@@ -197,6 +197,369 @@ function resolveSupportStructure(type: ChallengeType, tier: SupportTier): Suppor
   }
 }
 
+// ---------------------------------------------------------------------------
+// STRUCTURAL problem difficulty (the SECOND thing config.difficulty drives) —
+// distinct from the scaffolding withdrawal above. This makes the generated
+// PROBLEM itself genuinely harder per tier by reshaping WHICH in-band values the
+// pickers choose, NEVER by inflating magnitude (range/numberType are owned by the
+// eval mode + scope) and NEVER by reshaping into another mode. number-line is a
+// graph-data primitive: every mode reduces to reading a position against a tick
+// lattice, so the canonical levers are gap-subtlety and step-depth.
+//
+//   identify/plot (plot_point) → target-to-LABELED-tick distance: target sits ON a
+//        labeled tick (easy) → on a minor/unlabeled tick (medium) → maximally
+//        BETWEEN two labeled ticks, forcing the widest interpolation (hard).
+//   jump (show_jump)          → steps-to-solve depth: 1 op (easy/medium) → 2
+//        chained ops (hard). (Built in resolveSupportStructure.jumpSteps; mirrored
+//        here for one coherent prompt voice.)
+//   order (order_values)      → adjacent-value gap |a-b|: values spread far apart
+//        (easy) → mixed (medium) → tightly clustered, near-indistinguishable (hard).
+//   between (find_between)    → bound-gap width: bounds far apart, many in-between
+//        ticks (easy) → moderate (medium) → bounds adjacent, exactly one in-between
+//        value (hard).
+//
+// The structural numeric levers (labelOffset / orderGap / boundGap) are ENFORCED
+// by constructive re-selectors in each sub-generator's post-process (count the
+// LLM-agnostic picker output → honor if already on-target → else reconstruct to
+// the EXACT target, in band, preserving solvability). The answer in every mode is
+// the re-selected value(s), so the emitted targetValues ARE the recomputed answer.
+// See memory [[structural-difficulty-not-numeric]] / [[structural-difficulty-regrouping-pilot]].
+// ---------------------------------------------------------------------------
+
+/**
+ * Effective LABEL interval for an integer line — mirrors the component's
+ * getLabelInterval(numberType, tickInterval, range) so the generator's notion of
+ * "on a labeled tick" matches what the student actually sees. For non-integer
+ * types the label interval equals the tick interval (component contract). `range`
+ * here is the SPAN (max-min), matching the component.
+ */
+/** Snap precision per numberType — mirrors the component's getSnapPrecision so
+ *  the generator only ever proposes targets the snap-check can actually honor. */
+function snapPrecisionFor(numberType: ResolvedRange['numberType']): number {
+  if (numberType === 'integer') return 1;
+  if (numberType === 'decimal') return 0.01;
+  return 1 / 8; // fraction / mixed
+}
+
+/** Default tick interval per numberType+span — mirrors the component's
+ *  getDefaultTickInterval so "labeled tick" math matches what renders. */
+function defaultTickIntervalFor(numberType: ResolvedRange['numberType'], span: number): number {
+  if (numberType === 'integer') {
+    if (span <= 30) return 1;
+    if (span <= 100) return 5;
+    return 10;
+  }
+  const precision = snapPrecisionFor(numberType);
+  let interval = precision;
+  while (span / interval > 25) interval *= 2;
+  return interval;
+}
+
+function effectiveLabelInterval(
+  numberType: ResolvedRange['numberType'],
+  tickInterval: number,
+  span: number,
+): number {
+  if (numberType !== 'integer') return Math.max(tickInterval, 1e-9);
+  if (tickInterval === 1) {
+    if (span <= 10) return 1;
+    if (span <= 20) return 2;
+    return 5;
+  }
+  if (tickInterval === 5) {
+    if (span <= 50) return 5;
+    return 10;
+  }
+  return tickInterval;
+}
+
+interface ProblemShape {
+  /** plot_point: where the target should sit relative to the LABEL grid.
+   *  'on' = on a labeled tick; 'minor' = on an unlabeled tick one step from a
+   *  label; 'mid' = maximally between two labeled ticks. null = no constraint. */
+  labelPlacement: 'on' | 'minor' | 'mid' | null;
+  /** order_values: target adjacent-value gap profile. 'wide' = far apart;
+   *  'mixed' = default sampling; 'clustered' = small min adjacent gap. */
+  orderGap: 'wide' | 'mixed' | 'clustered' | null;
+  /** find_between: target bound separation in LABEL-interval units. 'wide' = many
+   *  in-between ticks; 'moderate' = a few; 'narrow' = exactly one. null = none. */
+  boundGap: 'wide' | 'moderate' | 'narrow' | null;
+  /** Prompt lines describing what HARDER means here (soft; the picker enforces). */
+  promptLines: string[];
+}
+
+/** One tier → one structural intent per mode. Clamped to [floor, cap] from the
+ *  brief INSIDE the constructive re-selectors (range/numberType never widen). */
+function resolveProblemShape(type: ChallengeType, tier: SupportTier): ProblemShape {
+  switch (type) {
+    case 'show_jump':
+      // Steps-to-solve depth lives in resolveSupportStructure.jumpSteps (1→2);
+      // this only contributes the coherent PROBLEM prose. No numeric lever here.
+      return {
+        labelPlacement: null, orderGap: null, boundGap: null,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a single jump from start to landing — one operation to track.'
+            : tier === 'medium'
+              ? 'PROBLEM: still a single jump, but the worked arc is gone — track the hop yourself.'
+              : 'PROBLEM: TWO chained jumps — land, then jump again from the new position, tracking the intermediate landing.',
+        ],
+      };
+    case 'order_values':
+      return {
+        labelPlacement: null,
+        orderGap: tier === 'easy' ? 'wide' : tier === 'hard' ? 'clustered' : 'mixed',
+        boundGap: null,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the values are spread FAR apart across the range, so left-to-right order is visually obvious.'
+            : tier === 'medium'
+              ? 'PROBLEM: the values have mixed gaps — some close, some far.'
+              : 'PROBLEM: the values are tightly CLUSTERED (small gaps between neighbours), so positions look near-identical — read the ticks carefully.',
+        ],
+      };
+    case 'find_between':
+      return {
+        labelPlacement: null, orderGap: null,
+        boundGap: tier === 'easy' ? 'wide' : tier === 'hard' ? 'narrow' : 'moderate',
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the two bounds are FAR apart with several ticks between them — many obvious in-between values.'
+            : tier === 'medium'
+              ? 'PROBLEM: the two bounds are a moderate gap apart — a few values lie between.'
+              : 'PROBLEM: the two bounds are ADJACENT (one step apart) — only one value lies strictly between, so the student must estimate carefully.',
+        ],
+      };
+    case 'plot_point':
+    default:
+      return {
+        labelPlacement: tier === 'easy' ? 'on' : tier === 'hard' ? 'mid' : 'minor',
+        orderGap: null, boundGap: null,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the target lands exactly ON a labeled tick — a direct, snap-obvious read.'
+            : tier === 'medium'
+              ? 'PROBLEM: the target lands on an unlabeled tick, one step from the nearest label — count from the label.'
+              : 'PROBLEM: the target lands MIDWAY between two labeled ticks — count the unlabeled subdivisions across the widest span.',
+        ],
+      };
+  }
+}
+
+/** Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS
+ *  structural problem difficulty (resolveProblemShape). One coherent section so
+ *  the LLM sees both axes of config.difficulty together. */
+function buildTierPromptSection(
+  type: ChallengeType,
+  tier: SupportTier,
+  heading: string,
+): string {
+  const lines = [
+    ...resolveSupportStructure(type, tier).promptLines,
+    ...resolveProblemShape(type, tier).promptLines,
+  ];
+  return `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (${heading} — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}`;
+}
+
+// ---------------------------------------------------------------------------
+// Constructive re-selectors — enforce the structural lever to the EXACT target,
+// in band, preserving each mode's solvability invariants. Each takes the LLM-/
+// picker-chosen value(s) plus the resolved line geometry and returns reshaped
+// in-band value(s); if it cannot satisfy the band it returns the input UNCHANGED
+// (the band SATURATES honestly rather than overflowing magnitude).
+// ---------------------------------------------------------------------------
+
+/**
+ * plot_point / identify: reshape a target so it sits ON / on a MINOR tick / MIDWAY
+ * between two labeled ticks. Magnitude stays inside `range`; numberType unchanged.
+ *  - 'on'    → snap to nearest labeled tick (multiple of labelIv).
+ *  - 'minor' → a tick one step (tickInterval) off the nearest label, when the
+ *              label grid is coarser than the tick grid (labelIv > tickInterval);
+ *              otherwise (every tick labeled, e.g. 0-10) the mode SATURATES at 'on'.
+ *  - 'mid'   → the value halfway between two adjacent labels, when that midpoint is
+ *              representable at this numberType (snap precision); else nearest minor;
+ *              else 'on'. Never leaves [min,max]; never collides with the bounds.
+ */
+function reshapePlotTarget(
+  target: number,
+  placement: ProblemShape['labelPlacement'],
+  geom: { min: number; max: number; tickInterval: number; labelIv: number; precision: number },
+): number {
+  if (!placement) return target;
+  const { min, max, tickInterval, labelIv, precision } = geom;
+  const inRange = (v: number) => v >= min - 1e-9 && v <= max + 1e-9;
+  const snapPrec = (v: number) => Math.round(v / precision) * precision;
+  // Nearest labeled tick, CLAMPED to the in-range label grid (the topmost label
+  // may sit below max for non-integer intervals — never fall back off-grid).
+  const labelIndex = Math.round((target - min) / labelIv);
+  const maxLabelIndex = Math.floor((max - min) / labelIv + 1e-9);
+  const clampIdx = (i: number) => Math.max(0, Math.min(maxLabelIndex, i));
+  const labelAt = (i: number) => snapPrec(min + clampIdx(i) * labelIv);
+  const nearestLabel = labelAt(labelIndex);
+
+  if (placement === 'on') {
+    return nearestLabel;
+  }
+
+  if (placement === 'minor') {
+    // A tick one tickInterval off a label. Only meaningful if labels are sparser
+    // than ticks; otherwise saturate ON the label.
+    if (labelIv <= tickInterval + 1e-9) {
+      return nearestLabel;
+    }
+    for (const dir of [1, -1]) {
+      const cand = snapPrec(nearestLabel + dir * tickInterval);
+      // must NOT itself land on another label, and stay in range
+      const onLabel = Math.abs((cand - min) / labelIv - Math.round((cand - min) / labelIv)) < 1e-6;
+      if (inRange(cand) && !onLabel) return cand;
+    }
+    return nearestLabel; // saturation: every tick labeled near the edge
+  }
+
+  // 'mid' — halfway between two ADJACENT in-range labels (widest interpolation).
+  // Anchor on the lower of the two labels that bracket the target, clamped so the
+  // upper label stays in range; the midpoint then never exceeds max.
+  const lowerIdx = clampIdx(Math.min(Math.floor((target - min) / labelIv + 1e-9), maxLabelIndex - 1));
+  const lowerLabel = labelAt(lowerIdx);
+  const midRaw = lowerLabel + labelIv / 2;
+  const midSnap = snapPrec(midRaw);
+  // The snapped midpoint must be strictly interior (not back on a label) AND in range.
+  const onLabel = Math.abs((midSnap - min) / labelIv - Math.round((midSnap - min) / labelIv)) < 1e-6;
+  if (inRange(midSnap) && !onLabel) return midSnap;
+  // Fall back to a minor tick, then to the label (saturation).
+  if (labelIv > tickInterval + 1e-9) {
+    for (const dir of [1, -1]) {
+      const cand = snapPrec(lowerLabel + dir * tickInterval);
+      const candOnLabel = Math.abs((cand - min) / labelIv - Math.round((cand - min) / labelIv)) < 1e-6;
+      if (inRange(cand) && !candOnLabel) return cand;
+    }
+  }
+  return nearestLabel; // saturation
+}
+
+/**
+ * order_values: reshape a set of DISTINCT in-range values to the tier's gap
+ * profile. 'wide' → maximise the minimum adjacent gap (spread across the range);
+ * 'clustered' → minimise it (a tight contiguous-ish run). Returns `perSet`
+ * DISTINCT values inside [min,max]; if the pool is too small to satisfy the
+ * profile it falls back to the widest distinct set it can (never < perSet, never
+ * duplicates — the floor). numberType/range never change.
+ */
+function reshapeOrderSet(
+  pool: number[],
+  perSet: number,
+  gap: ProblemShape['orderGap'],
+): number[] | null {
+  const sorted = Array.from(new Set(pool.filter(Number.isFinite))).sort((a, b) => a - b);
+  if (sorted.length < perSet) return null;
+  if (!gap || gap === 'mixed') return null; // medium = default sampling (no reshape)
+
+  if (gap === 'clustered') {
+    // Tightest window of perSet consecutive-in-pool values (smallest span).
+    let best = sorted.slice(0, perSet);
+    let bestSpan = best[best.length - 1] - best[0];
+    for (let i = 0; i + perSet <= sorted.length; i++) {
+      const win = sorted.slice(i, i + perSet);
+      const span = win[win.length - 1] - win[0];
+      if (span < bestSpan) { best = win; bestSpan = span; }
+    }
+    // Randomise WHICH tight window among ties so parallel sessions differ.
+    const ties: number[][] = [];
+    for (let i = 0; i + perSet <= sorted.length; i++) {
+      const win = sorted.slice(i, i + perSet);
+      if (win[win.length - 1] - win[0] === bestSpan) ties.push(win);
+    }
+    return ties.length ? ties[Math.floor(Math.random() * ties.length)] : best;
+  }
+
+  // 'wide' — maximise the minimum adjacent gap via even spread across the pool.
+  const out: number[] = [];
+  for (let k = 0; k < perSet; k++) {
+    const idx = Math.round((k * (sorted.length - 1)) / (perSet - 1));
+    out.push(sorted[idx]);
+  }
+  // De-dup collisions (can happen on a tiny pool) by nudging to the next free slot.
+  const seen = new Set<number>();
+  const used = new Set(out);
+  const result: number[] = [];
+  for (const v of out) {
+    if (!seen.has(v)) { seen.add(v); result.push(v); continue; }
+    const alt = sorted.find(s => !used.has(s) && !seen.has(s));
+    if (alt == null) return null; // cannot make perSet distinct → caller keeps original
+    seen.add(alt); used.add(alt); result.push(alt);
+  }
+  return result.length === perSet ? result : null;
+}
+
+/**
+ * find_between: reshape a [lo,hi] bound pair to the tier's bound-gap width,
+ * measured in LABEL-interval units. 'narrow' → bounds one labelIv apart (exactly
+ * one strictly-between value at this numberType); 'wide' → bounds maximally far
+ * apart in the pool. The floor (>=1 representable value strictly between) is
+ * ASSERTED: a 'narrow' pair is only accepted if a snap-representable value lies
+ * strictly between it, else it widens by one step. Bounds stay in [min,max].
+ */
+function reshapeBetweenPair(
+  pair: [number, number],
+  pool: number[],
+  width: ProblemShape['boundGap'],
+  geom: { labelIv: number; precision: number },
+): [number, number] | null {
+  if (!width || width === 'moderate') return null; // medium = default builder
+  const sorted = Array.from(new Set(pool.filter(Number.isFinite))).sort((a, b) => a - b);
+  if (sorted.length < 2) return null;
+  const { labelIv, precision } = geom;
+
+  // Does at least one snap-representable value lie STRICTLY between a<b?
+  const hasBetween = (a: number, b: number): boolean => {
+    if (b - a <= precision + 1e-9) return false;
+    // a representable value at `precision` strictly inside (a,b)
+    const firstInside = Math.floor(a / precision + 1) * precision;
+    return firstInside > a + 1e-9 && firstInside < b - 1e-9;
+  };
+
+  if (width === 'narrow') {
+    // Prefer bounds exactly one labelIv apart with a value between; among such
+    // pairs choose randomly. Fall back to the smallest gap that still has a
+    // between-value (floor) — never collapse to no in-between value.
+    const oneApart: Array<[number, number]> = [];
+    const anyValid: Array<[number, number]> = [];
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        const a = sorted[i], b = sorted[j];
+        if (!hasBetween(a, b)) continue;
+        anyValid.push([a, b]);
+        if (Math.abs((b - a) - labelIv) < 1e-6) oneApart.push([a, b]);
+      }
+    }
+    const fromOne = oneApart.length ? oneApart : null;
+    const pickFrom = fromOne ?? (anyValid.length
+      ? anyValid.filter(([a, b]) => (b - a) === Math.min(...anyValid.map(([x, y]) => y - x)))
+      : null);
+    if (!pickFrom || pickFrom.length === 0) return null;
+    return pickFrom[Math.floor(Math.random() * pickFrom.length)];
+  }
+
+  // 'wide' — the largest-gap pair (most in-between ticks); random among ties.
+  let maxGap = -Infinity;
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const g = sorted[j] - sorted[i];
+      if (hasBetween(sorted[i], sorted[j]) && g > maxGap) maxGap = g;
+    }
+  }
+  if (!Number.isFinite(maxGap)) return null;
+  const widest: Array<[number, number]> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (hasBetween(sorted[i], sorted[j]) && sorted[j] - sorted[i] === maxGap) {
+        widest.push([sorted[i], sorted[j]]);
+      }
+    }
+  }
+  return widest.length ? widest[Math.floor(Math.random() * widest.length)] : null;
+}
+
 /**
  * Build benchmark anchor highlights for a challenge WITHOUT ever including a
  * target value (the leak guard — an anchor equal to the answer trivialises the
@@ -489,16 +852,47 @@ async function generatePlotPointChallenges(
   const poolNumbers = isIdentify
     ? uniqueIntegerPool(0, 10)
     : resolvedPoolNumbers(config, range);
-  const targets = selectPlotPointTargets(poolNumbers, resolveCount('plot_point'));
+  let targets = selectPlotPointTargets(poolNumbers, resolveCount('plot_point'));
   if (targets.length === 0) return emptySubResult('plot');
+
+  const tier = normalizeSupportTier(config?.difficulty);
+
+  // STRUCTURAL difficulty: reshape each target relative to the LABEL grid (on a
+  // labeled tick → on a minor tick → midway between labels). Magnitude stays in
+  // `range`; numberType unchanged. The reshaped values ARE the recomputed answer.
+  if (tier) {
+    const placement = resolveProblemShape('plot_point', tier).labelPlacement;
+    if (placement) {
+      const span = Math.max(1, range.max - range.min);
+      const tickInterval = defaultTickIntervalFor(numberType, span);
+      const labelIv = effectiveLabelInterval(numberType, tickInterval, span);
+      const precision = snapPrecisionFor(numberType);
+      const geom = { min: range.min, max: range.max, tickInterval, labelIv, precision };
+      const reshaped: number[] = [];
+      const seen = new Set<number>();
+      for (const t of targets) {
+        let v = reshapePlotTarget(t, placement, geom);
+        // Keep targets DISTINCT (a plot session shows variety); on collision try
+        // the next pool member, else accept the dup-free original.
+        if (seen.has(v)) {
+          const alt = poolNumbers
+            .map((p) => reshapePlotTarget(p, placement, geom))
+            .find((c) => !seen.has(c));
+          if (alt != null) v = alt;
+        }
+        seen.add(v);
+        reshaped.push(v);
+      }
+      targets = reshaped;
+    }
+  }
 
   const modeBanner = isIdentify
     ? 'IDENTIFY MODE (Kindergarten): use very warm, simple language. Every tick is labeled; this is pure number recognition.'
     : `GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}`;
 
-  const tier = normalizeSupportTier(config?.difficulty);
   const tierSection = tier
-    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('plot_point', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    ? buildTierPromptSection('plot_point', tier, 'scaffolding + structural problem difficulty')
     : '';
 
   const promptFor = (target: number, index: number) => `Create text for ONE Number Line PLOT challenge for "${topic}" (Grade ${gradeLevel}).
@@ -554,7 +948,7 @@ async function generateShowJumpChallenges(
   const tier = normalizeSupportTier(config?.difficulty);
   const scaffold = tier ? resolveSupportStructure('show_jump', tier) : null;
   const tierSection = tier
-    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding + jump steps — NOT number size)\n${scaffold!.promptLines.map((l) => `- ${l}`).join('\n')}`
+    ? buildTierPromptSection('show_jump', tier, 'scaffolding + jump-step depth')
     : '';
 
   const tuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'));
@@ -678,12 +1072,24 @@ async function generateOrderValuesChallenges(
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
   const perSet = gradeBand === 'K-2' ? 3 : 4;
   const poolNumbers = resolvedPoolNumbers(config, range);
-  const sets = selectOrderValueSets(poolNumbers, resolveCount('order_values'), perSet);
+  let sets = selectOrderValueSets(poolNumbers, resolveCount('order_values'), perSet);
   if (sets.length === 0) return emptySubResult('order');
 
   const tier = normalizeSupportTier(config?.difficulty);
+
+  // STRUCTURAL difficulty: reshape each set's adjacent-value gap profile (wide
+  // spread → clustered). Values stay DISTINCT and inside `range` (floor); on a
+  // pool too small to satisfy the profile the original (already-distinct) set is
+  // kept — the band saturates honestly.
+  if (tier) {
+    const gap = resolveProblemShape('order_values', tier).orderGap;
+    if (gap && gap !== 'mixed') {
+      sets = sets.map((s) => reshapeOrderSet(poolNumbers, perSet, gap) ?? s);
+    }
+  }
+
   const tierSection = tier
-    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('order_values', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    ? buildTierPromptSection('order_values', tier, 'scaffolding + structural problem difficulty')
     : '';
 
   const promptFor = (values: number[], index: number) => `Create text for ONE Number Line ORDER challenge for "${topic}" (Grade ${gradeLevel}).
@@ -737,12 +1143,29 @@ async function generateFindBetweenChallenges(
   const gradeBand = resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: 10 };
   const poolNumbers = resolvedPoolNumbers(config, range);
-  const pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
+  let pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
   if (pairs.length === 0) return emptySubResult('compare');
 
   const tier = normalizeSupportTier(config?.difficulty);
+
+  // STRUCTURAL difficulty: reshape the bound-gap width (wide → narrow/adjacent).
+  // The FLOOR (at least one snap-representable value strictly between the bounds)
+  // is asserted inside reshapeBetweenPair — a 'narrow' pair is only accepted if it
+  // remains answerable, else the band saturates at the smallest valid gap.
+  if (tier) {
+    const width = resolveProblemShape('find_between', tier).boundGap;
+    if (width && width !== 'moderate') {
+      const numberType: ResolvedRange['numberType'] = gradeBand === 'K-2' ? 'integer' : 'decimal';
+      const span = Math.max(1, range.max - range.min);
+      const tickInterval = defaultTickIntervalFor(numberType, span);
+      const labelIv = effectiveLabelInterval(numberType, tickInterval, span);
+      const geom = { labelIv, precision: snapPrecisionFor(numberType) };
+      pairs = pairs.map((p) => reshapeBetweenPair(p, poolNumbers, width, geom) ?? p);
+    }
+  }
+
   const tierSection = tier
-    ? `\n\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level — NOT number size)\n${resolveSupportStructure('find_between', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    ? buildTierPromptSection('find_between', tier, 'scaffolding + structural problem difficulty')
     : '';
 
   const promptFor = ([b0, b1]: [number, number], index: number) => `Create text for ONE Number Line FIND-BETWEEN challenge for "${topic}" (Grade ${gradeLevel}).

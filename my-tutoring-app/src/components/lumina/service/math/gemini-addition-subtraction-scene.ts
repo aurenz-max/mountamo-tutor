@@ -66,20 +66,51 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
-// Within-mode support tier (config.difficulty)
+// Within-mode difficulty (config.difficulty) — TWO axes off one enum.
 //
-// Second axis of the two-field contract: targetEvalMode = WHICH skill,
-// difficulty = HOW MUCH on-screen scaffolding within it. A tier withdraws
-// SUPPORT inherent to the story-scene interaction — never the size of the
-// numbers (the scope / per-mode tables own those). Each pinned mode has its
-// own natural lever:
-//   act-out        → scene count-aids (grouped reveal + ordinal tap-badges)
-//   build-equation → equation-tray distractors (exact → +distractors → full)
-//   solve-story    → unknownPosition (result/forward → start·change/inverse)
-//   create-story   → open-ended; no support surface, no tier
+// targetEvalMode = WHICH skill; difficulty = how hard WITHIN it. config.difficulty
+// drives two dials at once:
+//
+//   AXIS 1 — scaffolding withdrawal ("how much help?", resolveSupportStructure):
+//     act-out        → scene count-aids (grouped reveal + ordinal tap-badges)
+//     build-equation → equation-tray distractors (exact → +distractors → full)
+//     solve-story    → carries no scaffold of its own (its lever is structural below)
+//     create-story   → open-ended; no support surface, no tier
+//
+//   AXIS 2 — problem STRUCTURE ("how hard a problem, structurally?",
+//   resolveProblemShape): a genuinely harder problem SHAPE per tier, magnitude
+//   held inside maxNumber, never crossing into another challenge type. Because
+//   every problem here is a natural-language STORY, the structural fields are
+//   coupled to the prose — so the lever is enforced by CONSTRAINING THE SCHEMA
+//   ENUM per tier (the LLM then authors a fully self-consistent story+counts),
+//   not by rewriting the narrative in post-process (brittle, desyncs the answer).
+//     build-equation → storyType: join/separate → part-whole → compare
+//                      (the story→equation mapping gets structurally harder)
+//     solve-story    → unknownPosition: result(forward) → change → start(inverse)
+//                      (inverse-reasoning depth — the answer IS the hidden slot)
+//     act-out        → none: its interaction is "count the objects on screen",
+//                      which has no clean in-mode structural lever (compare can't
+//                      render — the scene shows one group, not a difference). It
+//                      legitimately supports only AXIS 1.
+//     create-story   → none.
 // ---------------------------------------------------------------------------
 
 type ChallengeType = 'act-out' | 'build-equation' | 'solve-story' | 'create-story';
+type ChallengeStoryType = 'join' | 'separate' | 'compare' | 'part-whole';
+type UnknownPosition = 'result' | 'change' | 'start';
+
+/**
+ * Guardrail shared by BOTH axes of config.difficulty (replaces the old
+ * "numbers never change" line, which became a half-truth once AXIS 2 started
+ * selecting harder story SHAPES). Structure changes (which story situation, which
+ * quantity is unknown); magnitude does NOT.
+ */
+const TIER_GUARDRAIL =
+  'This tier sets how much on-screen scaffolding the student gets AND the problem '
+  + 'STRUCTURE (which story situation — join/separate vs part-whole vs compare — and '
+  + 'which quantity is unknown). It must NEVER change the size of any number: keep every '
+  + 'startCount / changeCount / resultCount within maxNumber exactly as you otherwise '
+  + 'would. Harder means a harder SHAPE, never bigger numbers.';
 
 type SupportTier = 'easy' | 'medium' | 'hard';
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
@@ -98,8 +129,6 @@ interface SupportScaffold {
   groupedReveal: boolean;
   /** build-equation: how many candidate number tiles the tray offers. */
   tilePalette: 'exact' | 'plus-distractors' | 'full';
-  /** solve-story (prompt-driven): which unknownPosition gradient to request. */
-  unknownGradient: 'result' | 'vary' | 'inverse';
   promptLines: string[];
 }
 
@@ -110,10 +139,7 @@ interface SupportScaffold {
 function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): SupportScaffold | null {
   if (pinnedType === 'create-story') return null;
 
-  const lead =
-    `SUPPORT TIER = "${tier}". This sets ONLY how much on-screen scaffolding the student gets — `
-    + `it must NEVER change the size of any number. Keep every startCount / changeCount / resultCount `
-    + `within maxNumber exactly as you otherwise would; only the support described below changes.`;
+  const lead = `SUPPORT TIER = "${tier}". ${TIER_GUARDRAIL}`;
 
   if (pinnedType === 'act-out') {
     const showCountBadges = tier !== 'hard';
@@ -126,7 +152,7 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
     } else {
       lines.push('Scene aids WITHDRAWN (applied automatically): objects appear together with no counting numbers — the student must segment and count unaided.');
     }
-    return { showCountBadges, groupedReveal, tilePalette: 'full', unknownGradient: 'vary', promptLines: lines };
+    return { showCountBadges, groupedReveal, tilePalette: 'full', promptLines: lines };
   }
 
   if (pinnedType === 'build-equation') {
@@ -140,22 +166,14 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
     } else {
       lines.push('Equation tray shows the full number range (applied automatically) — the student must pick the right numbers from many.');
     }
-    return { showCountBadges: true, groupedReveal: true, tilePalette, unknownGradient: 'vary', promptLines: lines };
+    return { showCountBadges: true, groupedReveal: true, tilePalette, promptLines: lines };
   }
 
-  // solve-story — unknownPosition is coupled to the story phrasing, so it is
-  // driven through the prompt (like the numbers), not force-set in code.
-  const unknownGradient: SupportScaffold['unknownGradient'] =
-    tier === 'easy' ? 'result' : tier === 'medium' ? 'vary' : 'inverse';
-  const lines = [lead];
-  if (tier === 'easy') {
-    lines.push('Make the missing value the RESULT in every story (the forward operation). Set unknownPosition="result" and phrase each story to ask "how many now / how many left?".');
-  } else if (tier === 'medium') {
-    lines.push('Mix unknown positions: mostly "result", occasionally "change". Phrase each story so the question clearly targets the hidden value, and set unknownPosition to match.');
-  } else {
-    lines.push('Make the missing value the START or CHANGE (inverse reasoning — the student works backward). Set unknownPosition="start" or "change" and phrase each story to ask for that hidden value (e.g. "How many were there before?" / "How many came?"). Keep all numbers within maxNumber.');
-  }
-  return { showCountBadges: true, groupedReveal: true, tilePalette: 'full', unknownGradient, promptLines: lines };
+  // solve-story has no scaffolding lever of its own — its difficulty is the
+  // STRUCTURAL unknownPosition ladder (AXIS 2 / resolveProblemShape), enforced by
+  // the schema enum so the LLM authors a story-consistent unknown. AXIS 1 only
+  // carries the shared guardrail here.
+  return { showCountBadges: true, groupedReveal: true, tilePalette: 'full', promptLines: [lead] };
 }
 
 /**
@@ -181,6 +199,129 @@ function buildAllowedTiles(
     if (!set.has(n)) distractors.push(n);
   }
   return Array.from(new Set([...needed, ...distractors])).sort((a, b) => a - b).map(String);
+}
+
+// ---------------------------------------------------------------------------
+// AXIS 2 — structural problem difficulty (config.difficulty, second dial).
+//
+// A genuinely harder problem SHAPE per tier, magnitude held inside maxNumber and
+// never crossing into another challenge type. The lever per pinned mode follows
+// the CGI problem-type ladder (well-grounded in early-math research):
+//   build-equation → storyType:        join/separate → part-whole → compare
+//   solve-story    → unknownPosition:  result(forward) → change → start(inverse)
+// act-out & create-story have no clean in-mode structural lever (AXIS-1 only).
+//
+// Because every problem here is a natural-language STORY, the structural fields
+// are coupled to the prose. Rather than rewrite the narrative in post-process
+// (brittle — it desyncs the story from the answer), we CONSTRAIN THE RESPONSE
+// SCHEMA ENUM to the tier's target (see constrainStructuralEnums): the LLM then
+// authors a fully self-consistent story + counts + fields for the forced shape.
+// Constraints flow through the schema, not prompt prose. The component recomputes
+// the answer from the (LLM-authored, now-constrained) counts/unknownPosition, so
+// nothing is leaked and nothing can desync.
+//
+// In-mode FLOOR: easy keeps the simplest in-scope shape (result / join·separate)
+// and never drops to a different challenge type. MAGNITUDE CAP: every count stays
+// ≤ maxNumber (owned by the scope, untouched here).
+// ---------------------------------------------------------------------------
+
+interface ProblemShape {
+  /** build-equation: storyType enum the schema is constrained to this tier. */
+  allowedStoryTypes?: ChallengeStoryType[];
+  /** solve-story: unknownPosition enum the schema is constrained to this tier. */
+  allowedUnknownPositions?: UnknownPosition[];
+  /** Prompt lines describing the structural intent (the schema enforces it). */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the in-mode structural lever for a tier. Returns null for modes with no
+ * clean structural lever (act-out, create-story) — those ride AXIS 1 only.
+ */
+function resolveProblemShape(pinnedType: ChallengeType, tier: SupportTier): ProblemShape | null {
+  if (pinnedType === 'build-equation') {
+    const allowedStoryTypes: ChallengeStoryType[] =
+      tier === 'easy' ? ['join', 'separate']
+      : tier === 'medium' ? ['part-whole']
+      : ['compare'];
+    const line =
+      tier === 'easy'
+        ? 'PROBLEM STRUCTURE: write JOIN or SEPARATE stories (a direct add-to / take-away action). The equation maps straight from the visible action — the easiest story→equation translation.'
+        : tier === 'medium'
+          ? 'PROBLEM STRUCTURE: write PART-WHOLE stories where BOTH parts are given and the student finds the WHOLE (e.g. "3 cats inside and 2 outside — how many in all/altogether?"). startCount and changeCount are the two parts; resultCount is the whole they combine to. Do NOT write MISSING-ADDEND stories (total given, one part given, "how many are LEFT / the REST / how many MORE came") — those put the whole in the wrong slot and break the equation.'
+          : 'PROBLEM STRUCTURE: write COMPARE stories ("how many MORE / FEWER?", e.g. "4 red flowers and 2 blue — how many more red?"). The student must translate comparison language into a subtraction equation — the hardest mapping.';
+    // build-equation is intrinsically a FORWARD task: the student builds the full
+    // "start OP change = result" sentence, so the computed RESULT is always the
+    // answer. Pinning unknownPosition='result' on the schema enum forces the LLM to
+    // author story counts where startCount/changeCount are the givens and resultCount
+    // is what's computed — which disambiguates part-whole away from missing-addend
+    // (the medium-tier desync) by construction, not by post-process re-assembly.
+    return { allowedStoryTypes, allowedUnknownPositions: ['result'], promptLines: [line] };
+  }
+
+  if (pinnedType === 'solve-story') {
+    const allowedUnknownPositions: UnknownPosition[] =
+      tier === 'easy' ? ['result']
+      : tier === 'medium' ? ['change']
+      : ['start'];
+    const line =
+      tier === 'easy'
+        ? 'PROBLEM STRUCTURE: hide the RESULT (forward operation) — phrase every story to ask "how many now / how many left?". The student computes the outcome directly.'
+        : tier === 'medium'
+          ? 'PROBLEM STRUCTURE: hide the CHANGE — phrase every story to ask "how many came / went away?". The student works backward from the start and the result (an inverse step).'
+          : 'PROBLEM STRUCTURE: hide the START — phrase every story to ask "how many were there before?". Full inverse reasoning from the change and the result — the hardest unknown position.';
+    return { allowedUnknownPositions, promptLines: [line] };
+  }
+
+  // act-out (counting interaction — no clean structural lever) / create-story
+  return null;
+}
+
+/**
+ * Combined within-mode tier prompt block: AXIS 1 scaffolding tone
+ * (resolveSupportStructure) PLUS AXIS 2 problem STRUCTURE (resolveProblemShape).
+ * One section so the LLM sees both dials of config.difficulty together — though
+ * the structural lever is ultimately ENFORCED on the schema enum, not left to the
+ * LLM. Returns '' when neither axis applies (create-story / no tier).
+ */
+function buildTierPromptSection(pinnedType: ChallengeType, tier: SupportTier): string {
+  const lines = [
+    ...(resolveSupportStructure(pinnedType, tier)?.promptLines ?? []),
+    ...(resolveProblemShape(pinnedType, tier)?.promptLines ?? []),
+  ];
+  if (lines.length === 0) return '';
+  return `\n## WITHIN-MODE DIFFICULTY "${tier}" (scaffolding + problem STRUCTURE — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
+/**
+ * Constrain the response-schema enums to the tier's structural target, so the LLM
+ * authors a story whose storyType / unknownPosition is guaranteed in-band — the
+ * narrative, counts, and fields stay mutually consistent by construction (no
+ * post-process narrative rewriting). Deep-clones the schema; never mutates input.
+ * When unknownPosition is constrained it is also made REQUIRED so the LLM always
+ * commits to the (story-consistent) hidden slot.
+ */
+function constrainStructuralEnums(schema: Schema, shape: ProblemShape): Schema {
+  const cloned: Schema = JSON.parse(JSON.stringify(schema));
+  const items = (cloned.properties?.challenges as Schema | undefined)?.items as Schema | undefined;
+  const props = items?.properties as Record<string, Schema> | undefined;
+  if (!items || !props) return cloned;
+
+  if (shape.allowedStoryTypes && props.storyType) {
+    props.storyType.enum = [...shape.allowedStoryTypes];
+    props.storyType.description =
+      `Story situation — CONSTRAINED to this difficulty tier: ${shape.allowedStoryTypes.join(', ')}. `
+      + `The storyText, counts, and operation MUST match this situation.`;
+  }
+  if (shape.allowedUnknownPositions && props.unknownPosition) {
+    props.unknownPosition.enum = [...shape.allowedUnknownPositions];
+    props.unknownPosition.description =
+      `Which quantity is unknown — CONSTRAINED to this difficulty tier: ${shape.allowedUnknownPositions.join(', ')}. `
+      + `Phrase the story so its question targets exactly this hidden value.`;
+    const req = (items.required ?? []) as string[];
+    if (!req.includes('unknownPosition')) items.required = [...req, 'unknownPosition'];
+  }
+  return cloned;
 }
 
 // ---------------------------------------------------------------------------
@@ -306,9 +447,11 @@ export const generateAdditionSubtractionScene = async (
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
     /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+     * Per-component difficulty tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second field of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how hard within it. Drives TWO axes: AXIS 1 = on-screen
+     * scaffolding (how much help), AXIS 2 = problem STRUCTURE (storyType /
+     * unknownPosition ladder). NEVER changes the size of any number.
      */
     difficulty?: string;
   }
@@ -330,14 +473,22 @@ export const generateAdditionSubtractionScene = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // AXIS 2: the structural problem shape for this pinned mode + tier (null for
+  // act-out/create-story or no tier). Enforced via the schema enum below.
+  const problemShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier)
     : '';
 
-  // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
+  // ── Build mode-constrained schema (eval mode → then AXIS-2 structural enum) ──
+  let activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(additionSubtractionSceneSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : additionSubtractionSceneSchema;
+  if (problemShape) {
+    activeSchema = constrainStructuralEnums(activeSchema, problemShape);
+  }
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
@@ -606,34 +757,70 @@ Return the complete addition/subtraction scene configuration.
     }
   }
 
-  // ── Apply the within-mode support tier deterministically (scaffolding only) ──
-  // Runs LAST, after all structural fixups: code owns the support structure;
-  // the LLM only chose the numbers (and, for solve-story, the matching phrasing).
+  // ── Apply the within-mode difficulty deterministically (both axes) ──
+  // Runs LAST, after all structural fixups. AXIS 1 (scaffolding) is code-owned;
+  // AXIS 2 (problem structure) was enforced upstream by the schema enum, so here
+  // we only VALIDATE it (clamp the rare stray to the tier floor) and keep the
+  // answer-bearing fields mutually consistent. Gated on supportTier → the no-tier
+  // path is byte-identical to before this skill ran.
   if (tierScaffold && pinnedType) {
     if (pinnedType === 'act-out') {
       data.showCountBadges = tierScaffold.showCountBadges;
       data.groupedReveal = tierScaffold.groupedReveal;
       console.log(
-        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "act-out" → `
+        `[AdditionSubtractionScene] Tier "${supportTier}" on mode "act-out" (scaffolding-only) → `
         + `countBadges=${data.showCountBadges}, groupedReveal=${data.groupedReveal}`,
       );
     } else if (pinnedType === 'build-equation') {
+      // AXIS 2 is enforced by the SCHEMA enum (storyType + unknownPosition='result'),
+      // so the LLM already authored a self-consistent storyText + operation + counts.
+      // We must NOT re-derive operation from the forced storyType LABEL here: a story
+      // the LLM wrote as take-away ("…how many are LEFT?") but the enum tagged
+      // 'part-whole' is still a SUBTRACTION. The old code forced part-whole→addition and
+      // recomputed result = start + change, desyncing the equation from the story (e.g.
+      // "9 baked, ate 4, how many left?" → 9 + 4 = 13). TRUST the LLM's operation; only
+      // clamp a stray storyType and keep the arithmetic consistent for THAT operation.
+      const allowed = problemShape?.allowedStoryTypes;
+      if (allowed) {
+        for (const ch of data.challenges as AddSubChallenge[]) {
+          if (!allowed.includes(ch.storyType)) ch.storyType = allowed[0];
+          if (ch.operation === 'subtraction' && ch.startCount < ch.changeCount) {
+            const t = ch.startCount; ch.startCount = ch.changeCount; ch.changeCount = t;
+          }
+          ch.resultCount = ch.operation === 'addition'
+            ? ch.startCount + ch.changeCount
+            : ch.startCount - ch.changeCount;
+          ch.equation = `${ch.startCount} ${ch.operation === 'addition' ? '+' : '-'} ${ch.changeCount} = ${ch.resultCount}`;
+        }
+      }
       for (const ch of data.challenges as AddSubChallenge[]) {
         const tiles = buildAllowedTiles(ch, tierScaffold.tilePalette, data.maxNumber);
         if (tiles) ch.allowedTiles = tiles;
         else delete ch.allowedTiles;
       }
       console.log(
-        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "build-equation" → `
-        + `tilePalette=${tierScaffold.tilePalette}`,
+        `[AdditionSubtractionScene] Tier "${supportTier}" on mode "build-equation" → `
+        + `tilePalette=${tierScaffold.tilePalette}, storyTypes=[${allowed?.join(', ') ?? 'n/a'}] `
+        + `(schema-enforced) → ${(data.challenges as AddSubChallenge[]).map((c) => `${c.storyType}:${c.equation}`).join(' | ')}`,
       );
     } else if (pinnedType === 'solve-story') {
-      // unknownPosition is coupled to the LLM-authored story phrasing, so it is
-      // driven through the prompt (not force-set here) to avoid story↔answer desync.
-      console.log(
-        `[AdditionSubtractionScene] Support tier "${supportTier}" on mode "solve-story" → `
-        + `unknownGradient=${tierScaffold.unknownGradient} (prompt-driven)`,
-      );
+      // AXIS 2: unknownPosition is the structural lever, enforced by the schema enum
+      // so the LLM-authored story already targets the right hidden slot. Validate &
+      // clamp the rare stray to the tier floor; the component recomputes the answer
+      // from unknownPosition, so nothing is leaked.
+      const allowed = problemShape?.allowedUnknownPositions;
+      if (allowed) {
+        for (const ch of data.challenges as AddSubChallenge[]) {
+          if (!ch.unknownPosition || !allowed.includes(ch.unknownPosition)) {
+            ch.unknownPosition = allowed[0];
+          }
+        }
+        console.log(
+          `[AdditionSubtractionScene] Tier "${supportTier}" on mode "solve-story" → `
+          + `unknownPosition constrained to [${allowed.join(', ')}] (schema-enforced) → `
+          + `${(data.challenges as AddSubChallenge[]).map((c) => c.unknownPosition).join(', ')}`,
+        );
+      }
     }
   }
 

@@ -109,14 +109,27 @@ interface SupportScaffold {
 }
 
 /**
+ * Guardrail line shared by BOTH axes of config.difficulty. Replaces the old
+ * "numbers never change" framing, which became a lie once the structural axis
+ * (resolveProblemShape) started re-selecting targets/operands: the numbers DO
+ * change, but only to change problem STRUCTURE (interior-zero-place count for
+ * build/read; carry/borrow count for operate), never to inflate magnitude past
+ * the eval-mode + grade-band scope.
+ */
+const TIER_GUARDRAIL =
+  'Numbers stay within the eval-mode + grade-band scope. This tier changes the '
+  + 'problem STRUCTURE (how many empty place-value columns the number has, or how '
+  + 'many carries/borrows an operation needs) and how much on-screen help is shown '
+  + '— NOT the magnitude. 305 and 235 are the SAME band. Never just make the numbers bigger.';
+
+/**
  * Map (challenge type, tier) → on-screen scaffolds. Scaffolding-only: the target
  * numbers never change, only how much the workspace helps the student self-check.
  * easy = workspace reads + verifies for them; hard = they place blocks and verify
  * mentally before typing the answer.
  */
 function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffold {
-  const numbersNeverChange =
-    'This tier changes only on-screen SUPPORT, never the numbers — the target stays exactly as generated.';
+  const numbersNeverChange = TIER_GUARDRAIL;
 
   // read_blocks: counts + total are contractually hidden (they leak the answer).
   // The tier cannot turn them on; it only sets the tutor/instruction tone.
@@ -160,6 +173,287 @@ function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffo
         ],
       };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty — the SECOND axis of config.difficulty.
+//
+// Distinct from the scaffolding above ("how much help?"), this makes the
+// generated PROBLEM itself harder per tier — STRUCTURALLY, never by inflating
+// magnitude and never by crossing into another eval mode. Two lever families:
+//
+//   build_number / read_blocks → INTERIOR-ZERO-PLACE COUNT. A number with empty
+//     place-value columns (305, 1003) is structurally harder to build/read than
+//     one with every column filled (235) — the classic "forgot the zero"
+//     misconception — at the SAME magnitude band. Lever: 0 → 1 → 2 interior
+//     zeros, clamped to places-2 so at least the top + ones digits stay non-zero
+//     (floor: still a multi-digit number that requires reading the blocks).
+//
+//   add_with_blocks / subtract_with_blocks (operate) → REGROUP-EVENT COUNT,
+//     identical to the regrouping-workbench pilot. carries/borrows 1 → 2 →
+//     cascade (chained carry) / borrow-across-zero, magnitude held in band.
+//     Floor 1 (operate under-tests at 0 regroups); cap places-1 so nothing
+//     carries/borrows out of the top column (result stays in band, M>S strict).
+//
+//   regroup → NO structural lever (brief: "none"). The component renders only
+//     standard-form starting states and the prompt forbids non-standard
+//     arrangements, so a 2nd trade can't be shown. Its floor (exactly 1 trade)
+//     is also its cap — scaffolding axis only, no branch here.
+//
+// The exact shape is CODE-enforced in post-process (re-selecting the target /
+// operands); the prompt only describes the intent. The answer is a pure
+// function of those numbers, so reconstruction stays self-consistent.
+// See memory [[structural-difficulty-not-numeric]] / [[structural-difficulty-regrouping-pilot]].
+// ---------------------------------------------------------------------------
+
+const BT_OPERATE_TYPES = ['add_with_blocks', 'subtract_with_blocks'] as const;
+const BT_ZEROGAP_TYPES = ['build_number', 'read_blocks'] as const;
+
+interface ProblemShape {
+  /** build/read: exact number of INTERIOR zero columns to force in the target. */
+  zeroGapTarget: number;
+  /** operate: exact number of carry/borrow events to force (≥1 for operate). */
+  regroupTarget: number;
+  /** operate subtract hard: force a borrow across a zero (e.g. 305 − 78). */
+  crossZero: boolean;
+  /** operate add hard: make the upper carry a CHAINED carry (own digits sum to 9). */
+  chainedCarry: boolean;
+  /** Prompt lines describing the structural intent (code still enforces). */
+  promptLines: string[];
+  /** True when this type has a structural lever; false → scaffolding-only (regroup). */
+  hasLever: boolean;
+}
+
+/** ones→thousands → digit count. K-1 'tens' = 2, 2-3 'hundreds' = 3, 4-5 'thousands' = 4. */
+const placeCount = (p?: string): number => (p === 'thousands' ? 4 : p === 'hundreds' ? 3 : p === 'ones' ? 1 : p === 'tens' ? 2 : 3);
+
+/**
+ * Resolve the in-mode structural lever for a tier. `places` (2/3/4 from the grade
+ * band's maxPlace) bounds the achievable lever so we never push past the band:
+ * a 2-digit number fits at most ONE interior zero (the tens column) and ONE
+ * regroup, so its hard tier saturates there honestly (the scaffolding axis still
+ * varies). The real ladder lives at 3- and 4-digit.
+ */
+function resolveProblemShape(type: string, tier: SupportTier, places: number): ProblemShape {
+  // ── operate: regroup-event count (regrouping-workbench ladder) ──
+  if ((BT_OPERATE_TYPES as readonly string[]).includes(type)) {
+    const isSub = type === 'subtract_with_blocks';
+    const ev = isSub ? 'borrow' : 'carry';
+    // floor 1 (operate under-tests at 0); cap places-1 (no carry/borrow out of top → in band).
+    const cap = Math.max(1, places - 1);
+    const ideal = tier === 'easy' ? 1 : tier === 'medium' ? 2 : 3;
+    const regroupTarget = Math.min(Math.max(ideal, 1), cap);
+    const crossZero = isSub && tier === 'hard' && places >= 3 && regroupTarget >= 2;
+    const chainedCarry = !isSub && tier === 'hard' && regroupTarget >= 2;
+
+    let line: string;
+    if (crossZero) {
+      line = `PROBLEM SHAPE: a BORROW ACROSS A ZERO — the minuend has a 0 in the tens place, so the ones-place borrow cascades THROUGH the zero up to the hundreds (e.g. 305 − 78). The hardest elementary borrow.`;
+    } else if (chainedCarry) {
+      line = `PROBLEM SHAPE: a CASCADING carry — the ones column carries, and that carry pushes the tens column over 10 even though its own two digits sum to only 9 (a hidden, chained carry students often miss).`;
+    } else if (regroupTarget >= 2) {
+      line = `PROBLEM SHAPE: exactly TWO ${ev}s — both the ones and tens columns ${ev}.`;
+    } else {
+      line = `PROBLEM SHAPE: exactly ONE ${ev} (the ones column); keep every other column ${ev}-free.`;
+    }
+    return { zeroGapTarget: 0, regroupTarget, crossZero, chainedCarry, hasLever: true, promptLines: [line] };
+  }
+
+  // ── build_number / read_blocks: interior-zero-place count ──
+  if ((BT_ZEROGAP_TYPES as readonly string[]).includes(type)) {
+    // Interior places = the columns strictly between the top digit and the ones
+    // digit (both held non-zero so the number stays multi-digit & in-band). For
+    // `places` digits there are places-2 interior columns; cap the zero count there.
+    const interior = Math.max(0, places - 2);
+    const ideal = tier === 'easy' ? 0 : tier === 'medium' ? 1 : 2;
+    const zeroGapTarget = Math.min(ideal, interior);
+
+    let line: string;
+    if (zeroGapTarget === 0) {
+      line = `PROBLEM SHAPE: a number where EVERY place-value column has blocks (no empty columns), e.g. 235 / 4678. Each column is non-zero so there is no "missing place" to track.`;
+    } else if (zeroGapTarget === 1) {
+      line = `PROBLEM SHAPE: a number with exactly ONE interior zero — one empty place-value column the student must remember (e.g. 205, 4078). The "forgot the zero" trap.`;
+    } else {
+      line = `PROBLEM SHAPE: a number with TWO interior zeros — multiple empty place-value columns (e.g. 3008, 1005). Mostly-empty columns are the hardest to ${type === 'read_blocks' ? 'read' : 'build'} correctly.`;
+    }
+    return { zeroGapTarget, regroupTarget: 0, crossZero: false, chainedCarry: false, hasLever: true, promptLines: [line] };
+  }
+
+  // ── regroup (and any other type): NO structural lever (scaffolding axis only). ──
+  return { zeroGapTarget: 0, regroupTarget: 0, crossZero: false, chainedCarry: false, hasLever: false, promptLines: [] };
+}
+
+// --- Constructive builders (code-enforced structural levers) ----------------
+// The LLM picks numbers in the grade magnitude band; we re-select them in
+// post-process to land the EXACT structural target (never trust the LLM to hit
+// it), keeping every number `places`-digit (= in band). Digit arrays are
+// ones-first to match the component's place-value reading.
+
+const randInt = (lo: number, hi: number): number => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
+const fromDigits = (digits: number[]): number => digits.reduce((n, d, i) => n + d * Math.pow(10, i), 0);
+const toDigits = (num: number, places: number): number[] => {
+  const out: number[] = [];
+  let n = Math.abs(Math.floor(num));
+  for (let i = 0; i < places; i++) { out.push(n % 10); n = Math.floor(n / 10); }
+  return out;
+};
+
+/**
+ * Build a `places`-digit number with EXACTLY `zeros` interior zero columns.
+ * The top digit and the ones digit are always non-zero (so the number is a true
+ * `places`-digit value that still requires reading every column / leaving real
+ * gaps); the `zeros` interior columns nearest the ones place are forced to 0 and
+ * the remaining interior columns are non-zero. `zeros` is assumed already clamped
+ * to [0, places-2] by resolveProblemShape.
+ */
+function buildZeroGapNumber(places: number, zeros: number, bandMax = Infinity): number {
+  const placeBase = Math.pow(10, places - 1);
+  // top digit non-zero; cap it so even with the minimum non-zero ones digit (1) the
+  // number never exceeds the band (covers K-1's 2-digit tens band whose max is 20:
+  // top must be ≤1 because 2·10+1 = 21 > 20).
+  const topMax = Math.min(9, Math.max(1, Math.floor((bandMax - 1) / placeBase)));
+  const d = new Array(places).fill(0);
+  d[places - 1] = randInt(1, topMax);     // top digit non-zero (in band, multi-digit)
+  // interior columns are indices 1 .. places-2; force the lowest `zeros` of them to 0.
+  for (let i = 1; i <= places - 2; i++) {
+    d[i] = i <= zeros ? 0 : randInt(1, 9);
+  }
+  // ones digit non-zero (never a trivial single-column read) AND keep the total in
+  // band: bound the ones so top·base + interior + ones ≤ bandMax.
+  const headroom = bandMax - (fromDigits(d) - d[0]);
+  const onesMax = Math.min(9, Math.max(1, headroom));
+  d[0] = randInt(1, onesMax);
+  return fromDigits(d);
+}
+
+/** Count interior zero columns (strictly between the highest non-zero digit and the ones place). */
+function countInteriorZeros(num: number, places: number): number {
+  const d = toDigits(num, places);
+  // highest occupied column:
+  let hi = places - 1;
+  while (hi > 0 && d[hi] === 0) hi--;
+  let zeros = 0;
+  for (let i = 1; i < hi; i++) if (d[i] === 0) zeros++;
+  return zeros;
+}
+
+/** Pick [da, db] with da∈[aMin,9], db∈[bMin,9], da+db within [sumLo,sumHi]. */
+function pickPair(sumLo: number, sumHi: number, aMin: number, bMin: number): [number, number] {
+  const lo = Math.max(sumLo, aMin + bMin);
+  const hi = Math.min(Math.max(sumHi, lo), 18);
+  const sum = randInt(lo, hi);
+  const daLo = Math.max(aMin, sum - 9);
+  const daHi = Math.min(9, sum - bMin);
+  const da = randInt(daLo, daHi);
+  const db = Math.min(9, Math.max(bMin, sum - da));
+  return [da, db];
+}
+
+/**
+ * Build two `places`-digit addends whose column addition produces EXACTLY
+ * `carries` carry events, with NO carry out of the top column (sum stays
+ * `places`-digit → in band). The lowest `carries` columns carry. When `chained`,
+ * the highest carrying column carries only via the incoming carry (digits sum 9).
+ */
+function buildAdditionOperands(places: number, carries: number, chained: boolean): [number, number] {
+  const a = new Array(places).fill(0);
+  const b = new Array(places).fill(0);
+  let carryIn = 0;
+  for (let i = 0; i < places; i++) {
+    const top = i === places - 1;
+    const aMin = top ? 1 : 0;
+    const bMin = top ? 1 : 0;
+    let da: number, db: number;
+    if (i < carries) {
+      const isChainTop = chained && i === carries - 1 && carryIn === 1;
+      const sumLo = isChainTop ? 9 : Math.max(10 - carryIn, aMin + bMin);
+      const sumHi = isChainTop ? 9 : 16;
+      [da, db] = pickPair(sumLo, sumHi, aMin, bMin);
+      carryIn = 1;
+    } else {
+      [da, db] = pickPair(aMin + bMin, 9 - carryIn, aMin, bMin);
+      carryIn = 0;
+    }
+    a[i] = da; b[i] = db;
+  }
+  return [fromDigits(a), fromDigits(b)];
+}
+
+/**
+ * Build minuend & subtrahend (`places`-digit) whose subtraction needs EXACTLY
+ * `borrows` borrow events, with NO borrow out of the top column (M > S, both in
+ * band). When `crossZero`, the minuend's tens digit is forced to 0 so the
+ * ones-place borrow cascades across the zero (e.g. 305 − 78).
+ */
+function buildSubtractionOperands(places: number, borrows: number, crossZero: boolean): [number, number] {
+  const m = new Array(places).fill(0);
+  const s = new Array(places).fill(0);
+  let borrowIn = 0;
+  for (let i = 0; i < places; i++) {
+    const top = i === places - 1;
+    const mMin = top ? 1 : 0;
+    const sMin = top ? 1 : 0;
+    let md: number, sd: number;
+    if (i < borrows) {
+      if (crossZero && i === 1) {
+        md = 0; // force the across-zero column
+        sd = randInt(Math.max(1, sMin), 9);
+      } else {
+        md = randInt(mMin, 8);
+        const effM = md - borrowIn;
+        sd = randInt(Math.max(sMin, effM + 1, 1), 9);
+        if (sd <= effM) sd = Math.min(9, effM + 1);
+      }
+      borrowIn = 1;
+    } else {
+      // No borrow: effective M (md - borrowIn) >= sd. TOP column forces STRICT
+      // inequality so the whole minuend exceeds the subtrahend (M > S) even when
+      // every lower column is equal (else a 0-borrow problem could land M == S).
+      sd = randInt(sMin, 7);
+      const slack = top ? 1 : 0;
+      md = randInt(Math.max(mMin, sd + borrowIn + slack), 9);
+      borrowIn = 0;
+    }
+    m[i] = md; s[i] = sd;
+  }
+  return [fromDigits(m), fromDigits(s)];
+}
+
+/** Count carry events when adding a + b across `places` columns. */
+function countCarries(a: number, b: number, places: number): number {
+  const da = toDigits(a, places), db = toDigits(b, places);
+  let carry = 0, n = 0;
+  for (let i = 0; i < places; i++) {
+    if (da[i] + db[i] + carry >= 10) { carry = 1; n++; } else carry = 0;
+  }
+  return n;
+}
+
+/** Count borrow events for m − s and flag whether any borrow crosses a zero. */
+function analyzeBorrows(m: number, s: number, places: number): { borrows: number; crossesZero: boolean } {
+  const dm = toDigits(m, places), ds = toDigits(s, places);
+  let borrow = 0, n = 0, crossesZero = false;
+  for (let i = 0; i < places; i++) {
+    if (dm[i] - borrow < ds[i]) {
+      if (i + 1 < places && dm[i + 1] === 0) crossesZero = true;
+      borrow = 1; n++;
+    } else borrow = 0;
+  }
+  return { borrows: n, crossesZero };
+}
+
+/**
+ * Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS
+ * structural problem difficulty (resolveProblemShape). One section so the LLM
+ * sees both axes of config.difficulty together — though the structural lever is
+ * ultimately CODE-enforced on the numbers, not left to the LLM.
+ */
+function buildTierPromptSection(type: string, tier: SupportTier, places: number): string {
+  const lines = [
+    ...resolveSupportStructure(type, tier).promptLines,
+    ...resolveProblemShape(type, tier, places).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding + problem STRUCTURE — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,18 +582,31 @@ export const generateBaseTenBlocks = async (
   const pinnedType = evalConstraint && evalConstraint.allowedTypes.length === 1
     ? evalConstraint.allowedTypes[0]
     : undefined;
-  const tierScaffold = pinnedType && supportTier
-    ? resolveSupportStructure(pinnedType, supportTier)
-    : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Best-effort place count for the PROMPT's structural shape (post-process uses
+  // the resolved gradeBand/maxPlace, which is authoritative). Infer from the
+  // manifest numberRange when present, else default to 3-digit (2-3 band).
+  const promptPlaces = config?.numberRange
+    ? (config.numberRange.max >= 1000 ? 4 : config.numberRange.max <= 20 ? 2 : 3)
+    : 3;
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier, promptPlaces)
     : '';
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   // ── Build number pool (Gemini structured output is near-deterministic — we own the randomness) ──
-  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: 2 });
+  // The minNonZeroDigits:2 floor bars a trivial single-digit target, but it also
+  // bars the interior-zero-gap SHAPE that the structural axis needs at medium/hard
+  // (e.g. 205 has only 2 non-zero digits, 1005 has only 2). Relax it to 1 when a
+  // zero-gap tier is active so the LLM is free to author empty columns — the
+  // post-process re-selects the exact zero count anyway and never drops below a
+  // multi-digit target (buildZeroGapNumber pins the top + ones digits non-zero).
+  const zeroGapActive = !!supportTier
+    && supportTier !== 'easy'
+    && !!pinnedType
+    && (BT_ZEROGAP_TYPES as readonly string[]).includes(pinnedType);
+  const pool = createNumberPool(config?.numberRange, { minNonZeroDigits: zeroGapActive ? 1 : 2 });
   console.log(`[BaseTenBlocks] pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
   const rangeSection = pool?.toPromptSection({
@@ -468,6 +775,96 @@ Return the complete base-ten blocks data structure.`;
   // happens to give them all the same scaffold. Resolve from each challenge's OWN type
   // so a blended/operate session withdraws the right aids. read_blocks self-guards (both off).
   if (supportTier) {
+    // --- AXIS 2: structural problem difficulty (code-enforced number re-selection) ---
+    // Re-select each challenge's target/operands to land the EXACT structural shape
+    // for the tier (honoring the LLM's numbers when they already hit it), keeping
+    // every number inside the grade magnitude band (`places`-digit). The answer is a
+    // pure function of these numbers (targetNumber IS the answer for build/read; the
+    // component recomputes sum/difference for operate), so nothing is leaked and the
+    // problem stays self-consistent. regroup has no lever (hasLever=false) → untouched.
+    const places = placeCount(data.maxPlace);
+    const bandMax = data.gradeBand === 'K-1' ? 20 : data.gradeBand === '4-5' ? 9999 : 999;
+    let rewroteAny = false;
+
+    for (const ch of data.challenges as BaseTenBlocksChallenge[]) {
+      const shape = resolveProblemShape(ch.type, supportTier, places);
+      if (!shape.hasLever) continue;
+
+      if ((BT_ZEROGAP_TYPES as readonly string[]).includes(ch.type)) {
+        // build_number / read_blocks: force the exact interior-zero count.
+        const cur = ch.targetNumber;
+        const needRebuild =
+          !Number.isFinite(cur)
+          || cur > bandMax
+          || cur < Math.pow(10, Math.max(0, places - 1)) // must be a true `places`-digit number
+          || countInteriorZeros(cur, places) !== shape.zeroGapTarget;
+        if (needRebuild) {
+          ch.targetNumber = buildZeroGapNumber(places, shape.zeroGapTarget, bandMax);
+          rewroteAny = true;
+        }
+        ch.secondNumber = undefined;
+      } else if ((BT_OPERATE_TYPES as readonly string[]).includes(ch.type)) {
+        // add_with_blocks / subtract_with_blocks: force the exact regroup count.
+        const isAdd = ch.type === 'add_with_blocks';
+        // For operate the LLM sets targetNumber = sum/difference and secondNumber =
+        // the 2nd addend / subtrahend. We need the two OPERANDS to validate the
+        // shape. Recover operand1 from (target, second): add → o1 = sum - second;
+        // sub → o1 = difference + second. Fall back to a rebuild if missing.
+        const second = ch.secondNumber;
+        let o1: number | undefined;
+        if (Number.isFinite(ch.targetNumber) && Number.isFinite(second)) {
+          o1 = isAdd ? (ch.targetNumber as number) - (second as number)
+                     : (ch.targetNumber as number) + (second as number);
+        }
+        let a: number | undefined = o1;
+        let b: number | undefined = second;
+        let needRebuild = !(Number.isFinite(a) && Number.isFinite(b) && (a as number) > 0 && (b as number) > 0);
+        if (!needRebuild) {
+          if (isAdd) {
+            const sum = (a as number) + (b as number);
+            needRebuild =
+              countCarries(a as number, b as number, places) !== shape.regroupTarget
+              || shape.chainedCarry
+              || sum > bandMax;
+          } else {
+            if ((a as number) < (b as number)) { const tmp = a; a = b; b = tmp; }
+            const { borrows, crossesZero } = analyzeBorrows(a as number, b as number, places);
+            needRebuild =
+              (a as number) <= (b as number)
+              || borrows !== shape.regroupTarget
+              || (shape.crossZero && !crossesZero)
+              || (a as number) > bandMax;
+          }
+        }
+        if (needRebuild) {
+          [a, b] = isAdd
+            ? buildAdditionOperands(places, shape.regroupTarget, shape.chainedCarry)
+            : buildSubtractionOperands(places, shape.regroupTarget, shape.crossZero);
+          rewroteAny = true;
+        }
+        const op1 = a as number;
+        const op2 = b as number;
+        ch.secondNumber = op2;
+        ch.targetNumber = isAdd ? op1 + op2 : op1 - op2;
+        // Rewrite the instruction so the NAMED operands match the re-selected ones
+        // (the old instruction text — "Add 234 + 158" — would otherwise desync).
+        ch.instruction = isAdd
+          ? `Add ${op1} + ${op2} using blocks.`
+          : `Subtract ${op2} from ${op1} using blocks.`;
+        // Drop any pre-baked hint that named the old operands; keep a generic one.
+        ch.hint = isAdd
+          ? 'Start with the ones column. Do you need to regroup?'
+          : 'Start with the ones. Can you borrow from the next column?';
+      }
+    }
+    if (rewroteAny) {
+      console.log(
+        `[BaseTenBlocks] Structural tier "${supportTier}" applied (places=${places}) → `
+        + `${(data.challenges as BaseTenBlocksChallenge[]).map((c) => `${c.type}:${c.targetNumber}${c.secondNumber != null ? `/${c.secondNumber}` : ''}`).join(', ')}`,
+      );
+    }
+
+    // --- AXIS 1: scaffolding withdrawal (display-only flags) ---
     data.challenges = (data.challenges as BaseTenBlocksChallenge[]).map((c) => {
       const sc = resolveSupportStructure(c.type, supportTier);
       return { ...c, showColumnCounts: sc.showColumnCounts, showBlocksTotal: sc.showBlocksTotal };

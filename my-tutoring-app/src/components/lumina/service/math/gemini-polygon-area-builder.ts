@@ -97,10 +97,14 @@ interface SupportScaffold {
 }
 
 const TIER_GUARDRAIL =
-  'This tier changes only the on-screen DECOMPOSITION SCAFFOLDING (cut guidelines, '
-  + 'per-region area sub-labels, a self-check grid) — it NEVER changes the polygon\'s '
-  + 'dimensions or the area. The figures keep the exact same numbers at every tier; '
-  + 'easy just shows MORE of how to break the shape apart.';
+  'This tier changes the problem\'s SHAPE and on-screen DECOMPOSITION SCAFFOLDING, '
+  + 'never its MAGNITUDE. Axis 1 (scaffolding): cut guidelines, per-region area '
+  + 'sub-labels, and a self-check grid are withdrawn at higher tiers. Axis 2 '
+  + '(structure): harder tiers use a structurally harder FIGURE — more rectangle '
+  + 'pieces, more vertices, a less-symmetric trapezoid, or more figures needing the '
+  + 'extra ½ step — built from the SAME small number bands. The dimensions stay in '
+  + 'their existing grade-band ranges at every tier; "harder" is more steps, not '
+  + 'bigger numbers, and never a different eval mode.';
 
 /** easy → hard decomposition-support gradient, per challenge type. */
 function resolveSupportStructure(type: PolygonAreaChallengeType, tier: SupportTier): SupportScaffold {
@@ -183,6 +187,122 @@ function resolveSupportStructure(type: PolygonAreaChallengeType, tier: SupportTi
               : 'HARD: no grid, no extra cues — only the dimension labels and the perpendicular-height mark remain.',
         ],
       };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (the SECOND thing config.difficulty drives) —
+// axis 2, distinct from the scaffolding-withdrawal axis above.
+//
+// This makes the generated PROBLEM itself structurally harder per tier WITHOUT
+// inflating magnitude (the figure dimensions stay in their existing randInt
+// bands) and WITHOUT crossing into another eval mode (the eval mode is the task
+// identity). Each mode exposes ONE in-mode SHAPE lever, clamped to [floor, cap]
+// from the design brief:
+//   decompose                      → NONE (no honest structural dial; the task
+//                                    is invariant "slide the one cut triangle".
+//                                    Brief: honest skip — do not invent one.)
+//   find_area_triangle_parallelogram → formula-step depth via figure-variant MIX
+//                                    (parallelogram-weighted b·h → triangle-
+//                                    weighted ½·b·h). FLOOR: both variants stay
+//                                    representable (never collapse to one type).
+//   find_area_trapezoid            → decomposition asymmetry via topOffset:
+//                                    isosceles → right (one vertical side) →
+//                                    scalene (two different side triangles).
+//                                    FLOOR: still a trapezoid (b1≠b2); area
+//                                    identical ½·(b1+b2)·h, kept integer.
+//   composite_area                 → # of rectangle pieces to sum: 2 → 3.
+//                                    FLOOR: ≥2 (1 piece = not composite). CAP at
+//                                    the guides-shown tiers — the hard-tier union
+//                                    outline render is 2-rect only (see concerns).
+//   coordinate_polygon             → vertex / decomposition depth: axis-aligned
+//                                    rectangle (4v, w·h) → right triangle (3v,
+//                                    ½·b·h) → L-shaped hexagon (6v, multi-piece).
+//                                    FLOOR: ≥3 first-quadrant integer vertices,
+//                                    clean integer area.
+//
+// Magnitude is HELD at every tier by reusing the existing per-figure randInt
+// bands — more pieces / more vertices, not bigger numbers. The answer recomputes
+// deterministically (sum-of-parts / shoelace) so it can never desync.
+// ---------------------------------------------------------------------------
+
+type TrapezoidVariant = 'isosceles' | 'right' | 'scalene';
+type CoordinateVariant = 'rectangle' | 'right_triangle' | 'l_shape';
+
+interface ProblemShape {
+  /** Prompt lines describing what "harder" means structurally for this tier. */
+  promptLines: string[];
+  /** find_area_triangle_parallelogram: P(figure is a triangle) for the pool. */
+  triangleBias?: number;
+  /** find_area_trapezoid: the enforced asymmetry variant. */
+  trapezoidVariant?: TrapezoidVariant;
+  /** composite_area: exact # of rectangle pieces to decompose-and-sum (≥2). */
+  pieceCount?: number;
+  /** coordinate_polygon: the enforced vertex-count variant. */
+  coordinateVariant?: CoordinateVariant;
+}
+
+/** One tier → one structural intent, clamped to [floor, cap]. Single source of
+ *  truth consumed by BOTH the prompt section and the post-process re-selection. */
+function resolveProblemShape(type: PolygonAreaChallengeType, tier: SupportTier): ProblemShape {
+  switch (type) {
+    case 'find_area_triangle_parallelogram':
+      // Re-weight the figure mix toward the extra ½ step at hard. FLOOR: both
+      // variants stay possible (the pool still guarantees ≥1 of each), so the
+      // mode keeps its "triangle OR parallelogram" identity at every tier.
+      return {
+        triangleBias: tier === 'easy' ? 0.25 : tier === 'medium' ? 0.5 : 0.8,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: mostly parallelograms (area = base × height, no halving step).'
+            : tier === 'medium'
+              ? 'PROBLEM: a balanced mix of triangles and parallelograms.'
+              : 'PROBLEM: mostly triangles — every figure needs the extra ½ step (½ × base × height), and the student must use the perpendicular height, not a slanted side.',
+        ],
+      };
+    case 'find_area_trapezoid':
+      return {
+        trapezoidVariant: tier === 'easy' ? 'isosceles' : tier === 'medium' ? 'right' : 'scalene',
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a symmetric (isosceles) trapezoid — the top base is centered, so the two side triangles are mirror images.'
+            : tier === 'medium'
+              ? 'PROBLEM: a right trapezoid — one vertical (square-corner) side and a single slanted side.'
+              : 'PROBLEM: a scalene trapezoid — the top base is off-center, so the two side triangles are different and the decomposition is less obvious.',
+        ],
+      };
+    case 'composite_area':
+      // 2 → 3 rectangle pieces. CAP: hard withdraws the decomposition guides, and
+      // the union-outline render is 2-rect only, so 3 pieces are only renderable
+      // at easy/medium. Pin hard back to 2 (the extra structural step at hard is
+      // the guide withdrawal, owned by the scaffolding axis). See concerns.
+      return {
+        pieceCount: tier === 'hard' ? 2 : tier === 'medium' ? 3 : 2,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a 2-rectangle L-shape — two pieces to find and add.'
+            : tier === 'medium'
+              ? 'PROBLEM: a 3-rectangle figure (e.g. a T or stair) — three pieces to decompose and sum, with no growth in overall size.'
+              : 'PROBLEM: a 2-rectangle L-shape shown as ONE outline — the student also decides where to cut (guides withdrawn).',
+        ],
+      };
+    case 'coordinate_polygon':
+      return {
+        coordinateVariant: tier === 'easy' ? 'rectangle' : tier === 'medium' ? 'right_triangle' : 'l_shape',
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: an axis-aligned rectangle (4 vertices) — area is width × height, no decomposition.'
+            : tier === 'medium'
+              ? 'PROBLEM: a right triangle (3 vertices) — one ½ × base × height split.'
+              : 'PROBLEM: an L-shaped hexagon (6 vertices) — the student decomposes it into rectangles (or uses the shoelace method) over several steps.',
+        ],
+      };
+    case 'decompose':
+    default:
+      // Brief: NONE. The task is invariant (slide the one cut triangle, then
+      // b·h); the only "harder" dials are banned magnitude or geometric skew
+      // noise. No structural branch — scaffolding axis only.
+      return { promptLines: [] };
   }
 }
 
@@ -319,14 +439,43 @@ function buildParallelogramFA(): RawChallenge {
   };
 }
 
-function buildTrapezoid(): RawChallenge {
+function buildTrapezoid(variant: TrapezoidVariant = 'isosceles'): RawChallenge {
   const base2 = randInt(2, 8);                 // top base
-  const extra = 2 * randInt(1, 4);             // keep (base - base2) even → integer topOffset
+  // `extra` = base − base2 (must be ≥ 1 so the top base is genuinely shorter).
+  // For isosceles, keep `extra` EVEN so the centered topOffset = extra/2 is an
+  // integer; right/scalene place the offset at an integer directly, so any
+  // extra ≥ 1 is fine there. Area = ½·(base+base2)·height is independent of the
+  // offset; we keep (base+base2)·height even so the area stays an integer.
+  const extra = variant === 'isosceles' ? 2 * randInt(1, 4) : randInt(1, 8);
   const base = base2 + extra;                  // bottom base
-  const height = randInt(3, 10);
-  const topOffset = (base - base2) / 2;        // isosceles
+  let height = randInt(3, 10);
+  if (((base + base2) * height) % 2 !== 0) {
+    // make (b1+b2)·h even so ½·(b1+b2)·h is an integer
+    height = height + 1 <= 10 ? height + 1 : height - 1;
+  }
+  // topOffset places the top base over the bottom base (0 ≤ off, off+base2 ≤ base):
+  //   isosceles → centered (extra/2, even extra so integer);
+  //   right     → flush-left (0): one vertical side, single side triangle;
+  //   scalene   → off-center integer, NOT centered and NOT 0 (two different side
+  //               triangles). Falls back to right/isosceles if extra is too small.
+  let topOffset: number;
+  if (variant === 'right') {
+    topOffset = 0;
+  } else if (variant === 'scalene') {
+    const centered = extra / 2;
+    if (extra >= 2) {
+      // pick an integer offset in [1, extra-1] excluding the centered value
+      const choices: number[] = [];
+      for (let o = 1; o <= extra - 1; o++) if (o !== centered) choices.push(o);
+      topOffset = choices.length > 0 ? pick(choices) : 0; // extra=2 has no asym → right
+    } else {
+      topOffset = 0; // extra=1 → only offset 0 fits → right trapezoid
+    }
+  } else {
+    topOffset = extra / 2; // isosceles (extra is even here)
+  }
   const unitLabel = pick(UNIT_POOL);
-  // (base + base2) is even, so the area is always an integer.
+  // (base + base2) · height is even, so the area is always an integer.
   return {
     type: 'find_area_trapezoid',
     figureType: 'trapezoid',
@@ -339,18 +488,45 @@ function buildTrapezoid(): RawChallenge {
   };
 }
 
-function buildComposite(): RawChallenge {
-  const W = randInt(5, 10);      // bottom rectangle width
-  const h1 = randInt(2, 5);      // bottom rectangle height
-  const w2 = randInt(2, W - 1);  // top rectangle width (narrower → makes an L)
-  const h2 = randInt(2, 5);      // top rectangle height
-  const onLeft = Math.random() < 0.5;
-  const topX = onLeft ? 0 : W - w2;
-  const parts: CompositeRect[] = [
-    { x: 0, y: 0, w: W, h: h1 },
-    { x: topX, y: h1, w: w2, h: h2 },
-  ];
-  const expectedArea = W * h1 + w2 * h2;
+function buildComposite(pieceCount = 2): RawChallenge {
+  const pieces = Math.max(2, Math.min(3, pieceCount)); // FLOOR ≥2; CAP 3
+  let parts: CompositeRect[];
+  if (pieces >= 3) {
+    // 3-rectangle figure: a base spanning the full width, with TWO smaller
+    // rectangles stacked on top (a T / plateau outline). Per-piece bands are
+    // TIGHTENED vs the 2-piece case so total area does NOT grow with the part
+    // count (magnitude held — only the # of decompose-and-sum steps rises).
+    const W = randInt(5, 8);          // base width (tightened from 5-10)
+    const h1 = randInt(2, 3);         // base height (tightened from 2-5)
+    const wL = randInt(2, Math.max(2, W - 2)); // left top piece width
+    const hL = randInt(2, 3);
+    // right top piece sits to the right of the left one; keep it inside W
+    const remaining = W - wL;
+    const wR = remaining >= 2 ? randInt(2, remaining) : 0;
+    const hR = randInt(2, 3);
+    parts = [{ x: 0, y: 0, w: W, h: h1 }, { x: 0, y: h1, w: wL, h: hL }];
+    if (wR >= 2) {
+      parts.push({ x: wL, y: h1, w: wR, h: hR });
+    } else {
+      // degenerate (no room for a 3rd piece) → fall back to a clean 2-piece L
+      parts = [
+        { x: 0, y: 0, w: W, h: h1 },
+        { x: Math.random() < 0.5 ? 0 : W - wL, y: h1, w: wL, h: hL },
+      ];
+    }
+  } else {
+    const W = randInt(5, 10);      // bottom rectangle width
+    const h1 = randInt(2, 5);      // bottom rectangle height
+    const w2 = randInt(2, W - 1);  // top rectangle width (narrower → makes an L)
+    const h2 = randInt(2, 5);      // top rectangle height
+    const onLeft = Math.random() < 0.5;
+    const topX = onLeft ? 0 : W - w2;
+    parts = [
+      { x: 0, y: 0, w: W, h: h1 },
+      { x: topX, y: h1, w: w2, h: h2 },
+    ];
+  }
+  const expectedArea = parts.reduce((s, p) => s + p.w * p.h, 0);
   const unitLabel = pick(UNIT_POOL);
   return {
     type: 'composite_area',
@@ -360,11 +536,13 @@ function buildComposite(): RawChallenge {
     unitLabel,
     narration: `${pick(COMP_CTX)} is shaped like this figure.`,
     instruction: 'Split the figure into rectangles, find each area, then add them up.',
-    hint: 'Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.',
+    hint: parts.length >= 3
+      ? 'Break the figure into the rectangles you can see. Find length × width for each piece, then add all the areas.'
+      : 'Break the L-shape into two rectangles. Find length × width for each piece, then add the two areas.',
   };
 }
 
-function buildCoordinate(variant: 'rectangle' | 'right_triangle'): RawChallenge {
+function buildCoordinate(variant: CoordinateVariant): RawChallenge {
   const x0 = randInt(0, 3);
   const y0 = randInt(0, 3);
   let vertices: PolygonVertex[];
@@ -379,6 +557,36 @@ function buildCoordinate(variant: 'rectangle' | 'right_triangle'): RawChallenge 
       { x: x0, y: y0 + h },
     ];
     expectedArea = w * h;
+  } else if (variant === 'l_shape') {
+    // Axis-aligned L-shaped HEXAGON (6 integer vertices, first quadrant). Built
+    // as a full-width base rectangle (W × hB) with a taller column (wC × hC) on
+    // one side — a rectilinear L, so the shoelace area is ALWAYS an integer
+    // (= W·hB + wC·hC). Coordinate range is held in the existing small band so
+    // adding vertices does NOT grow magnitude.
+    const W = randInt(4, 7);          // overall base width
+    const hB = randInt(2, 3);         // base strip height
+    const wC = randInt(2, Math.max(2, W - 2)); // column width (< W → makes the notch)
+    const hC = randInt(2, 4);         // column extra height above the base
+    const onLeft = Math.random() < 0.5;
+    // Walk the outline counter-clockwise from the origin corner.
+    vertices = onLeft
+      ? [
+          { x: x0,          y: y0 },
+          { x: x0 + W,      y: y0 },
+          { x: x0 + W,      y: y0 + hB },
+          { x: x0 + wC,     y: y0 + hB },
+          { x: x0 + wC,     y: y0 + hB + hC },
+          { x: x0,          y: y0 + hB + hC },
+        ]
+      : [
+          { x: x0,          y: y0 },
+          { x: x0 + W,      y: y0 },
+          { x: x0 + W,      y: y0 + hB + hC },
+          { x: x0 + W - wC, y: y0 + hB + hC },
+          { x: x0 + W - wC, y: y0 + hB },
+          { x: x0,          y: y0 + hB },
+        ];
+    expectedArea = W * hB + wC * hC;
   } else {
     let a = randInt(3, 8);   // horizontal leg
     let b = randInt(2, 7);   // vertical leg
@@ -398,7 +606,9 @@ function buildCoordinate(variant: 'rectangle' | 'right_triangle'): RawChallenge 
     unitLabel: 'units',
     narration: `${pick(COORD_CTX)} — find its area from the corner coordinates.`,
     instruction: 'Find the area of this polygon using its vertex coordinates.',
-    hint: 'Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.',
+    hint: variant === 'l_shape'
+      ? 'Break the L into two rectangles using the corner coordinates. Find length × width for each, then add them.'
+      : 'Count the width and height between corners. A rectangle is width × height; a right triangle is ½ × base × height.',
   };
 }
 
@@ -425,23 +635,29 @@ function canonicalKey(ch: RawChallenge): string {
 export function selectPolygonAreaChallenges(
   challengeType: PolygonAreaChallengeType,
   count?: number,
+  tier: SupportTier | null = null,
 ): PolygonAreaChallenge[] {
   const target = Math.max(
     1,
     Math.min(MAX_INSTANCE_COUNT, count ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT),
   );
 
+  // Axis 2: when a tier is present, the structural shape is FIXED per the brief
+  // (trapezoid asymmetry / composite piece-count / coordinate vertex-count /
+  // triangle-vs-parallelogram bias). No tier → byte-identical legacy behaviour.
+  const shape = tier ? resolveProblemShape(challengeType, tier) : null;
+
   const builderFor = (): RawChallenge => {
     switch (challengeType) {
       case 'decompose':
         return buildDecompose();
       case 'find_area_trapezoid':
-        return buildTrapezoid();
+        return buildTrapezoid(shape?.trapezoidVariant);
       case 'composite_area':
-        return buildComposite();
+        return buildComposite(shape?.pieceCount);
       default:
         // never reached for the two multi-variant modes below
-        return buildTrapezoid();
+        return buildTrapezoid(shape?.trapezoidVariant);
     }
   };
 
@@ -449,11 +665,16 @@ export function selectPolygonAreaChallenges(
   const seen = new Set<string>();
 
   if (challengeType === 'find_area_triangle_parallelogram') {
-    // Variance rule: guarantee at least one triangle AND one parallelogram.
+    // Variance rule (FLOOR): guarantee at least one triangle AND one
+    // parallelogram so the mode keeps its identity at every tier. The tier's
+    // triangleBias re-weights only the REMAINING slots (axis-2 step-depth).
+    const bias = shape?.triangleBias ?? 0.5;
+    const pickVariant = (): (() => RawChallenge) =>
+      Math.random() < bias ? buildTriangleFA : buildParallelogramFA;
     const queue: Array<() => RawChallenge> = [buildTriangleFA, buildParallelogramFA];
     let i = 0;
     for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
-      const ch = (i < queue.length ? queue[i] : (Math.random() < 0.5 ? buildTriangleFA : buildParallelogramFA))();
+      const ch = (i < queue.length ? queue[i] : pickVariant())();
       i++;
       const key = canonicalKey(ch);
       if (seen.has(key)) continue;
@@ -461,17 +682,31 @@ export function selectPolygonAreaChallenges(
       raw.push(ch);
     }
   } else if (challengeType === 'coordinate_polygon') {
-    // Variance rule: rotate rectangle / right-triangle, guarantee at least one of each.
-    const variants: Array<'rectangle' | 'right_triangle'> = ['rectangle', 'right_triangle'];
-    let i = 0;
-    for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
-      const v = i < variants.length ? variants[i] : (Math.random() < 0.5 ? 'rectangle' : 'right_triangle');
-      i++;
-      const ch = buildCoordinate(v);
-      const key = canonicalKey(ch);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      raw.push(ch);
+    if (shape?.coordinateVariant) {
+      // Tier fixes the vertex-count variant (the structural lever IS the
+      // variant): every figure this session is the same shape family; the
+      // randInt dimensions provide the within-tier variety.
+      const v = shape.coordinateVariant;
+      for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
+        const ch = buildCoordinate(v);
+        const key = canonicalKey(ch);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        raw.push(ch);
+      }
+    } else {
+      // No tier: legacy variance rule — rotate rectangle / right-triangle.
+      const variants: Array<CoordinateVariant> = ['rectangle', 'right_triangle'];
+      let i = 0;
+      for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
+        const v = i < variants.length ? variants[i] : (Math.random() < 0.5 ? 'rectangle' : 'right_triangle');
+        i++;
+        const ch = buildCoordinate(v);
+        const key = canonicalKey(ch);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        raw.push(ch);
+      }
     }
   } else {
     for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
@@ -486,9 +721,10 @@ export function selectPolygonAreaChallenges(
   // Fallback — accept duplicates if the candidate space was too narrow.
   while (raw.length < target) {
     if (challengeType === 'find_area_triangle_parallelogram') {
-      raw.push(Math.random() < 0.5 ? buildTriangleFA() : buildParallelogramFA());
+      const bias = shape?.triangleBias ?? 0.5;
+      raw.push(Math.random() < bias ? buildTriangleFA() : buildParallelogramFA());
     } else if (challengeType === 'coordinate_polygon') {
-      raw.push(buildCoordinate(Math.random() < 0.5 ? 'rectangle' : 'right_triangle'));
+      raw.push(buildCoordinate(shape?.coordinateVariant ?? (Math.random() < 0.5 ? 'rectangle' : 'right_triangle')));
     } else {
       raw.push(builderFor());
     }
@@ -505,22 +741,26 @@ export function selectPolygonAreaChallenges(
 
 // Dispatch to the right per-type builder. The two multi-variant tiers pick a
 // variant at random so a mixed session shows figure variety within a tier too.
-function buildForType(type: PolygonAreaChallengeType): RawChallenge {
+// When a support tier is present, each type's axis-2 structural shape is applied
+// (trapezoid asymmetry / composite piece-count / coordinate vertex-count /
+// triangle bias) so a blended session still carries the structural difficulty.
+function buildForType(type: PolygonAreaChallengeType, tier: SupportTier | null = null): RawChallenge {
+  const shape = tier ? resolveProblemShape(type, tier) : null;
   switch (type) {
     case 'decompose':
       return buildDecompose();
     case 'find_area_triangle_parallelogram':
-      return Math.random() < 0.5 ? buildTriangleFA() : buildParallelogramFA();
+      return Math.random() < (shape?.triangleBias ?? 0.5) ? buildTriangleFA() : buildParallelogramFA();
     case 'find_area_trapezoid':
-      return buildTrapezoid();
+      return buildTrapezoid(shape?.trapezoidVariant);
     case 'composite_area':
-      return buildComposite();
+      return buildComposite(shape?.pieceCount);
     case 'coordinate_polygon':
-      return buildCoordinate(Math.random() < 0.5 ? 'rectangle' : 'right_triangle');
+      return buildCoordinate(shape?.coordinateVariant ?? (Math.random() < 0.5 ? 'rectangle' : 'right_triangle'));
   }
 }
 
-export function selectMixedPolygonAreaChallenges(count?: number): PolygonAreaChallenge[] {
+export function selectMixedPolygonAreaChallenges(count?: number, tier: SupportTier | null = null): PolygonAreaChallenge[] {
   // Cover every tier at least once; default to a session of 8.
   const target = Math.max(
     TIER_ORDER.length,
@@ -537,7 +777,7 @@ export function selectMixedPolygonAreaChallenges(count?: number): PolygonAreaCha
 
   for (let attempt = 0; attempt < target * 10 && raw.length < target; attempt++) {
     const type = rotation[raw.length % rotation.length];
-    const ch = buildForType(type);
+    const ch = buildForType(type, tier);
     const key = canonicalKey(ch);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -547,7 +787,7 @@ export function selectMixedPolygonAreaChallenges(count?: number): PolygonAreaCha
   // Fallback — accept duplicates if dedup starved a slot (narrow candidate space).
   let slot = raw.length;
   while (raw.length < target) {
-    raw.push(buildForType(rotation[slot % rotation.length]));
+    raw.push(buildForType(rotation[slot % rotation.length], tier));
     slot++;
   }
 
@@ -671,8 +911,18 @@ export const generatePolygonAreaBuilder = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (decomposition scaffolding level — NOT figure size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Fold BOTH axes of config.difficulty into one coherent tier block: the
+  // scaffolding gradient (axis 1) and the structural problem shape (axis 2). The
+  // wrapper LLM only writes the title/description — code builds the actual
+  // figures — so these lines steer the SESSION-level prose, not the geometry.
+  const tierShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
+  const tierLines = tierScaffold
+    ? [...tierScaffold.promptLines, ...(tierShape?.promptLines ?? [])]
+    : [];
+  const tierSection = tierLines.length
+    ? `\n## WITHIN-MODE DIFFICULTY (scaffolding level + structural problem shape — NOT figure size)\n${tierLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   const prompt = `
@@ -728,9 +978,13 @@ Return ONLY the wrapper fields described above.
   if (!validTypes.includes(challengeType)) challengeType = 'find_area_triangle_parallelogram';
 
   // ── Build the per-challenge pool locally ──
+  // Axis 2: pass supportTier so the constructive builders make the structurally
+  // HARDER shape per tier (trapezoid asymmetry / composite piece-count /
+  // coordinate vertex-count / triangle bias). supportTier is null when
+  // config.difficulty is absent → byte-identical legacy figures.
   const challenges = isMixed
-    ? selectMixedPolygonAreaChallenges(config?.instanceCount)
-    : selectPolygonAreaChallenges(challengeType, config?.instanceCount);
+    ? selectMixedPolygonAreaChallenges(config?.instanceCount, supportTier)
+    : selectPolygonAreaChallenges(challengeType, config?.instanceCount, supportTier);
 
   // ── Post-validation: every expectedArea must match its geometry ──
   for (const ch of challenges) {

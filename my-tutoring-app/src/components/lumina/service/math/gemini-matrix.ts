@@ -140,8 +140,14 @@ interface MatrixSupportScaffold {
   promptLines: string[];
 }
 
+// TIER_GUARDRAIL: the one invariant both axes obey. Structure changes, magnitude does not.
+const TIER_GUARDRAIL =
+  'This tier changes only how much on-screen help the student gets and the structural SHAPE of each '
+  + 'matrix problem (entry count / dot-product depth / determinant order). It NEVER changes the number '
+  + 'range or the answer, and NEVER reshapes the problem into a different matrix operation.';
+
 /** Scaffolding axis — mode-independent (hint + steps apply to every matrix operation).
- *  Structural axis lives in the build functions (grade-clamped per mode). */
+ *  Structural axis lives in resolveProblemShape + the build functions (grade-clamped per mode). */
 function resolveSupportStructure(tier: SupportTier): MatrixSupportScaffold {
   const hintLevel: MatrixSupportScaffold['hintLevel'] =
     tier === 'easy' ? 'formula' : tier === 'medium' ? 'concept' : 'none';
@@ -151,9 +157,7 @@ function resolveSupportStructure(tier: SupportTier): MatrixSupportScaffold {
     hintLevel,
     stepsGating,
     promptLines: [
-      // TIER_GUARDRAIL: support level + structural SIZE only — never the number range or answer.
-      'This tier changes only how much on-screen help the student gets and the structural SIZE of each '
-        + 'matrix problem (entry count / dot-product depth). It NEVER changes the number range or the answer.',
+      TIER_GUARDRAIL,
       `The per-challenge hint is ${
         hintLevel === 'formula' ? 'an explicit formula/rule'
         : hintLevel === 'concept' ? 'a conceptual nudge only — no formula'
@@ -165,6 +169,159 @@ function resolveSupportStructure(tier: SupportTier): MatrixSupportScaffold {
       'Keep the title and description neutral — never state the support level or reveal an answer.',
     ],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (the SECOND thing config.difficulty drives).
+//
+// Distinct from the scaffolding above: this makes the generated PROBLEM itself
+// genuinely harder per tier — but STRUCTURALLY (matrix SHAPE), never by inflating
+// magnitude (entries always stay bound by rangeForGrade) and never by crossing
+// into another matrix operation (the eval mode is the task identity; see memory
+// [[structural-difficulty-not-numeric]]). Each mode exposes ONE in-mode lever:
+//   transpose    → entry count to flip   (2×3 → 3×2 alt → 3×4 / 4×3); FLOOR ≥ 2×3 non-square
+//   add/subtract → element-wise order    (2×2 → 2×3 alt → 3×3);       FLOOR ≥ 2×2
+//   multiply     → dot-product DEPTH k   (k=2 → alt k=2/3 → k=3);     result PINNED 2×2 (magnitude fixed)
+//   determinant  → computation order     (2×2 → alt 2×2/3×3 → 3×3);   GRADE-CLAMPED: 7-8 pinned 2×2
+//   inverse      → NONE (pinned 2×2, det=±1 so A⁻¹ stays integer — a hard FLOOR, not a missed lever)
+// Shapes are fully CODE-BUILT (Gemini emits no per-challenge data), so resolveProblemShape
+// is the single source of truth consumed by BOTH the prompt block and the build functions.
+// ---------------------------------------------------------------------------
+
+interface MatrixProblemShape {
+  /** Enforced operand dimensions for the next challenge. For transpose/add/subtract/
+   *  determinant this is the operand shape; for multiply it is the inner-dim DEPTH carrier
+   *  (aRows×aCols, result held 2×2). undefined fields = mode-specific defaults apply. */
+  rows?: number;
+  cols?: number;
+  /** multiply: inner dimension k (dot-product depth). Result is always 2×2. */
+  innerDim?: number;
+  /** determinant: square order (2 or 3). */
+  order?: number;
+  promptLines: string[];
+}
+
+/** Single source of truth for the structural lever, clamped to [floor, cap] per the brief.
+ *  `idx` drives the medium/no-tier ALTERNATION (byte-identical to the pre-shape behavior).
+ *  `tier === null` ⇒ no structural branch is taken (the no-tier path stays byte-identical). */
+function resolveProblemShape(
+  type: MatrixChallengeType,
+  tier: SupportTier | null,
+  gradeBand: BuildContext['gradeBand'],
+  idx: number,
+): MatrixProblemShape {
+  const isWide = idx % 2 === 0;
+  switch (type) {
+    case 'transpose': {
+      // CAP: dimensions ≤ 4×3 (index reshuffle, no arithmetic). FLOOR: ≥ 2×3 non-square.
+      let rows: number, cols: number;
+      if (tier === 'easy') { rows = 2; cols = 3; }
+      else if (tier === 'hard') { rows = isWide ? 3 : 4; cols = isWide ? 4 : 3; }
+      else { rows = isWide ? 2 : 3; cols = isWide ? 3 : 2; } // medium / no-tier alternation
+      return {
+        rows, cols,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a 2×3 matrix (6 entries) → 3×2 transpose — the smallest visible shape flip.'
+            : tier === 'hard'
+              ? 'PROBLEM: a 3×4 / 4×3 matrix (12 entries) → larger shape flip to track during the swap.'
+              : 'PROBLEM: alternate 2×3 / 3×2 matrices so the row↔column flip is clearly visible.',
+        ],
+      };
+    }
+    case 'add':
+    case 'subtract': {
+      // CAP: ≤ 3×3 (stays element-wise, no dot products). FLOOR: ≥ 2×2.
+      let rows: number, cols: number;
+      if (tier === 'easy') { rows = 2; cols = 2; }
+      else if (tier === 'hard') { rows = 3; cols = 3; }
+      else { rows = 2; cols = idx % 2 === 1 ? 3 : 2; } // medium / no-tier alternation
+      return {
+        rows, cols,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: 2×2 matrices (4 element-wise cells to coordinate).'
+            : tier === 'hard'
+              ? 'PROBLEM: 3×3 matrices (9 element-wise cells) — same position-by-position add/subtract, more cells.'
+              : 'PROBLEM: alternate 2×2 / 2×3 matrices (4–6 element-wise cells).',
+        ],
+      };
+    }
+    case 'multiply': {
+      // CAP: result pinned 2×2 (magnitude fixed); lever = inner dim k. FLOOR: k ≥ 2 (genuine multiply).
+      let innerDim: number;
+      if (tier === 'easy') innerDim = 2;
+      else if (tier === 'hard') innerDim = 3;
+      else innerDim = idx % 2 === 0 ? 2 : 3; // medium / no-tier alternation
+      return {
+        innerDim,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: 2×2 · 2×2 — each result cell is a 2-term dot product. Result is 2×2.'
+            : tier === 'hard'
+              ? 'PROBLEM: 2×3 · 3×2 — each result cell is a 3-term dot product (deeper sum). Result still 2×2.'
+              : 'PROBLEM: alternate inner dim 2 / 3 so dot-product depth varies. Result always 2×2.',
+        ],
+      };
+    }
+    case 'determinant': {
+      // CAP: 3×3 only at algebra2+ (7-8 is grade-clamped to 2×2). FLOOR: ≥ 2×2 square.
+      const allow3x3 = gradeBand !== '7-8';
+      let order: number;
+      if (!allow3x3) order = 2;
+      else if (tier === 'easy') order = 2;
+      else if (tier === 'hard') order = 3;
+      else order = idx % 2 === 1 ? 3 : 2; // medium / no-tier alternation
+      return {
+        order,
+        promptLines: [
+          !allow3x3
+            ? 'PROBLEM: a 2×2 determinant (ad − bc) — grade-clamped (3×3 is out of grade scope here).'
+            : tier === 'easy'
+              ? 'PROBLEM: a 2×2 determinant (ad − bc) — two diagonal products.'
+              : tier === 'hard'
+                ? 'PROBLEM: a 3×3 determinant (Rule of Sarrus, six signed products) — deeper computation.'
+                : 'PROBLEM: alternate 2×2 / 3×3 determinants so computation order varies.',
+        ],
+      };
+    }
+    case 'inverse':
+    default:
+      // NO structural lever: pinned 2×2 with det = ±1 so A⁻¹ stays integer-valued.
+      // This is a hard FLOOR (the invariant that defines the mode), not a missed opportunity.
+      return {
+        rows: 2, cols: 2,
+        promptLines: [
+          'PROBLEM: the inverse is always a 2×2 with det = ±1 so A⁻¹ has clean integer entries — '
+            + 'this mode carries the scaffolding axis only (no structural size lever).',
+        ],
+      };
+  }
+}
+
+/**
+ * Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS the
+ * structural problem shape per allowed mode (resolveProblemShape). ONE source of truth,
+ * folded into ONE section so the LLM sees both axes of config.difficulty together.
+ * The LLM picks no per-challenge numbers — these lines only keep the title/description
+ * tone coherent with what the deterministic build is actually producing.
+ */
+function buildTierPromptSection(
+  tier: SupportTier,
+  allowedTypes: MatrixChallengeType[],
+  gradeBand: BuildContext['gradeBand'],
+): string {
+  const scaffoldLines = resolveSupportStructure(tier).promptLines;
+  // Dedup the structural lines across the bundle's types (e.g. add + subtract share a shape).
+  const seen = new Set<string>();
+  const shapeLines: string[] = [];
+  for (const t of allowedTypes) {
+    for (const line of resolveProblemShape(t, tier, gradeBand, 0).promptLines) {
+      if (!seen.has(line)) { seen.add(line); shapeLines.push(line); }
+    }
+  }
+  const allLines = [...scaffoldLines, ...shapeLines];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding level + structural SHAPE — NOT number range)\n${allLines.map((l) => `- ${l}`).join('\n')}\n`;
 }
 
 /** Conceptual nudge per operation (medium tier) — the idea, with NO formula/symbols. */
@@ -317,18 +474,12 @@ function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
 
 function buildTransposeChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // Structural lever: entry count / shape size (numbers stay in grade range).
-  // easy = 2×3 (6 entries); hard = 3×4 / 4×3 (12 entries, bigger shape flip);
-  // medium/no-tier = alternate 2×3 / 3×2 so the shape change is visible.
-  const isWide = idx % 2 === 0;
-  let rows: number, cols: number;
-  if (ctx.tier === 'easy') {
-    rows = 2; cols = 3;
-  } else if (ctx.tier === 'hard') {
-    rows = isWide ? 3 : 4; cols = isWide ? 4 : 3;
-  } else {
-    rows = isWide ? 2 : 3; cols = isWide ? 3 : 2;
-  }
+  // Structural lever (single source of truth = resolveProblemShape): entry count / shape
+  // size. Numbers stay in grade range; only the shape grows. tier=null reproduces the
+  // prior alternating 2×3 / 3×2 byte-for-byte.
+  const shape = resolveProblemShape('transpose', ctx.tier, ctx.gradeBand, idx);
+  const rows = shape.rows!;
+  const cols = shape.cols!;
   const values = makeMatrix(rows, cols, min, max);
   const expectedMatrix = transposeMatrix(values);
   return {
@@ -349,16 +500,12 @@ function buildAddSubtractChallenge(
   idx: number,
 ): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // Structural lever: entries to coordinate (both matrices stay the same size).
-  // easy = 2×2 (4 entries); hard = 3×3 (9 entries); medium/no-tier = alternate 2×2 / 2×3.
-  let rows: number, cols: number;
-  if (ctx.tier === 'easy') {
-    rows = 2; cols = 2;
-  } else if (ctx.tier === 'hard') {
-    rows = 3; cols = 3;
-  } else {
-    rows = 2; cols = idx % 2 === 1 ? 3 : 2;
-  }
+  // Structural lever (single source of truth = resolveProblemShape): # of element-wise
+  // cells to coordinate. Both operands share the shape; the operation stays position-by-
+  // position. tier=null reproduces the prior alternating 2×2 / 2×3 byte-for-byte.
+  const shape = resolveProblemShape(operation, ctx.tier, ctx.gradeBand, idx);
+  const rows = shape.rows!;
+  const cols = shape.cols!;
   const a = makeMatrix(rows, cols, min, max);
   const b = makeMatrix(rows, cols, min, max);
   const expectedMatrix = operation === 'add' ? addMatrices(a, b) : subtractMatrices(a, b);
@@ -381,19 +528,14 @@ function buildAddSubtractChallenge(
 
 function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = ctx.gradeBand === '7-8' ? [1, 6] : ctx.gradeBand === 'algebra2' ? [-6, 6] : rangeForGrade(ctx.gradeBand);
-  // Structural lever: dot-product DEPTH (result is 2×2 either way; numbers stay in range).
-  // easy = 2×2 × 2×2 (2-term dot products); hard = 2×3 × 3×2 (3-term dot products);
-  // medium/no-tier = alternate so dimensions vary.
+  // Structural lever (single source of truth = resolveProblemShape): dot-product DEPTH =
+  // inner dim k. Result is PINNED 2×2 so answer magnitude never grows with the lever; the
+  // tightened factor range above keeps depth from smuggling in bigger sums. tier=null
+  // reproduces the prior alternating k=2 / k=3 byte-for-byte.
   const aRows = 2;
   const bCols = 2;
-  let aCols: number;
-  if (ctx.tier === 'easy') {
-    aCols = 2;
-  } else if (ctx.tier === 'hard') {
-    aCols = 3;
-  } else {
-    aCols = idx % 2 === 0 ? 2 : 3;
-  }
+  const shape = resolveProblemShape('multiply', ctx.tier, ctx.gradeBand, idx);
+  const aCols = shape.innerDim!;
   const bRows = aCols;
   const a = makeMatrix(aRows, aCols, min, max);
   const b = makeMatrix(bRows, bCols, min, max);
@@ -413,20 +555,12 @@ function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayCh
 
 function buildDeterminantChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
   const [min, max] = rangeForGrade(ctx.gradeBand);
-  // Structural lever: matrix order = computation depth (2×2 → 2 products; 3×3 → Sarrus).
-  // Grade ceiling wins: 7-8 stays 2×2 at EVERY tier (3×3 is out of grade scope).
-  // easy = 2×2; hard = 3×3 (algebra2+); medium/no-tier = alternate 2×2 / 3×3 (algebra2+).
-  const allow3x3 = ctx.gradeBand !== '7-8';
-  let size: number;
-  if (!allow3x3) {
-    size = 2;
-  } else if (ctx.tier === 'easy') {
-    size = 2;
-  } else if (ctx.tier === 'hard') {
-    size = 3;
-  } else {
-    size = idx % 2 === 1 ? 3 : 2;
-  }
+  // Structural lever (single source of truth = resolveProblemShape): determinant ORDER =
+  // computation depth (2×2 → two diagonal products; 3×3 → Sarrus, six signed products).
+  // Grade ceiling wins inside resolveProblemShape: 7-8 stays 2×2 at EVERY tier (3×3 is out
+  // of grade scope). tier=null reproduces the prior alternating 2×2 / 3×3 byte-for-byte.
+  const shape = resolveProblemShape('determinant', ctx.tier, ctx.gradeBand, idx);
+  const size = shape.order!;
   // Retry up to 12× to avoid det = 0.
   let m: number[][] = [];
   let det = 0;
@@ -656,12 +790,21 @@ export const generateMatrix = async (
   logEvalModeResolution('Matrix', config?.targetEvalMode, evalConstraint);
 
   // ── Within-mode support tier (config.difficulty): scaffolding level + structural
-  //    size, NOT the number range. tierSection only nudges the wrapper title/description
-  //    tone; the real withdrawal/shaping happens deterministically in code below. ──
+  //    SHAPE, NOT the number range. tierSection only nudges the wrapper title/description
+  //    tone (the LLM picks no numbers); the real withdrawal/shaping happens deterministically
+  //    in code below via resolveProblemShape — the SAME source of truth folded in here. ──
   const supportTier = normalizeSupportTier(config?.difficulty);
-  const tierScaffold = supportTier ? resolveSupportStructure(supportTier) : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level + structural size — NOT number range)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Allowed types are known pre-call (the eval constraint already carries them) so the
+  // structural shape lines can be folded into the prompt alongside the scaffolding lines.
+  const promptAllowedTypes: MatrixChallengeType[] =
+    evalConstraint && evalConstraint.allowedTypes.length > 0
+      ? (evalConstraint.allowedTypes as MatrixChallengeType[])
+      : config?.operation && (['transpose', 'add', 'subtract', 'multiply', 'determinant', 'inverse'] as string[]).includes(config.operation)
+        ? [config.operation as MatrixChallengeType]
+        : ['determinant'];
+  const promptGradeBand = inferGradeBand(gradeLevel);
+  const tierSection = supportTier
+    ? buildTierPromptSection(supportTier, promptAllowedTypes, promptGradeBand)
     : '';
 
   const activeSchema = evalConstraint

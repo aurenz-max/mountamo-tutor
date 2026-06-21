@@ -241,6 +241,78 @@ function resolveSupportStructure(
 }
 
 // ---------------------------------------------------------------------------
+// Structural difficulty (axis 2) — table DIMENSIONALITY, NOT cell magnitude.
+// The honest in-mode SHAPE lever for a contingency-table primitive is "how many
+// parts to coordinate": a builder-constructor dial driven by table size.
+//
+//   easy   → 2x2 (4 cells)  — floor: a genuine contingency table; a marginal
+//            still sums >=2 cells (the property that DEFINES the non-joint modes),
+//            so we never collapse below 2x2.
+//   medium → 2x3 (6 cells)  — a row marginal now sums 3 cells; more decoy cells.
+//   hard   → 3x3 (9 cells)  — both marginals sum 3 cells over a 9-cell grand
+//            total; cap: cell counts stay in the SAME ~5-50 band as the 2x2 pool,
+//            the grand total grows only because there are MORE cells.
+//
+// Code-enforced: the tier SELECTS a template of the target dimension from the
+// matching pool; the builders + grandTotal/rowTotal/colTotal generalize over any
+// number[][], so correctAnswer auto-recomputes. The LLM authors no frequencies,
+// so there is nothing to validate/reconstruct — the structure IS the selected
+// template. See memory [[structural-difficulty-not-numeric]].
+// ---------------------------------------------------------------------------
+
+type TableDimension = '2x2' | '2x3' | '3x3';
+
+interface ProblemShape {
+  /** Target table dimension for this tier (clamped to [2x2, 3x3]). */
+  dimension: TableDimension;
+  /** Prompt lines describing the structural difficulty to the wrapper LLM. */
+  promptLines: string[];
+}
+
+/**
+ * One tier → one structural intent. The dimension is clamped to [2x2, 3x3]:
+ * below 2x2 a marginal would collapse to a single pre-given cell (silently a
+ * different, joint-style mode = forbidden); above 3x3 we would be inflating
+ * grand-total cardinality past the realistic-table cap. A two-tier band where
+ * only one dimension fits SATURATES there honestly (e.g. if a future pool lacks
+ * 3x3 templates, the selector falls back to the densest available — see
+ * poolForDimension).
+ */
+function resolveProblemShape(tier: SupportTier): ProblemShape {
+  if (tier === 'easy') {
+    return {
+      dimension: '2x2',
+      promptLines: [
+        'STRUCTURE: a 2x2 table (4 cells) — the fewest parts to coordinate; a marginal sums just 2 cells.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      dimension: '2x3',
+      promptLines: [
+        'STRUCTURE: a 2x3 table (6 cells) — a row marginal now sums 3 cells and there are more decoy cells to scan. Same small per-cell counts, just more of them.',
+      ],
+    };
+  }
+  // hard
+  return {
+    dimension: '3x3',
+    promptLines: [
+      'STRUCTURE: a 3x3 table (9 cells) — marginals sum 3 cells over a 9-cell grand total; more competing rows and columns to keep straight. Cells stay the same small size — only the COUNT of cells grows.',
+    ],
+  };
+}
+
+/** Pool for a target dimension. Falls back to the 2x2 pool if a denser pool is
+ *  empty so the band saturates honestly rather than throwing. */
+function poolForDimension(dim: TableDimension): ScenarioTemplate[] {
+  if (dim === '3x3') return SCENARIO_POOL_3X3.length > 0 ? SCENARIO_POOL_3X3 : SCENARIO_POOL_2X3.length > 0 ? SCENARIO_POOL_2X3 : SCENARIO_POOL;
+  if (dim === '2x3') return SCENARIO_POOL_2X3.length > 0 ? SCENARIO_POOL_2X3 : SCENARIO_POOL;
+  return SCENARIO_POOL;
+}
+
+// ---------------------------------------------------------------------------
 // Scenario pool — pre-authored real-world contingency tables
 // ---------------------------------------------------------------------------
 
@@ -334,6 +406,105 @@ const SCENARIO_POOL: ScenarioTemplate[] = [
     rowCategories: ['Under 30', '30 and over'],
     columnCategories: ['Brand A', 'Brand B'],
     frequencies: [[42, 18], [15, 45]],
+  },
+];
+
+// ── 2x3 pool (medium structural tier): 6 cells, same per-cell band (~5-50). ──
+// Two row categories × three column categories. A row marginal now sums 3 cells.
+const SCENARIO_POOL_2X3: ScenarioTemplate[] = [
+  {
+    scenario: 'Favorite snack by grade',
+    rowLabel: 'Grade',
+    columnLabel: 'Snack',
+    rowCategories: ['Grade 7', 'Grade 8'],
+    columnCategories: ['Fruit', 'Chips', 'Yogurt'],
+    frequencies: [[18, 14, 8], [12, 20, 10]],
+  },
+  {
+    scenario: 'Commute mode by neighborhood',
+    rowLabel: 'Neighborhood',
+    columnLabel: 'Commute mode',
+    rowCategories: ['North', 'South'],
+    columnCategories: ['Walk', 'Bike', 'Bus'],
+    frequencies: [[16, 9, 25], [22, 14, 18]],
+  },
+  {
+    scenario: 'Pet type by household',
+    rowLabel: 'Household',
+    columnLabel: 'Pet type',
+    rowCategories: ['Apartment', 'House'],
+    columnCategories: ['Dog', 'Cat', 'Fish'],
+    frequencies: [[12, 24, 16], [30, 18, 10]],
+  },
+  {
+    scenario: 'Drink choice by meal',
+    rowLabel: 'Meal',
+    columnLabel: 'Drink',
+    rowCategories: ['Lunch', 'Dinner'],
+    columnCategories: ['Water', 'Milk', 'Juice'],
+    frequencies: [[28, 12, 20], [34, 8, 18]],
+  },
+  {
+    scenario: 'Hobby by age group',
+    rowLabel: 'Age group',
+    columnLabel: 'Hobby',
+    rowCategories: ['Teen', 'Adult'],
+    columnCategories: ['Gaming', 'Reading', 'Sports'],
+    frequencies: [[26, 10, 24], [14, 28, 18]],
+  },
+  {
+    scenario: 'Movie type by ticket time',
+    rowLabel: 'Ticket time',
+    columnLabel: 'Movie type',
+    rowCategories: ['Matinee', 'Evening'],
+    columnCategories: ['Action', 'Comedy', 'Drama'],
+    frequencies: [[20, 16, 9], [32, 22, 15]],
+  },
+];
+
+// ── 3x3 pool (hard structural tier): 9 cells, same per-cell band (~5-50). ──
+// Three row categories × three column categories. Marginals sum 3 cells over a
+// 9-cell grand total — more addends and more decoy cells, never bigger numbers.
+const SCENARIO_POOL_3X3: ScenarioTemplate[] = [
+  {
+    scenario: 'Sport by grade',
+    rowLabel: 'Grade',
+    columnLabel: 'Sport',
+    rowCategories: ['Grade 6', 'Grade 7', 'Grade 8'],
+    columnCategories: ['Soccer', 'Tennis', 'Track'],
+    frequencies: [[18, 10, 14], [22, 16, 8], [12, 20, 24]],
+  },
+  {
+    scenario: 'Lunch choice by day',
+    rowLabel: 'Day',
+    columnLabel: 'Lunch',
+    rowCategories: ['Monday', 'Wednesday', 'Friday'],
+    columnCategories: ['Cafeteria', 'Packed', 'Skip'],
+    frequencies: [[30, 18, 6], [24, 22, 9], [28, 14, 11]],
+  },
+  {
+    scenario: 'Transport by region',
+    rowLabel: 'Region',
+    columnLabel: 'Transport',
+    rowCategories: ['Urban', 'Suburban', 'Rural'],
+    columnCategories: ['Walk', 'Bus', 'Car'],
+    frequencies: [[26, 20, 14], [10, 24, 32], [6, 12, 28]],
+  },
+  {
+    scenario: 'Subject preference by grade',
+    rowLabel: 'Grade',
+    columnLabel: 'Subject',
+    rowCategories: ['Grade 7', 'Grade 8', 'Grade 9'],
+    columnCategories: ['Math', 'Science', 'History'],
+    frequencies: [[20, 16, 12], [14, 26, 18], [22, 10, 24]],
+  },
+  {
+    scenario: 'Music genre by age group',
+    rowLabel: 'Age group',
+    columnLabel: 'Genre',
+    rowCategories: ['Under 20', '20 to 40', 'Over 40'],
+    columnCategories: ['Pop', 'Rock', 'Jazz'],
+    frequencies: [[32, 18, 6], [20, 28, 14], [10, 22, 30]],
   },
 ];
 
@@ -613,9 +784,15 @@ export function selectTwoWayTableChallenges(
   const sessionOrder = allowed.length > 1 ? shuffle(allowed) : allowed;
   const pickType = (i: number): TwoWayTableChallengeType => sessionOrder[i % sessionOrder.length];
 
+  // STRUCTURAL DIFFICULTY (axis 2): when a support tier is present, draw scenarios
+  // from the dimension-appropriate pool (easy 2x2 → medium 2x3 → hard 3x3). The
+  // no-tier path is BYTE-IDENTICAL: it always draws from the 2x2 SCENARIO_POOL.
+  const dimension = options.supportTier ? resolveProblemShape(options.supportTier).dimension : '2x2';
+  const sourcePool = options.supportTier ? poolForDimension(dimension) : SCENARIO_POOL;
+
   // Shuffle scenarios so each session draws a different sequence; cycle if we need more
   // challenges than scenarios.
-  const scenarios = shuffle(SCENARIO_POOL);
+  const scenarios = shuffle(sourcePool);
   const pickScenario = (i: number): ScenarioTemplate => scenarios[i % scenarios.length];
 
   const out: TwoWayTableChallenge[] = [];
@@ -632,7 +809,7 @@ export function selectTwoWayTableChallenges(
     for (const ch of out) applySupportTier(ch, options.supportTier);
     console.log(
       `[TwoWayTable] Support tier "${options.supportTier}" applied per-challenge `
-      + `(${allowed.length === 1 ? `single-mode ${allowed[0]}` : 'blended'})`,
+      + `(${allowed.length === 1 ? `single-mode ${allowed[0]}` : 'blended'}); table dimension=${dimension}`,
     );
   }
 
@@ -709,11 +886,19 @@ export const generateTwoWayTable = async (
     evalConstraint && evalConstraint.allowedTypes.length === 1
       ? (evalConstraint.allowedTypes[0] as TwoWayTableChallengeType)
       : undefined;
-  const tierScaffold = supportTier
-    ? resolveSupportStructure(supportTier, undefined)
+  // One coherent "what this tier means" block = scaffolding withdrawal (axis 1,
+  // resolveSupportStructure) PLUS structural problem difficulty (axis 2,
+  // resolveProblemShape table dimension). The LLM only authors wrapper prose, so
+  // these lines just keep its title/description honest about table size; the
+  // actual structure is code-enforced in the selector.
+  const tierLines = supportTier
+    ? [
+        ...resolveSupportStructure(supportTier, undefined).promptLines,
+        ...resolveProblemShape(supportTier).promptLines,
+      ]
     : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  const tierSection = tierLines
+    ? `\n## WITHIN-MODE SUPPORT TIER "${supportTier}" (scaffolding + table structure — NOT number size)\n${tierLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   const activeSchema = evalConstraint
@@ -793,8 +978,9 @@ Return ONLY the wrapper fields described above.
     supportTier,
   });
 
+  const structDim = supportTier ? resolveProblemShape(supportTier).dimension : 'none';
   console.log(
-    `[TwoWayTable Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, gradeBand=${gradeBand}, supportTier=${supportTier ?? 'none'}${pinnedType ? `, pinned=${pinnedType}` : ''}`
+    `[TwoWayTable Gen] Final: allowedTypes=[${allowedChallengeTypes.join(',')}], instances=${challenges.length}, gradeBand=${gradeBand}, supportTier=${supportTier ?? 'none'}, tableDim=${structDim}${pinnedType ? `, pinned=${pinnedType}` : ''}`
   );
 
   return {

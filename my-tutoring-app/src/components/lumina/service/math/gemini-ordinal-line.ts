@@ -747,7 +747,133 @@ function pickDistinctPositions(maxPosition: number, count: number): number[] {
 // Each lever changes WHICH positions / how the parts are ordered, never the
 // number range (bounded by maxPosition either way). Applied only in the
 // code-built single-mode path, where positions/orderings are fully ours.
+//
+// resolveProblemShape(mode, tier) is the ONE source of truth: it turns a tier
+// into a structural INTENT (a few enforced flags consumed by the code builders,
+// plus promptLines consumed by the only LLM-in-the-loop structural mode —
+// sequence-story). Every lever is a permutation / subset / count WITHIN
+// maxPosition, so magnitude is fixed and no lever changes ch.type (eval mode =
+// task identity). See memory [[structural-difficulty-not-numeric]].
+//
+// Per-mode lever (clamped to [floor, cap] from the brief):
+//   identify          → target-position LOCUS: anchor {1,2,last} → unbiased →
+//                       interior. NO-OP when count covers the whole line (K,
+//                       maxPosition≤count) — every position appears regardless.
+//   match             → NONE (matching "first"→"1st" is the same recall at any
+//                       pair count; differentiation is the scaffold axis).
+//   relative_position → reference LOCUS (edge-adjacent → interior) coupled with
+//                       distractor similarity (farthest-first → adjacency trap).
+//   sequence_story    → story DISORDER = inversion count of the story order vs.
+//                       the lineup (near-sorted → high-inversion).
+//   build_sequence    → CLUE COUNT (grade base → full line) + clue-list order
+//                       (position-ordered → scrambled).
 // ---------------------------------------------------------------------------
+
+const TIER_GUARDRAIL =
+  'This tier changes problem STRUCTURE (which positions, distractor distance, ' +
+  'story inversion, clue count + order) and on-screen help — NOT magnitude. ' +
+  'Every position stays within 1..maxPosition; structure changes, magnitude does not.';
+
+/** identify: where the tapped position sits. */
+type PositionLocus = 'anchor' | 'unbiased' | 'interior';
+/** relative_position: where the reference sits / how the distractors cluster. */
+type ReferenceLocus = 'edge' | 'unbiased' | 'interior';
+type DistractorBias = 'farthest' | 'shuffled' | 'adjacent';
+/** sequence_story: how scrambled the story order is vs. the lineup. */
+type InversionBias = 'low' | 'random' | 'high';
+/** build_sequence: how many clues, listed in what order. */
+type ClueCountBias = 'min' | 'mid' | 'max';
+
+interface ProblemShape {
+  positionLocus: PositionLocus;       // identify
+  referenceLocus: ReferenceLocus;     // relative_position
+  distractorBias: DistractorBias;     // relative_position
+  inversionBias: InversionBias;       // sequence_story
+  clueCountBias: ClueCountBias;       // build_sequence
+  scrambleClues: boolean;             // build_sequence clue-list order
+  promptLines: string[];              // folded into the story LLM prompt
+}
+
+/**
+ * ONE source of truth for the structural axis. The code builders read the
+ * enforced flags; the story sub-generator folds promptLines into its prompt.
+ * Called only when a tier is present (gated in the builders / main flow), so the
+ * no-tier path is byte-identical.
+ */
+function resolveProblemShape(type: string, tier: SupportTier): ProblemShape {
+  const base: ProblemShape = {
+    positionLocus: 'unbiased',
+    referenceLocus: 'unbiased',
+    distractorBias: 'shuffled',
+    inversionBias: 'random',
+    clueCountBias: 'mid',
+    scrambleClues: false,
+    promptLines: [TIER_GUARDRAIL],
+  };
+  const easy = tier === 'easy';
+  const hard = tier === 'hard';
+  switch (type) {
+    case 'identify':
+      return {
+        ...base,
+        positionLocus: easy ? 'anchor' : hard ? 'interior' : 'unbiased',
+        promptLines: [
+          TIER_GUARDRAIL,
+          easy
+            ? 'PROBLEM: ask for anchor positions (first, second, last) — easy to land on without counting.'
+            : hard
+              ? 'PROBLEM: ask for deep-interior positions (not first/second/last) — the student must count forward from the front.'
+              : 'PROBLEM: ask for any position across the line.',
+        ],
+      };
+    case 'match':
+      // brief: NONE — pair count is instance variance, not a difficulty shape.
+      return { ...base, promptLines: [TIER_GUARDRAIL] };
+    case 'relative-position':
+      return {
+        ...base,
+        referenceLocus: easy ? 'edge' : hard ? 'interior' : 'unbiased',
+        distractorBias: easy ? 'farthest' : hard ? 'adjacent' : 'shuffled',
+        promptLines: [
+          TIER_GUARDRAIL,
+          easy
+            ? 'PROBLEM: reference near an edge (few to count); distractors are the farthest characters — clearly eliminable.'
+            : hard
+              ? 'PROBLEM: interior reference; distractors are the answer\'s immediate neighbours — the off-by-one trap.'
+              : 'PROBLEM: unbiased reference and shuffled distractors.',
+        ],
+      };
+    case 'sequence-story':
+      return {
+        ...base,
+        inversionBias: easy ? 'low' : hard ? 'high' : 'random',
+        promptLines: [
+          TIER_GUARDRAIL,
+          easy
+            ? 'PROBLEM: the story tracks the line front-to-back (near-sorted order) — positions read off left-to-right.'
+            : hard
+              ? 'PROBLEM: the story jumps around (high disorder) — position cannot be read off the lineup left-to-right.'
+              : 'PROBLEM: the story uses a random distinct ordering.',
+        ],
+      };
+    case 'build-sequence':
+      return {
+        ...base,
+        clueCountBias: easy ? 'min' : hard ? 'max' : 'mid',
+        scrambleClues: hard,
+        promptLines: [
+          TIER_GUARDRAIL,
+          easy
+            ? 'PROBLEM: fewest clues, listed in position order (readable top-to-bottom).'
+            : hard
+              ? 'PROBLEM: most clues (up to the full line), listed in scrambled order — can\'t be followed linearly.'
+              : 'PROBLEM: a midpoint number of clues, listed in position order.',
+        ],
+      };
+    default:
+      return base;
+  }
+}
 
 /** identify: easy biases anchor positions (1st/2nd/last — easy to land on),
  *  hard biases interior positions (must count to them). When count covers the
@@ -758,13 +884,16 @@ function pickPositionsByTier(
   tier: SupportTier | null,
 ): number[] {
   const take = Math.min(count, maxPosition);
-  if (!tier || tier === 'medium') return pickDistinctPositions(maxPosition, count);
+  if (!tier) return pickDistinctPositions(maxPosition, count);
+
+  const locus = resolveProblemShape('identify', tier).positionLocus; // floor: still 1..maxPosition
+  if (locus === 'unbiased') return pickDistinctPositions(maxPosition, count);
 
   const all = Array.from({ length: maxPosition }, (_, i) => i + 1);
   const anchors = Array.from(new Set([1, 2, maxPosition])).filter((p) => p >= 1 && p <= maxPosition);
   const interior = shuffleInPlace(all.filter((p) => !anchors.includes(p)));
   const ordered =
-    tier === 'easy'
+    locus === 'anchor'
       ? [...anchors, ...interior]
       : [...interior, ...shuffleInPlace([...anchors])];
   return ordered.slice(0, take);
@@ -874,9 +1003,10 @@ function buildRelativeChallenges(
   shuffleInPlace(validTuples);
   // structural lever (target shape): easy → reference near an edge (few to count),
   // hard → interior reference (far from both ends). Query is a minor tiebreak
-  // ("after" for easy). medium → unbiased shuffle.
-  if (tier === 'easy' || tier === 'hard') {
-    const dir = tier === 'easy' ? 1 : -1;
+  // ("after" for easy). medium → unbiased shuffle. Driven by resolveProblemShape.
+  const shape = tier ? resolveProblemShape('relative-position', tier) : null;
+  if (shape && shape.referenceLocus !== 'unbiased') {
+    const dir = shape.referenceLocus === 'edge' ? 1 : -1;
     const score = (t: { pos: number; query: 'before' | 'after' }) =>
       Math.min(t.pos - 1, setup.maxPosition - t.pos) + (t.query === 'after' ? 0 : 0.5);
     validTuples.sort((a, b) => dir * (score(a) - score(b)));
@@ -893,9 +1023,10 @@ function buildRelativeChallenges(
     const others = setup.characters
       .map((c, idx) => ({ name: c.name, idx }))
       .filter((o) => o.name !== correctChar.name);
-    if (tier === 'hard') {
+    const distractorBias = shape?.distractorBias ?? 'shuffled';
+    if (distractorBias === 'adjacent') {
       others.sort((a, b) => Math.abs(a.idx - answerIdx) - Math.abs(b.idx - answerIdx));
-    } else if (tier === 'easy') {
+    } else if (distractorBias === 'farthest') {
       others.sort((a, b) => Math.abs(b.idx - answerIdx) - Math.abs(a.idx - answerIdx));
     } else {
       shuffleInPlace(others);
@@ -928,8 +1059,12 @@ function buildBuildSequenceChallenges(
 ): OrdinalLineChallenge[] {
   // structural lever: # of clues to coordinate (K base 3 / G1 base 4 → full line).
   // No-tier keeps the original fixed base count (byte-identical to before).
+  // floor = the grade base clue count (never drops below it → stays a real
+  // ordering task); cap = the full character set. countByTier maps the
+  // clueCountBias (easy=min, medium=mid, hard=max) onto [minClues, maxClues].
   const minClues = Math.min(setup.gradeBand === 'K' ? 3 : 4, setup.characters.length);
   const maxClues = setup.characters.length;
+  const shape = tier ? resolveProblemShape('build-sequence', tier) : null;
   const clueCount = tier
     ? Math.min(countByTier(minClues, maxClues, tier), setup.characters.length)
     : minClues;
@@ -950,7 +1085,7 @@ function buildBuildSequenceChallenges(
     // structural lever: clue-list presentation order. easy/medium list clues in
     // position order (read top-to-bottom = front-to-back); hard scrambles the list
     // so the student can't follow it linearly. Positions/answer are unchanged.
-    const displayClues = tier === 'hard' ? shuffleInPlace([...clues]) : clues;
+    const displayClues = shape?.scrambleClues ? shuffleInPlace([...clues]) : clues;
 
     challenges.push({
       id: `c${challenges.length + 1}`,
@@ -979,6 +1114,7 @@ async function generateStoryForOrdering(
   topic: string,
   gradeLevel: string,
   clues: Array<{ character: string; position: number }>,
+  tierPromptSection = '',
 ): Promise<{ instruction: string; storyText: string }> {
   const sorted = [...clues].sort((a, b) => a.position - b.position);
   const orderingHint = sorted
@@ -993,7 +1129,7 @@ Write a fun 2-3 sentence story in the "${setup.context}" using this EXACT charac
 ${orderingHint}.
 
 Every character must be mentioned with their ordinal position word (first, second, third, etc.).
-Vary the wording — do not just say "X is first, Y is second."
+Vary the wording — do not just say "X is first, Y is second."${tierPromptSection}
 Return only:
 - instruction: a warm, brief instruction
 - storyText: the 2-3 sentence story matching the ordering above
@@ -1083,18 +1219,27 @@ async function buildStoryChallenges(
       seenKeys.add(key);
       pool.push(clues);
     }
-    if (tier === 'medium') {
+    const inversionBias = resolveProblemShape('sequence-story', tier).inversionBias;
+    if (inversionBias === 'random') {
       shuffleInPlace(pool);
     } else {
-      const dir = tier === 'easy' ? 1 : -1;
+      const dir = inversionBias === 'low' ? 1 : -1;
       pool.sort((a, b) => dir * (inversionsOf(a) - inversionsOf(b)));
     }
     orderings = pool.slice(0, count);
   }
 
+  // Fold the structural promptLines into the story prompt so the LLM authors a
+  // self-consistent narrative for the (code-selected) ordering — the only
+  // LLM-in-the-loop structural mode. ONE KEY (tier) → TWO PLACES (code ordering
+  // selection above + this prompt). Empty when no tier (byte-identical path).
+  const tierPromptSection = tier
+    ? `\n\n## SUPPORT TIER "${tier}" (structure, not bigger numbers)\n${resolveProblemShape('sequence-story', tier).promptLines.map((l) => `- ${l}`).join('\n')}`
+    : '';
+
   const stories = await Promise.all(
     orderings.map((clues) =>
-      generateStoryForOrdering(setup, topic, gradeLevel, clues),
+      generateStoryForOrdering(setup, topic, gradeLevel, clues, tierPromptSection),
     ),
   );
 

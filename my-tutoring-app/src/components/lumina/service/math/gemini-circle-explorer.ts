@@ -120,6 +120,124 @@ function resolveSupportStructure(_type: CircleExplorerChallengeType, tier: Suppo
 }
 
 // ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (the SECOND thing config.difficulty drives).
+//
+// Distinct from the scaffolding above: this makes the generated PROBLEM itself
+// genuinely harder per tier — but STRUCTURALLY (operation/step depth), never by
+// inflating magnitude beyond the whole-number band and never by crossing into
+// another eval mode (the eval mode is the task identity; see memory
+// [[structural-difficulty-not-numeric]]). This primitive is a MULTI-STEP-SOLVER:
+// difficulty IS the chain depth, which the builders already encode as discrete
+// sub-variant flags. The lever just pins the deeper-chain variant per tier:
+//   discover_pi  → NONE. Its answer is the invariant constant 3.14 (recognizing
+//                  the ratio C÷d IS the task); any "harder" is bigger radius
+//                  (banned numeric) or more circles (instance-count, not shape).
+//   circumference→ given diameter (C = πd, one multiply) → given radius
+//                  (C = 2πr, double THEN multiply). Caps at this 2-op chain.
+//   area         → given radius (square directly) → given diameter (halve to r,
+//                  THEN square, THEN ×π). Caps at this 3-op chain.
+//   reverse      → from circumference (1 inverse op, ÷2π) → from area (2 inverse
+//                  ops, ÷π then √). The √ step is the depth ceiling.
+//   composite    → semicircle_area (1 scaled formula) → semicircle_perimeter
+//                  (curved + straight, summed) → circle_in_square (two areas,
+//                  subtracted). Part-count rises; magnitude band fixed.
+//
+// The forced variant is the [floor, cap] of each mode's lever: below the floor
+// you became a different mode; above the cap you only have bigger numbers left.
+// Bands saturate honestly where a mode has fewer rungs than tiers (e.g.
+// circumference/area/reverse have only 2 variants, so medium == hard).
+// ---------------------------------------------------------------------------
+
+const TIER_GUARDRAIL =
+  'This tier changes the PROBLEM\'S STRUCTURE (how many chained operations the '
+  + 'student must perform: which length is given, forward vs inverse, part-count) '
+  + 'and the on-screen scaffolding — NEVER the magnitude of the radii or answers. '
+  + 'π stays ≈ 3.14 and every measure stays a whole number in the same band.';
+
+type CircumferenceVariant = 'radius' | 'diameter';
+type AreaVariant = 'radius' | 'diameter';
+type ReverseVariant = 'circumference' | 'area';
+
+interface ProblemShape {
+  /** circumference: which given length forces the chain depth. */
+  circumferenceVariant?: CircumferenceVariant;
+  /** area: which given length forces the chain depth. */
+  areaVariant?: AreaVariant;
+  /** reverse: which given quantity forces the inverse-step depth. */
+  reverseVariant?: ReverseVariant;
+  /** composite: which figure forces the part-count. */
+  compositeShape?: CircleCompositeShape;
+  /** Soft description folded into the tier prompt block. */
+  promptLines: string[];
+}
+
+/** ONE source of truth: a tier → the deeper-chain variant for that mode.
+ *  discover_pi returns no enforced variant (lever = none — see brief). */
+function resolveProblemShape(type: CircleExplorerChallengeType, tier: SupportTier): ProblemShape {
+  switch (type) {
+    case 'circumference': {
+      // floor = given diameter (1 multiply); cap = given radius (double + multiply).
+      const v: CircumferenceVariant = tier === 'easy' ? 'diameter' : 'radius';
+      return {
+        circumferenceVariant: v,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the DIAMETER is given — a single-step solve, C = π × d.'
+            : 'PROBLEM: the RADIUS is given — a two-step chain: double it to get the diameter (or use C = 2 × π × r), then multiply by π.',
+        ],
+      };
+    }
+    case 'area': {
+      // floor = given radius (square directly); cap = given diameter (halve→square→×π).
+      const v: AreaVariant = tier === 'easy' ? 'radius' : 'diameter';
+      return {
+        areaVariant: v,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the RADIUS is given — square it directly, then multiply by π (A = π × r²).'
+            : 'PROBLEM: the DIAMETER is given — a three-step chain: halve it to get the radius, square that, then multiply by π.',
+        ],
+      };
+    }
+    case 'reverse': {
+      // floor = from circumference (1 inverse op); cap = from area (÷π then √).
+      const v: ReverseVariant = tier === 'easy' ? 'circumference' : 'area';
+      return {
+        reverseVariant: v,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the CIRCUMFERENCE is given — one inverse step, r = C ÷ (2 × π).'
+            : 'PROBLEM: the AREA is given — two inverse steps, r = √(A ÷ π): divide by π THEN take the square root.',
+        ],
+      };
+    }
+    case 'composite': {
+      // floor = semicircle_area (1 op); mid = semicircle_perimeter (2 summed terms);
+      // cap = circle_in_square (two areas subtracted).
+      const shape: CircleCompositeShape =
+        tier === 'easy' ? 'semicircle_area'
+          : tier === 'medium' ? 'semicircle_perimeter'
+            : 'circle_in_square';
+      return {
+        compositeShape: shape,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a SEMICIRCLE AREA — one scaled formula, ½ × π × r².'
+            : tier === 'medium'
+              ? 'PROBLEM: a SEMICIRCLE PERIMETER — two summed terms: the curved part (π × r) plus the straight diameter (2 × r).'
+              : 'PROBLEM: a CIRCLE-IN-SQUARE shaded area — compute the square area AND the inscribed-circle area, then SUBTRACT (s² − π × (s ÷ 2)²).',
+        ],
+      };
+    }
+    case 'discover_pi':
+    default:
+      // Lever = NONE. The answer is the invariant constant 3.14; the only honest
+      // "harder" would be bigger numbers (banned) or more circles (instance-count).
+      return { promptLines: [] };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts
 // ---------------------------------------------------------------------------
 
@@ -496,6 +614,13 @@ function conceptualHintFor(ch: RawChallenge): string {
 export function selectCircleExplorerChallenges(
   challengeType: CircleExplorerChallengeType,
   count?: number,
+  /**
+   * SECOND AXIS — structural difficulty. When a support tier is present, the
+   * sub-variant (chain depth) is PINNED to that tier's forced variant via
+   * resolveProblemShape, instead of rotating through all variants. Absent → the
+   * byte-identical original variance behavior (rotate, guarantee ≥1 of each).
+   */
+  tier?: SupportTier | null,
 ): CircleExplorerChallenge[] {
   const target = Math.max(
     1,
@@ -513,6 +638,41 @@ export function selectCircleExplorerChallenges(
     return true;
   };
 
+  // STRUCTURAL TIER PATH: pin the deeper-chain variant for this tier (no
+  // rotation). The only remaining variance is the radius/unit/context, which the
+  // builders randomize and the dedup key separates. Gated on `tier` so the
+  // no-tier path below is byte-identical to the original.
+  const shape = tier ? resolveProblemShape(challengeType, tier) : null;
+  if (shape) {
+    const attemptCap = target * 16;
+    if (challengeType === 'circumference' && shape.circumferenceVariant) {
+      const v = shape.circumferenceVariant;
+      for (let a = 0; a < attemptCap && raw.length < target; a++) tryPush(buildCircumference(v));
+      while (raw.length < target) raw.push(buildCircumference(v)); // saturate honestly
+    } else if (challengeType === 'area' && shape.areaVariant) {
+      const v = shape.areaVariant;
+      for (let a = 0; a < attemptCap && raw.length < target; a++) tryPush(buildArea(v));
+      while (raw.length < target) raw.push(buildArea(v));
+    } else if (challengeType === 'reverse' && shape.reverseVariant) {
+      const v = shape.reverseVariant;
+      for (let a = 0; a < attemptCap && raw.length < target; a++) tryPush(buildReverse(v));
+      while (raw.length < target) raw.push(buildReverse(v));
+    } else if (challengeType === 'composite' && shape.compositeShape) {
+      const v = shape.compositeShape;
+      for (let a = 0; a < attemptCap && raw.length < target; a++) tryPush(buildComposite(v));
+      while (raw.length < target) raw.push(buildComposite(v));
+    } else {
+      // discover_pi (lever = none): the tier withdraws scaffolding only; the
+      // problem shape is unchanged from the no-tier path (distinct radii).
+      for (let a = 0; a < attemptCap && raw.length < target; a++) tryPush(buildDiscoverPi());
+      while (raw.length < target) raw.push(buildDiscoverPi());
+    }
+    // Saturated variants leave the radius the only easy→hard cue.
+    const sortedTier = raw.sort((a, b) => a.radius - b.radius);
+    return sortedTier.map((ch, i) => ({ ...ch, id: `ce-${i + 1}` }));
+  }
+
+  // ── NO-TIER PATH (byte-identical to the original) ──
   // Variance rule: rotate through structural variants, guaranteeing ≥1 of each
   // before back-filling. Mirrors factor-tree's "≥1 odd composite" pattern.
   if (challengeType === 'circumference') {
@@ -583,24 +743,27 @@ const shuffle = <T,>(arr: T[]): T[] => {
   return out;
 };
 
-// Dispatch to the right per-type builder. The multi-variant tiers pick a
-// variant at random so a mixed session shows structural variety within a tier too.
-function buildForType(type: CircleExplorerChallengeType): RawChallenge {
+// Dispatch to the right per-type builder. With NO tier the multi-variant types
+// pick a variant at random (structural variety within a mixed session). With a
+// tier present, the variant is PINNED to that tier's forced chain depth via
+// resolveProblemShape — so a blended session also honors the second axis.
+function buildForType(type: CircleExplorerChallengeType, tier?: SupportTier | null): RawChallenge {
+  const shape = tier ? resolveProblemShape(type, tier) : null;
   switch (type) {
     case 'discover_pi':
       return buildDiscoverPi();
     case 'circumference':
-      return buildCircumference(pick(['radius', 'diameter']));
+      return buildCircumference(shape?.circumferenceVariant ?? pick(['radius', 'diameter']));
     case 'area':
-      return buildArea(pick(['radius', 'diameter']));
+      return buildArea(shape?.areaVariant ?? pick(['radius', 'diameter']));
     case 'reverse':
-      return buildReverse(pick(['circumference', 'area']));
+      return buildReverse(shape?.reverseVariant ?? pick(['circumference', 'area']));
     case 'composite':
-      return buildComposite(pick(['semicircle_area', 'semicircle_perimeter', 'circle_in_square']));
+      return buildComposite(shape?.compositeShape ?? pick(['semicircle_area', 'semicircle_perimeter', 'circle_in_square']));
   }
 }
 
-export function selectMixedCircleExplorerChallenges(count?: number): CircleExplorerChallenge[] {
+export function selectMixedCircleExplorerChallenges(count?: number, tier?: SupportTier | null): CircleExplorerChallenge[] {
   // Cover every tier at least once; default to a session of 8.
   const target = Math.max(
     TIER_ORDER.length,
@@ -617,7 +780,7 @@ export function selectMixedCircleExplorerChallenges(count?: number): CircleExplo
 
   for (let attempt = 0; attempt < target * 12 && raw.length < target; attempt++) {
     const type = rotation[raw.length % rotation.length];
-    const ch = buildForType(type);
+    const ch = buildForType(type, tier);
     const key = canonicalKey(ch);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -627,7 +790,7 @@ export function selectMixedCircleExplorerChallenges(count?: number): CircleExplo
   // Fallback — accept duplicates if dedup starved a slot (narrow candidate space).
   let slot = raw.length;
   while (raw.length < target) {
-    raw.push(buildForType(rotation[slot % rotation.length]));
+    raw.push(buildForType(rotation[slot % rotation.length], tier));
     slot++;
   }
 
@@ -722,8 +885,15 @@ export const generateCircleExplorer = async (
       ? (evalConstraint.allowedTypes[0] as CircleExplorerChallengeType)
       : undefined;
   const tierScaffold = pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // ONE coherent "what HARD means here": scaffolding withdrawal (axis 1) PLUS
+  // structural chain-depth (axis 2 = resolveProblemShape). Both keyed off the
+  // same tier enum so the LLM sees one consistent picture.
+  const tierProblemShape = pinnedType && supportTier ? resolveProblemShape(pinnedType, supportTier) : null;
+  const tierLines = tierScaffold
+    ? [TIER_GUARDRAIL, ...tierScaffold.promptLines, ...(tierProblemShape?.promptLines ?? [])]
+    : [];
+  const tierSection = tierLines.length
+    ? `\n## WITHIN-MODE SUPPORT TIER "${supportTier}" (scaffolding + structural chain-depth — NOT number size)\n${tierLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   const prompt = `
@@ -779,9 +949,12 @@ Return ONLY the wrapper fields described above.
   if (!validTypes.includes(challengeType)) challengeType = 'circumference';
 
   // ── Build the per-challenge pool locally ──
+  // supportTier is threaded into the pool builders so the SECOND axis (structural
+  // chain-depth via resolveProblemShape) is enforced at construction. Absent →
+  // null → byte-identical original variance behavior.
   const challenges = isMixed
-    ? selectMixedCircleExplorerChallenges(config?.instanceCount)
-    : selectCircleExplorerChallenges(challengeType, config?.instanceCount);
+    ? selectMixedCircleExplorerChallenges(config?.instanceCount, supportTier)
+    : selectCircleExplorerChallenges(challengeType, config?.instanceCount, supportTier);
 
   // ── Post-validation: every expectedAnswer must match its geometry ──
   for (const ch of challenges) {

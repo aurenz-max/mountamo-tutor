@@ -60,6 +60,18 @@ interface SupportScaffold {
 }
 
 /**
+ * Guardrail line shared by BOTH axes of config.difficulty. Replaces the old
+ * "numbers never change" framing, which became a lie once the structural axis
+ * (resolveProblemShape) started re-selecting operands: the operands DO change,
+ * but only to change problem STRUCTURE (regroup count, cross-zero), never to
+ * inflate magnitude past the eval-mode + grade-band scope.
+ */
+const TIER_GUARDRAIL =
+  'Numbers stay within the eval-mode + grade-band scope. This tier changes the '
+  + 'problem STRUCTURE (how many carries/borrows, and whether a borrow crosses a zero) '
+  + 'and how much on-screen help is shown — NOT the magnitude. Never just make the numbers bigger.';
+
+/**
  * Resolve the on-workspace support structure for a tier on a pinned challenge
  * type. Support is withdrawn as the tier hardens; the per-mode lines reframe the
  * SAME task with less scaffolding — never a different task, never bigger numbers.
@@ -88,8 +100,7 @@ function resolveSupportStructure(pinnedType: RWChallengeType, tier: SupportTier)
         : tier === 'medium'
           ? 'moderate support: place labels and the carry/borrow row stay, but the student decides which columns need regrouping'
           : 'minimum support: the student decides WHEN to regroup, tracks place value unaided, and explains each trade'}). `
-    + `NEVER change the operands or the magnitude of the problem — a harder tier means LESS on-screen help, not bigger numbers. `
-    + `The numbers stay bound to the eval mode and grade band.`,
+    + TIER_GUARDRAIL,
   ];
 
   if (requiresRegroup) {
@@ -111,6 +122,226 @@ function resolveSupportStructure(pinnedType: RWChallengeType, tier: SupportTier)
   }
 
   return { showCarryBorrow, showRegroupHints, showPlaceColumns, showColumnBadges, stepByStepMode, promptLines };
+}
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty — the SECOND axis of config.difficulty.
+//
+// Distinct from the scaffolding above (which answers "how much help?"), this
+// makes the generated PROBLEM itself genuinely harder per tier — but
+// STRUCTURALLY, never by inflating magnitude and never by crossing into another
+// eval mode (the eval mode is operation-based, so a regroup-count change is
+// orthogonal to it). The lever is the REGROUP-EVENT COUNT, magnitude held fixed
+// inside the grade band:
+//   add_regroup       → # of carries: 1 → 2 → cascading (chained) carry
+//   subtract_regroup  → # of borrows: 1 → 2 → borrow ACROSS A ZERO (e.g. 305-78)
+//   add_no_regroup    → 0 carries always; "breadth" (how many live columns) is
+//   subtract_no_regroup → 0 borrows always;  prompt-shaped — the count NEVER rises
+//                         above 0 (that would jump to a different, regrouping mode).
+//
+// In-mode floor: a "_regroup" mode keeps ≥1 regroup at EVERY tier — easy never
+// drops to 0 (that would silently become its "_no_regroup" sibling). The count
+// is also CAPPED at places-1 so the top column never carries/borrows out and the
+// result stays in-band. The exact count is enforced in code (re-selecting
+// operands in post-process); the prompt only describes the intent.
+// See memory [[structural-difficulty-not-numeric]] / [[feedback_llm-window-code-builds-structure]].
+// ---------------------------------------------------------------------------
+
+interface ProblemShape {
+  /** Exact number of carry/borrow events to force in code (0 for no-regroup modes). */
+  regroupTarget: number;
+  /** Subtraction hard: force a borrow across a zero (e.g. 305 − 78). */
+  crossZero: boolean;
+  /** Addition hard: make the upper carry a CHAINED carry (its own digits sum to 9,
+   *  it carries only because of the incoming carry — the classic cascade trap). */
+  chainedCarry: boolean;
+  /** Prompt lines describing the structural intent to the LLM (code still enforces). */
+  promptLines: string[];
+}
+
+/**
+ * Resolve the in-mode structural lever for a tier. `places` (2/3/4 from the grade
+ * band's maxPlace) bounds the achievable regroup count so we never push past the
+ * band: a 2-digit problem can only fit ONE regroup, so its hard tier saturates at
+ * 1 (the scaffolding axis still varies). The real ladder lives at 3-digit.
+ */
+function resolveProblemShape(mode: RWChallengeType, tier: SupportTier, places: number): ProblemShape {
+  const noRegroup = mode.includes('no_regroup');
+  const isSub = mode.startsWith('subtract');
+  const ev = isSub ? 'borrow' : 'carry';
+
+  if (noRegroup) {
+    return {
+      regroupTarget: 0,
+      crossZero: false,
+      chainedCarry: false,
+      promptLines: [
+        tier === 'easy'
+          ? `PROBLEM SHAPE: a clean ${places}-digit ${isSub ? 'subtraction' : 'addition'} with NO regrouping — keep some columns trivial (a digit may be 0) so only one or two columns need real work.`
+          : tier === 'medium'
+            ? `PROBLEM SHAPE: a ${places}-digit ${isSub ? 'subtraction' : 'addition'} with NO regrouping, but EVERY column has two non-zero digits to combine. Still no ${ev}.`
+            : `PROBLEM SHAPE: a ${places}-digit ${isSub ? 'subtraction' : 'addition'} with NO regrouping where the columns sit "close to the edge" (sums near 9 / digits near-equal) so the student must verify carefully that NO column ${isSub ? 'borrows' : 'carries'}.`,
+      ],
+    };
+  }
+
+  // _regroup modes: floor 1 (mode identity), cap places-1 (stay in band).
+  const cap = Math.max(1, places - 1);
+  const ideal = tier === 'easy' ? 1 : tier === 'medium' ? 2 : 3;
+  const regroupTarget = Math.min(Math.max(ideal, 1), cap);
+  const crossZero = isSub && tier === 'hard' && places >= 3 && regroupTarget >= 2;
+  const chainedCarry = !isSub && tier === 'hard' && regroupTarget >= 2;
+
+  let line: string;
+  if (crossZero) {
+    line = `PROBLEM SHAPE: a BORROW ACROSS A ZERO — the minuend has a 0 in the tens place, so the ones-place borrow must cascade THROUGH the zero up to the hundreds (e.g. 305 − 78). The hardest elementary borrow.`;
+  } else if (chainedCarry) {
+    line = `PROBLEM SHAPE: a CASCADING carry — the ones column carries, and that carry pushes the tens column over 10 even though its own two digits sum to only 9 (a hidden, chained carry students often miss).`;
+  } else if (regroupTarget >= 2) {
+    line = `PROBLEM SHAPE: exactly TWO ${ev}s — both the ones and tens columns ${ev}.`;
+  } else {
+    line = `PROBLEM SHAPE: exactly ONE ${ev} (the ones column); keep every other column ${ev}-free.`;
+  }
+  return { regroupTarget, crossZero, chainedCarry, promptLines: [line] };
+}
+
+// --- Operand re-selection (code-enforced structural levers) ----------------
+// The LLM picks operands in the grade magnitude band; we re-select them in
+// post-process to land the EXACT regroup count (never trust the LLM to hit it),
+// while keeping every operand `places`-digit (= in band). Digit arrays are
+// ones-first to match the component's getDigits().
+
+const placeCount = (p?: string): number => (p === 'thousands' ? 4 : p === 'hundreds' ? 3 : 2);
+const randInt = (lo: number, hi: number): number => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
+const fromDigits = (digits: number[]): number => digits.reduce((n, d, i) => n + d * Math.pow(10, i), 0);
+const toDigits = (num: number, places: number): number[] => {
+  const out: number[] = [];
+  let n = Math.abs(Math.floor(num));
+  for (let i = 0; i < places; i++) { out.push(n % 10); n = Math.floor(n / 10); }
+  return out;
+};
+
+/** Pick [da, db] with da∈[aMin,9], db∈[bMin,9], da+db within [sumLo,sumHi]. */
+function pickPair(sumLo: number, sumHi: number, aMin: number, bMin: number): [number, number] {
+  const lo = Math.max(sumLo, aMin + bMin);
+  const hi = Math.min(Math.max(sumHi, lo), 18);
+  const sum = randInt(lo, hi);
+  const daLo = Math.max(aMin, sum - 9);
+  const daHi = Math.min(9, sum - bMin);
+  const da = randInt(daLo, daHi);
+  const db = Math.min(9, Math.max(bMin, sum - da));
+  return [da, db];
+}
+
+/**
+ * Build two `places`-digit addends whose column addition produces EXACTLY
+ * `carries` carry events, with NO carry out of the top column (result stays
+ * `places`-digit → in band). The lowest `carries` columns are the carrying ones.
+ * When `chained`, the highest carrying column carries only via the incoming
+ * carry (its own digits sum to 9).
+ */
+function buildAdditionOperands(places: number, carries: number, chained: boolean): [number, number] {
+  const a = new Array(places).fill(0);
+  const b = new Array(places).fill(0);
+  let carryIn = 0;
+  for (let i = 0; i < places; i++) {
+    const top = i === places - 1;
+    const aMin = top ? 1 : 0;
+    const bMin = top ? 1 : 0;
+    let da: number, db: number;
+    if (i < carries) {
+      const isChainTop = chained && i === carries - 1 && carryIn === 1;
+      // need da + db + carryIn >= 10
+      const sumLo = isChainTop ? 9 : Math.max(10 - carryIn, aMin + bMin);
+      const sumHi = isChainTop ? 9 : 16;
+      [da, db] = pickPair(sumLo, sumHi, aMin, bMin);
+      carryIn = 1;
+    } else {
+      // need da + db + carryIn <= 9
+      [da, db] = pickPair(aMin + bMin, 9 - carryIn, aMin, bMin);
+      carryIn = 0;
+    }
+    a[i] = da; b[i] = db;
+  }
+  return [fromDigits(a), fromDigits(b)];
+}
+
+/**
+ * Build minuend & subtrahend (`places`-digit) whose subtraction needs EXACTLY
+ * `borrows` borrow events, with NO borrow out of the top column (M > S, both in
+ * band). When `crossZero`, the minuend's tens digit is forced to 0 so the
+ * ones-place borrow must cascade across the zero (e.g. 305 − 78).
+ */
+function buildSubtractionOperands(places: number, borrows: number, crossZero: boolean): [number, number] {
+  const m = new Array(places).fill(0);
+  const s = new Array(places).fill(0);
+  let borrowIn = 0;
+  for (let i = 0; i < places; i++) {
+    const top = i === places - 1;
+    const mMin = top ? 1 : 0;
+    const sMin = top ? 1 : 0;
+    let md: number, sd: number;
+    if (i < borrows) {
+      if (crossZero && i === 1) {
+        md = 0; // force the across-zero column
+        sd = randInt(Math.max(1, sMin), 9);
+      } else {
+        md = randInt(mMin, 8);
+        const effM = md - borrowIn;
+        sd = randInt(Math.max(sMin, effM + 1, 1), 9);
+        if (sd <= effM) sd = Math.min(9, effM + 1);
+      }
+      borrowIn = 1;
+    } else {
+      // No borrow: effective M (md - borrowIn) >= sd. For the TOP column force a
+      // STRICT inequality so the whole minuend exceeds the subtrahend (M > S) even
+      // when every lower column is equal — otherwise a 0-borrow problem could land
+      // M == S (e.g. 87 − 87).
+      sd = randInt(sMin, 7);
+      const slack = top ? 1 : 0;
+      md = randInt(Math.max(mMin, sd + borrowIn + slack), 9);
+      borrowIn = 0;
+    }
+    m[i] = md; s[i] = sd;
+  }
+  return [fromDigits(m), fromDigits(s)];
+}
+
+/** Count carry events when adding a + b across `places` columns. */
+function countCarries(a: number, b: number, places: number): number {
+  const da = toDigits(a, places), db = toDigits(b, places);
+  let carry = 0, n = 0;
+  for (let i = 0; i < places; i++) {
+    if (da[i] + db[i] + carry >= 10) { carry = 1; n++; } else carry = 0;
+  }
+  return n;
+}
+
+/** Count borrow events for m − s and flag whether any borrow crosses a zero. */
+function analyzeBorrows(m: number, s: number, places: number): { borrows: number; crossesZero: boolean } {
+  const dm = toDigits(m, places), ds = toDigits(s, places);
+  let borrow = 0, n = 0, crossesZero = false;
+  for (let i = 0; i < places; i++) {
+    if (dm[i] - borrow < ds[i]) {
+      if (i + 1 < places && dm[i + 1] === 0) crossesZero = true;
+      borrow = 1; n++;
+    } else borrow = 0;
+  }
+  return { borrows: n, crossesZero };
+}
+
+/**
+ * Combined tier prompt block: scaffolding tone (resolveSupportStructure) PLUS
+ * structural problem difficulty (resolveProblemShape). One section so the LLM
+ * sees both axes of config.difficulty together — though the structural lever is
+ * ultimately CODE-enforced on the operands, not left to the LLM.
+ */
+function buildTierPromptSection(mode: RWChallengeType, tier: SupportTier, places: number): string {
+  const lines = [
+    ...resolveSupportStructure(mode, tier).promptLines,
+    ...resolveProblemShape(mode, tier, places).promptLines,
+  ];
+  return `\n## WITHIN-MODE SUPPORT TIER "${tier}" (scaffolding + problem STRUCTURE — NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
 }
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
@@ -376,10 +607,15 @@ export const generateRegroupingWorkbench = async (
   const pinnedType = (evalConstraint?.allowedTypes.length === 1
     ? evalConstraint.allowedTypes[0]
     : undefined) as RWChallengeType | undefined;
-  const tierScaffold = pinnedType && supportTier
-    ? resolveSupportStructure(pinnedType, supportTier) : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Best-effort place count for the PROMPT (the post-process uses data.maxPlace,
+  // which is authoritative). Lets the structural prompt-shape match the band.
+  const promptGradeBand: '1-2' | '3-4' = config?.gradeBand
+    ?? ((gradeLevel.includes('1') || gradeLevel.includes('2')) ? '1-2' : '3-4');
+  const promptPlaces = config?.maxPlace
+    ? placeCount(config.maxPlace)
+    : (promptGradeBand === '1-2' ? 2 : 3);
+  const tierSection = pinnedType && supportTier
+    ? buildTierPromptSection(pinnedType, supportTier, promptPlaces)
     : '';
 
   // Infer operation constraint from eval mode
@@ -568,6 +804,56 @@ Return the complete regrouping workbench configuration.
         stepByStepMode: data.gradeBand === '1-2',
       };
     }
+
+    // --- AXIS 2: structural problem difficulty (code-enforced operand lever) ---
+    // Re-select each challenge's operands to land the EXACT regroup count for the
+    // tier (honoring the LLM's numbers when they already hit it), keeping every
+    // operand inside the grade magnitude band (`places`-digit). The component
+    // recomputes correctAnswer from the rewritten `problem`, so nothing is leaked.
+    const places = placeCount(data.maxPlace);
+    let rewroteAny = false;
+    for (const ch of data.challenges as Array<{ type?: string; problem?: string; requiresRegrouping?: boolean; regroupCount?: number }>) {
+      const t = (ch.type as RWChallengeType) ?? (pinnedType ?? 'add_regroup');
+      const shape = resolveProblemShape(t, supportTier, places);
+      const isAdd = t.startsWith('add');
+      const nums = ch.problem?.match(/\d+/g)?.map(Number) ?? [];
+      let a = nums[0];
+      let b = nums[1];
+
+      let needRebuild = !(Number.isFinite(a) && Number.isFinite(b));
+      if (!needRebuild) {
+        if (isAdd) {
+          needRebuild = countCarries(a, b, places) !== shape.regroupTarget || shape.chainedCarry;
+        } else {
+          if (a < b) { const tmp = a; a = b; b = tmp; }
+          const { borrows, crossesZero } = analyzeBorrows(a, b, places);
+          needRebuild = a <= b || borrows !== shape.regroupTarget || (shape.crossZero && !crossesZero);
+        }
+      }
+      if (needRebuild) {
+        [a, b] = isAdd
+          ? buildAdditionOperands(places, shape.regroupTarget, shape.chainedCarry)
+          : buildSubtractionOperands(places, shape.regroupTarget, shape.crossZero);
+        rewroteAny = true;
+      }
+
+      ch.problem = `${a} ${isAdd ? '+' : '-'} ${b}`;
+      ch.requiresRegrouping = shape.regroupTarget > 0;
+      ch.regroupCount = shape.regroupTarget;
+    }
+    if (rewroteAny) {
+      // Sync the umbrella operands to challenge 1 and drop the pre-baked regrouping
+      // narration — its from/to values were keyed to the old operands. The live
+      // tutor narrates each regroup step itself, so nothing is lost.
+      const firstNums = data.challenges[0]?.problem?.match(/\d+/g)?.map(Number) ?? [];
+      if (firstNums.length >= 2) { data.operand1 = firstNums[0]; data.operand2 = firstNums[1]; }
+      data.regroupingSteps = [];
+    }
+    console.log(
+      `[RegroupingWorkbench] Structural tier "${supportTier}" applied (places=${places}) → `
+      + `${(data.challenges as Array<{ problem?: string; regroupCount?: number }>).map((c) => `${c.problem}[${c.regroupCount}]`).join(', ')}`,
+    );
+
     let anyCarryBorrow = false;
     let anyRegroupHints = false;
     let anyPlaceColumns = false;

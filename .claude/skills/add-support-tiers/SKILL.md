@@ -86,35 +86,13 @@ Scaffolding is not one thing. In Phase 1 sweep the **whole menu**, not just `sho
 
 For each candidate ask: *does this primitive expose this lever, and does withdrawing it leave the answer and the task identity intact?* If not → not a support lever. **The bespoke interaction-surface scaffolds (P1) come first — they're the pedagogical core and the creative 20%.**
 
-## Structural problem difficulty — the second axis (generator-side)
+## The second axis — structural problem difficulty (now its own skill)
 
-The modalities above all answer *"how much help?"* — same problem, scaffolding withdrawn. But a primitive feels weak if easy/med/hard produce **byte-identical problems** with only the help toggled. The second axis answers *"how hard a problem, structurally?"* — entirely **generator-side** (no component change). The principle: structural difficulty is *how much the student must coordinate*, and the lever is whatever shapes that coordination **without changing magnitude or task identity** (the per-archetype lever is the "Structural-difficulty lever" column in the archetype table — gaps/steps in arithmetic, coupled variables in a sim, distractor similarity on a card).
+The modalities above all answer *"how much help?"* — same problem, scaffolding withdrawn. But a primitive feels weak if easy/med/hard produce **byte-identical problems** with only the help toggled. The second axis answers *"how hard a problem, structurally?"* — a genuinely harder problem by **shape** (gaps/steps/regroup-count/coupled-variables), never by bigger numbers, entirely generator-side.
 
-**The hard line:** difficulty here is **structural, never magnitude** — change the *shape*, never just scale the numbers, and **never** cross into another eval mode ([[structural-difficulty-not-numeric]]). Each mode gets **one in-mode structural lever**. Worked reference — **bar-model** (`service/math/gemini-bar-model.ts`):
+That axis rides this skill's harness but is a substantial procedure of its own (an in-mode structural lever per mode, plus **code-enforced re-selection** of the answer-bearing values — don't trust the LLM to land an exact gap/regroup-count). It now lives in its own skill:
 
-| mode | structural lever (easy → hard) | where enforced |
-|---|---|---|
-| compare_bars | height gap `\|a-b\|`: 4 (obvious) → 2 → 1 (subtle) | code post-process |
-| read_scale | axis step 1 → 2 (skip-count the axis, still **on-tick** — not interpolation) | code post-process |
-| scaled_bar_graph | axis step 2 → 5 → 10 (coarser ticks = harder interpolation) | code post-process |
-| picture_graph | icon multiplier 2 → 5 (skip-count by 5s) | code post-process |
-| graph_word_problem | operation depth: one difference → total → two-step | prompt-shaped, LLM-validated |
-| build_graph | scale-choice ambiguity: obvious → genuinely ambiguous | prompt-shaped |
-
-**The generator-side pattern (mirror of `resolveSupportStructure`):**
-
-1. **`resolveProblemShape(mode, tier)`** — sibling to `resolveSupportStructure`. Returns `{ promptLines, ...numericParams }` where the numeric params (e.g. `compareGap`, `forcedStep`, `iconValue`) are the structural levers enforced deterministically in post-process, and `promptLines` describe the structural intent to the LLM for the levers that can't be code-forced (operation depth, dataset ambiguity).
-2. **`buildTierPromptSection(mode, tier)`** — concatenates `resolveSupportStructure(mode, tier).promptLines` (scaffolding tone) **and** `resolveProblemShape(mode, tier).promptLines` (problem shape) into one `## SUPPORT TIER "<tier>"` block, so the LLM sees both axes together. This **replaces** the scaffolding-only `tierSection`.
-3. **Thread the `tier` enum (not a pre-built string) into each sub-generator** so it can both inject `buildTierPromptSection(...)` into its prompt **and** apply its `resolveProblemShape(...)` numeric params in post-process (e.g. enforce the exact `compareGap`, snap to `forcedStep`, force `iconValue`). Numeric levers are enforced in **code** (don't trust the LLM to hit an exact gap); prompt-only levers are validated as usual.
-4. **Reframe the guardrail constant.** The scaffolding-only skill ships a `NUMBERS_NEVER_CHANGE` prompt line; once this axis exists it's a lie. Rename it to `TIER_GUARDRAIL` and reword: *"Keep every number within scope — this tier changes problem STRUCTURE (gaps, steps, multipliers, steps-to-solve), NOT raw magnitude."*
-
-**Per-lever discipline (the review checklist for each one):**
-- **In-mode?** Does the harder problem still belong to the *same* eval mode? (read_scale going off-tick would become scaled_bar_graph — that's a mode jump, forbidden. Keep read_scale on-tick; let *step coarseness* be its lever.)
-- **Structural, not magnitude?** Is it a gap/step/multiplier/step-count change, or just "bigger numbers"? The latter is the reversed path.
-- **Code-enforce exact numeric levers.** An LLM asked for "gap of exactly 1" will drift; clamp it in post-process. Reserve prompt-only shaping for levers with no clean numeric handle (operation depth, ambiguity).
-- **Default (no tier) path unchanged.** Guard every structural branch on the tier being present (`shape?.compareGap != null`), so a no-tier generation is byte-identical to before.
-
-A primitive may legitimately support **only** the scaffolding axis, **only** structural, or **both** (bar-model). Build what fits; don't invent a fake structural lever just to fill the table.
+> **Run `/add-structural-difficulty` after this one** to add the structural axis. It reuses the `normalizeSupportTier` harness and the `if (supportTier)` block you build here, upgrades `buildTierPromptSection` to merge both axes, and renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`. Worked references: `gemini-regrouping-workbench.ts` (code-enforced operand re-selection) and `gemini-bar-model.ts` (multi-mode lever table). A primitive may legitimately support **only** the scaffolding axis, **only** structural, or **both** — build what fits.
 
 > Two gotchas apply once you build certain levers — **answer-bearing levers** (tier code writes a field the checker reads) and **a live tutor that can leak what a tier hid.** Both are covered in **Gotchas** after the workflow; Phase 4 points back to them.
 
@@ -201,15 +179,9 @@ Run `/add-eval-modes` **first** — the primitive needs a generator that resolve
 
 10. **Inject `${tierSection}`** into the prompt, immediately after the challenge-type section.
 
-### Phase 3b (optional): Add the structural problem-difficulty axis
+### Phase 3b (optional): the structural problem-difficulty axis → `/add-structural-difficulty`
 
-If the primitive has a clean **in-mode structural lever** (see "Structural problem difficulty" above), add it now — it's what stops easy/med/hard from producing byte-identical problems:
-
-10a. **Write `resolveProblemShape(mode, tier)`** alongside `resolveSupportStructure` — returns `{ promptLines, ...numericParams }` (the structural levers: `compareGap` / `forcedStep` / `iconValue` / etc.). One lever per mode; in-mode and structural only.
-
-10b. **Upgrade `tierSection` → `buildTierPromptSection(mode, tier)`** that concatenates the scaffolding `promptLines` **and** the problem-shape `promptLines` into one block, and **thread the `tier` enum (not the pre-built string) into the sub-generators** so each can both inject the section *and* apply its `resolveProblemShape` numeric params in post-process. **Code-enforce exact numeric levers** (clamp the gap, snap to step, force the multiplier); gate every branch on the tier being present so the no-tier path stays byte-identical.
-
-10c. **Rename the guardrail prompt constant** `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL` and reword it to "numbers stay in scope; structure changes, magnitude does not" (the old wording becomes false once this axis exists).
+If the primitive has a clean **in-mode structural lever** (gap / step / regroup-count / coupled-variable), add the second axis so easy/med/hard stop producing byte-identical problems — but do it via the dedicated **`/add-structural-difficulty`** skill, which builds `resolveProblemShape`, upgrades `tierSection` → `buildTierPromptSection` (merging both axes), code-enforces the exact numeric lever, and renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`. It reuses the harness and the `if (supportTier)` block from this skill, so finish Phases 1–5 here first.
 
 ### Phase 4: Apply deterministically + clean up
 
@@ -272,6 +244,6 @@ All worked examples are **math** — the only domain wired so far. Read them by 
 - [ ] Applied the scaffold at the END, **per challenge** (`resolveSupportStructure(ch.type, tier)`), gated only on a tier being present (NOT `pinnedType`); `${tierSection}` injected; UI contracts guarded per mode; log line present
 - [ ] **Answer-bearing levers** (Gotcha #1): honored LLM choices, top-up only to the tier *count*, no instruction-referenceable answer (e.g. `endAt`) excluded, `instruction → answer` passes at every tier
 - [ ] **Live tutor** (Gotcha #2): `supportTier` threaded into data + `aiPrimitiveData` + a tier reveal-clause in `sendText` (mandatory for #2)
-- [ ] **(Optional 2nd axis)** `resolveProblemShape` + `buildTierPromptSection`, `tier` enum threaded into sub-generators, exact numeric levers code-enforced, `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`; each lever **in-mode** and **structural, not magnitude**
+- [ ] **(Optional 2nd axis)** if the primitive has a clean in-mode structural lever, follow up with **`/add-structural-difficulty`** (builds `resolveProblemShape`, merges `buildTierPromptSection`, code-enforces the lever, renames `NUMBERS_NEVER_CHANGE` → `TIER_GUARDRAIL`)
 - [ ] Deleted any dead `difficulty?: number` field; tier never inflates magnitude beyond scope
 - [ ] Project-local `tsc --noEmit` clean vs. baseline (not bare `npx tsc`); reminded user to test easy/med/hard + `/eval-test`

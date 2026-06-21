@@ -54,6 +54,147 @@ type SupportTier = 'easy' | 'medium' | 'hard';
 
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
 
+// ============================================================================
+// Within-mode STRUCTURAL DIFFICULTY (axis 2 of config.difficulty)
+// ============================================================================
+// The SECOND, orthogonal axis. Axis 1 (above) withdraws on-canvas tracing help
+// while holding the SAME shape. Axis 2 (here) hardens the PROBLEM ITSELF by
+// re-selecting the TARGET SHAPE up the geometric-complexity ladder — more
+// vertices/sides = more strokes to trace, a longer dot-ordering chain, more
+// missing sides to infer, a denser property description. It NEVER grows the
+// canvas footprint or the on-screen size (every shape lives on the same
+// 500x400 canvas at the same scale — bigger-on-screen is the banned magnitude
+// path) and NEVER leaves the grade-band shape pool (K caps at 4 vertices; only
+// G1 unlocks pentagon/hexagon/rhombus). Both axes share ONE source of truth
+// (resolveProblemShape) folded into ONE prompt block and code-enforced in the
+// post-process. See memory: structural-difficulty-not-numeric.
+
+/**
+ * Guardrail line shared by both axes of config.difficulty. Structure (the
+ * target shape's vertex/side count) changes up the tier ladder; magnitude (the
+ * on-canvas size / footprint) does NOT. A harder tier is a more complex SHAPE,
+ * never a bigger one, and never a shape outside the grade-band pool.
+ */
+const TIER_GUARDRAIL =
+  'A harder tier means a more geometrically COMPLEX target shape (more vertices/'
+  + 'sides, more direction changes) — NOT a bigger shape on the canvas. Every shape '
+  + 'stays inside the same 500x400 canvas at the same scale and inside the grade-band '
+  + 'shape pool. Never inflate size or leave the pool to fake difficulty.';
+
+/**
+ * Grade-band shape pool, ordered by geometric complexity (vertex/side count).
+ * K caps at 4 vertices (square/rectangle); G1 unlocks the 5-6 vertex pool plus
+ * the oblique-angle rhombus. These are the ONLY shapes a tier may select — the
+ * cap from the brief. Circle is intentionally excluded from the tiered ladder:
+ * it has no vertices to trace / order / complete, so a circle challenge is left
+ * at whatever shape the LLM produced (no structural re-selection).
+ */
+const SHAPE_COMPLEXITY: Record<string, number> = {
+  triangle: 3,
+  square: 4,
+  rectangle: 4,
+  rhombus: 4,
+  pentagon: 5,
+  hexagon: 6,
+};
+
+/**
+ * The complexity ladder the tier climbs, per grade band. Index = rung.
+ * K: triangle(3) -> square(4) -> [saturates at 4 — the K pool has no >4-vertex
+ *    shape, so K's hard rung is the SAME square as medium; the ladder honestly
+ *    saturates rather than escaping the pool].
+ * G1: triangle(3) -> square(4) -> hexagon(6) [pentagon(5) is the alternate hard
+ *    rung; hexagon is the top of the pool].
+ */
+const COMPLEXITY_LADDER: Record<'K' | '1', Record<SupportTier, string>> = {
+  K: { easy: 'triangle', medium: 'square', hard: 'square' },
+  '1': { easy: 'triangle', medium: 'square', hard: 'hexagon' },
+};
+
+/**
+ * draw-from-description hard rung uses the RHOMBUS at G1 instead of hexagon:
+ * the brief's irregular-angle contradiction (4 equal sides BUT non-square
+ * corners) is the densest property load for the build-from-words task. Still in
+ * the G1 pool, still 4 vertices on the same canvas — denser PROPERTIES, not a
+ * bigger shape. (Other modes use vertex COUNT as the lever; draw uses property
+ * load, for which rhombus's equal-sides-non-right-angles is the harder rung.)
+ */
+function ladderShapeForMode(
+  mode: ChallengeType,
+  tier: SupportTier,
+  gradeBand: 'K' | '1',
+): string {
+  const base = COMPLEXITY_LADDER[gradeBand][tier];
+  if (mode === 'draw-from-description' && gradeBand === '1' && tier === 'hard') {
+    return 'rhombus';
+  }
+  return base;
+}
+
+interface ProblemShape {
+  /** The structurally-resolved target shape for this tier+mode+grade. Clamped
+   *  to the grade-band pool (the cap) and to a closed polygon (the floor). */
+  targetShape: string;
+  /** Soft description of what "harder" means here, folded into the prompt. */
+  promptLines: string[];
+}
+
+/**
+ * Axis-2 source of truth: turn one tier into one structural intent — a harder
+ * TARGET SHAPE (more vertices/sides) clamped to the grade-band pool. Consumed by
+ * BOTH the prompt (promptLines) and the post-process (targetShape re-selection).
+ *
+ * Floor: every selected shape is a closed polygon with >=3 vertices — every mode
+ * is still satisfiable (trace/connect/complete/draw all need >=3 vertices), so we
+ * never drop below the task's identity. Cap: SHAPE_COMPLEXITY only — never a
+ * shape outside the grade band, never a bigger footprint.
+ */
+function resolveProblemShape(
+  mode: ChallengeType,
+  tier: SupportTier,
+  gradeBand: 'K' | '1',
+): ProblemShape {
+  const targetShape = ladderShapeForMode(mode, tier, gradeBand);
+  const v = SHAPE_COMPLEXITY[targetShape] ?? 3;
+  const saturated = gradeBand === 'K' && tier === 'hard';
+
+  const lines: string[] = [];
+  switch (mode) {
+    case 'trace':
+      lines.push(
+        `STRUCTURE: trace a ${targetShape} (${v} vertices, ${v} strokes)${
+          tier === 'hard' ? ' — the most direction changes in the grade-band pool' : ''
+        }. ${saturated ? 'The K pool caps at 4 vertices, so hard holds at the square.' : ''}`,
+      );
+      break;
+    case 'connect-dots':
+      lines.push(
+        `STRUCTURE: ${v} numbered dots forming a ${targetShape} — a ${v}-step ordering chain to infer from the labels. Do NOT add decoy or unnumbered dots; the lever is the vertex COUNT, not distractors. ${
+          saturated ? 'K caps at 4 dots, so hard holds at the square.' : ''
+        }`,
+      );
+      break;
+    case 'complete':
+      lines.push(
+        `STRUCTURE: a partial ${targetShape} (${v} vertices); about half its sides pre-drawn, the student infers and closes the rest — more vertices means more missing geometry to reconstruct. Keep ~half pre-drawn so it stays a 'finish-the-partial-shape' task. ${
+          saturated ? 'K caps at the square here.' : ''
+        }`,
+      );
+      break;
+    case 'draw-from-description':
+      lines.push(
+        targetShape === 'rhombus'
+          ? `STRUCTURE: describe a RHOMBUS — 4 equal sides BUT corners that are NOT square (a tilted-diamond). The hard rung's property load is the equal-sides / non-right-angles contradiction the student must hold, not a bigger shape.`
+          : `STRUCTURE: describe a ${targetShape} — ${v} sides, ${v} corners${
+              v >= 4 ? ', with an equality constraint (all sides equal)' : ' (any triangle, no equality constraint)'
+            }. More properties to satisfy unaided. ${saturated ? 'K caps at the square here.' : ''}`,
+      );
+      break;
+  }
+  lines.push(TIER_GUARDRAIL);
+  return { targetShape, promptLines: lines };
+}
+
 /**
  * Read the manifest's support tier. The manifest schema enum-constrains
  * config.difficulty to exactly these values, so this is a STRICT lookup.
@@ -645,6 +786,98 @@ function getVertices(shape: string): Array<{ x: number; y: number }> {
   return SHAPE_VERTICES[shape] || SHAPE_VERTICES.triangle!;
 }
 
+// ============================================================================
+// Axis-2 deterministic RECONSTRUCTION builders (re-build a challenge's
+// answer-bearing geometry from a NEW target shape). The shape DETERMINES the
+// answer (tracePath / dots+order / drawnSides+remainingVertices / properties),
+// so re-selecting the shape and rebuilding from SHAPE_VERTICES stays
+// self-consistent. Every shape these touch is in SHAPE_VERTICES (the cap), at
+// the canonical canvas scale (no footprint growth). draw-from-description has no
+// rendered geometry — its "answer" is requiredProperties, rebuilt from a table.
+// ============================================================================
+
+const RECONSTRUCTABLE = new Set(Object.keys(SHAPE_VERTICES));
+
+/** Canonical shape properties for draw-from-description reconstruction. */
+const SHAPE_PROPS: Record<string, { sides: number; corners: number; equal: boolean; curved: boolean; desc: string }> = {
+  triangle: { sides: 3, corners: 3, equal: false, curved: false, desc: 'A shape with 3 straight sides and 3 pointy corners' },
+  square: { sides: 4, corners: 4, equal: true, curved: false, desc: 'A shape with 4 equal sides and 4 square corners' },
+  rectangle: { sides: 4, corners: 4, equal: false, curved: false, desc: 'A shape with 4 sides - 2 long and 2 short - and 4 corners' },
+  pentagon: { sides: 5, corners: 5, equal: true, curved: false, desc: 'A shape with 5 equal sides and 5 corners' },
+  hexagon: { sides: 6, corners: 6, equal: true, curved: false, desc: 'A shape with 6 equal sides and 6 corners' },
+  rhombus: { sides: 4, corners: 4, equal: true, curved: false, desc: 'A shape like a tilted square - 4 equal sides but NOT square corners' },
+};
+
+/** Rebuild a TRACE challenge's path from the target shape. */
+function reconstructTrace(ch: ShapeTracerChallenge, shape: string): void {
+  ch.tracePath = getVertices(shape).map(v => ({ ...v }));
+  ch.targetShape = shape;
+}
+
+/** Rebuild a CONNECT-DOTS challenge: dots = vertices, order = label order. The
+ *  numbered dots ARE the answer, so order is the canonical 0..n-1 sequence. */
+function reconstructConnectDots(ch: ShapeTracerChallenge, shape: string): void {
+  const verts = getVertices(shape);
+  ch.dots = verts.map((v, i) => ({ ...v, label: String(i + 1) }));
+  ch.correctOrder = verts.map((_, i) => i);
+  ch.revealShape = shape;
+  ch.targetShape = shape;
+}
+
+/** Rebuild a COMPLETE challenge: ~half the sides pre-drawn, the rest left for
+ *  the student to close. Mirrors fallbackComplete so the pre-drawn fraction
+ *  stays ~half (the floor/cap that keeps it 'complete', not 'trace'/'draw'). */
+function reconstructComplete(ch: ShapeTracerChallenge, shape: string): void {
+  const verts = getVertices(shape);
+  const half = Math.ceil(verts.length / 2);
+  const drawnSides: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }> = [];
+  for (let i = 0; i < half; i++) {
+    drawnSides.push({ from: { ...verts[i]! }, to: { ...verts[(i + 1) % verts.length]! } });
+  }
+  const remaining = verts.slice(half);
+  ch.drawnSides = drawnSides;
+  ch.remainingVertices = remaining.length > 0 ? remaining.map(v => ({ ...v })) : [{ ...verts[verts.length - 1]! }];
+  ch.targetShape = shape;
+}
+
+/** Rebuild a DRAW-FROM-DESCRIPTION challenge's required properties + clue. */
+function reconstructDrawFromDescription(ch: ShapeTracerChallenge, shape: string): void {
+  const p = SHAPE_PROPS[shape] ?? SHAPE_PROPS.triangle!;
+  ch.requiredProperties = {
+    sides: p.sides,
+    corners: p.corners,
+    allSidesEqual: p.equal,
+    hasCurvedSides: p.curved,
+  };
+  ch.description = p.desc;
+  ch.targetShape = shape;
+}
+
+/**
+ * Post-process a single challenge to the structural tier: re-select its target
+ * shape up the complexity ladder, then RECONSTRUCT its answer-bearing geometry
+ * from that shape. Returns true if anything was rewritten.
+ *
+ * Honor-don't-churn: if the LLM already produced the exact target shape, leave
+ * its geometry intact (it's already valid + in-band). Only reconstruct on a
+ * mismatch. Circle (no vertices) and any shape outside SHAPE_VERTICES are left
+ * untouched — the structural ladder only operates on closed polygons.
+ */
+function applyStructuralShape(ch: ShapeTracerChallenge, tier: SupportTier, gradeBand: 'K' | '1'): boolean {
+  const mode = ch.type as ChallengeType;
+  const target = resolveProblemShape(mode, tier, gradeBand).targetShape;
+  if (!RECONSTRUCTABLE.has(target)) return false;
+  // Already on target — don't churn a valid, in-band problem.
+  if (ch.targetShape === target) return false;
+  switch (mode) {
+    case 'trace': reconstructTrace(ch, target); return true;
+    case 'connect-dots': reconstructConnectDots(ch, target); return true;
+    case 'complete': reconstructComplete(ch, target); return true;
+    case 'draw-from-description': reconstructDrawFromDescription(ch, target); return true;
+    default: return false;
+  }
+}
+
 function fallbackTrace(shape: string, setup: SetupResult): ShapeTracerChallenge {
   return {
     id: '',
@@ -785,10 +1018,17 @@ export const generateShapeTracer = async (
   // The tier tunes only the prompt TONE per challenge; the show* scaffolds are
   // applied deterministically in code below.
   const challengePromises = setup.challengePlan.map(plan => {
+    // ONE prompt block carries BOTH axes: scaffolding withdrawal
+    // (resolveSupportStructure) + structural shape complexity
+    // (resolveProblemShape) — so the LLM sees one coherent "what hard means".
+    // The structural shape is ultimately CODE-enforced on the geometry below;
+    // the prompt just steers the LLM toward the same target.
     const tierSection = supportTier
-      ? `\n## WITHIN-MODE SUPPORT TIER (tracing-scaffolding level — NOT shape size)\n${
-          resolveSupportStructure(plan.type as ChallengeType, supportTier)
-            .promptLines.map(l => `- ${l}`).join('\n')
+      ? `\n## WITHIN-MODE TIER "${supportTier}" (tracing-scaffolding level + structural shape complexity — NOT shape size)\n${
+          [
+            ...resolveSupportStructure(plan.type as ChallengeType, supportTier).promptLines,
+            ...resolveProblemShape(plan.type as ChallengeType, supportTier, setup.gradeBand).promptLines,
+          ].map(l => `- ${l}`).join('\n')
         }\n`
       : '';
     return generateChallengeByType(plan, setup, tierSection);
@@ -802,7 +1042,9 @@ export const generateShapeTracer = async (
   // Resolve each challenge's scaffold from its OWN mode (ch.type) so blended /
   // auto sessions get tiered too. Withdraw tracing help; NEVER touch the shape.
   if (supportTier) {
+    let reshapedCount = 0;
     for (const ch of challenges) {
+      // AXIS 1 — scaffolding withdrawal (display-only, same shape).
       const sc = resolveSupportStructure(ch.type as ChallengeType, supportTier);
       ch.showGuidePath = sc.showGuidePath;
       ch.showDirectionArrows = sc.showDirectionArrows;
@@ -810,10 +1052,17 @@ export const generateShapeTracer = async (
       // connect-dots: the order numbers ARE the answer — keep them at every tier.
       ch.showOrderNumbers = ch.type === 'connect-dots' ? true : sc.showOrderNumbers;
       ch.supportTier = supportTier;
+
+      // AXIS 2 — structural shape complexity. Re-select the target shape up the
+      // grade-band complexity ladder and RECONSTRUCT the answer-bearing geometry
+      // from it (the shape determines the answer, so this stays self-consistent).
+      // Honor-don't-churn: skips when the LLM already produced the target shape.
+      if (applyStructuralShape(ch, supportTier, setup.gradeBand)) reshapedCount++;
     }
     console.log(
       `[ShapeTracer] Support tier "${supportTier}" applied per-challenge `
-      + `(${evalConstraint?.allowedTypes.length === 1 ? `single-mode ${evalConstraint.allowedTypes[0]}` : 'blended'})`,
+      + `(${evalConstraint?.allowedTypes.length === 1 ? `single-mode ${evalConstraint.allowedTypes[0]}` : 'blended'}); `
+      + `structural reshapes: ${reshapedCount}/${challenges.length} (grade ${setup.gradeBand})`,
     );
   }
 

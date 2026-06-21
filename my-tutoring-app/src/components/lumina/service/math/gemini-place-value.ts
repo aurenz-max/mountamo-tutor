@@ -91,6 +91,23 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 //   • showExpandedForm is the PRIMARY scaffold of expanded_form mode — withdrawn
 //     only at HARD, never easy/medium.
 
+// ---------------------------------------------------------------------------
+// Within-mode difficulty = TWO axes (config.difficulty)
+// ---------------------------------------------------------------------------
+// Axis 1 (SCAFFOLDING, above): higher tier withdraws on-chart help.
+// Axis 2 (STRUCTURE, below): higher tier hands a structurally HARDER problem of
+//   the SAME mode and SAME magnitude band. The lever here is the count of
+//   non-zero digits the student must coordinate (more real columns to
+//   fill/decompose, fewer free zeros) via the pool service's minNonZeroDigits,
+//   plus which place is highlighted (edge ones/leftmost → place-confusable
+//   interior). The per-mode numberRange (magnitude band) NEVER changes.
+const TIER_GUARDRAIL =
+  'Numbers stay within the per-mode magnitude band (the same digit count). This '
+  + 'tier changes the problem STRUCTURE — how many columns carry a real (non-zero) '
+  + 'value and how place-confusable the highlighted column is — and how much '
+  + 'on-chart help is shown, NOT the size of the number. Never just make the '
+  + 'number bigger.';
+
 type SupportTier = 'easy' | 'medium' | 'hard';
 
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
@@ -183,6 +200,100 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       break;
   }
   return { showMultipliers, showExpandedForm, hintDepth, promptLines };
+}
+
+// ---------------------------------------------------------------------------
+// Axis 2: STRUCTURAL difficulty (problem SHAPE, not magnitude)
+// ---------------------------------------------------------------------------
+// Lever = the count of non-zero digits the student must coordinate
+// (minNonZeroDigits, fed to the pool service) + which place is highlighted
+// (edge → place-confusable interior). The magnitude band (per-mode digit count)
+// is invariant; this only fills more real columns and picks a harder column.
+//
+// Highlight preference resolved against the number's non-zero places:
+//   'edge'          — the ones digit or the leftmost digit (least confusable).
+//   'interior'      — any non-edge non-zero place.
+//   'deep-interior' — a non-edge place as far from both ends as possible
+//                     (tens/hundreds in a 4-digit number — most confusable).
+//   'any'           — no preference (existing interior-preferring heuristic).
+type HighlightPreference = 'edge' | 'interior' | 'deep-interior' | 'any';
+
+interface ProblemShape {
+  /** Floor on non-zero digits the pool must produce for this tier+mode.
+   *  Clamped INSIDE resolveProblemShape to [modeDefault, bandDigitFloor] so it
+   *  can never re-enter another mode (too few) or demand more non-zero digits
+   *  than the band's smallest number has (saturation). */
+  minNonZeroDigits: number;
+  /** Which place to highlight (Phase 1/2 reasoning target). */
+  highlightPreference: HighlightPreference;
+  /** Soft description folded into the tier prompt block. */
+  promptLines: string[];
+}
+
+// Per-mode structural defaults. minNonZeroFloor = the mode's identity floor
+// (never drop below it — that re-enters an easier mode). bandDigitFloor = the
+// digit count of the SMALLEST number in the band, i.e. the largest
+// minNonZeroDigits achievable for EVERY number (above it saturates).
+const STRUCTURAL_PROFILES: Record<ChallengeType, { minNonZeroFloor: number; bandDigitFloor: number }> = {
+  // identify: 2-digit (11-99), already 2-of-2 non-zero. No structural room.
+  identify:      { minNonZeroFloor: 2, bandDigitFloor: 2 },
+  // build: 3-digit (111-999). Floor 2 (≥1 free zero column allowed), cap 3.
+  build:         { minNonZeroFloor: 2, bandDigitFloor: 3 },
+  // compare: 4-digit (1111-9999). Floor 2 (pool default), cap 4.
+  compare:       { minNonZeroFloor: 2, bandDigitFloor: 4 },
+  // expanded_form: 4-5 digit (1111-99999). Smallest is 4-digit, so the floor of
+  // achievable non-zero digits across the whole band is 4 (a 5-digit draw can
+  // carry 5, but a 4-digit draw cannot — clamping to 4 keeps it non-saturating).
+  expanded_form: { minNonZeroFloor: 2, bandDigitFloor: 4 },
+};
+
+/**
+ * Resolve the structural problem SHAPE for a tier on a pinned mode. ONE source
+ * of truth consumed by both the prompt section and the post-process rebuild.
+ * Clamps minNonZeroDigits to [floor, cap] so it can never re-enter another mode
+ * (below floor) or saturate the pool's digit fixup (above the band digit floor).
+ */
+function resolveProblemShape(mode: ChallengeType, tier: SupportTier): ProblemShape {
+  const prof = STRUCTURAL_PROFILES[mode] ?? STRUCTURAL_PROFILES.compare;
+  const clamp = (v: number) =>
+    Math.max(prof.minNonZeroFloor, Math.min(prof.bandDigitFloor, v));
+
+  // identify has zero structural headroom (2-of-2 non-zero already). lever=none.
+  if (mode === 'identify') {
+    return {
+      minNonZeroDigits: prof.minNonZeroFloor,
+      highlightPreference: 'any',
+      promptLines: [
+        'PROBLEM SHAPE: a 2-digit number (tens + ones); both columns already carry '
+        + 'a value. This mode has no structural headroom — difficulty is the '
+        + 'scaffolding tier only, NOT a bigger number.',
+      ],
+    };
+  }
+
+  // The non-zero-digit ladder, clamped per mode.
+  const want = tier === 'easy' ? 2 : tier === 'medium' ? 3 : 4;
+  const minNonZeroDigits = clamp(want);
+
+  // Highlight preference hardens edge → interior → deep-interior.
+  const highlightPreference: HighlightPreference =
+    tier === 'easy' ? 'edge' : tier === 'medium' ? 'interior' : 'deep-interior';
+
+  const saturated = want > minNonZeroDigits;
+  const promptLines: string[] = [
+    `PROBLEM SHAPE: keep the number in the per-mode band but make at least `
+    + `${minNonZeroDigits} of its columns carry a real (non-zero) value`
+    + `${saturated ? ' (the band cannot pack more non-zero columns than this, so this is the ceiling)' : ''}`
+    + `. ${
+      tier === 'easy'
+        ? 'Highlight an EDGE digit (the ones place or the leftmost place) — the least place-confusable column — and allow a free zero column.'
+        : tier === 'medium'
+          ? 'Every main column should carry a value; highlight an INTERIOR (non-edge) place so the student cannot rely on position-at-an-end.'
+          : 'Pack every column with a non-zero digit (no free zeros) and highlight a DEEP-INTERIOR place (e.g. the tens/hundreds of a 4-digit number) — the most place-confusable column.'
+    }`,
+    TIER_GUARDRAIL,
+  ];
+  return { minNonZeroDigits, highlightPreference, promptLines };
 }
 
 // ---------------------------------------------------------------------------
@@ -351,6 +462,51 @@ function selectHighlightedPlace(
 }
 
 /**
+ * Tier-aware highlight selection (axis-2 structural lever). Picks a non-zero
+ * place honoring the tier's HighlightPreference; falls back to the existing
+ * interior-preferring heuristic when no place matches (always returns a non-zero
+ * place when one exists, so Phase-2 distractors stay derivable).
+ */
+function selectHighlightedPlaceForTier(
+  targetNumber: number,
+  minPlace: number,
+  maxPlace: number,
+  preference: HighlightPreference,
+): number {
+  const candidates: number[] = [];
+  for (let p = minPlace; p <= maxPlace; p++) {
+    if (getDigitAtPlace(targetNumber, p) !== 0) candidates.push(p);
+  }
+  if (candidates.length === 0) return minPlace;
+  if (preference === 'any') {
+    return selectHighlightedPlace(targetNumber, minPlace, maxPlace);
+  }
+
+  const isEdge = (p: number) => p === minPlace || p === maxPlace;
+  const interior = candidates.filter(p => !isEdge(p));
+
+  let pool: number[];
+  if (preference === 'edge') {
+    const edges = candidates.filter(isEdge);
+    pool = edges.length > 0 ? edges : candidates;
+  } else if (preference === 'deep-interior') {
+    // Maximize distance from BOTH ends; fall back to any interior, then any.
+    const base = interior.length > 0 ? interior : candidates;
+    let best = -1;
+    pool = [];
+    for (const p of base) {
+      const dist = Math.min(p - minPlace, maxPlace - p);
+      if (dist > best) { best = dist; pool = [p]; }
+      else if (dist === best) pool.push(p);
+    }
+  } else {
+    // 'interior'
+    pool = interior.length > 0 ? interior : candidates;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/**
  * Build 4 place-name MC choices, with the correct answer at a random position
  * and 3 plausible adjacent-place distractors.
  */
@@ -466,6 +622,43 @@ function computePlaceRange(
 }
 
 /**
+ * Constructive enforcement of the tier's non-zero-digit floor (axis 2). Counts
+ * the number's non-zero digits and, if short of `target`, replaces zero digits
+ * (interior/ones first, never the already-non-zero leading digit) with random
+ * 1-9 values. Preserves the DIGIT COUNT — so the number stays in the exact same
+ * magnitude band (never crosses into another mode) — and clamps to `range`.
+ * Idempotent once the floor is met.
+ */
+function enforceNonZeroDigits(
+  n: number,
+  target: number,
+  range: { min: number; max: number },
+): number {
+  if (target <= 0) return n;
+  const neg = n < 0;
+  const digits = String(Math.abs(Math.trunc(n))).split('').map(Number);
+  let nonZero = digits.filter(d => d > 0).length;
+  if (nonZero >= target) return n;
+
+  // Fill zero positions from the RIGHT (ones-ward) so the leading digit and the
+  // overall digit count are untouched. The leading digit (index 0) is already
+  // non-zero for every in-band number, so we never need to touch it.
+  for (let i = digits.length - 1; i >= 0 && nonZero < target; i--) {
+    if (digits[i] === 0) {
+      digits[i] = 1 + Math.floor(Math.random() * 9); // 1-9
+      nonZero++;
+    }
+  }
+  let result = Number(digits.join(''));
+  if (neg) result = -result;
+  // Digit count is preserved, so result stays the same order of magnitude.
+  // Clamp defensively (an all-9s band max can never be exceeded by this).
+  if (result < range.min) result = Math.max(range.min, result);
+  if (result > range.max) result = Math.min(range.max, result);
+  return result;
+}
+
+/**
  * Select N distinct targetNumbers from the pool and build one
  * PlaceValueChartChallenge per number.
  */
@@ -473,6 +666,9 @@ function buildChallenges(
   challengeType: string,
   count: number,
   manifestRange?: { min: number; max: number },
+  /** Axis-2 structural shape (gated on supportTier upstream). When absent, the
+   *  no-tier defaults below reproduce the original behavior byte-for-byte. */
+  shape?: ProblemShape,
 ): PlaceValueChartChallenge[] {
   const profile = MODE_PROFILES[challengeType] ?? MODE_PROFILES.compare;
   const range = manifestRange ?? profile.numberRange;
@@ -481,7 +677,7 @@ function buildChallenges(
     count,
     integers: true,
     unique: true,
-    minNonZeroDigits: 2,
+    minNonZeroDigits: shape?.minNonZeroDigits ?? 2,
   });
   const numbers = pool?.numbers ?? [];
 
@@ -497,13 +693,22 @@ function buildChallenges(
     }
   }
 
-  return numbers.slice(0, count).map((targetNumber, idx) => {
+  return numbers.slice(0, count).map((rawNumber, idx) => {
+    // Axis-2 enforcement: COUNT the pool's actual non-zero columns; if it falls
+    // short of the tier target (the pool clamps back to range after its own
+    // fixup, which can re-zero a column), RECONSTRUCT deterministically by
+    // filling zero columns 1-9 while staying inside the same magnitude band.
+    const targetNumber = shape
+      ? enforceNonZeroDigits(rawNumber, shape.minNonZeroDigits, range)
+      : rawNumber;
     const { minPlace, maxPlace } = computePlaceRange(
       targetNumber,
       profile.minPlace,
       profile.maxPlace,
     );
-    const highlightedDigitPlace = selectHighlightedPlace(targetNumber, minPlace, maxPlace);
+    const highlightedDigitPlace = shape
+      ? selectHighlightedPlaceForTier(targetNumber, minPlace, maxPlace, shape.highlightPreference)
+      : selectHighlightedPlace(targetNumber, minPlace, maxPlace);
     const digit = getDigitAtPlace(targetNumber, highlightedDigitPlace);
     return {
       id: `pvc-${idx + 1}`,
@@ -565,9 +770,18 @@ export const generatePlaceValueChart = async (
       : undefined;
   const tierScaffold =
     pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
-    : '';
+  // Axis-2 structural shape for the prompt (same source consumed by the rebuild).
+  const tierShape =
+    pinnedType && supportTier ? resolveProblemShape(pinnedType, supportTier) : null;
+  const tierSection =
+    tierScaffold || tierShape
+      ? `\n## WITHIN-MODE DIFFICULTY TIER "${supportTier}" (scaffolding + problem STRUCTURE — NOT number size)\n${[
+          ...(tierScaffold?.promptLines ?? []),
+          ...(tierShape?.promptLines ?? []),
+        ]
+          .map((l) => `- ${l}`)
+          .join('\n')}\n`
+      : '';
 
   const instanceCount = Math.max(
     1,
@@ -616,7 +830,20 @@ Return ONLY the wrapper metadata in the response schema.
 
   // ── Local: build challenges array ─────────────────────────────────
   const challengeType: string = wrapper.challengeType || evalConstraint?.allowedTypes[0] || 'compare';
-  const challenges = buildChallenges(challengeType, instanceCount, config?.numberRange);
+  // Axis-2 structural shape — gated ONLY on supportTier being present, resolved
+  // from the RESOLVED mode (same gate as the scaffold application below), so a
+  // session reached via challengeType inference still gets a harder SHAPE. When
+  // supportTier is absent, shape is undefined and buildChallenges reproduces the
+  // original no-tier behavior byte-for-byte.
+  const problemShape = supportTier
+    ? resolveProblemShape(challengeType as ChallengeType, supportTier)
+    : undefined;
+  const challenges = buildChallenges(
+    challengeType,
+    instanceCount,
+    config?.numberRange,
+    problemShape,
+  );
 
   console.log('🔢 Place Value Chart generated:', {
     topic,

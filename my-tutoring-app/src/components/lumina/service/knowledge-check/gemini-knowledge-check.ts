@@ -108,12 +108,31 @@ const BLOOMS_TIER_PROMPTS: Record<BloomsTier, {
 };
 
 /**
+ * Normalize a raw eval-mode pin into a single valid Bloom's tier.
+ *
+ * The `targetEvalMode` channel carries single | blend ('a|b') | mixed (see
+ * resolveLessonEvalModes / evalMode/index.ts). Knowledge-check's single eval-mode
+ * keys happen to equal the Bloom's tiers, but a blend, 'mixed', or any unknown value
+ * is NOT a valid BLOOMS_TIER_PROMPTS key — blindly indexing with it throws.
+ * Returns the first valid tier found, or undefined (→ open / un-tiered) for
+ * mixed / unknown / empty input.
+ */
+function normalizeBloomsTier(raw?: string): BloomsTier | undefined {
+  if (!raw) return undefined;
+  for (const key of raw.split('|').map(k => k.trim())) {
+    if (key in BLOOMS_TIER_PROMPTS) return key as BloomsTier;
+  }
+  return undefined;
+}
+
+/**
  * Build the Bloom's tier prompt section for injection into any generator.
  * Returns empty string when no tier is specified (backward compatible).
  */
 function buildBloomsTierPrompt(tier?: BloomsTier): string {
   if (!tier) return '';
   const t = BLOOMS_TIER_PROMPTS[tier];
+  if (!t) return '';
   return `
 ## ADAPTIVE DIFFICULTY CONSTRAINT (IRT calibration)
 **Cognitive Level: ${t.label}**
@@ -132,7 +151,7 @@ IMPORTANT: Every question in this batch MUST be at the ${tier.toUpperCase()} cog
  * Get MC option letters for a given tier (4 or 5 options).
  */
 function getMcOptionLabels(tier?: BloomsTier): string[] {
-  const count = tier ? BLOOMS_TIER_PROMPTS[tier].mcOptionCount : 4;
+  const count = (tier && BLOOMS_TIER_PROMPTS[tier]?.mcOptionCount) || 4;
   return count === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
 }
 
@@ -1533,7 +1552,8 @@ export const generateKnowledgeCheck = async (
     difficulty?: string;
     context?: string;
     objectiveText?: string;
-    bloomsTier?: BloomsTier;
+    /** Raw eval-mode pin (single | blend 'a|b' | mixed). Normalized to one tier internally. */
+    bloomsTier?: BloomsTier | string;
     insetType?: InsetType;
     /** Force orchestrator even when problemType is set */
     useOrchestrator?: boolean;
@@ -1541,7 +1561,7 @@ export const generateKnowledgeCheck = async (
 ): Promise<ProblemData[]> => {
   const count = config?.count || 1;
   const context = config?.context || config?.objectiveText;
-  const bloomsTier = config?.bloomsTier;
+  const bloomsTier = normalizeBloomsTier(config?.bloomsTier);
   const gradeLevel = VALID_GRADE_KEYS.has(gradeContext) ? gradeContext : 'elementary';
 
   // Orchestrated path: no explicit problemType, or caller opted in

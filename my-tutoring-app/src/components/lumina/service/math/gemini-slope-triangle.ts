@@ -212,7 +212,177 @@ function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffo
 }
 
 const TIER_GUARDRAIL =
-  'This tier changes only HOW MUCH measurement help is overlaid on the triangle — it NEVER changes the line, the points, the grid, or the slope. Keep every value exactly as pre-built.';
+  'This tier changes the problem STRUCTURE (how many grid squares to count off each leg, and whether the read-off ratio needs simplifying) and HOW MUCH measurement help is overlaid — it NEVER changes the SLOPE ANSWER or its magnitude, and never reshapes the task into a different eval mode. Scaling rise & run together preserves the ratio, so the answer is byte-identical; only the structure gets harder.';
+
+// ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (the SECOND thing config.difficulty drives).
+//
+// Distinct from the scaffolding above (resolveSupportStructure withdraws on-
+// screen help). This makes the generated PROBLEM itself structurally harder per
+// tier — but the SLOPE ANSWER and its magnitude are held fixed (scaling rise &
+// run by a common factor preserves the ratio). Never crosses into another eval
+// mode (the eval mode is the task identity; see memory
+// [[structural-difficulty-not-numeric]]). Each mode exposes ONE in-mode lever:
+//   identify_slope → counting-step count: triangle leg size (the run the student
+//                    counts off), holding slope fixed via a scaled (rise,run)
+//                    pair. easy run=2 → medium run=3 → hard run=4.
+//   calculate      → ratio reducibility: gcd of the DRAWN legs. easy factor 1
+//                    (read Δy/Δx = the answer) → medium factor 2 (one reduce
+//                    step) → hard factor 3 (reducible non-trivial fraction).
+//                    Legs = (rise·k, run·k); the answer slope is byte-identical.
+//   draw_triangle  → construction-step count: the target run the student lays
+//                    out + verifies. easy run=2 → medium run=3 → hard run=4.
+//
+// Levers are CODE-ENFORCED at challenge-build time (this generator builds every
+// challenge in code — the LLM only writes title/description), so there is no LLM
+// shape to reconstruct. Every lever clamps to [floor, cap] from the brief:
+//   identify_slope / draw_triangle: run ∈ [2,4] (the existing band; |slope|
+//     unchanged because rise scales with run). 2-digit-equivalent bands that
+//     only fit one run SATURATE there honestly.
+//   calculate: scale factor k ∈ [1,3], and the scaled run stays ≤ 6 (the
+//     existing calculate run band) so legs stay grid-friendly and chooseYIntercept
+//     keeps the triangle in-viewport. If a base run is too large to scale to the
+//     target factor inside the band, k clamps DOWN (saturates) — never overflows.
+// ---------------------------------------------------------------------------
+
+interface ProblemShape {
+  /** identify_slope / draw_triangle: the exact run (horizontal leg) to build. */
+  forcedRun?: number;
+  /** calculate: the exact common factor k to scale the drawn legs by (gcd of the
+   *  drawn legs == k), so the read-off ratio needs simplifying. Answer unchanged. */
+  forcedFactor?: 1 | 2 | 3;
+  promptLines: string[];
+}
+
+function gcd(a: number, b: number): number {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  while (b) {
+    [a, b] = [b, a % b];
+  }
+  return a || 1;
+}
+
+function resolveProblemShape(type: SlopeTriangleChallengeType, tier: SupportTier): ProblemShape {
+  switch (type) {
+    case 'identify_slope':
+      // Lever = how many grid squares to count off. Hold the slope ANSWER fixed
+      // by counting off a LARGER run (rise scales with it, ratio is unchanged).
+      // Run clamped to the existing [2,4] band — bigger run is more counting,
+      // not a bigger answer.
+      return {
+        forcedRun: tier === 'easy' ? 2 : tier === 'medium' ? 3 : 4,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: a small triangle (run = 2) — only a few grid squares to count off each leg.'
+            : tier === 'medium'
+              ? 'PROBLEM: a mid triangle (run = 3) — a few more grid ticks to count along each leg.'
+              : 'PROBLEM: a large triangle (run = 4, slope-preserving scaled pair) — the most grid squares to count off both legs unaided. The slope answer is unchanged.',
+        ],
+      };
+    case 'draw_triangle':
+      // Lever = construction-step count: the target run the student lays out and
+      // verifies. Clean integer slope; bigger run = longer construction, NOT a
+      // bigger answer. Run clamped to the existing [2,4] band.
+      return {
+        forcedRun: tier === 'easy' ? 2 : tier === 'medium' ? 3 : 4,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: target run = 2 on a clean integer-slope line — a short construction.'
+            : tier === 'medium'
+              ? 'PROBLEM: target run = 3 — a slightly longer construction to lay out and verify.'
+              : 'PROBLEM: target run = 4 — the longest construction + verification off the grid. The slope answer is unchanged; only the construction has more steps.',
+        ],
+      };
+    case 'calculate':
+      // Lever = ratio reducibility (gcd of the DRAWN legs). easy = read Δy/Δx and
+      // the ratio IS the answer; hard = a reducible non-trivial fraction the
+      // student must simplify (the catalog's named commonStruggle). The ANSWER
+      // slope is byte-identical — we only scale BOTH legs by the same factor.
+      return {
+        forcedFactor: tier === 'easy' ? 1 : tier === 'medium' ? 2 : 3,
+        promptLines: [
+          tier === 'easy'
+            ? 'PROBLEM: the drawn legs are already in lowest terms — the read-off Δy/Δx IS the slope (e.g. 2/3, 3/1). No simplifying.'
+            : tier === 'medium'
+              ? 'PROBLEM: the drawn legs share a factor of 2, so the read-off ratio needs ONE simplification step (e.g. 2/4 → 1/2, 4/6 → 2/3). Same answer slope.'
+              : 'PROBLEM: the drawn legs share a factor of 3, so the read-off ratio is a reducible non-trivial fraction the student must simplify (e.g. 6/9 → 2/3, 3/6 → 1/2). Forgetting to simplify is the named struggle. Same answer slope.',
+        ],
+      };
+  }
+}
+
+/**
+ * Constructive structural builder — turns ONE base pool pair (riseUnit, runUnit)
+ * + the resolved ProblemShape into the EXACT drawn legs for this tier. ONE source
+ * of truth for the structural axis, consumed inside the selection loop.
+ *
+ *  - identify_slope / draw_triangle: the drawn run is FORCED to forcedRun (2/3/4).
+ *    rise = slope · run scales with it, so the answer slope is unchanged (a
+ *    "scaled (rise,run) pair"). Returns null if the resulting rise is not grid-
+ *    integer-readable (the floor — legs must read cleanly off the grid).
+ *  - calculate: scale the lowest-terms (riseUnit, runUnit) by factor k (1/2/3) so
+ *    the drawn legs share gcd == k and the read-off ratio needs simplifying; the
+ *    answer slope = riseUnit/runUnit is byte-identical. k clamps DOWN if the
+ *    scaled run would exceed the calculate run cap (6) — saturates, never overflows.
+ *
+ * `runCap` is the per-mode run band ceiling (the brief's cap). Returns the exact
+ * { slope, run, rise } to build, or null when the pair can't satisfy the shape
+ * inside [floor, cap] (caller picks another pair).
+ */
+function buildTierShape(
+  type: SlopeTriangleChallengeType,
+  shape: ProblemShape,
+  riseUnit: number,
+  runUnit: number,
+  runCap: number,
+): { slope: number; run: number; rise: number } | null {
+  const slope = riseUnit / runUnit;
+
+  if (type === 'calculate') {
+    // Reduce the pool pair to lowest terms (calculate pool entries are already
+    // coprime, but be defensive) so the drawn-leg gcd equals exactly k.
+    const g0 = gcd(riseUnit, runUnit);
+    const r0 = riseUnit / g0;          // lowest-terms rise (carries the sign)
+    const c0 = Math.abs(runUnit / g0); // lowest-terms run (positive)
+    const factor = shape.forcedFactor ?? 1;
+    // INTEGER-SLOPE FLOOR: for an integer slope (c0 === 1) the read-off ratio
+    // reduces to the integer regardless of leg size — there is no "common factor
+    // to simplify". The reducibility lever therefore only applies to FRACTIONAL
+    // slopes (c0 ≥ 2). At EASY (read-direct) an integer slope is a legit drawn
+    // problem: legs (m, 1), ratio m/1 IS the answer (matches the brief's "3/1"
+    // example). Above easy, integer slopes are DROPPED so medium/hard sessions
+    // actually exercise the simplification step — caller re-draws a fractional pair.
+    if (c0 === 1) {
+      if (factor > 1) return null;
+      return { slope, run: 1, rise: r0 }; // easy: clean integer slope, gcd(legs)=1
+    }
+    // Fractional slope: scale BOTH legs by k so the drawn-leg gcd == k and the
+    // read-off ratio needs simplifying. Clamp k DOWN if the scaled run would
+    // exceed the run cap (saturate, never overflow the band).
+    let k = factor;
+    while (k > 1 && c0 * k > runCap) k--;
+    const run = c0 * k;
+    const rise = r0 * k; // preserve the slope's sign via r0
+    if (run < 2 || run > runCap) return null;          // floor + cap
+    if (!Number.isInteger(rise) || !Number.isInteger(run)) return null;
+    // Non-easy tiers MUST actually present a reducible ratio (gcd ≥ 2). A pair
+    // whose run cap forces k down to 1 (e.g. c0 = 4 with cap 6: 4·2 = 8 > 6)
+    // can't host the simplify lever in-band → reject so the caller re-draws.
+    if (factor > 1 && k < 2) return null;
+    return { slope, run, rise };
+  }
+
+  // identify_slope / draw_triangle: force the run; rise scales with it.
+  const run = shape.forcedRun ?? runUnit;
+  if (run > runCap) return null;
+  const rise = slope * run;
+  // Floor: legs must read cleanly off the grid (integer rise). For slope=±1/2,
+  // an odd run gives a half-integer rise → reject (the caller retries with a run
+  // forced even by the tier; for the ±1/2 pair only even runs survive).
+  if (!Number.isFinite(rise) || !Number.isInteger(rise)) return null;
+  return { slope, run, rise };
+}
 
 // ---------------------------------------------------------------------------
 // Line pool service (deterministic, per-challenge values built locally)
@@ -365,6 +535,9 @@ function labelEquation(slope: number, yIntercept: number): string {
 export function selectSlopeTriangleChallenges(
   challengeType: SlopeTriangleChallengeType,
   count?: number,
+  /** When present, the structural axis forces the per-mode lever (run size /
+   *  ratio reducibility) at build time. Absent → byte-identical no-tier path. */
+  supportTier?: SupportTier | null,
 ): SlopeTriangleChallenge[] {
   const modeCount = COUNT_BY_MODE[challengeType];
   const target = Math.max(
@@ -374,6 +547,10 @@ export function selectSlopeTriangleChallenges(
   const slopePool = SLOPE_POOL_BY_TYPE[challengeType];
   const runPool = RUN_POOL_BY_TYPE[challengeType];
   const notation = notationForType(challengeType);
+  // Structural axis: resolve once per session (single-mode). The run cap is the
+  // top of the existing per-mode run band — the structural lever stays inside it.
+  const shape = supportTier ? resolveProblemShape(challengeType, supportTier) : null;
+  const runCap = runPool[runPool.length - 1];
 
   const seen = new Set<string>();
   const challenges: SlopeTriangleChallenge[] = [];
@@ -381,8 +558,18 @@ export function selectSlopeTriangleChallenges(
   for (let attempt = 0; attempt < target * 8 && challenges.length < target; attempt++) {
     const [riseUnit, runUnit] = slopePool[randInt(0, slopePool.length - 1)];
     const slope = riseUnit / runUnit;
-    const run = runPool[randInt(0, runPool.length - 1)];
-    const rise = slope * run;
+    let run: number;
+    let rise: number;
+    if (shape) {
+      // STRUCTURAL AXIS: code forces the run / reducibility for this tier.
+      const built = buildTierShape(challengeType, shape, riseUnit, runUnit, runCap);
+      if (!built) continue; // this pool pair can't satisfy the shape — retry
+      run = built.run;
+      rise = built.rise;
+    } else {
+      run = runPool[randInt(0, runPool.length - 1)];
+      rise = slope * run;
+    }
     if (!Number.isFinite(rise) || !Number.isInteger(rise * 2)) continue; // keep grid-friendly
 
     const startX = randInt(-5, Math.min(5, 7 - run));
@@ -437,8 +624,17 @@ export function selectSlopeTriangleChallenges(
   while (challenges.length < target) {
     const [riseUnit, runUnit] = slopePool[randInt(0, slopePool.length - 1)];
     const slope = riseUnit / runUnit;
-    const run = runPool[randInt(0, runPool.length - 1)];
-    const rise = slope * run;
+    let run: number;
+    let rise: number;
+    if (shape) {
+      const built = buildTierShape(challengeType, shape, riseUnit, runUnit, runCap);
+      if (!built) continue; // pool pair can't satisfy the shape — re-draw
+      run = built.run;
+      rise = built.rise;
+    } else {
+      run = runPool[randInt(0, runPool.length - 1)];
+      rise = slope * run;
+    }
     const startX = randInt(-5, Math.min(5, 7 - run));
     const yIntercept = chooseYIntercept(slope, run, rise, startX);
     const idx = challenges.length;
@@ -545,8 +741,16 @@ export const generateSlopeTriangle = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
+  // ONE KEY, TWO PLACES: the SAME tier drives the prompt (here — scaffolding tone
+  // + structural "what hard means") AND the code-enforced lever in
+  // selectSlopeTriangleChallenges below. Fold BOTH axes' promptLines into one
+  // coherent block so the LLM (which only writes title/description) frames the
+  // session correctly.
+  const tierProblemShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
   const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (measurement-overlay level — NOT number size)\n- ${TIER_GUARDRAIL}\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level + structural difficulty — NOT number/answer size)\n- ${TIER_GUARDRAIL}\n${[...tierScaffold.promptLines, ...(tierProblemShape?.promptLines ?? [])].map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   // ── Build mode-constrained schema ──
@@ -605,8 +809,10 @@ Return ONLY the wrapper fields described above.
     : (evalConstraint?.allowedTypes[0] as SlopeTriangleChallengeType) ?? 'identify_slope';
   if (!validTypes.includes(challengeType)) challengeType = 'identify_slope';
 
-  // ── Build the per-challenge pool locally ──
-  const challenges = selectSlopeTriangleChallenges(challengeType, config?.instanceCount);
+  // ── Build the per-challenge pool locally. The structural axis (supportTier)
+  //    code-forces the per-mode lever (run size / ratio reducibility) at build
+  //    time; absent → byte-identical no-tier path. ──
+  const challenges = selectSlopeTriangleChallenges(challengeType, config?.instanceCount, supportTier);
 
   // ── Apply support tier per challenge (mode-correct for blends). Code owns the
   //    overlay STRUCTURE; the pool service already chose the numbers. Gated on a

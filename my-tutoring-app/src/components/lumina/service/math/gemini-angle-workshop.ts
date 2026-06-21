@@ -69,6 +69,187 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 }
 
 // ---------------------------------------------------------------------------
+// Structural PROBLEM difficulty (axis 2) — config.difficulty also makes the
+// PROBLEM itself genuinely harder per tier, STRUCTURALLY, never by inflating
+// magnitude beyond the existing degree/x bands and never by crossing into
+// another eval mode (the eval mode is the task identity; see memory
+// [[structural-difficulty-not-numeric]]). Distinct from the scaffolding axis
+// (resolveSupportStructure) which only withdraws on-screen help.
+//
+// Each mode exposes ONE in-mode structural lever, all CODE-ENFORCED because
+// angle-workshop builds every challenge config locally with back-solved
+// answers (recomputeExpected auto-corrects):
+//   measure          → scale-reading ambiguity (which protractor scale the 2nd
+//                      ray lands on): acute-off-rising-scale → obtuse inner/outer
+//                      discrimination → near-90 / near-boundary confusable read.
+//   classify_pairs   → distractor distance: how close the `adjacent` pair's outer
+//                      total sits to 90/180 (obvious → tempting → ~5-10 off but
+//                      still UNIQUELY adjacent). Other relations stay canonical.
+//   solve_unknown    → step depth: 0-1 operation (vertical / single subtraction)
+//                      → 2 operations (around_point, x = 360 − k1 − k2).
+//   solve_algebraic  → equation structure: unit-coefficient collect (a1=a2=1)
+//                      → mixed-coefficient collect (a1,a2 ∈ 1-3) → variable on
+//                      BOTH sides of an equality (vertical, a1 ≠ a2).
+//   transversal      → reasoning chain: direct-equality parallel relation (1 step)
+//                      → one-operation (co-interior / triangle sum) → exterior-angle
+//                      (sum of the two remote interiors).
+// The lever re-selects the config/shape/coefficients (or the enforced numeric
+// range for measure/classify); the back-solved answer recomputes — the magnitude
+// stays inside the existing bands. Clamped to [floor, cap] INSIDE the resolver.
+// ---------------------------------------------------------------------------
+
+const TIER_GUARDRAIL =
+  'This tier changes problem STRUCTURE (which relationship/shape, equation structure, '
+  + 'step depth, distractor distance) and on-screen help — NOT the size of the angles or x. '
+  + 'Angles stay in their existing degree bands and x stays small; never just "make the numbers bigger".';
+
+interface ProblemShape {
+  promptLines: string[];
+  /** measure: enforced angle band [min,max] (multiples of 5) for the reading lever. */
+  measureBand?: { min: number; max: number; nearBoundary?: boolean };
+  /** classify_pairs: enforced outer-total band for the `adjacent` distractor lever. */
+  adjacentBand?: { min: number; max: number };
+  /** solve_unknown: which solveConfigs this tier may draw (step-depth lever). */
+  solveConfigs?: SolveConfig[];
+  /** solve_algebraic: equation-structure lever. */
+  algStructure?: 'unit_collect' | 'mixed_collect' | 'both_sides';
+  /** transversal: which shapes/relations this tier may draw (chain-length lever). */
+  transShapes?: TransversalShape[];
+  transRelations?: TransversalRelation[];
+}
+
+function resolveProblemShape(
+  mode: AngleWorkshopChallengeType,
+  tier: SupportTier,
+): ProblemShape {
+  switch (mode) {
+    case 'measure':
+      // Lever = which protractor scale the 2nd ray lands on (reading ambiguity).
+      // Framed as scale-discrimination, NOT "bigger degrees". Floor: still a
+      // single drawn angle read in degrees (mult of 5). Cap: 15-165, no reflex.
+      if (tier === 'easy') {
+        return {
+          measureBand: { min: 15, max: 60 }, // acute, reads off the rising scale
+          promptLines: ['PROBLEM (measure): an acute angle that reads unambiguously off the rising (inner) protractor scale — no inner-vs-outer confusion.'],
+        };
+      }
+      if (tier === 'medium') {
+        return {
+          measureBand: { min: 95, max: 150 }, // obtuse → inner-vs-outer discrimination
+          promptLines: ['PROBLEM (measure): an obtuse angle, so the student must discriminate the inner vs. outer protractor scale rather than read the first number it touches.'],
+        };
+      }
+      // hard — near 90 / near a scale boundary where the two scales are easiest to confuse.
+      return {
+        measureBand: { min: 80, max: 100, nearBoundary: true },
+        promptLines: ['PROBLEM (measure): an angle very near 90°, the protractor crossover where the two scales are easiest to confuse — the read must be made carefully.'],
+      };
+
+    case 'classify_pairs':
+      // Lever = distractor distance for the `adjacent` pair: how close its outer
+      // total sits to 90/180. The other three relations stay canonical (their
+      // identity is the answer). Cap: outer total must stay UNIQUELY ≠ 90 and
+      // ≠ 180 within the 0.5 tolerance, so the adjacent label is unambiguous.
+      if (tier === 'easy') {
+        return {
+          adjacentBand: { min: 120, max: 150 }, // clearly neither 90 nor 180
+          promptLines: ['PROBLEM (classify): the adjacent pair\'s outer total is clearly off any special total — obviously not complementary or supplementary.'],
+        };
+      }
+      if (tier === 'medium') {
+        return {
+          adjacentBand: { min: 100, max: 170 }, // tempting near a special total
+          promptLines: ['PROBLEM (classify): the adjacent pair\'s outer total sits near a special total (around 100 or 170) — tempting, but still clearly not 90 or 180.'],
+        };
+      }
+      // hard — within ~5-10 of 90 or 180 (but never exactly, so still uniquely adjacent).
+      return {
+        adjacentBand: { min: 80, max: 175 }, // refined per-build to ±5-10 of 90/180
+        promptLines: ['PROBLEM (classify): the adjacent pair\'s outer total is within ~5-10° of 90° or 180°, so it visually mimics complementary/supplementary — yet the true relationship is still uniquely adjacent.'],
+      };
+
+    case 'solve_unknown':
+      // Lever = step depth. Floor: still finding a missing angle in degrees from a
+      // relationship (NOT an x-equation → that is solve_algebraic). Cap: operands
+      // stay in the existing 10-160 bands; depth rises, magnitude does not.
+      if (tier === 'easy') {
+        return {
+          solveConfigs: ['vertical', 'complementary', 'supplementary'], // 0-1 operation
+          promptLines: ['PROBLEM (solve): a single-step relationship — vertical (x equals the known) or one subtraction (complementary / supplementary).'],
+        };
+      }
+      // medium & hard — two-operation depth (around_point: x = 360 − k1 − k2).
+      // True chained two-step (intermediate angle fed into a second relationship)
+      // has no distinct renderable figure in the current component, so the depth
+      // lever SATURATES at around_point's two subtractions. (See concerns.)
+      return {
+        solveConfigs: ['around_point'],
+        promptLines: [tier === 'hard'
+          ? 'PROBLEM (solve): an angles-around-a-point figure — two knowns, so reaching x takes two subtractions (x = 360 − k1 − k2), the deepest the current figure supports.'
+          : 'PROBLEM (solve): an angles-around-a-point figure with two knowns — two subtractions to reach x (x = 360 − k1 − k2).'],
+      };
+
+    case 'solve_algebraic':
+      // Lever = equation structure depth. Floor: still a linear equation in x with
+      // an integer solution from complementary/supplementary/vertical. Cap: x stays
+      // 4-12, angles 20-160, coefficients 1-3 — raise STRUCTURE, not size.
+      if (tier === 'easy') {
+        return {
+          algStructure: 'unit_collect', // both coefficients 1: 2x + (b1+b2) = T, one collect+isolate
+          promptLines: ['PROBLEM (algebraic): both labeled expressions use a UNIT coefficient on x, so the student collects to 2x + constant = total and isolates in one move.'],
+        };
+      }
+      if (tier === 'medium') {
+        return {
+          algStructure: 'mixed_collect', // a1,a2 ∈ 1-3, summing to a target: collect like terms then isolate
+          promptLines: ['PROBLEM (algebraic): the two expressions carry DIFFERENT coefficients on x and sum to the total — the student must collect like terms before isolating.'],
+        };
+      }
+      // hard — variable on BOTH sides of an equality (vertical, a1 ≠ a2).
+      return {
+        algStructure: 'both_sides',
+        promptLines: ['PROBLEM (algebraic): the variable appears on BOTH sides of an equality (vertical angles, two different coefficients) — the student moves the x-terms across before isolating.'],
+      };
+
+    case 'transversal':
+      // Lever = reasoning chain length. Floor: still a parallel-transversal or
+      // triangle angle problem to a degree answer. Cap: given angles stay 30-140;
+      // lengthen the chain, not the numbers.
+      if (tier === 'easy') {
+        return {
+          transShapes: ['parallel_transversal'],
+          transRelations: ['corresponding', 'alternate_interior', 'alternate_exterior'], // direct equality, x = given
+          promptLines: ['PROBLEM (transversal): a direct-equality parallel relation (corresponding / alternate) — x equals the marked angle in one step.'],
+        };
+      }
+      if (tier === 'medium') {
+        return {
+          transShapes: ['parallel_transversal', 'triangle_sum'],
+          transRelations: ['co_interior'], // one operation: x = 180 − given (parallel) or 180 − g1 − g2 (triangle)
+          promptLines: ['PROBLEM (transversal): a one-operation relation — co-interior (x = 180 − given) or triangle angle-sum (x = 180 − g1 − g2).'],
+        };
+      }
+      // hard — exterior_angle: x = sum of the two remote interior angles (two-part).
+      return {
+        transShapes: ['exterior_angle'],
+        promptLines: ['PROBLEM (transversal): an exterior-angle figure — x equals the SUM of the two remote interior angles, so the student must identify the remote-interior pair, not just copy a marked angle.'],
+      };
+
+    default:
+      return { promptLines: [] };
+  }
+}
+
+/** Format the full structural-difficulty prompt block for a pinned single mode. */
+function buildStructuralPromptSection(
+  mode: AngleWorkshopChallengeType,
+  tier: SupportTier,
+): string {
+  const lines = [TIER_GUARDRAIL, ...resolveProblemShape(mode, tier).promptLines];
+  return `\n## STRUCTURAL PROBLEM DIFFICULTY ("${tier}" — harder SHAPE, NOT bigger numbers)\n${lines.map((l) => `- ${l}`).join('\n')}\n`;
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode instance counts
 // ---------------------------------------------------------------------------
 
@@ -121,8 +302,25 @@ type RawChallenge = Omit<AngleWorkshopChallenge, 'id'>;
 // measure
 // ---------------------------------------------------------------------------
 
-function buildMeasure(): RawChallenge {
-  const angleMeasure = randInt(3, 33) * 5; // 15..165, multiples of 5
+function buildMeasure(shape?: ProblemShape): RawChallenge {
+  let angleMeasure: number;
+  if (shape?.measureBand) {
+    const { min, max, nearBoundary } = shape.measureBand;
+    if (nearBoundary) {
+      // Hard: cluster near the 90° protractor crossover where the inner/outer
+      // scales are easiest to confuse. Multiples of 5 in the band, biased to the
+      // closest-to-90 values; never exactly 90 (an unambiguous square read).
+      const candidates = [80, 85, 95, 100].filter((v) => v >= min && v <= max);
+      angleMeasure = candidates.length ? pick(candidates) : 85;
+    } else {
+      const lo = Math.ceil(min / 5), hi = Math.floor(max / 5);
+      angleMeasure = randInt(lo, hi) * 5;
+    }
+    // Cap: stay 15-165 (no reflex, on-protractor).
+    angleMeasure = Math.max(15, Math.min(165, angleMeasure));
+  } else {
+    angleMeasure = randInt(3, 33) * 5; // 15..165, multiples of 5 (no-tier default)
+  }
   return {
     type: 'measure',
     narration: `${pick(MEASURE_CTX)} opens to this angle.`,
@@ -139,7 +337,7 @@ function buildMeasure(): RawChallenge {
 // classify_pairs
 // ---------------------------------------------------------------------------
 
-function buildClassify(rel: AnglePairRelationship): RawChallenge {
+function buildClassify(rel: AnglePairRelationship, shape?: ProblemShape): RawChallenge {
   const base = {
     type: 'classify_pairs' as const,
     narration: `${pick(PAIR_CTX)} form this pair of angles.`,
@@ -160,9 +358,30 @@ function buildClassify(rel: AnglePairRelationship): RawChallenge {
   if (rel === 'vertical') {
     return { ...base, crossAngle: r5(randInt(25, 80)) };
   }
-  // adjacent — outer total is deliberately not 90 or 180
-  const outerAngle = r5(randInt(110, 165));
-  return { ...base, outerAngle, splitAngle: r5(randInt(25, outerAngle - 25)) };
+  // adjacent — the structural lever lives here: how close the outer total sits
+  // to a special total (90/180). Default: deliberately not 90 or 180.
+  let outerAngle: number;
+  if (shape?.adjacentBand) {
+    // Hard band is wide (80-175); refine to values within ~5-10 of 90 or 180,
+    // but NEVER exactly 90/180 so the pair stays uniquely adjacent under tol 0.5.
+    const { min, max } = shape.adjacentBand;
+    if (min <= 85 && max >= 170) {
+      outerAngle = pick([80, 85, 95, 100, 170, 175]); // ±5-10 of 90 or 180, never on it
+    } else {
+      const lo = Math.ceil(min / 5), hi = Math.floor(max / 5);
+      let v = randInt(lo, hi) * 5;
+      if (v === 90) v = 95;
+      if (v === 180) v = 175;
+      outerAngle = v;
+    }
+  } else {
+    outerAngle = r5(randInt(110, 165));
+  }
+  // Cap: keep the figure renderable — outer 60-175, split leaves ≥ 20 on each side.
+  outerAngle = Math.max(60, Math.min(175, outerAngle));
+  const splitLo = 20;
+  const splitHi = Math.max(splitLo + 5, outerAngle - 20);
+  return { ...base, outerAngle, splitAngle: r5(randInt(splitLo, splitHi)) };
 }
 
 // ---------------------------------------------------------------------------
@@ -217,17 +436,31 @@ function buildSolveUnknown(cfg: SolveConfig): RawChallenge {
 // solve_algebraic — back-solve from an integer x so the figure is consistent
 // ---------------------------------------------------------------------------
 
-function buildAlgebraic(cfg: 'complementary' | 'supplementary' | 'vertical'): RawChallenge {
+function buildAlgebraic(
+  cfg: 'complementary' | 'supplementary' | 'vertical',
+  shape?: ProblemShape,
+): RawChallenge {
   const ctx = pick(SOLVE_CTX);
+  // Structural lever: equation-structure depth. The tier may OVERRIDE cfg —
+  // both_sides forces vertical (variable on both sides), unit/mixed_collect force
+  // a summed relationship (complementary/supplementary). The chosen structure also
+  // constrains the coefficients (unit = a1=a2=1; mixed = a1≠a2; both_sides = a1≠a2).
+  const structure = shape?.algStructure;
+  if (structure === 'both_sides' && cfg !== 'vertical') cfg = 'vertical';
+  if ((structure === 'unit_collect' || structure === 'mixed_collect') && cfg === 'vertical') {
+    cfg = 'supplementary';
+  }
   const target = cfg === 'complementary' ? 90 : 180;
 
   for (let tries = 0; tries < 300; tries++) {
     const x = randInt(4, 12);
-    const a1 = randInt(1, 3);
+    const a1 = structure === 'unit_collect' ? 1 : randInt(1, 3);
     const b1 = randInt(0, 6) * 5; // 0..30
     const angle1 = a1 * x + b1;
 
     if (cfg === 'vertical') {
+      // both_sides (or no-tier vertical): two DIFFERENT coefficients → variable on
+      // both sides of the equality. a1 ≠ a2 is required for a unique x.
       let a2 = randInt(1, 3);
       if (a2 === a1) a2 = a1 === 3 ? 2 : a1 + 1;
       const b2 = angle1 - a2 * x; // makes angle2 === angle1 (vertical → equal)
@@ -245,13 +478,28 @@ function buildAlgebraic(cfg: 'complementary' | 'supplementary' | 'vertical'): Ra
 
     if (angle1 <= 5 || angle1 >= target - 5) continue;
     const angle2 = target - angle1;
-    const a2 = randInt(1, 3);
+    // unit_collect: a2 = 1 too (both unit → collect to 2x + const). mixed_collect:
+    // force a2 ≠ a1 so the two coefficients genuinely differ. Else: free 1-3.
+    let a2: number;
+    if (structure === 'unit_collect') {
+      a2 = 1;
+    } else if (structure === 'mixed_collect') {
+      a2 = randInt(1, 3);
+      if (a2 === a1) a2 = a1 === 3 ? 1 : a1 + 1;
+    } else {
+      a2 = randInt(1, 3);
+    }
     const b2 = angle2 - a2 * x;
     // Cap the constant term so the label stays readable. Supplementary angles
     // (sum 180) routinely have a larger second angle than complementary (sum 90),
     // so scale the upper bound with the target — a flat 70 cap starved the
-    // supplementary branch and forced it into the fallback every time.
-    const b2Max = cfg === 'supplementary' ? 150 : 70;
+    // supplementary branch and forced it into the fallback every time. With
+    // unit_collect (a2=1) on a supplementary sum the second constant runs higher
+    // still (b2 = 180 − 2x − b1), so widen the cap there too — the value stays an
+    // in-band angle constant, NOT inflated magnitude.
+    const b2Max = structure === 'unit_collect'
+      ? (cfg === 'supplementary' ? 175 : 90)
+      : (cfg === 'supplementary' ? 150 : 70);
     if (b2 < -40 || b2 > b2Max) continue;
     return {
       type: 'solve_algebraic',
@@ -280,7 +528,12 @@ function buildAlgebraic(cfg: 'complementary' | 'supplementary' | 'vertical'): Ra
       expectedAnswer: x, tolerance: 0.01,
     };
   }
-  const a1 = 2, b1 = 10, angle1 = a1 * x + b1, angle2 = target - angle1, a2 = 1, b2 = angle2 - a2 * x;
+  // Honor the structural lever even on the (rare) fallback: unit_collect forces
+  // a1=a2=1; every other path keeps the original 2/1 (mixed_collect already differs,
+  // and the no-tier path is byte-identical: a1=2, a2=1).
+  const a1 = structure === 'unit_collect' ? 1 : 2;
+  const a2 = 1;
+  const b1 = 10, angle1 = a1 * x + b1, angle2 = target - angle1, b2 = angle2 - a2 * x;
   return {
     type: 'solve_algebraic', narration: `${ctx} has angles labeled by expressions.`,
     instruction:
@@ -423,11 +676,21 @@ function recomputeExpected(ch: AngleWorkshopChallenge): number | null {
 export function selectAngleWorkshopChallenges(
   challengeType: AngleWorkshopChallengeType,
   count?: number,
+  /**
+   * Structural-difficulty tier (axis 2). Present ONLY for single-mode pinned
+   * sessions — when set, the config/shape rotation and enforced numeric bands are
+   * constrained to resolveProblemShape(challengeType, tier). Absent → the original
+   * byte-identical rotation (every structural branch below is gated on `tier`).
+   */
+  tier?: SupportTier | null,
 ): AngleWorkshopChallenge[] {
   const target = Math.max(
     1,
     Math.min(MAX_INSTANCE_COUNT, count ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT),
   );
+
+  // Axis-2 structural intent for the pinned mode (null on the no-tier path).
+  const shape: ProblemShape | null = tier ? resolveProblemShape(challengeType, tier) : null;
 
   const raw: RawChallenge[] = [];
   const seen = new Set<string>();
@@ -442,17 +705,21 @@ export function selectAngleWorkshopChallenges(
   // Variance rule: rotate through structural variants, guaranteeing ≥1 of each
   // category before back-filling (mirrors factor-tree / circle-explorer).
   if (challengeType === 'measure') {
-    for (let a = 0; a < target * 12 && raw.length < target; a++) tryPush(buildMeasure());
+    for (let a = 0; a < target * 12 && raw.length < target; a++) tryPush(buildMeasure(shape ?? undefined));
   } else if (challengeType === 'classify_pairs') {
+    // The four relationships ARE the task identity — keep them all. The tier only
+    // tightens the `adjacent` distractor distance (shape.adjacentBand), which the
+    // builder reads; the other three relations are untouched.
     const rels: AnglePairRelationship[] = ['complementary', 'supplementary', 'vertical', 'adjacent'];
     let i = 0;
     for (let a = 0; a < target * 16 && raw.length < target; a++) {
       const rel = i < rels.length ? rels[i] : pick(rels);
       i++;
-      tryPush(buildClassify(rel));
+      tryPush(buildClassify(rel, shape ?? undefined));
     }
   } else if (challengeType === 'solve_unknown') {
-    const cfgs: SolveConfig[] = ['complementary', 'supplementary', 'vertical', 'around_point'];
+    // Step-depth lever: a tier constrains which solveConfigs may be drawn.
+    const cfgs: SolveConfig[] = shape?.solveConfigs ?? ['complementary', 'supplementary', 'vertical', 'around_point'];
     let i = 0;
     for (let a = 0; a < target * 16 && raw.length < target; a++) {
       const cfg = i < cfgs.length ? cfgs[i] : pick(cfgs);
@@ -460,34 +727,54 @@ export function selectAngleWorkshopChallenges(
       tryPush(buildSolveUnknown(cfg));
     }
   } else if (challengeType === 'solve_algebraic') {
-    const cfgs: Array<'complementary' | 'supplementary' | 'vertical'> = ['supplementary', 'complementary', 'vertical'];
+    // Equation-structure lever: shape.algStructure pins the structure inside the
+    // builder; cfg rotation just supplies relationship variety where the structure
+    // allows it (unit/mixed → summed; both_sides → vertical).
+    const cfgs: Array<'complementary' | 'supplementary' | 'vertical'> =
+      shape?.algStructure === 'both_sides'
+        ? ['vertical']
+        : shape?.algStructure
+          ? ['supplementary', 'complementary'] // summed relationships only
+          : ['supplementary', 'complementary', 'vertical'];
     let i = 0;
     for (let a = 0; a < target * 18 && raw.length < target; a++) {
       const cfg = i < cfgs.length ? cfgs[i] : pick(cfgs);
       i++;
-      tryPush(buildAlgebraic(cfg));
+      tryPush(buildAlgebraic(cfg, shape ?? undefined));
     }
   } else {
-    // transversal — rotate shapes; spread the parallel relations
-    const shapes: TransversalShape[] = ['parallel_transversal', 'triangle_sum', 'exterior_angle'];
+    // transversal — chain-length lever: a tier constrains shapes/relations.
+    const shapes: TransversalShape[] = shape?.transShapes ?? ['parallel_transversal', 'triangle_sum', 'exterior_angle'];
+    const rels: TransversalRelation[] = shape?.transRelations ?? TRANS_RELATIONS;
     let i = 0;
     let relIdx = 0;
     for (let a = 0; a < target * 18 && raw.length < target; a++) {
-      const shape = i < shapes.length ? shapes[i] : pick(shapes);
+      const sh = i < shapes.length ? shapes[i] : pick(shapes);
       i++;
-      const rel = shape === 'parallel_transversal' ? TRANS_RELATIONS[relIdx++ % TRANS_RELATIONS.length] : undefined;
-      tryPush(buildTransversal(shape, rel));
+      const rel = sh === 'parallel_transversal' ? rels[relIdx++ % rels.length] : undefined;
+      tryPush(buildTransversal(sh, rel));
     }
   }
 
-  // Fallback — accept duplicates if the candidate space was too narrow.
+  // Fallback — accept duplicates if the candidate space was too narrow. Honors the
+  // tier's constrained config/shape sets so a small (saturated) band never leaks an
+  // off-tier (easier/harder) problem in to pad the count.
   while (raw.length < target) {
     switch (challengeType) {
-      case 'measure': raw.push(buildMeasure()); break;
-      case 'classify_pairs': raw.push(buildClassify(pick(['complementary', 'supplementary', 'vertical', 'adjacent']))); break;
-      case 'solve_unknown': raw.push(buildSolveUnknown(pick(['complementary', 'supplementary', 'vertical', 'around_point']))); break;
-      case 'solve_algebraic': raw.push(buildAlgebraic(pick(['complementary', 'supplementary', 'vertical']))); break;
-      default: raw.push(buildTransversal(pick(['parallel_transversal', 'triangle_sum', 'exterior_angle']))); break;
+      case 'measure': raw.push(buildMeasure(shape ?? undefined)); break;
+      case 'classify_pairs': raw.push(buildClassify(pick(['complementary', 'supplementary', 'vertical', 'adjacent']), shape ?? undefined)); break;
+      case 'solve_unknown': raw.push(buildSolveUnknown(pick(shape?.solveConfigs ?? ['complementary', 'supplementary', 'vertical', 'around_point']))); break;
+      case 'solve_algebraic': raw.push(buildAlgebraic(
+        pick(shape?.algStructure === 'both_sides' ? ['vertical'] : shape?.algStructure ? ['supplementary', 'complementary'] : ['supplementary', 'complementary', 'vertical']),
+        shape ?? undefined,
+      )); break;
+      default: {
+        const fbShapes = shape?.transShapes ?? ['parallel_transversal', 'triangle_sum', 'exterior_angle'];
+        const fbShape = pick(fbShapes);
+        const fbRel = fbShape === 'parallel_transversal' ? pick(shape?.transRelations ?? TRANS_RELATIONS) : undefined;
+        raw.push(buildTransversal(fbShape, fbRel));
+        break;
+      }
     }
   }
 
@@ -725,8 +1012,13 @@ export const generateAngleWorkshop = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
+  // Two halves of config.difficulty, BOTH gated on a single pinned mode + tier:
+  //   (a) scaffolding axis — resolveSupportStructure (on-screen help withdrawal)
+  //   (b) structural axis  — resolveProblemShape (harder problem SHAPE, enforced in
+  //       selectAngleWorkshopChallenges below; promptLines folded in here too).
   const tierSection = tierScaffold
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+      + (pinnedType && supportTier ? buildStructuralPromptSection(pinnedType, supportTier) : '')
     : '';
 
   const prompt = `
@@ -775,7 +1067,13 @@ Return ONLY the wrapper fields described above.
   const gradeBand: '7' | '8' = wrapper.gradeBand === '8' ? '8' : '7';
 
   // ── Build the per-challenge pool locally ──
-  const challenges = selectAngleWorkshopChallenges(challengeType, config?.instanceCount);
+  // Structural difficulty (axis 2) is a SINGLE-MODE lever: it re-selects the
+  // config/shape/coefficients for the pinned mode. A blended (auto-mode) session
+  // has no single tier surface, so pass the tier only when exactly one mode was
+  // pinned AND it matches the resolved challengeType. The scaffolding axis still
+  // applies per-challenge in the blended post-process below (unchanged).
+  const structuralTier = pinnedType && pinnedType === challengeType ? supportTier : null;
+  const challenges = selectAngleWorkshopChallenges(challengeType, config?.instanceCount, structuralTier);
 
   // ── Post-validation: every numeric expectedAnswer must match its figure ──
   for (const ch of challenges) {

@@ -15,7 +15,7 @@
 | tape-diagram | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/tape-diagram-2026-06-14.md) |
 | sorting-station | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/sorting-station-2026-06-14.md) |
 | number-sequencer | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-sequencer-2026-06-14.md) |
-| base-ten-blocks | 4 | 4 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
+| base-ten-blocks | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/base-ten-blocks-2026-06-20.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
@@ -36,26 +36,26 @@
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-13 | [report](eval-reports/addition-subtraction-scene-2026-06-13.md) |
-| number-line | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-line-2026-06-14.md) |
+| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-20 | [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
+| number-line | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/number-line-2026-06-20.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-06-18 | [report](eval-reports/fraction-circles-2026-06-18.md) |
 | number-bond | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-bond-2026-06-14.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
 | comparison-builder | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/comparison-builder-2026-06-14.md) |
 | balance-scale | 6 | 6 | 0 | 2026-05-21 | [report](eval-reports/balance-scale-2026-05-21.md) |
-| ordinal-line | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout-2026-06-11.md) |
+| ordinal-line | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/ordinal-line-2026-06-20.md) |
 | shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
 | math-fact-fluency | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | multiplication-explorer | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/multiplication-explorer-2026-06-14.md) |
 | skip-counting-runner | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/skip-counting-runner-2026-06-14.md) |
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
-| shape-tracer | 4 | 4 | 0 | 2026-03-17 | [report](eval-reports/shape-tracer-2026-03-17.md) |
+| shape-tracer | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/shape-tracer-2026-06-20.md) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
 | strategy-picker | 5 | 5 | 0 | 2026-05-23 | [report](eval-reports/strategy-picker-2026-05-23.md) |
 | ratio-table | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/ratio-table-2026-06-14.md) |
-| matrix-display | 4 | 4 | 0 | 2026-05-23 | [report](eval-reports/matrix-display-2026-05-23.md) |
+| matrix-display | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/matrix-display-2026-06-20.md) |
 | double-number-line | 3 | 3 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/double-number-line-2026-06-14.md) |
-| place-value-chart | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/place-value-2026-06-14.md) |
+| place-value-chart | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/place-value-chart-2026-06-20.md) |
 | function-machine | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/function-machine-2026-06-14.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
@@ -86,15 +86,18 @@
 | annotated-example | 1 | 1 | 0 | 2026-04-24 | [report](eval-reports/annotated-example-2026-04-24.md) |
 | function-sketch | 4 | 3 | 1 | 2026-05-23 | [report](eval-reports/function-sketch-2026-05-23.md) |
 | histogram | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/histogram-2026-05-22.md) |
-| slope-triangle | 3 | 3 | 0 | 2026-05-23 | [report](eval-reports/slope-triangle-2026-05-23.md) |
+| slope-triangle | 3 | 3 | 0 | 2026-06-20 | [structural sweep](eval-reports/slope-triangle-2026-06-20.md) |
 | compare-objects | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/compare-objects-2026-06-14.md) |
 | number-tracer | 4 | 4 | 0 | 2026-06-02 | [report](eval-reports/number-tracer-2026-06-02.md) |
-| polygon-area-builder | 5 | 5 | 0 | 2026-06-06 | [report](eval-reports/polygon-area-builder-2026-06-06.md) |
-| circle-explorer | 5 | 5 | 0 | 2026-06-14 | [report](eval-reports/circle-explorer-2026-06-14.md) |
+| polygon-area-builder | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/polygon-area-builder-2026-06-20.md) |
+| circle-explorer | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/circle-explorer-2026-06-20.md) |
+| systems-equations-visualizer | 3 | 3 | 0 | 2026-06-20 | [structural sweep](eval-reports/systems-equations-visualizer-2026-06-20.md) |
+| two-way-table | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/two-way-table-2026-06-20.md) |
+| angle-workshop | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/angle-workshop-2026-06-20.md) |
 | transformation-lab | 5 | 5 | 0 | 2026-06-07 | [report](eval-reports/transformation-lab-2026-06-07.md) |
 | coordinate-graph | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/coordinate-graph-2026-06-14.md) |
 
-**Totals:** 324/335 modes passing (96.7%) | 25 open issues (3 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 336/347 modes passing (96.8%) | 26 open issues (4 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -299,6 +302,50 @@ setWorkspaceSlots(prev => [...prev, tile]);
 **Fix pattern:** Prefer rolling aliases (`gemini-flash-lite-latest`) over dated snapshots in generators. Periodically grep `service/**/gemini-*.ts` for `model:` strings and reconcile against the currently-served model list.
 **Status:** Resolved for coordinate-graph 2026-06-14 (one-line swap to `gemini-flash-lite-latest`).
 
+### SP-24: Structural-difficulty schema-enum constrains the storyType but not the unknown-structure inside it — post-process arithmetic desyncs from the story  — ✅ RESOLVED 2026-06-20
+
+**Affected:** ~~addition-subtraction-scene (AS-3 — build_equation medium tier, part-whole)~~ Resolved 2026-06-20.
+**Resolution:** The deeper corruptor was the post-process *operation override* (forcing
+`part-whole → addition` then `result = start + change`), which clobbered the LLM's
+self-consistent take-away authoring (`9 ate 4 → 9−4=5` became `9+4=13`). Fixed schema-led
+per the established directive: (1) pin `unknownPosition='result'` for build-equation via
+`constrainStructuralEnums` (build-equation is intrinsically forward — the result is the
+answer — which disambiguates part-whole from missing-addend by construction) + a prompt
+line forbidding "the rest / how many left"; (2) **remove the post-process operation
+override** — TRUST the LLM's schema-constrained `operation` and only keep arithmetic
+consistent for THAT operation. Verified 0/13 desync-or-overflow across 3 stochastic medium
+runs; all 4 tiers pass. Residual: occasional take-away story still labeled part-whole at
+medium — now correct (operation follows the story), a minor difficulty-fidelity gap only.
+**Reusable lesson:** for STORY primitives, the schema enum can pin *which situation* and
+*which quantity is unknown*, but it cannot police the free-text prose — so the post-process
+must TRUST the LLM's authored operation rather than re-deriving it from the forced label.
+Re-deriving an answer-bearing field from a constrained label is the desync trap.
+**Risk:** Any STORY primitive using the AXIS-2 "constrain the response-schema enum per
+tier" structural-difficulty approach (per [[structural-difficulty-not-numeric]] /
+`constrainStructuralEnums`). Forcing a *story situation* enum (part-whole, compare, …)
+does NOT constrain the *internal unknown position* of that situation, and the
+deterministic post-process makes a fixed arithmetic assumption (`result = start +
+change`). That assumption holds for some sub-shapes but not all:
+- **join / separate / compare** are safe — the forward/`bigger−smaller` arithmetic always
+  matches the story the LLM can author.
+- **part-whole is NOT safe** — it has two sub-shapes: *two-parts→whole* (forward, safe)
+  and *whole+one-part→missing-part* (missing addend). The LLM freely authors the
+  missing-addend variant; the post-process forces `result=start+change` and rebuilds the
+  equation, producing a value that contradicts the story (e.g. "8 total, 5 eating, find
+  the rest" → emits `8+5=13`). The component's exact-equation checker then rejects the
+  pedagogically-correct answer.
+**Root cause:** The schema-enum approach (correctly chosen over post-process narrative
+rewriting) constrains *which situation* but leaves *which quantity is unknown* free, while
+the answer-recompute assumes a single canonical unknown (the result). storyType and
+unknownPosition are coupled in real CGI problem structure, but only one is constrained.
+**Fix pattern:** When a tier forces a storyType whose arithmetic has more than one valid
+unknown structure, ALSO pin the unknown so the recompute is valid — either (1) constrain
+the prompt/schema to the single safe sub-shape (part-whole = two-parts-combine, *find the
+whole*; forbid "the rest / how many left / how many more came" phrasing), or (2) detect
+the missing-addend case (stated total = max of the three numbers) and recompute the
+missing PART instead of the sum. Mirrors SP-17's "deterministic post-process desyncs with
+LLM-authored text," specialized to the structural-difficulty enum lever.
+
 ---
 
 ## Open Issues — CRITICAL / HIGH
@@ -364,6 +411,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 | ~~BS-2~~ | ~~balance-scale~~ | ~~one_step_hard, two_step_intro, two_step~~ | ~~HIGH~~ | ~~Wrong math~~ | ~~`divide`/`multiply` mapped element-wise.~~ Fixed 2026-05-21: replaced with whole-side `divideSide`/`multiplySide` helpers + `isSideDivisibleBy` precheck — variable groups collapse to count/k copies, constants divide cleanly, or the op is rejected. | ~~COMPONENT~~ |
 | ~~FS-1~~ | ~~function-sketch~~ | ~~identify-features~~ | ~~HIGH~~ | ~~Wrong content~~ | ~~3/4 challenges generated linear functions with a feature tagged `type: "maximum"` on an endpoint or arbitrary midpoint. Math-conceptual error.~~ Fixed 2026-05-21: PROMPT-CHANGE forbids linear/monotonic functions in identify-features mode; new `validateFeatureSemantics()` drops max/min features that aren't real local extrema of the sampled curve; orchestrator uses `Promise.allSettled` for stochastic resilience. | ~~GENERATOR~~ |
 | FS-2 | function-sketch | classify-shape | HIGH | Trivial session (SP-19) | All 4 parallel sub-generators receive identical args and converge on the same function family — `topic=oscillating waves` → 4× sinusoidal; default topic → 4× linear. MC answer is invariant across the session, so after challenge 1 the student locks in the right option for all remaining 3. Mode no longer discriminates between families. | GENERATOR |
+| AS-1 | addition-subtraction-scene | build_equation (medium tier) | CRITICAL | Wrong math / story desync (SP-24) | AXIS-2 medium forces `storyType=part-whole` via schema enum but doesn't constrain the *unknown structure*. LLM authors a missing-addend story ("8 bunnies total, 5 eating, how many hopping?"); post-process blindly recomputes `result=start+change` → equation `8+5=13`, contradicting the story (total 8, answer 3). Component requires building exactly `8+5=13` → correct reader marked wrong, accepted answer is false. ~1/4 medium challenges. easy/hard unaffected. | GENERATOR |
 | NT-1 | number-tracer | all modes | CRITICAL | Truncated JSON (SP-6) | Required deeply-nested `strokePaths` (ARRAY<ARRAY<{x,y}>>) forces Flash Lite to emit hundreds of coordinate points despite prompt saying "leave []". Output overflows token limit, JSON truncates mid-array (`JSON.parse` fails at pos 66381, one ~65KB line). All 4 modes fail to generate. The field is dead weight — generator force-sets `strokePaths=[]` at gemini-number-tracer.ts:184, component falls back to hardcoded `getDigitPaths(digit)`. Fix: delete `strokePaths` property + required entry from schema (lines 54-68, 75). | GENERATOR |
 | ~~NS-2~~ | ~~number-sequencer~~ | ~~count_from~~ | ~~CRITICAL~~ | ~~Instruction-data mismatch (SP-22)~~ | ~~Difficulty bands raise the step to 2 (MID) / 5 (HIGH) but the deterministic instruction template only says "Count forward from X!" — the skip-count step is invisible, so counting by ones is marked wrong.~~ Fixed 2026-06-11: pinned step=1 for count_from in `numberSequencerStepBand` (user decision: mode doc says "sequential counting"; skip counting belongs to fill_missing + skip-counting-runner). | ~~GENERATOR~~ |
 | DNL-1 | double-number-line | find_missing | HIGH | Answer leak | Umbrella `contextQuestion` verbally states the unit rate ("1 can of paint covers 5 feet of wood", "Every 1 packet of flower seeds grows 5 beautiful flowers") in 2/2 samples — but `find_missing` is supposed to make students derive the rate from the labeled non-unit given pair (e.g., `2 → 10`). Schema description's example (`'1 cup of flour makes 3 cookies'`) trains Gemini to follow the same pattern regardless of `challengeType`. `equivalent_ratios` is fine (rate is shown anyway); `unit_rate` already avoids stating it. | GENERATOR |
@@ -470,6 +518,7 @@ setWorkspaceSlots(prev => [...prev, tile]);
 | SS-3 | sorting-station | 2026-03-15 | Tally-record uses shared sort sub-generator with derived categories. Label/rule mismatch impossible. |
 | AS-1 | addition-subtraction-scene | 2026-03-16 | Schema enum + post-process clamp constrains objectType to 14 valid OBJECT_EMOJI keys. Scene-appropriate defaults for invalid values. |
 | AS-2 | addition-subtraction-scene | 2026-03-16 | Post-process derives operation from storyType: join→addition, separate→subtraction. Existing math recomputation cascades correctly. |
+| AS-3 | addition-subtraction-scene | 2026-06-20 | build_equation medium part-whole desync (SP-24). Schema pins `unknownPosition='result'` for build-equation (forward by construction) + prompt forbids missing-addend phrasing; removed the post-process operation override so the LLM's self-authored take-away operation is trusted (`9 ate 4 → 9−4=5`, was clobbered to `9+4=13`). 0/13 desync across 3 medium runs; all 4 tiers pass. |
 | BT-1 | base-ten-blocks | 2026-03-17 | Component initialColumns now checks challenges[0].type — decomposes from first challenge targetNumber for read_blocks/regroup. Generator post-process forces interactionMode='decompose' for read_blocks (SP-5). |
 | BT-2 | base-ten-blocks | 2026-03-17 | Component hides digit counts and "Blocks Total" display when challenge type is read_blocks — student must count visual blocks. |
 | BT-3 | base-ten-blocks | 2026-03-17 | Same SP-5 fix as BT-1 — initialColumns uses challenges[0].targetNumber instead of top-level numberValue. |
