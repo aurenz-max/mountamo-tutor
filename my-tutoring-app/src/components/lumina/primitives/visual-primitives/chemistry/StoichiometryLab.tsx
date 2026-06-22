@@ -72,6 +72,13 @@ export interface StoichShowOptions {
   showLeftovers: boolean;
   showRatioStrip: boolean;
   showPercentYield: boolean;
+  /**
+   * Show the "Run the reaction" output panel (computed limiting reagent + product
+   * yields + leftovers). This is a self-check overlay: it surfaces the very values
+   * the student is being asked to find. Withdrawn at the hard support tier so the
+   * student works unaided. Defaults true (the no-tier / easy behavior).
+   */
+  showReactionOutput: boolean;
 }
 
 export interface StoichiometryLabData {
@@ -81,6 +88,13 @@ export interface StoichiometryLabData {
   challenges: StoichChallenge[];
   showOptions?: Partial<StoichShowOptions>;
   gradeBand?: '8' | '9-10' | '11-12';
+  /**
+   * Within-mode support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Scaffolding level only — never changes numbers. Threaded to the live tutor so
+   * its reveal policy is tier-aware (easy: name the mole-map step; hard: ask what
+   * the student sees, never name the strategy the instruction hid).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   instanceId?: string;
   skillId?: string;
@@ -303,6 +317,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     challenges = [],
     showOptions: showOptionsProp = {},
     gradeBand = '9-10',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -316,6 +331,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     showLeftovers = true,
     showRatioStrip = true,
     showPercentYield = gradeBand === '11-12',
+    showReactionOutput = true,
   } = showOptionsProp;
 
   // -------------------------------------------------------------------------
@@ -434,6 +450,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
 
   const aiPrimitiveData = useMemo(() => ({
     gradeBand,
+    supportTier: supportTier ?? null,
     title,
     equation: reaction.equation,
     challengeType: currentChallenge?.type ?? 'convert',
@@ -459,10 +476,37 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     hasOpenedReactionOutput: openAccordions.includes('reaction-output'),
     attemptNumber: currentAttempts + 1,
   }), [
-    gradeBand, title, reaction.equation, currentChallenge, currentChallengeIndex,
+    gradeBand, supportTier, title, reaction.equation, currentChallenge, currentChallengeIndex,
     challenges.length, reactionOutcome, studentAnswer, studentLimitingChoice, phase,
     openAccordions, currentAttempts,
   ]);
+
+  /**
+   * Tier-aware reveal clause appended to tutor prompts. The tier is a SECOND
+   * scaffold channel that must stay in lockstep with the on-screen withdrawal:
+   * - easy: name the mole-map step / strategy and walk the setup.
+   * - medium: nudge execution only; don't restate the whole strategy.
+   * - hard: the instruction hid the strategy and the reaction-output overlay is
+   *   gone — do NOT name the strategy, ask what the student reads off the figure,
+   *   never reveal the limiting reagent or the numeric answer.
+   * For 'limiting' the answer IS the relationship, so the tutor never names the
+   * limiting reagent at any tier.
+   */
+  const tutorTierClause = useCallback((): string => {
+    const isLimiting = currentChallenge?.type === 'limiting';
+    if (supportTier === 'hard') {
+      return isLimiting
+        ? ' [SUPPORT_TIER=hard] The reaction-output panel is hidden and the instruction does not name a strategy. Do NOT tell the student which reactant is limiting and do NOT name the moles÷coefficient rule — ask what they computed for each reactant and let them decide. Never reveal the answer.'
+        : ' [SUPPORT_TIER=hard] The reaction-output panel is hidden and the instruction does not name the mole-map step. Do NOT name the strategy or hand a formula — ask what the student can read from the equation and givens, then let them work it unaided. Never reveal the numeric answer.';
+    }
+    if (supportTier === 'medium') {
+      return ' [SUPPORT_TIER=medium] The strategy is named but the formula/self-check tools are thinned. Nudge the next execution step only — do not re-walk the whole mole-map or reveal the answer.';
+    }
+    if (supportTier === 'easy') {
+      return ' [SUPPORT_TIER=easy] Full scaffolding is on screen. Name the relevant mole-map step explicitly and walk the student through the setup, but still let them state the final number.';
+    }
+    return '';
+  }, [supportTier, currentChallenge?.type]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'stoichiometry-lab',
@@ -478,10 +522,11 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     sendText(
       `[ACTIVITY_START] Stoichiometry Lab "${title}" for ${gradeBand}. `
       + `Reaction: ${reaction.equation}. The student is on challenge ${currentChallengeIndex + 1} of ${challenges.length} `
-      + `(type: ${currentChallenge.type}). Walk them through the mole-map approach: grams → moles → ratio → moles → grams.`,
+      + `(type: ${currentChallenge.type}). Walk them through the mole-map approach: grams → moles → ratio → moles → grams.`
+      + tutorTierClause(),
       { silent: true }
     );
-  }, [isConnected, title, gradeBand, reaction.equation, currentChallenge, currentChallengeIndex, challenges.length, sendText]);
+  }, [isConnected, title, gradeBand, reaction.equation, currentChallenge, currentChallengeIndex, challenges.length, sendText, tutorTierClause]);
 
   // -------------------------------------------------------------------------
   // Answer handling
@@ -553,14 +598,15 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
     } else {
       sendText(
         `[ANSWER_INCORRECT] Student answered "${studentAnswer || studentLimitingChoice}" for ${currentChallenge.type} challenge. `
-        + `Correct: ${currentChallenge.type === 'limiting' ? currentChallenge.targetAnswerFormula : currentChallenge.targetAnswer}. `
-        + `Attempt ${currentAttempts + 1}. Give a hint that walks one step of the mole-map: "${currentChallenge.hint}"`,
+        + `(For your reference only — do NOT state it outright; the correct value is ${currentChallenge.type === 'limiting' ? currentChallenge.targetAnswerFormula : currentChallenge.targetAnswer}.) `
+        + `Attempt ${currentAttempts + 1}. Give a hint that walks one step of the mole-map: "${currentChallenge.hint}"`
+        + tutorTierClause(),
         { silent: true }
       );
     }
   }, [
     currentChallenge, studentAnswer, studentLimitingChoice, currentAttempts,
-    incrementAttempts, recordResult, sendText,
+    incrementAttempts, recordResult, sendText, tutorTierClause,
   ]);
 
   const handleAdvance = useCallback(() => {
@@ -791,7 +837,7 @@ const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) 
             </AccordionItem>
           )}
 
-          {reactionOutcome && (
+          {reactionOutcome && showReactionOutput && (
             <AccordionItem value="reaction-output" className="border border-white/10 rounded-lg bg-slate-800/30 px-3">
               <AccordionTrigger className="text-slate-300 text-sm hover:text-slate-100 hover:no-underline py-3">
                 <span className="flex items-center gap-2">

@@ -45,11 +45,25 @@ export interface SoundSwapChallenge {
   resultWord: string;
   resultPhonemes: string[];
   resultImage: string;
+
+  // ── Within-mode support tier scaffolds (set by the generator from config.difficulty).
+  //    Display/instruction only — NEVER change the word, phonemes, or the answer.
+  //    All optional; absent ⇒ legacy full-scaffold behavior (every cue shown). ──
+  /** #1 perception — show the original-word picture cue (self-check). Default: shown. */
+  showWordImage?: boolean;
+  /** #1 perception (substitution) — highlight the tile to change. Default: shown. */
+  showTargetHighlight?: boolean;
+  /** #2 instruction — name the exact target sound in the instruction. Default: named. */
+  nameTargetSound?: boolean;
+  /** #5 answer-form (addition/substitution) — number of phoneme choice buttons. Default: 3. */
+  optionCount?: number;
 }
 
 export interface SoundSwapData {
   title: string;
   gradeLevel: string;
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SoundSwapChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -127,6 +141,24 @@ function getOperationInstruction(ch: SoundSwapChallenge): string {
   }
 }
 
+/** The instruction the tutor PRESENTS. At the hard tier (nameTargetSound === false)
+ *  this matches the neutral on-screen instruction — the tutor must not name the
+ *  target sound the screen withheld. (The tutor still knows the answer internally
+ *  via aiPrimitiveData; this only governs what it says aloud.) */
+function getPresentedInstruction(ch: SoundSwapChallenge): string {
+  if (ch.nameTargetSound === false) {
+    switch (ch.operation) {
+      case 'addition':
+        return `Say "${ch.originalWord}." Add one sound to make a new word. What word?`;
+      case 'deletion':
+        return `Say "${ch.originalWord}." Take one sound away to make a new word. What's left?`;
+      case 'substitution':
+        return `Say "${ch.originalWord}." Change one sound to make a new word. What word?`;
+    }
+  }
+  return getOperationInstruction(ch);
+}
+
 function getOperationDescription(ch: SoundSwapChallenge): string {
   switch (ch.operation) {
     case 'addition':
@@ -159,6 +191,30 @@ function findTargetIndex(
   return -1;
 }
 
+/**
+ * Mode-aware tutor reveal policy keyed to the within-mode support tier. The tutor is
+ * a second scaffold channel, so its reveal latitude must MATCH the on-screen tier:
+ *  - easy   → may name the target sound / position and walk the setup step by step.
+ *  - medium → nudge execution only; confirm the sound, don't pre-chew the whole move.
+ *  - hard   → the instruction hid the target sound, so the tutor must NOT name it
+ *             either; ask what the student hears in the word, never reveal the new word.
+ * At EVERY tier the tutor never says the result word outright (the new word IS the
+ * answer the student is producing).
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  operation: string,
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return `[SUPPORT_TIER easy] Full scaffolding: you may name the exact sound to ${operation === 'deletion' ? 'take away' : operation === 'addition' ? 'add and where' : 'change'} and walk the student through the move step by step. Still never say the new result word — let them produce it.`;
+  }
+  if (tier === 'medium') {
+    return `[SUPPORT_TIER medium] Light scaffolding: nudge the execution only — confirm which sound they are working with if asked, but do not pre-solve the whole move, and never say the result word.`;
+  }
+  return `[SUPPORT_TIER hard] Minimal scaffolding: the on-screen instruction does NOT name the target sound, so you must not name it either. Ask what the student hears in the word and which sound to ${operation === 'deletion' ? 'remove' : operation === 'addition' ? 'add' : 'change'}; guide by questioning. Never reveal the target sound or the new result word.`;
+}
+
 /** Pick N random distractors that aren't the correct phoneme. */
 function pickDistractors(correctPhoneme: string, count: number): string[] {
   const norm = correctPhoneme.toLowerCase().replace(/\//g, '');
@@ -176,6 +232,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   const {
     title,
     gradeLevel,
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -255,7 +312,11 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       ? currentChallenge.addPhoneme!
       : currentChallenge.newPhoneme!;
 
-    const distractors = pickDistractors(correctPhoneme, 2);
+    // Support tier (#5 answer-form lever): optionCount sets the size of the choice
+    // field. More distractors = harder discrimination at the SAME task, with exactly
+    // ONE correct option always present (answer never changes). Default 3.
+    const totalOptions = Math.max(2, Math.min(5, currentChallenge.optionCount ?? 3));
+    const distractors = pickDistractors(correctPhoneme, totalOptions - 1);
     return [
       { phoneme: correctPhoneme, isCorrect: true },
       ...distractors.map(p => ({ phoneme: p, isCorrect: false })),
@@ -277,7 +338,8 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     newPhoneme: currentChallenge?.newPhoneme ?? currentChallenge?.addPhoneme ?? '',
     position: currentChallenge?.deletePosition ?? currentChallenge?.substitutePosition ?? currentChallenge?.addPosition ?? '',
     originalPhonemes: currentChallenge?.originalPhonemes?.join(' ') ?? '',
-  }), [currentChallenge, currentIndex, challenges.length, currentAttempts]);
+    supportTier: supportTier ?? null,
+  }), [currentChallenge, currentIndex, challenges.length, currentAttempts, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'sound-swap',
@@ -293,15 +355,17 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
 
-    const instruction = getOperationInstruction(currentChallenge);
+    const instruction = getPresentedInstruction(currentChallenge);
+    const policy = tutorRevealPolicy(supportTier, currentChallenge.operation);
     sendText(
       `[ACTIVITY_START] This is a Sound Swap phoneme manipulation activity for Grade ${gradeLevel}. `
       + `There are ${challenges.length} challenges covering addition, deletion, and substitution. `
       + `Warmly introduce the activity ("We're going to change sounds in words to make new words!"), `
-      + `then present the first challenge: ${instruction}`,
+      + `then present the first challenge: ${instruction}`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [hasStarted, isConnected, currentChallenge, gradeLevel, challenges.length, sendText]);
+  }, [hasStarted, isConnected, currentChallenge, gradeLevel, challenges.length, sendText, supportTier]);
 
   // ── Phase transition detection ────────────────────────────────────
   useEffect(() => {
@@ -322,12 +386,14 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
     if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
 
-    const instruction = getOperationInstruction(currentChallenge);
+    const instruction = getPresentedInstruction(currentChallenge);
+    const policy = tutorRevealPolicy(supportTier, currentChallenge.operation);
     sendText(
-      `[PRESENT_CHALLENGE] Challenge ${currentIndex + 1} of ${challenges.length}. ${instruction}`,
+      `[PRESENT_CHALLENGE] Challenge ${currentIndex + 1} of ${challenges.length}. ${instruction}`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [currentIndex, currentChallenge, isConnected, sendText, challenges.length]);
+  }, [currentIndex, currentChallenge, isConnected, sendText, challenges.length, supportTier]);
 
   // ── Reset interaction state when challenge advances ───────────────
   useEffect(() => {
@@ -746,17 +812,25 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   // ── Render: Deletion mode ─────────────────────────────────────────
   const renderDeletionMode = () => {
     if (!currentChallenge) return null;
+    const showImage = currentChallenge.showWordImage !== false;
+    const nameSound = currentChallenge.nameTargetSound !== false;
     return (
       <div className="space-y-5">
         {/* Word display */}
         <div className="text-center space-y-1">
-          <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          {showImage && (
+            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          )}
           <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
         </div>
 
         {/* Instruction */}
         <p className="text-center text-lg text-slate-300 font-medium">
-          Tap the <span className="text-amber-300">{currentChallenge.deletePhoneme}</span> sound to remove it
+          {nameSound ? (
+            <>Tap the <span className="text-amber-300">{currentChallenge.deletePhoneme}</span> sound to remove it</>
+          ) : (
+            <>Take away one sound to make a new word — tap the sound to remove</>
+          )}
         </p>
 
         {/* Phoneme tiles — tappable */}
@@ -783,24 +857,34 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   // ── Render: Addition mode ─────────────────────────────────────────
   const renderAdditionMode = () => {
     if (!currentChallenge) return null;
+    const showImage = currentChallenge.showWordImage !== false;
+    const nameSound = currentChallenge.nameTargetSound !== false;
     return (
       <div className="space-y-5">
         {/* Word display */}
         <div className="text-center space-y-1">
-          <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          {showImage && (
+            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          )}
           <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
         </div>
 
         {/* Instruction */}
         <p className="text-center text-lg text-slate-300 font-medium">
-          Add a sound to the{' '}
-          <span className="text-amber-300">{currentChallenge.addPosition}</span>{' '}
-          to make a new word
+          {nameSound ? (
+            <>Add a sound to the{' '}
+            <span className="text-amber-300">{currentChallenge.addPosition}</span>{' '}
+            to make a new word</>
+          ) : (
+            <>Add one sound to make a new word</>
+          )}
         </p>
 
-        {/* Phoneme tiles with + slot */}
+        {/* Phoneme tiles with + slot. When the instruction does NOT name the sound
+            (hard tier), the "+" position slot is also withheld until the answer is
+            shown, so the placement isn't a free cue. */}
         {renderPhonemeTiles(currentChallenge.originalPhonemes, {
-          addPosition: currentChallenge.addPosition,
+          addPosition: (nameSound || showResult) ? currentChallenge.addPosition : undefined,
           addedTo: addedPhoneme,
           disabled: true,
         })}
@@ -828,6 +912,9 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   // ── Render: Substitution mode ─────────────────────────────────────
   const renderSubstitutionMode = () => {
     if (!currentChallenge) return null;
+    const showImage = currentChallenge.showWordImage !== false;
+    const nameSound = currentChallenge.nameTargetSound !== false;
+    const showHighlight = currentChallenge.showTargetHighlight !== false;
     const targetIdx = findTargetIndex(
       currentChallenge.originalPhonemes,
       currentChallenge.oldPhoneme!,
@@ -838,18 +925,26 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       <div className="space-y-5">
         {/* Word display */}
         <div className="text-center space-y-1">
-          <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          {showImage && (
+            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+          )}
           <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
         </div>
 
         {/* Instruction */}
         <p className="text-center text-lg text-slate-300 font-medium">
-          Change the <span className="text-amber-300">{currentChallenge.oldPhoneme}</span> to a new sound
+          {nameSound ? (
+            <>Change the <span className="text-amber-300">{currentChallenge.oldPhoneme}</span> to a new sound</>
+          ) : (
+            <>Change one sound to make a new word</>
+          )}
         </p>
 
-        {/* Phoneme tiles with highlighted target */}
+        {/* Phoneme tiles. The amber target highlight is a perception scaffold — at
+            hard it is withdrawn so the student locates the sound to change, but the
+            swap result still animates on the correct tile after answering. */}
         {renderPhonemeTiles(currentChallenge.originalPhonemes, {
-          highlightIdx: !showResult ? targetIdx : null,
+          highlightIdx: (!showResult && showHighlight) ? targetIdx : null,
           swappedIdx: showResult ? targetIdx : null,
           swappedTo: swappedPhoneme,
           disabled: true,

@@ -50,6 +50,11 @@ export interface DecodableReaderData {
   // Phonics patterns present in this passage
   phonicsPatternsInPassage: string[];
 
+  // Comprehension SKILL the embedded question demands (eval-mode task identity).
+  // Optional / back-compatible: the component does not branch on it — it only
+  // pins which reading-comprehension skill the generator authored for.
+  comprehensionType?: 'literal' | 'sequence' | 'inference' | 'main_idea';
+
   // Comprehension question after reading
   comprehensionQuestion: {
     question: string;

@@ -38,12 +38,26 @@ export interface RaceChallenge {
   distractor1: string;
   distractor2?: string;
   hint: string;
+  /**
+   * Support-tier display lever (second axis: scaffolding level, never numbers).
+   * When false the per-racer speed readout legend is withdrawn so the student
+   * must infer relative speed from the race itself. Defaults to shown (true) so
+   * no-tier sessions render exactly as before. NEVER changes the answer.
+   */
+  showSpeedLegend?: boolean;
 }
 
 export interface RaceTrackLabData {
   title: string;
   description: string;
   challenges: RaceChallenge[];
+
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard'), threaded from the
+   * manifest so the live AI tutor's reveal policy is tier-aware. Scaffolding
+   * level only — it never changes the numbers or the answer.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -493,12 +507,26 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
     title,
     description,
     challenges,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
   } = data;
+
+  // Tier-aware tutor reveal clause: the AI tutor is a second scaffold channel.
+  // easy → name the strategy & walk the setup; medium → nudge execution only;
+  // hard → never name the strategy the instruction withheld, ask what the
+  // student sees on the track, never reveal which racer wins.
+  const tierTutorClause =
+    supportTier === 'easy'
+      ? ' SUPPORT TIER easy: name the strategy out loud (e.g. compare the speeds, or distance = speed × time) and walk the setup; do not state the final answer.'
+      : supportTier === 'hard'
+        ? ' SUPPORT TIER hard: do NOT name the strategy or the rule — ask the student what they observed on the track (who pulled ahead, how far each traveled) and let them justify; never reveal which racer wins.'
+        : supportTier === 'medium'
+          ? ' SUPPORT TIER medium: nudge the execution only — assume the student knows the idea, help them carry it out; do not reveal the answer.'
+          : '';
 
   const resolvedInstanceId = instanceId || 'race-track-lab-default';
 
@@ -515,7 +543,8 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
   // ── AI tutoring ──────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     challengeCount: challenges.length,
-  }), [challenges.length]);
+    supportTier,
+  }), [challenges.length, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'race-track-lab',
@@ -710,7 +739,7 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
         attempts: currentAttempts + 1,
       });
       sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the speed/distance concept.`,
+        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the speed/distance concept.${tierTutorClause}`,
         { silent: true },
       );
     } else {
@@ -728,11 +757,11 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
         setShowingAnswer(true);
       }
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about speed and distance.`,
+        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about speed and distance.${tierTutorClause}`,
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
 
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {
@@ -816,7 +845,10 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
               </Button>
             )}
 
-            {/* Racer speed legend */}
+            {/* Racer speed legend — a support-tier display lever. When the tier
+                withdraws it (showSpeedLegend === false) only the numeric (speed)
+                readout drops; the colored racer name/emoji key stays so the race
+                is still readable. Defaults to the full readout (no-tier sessions). */}
             {currentChallenge && (
               <div className="flex gap-2 ml-auto">
                 {currentChallenge.racers.map((r, i) => (
@@ -824,7 +856,9 @@ export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps
                     <span style={{ color: r.color || RACER_COLORS[i % RACER_COLORS.length] }}>
                       {r.emoji} {r.name}
                     </span>
-                    {' '}({r.speed} sq/s)
+                    {currentChallenge.showSpeedLegend !== false && (
+                      <>{' '}({r.speed} sq/s)</>
+                    )}
                   </span>
                 ))}
               </div>

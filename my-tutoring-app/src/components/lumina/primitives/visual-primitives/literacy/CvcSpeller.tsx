@@ -36,6 +36,10 @@ export interface CvcSpellerChallenge {
   emoji: string;
   imageDescription: string;
   distractorLetters: string[];
+  /** Support-tier lever (spell-word + word-sort): show emoji/image self-check cue.
+   *  Withdrawn at the hard tier so the student decodes purely from the heard sounds.
+   *  Undefined (no tier) = treated as shown (default behavior preserved). */
+  showPictureCue?: boolean;
   vowelOptions?: string[];     // fill-vowel: exactly 2 vowels
   sortBucketLabel?: string;    // word-sort: which bucket (e.g. 'short-a')
   commonErrors?: Array<{
@@ -50,6 +54,10 @@ export interface CvcSpellerData {
   letterGroup: 1 | 2 | 3 | 4;
   availableLetters: string[];
   challenges: CvcSpellerChallenge[];
+
+  /** Within-mode support tier ('easy'|'medium'|'hard') — set by the generator from
+   *  config.difficulty. Tunes the live tutor's reveal policy; never changes the words. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -132,6 +140,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     letterGroup,
     availableLetters = [],
     challenges = [],
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -249,9 +258,18 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     attempts: currentAttempts,
     firstPhoneme: currentChallenge?.targetPhonemes?.[0] ?? '',
     middlePhoneme: currentChallenge?.targetPhonemes?.[1] ?? '',
+    supportTier: supportTier ?? '',
+    tutorRevealPolicy:
+      supportTier === 'easy'
+        ? 'EASY tier: you MAY name the strategy — tell the student to listen for the 3 sounds (or stretch the vowel), and walk them through the segmentation before they answer.'
+        : supportTier === 'hard'
+          ? 'HARD tier: do NOT name the segmentation strategy or pre-stretch unprompted. Say the word, then ask what sounds the student hears and let them work unaided. Only scaffold if they ask or after a wrong attempt. Never reveal the answer.'
+          : supportTier === 'medium'
+            ? 'MEDIUM tier: nudge execution only — say the word clearly and let the student work; offer a stretch only if they hesitate or miss.'
+            : 'No support tier set — use the default progressive scaffolding.',
   }), [
     vowelFocus, letterGroup, currentChallenge, slots,
-    currentChallengeIndex, challenges.length, currentAttempts,
+    currentChallengeIndex, challenges.length, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -272,14 +290,22 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
     const vowelLabel = VOWEL_LABELS[vowelFocus] || vowelFocus;
     const taskLabel = TASK_TYPE_CONFIG[currentChallenge.taskType]?.label || currentChallenge.taskType;
+    const tierPosture =
+      supportTier === 'easy'
+        ? ' SUPPORT POSTURE (easy): name the listening strategy up front — tell the student to listen for the 3 sounds and stretch the vowel before answering.'
+        : supportTier === 'hard'
+          ? ' SUPPORT POSTURE (hard): do NOT name the segmentation strategy or pre-stretch. Say the word, then let the student work unaided; ask what sounds they hear rather than telling them. Never reveal the answer.'
+          : supportTier === 'medium'
+            ? ' SUPPORT POSTURE (medium): say the word clearly and let the student try; offer a stretch only if they hesitate.'
+            : '';
     sendText(
       `[ACTIVITY_START] This is a CVC spelling activity focusing on ${vowelLabel}. `
       + `There are ${challenges.length} challenges. First up: ${taskLabel}. `
       + `Introduce the activity warmly, then say the first word "${currentChallenge.targetWord}" clearly. `
-      + `Keep it brief — 2-3 sentences.`,
+      + `Keep it brief — 2-3 sentences.${tierPosture}`,
       { silent: true }
     );
-  }, [isConnected, currentChallenge, vowelFocus, challenges.length, sendText]);
+  }, [isConnected, currentChallenge, vowelFocus, challenges.length, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
   // Auto-play word on challenge load (all modes)
@@ -823,13 +849,15 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     if (!currentChallenge) return null;
     return (
       <div className="space-y-5">
-        {/* Word hint: emoji */}
-        <LuminaPanel className="flex items-center justify-center gap-3 px-5 py-3">
-          {currentChallenge.emoji && <span className="text-4xl">{currentChallenge.emoji}</span>}
-          {currentChallenge.imageDescription && (
-            <p className="text-slate-400 text-sm italic">{currentChallenge.imageDescription}</p>
-          )}
-        </LuminaPanel>
+        {/* Word hint: emoji + image (picture self-check cue — withdrawn at hard tier) */}
+        {currentChallenge.showPictureCue !== false && (currentChallenge.emoji || currentChallenge.imageDescription) && (
+          <LuminaPanel className="flex items-center justify-center gap-3 px-5 py-3">
+            {currentChallenge.emoji && <span className="text-4xl">{currentChallenge.emoji}</span>}
+            {currentChallenge.imageDescription && (
+              <p className="text-slate-400 text-sm italic">{currentChallenge.imageDescription}</p>
+            )}
+          </LuminaPanel>
+        )}
 
         {/* Elkonin box slots */}
         <div className="flex items-center justify-center gap-3">
@@ -941,9 +969,9 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-6">
-        {/* Word to sort — shown as emoji + speaker button */}
+        {/* Word to sort — emoji (picture cue, withdrawn at hard tier) + speaker button */}
         <div className="flex flex-col items-center gap-3">
-          {currentChallenge.emoji && (
+          {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
             <span className="text-5xl">{currentChallenge.emoji}</span>
           )}
           <button

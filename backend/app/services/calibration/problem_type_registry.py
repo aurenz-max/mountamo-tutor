@@ -443,7 +443,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "identification": PriorConfig(2.5, "Guided: pick the rhyming word from options"),
         "production":     PriorConfig(5.0, "Production: generate a rhyming word"),
     },
-    "read-aloud-studio":          {"default": PriorConfig(3.0, "Read aloud fluency")},
+    "read-aloud-studio": {
+        "accuracy":   PriorConfig(2.0, "Smooth, accurate word reading (automaticity)"),
+        "expression": PriorConfig(3.5, "Prosody: phrasing, pausing, and emphasis"),
+        "dialogue":   PriorConfig(4.5, "Character voices and dramatic tone"),
+    },
     "context-clues-detective": {
         "definition":      PriorConfig(1.5, "Definition: meaning stated directly in text"),
         "synonym_antonym":  PriorConfig(2.5, "Synonym/Antonym: meaning from similar/opposite words"),
@@ -546,21 +550,39 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "greek_latin":     PriorConfig(5.0, "Academic: Greek/Latin morpheme construction"),
         "multi_morpheme":  PriorConfig(7.0, "Advanced: complex multi-morpheme words"),
     },
-    "decodable-reader":             {"default": PriorConfig(2.5, "Controlled-vocabulary reading with comprehension")},
+    "decodable-reader": {
+        "literal":   PriorConfig(1.5, "Recall a fact stated directly in the passage"),
+        "sequence":  PriorConfig(2.5, "Order of events or stated cause/effect"),
+        "inference": PriorConfig(3.5, "Deduce something the text implies but does not state"),
+        "main_idea": PriorConfig(4.0, "Synthesize the passage's central message"),
+    },
     "cvc-speller": {
         "fill_vowel": PriorConfig(1.5, "Recognition: pick missing vowel in C_C frame"),
         "spell_word": PriorConfig(2.5, "Guided: spell full CVC word in Elkonin boxes"),
         "word_sort":  PriorConfig(3.5, "Application: sort words into vowel-sound buckets"),
     },
     "character-web": {
-        "simple_traits":    PriorConfig(1.5, "Simple trait identification for 1-2 characters"),
-        "trait_evidence":   PriorConfig(2.5, "Traits supported by text evidence quotes"),
-        "default":          PriorConfig(3.5, "Character traits and relationship mapping"),
-        "complex_analysis": PriorConfig(4.5, "Multi-layered character analysis with foils and themes"),
+        "trait_id":         PriorConfig(1.5, "Identify traits from a character's actions and words"),
+        "trait_evidence":   PriorConfig(2.5, "Support trait claims with text evidence quotes"),
+        "relationship_map": PriorConfig(3.5, "Analyze how character relationships drive the plot"),
+        "character_change": PriorConfig(4.5, "Analyze a dynamic character's development and its cause"),
     },
-    "genre-explorer":               {"default": PriorConfig(3.0, "Classify text excerpts by genre features")},
-    "evidence-finder":              {"default": PriorConfig(3.5, "Find and highlight text evidence for claims")},
-    "story-planner":                {"default": PriorConfig(3.0, "Pre-writing narrative planning with story arc")},
+    "genre-explorer": {
+        "identify_basic": PriorConfig(2.0, "Binary fiction vs nonfiction recognition"),
+        "classify_genre": PriorConfig(3.0, "Multi-way classification among specific genres"),
+        "compare_genres": PriorConfig(4.5, "Contrast two genres on the same topic"),
+    },
+    "evidence-finder": {
+        "locate_evidence":            PriorConfig(2.5, "Find explicit, directly-stated evidence for one claim"),
+        "match_evidence_to_claim":    PriorConfig(3.5, "Assign evidence to the correct of two claims"),
+        "evaluate_evidence_strength": PriorConfig(4.5, "Rate evidence strength and justify it (CER)"),
+    },
+    "story-planner": {
+        "story_structure":     PriorConfig(2.0, "Sequence the narrative arc: beginning-middle-end"),
+        "character_setting":   PriorConfig(3.0, "Develop a believable character and a vivid setting"),
+        "conflict_resolution": PriorConfig(3.5, "Plan a central conflict and a connected resolution"),
+        "theme_craft":         PriorConfig(5.0, "Weave theme, dialogue, and craft into the plan"),
+    },
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------

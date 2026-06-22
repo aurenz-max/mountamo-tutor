@@ -45,6 +45,15 @@ export interface LetterSpotterChallenge {
   emoji?: string;
   /** For name-it: the full word containing the target letter (e.g., "sun") */
   targetWord?: string;
+  // -- Within-mode support-tier scaffolds (display-only; never the answer) --
+  /** #2 instruction-as-scaffold: a one-line "how to approach this" cue shown on the
+   *  card at lower tiers (e.g. "Say the sentence and listen for the missing sound").
+   *  Withdrawn at the hard tier so the student chooses a strategy unaided. */
+  strategyHint?: string;
+  /** #1 perception (find-it): show the target letter on-card as a reference the
+   *  student can self-check against while scanning. Does NOT reveal which cells —
+   *  finding every instance is still the task. Withdrawn at hard (audio only). */
+  showTargetReference?: boolean;
 }
 
 export interface LetterSpotterData {
@@ -53,6 +62,9 @@ export interface LetterSpotterData {
   cumulativeLetters: string[];
   newLetters: string[];
   challenges: LetterSpotterChallenge[];
+  /** Within-mode support tier ('easy'|'medium'|'hard'). Scaffolding level only —
+   *  the live tutor's reveal policy keys off this; it never changes the letters. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -111,6 +123,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     cumulativeLetters = [],
     newLetters = [],
     challenges = [],
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -183,6 +196,22 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
   // ---------------------------------------------------------------------------
   // AI Tutoring
   // ---------------------------------------------------------------------------
+  // Tier-aware reveal policy for the live tutor (second scaffold channel). The
+  // target letter IS the answer in every mode, so NO tier ever names it. Easy =
+  // name the strategy and model the approach; medium = nudge execution only;
+  // hard = ask what the student notices and have them justify, naming nothing.
+  const tierTutorClause = useMemo(() => {
+    if (supportTier === 'easy') {
+      return ' SUPPORT TIER easy: name the approach out loud (e.g. say the sentence and listen for the missing sound, or describe the letter\'s shape) and walk the student through it warmly — but NEVER say the target letter or which option/cell is correct.';
+    }
+    if (supportTier === 'hard') {
+      return ' SUPPORT TIER hard: do NOT name any strategy. Ask the student what they notice (the sound they hear, the shape they see) and have them explain their choice. Reveal nothing — never the target letter, the strategy, or the correct option/cell.';
+    }
+    if (supportTier === 'medium') {
+      return ' SUPPORT TIER medium: nudge the student to execute their own approach; do not lay out the full strategy and never reveal the target letter or correct answer.';
+    }
+    return '';
+  }, [supportTier]);
   const aiPrimitiveData = useMemo(() => ({
     letterGroup,
     cumulativeLetters: cumulativeLetters.join(', '),
@@ -195,9 +224,11 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     currentChallenge: currentChallengeIndex + 1,
     totalChallenges: challenges.length,
     attempts: currentAttempts,
+    supportTier: supportTier ?? '',
   }), [
     letterGroup, cumulativeLetters, newLetters,
     currentChallenge, currentChallengeIndex, challenges.length, currentAttempts,
+    supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -238,10 +269,11 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
       + (currentChallenge.mode !== 'name-it' ? `First challenge: ${modeLabel} for the letter "${currentChallenge.targetLetter.toUpperCase()}". ` : '')
       + introExtra
       + (isNew ? `This is a NEW letter — introduce it warmly with a brief description of its shape. ` : '')
-      + `Keep it brief and enthusiastic — 2-3 sentences max.`,
+      + `Keep it brief and enthusiastic — 2-3 sentences max.`
+      + tierTutorClause,
       { silent: true },
     );
-  }, [isConnected, currentChallenge, letterGroup, cumulativeLetters, newLetters, challenges.length, sendText]);
+  }, [isConnected, currentChallenge, letterGroup, cumulativeLetters, newLetters, challenges.length, sendText, tierTutorClause]);
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -303,7 +335,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         : '';
       sendText(
         `[ANSWER_INCORRECT] The student chose "${option.toUpperCase()}" but the correct letter is "${currentChallenge.targetLetter.toUpperCase()}". ` +
-        `This is attempt ${currentAttempts + 1}. Give a brief hint without giving the answer.${hintExtra}`,
+        `This is attempt ${currentAttempts + 1}. Give a brief hint without giving the answer.${hintExtra}${tierTutorClause}`,
         { silent: true },
       );
 
@@ -326,7 +358,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     }
   }, [
     isLocked, hasSubmittedEvaluation, currentChallenge, currentAttempts,
-    newLetters, incrementAttempts, recordResult, sendText, trackConfusion,
+    newLetters, incrementAttempts, recordResult, sendText, trackConfusion, tierTutorClause,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -406,7 +438,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
 
       sendText(
         `[ANSWER_INCORRECT] Find-it mode: student selected ${selectedGridCells.size} cells but there are ${targetIndices.size} "${currentChallenge.targetLetter.toUpperCase()}"s. ` +
-        `Missed: ${missed}, extra wrong: ${extra}. Attempt ${currentAttempts + 1}. Give a brief hint.`,
+        `Missed: ${missed}, extra wrong: ${extra}. Attempt ${currentAttempts + 1}. Give a brief hint.${tierTutorClause}`,
         { silent: true },
       );
 
@@ -429,7 +461,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     }
   }, [
     isLocked, hasSubmittedEvaluation, currentChallenge, selectedGridCells,
-    currentAttempts, newLetters, incrementAttempts, recordResult, sendText, trackConfusion,
+    currentAttempts, newLetters, incrementAttempts, recordResult, sendText, trackConfusion, tierTutorClause,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -642,6 +674,13 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
           Listen to the sentence. What letter does the {emoji} replace?
         </p>
 
+        {/* Strategy cue (#2 instruction scaffold) — shown at lower tiers, withdrawn at hard */}
+        {currentChallenge.strategyHint && (
+          <p className="text-center text-amber-300/80 text-xs italic">
+            {currentChallenge.strategyHint}
+          </p>
+        )}
+
         {/* Letter options grid — letter tiles (interaction surface); grading colors from kit tokens */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
           {options.map((option) => {
@@ -691,6 +730,26 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
             Listen carefully — find all the matching letters in the grid!
           </p>
         </div>
+
+        {/* Target reference (#1 perception) — at lower tiers show the letter to
+            self-check against while scanning. Does NOT reveal which cells. */}
+        {currentChallenge.showTargetReference && (
+          <div className="flex justify-center">
+            <div className="bg-white/5 border-2 border-white/15 rounded-xl px-5 py-2 flex items-center gap-3">
+              <span className="text-slate-400 text-xs">Looking for</span>
+              <span className={`${fontClass} text-2xl font-bold text-slate-100`}>
+                {currentChallenge.targetLetter.toUpperCase()}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Strategy cue (#2 instruction scaffold) — withdrawn at hard */}
+        {currentChallenge.strategyHint && (
+          <p className="text-center text-amber-300/80 text-xs italic">
+            {currentChallenge.strategyHint}
+          </p>
+        )}
 
         {/* Letter grid — interaction surface; grading colors from kit tokens */}
         <div
@@ -764,6 +823,13 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
         </div>
 
         <p className="text-center text-slate-400 text-sm">Which lowercase letter matches?</p>
+
+        {/* Strategy cue (#2 instruction scaffold) — withdrawn at hard */}
+        {currentChallenge.strategyHint && (
+          <p className="text-center text-amber-300/80 text-xs italic">
+            {currentChallenge.strategyHint}
+          </p>
+        )}
 
         {/* Lowercase options — letter tiles (interaction surface); grading colors from kit tokens */}
         <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">

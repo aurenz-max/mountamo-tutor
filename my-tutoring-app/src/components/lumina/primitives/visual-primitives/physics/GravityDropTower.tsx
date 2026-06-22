@@ -39,12 +39,32 @@ export interface DropChallenge {
   distractor1: string;
   distractor2?: string;
   hint: string;
+
+  // ── Within-mode support tier scaffolds (config.difficulty) ──────────────────
+  // Display-only levers. NEVER change the objects, height, airResistance, the
+  // question, or the answer — they only withdraw on-screen self-check help.
+  // Absent → default ON (full readouts), preserving legacy/no-tier behavior.
+  /**
+   * Perception lever (#1): show the live numeric readouts the student would
+   * otherwise read the answer off of — per-object fall speed (m/s), the land-time
+   * stamp, and the running timer. easy/medium = shown (self-check); hard =
+   * withdrawn so the student estimates/computes the time/speed unaided.
+   */
+  showReadouts?: boolean;
 }
 
 export interface GravityDropTowerData {
   title: string;
   description: string;
   challenges: DropChallenge[];
+
+  /**
+   * Within-mode support tier ('easy' | 'medium' | 'hard') from the manifest.
+   * Threaded to the live tutor so its reveal policy is scaffolding-aware: at hard
+   * the tutor must NOT name the strategy the instruction withheld. Display state
+   * itself is driven per-challenge by showReadouts; this is the tutor channel.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -116,6 +136,7 @@ interface DropState {
   heightMeters: number;
   pixelsPerMeter: number;
   slowMo: boolean;
+  showReadouts: boolean; // support-tier lever: numeric speed/time overlays
 }
 
 function createDropState(challenge: DropChallenge, slowMo: boolean): DropState {
@@ -142,6 +163,8 @@ function createDropState(challenge: DropChallenge, slowMo: boolean): DropState {
     heightMeters: challenge.height,
     pixelsPerMeter,
     slowMo,
+    // Default ON when unset (legacy / no-tier sessions keep full readouts).
+    showReadouts: challenge.showReadouts !== false,
   };
 }
 
@@ -340,14 +363,16 @@ function drawDropTower(
     ctx.font = '9px sans-serif';
     ctx.fillText(`${obj.mass}kg`, cx, GROUND_Y + 20);
 
-    // Speed indicator while falling
+    // Speed indicator while falling (numeric readout — support-tier gated)
     if (!obj.landed && obj.vy > 0) {
-      const speedMs = obj.vy / state.pixelsPerMeter;
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '10px sans-serif';
-      ctx.textBaseline = 'bottom';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${speedMs.toFixed(1)} m/s`, cx, cy - r - 4);
+      if (state.showReadouts) {
+        const speedMs = obj.vy / state.pixelsPerMeter;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '10px sans-serif';
+        ctx.textBaseline = 'bottom';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${speedMs.toFixed(1)} m/s`, cx, cy - r - 4);
+      }
 
       // Motion lines
       ctx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -363,8 +388,8 @@ function drawDropTower(
       }
     }
 
-    // Land time display
-    if (obj.landed) {
+    // Land time display (numeric readout — support-tier gated)
+    if (obj.landed && state.showReadouts) {
       ctx.fillStyle = 'rgba(52, 211, 153, 0.8)';
       ctx.font = 'bold 11px sans-serif';
       ctx.textBaseline = 'bottom';
@@ -373,13 +398,15 @@ function drawDropTower(
     }
   }
 
-  // Timer
+  // Timer (numeric readout — support-tier gated)
   if (state.isRunning || state.elapsed > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText(`t = ${state.elapsed.toFixed(2)}s`, w - 10, 8);
+    // When readouts are withdrawn (hard tier) the student estimates the time
+    // themselves — show a masked clock so the affordance is clear, not the value.
+    ctx.fillText(state.showReadouts ? `t = ${state.elapsed.toFixed(2)}s` : 't = ? s', w - 10, 8);
   }
 
   // Slow-mo indicator
@@ -402,12 +429,26 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
     title,
     description,
     challenges,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
   } = data;
+
+  // Mode-aware tutor reveal clause keyed to the support tier. At hard the
+  // instruction withheld the strategy and the on-screen readouts are gone, so the
+  // tutor must NOT hand either back — it asks what the student observes instead.
+  // NEVER reveals the correct answer at any tier.
+  const tierTutorClause =
+    supportTier === 'easy'
+      ? 'SUPPORT TIER easy: you may name the gravity idea at play (e.g. without air all objects fall together; time grows with the square root of height) and walk the setup, but never state which option is correct.'
+      : supportTier === 'hard'
+        ? 'SUPPORT TIER hard: the on-screen timer/speed readouts are hidden and the strategy is NOT named for the student. Do NOT name the rule or read off a number for them — ask what they SAW the objects do and let them reason. Never reveal the correct option.'
+        : supportTier === 'medium'
+          ? 'SUPPORT TIER medium: nudge their execution only — do not name the full strategy up front, and never reveal the correct option.'
+          : '';
 
   const resolvedInstanceId = instanceId || 'gravity-drop-tower-default';
 
@@ -424,7 +465,8 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
   // ── AI tutoring ──────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     challengeCount: challenges.length,
-  }), [challenges.length]);
+    supportTier,
+  }), [challenges.length, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'gravity-drop-tower',
@@ -604,7 +646,7 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
         attempts: currentAttempts + 1,
       });
       sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate and explain the gravity concept.`,
+        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate and explain the gravity concept. ${tierTutorClause}`,
         { silent: true },
       );
     } else {
@@ -624,11 +666,11 @@ export default function GravityDropTower({ data, className = '' }: GravityDropTo
       }
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about gravity.`,
+        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about gravity. ${tierTutorClause}`,
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
 
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {

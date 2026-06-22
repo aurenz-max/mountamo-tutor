@@ -1,13 +1,79 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { CharacterWebData } from "../../primitives/visual-primitives/literacy/CharacterWeb";
-import { logEvalModeResolution } from '../evalMode';
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry
+//
+// Each mode is a DISTINCT literary-analysis task identity (a different reading
+// skill / Bloom tier), NOT a numeric difficulty knob. The character-web data
+// shape is identical for every mode (same characters/relationships/change
+// fields); the mode shifts WHICH analytical move the content is built to
+// elicit — what the story foregrounds and what the change/relationship prompts
+// demand. `analysisFocus` is the root-level discriminator; the component
+// renders every phase regardless, so the field is back-compatible / optional.
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  trait_id: {
+    promptDoc:
+      `"trait_id": IDENTIFY character traits from behavior. The student's task is to name `
+      + `single-word adjective traits a character shows through what they DO and SAY (kind, brave, `
+      + `stubborn, curious). The story must make traits inferable from concrete actions — each `
+      + `suggestedTrait should be demonstrated by an event in the storyContext. traitEvidence can be `
+      + `a short action reference (1 sentence). Relationships are simple and plot-obvious. The change `
+      + `prompt asks about an OUTWARD behavior change. Bloom: identify/describe. Grades 2-3.`,
+    schemaDescription: "'trait_id' (name traits from behavior)",
+  },
+  trait_evidence: {
+    promptDoc:
+      `"trait_evidence": CITE TEXT EVIDENCE for each trait. The skill is supporting a trait claim with `
+      + `a specific quote or paraphrase from the story — the trait-to-evidence link is the graded move. `
+      + `Every suggestedTrait MUST map (via traitEvidence) to a concrete 1-2 sentence quote drawn from `
+      + `storyContext. Choose traits that are NOT stated outright but are provable from an event, so the `
+      + `student must locate the supporting line. The change prompt asks the student to back up a claim `
+      + `with evidence. Bloom: cite/justify. Grades 3-4.`,
+    schemaDescription: "'trait_evidence' (support traits with text evidence)",
+  },
+  relationship_map: {
+    promptDoc:
+      `"relationship_map": ANALYZE how characters interact and how those relationships drive the plot. `
+      + `Provide 2-3 characters with VARIED, non-obvious relationships (include at least one rival/enemy `
+      + `or mentor pairing, not just friends) whose interactions actually shape story events. Each `
+      + `relationship description must explain HOW the connection affects what happens, not just label it. `
+      + `The change prompt centers on how a RELATIONSHIP shifted over the story. Bloom: analyze `
+      + `interactions. Grades 4-5.`,
+    schemaDescription: "'relationship_map' (analyze character interactions)",
+  },
+  character_change: {
+    promptDoc:
+      `"character_change": ANALYZE a dynamic character's development and WHY it happened. Build a clear `
+      + `character arc — the protagonist is meaningfully different by the end (a belief, value, or `
+      + `relationship has shifted) and the story supplies the CAUSE of that change (a turning point, `
+      + `consequence, or relationship). suggestedTraits should contrast beginning-vs-end where relevant `
+      + `(e.g. "fearful early, resolute later"). The change prompt MUST ask not just WHAT changed but WHY, `
+      + `and expectedChange names the cause. Bloom: analyze/evaluate development. Grades 5-6.`,
+    schemaDescription: "'character_change' (analyze character development and cause)",
+  },
+};
 
 const characterWebSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: { type: Type.STRING, description: "Engaging title for the character analysis activity" },
     gradeLevel: { type: Type.STRING, description: "Target grade level ('2' through '6')" },
+    analysisFocus: {
+      type: Type.STRING,
+      enum: ["trait_id", "trait_evidence", "relationship_map", "character_change"],
+      description: "The literary-analysis skill this activity is built to elicit (does not change the data shape; shapes the content emphasis)",
+    },
     storyContext: { type: Type.STRING, description: "Brief story summary (3-5 sentences) for student reference" },
     characters: {
       type: Type.ARRAY,
@@ -47,121 +113,84 @@ const characterWebSchema: Schema = {
   required: ["title", "gradeLevel", "storyContext", "characters", "relationships", "changePrompt", "changeCharacterId", "expectedChange"]
 };
 
-// --- Eval-mode differentiation ---
-
-interface ModeConstraints {
-  maxCharacters: number;
-  maxTraitsPerChar: number;
-  maxRelationships: number;
-  promptNote: string;
-}
-
-const MODE_CONSTRAINTS: Record<string, ModeConstraints> = {
-  simple_traits: {
-    maxCharacters: 2,
-    maxTraitsPerChar: 3,
-    maxRelationships: 1,
-    promptNote: 'DIFFICULTY: EASY. Use only 1-2 characters. Traits must be simple, single-word adjectives a young child knows (kind, brave, funny, shy, strong). Keep evidence quotes short (1 sentence). Only 1 simple relationship. Change prompt should be a simple behavior change.',
-  },
-  trait_evidence: {
-    maxCharacters: 2,
-    maxTraitsPerChar: 4,
-    maxRelationships: 2,
-    promptNote: 'DIFFICULTY: MODERATE. Use exactly 2 characters. Each trait MUST have a detailed text evidence quote (2+ sentences from the story). Focus on evidence quality. 1-2 relationships. Change prompt asks how a character changed from beginning to end.',
-  },
-  default: {
-    maxCharacters: 3,
-    maxTraitsPerChar: 5,
-    maxRelationships: 3,
-    promptNote: '', // uses grade notes as-is
-  },
-  complex_analysis: {
-    maxCharacters: 3,
-    maxTraitsPerChar: 5,
-    maxRelationships: 3,
-    promptNote: 'DIFFICULTY: ADVANCED. Include 2-3 complex characters. One character MUST be a foil or contrast to the protagonist — include a "rival" or "enemy" relationship type. Use multi-layered traits (e.g., "outwardly confident but privately insecure"). Explore deeper motivations and thematic connections. Change prompt should require analysis of WHY the character changed, not just WHAT changed.',
-  },
-};
-
-function postFilterByMode(data: CharacterWebData, mode: string): CharacterWebData {
-  const constraints = MODE_CONSTRAINTS[mode] || MODE_CONSTRAINTS.default;
-
-  // Trim characters to max
-  if (data.characters.length > constraints.maxCharacters) {
-    const keptIds = new Set(data.characters.slice(0, constraints.maxCharacters).map(c => c.characterId));
-    data.characters = data.characters.slice(0, constraints.maxCharacters);
-    // Filter relationships to only kept characters
-    data.relationships = data.relationships.filter(
-      r => keptIds.has(r.fromCharacterId) && keptIds.has(r.toCharacterId)
-    );
-    // Ensure changeCharacterId is still valid
-    if (!keptIds.has(data.changeCharacterId)) {
-      data.changeCharacterId = data.characters[0].characterId;
-    }
-  }
-
-  // Trim traits per character
-  for (const char of data.characters) {
-    if (char.suggestedTraits.length > constraints.maxTraitsPerChar) {
-      const kept = char.suggestedTraits.slice(0, constraints.maxTraitsPerChar);
-      const keptSet = new Set(kept);
-      char.suggestedTraits = kept;
-      // Trim evidence to match
-      if (char.traitEvidence) {
-        const filtered: Record<string, string> = {};
-        for (const [trait, evidence] of Object.entries(char.traitEvidence)) {
-          if (keptSet.has(trait)) filtered[trait] = evidence;
-        }
-        char.traitEvidence = filtered;
-      }
-    }
-  }
-
-  // Trim relationships
-  if (data.relationships.length > constraints.maxRelationships) {
-    data.relationships = data.relationships.slice(0, constraints.maxRelationships);
-  }
-
-  return data;
-}
-
+/**
+ * Generate character web data using Gemini AI.
+ *
+ * Eval modes are distinct literary-analysis task identities (trait_id →
+ * trait_evidence → relationship_map → character_change), resolved via the
+ * shared eval-mode utility. An explicit `config.targetEvalMode` pins one mode
+ * (the tester / curator path); otherwise the resolver runs and may blend or
+ * leave the focus unconstrained (mixed). The schema's `analysisFocus` enum is
+ * narrowed to the resolved mode(s) so Gemini commits to the right analytical
+ * emphasis — no post-filtering, no numeric trimming.
+ *
+ * @param topic - Theme for the story (e.g. "A New School", "Lost in the Woods")
+ * @param gradeLevel - Grade level ('2' through '6') sets vocabulary/complexity for the mixed case
+ * @param config - Optional overrides + eval-mode routing (targetEvalMode / intent / objectiveText)
+ */
 export const generateCharacterWeb = async (
   topic: string,
   gradeLevel: string = '4',
-  config?: Partial<CharacterWebData> & { targetEvalMode?: string }
+  config?: Partial<CharacterWebData> & {
+    /** Eval mode pinned by the tester/curator. Wins over intent resolution, no LLM call. */
+    targetEvalMode?: string;
+    /** Component intent — routing signal when no mode is pinned. */
+    intent?: string;
+    /** Parent objective text — secondary routing signal. */
+    objectiveText?: string;
+  }
 ): Promise<CharacterWebData> => {
-  const evalMode = config?.targetEvalMode || 'default';
-  logEvalModeResolution('CharacterWeb', evalMode, null);
+
+  // ── Eval mode resolution ────────────────────────────────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'character-web',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('CharacterWeb', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(characterWebSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'analysisFocus',
+        rootLevel: true,
+      })
+    : characterWebSchema;
+
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
+  // Grade band shapes vocabulary / character count only for the MIXED (unconstrained)
+  // case — when a mode is pinned, the mode's own promptDoc governs the analytical task.
   const gradeNotes: Record<string, string> = {
-    '2': 'Grade 2: 1-2 characters. 2-3 simple traits per character (kind, brave, funny). Simple evidence quotes. 1 relationship. Change = simple behavior change.',
+    '2': 'Grade 2: 1-2 characters. 2-3 simple traits per character (kind, brave, funny). Simple evidence. 1 relationship. Change = simple behavior change.',
     '3': 'Grade 3: 2 characters for comparison. 3 traits each with evidence. 1-2 relationships. How a character changes from beginning to end.',
     '4': 'Grade 4: 2-3 characters. Internal vs external traits. Motivations. 2-3 relationships. Character development arc.',
     '5': 'Grade 5: 2-3 characters including a foil. Deeper motivation analysis. Character growth/decline. Thematic connections.',
     '6': 'Grade 6: 2-3 complex characters. Multi-layered motivations. Character as symbol. Sophisticated analysis expected.',
   };
 
-  const modeConstraints = MODE_CONSTRAINTS[evalMode] || MODE_CONSTRAINTS.default;
-  const characterCount = Math.min(
-    parseInt(gradeLevelKey) <= 3 ? 2 : 3,
-    modeConstraints.maxCharacters
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
   );
 
-  const modeInstruction = modeConstraints.promptNote
-    ? `\n${modeConstraints.promptNote}`
-    : '';
-
   const prompt = `Create a character analysis activity about: "${topic}".
-GRADE: ${gradeLevelKey}. CHARACTERS: ${characterCount}.
-${gradeNotes[gradeLevelKey] || gradeNotes['4']}${modeInstruction}
 
-Generate:
-1. A brief story summary related to the topic with interesting characters
-2. ${characterCount} character profiles with traits and text evidence
-3. Relationships between characters (${characterCount === 2 ? '1' : '2-3'} relationships)
-4. A character change question targeting the main character
-5. traitEvidence should map each suggestedTrait to a quote from the story context`;
+TARGET GRADE LEVEL: ${gradeLevelKey}
+${!evalConstraint ? `\n${gradeNotes[gradeLevelKey] || gradeNotes['4']}\n` : ''}
+${challengeTypeSection}
+
+Provide:
+1. analysisFocus: ${evalConstraint ? `"${evalConstraint.allowedTypes[0]}"` : 'the focus that best fits this activity'}
+2. A brief story summary (storyContext) related to the topic with vivid characters whose traits are inferable from their actions
+3. 2-3 character profiles, each with suggestedTraits and a traitEvidence map (trait name -> a quote/paraphrase drawn from storyContext)
+4. Relationships between characters, each with a description of HOW they relate
+5. A character change question (changePrompt) targeting one character, the changeCharacterId, and a model expectedChange
+
+CRITICAL RULES:
+- Every suggestedTrait MUST be demonstrable from an event or line in storyContext (never reveal the answer outright in labels — the student infers it).
+- Every key in traitEvidence MUST be one of that character's suggestedTraits, and its value is a quote/paraphrase that actually supports the trait.
+- changeCharacterId MUST be one of the provided characters.
+- Keep the title neutral — never state the analysis focus or the answer in the title.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -169,18 +198,31 @@ Generate:
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: characterWebSchema,
-        systemInstruction: 'You are an expert K-6 reading teacher specializing in character analysis and literary response. You create rich, relatable characters with clear traits supported by textual evidence. Your story contexts are engaging and age-appropriate. Character relationships are realistic and varied.',
+        responseSchema: activeSchema,
+        systemInstruction: 'You are an expert K-6 reading teacher specializing in character analysis and literary response. You create rich, relatable characters with clear traits supported by textual evidence. Your story contexts are engaging and age-appropriate. Character relationships are realistic and varied. You build each activity to elicit one specific analytical skill without ever revealing the answer in titles, labels, or prompts.',
       }
     });
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
-    let result = JSON.parse(text) as CharacterWebData;
+    const result = JSON.parse(text) as CharacterWebData;
 
-    // Post-filter: enforce mode constraints deterministically
-    result = postFilterByMode(result, evalMode);
+    // Merge config overrides (exclude routing fields from the spread).
+    const { targetEvalMode: _m, intent: _i, objectiveText: _o, ...configRest } = config ?? {};
+    void _m; void _i; void _o;
+    const finalData: CharacterWebData = {
+      ...result,
+      ...configRest,
+    };
 
-    return { ...result, ...config };
+    console.log('Character Web Generated:', {
+      title: finalData.title,
+      gradeLevel: finalData.gradeLevel,
+      analysisFocus: (finalData as { analysisFocus?: string }).analysisFocus,
+      modes: evalConstraint ? evalConstraint.allowedTypes.join('+') : 'mixed',
+      characters: finalData.characters?.map(c => c.name) || [],
+    });
+
+    return finalData;
   } catch (error) {
     console.error("Error generating character web:", error);
     throw error;

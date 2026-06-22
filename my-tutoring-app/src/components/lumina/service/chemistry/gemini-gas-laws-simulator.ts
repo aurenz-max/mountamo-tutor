@@ -100,6 +100,117 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen helps are withdrawn (per pinned mode).
+// INVARIANT: a tier only removes scaffolding (overlays, graph traces, hint
+// explicitness). It NEVER touches the scenario numbers, the perturbation, the
+// directionAnswer, or any targetAnswer — those are owned by the physics solver
+// and are byte-identical across tiers. All levers here are DISPLAY-ONLY: the
+// component's check functions read studentDirection/studentNumber vs the stored
+// answer, never any field a tier writes.
+//
+// Lever menu (this is a living-simulation primitive, so the levers are #1
+// perception/tracking overlays + #2 instruction-as-scaffold):
+//   #1 graph traces  — the P-V / V-T / P-T mini-plots draw the relationship as a
+//                      curve the student can READ to self-check; withdraw them and
+//                      the student must reason from the bare particle sim + numbers.
+//   #1 collision flash — the piston-collision overlay makes "more collisions =
+//                      higher pressure" visible; withdraw it at hard.
+//   #1 temperature color — particle color encodes T (a perceptual readout of how
+//                      hot the gas is); withdraw it at hard.
+//   #2 hint level     — 'formula' names the governing gas law / equation; 'concept'
+//                      is a KMT nudge with no formula. (words only; numbers identical)
+// ---------------------------------------------------------------------------
+
+interface GasLawsSupportScaffold {
+  /** #1 show the P-V/V-T/P-T graph traces the student can read to self-check the relationship. */
+  showPlots?: boolean;
+  /** #1 show the collision-frequency flash overlay on the piston. */
+  showCollisionMarkers?: boolean;
+  /** #1 encode temperature as particle color (perceptual readout of T). */
+  showTemperatureColor?: boolean;
+  /** #2 'formula' = name the gas law / equation in the hint; 'concept' = KMT nudge only. */
+  hintLevel?: 'formula' | 'concept';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: GasLawsChallenge['type'],
+  tier: SupportTier,
+): GasLawsSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen help the student gets. It NEVER changes the '
+    + 'scenario values, the perturbation, or the answer — only which overlays/readouts are shown '
+    + 'and how explicit the hint is.';
+
+  // Perception overlays withdraw as the tier rises (easy = full self-check support,
+  // hard = bare particle sim). Identical across challenge types: every type uses the
+  // same particle simulation surface.
+  const showPlots = tier === 'easy';
+  const showCollisionMarkers = tier !== 'hard';
+  const showTemperatureColor = tier !== 'hard';
+  const hintLevel: 'formula' | 'concept' = tier === 'easy' ? 'formula' : 'concept';
+
+  const verb = pinnedType === 'observe'
+    ? 'reason about the direction of change'
+    : 'compute the new value';
+
+  return {
+    showPlots,
+    showCollisionMarkers,
+    showTemperatureColor,
+    hintLevel,
+    promptLines: [
+      lead,
+      `The P-V / V-T / P-T graph traces are ${showPlots ? 'shown so the student can read the relationship as a curve and self-check' : 'withdrawn — the student must ' + verb + ' from the bare particle simulation and the variable readouts alone'}.`,
+      `The collision-frequency flash overlay and temperature-color cue are ${showCollisionMarkers ? 'shown to make collision rate and "how hot" perceptible' : 'withdrawn — the student infers collision frequency and temperature from particle motion unaided'}.`,
+      `The hint is ${hintLevel === 'formula' ? 'an explicit gas-law statement (the relevant law / equation is named so the student can apply it)' : 'a conceptual KMT nudge only — it points at particle behavior but does NOT name the law or the equation'}.`,
+      'Keep the title and description neutral — never state the support level, the law focus, or the answer.',
+    ],
+  };
+}
+
+/** A conceptual KMT nudge that points at particle behavior WITHOUT naming the gas
+ *  law or its equation (used at medium/hard, where the formula scaffold is withdrawn).
+ *  Numbers are never mentioned — this only rewrites the hint TEXT, never the answer. */
+function conceptHint(ch: GasLawsChallenge): string {
+  const asked = ch.askedVariable;
+  const changed = ch.change.variable;
+  const verb = ch.type === 'observe'
+    ? 'decide whether it goes up, down, or stays the same'
+    : 'work out its new value';
+  // Anchor in particle behavior, never the law name.
+  const kmt: Record<GasVariable, string> = {
+    T: 'temperature shows up as how fast the particles move',
+    V: 'volume is how much room the particles have',
+    P: 'pressure is how often and how hard the particles strike the walls',
+    n: 'amount is how many particles are in the container',
+  };
+  return `Watch the particles: ${kmt[changed]}, and ${kmt[asked]}. `
+    + `Think about how changing ${VARIABLE_LABEL_LOCAL[changed]} changes the collisions, then ${verb} for ${VARIABLE_LABEL_LOCAL[asked]}.`;
+}
+
+const VARIABLE_LABEL_LOCAL: Record<GasVariable, string> = {
+  P: 'pressure',
+  V: 'volume',
+  T: 'temperature',
+  n: 'the amount of gas',
+};
+
+// ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
 
@@ -565,7 +676,13 @@ function normalizeScenario(raw: unknown, gradeBand: GradeBand): GasLawsScenario 
 export const generateGasLawsSimulator = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string; intent?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    intent?: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second
+     *  axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
+    difficulty?: string;
+  }>,
 ): Promise<GasLawsSimulatorData> => {
   const gradeBand = resolveGradeBand(gradeLevel);
 
@@ -606,6 +723,23 @@ export const generateGasLawsSimulator = async (
 
   logEvalModeResolution('gas-laws-simulator', config?.targetEvalMode, constraint);
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    pinnedType is the single mode the prompt TONE references when exactly one
+  //    type is allowed (eval-mode pin and/or grade-8 observe lock). It drives prompt
+  //    tone only — the actual per-challenge withdrawal runs deterministically at the
+  //    end and resolves each challenge's scaffold from its OWN type. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: GasLawsChallenge['type'] | undefined =
+    effectiveAllowed && effectiveAllowed.length === 1
+      ? (effectiveAllowed[0] as GasLawsChallenge['type'])
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const intentHint = config?.intent ? `\nInstructor intent: ${config.intent}` : '';
   const grade8Rider = grade8Forced
     ? `\n\nGRADE 8 OVERRIDE: ONLY 'observe' challenges are permitted. Use lawFocus='kmt_only' ` +
@@ -618,7 +752,7 @@ GRADE BAND GUIDANCE:
 ${GRADE_BAND_GUIDANCE[gradeBand]}
 
 ${challengeTypePromptSection}
-
+${tierSection}
 SCENARIO REQUIREMENTS:
 1. Choose a lawFocus appropriate to the grade band.
 2. lockedVariables MUST match lawFocus:
@@ -864,10 +998,57 @@ DOUBLE-CHECK:
     }
 
     // -----------------------------------------------------------------------
-    // Assemble final result
+    // Within-mode support tier: withdraw on-screen scaffolding (never the numbers).
+    // Gated ONLY on supportTier being present — a blended/auto session must get
+    // difficulty too (each challenge resolves its scaffold from its OWN type).
+    // Runs AFTER the empty-fallback + every structural fixup so a tier can only
+    // REMOVE help. The hint rewrite is the per-challenge half; the showOptions
+    // overlays are session-level (one particle sim drives all challenges), so they
+    // resolve once from the highest-applicable tier surface.
     // -----------------------------------------------------------------------
 
-    const showOptions = raw.showOptions ?? undefined;
+    type ShowOptions = NonNullable<GasLawsSimulatorData['showOptions']>;
+    let showOptions: ShowOptions | undefined =
+      (raw.showOptions as ShowOptions | undefined) ?? undefined;
+
+    if (supportTier) {
+      // Per-challenge: withdraw the formula-level hint at medium/hard (#2).
+      for (const ch of challenges) {
+        const sc = resolveSupportStructure(ch.type, supportTier);
+        if (sc.hintLevel === 'concept') {
+          ch.hint = conceptHint(ch);
+        }
+        // 'formula' (easy) keeps the LLM's explicit gas-law hint untouched.
+      }
+
+      // Session-level overlays (#1). The mini-plots, collision flash, and
+      // temperature color are a single simulation surface shared by every
+      // challenge, so they resolve from the pinned mode when one exists, else
+      // 'observe' (every type shares the same sim). The plot lever NEVER turns ON
+      // a plot that isn't law-relevant — at easy it enables only the focus-relevant
+      // traces (UI contract: an off-axis plot would draw a meaningless flat line).
+      const sessScaffold = resolveSupportStructure(pinnedType ?? 'observe', supportTier);
+      const focus = scenario.lawFocus;
+      const pvRelevant = focus === 'boyle' || focus === 'combined' || focus === 'ideal';
+      const vtRelevant = focus === 'charles' || focus === 'combined' || focus === 'ideal';
+      const ptRelevant = focus === 'gay_lussac' || focus === 'combined' || focus === 'ideal';
+      showOptions = {
+        ...(showOptions ?? {}),
+        showPVPlot: sessScaffold.showPlots ? pvRelevant : false,
+        showVTPlot: sessScaffold.showPlots ? vtRelevant : false,
+        showPTPlot: sessScaffold.showPlots ? ptRelevant : false,
+        showCollisionMarkers: sessScaffold.showCollisionMarkers ?? true,
+        showTemperatureColor: sessScaffold.showTemperatureColor ?? true,
+      };
+      console.log(
+        `[gas-laws-simulator] Support tier "${supportTier}" applied per-challenge `
+        + `(${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`,
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // Assemble final result
+    // -----------------------------------------------------------------------
 
     const result: GasLawsSimulatorData = {
       title: raw.title || 'Gas Laws Lab',
@@ -876,6 +1057,7 @@ DOUBLE-CHECK:
       scenario,
       challenges,
       ...(showOptions ? { showOptions } : {}),
+      ...(supportTier ? { supportTier } : {}),
     };
 
     console.log('\uD83C\uDF88 Gas Laws Simulator Generated:', {

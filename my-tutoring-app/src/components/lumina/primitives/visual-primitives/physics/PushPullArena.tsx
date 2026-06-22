@@ -47,6 +47,11 @@ export interface PushPullChallenge {
   distractor1: string;
   distractor2?: string;
   hint: string;
+  // ── Within-mode support tier scaffolds (display-only; NEVER change numbers/answer) ──
+  /** Show the on-canvas force-vector arrow + Newton readout (perception self-check). Default true. */
+  showForceArrows?: boolean;
+  /** Show the on-canvas velocity (m/s) + distance-marker readouts after the sim runs. Default true. */
+  showMotionReadout?: boolean;
 }
 
 export interface PushPullArenaData {
@@ -54,6 +59,9 @@ export interface PushPullArenaData {
   description: string;
   theme: ArenaTheme;
   challenges: PushPullChallenge[];
+
+  /** Within-mode support tier ('easy'|'medium'|'hard') — passed to the live tutor's reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -217,6 +225,7 @@ function drawArena(
   state: PhysicsState,
   dpr: number,
   showForceArrows: boolean,
+  showMotionReadout: boolean = true,
 ) {
   const w = CANVAS_W;
   const h = CANVAS_H;
@@ -252,16 +261,18 @@ function drawArena(
   ctx.textAlign = 'right';
   ctx.fillText(surfaceStyle.label, w - 10, h - 10);
 
-  // Distance markers
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.font = '9px sans-serif';
-  ctx.textAlign = 'center';
-  for (let x = 100; x < w; x += 100) {
-    ctx.beginPath();
-    ctx.moveTo(x, GROUND_Y);
-    ctx.lineTo(x, GROUND_Y + 8);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.stroke();
+  // Distance markers (motion self-check aid — withdrawn at the hard tier)
+  if (showMotionReadout) {
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    for (let x = 100; x < w; x += 100) {
+      ctx.beginPath();
+      ctx.moveTo(x, GROUND_Y);
+      ctx.lineTo(x, GROUND_Y + 8);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.stroke();
+    }
   }
 
   // Trail
@@ -345,8 +356,8 @@ function drawArena(
       );
     }
 
-    // Velocity indicator
-    if (Math.abs(obj.v) > 1) {
+    // Velocity indicator (motion self-check aid — withdrawn at the hard tier)
+    if (showMotionReadout && Math.abs(obj.v) > 1) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
@@ -394,7 +405,25 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   const aiPrimitiveData = useMemo(() => ({
     theme: data.theme,
     challengeCount: challenges.length,
-  }), [data.theme, challenges.length]);
+    supportTier: data.supportTier,
+  }), [data.theme, challenges.length, data.supportTier]);
+
+  // Mode-aware tier reveal clause: the live tutor is a second scaffold channel.
+  // easy → name the force principle / walk the setup; medium → nudge execution only;
+  // hard → never name the principle the instruction withheld, ask what the student
+  // observes, never reveal the answer.
+  const tierTutorClause = useMemo(() => {
+    switch (data.supportTier) {
+      case 'easy':
+        return ' SUPPORT (easy): name the force/motion idea at play (push vs pull, heavier-needs-more-force, slippery vs rough) and walk the student through what to watch for. Never state the answer.';
+      case 'medium':
+        return ' SUPPORT (medium): nudge how to run or read the simulation — do NOT name the underlying force rule for them. Never state the answer.';
+      case 'hard':
+        return ' SUPPORT (hard): do NOT name the force rule; the workspace shows no arrows or readouts. Ask what the student SAW happen and have them justify their thinking. Never reveal the answer.';
+      default:
+        return '';
+    }
+  }, [data.supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'push-pull-arena',
@@ -437,6 +466,10 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
   // ── UI state ─────────────────────────────────────────────────────
   const currentChallenge = challenges[currentChallengeIndex] ?? challenges[0];
+
+  // Per-challenge scaffold flags (default ON — only a 'hard' tier withdraws them).
+  const showForceArrows = currentChallenge?.showForceArrows ?? true;
+  const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
   const [forceStrength, setForceStrength] = useState(currentChallenge?.pushStrength ?? 5);
   const [forceDirection, setForceDirection] = useState<PushPullDirection>(currentChallenge?.pushDirection ?? 'push');
   const [simRunning, setSimRunning] = useState(false);
@@ -533,10 +566,10 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
-        if (ctx) drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1, true);
+        if (ctx) drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1, showForceArrows, showMotionReadout);
       }
     }
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, initPhysics]);
+  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, initPhysics, showForceArrows, showMotionReadout]);
 
   // ── Canvas setup & sizing ────────────────────────────────────────
   useEffect(() => {
@@ -548,7 +581,8 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     canvas.style.width = `${CANVAS_W}px`;
     canvas.style.height = `${CANVAS_H}px`;
     const ctx = canvas.getContext('2d');
-    if (ctx) drawArena(ctx, physicsRef.current, dpr, true);
+    if (ctx) drawArena(ctx, physicsRef.current, dpr, showForceArrows, showMotionReadout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Animation loop ───────────────────────────────────────────────
@@ -565,7 +599,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     const loop = () => {
       if (!running) return;
       physicsRef.current = stepPhysics(physicsRef.current, 1 / 60);
-      drawArena(ctx, physicsRef.current, dpr, true);
+      drawArena(ctx, physicsRef.current, dpr, showForceArrows, showMotionReadout);
 
       if (!physicsRef.current.isRunning) {
         setSimRunning(false);
@@ -580,7 +614,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       running = false;
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [simRunning]);
+  }, [simRunning, showForceArrows, showMotionReadout]);
 
   // ── Apply force button handler ───────────────────────────────────
   const handleApplyForce = useCallback(() => {
@@ -652,11 +686,11 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       }
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint about forces and motion.`,
+        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint about forces and motion.${tierTutorClause}`,
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
 
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {

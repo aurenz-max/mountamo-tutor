@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -16,6 +16,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { FigurativeLanguageFinderMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -45,6 +46,18 @@ export interface FigurativeLanguageFinderData {
 
   // Available types for classification
   availableTypes: FigurativeType[];
+
+  // ── Within-mode support tier (config.difficulty) — scaffolding level, NOT the
+  //    passage, instances, or answers. Set deterministically by the generator. ──
+  /** easy: pre-cue the figurative spans in the Find phase so finding is confirmation;
+   *  hard: no cue — the student locates them in plain prose. Display-only. */
+  prehighlightInstances?: boolean;
+  /** easy: restrict the classify chips to a tighter choice set (still contains every
+   *  correct type present, so no answer is unselectable); hard: full type menu.
+   *  Decoupled into its OWN field so it never narrows the answer key. */
+  classifyTypeChoices?: FigurativeType[];
+  /** easy: per-phase instruction names the strategy / signal words; hard: neutral. */
+  nameStrategyInHints?: boolean;
 
   // Evaluation props
   instanceId?: string;
@@ -84,6 +97,19 @@ const TYPE_COLORS: Record<FigurativeType, string> = {
   imagery: 'bg-pink-500/20 border-pink-500/40 text-pink-300',
 };
 
+// Signal-word / strategy cue per figurative type — shown ONLY at the easy tier
+// (#2 instruction-as-scaffold). Names the thing to look for; never the answer.
+const TYPE_STRATEGY: Record<FigurativeType, string> = {
+  simile: 'comparisons using "like" or "as"',
+  metaphor: 'a thing said to BE another thing (no "like"/"as")',
+  personification: 'objects/animals doing human actions',
+  hyperbole: 'wild exaggerations that can\'t be literally true',
+  idiom: 'common sayings that don\'t mean their literal words',
+  alliteration: 'repeated starting sounds in nearby words',
+  onomatopoeia: 'words that spell out a sound',
+  imagery: 'vivid sensory details you can picture, hear, or feel',
+};
+
 const TYPE_LABELS: Record<FigurativeType, string> = {
   simile: 'Simile',
   metaphor: 'Metaphor',
@@ -102,23 +128,75 @@ const TYPE_LABELS: Record<FigurativeType, string> = {
 const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ data, className }) => {
   const {
     title, gradeLevel, passage, instances, translateInstanceIds, availableTypes,
+    prehighlightInstances, classifyTypeChoices, nameStrategyInHints,
     instanceId: evalInstanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
+
+  // Classify chips: prefer the tier-reduced choice set when the generator supplied
+  // one (easy/medium). It is GUARANTEED to contain every correct type present, so
+  // no correct answer is ever made unselectable. Falls back to the full menu.
+  const classifyOptions: FigurativeType[] =
+    classifyTypeChoices && classifyTypeChoices.length > 0 ? classifyTypeChoices : availableTypes;
 
   const [currentPhase, setCurrentPhase] = useState<FinderPhase>('find');
   const [foundInstances, setFoundInstances] = useState<Set<number>>(new Set()); // indices into instances[]
   const [classifications, setClassifications] = useState<Record<number, FigurativeType>>({}); // instance index -> type
   const [translations, setTranslations] = useState<Record<string, string>>({}); // instanceId -> student translation
 
+  // Stable fallback instance ID — must not change across renders
+  const stableInstanceIdRef = useRef(evalInstanceId || `figurative-language-finder-${Date.now()}`);
+  const resolvedInstanceId = evalInstanceId || stableInstanceIdRef.current;
+
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
   } = usePrimitiveEvaluation<FigurativeLanguageFinderMetrics>({
     primitiveType: 'figurative-language-finder',
-    instanceId: evalInstanceId || `figurative-language-finder-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
+
+  // Types of figurative language present in this passage — drives tutor context.
+  const typesPresent = useMemo(
+    () => Array.from(new Set(instances.map(i => i.type))).map(t => TYPE_LABELS[t]).join(', '),
+    [instances]
+  );
+
+  // ---------------------------------------------------------------------------
+  // AI Tutoring Integration — the AI tutor coaches the student through finding,
+  // classifying, and interpreting figurative language. It never names the answer;
+  // it points at signal words and the literal/figurative distinction.
+  // ---------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    gradeLevel,
+    currentPhase,
+    totalInstances: instances.length,
+    instancesFound: foundInstances.size,
+    typesPresent,
+    classifiedCount: Object.keys(classifications).length,
+  }), [gradeLevel, currentPhase, instances.length, foundInstances, typesPresent, classifications]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'figurative-language-finder',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // Activity introduction — fire once when the AI tutor connects
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || instances.length === 0) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] This is a figurative-language activity for Grade ${gradeLevel}. `
+      + `The passage "${title}" contains ${instances.length} figurative phrases (types in play: ${typesPresent}). `
+      + `Warmly introduce the activity (2 sentences max): we'll find, classify, and interpret figurative language. `
+      + `Encourage the student to tap each figurative phrase they spot in the passage. Do NOT reveal which phrases or types they are.`,
+      { silent: true }
+    );
+  }, [isConnected, instances.length, gradeLevel, title, typesPresent, sendText]);
 
   // Phase navigation
   const phases: FinderPhase[] = ['find', 'classify', 'interpret', 'review'];
@@ -128,7 +206,24 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
     const idx = phases.indexOf(currentPhase);
     if (idx < phases.length - 1) {
       SoundManager.navigate();
-      setCurrentPhase(phases[idx + 1]);
+      const next = phases[idx + 1];
+      setCurrentPhase(next);
+      if (next === 'classify') {
+        sendText(
+          `[PHASE_CLASSIFY] The student found ${foundInstances.size} of ${instances.length} figurative phrases and is now labeling each by type. Briefly prompt them to think about HOW each phrase works (one sentence). Do not reveal any answer.`,
+          { silent: true }
+        );
+      } else if (next === 'interpret') {
+        sendText(
+          `[PHASE_INTERPRET] The student is now writing the literal meaning of ${translateInstanceIds.length} figurative phrase(s). Briefly prompt them to put the figurative phrase into plain words (one sentence).`,
+          { silent: true }
+        );
+      } else if (next === 'review') {
+        sendText(
+          `[PHASE_REVIEW] The student reached the review step. Briefly invite them to check their labels before submitting (one sentence).`,
+          { silent: true }
+        );
+      }
     }
   };
   const prevPhase = () => {
@@ -165,6 +260,10 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
       const isFound = foundInstances.has(inst.origIdx);
       const classification = classifications[inst.origIdx];
       const typeColor = classification ? TYPE_COLORS[classification] : '';
+      // easy tier (#1 perception): pre-cue the figurative spans in the Find phase so
+      // locating them is confirmation, not discovery. Does NOT mark them found — the
+      // student still taps each one, so foundInstances / the score are unchanged.
+      const showCue = prehighlightInstances && currentPhase === 'find' && !isFound;
 
       elements.push(
         <span
@@ -177,7 +276,9 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
               ? classification
                 ? typeColor
                 : 'bg-yellow-400/20 text-yellow-200 underline underline-offset-2'
-              : 'text-slate-200'
+              : showCue
+                ? 'decoration-dashed decoration-slate-400/60 underline underline-offset-2 text-slate-200'
+                : 'text-slate-200'
           }`}
         >
           {passage.slice(inst.startIndex, inst.endIndex)}
@@ -191,14 +292,27 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
     }
 
     return <p className="text-sm leading-relaxed">{elements}</p>;
-  }, [passage, instances, foundInstances, classifications, currentPhase, toggleInstance]);
+  }, [passage, instances, foundInstances, classifications, currentPhase, toggleInstance, prehighlightInstances]);
 
   // Classify an instance
   const classifyInstance = useCallback((index: number, type: FigurativeType) => {
-    if (type === instances[index]?.type) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
+    const inst = instances[index];
+    if (!inst) return;
+    if (type === inst.type) {
+      SoundManager.playCorrect();
+      sendText(
+        `[CLASSIFY_CORRECT] The student correctly labeled "${inst.text}" as ${TYPE_LABELS[inst.type]}. Affirm briefly in one short sentence — note the signal that makes it a ${TYPE_LABELS[inst.type]}.`,
+        { silent: true }
+      );
+    } else {
+      SoundManager.playIncorrect();
+      sendText(
+        `[CLASSIFY_INCORRECT] The student labeled "${inst.text}" as ${TYPE_LABELS[type]}, but that is not the best fit. Give a brief hint about what to look for, without naming the correct type.`,
+        { silent: true }
+      );
+    }
     setClassifications(prev => ({ ...prev, [index]: type }));
-  }, [instances]);
+  }, [instances, sendText]);
 
   // Calculate score
   const calculateScore = useCallback(() => {
@@ -263,7 +377,12 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
       classifications,
       translations,
     });
-  }, [hasSubmittedEvaluation, calculateScore, submitEvaluation, foundInstances, classifications, translations]);
+
+    sendText(
+      `[ACTIVITY_COMPLETE] The student finished: found ${m.instancesFound}/${m.instancesTotal} phrases and labeled ${m.classificationsCorrect}/${m.classificationsTotal} correctly (score ${m.score}). Give a brief, warm wrap-up (one or two sentences) and one tip for spotting figurative language next time.`,
+      { silent: true }
+    );
+  }, [hasSubmittedEvaluation, calculateScore, submitEvaluation, foundInstances, classifications, translations, sendText]);
 
   // Render progress
   const renderProgress = () => (
@@ -287,6 +406,27 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
       })}
     </div>
   );
+
+  // easy-tier strategy cue (#2): name the signal words for the types actually in
+  // play. Distinct from the legend (which just labels). Hidden at medium/hard.
+  const strategyCue = useMemo(() => {
+    if (!nameStrategyInHints) return null;
+    const present = Array.from(new Set(instances.map(i => i.type)));
+    if (present.length === 0) return null;
+    return present.map(t => `${TYPE_LABELS[t]} — ${TYPE_STRATEGY[t]}`);
+  }, [nameStrategyInHints, instances]);
+
+  const renderStrategyCue = () =>
+    strategyCue ? (
+      <LuminaPanel accent="blue" className="p-3">
+        <p className="text-xs text-blue-200 font-medium mb-1">What to look for:</p>
+        <ul className="space-y-0.5">
+          {strategyCue.map((line, i) => (
+            <li key={i} className="text-xs text-slate-300">{line}</li>
+          ))}
+        </ul>
+      </LuminaPanel>
+    ) : null;
 
   // Type legend
   const renderTypeLegend = () => (
@@ -320,6 +460,7 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
         {currentPhase === 'find' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Tap each figurative language phrase you find in the passage:</p>
+            {renderStrategyCue()}
             {/* Interaction surface: clickable/highlightable passage spans — left bespoke */}
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
               {renderPassage}
@@ -338,6 +479,7 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
         {currentPhase === 'classify' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Label each highlighted phrase with its figurative language type:</p>
+            {renderStrategyCue()}
             <div className="space-y-2">
               {Array.from(foundInstances).sort((a, b) => a - b).map(idx => {
                 const inst = instances[idx];
@@ -346,9 +488,10 @@ const FigurativeLanguageFinder: React.FC<FigurativeLanguageFinderProps> = ({ dat
                 return (
                   <LuminaPanel key={idx} className="p-3">
                     <p className="text-sm text-yellow-200 font-medium mb-2">&ldquo;{inst.text}&rdquo;</p>
-                    {/* Figurative-tagging chips — bespoke interaction surface (color = the "ink") */}
+                    {/* Figurative-tagging chips — bespoke interaction surface (color = the "ink").
+                        Choice set is tier-reduced at easy/medium, full menu at hard. */}
                     <div className="flex flex-wrap gap-1.5">
-                      {availableTypes.map(t => (
+                      {classifyOptions.map(t => (
                         <button
                           key={t}
                           onClick={() => classifyInstance(idx, t)}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -21,6 +21,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { ContextCluesDetectiveMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -59,6 +60,18 @@ export interface ContextCluesDetectiveData {
 
     // Dictionary definition for comparison
     dictionaryDefinition: string;
+
+    // ── Within-mode support scaffold (config.difficulty) — on-screen help only.
+    //    Set deterministically by the generator per support tier; NEVER changes the
+    //    passage text, the clue type, the target word, or the correct meaning. A
+    //    missing/undefined value falls back to the fully-scaffolded default so the
+    //    no-tier path renders exactly as before. ──
+    /** Find phase: pre-tint the actual clue sentence(s) so the student can self-check the search. */
+    showClueHints?: boolean;
+    /** Classify phase: show the per-type descriptions under each clue-type label (vs. bare labels — recall the types unaided). */
+    showClueTypeDescriptions?: boolean;
+    /** Define phase: a named-strategy nudge ("look for the synonym near the word"). Withheld at higher tiers so the student names the strategy themselves. */
+    strategyHint?: string;
   }>;
 
   // Evaluation props (optional, auto-injected)
@@ -149,13 +162,17 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [showDictionary, setShowDictionary] = useState(false);
 
+  // Stable fallback instance ID — must not change across renders
+  const stableInstanceIdRef = useRef(instanceId || `context-clues-detective-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // Evaluation hook
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
   } = usePrimitiveEvaluation<ContextCluesDetectiveMetrics>({
     primitiveType: 'context-clues-detective',
-    instanceId: instanceId || `context-clues-detective-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -164,6 +181,50 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
   });
 
   const currentChallenge = challenges[currentChallengeIndex];
+
+  // ---------------------------------------------------------------------------
+  // AI Tutoring Integration — the AI tutor coaches the detective work. It never
+  // reveals the meaning/clue; it nudges the strategy (find the clue, name the
+  // clue type, infer the meaning) per the catalog tutoring scaffold.
+  // ---------------------------------------------------------------------------
+  const aiPrimitiveData = useMemo(() => ({
+    gradeLevel,
+    targetWord: currentChallenge?.targetWord ?? '',
+    currentPhase,
+    clueType: currentChallenge?.clueType ?? '',
+    itemIndex: currentChallengeIndex + 1,
+    totalItems: challenges.length,
+    selectedClueType,
+    highlightCount: highlightedSentenceIds.size,
+  }), [
+    gradeLevel, currentChallenge, currentPhase,
+    currentChallengeIndex, challenges.length,
+    selectedClueType, highlightedSentenceIds,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'context-clues-detective',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // Activity introduction — fire once when the AI tutor connects
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
+    hasIntroducedRef.current = true;
+
+    sendText(
+      `[ACTIVITY_START] This is a context-clues detective activity for Grade ${gradeLevel}. `
+      + `There are ${challenges.length} words to investigate. `
+      + `The first mystery word is "${currentChallenge.targetWord}". `
+      + `Introduce the activity warmly: we are detectives figuring out word meanings from clues in the passage. `
+      + `Tell the student to start by clicking the sentence that gives a clue about the word. `
+      + `Do NOT reveal the meaning or which sentence is the clue. Keep it brief and enthusiastic — 2-3 sentences max.`,
+      { silent: true }
+    );
+  }, [isConnected, currentChallenge, gradeLevel, challenges.length, sendText]);
 
   // Toggle sentence highlight
   const handleToggleSentence = useCallback((sentenceId: string) => {
@@ -200,6 +261,11 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       SoundManager.playCorrect();
       setFeedback('Great detective work! You found a context clue!');
       setFeedbackType('success');
+      sendText(
+        `[FIND_CORRECT] The student found a context-clue sentence for "${currentChallenge.targetWord}" (word ${currentChallengeIndex + 1} of ${challenges.length}). `
+        + `Briefly congratulate the detective and tell them to figure out what TYPE of clue it is. One sentence. Do not name the clue type.`,
+        { silent: true }
+      );
       setTimeout(() => {
         setCurrentPhase('classify');
         setFeedback('');
@@ -209,8 +275,13 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       SoundManager.playIncorrect();
       setFeedback('That sentence doesn\'t contain a clue. Look for a sentence that helps explain the highlighted word.');
       setFeedbackType('error');
+      sendText(
+        `[FIND_INCORRECT] The student highlighted a sentence that is NOT a context clue for "${currentChallenge.targetWord}" (word ${currentChallengeIndex + 1} of ${challenges.length}). `
+        + `Give a brief hint about what a context clue does, without pointing to the exact sentence or revealing the meaning. One sentence.`,
+        { silent: true }
+      );
     }
-  }, [currentChallenge, highlightedSentenceIds]);
+  }, [currentChallenge, highlightedSentenceIds, currentChallengeIndex, challenges.length, sendText]);
 
   // Check classify phase and advance
   const handleCheckClassify = useCallback(() => {
@@ -222,6 +293,11 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       SoundManager.playCorrect();
       setFeedback('Correct! You identified the clue type!');
       setFeedbackType('success');
+      sendText(
+        `[CLASSIFY_CORRECT] The student correctly named the clue type for "${currentChallenge.targetWord}". `
+        + `Briefly affirm and tell them to now use that clue to figure out what the word means. One sentence. Do not state the meaning.`,
+        { silent: true }
+      );
       setTimeout(() => {
         setCurrentPhase('define');
         setFeedback('');
@@ -231,8 +307,13 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       SoundManager.playIncorrect();
       setFeedback(`Not quite. Think about what the clue sentence does — does it define, give a synonym, show an opposite, provide an example, or require inference?`);
       setFeedbackType('error');
+      sendText(
+        `[CLASSIFY_INCORRECT] The student chose the clue type "${selectedClueType}" for "${currentChallenge.targetWord}", which is not right. `
+        + `Help them reason about what the clue sentence actually does (defines / gives a synonym / shows an opposite / gives an example / requires inference) without naming the correct type. One sentence.`,
+        { silent: true }
+      );
     }
-  }, [currentChallenge, selectedClueType]);
+  }, [currentChallenge, selectedClueType, sendText]);
 
   // Check define phase and finish challenge
   const handleCheckDefine = useCallback(() => {
@@ -264,19 +345,30 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       SoundManager.playCorrect();
       setFeedback('Excellent! You figured out the meaning from context!');
       setFeedbackType('success');
+      sendText(
+        `[DEFINE_CORRECT] The student correctly worked out the meaning of "${currentChallenge.targetWord}" from the context clues (word ${currentChallengeIndex + 1} of ${challenges.length}). `
+        + `Celebrate the detective work briefly and mention they can compare it to the dictionary definition shown. One or two sentences.`,
+        { silent: true }
+      );
     } else {
       SoundManager.playIncorrect();
       setFeedback(`The meaning is: "${currentChallenge.correctMeaning}"`);
       setFeedbackType('info');
+      sendText(
+        `[DEFINE_INCORRECT] The student's meaning for "${currentChallenge.targetWord}" was not correct (word ${currentChallengeIndex + 1} of ${challenges.length}). `
+        + `The dictionary definition is now shown on screen. Encourage them warmly to read it and the clue together so they can connect the clue to the meaning. One or two sentences. Stay supportive.`,
+        { silent: true }
+      );
     }
 
     // Show dictionary comparison
     setShowDictionary(true);
-  }, [currentChallenge, selectedMeaning, typedMeaning, highlightedSentenceIds, selectedClueType]);
+  }, [currentChallenge, selectedMeaning, typedMeaning, highlightedSentenceIds, selectedClueType, currentChallengeIndex, challenges.length, sendText]);
 
   // Move to next challenge or finish
   const handleNext = useCallback(() => {
     if (currentChallengeIndex < challenges.length - 1) {
+      const nextChallenge = challenges[currentChallengeIndex + 1];
       setCurrentChallengeIndex(prev => prev + 1);
       setCurrentPhase('find');
       setHighlightedSentenceIds(new Set());
@@ -286,10 +378,18 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
       setFeedback('');
       setFeedbackType('');
       setShowDictionary(false);
+
+      if (nextChallenge) {
+        sendText(
+          `[NEXT_WORD] The student is moving to mystery word ${currentChallengeIndex + 2} of ${challenges.length}: "${nextChallenge.targetWord}". `
+          + `Briefly introduce the new word and tell them to find the clue sentence. One sentence. Do not reveal the meaning or the clue location.`,
+          { silent: true }
+        );
+      }
     } else {
       submitFinalEvaluation();
     }
-  }, [currentChallengeIndex, challenges.length]);
+  }, [currentChallengeIndex, challenges, sendText]);
 
   // Submit final evaluation
   const submitFinalEvaluation = useCallback(() => {
@@ -399,6 +499,13 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
           const isTargetSentence = sentence.id === currentChallenge.targetWordSentenceId;
           const isHighlighted = highlightedSentenceIds.has(sentence.id);
           const isClueRevealed = currentPhase !== 'find' && currentChallenge.clueSentenceIds.includes(sentence.id);
+          // Support scaffold (easy/medium): during the FIND phase, faintly cue the
+          // real clue sentence(s) so the student can self-check their search. The
+          // check still reads clueSentenceIds — this only tints, never auto-answers.
+          const isClueHinted =
+            currentPhase === 'find' &&
+            !!currentChallenge.showClueHints &&
+            currentChallenge.clueSentenceIds.includes(sentence.id);
           const isClickable = currentPhase === 'find' && !isTargetSentence;
 
           // Highlight the target word within the target sentence
@@ -427,6 +534,7 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
                 ${isTargetSentence ? 'text-slate-100' : 'text-slate-300'}
                 ${isHighlighted ? 'bg-blue-500/20 rounded px-1 py-0.5' : ''}
                 ${isClueRevealed ? 'bg-emerald-500/10 rounded px-1 py-0.5' : ''}
+                ${isClueHinted && !isHighlighted ? 'ring-1 ring-amber-400/30 rounded px-0.5' : ''}
               `}
             >
               {sentenceContent}{' '}
@@ -498,7 +606,13 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
                 <span className="text-lg w-6 text-center">{config.icon}</span>
                 <div>
                   <p className="text-sm font-medium">{config.label}</p>
-                  <p className="text-xs text-slate-500">{config.description}</p>
+                  {/* Support scaffold: the per-type description (what each clue type
+                      means) is shown at easy and withdrawn at medium/hard, so a
+                      stronger student recalls the clue types from the label alone.
+                      Default (undefined) shows it — the no-tier path is unchanged. */}
+                  {currentChallenge?.showClueTypeDescriptions !== false && (
+                    <p className="text-xs text-slate-500">{config.description}</p>
+                  )}
                 </div>
               </div>
             </LuminaAnswerChoice>
@@ -528,6 +642,13 @@ const ContextCluesDetective: React.FC<ContextCluesDetectiveProps> = ({ data, cla
           Based on the context clues, what does
           <span className="font-bold text-amber-300"> &ldquo;{currentChallenge?.targetWord}&rdquo;</span> mean?
         </p>
+        {/* Support scaffold (easy): a named-strategy nudge that tells the student
+            HOW to read the clue (e.g. "look for the synonym near the word"). Withheld
+            at medium/hard so the student names the reading strategy themselves. Never
+            states the meaning or the answer. */}
+        {currentChallenge?.strategyHint && (
+          <p className="text-xs text-blue-300/80 mt-2 italic">{currentChallenge.strategyHint}</p>
+        )}
       </LuminaPanel>
 
       {renderPassage()}

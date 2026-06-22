@@ -32,6 +32,95 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen / instructional helps are withdrawn.
+// INVARIANT: a tier only removes scaffolding. It NEVER changes the tiles, the
+// validArrangements (the answer the component checks), or the sentence type.
+// All levers here are display/instruction-only (the check function reads only
+// placedTileIds vs validArrangements, never targetMeaning or hint).
+//
+// Levers (all instruction-as-scaffold, the only modality a tile-arrangement
+// builder exposes — there are no per-tile showOptions in the data):
+//   targetMeaningStyle — how the "Build a sentence that means…" prompt is phrased.
+//     'literal'   (easy)   : the meaning is given in near-target word order, so the
+//                            student maps it almost 1:1 onto the tiles (setup shown).
+//     'paraphrase'(medium) : the meaning is a faithful paraphrase in different words,
+//                            so the student composes the surface form, not copies it.
+//     'abstract'  (hard)   : the meaning is stated as an abstract idea / who-did-what,
+//                            so the student builds the whole sentence unaided.
+//   hintStyle — how explicit the (optional) hint is.
+//     'strategy'  (easy)   : names the build strategy ("start with the subject, then…").
+//     'nudge'     (medium) : a conceptual nudge only, no step ordering.
+//     'none'      (hard)   : no hint at all — the student justifies the order themselves.
+// targetMeaning + hint are DISPLAY-ONLY (never read by handleCheck), so withdrawing
+// them changes how unaided the build is without ever changing the checked answer.
+// ---------------------------------------------------------------------------
+
+interface SentenceBuilderSupportScaffold {
+  targetMeaningStyle: 'literal' | 'paraphrase' | 'abstract';
+  hintStyle: 'strategy' | 'nudge' | 'none';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: string,
+  tier: SupportTier,
+): SentenceBuilderSupportScaffold {
+  const lead =
+    'This tier changes only how much instructional help the student gets while building. '
+    + 'It NEVER changes the tiles, the words, the sentence type, or the valid arrangements (the answer).';
+
+  if (tier === 'easy') {
+    return {
+      targetMeaningStyle: 'literal',
+      hintStyle: 'strategy',
+      promptLines: [
+        lead,
+        'targetMeaning: state the meaning in NEAR-TARGET WORD ORDER (e.g. "The cat chases the mouse"), so the student maps the idea almost one-to-one onto the tiles — the setup is shown.',
+        'hint: NAME the build strategy explicitly (e.g. "Start with the subject — who or what is acting? Then the action word, then what receives it.").',
+        'Keep the title and description neutral — never state the support level or the answer.',
+      ],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      targetMeaningStyle: 'paraphrase',
+      hintStyle: 'nudge',
+      promptLines: [
+        lead,
+        'targetMeaning: state the meaning as a faithful PARAPHRASE in DIFFERENT words from the tiles (e.g. "A cat is going after a mouse"), so the student composes the surface form rather than copying word order.',
+        'hint: a conceptual NUDGE only — point at sentence structure without naming the build order (e.g. "Think about which part of the sentence comes first.").',
+        'Keep the title and description neutral — never state the support level or the answer.',
+      ],
+    };
+  }
+  // hard
+  return {
+    targetMeaningStyle: 'abstract',
+    hintStyle: 'none',
+    promptLines: [
+      lead,
+      'targetMeaning: state the meaning as an ABSTRACT idea / who-did-what (e.g. "a predator pursuing its prey"), so the student builds the whole sentence and its order unaided — the setup is withdrawn.',
+      'hint: provide NO hint — leave it empty so the student justifies the word order themselves.',
+      'Keep the title and description neutral — never state the support level or the answer.',
+    ],
+  };
+}
+
 /**
  * Schema definition for Sentence Builder Data
  *
@@ -146,7 +235,11 @@ const sentenceBuilderSchema: Schema = {
 export const generateSentenceBuilder = async (
   topic: string,
   gradeLevel: string = '2',
-  config?: Partial<SentenceBuilderData & { targetEvalMode: string }>
+  config?: Partial<SentenceBuilderData & {
+    targetEvalMode: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers/tiles. */
+    difficulty: string;
+  }>
 ): Promise<SentenceBuilderData> => {
 
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -248,6 +341,22 @@ GRADE 6 GUIDELINES:
     CHALLENGE_TYPE_DOCS,
   );
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    pinnedType drives prompt TONE only; the actual withdrawal is applied
+  //    deterministically per-challenge at the END of the generator. The tier is a
+  //    STUDENT property — applied whenever supportTier is present (blended too). ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: string | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? evalConstraint.allowedTypes[0]
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number/tile size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const generationPrompt = `Create an interactive sentence builder activity for: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevelKey}
@@ -255,7 +364,7 @@ TARGET GRADE LEVEL: ${gradeLevelKey}
 ${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['2']) : ''}
 
 ${challengeTypeSection}
-
+${tierSection}
 REQUIRED INFORMATION:
 
 1. **Title**: An engaging, kid-friendly title for the activity
@@ -416,13 +525,39 @@ Now generate a sentence builder activity for "${topic}" at grade level ${gradeLe
 
     const result = JSON.parse(text) as SentenceBuilderData;
 
-    // Merge with any config overrides (excluding targetEvalMode)
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    // Merge with any config overrides (excluding targetEvalMode + difficulty —
+    // difficulty is the support-tier axis, applied below, not a data passthrough).
+    const { targetEvalMode: _unused, difficulty: _unusedTier, ...configRest } = config ?? {};
     void _unused;
+    void _unusedTier;
     const finalData: SentenceBuilderData = {
       ...result,
       ...configRest,
+      // Tell the live tutor the support level whenever a tier is present (blended
+      // sessions too — the tutor reveal policy is tier-aware).
+      ...(supportTier ? { supportTier } : {}),
     };
+
+    // ── Within-mode support tier: deterministically enforce the withdrawals the
+    //    LLM cannot be trusted to honor (the hint-explicitness floor). Applied
+    //    PER CHALLENGE from each challenge's OWN sentence type so a blended session
+    //    gets difficulty too. Display-only fields — never touches tiles or
+    //    validArrangements (the checked answer). Code owns the STRUCTURE; the LLM
+    //    only chose the words (targetMeaning paraphrase/abstraction lives in the
+    //    prompt — prose can't be reconstructed deterministically without breaking
+    //    grammaticality, so it is prompt-enforced; the hard hint-removal IS code). ──
+    if (supportTier && Array.isArray(finalData.challenges)) {
+      const sc = resolveSupportStructure(finalData.sentenceType, supportTier);
+      for (const ch of finalData.challenges) {
+        if (sc.hintStyle === 'none') {
+          // Hard: no hint at all — strip it so the Hint button never offers help.
+          delete ch.hint;
+        }
+        // 'strategy' / 'nudge' hints are authored by the LLM under the tierSection;
+        // a missing-hint fallback is fine (component just hides the Hint button).
+      }
+      console.log(`[sentence-builder] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+    }
 
     console.log('Sentence Builder Generated:', {
       title: finalData.title,

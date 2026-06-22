@@ -38,6 +38,9 @@ export interface StoryPlannerData {
   storyArcLabels: string[];           // e.g. ["Beginning", "Rising Action", "Climax", "Falling Action", "Resolution"]
   conflictTypes?: string[];           // For grades 4+: internal, external, person vs nature, etc.
   dialoguePrompt?: string;            // For grades 3+: guidance for adding dialogue
+  // Eval-mode task identity: which narrative-writing skill this plan emphasises.
+  // Optional / back-compatible — the scaffold renders identically regardless.
+  planningFocus?: 'story_structure' | 'character_setting' | 'conflict_resolution' | 'theme_craft';
 
   // Evaluation props
   instanceId?: string;

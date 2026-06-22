@@ -1,7 +1,57 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { DecodableReaderData } from "../../primitives/visual-primitives/literacy/DecodableReader";
-import { logEvalModeResolution } from '../evalMode';
+import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  buildChallengeTypePromptSection,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from '../evalMode';
+
+// ---------------------------------------------------------------------------
+// Eval modes = COMPREHENSION TASK IDENTITIES (not numeric difficulty).
+// The decodable passage stays controlled-vocabulary at the same grade band in
+// every mode — what changes is the READING-COMPREHENSION SKILL the embedded
+// question demands. This is a genuine DOK/Bloom ladder for reading:
+//   literal   → locate-and-restate a fact stated explicitly in the text
+//   sequence  → connect two text-explicit parts (order / cause→effect)
+//   inference → meaning NOT stated; combine clues across sentences
+//   main_idea → synthesize the whole passage into its central message
+// The `comprehensionType` enum (root-level, OPTIONAL) carries the pinned skill;
+// the component never reads it, so rendering is unaffected (back-compatible).
+// ---------------------------------------------------------------------------
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  literal: {
+    promptDoc:
+      `"literal": The comprehension question asks for a fact stated EXPLICITLY in the passage. `
+      + `The answer is a single detail the reader can locate and restate verbatim ("Who ran?", "What did the cat sit on?"). `
+      + `No inference — the answer words appear in the text. Simplest comprehension skill. K-1 level.`,
+    schemaDescription: "'literal' (recall a fact stated directly in the text)",
+  },
+  sequence: {
+    promptDoc:
+      `"sequence": The question requires connecting TWO text-explicit parts of the passage — `
+      + `the ORDER of events ("What happened first/next/last?") or a simple cause→effect ("Why did X happen?") `
+      + `where both the cause and effect are stated. Still text-explicit, but the reader must relate two sentences. Grade 1-2 level.`,
+    schemaDescription: "'sequence' (order of events or stated cause/effect)",
+  },
+  inference: {
+    promptDoc:
+      `"inference": The answer is NOT stated directly. The reader must combine clues from across the `
+      + `passage and reason to a conclusion ("How did the boy feel?", "What will probably happen next?"). `
+      + `Distractors must be plausible to a reader who only skimmed. Harder comprehension skill. Grade 2 level.`,
+    schemaDescription: "'inference' (deduce something the text implies but does not state)",
+  },
+  main_idea: {
+    promptDoc:
+      `"main_idea": The question asks for the CENTRAL message or "what the whole passage is mostly about". `
+      + `The reader must synthesize every sentence, not a single detail. Distractors should be true details from the `
+      + `passage that are too narrow to be the main idea. Most abstract comprehension skill. Grade 2 level.`,
+    schemaDescription: "'main_idea' (synthesize the passage's central message)",
+  },
+};
 
 /**
  * Schema definition for Decodable Reader Data
@@ -79,6 +129,11 @@ const decodableReaderSchema: Schema = {
       items: { type: Type.STRING },
       description: "List of phonics patterns represented in this passage (e.g., ['cvc', 'sight', 'digraph'])"
     },
+    comprehensionType: {
+      type: Type.STRING,
+      enum: ["literal", "sequence", "inference", "main_idea"],
+      description: "The comprehension SKILL the embedded question demands: 'literal' (fact stated in text), 'sequence' (order / stated cause-effect), 'inference' (deduce from clues), 'main_idea' (central message)."
+    },
     comprehensionQuestion: {
       type: Type.OBJECT,
       properties: {
@@ -147,7 +202,25 @@ export const generateDecodableReader = async (
   config?: Partial<DecodableReaderData> & { targetEvalMode?: string }
 ): Promise<DecodableReaderData> => {
 
-  logEvalModeResolution('DecodableReader', config?.targetEvalMode, null);
+  // ── Eval mode resolution (LEGACY pattern: explicit pin → schema enum) ──
+  const evalConstraint = resolveEvalModeConstraint(
+    'decodable-reader',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('DecodableReader', config?.targetEvalMode, evalConstraint);
+
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(decodableReaderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'comprehensionType',
+        rootLevel: true,
+      })
+    : decodableReaderSchema;
+
+  const challengeTypeSection = buildChallengeTypePromptSection(
+    evalConstraint,
+    CHALLENGE_TYPE_DOCS,
+  );
 
   const gradeContext: Record<string, string> = {
     'K': `
@@ -198,7 +271,7 @@ GRADE 2 GUIDELINES:
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeContext[gradeLevelKey] || gradeContext['K']}
-
+${challengeTypeSection}
 REQUIRED INFORMATION:
 
 1. **Title**: A kid-friendly title for the passage
@@ -224,14 +297,20 @@ REQUIRED INFORMATION:
 
 4. **Phonics Patterns in Passage**: Array of pattern types used (e.g., ["cvc", "sight", "blend"])
 
-5. **Comprehension Question**: An object with:
-   - question: Clear question about the passage content
+5. **Comprehension Type**: ${evalConstraint
+    ? `MUST be "${evalConstraint.allowedTypes[0]}". The comprehension question below MUST genuinely demand this exact reading-comprehension skill (see the COMPREHENSION SKILL section above).`
+    : `Pick the comprehension skill that best fits your passage: one of "literal", "sequence", "inference", or "main_idea". Set comprehensionType to that value and make the question genuinely demand that skill.`}
+
+6. **Comprehension Question**: An object with:
+   - question: Clear question about the passage content that genuinely requires the comprehensionType skill above
    - type: "multiple-choice"
    - options: Array of 3-4 option objects, each with:
      - id: Letter identifier ("A", "B", "C", "D")
      - text: The option text
    - correctOptionId: The letter ID of the correct option (e.g., "B")
    - Mix up the position of the correct answer across generations
+   - Distractors must be plausible but wrong; NEVER let the correct answer be the only complete or only on-topic option
+   - For 'inference'/'main_idea': distractors should be true passage details that don't fully answer the question, so the layout can't reveal the answer
 
 EXAMPLE OUTPUT FOR KINDERGARTEN:
 {
@@ -263,6 +342,7 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
     "imageDescription": "A happy big red dog running in a green park"
   },
   "phonicsPatternsInPassage": ["cvc", "sight"],
+  "comprehensionType": "literal",
   "comprehensionQuestion": {
     "question": "What can the dog do?",
     "type": "multiple-choice",
@@ -275,7 +355,7 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
   }
 }
 
-Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag and IDs are unique.`;
+Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, and the comprehension question genuinely demands the required comprehension skill.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -283,7 +363,7 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: decodableReaderSchema,
+        responseSchema: activeSchema,
         systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words. You carefully tag every word with its correct phonics pattern and provide accurate phoneme breakdowns. You craft comprehension questions that assess genuine understanding of the passage content.`,
       }
     });
@@ -305,13 +385,24 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
       }
     }
 
+    // Force the pinned comprehension skill when a mode was explicitly pinned,
+    // so a single-mode session never drifts off-skill if Gemini mislabels it.
+    if (evalConstraint && evalConstraint.allowedTypes.length === 1) {
+      result.comprehensionType =
+        evalConstraint.allowedTypes[0] as DecodableReaderData['comprehensionType'];
+    }
+
+    // Exclude targetEvalMode from the merged output (it is a routing signal, not data).
+    const { targetEvalMode: _unusedEvalMode, ...configRest } = config ?? {};
+    void _unusedEvalMode;
     const finalData: DecodableReaderData = {
       ...result,
-      ...config,
+      ...configRest,
     };
 
     console.log('Decodable Reader Generated:', {
       title: finalData.title,
+      comprehensionType: finalData.comprehensionType,
       gradeLevel: finalData.gradeLevel,
       sentenceCount: finalData.passage?.sentences?.length || 0,
       totalWords: finalData.passage?.sentences?.reduce((s, sent) => s + sent.words.length, 0) || 0,

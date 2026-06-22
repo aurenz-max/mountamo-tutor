@@ -42,6 +42,14 @@ export interface GenreExcerpt {
 export interface GenreExplorerData {
   title: string;
   gradeLevel: string;
+  /**
+   * Classification task identity (eval mode). OPTIONAL / back-compatible — the
+   * component does not branch on it; it only documents which genre-task the
+   * generator was constrained to produce. Rendering is identical for all modes
+   * (the existing excerpts/genreOptions/comparisonEnabled fields carry the mode's
+   * content). Absent on legacy/unpinned generations.
+   */
+  mode?: 'identify_basic' | 'classify_genre' | 'compare_genres';
   excerpts: GenreExcerpt[];         // 1-2 excerpts
   genreOptions: string[];           // Available genre choices
   comparisonEnabled: boolean;       // Whether side-by-side comparison is available

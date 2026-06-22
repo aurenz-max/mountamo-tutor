@@ -66,6 +66,93 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — scaffolding level, NOT numbers
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen helps the arena withdraws per tier.
+// INVARIANT: a tier only removes on-screen / instructional help. It NEVER changes
+// the object weight, surface, push strength, the correctAnswer, or the distractors
+// (those are the numbers + the task identity). All levers here are DISPLAY-ONLY:
+//   showForceArrows   → the on-canvas force-vector overlay + Newton readout
+//                        (a "did it move and which way / how hard" self-check).
+//   showMotionReadout → the velocity (m/s) text + distance markers that print the
+//                        result the student is being asked to judge.
+//   nameStrategy      → whether the instruction names the governing force idea
+//                        (push moves away / heavier needs more force / rough stops
+//                        sooner) vs. leaving the student to reason it out.
+//   hintLevel: 'rule' = the hint states the physics rule; 'nudge' = a conceptual
+//                        prompt only ("run it and watch — what changed?").
+// Gradient: easy = every overlay/readout shown + strategy named + rule hint
+// (workspace self-checks the student). hard = overlays + readouts withdrawn +
+// strategy NOT named + nudge-only hint (student observes and justifies unaided).
+// ---------------------------------------------------------------------------
+
+interface PushPullSupportScaffold {
+  showForceArrows: boolean;
+  showMotionReadout: boolean;
+  nameStrategy: boolean;
+  hintLevel: 'rule' | 'nudge';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: PushPullChallengeType,
+  tier: SupportTier,
+): PushPullSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen and instructional help the student gets. '
+    + 'It NEVER changes the object weight, the surface, the push strength, or the answer.';
+
+  // Perception overlays: shown at easy/medium, withdrawn at hard so the student
+  // judges the motion by eye and justifies it.
+  const showForceArrows = tier !== 'hard';
+  const showMotionReadout = tier !== 'hard';
+  // Strategy naming: named at easy, withheld at medium+hard so the student reasons
+  // about WHICH force idea applies before answering.
+  const nameStrategy = tier === 'easy';
+  const hintLevel: 'rule' | 'nudge' = tier === 'easy' ? 'rule' : 'nudge';
+
+  const overlayLine =
+    showForceArrows || showMotionReadout
+      ? 'The force-arrow overlay and the motion readouts (force in Newtons, speed, distance markers) are SHOWN, so the student can self-check what the push did.'
+      : 'The force-arrow overlay AND the motion readouts (Newtons, speed, distance markers) are WITHDRAWN — the student must watch the simulation and judge the motion by eye, then justify it.';
+
+  const strategyLine = nameStrategy
+    ? 'The instruction NAMES the force idea at play (e.g. "a bigger push moves it faster", "heavier objects need a bigger push", "rough surfaces stop things sooner") to anchor the student.'
+    : 'The instruction does NOT name the force rule — the student must decide which force idea applies (do not hand it to them in the instruction text).';
+
+  const hintLine =
+    hintLevel === 'rule'
+      ? 'The hint states the underlying physics rule plainly.'
+      : 'The hint is a conceptual nudge only — point the student to run the simulation and observe, never the rule itself.';
+
+  return {
+    showForceArrows,
+    showMotionReadout,
+    nameStrategy,
+    hintLevel,
+    promptLines: [
+      lead,
+      overlayLine,
+      strategyLine,
+      hintLine,
+      'Keep the title, description, and instruction neutral — never state the support level and never reveal the answer or the direction/distance outcome.',
+    ],
+  };
+}
+
+// ============================================================================
 // DETERMINISTIC OBJECT LIBRARY
 // ============================================================================
 
@@ -255,7 +342,11 @@ const SURFACES: ArenaSurface[] = ['ice', 'wood', 'carpet', 'grass'];
 export const generatePushPullArena = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
+    difficulty?: string;
+  }>,
 ): Promise<PushPullArenaData> => {
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
@@ -281,6 +372,21 @@ export const generatePushPullArena = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    pinnedType drives prompt TONE only; the withdrawal is applied per-challenge
+  //    (from each challenge's OWN type) at the END so blended sessions get it too. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: PushPullChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as PushPullChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   // Build prompt
   const prompt = `
 Create a Push & Pull Arena activity for Grade ${finalGrade} students about forces and motion.
@@ -299,7 +405,7 @@ Physics rules the student should discover:
 - Two opposite pushes can CANCEL OUT (balanced forces = no movement).
 
 ${challengeTypeSection}
-
+${tierSection}
 Available objects (use EXACT names in objectName / object2Name):
 - Tennis Ball (1kg), Soccer Ball (2kg), Toy Car (2kg), Book (3kg)
 - Brick (4kg), Backpack (5kg), Watermelon (6kg)
@@ -414,24 +520,64 @@ Vary surfaces across challenges for variety.
 
     if (validChallenges.length === 0) {
       console.error('[PushPullArena] All challenges rejected — using fallback');
-      return buildFallback(finalGrade, config?.targetEvalMode);
+      const fb = buildFallback(finalGrade, config?.targetEvalMode);
+      applySupportTier(fb.challenges, supportTier, pinnedType);
+      return { ...fb, ...(supportTier ? { supportTier } : {}) };
     }
 
     const theme: ArenaTheme = ['playground', 'toys', 'sports', 'animals'].includes(raw.theme)
       ? raw.theme
       : 'playground';
 
+    // ── Within-mode support tier: withdraw on-screen scaffolding (never the
+    //    numbers). Applied PER CHALLENGE from each challenge's OWN type, so a
+    //    blended (auto-mode) session gets difficulty too — the tier is a STUDENT
+    //    property, not a single-mode one. Runs after all structural fixups. ──
+    applySupportTier(validChallenges, supportTier, pinnedType);
+
     return {
       title: raw.title || 'Push & Pull Arena',
       description: raw.description || 'Explore how pushes and pulls make things move!',
       theme,
+      ...(supportTier ? { supportTier } : {}),
       challenges: validChallenges,
     };
   } catch (error) {
     console.error('Error generating PushPullArena content:', error);
-    return buildFallback(finalGrade, config?.targetEvalMode);
+    const fb = buildFallback(finalGrade, config?.targetEvalMode);
+    applySupportTier(fb.challenges, supportTier, pinnedType);
+    return { ...fb, ...(supportTier ? { supportTier } : {}) };
   }
 };
+
+// ============================================================================
+// SUPPORT-TIER APPLICATION (deterministic, display-only, per challenge)
+// ============================================================================
+
+/**
+ * Apply the within-mode support tier to a built challenge set. Code owns the
+ * STRUCTURE of the on-screen scaffolding (the two display overlays the component
+ * reads); the LLM only authored the instruction/hint wording (steered by the
+ * tierSection prompt block). Gated ONLY on supportTier being present — a blended/
+ * auto session must get difficulty too, each challenge resolving from its OWN type.
+ * NEVER touches numbers (weight/surface/pushStrength) or the answer/distractors.
+ */
+function applySupportTier(
+  challenges: PushPullChallenge[],
+  supportTier: SupportTier | null,
+  pinnedType?: PushPullChallengeType,
+): void {
+  if (!supportTier) return;
+  for (const ch of challenges) {
+    const sc = resolveSupportStructure(ch.type, supportTier);
+    // Display-only perception overlays — withdrawn at hard, shown otherwise.
+    ch.showForceArrows = sc.showForceArrows;
+    ch.showMotionReadout = sc.showMotionReadout;
+  }
+  console.log(
+    `[push-pull-arena] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`,
+  );
+}
 
 // ============================================================================
 // FALLBACK

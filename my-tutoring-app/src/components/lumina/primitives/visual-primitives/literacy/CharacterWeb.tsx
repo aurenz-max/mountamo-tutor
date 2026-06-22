@@ -41,6 +41,8 @@ export interface CharacterRelationship {
 export interface CharacterWebData {
   title: string;
   gradeLevel: string;
+  /** Literary-analysis skill the activity is built to elicit (eval mode). Optional / back-compatible — every phase still renders regardless of focus. */
+  analysisFocus?: 'trait_id' | 'trait_evidence' | 'relationship_map' | 'character_change';
   storyContext: string;               // Brief story summary for reference
 
   characters: CharacterProfile[];

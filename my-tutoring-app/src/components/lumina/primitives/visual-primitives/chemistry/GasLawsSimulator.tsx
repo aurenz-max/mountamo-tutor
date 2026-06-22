@@ -98,6 +98,11 @@ export interface GasLawsSimulatorData {
   showOptions?: Partial<GasLawsShowOptions>;
   gradeBand?: '8' | '9-10' | '11-12';
 
+  /** Within-mode support tier ('easy'|'medium'|'hard') from the manifest. Controls
+   *  how much on-screen scaffolding is shown and how explicit the tutor is. NEVER
+   *  changes the scenario numbers or the answer. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -556,6 +561,7 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     challenges = [],
     showOptions: showOptionsProp = {},
     gradeBand = '9-10',
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -687,8 +693,26 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
   // AI Tutoring
   // --------------------------------------------------------------------------
 
+  // Tier-aware reveal policy for the live tutor. easy = name the law / walk the
+  // setup; medium = nudge execution only; hard = do NOT name the law the on-screen
+  // instruction withheld — ask what the student sees in the particle motion. The
+  // tutor NEVER states the directionAnswer or targetAnswer at any tier.
+  const tutorTierClause = useMemo(() => {
+    if (supportTier === 'easy') {
+      return 'SUPPORT TIER easy: you MAY name the governing gas law and walk the student through setting up the relationship; still never state the final numeric answer or direction.';
+    }
+    if (supportTier === 'hard') {
+      return 'SUPPORT TIER hard: do NOT name the gas law or give the equation — the on-screen instruction deliberately withheld it. Ask the student what they SEE in the particle motion (speed, crowding, collision rate) and let them name the relationship. Never reveal the answer.';
+    }
+    if (supportTier === 'medium') {
+      return 'SUPPORT TIER medium: nudge the execution only — you may confirm which variables matter, but make the student recall the relationship themselves. Never name the equation outright and never reveal the answer.';
+    }
+    return 'Never reveal the final answer; hint via particle behavior.';
+  }, [supportTier]);
+
   const aiPrimitiveData = useMemo(() => ({
     gradeBand,
+    supportTier: supportTier ?? null,
     title,
     lawFocus: scenario.lawFocus,
     lockedVariables: scenario.lockedVariables,
@@ -715,7 +739,7 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     phase,
     attemptNumber: currentAttempts + 1,
   }), [
-    gradeBand, title, scenario, P, V, T, nMol, currentChallengeIndex,
+    gradeBand, supportTier, title, scenario, P, V, T, nMol, currentChallengeIndex,
     challenges.length, currentChallenge, studentNumber, studentDirection, phase, currentAttempts,
   ]);
 
@@ -735,10 +759,11 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
       + `Initial state: P=${scenario.initialP} atm, V=${scenario.initialV} L, T=${scenario.initialT} K, n=${scenario.initialN} mol. `
       + `Locked: ${scenario.lockedVariables.join(', ') || 'none'}. `
       + `Student is on challenge ${currentChallengeIndex + 1} of ${challenges.length} (type: ${currentChallenge.type}). `
-      + `Anchor every hint in KMT: faster particles = more collisions = higher pressure; less volume = crowded particles = more collisions.`,
+      + `Anchor every hint in KMT: faster particles = more collisions = higher pressure; less volume = crowded particles = more collisions. `
+      + tutorTierClause,
       { silent: true }
     );
-  }, [isConnected, title, scenario, gradeBand, currentChallenge, currentChallengeIndex, challenges.length, sendText]);
+  }, [isConnected, title, scenario, gradeBand, currentChallenge, currentChallengeIndex, challenges.length, sendText, tutorTierClause]);
 
   // --------------------------------------------------------------------------
   // Actions
@@ -760,10 +785,11 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
     sendText(
       `[CHANGE_APPLIED] ${currentChallenge.change.variable} set to ${formatNum(currentChallenge.change.newValue)} ${VARIABLE_UNIT[currentChallenge.change.variable]}. `
       + `New state: P=${formatNum(next.P)} atm, V=${formatNum(next.V)} L, T=${formatNum(next.T)} K, n=${formatNum(next.n)} mol. `
-      + `Help the student connect the particle behavior they are seeing to their prediction.`,
+      + `Help the student connect the particle behavior they are seeing to their prediction. `
+      + tutorTierClause,
       { silent: true }
     );
-  }, [currentChallenge, scenario, sendText]);
+  }, [currentChallenge, scenario, sendText, tutorTierClause]);
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
@@ -818,11 +844,12 @@ const GasLawsSimulator: React.FC<GasLawsSimulatorProps> = ({ data, className }) 
       const expected = currentChallenge.type === 'observe' ? currentChallenge.directionAnswer : currentChallenge.targetAnswer;
       sendText(
         `[ANSWER_INCORRECT] Student answered "${answered}" for ${currentChallenge.type} challenge. Correct: ${expected}. `
-        + `Attempt ${currentAttempts + 1}. Give a hint grounded in particle behavior: "${currentChallenge.hint}"`,
+        + `Attempt ${currentAttempts + 1}. Give a hint grounded in particle behavior: "${currentChallenge.hint}" `
+        + tutorTierClause,
         { silent: true }
       );
     }
-  }, [currentChallenge, studentDirection, studentNumber, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, studentDirection, studentNumber, currentAttempts, incrementAttempts, recordResult, sendText, tutorTierClause]);
 
   const handleAdvance = useCallback(() => {
     if (!advanceProgress()) {

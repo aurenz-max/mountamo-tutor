@@ -46,6 +46,16 @@ export interface ShadowChallenge {
   distractor1?: string;
   distractor2?: string;
   hint?: string;
+
+  // ── Within-mode support scaffolds (config.difficulty) — DISPLAY-ONLY, never
+  //    read by the answer checker. Set by the generator per challenge; absent =
+  //    no tier applied (legacy default behavior). See gemini-light-shadow-lab.ts. ──
+  /** Show the live "Shadow: <length>, <direction>" readout WHILE working (self-check). */
+  showLiveShadowReadout?: boolean;
+  /** Show the dashed sun-path arc guide. */
+  showSunPath?: boolean;
+  /** Show the E/W ground direction labels. */
+  showDirectionLabels?: boolean;
 }
 
 export interface LightShadowLabData {
@@ -57,6 +67,10 @@ export interface LightShadowLabData {
   objects: ShadowObject[];
   sunPositions: SunPosition[];
   challenges: ShadowChallenge[];
+
+  /** Within-mode support tier ('easy'|'medium'|'hard') — calibrates the AI
+   *  tutor's reveal level. Present only when the manifest emitted difficulty. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -248,6 +262,7 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
     objects,
     sunPositions,
     challenges,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -273,7 +288,8 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
     theme,
     gradeLevel,
     challengeCount: challenges.length,
-  }), [theme, gradeLevel, challenges.length]);
+    ...(supportTier ? { supportTier } : {}),
+  }), [theme, gradeLevel, challenges.length, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'light-shadow-lab',
@@ -323,6 +339,14 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
   );
   const sunSvg = useMemo(() => sunToSvg(sunAltitude, sunAzimuth), [sunAltitude, sunAzimuth]);
   const currentRelLen = getRelativeLength(shadow.length);
+
+  // ── Per-challenge support scaffolds (undefined = no tier → legacy all-on) ──
+  const showSunPath = currentChallenge?.showSunPath ?? true;
+  const showDirectionLabels = currentChallenge?.showDirectionLabels ?? true;
+  // Live readout: when the generator opts in (easy/observe), show it WHILE the
+  // student works; otherwise fall back to legacy (only after a correct answer or
+  // once all challenges are complete).
+  const showLiveReadout = currentChallenge?.showLiveShadowReadout ?? false;
   const timeLabel = useMemo(() => {
     if (sunAzimuth < 60) return 'Early Morning';
     if (sunAzimuth < 80) return 'Morning';
@@ -443,6 +467,24 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
     return `${DIRECTION_LABELS[c.direction]}, ${LENGTH_LABELS[c.relativeLength]}`;
   }, [currentChallenge]);
 
+  // ── Tutor reveal policy (mode-aware tier clause) ─────────────────
+  // A tier that hides the sun-path/labels/readout on screen, or strips the rule
+  // name from the instruction, must not be re-leaked by the live tutor. easy =
+  // name the rule and walk the setup; medium = nudge execution only; hard = do
+  // NOT name the rule, ask what the student sees, never reveal the answer.
+  const tutorRevealClause = useMemo(() => {
+    if (supportTier === 'easy') {
+      return 'SUPPORT=easy: you may name the shadow rule (low sun → long shadow; shadow points away from the sun) and walk the student through reading the scene. Never state the final answer.';
+    }
+    if (supportTier === 'hard') {
+      return 'SUPPORT=hard: do NOT name the shadow rule and do NOT mention east/west sides directly — ask what the student notices about how HIGH the sun is and which side it is on. Never reveal the shadow length, direction, or answer.';
+    }
+    if (supportTier === 'medium') {
+      return 'SUPPORT=medium: nudge the student\'s execution only — do not re-state the full rule; prompt them to apply what they see. Never reveal the answer.';
+    }
+    return '';
+  }, [supportTier]);
+
   // ── Answer checking ──────────────────────────────────────────────
   const [selectedMcAnswer, setSelectedMcAnswer] = useState<string | null>(null);
 
@@ -490,11 +532,11 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
       }
 
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedMcAnswer}" but correct is "${correctMcAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`,
+        `[ANSWER_INCORRECT] Student chose "${selectedMcAnswer}" but correct is "${correctMcAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint without revealing the answer. ${tutorRevealClause}`,
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedMcAnswer, correctMcAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedMcAnswer, correctMcAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
 
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {
@@ -591,23 +633,29 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
             {/* Sky */}
             <rect x={0} y={0} width={SVG_WIDTH} height={GROUND_Y} fill="url(#skyGrad)" />
 
-            {/* Sun arc guide (dashed) */}
-            <ellipse
-              cx={SUN_ARC_CX}
-              cy={SUN_ARC_CY}
-              rx={SUN_ARC_RX}
-              ry={SUN_ARC_RY}
-              fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeDasharray="4 8"
-            />
+            {/* Sun arc guide (dashed) — perception scaffold, withdrawn at hard */}
+            {showSunPath && (
+              <ellipse
+                cx={SUN_ARC_CX}
+                cy={SUN_ARC_CY}
+                rx={SUN_ARC_RX}
+                ry={SUN_ARC_RY}
+                fill="none"
+                stroke="rgba(255,255,255,0.08)"
+                strokeDasharray="4 8"
+              />
+            )}
 
             {/* Ground */}
             <rect x={0} y={GROUND_Y} width={SVG_WIDTH} height={SVG_HEIGHT - GROUND_Y} fill="url(#groundGrad)" />
 
-            {/* Direction labels */}
-            <text x={30} y={GROUND_Y + 20} fill="rgba(255,255,255,0.4)" fontSize={13} fontFamily="sans-serif">E (East)</text>
-            <text x={SVG_WIDTH - 80} y={GROUND_Y + 20} fill="rgba(255,255,255,0.4)" fontSize={13} fontFamily="sans-serif">W (West)</text>
+            {/* Direction labels — perception scaffold, withdrawn at medium+hard */}
+            {showDirectionLabels && (
+              <>
+                <text x={30} y={GROUND_Y + 20} fill="rgba(255,255,255,0.4)" fontSize={13} fontFamily="sans-serif">E (East)</text>
+                <text x={SVG_WIDTH - 80} y={GROUND_Y + 20} fill="rgba(255,255,255,0.4)" fontSize={13} fontFamily="sans-serif">W (West)</text>
+              </>
+            )}
 
             {/* Shadow */}
             <line
@@ -699,8 +747,9 @@ export default function LightShadowLab({ data, className = '' }: LightShadowLabP
               {currentChallenge?.sunPosition?.time ?? timeLabel}
             </text>
 
-            {/* Shadow info (when exploring or after answer) */}
-            {(allChallengesComplete || feedback?.correct) && (
+            {/* Shadow info readout. Legacy: after a correct answer / on completion.
+                Easy tier (showLiveReadout): live self-check WHILE the student works. */}
+            {(allChallengesComplete || feedback?.correct || showLiveReadout) && (
               <text
                 x={shadow.tipX > OBJECT_X ? shadow.tipX + 10 : shadow.tipX - 10}
                 y={GROUND_Y - 8}

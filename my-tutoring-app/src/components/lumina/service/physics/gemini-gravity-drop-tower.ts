@@ -64,6 +64,79 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — scaffolding level, NOT numbers
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ----------------------------------------------------------------------------
+// Bespoke support scaffold — which on-screen / instructional helps are withdrawn
+// per pinned mode. INVARIANT: a tier only removes scaffolding; it NEVER touches
+// the objects, the height, airResistance, the question, or the correctAnswer.
+// Two levers:
+//   showReadouts (#1 perception): the live numeric overlays the student reads the
+//     answer off of — fall speed (m/s), the land-time stamp, the running timer.
+//     easy/medium = shown (self-check); hard = withdrawn (estimate/compute unaided).
+//   nameStrategy + hintLevel (#2 instruction): easy names the governing gravity
+//     idea in the instruction and gives a formula-grade hint; hard names nothing
+//     and the hint is a conceptual nudge only. Words only — every number identical.
+// ----------------------------------------------------------------------------
+
+interface GravityDropTowerSupportScaffold {
+  /** Show the live numeric speed/time readouts on the canvas (self-check overlay). */
+  showReadouts: boolean;
+  /** Name the governing gravity idea in the instruction (easy) vs. leave it neutral. */
+  nameStrategy: boolean;
+  /** 'formula' = explicit rule in the hint; 'concept' = nudge only. */
+  hintLevel: 'formula' | 'concept';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: DropChallengeType,
+  tier: SupportTier,
+): GravityDropTowerSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen / instructional help the student gets. '
+    + 'It NEVER changes the objects, the drop height, air resistance, the question, or the answer.';
+
+  // Readouts are the answer-supporting numbers for any mode that reads time/speed.
+  // For qualitative modes (observe/predict) they still confirm the outcome, so they
+  // follow the same withdrawal ladder. Hidden at hard across every mode.
+  const showReadouts = tier !== 'hard';
+  const nameStrategy = tier === 'easy';
+  const hintLevel: 'formula' | 'concept' = tier === 'easy' ? 'formula' : 'concept';
+
+  const readoutNoun =
+    pinnedType === 'measure' || pinnedType === 'calculate'
+      ? 'fall time and speed'
+      : pinnedType === 'compare'
+        ? 'fall times and speeds for the objects'
+        : 'falling speed and landing time';
+
+  return {
+    showReadouts,
+    nameStrategy,
+    hintLevel,
+    promptLines: [
+      lead,
+      `The on-screen numeric readouts (${readoutNoun}) are ${showReadouts ? 'shown so the student can self-check' : 'WITHDRAWN — the student must estimate or compute the values unaided (the timer shows "?")'}.`,
+      `The instruction ${nameStrategy ? 'NAMES the gravity idea at play (e.g. "without air, all objects fall at the same rate" / "fall time grows with the square root of height") so the student knows the strategy' : 'stays NEUTRAL — it sets up the drop WITHOUT naming the rule or the misconception; the student must decide what is going on'}.`,
+      `The hint is ${hintLevel === 'formula' ? 'an explicit rule or formula' : 'a conceptual nudge only — no rule or formula stated'}.`,
+      'Keep the title and description neutral — never state the support level or reveal which option is correct.',
+    ],
+  };
+}
+
+// ============================================================================
 // OBJECT LIBRARY
 // ============================================================================
 
@@ -246,7 +319,11 @@ const GRADE_CONFIGS: Record<string, { numChallenges: number; guidance: string }>
 export const generateGravityDropTower = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
+    difficulty?: string;
+  }>,
 ): Promise<GravityDropTowerData> => {
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d+|K)/i)?.[1]?.toUpperCase() || '3';
@@ -271,6 +348,20 @@ export const generateGravityDropTower = async (
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    pinnedType drives the prompt TONE only (a single pinned mode); the actual
+  //    withdrawal is applied deterministically per challenge below from each
+  //    challenge's OWN type, so a blended/auto session gets difficulty too. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: DropChallengeType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as DropChallengeType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const prompt = `
 Create a Gravity Drop Tower activity for Grade ${finalGrade} students about gravity and falling objects.
 
@@ -284,7 +375,7 @@ This is the #1 misconception — most students (and adults!) think heavier = fas
 WITH air resistance, shape/drag coefficient matters — a feather floats, a rock plummets.
 
 ${challengeTypeSection}
-
+${tierSection}
 Available objects (use EXACT names for obj0Name / obj1Name):
 - Marble (0.01kg, low drag), Tennis Ball (0.06kg, medium drag)
 - Baseball (0.15kg, medium drag), Brick (2kg, low drag)
@@ -407,19 +498,52 @@ Generate ${gradeConfig.numChallenges} challenges.
 
     if (validChallenges.length === 0) {
       console.error('[GravityDropTower] All challenges rejected — using fallback');
-      return buildFallback(finalGrade, config?.targetEvalMode);
+      return applySupportTier(buildFallback(finalGrade, config?.targetEvalMode), supportTier, pinnedType);
     }
 
-    return {
-      title: raw.title || 'Gravity Drop Tower',
-      description: raw.description || 'Discover how gravity makes things fall!',
-      challenges: validChallenges,
-    };
+    return applySupportTier(
+      {
+        title: raw.title || 'Gravity Drop Tower',
+        description: raw.description || 'Discover how gravity makes things fall!',
+        challenges: validChallenges,
+      },
+      supportTier,
+      pinnedType,
+    );
   } catch (error) {
     console.error('Error generating GravityDropTower content:', error);
-    return buildFallback(finalGrade, config?.targetEvalMode);
+    return applySupportTier(buildFallback(finalGrade, config?.targetEvalMode), supportTier, pinnedType);
   }
 };
+
+// ============================================================================
+// SUPPORT-TIER APPLICATION (deterministic, per-challenge, AFTER all fixups)
+// ============================================================================
+
+/**
+ * Withdraw on-screen / instructional scaffolding per the support tier. Display
+ * lever (showReadouts) and the tutor channel (supportTier) only — NEVER touches
+ * the objects, height, airResistance, question, or correctAnswer. Resolves the
+ * scaffold from EACH challenge's OWN type so blended sessions get difficulty too.
+ * Gated solely on supportTier being present (never on a single pinned mode).
+ */
+function applySupportTier(
+  data: GravityDropTowerData,
+  supportTier: SupportTier | null,
+  pinnedType: DropChallengeType | undefined,
+): GravityDropTowerData {
+  if (!supportTier) return data;
+  for (const ch of data.challenges) {
+    const sc = resolveSupportStructure(ch.type, supportTier);
+    // #1 perception lever — the only display field; the answer never reads it.
+    ch.showReadouts = sc.showReadouts;
+  }
+  // Tutor channel: surface the tier so the live tutor's reveal policy is
+  // scaffolding-aware (does not re-name a strategy the instruction withheld).
+  data.supportTier = supportTier;
+  console.log(`[gravity-drop-tower] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+  return data;
+}
 
 // ============================================================================
 // FALLBACK

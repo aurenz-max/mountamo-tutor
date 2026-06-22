@@ -222,7 +222,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes embedded comprehension question. Words color-coded by phonics pattern. ESSENTIAL for K-2 reading fluency.',
     constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level.',
     evalModes: [
-      { evalMode: 'default', label: 'Default (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['default'], description: 'Controlled-vocabulary reading with comprehension question.' },
+      { evalMode: 'literal', label: 'Literal Recall (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Recall a fact stated directly in the passage.' },
+      { evalMode: 'sequence', label: 'Sequence/Cause-Effect (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['sequence'], description: 'Connect two text-explicit parts: order of events or stated cause/effect.' },
+      { evalMode: 'inference', label: 'Inference (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['inference'], description: 'Deduce something the text implies but does not state.' },
+      { evalMode: 'main_idea', label: 'Main Idea (Tier 4)', beta: 4.0, scaffoldingMode: 4, challengeTypes: ['main_idea'], description: 'Synthesize the passage into its central message.' },
     ],
     supportsEvaluation: true,
     tutoring: {
@@ -922,10 +925,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',
     evalModes: [
-      { evalMode: 'simple_traits', label: 'Simple Traits (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['default'], description: '1-2 characters with simple adjective traits and 1 relationship.' },
-      { evalMode: 'trait_evidence', label: 'Trait Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['default'], description: '2 characters with traits supported by text evidence quotes.' },
-      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Character trait identification and relationship mapping.' },
-      { evalMode: 'complex_analysis', label: 'Complex Analysis (Tier 5)', beta: 4.5, scaffoldingMode: 5, challengeTypes: ['default'], description: '2-3 characters with foils, multi-layered motivations, and thematic relationships.' },
+      { evalMode: 'trait_id', label: 'Identify Traits (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['trait_id'], description: 'Name single-word traits a character shows through what they do and say.' },
+      { evalMode: 'trait_evidence', label: 'Trait Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['trait_evidence'], description: 'Support each trait claim with a specific quote or paraphrase from the text.' },
+      { evalMode: 'relationship_map', label: 'Relationship Map (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['relationship_map'], description: 'Analyze how character relationships drive the plot.' },
+      { evalMode: 'character_change', label: 'Character Change (Tier 5)', beta: 4.5, scaffoldingMode: 5, challengeTypes: ['character_change'], description: 'Analyze a dynamic character\'s development and the cause behind it.' },
     ],
     supportsEvaluation: true,
   },
@@ -944,7 +947,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Students examine text excerpts and classify them by genre using feature checklists. Supports fiction, nonfiction, poetry, drama, folktale, myth, fable, biography, informational, persuasive. Side-by-side comparison of different genres on same topic. Perfect for grades 1-6 genre study.',
     constraints: 'Best for grades 1-6. Needs text excerpts from different genres.',
     evalModes: [
-      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Classify text excerpts by genre features.' },
+      { evalMode: 'identify_basic', label: 'Fiction vs Nonfiction (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['identify_basic'], description: 'Binary fiction vs nonfiction recognition on one excerpt.' },
+      { evalMode: 'classify_genre', label: 'Classify Genre (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['classify_genre'], description: 'Multi-way classification among specific literary/informational genres.' },
+      { evalMode: 'compare_genres', label: 'Compare Genres (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['compare_genres'], description: 'Contrast two genres on the same topic side by side.' },
     ],
     supportsEvaluation: true,
   },
@@ -961,13 +966,76 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'problem_solution', label: 'Problem-Solution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['problem-solution'], description: 'Identify problem and proposed solutions.' },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription:
+        'You are the reading-strategy coach for this text-structure analysis activity. '
+        + 'The student is analyzing the passage "{{title}}" at Grade {{gradeLevel}} across four phases: '
+        + 'find signal words, identify the organizational structure, map key ideas onto a template, then review. '
+        + 'Current phase: {{currentPhase}}. '
+        + 'Signal words found: {{signalWordsFound}} of {{signalWordsTotal}}. '
+        + 'Key ideas placed: {{keyIdeasPlaced}} of {{keyIdeasTotal}}. Attempts: {{attempts}}. '
+        + 'The passage is actually organized as {{structureType}} — this is the ANSWER the student must discover. '
+        + 'NEVER state the structure type outright; instead steer them to the signal words and template clues so they reason it out.',
+      contextKeys: [
+        'title', 'gradeLevel', 'currentPhase', 'structureType',
+        'signalWordsFound', 'signalWordsTotal',
+        'keyIdeasPlaced', 'keyIdeasTotal', 'attempts',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'SIGNAL-WORDS phase: "What transition words do you see — words like because, first, however, or unlike?" '
+          + 'IDENTIFY phase: "What do the signal words you found tell you about how the ideas connect?" '
+          + 'MAP phase: "Where does this idea belong in the template?" '
+          + 'REVIEW phase: "Does your structure choice match the signal words you highlighted?"',
+        level2:
+          'SIGNAL-WORDS phase: "Re-read slowly and tap every word that links one idea to another." '
+          + 'IDENTIFY phase: "Group the signal words you found — do they show time order, a comparison, a cause, or a problem being solved?" '
+          + 'MAP phase: "Read each region label, then ask which key idea answers it." '
+          + 'REVIEW phase: "Check each region: does every idea sit in the part that matches it?"',
+        level3:
+          'SIGNAL-WORDS phase: "Look for one signal word per sentence that joins ideas, and highlight it." '
+          + 'IDENTIFY phase: "Match your signal-word family to a structure: order words = sequence, likeness/difference words = compare, because/so = cause, problem/solution words = problem-solution. Then choose." '
+          + 'MAP phase: "Take one key idea at a time and place it in the region whose label it best answers." '
+          + 'REVIEW phase: "Walk region by region and confirm each placement before submitting — adjust any that feel off."',
+      },
+      commonStruggles: [
+        { pattern: 'Highlights content words instead of transition/signal words', response: 'Point out that signal words connect ideas (like, because, first) rather than name things.' },
+        { pattern: 'Picks a structure that ignores the signal words found', response: 'Ask which signal words they highlighted and what those words usually show.' },
+        { pattern: 'Places key ideas in the wrong template region', response: 'Have them read the region label aloud and ask which idea answers it.' },
+        { pattern: 'Many attempts without progress (attempts > 1)', response: 'Slow down to one phase at a time — start by re-reading the signal words for a clue.' },
+        { pattern: 'Confuses compare-contrast with cause-effect', response: 'Ask: are two things being measured against each other, or is one thing making another happen?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], warmly introduce the text-structure activity for the passage "{{title}}". '
+            + 'Tell the student to begin by tapping the signal words that show how the passage is organized. '
+            + 'Do NOT name or hint at the correct structure type — discovering it is the goal. Keep it to 2-3 sentences.',
+        },
+        {
+          title: 'PHASE TRANSITIONS',
+          instruction:
+            'When you receive [PHASE_TO_IDENTIFY], [PHASE_TO_MAP], or [PHASE_TO_REVIEW], briefly orient the student to the new phase in one sentence. '
+            + 'Never name the correct structure and never place ideas for them.',
+        },
+        {
+          title: 'COMPLETION FEEDBACK',
+          instruction:
+            'When you receive [ANALYSIS_CORRECT], celebrate briefly and name one strength. '
+            + 'When you receive [ANALYSIS_INSIGHT], encourage the student, then reflect on which signal words point to the real structure so they learn from the miss — coach the reasoning, do not just announce the answer.',
+        },
+      ],
+    },
   },
   {
     id: 'evidence-finder',
     description: 'Students find and highlight specific text evidence supporting claims in informational passages. Supports multiple claims, evidence strength ranking, and Claim-Evidence-Reasoning (CER) framework. Multi-color highlighting. Perfect for grades 2-6 evidence-based reading.',
     constraints: 'Best for grades 2-6. Requires informational passage with identifiable evidence.',
     evalModes: [
-      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Find and evaluate text evidence for claims.' },
+      { evalMode: 'locate_evidence', label: 'Locate Evidence (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['locate_evidence'], description: 'Find explicit, directly-stated evidence for one claim.' },
+      { evalMode: 'match_evidence_to_claim', label: 'Match Evidence to Claim (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['match_evidence_to_claim'], description: 'Assign each evidence sentence to the correct of two claims.' },
+      { evalMode: 'evaluate_evidence_strength', label: 'Evaluate Evidence Strength (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['evaluate_evidence_strength'], description: 'Rate evidence strength and justify it (CER framework).' },
     ],
     supportsEvaluation: true,
     tutoring: {
@@ -1059,7 +1127,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Pre-writing planning tool for narrative writing. Students fill structured cards: characters, setting, conflict, key events, resolution, theme. Generates visual story arc from inputs. AI-generated character/setting illustrations. Connects to story-map for read-to-write cycle. Perfect for K-6 narrative writing.',
     constraints: 'Best for K-6. Focus complexity on grade level.',
     evalModes: [
-      { evalMode: 'default', label: 'Default (Tier 3)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['default'], description: 'Pre-writing narrative planning with story arc.' },
+      { evalMode: 'story_structure', label: 'Story Structure (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['story_structure'], description: 'Sequence the narrative arc: beginning-middle-end.' },
+      { evalMode: 'character_setting', label: 'Character & Setting (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['character_setting'], description: 'Develop a believable character and a vivid setting.' },
+      { evalMode: 'conflict_resolution', label: 'Conflict & Resolution (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['conflict_resolution'], description: 'Plan a central conflict and a connected resolution.' },
+      { evalMode: 'theme_craft', label: 'Theme & Craft (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['theme_craft'], description: 'Weave theme, dialogue, and craft into the plan.' },
     ],
     supportsEvaluation: true,
   },
@@ -1093,6 +1164,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'read-aloud-studio',
     description: 'Fluency practice with three modes: Model (TTS with karaoke-style word highlighting), Practice (student records via microphone), Compare (side-by-side playback). Tracks WPM. Student self-assessment only, no AI speech grading. Perfect for grades 1-6 fluency.',
     constraints: 'Best for grades 1-6. Requires microphone for practice mode. No AI grading of speech.',
+    evalModes: [
+      { evalMode: 'accuracy', label: 'Accuracy (Tier 1)', beta: 2.0, scaffoldingMode: 1, challengeTypes: ['accuracy'], description: 'Smooth, accurate word reading (automaticity).' },
+      { evalMode: 'expression', label: 'Expression (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['expression'], description: 'Prosody: phrasing, pausing, and emphasis.' },
+      { evalMode: 'dialogue', label: 'Dialogue (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['dialogue'], description: 'Character voices and dramatic tone.' },
+    ],
     supportsEvaluation: true,
     tutoring: {
       taskDescription:
@@ -1270,6 +1346,58 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription:
+        'You ARE the detective coach for this context-clues activity. '
+        + 'The student is figuring out what an unfamiliar word means using clues in the passage — '
+        + 'NEVER reveal the meaning, the clue type, or which sentence is the clue; coach the strategy instead. '
+        + 'Grade {{gradeLevel}}. Mystery word {{itemIndex}}/{{totalItems}}: "{{targetWord}}". '
+        + 'Phase: {{currentPhase}} (find the clue sentence -> classify the clue type -> define the word). '
+        + 'Student has highlighted {{highlightCount}} sentence(s); their current clue-type guess is "{{selectedClueType}}".',
+      contextKeys: [
+        'gradeLevel', 'targetWord', 'currentPhase', 'clueType',
+        'itemIndex', 'totalItems', 'selectedClueType', 'highlightCount',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'FIND phase: "Which sentence tells you something about {{targetWord}}?" '
+          + 'CLASSIFY phase: "What is that clue sentence DOING for {{targetWord}}?" '
+          + 'DEFINE phase: "Use the clue — what could {{targetWord}} mean?"',
+        level2:
+          'FIND phase: "Read the sentence right next to {{targetWord}} — does it hint at the meaning?" '
+          + 'CLASSIFY phase: "Does the clue define it, give a similar or opposite word, give an example, or make you infer?" '
+          + 'DEFINE phase: "Put the clue in your own words — that is close to what {{targetWord}} means."',
+        level3:
+          'FIND phase: "Look for the sentence that explains or hints at {{targetWord}}, then click it." '
+          + 'CLASSIFY phase: "Compare the clue to {{targetWord}}: a matching word is a synonym, an opposite is an antonym, a meaning spelled out is a definition." '
+          + 'DEFINE phase: "Re-read the clue sentence and say the meaning of {{targetWord}} using those words."',
+      },
+      commonStruggles: [
+        { pattern: 'Highlights a sentence with no clue', response: 'A clue sentence helps explain {{targetWord}} — does this one do that, or is it just part of the story?' },
+        { pattern: 'Cannot tell which clue type it is', response: 'Ask: does the clue sentence DEFINE {{targetWord}}, give a similar/opposite word, give an example, or make you figure it out?' },
+        { pattern: 'Confuses synonym and antonym clues', response: 'Is the nearby word similar to {{targetWord}} or the opposite of it?' },
+        { pattern: 'Guesses the meaning without using the clue', response: 'Point back to the clue sentence — what does it tell you {{targetWord}} is about?' },
+        { pattern: 'Repeated wrong attempts on the meaning', response: 'Read just the clue sentence again slowly and say the meaning of {{targetWord}} in your own words.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], warmly introduce the context-clues detective activity. '
+            + 'Frame the student as a detective who figures out word meanings from clues in the passage, '
+            + 'then point them to the first mystery word and tell them to click the sentence that gives a clue. '
+            + 'NEVER reveal the meaning or which sentence is the clue. Keep it brief (2-3 sentences), warm, and enthusiastic. '
+            + 'Use age-appropriate language for the grade level.',
+        },
+        {
+          title: 'NEVER REVEAL THE ANSWER',
+          instruction:
+            'Across all phases, you must never state what {{targetWord}} means, never name the correct clue type, '
+            + 'and never point to the exact clue sentence. Coach the strategy (find -> classify -> define) and nudge with questions. '
+            + 'The on-screen dictionary definition appears only AFTER the student answers — do not preempt it.',
+        },
+      ],
+    },
   },
   {
     id: 'figurative-language-finder',
@@ -1310,6 +1438,67 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription:
+        'You coach a student through a figurative-language activity. '
+        + 'They progress through phases: FIND (tap figurative phrases in the passage), '
+        + 'CLASSIFY (label each phrase by type), INTERPRET (write the literal meaning), and REVIEW. '
+        + 'Grade {{gradeLevel}}. Phase: {{currentPhase}}. '
+        + 'Found {{instancesFound}} of {{totalInstances}} phrases; {{classifiedCount}} labeled so far. '
+        + 'Types present in this passage: {{typesPresent}}. '
+        + 'NEVER name which phrases are figurative or what type they are — guide with signal words and the literal-vs-figurative distinction only.',
+      contextKeys: [
+        'gradeLevel', 'currentPhase', 'totalInstances',
+        'instancesFound', 'typesPresent', 'classifiedCount',
+      ],
+      scaffoldingLevels: {
+        level1:
+          'FIND: "Read slowly — which words paint a picture or do not mean exactly what they say?" '
+          + 'CLASSIFY: "How does this phrase work — is it comparing, exaggerating, or making a sound?" '
+          + 'INTERPRET: "If you said this in plain words, what would it really mean?"',
+        level2:
+          'FIND: "Look for comparisons (like/as), exaggerations, or human actions given to objects." '
+          + 'CLASSIFY: "Does it use \'like\' or \'as\'? Does it give an object a human action? That tells you the type." '
+          + 'INTERPRET: "Picture what is literally happening, then write it as a plain fact."',
+        level3:
+          'FIND: "Scan each sentence for a phrase that cannot be literally true — that is your figurative phrase." '
+          + 'CLASSIFY: "Match the signal: \'like/as\' = comparison, an action only people do = personification, a wild overstatement = exaggeration." '
+          + 'INTERPRET: "Restate it directly: drop the imagery and say the underlying meaning in one plain sentence."',
+      },
+      commonStruggles: [
+        { pattern: 'Cannot find any figurative phrases', response: 'Read one sentence at a time — does any part stretch the truth or compare two things?' },
+        { pattern: 'Confuses simile and metaphor', response: 'Check for the words "like" or "as" — that is the difference between the two comparison types.' },
+        { pattern: 'Labels literal language as figurative', response: 'Could this sentence be literally true? If yes, it may not be figurative.' },
+        { pattern: 'Literal interpretation just repeats the phrase', response: 'Do not reuse the figurative words — say what actually, plainly happens.' },
+        { pattern: 'Repeated wrong classification', response: 'Think about HOW the phrase works — comparing, exaggerating, making a sound, or giving human traits?' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ACTIVITY INTRODUCTION',
+          instruction:
+            'When you receive [ACTIVITY_START], warmly introduce the figurative-language activity in 2 sentences max. '
+            + 'Mention we will find, classify, and interpret figurative language, and encourage the student to tap each figurative phrase they spot. '
+            + 'Never reveal which phrases are figurative or their types. Use age-appropriate language for the grade level.',
+        },
+        {
+          title: 'PHASE TRANSITIONS',
+          instruction:
+            'When you receive [PHASE_CLASSIFY], [PHASE_INTERPRET], or [PHASE_REVIEW], give one brief sentence orienting the student to the new step. '
+            + 'Do not reveal any answer or correct type.',
+        },
+        {
+          title: 'CLASSIFICATION FEEDBACK',
+          instruction:
+            'When you receive [CLASSIFY_CORRECT], affirm in one short sentence and name the signal that makes the phrase that type. '
+            + 'When you receive [CLASSIFY_INCORRECT], give a brief hint about what to look for WITHOUT naming the correct type.',
+        },
+        {
+          title: 'COMPLETION',
+          instruction:
+            'When you receive [ACTIVITY_COMPLETE], give a brief, warm wrap-up (one or two sentences) acknowledging their results, plus one tip for spotting figurative language next time.',
+        },
+      ],
+    },
   },
   {
     id: 'spelling-pattern-explorer',

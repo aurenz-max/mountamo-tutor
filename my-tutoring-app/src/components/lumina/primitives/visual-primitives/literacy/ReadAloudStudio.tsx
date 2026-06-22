@@ -36,6 +36,9 @@ export interface ExpressionMarker {
 export interface ReadAloudStudioData {
   title: string;
   gradeLevel: string;
+  /** Which fluency sub-skill this passage targets (eval mode). Optional / back-compatible —
+   *  the interaction is identical across foci; only the passage content & markers vary. */
+  fluencyFocus?: 'accuracy' | 'expression' | 'dialogue';
   passage: string;
   passageWords: string[];             // Words of the passage for word-level tracking
   targetWPM: number;                  // Target words per minute for this grade

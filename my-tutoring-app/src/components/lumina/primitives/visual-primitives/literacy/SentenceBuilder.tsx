@@ -52,6 +52,15 @@ export interface SentenceBuilderData {
   // Role color legend
   roleColors: Record<string, string>; // e.g., { subject: 'blue', predicate: 'red' }
 
+  /**
+   * Within-mode support tier ('easy'|'medium'|'hard') from the manifest. Second
+   * axis: how much instructional scaffolding the student gets, NOT the words/tiles.
+   * Threaded to the live tutor so its reveal policy is tier-aware. Display/instruction
+   * scaffolding (targetMeaning phrasing, hint explicitness) is baked into the data by
+   * the generator; this field exists so the tutor knows how much to give away.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
   skillId?: string;
@@ -135,6 +144,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     sentenceType,
     challenges = [],
     roleColors,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -226,8 +236,25 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   // ── AI Tutoring ──
   const resolvedInstanceId = instanceId || `sentence-builder-${Date.now()}`;
 
+  // Tier-aware reveal policy for the tutor: a second scaffolding channel that must
+  // honor the same support tier the on-screen scaffolding does. At hard the tutor
+  // must NOT name the build strategy the instruction deliberately withheld.
+  const tierRevealClause = useMemo(() => {
+    switch (supportTier) {
+      case 'easy':
+        return 'SUPPORT TIER: easy — you may NAME the build strategy (start with the subject, then the action, then what receives it) and walk the student through the setup.';
+      case 'medium':
+        return 'SUPPORT TIER: medium — nudge execution only; point at sentence structure but do NOT spell out the full word order. Never reveal the answer.';
+      case 'hard':
+        return 'SUPPORT TIER: hard — the build strategy was deliberately withheld on screen; do NOT name it. Ask the student what they notice about the target meaning and the tile roles. Never reveal the answer or the word order.';
+      default:
+        return '';
+    }
+  }, [supportTier]);
+
   const aiPrimitiveData = useMemo(() => ({
     sentenceType,
+    supportTier: supportTier ?? null,
     currentPhase,
     phaseDescription: PHASE_LABELS[currentPhase]?.description ?? '',
     withinPhaseIndex: withinPhaseIndex + 1,
@@ -240,7 +267,7 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     placedWords: placedTileIds.map(id => currentChallenge?.tiles.find(t => t.id === id)?.text ?? '').join(' '),
     tileRoles: currentChallenge?.tiles.map(t => `${t.text}(${t.role})`).join(', ') ?? '',
   }), [
-    sentenceType, currentPhase, withinPhaseIndex, challenges.length,
+    sentenceType, supportTier, currentPhase, withinPhaseIndex, challenges.length,
     currentChallenge, placedTileIds, currentAttempts, gradeLevel,
   ]);
 
@@ -260,10 +287,10 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       `[ACTIVITY_START] Sentence Builder for grade ${gradeLevel}. Sentence type: ${sentenceType}. `
       + `${challenges.length} challenges across 3 phases (explore → practice → apply). `
       + `First challenge: "${currentChallenge?.targetMeaning}". `
-      + `Introduce warmly: "Let's build some sentences together!"`,
+      + `Introduce warmly: "Let's build some sentences together!" ${tierRevealClause}`,
       { silent: true },
     );
-  }, [isConnected, challenges.length, currentChallenge, gradeLevel, sentenceType, sendText]);
+  }, [isConnected, challenges.length, currentChallenge, gradeLevel, sentenceType, sendText, tierRevealClause]);
 
   // ── Local overall score (fallback for PhaseSummaryPanel) ──
   const localOverallScore = useMemo(() => {
@@ -396,11 +423,11 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
         + `Phase: ${currentPhase}. Attempt ${currentAttempts + 1}. `
         + `Target meaning: "${currentChallenge.targetMeaning}". `
         + `Available roles: ${currentChallenge.tiles.map(t => `${t.text}(${t.role})`).join(', ')}. `
-        + `Give a hint about sentence structure without revealing the answer.`,
+        + `Give a hint about sentence structure without revealing the answer. ${tierRevealClause}`,
         { silent: true },
       );
     }
-  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex, incrementAttempts, recordResult, currentAttempts, hintsUsedPerChallenge, sendText]);
+  }, [currentChallenge, currentPhase, placedTileIds, exploreCorrectArrangement, exploreMissingIndex, incrementAttempts, recordResult, currentAttempts, hintsUsedPerChallenge, sendText, tierRevealClause]);
 
   const handleHint = useCallback(() => {
     if (!currentChallenge) return;

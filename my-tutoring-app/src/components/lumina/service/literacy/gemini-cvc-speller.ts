@@ -38,6 +38,97 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen / instructional helps are withdrawn.
+// INVARIANT: a tier ONLY removes scaffolding. It never changes the target word,
+// the heard audio, the correct vowel, or any answer — only how much the
+// workspace helps the student self-check.
+//
+// Levers (per task type):
+//   spell-word  → showPictureCue (emoji + image identify the word, so the
+//                 student can self-check what they're spelling) AND
+//                 distractorLevel (how cluttered the letter bank is — trims
+//                 distractorLetters only, NEVER the 3 target letters).
+//   word-sort   → showPictureCue (the emoji reveals the word; withdrawing it
+//                 forces a pure listen-and-sort).
+//   fill-vowel  → no display lever (consonant frame + 2 vowel options are the
+//                 task itself); the tutor channel carries its tier instead.
+// ---------------------------------------------------------------------------
+
+type CvcTaskType = 'fill-vowel' | 'spell-word' | 'word-sort';
+
+interface CvcSupportScaffold {
+  /** spell-word / word-sort: show the emoji + image that identifies the word (self-check aid). */
+  showPictureCue?: boolean;
+  /** spell-word: how many distractor letters clutter the bank (0-1 easy → up to 5 hard). */
+  distractorLevel?: 'clean' | 'some' | 'full';
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  taskType: CvcTaskType,
+  tier: SupportTier,
+): CvcSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen / spoken help the student gets. It NEVER '
+    + 'changes the target word, the audio, the correct letters, or the answer.';
+  const neutral =
+    'Keep the title and description neutral — never state the support level or reveal the answer.';
+
+  if (taskType === 'spell-word') {
+    const showPictureCue = tier !== 'hard';
+    const distractorLevel: CvcSupportScaffold['distractorLevel'] =
+      tier === 'easy' ? 'clean' : tier === 'medium' ? 'some' : 'full';
+    return {
+      showPictureCue,
+      distractorLevel,
+      promptLines: [
+        lead,
+        `The picture cue (emoji + image of the word) is ${showPictureCue ? 'shown so the student can self-check what they are spelling' : 'withdrawn — the student spells purely from the sounds they hear'}.`,
+        `The letter bank is ${distractorLevel === 'clean' ? 'kept clean (few extra letters), so sounding-out is the only step' : distractorLevel === 'some' ? 'lightly populated with a few distractor letters' : 'fully populated with distractor letters, so the student must hold each phoneme while searching'}.`,
+        neutral,
+      ],
+    };
+  }
+
+  if (taskType === 'word-sort') {
+    const showPictureCue = tier !== 'hard';
+    return {
+      showPictureCue,
+      promptLines: [
+        lead,
+        `The picture cue (emoji of the word) is ${showPictureCue ? 'shown to anchor the word being sorted' : 'withdrawn — the student sorts purely by the vowel sound they hear'}.`,
+        neutral,
+      ],
+    };
+  }
+
+  // fill-vowel: the consonant frame + 2 vowel choices ARE the task; nothing
+  // visual to withdraw without changing what is assessed. The tutor channel
+  // carries the tier (easy names the strategy, hard withholds it).
+  return {
+    promptLines: [
+      lead,
+      'No on-screen scaffolding is withdrawn for this mode (the consonant frame and the two vowel choices are the task itself); the spoken support is tuned by tier instead.',
+      neutral,
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Confusable vowel pairs for fill-vowel and word-sort distractors
 // ---------------------------------------------------------------------------
 
@@ -191,7 +282,12 @@ const VOWEL_MAP: Record<string, string> = {
 export const generateCvcSpeller = async (
   topic: string,
   gradeLevel: string = 'K',
-  config?: Partial<CvcSpellerData & { targetEvalMode?: string }>
+  config?: Partial<CvcSpellerData & {
+    targetEvalMode?: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
+     *  difficulty = how much scaffolding within the mode. NEVER changes numbers/words. */
+    difficulty?: string;
+  }>
 ): Promise<CvcSpellerData> => {
 
   // -------------------------------------------------------------------------
@@ -227,6 +323,21 @@ export const generateCvcSpeller = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT word
+  //    size. pinnedType (the single pinned mode, if any) drives prompt TONE only;
+  //    the withdrawal is applied deterministically per challenge at the end. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: CvcTaskType | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as CvcTaskType)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  const tierSection = tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT word size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevel}
@@ -239,7 +350,7 @@ This is an audio-first activity. The AI tutor SAYS each word aloud — students 
 The AI provides progressive scaffolding: natural word → stretched sounds → isolated phonemes.
 
 ${challengeTypeSection}
-
+${tierSection}
 TASK-SPECIFIC FORMATS:
 
 For "fill-vowel" challenges:
@@ -330,6 +441,39 @@ PHONEME NOTATION:
 
         return ch;
       });
+    }
+
+    // ========================================================================
+    // Within-mode support tier: withdraw on-screen scaffolding (never the word).
+    // Gated ONLY on supportTier — a blended/auto session gets difficulty too,
+    // each challenge resolving its scaffold from its OWN taskType. Runs LAST,
+    // after all structural fixups, so a tier can only REMOVE help.
+    // ========================================================================
+    if (supportTier && result.challenges) {
+      for (const ch of result.challenges) {
+        const sc = resolveSupportStructure(ch.taskType as CvcTaskType, supportTier);
+
+        // Picture cue (spell-word + word-sort): emoji/image self-check aid.
+        // fill-vowel renders no picture, so leave it untouched (no-op there).
+        if (ch.taskType === 'spell-word' || ch.taskType === 'word-sort') {
+          ch.showPictureCue = sc.showPictureCue ?? true;
+        }
+
+        // Letter-bank clutter (spell-word only). Trim DISTRACTORS only — never
+        // touch targetLetters, so the answer stays spellable at every tier.
+        if (ch.taskType === 'spell-word' && sc.distractorLevel) {
+          const cap = sc.distractorLevel === 'clean' ? 1 : sc.distractorLevel === 'some' ? 3 : 5;
+          const targets = new Set((ch.targetLetters || []).map((l) => l.toLowerCase()));
+          const distractors = (ch.distractorLetters || []).filter(
+            (l) => !targets.has(l.toLowerCase()),
+          );
+          ch.distractorLetters = distractors.slice(0, cap);
+        }
+      }
+      // Tell the live tutor the support level (blended sessions included) so its
+      // reveal policy is tier-aware per challenge.
+      result.supportTier = supportTier;
+      console.log(`[cvc-speller] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
     }
 
     console.log('CVC Speller Generated:', {
