@@ -20,14 +20,14 @@
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
 | phoneme-explorer | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phoneme-explorer-2026-03-15.md) |
-| sound-swap | 3 | 3 | 0 | 2026-04-04 | [report](eval-reports/sound-swap-2026-03-15.md) |
-| letter-spotter | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-spotter-2026-03-15.md) |
+| sound-swap | 3 | 0 | 3 | 2026-06-21 | [structural sweep](eval-reports/sound-swap-2026-06-21.md) |
+| letter-spotter | 3 | 0 | 1 | 2026-06-21 | [structural sweep](eval-reports/letter-spotter-2026-06-21.md) |
 | letter-sound-link | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-sound-link-2026-03-15.md) |
 | cvc-speller | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/cvc-speller-2026-03-15.md) |
 | word-workout | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/word-workout-2026-04-04.md) |
 | story-map | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/story-map-2026-03-15.md) |
 | poetry-lab | 2 | 0 | 2 | 2026-03-15 | [report](eval-reports/poetry-lab-2026-03-15.md) |
-| text-structure-analyzer | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/text-structure-analyzer-2026-03-15.md) |
+| text-structure-analyzer | 4 | 4 | 0 | 2026-06-21 | [structural sweep](eval-reports/text-structure-analyzer-2026-06-21.md) |
 | paragraph-architect | 3 | 3 | 0 | 2026-04-04 | [report](eval-reports/paragraph-architect-2026-03-15.md) |
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
@@ -59,7 +59,7 @@
 | function-machine | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/function-machine-2026-06-14.md) |
 | knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
 | how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
-| light-shadow-lab | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/light-shadow-lab-2026-03-29.md) |
+| light-shadow-lab | 4 | 4 | 0 | 2026-06-21 | [structural sweep](eval-reports/light-shadow-lab-2026-06-21.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
 | hundreds-chart | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/hundreds-chart-2026-06-14.md) |
@@ -75,8 +75,8 @@
 | planetary-explorer | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/planetary-explorer-2026-04-04.md) |
 | construction-sequence-planner | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/construction-sequence-planner-2026-04-05.md) |
 | read-aloud-studio | 0 | 0 | 0 | 2026-04-05 | [report](eval-reports/read-aloud-studio-2026-04-05.md) |
-| context-clues-detective | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/context-clues-detective-2026-04-05.md) |
-| figurative-language-finder | 4 | 4 | 0 | 2026-04-05 | [report](eval-reports/figurative-language-finder-2026-04-05.md) |
+| context-clues-detective | 4 | 3 | 1 | 2026-06-21 | [structural sweep](eval-reports/context-clues-detective-2026-06-21.md) |
+| figurative-language-finder | 4 | 4 | 0 | 2026-06-21 | [structural sweep](eval-reports/figurative-language-finder-2026-06-21.md) |
 | word-sorter | 3 | 3 | 0 | 2026-04-05 | [report](eval-reports/word-sorter-2026-04-05.md) |
 | decodable-reader | 1 | 1 | 0 | 2026-04-05 | [report](eval-reports/decodable-reader-2026-04-05.md) |
 | equation-builder | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/equation-builder-2026-06-14.md) |
@@ -96,14 +96,23 @@
 | angle-workshop | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/angle-workshop-2026-06-20.md) |
 | transformation-lab | 5 | 5 | 0 | 2026-06-07 | [report](eval-reports/transformation-lab-2026-06-07.md) |
 | coordinate-graph | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/coordinate-graph-2026-06-14.md) |
+| stoichiometry-lab | 3 | 2 | 1 | 2026-06-21 | [structural sweep](eval-reports/stoichiometry-lab-2026-06-21.md) |
+| race-track-lab | 5 | 5 | 0 | 2026-06-21 | [structural sweep](eval-reports/race-track-lab-2026-06-21.md) |
 
-**Totals:** 336/347 modes passing (96.8%) | 26 open issues (4 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 336/355 modes passing (94.6%) | 31 open issues (7 CRITICAL, 23 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
 Note: polygon-area-builder and circle-explorer each have 5 IRT-pinned modes all passing; their "Auto (mixed)" paths (PAB-1 / CE-1) were both fixed 2026-06-06 (SP-21) — each now interleaves all five tiers, scaled easy→hard, across 8 problems.
 
 Note: annotated-example passes structurally (final answers correct, schema refactor successful) but has 3 HIGH content-quality issues around redundant step planning — see AE-1..AE-4 and SP-16.
+
+Note: **Track-C structural-difficulty eval-test sweep (2026-06-21)** — Step-2c support-tier sweep across the 8 primitives that just got the structural axis. **Tier wiring is correct everywhere it could be verified** (scaffold flip, lever moves easy→hard, magnitude invariant, no leak, null-tier no-op all pass): figurative-language-finder, light-shadow-lab, race-track-lab fully clean; text-structure-analyzer clean on all 4 tier checks. 5 open issues surfaced (detailed rows pending in the issue tables below; recorded here with IDs):
+> - **SSW-1 (sound-swap, CRITICAL, GENERATOR):** generator pinned to the retired `gemini-2.0-flash-lite` → 404 on every call; ships nothing. One-line model swap to `gemini-flash-lite-latest`. PRE-EXISTING (not the Track-C change); same root cause as SP-22 / coordinate-graph. Blocks the whole primitive, so the tier work is runtime-unverified.
+> - **LSP-1 (letter-spotter, CRITICAL, GENERATOR):** `name_it` intermittently emits a ~383 KB runaway response → unterminated JSON → `JSON.parse` throws (`gemini-letter-spotter.ts:566`). Baseline passed; the diff does not touch the schema, so it's a Flash-Lite robustness/brittle-schema issue (SP-6 family), to be addressed separately. find_it/match_it not swept.
+> - **TSA-1 (text-structure-analyzer, CRITICAL, COMPONENT):** the correct `structureType` is rendered in the header badge (`TextStructureAnalyzer.tsx:536-538`) at all tiers, leaking the Identify-step answer. PRE-EXISTING component behavior (present at baseline), not a tier regression.
+> - **STO-1 (stoichiometry-lab, HIGH, GENERATOR):** `yield` hard-tier extent gap can clamp below the `LIMITING_GAP_FLOOR` (0.18) — down to ~0.04 — when the reselected mass hits the band ceiling, because the gap-floor re-check doesn't run in the tier reselection path. Near-tie limiting reagent at the hardest tier (~1/12 challenges).
+> - **CCD-1 (context-clues-detective, HIGH, GENERATOR):** `synonym_antonym` structural lever is flat — the clue-gap lever is intrinsically inapplicable (co-located synonym/antonym clue) and the prompt-shaped near-distractor lever doesn't land; only scaffold withdrawal differs across tiers. Consider a schema-enforced near-distractor lever or document the mode as scaffold-only on axis 2.
 
 ---
 

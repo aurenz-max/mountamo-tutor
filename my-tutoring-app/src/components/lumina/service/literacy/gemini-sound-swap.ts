@@ -217,6 +217,268 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// TIER GUARDRAIL — the one hard rule for BOTH within-mode difficulty axes.
+//
+// A tier changes the problem's STRUCTURE (axis 2: WHERE the manipulated phoneme
+// sits — onset → coda → medial) and how much HELP is shown (axis 1: scaffolding
+// withdrawal). It NEVER changes the problem's MAGNITUDE (word length / phoneme
+// count stays inside the eval mode + grade band) and NEVER changes the operation
+// (the eval mode is the task identity — addition stays addition, etc.).
+//
+// Position is answer-bearing here: the target phoneme + its index ARE the answer,
+// and they are re-derived from the phoneme arrays by deriveOperationFields(), so
+// when the LLM authors a self-consistent pair at the requested position the answer
+// auto-syncs — no word re-assembly in code (that is brittle for word inventory).
+// ---------------------------------------------------------------------------
+const TIER_GUARDRAIL =
+  'This tier changes the problem STRUCTURE (where the manipulated sound sits — '
+  + 'beginning → end → middle) and how much help is shown. It NEVER changes the '
+  + 'OPERATION, never makes the words longer (word length stays in the grade band), '
+  + 'and never reveals the answer word.';
+
+// ---------------------------------------------------------------------------
+// Bespoke support scaffold — which on-screen / instructional helps are withdrawn
+// per pinned mode. INVARIANT for THIS function (axis 1 only): it ONLY removes
+// scaffolding — it never changes the operation or which phoneme is the answer.
+// (Axis 2 — resolveProblemShape — owns WHERE that phoneme sits; the operation and
+// grade-band word length are still fixed by the eval mode.)
+//
+// Levers (one field each), by modality:
+//   #1 perception   showWordImage      — the original-word picture self-check cue
+//                                         (all modes). hard withdraws it.
+//   #1 perception   showTargetHighlight— substitution: the amber highlight on the
+//                                         tile to change. hard withdraws → the
+//                                         student locates the phoneme unaided.
+//   #2 instruction  nameTargetSound    — name the exact phoneme to add/remove/swap
+//                                         in the instruction (easy/medium) vs. state
+//                                         only the goal "make a new word" (hard).
+//   #5 answer-form  optionCount        — number of phoneme choice buttons for
+//                                         addition/substitution: 3 (easy) → 4 (med)
+//                                         → 5 (hard). Always exactly ONE correct, so
+//                                         the task & answer are unchanged; only the
+//                                         discrimination load rises. (Deletion has no
+//                                         option buttons → optionCount is ignored.)
+// ---------------------------------------------------------------------------
+
+interface SoundSwapSupportScaffold {
+  /** #1 — show the original word's picture cue (self-check). Withdrawn at hard. */
+  showWordImage: boolean;
+  /** #1 (substitution) — highlight the tile to change. Withdrawn at hard. */
+  showTargetHighlight: boolean;
+  /** #2 — name the exact target phoneme in the instruction (vs. goal only at hard). */
+  nameTargetSound: boolean;
+  /** #5 (addition/substitution) — number of phoneme choice buttons (1 correct + distractors). */
+  optionCount: number;
+  promptLines: string[];
+}
+
+function resolveSupportStructure(
+  pinnedType: SoundSwapChallenge['operation'],
+  tier: SupportTier,
+): SoundSwapSupportScaffold {
+  const lead =
+    'SCAFFOLDING (how much help): this part of the tier changes ONLY how much on-screen '
+    + 'and instructional help the student gets. It NEVER changes the operation or which '
+    + 'sound is the answer. (The STRUCTURE lines above govern WHERE that sound sits.)';
+
+  const showWordImage = tier !== 'hard';
+  const nameTargetSound = tier !== 'hard';
+  // More phoneme choices = harder discrimination at the SAME task. Deletion has no
+  // option buttons, so this field is inert there.
+  const optionCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 5;
+  // The amber "change this tile" highlight is a substitution-only perception aid.
+  const showTargetHighlight = pinnedType === 'substitution' ? tier !== 'hard' : false;
+
+  const lines: string[] = [lead];
+
+  if (pinnedType === 'deletion') {
+    lines.push(
+      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
+      `The instruction ${nameTargetSound ? 'names the exact sound to take away' : 'states only the goal ("take one sound away to make a new word"); the student must find which sound to remove'}.`,
+    );
+  } else if (pinnedType === 'addition') {
+    lines.push(
+      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
+      `The instruction ${nameTargetSound ? 'names the exact sound to add and where' : 'states only the goal ("add one sound to make a new word"); the student must decide the sound'}.`,
+      `There are ${optionCount} sound choices (exactly one correct) — ${tier === 'easy' ? 'few, so the choice is clear' : tier === 'medium' ? 'a moderate field of look-alikes' : 'a wide field of close look-alikes, so the student must discriminate carefully'}.`,
+    );
+  } else {
+    // substitution
+    lines.push(
+      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
+      `The tile to change is ${showTargetHighlight ? 'highlighted so the student sees where the swap happens' : 'NOT highlighted — the student must locate the sound to change from the instruction'}.`,
+      `The instruction ${nameTargetSound ? 'names the exact sound to change and its replacement target' : 'states only the goal ("change one sound to make a new word"); the student must find which sound to change'}.`,
+      `There are ${optionCount} sound choices (exactly one correct) — ${tier === 'easy' ? 'few, so the choice is clear' : tier === 'medium' ? 'a moderate field of look-alikes' : 'a wide field of close look-alikes, so the student must discriminate carefully'}.`,
+    );
+  }
+
+  lines.push('Keep the title and the word/image text neutral — never state the support level and never reveal the answer word.');
+
+  return { showWordImage, showTargetHighlight, nameTargetSound, optionCount, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
+// STRUCTURAL DIFFICULTY (axis 2) — phoneme MANIPULATION POSITION.
+//
+// Archetype: recognition / manipulation card. The in-mode structural lever is
+// WHERE the manipulated phoneme sits in the word — isolating a beginning sound
+// (onset) is the easiest phonemic-awareness move, an ending sound (coda) is
+// harder, and a MIDDLE sound (medial vowel / cluster interior) is the hardest.
+// This changes problem SHAPE, never magnitude (the word stays CVC/CVCC at the
+// same grade-band length) and never the operation (the eval mode is preserved).
+//
+// FLOORS & CAPS per mode (read from catalog evalModes + grade guidelines):
+//   addition     floor: exactly +1 phoneme. CAP: only 'beginning' | 'end' are
+//                renderable/derivable (no medial "+" slot, and real-word medial
+//                insertions are vanishingly rare for K-2). So this mode's ladder
+//                SATURATES at 2 positions: beginning (easy/med) → end (hard).
+//   deletion     floor: exactly -1 phoneme, result a real word. Full ladder:
+//                beginning → end → middle (delete a cluster-interior consonant,
+//                e.g. "slip"→"sip"). CAP: word length stays in grade band.
+//   substitution floor: same length, one phoneme differs. Full ladder:
+//                beginning → end → middle (medial vowel swap, e.g. "bit"→"bat").
+//                CAP: grade-band word length. This is the canonical gradient the
+//                grade guidelines already describe (K beginning → G2 medial vowel).
+//
+// This lever is PROMPT-SHAPED + CODE-VALIDATED, not code-reconstructed: the answer
+// is bound to a real-word pair, so reconstructing a medial swap in code would mean
+// inventing a word (brittle — see project_structural-difficulty-story-primitives).
+// Instead the prompt CONSTRAINS the target position per tier, and the post-process
+// COUNTS the position the LLM actually produced (re-derived from the phoneme diff)
+// and logs target-vs-actual. The position itself is answer-bearing and is recomputed
+// by deriveOperationFields() from the arrays, so a self-consistent pair stays correct.
+// ---------------------------------------------------------------------------
+
+type ManipPosition = 'beginning' | 'middle' | 'end';
+
+interface SoundSwapProblemShape {
+  /** The ordered set of positions this tier may use (first = preferred/easiest). */
+  targetPositions: ManipPosition[];
+  /** The single hardest position the tier is trying to reach (the "target"). */
+  primaryPosition: ManipPosition;
+  promptLines: string[];
+}
+
+/**
+ * Resolve the structural intent (manipulation position) for one mode + tier.
+ * Clamped internally to each mode's renderable/derivable position set, so a mode
+ * whose band only fits one or two positions SATURATES honestly (addition tops out
+ * at 'end' because medial insertion isn't renderable — not a forced overflow).
+ */
+function resolveProblemShape(
+  mode: SoundSwapChallenge['operation'],
+  tier: SupportTier,
+): SoundSwapProblemShape {
+  // The per-mode band: which positions are legal/renderable for THIS operation.
+  // addition has no medial "+" slot → {beginning, end} only.
+  const band: ManipPosition[] =
+    mode === 'addition' ? ['beginning', 'end'] : ['beginning', 'middle', 'end'];
+
+  // The easy → hard position ladder, before clamping to the band.
+  //   easy   → beginning (onset isolation — easiest phonemic move)
+  //   medium → end (coda)
+  //   hard   → middle (medial vowel / cluster interior — hardest)
+  const ladder: Record<SupportTier, ManipPosition> = {
+    easy: 'beginning',
+    medium: 'end',
+    hard: 'middle',
+  };
+
+  // Clamp the desired position into the band. If the desired position isn't legal
+  // for this mode, fall back to the hardest position the band DOES support that is
+  // ≤ the desired difficulty — i.e. saturate at the band ceiling.
+  const desired = ladder[tier];
+  let primaryPosition: ManipPosition;
+  if (band.includes(desired)) {
+    primaryPosition = desired;
+  } else {
+    // desired === 'middle' but band has no middle (addition) → saturate at 'end'.
+    primaryPosition = band[band.length - 1];
+  }
+
+  // The positions the LLM is ALLOWED to use this tier. Easy/medium are permissive
+  // (lower positions are fine — we don't want to reject a clean beginning-swap at
+  // medium); hard is strict (must hit the hardest renderable position).
+  let targetPositions: ManipPosition[];
+  if (tier === 'hard') {
+    targetPositions = [primaryPosition];
+  } else if (tier === 'medium') {
+    // beginning OR end (both ≤ medium difficulty), prefer end.
+    targetPositions = band.filter((p) => p !== 'middle');
+  } else {
+    // easy — beginning only (the defining easiest move).
+    targetPositions = ['beginning'];
+  }
+
+  const posWord = (p: ManipPosition) =>
+    p === 'beginning' ? 'the BEGINNING (first sound / onset)'
+      : p === 'end' ? 'the END (last sound / coda)'
+        : 'the MIDDLE (a medial vowel or a sound inside a consonant cluster)';
+
+  const verb = mode === 'addition' ? 'add the sound at'
+    : mode === 'deletion' ? 'remove the sound from'
+      : 'change the sound at';
+
+  const lines: string[] = [];
+  if (tier === 'hard' && primaryPosition === 'middle') {
+    lines.push(
+      `STRUCTURE (hardest): the manipulated sound must be in ${posWord('middle')}. `
+      + `For every challenge, ${verb} the MIDDLE of the word — `
+      + (mode === 'substitution'
+        ? 'swap a MEDIAL VOWEL (e.g. "bit" → "bat" changing /ɪ/→/æ/), the hardest phoneme-awareness move.'
+        : mode === 'deletion'
+          ? 'remove a CLUSTER-INTERIOR consonant (e.g. "slip" → "sip" removing /l/).'
+          : 'add the sound — see placement note below.')
+      + ' Keep words inside the grade band (do NOT make them longer to reach a middle position).',
+    );
+  } else if (tier === 'hard' && mode === 'addition') {
+    lines.push(
+      `STRUCTURE (hardest renderable): addition has no middle slot, so ${verb} ${posWord('end')} `
+      + `(build a coda, e.g. a real-word final-consonant addition). Keep the word in the grade band.`,
+    );
+  } else if (tier === 'medium') {
+    lines.push(
+      `STRUCTURE (medium): the manipulated sound should be at ${posWord('end')} `
+      + `(${verb} the LAST sound), which is harder to isolate than the first sound.`,
+    );
+  } else {
+    lines.push(
+      `STRUCTURE (easy): keep the manipulated sound at ${posWord('beginning')} `
+      + `(${verb} the FIRST sound), the most accessible phonemic-awareness move.`,
+    );
+  }
+  lines.push(
+    `Do NOT change the operation or lengthen the word to hit the position — only choose word pairs where the changed sound naturally falls at ${posWord(primaryPosition)}.`,
+  );
+
+  return { targetPositions, primaryPosition, promptLines: lines };
+}
+
+/** Re-derive the actual manipulation position from a fully-derived challenge —
+ *  reads the position field deriveOperationFields() already computed from the
+ *  phoneme diff. This is the "count" step: what position did the LLM actually
+ *  produce? Returns null if the challenge is malformed. */
+function actualManipPosition(ch: SoundSwapChallenge): ManipPosition | null {
+  if (ch.operation === 'addition') return (ch.addPosition as ManipPosition) ?? null;
+  if (ch.operation === 'deletion') return (ch.deletePosition as ManipPosition) ?? null;
+  return (ch.substitutePosition as ManipPosition) ?? null;
+}
+
 /**
  * Schema definition for Sound Swap Data
  *
@@ -416,6 +678,11 @@ export const generateSoundSwap = async (
     operations: string[];
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
+    /** Per-component difficulty tier from the manifest ('easy'|'medium'|'hard').
+     *  Drives BOTH within-mode axes: structural (WHERE the manipulated phoneme sits —
+     *  beginning→end→middle) and scaffolding (how much help). NEVER changes the
+     *  operation or lengthens the word past the grade band. */
+    difficulty: string;
   }>
 ): Promise<SoundSwapData> => {
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -425,6 +692,31 @@ export const generateSoundSwap = async (
     CHALLENGE_TYPE_DOCS,
   );
   logEvalModeResolution('SoundSwap', config?.targetEvalMode, evalConstraint);
+
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
+  //    pinnedType drives the prompt TONE only (which mode's scaffold wording to lead
+  //    with); the withdrawal is applied deterministically per-challenge at the end. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: SoundSwapChallenge['operation'] | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as SoundSwapChallenge['operation'])
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  // Axis 2 (structural): the manipulation-position intent for this pinned mode + tier.
+  const tierShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
+  // One coherent "what 'hard' means here" — STRUCTURE lines first (the harder problem),
+  // then SCAFFOLD lines (less help). Both come from the single supportTier key, so the
+  // prompt and the post-process can never disagree about the tier.
+  const tierSection = (tierScaffold || tierShape)
+    ? `\n## WITHIN-MODE DIFFICULTY TIER ("${supportTier}") — structure + scaffolding (NOT word size)\n`
+      + `- ${TIER_GUARDRAIL}\n`
+      + (tierShape ? tierShape.promptLines.map((l) => `- ${l}`).join('\n') + '\n' : '')
+      + (tierScaffold ? tierScaffold.promptLines.map((l) => `- ${l}`).join('\n') + '\n' : '')
+    : '';
 
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(soundSwapSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
@@ -486,7 +778,7 @@ ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
 Generate exactly ${challengeCount} challenges.
 
 ${challengeTypeSection}
-
+${tierSection}
 PHONEME NOTATION RULES:
 - Use IPA-style phoneme notation wrapped in forward slashes: /k/, /æ/, /t/, /s/, /b/, /ɪ/, /ʌ/, /ɛ/, /ɑ/, /ʊ/
 - Use /r/ for the R sound, NOT /ɹ/ or /ɾ/
@@ -588,9 +880,51 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       console.warn(`[SoundSwap] Rejected ${rejectedCount} challenge(s) with non-real words`);
     }
 
+    // ── Within-mode support tier: withdraw on-screen / instructional scaffolding
+    //    (never the words or the answer phoneme). Applied PER CHALLENGE from each
+    //    challenge's OWN operation, so a blended session gets difficulty too — the
+    //    tier is a student property, not a single-mode one. Gated ONLY on supportTier
+    //    being present; never on pinnedType. ──
+    if (supportTier) {
+      let onTarget = 0;
+      let offTarget = 0;
+      for (const ch of challenges) {
+        // ── Axis 1 (scaffolding withdrawal) — display/instruction only ──
+        const sc = resolveSupportStructure(ch.operation, supportTier);
+        ch.showWordImage = sc.showWordImage;
+        ch.nameTargetSound = sc.nameTargetSound;
+        // Highlight is a substitution-only perception aid; resolveSupportStructure
+        // already returns false for non-substitution modes, but guard anyway.
+        ch.showTargetHighlight = ch.operation === 'substitution' ? sc.showTargetHighlight : false;
+        // Option count only applies where there are choice buttons (addition/substitution).
+        // Deletion taps a tile directly and has no options — leave it unset there.
+        if (ch.operation === 'addition' || ch.operation === 'substitution') {
+          ch.optionCount = sc.optionCount;
+        }
+
+        // ── Axis 2 (structural — manipulation position): COUNT → validate. ──
+        // The position is answer-bearing and was already re-derived from the phoneme
+        // diff by deriveOperationFields(), so the answer is correct regardless. We
+        // cannot RECONSTRUCT a different position in code without inventing a word
+        // (brittle for word inventory), so we COUNT the LLM's actual position against
+        // this tier's allowed set and log target-vs-actual for the live sweep.
+        const shape = resolveProblemShape(ch.operation, supportTier);
+        const actual = actualManipPosition(ch);
+        const hit = actual !== null && shape.targetPositions.includes(actual);
+        if (hit) onTarget++; else offTarget++;
+      }
+      const shapeNote = pinnedType
+        ? `structural target=${resolveProblemShape(pinnedType, supportTier).primaryPosition}, on-target ${onTarget}/${onTarget + offTarget}`
+        : 'blended (per-challenge position validated)';
+      console.log(`[sound-swap] Difficulty tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'}); ${shapeNote}`);
+    }
+
     const finalData: SoundSwapData = {
       title: result.title,
       gradeLevel: gradeLevelKey,
+      // Tell the live tutor the support level whenever a tier is present — it applies
+      // in blended sessions too (the tutor reveal policy is mode-aware per challenge).
+      ...(supportTier ? { supportTier } : {}),
       challenges,
     };
 

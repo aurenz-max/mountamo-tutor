@@ -61,6 +61,234 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT numbers
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Support-tier scaffold — which on-screen / instructional helps are withdrawn
+// per pinned challenge type. INVARIANT: a tier only removes scaffolding; it
+// never touches a given mass, a coefficient, a molar mass, targetAnswer, or
+// targetAnswerFormula (the post-validation block above owns every number).
+//
+// Levers (all display-/instruction-only — none are read by the check function):
+//   showReactionOutput → the "Run the reaction" overlay that prints the computed
+//                        limiting reagent + product yields (a direct self-check of
+//                        the answer). easy/medium: shown; hard: withdrawn.
+//   showMoleLadder     → the pre-computed grams→moles ladder (#1 perception / CPA).
+//                        easy: shown; medium/hard: withdrawn (student does ÷molarMass).
+//   showRatioStrip     → the mole-ratio strip derived from coefficients (#3 CPA).
+//                        easy/medium: shown; hard: withdrawn (student reads the
+//                        ratio off the balanced equation themselves).
+//   nameStrategy       → whether the instruction names the governing step/relation
+//                        (the mole-map step, or "limiting reagent = smallest
+//                        moles÷coeff"). easy/medium: named; hard: withheld.
+//   hintLevel          → 'formula' (explicit rule) at easy → 'concept' (nudge only)
+//                        at medium/hard.
+// The lever set is resolved PER CHALLENGE from each challenge's OWN type, so a
+// blended/auto session gets difficulty too (difficulty is a student property).
+// ---------------------------------------------------------------------------
+
+interface StoichSupportScaffold {
+  showReactionOutput: boolean;
+  showMoleLadder: boolean;
+  showRatioStrip: boolean;
+  nameStrategy: boolean;
+  hintLevel: 'formula' | 'concept';
+  promptLines: string[];
+}
+
+// ---------------------------------------------------------------------------
+// TIER_GUARDRAIL — the one hard rule for BOTH within-mode axes.
+// (Renamed from the scaffolding skill's "numbers never change" — that line is
+//  now false: this generator ALSO carries a structural difficulty axis that
+//  re-selects answer-bearing values.)
+//
+// A tier changes the problem's STRUCTURE, never its MAGNITUDE, and never its
+// eval mode (the eval mode = the task identity = convert | limiting | yield):
+//   - convert: # of mole-map steps engaged (same-substance unit conversion →
+//              cross-substance 1:1 ratio → cross-substance NON-1:1 ratio).
+//              Still ONE given mass, one conversion — never becomes limiting/yield.
+//   - limiting: the extent-gap subtlety |extentA−extentB| (wide & obvious →
+//               near-borderline but STILL unambiguous). The gap NEVER drops below
+//               the mode's unambiguity floor (that would make the mode unsolvable).
+//   - yield: whether the percent-yield step is engaged (theoretical only →
+//            theoretical + actual÷theoretical×100), riding the same limiting gap.
+// Magnitude (grade-band mass range, molar masses, coefficients of the reaction)
+// is owned by the eval mode + grade scope; the tier never pushes past it. The
+// student's answer is RECOMPUTED from whatever values the code finally lands.
+// ---------------------------------------------------------------------------
+const TIER_GUARDRAIL =
+  'Structural difficulty changes the problem SHAPE (mole-map steps engaged, '
+  + 'extent-gap subtlety, percent-yield step), never the MAGNITUDE (mass range, '
+  + 'molar masses, coefficients) and never the eval mode (convert | limiting | yield).';
+
+// ---------------------------------------------------------------------------
+// Structural difficulty (2nd axis) — config.difficulty drives a harder PROBLEM
+// SHAPE, not less help. Rides the same tier enum as the scaffolding axis.
+//
+// Per-mode lever (easy → hard):
+//   convert  · mole-map steps: 'same' (g↔mol of ONE substance, no ratio) →
+//              'ratio1to1' (cross-substance, coeffA==coeffB) →
+//              'ratioNonUnity' (cross-substance, coeffA!=coeffB — the ratio step bites)
+//              FLOOR: one given mass, one conversion (never limiting/yield).
+//              CAP: substances/coefficients of THIS reaction (no magnitude inflation).
+//   limiting · gapTarget: the fractional extent gap |eA−eB|/max(eA,eB) to engineer.
+//              easy 0.55 (obvious) → medium 0.35 → hard 0.20 (tight, still unambiguous).
+//              FLOOR: 0.18 (catalog requires ≥~20% / post-validation rejects <0.15;
+//              never go borderline-undecidable). CAP: 0.85 (a wider gap is just a
+//              different obvious problem, not magnitude).
+//   yield    · percentYield: false (theoretical only) → true (extra actual÷theo×100
+//              step) at hard; rides the same limiting gapTarget (easy 0.50 wide →
+//              hard 0.22 tight). FLOOR: theoretical yield always computed. CAP: same gap cap.
+// ---------------------------------------------------------------------------
+
+const LIMITING_GAP_FLOOR = 0.18;
+const LIMITING_GAP_CAP = 0.85;
+
+type ConvertSteps = 'same' | 'ratio1to1' | 'ratioNonUnity';
+
+interface StoichProblemShape {
+  /** convert only: how many mole-map steps the conversion engages. */
+  convertSteps: ConvertSteps;
+  /** limiting/yield only: target fractional extent gap, clamped to [floor, cap]. */
+  gapTarget: number;
+  /** yield only: engage the percent-yield step (requires actualYield). */
+  percentYield: boolean;
+  promptLines: string[];
+}
+
+const clampGap = (g: number): number =>
+  Math.min(LIMITING_GAP_CAP, Math.max(LIMITING_GAP_FLOOR, g));
+
+/**
+ * Turn one tier into one structural intent per mode. Clamped to [floor, cap]
+ * internally so the returned target already respects the mode's floor and the
+ * magnitude ceiling. Both the prompt (describe) and the post-process (enforce)
+ * consume THIS function, so they can never disagree about what "hard" means.
+ */
+function resolveProblemShape(
+  pinnedType: string,
+  tier: SupportTier,
+): StoichProblemShape {
+  if (pinnedType === 'convert') {
+    const convertSteps: ConvertSteps =
+      tier === 'easy' ? 'same' : tier === 'medium' ? 'ratio1to1' : 'ratioNonUnity';
+    const desc: Record<ConvertSteps, string> = {
+      same:
+        'a SAME-SUBSTANCE conversion: convert a given mass of one substance to moles '
+        + '(or moles back to grams) of the SAME substance — molar mass only, NO mole-ratio step.',
+      ratio1to1:
+        'a CROSS-SUBSTANCE conversion where the two coefficients are EQUAL (a 1:1 mole ratio) — '
+        + 'grams of A → moles of A → moles of B → grams/moles of B, but the ratio step is the trivial 1:1.',
+      ratioNonUnity:
+        'a CROSS-SUBSTANCE conversion where the two coefficients DIFFER (a non-1:1 mole ratio, e.g. 2:1 or 3:2) — '
+        + 'the student MUST apply the coefficient ratio; skipping it gives a wrong answer.',
+    };
+    return {
+      convertSteps,
+      gapTarget: 0,
+      percentYield: false,
+      promptLines: [
+        `Structural shape (HARDER PROBLEM, not less help): make every "convert" challenge ${desc[convertSteps]}`,
+        'Keep it a SINGLE conversion with ONE given mass — never two givens, never a limiting-reagent question.',
+      ],
+    };
+  }
+  if (pinnedType === 'limiting') {
+    const gapTarget = clampGap(tier === 'easy' ? 0.55 : tier === 'medium' ? 0.35 : 0.20);
+    return {
+      convertSteps: 'same',
+      gapTarget,
+      percentYield: false,
+      promptLines: [
+        `Structural shape: engineer the two given masses so the limiting reagent is ${
+          tier === 'easy'
+            ? 'OBVIOUS — one reactant runs out well before the other (a wide extent gap)'
+            : tier === 'medium'
+              ? 'clear but NOT lopsided — a moderate extent gap that takes real mole math to settle'
+              : 'TIGHT — the two reactants are close, so only careful moles÷coefficient math (NOT comparing masses) reveals which runs out first'
+        }.`,
+        `Aim for roughly a ${Math.round(gapTarget * 100)}% gap between the two extents (moles÷coefficient), but keep it UNAMBIGUOUS — never a tie.`,
+      ],
+    };
+  }
+  // yield
+  const gapTarget = clampGap(tier === 'easy' ? 0.50 : tier === 'medium' ? 0.32 : 0.22);
+  const percentYield = tier === 'hard';
+  return {
+    convertSteps: 'same',
+    gapTarget,
+    percentYield,
+    promptLines: [
+      `Structural shape: ${
+        percentYield
+          ? 'this is a PERCENT-YIELD problem — include a realistic actualYield (80–95% of theoretical) so the student must compute theoretical yield AND then actual÷theoretical×100'
+          : 'this is a THEORETICAL-yield-only problem — do NOT include actualYield (no percent-yield step)'
+      }.`,
+      `Engineer the two given masses for a ${
+        tier === 'hard' ? 'TIGHT' : tier === 'medium' ? 'moderate' : 'wide'
+      } extent gap (~${Math.round(gapTarget * 100)}%) so finding the limiting reagent takes real mole math, but keep it unambiguous.`,
+    ],
+  };
+}
+
+function resolveSupportStructure(
+  pinnedType: string,
+  tier: SupportTier,
+): StoichSupportScaffold {
+  const lead =
+    'This tier changes only how much on-screen / instructional help the student gets. '
+    + 'It NEVER changes the reaction, the given masses, the molar masses, or the answer.';
+
+  // Self-check overlay: the "Run the reaction" panel literally prints the limiting
+  // reagent and product yields — it is the single strongest self-check. Withdrawn
+  // only at hard so a strong student computes unaided.
+  const showReactionOutput = tier !== 'hard';
+  // The grams→moles ladder pre-computes moles for the given mass — a perception/CPA
+  // aid. Kept at easy (the struggling student leans on it), withdrawn from medium up.
+  const showMoleLadder = tier === 'easy';
+  // The mole-ratio strip restates the coefficients as a ratio — withdrawn at hard,
+  // where the student reads the ratio directly off the balanced equation.
+  const showRatioStrip = tier !== 'hard';
+  // Instruction-as-scaffold: name the governing step at easy/medium; withhold at hard.
+  const nameStrategy = tier !== 'hard';
+  const hintLevel: 'formula' | 'concept' = tier === 'easy' ? 'formula' : 'concept';
+
+  const strategyName =
+    pinnedType === 'limiting'
+      ? 'that the limiting reagent is the reactant with the smallest moles ÷ coefficient'
+      : pinnedType === 'yield'
+        ? 'the mole-map route through the limiting reagent (grams → moles → ratio → grams of product)'
+        : 'the mole-map route (grams → moles → ratio → moles → grams)';
+
+  return {
+    showReactionOutput,
+    showMoleLadder,
+    showRatioStrip,
+    nameStrategy,
+    hintLevel,
+    promptLines: [
+      lead,
+      `The "Run the reaction" self-check overlay (computed limiting reagent + product yields) is ${showReactionOutput ? 'available to the student' : 'WITHDRAWN — the student must reach the result without the worked output'}.`,
+      `The pre-computed grams→moles ladder is ${showMoleLadder ? 'shown' : 'withdrawn — the student converts mass to moles themselves'}; the mole-ratio strip is ${showRatioStrip ? 'shown' : 'withdrawn — the student reads the ratio off the balanced equation'}.`,
+      `The instruction ${nameStrategy ? `NAMES the strategy (${strategyName})` : 'does NOT name the strategy — the student must decide how to attack the problem from the equation and givens'}.`,
+      `The hint is ${hintLevel === 'formula' ? 'an explicit formula/rule for the next step' : 'a conceptual nudge only — no formula, no plugged-in numbers'}.`,
+      'Keep the title and description neutral — never state the support level, and never state the limiting reagent or the numeric answer.',
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
 
@@ -257,8 +485,12 @@ const stoichiometryLabSchema: Schema = {
           type: Type.BOOLEAN,
           description: "Show percent yield tools (grade 11-12 only).",
         },
+        showReactionOutput: {
+          type: Type.BOOLEAN,
+          description: "Show the 'Run the reaction' output panel (computed limiting reagent, product yields, leftovers). Default true.",
+        },
       },
-      required: ["showMoleLadder", "showLeftovers", "showRatioStrip", "showPercentYield"],
+      required: ["showMoleLadder", "showLeftovers", "showRatioStrip", "showPercentYield", "showReactionOutput"],
     },
   },
   required: [
@@ -420,6 +652,152 @@ function validateReaction(reaction: unknown): reaction is StoichReaction {
 }
 
 // ---------------------------------------------------------------------------
+// Instruction / hint rewrites for the hard + medium support tiers.
+// These withhold the NAMED strategy / explicit formula only — they never restate
+// or alter any given mass, coefficient, or answer. `askFor` still tells the
+// student WHAT to find (the task identity); the rewrite only removes HOW-help.
+// ---------------------------------------------------------------------------
+
+/** Hard tier: an instruction that states the task (what to find) but does NOT name
+ *  the governing strategy — the student decides how to attack it from the figure. */
+function neutralizeStrategy(ch: StoichChallenge): string {
+  const A = ch.givenFormulaA;
+  const B = ch.givenFormulaB;
+  switch (ch.type) {
+    case 'limiting':
+      return `You start with ${ch.givenMassA} g of ${A} and ${ch.givenMassB ?? '?'} g of ${B}. `
+        + `Using the balanced equation, work out the amount of each and decide which reactant the products depend on. `
+        + `Find the ${ch.askFor}.`;
+    case 'yield':
+      return `You start with ${ch.givenMassA} g of ${A} and ${ch.givenMassB ?? '?'} g of ${B}. `
+        + `Use the balanced equation to find the ${ch.askFor}.`;
+    default: // convert
+      return `You are given ${ch.givenMassA} g of ${A}. `
+        + `Use the balanced equation to find the ${ch.askFor}.`;
+  }
+}
+
+/** Conceptual hint (no formula, no plugged-in numbers). `named` = the instruction
+ *  still names the strategy (medium tier); otherwise point the student to read the
+ *  equation first (hard tier). Never reveals the answer. */
+function conceptHint(ch: StoichChallenge, named: boolean): string {
+  if (named) {
+    switch (ch.type) {
+      case 'limiting':
+        return 'You know the rule — now do the mole math for each reactant and compare.';
+      case 'yield':
+        return 'Work from the limiting reagent you found, then carry its amount through to the product.';
+      default:
+        return 'Take it one step of the mole-map at a time, then finish the conversion.';
+    }
+  }
+  switch (ch.type) {
+    case 'limiting':
+      return 'Start by turning each given mass into a count of particles, then account for how many of each the equation needs.';
+    case 'yield':
+      return 'Decide first which reactant caps the reaction, then follow that amount through to the product.';
+    default:
+      return 'Think about how mass, particle count, and the equation\'s ratio connect before you compute.';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Structural-difficulty post-process helpers (count → honor → reconstruct).
+// These re-select ANSWER-BEARING values, so each closes the loop on the answer.
+// ---------------------------------------------------------------------------
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/** Fractional extent gap between two reactants (the limiting-mode lever). */
+function extentGap(extentA: number, extentB: number): number {
+  const hi = Math.max(extentA, extentB);
+  if (hi <= 0) return 0;
+  return Math.abs(extentA - extentB) / hi;
+}
+
+/** Classify a convert challenge's actual mole-map shape against the reaction. */
+function countConvertSteps(
+  ch: StoichChallenge,
+  reaction: StoichReaction,
+): ConvertSteps | null {
+  if (!ch.answerFormula) return null;
+  if (ch.answerFormula === ch.givenFormulaA) return 'same';
+  const all = [...reaction.reactants, ...reaction.products];
+  const subGiven = all.find((s) => s.formula === ch.givenFormulaA);
+  const subAns = all.find((s) => s.formula === ch.answerFormula);
+  if (!subGiven || !subAns) return null;
+  return subGiven.coefficient === subAns.coefficient ? 'ratio1to1' : 'ratioNonUnity';
+}
+
+/** Pick an answer substance for a convert challenge that realizes the target shape.
+ *  Returns the chosen answerFormula, or null if the reaction can't support the shape
+ *  (caller then SATURATES to the best available shape). */
+function pickConvertAnswerFormula(
+  givenFormula: string,
+  target: ConvertSteps,
+  reaction: StoichReaction,
+): string | null {
+  const all = [...reaction.reactants, ...reaction.products];
+  const given = all.find((s) => s.formula === givenFormula);
+  if (!given) return null;
+  if (target === 'same') return givenFormula;
+  // cross-substance candidates (anything but the given formula)
+  const others = all.filter((s) => s.formula !== givenFormula);
+  if (target === 'ratio1to1') {
+    const eq = others.find((s) => s.coefficient === given.coefficient);
+    return eq ? eq.formula : null;
+  }
+  // ratioNonUnity
+  const neq = others.find((s) => s.coefficient !== given.coefficient);
+  return neq ? neq.formula : null;
+}
+
+/** Recompute a convert challenge's targetAnswer from grams→moles→ratio→(grams|moles). */
+function computeConvertAnswer(
+  givenMass: number,
+  givenSub: StoichSubstance,
+  ansSub: StoichSubstance,
+  unit: 'g' | 'mol',
+): number {
+  const molesGiven = givenMass / givenSub.molarMass;
+  const molesAns = molesGiven * (ansSub.coefficient / givenSub.coefficient);
+  return unit === 'g' ? molesAns * ansSub.molarMass : molesAns;
+}
+
+/**
+ * Re-select givenMassB so the extent gap hits gapTarget while keeping the SAME
+ * limiting reagent the LLM intended (preserves the question's narrative) and
+ * staying inside the grade-band mass window. Returns the new givenMassB (>0).
+ *
+ * We hold givenMassA / extentA fixed and solve for the B-mass that yields the
+ * target gap. To keep A limiting: extentB = extentA / (1 - gap). To keep B
+ * limiting: extentB = extentA * (1 - gap). massB = extentB * coeffB * molarMassB.
+ */
+function reselectMassBForGap(
+  extentA: number,
+  subB: StoichSubstance,
+  gapTarget: number,
+  keepALimiting: boolean,
+  massWindow: { min: number; max: number },
+): number {
+  const g = clampGap(gapTarget);
+  const extentB = keepALimiting ? extentA / (1 - g) : extentA * (1 - g);
+  let massB = extentB * subB.coefficient * subB.molarMass;
+  // Clamp into the grade-band window WITHOUT breaking the gap: if clamping the
+  // mass would change the gap, we accept the in-window mass (band cap wins —
+  // magnitude is owned by the band) and let the post-validation gap-floor stand.
+  massB = Math.min(massWindow.max, Math.max(massWindow.min, massB));
+  return round2(massB);
+}
+
+/** Grade-band mass window (matches GRADE_BAND_GUIDANCE prose). */
+const MASS_WINDOW: Record<GradeBand, { min: number; max: number }> = {
+  '8': { min: 2, max: 20 },
+  '9-10': { min: 5, max: 50 },
+  '11-12': { min: 10, max: 200 },
+};
+
+// ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
@@ -434,7 +812,16 @@ function validateReaction(reaction: unknown): reaction is StoichReaction {
 export const generateStoichiometryLab = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string; intent?: string }>,
+  config?: Partial<{
+    targetEvalMode?: string;
+    intent?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis: difficulty = how much scaffolding within the mode. NEVER changes
+     * numbers — only withdraws on-screen overlays and instruction/hint explicitness.
+     */
+    difficulty?: string;
+  }>,
 ): Promise<StoichiometryLabData> => {
   const gradeBand = resolveGradeBand(gradeLevel);
 
@@ -444,6 +831,33 @@ export const generateStoichiometryLab = async (
     config?.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+
+  // Within-mode support tier (scaffolding level — NOT number size). pinnedType
+  // drives prompt TONE only (a single pinned mode); the application below runs
+  // PER CHALLENGE off each challenge's own type so blended sessions get it too.
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    constraint && constraint.allowedTypes.length === 1
+      ? constraint.allowedTypes[0]
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  // Axis 2: structural shape. The tier ENUM (not a baked string) reaches both
+  // the prompt (describe the harder shape) here and the post-process (enforce
+  // it) below — buildTierPromptSection merges both axes into one coherent block.
+  const tierShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
+  const tierSection = (tierScaffold || tierShape)
+    ? `\n## WITHIN-MODE DIFFICULTY TIER (config.difficulty = "${supportTier}")\n`
+      + `${TIER_GUARDRAIL}\n`
+      + [
+          ...(tierShape ? tierShape.promptLines : []),
+          ...(tierScaffold ? tierScaffold.promptLines : []),
+        ].map((l) => `- ${l}`).join('\n')
+      + '\n'
+    : '';
   const constrainedSchema = constraint
     ? constrainChallengeTypeEnum(
         stoichiometryLabSchema,
@@ -467,7 +881,7 @@ GRADE BAND GUIDANCE:
 ${GRADE_BAND_GUIDANCE[gradeBand]}
 
 ${challengeTypePromptSection}
-
+${tierSection}
 REACTION REQUIREMENTS:
 1. Provide a SINGLE balanced chemical reaction that all challenges reference.
 2. The "equation" string must show the balanced form with coefficients (e.g. "2H2 + O2 -> 2H2O").
@@ -700,7 +1114,126 @@ DOUBLE-CHECK:
       showLeftovers: raw.showOptions?.showLeftovers ?? true,
       showRatioStrip: raw.showOptions?.showRatioStrip ?? true,
       showPercentYield: raw.showOptions?.showPercentYield ?? (gradeBand === "11-12"),
+      showReactionOutput: raw.showOptions?.showReactionOutput ?? true,
     };
+
+    // -----------------------------------------------------------------------
+    // Within-mode support tier — withdraw on-screen / instructional help only.
+    // Gated ONLY on supportTier (NOT pinnedType) so blended/auto sessions get
+    // difficulty too. The overlay flags (showReactionOutput/showMoleLadder/
+    // showRatioStrip) depend only on the tier, so they apply to the whole
+    // session's global showOptions; the instruction/hint levers resolve PER
+    // CHALLENGE from each challenge's own type. Numbers are never touched.
+    // -----------------------------------------------------------------------
+    if (supportTier) {
+      // Global overlays — resolved off the tier (identical across challenge types).
+      const overlay = resolveSupportStructure(challenges[0]?.type ?? 'convert', supportTier);
+      showOptions.showReactionOutput = overlay.showReactionOutput;
+      showOptions.showMoleLadder = overlay.showMoleLadder;
+      showOptions.showRatioStrip = overlay.showRatioStrip;
+
+      const window = MASS_WINDOW[(raw.gradeBand as GradeBand) || gradeBand] ?? MASS_WINDOW['9-10'];
+
+      // ------------------------------------------------------------------
+      // AXIS 2 — structural shape. Per challenge: resolve the target shape
+      // from its OWN type, COUNT the LLM's actual shape, HONOR if it already
+      // hits the target, else RECONSTRUCT deterministically to the exact
+      // target (in band, solvability preserved) and RECOMPUTE the answer.
+      // ------------------------------------------------------------------
+      for (const ch of challenges) {
+        const shape = resolveProblemShape(ch.type, supportTier);
+
+        if (ch.type === 'convert') {
+          const actual = countConvertSteps(ch, reaction);
+          if (actual !== shape.convertSteps) {
+            // Reconstruct: pick an answerFormula realizing the target shape.
+            // SATURATE honestly — if the reaction can't realize the target, fall
+            // back ratioNonUnity→ratio1to1→same (richest available shape).
+            const ladder: ConvertSteps[] =
+              shape.convertSteps === 'ratioNonUnity'
+                ? ['ratioNonUnity', 'ratio1to1', 'same']
+                : shape.convertSteps === 'ratio1to1'
+                  ? ['ratio1to1', 'ratioNonUnity', 'same']
+                  : ['same'];
+            let chosen: string | null = null;
+            for (const want of ladder) {
+              chosen = pickConvertAnswerFormula(ch.givenFormulaA, want, reaction);
+              if (chosen) break;
+            }
+            if (chosen) {
+              ch.answerFormula = chosen;
+              const all = [...reaction.reactants, ...reaction.products];
+              const givenSub = all.find((s) => s.formula === ch.givenFormulaA);
+              const ansSub = all.find((s) => s.formula === chosen);
+              if (givenSub && ansSub) {
+                const unit: 'g' | 'mol' = (ch.answerUnit === 'mol') ? 'mol' : 'g';
+                ch.answerUnit = unit;
+                ch.targetAnswer = round2(
+                  computeConvertAnswer(ch.givenMassA, givenSub, ansSub, unit),
+                );
+                ch.tolerance = Math.max(0.05 * Math.abs(ch.targetAnswer), 0.01);
+                ch.narration = ch.instruction; // drop stale narration keyed to old answer
+              }
+            }
+          }
+        } else if (ch.type === 'limiting' || ch.type === 'yield') {
+          const subA = reaction.reactants.find((r) => r.formula === ch.givenFormulaA);
+          const subB = reaction.reactants.find((r) => r.formula === ch.givenFormulaB);
+          if (subA && subB && ch.givenMassB != null) {
+            const extentA = (ch.givenMassA / subA.molarMass) / subA.coefficient;
+            const extentB0 = (ch.givenMassB / subB.molarMass) / subB.coefficient;
+            const actualGap = extentGap(extentA, extentB0);
+            const keepALimiting = extentA <= extentB0; // preserve which reactant limits
+            // HONOR if the LLM's gap is already within ±0.06 of the target & in floor.
+            if (Math.abs(actualGap - shape.gapTarget) > 0.06 || actualGap < LIMITING_GAP_FLOOR) {
+              const newMassB = reselectMassBForGap(
+                extentA, subB, shape.gapTarget, keepALimiting, window,
+              );
+              ch.givenMassB = newMassB;
+            }
+            // RECOMPUTE answer-bearing fields from the (possibly) new mass.
+            const eB = (ch.givenMassB! / subB.molarMass) / subB.coefficient;
+            if (ch.type === 'limiting') {
+              ch.targetAnswerFormula = extentA < eB ? ch.givenFormulaA : ch.givenFormulaB;
+              ch.targetAnswer = 0;
+              ch.tolerance = 0;
+              ch.actualYield = null;
+            } else {
+              const prod = reaction.products.find((p) => p.formula === ch.answerFormula);
+              if (prod) {
+                const limitingExtent = Math.min(extentA, eB);
+                ch.targetAnswer = round2(limitingExtent * prod.coefficient * prod.molarMass);
+                ch.answerUnit = 'g';
+                ch.tolerance = Math.max(0.05 * ch.targetAnswer, 0.05);
+                ch.targetAnswerFormula = null;
+                // Percent-yield step is the hard-tier lever for yield.
+                if (shape.percentYield) {
+                  // 80–95% of theoretical, deterministic (88%), rounded.
+                  ch.actualYield = round2(ch.targetAnswer * 0.88);
+                  if (ch.actualYield >= ch.targetAnswer) ch.actualYield = round2(ch.targetAnswer * 0.85);
+                } else {
+                  ch.actualYield = null;
+                }
+              }
+            }
+            ch.narration = ch.instruction; // drop stale narration keyed to old values
+          }
+        }
+      }
+
+      // Per-challenge instruction/hint explicitness — mode-correct (axis 1).
+      // Runs AFTER axis-2 reselection so neutralizeStrategy reads the final masses.
+      for (const ch of challenges) {
+        const sc = resolveSupportStructure(ch.type, supportTier);
+        if (!sc.nameStrategy) {
+          ch.instruction = neutralizeStrategy(ch);
+        }
+        if (sc.hintLevel === 'concept') {
+          ch.hint = conceptHint(ch, sc.nameStrategy);
+        }
+      }
+      console.log(`[stoichiometry-lab] Difficulty tier "${supportTier}" applied per-challenge (scaffold + structural shape; ${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+    }
 
     const result: StoichiometryLabData = {
       title: raw.title || "Stoichiometry Lab",
@@ -709,6 +1242,7 @@ DOUBLE-CHECK:
       reaction,
       challenges,
       showOptions,
+      ...(supportTier ? { supportTier } : {}),
     };
 
     console.log("\u2697\uFE0F Stoichiometry Lab Generated:", {
@@ -741,6 +1275,7 @@ DOUBLE-CHECK:
         showLeftovers: true,
         showRatioStrip: true,
         showPercentYield: gradeBand === "11-12",
+        showReactionOutput: true,
       },
     };
   }

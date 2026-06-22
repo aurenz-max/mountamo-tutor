@@ -43,6 +43,279 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT letters
+// ---------------------------------------------------------------------------
+// Two-field contract: config.targetEvalMode = WHICH recognition task (task
+// identity, matched to the objective by the manifest); config.difficulty drives
+// TWO axes within that task: (1) how much on-card SUPPORT the student gets
+// (withdraw a strategy cue / reference letter / option scaffolding), and (2) the
+// problem's STRUCTURE — how visually confusable the DISTRACTORS are (far → near
+// letterforms; b/d/p/q at hard). Neither axis ever changes the target letter,
+// the letter scope/group, or which answer is correct — only the wrong choices
+// (and which letters fill the grid's non-target cells) shift. The answer is
+// always recomputed from the rewritten data. See memory: structural-difficulty-not-numeric.
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; grade-band defaults stand). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type LetterMode = 'name-it' | 'find-it' | 'match-it';
+
+// ---------------------------------------------------------------------------
+// Bespoke support scaffold — ONE field per discovered lever. Each lever only
+// WITHDRAWS on-card help; none touches targetLetter / options-correctness / grid.
+// ---------------------------------------------------------------------------
+
+interface LetterSpotterSupportScaffold {
+  /** #2 instruction-as-scaffold: a one-line strategy cue shown on the card.
+   *  null = withdrawn (hard) — the student picks an approach unaided. */
+  strategyHint: string | null;
+  /** #1 perception (find-it only): show the target letter on-card as a self-check
+   *  reference. Never reveals which cells. false at hard (audio only). */
+  showTargetReference: boolean;
+  /** #5 answer-form (name-it / match-it): how many letter options to present.
+   *  Fewer distractors = more support. The correct answer is ALWAYS retained
+   *  (answer-bearing guard); only distractors are trimmed/kept. */
+  optionCount: number;
+  promptLines: string[];
+}
+
+/** Per-mode strategy cue text, authored per tier. Never names the target letter. */
+function strategyText(mode: LetterMode): string {
+  switch (mode) {
+    case 'name-it':
+      return 'Say the whole sentence out loud and listen for the sound the emoji is hiding.';
+    case 'find-it':
+      return 'Scan the grid row by row, left to right, so you do not skip any.';
+    case 'match-it':
+      return 'Picture how the big letter looks small — does its shape stay the same or flip?';
+  }
+}
+
+/** TRUTHFUL guardrail shared by BOTH axes. Tier changes problem STRUCTURE
+ *  (distractor letterform similarity — how confusable the wrong choices are)
+ *  and on-card help — NEVER the letter scope, the target letter, or which
+ *  answer is correct. Magnitude (the letter group + grade band) is owned by
+ *  the eval mode; the tier never reaches past it. */
+const TIER_GUARDRAIL =
+  'This tier changes problem STRUCTURE (how visually confusable the wrong choices are — '
+  + 'far vs. near letterforms) and on-screen help — NOT the letter scope or which answer is correct. '
+  + 'Every letter still comes from the cumulative group; never add letters outside it, and never '
+  + 'just "use harder letters". The target letter and the correct answer are unchanged.';
+
+/**
+ * Resolve the on-card support structure for a tier on a pinned (or per-challenge)
+ * mode. Support is withdrawn as the tier hardens; the lines reframe the SAME task
+ * with less help — never a different task, never different letters.
+ */
+function resolveSupportStructure(mode: LetterMode, tier: SupportTier): LetterSpotterSupportScaffold {
+  const strategyHint = tier === 'hard' ? null : strategyText(mode);
+  const showTargetReference = mode === 'find-it' && tier !== 'hard';
+  // Option count is the answer-form lever for the option modes. find-it has no
+  // options, so it ignores this. easy = fewest distractors, hard = most.
+  const optionCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 4;
+
+  const lead =
+    `Support tier "${tier}" sets on-card SCAFFOLDING only — it NEVER changes the target letter, `
+    + `the grid, the sentence, or which answer is correct. A harder tier just gives less help.`;
+
+  const lines: string[] = [lead];
+  switch (mode) {
+    case 'name-it':
+      lines.push(
+        tier === 'easy'
+          ? 'A short strategy cue ("say the sentence, listen for the missing sound") is shown, and only a few options appear so the choice is focused.'
+          : tier === 'hard'
+            ? 'No strategy cue is shown; the student decides how to find the missing letter and justifies it from the sound of the sentence.'
+            : 'A light strategy cue is shown; the student works through the sentence themselves.',
+      );
+      break;
+    case 'find-it':
+      lines.push(
+        tier === 'easy'
+          ? 'The target letter is shown on-card as a reference to self-check against, plus a "scan row by row" cue — but the student still must locate every instance.'
+          : tier === 'hard'
+            ? 'No on-card target reference and no scan cue: the student holds the letter from the audio alone and explains how they searched the grid.'
+            : 'The on-card target reference is shown, but no scan cue — the student organizes their own search.',
+      );
+      break;
+    case 'match-it':
+      lines.push(
+        tier === 'easy'
+          ? 'A shape-strategy cue is shown and only a few options appear so the match is focused.'
+          : tier === 'hard'
+            ? 'No strategy cue; the student reasons about the letter shape unaided across the full set of options.'
+            : 'A light shape cue is shown; the student compares the options themselves.',
+      );
+      break;
+  }
+  lines.push('Keep the title and challenge text neutral — never state the support level or name the answer.');
+  return { strategyHint, showTargetReference, optionCount, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
+// SECOND AXIS — Structural problem difficulty (config.difficulty, same dial).
+//
+// Recognition-card lever: DISTRACTOR LETTERFORM SIMILARITY (far → near).
+// easy = wrong choices look nothing like the target (low discrimination load);
+// hard = wrong choices are near-confusable letterforms (b/d/p/q, m/n/u, …) so
+// the student must truly DISCRIMINATE the shape. This changes problem SHAPE,
+// never magnitude: the target letter, the letter group, and the correct answer
+// are unchanged — only WHICH cumulative-group letters fill the distractor slots
+// shifts along the similarity axis. It never turns one eval mode into another.
+//
+// Floor (per mode): the distractors are always REAL letters from the cumulative
+// group and the answer is always present — easy is still a genuine discrimination
+// task, just an easy one. find-it always keeps its ≥1 target instances (the mode
+// identity). Band cap: distractors are drawn ONLY from the cumulative group, so
+// the lever can never inflate scope; when the group offers few near-confusables
+// of the target (e.g. Group 1) the hard tier SATURATES at the nearest available.
+// ---------------------------------------------------------------------------
+
+/** How structurally confusable distractors should be at this tier. */
+type SimilarityTarget = 'far' | 'mixed' | 'near';
+
+/** Confusability clusters — letterforms students routinely mix up. Membership is
+ *  by visual shape (case-insensitive on the lowercase letter). A distractor inside
+ *  the target's cluster is "near"; one outside is "far". Mirror/rotation pairs
+ *  (b/d/p/q) are the densest cluster — the hardest discrimination. */
+const CONFUSABLE_CLUSTERS: string[][] = [
+  ['b', 'd', 'p', 'q', 'g'], // mirror / rotation family (densest)
+  ['m', 'n', 'h', 'r', 'u'], // hump / stem family
+  ['i', 'l', 't', 'j', 'f'], // tall-thin / dotted family
+  ['c', 'e', 'o', 'a', 's'], // round / open family
+  ['v', 'w', 'y', 'x', 'z', 'k'], // angular family
+];
+
+/** Map each letter to the set of its cluster-mates (excluding itself). */
+const CLUSTER_MATES: Record<string, Set<string>> = (() => {
+  const m: Record<string, Set<string>> = {};
+  for (const cluster of CONFUSABLE_CLUSTERS) {
+    for (const ch of cluster) {
+      m[ch] = m[ch] ?? new Set<string>();
+      for (const other of cluster) if (other !== ch) m[ch].add(other);
+    }
+  }
+  return m;
+})();
+
+/** Similarity distance: 0 = same cluster (near/confusable), 1 = different cluster (far). */
+function similarityDistance(target: string, candidate: string): 0 | 1 {
+  const t = target.toLowerCase();
+  const c = candidate.toLowerCase();
+  return CLUSTER_MATES[t]?.has(c) ? 0 : 1;
+}
+
+interface LetterSpotterProblemShape {
+  similarity: SimilarityTarget;
+  promptLines: string[];
+}
+
+/** Map a tier to the structural intent (similarity target) for a mode, plus the
+ *  prompt lines that DESCRIBE that shape to the LLM. All three modes share the
+ *  same recognition lever (distractor similarity), so the table is mode-uniform;
+ *  the prompt wording is tailored to each mode's surface (options vs. grid). */
+function resolveProblemShape(mode: LetterMode, tier: SupportTier): LetterSpotterProblemShape {
+  // Clamp lives in the consumer: distractors are picked ONLY from the cumulative
+  // group, so "near" saturates to the nearest-available when no true cluster-mate
+  // of the target is in scope. The intent itself is just easy/medium/hard → target.
+  const similarity: SimilarityTarget = tier === 'easy' ? 'far' : tier === 'medium' ? 'mixed' : 'near';
+
+  const surface =
+    mode === 'find-it'
+      ? 'the non-target cells in the grid'
+      : 'the wrong-answer option letters';
+
+  const lines: string[] = [TIER_GUARDRAIL];
+  switch (similarity) {
+    case 'far':
+      lines.push(
+        `EASY structure: make ${surface} look NOTHING like the target letter — pick distractors `
+        + `from a different shape family (no b/d/p/q-style mirrors, no same-hump or same-round confusions). `
+        + `Discrimination is easy; the student just has to spot the obvious match.`,
+      );
+      break;
+    case 'mixed':
+      lines.push(
+        `MEDIUM structure: mix ${surface} — some clearly different, some moderately similar in shape. `
+        + `A couple of distractors should share a feature with the target so the student looks twice.`,
+      );
+      break;
+    case 'near':
+      lines.push(
+        `HARD structure: make ${surface} NEAR-CONFUSABLE with the target — same shape family `
+        + `(mirror/rotation like b/d/p/q, same-hump like m/n/u, same-round like c/e/o) wherever the `
+        + `cumulative group allows. The student must truly DISCRIMINATE the letterform, not just glance.`,
+      );
+      break;
+  }
+  return { similarity, promptLines: lines };
+}
+
+/**
+ * Constructive distractor selector — the CODE-ENFORCED half of the structural
+ * axis. Given the target, the in-scope pool, how many distractors are needed,
+ * and the tier's similarity target, deterministically pick distractors that hit
+ * the target similarity AS CLOSELY AS THE POOL ALLOWS.
+ *
+ * - 'near' → prefer cluster-mates (distance 0); saturates to far ones only if
+ *   the group has too few mates (HONEST band saturation — never invents letters).
+ * - 'far'  → prefer non-mates (distance 1); falls back to mates if forced.
+ * - 'mixed'→ aim for a roughly even split of near and far.
+ *
+ * Never returns the target itself; never exceeds the pool; never duplicates.
+ * `rng` is injectable for deterministic stress-testing.
+ */
+function selectDistractorsBySimilarity(
+  target: string,
+  pool: string[],
+  count: number,
+  similarity: SimilarityTarget,
+  rng: () => number = Math.random,
+): string[] {
+  const t = target.toLowerCase();
+  const candidates = Array.from(new Set(pool.map(l => l.toLowerCase()))).filter(l => l !== t);
+  const near = candidates.filter(c => similarityDistance(t, c) === 0);
+  const far = candidates.filter(c => similarityDistance(t, c) === 1);
+
+  const shuffle = (arr: string[]) => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const sNear = shuffle(near);
+  const sFar = shuffle(far);
+
+  let ordered: string[];
+  if (similarity === 'near') {
+    ordered = [...sNear, ...sFar]; // mates first; saturate to far if too few mates
+  } else if (similarity === 'far') {
+    ordered = [...sFar, ...sNear]; // non-mates first; saturate to near if forced
+  } else {
+    // mixed: interleave near/far so we get an even-ish split
+    ordered = [];
+    const a = sNear, b = sFar;
+    const maxLen = Math.max(a.length, b.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < a.length) ordered.push(a[i]);
+      if (i < b.length) ordered.push(b[i]);
+    }
+  }
+
+  return ordered.slice(0, Math.min(count, candidates.length));
+}
+
 /**
  * Schema definition for Letter Spotter Data
  *
@@ -174,6 +447,9 @@ export const generateLetterSpotter = async (
     letterGroup: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
+    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second
+     *  axis: difficulty = how much scaffolding within the mode. NEVER changes letters. */
+    difficulty: string;
   }>,
 ): Promise<LetterSpotterData> => {
 
@@ -211,6 +487,31 @@ export const generateLetterSpotter = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // ── Within-mode support tier (config.difficulty): scaffolding level, NOT letters.
+  //    pinnedType drives prompt TONE only when the manifest pinned exactly one mode;
+  //    the actual withdrawal is applied per-challenge (from each challenge's OWN mode)
+  //    after generation, so blended/auto sessions get difficulty too. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType: LetterMode | undefined =
+    evalConstraint && evalConstraint.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as LetterMode)
+      : undefined;
+  const tierScaffold = pinnedType && supportTier
+    ? resolveSupportStructure(pinnedType, supportTier)
+    : null;
+  // Second axis (structural): fold the problem-shape lines (distractor similarity)
+  // into the SAME tier block so the LLM sees ONE coherent "what this tier means" —
+  // axis 1 = how much help, axis 2 = how confusable the distractors are.
+  const tierShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier)
+    : null;
+  const tierSection = (tierScaffold || tierShape)
+    ? `\n## WITHIN-MODE DIFFICULTY TIER (scaffolding + distractor similarity — NOT the letter scope)\n${[
+        ...(tierShape?.promptLines ?? []),
+        ...(tierScaffold?.promptLines ?? []),
+      ].map((l) => `- ${l}`).join('\n')}\n`
+    : '';
+
   const generationPrompt = `Create an interactive letter recognition activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevel}
@@ -221,7 +522,7 @@ NEW LETTERS (just introduced): ${newLetters.join(', ')}
 Generate 6-8 challenges. Prioritize new letters but include some review letters too.
 
 ${challengeTypeSection}
-
+${tierSection}
 MODE-SPECIFIC FIELD RULES:
 - name-it (SENTENCE SPOTTER): set sentence, emoji, targetWord, and options (4 letters). Do NOT set letterGrid or targetCount.
   * sentence: a short (4-7 word) sentence where the emoji replaces the targetLetter at the START of targetWord
@@ -416,6 +717,110 @@ LETTER GROUP DATA:
           options: [targetLetter, ...distractors].sort(() => Math.random() - 0.5),
         }];
       }
+    }
+
+    // ========================================================================
+    // Within-mode support tier — withdraw on-card scaffolding (never the letters).
+    // Applied PER CHALLENGE from each challenge's OWN mode, so a blended/auto
+    // session gets difficulty too (the tier is a STUDENT property, not single-mode).
+    // Gated ONLY on supportTier; runs AFTER all structural fixups so it can only
+    // remove help. Code owns the SUPPORT structure; the LLM only chose the letters.
+    // ========================================================================
+    if (supportTier && result.challenges) {
+      for (const ch of result.challenges) {
+        const sc = resolveSupportStructure(ch.mode as LetterMode, supportTier);
+        // Second axis: structural similarity target for this challenge's OWN mode.
+        const shape = resolveProblemShape(ch.mode as LetterMode, supportTier);
+
+        // #2 strategy cue — display-only, withdrawn at hard (null).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ch as any).strategyHint = sc.strategyHint ?? undefined;
+
+        // #1 perception reference — find-it only (UI contract: other modes ignore it).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ch as any).showTargetReference = ch.mode === 'find-it' ? sc.showTargetReference : undefined;
+
+        const correct = ch.targetLetter.toLowerCase();
+        const pool = cumulativeLetters.map(l => l.toLowerCase());
+
+        // #5 answer-form (option count, support axis) × distractor similarity
+        // (structural axis) — name-it / match-it only. ANSWER-BEARING GUARD: the
+        // component checks the picked option against targetLetter, so the correct
+        // letter MUST always remain. We keep the correct answer, then build the
+        // distractor set deterministically to the tier's similarity target.
+        //
+        // COUNT → HONOR-IF-VALID → RECONSTRUCT: if the LLM's own distractors
+        // already match the target similarity AND hit the option count, keep them
+        // (don't churn a coherent question); otherwise reconstruct from the pool.
+        if ((ch.mode === 'name-it' || ch.mode === 'match-it') && Array.isArray(ch.options)) {
+          const needed = Math.max(1, sc.optionCount - 1); // minus the correct answer
+          const llmDistractors = Array.from(
+            new Set(ch.options.map(o => o.toLowerCase()).filter(o => o !== correct)),
+          ).filter(o => pool.includes(o)); // band cap: in-group only
+
+          // What similarity would we IDEALLY achieve from this pool? (saturation-aware)
+          const idealNear = selectDistractorsBySimilarity(correct, pool, needed, 'near');
+          const idealNearCount = idealNear.filter(d => similarityDistance(correct, d) === 0).length;
+
+          const countNear = (arr: string[]) =>
+            arr.filter(d => similarityDistance(correct, d) === 0).length;
+
+          // The LLM's set is "valid" if it has the right size AND its near-count
+          // already matches what the tier would build (so we don't fight a good set).
+          const targetNear =
+            shape.similarity === 'near'
+              ? idealNearCount
+              : shape.similarity === 'far'
+                ? 0
+                : Math.min(idealNearCount, Math.ceil(needed / 2));
+          const llmValid =
+            llmDistractors.length === needed && countNear(llmDistractors) === targetNear;
+
+          const finalDistractors = llmValid
+            ? llmDistractors
+            : selectDistractorsBySimilarity(correct, pool, needed, shape.similarity);
+
+          ch.options = [correct, ...finalDistractors].sort(() => Math.random() - 0.5);
+        }
+
+        // find-it: re-fill the NON-target grid cells by similarity. ANSWER-BEARING
+        // + FLOOR GUARD: keep exactly the target instances (the mode identity — the
+        // answer is "every cell == target"); only the distractor cells change. The
+        // component recomputes targetCount from the grid, so the answer stays sound.
+        if (ch.mode === 'find-it' && Array.isArray(ch.letterGrid) && ch.letterGrid.length === 16) {
+          const upperTarget = correct.toUpperCase();
+          const targetCells = ch.letterGrid.filter(l => l.toUpperCase() === upperTarget).length;
+          const distractorSlots = 16 - targetCells;
+          if (targetCells >= 1 && distractorSlots > 0) {
+            // Build a similarity-tilted distractor BAG sized to fill every slot,
+            // cycling the ranked pool (the grid may need more cells than distinct
+            // in-group letters). Ranking respects the tier similarity target.
+            const ranked = selectDistractorsBySimilarity(
+              correct, pool, pool.length - 1, shape.similarity,
+            );
+            const bag: string[] = [];
+            for (let j = 0; j < distractorSlots; j++) {
+              bag.push((ranked[j % ranked.length] ?? pool.find(l => l !== correct) ?? 'x').toUpperCase());
+            }
+            const grid: string[] = [];
+            for (let j = 0; j < targetCells; j++) grid.push(upperTarget);
+            grid.push(...bag);
+            // Shuffle so targets aren't clustered.
+            for (let j = grid.length - 1; j > 0; j--) {
+              const k = Math.floor(Math.random() * (j + 1));
+              [grid[j], grid[k]] = [grid[k], grid[j]];
+            }
+            ch.letterGrid = grid;
+            ch.targetCount = grid.filter(l => l.toUpperCase() === upperTarget).length;
+          }
+        }
+      }
+      console.log(`[letter-spotter] Tier "${supportTier}" applied per-challenge (support + distractor-similarity; ${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+    }
+
+    // Surface the tier to the live tutor (reveal policy is mode-aware per challenge).
+    if (supportTier) {
+      result.supportTier = supportTier;
     }
 
     console.log('Letter Spotter Generated:', {
