@@ -90,6 +90,9 @@ export {
 } from './LuminaChip';
 export { LuminaInput, type LuminaInputProps } from './LuminaInput';
 
+// Brand — the Aurora Core mark, doubling as a progress ring.
+export { LuminaMark, type LuminaMarkProps } from './LuminaMark';
+
 export {
   surface,
   text,

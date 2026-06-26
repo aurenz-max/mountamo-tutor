@@ -23,7 +23,7 @@
 | sound-swap | 3 | 0 | 3 | 2026-06-21 | [structural sweep](eval-reports/sound-swap-2026-06-21.md) |
 | letter-spotter | 3 | 0 | 1 | 2026-06-21 | [structural sweep](eval-reports/letter-spotter-2026-06-21.md) |
 | letter-sound-link | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-sound-link-2026-03-15.md) |
-| cvc-speller | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/cvc-speller-2026-03-15.md) |
+| cvc-speller | 3 | 3 | 0 | 2026-06-25 | [structural sweep](eval-reports/cvc-speller-2026-06-25.md) |
 | word-workout | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/word-workout-2026-04-04.md) |
 | story-map | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/story-map-2026-03-15.md) |
 | poetry-lab | 2 | 0 | 2 | 2026-03-15 | [report](eval-reports/poetry-lab-2026-03-15.md) |
@@ -31,7 +31,7 @@
 | paragraph-architect | 3 | 3 | 0 | 2026-04-04 | [report](eval-reports/paragraph-architect-2026-03-15.md) |
 | opinion-builder | 2 | 1 | 1 | 2026-03-15 | [report](eval-reports/opinion-builder-2026-03-15.md) |
 | revision-workshop | 6 | 5 | 1 | 2026-03-15 | [report](eval-reports/revision-workshop-2026-03-15.md) |
-| sentence-builder | 4 | 2 | 2 | 2026-03-15 | [report](eval-reports/sentence-builder-2026-03-15.md) |
+| sentence-builder | 4 | 2 | 2 | 2026-06-25 | [structural sweep (simple, tiers PASS)](eval-reports/sentence-builder-2026-06-25.md) |
 | area-model | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
@@ -98,8 +98,9 @@
 | coordinate-graph | 4 | 4 | 0 | 2026-06-14 | [difficulty sweep](eval-reports/coordinate-graph-2026-06-14.md) |
 | stoichiometry-lab | 3 | 2 | 1 | 2026-06-21 | [structural sweep](eval-reports/stoichiometry-lab-2026-06-21.md) |
 | race-track-lab | 5 | 5 | 0 | 2026-06-21 | [structural sweep](eval-reports/race-track-lab-2026-06-21.md) |
+| vocabulary-explorer | 3 | 3 | 0 | 2026-06-25 | [report](eval-reports/vocabulary-explorer-2026-06-25.md) |
 
-**Totals:** 336/355 modes passing (94.6%) | 31 open issues (7 CRITICAL, 23 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 339/358 modes passing (94.7%) | 31 open issues (7 CRITICAL, 23 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -210,7 +211,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-14: Gemini Flash Lite silently drops nullable flat-indexed fields — generator produces structurally broken challenges
 
-**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1), dot-plot (all 6 modes — DP-1; fixed 2026-04-19 via orchestrator refactor), ~~bar-model (read_scale, scaled_bar_graph — BM-1, BM-3; fixed 2026-04-19 via orchestrator refactor)~~, how-it-works (sequence — HW-3, sequenceItem* fields dropped)
+**Affected:** coin-counter (count, compare, identify — all fixed 2026-04-04), spatial-scene (identify, describe, place — SS-1), word-sorter (all modes — WS-1), dot-plot (all 6 modes — DP-1; fixed 2026-04-19 via orchestrator refactor), ~~bar-model (read_scale, scaled_bar_graph — BM-1, BM-3; fixed 2026-04-19 via orchestrator refactor)~~, how-it-works (sequence — HW-3, sequenceItem* fields dropped), ~~vocabulary-explorer (recall — VE-3, option0–3 dropped → placeholder "Option A–D"; resolved 2026-06-25: reject empty options + derive real type-aware challenge from terms)~~
 **Risk:** Any primitive using the flattened-index pattern (e.g., `coin0Type`, `displayedCoin0Type`, `groupACoin0Type`, `option0..option3`) with nullable fields **OR** any generator where a challenge-carrying array is omitted from the schema's `required` list. Gemini Flash Lite frequently omits entire groups of these fields, producing challenges with missing visual data (no coins to count, no groups to compare). The generator's `collectCoinDefs`/`collectStrings` reconstruction returns empty arrays, and the challenge is accepted with wrong fallback values.
 **Root cause:** Flat-indexed fields are all `nullable: true` in the schema so Gemini can skip them without schema violation. Flash Lite takes the path of least resistance and omits fields it considers optional, especially when the prompt describes multiple challenge types. The generator's post-reconstruction validation was too permissive — it accepted challenges missing critical fields.
 **Fix pattern:** After flat→structured reconstruction, validate each challenge has all REQUIRED fields for its type. Reject (return null + filter) any challenge missing critical visual/interaction data. Never silently fall back to wrong values. For identify-type challenges, derive missing options from the answer field + grade-appropriate pool. Log all rejections for debugging.
@@ -329,6 +330,13 @@ medium — now correct (operation follows the story), a minor difficulty-fidelit
 *which quantity is unknown*, but it cannot police the free-text prose — so the post-process
 must TRUST the LLM's authored operation rather than re-deriving it from the forced label.
 Re-deriving an answer-bearing field from a constrained label is the desync trap.
+
+### SP-25: LLM-emitted positional answer index (`correctIndex`) is unreliable — derive it from the answer text instead
+
+**Affected:** vocabulary-explorer (VE-1 — fill_blank / context / identify, `correctIndex` wrong in the majority of generations, anchors to 0)
+**Risk:** Any MC primitive whose generator asks Gemini for a positional `correctIndex` / `correctOption` integer and trusts it. Flash-lite frequently emits `0` (or a stale index) regardless of where the correct option actually sits, especially after the option order is shuffled or reconstructed from flat fields. The component grades against the index, so the conceptually-correct choice is marked wrong — and the bug is invisible to schema validation (an integer 0–3 is "valid").
+**Root cause:** The model is being asked to do two coupled things at once — author the options AND track which slot the right one landed in. It reliably authors a correct answer and a correct `explanation`, but loses the positional bookkeeping. The generator's only check is a range clamp (0–3), which never catches a wrong-but-in-range index.
+**Fix pattern:** Don't ask for the index. Have Gemini emit the correct answer as TEXT (`correctAnswer` string, or a stable `correctOptionId`), then compute `correctIndex` in post-process by matching that string against `options[]` (case/trim-normalized). If no match, reject/repair the challenge rather than defaulting to 0. **Precedent:** knowledge-check uses a stable `correctOptionId`; decodable-reader adopted the same ID-based comparison to close DR-1. This is the MC analogue of SP-8 (never trust LLM-computed offsets) and SP-17 (derive answer-bearing fields in code, not from LLM bookkeeping).
 **Risk:** Any STORY primitive using the AXIS-2 "constrain the response-schema enum per
 tier" structural-difficulty approach (per [[structural-difficulty-not-numeric]] /
 `constrainStructuralEnums`). Forcing a *story situation* enum (part-whole, compare, …)
@@ -361,6 +369,9 @@ LLM-authored text," specialized to the structural-difficulty enum lever.
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
+| VE-1 | vocabulary-explorer | recall, apply | CRITICAL | Wrong answer key | LLM-emitted positional `correctIndex` is wrong in the majority of MC generations (anchors to 0) — correct option graded wrong (user-reported: "precipitation" marked wrong, "transpiration" marked correct). Generator only range-clamps, never validates the index. Fix: emit answer as TEXT, derive index by matching `options[]` (SP-25). | GENERATOR |
+| VE-2 | vocabulary-explorer | explore | HIGH | Trivial challenge | `match` definitions render in same index order as terms; correctness = positional identity (`t===d`) — solvable by matching row-to-row without reading. Shuffle definitions + index map. | COMPONENT |
+| VE-3 | vocabulary-explorer | recall | HIGH | Missing data | flash-lite intermittently drops `option0–3` flat fields → generator falls back to placeholder "Option A–D", unanswerable (SP-14); also truncated-JSON throws (SP-6). Reject MC challenges missing real options. | GENERATOR |
 | ~~SW-1~~ | ~~sound-swap~~ | ~~addition~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition)~~ | ~~GENERATOR~~ |
 | ~~SW-2~~ | ~~sound-swap~~ | ~~deletion~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words~~ | ~~GENERATOR~~ |
 | ~~SW-3~~ | ~~sound-swap~~ | ~~addition~~ | ~~HIGH~~ | ~~Notation mismatch~~ | ~~Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options~~ | ~~GENERATOR~~ |

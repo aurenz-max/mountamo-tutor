@@ -1631,8 +1631,17 @@ export interface VisualPrimitiveSpec {
   componentId: ComponentId;
   /** Natural-language instructions for the generator (what to build, target values, etc.) */
   intent: string;
-  /** Structured number range from the manifest — grade+mode appropriate. Null for non-numeric primitives. */
+  /** Structured number range from the manifest — grade-level appropriate. Null for non-numeric primitives. */
   numberRange?: { min: number; max: number } | null;
+  /**
+   * Eval mode (the SKILL / task type the primitive evaluates) pinned by the
+   * dedicated post-manifest resolvePracticeEvalModes stage — NOT by the manifest
+   * call that chose the primitive. Carries the same single | 'a|b' | 'mixed'
+   * encoding the generators already read via config.targetEvalMode. Absent when
+   * the primitive is single-mode or resolution was skipped/failed (the generator
+   * then resolves its own mode from intent, the legacy path).
+   */
+  targetEvalMode?: string;
   successCriteria: {
     description: string;
     targetValue?: string;

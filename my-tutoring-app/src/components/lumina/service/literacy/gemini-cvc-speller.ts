@@ -144,6 +144,146 @@ const VOWEL_KEYWORDS: Record<string, string> = {
   a: 'apple', e: 'egg', i: 'itch', o: 'octopus', u: 'up',
 };
 
+// ---------------------------------------------------------------------------
+// Structural difficulty (config.difficulty) — second axis: problem SHAPE, not
+// scaffolding. For a phoneme-discrimination card the lever is the SIMILARITY of
+// the wrong choices (the recognition-card "distractor similarity" lever): a
+// FAR decoy is easy to reject, a NEAR (confusable) decoy is hard. This never
+// changes the target word, the vowel focus, the heard audio, or the answer —
+// only how confusable the foils are.
+//
+// TIER_GUARDRAIL — the truthful dual-axis invariant for config.difficulty.
+// Axis 1 (support tiers) withdraws on-screen help (picture cue, distractor
+// COUNT); axis 2 (this) changes the distractor SIMILARITY. Neither changes the
+// target word, the correct letters, or the answer. Harder ≠ longer/bigger words.
+// ---------------------------------------------------------------------------
+
+const TIER_GUARDRAIL =
+  'Tier changes scaffolding + distractor similarity; never the target word, vowel focus, or answer.';
+
+/** Short-vowel confusability, ranked MOST-confusable → LEAST (near → far). */
+const VOWEL_CONFUSION_RANK: Record<string, string[]> = {
+  a: ['e', 'o', 'i', 'u'],
+  e: ['i', 'a', 'u', 'o'],
+  i: ['e', 'u', 'a', 'o'],
+  o: ['u', 'a', 'e', 'i'],
+  u: ['o', 'i', 'a', 'e'],
+};
+
+/** Visually / aurally confusable consonants (plus vowels via CONFUSABLE_VOWELS),
+ *  used to pick NEAR-miss distractor letters for spell-word at higher tiers. */
+const CONFUSABLE_LETTERS: Record<string, string[]> = {
+  b: ['d', 'p', 'q'], d: ['b', 'p', 'q'], p: ['q', 'b', 'd'], q: ['p', 'b', 'd'],
+  m: ['n', 'w'], n: ['m', 'r', 'h'], w: ['m', 'v'], v: ['w', 'f'], f: ['v', 't'],
+  g: ['j', 'q'], j: ['g'], c: ['k', 's'], k: ['c', 'x'], s: ['c', 'z'], z: ['s', 'x'],
+  t: ['f', 'l'], l: ['t'], r: ['n'], h: ['n'], x: ['k', 'z'], y: ['v'],
+};
+
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** Pick from a near→far ranked list by tier: hard = nearest, easy = farthest. */
+function pickByTier<T>(rankedNearToFar: T[], tier: SupportTier): T | undefined {
+  if (rankedNearToFar.length === 0) return undefined;
+  if (tier === 'hard') return rankedNearToFar[0];
+  if (tier === 'easy') return rankedNearToFar[rankedNearToFar.length - 1];
+  return rankedNearToFar[Math.min(1, rankedNearToFar.length - 1)];
+}
+
+/** Choose `cap` distractor letters by similarity to the target letters. NEAR
+ *  fills from the visually/aurally confusable pool first; FAR fills from the
+ *  rest of the alphabet first; MID interleaves. Never returns a target letter,
+ *  so the word stays spellable (answer-safe). */
+function selectDistractorLetters(
+  targetLetters: string[],
+  cap: number,
+  similarity: 'far' | 'mid' | 'near',
+): string[] {
+  const targets = new Set(targetLetters.map((l) => l.toLowerCase()));
+  const nearSet = new Set<string>();
+  for (const tl of targetLetters.map((l) => l.toLowerCase())) {
+    for (const c of CONFUSABLE_LETTERS[tl] ?? []) if (!targets.has(c)) nearSet.add(c);
+    const cv = CONFUSABLE_VOWELS[tl];
+    if (cv && !targets.has(cv)) nearSet.add(cv);
+  }
+  const near = shuffleInPlace(Array.from(nearSet));
+  const far = shuffleInPlace(ALPHABET.filter((c) => !targets.has(c) && !nearSet.has(c)));
+  let ordered: string[];
+  if (similarity === 'near') ordered = [...near, ...far];
+  else if (similarity === 'far') ordered = [...far, ...near];
+  else {
+    ordered = [];
+    const a = [...near], b = [...far];
+    while (a.length || b.length) {
+      if (b.length) ordered.push(b.shift()!);
+      if (a.length) ordered.push(a.shift()!);
+    }
+  }
+  return ordered.slice(0, Math.max(0, cap));
+}
+
+interface CvcProblemShape {
+  /** fill-vowel: the decoy vowel chosen by confusability distance. */
+  vowelDecoy?: string;
+  /** word-sort: the contrast bucket vowel chosen by confusability distance. */
+  contrastVowel?: string;
+  /** spell-word: how similar the distractor letters are to the target letters. */
+  letterSimilarity: 'far' | 'mid' | 'near';
+  promptLines: string[];
+}
+
+/** One in-mode structural lever per task type, all of it "distractor similarity". */
+function resolveProblemShape(
+  taskType: CvcTaskType,
+  tier: SupportTier,
+  ctx: { targetVowel: string },
+): CvcProblemShape {
+  const lead =
+    'STRUCTURAL DIFFICULTY (second axis): this changes how CONFUSABLE the wrong choices are — '
+    + 'NOT the target word, the vowel focus, or the answer.';
+  const rank = VOWEL_CONFUSION_RANK[ctx.targetVowel] ?? [];
+  const distLabel = tier === 'hard' ? 'a NEAR, highly confusable' : tier === 'easy' ? 'a FAR, easily distinguished' : 'a moderately confusable';
+
+  if (taskType === 'fill-vowel') {
+    const vowelDecoy = pickByTier(rank, tier);
+    return {
+      vowelDecoy,
+      letterSimilarity: 'far',
+      promptLines: [
+        lead,
+        `The two vowel choices are "${ctx.targetVowel}" and the decoy "${vowelDecoy ?? '?'}" — ${distLabel} vowel (the exact decoy is enforced in code).`,
+      ],
+    };
+  }
+  if (taskType === 'word-sort') {
+    const contrastVowel = pickByTier(rank, tier);
+    return {
+      contrastVowel,
+      letterSimilarity: 'far',
+      promptLines: [
+        lead,
+        `Sort against the contrast vowel "${contrastVowel ?? '?'}" — ${distLabel} vowel vs the focus "${ctx.targetVowel}". Include words with BOTH vowels.`,
+      ],
+    };
+  }
+  // spell-word
+  const letterSimilarity = tier === 'hard' ? 'near' : tier === 'easy' ? 'far' : 'mid';
+  return {
+    letterSimilarity,
+    promptLines: [
+      lead,
+      `Distractor letters in the bank should be ${letterSimilarity === 'near' ? 'NEAR misses — visually/aurally confusable with the target letters (b/d/p, m/n, the confusable vowel)' : letterSimilarity === 'far' ? 'FAR — clearly different from the target letters' : 'a mix of near and far'} (the exact letters are enforced in code).`,
+    ],
+  };
+}
+
 /**
  * Schema definition for CVC Speller Data
  *
@@ -334,15 +474,28 @@ export const generateCvcSpeller = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT word size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Axis 2 (structural): the contrast vowel used in the prompt is tuned by tier
+  // (near at hard, far at easy). When no tier is present it falls back to the
+  // legacy nearest-confusable vowel, keeping the no-tier prompt byte-identical.
+  const structuralContrast = supportTier && VOWEL_CONFUSION_RANK[targetVowel]
+    ? (pickByTier(VOWEL_CONFUSION_RANK[targetVowel], supportTier) ?? confusableVowel)
+    : confusableVowel;
+  const tierShape = pinnedType && supportTier
+    ? resolveProblemShape(pinnedType, supportTier, { targetVowel })
+    : null;
+  const tierPromptLines: string[] = [
+    ...(tierScaffold ? tierScaffold.promptLines : []),
+    ...(tierShape ? tierShape.promptLines : []),
+  ];
+  const tierSection = tierPromptLines.length
+    ? `\n## WITHIN-MODE DIFFICULTY (config.difficulty — scaffolding + discrimination shape, NOT word size)\n${tierPromptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
 
 TARGET GRADE LEVEL: ${gradeLevel}
 VOWEL FOCUS: ${vowelFocus} (the vowel "${targetVowel}")
-CONFUSABLE VOWEL PAIR: "${targetVowel}" vs "${confusableVowel}" (${VOWEL_KEYWORDS[targetVowel]} vs ${VOWEL_KEYWORDS[confusableVowel]})
+CONFUSABLE VOWEL PAIR: "${targetVowel}" vs "${structuralContrast}" (${VOWEL_KEYWORDS[targetVowel]} vs ${VOWEL_KEYWORDS[structuralContrast]})
 LETTER GROUP: ${letterGroup} (available consonants: ${consonants.join(', ')})
 
 AUDIO-FIRST DESIGN:
@@ -355,9 +508,9 @@ TASK-SPECIFIC FORMATS:
 
 For "fill-vowel" challenges:
 - Student hears the word, sees consonant frame (e.g., "c_t"), picks from 2 vowels
-- vowelOptions: exactly 2 vowels — the correct one ("${targetVowel}") and confusable ("${confusableVowel}")
+- vowelOptions: exactly 2 vowels — the correct one ("${targetVowel}") and confusable ("${structuralContrast}")
 - distractorLetters: not needed (omit or empty)
-- Words must use vowel "${targetVowel}" — the confusable "${confusableVowel}" is ONLY for the wrong option
+- Words must use vowel "${targetVowel}" — the confusable "${structuralContrast}" is ONLY for the wrong option
 
 For "spell-word" challenges:
 - Student hears the word and places all 3 letters in Elkonin boxes
@@ -367,8 +520,8 @@ For "spell-word" challenges:
 
 For "word-sort" challenges:
 - Student hears words and sorts into 2 buckets by vowel sound
-- sortBucketLabel: either "${vowelFocus}" or "short-${confusableVowel}"
-- Include a MIX of both vowels — some words use "${targetVowel}", some use "${confusableVowel}"
+- sortBucketLabel: either "${vowelFocus}" or "short-${structuralContrast}"
+- Include a MIX of both vowels — some words use "${targetVowel}", some use "${structuralContrast}"
 - vowelOptions: not needed, distractorLetters: not needed
 - IMPORTANT: word-sort challenges MUST include words with BOTH vowels (not just "${targetVowel}")
 
@@ -459,21 +612,50 @@ PHONEME NOTATION:
           ch.showPictureCue = sc.showPictureCue ?? true;
         }
 
-        // Letter-bank clutter (spell-word only). Trim DISTRACTORS only — never
-        // touch targetLetters, so the answer stays spellable at every tier.
+        // ── Axis 1 (support: distractor COUNT) × Axis 2 (structural: distractor
+        //    SIMILARITY) for spell-word. Support tier sets the cap; structural
+        //    tier picks WHICH letters fill it. selectDistractorLetters excludes
+        //    target letters, so the word stays spellable (answer-safe). ──
         if (ch.taskType === 'spell-word' && sc.distractorLevel) {
           const cap = sc.distractorLevel === 'clean' ? 1 : sc.distractorLevel === 'some' ? 3 : 5;
-          const targets = new Set((ch.targetLetters || []).map((l) => l.toLowerCase()));
-          const distractors = (ch.distractorLetters || []).filter(
-            (l) => !targets.has(l.toLowerCase()),
+          const shape = resolveProblemShape('spell-word', supportTier, { targetVowel });
+          ch.distractorLetters = selectDistractorLetters(
+            ch.targetLetters || ch.targetWord.split(''),
+            cap,
+            shape.letterSimilarity,
           );
-          ch.distractorLetters = distractors.slice(0, cap);
+        }
+
+        // ── Axis 2 (structural) for fill-vowel: re-select the DECOY vowel by
+        //    confusability (near at hard, far at easy). The correct vowel is the
+        //    word's middle letter and is never touched, so the answer
+        //    (targetLetters[1]) is preserved. ──
+        if (ch.taskType === 'fill-vowel') {
+          const correct = (ch.targetLetters?.[1] ?? targetVowel).toLowerCase();
+          const shape = resolveProblemShape('fill-vowel', supportTier, { targetVowel: correct });
+          let decoy = shape.vowelDecoy;
+          if (!decoy || decoy === correct) {
+            decoy = CONFUSABLE_VOWELS[correct] ?? (correct === 'a' ? 'e' : 'a');
+          }
+          ch.vowelOptions = Math.random() > 0.5 ? [correct, decoy] : [decoy, correct];
+        }
+
+        // ── Axis 2 (structural) for word-sort: pin the bucket label to the
+        //    tier-tuned contrast pair {focus, structuralContrast}. The WORDS are
+        //    prose (LLM-authored under the prompt's tier-tuned contrast); this
+        //    only keeps the labels consistent with that pair. ──
+        if (ch.taskType === 'word-sort') {
+          const mid = ch.targetLetters?.[1]?.toLowerCase();
+          ch.sortBucketLabel = mid === structuralContrast ? `short-${structuralContrast}` : vowelFocus;
         }
       }
       // Tell the live tutor the support level (blended sessions included) so its
       // reveal policy is tier-aware per challenge.
       result.supportTier = supportTier;
-      console.log(`[cvc-speller] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+      console.log(
+        `[cvc-speller] tier "${supportTier}" applied per-challenge — contrast="${structuralContrast}" `
+        + `(${pinnedType ? 'single-mode ' + pinnedType : 'blended'}). ${TIER_GUARDRAIL}`,
+      );
     }
 
     console.log('CVC Speller Generated:', {

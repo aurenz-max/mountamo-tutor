@@ -822,14 +822,32 @@ async def lumina_tutor_session(websocket: WebSocket):
             # Wait for any task to complete (usually means an error or disconnect)
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-            # Cancel remaining tasks
+            # Cancel remaining tasks (incl. the serialized ws_sender) and let them
+            # unwind, so we can send a final message directly to the client below
+            # without racing the sender on the same WebSocket.
             for task in pending:
                 task.cancel()
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
 
             # Check for any exceptions
             for task in done:
                 if task.exception():
                     logger.error(f"Task failed with exception: {task.exception()}")
+
+            # Notify the client that the tutor session has ended — typically because
+            # Gemini Live hit its session-duration limit and aborted (1008). Without
+            # this the socket just goes quiet and the frontend has no signal to
+            # distinguish "ended" from "still thinking" or to offer a reconnect.
+            try:
+                await websocket.send_json({
+                    "type": "session_ended",
+                    "reason": "gemini_session_closed",
+                    "message": "The tutor session has ended. Reconnect to keep going.",
+                })
+                logger.info("Sent session_ended notification to client")
+            except Exception as notify_err:
+                logger.info(f"Could not send session_ended (client likely gone): {notify_err}")
 
     except WebSocketDisconnect:
         logger.info("Lumina Tutor WebSocket disconnected")

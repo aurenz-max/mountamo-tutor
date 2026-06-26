@@ -40,6 +40,7 @@ import {
   MessageSquare,
   Loader2,
   Target,
+  RefreshCw,
 } from 'lucide-react';
 
 /** Human-facing name for the active primitive (registry title → title-cased id). */
@@ -109,11 +110,24 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
     startListening,
     stopListening,
     isListening,
+    sessionEnded,
+    reconnect,
   } = ctx;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [showTranscript, setShowTranscript] = useState(false);
   const [text, setText] = useState('');
+  const [reconnecting, setReconnecting] = useState(false);
+
+  const handleReconnect = async () => {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await reconnect();
+    } finally {
+      setReconnecting(false);
+    }
+  };
 
   // Which on-screen primitive the Curator is anchored to (follows viewport).
   const focusName = useMemo(
@@ -285,7 +299,13 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
             ))}
           </div>
           <p className="w-20 text-right text-xs font-medium text-slate-400">
-            {!isConnected ? 'Connecting…' : isAIResponding ? 'Speaking…' : 'Ready'}
+            {!isConnected
+              ? sessionEnded
+                ? 'Ended'
+                : 'Connecting…'
+              : isAIResponding
+                ? 'Speaking…'
+                : 'Ready'}
           </p>
         </div>
 
@@ -300,7 +320,7 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
               instantly without re-animating. */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={!isConnected ? 'connecting' : activePrimitiveType ?? 'none'}
+              key={!isConnected ? (sessionEnded ? 'ended' : 'connecting') : activePrimitiveType ?? 'none'}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -308,10 +328,31 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
               className="overflow-hidden"
             >
               {!isConnected ? (
-                <div className="flex items-center gap-2 px-1 py-2 text-xs text-slate-500">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Waking up the Curator…
-                </div>
+                sessionEnded ? (
+                  <div className="flex flex-col gap-2.5 px-1 py-1">
+                    <p className="text-xs text-slate-400">
+                      The tutor session ended. Reconnect to keep going.
+                    </p>
+                    <LuminaButton
+                      tone="primary"
+                      disabled={reconnecting}
+                      onClick={handleReconnect}
+                      className="justify-center gap-2"
+                    >
+                      {reconnecting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      {reconnecting ? 'Reconnecting…' : 'Reconnect'}
+                    </LuminaButton>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-1 py-2 text-xs text-slate-500">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Waking up the Curator…
+                  </div>
+                )
               ) : prompts.length === 0 ? (
                 <p className="px-1 py-2 text-xs text-slate-500">
                   Keep exploring — I&apos;ll jump in when there&apos;s something to help with.

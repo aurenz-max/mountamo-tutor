@@ -83,8 +83,18 @@ interface LuminaAIContextType {
   connectLesson: (info: LessonConnectionInfo) => Promise<void>;
   switchPrimitive: (primitiveContext: PrimitiveContext) => void;
   disconnect: () => void;
+  /** Re-establish the most recent session (standalone or lesson) after it ended
+   *  unexpectedly — e.g. Gemini Live hit its duration limit. No-op if there was
+   *  never a session to restore. */
+  reconnect: () => Promise<void>;
   isConnected: boolean;
   sessionMode: SessionMode;
+  /** True once a session ended without the user disconnecting (server close /
+   *  Gemini duration limit / network drop). Drives the reconnect affordance. */
+  sessionEnded: boolean;
+  /** Machine-readable cause of the last unexpected end (e.g.
+   *  'gemini_session_closed', 'disconnected'), or null while connected. */
+  sessionEndedReason: string | null;
   /** Synchronous flag (ref) that a lesson session owns this provider. Primitives
    *  read it to suppress their standalone auto-connect and avoid racing it. */
   lessonModeRef: React.MutableRefObject<boolean>;
@@ -145,6 +155,14 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const lessonModeRef = useRef(false);
   const sessionStartTimeRef = useRef<number>(0);
 
+  // Remembers how to rebuild the most recent session so reconnect() can re-run
+  // the exact same connect path after an unexpected end.
+  const lastConnectionRef = useRef<
+    | { mode: 'standalone'; ctx: PrimitiveContext }
+    | { mode: 'lesson'; info: LessonConnectionInfo }
+    | null
+  >(null);
+
   // Use the proven queued audio playback hook
   const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn } = useAudioPlayback({ sampleRate: 24000 });
 
@@ -160,6 +178,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
+
+  // Unexpected-end tracking. sessionEnded flips true on a server/Gemini close or
+  // network drop (NOT on a user-initiated disconnect), so the UI can offer a
+  // reconnect instead of sitting on a perpetual "Connecting…".
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const [sessionEndedReason, setSessionEndedReason] = useState<string | null>(null);
 
   // Session mode and active primitive tracking
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
@@ -301,6 +325,15 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Server confirms only type + id; live data comes from our optimistic mirror.
           setActivePrimitiveType(message.primitive_type ?? null);
           setActivePrimitiveData(currentPrimitiveRef.current?.primitive_data ?? null);
+        } else if (messageType === 'session_ended') {
+          // Server told us the Gemini session ended (usually the Live duration
+          // limit). The socket close follows; flag it now so the UI flips to the
+          // reconnect state immediately and any in-flight audio stops.
+          console.log('Lumina AI session ended by server:', message.reason, message.message);
+          setSessionEnded(true);
+          setSessionEndedReason(message.reason ?? 'gemini_session_closed');
+          setIsAIResponding(false);
+          stopAudioPlayback();
         } else if (messageType === 'auth_success' || messageType === 'session_ready') {
           console.log('Lumina AI session ready:', message.message);
         }
@@ -311,6 +344,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     socket.onclose = (event) => {
       console.log('Lumina AI WebSocket closed:', event.code, event.reason);
+
+      // Ignore a stale socket we've already swapped out (reconnect / re-auth) —
+      // its late close must not tear down the freshly opened session.
+      if (socketRef.current && socketRef.current !== socket) return;
+      socketRef.current = null;
+
       setIsConnected(false);
       setSessionMode('idle');
       lessonModeRef.current = false;
@@ -318,6 +357,17 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setActivePrimitiveId(null);
       setActivePrimitiveType(null);
       setActivePrimitiveData(null);
+      lastContextSigRef.current = '';
+
+      // Distinguish a deliberate close (disconnect / reconnect swap) from an
+      // unexpected one. Only the latter should surface a reconnect affordance.
+      // Tagged per-socket so a stale flag can't bleed across sessions.
+      const intentional = (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose === true;
+      if (!intentional) {
+        setSessionEnded(true);
+        // Keep a reason already set by an explicit session_ended message.
+        setSessionEndedReason(prev => prev ?? 'disconnected');
+      }
 
       if (sessionStartTimeRef.current > 0) {
         const totalTime = Date.now() - sessionStartTimeRef.current;
@@ -328,7 +378,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     socket.onerror = (error) => {
       console.error('Lumina AI WebSocket error:', error);
     };
-  }, [processAndPlayRawAudio, resetForNextTurn]);
+  }, [processAndPlayRawAudio, resetForNextTurn, stopAudioPlayback]);
 
   // Helper to close any existing socket
   const closeExistingSocket = useCallback(() => {
@@ -336,6 +386,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const state = socketRef.current.readyState;
       if (state === WebSocket.CONNECTING || state === WebSocket.OPEN) {
         console.log('Lumina AI: closing existing socket before reconnecting');
+        (socketRef.current as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
         socketRef.current.close(1000, 'Reconnecting');
       }
       socketRef.current = null;
@@ -377,6 +428,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const evalCtx = evaluationContextRef.current;
 
     currentPrimitiveRef.current = primitiveContext;
+    lastConnectionRef.current = { mode: 'standalone', ctx: primitiveContext };
+    setSessionEnded(false);
+    setSessionEndedReason(null);
     ensureAudioService();
 
     const lessonContext = buildLessonContext(
@@ -399,6 +453,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const token = await getFirebaseToken();
           if (!token) throw new Error('No authentication token available');
           if (socketRef.current !== socket) {
+            (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
             socket.close();
             return;
           }
@@ -436,6 +491,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           console.log('Lumina AI authenticated (standalone)');
         } catch (error) {
           console.error('Error authenticating Lumina AI:', error);
+          (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
           socket.close();
           setIsConnected(false);
         }
@@ -458,6 +514,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     closeExistingSocket();
 
     currentPrimitiveRef.current = info.firstPrimitive;
+    lastConnectionRef.current = { mode: 'lesson', info };
+    setSessionEnded(false);
+    setSessionEndedReason(null);
     ensureAudioService();
 
     const { objectives, manifestItems } = exhibitContextRef.current;
@@ -483,6 +542,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const token = await getFirebaseToken();
           if (!token) throw new Error('No authentication token available');
           if (socketRef.current !== socket) {
+            (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
             socket.close();
             return;
           }
@@ -520,6 +580,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           console.log('Lumina AI authenticated (lesson mode)');
         } catch (error) {
           console.error('Error authenticating Lumina AI (lesson):', error);
+          (socket as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
           socket.close();
           setIsConnected(false);
         }
@@ -530,6 +591,23 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsConnected(false);
     }
   }, [buildLessonContext, setupSocket, closeExistingSocket, ensureAudioService, getFirebaseToken]);
+
+  // Re-establish the most recent session after an unexpected end. Re-runs the
+  // exact connect path that was used originally (lesson re-greets; standalone
+  // re-auths), reusing the stored connection info.
+  const reconnect = useCallback(async () => {
+    const last = lastConnectionRef.current;
+    if (!last) {
+      console.warn('Lumina AI: reconnect() called with no prior session to restore');
+      return;
+    }
+    console.log(`[LuminaAI] reconnect() (${last.mode})`);
+    if (last.mode === 'lesson') {
+      await connectLesson(last.info);
+    } else {
+      await connect(last.ctx);
+    }
+  }, [connect, connectLesson]);
 
   // Switch the active primitive within a lesson session (no new WebSocket)
   const switchPrimitive = useCallback((primitiveContext: PrimitiveContext) => {
@@ -568,6 +646,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
+      (socketRef.current as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
       socketRef.current.close(1000, 'Manual disconnect');
       socketRef.current = null;
     }
@@ -586,6 +665,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setActivePrimitiveId(null);
     setConversation([]);
     lastContextSigRef.current = '';
+    // User-initiated end — not an unexpected drop, so clear the reconnect flag.
+    setSessionEnded(false);
+    setSessionEndedReason(null);
 
     if (sessionStartTimeRef.current > 0) {
       const totalTime = Date.now() - sessionStartTimeRef.current;
@@ -752,6 +834,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     return () => {
       if (socketRef.current) {
+        (socketRef.current as unknown as { __intentionalClose?: boolean }).__intentionalClose = true;
         socketRef.current.close();
       }
       if (audioServiceRef.current) {
@@ -766,8 +849,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     connectLesson,
     switchPrimitive,
     disconnect,
+    reconnect,
     isConnected,
     sessionMode,
+    sessionEnded,
+    sessionEndedReason,
     lessonModeRef,
     activePrimitiveId,
     activePrimitiveType,

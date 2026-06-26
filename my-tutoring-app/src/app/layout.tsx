@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Tutor',
+  title: 'Lumina',
   description: 'Personalized learning experience powered by AI',
 };
 

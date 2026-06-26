@@ -272,6 +272,26 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
   // -------------------------------------------------------------------------
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
 
+  // VE-2: shuffle the Definitions column so matches can't be solved by row alignment.
+  // The shuffled values are ORIGINAL pair indices — grading still compares term i to
+  // definition i (matchPairs[i].term ↔ matchPairs[i].definition); only the visual
+  // order of definitions changes.
+  const shuffledDefOrder = useMemo(() => {
+    if (currentChallenge?.type !== 'match') return [];
+    const n = currentChallenge.matchPairs?.length || 0;
+    const order = Array.from({ length: n }, (_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    // Avoid the degenerate identity permutation (would re-expose row alignment).
+    if (n > 1 && order.every((v, i) => v === i)) {
+      [order[0], order[1]] = [order[1], order[0]];
+    }
+    return order;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallengeIndex]);
+
   const handleStartChallenges = useCallback(() => {
     setShowChallenges(true);
     setCurrentChallengeIndex(0);
@@ -670,10 +690,11 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
               {/* Definitions column */}
               <div className="space-y-2">
                 <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Definitions</p>
-                {currentChallenge.matchPairs.map((pair, i) => {
-                  const isMatched = matchedPairs.some(([, d]) => d === i);
-                  const pairIdx = matchedPairs.findIndex(([, d]) => d === i);
-                  const isCorrectPair = matchChecked && matchedPairs.some(([t, d]) => d === i && t === d);
+                {shuffledDefOrder.map((origIdx) => {
+                  const pair = currentChallenge.matchPairs![origIdx];
+                  const isMatched = matchedPairs.some(([, d]) => d === origIdx);
+                  const pairIdx = matchedPairs.findIndex(([, d]) => d === origIdx);
+                  const isCorrectPair = matchChecked && matchedPairs.some(([t, d]) => d === origIdx && t === d);
                   const isWrongPair = matchChecked && !matchCorrect && isMatched && !isCorrectPair;
 
                   // Graded states use the shared answer-state color language;
@@ -690,8 +711,8 @@ const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className
 
                   return (
                     <button
-                      key={i}
-                      onClick={() => handleMatchDefSelect(i)}
+                      key={origIdx}
+                      onClick={() => handleMatchDefSelect(origIdx)}
                       disabled={matchChecked || isMatched || selectedMatchTerm === null}
                       className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all duration-200 ${gradedClass}`}
                     >

@@ -1,28 +1,8 @@
-"use client";
+import LuminaLanding from '@/components/landing/LuminaLanding';
 
-import { useAuth } from '@/contexts/AuthContext';
-import LandingPage from '@/components/landing/LandingPage';
-import EnhancedLearningDashboard from '@/components/dashboard/EnhancedLearningDashboard';
-
+// The root route is now the Lumina marketing landing. The legacy auth-gated
+// dashboard (EnhancedLearningDashboard / the old LandingPage) is sunset — the
+// product lives at /lumina, and this page is its front door.
 export default function Home() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p>Loading...</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="min-h-screen bg-gray-50">
-      {user ? <EnhancedLearningDashboard /> : <LandingPage />}
-    </main>
-  );
+  return <LuminaLanding />;
 }

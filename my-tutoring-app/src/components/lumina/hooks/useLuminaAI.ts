@@ -278,6 +278,10 @@ export function useLuminaAI({
     sessionMode: context.sessionMode,
     activePrimitiveId: context.activePrimitiveId,
 
+    // Unexpected-end + recovery (e.g. Gemini Live duration limit)
+    sessionEnded: context.sessionEnded,
+    reconnect: context.reconnect,
+
     // Metrics (for evaluation integration)
     aiMetrics: context.aiMetrics,
   };

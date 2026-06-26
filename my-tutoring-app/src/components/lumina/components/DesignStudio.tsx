@@ -44,6 +44,7 @@ import {
   LuminaChip,
   LuminaChipBank,
   LuminaInput,
+  LuminaMark,
   type AnswerChoiceState,
   LUMINA_ACCENTS,
   accentText,
@@ -99,6 +100,7 @@ const SURFACES: { key: keyof typeof surface; blurb: string }[] = [
 
 export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
   const [disabled, setDisabled] = useState(false);
+  const [markProgress, setMarkProgress] = useState(65);
   const [force, setForce] = useState(50);
   const [selectedChip, setSelectedChip] = useState('tracks');
   const [count, setCount] = useState(3);
@@ -142,6 +144,70 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Main column ──────────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-8">
+          {/* Brand mark */}
+          <Section title="Brand mark" blurb="LuminaMark — the Aurora Core, which doubles as a progress ring">
+            <LuminaCard>
+              <LuminaCardContent className="pt-6 space-y-6">
+                <Spec label="Identity" code="<LuminaMark /> · variant='tile' | 'bare'">
+                  <div className="flex items-end gap-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <LuminaMark size={72} />
+                      <span className="text-[10px] font-mono text-slate-500">tile · logo</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-2">
+                      <LuminaMark size={72} variant="bare" />
+                      <span className="text-[10px] font-mono text-slate-500">bare · inline</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <LuminaMark size={32} />
+                      <span className="text-xl font-bold tracking-tight text-white">
+                        Lumina <span className="text-slate-500 font-light">Exhibits</span>
+                      </span>
+                    </div>
+                  </div>
+                </Spec>
+
+                <Spec label="Reactive progress" code="<LuminaMark progress={pct} /> — fills as the lesson advances">
+                  <div className="space-y-4">
+                    <div className="flex items-end justify-between gap-6">
+                      {[0, 25, 50, 75, 100].map((p) => (
+                        <div key={p} className="flex flex-col items-center gap-2">
+                          <LuminaMark size={56} progress={p} />
+                          <span className="text-[10px] font-mono text-slate-500">{p}%</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                      <div className="flex items-center gap-4">
+                        <LuminaMark size={64} progress={markProgress} />
+                        <LuminaMark size={64} progress={markProgress} variant="bare" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex justify-between items-baseline">
+                            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                              Lesson progress
+                            </span>
+                            <span className={`text-xs font-mono ${accentText.purple}`}>{markProgress}%</span>
+                          </div>
+                          <LuminaSlider
+                            accent="purple"
+                            value={[markProgress]}
+                            onValueChange={([v]) => setMarkProgress(v)}
+                            min={0}
+                            max={100}
+                            step={1}
+                          />
+                          <p className="text-[11px] text-slate-500">
+                            Drag — the ring fills clockwise and the core lights up as it nears 100%.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Spec>
+              </LuminaCardContent>
+            </LuminaCard>
+          </Section>
+
           {/* Surfaces */}
           <Section title="Surfaces" blurb="LuminaCard — the glass containers">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

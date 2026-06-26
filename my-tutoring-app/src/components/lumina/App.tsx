@@ -18,25 +18,33 @@ import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
+import { LuminaMark } from './ui';
 
 
-export default function App() {
+export interface AppProps {
+  /** Topic handed in from the landing page (`/lumina?topic=…`) — auto-starts a lesson on mount. */
+  initialTopic?: string;
+  /** Grade band handed in alongside the topic. */
+  initialGrade?: GradeLevel;
+}
+
+export default function App({ initialTopic, initialGrade }: AppProps = {}) {
   return (
     <StudentProvider>
-      <LuminaApp />
+      <LuminaApp initialTopic={initialTopic} initialGrade={initialGrade} />
     </StudentProvider>
   );
 }
 
-function LuminaApp() {
+function LuminaApp({ initialTopic, initialGrade }: AppProps) {
   // Student identity — resolved once by StudentProvider, never a literal
   const { studentId } = useStudent();
 
   // Core lesson pipeline (brief → manifest → exhibit), personalized per student
   const { phase, brief, exhibit, progress, generate, reset: resetSession } = useExhibitSession(studentId);
 
-  const [topic, setTopic] = useState('');
-  const [gradeLevel, setGradeLevel] = useState<GradeLevel>('elementary');
+  const [topic, setTopic] = useState(initialTopic ?? '');
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel>(initialGrade ?? 'elementary');
 
   // Single panel state replaces 17 individual booleans
   const [activePanel, setActivePanel] = useState<string | null>(null);
@@ -57,6 +65,17 @@ function LuminaApp() {
     lastGenerateRef.current = options;
     void generate(options);
   }, [generate]);
+
+  // Topic handed in from the landing page (`/lumina?topic=…`) → start the
+  // lesson straight away, exactly once, skipping the home screen.
+  const handoffStarted = useRef(false);
+  useEffect(() => {
+    if (handoffStarted.current) return;
+    const handoff = initialTopic?.trim();
+    if (!handoff) return;
+    handoffStarted.current = true;
+    startGenerate({ topic: handoff, gradeLevel: initialGrade ?? gradeLevel });
+  }, [initialTopic, initialGrade, gradeLevel, startGenerate]);
 
   // Auto-scroll when generation starts
   useEffect(() => {
@@ -273,10 +292,16 @@ function LuminaApp() {
 
       {/* Header */}
       <header className="fixed top-0 left-0 w-full px-6 py-4 z-50 flex justify-between items-center bg-slate-900/80 backdrop-blur-md border-b border-white/5">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={reset}>
-             <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="font-bold text-white text-lg">L</span>
-             </div>
+        <div className="flex items-center gap-2.5 cursor-pointer" onClick={reset}>
+             {/* Aurora Core brand mark — fills as the daily session progresses */}
+             <LuminaMark
+               size={32}
+               progress={
+                 sessionStats && sessionStats.total > 0
+                   ? Math.round((sessionStats.completed / sessionStats.total) * 100)
+                   : undefined
+               }
+             />
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
         <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">

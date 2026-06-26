@@ -10,6 +10,7 @@ import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { PracticeManifest, CURRICULUM_SUBJECT_IDS } from "../../types";
 import { ai } from "../geminiClient";
 import { buildPracticeVisualCatalogContext } from "./practice-visual-catalog";
+import { resolvePracticeEvalModes } from "./resolvePracticeEvalModes";
 
 /**
  * Map target_beta to nearest Bloom's tier when eval_mode_name is not available.
@@ -98,6 +99,7 @@ const practiceManifestSchema: Schema = {
           difficulty: {
             type: Type.STRING,
             enum: ["easy", "medium", "hard"],
+            description: "Structural support tier for this problem: 'easy' (maximum scaffolding — concrete representation, full guidance), 'medium', or 'hard' (minimum scaffolding — symbolic, independent). Support/representation level ONLY — it NEVER means bigger numbers; the numberRange is owned by the grade-level scope.",
           },
           bloomLevel: {
             type: Type.STRING,
@@ -128,7 +130,7 @@ const practiceManifestSchema: Schema = {
               numberRange: {
                 type: Type.OBJECT,
                 nullable: true,
-                description: "Structured number range for this primitive based on the student's grade and scaffolding level. Required for math primitives that generate numbers (e.g., place-value-chart, base-ten-blocks, number-line). Null for non-numeric primitives.",
+                description: "Structured number range for this primitive, bound to the student's GRADE LEVEL (the scope ceiling). The scaffolding/difficulty level does NOT widen this range — it only changes representation and guidance. Required for math primitives that generate numbers (e.g., place-value-chart, base-ten-blocks, number-line). Null for non-numeric primitives.",
                 properties: {
                   min: { type: Type.NUMBER, description: "Minimum value (inclusive) appropriate for this student's level" },
                   max: { type: Type.NUMBER, description: "Maximum value (inclusive) appropriate for this student's level" },
@@ -191,37 +193,43 @@ export interface PracticeManifestOptions {
  * Mode-based scaffolding descriptions for the Gemini prompt.
  * Maps IRT target_mode (1-6) to concrete content generation instructions.
  * This is the bridge between the backend calibration system and Gemini's output.
+ *
+ * IMPORTANT: mode controls the STRUCTURAL difficulty axis — representation
+ * (concrete → pictorial → symbolic), guidance, and step count. It does NOT
+ * control number magnitude. Number size is bound to the student's grade-level
+ * scope (see numberRange), not to the mode. A student works with the same
+ * grade-appropriate numbers at mode 1 and mode 6; only the scaffolding changes.
  */
 const MODE_SCAFFOLDING: Record<number, { label: string; difficulty: string; instruction: string }> = {
   1: {
     label: 'Concrete manipulatives with full guidance',
     difficulty: 'easy',
-    instruction: 'Use visual manipulatives (ten frames, counters, fraction circles, etc.) with full step-by-step guidance. Provide visual scaffolding for every step. Use small, simple numbers. The student should be able to see and interact with physical representations.',
+    instruction: 'Use visual manipulatives (ten frames, counters, fraction circles, etc.) with full step-by-step guidance. Provide visual scaffolding for every step. The student should be able to see and interact with physical representations.',
   },
   2: {
     label: 'Pictorial with prompts',
     difficulty: 'easy',
-    instruction: 'Use pictorial representations (drawings, diagrams, number lines) with guiding prompts. One layer of abstraction above concrete manipulatives. Provide visual support but let the student figure out the approach. Keep numbers manageable.',
+    instruction: 'Use pictorial representations (drawings, diagrams, number lines) with guiding prompts. One layer of abstraction above concrete manipulatives. Provide visual support but let the student figure out the approach.',
   },
   3: {
     label: 'Pictorial, reduced prompts',
     difficulty: 'medium',
-    instruction: 'Use pictorial representations but with minimal prompting. The student must self-organize their approach. Visual support is present but the student drives the reasoning. Moderate number ranges.',
+    instruction: 'Use pictorial representations but with minimal prompting. The student must self-organize their approach. Visual support is present but the student drives the reasoning.',
   },
   4: {
     label: 'Transitional: mixed symbolic/pictorial',
     difficulty: 'medium',
-    instruction: 'Bridge between concrete and abstract. Mix some symbolic notation with pictorial support. Partial scaffolding — the student should be transitioning to working with numbers and symbols. Broader number ranges.',
+    instruction: 'Bridge between concrete and abstract. Mix some symbolic notation with pictorial support. Partial scaffolding — the student should be transitioning to working with numbers and symbols.',
   },
   5: {
     label: 'Fully symbolic, single operation',
     difficulty: 'hard',
-    instruction: 'Abstract, symbolic problems with no visual scaffolding. The student works with numbers, equations, and symbolic notation directly. Single-operation problems requiring direct abstract reasoning. Wider number ranges.',
+    instruction: 'Abstract, symbolic problems with no visual scaffolding. The student works with numbers, equations, and symbolic notation directly. Single-operation problems requiring direct abstract reasoning.',
   },
   6: {
     label: 'Symbolic, multi-step or cross-concept',
     difficulty: 'hard',
-    instruction: 'The most challenging level. Multi-step symbolic problems, cross-concept integration, or problems requiring the student to synthesize multiple skills. No scaffolding. Expect the student to work abstractly and independently. Complex number ranges and multi-step reasoning.',
+    instruction: 'The most challenging level. Multi-step symbolic problems, cross-concept integration, or problems requiring the student to synthesize multiple skills. No scaffolding. Expect the student to work abstractly and independently, reasoning across multiple steps.',
   },
 };
 
@@ -353,13 +361,13 @@ For each problem, decide:
 
 ## VISUAL PRIMITIVE RULES
 - The "intent" field is natural language describing what the generator should build (target values, task type, context). Dedicated generators handle the full configuration — you just describe what you want.
-- "numberRange": For math primitives that work with numbers (place-value-chart, base-ten-blocks, number-line, counting-board, ten-frame, etc.), set numberRange to {min, max} appropriate for the student's grade AND scaffolding mode. Examples:
-  * Kindergarten mode 1: {"min": 1, "max": 10}
-  * Grade 1 mode 2: {"min": 1, "max": 20}
-  * Grade 2 mode 3: {"min": 10, "max": 100}
-  * Grade 3 mode 4: {"min": 100, "max": 1000}
-  * Grade 4 mode 5: {"min": 100, "max": 9999}
-  * Grade 5+ mode 6: {"min": 1000, "max": 99999}
+- "numberRange": For math primitives that work with numbers (place-value-chart, base-ten-blocks, number-line, counting-board, ten-frame, etc.), set numberRange to {min, max} appropriate for the student's GRADE LEVEL only. The scaffolding mode/difficulty changes HOW the problem is represented (concrete → symbolic) and how much guidance is given — it does NOT change the size of the numbers. A grade-2 student works with grade-2 numbers whether at mode 1 or mode 5. Grade-bound ranges:
+  * Kindergarten: {"min": 1, "max": 10}
+  * Grade 1: {"min": 1, "max": 20}
+  * Grade 2: {"min": 10, "max": 100}
+  * Grade 3: {"min": 100, "max": 1000}
+  * Grade 4: {"min": 100, "max": 9999}
+  * Grade 5+: {"min": 1000, "max": 99999}
   Set to null for non-numeric primitives (fraction-circles, shape-builder, etc.).
 - successCriteria.description: tell the student what to DO
 - successCriteria.targetValue: the expected answer
@@ -526,6 +534,21 @@ Return ONLY valid JSON matching the schema.`;
     }
   }
 
+  // Dedicated eval-mode resolution stage (post-manifest, pre-hydration) — the
+  // authoritative selector for each multi-mode visual primitive's task type.
+  // One batched call sees the whole session, replacing the per-item intent-based
+  // resolution the generators would otherwise each run in isolation. Mutates
+  // item.visualPrimitive.targetEvalMode in place; non-regressing on failure.
+  callbacks?.onProgress?.('Resolving eval modes...');
+  try {
+    const summary = await resolvePracticeEvalModes(manifest, topic, gradeLevel);
+    if (summary.slots > 0) {
+      callbacks?.onProgress?.(`Eval modes: ${summary.changed} pinned, ${summary.kept} kept`);
+    }
+  } catch (e) {
+    console.warn('[practice-manifest] eval-mode resolution stage failed; generators will self-resolve:', e);
+  }
+
   const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
   const standardCount = manifest.items.filter(i => i.standardProblem).length;
   console.log(`📋 Practice Manifest Generated: ${manifest.items.length} items`);
@@ -636,14 +659,17 @@ For each item, decide:
 
 ## VISUAL PRIMITIVE RULES
 - The "intent" field is natural language describing what the generator should build. Dedicated generators handle configuration.
-- "numberRange": For math primitives that work with numbers, set numberRange to {min, max} appropriate for the item's grade AND scaffolding mode. Match the mode level:
-  * Mode 1-2 (concrete/pictorial): small numbers (e.g., K: 1-10, G1: 1-20, G2: 10-100)
-  * Mode 3-4 (transitional): moderate numbers (e.g., G2: 10-200, G3: 100-1000, G4: 100-5000)
-  * Mode 5-6 (symbolic): wider ranges (e.g., G3: 100-2000, G4: 1000-9999, G5+: 1000-99999)
+- "numberRange": For math primitives that work with numbers, set numberRange to {min, max} appropriate for the item's GRADE LEVEL only. The scaffolding mode does NOT change the size of the numbers — it changes representation (concrete → symbolic) and guidance. Same grade = same number range across all modes. Grade-bound ranges:
+  * Kindergarten: {"min": 1, "max": 10}
+  * Grade 1: {"min": 1, "max": 20}
+  * Grade 2: {"min": 10, "max": 100}
+  * Grade 3: {"min": 100, "max": 1000}
+  * Grade 4: {"min": 100, "max": 9999}
+  * Grade 5+: {"min": 1000, "max": 99999}
   Set to null for non-numeric primitives.
 - successCriteria.description: tell the student what to DO
 - successCriteria.targetValue: the expected answer
-- Match the difficulty/scaffolding level specified per item. Item at mode 1 should use concrete manipulatives; item at mode 5 should use abstract symbolic.
+- Match the difficulty/scaffolding level specified per item. This changes representation and guidance ONLY, never number magnitude: item at mode 1 should use concrete manipulatives; item at mode 5 should use abstract symbolic — both with grade-appropriate numbers.
 
 ## DIVERSITY ACROSS THE SESSION (CRITICAL)
 You are generating ${items.length} activities that the student will see in sequence. Variety is essential:

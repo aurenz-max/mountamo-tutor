@@ -121,6 +121,72 @@ function resolveSupportStructure(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Structural difficulty (config.difficulty) — second axis: problem SHAPE, not
+// scaffolding. The lever for a tile-arrangement BUILDER is the number of DECOY
+// (distractor) tiles the student must reject, and how similar they are to the
+// real tiles. A decoy tile is one that appears in NO validArrangement, so
+// adding/removing decoys is answer-safe BY CONSTRUCTION (the checked answer is
+// placedTileIds vs validArrangements; decoys are never in any arrangement).
+//
+// TIER_GUARDRAIL — the truthful dual-axis invariant for config.difficulty.
+// Axis 1 (support tiers) withdraws scaffolding; axis 2 (this) changes the
+// problem SHAPE (decoy-tile count + similarity). BOTH change what the student
+// sees, but NEITHER changes the sentence TYPE, the sentence LENGTH/magnitude,
+// the target meaning, or the validArrangements (the answer). Bigger decoys ≠
+// bigger sentences — magnitude is owned by the eval mode + grade band.
+// ---------------------------------------------------------------------------
+
+const TIER_GUARDRAIL =
+  'Tier changes scaffolding + decoy-tile count/similarity; never the sentence type, length, or answer.';
+
+interface SentenceBuilderProblemShape {
+  /** Exact number of decoy tiles (in no validArrangement) the bank should carry. */
+  distractorTarget: 0 | 1 | 2;
+  distractorSimilarity: 'none' | 'far' | 'near';
+  promptLines: string[];
+}
+
+/** One in-mode structural lever: decoy-tile count + similarity. The sentence
+ *  type is unused (the lever is the same shape across all four modes — the
+ *  modes already differ by sentence type / length, which this never touches). */
+function resolveProblemShape(
+  _pinnedType: string,
+  tier: SupportTier,
+): SentenceBuilderProblemShape {
+  const lead =
+    'STRUCTURAL DIFFICULTY (second axis): this changes the SHAPE of the build — how many decoy '
+    + 'tiles the student must reject — NOT the sentence type, the sentence length, or the answer. '
+    + 'Every decoy (distractor) tile MUST NOT appear in ANY validArrangement.';
+
+  if (tier === 'easy') {
+    return {
+      distractorTarget: 0,
+      distractorSimilarity: 'none',
+      promptLines: [lead, 'Add NO decoy tiles — every tile belongs in the sentence (a clean build).'],
+    };
+  }
+  if (tier === 'medium') {
+    return {
+      distractorTarget: 1,
+      distractorSimilarity: 'far',
+      promptLines: [
+        lead,
+        'Add EXACTLY 1 decoy tile whose word clearly does NOT fit this sentence (a FAR distractor — e.g. an extra modifier or an unrelated noun in a role the sentence does not need). It must not appear in any validArrangement.',
+      ],
+    };
+  }
+  // hard
+  return {
+    distractorTarget: 2,
+    distractorSimilarity: 'near',
+    promptLines: [
+      lead,
+      'Add EXACTLY 2 decoy tiles that are NEAR distractors: each shares the SAME grammatical role (and color) as a real tile but is the wrong word for this meaning (e.g. a different subject, a different verb), forcing the student to discriminate by MEANING, not by tile color. Neither may appear in any validArrangement.',
+    ],
+  };
+}
+
 /**
  * Schema definition for Sentence Builder Data
  *
@@ -353,8 +419,17 @@ GRADE 6 GUIDELINES:
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
-  const tierSection = tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number/tile size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
+  // Axis 2 (structural): decoy-tile count/similarity. Applies whenever a tier is
+  // present — even blended (no pin) — since the lever is mode-independent.
+  const tierShape = supportTier
+    ? resolveProblemShape(pinnedType ?? sentenceTypeForGrade, supportTier)
+    : null;
+  const tierPromptLines: string[] = [
+    ...(tierScaffold ? tierScaffold.promptLines : []),
+    ...(tierShape ? tierShape.promptLines : []),
+  ];
+  const tierSection = tierPromptLines.length
+    ? `\n## WITHIN-MODE DIFFICULTY (config.difficulty — scaffolding + problem shape, NOT sentence size)\n${tierPromptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
   const generationPrompt = `Create an interactive sentence builder activity for: "${topic}".
@@ -548,6 +623,7 @@ Now generate a sentence builder activity for "${topic}" at grade level ${gradeLe
     //    grammaticality, so it is prompt-enforced; the hard hint-removal IS code). ──
     if (supportTier && Array.isArray(finalData.challenges)) {
       const sc = resolveSupportStructure(finalData.sentenceType, supportTier);
+      const shape = resolveProblemShape(finalData.sentenceType, supportTier);
       for (const ch of finalData.challenges) {
         if (sc.hintStyle === 'none') {
           // Hard: no hint at all — strip it so the Hint button never offers help.
@@ -555,8 +631,33 @@ Now generate a sentence builder activity for "${topic}" at grade level ${gradeLe
         }
         // 'strategy' / 'nudge' hints are authored by the LLM under the tierSection;
         // a missing-hint fallback is fine (component just hides the Hint button).
+
+        // ── Axis 2 (structural): enforce the decoy-tile COUNT as an exact ceiling.
+        //    A decoy = a tile whose id is in NO validArrangement. Removing one is
+        //    answer-safe (it appears in no accepted ordering), so the easy floor (0)
+        //    and the medium/hard ceiling are deterministically exact. A SHORTFALL at
+        //    medium/hard means the LLM under-produced decoys (decoy WORDS are prose —
+        //    can't be fabricated deterministically without breaking grammaticality),
+        //    so the count is enforced as a ceiling + prompt-best-effort floor; logged. ──
+        if (Array.isArray(ch.tiles) && Array.isArray(ch.validArrangements)) {
+          const used = new Set<string>();
+          for (const arr of ch.validArrangements) for (const id of arr) used.add(id);
+          const decoys = ch.tiles.filter((t) => !used.has(t.id));
+          if (decoys.length > shape.distractorTarget) {
+            const keep = new Set(decoys.slice(0, shape.distractorTarget).map((t) => t.id));
+            ch.tiles = ch.tiles.filter((t) => used.has(t.id) || keep.has(t.id));
+          } else if (decoys.length < shape.distractorTarget) {
+            console.warn(
+              `[sentence-builder] challenge ${ch.id}: ${decoys.length}/${shape.distractorTarget} decoy tiles `
+              + `(LLM under-produced; prompt best-effort for the floor)`,
+            );
+          }
+        }
       }
-      console.log(`[sentence-builder] Support tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);
+      console.log(
+        `[sentence-builder] tier "${supportTier}" applied per-challenge — hint=${sc.hintStyle}, `
+        + `decoys=${shape.distractorTarget}/${shape.distractorSimilarity} (${pinnedType ? 'single-mode ' + pinnedType : 'blended'}). ${TIER_GUARDRAIL}`,
+      );
     }
 
     console.log('Sentence Builder Generated:', {

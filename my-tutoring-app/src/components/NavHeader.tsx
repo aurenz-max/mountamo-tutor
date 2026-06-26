@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
   Brain, 
   User, 
@@ -27,6 +27,11 @@ const NavHeader = () => {
   const { processEngagementResponse } = useEngagement();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // The Lumina marketing landing (/) and the Lumina app (/lumina) carry their
+  // own brand chrome — the legacy white nav would clash, so hide it there.
+  const hideNav = pathname === '/' || pathname === '/lumina' || pathname?.startsWith('/lumina/');
 
   // Get AI Coach state and controls
   const { showAICoach, setShowAICoach, notificationCount, clearNotifications } = useGlobalAICoachUI();
@@ -148,6 +153,8 @@ const NavHeader = () => {
       </div>
     );
   };
+
+  if (hideNav) return null;
 
   return (
     <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200">

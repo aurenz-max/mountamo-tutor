@@ -111,7 +111,8 @@ const challengeSchema: Schema = {
     option1: { type: Type.STRING, description: "Second answer option" },
     option2: { type: Type.STRING, description: "Third answer option" },
     option3: { type: Type.STRING, description: "Fourth answer option" },
-    correctIndex: { type: Type.NUMBER, description: "Index of correct option 0-3" },
+    correctAnswer: { type: Type.STRING, description: "The EXACT text of the correct option — copy one of option0-option3 verbatim" },
+    correctIndex: { type: Type.NUMBER, description: "Backup: index (0-3) of the correct option" },
     // Common
     explanation: { type: Type.STRING, description: "Explanation shown after answering (1-2 sentences)" },
     relatedTermId: { type: Type.STRING, description: "Term ID this challenge relates to" },
@@ -145,7 +146,115 @@ const vocabularyExplorerSchema: Schema = {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function validateVocabularyExplorerData(raw: any): VocabularyExplorerData {
+type VocabChallenge = NonNullable<VocabularyExplorerData['challenges']>[number];
+type VocabTerm = VocabularyExplorerData['terms'][number];
+
+/** Fisher-Yates shuffle (new array). */
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * VE-3: Build a real, answerable multiple-choice challenge from the generated
+ * terms. Used when Gemini drops the flat option0-3 fields (SP-14) or when we
+ * need to pad to the 3-challenge minimum — instead of emitting unanswerable
+ * "Option A-D" placeholders. `type` is honored so the fallback never violates
+ * the eval-mode's challenge-type constraint. Correct by construction: options
+ * are real term data and correctIndex is derived, not trusted.
+ */
+function buildMcChallengeFromTerms(
+  terms: VocabTerm[],
+  used: Set<string>,
+  type: 'fill_blank' | 'context' | 'identify' = 'identify',
+): VocabChallenge {
+  const term = terms.find(t => !used.has(t.id)) || terms[0];
+  used.add(term.id);
+
+  if (type === 'identify') {
+    // options ARE definitions; pick the one that defines the word.
+    const correct = term.definition || `The meaning of "${term.word}"`;
+    const distractors = terms
+      .filter(t => t.id !== term.id && t.definition && t.definition !== correct)
+      .slice(0, 3)
+      .map(t => t.definition);
+    const options = shuffle([correct, ...distractors]);
+    while (options.length < 4) options.push(`Unrelated to "${term.word}"`);
+    return {
+      type: 'identify',
+      question: `Which definition best describes "${term.word}"?`,
+      options: options.slice(0, 4),
+      correctIndex: Math.max(0, options.indexOf(correct)),
+      explanation: `"${term.word}" means: ${term.definition}`,
+      relatedTermId: term.id,
+    };
+  }
+
+  // fill_blank / context: options ARE words; pick the one matching the meaning.
+  const correct = term.word;
+  const distractors = terms
+    .filter(t => t.id !== term.id && t.word && t.word !== correct)
+    .slice(0, 3)
+    .map(t => t.word);
+  const options = shuffle([correct, ...distractors]);
+  while (options.length < 4) options.push(`(not ${correct})`);
+  const correctIndex = Math.max(0, options.indexOf(correct));
+  const explanation = `The word "${term.word}" means: ${term.definition}`;
+
+  if (type === 'fill_blank') {
+    const wordRe = new RegExp(term.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const sentence = term.exampleSentence && wordRe.test(term.exampleSentence)
+      ? term.exampleSentence.replace(wordRe, '_____')
+      : `Fill in the blank: a word meaning "${term.definition}" is _____.`;
+    return {
+      type: 'fill_blank',
+      question: 'Choose the word that best completes the sentence.',
+      sentence,
+      options: options.slice(0, 4),
+      correctIndex,
+      explanation,
+      relatedTermId: term.id,
+    };
+  }
+
+  return {
+    type: 'context',
+    question: `Which word means: "${term.definition}"?`,
+    options: options.slice(0, 4),
+    correctIndex,
+    explanation,
+    relatedTermId: term.id,
+  };
+}
+
+/**
+ * VE-3: Build a real `match` challenge from the generated terms (term ↔ definition).
+ * Used to pad match-constrained modes so the fallback can't drift to a wrong type.
+ */
+function buildMatchChallengeFromTerms(terms: VocabTerm[], used: Set<string>): VocabChallenge {
+  const picks: VocabTerm[] = [];
+  for (const t of terms) {
+    if (picks.length >= 3) break;
+    if (!used.has(t.id)) { picks.push(t); used.add(t.id); }
+  }
+  // If we ran out of unused terms, top up from the front (allow reuse).
+  for (let i = 0; picks.length < 3 && i < terms.length; i++) {
+    if (!picks.includes(terms[i])) picks.push(terms[i]);
+  }
+  return {
+    type: 'match',
+    question: 'Match each term to its definition.',
+    matchPairs: picks.map(t => ({ term: t.word, definition: t.definition })),
+    explanation: 'Each term pairs with the definition that states its meaning.',
+    relatedTermId: picks[0]?.id || 'term1',
+  };
+}
+
+function validateVocabularyExplorerData(raw: any, allowedTypes?: string[]): VocabularyExplorerData {
   const title = raw.title || 'Vocabulary Explorer';
   const topic = raw.topic || '';
   const introduction = raw.introduction || '';
@@ -189,6 +298,9 @@ function validateVocabularyExplorerData(raw: any): VocabularyExplorerData {
   }
 
   // --- Challenges (3-4) ---
+  // Tracks term IDs consumed by derived/padded identify challenges so we don't
+  // repeat the same word (VE-3 fallback + min-3 padding).
+  const usedDerived = new Set<string>();
   let challenges: NonNullable<VocabularyExplorerData['challenges']> = [];
   if (Array.isArray(raw.challenges)) {
     challenges = raw.challenges.slice(0, 4).map((c: any) => {
@@ -227,14 +339,31 @@ function validateVocabularyExplorerData(raw: any): VocabularyExplorerData {
       } else {
         // fill_blank, context, identify — reconstruct options from flat fields
         const options = [
-          String(c.option0 || c.options?.[0] || 'Option A'),
-          String(c.option1 || c.options?.[1] || 'Option B'),
-          String(c.option2 || c.options?.[2] || 'Option C'),
-          String(c.option3 || c.options?.[3] || 'Option D'),
-        ];
+          c.option0 ?? c.options?.[0],
+          c.option1 ?? c.options?.[1],
+          c.option2 ?? c.options?.[2],
+          c.option3 ?? c.options?.[3],
+        ].map((o: any) => (o == null ? '' : String(o).trim()));
 
-        let correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
-        if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+        // VE-3 (SP-14): Flash Lite drops the flat option fields → no real options.
+        // Don't ship "Option A-D" placeholders; derive a real challenge from terms.
+        if (!options.every(o => o.length > 0)) {
+          console.warn('[VocabularyExplorer] Challenge missing real options — deriving from terms (VE-3)');
+          return buildMcChallengeFromTerms(terms, usedDerived, type as 'fill_blank' | 'context' | 'identify');
+        }
+
+        // VE-1: derive correctIndex from the answer TEXT, not the positional index
+        // (Gemini's correctIndex is wrong in the majority of generations — it anchors
+        // to 0). Mirrors knowledge-check's correctOptionId pattern.
+        const correctAnswer = c.correctAnswer != null ? String(c.correctAnswer).trim() : '';
+        let correctIndex = correctAnswer
+          ? options.findIndex(o => o.toLowerCase() === correctAnswer.toLowerCase())
+          : -1;
+        if (correctIndex < 0) {
+          // Last resort only: trust the LLM's positional index (clamped).
+          correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
+          if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+        }
 
         return {
           ...base,
@@ -245,16 +374,16 @@ function validateVocabularyExplorerData(raw: any): VocabularyExplorerData {
       }
     });
   }
-  // Pad to minimum 3 challenges
+  // Pad to minimum 3 challenges with REAL term-derived challenges (never placeholders),
+  // honoring the eval-mode's allowed challenge type so padding can't drift off-type.
+  const padType = (allowedTypes && allowedTypes.length ? allowedTypes[0] : 'identify') as
+    'match' | 'fill_blank' | 'context' | 'identify';
   while (challenges.length < 3) {
-    challenges.push({
-      type: 'identify',
-      question: 'Which definition best describes this word?',
-      options: ['Option A', 'Option B', 'Option C', 'Option D'],
-      correctIndex: 0,
-      explanation: 'Review the vocabulary terms for the answer.',
-      relatedTermId: 'term1',
-    });
+    challenges.push(
+      padType === 'match'
+        ? buildMatchChallengeFromTerms(terms, usedDerived)
+        : buildMcChallengeFromTerms(terms, usedDerived, padType),
+    );
   }
 
   return {
@@ -336,9 +465,9 @@ ${challengeTypeSection}
 - Each challenge references a relatedTermId from the terms above
 - Challenge types:
   - "match": Provide 3-4 term-definition pairs using matchTerm0/matchDef0 through matchTerm3/matchDef3
-  - "fill_blank": Provide a sentence with a blank, 4 options (option0-option3), and correctIndex (0-3)
-  - "context": Provide a new context sentence, 4 usage options (option0-option3), and correctIndex (0-3)
-  - "identify": Provide a word and 4 possible definitions (option0-option3), and correctIndex (0-3)
+  - "fill_blank": Provide a sentence with a blank, 4 options (option0-option3), and correctAnswer (exact text of the right option)
+  - "context": Provide a new context sentence, 4 usage options (option0-option3), and correctAnswer (exact text of the right option)
+  - "identify": Provide a word and 4 possible definitions (option0-option3), and correctAnswer (exact text of the right definition)
 
 ## Grade-Level Adaptation:
 - For K-2: Simple, high-frequency words; short definitions; concrete examples
@@ -349,8 +478,8 @@ ${challengeTypeSection}
 1. All definitions must be accurate and age-appropriate
 2. Example sentences must use the word naturally — no awkward "the word X means..." patterns
 3. NEVER reveal answers in challenge questions, option labels, or placeholder text
-4. correctIndex must be 0, 1, 2, or 3 — matching the position of the correct option
-5. Every challenge must have exactly 4 options (for non-match types)
+4. correctAnswer must be the EXACT verbatim text of the correct option (copy it from option0-option3). Also set correctIndex to its position as a backup.
+5. Every challenge must have exactly 4 real, non-empty options (for non-match types) — never leave an option blank
 6. Match challenges need 3-4 term-definition pairs
 7. Distractors should be plausible but clearly wrong for the target grade level
 
@@ -371,7 +500,7 @@ Now generate the Vocabulary Explorer.`;
     if (!response.text) throw new Error("No content generated for vocabulary-explorer");
 
     const raw = JSON.parse(response.text);
-    const data = validateVocabularyExplorerData(raw);
+    const data = validateVocabularyExplorerData(raw, evalConstraint?.allowedTypes);
 
     console.log('[VocabularyExplorer] Generated:', {
       topic,
