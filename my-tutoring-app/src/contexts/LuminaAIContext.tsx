@@ -155,6 +155,14 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const lessonModeRef = useRef(false);
   const sessionStartTimeRef = useRef<number>(0);
 
+  // Gemini session-resumption handle, forwarded by the backend as it rolls.
+  // latestHandleRef = the newest handle for the live session; resumeWithHandleRef
+  // = the handle to send on the NEXT connect attempt. reconnect() copies latest
+  // into resumeWith so a dropped client socket resumes warm; a fresh connect
+  // leaves resumeWith null and starts cold.
+  const latestHandleRef = useRef<string | null>(null);
+  const resumeWithHandleRef = useRef<string | null>(null);
+
   // Remembers how to rebuild the most recent session so reconnect() can re-run
   // the exact same connect path after an unexpected end.
   const lastConnectionRef = useRef<
@@ -325,6 +333,22 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Server confirms only type + id; live data comes from our optimistic mirror.
           setActivePrimitiveType(message.primitive_type ?? null);
           setActivePrimitiveData(currentPrimitiveRef.current?.primitive_data ?? null);
+        } else if (messageType === 'resumption_handle') {
+          // Backend forwards Gemini's rolling resumption handle. Stash it so a
+          // full client-socket drop can reconnect warm (server-side resumes are
+          // transparent and don't need the client to do anything).
+          if (message.handle) latestHandleRef.current = message.handle;
+        } else if (messageType === 'session_resuming') {
+          // Server is transparently reconnecting to Gemini on the SAME socket
+          // (GoAway / drop). Not an end — drop any in-flight audio and keep going.
+          console.log('Lumina AI resuming:', message.message);
+          stopAudioPlayback();
+          setIsAIResponding(false);
+        } else if (messageType === 'session_resumed') {
+          // Transparent server-side resume completed; conversation continues.
+          console.log('Lumina AI resumed:', message.message);
+          setSessionEnded(false);
+          setSessionEndedReason(null);
         } else if (messageType === 'session_ended') {
           // Server told us the Gemini session ended (usually the Live duration
           // limit). The socket close follows; flag it now so the UI flips to the
@@ -460,10 +484,16 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           const componentDef = getComponentById(primitiveContext.primitive_type);
 
+          // Consume any pending resume handle (set by reconnect) so this attempt
+          // resumes warm; clear it so a later fresh connect starts cold.
+          const resumeHandle = resumeWithHandleRef.current;
+          resumeWithHandleRef.current = null;
+
           socket.send(JSON.stringify({
             type: 'authenticate',
             session_mode: 'standalone',
             token,
+            resumption_handle: resumeHandle,
             primitive_context: {
               primitive_type: primitiveContext.primitive_type,
               instance_id: primitiveContext.instance_id,
@@ -549,10 +579,16 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           const componentDef = getComponentById(info.firstPrimitive.primitive_type);
 
+          // Consume any pending resume handle (set by reconnect) so this attempt
+          // resumes warm; clear it so a later fresh connect starts cold.
+          const resumeHandle = resumeWithHandleRef.current;
+          resumeWithHandleRef.current = null;
+
           socket.send(JSON.stringify({
             type: 'authenticate',
             session_mode: 'lesson',
             token,
+            resumption_handle: resumeHandle,
             primitive_context: {
               primitive_type: info.firstPrimitive.primitive_type,
               instance_id: info.firstPrimitive.instance_id,
@@ -601,7 +637,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('Lumina AI: reconnect() called with no prior session to restore');
       return;
     }
-    console.log(`[LuminaAI] reconnect() (${last.mode})`);
+    // Resume warm: hand the latest Gemini handle to the next connect attempt so
+    // the conversation continues instead of re-greeting from scratch.
+    resumeWithHandleRef.current = latestHandleRef.current;
+    console.log(`[LuminaAI] reconnect() (${last.mode}, warm=${!!resumeWithHandleRef.current})`);
     if (last.mode === 'lesson') {
       await connectLesson(last.info);
     } else {
@@ -665,7 +704,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setActivePrimitiveId(null);
     setConversation([]);
     lastContextSigRef.current = '';
-    // User-initiated end — not an unexpected drop, so clear the reconnect flag.
+    // User-initiated end: drop the resumption handles so the next connect starts
+    // a fresh conversation rather than resuming this one.
+    latestHandleRef.current = null;
+    resumeWithHandleRef.current = null;
+    // Not an unexpected drop, so clear the reconnect flag.
     setSessionEnded(false);
     setSessionEndedReason(null);
 

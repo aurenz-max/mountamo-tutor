@@ -194,12 +194,18 @@ registerGenerator('safety-lab', async (item, topic, gradeContext) => ({
 registerGenerator('stoichiometry-lab', async (item, topic, gradeContext) => ({
   type: 'stoichiometry-lab',
   instanceId: item.instanceId,
-  data: await generateStoichiometryLab(topic, gradeContext, item.config),
+  data: await generateStoichiometryLab(topic, gradeContext, {
+    ...item.config,
+    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
+  }),
 }));
 
 // Gas Laws Simulator (KMT + Boyle/Charles/Gay-Lussac/Combined/Ideal gas law)
 registerGenerator('gas-laws-simulator', async (item, topic, gradeContext) => ({
   type: 'gas-laws-simulator',
   instanceId: item.instanceId,
-  data: await generateGasLawsSimulator(topic, gradeContext, item.config),
+  data: await generateGasLawsSimulator(topic, gradeContext, {
+    ...item.config,
+    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
+  }),
 }));

@@ -7,7 +7,7 @@ import type { CurriculumContext } from './CurriculumBrowser';
 import type { LessonBlock } from '@/lib/sessionPlanAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
 import { ManifestOrderRenderer } from './ManifestOrderRenderer';
-import { CuratorConsole } from './CuratorConsole';
+import { CuratorCompanion } from './CuratorCompanion';
 import { EvaluationProvider } from '../evaluation';
 import type { CompetencyUpdateSuggestion } from '../evaluation';
 import { EvaluationResultsIndicator } from './EvaluationResultsIndicator';
@@ -200,8 +200,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
           )}
 
           {/* Live generative-UI tutor. Binds to the lesson session opened by
-              LessonAIBootstrap; surfaces primitive-aware next-step buttons. */}
-          <CuratorConsole />
+              LessonAIBootstrap; surfaces primitive-aware next-step buttons.
+              CuratorCompanion is the K-5-native embodied face (Pip); CuratorConsole
+              remains the chat-panel variant for reference/older-grade fallback. */}
+          <CuratorCompanion />
         </LuminaAIProvider>
       </ExhibitProvider>
     </EvaluationProvider>

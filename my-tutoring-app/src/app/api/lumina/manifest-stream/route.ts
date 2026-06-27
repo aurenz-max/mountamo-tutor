@@ -11,43 +11,53 @@ export async function POST(request: NextRequest) {
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
+    // The client can disconnect (navigate away / re-request) mid-stream. When it
+    // does, the readable side is cancelled and every write/close on this writer
+    // throws (ResponseAborted / ERR_INVALID_STATE: WritableStream is closed).
+    // Track that state and make all writer ops no-ops once aborted so we never
+    // emit an unhandled rejection that crashes the dev server.
+    let closed = false;
+    request.signal.addEventListener('abort', () => {
+      closed = true;
+    });
+
+    const safeWrite = async (payload: unknown) => {
+      if (closed) return;
+      try {
+        await writer.write(encoder.encode(JSON.stringify(payload) + '\n'));
+      } catch {
+        closed = true; // client gone — stop trying to write
+      }
+    };
+    const safeClose = async () => {
+      if (closed) return;
+      closed = true;
+      try {
+        await writer.close();
+      } catch {
+        /* already closed/aborted — nothing to do */
+      }
+    };
+
     // Start the manifest generation in the background
     (async () => {
       try {
-        await generateExhibitManifestStreaming(
+        const manifest = await generateExhibitManifestStreaming(
           topic,
           gradeLevel,
           objectives,
           studentContext ?? undefined,
           {
-            onProgress: async (message: string) => {
-              const data = JSON.stringify({ type: 'progress', message }) + '\n';
-              await writer.write(encoder.encode(data));
-            },
-            onThinking: async (thought: string) => {
-              const data = JSON.stringify({ type: 'thinking', thought }) + '\n';
-              await writer.write(encoder.encode(data));
-            },
-            onPartialManifest: async (partial) => {
-              const data = JSON.stringify({ type: 'partial', manifest: partial }) + '\n';
-              await writer.write(encoder.encode(data));
-            }
+            onProgress: (message: string) => safeWrite({ type: 'progress', message }),
+            onThinking: (thought: string) => safeWrite({ type: 'thinking', thought }),
+            onPartialManifest: (partial) => safeWrite({ type: 'partial', manifest: partial }),
           }
-        ).then(manifest => {
-          // Send final manifest
-          const data = JSON.stringify({ type: 'complete', manifest }) + '\n';
-          writer.write(encoder.encode(data));
-          writer.close();
-        }).catch(error => {
-          // Send error
-          const data = JSON.stringify({ type: 'error', error: error.message }) + '\n';
-          writer.write(encoder.encode(data));
-          writer.close();
-        });
+        );
+        await safeWrite({ type: 'complete', manifest });
       } catch (error: any) {
-        const data = JSON.stringify({ type: 'error', error: error.message }) + '\n';
-        await writer.write(encoder.encode(data));
-        await writer.close();
+        await safeWrite({ type: 'error', error: error?.message ?? String(error) });
+      } finally {
+        await safeClose();
       }
     })();
 

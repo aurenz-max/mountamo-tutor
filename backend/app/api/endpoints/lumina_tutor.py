@@ -422,6 +422,10 @@ async def lumina_tutor_session(websocket: WebSocket):
         primitive_context = auth_data.get("primitive_context", {})
         lesson_context = auth_data.get("lesson_context", {})
         student_progress = auth_data.get("student_progress", {})
+        # Optional resumption handle: present when the client reconnects after its
+        # own WebSocket dropped (vs. the server-side transparent resume below).
+        # Seeds the Gemini session so the conversation continues warm, not cold.
+        initial_resumption_handle = auth_data.get("resumption_handle")
 
         primitive_type = primitive_context.get("primitive_type", "unknown")
         instance_id = primitive_context.get("instance_id", "unknown")
@@ -460,35 +464,56 @@ async def lumina_tutor_session(websocket: WebSocket):
             )
         )
 
-        config = LiveConnectConfig(
-            response_modalities=["AUDIO"],
-            speech_config=speech_config,
-            #context_window_compression=types.ContextWindowCompressionConfig(
-            #    trigger_tokens=104857,
-            #    sliding_window=types.SlidingWindow(target_tokens=52428),
-            #),
-            system_instruction=Content(parts=[{"text": system_instruction}]),
-        )
+        def build_gemini_config(handle: Optional[str]) -> LiveConnectConfig:
+            """Build the Live config. Two long-session features are always on:
+
+            - context_window_compression: slides a window over old context so the
+              session never hits the context/duration ceiling that triggers the
+              1008 "operation was aborted" close. (Audio-only sessions are capped
+              at ~15 min WITHOUT this; enabling it removes the duration limit.)
+            - session_resumption: asks Gemini to emit resumption handles. Passing
+              the latest handle back on `handle` resumes the SAME conversation
+              after a drop, instead of restarting cold. handle=None starts fresh.
+            """
+            return LiveConnectConfig(
+                response_modalities=["AUDIO"],
+                speech_config=speech_config,
+                context_window_compression=types.ContextWindowCompressionConfig(
+                    trigger_tokens=104857,
+                    sliding_window=types.SlidingWindow(target_tokens=52428),
+                ),
+                session_resumption=types.SessionResumptionConfig(handle=handle),
+                system_instruction=Content(parts=[{"text": system_instruction}]),
+            )
 
         logger.info("Starting Gemini Live session for Lumina tutoring...")
 
-        async with client.aio.live.connect(model=MODEL, config=config) as session:
-            gemini_session = session
-            logger.info("Gemini Live session connected successfully")
+        # --- Shared state that persists ACROSS Gemini (re)connections ---------
+        # The client WebSocket, queues, and the latest resumption handle all
+        # outlive any single Gemini connection so a transparent resume keeps the
+        # student's session unbroken.
+        text_queue: asyncio.Queue = asyncio.Queue()
+        audio_queue: asyncio.Queue = asyncio.Queue()
+        ws_send_queue: asyncio.Queue[dict] = asyncio.Queue()
+        # Set when the client disconnects or a fatal error makes resuming moot —
+        # breaks the reconnection loop below.
+        stop_event = asyncio.Event()
+        # Latest resumption handle from Gemini (mutable holder so closures share it).
+        resumption_handle: Dict[str, Optional[str]] = {"value": initial_resumption_handle}
 
-            # Create queues for communication
-            text_queue: asyncio.Queue = asyncio.Queue()
-            audio_queue: asyncio.Queue = asyncio.Queue()
-            ws_send_queue: asyncio.Queue[dict] = asyncio.Queue()
-
+        if True:
             # Send session ready message via the send queue
             await ws_send_queue.put({
                 "type": "session_ready",
                 "message": "Lumina AI is ready to help you learn!"
             })
 
-            # Queue initial greeting based on session mode
-            if session_mode == "lesson":
+            # Queue initial greeting based on session mode.
+            # Skip it entirely on a warm client reconnect (handle supplied): Gemini
+            # restores the prior conversation, so a fresh greeting would duplicate.
+            if initial_resumption_handle:
+                logger.info("Resumption handle supplied on connect — skipping greeting (warm resume)")
+            elif session_mode == "lesson":
                 # In lesson mode, send first primitive's scaffold as a text message,
                 # then greet. This gives Gemini the specific context.
                 first_scaffold = get_primitive_specific_instructions(
@@ -503,6 +528,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                     ),
                     end_of_turn=True,
                 ))
+                logger.info("Initial greeting prompt queued")
             else:
                 await text_queue.put(TextQueueEntry(
                     text=(
@@ -511,10 +537,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                     ),
                     end_of_turn=True,
                 ))
-            logger.info("Initial greeting prompt queued")
-
-            # Task management
-            tasks = []
+                logger.info("Initial greeting prompt queued")
 
             # ------------------------------------------------------------------
             # Serialized WebSocket sender — all outbound messages go through here
@@ -672,11 +695,12 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                 except WebSocketDisconnect:
                     logger.info("Client disconnected")
+                    stop_event.set()
                 except Exception as e:
                     logger.error(f"Error in client message handler: {e}")
-                    await websocket.close(code=1011, reason="Internal server error")
+                    stop_event.set()
 
-            async def handle_text_to_gemini():
+            async def handle_text_to_gemini(session):
                 """Send text messages to Gemini using realtime input.
 
                 Gemini 3.1+ rejects send_client_content mid-session (1007 error).
@@ -701,7 +725,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                     logger.error(f"Error sending text to Gemini: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
 
-            async def handle_audio_to_gemini():
+            async def handle_audio_to_gemini(session):
                 """Send audio data to Gemini via realtime input."""
                 try:
                     while True:
@@ -716,14 +740,43 @@ async def lumina_tutor_session(websocket: WebSocket):
                 except Exception as e:
                     logger.error(f"Error sending audio to Gemini: {e}")
 
-            async def handle_gemini_responses():
-                """Handle responses from Gemini and send to client via ws_send_queue"""
+            async def handle_gemini_responses(session) -> str:
+                """Handle responses from Gemini and send to client via ws_send_queue.
+
+                Returns a signal for the reconnection loop:
+                  - 'reconnect': Gemini sent GoAway, or the connection aborted while
+                    we hold a resumption handle — resume the SAME conversation.
+                  - 'stop': nothing left to resume (no handle) or terminal error.
+                """
                 try:
                     turn_count = 0
                     while True:
                         turn_count += 1
                         logger.info(f"Waiting for Gemini response (turn {turn_count})...")
+                        go_away_pending = False
                         async for response in session.receive():
+                            # Capture the rolling resumption handle. Passing this back
+                            # on reconnect restores the conversation transparently.
+                            sru = getattr(response, 'session_resumption_update', None)
+                            if sru is not None and getattr(sru, 'new_handle', None):
+                                resumption_handle["value"] = sru.new_handle
+                                gemini_logger.debug("Stored session resumption handle")
+                                # Forward to the client too, so that if the whole
+                                # client socket drops, its reconnect can resume warm.
+                                await ws_send_queue.put({
+                                    "type": "resumption_handle",
+                                    "handle": sru.new_handle,
+                                })
+
+                            # GoAway = Gemini's native "this connection is about to
+                            # close" signal (the real liveness check). Flag it; we
+                            # finish processing THIS response, then resume.
+                            go_away = getattr(response, 'go_away', None)
+                            if go_away is not None:
+                                time_left = getattr(go_away, 'time_left', None)
+                                logger.warning(f"Gemini GoAway received (time_left={time_left}); will resume")
+                                go_away_pending = True
+
                             if hasattr(response, 'server_content') and response.server_content:
                                 # Handle model turn (AI speaking)
                                 if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
@@ -797,6 +850,14 @@ async def lumina_tutor_session(websocket: WebSocket):
                                     logger.info("AI turn finished (flag detected).")
                                     await ws_send_queue.put({"type": "ai_turn_end"})
 
+                            # GoAway carried in this response: stop reading and resume.
+                            if go_away_pending:
+                                await ws_send_queue.put({
+                                    "type": "session_resuming",
+                                    "message": "Reconnecting to keep your tutor live…",
+                                })
+                                return 'reconnect'
+
                         # Fallback: when the receive() iterator completes, the turn is done
                         # even if no explicit end_of_turn flag was set on any response
                         logger.info("AI turn finished (iterator ended).")
@@ -804,50 +865,133 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                 except WebSocketDisconnect:
                     logger.info("WebSocket disconnected while receiving from Gemini.")
+                    return 'stop'
                 except asyncio.CancelledError:
                     logger.info("Gemini response handler task was cancelled.")
+                    raise
                 except Exception as e:
+                    # The Gemini connection dropped (e.g. 1008 abort, network).
+                    # If we hold a resumption handle, resume the conversation;
+                    # otherwise there's nothing to continue from.
                     logger.error(f"Error handling Gemini responses: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
+                    if resumption_handle["value"]:
+                        logger.info("Resumption handle present — will resume after drop")
+                        await ws_send_queue.put({
+                            "type": "session_resuming",
+                            "message": "Reconnecting to keep your tutor live…",
+                        })
+                        return 'reconnect'
+                    return 'stop'
 
-            # Start all communication tasks (including the serialized sender)
-            tasks.append(asyncio.create_task(handle_client_messages()))
-            tasks.append(asyncio.create_task(handle_text_to_gemini()))
-            tasks.append(asyncio.create_task(handle_audio_to_gemini()))
-            tasks.append(asyncio.create_task(handle_gemini_responses()))
-            tasks.append(asyncio.create_task(ws_sender()))
+            # ------------------------------------------------------------------
+            # Client-facing tasks live for the WHOLE session — they read/write the
+            # client WebSocket and queues, independent of any single Gemini
+            # connection, so they survive transparent Gemini resumes.
+            # ------------------------------------------------------------------
+            client_tasks = [
+                asyncio.create_task(handle_client_messages()),
+                asyncio.create_task(ws_sender()),
+            ]
+            logger.info(f"Client-facing tasks started (mode={session_mode})")
 
-            logger.info(f"All Lumina tutor communication tasks started (mode={session_mode})")
+            # Cap on resumes so a flapping connection can't loop forever.
+            MAX_RESUMES = 50
+            resume_count = 0
 
-            # Wait for any task to complete (usually means an error or disconnect)
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-
-            # Cancel remaining tasks (incl. the serialized ws_sender) and let them
-            # unwind, so we can send a final message directly to the client below
-            # without racing the sender on the same WebSocket.
-            for task in pending:
-                task.cancel()
-            if pending:
-                await asyncio.gather(*pending, return_exceptions=True)
-
-            # Check for any exceptions
-            for task in done:
-                if task.exception():
-                    logger.error(f"Task failed with exception: {task.exception()}")
-
-            # Notify the client that the tutor session has ended — typically because
-            # Gemini Live hit its session-duration limit and aborted (1008). Without
-            # this the socket just goes quiet and the frontend has no signal to
-            # distinguish "ended" from "still thinking" or to offer a reconnect.
             try:
-                await websocket.send_json({
-                    "type": "session_ended",
-                    "reason": "gemini_session_closed",
-                    "message": "The tutor session has ended. Reconnect to keep going.",
-                })
-                logger.info("Sent session_ended notification to client")
-            except Exception as notify_err:
-                logger.info(f"Could not send session_ended (client likely gone): {notify_err}")
+                # Transparent reconnection loop. Each iteration owns one Gemini
+                # connection; on GoAway / drop (with a handle) we loop and resume
+                # the same conversation without the client noticing.
+                while not stop_event.is_set():
+                    resuming = resumption_handle["value"] is not None
+                    config = build_gemini_config(resumption_handle["value"])
+
+                    try:
+                        async with client.aio.live.connect(model=MODEL, config=config) as session:
+                            gemini_session = session
+                            logger.info(
+                                f"Gemini Live session connected "
+                                f"({'resuming' if resuming else 'fresh'}, resume #{resume_count})"
+                            )
+                            if resuming:
+                                await ws_send_queue.put({
+                                    "type": "session_resumed",
+                                    "message": "Tutor reconnected — right where you left off.",
+                                })
+
+                            # Per-connection Gemini I/O tasks. Queues persist across
+                            # reconnects, so any text/audio queued mid-drop still sends.
+                            gemini_tasks = [
+                                asyncio.create_task(handle_text_to_gemini(session)),
+                                asyncio.create_task(handle_audio_to_gemini(session)),
+                            ]
+                            response_task = asyncio.create_task(handle_gemini_responses(session))
+                            stop_task = asyncio.create_task(stop_event.wait())
+
+                            # End this connection when Gemini's response handler returns
+                            # (turn loop ended / GoAway / drop) OR the client disconnects.
+                            done, pending = await asyncio.wait(
+                                {response_task, stop_task},
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
+
+                            for t in (*gemini_tasks, response_task, stop_task):
+                                if not t.done():
+                                    t.cancel()
+                            await asyncio.gather(*gemini_tasks, response_task, stop_task,
+                                                 return_exceptions=True)
+
+                            outcome = response_task.result() if response_task in done else 'stop'
+                    except Exception as connect_err:
+                        # connect() (or its teardown) failed. If we were resuming,
+                        # the handle is likely stale/expired — drop it and retry cold
+                        # so the student keeps a working tutor instead of a dead one.
+                        logger.error(f"Gemini connect failed (resuming={resuming}): {connect_err}")
+                        if resuming:
+                            logger.info("Discarding stale resumption handle; retrying cold")
+                            resumption_handle["value"] = None
+                            resume_count += 1
+                            if resume_count > MAX_RESUMES:
+                                break
+                            continue
+                        break
+
+                    # Client gone → end the whole session.
+                    if stop_event.is_set():
+                        break
+
+                    if outcome == 'reconnect' and resumption_handle["value"]:
+                        resume_count += 1
+                        if resume_count > MAX_RESUMES:
+                            logger.warning("Max Gemini resumes reached — ending session")
+                            break
+                        logger.info(f"Resuming Gemini session (attempt {resume_count})")
+                        continue
+
+                    # No handle / terminal outcome → stop.
+                    break
+            finally:
+                for t in client_tasks:
+                    if not t.done():
+                        t.cancel()
+                await asyncio.gather(*client_tasks, return_exceptions=True)
+
+            # Notify the client the tutor session has truly ended (we exhausted
+            # resumes or there was nothing to resume). Skipped if the client itself
+            # disconnected — there's no one to tell. Without this the socket would
+            # just go quiet and the frontend couldn't distinguish "ended" from
+            # "still thinking" or offer a fresh reconnect.
+            if not stop_event.is_set():
+                try:
+                    await websocket.send_json({
+                        "type": "session_ended",
+                        "reason": "gemini_session_closed",
+                        "message": "The tutor session has ended. Reconnect to keep going.",
+                    })
+                    logger.info("Sent session_ended notification to client")
+                except Exception as notify_err:
+                    logger.info(f"Could not send session_ended (client likely gone): {notify_err}")
 
     except WebSocketDisconnect:
         logger.info("Lumina Tutor WebSocket disconnected")

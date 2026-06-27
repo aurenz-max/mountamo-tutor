@@ -666,6 +666,66 @@ async function generateChallengeText(prompt: string): Promise<ChallengeText | nu
 }
 
 // ---------------------------------------------------------------------------
+// Topic-driven number range resolver (micro-LLM)
+// ---------------------------------------------------------------------------
+//
+// The manifest deliberately does NOT emit numberRange (numeric scope is
+// pedagogy's job, not the curator's). Without it, the topic/intent strings only
+// ever reach prompt PROSE — the numeric pickers run in CODE off a range that, when
+// unset, falls back to a blanket 0–20. So "counting to 10" rendered a 0–20 line.
+// This reads the lesson's OWN words and returns the integer range it is actually
+// about ("counting to 10" → 0–10). Grade stays the CEILING; on any failure we
+// return null and callers keep their existing grade-band defaults (no regression).
+// Schema, not regex — see memory [[schema-over-regex-and-prompt]].
+
+function buildRangeSchema(): Schema {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      min: { type: Type.NUMBER, description: "Smallest number the lesson works with (almost always 0)" },
+      max: { type: Type.NUMBER, description: "Largest number the lesson works with, inferred from the topic/intent" },
+    },
+    required: ["min", "max"],
+  };
+}
+
+async function resolveTopicNumberRange(
+  topic: string,
+  intent: string | undefined,
+  gradeLevel: string,
+): Promise<{ min: number; max: number } | null> {
+  try {
+    const prompt = `A number-line lesson needs its numeric range inferred from what it is teaching.
+
+TOPIC: "${topic}"
+${intent ? `INTENT: "${intent}"\n` : ''}GRADE: ${gradeLevel}
+
+Return the integer range the student actually works with in THIS lesson.
+- Read the topic/intent for an explicit bound ("counting to 10" → max 10; "numbers to 20" → max 20; "adding within 100" → max 100).
+- min is almost always 0; use a negative min ONLY when the lesson is explicitly about negative numbers.
+- The grade is a CEILING — never return a max larger than that grade would ever use. If the topic gives no bound, pick the conventional top of the grade's range.`;
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: buildRangeSchema(),
+      },
+    });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text);
+    const min = Math.round(Number(parsed?.min));
+    const max = Math.round(Number(parsed?.max));
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+    return { min, max };
+  } catch (e) {
+    console.warn('[NumberLine] topic range resolution failed:', e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Per-mode numeric pickers (pool service — §6a #1, §6a #2)
 // ---------------------------------------------------------------------------
 //
@@ -1304,12 +1364,25 @@ export const generateNumberLine = async (
     ? evalConstraint.allowedTypes[0]
     : undefined) as ChallengeType | undefined;
 
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
+  // The manifest does not emit numberRange (scope is pedagogy's, not the curator's).
+  // When it is absent, infer the range from the lesson's OWN topic + intent so the
+  // code-side pickers stop falling back to a blanket 0–20. Grade stays the ceiling;
+  // a resolution failure leaves it undefined and the grade-band defaults stand.
+  let resolvedRange = config?.numberRange;
+  if (!resolvedRange) {
+    const inferred = await resolveTopicNumberRange(topic, config?.intent, gradeLevel);
+    if (inferred) {
+      resolvedRange = inferred;
+      console.log(`[NumberLine] topic-resolved range:`, inferred, `(topic="${topic}", intent="${config?.intent ?? ''}")`);
+    }
+  }
+
+  const pool = createSubRangePool(resolvedRange, { sorted: true, unique: true, maxSpan: 25 });
   console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
   const subConfig = {
     targetEvalMode: config?.targetEvalMode,
-    numberRange: config?.numberRange,
+    numberRange: resolvedRange,
     difficulty: config?.difficulty,
   };
 

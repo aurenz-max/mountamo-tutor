@@ -37,7 +37,7 @@
 | ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-06-20 | [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
-| number-line | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/number-line-2026-06-20.md) |
+| number-line | 5 | 5 | 0 | 2026-06-27 | [topic-range resolver](eval-reports/number-line-2026-06-27.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-06-18 | [report](eval-reports/fraction-circles-2026-06-18.md) |
 | number-bond | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-bond-2026-06-14.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |
@@ -337,6 +337,7 @@ Re-deriving an answer-bearing field from a constrained label is the desync trap.
 **Risk:** Any MC primitive whose generator asks Gemini for a positional `correctIndex` / `correctOption` integer and trusts it. Flash-lite frequently emits `0` (or a stale index) regardless of where the correct option actually sits, especially after the option order is shuffled or reconstructed from flat fields. The component grades against the index, so the conceptually-correct choice is marked wrong — and the bug is invisible to schema validation (an integer 0–3 is "valid").
 **Root cause:** The model is being asked to do two coupled things at once — author the options AND track which slot the right one landed in. It reliably authors a correct answer and a correct `explanation`, but loses the positional bookkeeping. The generator's only check is a range clamp (0–3), which never catches a wrong-but-in-range index.
 **Fix pattern:** Don't ask for the index. Have Gemini emit the correct answer as TEXT (`correctAnswer` string, or a stable `correctOptionId`), then compute `correctIndex` in post-process by matching that string against `options[]` (case/trim-normalized). If no match, reject/repair the challenge rather than defaulting to 0. **Precedent:** knowledge-check uses a stable `correctOptionId`; decodable-reader adopted the same ID-based comparison to close DR-1. This is the MC analogue of SP-8 (never trust LLM-computed offsets) and SP-17 (derive answer-bearing fields in code, not from LLM bookkeeping).
+**Status:** Resolved for vocabulary-explorer (VE-1, 2026-06-25) — `correctAnswer` text field + `options.indexOf` derivation, positional index kept only as last-resort fallback.
 **Risk:** Any STORY primitive using the AXIS-2 "constrain the response-schema enum per
 tier" structural-difficulty approach (per [[structural-difficulty-not-numeric]] /
 `constrainStructuralEnums`). Forcing a *story situation* enum (part-whole, compare, …)
@@ -369,9 +370,9 @@ LLM-authored text," specialized to the structural-difficulty enum lever.
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
-| VE-1 | vocabulary-explorer | recall, apply | CRITICAL | Wrong answer key | LLM-emitted positional `correctIndex` is wrong in the majority of MC generations (anchors to 0) — correct option graded wrong (user-reported: "precipitation" marked wrong, "transpiration" marked correct). Generator only range-clamps, never validates the index. Fix: emit answer as TEXT, derive index by matching `options[]` (SP-25). | GENERATOR |
-| VE-2 | vocabulary-explorer | explore | HIGH | Trivial challenge | `match` definitions render in same index order as terms; correctness = positional identity (`t===d`) — solvable by matching row-to-row without reading. Shuffle definitions + index map. | COMPONENT |
-| VE-3 | vocabulary-explorer | recall | HIGH | Missing data | flash-lite intermittently drops `option0–3` flat fields → generator falls back to placeholder "Option A–D", unanswerable (SP-14); also truncated-JSON throws (SP-6). Reject MC challenges missing real options. | GENERATOR |
+| ~~VE-1~~ | ~~vocabulary-explorer~~ | ~~recall, apply~~ | ~~CRITICAL~~ | ~~Wrong answer key~~ | ~~LLM-emitted positional `correctIndex` wrong in the majority of MC generations (anchors to 0).~~ RESOLVED 2026-06-25: added `correctAnswer` TEXT field; derive `correctIndex = options.indexOf(correctAnswer)` in post-process (SP-25 / knowledge-check pattern). | GENERATOR |
+| ~~VE-2~~ | ~~vocabulary-explorer~~ | ~~explore~~ | ~~HIGH~~ | ~~Trivial challenge~~ | ~~`match` definitions render in term order; correctness = positional identity, solvable row-to-row.~~ RESOLVED 2026-06-25: Definitions column rendered in shuffled order (`shuffledDefOrder`, values = original indices); grading unchanged so it stays correct. | COMPONENT |
+| ~~VE-3~~ | ~~vocabulary-explorer~~ | ~~recall~~ | ~~HIGH~~ | ~~Missing data~~ | ~~flash-lite drops `option0–3` → placeholder "Option A–D", unanswerable (SP-14).~~ RESOLVED 2026-06-25: reject empty options; derive a real, type-aware challenge from terms (also for pad-to-3). Truncated-JSON (SP-6) deferred. | GENERATOR |
 | ~~SW-1~~ | ~~sound-swap~~ | ~~addition~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~Adding /s/ to "on" should produce "son" not "sun" — vowel changes (substitution not addition)~~ | ~~GENERATOR~~ |
 | ~~SW-2~~ | ~~sound-swap~~ | ~~deletion~~ | ~~CRITICAL~~ | ~~Wrong content~~ | ~~5/9 result words are nonsense syllables (un, ig, ap) — catalog requires real words~~ | ~~GENERATOR~~ |
 | ~~SW-3~~ | ~~sound-swap~~ | ~~addition~~ | ~~HIGH~~ | ~~Notation mismatch~~ | ~~Generator uses /ɹ/ but component DISTRACTOR_PHONEMES uses /r/ — both may appear as options~~ | ~~GENERATOR~~ |

@@ -454,6 +454,13 @@ export const generateAdditionSubtractionScene = async (
      * unknownPosition ladder). NEVER changes the size of any number.
      */
     difficulty?: string;
+    /**
+     * Per-component intent the manifest assigned to THIS scene (e.g. "Take away
+     * within 5", "Make 5 by joining two groups"). `topic` is the broad lesson;
+     * `intent` is the specific objective this primitive must serve. Shapes the
+     * story focus + scope (the grade stays the ceiling). Never names an answer.
+     */
+    intent?: string;
   }
 ): Promise<AdditionSubtractionSceneData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -493,9 +500,13 @@ export const generateAdditionSubtractionScene = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  const intent = config?.intent?.trim();
+
   const prompt = `
 Create an educational addition and subtraction story activity for teaching "${topic}" to ${gradeLevel} students.
-
+${intent ? `
+FOCUS FOR THIS ACTIVITY: the broad lesson is "${topic}", but THIS scene was specifically assigned to target: "${intent}". Make every challenge serve that focus (its operation, story situation, and what is asked). Stay within the number range the topic and this focus imply — the grade is the ceiling, never exceed it. Do NOT restate or reveal any answer in the story; the focus describes the OBJECTIVE, not the solution.
+` : ''}
 CONTEXT:
 - This is an animated story scene where objects join, leave, or are compared
 - Students interact with concrete objects to build understanding of addition and subtraction

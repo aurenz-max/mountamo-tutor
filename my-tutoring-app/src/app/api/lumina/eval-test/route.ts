@@ -35,6 +35,12 @@ export async function GET(request: NextRequest) {
     // scaffolding AND raise structural problem difficulty within the eval mode.
     // Threaded through verbatim so a tier sweep is testable in isolation.
     const difficulty = searchParams.get('difficulty') || undefined;
+    // Optional ?intent= — the per-component intent the manifest would stamp
+    // (e.g. "Visualize the order of numbers 1 to 10"). In production this reaches
+    // the generator as config.intent via flattenManifestToLayout; threaded here so
+    // topic+intent fidelity is testable in isolation (see /topic-fidelity). Most
+    // generators only read `topic`, so this is inert unless the generator reads it.
+    const intent = searchParams.get('intent') || undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -47,6 +53,7 @@ export async function GET(request: NextRequest) {
         ...(studentTheta !== undefined && Number.isFinite(studentTheta) ? { studentTheta } : {}),
         ...(objectiveVerb ? { objectiveVerb } : {}),
         ...(difficulty ? { difficulty } : {}),
+        ...(intent ? { intent } : {}),
       },
     };
 

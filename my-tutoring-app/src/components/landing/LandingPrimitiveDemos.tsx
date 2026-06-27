@@ -19,6 +19,10 @@ import {
   FlaskConical,
   Globe2,
   GraduationCap,
+  PencilLine,
+  MousePointerClick,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { SoundManager } from '@/components/lumina/utils/SoundManager';
 import {
@@ -302,6 +306,179 @@ export const TrueFalseDemo: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
   );
 };
 
+// ── Visual, not worksheets — the same sum, two worlds ────────────────────
+// Show, don't tell. A segmented toggle flips one problem (4 + 3) between a dead
+// paper worksheet — a symbol to memorize, nothing to do but write a number —
+// and the live Lumina primitive, where you BUILD the sum by tapping a ten-frame
+// and the answer falls out of the interaction. The contrast IS the pitch.
+const WS_A = 4;
+const WS_B = 3;
+const WS_SUM = WS_A + WS_B;
+
+const WORKSHEET_VISUAL_CSS = `
+@keyframes luminaTabNudge { 0%, 70%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); } 85% { box-shadow: 0 0 0 4px rgba(168,85,247,0.18); } }
+.lumina-tab-nudge { animation: luminaTabNudge 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .lumina-tab-nudge { animation: none; } }
+`;
+
+export const WorksheetVsVisualDemo: React.FC = () => {
+  const [mode, setMode] = useState<'worksheet' | 'lumina'>('worksheet');
+  const [touchedLumina, setTouchedLumina] = useState(false); // stop nudging once they explore
+
+  // Lumina side — the first WS_A cells are the given "4" (locked); the student
+  // taps empty cells to add the "+3" until the frame shows the whole sum.
+  const [added, setAdded] = useState<Set<number>>(new Set());
+  const [submitted, setSubmitted] = useState(false);
+  const total = WS_A + added.size;
+  const correct = total === WS_SUM;
+
+  const switchMode = (m: 'worksheet' | 'lumina') => {
+    if (m === mode) return;
+    SoundManager.select();
+    setMode(m);
+    if (m === 'lumina') setTouchedLumina(true);
+  };
+
+  const toggleCell = (i: number) => {
+    if (submitted) return;
+    const adding = !added.has(i);
+    SoundManager.toggle(adding);
+    setAdded((prev) => {
+      const next = new Set(prev);
+      adding ? next.add(i) : next.delete(i);
+      return next;
+    });
+  };
+  const check = () => {
+    setSubmitted(true);
+    correct ? SoundManager.playCorrect() : SoundManager.playIncorrect();
+  };
+  const reset = () => {
+    SoundManager.tap();
+    setSubmitted(false);
+    setAdded(new Set());
+  };
+
+  return (
+    <LuminaCard surface="glass" topAccent="purple">
+      <style>{WORKSHEET_VISUAL_CSS}</style>
+      <LuminaCardContent className="flex h-full flex-col gap-4 pt-7">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-purple-500/20 bg-purple-500/20 text-purple-300">
+          <MousePointerClick className="h-5 w-5" />
+        </span>
+        <h3 className="text-lg font-bold text-slate-100">Visual, not worksheets</h3>
+
+        {/* Segmented toggle — the same problem, two worlds */}
+        <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
+          <button
+            type="button"
+            onClick={() => switchMode('worksheet')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              mode === 'worksheet'
+                ? 'bg-white/10 text-slate-100'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <PencilLine className="h-3.5 w-3.5" /> Worksheet
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('lumina')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              mode === 'lumina'
+                ? `${accentChipBg.purple} ${accentText.purple}`
+                : `text-slate-500 hover:text-slate-300 ${touchedLumina ? '' : 'lumina-tab-nudge'}`
+            }`}
+          >
+            <MousePointerClick className="h-3.5 w-3.5" /> Lumina
+          </button>
+        </div>
+
+        {mode === 'worksheet' ? (
+          /* ── Dead paper: a symbol to memorize, nothing to do ── */
+          <div
+            className="select-none cursor-not-allowed rounded-xl border border-black/10 p-5 text-slate-800 shadow-inner"
+            style={{
+              backgroundColor: '#eef0f2',
+              backgroundImage:
+                'repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(30,58,138,0.16) 31px, rgba(30,58,138,0.16) 32px)',
+            }}
+            aria-label="A paper worksheet"
+          >
+            <div className="flex items-baseline gap-2 font-serif text-3xl leading-[2rem] tracking-wide">
+              {WS_A} + {WS_B} ={' '}
+              <span className="inline-block w-12 border-b-2 border-slate-700/70" />
+            </div>
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+              <PencilLine className="h-3.5 w-3.5" /> Write the answer. Hand it in.
+            </div>
+          </div>
+        ) : (
+          /* ── Live primitive: build the sum, the answer falls out ── */
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <LuminaBadge accent="purple">{WS_A} + {WS_B}</LuminaBadge>
+              <LuminaInlineStat label="Total" value={total} suffix={`/ ${WS_SUM}`} accent="purple" />
+            </div>
+            <LuminaPrompt>Tap to add {WS_B} more.</LuminaPrompt>
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }).map((_, i) => {
+                const given = i < WS_A;
+                const isAdded = added.has(i);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => !given && toggleCell(i)}
+                    disabled={given || submitted}
+                    className={`flex aspect-square items-center justify-center rounded-lg border transition-all ${
+                      given
+                        ? 'cursor-default border-cyan-400/40 bg-cyan-500/10'
+                        : isAdded
+                          ? 'border-purple-400/50 bg-purple-500/15 hover:bg-purple-500/25'
+                          : 'border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06]'
+                    } ${submitted ? 'cursor-default' : ''}`}
+                  >
+                    {given && <span className="h-3 w-3 rounded-full bg-cyan-300" />}
+                    {isAdded && <span className="h-3 w-3 rounded-full bg-purple-300" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {submitted ? (
+              <LuminaFeedbackCard
+                status={correct ? 'correct' : 'insight'}
+                className="!p-4"
+                teachingNote={correct ? undefined : `Start with ${WS_A}, then add ${WS_B} one at a time.`}
+              >
+                <span className="text-base">
+                  {correct ? `${WS_A} and ${WS_B} make ${WS_SUM} — you built it!` : `You have ${total}. Aim for ${WS_SUM}.`}
+                </span>
+              </LuminaFeedbackCard>
+            ) : null}
+          </div>
+        )}
+
+        {/* Caption + (Lumina-mode) check — the line that names the difference */}
+        <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+          <p className="text-xs leading-relaxed text-slate-500">
+            {mode === 'worksheet'
+              ? 'A symbol to recall. The page can’t tell if it clicked.'
+              : 'You’re not recalling 7 — you’re watching it add up. The interaction is the teaching.'}
+          </p>
+          {mode === 'lumina' ? (
+            submitted ? (
+              <LuminaActionButton action="retry" size="sm" onClick={reset} />
+            ) : (
+              <LuminaActionButton action="check" size="sm" disabled={total === WS_A} onClick={check} />
+            )
+          ) : null}
+        </div>
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+};
+
 // ── Adapts in real time — a self-playing IRT ramp (low β → high β) ────────
 // Show, don't tell: a student answers, and each correct answer pushes the
 // selected eval mode up the difficulty ladder. Auto-plays and loops.
@@ -396,6 +573,316 @@ export const AdaptiveDemo: React.FC = () => {
   );
 };
 
+// ── How it works — a self-playing pipeline: pick → build → adapt ──────────
+// Show, don't tell. The three steps stop being captions and become one live,
+// looping run of the real pipeline: a topic is typed in, then the lesson
+// assembles itself the way the product actually shows it — a "Component
+// Assembly" checklist whose rows flip from a spinner to a green check, each
+// tagged with its Bloom verb — and finally the difficulty ladder climbs. The
+// numbered spine doubles as a progress tracker for the active step.
+
+type HiwComponent = { bloom: string; title: string };
+type HiwTopic = { topic: string; subject: string; accent: LuminaAccent; components: HiwComponent[] };
+
+// Bloom verb → accent, mirroring the real "What you'll master" objective cards
+// (IDENTIFY blue, EXPLAIN purple, COMPARE amber…).
+const BLOOM_ACCENT: Record<string, LuminaAccent> = {
+  Identify: 'blue',
+  Explain: 'purple',
+  Apply: 'cyan',
+  Compare: 'amber',
+};
+
+const HIW_TOPICS: HiwTopic[] = [
+  {
+    topic: 'adding fractions',
+    subject: 'Math',
+    accent: 'cyan',
+    components: [
+      { bloom: 'Identify', title: 'Name the parts of a fraction' },
+      { bloom: 'Explain', title: 'Build ¾ on a bar' },
+      { bloom: 'Apply', title: 'Add halves and quarters' },
+      { bloom: 'Compare', title: 'Which fraction is bigger?' },
+    ],
+  },
+  {
+    topic: 'the water cycle',
+    subject: 'Science',
+    accent: 'emerald',
+    components: [
+      { bloom: 'Identify', title: 'Spot evaporation' },
+      { bloom: 'Explain', title: 'Why the rain falls' },
+      { bloom: 'Apply', title: 'Run the whole cycle' },
+      { bloom: 'Compare', title: 'Rain vs. snow' },
+    ],
+  },
+  {
+    topic: 'telling time',
+    subject: 'Math',
+    accent: 'purple',
+    components: [
+      { bloom: 'Identify', title: 'Read the hour hand' },
+      { bloom: 'Explain', title: 'Minutes around the clock' },
+      { bloom: 'Apply', title: 'Set it to 3:30' },
+      { bloom: 'Compare', title: 'Morning vs. night' },
+    ],
+  },
+];
+
+const HIW_STEPS: { n: string; title: string; accent: LuminaAccent; caption: string }[] = [
+  { n: '1', title: 'Pick anything', accent: 'blue', caption: 'Type a topic — or tap one. Any K–5 idea works.' },
+  { n: '2', title: 'Lumina builds the lesson', accent: 'purple', caption: 'Objectives are set, then each component assembles to fit.' },
+  { n: '3', title: 'Practice adapts', accent: 'cyan', caption: 'Difficulty moves with mastery until the skill sticks.' },
+];
+
+const HIW_LADDER = 5;
+
+const HOW_IT_WORKS_CSS = `
+@keyframes luminaCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.lumina-caret { animation: luminaCaret 1s step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .lumina-caret { animation: none; opacity: 1; } }
+`;
+
+// One step's frame: a numbered/Check spine marker, a title, the live stage, and
+// a caption. The active step is lit; completed steps go green; pending steps dim.
+const HiwStageShell: React.FC<{
+  step: { n: string; title: string; accent: LuminaAccent; caption: string };
+  index: number;
+  active: number;
+  children: React.ReactNode;
+}> = ({ step, index, active, children }) => {
+  const done = active > index;
+  const isActive = active === index;
+  return (
+    <LuminaCard surface="glass" topAccent={step.accent}>
+      <LuminaCardContent className="flex h-full flex-col gap-4 pt-6">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-all duration-500 ${
+              isActive
+                ? `${accentSoftBorder[step.accent]} ${accentChipBg[step.accent]} ${accentText[step.accent]} scale-110`
+                : done
+                  ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-300'
+                  : 'border-white/10 bg-white/5 text-slate-500'
+            }`}
+          >
+            {done ? <Check className="h-4 w-4" /> : step.n}
+          </div>
+          <h3 className={`text-sm font-bold transition-colors ${isActive || done ? 'text-slate-100' : 'text-slate-500'}`}>
+            {step.title}
+          </h3>
+        </div>
+        <div className={`flex flex-1 flex-col transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-50'}`}>
+          {children}
+        </div>
+        <p className="text-xs leading-relaxed text-slate-500">{step.caption}</p>
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+};
+
+export const HowItWorksDemo: React.FC = () => {
+  const [step, setStep] = useState(0); // 0 pick · 1 build · 2 adapt
+  const [topicIdx, setTopicIdx] = useState(0);
+  const [typed, setTyped] = useState(''); // typewriter for step 0
+  const [built, setBuilt] = useState(0); // resolved components for step 1
+  const [rung, setRung] = useState(0); // climbed difficulty rung for step 2
+
+  const topic = HIW_TOPICS[topicIdx];
+
+  // Driver — advance pick → build → adapt, then turn to the next topic and loop.
+  // Each beat is paced to outlast its inner animation.
+  useEffect(() => {
+    const STEP_MS = [2300, 2500, 2300];
+    const t = setTimeout(() => {
+      if (step < 2) setStep(step + 1);
+      else {
+        setStep(0);
+        setTopicIdx((i) => (i + 1) % HIW_TOPICS.length);
+      }
+    }, STEP_MS[step]);
+    return () => clearTimeout(t);
+  }, [step, topicIdx]);
+
+  // Step 0 — type the topic out a character at a time; show it whole once past.
+  useEffect(() => {
+    if (step !== 0) {
+      setTyped(topic.topic);
+      return;
+    }
+    setTyped('');
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setTyped(topic.topic.slice(0, i));
+      if (i >= topic.topic.length) clearInterval(id);
+    }, 70);
+    return () => clearInterval(id);
+  }, [step, topicIdx, topic.topic]);
+
+  // Step 1 — resolve the assembly rows one by one; hold them all done at step 2.
+  useEffect(() => {
+    const len = topic.components.length;
+    if (step < 1) {
+      setBuilt(0);
+      return;
+    }
+    if (step > 1) {
+      setBuilt(len);
+      return;
+    }
+    setBuilt(0);
+    let n = 0;
+    const id = setInterval(() => {
+      n += 1;
+      setBuilt(n);
+      if (n >= len) clearInterval(id);
+    }, 430);
+    return () => clearInterval(id);
+  }, [step, topicIdx, topic.components.length]);
+
+  // Step 2 — climb the difficulty ladder a rung at a time.
+  useEffect(() => {
+    if (step !== 2) {
+      setRung(0);
+      return;
+    }
+    setRung(0);
+    let r = 0;
+    const id = setInterval(() => {
+      r += 1;
+      setRung(r);
+      if (r >= HIW_LADDER - 1) clearInterval(id);
+    }, 420);
+    return () => clearInterval(id);
+  }, [step, topicIdx]);
+
+  return (
+    <>
+      <style>{HOW_IT_WORKS_CSS}</style>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* ── 1 · Pick anything — a topic typed into the box ── */}
+        <HiwStageShell step={HIW_STEPS[0]} index={0} active={step}>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5">
+              <Sparkles className={`h-4 w-4 shrink-0 ${accentText.blue}`} />
+              <span className="truncate text-sm text-slate-100">
+                {typed}
+                {step === 0 ? (
+                  <span className="lumina-caret ml-px inline-block h-4 w-[2px] -translate-y-px bg-slate-300 align-middle" />
+                ) : null}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {HIW_TOPICS.map((t, i) => (
+                <span
+                  key={t.topic}
+                  className={`rounded-full border px-2.5 py-1 text-xs transition-all duration-300 ${
+                    i === topicIdx
+                      ? `${accentSoftBorder.blue} ${accentChipBg.blue} ${accentText.blue}`
+                      : 'border-white/10 bg-white/5 text-slate-500'
+                  }`}
+                >
+                  {t.topic}
+                </span>
+              ))}
+            </div>
+          </div>
+        </HiwStageShell>
+
+        {/* ── 2 · Lumina builds the lesson — the real Component Assembly view ── */}
+        <HiwStageShell step={HIW_STEPS[1]} index={1} active={step}>
+          {step >= 1 ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                  Component assembly
+                </span>
+                <span className="font-mono text-[10px] text-slate-500">
+                  {Math.min(built, topic.components.length)}/{topic.components.length}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {topic.components.map((c, i) => {
+                  const ready = i < built;
+                  const ba = BLOOM_ACCENT[c.bloom] ?? topic.accent;
+                  return (
+                    <div
+                      key={c.title}
+                      className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-all duration-300 ${
+                        ready ? 'border-emerald-400/20 bg-emerald-500/[0.06]' : 'border-white/10 bg-white/[0.03]'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                          ready ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-500'
+                        }`}
+                      >
+                        {ready ? <Check className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${accentChipBg[ba]} ${accentText[ba]}`}
+                      >
+                        {c.bloom}
+                      </span>
+                      <span className={`truncate text-[11px] ${ready ? 'text-slate-200' : 'text-slate-500'}`}>
+                        {c.title}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-1 items-center justify-center gap-1.5 text-xs text-slate-600">
+              <Loader2 className="h-4 w-4" /> waiting for a topic…
+            </div>
+          )}
+        </HiwStageShell>
+
+        {/* ── 3 · Practice adapts — the difficulty ladder climbs ── */}
+        <HiwStageShell step={HIW_STEPS[2]} index={2} active={step}>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
+              <div className="font-mono text-lg text-slate-100">
+                tier {Math.min(rung + 1, HIW_LADDER)}
+                <span className="text-slate-600">/{HIW_LADDER}</span>
+              </div>
+              <div className="mt-0.5 flex h-4 items-center justify-center text-[11px] font-semibold">
+                {step === 2 ? (
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <Check className="h-3 w-3" /> correct — leveling up
+                  </span>
+                ) : (
+                  <span className="text-slate-600">ready when you are</span>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {Array.from({ length: HIW_LADDER }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                    step === 2 && i === rung
+                      ? 'bg-gradient-to-r from-cyan-400 to-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                      : step === 2 && i < rung
+                        ? 'bg-cyan-500/40'
+                        : 'bg-white/10'
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px] uppercase tracking-widest text-slate-500">
+              <span>low β</span>
+              <span>high β</span>
+            </div>
+          </div>
+        </HiwStageShell>
+      </div>
+    </>
+  );
+};
+
 // ── Built for K–5 — an auto-touring curriculum map ───────────────────────
 // Show, don't tell. A grade wheel turns through K–5; for the selected grade the
 // four core subjects fan out; and the featured subject's units draw themselves
@@ -408,6 +895,8 @@ type ShowcaseSubject = {
   accent: LuminaAccent;
   icon: React.ReactNode;
   units: [string, string, string, string];
+  total: number; // real unit count for this grade × subject ("+N more")
+  inProgress?: boolean; // not yet published — titles borrowed from grade 4
 };
 type ShowcaseGrade = { label: string; full: string; subjects: ShowcaseSubject[] };
 
@@ -420,68 +909,77 @@ const SUBJECT_META = {
 
 const sub = (
   key: keyof typeof SUBJECT_META,
-  units: [string, string, string, string]
-): ShowcaseSubject => ({ ...SUBJECT_META[key], units });
+  units: [string, string, string, string],
+  total: number,
+  inProgress = false
+): ShowcaseSubject => ({ ...SUBJECT_META[key], units, total, inProgress });
 
+// Real unit titles pulled verbatim from the published curriculum service
+// (GET /api/curriculum/curriculum/{subject}?grade={g}). Four are shown per
+// subject as a peek; `total` is the true count so "+N more" stays honest.
+// NOTE: G5 Science + G5 Social Studies aren't published yet — those two cells
+// borrow grade 4's real titles and render an "in progress" tag; swap to the
+// published titles once those units ship.
 const GRADES: ShowcaseGrade[] = [
   {
     label: 'K',
     full: 'Kindergarten',
     subjects: [
-      sub('math', ['Count to 20', 'Compare sets', '2-D shapes', 'Add within 5']),
-      sub('reading', ['Letter sounds', 'Rhyming', 'Sight words', 'Story retell']),
-      sub('science', ['Five senses', 'Weather', 'Living vs not', 'Push & pull']),
-      sub('social', ['My family', 'Community helpers', 'Maps & globes', 'Rules']),
+      sub('math', ['Counting & Cardinality', 'Operations & Algebraic Thinking', 'Geometry', 'Measurement & Data'], 6),
+      sub('reading', ['The Alphabet', 'Phonics & Word Recognition', 'Vocabulary Development', 'Reading Comprehension'], 10),
+      sub('science', ['Physical Sciences', 'Life Sciences', 'Earth & Space Sciences', 'Engineering & Technology'], 4),
+      sub('social', ['Civics & Government', 'Economics', 'Geography', 'History'], 5),
     ],
   },
   {
     label: '1',
     full: 'Grade 1',
     subjects: [
-      sub('math', ['Add within 20', 'Place value', 'Measure length', 'Time to hour']),
-      sub('reading', ['Blends', 'Vowel teams', 'Main idea', 'Sequence events']),
-      sub('science', ['Light & sound', 'Plant parts', 'Sun & seasons', 'Materials']),
-      sub('social', ['Neighborhoods', 'Needs & wants', 'Past & present', 'Symbols']),
+      sub('math', ['Operations & Algebraic Thinking', 'Number & Operations in Base Ten', 'Measurement & Data', 'Geometry'], 5),
+      sub('reading', ['Phonics & Decoding', 'Reading Comprehension & Fluency', 'Grammar & Sentence Building', 'Vocabulary & Word Study'], 7),
+      sub('science', ['Sound & Light', 'Structure, Function & Heredity', 'Machines That Build', 'Patterns in the Sky'], 4),
+      sub('social', ['Civics & Government', 'Economics', 'Geography', 'History'], 5),
     ],
   },
   {
     label: '2',
     full: 'Grade 2',
     subjects: [
-      sub('math', ['Regroup add', 'Arrays', 'Money', 'Bar graphs']),
-      sub('reading', ['Prefixes', 'Compare texts', 'Context clues', 'Point of view']),
-      sub('science', ['States of matter', 'Habitats', 'Earth changes', 'Life cycles']),
-      sub('social', ['Communities', 'Goods & services', 'Landforms', 'Government']),
+      sub('math', ['Operations & Algebraic Thinking', 'Number & Operations in Base Ten', 'Measurement & Data', 'Geometry'], 4),
+      sub('reading', ['Reading Foundations', 'Reading Literature', 'Reading Informational Text', 'Vocabulary'], 7),
+      sub('science', ['Properties of Matter', 'Life Sciences', 'Earth Sciences', 'Engineering & Technology'], 4),
+      sub('social', ['Civics', 'Economics', 'Geography', 'History'], 5),
     ],
   },
   {
     label: '3',
     full: 'Grade 3',
     subjects: [
-      sub('math', ['Multiplication', 'Fractions', 'Area', 'Perimeter']),
-      sub('reading', ['Multisyllable', 'Theme', 'Text features', 'Inference']),
-      sub('science', ['Forces', 'Adaptations', 'Weather data', 'Fossils']),
-      sub('social', ['Regions', 'Economy basics', 'Maps & routes', 'Citizenship']),
+      sub('math', ['Operations & Algebraic Thinking', 'Number & Operations — Fractions', 'Geometry', 'Measurement & Data'], 5),
+      sub('reading', ['Reading Literature', 'Reading Informational Text', 'Writing', 'Vocabulary'], 6),
+      sub('science', ['Forces & Interactions', 'Life Cycles & Traits', 'Ecosystems', 'Weather & Climate'], 5),
+      sub('social', ['Civics', 'Economics', 'Geography', 'History'], 4),
     ],
   },
   {
     label: '4',
     full: 'Grade 4',
     subjects: [
-      sub('math', ['Multi-digit ×', 'Equiv. fractions', 'Decimals', 'Angles']),
-      sub('reading', ['Root words', 'Summarize', "Author's purpose", 'Compare POV']),
-      sub('science', ['Energy', 'Waves', 'Earth systems', 'Structures of life']),
-      sub('social', ['U.S. regions', 'Trade', 'Geography', 'Branches of gov']),
+      sub('math', ['Operations & Algebraic Thinking', 'Number & Operations in Base Ten', 'Number & Operations — Fractions', 'Geometry'], 5),
+      sub('reading', ['Reading Literature', 'Reading Informational Text', 'Writing', 'Language'], 6),
+      sub('science', ['Energy', 'Waves', 'Structure & Function', "Earth's Resources"], 5),
+      sub('social', ['Civics', 'Economics', 'Geography', 'History'], 4),
     ],
   },
   {
     label: '5',
     full: 'Grade 5',
     subjects: [
-      sub('math', ['Decimal ops', 'Volume', 'Coordinate plane', 'Multiply fractions']),
-      sub('reading', ['Figurative language', 'Argument', 'Synthesize', 'Tone']),
-      sub('science', ['Ecosystems', 'Matter cycles', 'Space systems', 'Engineering']),
-      sub('social', ['Early America', 'Economics', 'Map skills', 'Constitution']),
+      sub('math', ['Operations & Algebraic Thinking', 'Number & Operations in Base Ten', 'Fractions', 'Geometry'], 5),
+      sub('reading', ['Reading Literature', 'Reading Informational Text', 'Writing', 'Vocabulary'], 6),
+      // G5 Science + Social Studies aren't published yet — borrow grade 4, flag in progress.
+      sub('science', ['Energy', 'Waves', 'Structure & Function', "Earth's Resources"], 5, true),
+      sub('social', ['Civics', 'Economics', 'Geography', 'History'], 4, true),
     ],
   },
 ];
@@ -489,10 +987,10 @@ const GRADES: ShowcaseGrade[] = [
 // Diamond DAG — entry → two parallel strands → convergence. Percentages map
 // 1:1 onto both the SVG edge layer (viewBox 0 0 100 100) and the HTML frames.
 const NODE_POS = [
-  { x: 13, y: 50 },
-  { x: 45, y: 17 },
-  { x: 45, y: 83 },
-  { x: 86, y: 50 },
+  { x: 14, y: 50 },
+  { x: 47, y: 18 },
+  { x: 47, y: 82 },
+  { x: 84, y: 50 },
 ];
 const EDGES: [number, number][] = [
   [0, 1],
@@ -619,12 +1117,19 @@ export const CurriculumShowcase: React.FC = () => {
           <div className="relative">
             <div className="mb-1 flex items-center justify-between">
               <span className={`text-xs font-bold ${accentText[accent]}`}>{subject.name} · units</span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-500">
-                mapped &amp; sequenced
-              </span>
+              {subject.inProgress ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+                  In progress
+                </span>
+              ) : (
+                <span className="text-[10px] uppercase tracking-widest text-slate-500">
+                  mapped &amp; sequenced
+                </span>
+              )}
             </div>
 
-            <div key={`${g}-${s}`} className="relative h-44 w-full">
+            <div key={`${g}-${s}`} className="relative h-52 w-full">
               {/* Edge layer — prerequisite arrows, drawn behind the frames */}
               <svg
                 viewBox="0 0 100 100"
@@ -640,32 +1145,45 @@ export const CurriculumShowcase: React.FC = () => {
                     x2={NODE_POS[b].x}
                     y2={NODE_POS[b].y}
                     stroke="currentColor"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     strokeLinecap="round"
                     vectorEffect="non-scaling-stroke"
                     pathLength={1}
                     style={{ animationDelay: `${0.15 * i}s` }}
-                    className={`lumina-edge ${accentText[accent]} opacity-40`}
+                    className={`lumina-edge ${accentText[accent]} opacity-50`}
                   />
                 ))}
               </svg>
 
-              {/* Unit frames */}
+              {/* Unit frames — uniform width, and opaque so the connectors
+                  tuck cleanly under each card edge instead of crossing through. */}
               {subject.units.map((u, i) => (
                 <div
                   key={i}
                   style={{ left: `${NODE_POS[i].x}%`, top: `${NODE_POS[i].y}%` }}
                   className="absolute -translate-x-1/2 -translate-y-1/2"
                 >
-                  <div className="lumina-node" style={{ animationDelay: `${0.08 * i}s` }}>
+                  <div
+                    className="lumina-node relative w-[136px] overflow-hidden rounded-lg shadow-lg shadow-black/30"
+                    style={{ animationDelay: `${0.08 * i}s` }}
+                  >
+                    {/* Opaque base — occludes any connector running beneath the card */}
+                    <span className="absolute inset-0 bg-slate-950" />
                     <div
-                      className={`flex max-w-[100px] items-center justify-center rounded-lg border px-2 py-1.5 text-center text-[11px] font-semibold leading-tight backdrop-blur-md ${accentSoftBorder[accent]} ${accentChipBg[accent]} ${accentText[accent]}`}
+                      className={`relative flex min-h-[44px] items-center justify-center rounded-lg border px-2.5 py-1.5 text-center text-[10px] font-semibold leading-[1.2] ${accentSoftBorder[accent]} ${accentChipBg[accent]} ${accentText[accent]}`}
                     >
                       {u}
                     </div>
                   </div>
                 </div>
               ))}
+
+              {/* +N more — keeps "4 shown of {total}" honest */}
+              {subject.total > 4 && (
+                <span className="absolute bottom-0 right-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                  +{subject.total - 4} more
+                </span>
+              )}
             </div>
 
             {/* Footer caption */}

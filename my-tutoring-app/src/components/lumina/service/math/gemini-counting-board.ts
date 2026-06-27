@@ -337,6 +337,12 @@ export const generateCountingBoard = async (
      * difficulty = how much on-workspace scaffolding within it. NEVER changes counts.
      */
     difficulty?: string;
+    /**
+     * Per-component intent the manifest stamps (e.g. "Count groups up to five").
+     * Combined with `topic` to bound the counts: a tighter scope in either string
+     * caps every challenge's count. Absent → grade-band defaults stand.
+     */
+    intent?: string;
   }
 ): Promise<CountingBoardData> => {
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -389,8 +395,13 @@ export const generateCountingBoard = async (
   const countOnExtra = 2 + Math.floor(Math.random() * 4);       // 2-5
   const countOnTotal = countOnStart + countOnExtra;              // 5-12
 
+  const intentLine = config?.intent ? `\n- Lesson intent: "${config.intent}"` : '';
+
   const prompt = `
-Create an educational counting board activity for teaching "${topic}" to ${gradeLevel} students.
+Create an educational counting board activity for teaching "${topic}" to ${gradeLevel} students.${intentLine}
+
+## TOPIC SCOPE (highest priority — overrides the grade range and any starting-count suggestion below)
+The topic is "${topic}"${config?.intent ? ` and the intent is "${config.intent}"` : ''}. If the topic or intent names an upper count bound (e.g. "Counting to 5" → 5, "Numbers within 10" → 10, "Count to twenty" → 20), then EVERY challenge's count MUST be at or below that bound — no exceptions, including the first challenge. The grade level is only the CEILING; a tighter topic bound always wins. When the bound is small, hold the counts at or just below it across the ${targetCount} challenges (repeat/vary near the bound) rather than progressing past it. If the topic implies no specific bound, use the grade-appropriate range below. Do NOT name the bound number inside any student-facing instruction, hint, or narration — it must not reveal the answer.
 
 CONTEXT:
 - A counting board is a workspace with countable objects (bears, apples, stars, etc.)
@@ -438,7 +449,7 @@ ${(() => {
 REQUIREMENTS:
 1. Generate exactly ${targetCount} challenges that progress in difficulty
 2. IMPORTANT: Each challenge has its own count and arrangement — vary them!
-3. Start the FIRST challenge with exactly ${randomStartCount} ${randomObject} in a ${randomArrangement} arrangement, then progress upward from there
+3. Use ${randomObject} as the object theme and a ${randomArrangement} arrangement for the first challenge. For variety, vary the counts across challenges — you may start near ${randomStartCount} and build upward ONLY when the TOPIC SCOPE allows; if the topic's bound is small, keep every count at or below that bound instead of progressing past it
 4. Use warm, encouraging instruction text for young children
 5. For each challenge, targetAnswer MUST equal that challenge's count
 6. Include meaningful hints that guide without giving the answer

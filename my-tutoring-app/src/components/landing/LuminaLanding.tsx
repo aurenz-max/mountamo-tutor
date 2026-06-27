@@ -12,7 +12,7 @@
  */
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Wand2, Shapes, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import { GenerativeBackground } from '@/components/lumina/primitives/GenerativeBackground';
 import { SoundManager } from '@/components/lumina/utils/SoundManager';
 import {
@@ -22,39 +22,12 @@ import {
   LuminaButton,
   LuminaBadge,
   LuminaSectionLabel,
-  accentText,
-  accentChipBg,
-  accentSoftBorder,
-  type LuminaAccent,
 } from '@/components/lumina/ui';
-import { CountingDemo, FillBlankDemo, TrueFalseDemo, AdaptiveDemo, CurriculumShowcase } from './LandingPrimitiveDemos';
+import { CountingDemo, FillBlankDemo, TrueFalseDemo, WorksheetVsVisualDemo, AdaptiveDemo, CurriculumShowcase, HowItWorksDemo } from './LandingPrimitiveDemos';
 
 // A few real K–5 topics — used for the "jump straight in" launch chips. Each
 // hands its topic to /lumina, where the lesson builds itself.
 const QUICK_TOPICS = ['the water cycle', 'adding fractions', 'telling time', 'why volcanoes erupt'];
-
-// The "Adapts in real time" pillar is shown, not told — see <AdaptiveDemo /> in
-// the grid below. These two are the flanking text cards.
-const FEATURES: { icon: React.ReactNode; accent: LuminaAccent; title: string; body: string }[] = [
-  {
-    icon: <Shapes className="w-5 h-5" />,
-    accent: 'purple',
-    title: 'Visual, not worksheets',
-    body: 'Every lesson is an interactive primitive a student touches — count the ten-frame, build the sentence, drag the number line. The interaction is the teaching.',
-  },
-  {
-    icon: <Wand2 className="w-5 h-5" />,
-    accent: 'emerald',
-    title: 'Built for K–5',
-    body: 'A full Kindergarten-through-grade-5 curriculum across math, reading, science, and social studies — mapped, sequenced, and ready to route a learner through.',
-  },
-];
-
-const STEPS: { n: string; title: string; body: string; accent: LuminaAccent }[] = [
-  { n: '1', title: 'Pick anything', accent: 'blue', body: 'Type a topic — or tap one. Any K–5 idea works.' },
-  { n: '2', title: 'Lumina builds the lesson', accent: 'purple', body: 'An interactive, visual lesson is generated for that topic on the spot.' },
-  { n: '3', title: 'Practice adapts', accent: 'cyan', body: 'Difficulty moves with mastery until the skill sticks.' },
-];
 
 export default function LuminaLanding() {
   const router = useRouter();
@@ -192,16 +165,8 @@ export default function LuminaLanding() {
           </h2>
         </div>
         <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-          {/* Visual, not worksheets */}
-          <LuminaCard surface="glass" topAccent={FEATURES[0].accent}>
-            <LuminaCardContent className="space-y-3 pt-7">
-              <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${accentChipBg[FEATURES[0].accent]} ${accentSoftBorder[FEATURES[0].accent]} ${accentText[FEATURES[0].accent]}`}>
-                {FEATURES[0].icon}
-              </span>
-              <h3 className="text-lg font-bold text-slate-100">{FEATURES[0].title}</h3>
-              <p className="text-sm leading-relaxed text-slate-400">{FEATURES[0].body}</p>
-            </LuminaCardContent>
-          </LuminaCard>
+          {/* Visual, not worksheets — shown live: the same sum, paper vs. primitive */}
+          <WorksheetVsVisualDemo />
 
           {/* Adapts in real time — shown live */}
           <AdaptiveDemo />
@@ -236,17 +201,7 @@ export default function LuminaLanding() {
             How it works
           </LuminaSectionLabel>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {STEPS.map((step) => (
-            <div key={step.n} className="flex flex-col items-center text-center">
-              <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-full border ${accentSoftBorder[step.accent]} ${accentChipBg[step.accent]} text-lg font-bold ${accentText[step.accent]}`}>
-                {step.n}
-              </div>
-              <h3 className="text-base font-bold text-slate-100">{step.title}</h3>
-              <p className="mt-2 max-w-[15rem] text-sm text-slate-400">{step.body}</p>
-            </div>
-          ))}
-        </div>
+        <HowItWorksDemo />
       </section>
 
       {/* ── Final CTA ── */}

@@ -7,6 +7,11 @@ export default function ExhibitsLayout({
 }) {
   return (
     <div className="dark min-h-screen">
+      {/* Pre-paint dark base — sits behind the GenerativeBackground canvas
+          (which is transparent until its first JS draw). Without this, the
+          default-white <body> shows through during the route transition and
+          flashes white. Mirrors the same -z-20 fallback the landing uses. */}
+      <div aria-hidden className="fixed inset-0 -z-20 bg-slate-950" />
       <style jsx global>{`
         /* Custom scrollbar for Lumina */
         .custom-scrollbar::-webkit-scrollbar {

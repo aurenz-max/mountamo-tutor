@@ -243,7 +243,23 @@ export async function resolveLessonEvalModes(
   objectives?: Array<{ id: string; text: string; verb: string }>,
 ): Promise<EvalModeResolutionSummary> {
   const slots = collectSlots(manifest, objectives);
-  if (slots.length === 0) return { slots: 0, changed: 0, kept: 0, mixed: 0, blend: 0 };
+  if (slots.length === 0) {
+    console.log(`[resolveLessonEvalModes] no multi-mode slots for "${topic}" (${gradeLevel}) — nothing to resolve`);
+    return { slots: 0, changed: 0, kept: 0, mixed: 0, blend: 0 };
+  }
+
+  console.log(
+    `🎚️ [resolveLessonEvalModes] resolving ${slots.length} multi-mode slot(s) for "${topic}" (${gradeLevel}):\n` +
+      slots
+        .map(
+          (s) =>
+            `  ${s.slotId} · ${s.component.componentId} (${s.objectiveVerb}: "${s.objectiveText.slice(0, 80)}")\n` +
+            `     curator pin: ${s.currentPin ?? '∅'}\n` +
+            `     candidates: ${s.candidateKeys.join(', ')}` +
+            (s.siblings.length ? `\n     siblings: ${s.siblings.map((sib) => sib.componentId).join(', ')}` : ''),
+        )
+        .join('\n'),
+  );
 
   try {
     const result = await ai.models.generateContent({
@@ -252,9 +268,27 @@ export async function resolveLessonEvalModes(
       config: { responseMimeType: 'application/json', responseSchema: buildSchema(), temperature: 0.3 },
     });
     const parsed = result.text
-      ? (JSON.parse(result.text) as { picks?: Array<{ slotId: string; chosenModes?: string[] }> })
+      ? (JSON.parse(result.text) as {
+          picks?: Array<{ slotId: string; chosenModes?: string[]; rationale?: string }>;
+        })
       : null;
     const bySlot = new Map((parsed?.picks ?? []).map((p) => [p.slotId, p.chosenModes ?? []]));
+    const rationaleBySlot = new Map((parsed?.picks ?? []).map((p) => [p.slotId, p.rationale ?? '']));
+
+    if (!parsed?.picks?.length) {
+      console.warn('[resolveLessonEvalModes] LLM returned no picks — all slots will keep curator pins');
+    } else {
+      console.log(
+        `🎚️ [resolveLessonEvalModes] LLM picks:\n` +
+          parsed.picks
+            .map(
+              (p) =>
+                `  ${p.slotId} → [${(p.chosenModes ?? []).join(', ') || '∅'}]` +
+                (p.rationale ? `  — ${p.rationale}` : ''),
+            )
+            .join('\n'),
+      );
+    }
 
     let changed = 0;
     let kept = 0;
@@ -270,6 +304,10 @@ export async function resolveLessonEvalModes(
 
       if (valid.length === 0) {
         kept++; // slot omitted or all-invalid → curator's pin stands (non-regressing)
+        const reason = raw === undefined ? 'slot omitted by LLM' : `no valid keys in [${raw.join(', ')}]`;
+        console.log(
+          `  🎚️ ${slot.slotId} · ${slot.component.componentId}: KEPT curator pin "${slot.currentPin ?? '∅'}" (${reason})`,
+        );
         continue;
       }
 
@@ -278,8 +316,16 @@ export async function resolveLessonEvalModes(
       slot.component.config.targetEvalMode = pin;
       if (kind === 'mixed') mixed++;
       else if (kind === 'blend') blend++;
-      if (pin !== slot.currentPin) changed++;
+      const didChange = pin !== slot.currentPin;
+      if (didChange) changed++;
       else kept++;
+      const rationale = rationaleBySlot.get(slot.slotId);
+      console.log(
+        `  🎚️ ${slot.slotId} · ${slot.component.componentId}: ` +
+          `${didChange ? `CHANGED "${slot.currentPin ?? '∅'}" → "${pin}"` : `confirmed "${pin}"`} ` +
+          `[${kind}]` +
+          (rationale ? ` — ${rationale}` : ''),
+      );
     }
 
     console.log(

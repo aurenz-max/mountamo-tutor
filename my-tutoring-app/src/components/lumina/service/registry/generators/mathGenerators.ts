@@ -255,6 +255,7 @@ registerGenerator('counting-board', async (item, topic, gradeContext) => ({
   instanceId: item.instanceId,
   data: await generateCountingBoard(topic, gradeContext, {
     ...item.config,
+    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
   }),
 }));
 
@@ -341,7 +342,10 @@ registerGenerator('number-bond', async (item, topic, gradeContext) => ({
 registerGenerator('addition-subtraction-scene', async (item, topic, gradeContext) => ({
   type: 'addition-subtraction-scene',
   instanceId: item.instanceId,
-  data: await generateAdditionSubtractionScene(topic, gradeContext, item.config),
+  data: await generateAdditionSubtractionScene(topic, gradeContext, {
+    ...item.config,
+    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
+  }),
 }));
 
 // Ordinal Line (K-1 ordinal position sequencing)
@@ -404,7 +408,10 @@ registerGenerator('strategy-picker', async (item, topic, gradeContext) => ({
 registerGenerator('number-tracer', async (item, topic, gradeContext) => ({
   type: 'number-tracer',
   instanceId: item.instanceId,
-  data: await generateNumberTracer(topic, gradeContext, item.config),
+  data: await generateNumberTracer(topic, gradeContext, {
+    ...item.config,
+    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
+  }),
 }));
 
 // Hundreds Chart (1-4 skip-counting patterns and sequence discovery)
@@ -519,7 +526,13 @@ registerGenerator('distribution-explorer', async (item, topic, gradeContext) => 
 registerGenerator('practice-problem', async (item, topic, gradeContext) => ({
   type: 'practice-problem',
   instanceId: item.instanceId,
-  data: await generatePracticeProblem(topic, gradeContext, item.config),
+  data: await generatePracticeProblem(topic, gradeContext, {
+    ...item.config,
+    // No item.title fallback: when the manifest assigns no explicit intent, leave
+    // config.intent undefined so the generator keeps its tuned DIFFICULTY_INTENT
+    // default (a generic title would be worse than the per-difficulty default).
+    intent: (item.config?.intent as string | undefined) || item.intent,
+  }),
 }));
 
 // ============================================================================
