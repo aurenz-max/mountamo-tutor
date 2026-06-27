@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type {
   StoichiometryLabData,
   StoichChallenge,
@@ -809,10 +810,7 @@ const MASS_WINDOW: Record<GradeBand, { min: number; max: number }> = {
  * Gemini frequently miscomputes stoichiometry, targetAnswer for 'yield' and
  * targetAnswerFormula for 'limiting' are RECOMPUTED from the reaction data.
  */
-export const generateStoichiometryLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type StoichiometryLabConfig = Partial<{
     targetEvalMode?: string;
     intent?: string;
     /**
@@ -821,8 +819,14 @@ export const generateStoichiometryLab = async (
      * numbers — only withdraws on-screen overlays and instruction/hint explicitness.
      */
     difficulty?: string;
-  }>,
+}>;
+
+export const generateStoichiometryLab = async (
+  ctx: GenerationContext,
 ): Promise<StoichiometryLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: StoichiometryLabConfig = { ...(ctx.raw as StoichiometryLabConfig), intent: ctx.intent };
   const gradeBand = resolveGradeBand(gradeLevel);
 
   // Resolve eval mode constraint and narrow schema

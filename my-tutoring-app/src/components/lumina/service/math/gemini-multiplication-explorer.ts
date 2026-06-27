@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { MultiplicationExplorerData } from "../../primitives/visual-primitives/math/MultiplicationExplorer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -342,10 +343,7 @@ const multiplicationExplorerSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateMultiplicationExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type MultiplicationExplorerConfig = {
     factor1?: number;
     factor2?: number;
     gradeBand?: '2-3' | '3-4';
@@ -364,8 +362,14 @@ export const generateMultiplicationExplorer = async (
      * factors or the product — only readouts, representations, and hint depth.
      */
     difficulty?: string;
-  }
+};
+
+export const generateMultiplicationExplorer = async (
+  ctx: GenerationContext,
 ): Promise<MultiplicationExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: MultiplicationExplorerConfig = { ...(ctx.raw as MultiplicationExplorerConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'multiplication-explorer',

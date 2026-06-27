@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/mathGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerGenerator, registerContextGenerator } from '../contentRegistry';
 
 // Math Generator Imports
 import { generatePlaceValueChart } from '../../math/gemini-place-value';
@@ -267,13 +267,10 @@ registerGenerator('pattern-builder', async (item, topic, gradeContext) => ({
 }));
 
 // Skip Counting Runner (1-3 multiplication foundations)
-registerGenerator('skip-counting-runner', async (item, topic, gradeContext) => ({
+registerContextGenerator('skip-counting-runner', async (ctx) => ({
   type: 'skip-counting-runner',
-  instanceId: item.instanceId,
-  data: await generateSkipCountingRunner(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateSkipCountingRunner(ctx),
 }));
 
 // Regrouping Workbench (1-4 addition/subtraction with carry/borrow)
@@ -286,13 +283,10 @@ registerGenerator('regrouping-workbench', async (item, topic, gradeContext) => (
 }));
 
 // Multiplication Explorer (2-4 multi-representation multiplication)
-registerGenerator('multiplication-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('multiplication-explorer', async (ctx) => ({
   type: 'multiplication-explorer',
-  instanceId: item.instanceId,
-  data: await generateMultiplicationExplorer(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateMultiplicationExplorer(ctx),
 }));
 
 // Measurement Tools (1-5 measurement with real-world tools)
@@ -305,13 +299,10 @@ registerGenerator('measurement-tools', async (item, topic, gradeContext) => ({
 }));
 
 // Shape Builder (K-5 geometric construction & properties)
-registerGenerator('shape-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('shape-builder', async (ctx) => ({
   type: 'shape-builder',
-  instanceId: item.instanceId,
-  data: await generateShapeBuilder(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateShapeBuilder(ctx),
 }));
 
 // Comparison Builder (K-1 quantity comparison & inequality symbols)
@@ -388,13 +379,10 @@ registerGenerator('shape-tracer', async (item, topic, gradeContext) => ({
 }));
 
 // Math Fact Fluency (K-1 rapid recall of addition & subtraction facts)
-registerGenerator('math-fact-fluency', async (item, topic, gradeContext) => ({
+registerContextGenerator('math-fact-fluency', async (ctx) => ({
   type: 'math-fact-fluency',
-  instanceId: item.instanceId,
-  data: await generateMathFactFluency(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateMathFactFluency(ctx),
 }));
 
 // Strategy Picker (K-1 multi-strategy problem solving & computational flexibility)
@@ -405,13 +393,13 @@ registerGenerator('strategy-picker', async (item, topic, gradeContext) => ({
 }));
 
 // Number Tracer (K-2 canvas-based numeral writing practice)
-registerGenerator('number-tracer', async (item, topic, gradeContext) => ({
+// Context-native: intent/scope/supportTier are threaded by the registry boundary
+// (resolveGenerationContext) — the handler no longer shapes config. First migration
+// under PRD_GENERATION_CONTEXT_HARMONIZATION.
+registerContextGenerator('number-tracer', async (ctx) => ({
   type: 'number-tracer',
-  instanceId: item.instanceId,
-  data: await generateNumberTracer(topic, gradeContext, {
-    ...item.config,
-    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateNumberTracer(ctx),
 }));
 
 // Hundreds Chart (1-4 skip-counting patterns and sequence discovery)

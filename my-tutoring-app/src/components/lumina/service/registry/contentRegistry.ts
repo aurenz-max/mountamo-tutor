@@ -8,6 +8,8 @@
  */
 
 import { ComponentId } from '../../types';
+import type { GenerationContext } from '../generation/generationContext';
+import { resolveGenerationContext } from '../generation/resolveGenerationContext';
 
 // ============================================================================
 // Types
@@ -56,6 +58,19 @@ export type ContentGenerator<TConfig = ManifestItemConfig, TData = unknown> = (
   gradeLevel: string
 ) => Promise<GeneratedComponent<TData> | null>;
 
+/**
+ * Context-native generator signature — the harmonized contract.
+ *
+ * Receives a single resolved `GenerationContext` (built once by the registry
+ * boundary) instead of the four positional `(item, topic, gradeContext, gradeLevel)`
+ * arguments. New and migrated generators use this; legacy generators keep the
+ * `ContentGenerator` signature until migrated. See
+ * docs/PRD_GENERATION_CONTEXT_HARMONIZATION.md.
+ */
+export type ContextGenerator<TData = unknown> = (
+  ctx: GenerationContext
+) => Promise<GeneratedComponent<TData> | null>;
+
 // ============================================================================
 // Registry
 // ============================================================================
@@ -83,6 +98,29 @@ export function registerGenerator<TConfig = ManifestItemConfig, TData = unknown>
   }
 
   CONTENT_GENERATORS[id] = generator as ContentGenerator;
+}
+
+/**
+ * Register a CONTEXT-NATIVE generator for a component type.
+ *
+ * The generator receives a single resolved `GenerationContext` instead of the four
+ * positional arguments. Internally this wraps it as a `ContentGenerator` that builds
+ * the context via `resolveGenerationContext` at the dispatch boundary — so the
+ * generator never sees `item`/`config` and a handler cannot drop an axis (intent,
+ * scope, support tier, …). The dispatch site (`generateComponentContent`) is
+ * unchanged; both registration styles coexist during the incremental migration.
+ *
+ * @param id - The component ID to register
+ * @param generator - The context-native generator function
+ */
+export function registerContextGenerator<TData = unknown>(
+  id: ComponentId,
+  generator: ContextGenerator<TData>
+): void {
+  const wrapped: ContentGenerator = (item, topic, gradeContext, gradeLevel) =>
+    generator(resolveGenerationContext(item, topic, gradeContext, gradeLevel));
+
+  registerGenerator(id, wrapped);
 }
 
 /**

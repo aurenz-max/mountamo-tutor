@@ -46,8 +46,10 @@ export interface PedagogicalScope {
 
 /**
  * The subset of manifest config that carries scope context. `flattenManifestToLayout`
- * injects objectiveText/objectiveVerb/intent into every component's config, so a
- * generator can build its scope straight from the `config` it already receives.
+ * injects objectiveText/objectiveVerb AND intent into every component's config (intent
+ * also rides at top-level item.intent). In the harmonized pathway, scope is built once
+ * by `resolveGenerationContext` and handed to generators as `ctx.scope`; this type
+ * remains for the resolver's input and any not-yet-migrated generator.
  */
 export interface ScopeBearingConfig {
   objectiveText?: string;

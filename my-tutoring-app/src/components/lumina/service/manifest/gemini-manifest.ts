@@ -83,6 +83,11 @@ export const flattenManifestToLayout = (
             objectiveId: block.objectiveId,
             objectiveText,
             objectiveVerb,
+            // Belt-and-suspenders: also surface the component's intent INSIDE config
+            // (it already rides at top-level item.intent). resolveGenerationContext
+            // reads config.intent first, so this makes the documented scopeContext
+            // contract true at the source. See PRD_GENERATION_CONTEXT_HARMONIZATION §6.1.
+            intent: component.intent ?? (component.config as { intent?: string } | undefined)?.intent,
           },
           objectiveIds: [block.objectiveId]
         });

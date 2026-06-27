@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ShapeBuilderData } from "../../primitives/visual-primitives/math/ShapeBuilder";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -429,10 +430,7 @@ const shapeBuilderSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateShapeBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ShapeBuilderData> & {
+type ShapeBuilderConfig = Partial<ShapeBuilderData> & {
     /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
     targetEvalMode?: string;
     /** Intent or title from the manifest item. */
@@ -444,8 +442,14 @@ export const generateShapeBuilder = async (
      * the target shape or its eval-mode difficulty class.
      */
     difficulty?: string;
-  }
+};
+
+export const generateShapeBuilder = async (
+  ctx: GenerationContext,
 ): Promise<ShapeBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: ShapeBuilderConfig = { ...(ctx.raw as ShapeBuilderConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'shape-builder',

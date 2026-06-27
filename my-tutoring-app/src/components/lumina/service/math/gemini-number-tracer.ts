@@ -8,7 +8,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
-import { resolvePedagogicalScope, buildScopePromptSection } from '../scopeContext';
+import { buildScopePromptSection, type PedagogicalScope } from '../scopeContext';
+import type { GenerationContext } from '../generation/generationContext';
 
 // ===========================================================================
 // number-tracer is a HANDWRITING primitive: the interaction surface is a
@@ -86,18 +87,10 @@ const HANDWRITING_TYPES = ['trace', 'copy', 'write'] as const;
 
 type ChallengeType = 'trace' | 'copy' | 'write' | 'sequence';
 
+// SupportTier ('easy' | 'medium' | 'hard') is now normalized centrally and arrives
+// as `ctx.supportTier` — the per-generator normalizeSupportTier copy is retired.
+// See service/generation/generationContext.ts.
 type SupportTier = 'easy' | 'medium' | 'hard';
-
-const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
-
-/**
- * STRICT lookup — the manifest enum-constrains config.difficulty to these.
- * Unknown/absent → null (no tier applied; grade-band defaults stand).
- */
-function normalizeSupportTier(difficulty?: string): SupportTier | null {
-  const d = difficulty?.toLowerCase().trim() ?? '';
-  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
-}
 
 interface SupportScaffold {
   /** The ghost (dotted) digit path painted under the canvas for the student to
@@ -271,7 +264,7 @@ async function generateHandwriting(
   gradeBand: 'K' | '1',
   allowedTypes: string[],
   challengeCount: number,
-  config: NumberTracerConfig | undefined,
+  scope: PedagogicalScope,
   evalConstraint: ReturnType<typeof resolveEvalModeConstraint>,
   tierSection: string,
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
@@ -282,7 +275,7 @@ async function generateHandwriting(
     evalConstraint && allowedTypes.includes(evalConstraint.allowedTypes[0]) ? evalConstraint : null;
   const challengeTypeSection = buildChallengeTypePromptSection(handwritingConstraint, HANDWRITING_DOCS);
 
-  const scope = resolvePedagogicalScope(topic, config, config?.intent);
+  // Pedagogical scope is resolved once at the registry boundary (ctx.scope).
   const scopeSection = buildScopePromptSection(scope);
 
   const prompt = `
@@ -470,11 +463,11 @@ async function generateSequence(
   gradeLevel: string,
   gradeBand: 'K' | '1',
   challengeCount: number,
-  config: NumberTracerConfig | undefined,
+  scope: PedagogicalScope,
   tierSection: string,
 ): Promise<{ title?: string; description?: string; challenges: NumberTracerChallenge[] }> {
   const maxDigit = gradeBand === 'K' ? 9 : 20;
-  const scope = resolvePedagogicalScope(topic, config, config?.intent);
+  // Pedagogical scope is resolved once at the registry boundary (ctx.scope).
   const scopeSection = buildScopePromptSection(scope);
 
   const prompt = `
@@ -518,24 +511,26 @@ Return only the window.
 // Orchestrator
 // ---------------------------------------------------------------------------
 
-export async function generateNumberTracer(
-  topic: string,
-  gradeLevel: string,
-  config?: NumberTracerConfig,
-): Promise<NumberTracerData> {
+export async function generateNumberTracer(ctx: GenerationContext): Promise<NumberTracerData> {
+  const { topic, scope } = ctx;
+  // Historically the registry handler passed the grade-context PROSE as this
+  // generator's "gradeLevel"; preserve that so prompts stay byte-identical.
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as NumberTracerConfig;
+
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'number-tracer',
-    config?.targetEvalMode,
+    ctx.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution('NumberTracer', config?.targetEvalMode, evalConstraint);
+  logEvalModeResolution('NumberTracer', ctx.targetEvalMode, evalConstraint);
 
   const gradeBand = resolveGradeBand(config, gradeLevel);
-  const totalCount = config?.challengeCount ?? 5;
+  const totalCount = (config?.challengeCount as number | undefined) ?? 5;
 
-  // ── Resolve the within-mode support tier (the STUDENT's tier — drives application) ──
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  // ── Within-mode support tier — normalized centrally, arrives as ctx.supportTier ──
+  const supportTier = ctx.supportTier;
   // pinnedType is ONLY for the prompt tone (a curated blend has no single mode to describe).
   const pinnedType =
     evalConstraint && evalConstraint.allowedTypes.length === 1
@@ -560,10 +555,10 @@ export async function generateNumberTracer(
 
   const [handwriting, sequence] = await Promise.all([
     wantsHandwriting
-      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, config, evalConstraint, tierSection)
+      ? generateHandwriting(topic, gradeLevel, gradeBand, handwritingTypes, hwCount, scope, evalConstraint, tierSection)
       : Promise.resolve(null),
     wantsSequence
-      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, config, tierSection)
+      ? generateSequence(topic, gradeLevel, gradeBand, seqCount, scope, tierSection)
       : Promise.resolve(null),
   ]);
 

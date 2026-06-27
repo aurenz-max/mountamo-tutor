@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { SkipCountingRunnerData } from "../../primitives/visual-primitives/math/SkipCountingRunner";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { createDiscretePool } from "./numberPoolService";
 import {
   resolveEvalModeConstraint,
@@ -448,10 +449,7 @@ function buildSkipCountingRunnerSchema(count: number): Schema {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateSkipCountingRunner = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type SkipCountingRunnerConfig = {
     skipValue?: number;
     gradeBand?: '1-2' | '2-3';
     direction?: 'forward' | 'backward';
@@ -471,8 +469,14 @@ export const generateSkipCountingRunner = async (
     intent?: string;
     /** Override for instance count (clamped to [1, MAX_INSTANCE_COUNT]). Falls back to COUNT_BY_MODE table. */
     instanceCount?: number;
-  }
+};
+
+export const generateSkipCountingRunner = async (
+  ctx: GenerationContext,
 ): Promise<SkipCountingRunnerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: SkipCountingRunnerConfig = { ...(ctx.raw as SkipCountingRunnerConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'skip-counting-runner',

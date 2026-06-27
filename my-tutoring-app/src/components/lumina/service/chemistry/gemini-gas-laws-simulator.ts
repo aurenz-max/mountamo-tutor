@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type {
   GasLawsSimulatorData,
   GasLawsChallenge,
@@ -673,17 +674,20 @@ function normalizeScenario(raw: unknown, gradeBand: GradeBand): GasLawsScenario 
  * the scenario and change. Target answers that diverge from the computed
  * value by more than 10% are REPLACED with the computed value.
  */
-export const generateGasLawsSimulator = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type GasLawsSimulatorConfig = Partial<{
     targetEvalMode?: string;
     intent?: string;
     /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second
      *  axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
     difficulty?: string;
-  }>,
+}>;
+
+export const generateGasLawsSimulator = async (
+  ctx: GenerationContext,
 ): Promise<GasLawsSimulatorData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: GasLawsSimulatorConfig = { ...(ctx.raw as GasLawsSimulatorConfig), intent: ctx.intent };
   const gradeBand = resolveGradeBand(gradeLevel);
 
   // Resolve eval mode constraint and narrow the challenge.type enum if needed.

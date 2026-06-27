@@ -12,7 +12,7 @@
  * Usage: import './registry/generators/chemistryGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerGenerator, registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Chemistry Component Imports (from dedicated service files)
@@ -191,21 +191,15 @@ registerGenerator('safety-lab', async (item, topic, gradeContext) => ({
 }));
 
 // Stoichiometry Lab (mole conversions, limiting reagent, theoretical yield)
-registerGenerator('stoichiometry-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('stoichiometry-lab', async (ctx) => ({
   type: 'stoichiometry-lab',
-  instanceId: item.instanceId,
-  data: await generateStoichiometryLab(topic, gradeContext, {
-    ...item.config,
-    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateStoichiometryLab(ctx),
 }));
 
 // Gas Laws Simulator (KMT + Boyle/Charles/Gay-Lussac/Combined/Ideal gas law)
-registerGenerator('gas-laws-simulator', async (item, topic, gradeContext) => ({
+registerContextGenerator('gas-laws-simulator', async (ctx) => ({
   type: 'gas-laws-simulator',
-  instanceId: item.instanceId,
-  data: await generateGasLawsSimulator(topic, gradeContext, {
-    ...item.config,
-    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateGasLawsSimulator(ctx),
 }));
