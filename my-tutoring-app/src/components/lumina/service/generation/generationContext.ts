@@ -61,6 +61,8 @@ export interface GenerationContext {
   gradeContext: string;
 
   // ── Objective / intent (the per-component assignment) ──────
+  /** The manifest item's title (used by some narrative generators for framing). */
+  title?: string;
   /** Specific objective the manifest assigned to THIS instance (≠ topic). */
   intent?: string;
   /** Bloom-tagged objective this component serves. Always present (fields may be undefined). */

@@ -7,6 +7,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { BaseTenBlocksData, BaseTenBlocksChallenge } from '../../primitives/visual-primitives/math/BaseTenBlocks';
 import {
   resolveEvalModeConstraint,
@@ -552,18 +553,19 @@ const baseTenBlocksSchema: Schema = {
  * @param config - Optional configuration including intent
  * @returns Base-ten blocks data with number value and challenges
  */
-export const generateBaseTenBlocks = async (
-  topic: string,
-  gradeContext: string,
-  config?: {
-    intent?: string;
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode?: string;
-    /** Structured number range from the manifest — controls grade-appropriate values. */
-    numberRange?: { min: number; max: number };
-    difficulty?: string;
-  }
-): Promise<BaseTenBlocksData> => {
+type BaseTenBlocksConfig = {
+  intent?: string;
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode?: string;
+  /** Structured number range from the manifest — controls grade-appropriate values. */
+  numberRange?: { min: number; max: number };
+  difficulty?: string;
+};
+
+export const generateBaseTenBlocks = async (ctx: GenerationContext): Promise<BaseTenBlocksData> => {
+  const { topic } = ctx;
+  const gradeContext = ctx.gradeContext;
+  const config: BaseTenBlocksConfig = { ...(ctx.raw as BaseTenBlocksConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'base-ten-blocks',

@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { NumberSequencerData } from "../../primitives/visual-primitives/math/NumberSequencer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -274,29 +275,30 @@ const numberSequencerSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateNumberSequencer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding + structural load within it.
-     * NEVER changes the numbers or the range.
-     */
-    difficulty?: string;
-    challengeCount?: number;
-    gradeBand?: 'K' | '1';
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode?: string;
-    /** Intent or title from the manifest item. */
-    intent?: string;
-    /** Learning objective this component serves (injected by flattenManifestToLayout). */
-    objectiveText?: string;
-    /** Bloom's verb for the objective. */
-    objectiveVerb?: string;
-  }
-): Promise<NumberSequencerData> => {
+type NumberSequencerConfig = {
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding + structural load within it.
+   * NEVER changes the numbers or the range.
+   */
+  difficulty?: string;
+  challengeCount?: number;
+  gradeBand?: 'K' | '1';
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode?: string;
+  /** Intent or title from the manifest item. */
+  intent?: string;
+  /** Learning objective this component serves (injected by flattenManifestToLayout). */
+  objectiveText?: string;
+  /** Bloom's verb for the objective. */
+  objectiveVerb?: string;
+};
+
+export const generateNumberSequencer = async (ctx: GenerationContext): Promise<NumberSequencerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: NumberSequencerConfig = { ...(ctx.raw as NumberSequencerConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'number-sequencer',

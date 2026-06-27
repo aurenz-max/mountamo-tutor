@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   NumberLineData,
   NumberLineOperation,
@@ -1327,22 +1328,23 @@ function buildFallbackChallenge(type: string, range: { min: number; max: number 
  *
  * Per-call schema is 4 fields — no SP-14 field-drop risk.
  */
-export const generateNumberLine = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    intent: string;
-    targetEvalMode: string;
-    numberRange: { min: number; max: number };
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes the
-     * target numbers, the scope range, or the snap precision/answer tolerance.
-     */
-    difficulty: string;
-  }>
-): Promise<NumberLineData> => {
+type NumberLineConfig = Partial<{
+  intent: string;
+  targetEvalMode: string;
+  numberRange: { min: number; max: number };
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes the
+   * target numbers, the scope range, or the snap precision/answer tolerance.
+   */
+  difficulty: string;
+}>;
+
+export const generateNumberLine = async (ctx: GenerationContext): Promise<NumberLineData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: NumberLineConfig = { ...(ctx.raw as NumberLineConfig), intent: ctx.intent };
   // Resolve eval mode from the catalog (single source of truth).
   const evalConstraint = resolveEvalModeConstraint(
     'number-line',

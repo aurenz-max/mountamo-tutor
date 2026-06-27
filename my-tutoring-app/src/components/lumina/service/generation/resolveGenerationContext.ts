@@ -64,6 +64,7 @@ export function resolveGenerationContext(
     topic,
     gradeLevel,
     gradeContext,
+    title: item.title,
     intent,
     objective,
     scope,

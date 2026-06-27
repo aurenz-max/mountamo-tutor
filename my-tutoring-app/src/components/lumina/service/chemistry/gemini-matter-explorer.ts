@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   MatterExplorerData,
   MatterObject,
@@ -174,12 +175,10 @@ const matterExplorerSchema: Schema = {
  * @param config - Optional config with intent override
  * @returns MatterExplorerData ready for the MatterExplorer component
  */
-export const generateMatterExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ intent: string }>
-): Promise<MatterExplorerData> => {
-  const intent = config?.intent || "";
+export const generateMatterExplorer = async (ctx: GenerationContext): Promise<MatterExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent || "";
 
   const gradeBand = gradeLevel.toLowerCase().includes("k") ||
     gradeLevel.toLowerCase().includes("kindergarten")

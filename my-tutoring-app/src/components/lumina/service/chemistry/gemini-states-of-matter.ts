@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   StatesOfMatterData,
   SubstanceConfig,
@@ -327,12 +328,10 @@ const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" => {
  * @param config - Optional config with intent override
  * @returns StatesOfMatterData ready for the StatesOfMatter component
  */
-export const generateStatesOfMatter = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ intent: string }>
-): Promise<StatesOfMatterData> => {
-  const intent = config?.intent || "";
+export const generateStatesOfMatter = async (ctx: GenerationContext): Promise<StatesOfMatterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent || "";
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

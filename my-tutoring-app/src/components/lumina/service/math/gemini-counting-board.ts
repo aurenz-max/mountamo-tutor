@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { CountingBoardData } from "../../primitives/visual-primitives/math/CountingBoard";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -319,32 +320,33 @@ function buildCountingBoardSchema(count: number): Schema {
  *
  * Each challenge has its own count and arrangement for progressive difficulty.
  */
-export const generateCountingBoard = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    objectType?: string;
-    count?: number;
-    arrangement?: string;
-    groupSize?: number;
-    gradeBand?: 'K' | '1';
-    challengeTypes?: string[];
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * The second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-workspace scaffolding within it. NEVER changes counts.
-     */
-    difficulty?: string;
-    /**
-     * Per-component intent the manifest stamps (e.g. "Count groups up to five").
-     * Combined with `topic` to bound the counts: a tighter scope in either string
-     * caps every challenge's count. Absent → grade-band defaults stand.
-     */
-    intent?: string;
-  }
-): Promise<CountingBoardData> => {
+type CountingBoardConfig = {
+  objectType?: string;
+  count?: number;
+  arrangement?: string;
+  groupSize?: number;
+  gradeBand?: 'K' | '1';
+  challengeTypes?: string[];
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * The second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-workspace scaffolding within it. NEVER changes counts.
+   */
+  difficulty?: string;
+  /**
+   * Per-component intent the manifest stamps (e.g. "Count groups up to five").
+   * Combined with `topic` to bound the counts: a tighter scope in either string
+   * caps every challenge's count. Absent → grade-band defaults stand.
+   */
+  intent?: string;
+};
+
+export const generateCountingBoard = async (ctx: GenerationContext): Promise<CountingBoardData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: CountingBoardConfig = { ...(ctx.raw as CountingBoardConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'counting-board',

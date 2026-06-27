@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   MoleculeConstructorData,
   MoleculeConstructorChallenge,
@@ -387,12 +388,10 @@ function parseFormulaToAtoms(
  * @param config - Optional config with intent override
  * @returns MoleculeConstructorData ready for the MoleculeConstructor component
  */
-export const generateMoleculeConstructor = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ intent: string }>
-): Promise<MoleculeConstructorData> => {
-  const intent = config?.intent || "";
+export const generateMoleculeConstructor = async (ctx: GenerationContext): Promise<MoleculeConstructorData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent || "";
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

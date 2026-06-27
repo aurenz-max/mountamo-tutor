@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { TenFrameData, TenFrameChallenge } from "../../primitives/visual-primitives/math/TenFrame";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -347,39 +348,40 @@ function buildTenFrameSchema(count: number): Schema {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateTenFrame = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    mode?: 'single' | 'double';
-    gradeBand?: 'K' | '1-2';
-    challengeTypes?: string[];
-    counterColor?: string;
-    twoColorEnabled?: boolean;
-    /**
-     * Eval mode that pins which challenge types to generate. Set by the MANIFEST
-     * (curator matches the mode to the objective) and by the eval-test tester —
-     * both write this single field. Resolved through the catalog constraint.
-     */
-    targetEvalMode?: string;
-    /** Intent from the manifest item. */
-    intent?: string;
-    /** Learning objective this component serves (injected by flattenManifestToLayout). */
-    objectiveText?: string;
-    /**
-     * Bloom's verb for the objective (injected by flattenManifestToLayout).
-     * Scope context only — surfaced as the COGNITIVE LEVEL line in the prompt.
-     * NOT the difficulty source: config.difficulty owns the support tier.
-     */
-    objectiveVerb?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * The second axis of the two-field contract: evalMode = which skill,
-     * difficulty = how much on-frame scaffolding within it.
-     */
-    difficulty?: string;
-  }
-): Promise<TenFrameData> => {
+type TenFrameConfig = {
+  mode?: 'single' | 'double';
+  gradeBand?: 'K' | '1-2';
+  challengeTypes?: string[];
+  counterColor?: string;
+  twoColorEnabled?: boolean;
+  /**
+   * Eval mode that pins which challenge types to generate. Set by the MANIFEST
+   * (curator matches the mode to the objective) and by the eval-test tester —
+   * both write this single field. Resolved through the catalog constraint.
+   */
+  targetEvalMode?: string;
+  /** Intent from the manifest item. */
+  intent?: string;
+  /** Learning objective this component serves (injected by flattenManifestToLayout). */
+  objectiveText?: string;
+  /**
+   * Bloom's verb for the objective (injected by flattenManifestToLayout).
+   * Scope context only — surfaced as the COGNITIVE LEVEL line in the prompt.
+   * NOT the difficulty source: config.difficulty owns the support tier.
+   */
+  objectiveVerb?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * The second axis of the two-field contract: evalMode = which skill,
+   * difficulty = how much on-frame scaffolding within it.
+   */
+  difficulty?: string;
+};
+
+export const generateTenFrame = async (ctx: GenerationContext): Promise<TenFrameData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: TenFrameConfig = { ...(ctx.raw as TenFrameConfig), intent: ctx.intent };
   // ── Resolve eval mode(s): single | curated blend | mixed ──
   // An explicit config.targetEvalMode (tester / curator) pins exactly that mode
   // with NO LLM call. Otherwise the generator resolves its OWN mode set from the

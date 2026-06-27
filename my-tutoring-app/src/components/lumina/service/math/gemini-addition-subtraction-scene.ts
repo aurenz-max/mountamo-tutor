@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { AdditionSubtractionSceneData, AddSubChallenge } from "../../primitives/visual-primitives/math/AdditionSubtractionScene";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -435,34 +436,35 @@ const additionSubtractionSceneSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateAdditionSubtractionScene = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    maxNumber?: number;
-    gradeBand?: string;
-    challengeTypes?: string[];
-    operations?: string[];
-    storyTypes?: string[];
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode?: string;
-    /**
-     * Per-component difficulty tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second field of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how hard within it. Drives TWO axes: AXIS 1 = on-screen
-     * scaffolding (how much help), AXIS 2 = problem STRUCTURE (storyType /
-     * unknownPosition ladder). NEVER changes the size of any number.
-     */
-    difficulty?: string;
-    /**
-     * Per-component intent the manifest assigned to THIS scene (e.g. "Take away
-     * within 5", "Make 5 by joining two groups"). `topic` is the broad lesson;
-     * `intent` is the specific objective this primitive must serve. Shapes the
-     * story focus + scope (the grade stays the ceiling). Never names an answer.
-     */
-    intent?: string;
-  }
-): Promise<AdditionSubtractionSceneData> => {
+type AdditionSubtractionSceneConfig = {
+  maxNumber?: number;
+  gradeBand?: string;
+  challengeTypes?: string[];
+  operations?: string[];
+  storyTypes?: string[];
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode?: string;
+  /**
+   * Per-component difficulty tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second field of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how hard within it. Drives TWO axes: AXIS 1 = on-screen
+   * scaffolding (how much help), AXIS 2 = problem STRUCTURE (storyType /
+   * unknownPosition ladder). NEVER changes the size of any number.
+   */
+  difficulty?: string;
+  /**
+   * Per-component intent the manifest assigned to THIS scene (e.g. "Take away
+   * within 5", "Make 5 by joining two groups"). `topic` is the broad lesson;
+   * `intent` is the specific objective this primitive must serve. Shapes the
+   * story focus + scope (the grade stays the ceiling). Never names an answer.
+   */
+  intent?: string;
+};
+
+export const generateAdditionSubtractionScene = async (ctx: GenerationContext): Promise<AdditionSubtractionSceneData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: AdditionSubtractionSceneConfig = { ...(ctx.raw as AdditionSubtractionSceneConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'addition-subtraction-scene',

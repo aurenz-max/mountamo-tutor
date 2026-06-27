@@ -10,6 +10,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -534,10 +535,16 @@ export const generateSkipCountingRunner = async (
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  // Pedagogical scope is resolved once at the registry boundary (ctx.scope). Injected
+  // right after the opening line and BEFORE the grade-level guidelines so its rules
+  // reframe grade as a CEILING. The skip-value POOL below stays grade-band-legal and
+  // topic-authoritative — the scope block binds skipValue/startFrom/endAt to the
+  // topic+objective without filtering the pool (schema-over-regex).
+  const scopeSection = buildScopePromptSection(ctx.scope);
 
   const prompt = `
 Create an educational skip counting activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - Skip counting is the bridge from counting to multiplication
 - When a child counts 5, 10, 15, 20, they're doing 5x1, 5x2, 5x3, 5x4

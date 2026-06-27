@@ -96,64 +96,39 @@ registerGenerator('periodic-table', async (item, _topic, _gradeContext) => {
 });
 
 // Matter Explorer (interactive matter classification)
-registerGenerator('matter-explorer', async (item, topic, gradeContext) => {
-  const data = await generateMatterExplorer(topic, gradeContext, {
-    intent: item.intent,
-  });
-  return {
-    type: 'matter-explorer',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('matter-explorer', async (ctx) => ({
+  type: 'matter-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateMatterExplorer(ctx),
+}));
 
 // Reaction Lab (interactive chemistry experiment station)
-registerGenerator('reaction-lab', async (item, topic, gradeContext) => {
-  const data = await generateReactionLab(topic, gradeContext, {
-    intent: item.intent,
-  });
-  return {
-    type: 'reaction-lab',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('reaction-lab', async (ctx) => ({
+  type: 'reaction-lab',
+  instanceId: ctx.instanceId,
+  data: await generateReactionLab(ctx),
+}));
 
 // States of Matter (interactive particle simulation)
-registerGenerator('states-of-matter', async (item, topic, gradeContext) => {
-  const data = await generateStatesOfMatter(topic, gradeContext, {
-    intent: item.intent,
-  });
-  return {
-    type: 'states-of-matter',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('states-of-matter', async (ctx) => ({
+  type: 'states-of-matter',
+  instanceId: ctx.instanceId,
+  data: await generateStatesOfMatter(ctx),
+}));
 
 // Atom Builder (interactive atom construction with Bohr model)
-registerGenerator('atom-builder', async (item, topic, gradeContext) => {
-  const data = await generateAtomBuilder(topic, gradeContext, {
-    intent: item.intent,
-  });
-  return {
-    type: 'atom-builder',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('atom-builder', async (ctx) => ({
+  type: 'atom-builder',
+  instanceId: ctx.instanceId,
+  data: await generateAtomBuilder(ctx),
+}));
 
 // Molecule Constructor (interactive molecule building)
-registerGenerator('molecule-constructor', async (item, topic, gradeContext) => {
-  const data = await generateMoleculeConstructor(topic, gradeContext, {
-    intent: item.intent,
-  });
-  return {
-    type: 'molecule-constructor',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('molecule-constructor', async (ctx) => ({
+  type: 'molecule-constructor',
+  instanceId: ctx.instanceId,
+  data: await generateMoleculeConstructor(ctx),
+}));
 
 // Equation Balancer (interactive chemical equation balancing)
 registerGenerator('equation-balancer', async (item, topic, gradeContext) => ({

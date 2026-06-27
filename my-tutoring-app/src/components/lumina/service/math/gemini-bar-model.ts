@@ -17,6 +17,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -947,23 +948,24 @@ function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: 
   }
 }
 
-export const generateBarModel = async (
-  topic: string,
-  gradeContext: string,
-  config?: {
-    intent?: string;
-    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 compare_bars, 4 for T3/unclassified). */
-    instanceCount?: number;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
-     */
-    difficulty?: string;
-  },
-): Promise<BarModelData> => {
+type BarModelConfig = {
+  intent?: string;
+  /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 compare_bars, 4 for T3/unclassified). */
+  instanceCount?: number;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+   */
+  difficulty?: string;
+};
+
+export const generateBarModel = async (ctx: GenerationContext): Promise<BarModelData> => {
+  const { topic } = ctx;
+  const gradeContext = ctx.gradeContext;
+  const config: BarModelConfig = { ...(ctx.raw as BarModelConfig), intent: ctx.intent };
   const evalConstraint = resolveEvalModeConstraint(
     'bar-model',
     config?.targetEvalMode,

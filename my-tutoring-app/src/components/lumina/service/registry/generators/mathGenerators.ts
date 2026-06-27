@@ -240,23 +240,17 @@ registerGenerator('two-way-table', async (item, topic, gradeContext) => ({
 // ============================================================================
 
 // Ten Frame (K-2 number sense manipulative)
-registerGenerator('ten-frame', async (item, topic, gradeContext) => ({
+registerContextGenerator('ten-frame', async (ctx) => ({
   type: 'ten-frame',
-  instanceId: item.instanceId,
-  data: await generateTenFrame(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateTenFrame(ctx),
 }));
 
 // Counting Board (K-1 counting and subitizing)
-registerGenerator('counting-board', async (item, topic, gradeContext) => ({
+registerContextGenerator('counting-board', async (ctx) => ({
   type: 'counting-board',
-  instanceId: item.instanceId,
-  data: await generateCountingBoard(topic, gradeContext, {
-    ...item.config,
-    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateCountingBoard(ctx),
 }));
 
 // Pattern Builder (K-3 algebraic thinking)
@@ -313,13 +307,10 @@ registerGenerator('comparison-builder', async (item, topic, gradeContext) => ({
 }));
 
 // Number Sequencer (K-1 sequential number understanding)
-registerGenerator('number-sequencer', async (item, topic, gradeContext) => ({
+registerContextGenerator('number-sequencer', async (ctx) => ({
   type: 'number-sequencer',
-  instanceId: item.instanceId,
-  data: await generateNumberSequencer(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateNumberSequencer(ctx),
 }));
 
 // Number Bond (K-1 part-part-whole relationships)
@@ -330,13 +321,10 @@ registerGenerator('number-bond', async (item, topic, gradeContext) => ({
 }));
 
 // Addition/Subtraction Scene (K-1 story-based addition & subtraction)
-registerGenerator('addition-subtraction-scene', async (item, topic, gradeContext) => ({
+registerContextGenerator('addition-subtraction-scene', async (ctx) => ({
   type: 'addition-subtraction-scene',
-  instanceId: item.instanceId,
-  data: await generateAdditionSubtractionScene(topic, gradeContext, {
-    ...item.config,
-    intent: (item.config?.intent as string | undefined) || item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateAdditionSubtractionScene(ctx),
 }));
 
 // Ordinal Line (K-1 ordinal position sequencing)
@@ -528,43 +516,31 @@ registerGenerator('practice-problem', async (item, topic, gradeContext) => ({
 // ============================================================================
 
 // Bar Model (K-5 comparison bars, scaled bar graphs, picture graphs)
-registerGenerator('bar-model', async (item, topic, gradeContext) => ({
+registerContextGenerator('bar-model', async (ctx) => ({
   type: 'bar-model',
-  instanceId: item.instanceId,
-  data: await generateBarModel(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateBarModel(ctx),
 }));
 
 // Number Line (linear number representation)
-registerGenerator('number-line', async (item, topic, gradeContext) => ({
+registerContextGenerator('number-line', async (ctx) => ({
   type: 'number-line',
-  instanceId: item.instanceId,
-  data: await generateNumberLine(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateNumberLine(ctx),
 }));
 
 // Base Ten Blocks (place value visualization)
-registerGenerator('base-ten-blocks', async (item, topic, gradeContext) => ({
+registerContextGenerator('base-ten-blocks', async (ctx) => ({
   type: 'base-ten-blocks',
-  instanceId: item.instanceId,
-  data: await generateBaseTenBlocks(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateBaseTenBlocks(ctx),
 }));
 
 // Fraction Circles (pie chart fractions)
-registerGenerator('fraction-circles', async (item, topic, gradeContext) => ({
+registerContextGenerator('fraction-circles', async (ctx) => ({
   type: 'fraction-circles',
-  instanceId: item.instanceId,
-  data: await generateFractionCircles(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateFractionCircles(ctx),
 }));
 
 // Percent Bar (percentage visualization)

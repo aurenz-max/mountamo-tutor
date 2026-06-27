@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   AtomBuilderData,
   AtomBuilderChallenge,
@@ -256,12 +257,10 @@ const resolveGradeBand = (gradeLevel: string): "3-5" | "6-8" => {
  * @param config - Optional config with intent override
  * @returns AtomBuilderData ready for the AtomBuilder component
  */
-export const generateAtomBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ intent: string }>
-): Promise<AtomBuilderData> => {
-  const intent = config?.intent || "";
+export const generateAtomBuilder = async (ctx: GenerationContext): Promise<AtomBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent || "";
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

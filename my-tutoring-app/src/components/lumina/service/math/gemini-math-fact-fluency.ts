@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -370,10 +371,14 @@ export const generateMathFactFluency = async (
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  // Pedagogical scope is resolved once at the registry boundary (ctx.scope). Injected
+  // right after the opening line and BEFORE the grade guidelines so its rules reframe
+  // grade as a CEILING (topic/objective wins when narrower, e.g. "facts to 5" → maxNumber ≤ 5).
+  const scopeSection = buildScopePromptSection(ctx.scope);
 
   const prompt = `
 Create a math fact fluency activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - This primitive builds RAPID RECALL of basic addition and subtraction facts.
 - Students progress through challenge types that gradually remove visual scaffolding.

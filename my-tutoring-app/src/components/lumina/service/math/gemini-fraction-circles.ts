@@ -7,6 +7,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type {
   FractionCirclesData,
   FractionCirclesChallenge,
@@ -334,21 +335,22 @@ const fractionCirclesSchema: Schema = {
  * @param config - Optional configuration including intent and targetEvalMode
  * @returns FractionCirclesData with complete challenge set
  */
-export const generateFractionCircles = async (
-  topic: string,
-  gradeContext: string,
-  config?: Partial<{
-    intent: string;
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
-     */
-    difficulty: string;
-  }>
-): Promise<FractionCirclesData> => {
+type FractionCirclesConfig = Partial<{
+  intent: string;
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+   */
+  difficulty: string;
+}>;
+
+export const generateFractionCircles = async (ctx: GenerationContext): Promise<FractionCirclesData> => {
+  const { topic } = ctx;
+  const gradeContext = ctx.gradeContext;
+  const config: FractionCirclesConfig = { ...(ctx.raw as FractionCirclesConfig), intent: ctx.intent };
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'fraction-circles',

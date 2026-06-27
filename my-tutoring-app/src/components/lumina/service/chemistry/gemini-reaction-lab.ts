@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   ReactionLabData,
   Substance,
@@ -501,12 +502,10 @@ const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" | "6-8" => {
  * @param config - Optional config with intent override
  * @returns ReactionLabData ready for the ReactionLab component
  */
-export const generateReactionLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ intent: string }>
-): Promise<ReactionLabData> => {
-  const intent = config?.intent || "";
+export const generateReactionLab = async (ctx: GenerationContext): Promise<ReactionLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent || "";
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

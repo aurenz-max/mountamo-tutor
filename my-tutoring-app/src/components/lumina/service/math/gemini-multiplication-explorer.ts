@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -413,10 +414,15 @@ export const generateMultiplicationExplorer = async (
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  // Pedagogical scope is resolved once at the registry boundary (ctx.scope). Injected
+  // right after the opening line and BEFORE the grade-level guidelines so its rules
+  // reframe grade as a CEILING (topic/objective wins when narrower, e.g. "facts up to
+  // 5×5" keeps both factors ≤ 5).
+  const scopeSection = buildScopePromptSection(ctx.scope);
 
   const prompt = `
 Create an educational multiplication explorer activity for "${topic}" at ${gradeLevel} level.
-
+${scopeSection}
 CONTEXT:
 The multiplication explorer connects 5 representations of the same fact:
 1. Equal Groups (circles with dots — "3 groups of 4")

@@ -12,7 +12,7 @@
  * Usage: import './registry/generators/coreGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerGenerator, registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Core Narrative Component Imports (from dedicated service files)
@@ -137,59 +137,57 @@ registerGenerator('curator-brief', async (item, topic, gradeContext) => {
 });
 
 // Concept Card Grid (3-card layout)
-registerGenerator('concept-card-grid', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateConceptCards(topic, gradeContext, {
+registerContextGenerator('concept-card-grid', async (ctx) => {
+  const config = ctx.raw as AnyConfig;
+  const data = await generateConceptCards(ctx.topic, ctx.gradeContext, {
     itemCount: config.itemCount,
-    intent: item.intent,
-    objectiveText: config.objectiveText,
-    objectiveVerb: config.objectiveVerb
+    intent: ctx.intent,
+    objectiveText: ctx.objective.text,
+    objectiveVerb: ctx.objective.verb
   });
   return {
     type: 'concept-card-grid',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Feature Exhibit (deep dive editorial)
-registerGenerator('feature-exhibit', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateFeatureExhibit(topic, gradeContext, {
-    intent: item.intent,
-    objectiveText: config.objectiveText,
-    objectiveVerb: config.objectiveVerb
+registerContextGenerator('feature-exhibit', async (ctx) => {
+  const data = await generateFeatureExhibit(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent,
+    objectiveText: ctx.objective.text,
+    objectiveVerb: ctx.objective.verb
   });
   return {
     type: 'feature-exhibit',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Comparison Panel (A vs B)
-registerGenerator('comparison-panel', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateComparisonPanel(topic, gradeContext, {
-    intent: item.intent,
-    objectiveText: config.objectiveText,
-    objectiveVerb: config.objectiveVerb
+registerContextGenerator('comparison-panel', async (ctx) => {
+  const data = await generateComparisonPanel(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent,
+    objectiveText: ctx.objective.text,
+    objectiveVerb: ctx.objective.verb
   });
   return {
     type: 'comparison-panel',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Generative Table (structured data)
-registerGenerator('generative-table', async (item, topic, gradeContext) => {
-  const data = await generateGenerativeTable(topic, gradeContext, {
-    intent: item.intent
+registerContextGenerator('generative-table', async (ctx) => {
+  const data = await generateGenerativeTable(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent
   });
   return {
     type: 'generative-table',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -200,26 +198,26 @@ registerGenerator('generative-table', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Graph Board (interactive polynomial graphing)
-registerGenerator('graph-board', async (item, topic, _gradeContext) => {
-  const data = await generateGraphBoard(topic, {
-    title: item.title,
-    intent: item.intent
+registerContextGenerator('graph-board', async (ctx) => {
+  const data = await generateGraphBoard(ctx.topic, {
+    title: ctx.title,
+    intent: ctx.intent
   });
   return {
     type: 'graph-board',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Scale Spectrum (nuanced judgments)
-registerGenerator('scale-spectrum', async (item, topic, gradeContext) => {
-  const data = await generateScaleSpectrum(topic, gradeContext, {
-    intent: item.intent
+registerContextGenerator('scale-spectrum', async (ctx) => {
+  const data = await generateScaleSpectrum(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent
   });
   return {
     type: 'scale-spectrum',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -241,13 +239,13 @@ registerGenerator('annotated-example', async (item, topic, gradeContext) => {
 });
 
 // Formula Card (LaTeX/Math display)
-registerGenerator('formula-card', async (item, topic, gradeContext) => {
-  const data = await generateFormulaCard(topic, gradeContext, {
-    intent: item.intent
+registerContextGenerator('formula-card', async (ctx) => {
+  const data = await generateFormulaCard(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent
   });
   return {
     type: 'formula-card',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -257,14 +255,14 @@ registerGenerator('formula-card', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Image Panel (AI-generated images)
-registerGenerator('image-panel', async (item, topic, gradeContext) => {
-  const data = await generateImagePanel(topic, gradeContext, {
-    intent: item.intent,
+registerContextGenerator('image-panel', async (ctx) => {
+  const data = await generateImagePanel(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent,
     interactionMode: 'identify' // Always enable annotation mode with evaluation
   });
   return {
     type: 'image-panel',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -276,38 +274,38 @@ registerGenerator('image-panel', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Take Home Activity (hands-on activities)
-registerGenerator('take-home-activity', async (item, topic, gradeContext) => {
-  const data = await generateTakeHomeActivity(topic, gradeContext, {
-    intent: item.intent
+registerContextGenerator('take-home-activity', async (ctx) => {
+  const data = await generateTakeHomeActivity(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent
   });
   return {
     type: 'take-home-activity',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Interactive Passage (reading comprehension)
-registerGenerator('interactive-passage', async (item, topic, gradeContext) => {
-  const data = await generateInteractivePassage(topic, gradeContext, {
-    intent: item.intent
+registerContextGenerator('interactive-passage', async (ctx) => {
+  const data = await generateInteractivePassage(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent
   });
   return {
     type: 'interactive-passage',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Word Builder (vocabulary & morphology)
-registerGenerator('word-builder', async (item, topic, gradeContext) => {
-  const data = await generateWordBuilder(topic, gradeContext, {
-    ...item.config,
-    intent: item.intent || item.title,
+registerContextGenerator('word-builder', async (ctx) => {
+  const data = await generateWordBuilder(ctx.topic, ctx.gradeContext, {
+    ...(ctx.raw as AnyConfig),
+    intent: ctx.intent,
   });
   return {
     type: 'word-builder',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -317,55 +315,54 @@ registerGenerator('word-builder', async (item, topic, gradeContext) => {
 // ============================================================================
 
 // Math Visual (dynamic math visualization based on visual type)
-registerGenerator('math-visual', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateMathVisual(topic, gradeContext, {
+registerContextGenerator('math-visual', async (ctx) => {
+  const config = ctx.raw as AnyConfig;
+  const data = await generateMathVisual(ctx.topic, ctx.gradeContext, {
     visualType: config.visualType,
-    intent: item.intent,
-    title: item.title
+    intent: ctx.intent,
+    title: ctx.title
   });
   return {
     type: 'math-visual',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
 // Custom Visual (rich interactive HTML experiences)
-registerGenerator('custom-visual', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateCustomVisual(topic, gradeContext, {
-    intent: item.intent,
-    title: item.title,
+registerContextGenerator('custom-visual', async (ctx) => {
+  const config = ctx.raw as AnyConfig;
+  const data = await generateCustomVisual(ctx.topic, ctx.gradeContext, {
+    intent: ctx.intent,
+    title: ctx.title,
     subject: config.subject,
     unitTitle: config.unitTitle,
     keyTerms: config.keyTerms,
     conceptsCovered: config.conceptsCovered,
-    objectiveId: config.objectiveId,
-    objectiveText: config.objectiveText,
-    objectiveVerb: config.objectiveVerb
+    objectiveId: ctx.objective.id,
+    objectiveText: ctx.objective.text,
+    objectiveVerb: ctx.objective.verb
   });
   return {
     type: 'custom-visual',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data: {
       type: 'custom-web' as const,
-      id: item.instanceId,
+      id: ctx.instanceId,
       ...data,
     }
   };
 });
 
 // Sentence Analyzer (grammar/sentence structure analysis)
-registerGenerator('sentence-analyzer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const data = await generateSentenceAnalyzer(topic, gradeContext, {
-    ...config,
-    intent: item.intent || item.title,
+registerContextGenerator('sentence-analyzer', async (ctx) => {
+  const data = await generateSentenceAnalyzer(ctx.topic, ctx.gradeContext, {
+    ...(ctx.raw as AnyConfig),
+    intent: ctx.intent,
   });
   return {
     type: 'sentence-analyzer',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
