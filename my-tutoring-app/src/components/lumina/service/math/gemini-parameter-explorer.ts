@@ -18,6 +18,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -277,10 +278,12 @@ const FORMULA_SCHEMA: Schema = {
 async function runFormulaService(
   topic: string,
   gradeLevel: string,
+  scopeSection = '',
 ): Promise<FormulaResult | null> {
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
     contents: `Design a formula for a Parameter Explorer on "${topic}" for ${gradeLevel} students.
+${scopeSection}
 
 A Parameter Explorer lets students manipulate formula variables via sliders and observe output changes in real time.
 
@@ -743,6 +746,7 @@ export const generateParameterExplorer = async (
 ): Promise<ParameterExplorerData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as ParameterExplorerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -773,7 +777,7 @@ export const generateParameterExplorer = async (
   console.log(`[ParameterExplorer] Stage 1: Formula service for "${topic}"`);
 
   // ── Stage 1 (Sequential): Formula definition ──
-  const formulaResult = await runFormulaService(topic, gradeLevel);
+  const formulaResult = await runFormulaService(topic, gradeLevel, scopeSection);
 
   if (!formulaResult) {
     console.warn('[ParameterExplorer] Formula service returned empty, using fallback');

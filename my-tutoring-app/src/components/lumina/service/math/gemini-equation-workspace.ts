@@ -12,6 +12,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -506,6 +507,7 @@ async function generateSingleChallenge(
   gradeLevel: string,
   index: number,
   supportTier?: SupportTier | null,
+  scopeSection = '',
 ): Promise<EquationWorkspaceChallenge | null> {
   const cfg = SUB_GEN_CONFIGS[type];
   const typeDoc = CHALLENGE_TYPE_DOCS[type];
@@ -520,7 +522,7 @@ async function generateSingleChallenge(
 
   const prompt = `
 Generate ONE algebraic equation challenge for a ${gradeLevel} student learning "${topic}".
-
+${scopeSection}
 Challenge type: ${type}
 ${typeDoc.promptDoc}
 
@@ -619,6 +621,7 @@ export const generateEquationWorkspace = async (
 ): Promise<EquationWorkspaceData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as EquationWorkspaceConfig;
   const evalConstraint = resolveEvalModeConstraint(
     "equation-workspace",
@@ -662,7 +665,7 @@ export const generateEquationWorkspace = async (
   // Generate all challenges in parallel
   const results = await Promise.all(
     typePlan.map((type, idx) =>
-      generateSingleChallenge(type, topic, gradeLevel, idx, supportTier),
+      generateSingleChallenge(type, topic, gradeLevel, idx, supportTier, scopeSection),
     ),
   );
 

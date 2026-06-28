@@ -8,6 +8,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -405,6 +406,7 @@ export const generateNumberBond = async (
 ): Promise<NumberBondData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as NumberBondConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -449,7 +451,7 @@ export const generateNumberBond = async (
 
   const prompt = `
 Create an educational number bond activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - A number bond shows part-part-whole relationships: a whole number connected to two parts that add up to it
 - Students learn to decompose numbers, find missing parts, build equations, and understand fact families

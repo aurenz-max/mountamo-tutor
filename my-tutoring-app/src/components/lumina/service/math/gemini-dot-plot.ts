@@ -6,6 +6,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Public types (unchanged shape — callers and component must not break)
@@ -279,11 +280,12 @@ async function generateWholeNumberPlot(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a WHOLE NUMBER dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student plots a given whole-number dataset on a labeled line plot.
 GRADE BAND: 2-3 (CCSS 3.MD.B.4).
 
@@ -359,11 +361,12 @@ async function generateMeasureAndPlot(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a MEASURE AND PLOT dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student measures visual rulers/objects, then plots the measurements.
 GRADE: 3 (CCSS 3.MD.B.4).
 
@@ -457,11 +460,12 @@ async function generateReadFrequency(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a READ FREQUENCY dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student reads an EXISTING dot plot and identifies the most or least frequent value.
 GRADE: 3-4 (CCSS 3.MD.B.3).
 
@@ -544,11 +548,12 @@ async function generateFractionalUnits(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a FRACTIONAL UNITS dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student plots data with halves / quarters / eighths on a fractional number line.
 GRADE: 3-5 (CCSS 3.MD.B.4, 5.MD.B.2).
 
@@ -629,11 +634,12 @@ async function generateComputeStats(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a COMPUTE STATS dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student computes median, mode, OR range from a complete dot plot.
 GRADE: 5-6 (CCSS 6.SP.B).
 
@@ -779,11 +785,12 @@ async function generateCompareDatasets(
   topic: string,
   gradeLevel: string,
   config?: DotPlotConfig,
+  scopeSection = '',
 ): Promise<DotPlotData> {
   const tier = normalizeSupportTier(config?.difficulty);
   const prompt = `
 Create a COMPARE DATASETS dot plot activity for "${topic}" at grade ${gradeLevel}.
-
+${scopeSection}
 TASK: Student compares two parallel dot plots by center or spread.
 GRADE: 6-7 (CCSS 7.SP.B).
 
@@ -882,6 +889,7 @@ export const generateDotPlot = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as DotPlotConfig;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const evalConstraint = resolveEvalModeConstraint(
     'dot-plot',
     config?.targetEvalMode,
@@ -894,18 +902,18 @@ export const generateDotPlot = async (
   let data: DotPlotData;
   switch (mode) {
     case 'measure_and_plot':
-      data = await generateMeasureAndPlot(topic, gradeLevel, config); break;
+      data = await generateMeasureAndPlot(topic, gradeLevel, config, scopeSection); break;
     case 'read_frequency':
-      data = await generateReadFrequency(topic, gradeLevel, config); break;
+      data = await generateReadFrequency(topic, gradeLevel, config, scopeSection); break;
     case 'fractional_units':
-      data = await generateFractionalUnits(topic, gradeLevel, config); break;
+      data = await generateFractionalUnits(topic, gradeLevel, config, scopeSection); break;
     case 'compute_stats':
-      data = await generateComputeStats(topic, gradeLevel, config); break;
+      data = await generateComputeStats(topic, gradeLevel, config, scopeSection); break;
     case 'compare_datasets':
-      data = await generateCompareDatasets(topic, gradeLevel, config); break;
+      data = await generateCompareDatasets(topic, gradeLevel, config, scopeSection); break;
     case 'whole_number_plot':
     default:
-      data = await generateWholeNumberPlot(topic, gradeLevel, config); break;
+      data = await generateWholeNumberPlot(topic, gradeLevel, config, scopeSection); break;
   }
 
   // Apply the support tier deterministically AFTER assembly. Resolve each

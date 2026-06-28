@@ -10,6 +10,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ============================================================================
 // Eval Mode Configuration
@@ -503,12 +504,13 @@ async function generatePlotPoint(
   gradeLevel: string,
   gridMin: number,
   gridMax: number,
-  tier: SupportTier | null
+  tier: SupportTier | null,
+  scopeSection = ''
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 coordinate plane challenges where a student must plot a point at given coordinates.
 
 Topic: ${topic}
-Grade Level: ${gradeLevel}
+${scopeSection}Grade Level: ${gradeLevel}
 Grid Range: ${gridMin} to ${gridMax} on both axes
 
 RULES:
@@ -569,12 +571,13 @@ async function generateReadPoint(
   gradeLevel: string,
   gridMin: number,
   gridMax: number,
-  tier: SupportTier | null
+  tier: SupportTier | null,
+  scopeSection = ''
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 coordinate plane challenges where a point is displayed and the student must identify its coordinates from 4 multiple-choice options.
 
 Topic: ${topic}
-Grade Level: ${gradeLevel}
+${scopeSection}Grade Level: ${gradeLevel}
 Grid Range: ${gridMin} to ${gridMax} on both axes
 
 RULES:
@@ -657,12 +660,13 @@ async function generateFindSlope(
   gradeLevel: string,
   gridMin: number,
   gridMax: number,
-  tier: SupportTier | null
+  tier: SupportTier | null,
+  scopeSection = ''
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 find-slope challenges. Two points are shown on a coordinate plane and the student must calculate the slope.
 
 Topic: ${topic}
-Grade Level: ${gradeLevel}
+${scopeSection}Grade Level: ${gradeLevel}
 Grid Range: ${gridMin} to ${gridMax} on both axes
 
 RULES:
@@ -753,12 +757,13 @@ async function generateFindIntercept(
   gradeLevel: string,
   gridMin: number,
   gridMax: number,
-  tier: SupportTier | null
+  tier: SupportTier | null,
+  scopeSection = ''
 ): Promise<{ title: string; challenges: CoordinateGraphChallenge[] }> {
   const prompt = `Generate 5 find-y-intercept challenges. A line is drawn on a coordinate plane and the student must identify where it crosses the y-axis.
 
 Topic: ${topic}
-Grade Level: ${gradeLevel}
+${scopeSection}Grade Level: ${gradeLevel}
 Grid Range: ${gridMin} to ${gridMax} on both axes
 
 RULES:
@@ -869,6 +874,7 @@ export const generateCoordinateGraph = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as CoordinateGraphConfig;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   // Resolve eval mode to challenge type(s)
   const constraint = resolveEvalModeConstraint(
     "coordinate-graph",
@@ -904,7 +910,8 @@ export const generateCoordinateGraph = async (
       g: string,
       min: number,
       max: number,
-      tier: SupportTier | null
+      tier: SupportTier | null,
+      scopeSection?: string
     ) => Promise<{ title: string; challenges: CoordinateGraphChallenge[] }>
   > = {
     plot_point: generatePlotPoint,
@@ -917,7 +924,7 @@ export const generateCoordinateGraph = async (
     const gen = generators[ct];
     if (!gen) continue;
     const ctRange = getGridRange(gradeLevel, ct);
-    const result = await gen(topic, gradeLevel, ctRange.gridMin, ctRange.gridMax, supportTier);
+    const result = await gen(topic, gradeLevel, ctRange.gridMin, ctRange.gridMax, supportTier, scopeSection);
     if (allChallenges.length === 0) title = result.title;
     allChallenges.push(...result.challenges);
   }

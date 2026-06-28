@@ -8,6 +8,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -1216,6 +1217,7 @@ export const generateEquationBuilder = async (
 ): Promise<EquationBuilderData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as EquationBuilderConfig;
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -1277,7 +1279,7 @@ export const generateEquationBuilder = async (
 
   const prompt = `
 Create an educational equation-building activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - Students build, evaluate, and balance equations using draggable number and operator tiles
 - The MOST IMPORTANT concept: the equal sign = means "same amount on both sides," NOT "answer comes next"

@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -432,6 +433,7 @@ export const generatePatternBuilder = async (
 ): Promise<PatternBuilderData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as PatternBuilderConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -506,7 +508,7 @@ export const generatePatternBuilder = async (
 
   const prompt = `
 Create an educational pattern building activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - Pattern recognition is a foundational algebraic thinking skill
 - Students progress from recognizing to extending to creating patterns

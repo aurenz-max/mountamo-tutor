@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -252,6 +253,7 @@ export const generateAnalogClock = async (
 ): Promise<AnalogClockData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as AnalogClockConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -283,7 +285,7 @@ export const generateAnalogClock = async (
 
   const prompt = `
 Create an educational analog clock activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - Students learn to read analog clocks, set times, match analog to digital, and calculate elapsed time
 - The analog clock has an hour hand and a minute hand on a 12-hour face

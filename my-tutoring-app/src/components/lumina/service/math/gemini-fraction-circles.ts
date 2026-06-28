@@ -47,8 +47,14 @@ function resolveGradeBand(gradeContext: string): 'K-2' | '3-5' {
 }
 
 /** Roll a Fisher-Yates–shuffled pool of grade-legal proper fractions (the shuffle
- *  IS the entropy). Skips the trivial shade-all whole. */
+ *  IS the entropy). Skips the trivial shade-all whole. Every grade-legal
+ *  denominator is GUARANTEED at least one candidate so a topic/intent that names a
+ *  fraction family (e.g. "halves and thirds") always has it available to pick —
+ *  the family bias is then steered by the prompt, not regexed out of the prose. */
 function rollFractionPool(denominators: number[], count = 9): string[] {
+  // One random proper fraction per denominator → guarantees family coverage.
+  const covered = denominators.map((d) => `${1 + Math.floor(Math.random() * (d - 1))}/${d}`);
+  // The full grade-legal set, shuffled, to fill any remaining slots with variety.
   const all: string[] = [];
   for (const d of denominators) {
     for (let n = 1; n < d; n++) all.push(`${n}/${d}`);
@@ -57,18 +63,28 @@ function rollFractionPool(denominators: number[], count = 9): string[] {
     const j = Math.floor(Math.random() * (i + 1));
     [all[i], all[j]] = [all[j], all[i]];
   }
-  return all.slice(0, Math.min(count, all.length));
+  const pool = [...covered];
+  for (const f of all) {
+    if (pool.length >= count) break;
+    if (!pool.includes(f)) pool.push(f);
+  }
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.max(count, denominators.length));
 }
 
-/** Build the prompt block that hands Gemini the rolled candidate set. */
-function buildFractionPoolSection(gradeContext: string): string {
+/** Build the prompt block that hands Gemini the rolled candidate set. Both the
+ *  topic AND the per-instance intent are authoritative for the fraction family. */
+function buildFractionPoolSection(gradeContext: string, intent?: string): string {
   const dens = GRADE_BAND_DENOMINATORS[resolveGradeBand(gradeContext)];
   const list = rollFractionPool(dens).join(', ');
   return `
 FRACTION POOL (pre-shuffled by the adaptive system for variety):
 - Candidate fractions: ${list}
-- The topic is AUTHORITATIVE: if it names a fraction family (e.g. "fourths", "thirds"), prefer candidates with that denominator.
-- Assign a DIFFERENT fraction from this list to each challenge — do NOT default to 1/2, 2/3, 3/4. Favor VARIED numerators, not just unit fractions.
+- The topic${intent ? ' AND the lesson intent' : ''} ${intent ? 'are' : 'is'} AUTHORITATIVE for the fraction family: if ${intent ? 'either' : 'it'} names a family (e.g. "halves", "thirds", "tenths and twelfths") or a denominator range, use ONLY those denominators for EVERY challenge (every grade-legal denominator is represented in the pool above, so the named family is always available). You MAY repeat a fraction across challenges to stay on-family — varying the numerator is enough; treat all off-family pool entries as unavailable.
+- Only when NO family is named, assign a DIFFERENT fraction from this list to each challenge — do NOT default to 1/2, 2/3, 3/4. Favor VARIED numerators, not just unit fractions.
 - For 'compare': choose TWO DIFFERENT, non-equivalent fractions from the pool (the compareFraction too).
 - For 'equivalent': pick a base fraction from the pool, then choose equivalentDenominator from the legal denominators so the equivalent has a whole-number numerator.
 - Do NOT invent a fraction whose denominator is outside this list.`;
@@ -365,8 +381,9 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
     ?? ['identify', 'build', 'compare', 'equivalent']) as FractionChallengeType[];
   const tierSection = supportTier ? buildTierPromptSection(tierModes, supportTier) : '';
 
-  // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt) ──
-  const fractionPoolSection = buildFractionPoolSection(gradeContext);
+  // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt); the
+  //    per-instance intent steers the family within it ──
+  const fractionPoolSection = buildFractionPoolSection(gradeContext, config?.intent);
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint

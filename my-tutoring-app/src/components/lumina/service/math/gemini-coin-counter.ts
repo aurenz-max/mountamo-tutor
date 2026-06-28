@@ -7,6 +7,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -389,12 +390,13 @@ async function generateIdentifyChallenges(
   gradeLevel: string,
   gradeBand: string,
   tier: SupportTier | null,
+  scopeSection = '',
 ): Promise<CoinCounterChallenge[]> {
   const pool = gradeCoinPool(gradeBand);
   const prompt = `
 Create an educational coin IDENTIFICATION activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
-
+${scopeSection}
 Students must identify coins by appearance. They see 3-4 coins displayed WITHOUT value labels
 and must answer "Which coin is the [name]?"
 
@@ -458,6 +460,7 @@ async function generateCountChallenges(
   gradeBand: string,
   singleCoinType: boolean,
   tier: SupportTier | null,
+  scopeSection = '',
 ): Promise<CoinCounterChallenge[]> {
   const coinConstraint = singleCoinType
     ? "IMPORTANT: Each challenge MUST use ONLY ONE type of coin (e.g., all pennies, or all nickels). Do NOT mix coin types within a single challenge."
@@ -466,7 +469,7 @@ async function generateCountChallenges(
   const prompt = `
 Create an educational coin COUNTING activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
-
+${scopeSection}
 Students count the total value of displayed coins in cents.
 
 ${gradeCoinsPrompt(gradeBand)}
@@ -519,11 +522,12 @@ async function generateMakeAmountChallenges(
   gradeLevel: string,
   gradeBand: string,
   tier: SupportTier | null,
+  scopeSection = '',
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational MAKE AMOUNT activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
-
+${scopeSection}
 Students drag coins to build a target amount.
 
 ${gradeCoinsPrompt(gradeBand)}
@@ -570,11 +574,12 @@ async function generateCompareChallenges(
   gradeLevel: string,
   gradeBand: string,
   tier: SupportTier | null,
+  scopeSection = '',
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational coin COMPARISON activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
-
+${scopeSection}
 Students compare two groups of coins to determine which has more value.
 
 ${gradeCoinsPrompt(gradeBand)}
@@ -628,11 +633,12 @@ async function generateMakeChangeChallenges(
   gradeLevel: string,
   gradeBand: string,
   tier: SupportTier | null,
+  scopeSection = '',
 ): Promise<CoinCounterChallenge[]> {
   const prompt = `
 Create an educational MAKE CHANGE activity for "${topic}" (${gradeLevel} students).
 Theme: ${randomTheme()}.
-
+${scopeSection}
 Students calculate change from a purchase. Show what was paid and item cost, student computes the difference.
 
 ${gradeCoinsPrompt(gradeBand)}
@@ -757,6 +763,7 @@ export const generateCoinCounter = async (
 ): Promise<CoinCounterData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as CoinCounterConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -780,7 +787,7 @@ export const generateCoinCounter = async (
     typeOrder.push(type);
     switch (type) {
       case "identify":
-        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, supportTier));
+        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, supportTier, scopeSection));
         break;
       case "count":
         // count-like = single coin type, count-mixed or unconstrained = mixed
@@ -791,17 +798,18 @@ export const generateCoinCounter = async (
             gradeBand,
             config?.targetEvalMode === "count-like",
             supportTier,
+            scopeSection,
           ),
         );
         break;
       case "make-amount":
-        generators.push(generateMakeAmountChallenges(topic, gradeLevel, gradeBand, supportTier));
+        generators.push(generateMakeAmountChallenges(topic, gradeLevel, gradeBand, supportTier, scopeSection));
         break;
       case "compare":
-        generators.push(generateCompareChallenges(topic, gradeLevel, gradeBand, supportTier));
+        generators.push(generateCompareChallenges(topic, gradeLevel, gradeBand, supportTier, scopeSection));
         break;
       case "make-change":
-        generators.push(generateMakeChangeChallenges(topic, gradeLevel, gradeBand, supportTier));
+        generators.push(generateMakeChangeChallenges(topic, gradeLevel, gradeBand, supportTier, scopeSection));
         break;
     }
   }

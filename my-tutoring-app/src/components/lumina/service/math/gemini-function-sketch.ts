@@ -8,6 +8,7 @@ import type {
 } from "../../primitives/visual-primitives/math/FunctionSketch";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -562,6 +563,7 @@ async function generateIdentifyFeatures(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null,
+  scopeSection = '',
   attempt: number = 0,
 ): Promise<SubGeneratorResult> {
   const retryHint = attempt > 0
@@ -570,6 +572,7 @@ async function generateIdentifyFeatures(
   const tierSection = tier ? buildTierPromptSection('identify-features', tier) : '';
   const prompt = `${retryHint}${tierSection}
 Create a function for a "${topic}" lesson (grade ${gradeLevel}) where the student must identify key features on the graph.
+${scopeSection}
 
 CRITICAL — FUNCTION FAMILY REQUIREMENT:
 This challenge mode tests identifying maxima, minima, roots, and intercepts. The function you choose MUST have at least one genuine turning point (a local maximum or minimum). DO NOT use linear functions (y = mx + b) — linear functions are strictly monotonic and have NO maximum and NO minimum. They are FORBIDDEN for this mode.
@@ -641,7 +644,7 @@ EXAMPLE (quadratic):
   if (features.length < 2) {
     if (attempt < 1) {
       console.warn('[FunctionSketch] identify-features: retrying with stronger turning-point hint');
-      return generateIdentifyFeatures(topic, gradeLevel, tier, attempt + 1);
+      return generateIdentifyFeatures(topic, gradeLevel, tier, scopeSection, attempt + 1);
     }
     throw new Error('[FunctionSketch] Too few valid features after semantic validation');
   }
@@ -662,10 +665,11 @@ EXAMPLE (quadratic):
   };
 }
 
-async function generateClassifyShape(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+async function generateClassifyShape(topic: string, gradeLevel: string, tier: SupportTier | null, scopeSection = ''): Promise<SubGeneratorResult> {
   const tierSection = tier ? buildTierPromptSection('classify-shape', tier) : '';
   const prompt = `${tierSection}
 Create a function classification challenge for "${topic}" (grade ${gradeLevel}).
+${scopeSection}
 
 ${getFunctionGuidance(gradeLevel)}
 
@@ -733,10 +737,11 @@ EXAMPLE:
   };
 }
 
-async function generateSketchMatch(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+async function generateSketchMatch(topic: string, gradeLevel: string, tier: SupportTier | null, scopeSection = ''): Promise<SubGeneratorResult> {
   const tierSection = tier ? buildTierPromptSection('sketch-match', tier) : '';
   const prompt = `${tierSection}
 Create a sketch challenge for "${topic}" (grade ${gradeLevel}). The student will place control points to draw what they think the function looks like.
+${scopeSection}
 
 ${getFunctionGuidance(gradeLevel)}
 
@@ -809,10 +814,11 @@ EXAMPLE:
   };
 }
 
-async function generateCompareFunctions(topic: string, gradeLevel: string, tier: SupportTier | null): Promise<SubGeneratorResult> {
+async function generateCompareFunctions(topic: string, gradeLevel: string, tier: SupportTier | null, scopeSection = ''): Promise<SubGeneratorResult> {
   const tierSection = tier ? buildTierPromptSection('compare-functions', tier) : '';
   const prompt = `${tierSection}
 Create a function comparison challenge for "${topic}" (grade ${gradeLevel}). Two curves are shown and the student picks which one matches a description.
+${scopeSection}
 
 ${getFunctionGuidance(gradeLevel)}
 
@@ -910,7 +916,7 @@ const COUNT_BY_MODE: Record<ChallengeType, number> = {
 
 function subGeneratorFor(
   type: ChallengeType,
-): (topic: string, gradeLevel: string, tier: SupportTier | null) => Promise<SubGeneratorResult> {
+): (topic: string, gradeLevel: string, tier: SupportTier | null, scopeSection?: string) => Promise<SubGeneratorResult> {
   switch (type) {
     case 'classify-shape':    return generateClassifyShape;
     case 'sketch-match':      return generateSketchMatch;
@@ -939,6 +945,7 @@ export const generateFunctionSketch = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FunctionSketchConfig;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const evalConstraint = resolveEvalModeConstraint('function-sketch', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('FunctionSketch', config?.targetEvalMode, evalConstraint);
 
@@ -964,7 +971,7 @@ export const generateFunctionSketch = async (
   // a Gemini fake-maximum on a linear function) doesn't kill the batch.
   const runOne = subGeneratorFor(challengeType);
   const settled = await Promise.allSettled(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier)),
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier, scopeSection)),
   );
   const subResults: SubGeneratorResult[] = settled
     .filter((s): s is PromiseFulfilledResult<SubGeneratorResult> => s.status === 'fulfilled')

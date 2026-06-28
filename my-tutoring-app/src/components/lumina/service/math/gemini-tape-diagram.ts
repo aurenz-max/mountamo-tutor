@@ -23,6 +23,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -481,9 +482,10 @@ async function generateRepresentMode(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null = null,
+  scopeSection = '',
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('represent', tier) : null;
-  const tierSection = tier ? buildTierPromptSection('represent', tier) : '';
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('represent', tier) : '');
   // Structural lever: part count 2→3→4 (default 3 when no tier). Clamp to 2-4.
   const partCount = Math.max(2, Math.min(4, shape?.partCount ?? 3));
   const prompt = `
@@ -544,9 +546,10 @@ async function generatePartWholeMode(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null = null,
+  scopeSection = '',
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('solve_part_whole', tier) : null;
-  const tierSection = tier ? buildTierPromptSection('solve_part_whole', tier) : '';
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_part_whole', tier) : '');
   const prompt = `
 Create a cohesive part-whole problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -634,9 +637,10 @@ async function generateComparisonMode(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null = null,
+  scopeSection = '',
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('solve_comparison', tier) : null;
-  const tierSection = tier ? buildTierPromptSection('solve_comparison', tier) : '';
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_comparison', tier) : '');
   const prompt = `
 Create a comparison word problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -732,9 +736,10 @@ async function generateMultiStepMode(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null = null,
+  scopeSection = '',
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('multi_step', tier) : null;
-  const tierSection = tier ? buildTierPromptSection('multi_step', tier) : '';
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '');
   // Structural lever: solve-step count (2 default, 3 at hard). Drives both the
   // schema (a 3-step chain adds part3 + a second intermediate) and the segment
   // assembly + solveOrder so the render and the array stay in agreement.
@@ -836,7 +841,7 @@ ${stepCount >= 3
 
 function subGeneratorFor(
   challengeType: string,
-): (topic: string, gradeLevel: string, tier?: SupportTier | null) => Promise<SubGenResult> {
+): (topic: string, gradeLevel: string, tier?: SupportTier | null, scopeSection?: string) => Promise<SubGenResult> {
   switch (challengeType) {
     case 'represent':         return generateRepresentMode;
     case 'solve_comparison':  return generateComparisonMode;
@@ -865,6 +870,7 @@ export const generateTapeDiagram = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TapeDiagramConfig;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const evalConstraint = resolveEvalModeConstraint('tape-diagram', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('TapeDiagram', config?.targetEvalMode, evalConstraint);
 
@@ -893,7 +899,7 @@ export const generateTapeDiagram = async (
   // converges per-call, not across independent calls).
   const runOne = subGeneratorFor(challengeType);
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier)),
+    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier, scopeSection)),
   );
 
   const head = subResults[0];

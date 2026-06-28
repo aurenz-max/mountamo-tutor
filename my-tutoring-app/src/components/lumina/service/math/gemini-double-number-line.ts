@@ -30,6 +30,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the component)
@@ -509,6 +510,7 @@ export const generateDoubleNumberLine = async (
 ): Promise<DoubleNumberLineData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as DoubleNumberLineConfig;
   // Resolve eval mode from catalog (single source of truth)
   const evalConstraint = resolveEvalModeConstraint(
@@ -552,7 +554,7 @@ export const generateDoubleNumberLine = async (
 
   const prompt = `
 Create a multi-challenge double number line session for "${topic}" (${gradeLevel}).
-
+${scopeSection}
 This session contains ${instanceCount} ratio challenges that all share ONE proportional
 relationship (e.g., all flour→cookies, all dollars→hours). Per-challenge target ask-points
 will be derived locally — your job is to set up the SHARED session context.

@@ -509,6 +509,7 @@ export const generateHundredsChart = async (
 ): Promise<HundredsChartData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const intent = ctx.intent;
   const config = ctx.raw as HundredsChartConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -535,6 +536,19 @@ export const generateHundredsChart = async (
     ? buildTierPromptSection(pinnedType, supportTier)
     : '';
 
+  // ── Per-instance objective (ctx.intent) — the SPECIFIC focus the manifest
+  // assigned to THIS activity (≠ the broad topic). When it names a particular
+  // skip-counting interval, concentrate the activity on it (in-pool); otherwise
+  // the variety rule below stands. The interval is NEVER shown to the student
+  // (instructions/hints stay generic), so this cannot leak a find_skip_value answer.
+  const objectiveSection = intent
+    ? `\n## PRIMARY OBJECTIVE FOR THIS ACTIVITY\n${intent}\n`
+      + `- This is the specific focus the lesson assigned for this activity. If it names a particular `
+      + `skip-counting interval (e.g. "by 5s", "counting by 10"), make MOST challenges use THAT interval — `
+      + `it must be one of the grade-legal values [${gradeSkips.join(', ')}]; include at most one or two `
+      + `other intervals for contrast. If it names no specific interval, vary across the pool per the rule below.\n`
+    : '';
+
   // ── Build prompt — Gemini only picks types/skips and writes hints + topic flavor ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
@@ -542,7 +556,7 @@ export const generateHundredsChart = async (
 Create a hundreds-chart activity for "${topic}" for ${gradeLevel} students.
 
 A hundreds chart is a 10×10 grid (numbers 1-100). Students explore skip-counting patterns.
-
+${objectiveSection}
 ${challengeTypeSection}
 ${tierSection}
 ${!evalConstraint ? `
@@ -555,7 +569,7 @@ PROGRESSION (use this order when no eval mode is specified):
 
 RULES:
 - Generate exactly ${count} challenges.
-- Vary skipValue across challenges (choose from: ${gradeSkips.join(', ')}). Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
+- Unless the PRIMARY OBJECTIVE above directs you to focus on a specific interval, vary skipValue across challenges (choose from: ${gradeSkips.join(', ')}). Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
 ${config?.skipValue ? `- At least one challenge must use skipValue=${config.skipValue}.` : ''}
 ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChallengeTypes.join(' or ')}.` : ''}
 - Hints should guide thinking without giving away the answer or the skip value. Keep them short (one sentence).

@@ -12,6 +12,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -976,6 +977,7 @@ export const generateCompareObjects = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as CompareObjectsConfig;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'compare-objects',
@@ -997,7 +999,7 @@ export const generateCompareObjects = async (
     ? evalConstraint.allowedTypes[0] as ChallengeType
     : undefined;
   const sectionFor = (mode: ChallengeType): string =>
-    supportTier ? buildTierPromptSection(mode, supportTier) : '';
+    scopeSection + (supportTier ? buildTierPromptSection(mode, supportTier) : '');
 
   // ── Run sub-generators for allowed types in parallel ──
   const generators: Promise<CompareObjectsChallenge[]>[] = [];

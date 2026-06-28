@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { buildScopePromptSection } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -272,6 +273,7 @@ export const generateRatioTable = async (
 ): Promise<RatioTableData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as RatioTableConfig;
   // ---------------------------------------------------------------------------
   // Eval mode resolution
@@ -309,7 +311,7 @@ export const generateRatioTable = async (
 
   const prompt = `
 Create an educational ratio table activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 This activity should contain 3-5 CHALLENGES that progress in difficulty.
 
 ${challengeTypeSection}
