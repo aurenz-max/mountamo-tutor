@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   EnergyOfReactionsData,
 } from "../../primitives/visual-primitives/chemistry/EnergyOfReactions";
@@ -340,11 +341,10 @@ const resolveGradeBand = (gradeLevel: string): "5-6" | "7-8" => {
  * @param config - Optional partial EnergyOfReactionsData for overrides
  * @returns EnergyOfReactionsData ready for the EnergyOfReactions component
  */
-export const generateEnergyOfReactions = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<EnergyOfReactionsData>
-): Promise<EnergyOfReactionsData> => {
+export const generateEnergyOfReactions = async (ctx: GenerationContext): Promise<EnergyOfReactionsData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<EnergyOfReactionsData>;
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -99,10 +100,11 @@ const dumpTruckLoaderSchema: Schema = {
  * @returns DumpTruckLoaderData with complete configuration
  */
 export const generateDumpTruckLoader = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<DumpTruckLoaderData>
+  ctx: GenerationContext,
 ): Promise<DumpTruckLoaderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<DumpTruckLoaderData>;
   const prompt = `
 Create an educational Dump Truck Loader visualization for teaching "${topic}" to ${gradeLevel} students.
 

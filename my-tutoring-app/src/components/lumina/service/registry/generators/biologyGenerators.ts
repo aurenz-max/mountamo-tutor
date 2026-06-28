@@ -12,7 +12,7 @@
  * Usage: import './registry/generators/biologyGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Biology Component Imports (from dedicated service files)
@@ -37,20 +37,6 @@ import { generateEnergyCycleEngine } from '../../biology/gemini-energy-cycle-eng
 import { generateEvolutionTimeline } from '../../biology/gemini-evolution-timeline';
 
 // ============================================================================
-// Helper Types
-// ============================================================================
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyConfig = Record<string, any>;
-
-/**
- * Helper to safely extract config values with proper typing
- */
-const getConfig = (item: { config?: unknown }): AnyConfig => {
-  return (item.config as AnyConfig) || {};
-};
-
-// ============================================================================
 // Biology Primitive Registrations
 // ============================================================================
 
@@ -72,18 +58,11 @@ const getConfig = (item: { config?: unknown }): AnyConfig => {
  * - Fascinating facts and discovery history
  * - AI-generated species images
  */
-registerGenerator('species-profile', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Extract species name from config or topic
-  const speciesName = config.speciesName || topic;
-
-  return {
-    type: 'species-profile',
-    instanceId: item.instanceId,
-    data: await generateSpeciesProfile(speciesName, gradeContext, config),
-  };
-});
+registerContextGenerator('species-profile', async (ctx) => ({
+  type: 'species-profile',
+  instanceId: ctx.instanceId,
+  data: await generateSpeciesProfile(ctx),
+}));
 
 /**
  * Organism Card - Foundational organism information card
@@ -108,36 +87,11 @@ registerGenerator('species-profile', async (item, topic, gradeContext) => {
  * - 3-5: Scientific names, body temperature, reproduction, adaptations
  * - 6-8: Full taxonomy, cellular characteristics, evolutionary context
  */
-registerGenerator('organism-card', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Extract organism name from config or topic
-  const organismName = config.organismName || config.speciesName || topic;
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'organism-card',
-    instanceId: item.instanceId,
-    data: await generateOrganismCard(organismName, gradeBand, config),
-  };
-});
+registerContextGenerator('organism-card', async (ctx) => ({
+  type: 'organism-card',
+  instanceId: ctx.instanceId,
+  data: await generateOrganismCard(ctx),
+}));
 
 /**
  * Classification Sorter - Interactive drag-and-drop categorization
@@ -163,33 +117,11 @@ registerGenerator('organism-card', async (item, topic, gradeContext) => {
  * - 3-5: Multi-category sorts (3-5 categories), 8-10 items, scientific terms introduced
  * - 6-8: Complex/hierarchical sorts, 10-12 items, formal classification systems
  */
-registerGenerator('classification-sorter', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'classification-sorter',
-    instanceId: item.instanceId,
-    data: await generateClassificationSorter(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('classification-sorter', async (ctx) => ({
+  type: 'classification-sorter',
+  instanceId: ctx.instanceId,
+  data: await generateClassificationSorter(ctx),
+}));
 
 /**
  * Life Cycle Sequencer - Interactive temporal sequencing activity
@@ -215,33 +147,11 @@ registerGenerator('classification-sorter', async (item, topic, gradeContext) => 
  * - 3-5: More complex cycles (5-7 stages), scientific terms introduced, mechanisms explained
  * - 6-8: Complex circular/linear cycles (6-8 stages), molecular details, precise mechanisms
  */
-registerGenerator('life-cycle-sequencer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'life-cycle-sequencer',
-    instanceId: item.instanceId,
-    data: await generateLifeCycleSequencer(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('life-cycle-sequencer', async (ctx) => ({
+  type: 'life-cycle-sequencer',
+  instanceId: ctx.instanceId,
+  data: await generateLifeCycleSequencer(ctx),
+}));
 
 /**
  * Body System Explorer - Interactive layered anatomy diagram
@@ -266,73 +176,11 @@ registerGenerator('life-cycle-sequencer', async (item, topic, gradeContext) => {
  * - 5-6: Scientific terms, 6-8 organs, moderate complexity pathways (5-7 steps)
  * - 7-8: Medical terminology, 8-10+ organs, complex pathways with cellular detail (7-10+ steps)
  */
-registerGenerator('body-system-explorer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band for body system explorer
-  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
-    '2': '2-4',
-    '3': '2-4',
-    '4': '2-4',
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '2-4': '2-4',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
-
-  // Extract system from config or try to infer from topic
-  const systemKeywords: Record<string, string> = {
-    'digest': 'digestive',
-    'stomach': 'digestive',
-    'intestine': 'digestive',
-    'heart': 'circulatory',
-    'blood': 'circulatory',
-    'circul': 'circulatory',
-    'lung': 'respiratory',
-    'breath': 'respiratory',
-    'respir': 'respiratory',
-    'brain': 'nervous',
-    'nerve': 'nervous',
-    'neuron': 'nervous',
-    'bone': 'skeletal',
-    'skeleton': 'skeletal',
-    'muscle': 'muscular',
-    'immune': 'immune',
-    'lymph': 'immune',
-    'hormone': 'endocrine',
-    'gland': 'endocrine',
-    'kidney': 'urinary',
-    'bladder': 'urinary',
-    'urin': 'urinary',
-  };
-
-  let system = config.system;
-  if (!system) {
-    const topicLower = topic.toLowerCase();
-    for (const [keyword, systemName] of Object.entries(systemKeywords)) {
-      if (topicLower.includes(keyword)) {
-        system = systemName;
-        break;
-      }
-    }
-  }
-
-  // Default to digestive if no system detected
-  if (!system) {
-    system = 'digestive';
-  }
-
-  return {
-    type: 'body-system-explorer',
-    instanceId: item.instanceId,
-    data: await generateBodySystemExplorer(system, gradeBand, config),
-  };
-});
+registerContextGenerator('body-system-explorer', async (ctx) => ({
+  type: 'body-system-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateBodySystemExplorer(ctx),
+}));
 
 /**
  * Habitat Diorama - Interactive ecosystem explorer
@@ -358,33 +206,11 @@ registerGenerator('body-system-explorer', async (item, topic, gradeContext) => {
  * - 3-5: Food chains (6-8 organisms, introduce symbiosis, simple disruption scenario)
  * - 6-8: Complex food webs (8-10 organisms, all relationship types, trophic cascade scenarios)
  */
-registerGenerator('habitat-diorama', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'habitat-diorama',
-    instanceId: item.instanceId,
-    data: await generateHabitatDiorama(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('habitat-diorama', async (ctx) => ({
+  type: 'habitat-diorama',
+  instanceId: ctx.instanceId,
+  data: await generateHabitatDiorama(ctx),
+}));
 
 /**
  * Compare & Contrast - Side-by-side or Venn diagram comparison
@@ -410,8 +236,10 @@ registerGenerator('habitat-diorama', async (item, topic, gradeContext) => {
  * - 3-5: 6-8 attributes, scientific terms introduced, functional characteristics
  * - 6-8: 8-10 attributes, cellular/molecular details, evolutionary context
  */
-registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
+registerContextGenerator('bio-compare-contrast', async (ctx) => {
+  const { topic } = ctx;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const config = ctx.raw as Record<string, any>;
 
   // Map grade context to grade band
   const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
@@ -429,12 +257,12 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
     '6-8': '6-8',
   };
 
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
   // Determine mode from config, then fall back to intent inference.
   // The manifest generator knows about modes but doesn't always set config.mode,
   // so we check if the intent mentions venn/interactive as a reliable signal.
-  const intentLower = (item.intent || '').toLowerCase();
+  const intentLower = (ctx.intent || '').toLowerCase();
   const mode: 'side-by-side' | 'venn-interactive' = config.mode ||
     (intentLower.includes('venn') || intentLower.includes('drag') ? 'venn-interactive' : 'side-by-side');
 
@@ -445,20 +273,20 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
   // The exhibit-level topic ("Photosynthesis") rarely contains "vs"; the
   // component-level title ("Photosynthesis vs. Respiration") usually does.
   const vsPattern = /\s+(?:vs\.?|versus)\s+/i;
-  const vsSource = [topic, item.title].find(s => s && vsPattern.test(s));
+  const vsSource = [topic, ctx.title].find(s => s && vsPattern.test(s));
 
   if (vsSource) {
     if (generateImages) {
       return {
         type: 'bio-compare-contrast',
-        instanceId: item.instanceId,
+        instanceId: ctx.instanceId,
         data: await generateCompareContrastWithImagesFromTopic(vsSource, gradeBand, mode),
       };
     } else {
       const { generateCompareContrastFromTopic } = await import('../../biology/gemini-compare-contrast');
       return {
         type: 'bio-compare-contrast',
-        instanceId: item.instanceId,
+        instanceId: ctx.instanceId,
         data: await generateCompareContrastFromTopic(vsSource, gradeBand, mode),
       };
     }
@@ -472,20 +300,20 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
     throw new Error(
       `bio-compare-contrast: cannot determine what to compare. ` +
       `Provide entityA/entityB in config, or use a "vs" pattern in the component title. ` +
-      `Got topic="${topic}", title="${item.title}".`
+      `Got topic="${topic}", title="${ctx.title}".`
     );
   }
 
   if (generateImages) {
     return {
       type: 'bio-compare-contrast',
-      instanceId: item.instanceId,
+      instanceId: ctx.instanceId,
       data: await generateCompareContrastWithImages(entityA, entityB, gradeBand, mode, config),
     };
   } else {
     return {
       type: 'bio-compare-contrast',
-      instanceId: item.instanceId,
+      instanceId: ctx.instanceId,
       data: await generateCompareContrast(entityA, entityB, gradeBand, mode, config),
     };
   }
@@ -514,31 +342,11 @@ registerGenerator('bio-compare-contrast', async (item, topic, gradeContext) => {
  * - 5-6: Scientific terms introduced, 4-6 stages, causal understanding questions
  * - 7-8: Advanced terminology, 5-8 stages, application and synthesis questions
  */
-registerGenerator('bio-process-animator', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band for process animator
-  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
-    '2': '2-4',
-    '3': '2-4',
-    '4': '2-4',
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '2-4': '2-4',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
-
-  return {
-    type: 'bio-process-animator',
-    instanceId: item.instanceId,
-    data: await generateProcessAnimator(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('bio-process-animator', async (ctx) => ({
+  type: 'bio-process-animator',
+  instanceId: ctx.instanceId,
+  data: await generateProcessAnimator(ctx),
+}));
 
 /**
  * Microscope Viewer - Simulated microscope experience
@@ -561,29 +369,11 @@ registerGenerator('bio-process-animator', async (item, topic, gradeContext) => {
  * - 3-5: Simple vocabulary, 2-3 zoom levels, 2-4 structures per level, observable features
  * - 6-8: Scientific terms, 3-4 zoom levels, 3-6 structures per level, organelle detail
  */
-registerGenerator('microscope-viewer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'microscope-viewer',
-    instanceId: item.instanceId,
-    data: await generateMicroscopeViewer(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('microscope-viewer', async (ctx) => ({
+  type: 'microscope-viewer',
+  instanceId: ctx.instanceId,
+  data: await generateMicroscopeViewer(ctx),
+}));
 
 /**
  * Food Web Builder - Interactive food web construction
@@ -606,29 +396,11 @@ registerGenerator('microscope-viewer', async (item, topic, gradeContext) => {
  * - 3-5: Simple food chains (6-8 organisms), clear linear relationships, optional disruption
  * - 6-8: Complex food webs (8-10 organisms), interconnected relationships, required disruption scenarios
  */
-registerGenerator('food-web-builder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '3-5';
-
-  return {
-    type: 'food-web-builder',
-    instanceId: item.instanceId,
-    data: await generateFoodWebBuilder(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('food-web-builder', async (ctx) => ({
+  type: 'food-web-builder',
+  instanceId: ctx.instanceId,
+  data: await generateFoodWebBuilder(ctx),
+}));
 
 /**
  * Adaptation Investigator - Structure-function-environment reasoning
@@ -652,31 +424,11 @@ registerGenerator('food-web-builder', async (item, topic, gradeContext) => {
  * - 5-6: Scientific vocabulary introduced, functional descriptions, 2-3 scenarios
  * - 7-8: Evolutionary context, natural selection concepts, 3 nuanced scenarios
  */
-registerGenerator('adaptation-investigator', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
-    '2': '2-4',
-    '3': '2-4',
-    '4': '2-4',
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '2-4': '2-4',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
-
-  return {
-    type: 'adaptation-investigator',
-    instanceId: item.instanceId,
-    data: await generateAdaptationInvestigator(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('adaptation-investigator', async (ctx) => ({
+  type: 'adaptation-investigator',
+  instanceId: ctx.instanceId,
+  data: await generateAdaptationInvestigator(ctx),
+}));
 
 /**
  * Cell Builder - Three-phase interactive cell biology primitive
@@ -698,28 +450,11 @@ registerGenerator('adaptation-investigator', async (item, topic, gradeContext) =
  * - 4-5: Simple vocabulary, 5-7 organelles + 2-3 distractors, everyday analogies
  * - 6-8: Scientific terminology, 7-10 organelles + 3-4 distractors, detailed functions
  */
-registerGenerator('cell-builder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
-    '4': '4-5',
-    '5': '4-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    '4-5': '4-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '4-5';
-
-  return {
-    type: 'cell-builder',
-    instanceId: item.instanceId,
-    data: await generateCellBuilder(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('cell-builder', async (ctx) => ({
+  type: 'cell-builder',
+  instanceId: ctx.instanceId,
+  data: await generateCellBuilder(ctx),
+}));
 
 /**
  * Inheritance Lab - Interactive Punnett square and trait prediction tool
@@ -744,26 +479,11 @@ registerGenerator('cell-builder', async (item, topic, gradeContext) => {
  * - 6-7: Monohybrid crosses only, complete dominance, 2x2 grid, simple vocabulary
  * - 8: Mono- or dihybrid crosses, incomplete dominance/codominance/x-linked, scientific terminology
  */
-registerGenerator('inheritance-lab', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '6-7' | '8'> = {
-    '6': '6-7',
-    '7': '6-7',
-    '8': '8',
-    '6-7': '6-7',
-    '8': '8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '6-7';
-
-  return {
-    type: 'inheritance-lab',
-    instanceId: item.instanceId,
-    data: await generateInheritanceLab(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('inheritance-lab', async (ctx) => ({
+  type: 'inheritance-lab',
+  instanceId: ctx.instanceId,
+  data: await generateInheritanceLab(ctx),
+}));
 
 /**
  * DNA Explorer - Interactive DNA structure with base pairing challenges
@@ -787,27 +507,11 @@ registerGenerator('inheritance-lab', async (item, topic, gradeContext) => {
  * - 5-6: Base pairing rules (A-T, C-G), short sequences (6-8 bases), simple vocabulary
  * - 7-8: Hydrogen bond specifics, longer sequences (8-12 bases), transcription/replication modes
  */
-registerGenerator('dna-explorer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '5-6' | '7-8'> = {
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
-
-  return {
-    type: 'dna-explorer',
-    instanceId: item.instanceId,
-    data: await generateDnaExplorer(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('dna-explorer', async (ctx) => ({
+  type: 'dna-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateDnaExplorer(ctx),
+}));
 
 /**
  * Protein Folder - Interactive protein folding simulator
@@ -828,15 +532,11 @@ registerGenerator('dna-explorer', async (item, topic, gradeContext) => {
  *
  * Grade: 7-8 only (molecular biology concepts)
  */
-registerGenerator('protein-folder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'protein-folder',
-    instanceId: item.instanceId,
-    data: await generateProteinFolder(topic, '7-8', config),
-  };
-});
+registerContextGenerator('protein-folder', async (ctx) => ({
+  type: 'protein-folder',
+  instanceId: ctx.instanceId,
+  data: await generateProteinFolder(ctx),
+}));
 
 /**
  * Energy Cycle Engine - Interactive photosynthesis-respiration coupled cycle
@@ -858,27 +558,11 @@ registerGenerator('protein-folder', async (item, topic, gradeContext) => {
  * - 5-6: Simple vocabulary, 2-3 stages per process, 3-4 experiments
  * - 7-8: Scientific terminology, 3-4 stages with subcellular detail, 4-5 experiments
  */
-registerGenerator('energy-cycle-engine', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '5-6' | '7-8'> = {
-    '5': '5-6',
-    '6': '5-6',
-    '7': '7-8',
-    '8': '7-8',
-    '5-6': '5-6',
-    '7-8': '7-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '5-6';
-
-  return {
-    type: 'energy-cycle-engine',
-    instanceId: item.instanceId,
-    data: await generateEnergyCycleEngine(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('energy-cycle-engine', async (ctx) => ({
+  type: 'energy-cycle-engine',
+  instanceId: ctx.instanceId,
+  data: await generateEnergyCycleEngine(ctx),
+}));
 
 /**
  * Evolution Timeline - Interactive deep-time timeline
@@ -902,28 +586,11 @@ registerGenerator('energy-cycle-engine', async (item, topic, gradeContext) => {
  * - 4-5: 8-12 events, simple vocabulary, 2-3 lineages, dramatic mass extinctions
  * - 6-8: 12-18 events, scientific vocabulary, 3-5 lineages, all 5 major extinctions
  */
-registerGenerator('evolution-timeline', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
-    '4': '4-5',
-    '5': '4-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    '4-5': '4-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[gradeContext] || '4-5';
-
-  return {
-    type: 'evolution-timeline',
-    instanceId: item.instanceId,
-    data: await generateEvolutionTimeline(topic, gradeBand, config),
-  };
-});
+registerContextGenerator('evolution-timeline', async (ctx) => ({
+  type: 'evolution-timeline',
+  instanceId: ctx.instanceId,
+  data: await generateEvolutionTimeline(ctx),
+}));
 
 // ============================================================================
 // Export generator count for documentation

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { CharacterWebData } from "../../primitives/visual-primitives/literacy/CharacterWeb";
 import {
   resolveEvalModeConstraint,
@@ -128,18 +129,21 @@ const characterWebSchema: Schema = {
  * @param gradeLevel - Grade level ('2' through '6') sets vocabulary/complexity for the mixed case
  * @param config - Optional overrides + eval-mode routing (targetEvalMode / intent / objectiveText)
  */
+type CharacterWebConfig = Partial<CharacterWebData> & {
+  /** Eval mode pinned by the tester/curator. Wins over intent resolution, no LLM call. */
+  targetEvalMode?: string;
+  /** Component intent — routing signal when no mode is pinned. */
+  intent?: string;
+  /** Parent objective text — secondary routing signal. */
+  objectiveText?: string;
+};
+
 export const generateCharacterWeb = async (
-  topic: string,
-  gradeLevel: string = '4',
-  config?: Partial<CharacterWebData> & {
-    /** Eval mode pinned by the tester/curator. Wins over intent resolution, no LLM call. */
-    targetEvalMode?: string;
-    /** Component intent — routing signal when no mode is pinned. */
-    intent?: string;
-    /** Parent objective text — secondary routing signal. */
-    objectiveText?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<CharacterWebData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: CharacterWebConfig = { ...(ctx.raw as CharacterWebConfig), intent: ctx.intent };
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

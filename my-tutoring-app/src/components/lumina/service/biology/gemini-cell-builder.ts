@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { CellBuilderData } from "../../primitives/visual-primitives/biology/CellBuilder";
@@ -167,10 +168,23 @@ const cellBuilderSchema: Schema = {
  * @returns CellBuilderData with three-phase cell activity
  */
 export const generateCellBuilder = async (
-  topic: string,
-  gradeBand: '4-5' | '6-8' = '4-5',
-  config?: Partial<CellBuilderData>
+  ctx: GenerationContext
 ): Promise<CellBuilderData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<CellBuilderData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
+    '4': '4-5',
+    '5': '4-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '4-5': '4-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '4-5';
 
   const gradeContext = {
     '4-5': `

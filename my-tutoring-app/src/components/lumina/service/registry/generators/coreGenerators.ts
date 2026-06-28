@@ -397,64 +397,59 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLeve
 });
 
 // Fast Fact (timed fluency drill across all subjects)
-registerGenerator('fast-fact', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const gradeLevel = inferGradeLevel(gradeContext);
-  const data = await generateFastFact(topic, gradeLevel, config);
-  return {
-    type: 'fast-fact',
-    instanceId: item.instanceId,
-    data,
-  };
-});
+registerContextGenerator('fast-fact', async (ctx) => ({
+  type: 'fast-fact',
+  instanceId: ctx.instanceId,
+  data: await generateFastFact(ctx),
+}));
 
 // Fact File (magazine-style profile card with self-check questions)
-registerGenerator('fact-file', async (item, topic, gradeContext) => ({
+registerContextGenerator('fact-file', async (ctx) => ({
   type: 'fact-file',
-  instanceId: item.instanceId,
-  data: await generateFactFile(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFactFile(ctx),
 }));
 
 // How It Works (step-by-step process breakdown with comprehension challenges)
-registerGenerator('how-it-works', async (item, topic, gradeContext) => ({
+registerContextGenerator('how-it-works', async (ctx) => ({
   type: 'how-it-works',
-  instanceId: item.instanceId,
-  data: await generateHowItWorks(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateHowItWorks(ctx),
 }));
 
 // Timeline Explorer (chronological event exploration with comprehension challenges)
-registerGenerator('timeline-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('timeline-explorer', async (ctx) => ({
   type: 'timeline-explorer',
-  instanceId: item.instanceId,
-  data: await generateTimelineExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTimelineExplorer(ctx),
 }));
 
 // Vocabulary Explorer (topic-specific vocabulary with contextual definitions and challenges)
-registerGenerator('vocabulary-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('vocabulary-explorer', async (ctx) => ({
   type: 'vocabulary-explorer',
-  instanceId: item.instanceId,
-  data: await generateVocabularyExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateVocabularyExplorer(ctx),
 }));
 
 // Digital Skills Sim (click, drag, type practice for K-1)
-registerGenerator('digital-skills-sim', async (item, topic, gradeContext) => ({
+registerContextGenerator('digital-skills-sim', async (ctx) => ({
   type: 'digital-skills-sim',
-  instanceId: item.instanceId,
-  data: await generateDigitalSkillsSim(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateDigitalSkillsSim(ctx),
 }));
 
 // DeepDive (orchestrated multi-block learning experience)
-registerGenerator('deep-dive', async (item, topic, gradeContext) => ({
+registerContextGenerator('deep-dive', async (ctx) => ({
   type: 'deep-dive',
-  instanceId: item.instanceId,
-  data: await generateDeepDive(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateDeepDive(ctx),
 }));
 
 // PassageStudio (multi-block close-reading experience anchored to a stimulus)
-registerGenerator('passage-studio', async (item, topic, gradeContext) => ({
+registerContextGenerator('passage-studio', async (ctx) => ({
   type: 'passage-studio',
-  instanceId: item.instanceId,
-  data: await generatePassageStudio(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePassageStudio(ctx),
 }));
 
 // ============================================================================

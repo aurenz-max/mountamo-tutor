@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -316,15 +317,18 @@ const GRADE_CONFIGS: Record<string, { numChallenges: number; guidance: string }>
 // GENERATOR FUNCTION
 // ============================================================================
 
-export const generateGravityDropTower = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type GravityDropTowerConfig = Partial<{
     targetEvalMode?: string;
     /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateGravityDropTower = async (
+  ctx: GenerationContext,
 ): Promise<GravityDropTowerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as GravityDropTowerConfig;
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d+|K)/i)?.[1]?.toUpperCase() || '3';
   const validGrades = Object.keys(GRADE_CONFIGS);

@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -297,13 +298,16 @@ function validateStarReferences(
 // GENERATOR FUNCTION
 // ============================================================================
 
+type ConstellationBuilderConfig = {
+  targetEvalMode?: string;
+};
+
 export const generateConstellationBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    targetEvalMode?: string;
-  },
+  ctx: GenerationContext,
 ): Promise<ConstellationBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ConstellationBuilderConfig;
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as
     'K' | '1' | '2' | '3' | '4' | '5';
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { EvidenceFinderData } from "../../primitives/visual-primitives/literacy/EvidenceFinder";
 import {
   resolveEvalModeConstraint,
@@ -172,11 +173,14 @@ const evidenceFinderSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns EvidenceFinderData with passage, claims, and evidence-tagged sentences
  */
+type EvidenceFinderConfig = Partial<EvidenceFinderData> & { targetEvalMode?: string };
+
 export const generateEvidenceFinder = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<EvidenceFinderData> & { targetEvalMode?: string }
+  ctx: GenerationContext,
 ): Promise<EvidenceFinderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as EvidenceFinderConfig;
 
   // ── Eval mode resolution (explicit pin → constrained task identity) ──────
   const evalConstraint = resolveEvalModeConstraint(

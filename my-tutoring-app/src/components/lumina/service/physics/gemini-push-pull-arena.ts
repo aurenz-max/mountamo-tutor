@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -339,15 +340,18 @@ const SURFACES: ArenaSurface[] = ['ice', 'wood', 'carpet', 'grass'];
 // GENERATOR FUNCTION
 // ============================================================================
 
-export const generatePushPullArena = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type PushPullArenaConfig = Partial<{
     targetEvalMode?: string;
     /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generatePushPullArena = async (
+  ctx: GenerationContext,
 ): Promise<PushPullArenaData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PushPullArenaConfig;
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
   const validGrades = ['K', '1', '2', '3', '4', '5'];

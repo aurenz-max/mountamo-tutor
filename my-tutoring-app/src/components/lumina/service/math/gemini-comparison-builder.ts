@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ComparisonBuilderData, ComparisonBuilderChallenge } from "../../primitives/visual-primitives/math/ComparisonBuilder";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -392,28 +393,31 @@ const comparisonBuilderSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
+type ComparisonBuilderConfig = {
+  gradeBand?: 'K' | '1';
+  showCorrespondenceLines?: boolean;
+  useAlligatorMnemonic?: boolean;
+  title?: string;
+  description?: string;
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode?: string;
+  /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
+  instanceCount?: number;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding + structural problem difficulty
+   * within it. NEVER changes number magnitude / maxNumber.
+   */
+  difficulty?: string;
+};
+
 export const generateComparisonBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    gradeBand?: 'K' | '1';
-    showCorrespondenceLines?: boolean;
-    useAlligatorMnemonic?: boolean;
-    title?: string;
-    description?: string;
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode?: string;
-    /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
-    instanceCount?: number;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding + structural problem difficulty
-     * within it. NEVER changes number magnitude / maxNumber.
-     */
-    difficulty?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<ComparisonBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ComparisonBuilderConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'comparison-builder',

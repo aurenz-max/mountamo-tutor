@@ -5,6 +5,7 @@ import {
   SceneObject,
 } from "../../primitives/visual-primitives/math/SpatialScene";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -640,10 +641,7 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
 // Orchestrator — public API (same signature as before)
 // ---------------------------------------------------------------------------
 
-export const generateSpatialScene = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type SpatialSceneConfig = Partial<{
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
@@ -652,8 +650,14 @@ export const generateSpatialScene = async (
      * scene layout or which relation is asked.
      */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateSpatialScene = async (
+  ctx: GenerationContext,
 ): Promise<SpatialSceneData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SpatialSceneConfig;
   // -- Resolve eval mode --
   const evalConstraint = resolveEvalModeConstraint(
     "spatial-scene",

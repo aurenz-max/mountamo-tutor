@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { ProteinFolderData } from "../../primitives/visual-primitives/biology/ProteinFolder";
@@ -162,10 +163,11 @@ const proteinFolderSchema: Schema = {
  * @returns ProteinFolderData with sequence, folding levels, and mutation challenges
  */
 export const generateProteinFolder = async (
-  topic: string,
-  gradeBand: '7-8' = '7-8',
-  config?: Partial<ProteinFolderData>
+  ctx: GenerationContext
 ): Promise<ProteinFolderData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<ProteinFolderData>;
+  const gradeBand: '7-8' = '7-8';
 
   const generationPrompt = `Create an interactive protein folding simulation activity for: "${topic}".
 

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { StoryPlannerData } from "../../primitives/visual-primitives/literacy/StoryPlanner";
 import {
   resolveEvalModeConstraint,
@@ -80,11 +81,14 @@ const storyPlannerSchema: Schema = {
   required: ["title", "gradeLevel", "writingPrompt", "elements", "storyArcLabels"]
 };
 
+type StoryPlannerConfig = Partial<StoryPlannerData> & { targetEvalMode?: string };
+
 export const generateStoryPlanner = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<StoryPlannerData> & { targetEvalMode?: string }
+  ctx: GenerationContext,
 ): Promise<StoryPlannerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as StoryPlannerConfig;
   // ── Eval mode resolution (legacy literacy pattern: explicit pin only) ──
   const evalConstraint = resolveEvalModeConstraint(
     'story-planner',

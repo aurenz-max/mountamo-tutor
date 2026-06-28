@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 /**
  * Gear - represents a single gear in the train
@@ -157,10 +158,11 @@ const gearTrainBuilderSchema: Schema = {
  * @returns GearTrainBuilderData with complete configuration
  */
 export const generateGearTrainBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<GearTrainBuilderData>
+  ctx: GenerationContext,
 ): Promise<GearTrainBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<GearTrainBuilderData>;
   const prompt = `
 Create an educational Gear Train Builder visualization for teaching "${topic}" to ${gradeLevel} students.
 

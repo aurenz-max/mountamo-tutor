@@ -9,6 +9,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { VocabularyExplorerData } from '../../primitives/visual-primitives/core/VocabularyExplorer';
 import {
   resolveEvalModeConstraint,
@@ -401,18 +402,17 @@ function validateVocabularyExplorerData(raw: any, allowedTypes?: string[]): Voca
 // Generator
 // ---------------------------------------------------------------------------
 
+type VocabularyExplorerConfig = Partial<{ targetEvalMode?: string }>;
+
 /**
  * Generate a VocabularyExplorer with topic-specific vocabulary terms and challenges.
- *
- * @param topic      - The topic for vocabulary generation
- * @param gradeLevel - Grade level string (e.g. "Elementary", "Middle School")
- * @param config     - Optional overrides including targetEvalMode
  */
 export const generateVocabularyExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<VocabularyExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as VocabularyExplorerConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
   // ── Resolve eval mode from the catalog (single source of truth) ──

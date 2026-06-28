@@ -18,6 +18,7 @@ import {
   AreaModelChallenge,
 } from "../../primitives/visual-primitives/math/AreaModel";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -389,10 +390,7 @@ function buildChallenges(
 // Main generator
 // ---------------------------------------------------------------------------
 
-export const generateAreaModel = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type AreaModelConfig = {
     targetEvalMode?: string;
     /** Number of challenges in this session. Default 3 (pilot per PRD §6e). */
     instanceCount?: number;
@@ -402,8 +400,14 @@ export const generateAreaModel = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateAreaModel = async (
+  ctx: GenerationContext,
 ): Promise<AreaModelData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as AreaModelConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'area-model',

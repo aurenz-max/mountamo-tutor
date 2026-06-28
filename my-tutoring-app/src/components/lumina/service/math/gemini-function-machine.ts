@@ -19,6 +19,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -477,10 +478,7 @@ const functionMachineWrapperSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateFunctionMachine = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type FunctionMachineConfig = {
     /** How many rules in this session. Defaults from COUNT_BY_MODE (5 for T2 observe/predict, 4 for T3 discover/create_rule). */
     instanceCount?: number;
     ruleComplexity?: 'oneStep' | 'twoStep' | 'expression';
@@ -494,8 +492,14 @@ export const generateFunctionMachine = async (
      * or any number, and NEVER flips showRule (that is the eval mode's identity).
      */
     difficulty?: string;
-  }
+};
+
+export const generateFunctionMachine = async (
+  ctx: GenerationContext,
 ): Promise<FunctionMachineData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FunctionMachineConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'function-machine',

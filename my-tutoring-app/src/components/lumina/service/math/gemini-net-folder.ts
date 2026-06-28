@@ -7,6 +7,7 @@ import {
   NetLayout,
 } from '../../primitives/visual-primitives/math/NetFolder';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -869,10 +870,7 @@ const FALLBACKS: Record<string, NetFolderChallenge> = {
 // Main generator — dispatches to per-type sub-generators
 // ===========================================================================
 
-export const generateNetFolder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type NetFolderConfig = Partial<{
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
@@ -881,8 +879,14 @@ export const generateNetFolder = async (
      * which solid it folds into.
      */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateNetFolder = async (
+  ctx: GenerationContext,
 ): Promise<NetFolderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as NetFolderConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'net-folder',

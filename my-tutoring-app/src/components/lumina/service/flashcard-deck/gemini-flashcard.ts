@@ -1,6 +1,13 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { FlashcardDeckData, FlashcardItem } from '../../types';
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
+
+type FlashcardDeckConfig = {
+  cardCount?: number;
+  focusArea?: string;
+  includeExamples?: boolean;
+};
 
 /**
  * Schema definition for Flashcard Deck
@@ -42,14 +49,16 @@ const flashcardDeckSchema: Schema = {
  * @returns FlashcardDeckData with generated cards
  */
 export async function generateFlashcardDeck(
-  topic: string,
-  gradeContext: string,
-  config?: {
-    cardCount?: number;
-    focusArea?: string;
-    includeExamples?: boolean;
-  }
+  ctx: GenerationContext
 ): Promise<FlashcardDeckData> {
+  const topic = ctx.topic;
+  const gradeContext = ctx.gradeContext;
+  const rawConfig = ctx.raw as FlashcardDeckConfig;
+  const config: FlashcardDeckConfig = {
+    cardCount: rawConfig.cardCount || 15,
+    focusArea: ctx.intent || rawConfig.focusArea,
+    includeExamples: rawConfig.includeExamples,
+  };
   const cardCount = config?.cardCount || 15;
   const focusArea = config?.focusArea || '';
 

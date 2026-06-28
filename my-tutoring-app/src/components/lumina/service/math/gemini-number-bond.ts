@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { NumberBondData } from "../../primitives/visual-primitives/math/NumberBond";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -385,23 +386,26 @@ function generateInstruction(type: string, whole: number): string {
  * @param config - Optional configuration hints from the manifest
  * @returns NumberBondData with complete configuration
  */
+type NumberBondConfig = Partial<{
+  maxNumber: number;
+  challengeTypes: string[];
+  challengeCount: number;
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * The second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-workspace scaffolding within it. NEVER changes numbers.
+   */
+  difficulty: string;
+}>;
+
 export const generateNumberBond = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    maxNumber: number;
-    challengeTypes: string[];
-    challengeCount: number;
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * The second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-workspace scaffolding within it. NEVER changes numbers.
-     */
-    difficulty: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<NumberBondData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as NumberBondConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'number-bond',

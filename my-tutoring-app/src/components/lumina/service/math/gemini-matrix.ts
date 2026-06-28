@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -765,10 +766,7 @@ function inferGradeBand(gradeLevel: string): '7-8' | 'algebra2' | 'precalculus' 
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateMatrix = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type MatrixConfig = {
     /** Legacy single-operation override (ignored if targetEvalMode is set). */
     operation?: 'determinant' | 'inverse' | 'transpose' | 'multiply' | 'add' | 'subtract' | 'rowOperation' | 'solve';
     /** How many matrix challenges per session. Defaults from COUNT_BY_MODE (4 per §5a T2 matrix-specific hold). */
@@ -782,8 +780,14 @@ export const generateMatrix = async (
      * NEVER changes the number range.
      */
     difficulty?: string;
-  }
+};
+
+export const generateMatrix = async (
+  ctx: GenerationContext,
 ): Promise<MatrixDisplayData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as MatrixConfig;
   console.log('[Matrix Gen] Starting generation:', { topic, gradeLevel, config });
 
   const evalConstraint = resolveEvalModeConstraint('matrix-display', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);

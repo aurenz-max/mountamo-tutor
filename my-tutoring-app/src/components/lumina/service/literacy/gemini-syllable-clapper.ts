@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { SyllableClapperData } from "../../primitives/visual-primitives/literacy/SyllableClapper";
 import {
   resolveEvalModeConstraint,
@@ -121,16 +122,19 @@ const syllableClapperSchema: Schema = {
  * @param config - Optional configuration overrides
  * @returns SyllableClapperData with grade-appropriate syllable challenges
  */
-export const generateSyllableClapper = async (
-  topic: string,
-  gradeLevel: string = "K",
-  config?: Partial<{
+type SyllableClapperConfig = Partial<{
     challengeCount: number;
     intent: string;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
-  }>
+  }>;
+
+export const generateSyllableClapper = async (
+  ctx: GenerationContext,
 ): Promise<SyllableClapperData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config: SyllableClapperConfig = { ...(ctx.raw as SyllableClapperConfig), intent: ctx.intent };
   const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
     ? gradeLevel.toUpperCase()
     : "K";

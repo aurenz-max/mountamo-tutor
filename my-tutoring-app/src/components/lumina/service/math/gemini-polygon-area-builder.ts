@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -862,10 +863,7 @@ const polygonAreaSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generatePolygonAreaBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type PolygonAreaBuilderConfig = {
     instanceCount?: number;
     targetEvalMode?: string;
     /**
@@ -875,8 +873,14 @@ export const generatePolygonAreaBuilder = async (
      * polygon's dimensions.
      */
     difficulty?: string;
-  },
+};
+
+export const generatePolygonAreaBuilder = async (
+  ctx: GenerationContext,
 ): Promise<PolygonAreaBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PolygonAreaBuilderConfig;
   const validTypes: PolygonAreaChallengeType[] = [
     'decompose',
     'find_area_triangle_parallelogram',

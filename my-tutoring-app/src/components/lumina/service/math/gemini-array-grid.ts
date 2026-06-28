@@ -14,6 +14,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -291,10 +292,7 @@ function buildChallenges(
 // Main generator
 // ---------------------------------------------------------------------------
 
-export const generateArrayGrid = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ArrayGridData> & {
+type ArrayGridConfig = Partial<ArrayGridData> & {
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
     /** Number of challenges in this session. Default 4 (PRD §5 floor). */
@@ -305,8 +303,14 @@ export const generateArrayGrid = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateArrayGrid = async (
+  ctx: GenerationContext,
 ): Promise<ArrayGridData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ArrayGridConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'array-grid',

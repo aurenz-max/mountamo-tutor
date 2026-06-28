@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -859,10 +860,7 @@ function inferGradeBand(gradeLevel: string): '7-8' | 'statistics' {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateTwoWayTable = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type TwoWayTableConfig = {
     instanceCount?: number;
     targetEvalMode?: string;
     /**
@@ -872,8 +870,14 @@ export const generateTwoWayTable = async (
      * the scenario counts or the asked answer.
      */
     difficulty?: string;
-  }
+};
+
+export const generateTwoWayTable = async (
+  ctx: GenerationContext,
 ): Promise<TwoWayTableData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TwoWayTableConfig;
   console.log('[TwoWayTable Gen] Starting generation:', { topic, gradeLevel, config });
 
   const evalConstraint = resolveEvalModeConstraint('two-way-table', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { AdaptationInvestigatorData } from "../../primitives/visual-primitives/biology/AdaptationInvestigator";
@@ -141,10 +142,26 @@ const adaptationInvestigatorSchema: Schema = {
  * @returns AdaptationInvestigatorData with trait, environment, connection, and What If? scenarios
  */
 export const generateAdaptationInvestigator = async (
-  topic: string,
-  gradeBand: '2-4' | '5-6' | '7-8' = '5-6',
-  config?: Partial<AdaptationInvestigatorData>
+  ctx: GenerationContext
 ): Promise<AdaptationInvestigatorData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<AdaptationInvestigatorData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
+    '2': '2-4',
+    '3': '2-4',
+    '4': '2-4',
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '2-4': '2-4',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
 
   const gradeContext: Record<string, string> = {
     '2-4': `

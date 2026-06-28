@@ -4,6 +4,7 @@ import {
   CoordinateGraphChallenge,
 } from "../../primitives/visual-primitives/math/CoordinateGraph";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -860,11 +861,14 @@ RULES:
 // Main Generator (Orchestrator)
 // ============================================================================
 
+type CoordinateGraphConfig = Partial<{ targetEvalMode?: string; difficulty?: string }>;
+
 export const generateCoordinateGraph = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string; difficulty?: string }>
+  ctx: GenerationContext,
 ): Promise<CoordinateGraphData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CoordinateGraphConfig;
   // Resolve eval mode to challenge type(s)
   const constraint = resolveEvalModeConstraint(
     "coordinate-graph",

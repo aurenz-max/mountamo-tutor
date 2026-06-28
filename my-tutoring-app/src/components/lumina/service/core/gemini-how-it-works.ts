@@ -11,6 +11,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { HowItWorksData } from '../../primitives/visual-primitives/core/HowItWorks';
 import {
   resolveEvalModeConstraint,
@@ -350,18 +351,17 @@ function validateHowItWorksData(raw: any): HowItWorksData {
 // Generator
 // ---------------------------------------------------------------------------
 
+type HowItWorksConfig = Partial<{ targetEvalMode?: string }>;
+
 /**
  * Generate a HowItWorks step-by-step process breakdown.
- *
- * @param topic      - The topic or process to explain
- * @param gradeLevel - Grade level string (e.g. "Elementary", "Middle School")
- * @param config     - Optional overrides including targetEvalMode
  */
 export const generateHowItWorks = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<HowItWorksData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as HowItWorksConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
   // ── Resolve eval mode from the catalog (single source of truth) ──

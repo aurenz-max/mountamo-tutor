@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -229,10 +230,11 @@ const paperAirplaneDesignerSchema: Schema = {
  * @returns PaperAirplaneDesignerData with complete configuration
  */
 export const generatePaperAirplaneDesigner = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<PaperAirplaneDesignerData>
+  ctx: GenerationContext,
 ): Promise<PaperAirplaneDesignerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<PaperAirplaneDesignerData>;
   const prompt = `
 Create an educational Paper Airplane Designer visualization for teaching "${topic}" to ${gradeLevel} students.
 

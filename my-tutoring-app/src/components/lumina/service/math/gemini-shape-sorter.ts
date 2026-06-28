@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import type { ShapeSorterData } from "../../primitives/visual-primitives/math/ShapeSorter";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Local copy of shape properties — duplicated from ShapeSorter.tsx to avoid
 // importing a 'use client' module into server-side eval-test routes (SS-1).
@@ -261,21 +262,24 @@ const VALID_RULES = ['shape', 'color', 'sides', 'curved'];
 
 // ── Generator ────────────────────────────────────────────────────
 
+type ShapeSorterConfig = Partial<ShapeSorterData> & {
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = within-mode scaffolding + distractor tightness. NEVER changes
+   * the shape set or the sorted attribute (the eval-mode identity).
+   */
+  difficulty?: string;
+};
+
 export const generateShapeSorter = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ShapeSorterData> & {
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = within-mode scaffolding + distractor tightness. NEVER changes
-     * the shape set or the sorted attribute (the eval-mode identity).
-     */
-    difficulty?: string;
-  },
+  ctx: GenerationContext,
 ): Promise<ShapeSorterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ShapeSorterConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'shape-sorter',

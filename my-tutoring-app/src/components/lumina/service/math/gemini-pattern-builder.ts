@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { PatternBuilderData } from "../../primitives/visual-primitives/math/PatternBuilder";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -410,10 +411,7 @@ function buildPatternBuilderSchema(count: number): Schema {
  * @param config - Optional configuration hints from the manifest
  * @returns PatternBuilderData with complete configuration
  */
-export const generatePatternBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type PatternBuilderConfig = {
     patternType?: 'repeating' | 'growing' | 'number';
     gradeBand?: 'K-1' | '2-3';
     challengeTypes?: string[];
@@ -427,8 +425,14 @@ export const generatePatternBuilder = async (
      * pattern's length or elements — only how many cues (unit highlight, rule) show.
      */
     difficulty?: string;
-  }
+};
+
+export const generatePatternBuilder = async (
+  ctx: GenerationContext,
 ): Promise<PatternBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PatternBuilderConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'pattern-builder',

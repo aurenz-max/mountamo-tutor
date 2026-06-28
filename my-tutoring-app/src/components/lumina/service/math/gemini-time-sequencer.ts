@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { TimeSequencerData, TimeSequencerChallenge } from "../../primitives/visual-primitives/math/TimeSequencer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -751,10 +752,7 @@ const FALLBACKS: Record<string, TimeSequencerChallenge> = {
 // Main orchestrator
 // ---------------------------------------------------------------------------
 
-export const generateTimeSequencer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type TimeSequencerConfig = Partial<{
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
@@ -763,8 +761,14 @@ export const generateTimeSequencer = async (
      * NEVER changes the events, labels, times, or the correct answer.
      */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateTimeSequencer = async (
+  ctx: GenerationContext,
 ): Promise<TimeSequencerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TimeSequencerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "time-sequencer",

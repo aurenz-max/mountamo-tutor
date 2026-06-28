@@ -81,6 +81,19 @@ export type ContextGenerator<TData = unknown> = (
 const CONTENT_GENERATORS: Partial<Record<ComponentId, ContentGenerator>> = {};
 
 /**
+ * Ledger of component IDs registered via `registerContextGenerator` — i.e. the
+ * generators that receive the harmonized `GenerationContext` (resolved once at this
+ * boundary) rather than the raw positional `(item, topic, …)` arguments.
+ *
+ * `CONTENT_GENERATORS` alone cannot tell context-native from legacy generators
+ * because `registerContextGenerator` wraps into a `ContentGenerator`. This ledger
+ * makes that distinction observable so the intent-contract regression test (PRD §6.5)
+ * can assert the migrated set stays context-native: reverting any covered id to
+ * `registerGenerator` re-opens the intent-drop defect class and fails that test.
+ */
+const CONTEXT_NATIVE_IDS = new Set<ComponentId>();
+
+/**
  * Register a content generator for a component type
  *
  * Typically called at module load via side-effect import.
@@ -121,6 +134,15 @@ export function registerContextGenerator<TData = unknown>(
     generator(resolveGenerationContext(item, topic, gradeContext, gradeLevel));
 
   registerGenerator(id, wrapped);
+  CONTEXT_NATIVE_IDS.add(id);
+}
+
+/**
+ * True if `id` was registered as a context-native generator (via
+ * `registerContextGenerator`), i.e. it consumes the resolved `GenerationContext`.
+ */
+export function isContextNative(id: ComponentId): boolean {
+  return CONTEXT_NATIVE_IDS.has(id);
 }
 
 /**
@@ -167,4 +189,4 @@ export function getRegisteredCount(): number {
 // Exports
 // ============================================================================
 
-export { CONTENT_GENERATORS };
+export { CONTENT_GENERATORS, CONTEXT_NATIVE_IDS };

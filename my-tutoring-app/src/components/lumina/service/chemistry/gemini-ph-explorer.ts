@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   PhExplorerData,
 } from "../../primitives/visual-primitives/chemistry/PhExplorer";
@@ -320,11 +321,10 @@ const resolveGradeBand = (gradeLevel: string): "4-6" | "7-8" => {
  * @param config - Optional partial PhExplorerData for overrides
  * @returns PhExplorerData ready for the PhExplorer component
  */
-export const generatePhExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<PhExplorerData>
-): Promise<PhExplorerData> => {
+export const generatePhExplorer = async (ctx: GenerationContext): Promise<PhExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<PhExplorerData>;
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

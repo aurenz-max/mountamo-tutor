@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -126,10 +127,11 @@ const towerStackerSchema: Schema = {
  * @returns TowerStackerData with complete configuration
  */
 export const generateTowerStacker = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<TowerStackerData>
+  ctx: GenerationContext,
 ): Promise<TowerStackerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<TowerStackerData>;
   const prompt = `
 Create an educational Tower Stacker visualization for teaching "${topic}" to ${gradeLevel} students.
 

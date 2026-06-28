@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -194,10 +195,11 @@ const telescopeSimulatorSchema: Schema = {
  * @returns TelescopeSimulatorData with complete configuration
  */
 export const generateTelescopeSimulator = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<TelescopeSimulatorData>
+  ctx: GenerationContext,
 ): Promise<TelescopeSimulatorData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<TelescopeSimulatorData>;
   const prompt = `
 Create an educational Telescope Simulator experience for teaching "${topic}" to ${gradeLevel} students.
 

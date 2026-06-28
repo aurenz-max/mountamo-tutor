@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { StrategyPickerData, StrategyPickerChallenge, StrategyId } from "../../primitives/visual-primitives/math/StrategyPicker";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -1109,26 +1110,29 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
  *   - Multi-mode (auto / no constraint) → one challenge per allowed type with
  *     a shared problem across guided / try-another / compare.
  */
+type StrategyPickerConfig = Partial<{
+  maxNumber: number;
+  operations: string[];
+  strategiesIntroduced: string[];
+  challengeCount: number;
+  gradeBand: string;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes
+   * which strategy is correct and NEVER changes the numbers.
+   */
+  difficulty?: string;
+}>;
+
 export const generateStrategyPicker = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    maxNumber: number;
-    operations: string[];
-    strategiesIntroduced: string[];
-    challengeCount: number;
-    gradeBand: string;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes
-     * which strategy is correct and NEVER changes the numbers.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<StrategyPickerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as StrategyPickerConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'strategy-picker',
     config?.targetEvalMode,

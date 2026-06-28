@@ -23,6 +23,7 @@ import {
   PlaceValueChartChallenge,
 } from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -726,10 +727,7 @@ function buildChallenges(
 // Main generator
 // ---------------------------------------------------------------------------
 
-export const generatePlaceValueChart = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type PlaceValueChartConfig = {
     targetEvalMode?: string;
     numberRange?: { min: number; max: number };
     /** Number of challenges in this session. Default 3 (pilot per PRD Open Q #1). */
@@ -743,8 +741,14 @@ export const generatePlaceValueChart = async (
      * number or its magnitude.
      */
     difficulty?: string;
-  },
+};
+
+export const generatePlaceValueChart = async (
+  ctx: GenerationContext,
 ): Promise<PlaceValueChartData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PlaceValueChartConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'place-value-chart',

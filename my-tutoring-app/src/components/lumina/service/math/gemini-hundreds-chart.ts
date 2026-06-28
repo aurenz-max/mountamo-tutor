@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { HundredsChartData, HundredsChartChallenge } from '../../primitives/visual-primitives/math/HundredsChart';
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -488,24 +489,27 @@ function buildChallenge(
 // Generator
 // ---------------------------------------------------------------------------
 
+type HundredsChartConfig = {
+  skipValue?: number;
+  gradeBand?: '1' | '2' | '3' | '4';
+  challengeTypes?: string[];
+  targetEvalMode?: string;
+  intent?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much scaffolding/structural support within it. NEVER
+   * changes skipValue, the grade-band number pool, or magnitude.
+   */
+  difficulty?: string;
+};
+
 export const generateHundredsChart = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    skipValue?: number;
-    gradeBand?: '1' | '2' | '3' | '4';
-    challengeTypes?: string[];
-    targetEvalMode?: string;
-    intent?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much scaffolding/structural support within it. NEVER
-     * changes skipValue, the grade-band number pool, or magnitude.
-     */
-    difficulty?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<HundredsChartData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as HundredsChartConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'hundreds-chart',

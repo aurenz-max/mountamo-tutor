@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -136,10 +137,11 @@ const engineExplorerSchema: Schema = {
 // ============================================================================
 
 export const generateEngineExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<EngineExplorerData>
+  ctx: GenerationContext,
 ): Promise<EngineExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<EngineExplorerData>;
   const prompt = `
 Create educational content for a Living Engine simulation that teaches "${topic}" to ${gradeLevel} students.
 

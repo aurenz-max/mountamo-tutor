@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { PoetryLabData } from "../../primitives/visual-primitives/literacy/PoetryLab";
 import {
   resolveEvalModeConstraint,
@@ -72,11 +73,14 @@ const poetryLabSchema: Schema = {
   required: ["title", "gradeLevel", "mode"]
 };
 
+type PoetryLabConfig = Partial<PoetryLabData & { targetEvalMode: string }>;
+
 export const generatePoetryLab = async (
-  topic: string,
-  gradeLevel: string = '4',
-  config?: Partial<PoetryLabData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<PoetryLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PoetryLabConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
   // ---------------------------------------------------------------------------

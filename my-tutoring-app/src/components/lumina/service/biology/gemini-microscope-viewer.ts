@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { MicroscopeViewerData } from "../../primitives/visual-primitives/biology/MicroscopeViewer";
@@ -134,10 +135,24 @@ const microscopeViewerSchema: Schema = {
  * @returns MicroscopeViewerData with zoom levels, structures, and observation prompts
  */
 export const generateMicroscopeViewer = async (
-  topic: string,
-  gradeBand: '3-5' | '6-8' = '3-5',
-  config?: Partial<MicroscopeViewerData>
+  ctx: GenerationContext
 ): Promise<MicroscopeViewerData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<MicroscopeViewerData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
 import {
   resolveEvalModeConstraint,
@@ -144,14 +145,17 @@ const phonicsBlenderSchema: Schema = {
  * @param config - Optional configuration overrides
  * @returns PhonicsBlenderData with grade-appropriate words and phoneme breakdowns
  */
+type PhonicsBlenderConfig = Partial<PhonicsBlenderData & {
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+}>;
+
 export const generatePhonicsBlender = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<PhonicsBlenderData & {
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<PhonicsBlenderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PhonicsBlenderConfig;
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

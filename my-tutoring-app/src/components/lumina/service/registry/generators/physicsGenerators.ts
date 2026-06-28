@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/physicsGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // Physics Generator Imports
 import { generateMotionDiagram } from '../../physics/gemini-motion-diagram';
@@ -21,38 +21,38 @@ import { generateGravityDropTower } from '../../physics/gemini-gravity-drop-towe
 // ============================================================================
 
 // Motion Diagram / Strobe Diagram - Kinematics visualization
-registerGenerator('motion-diagram', async (item, topic, gradeContext) => ({
+registerContextGenerator('motion-diagram', async (ctx) => ({
   type: 'motion-diagram',
-  instanceId: item.instanceId,
-  data: await generateMotionDiagram(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateMotionDiagram(ctx),
 }));
 
 // Sound Wave Explorer - Interactive sound/vibration lab (K-3)
-registerGenerator('sound-wave-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('sound-wave-explorer', async (ctx) => ({
   type: 'sound-wave-explorer',
-  instanceId: item.instanceId,
-  data: await generateSoundWaveExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSoundWaveExplorer(ctx),
 }));
 
 // Push & Pull Arena - Interactive force/friction arena (K-5)
-registerGenerator('push-pull-arena', async (item, topic, gradeContext) => ({
+registerContextGenerator('push-pull-arena', async (ctx) => ({
   type: 'push-pull-arena',
-  instanceId: item.instanceId,
-  data: await generatePushPullArena(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePushPullArena(ctx),
 }));
 
 // Race Track Lab - Speed/distance/time racing lab (K-5)
-registerGenerator('race-track-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('race-track-lab', async (ctx) => ({
   type: 'race-track-lab',
-  instanceId: item.instanceId,
-  data: await generateRaceTrackLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateRaceTrackLab(ctx),
 }));
 
 // Gravity Drop Tower - Free fall & air resistance lab (K-HS)
-registerGenerator('gravity-drop-tower', async (item, topic, gradeContext) => ({
+registerContextGenerator('gravity-drop-tower', async (ctx) => ({
   type: 'gravity-drop-tower',
-  instanceId: item.instanceId,
-  data: await generateGravityDropTower(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateGravityDropTower(ctx),
 }));
 
 // ============================================================================

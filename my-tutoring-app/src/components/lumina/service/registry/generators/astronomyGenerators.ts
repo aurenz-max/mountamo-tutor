@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/astronomyGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // Astronomy Generator Imports
 import { generateSolarSystemExplorer } from '../../astronomy/gemini-solar-system-explorer';
@@ -27,80 +27,80 @@ import { generatePlanetaryExplorer } from '../../astronomy/gemini-planetary-expl
 // ============================================================================
 
 // Solar System Explorer
-registerGenerator('solar-system-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('solar-system-explorer', async (ctx) => ({
   type: 'solar-system-explorer',
-  instanceId: item.instanceId,
-  data: await generateSolarSystemExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSolarSystemExplorer(ctx),
 }));
 
 // Scale Comparator
-registerGenerator('scale-comparator', async (item, topic, gradeContext) => ({
+registerContextGenerator('scale-comparator', async (ctx) => ({
   type: 'scale-comparator',
-  instanceId: item.instanceId,
-  data: await generateScaleComparator(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateScaleComparator(ctx),
 }));
 
 // Day/Night & Seasons Simulator
-registerGenerator('day-night-seasons', async (item, topic, gradeContext) => ({
+registerContextGenerator('day-night-seasons', async (ctx) => ({
   type: 'day-night-seasons',
-  instanceId: item.instanceId,
-  data: await generateDayNightSeasons(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateDayNightSeasons(ctx),
 }));
 
 // Moon Phases Lab
-registerGenerator('moon-phases-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('moon-phases-lab', async (ctx) => ({
   type: 'moon-phases-lab',
-  instanceId: item.instanceId,
-  data: await generateMoonPhasesLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateMoonPhasesLab(ctx),
 }));
 
 // Rocket Builder
-registerGenerator('rocket-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('rocket-builder', async (ctx) => ({
   type: 'rocket-builder',
-  instanceId: item.instanceId,
-  data: await generateRocketBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateRocketBuilder(ctx),
 }));
 
 // Orbit Mechanics Lab
-registerGenerator('orbit-mechanics-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('orbit-mechanics-lab', async (ctx) => ({
   type: 'orbit-mechanics-lab',
-  instanceId: item.instanceId,
-  data: await generateOrbitMechanicsLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateOrbitMechanicsLab(ctx),
 }));
 
 // Mission Planner
-registerGenerator('mission-planner', async (item, topic, gradeContext) => ({
+registerContextGenerator('mission-planner', async (ctx) => ({
   type: 'mission-planner',
-  instanceId: item.instanceId,
-  data: await generateMissionPlanner(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateMissionPlanner(ctx),
 }));
 
 // Telescope Simulator
-registerGenerator('telescope-simulator', async (item, topic, gradeContext) => ({
+registerContextGenerator('telescope-simulator', async (ctx) => ({
   type: 'telescope-simulator',
-  instanceId: item.instanceId,
-  data: await generateTelescopeSimulator(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTelescopeSimulator(ctx),
 }));
 
 // Light & Shadow Lab
-registerGenerator('light-shadow-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('light-shadow-lab', async (ctx) => ({
   type: 'light-shadow-lab',
-  instanceId: item.instanceId,
-  data: await generateLightShadowLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateLightShadowLab(ctx),
 }));
 
 // Constellation Builder
-registerGenerator('constellation-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('constellation-builder', async (ctx) => ({
   type: 'constellation-builder',
-  instanceId: item.instanceId,
-  data: await generateConstellationBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateConstellationBuilder(ctx),
 }));
 
 // Planetary Explorer
-registerGenerator('planetary-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('planetary-explorer', async (ctx) => ({
   type: 'planetary-explorer',
-  instanceId: item.instanceId,
-  data: await generatePlanetaryExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePlanetaryExplorer(ctx),
 }));
 
 // ============================================================================

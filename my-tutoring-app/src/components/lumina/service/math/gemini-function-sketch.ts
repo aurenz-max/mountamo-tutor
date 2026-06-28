@@ -7,6 +7,7 @@ import type {
   SketchKeyFeature,
 } from "../../primitives/visual-primitives/math/FunctionSketch";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -919,10 +920,7 @@ function subGeneratorFor(
   }
 }
 
-export const generateFunctionSketch = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type FunctionSketchConfig = {
     targetEvalMode?: string;
     /** How many challenges in this session. Defaults from COUNT_BY_MODE (5 for T2 modes, 4 for T3 sketch-match). */
     instanceCount?: number;
@@ -933,8 +931,14 @@ export const generateFunctionSketch = async (
      * NEVER changes the numbers, axis ranges, or task identity.
      */
     difficulty?: string;
-  },
+};
+
+export const generateFunctionSketch = async (
+  ctx: GenerationContext,
 ): Promise<FunctionSketchData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FunctionSketchConfig;
   const evalConstraint = resolveEvalModeConstraint('function-sketch', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('FunctionSketch', config?.targetEvalMode, evalConstraint);
 

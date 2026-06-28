@@ -17,6 +17,7 @@ import {
   BarSegment,
 } from "../../primitives/visual-primitives/math/TapeDiagram";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -845,10 +846,7 @@ function subGeneratorFor(
   }
 }
 
-export const generateTapeDiagram = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type TapeDiagramConfig = {
     targetEvalMode?: string;
     /** How many challenges in this session. Defaults from COUNT_BY_MODE (3 for T4, 4 for T3). */
     instanceCount?: number;
@@ -859,8 +857,14 @@ export const generateTapeDiagram = async (
      * problem) within it. NEVER changes the magnitude/scope of the numbers.
      */
     difficulty?: string;
-  }
+};
+
+export const generateTapeDiagram = async (
+  ctx: GenerationContext,
 ): Promise<TapeDiagramData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TapeDiagramConfig;
   const evalConstraint = resolveEvalModeConstraint('tape-diagram', config?.targetEvalMode, CHALLENGE_TYPE_DOCS);
   logEvalModeResolution('TapeDiagram', config?.targetEvalMode, evalConstraint);
 

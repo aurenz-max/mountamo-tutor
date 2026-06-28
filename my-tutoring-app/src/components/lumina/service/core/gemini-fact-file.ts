@@ -8,6 +8,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { FactFileData } from '../../primitives/visual-primitives/core/FactFile';
 import {
   resolveEvalModeConstraint,
@@ -361,18 +362,17 @@ function validateFactFileData(raw: any): FactFileData {
 // Generator
 // ---------------------------------------------------------------------------
 
+type FactFileConfig = Partial<{ targetEvalMode?: string }>;
+
 /**
  * Generate a FactFile magazine-style profile card.
- *
- * @param topic      - The topic or subject for the fact file
- * @param gradeLevel - Grade level string (e.g. "Elementary", "Middle School")
- * @param config     - Optional overrides including targetEvalMode
  */
 export const generateFactFile = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<FactFileData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FactFileConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
   // ── Resolve eval mode from the catalog (single source of truth) ──

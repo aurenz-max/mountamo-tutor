@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { LetterSpotterData } from "../../primitives/visual-primitives/literacy/LetterSpotter";
 import {
   resolveEvalModeConstraint,
@@ -440,18 +441,21 @@ const NEW_LETTERS: Record<number, string[]> = {
  * @param config - Optional config with letterGroup override and targetEvalMode
  * @returns LetterSpotterData with challenges across all three modes
  */
+type LetterSpotterConfig = Partial<{
+  letterGroup: number;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+  /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second
+   *  axis: difficulty = how much scaffolding within the mode. NEVER changes letters. */
+  difficulty: string;
+}>;
+
 export const generateLetterSpotter = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<{
-    letterGroup: number;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second
-     *  axis: difficulty = how much scaffolding within the mode. NEVER changes letters. */
-    difficulty: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<LetterSpotterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as LetterSpotterConfig;
 
   // -------------------------------------------------------------------------
   // Eval mode resolution

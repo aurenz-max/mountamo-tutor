@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -464,11 +465,14 @@ function getHouseFallback(gradeLevel: string, evalMode?: string): ConstructionSe
 // Generator
 // ============================================================================
 
+type ConstructionSequencePlannerConfig = Partial<{ targetEvalMode?: string }>;
+
 export const generateConstructionSequencePlanner = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<ConstructionSequencePlannerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ConstructionSequencePlannerConfig;
   const targetEvalMode = config?.targetEvalMode;
 
   // Resolve eval mode constraint from catalog

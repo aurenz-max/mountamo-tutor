@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { RegroupingWorkbenchData } from "../../primitives/visual-primitives/math/RegroupingWorkbench";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -564,10 +565,7 @@ const regroupingWorkbenchSchema: Schema = {
  * @param config - Optional configuration hints
  * @returns RegroupingWorkbenchData with complete configuration
  */
-export const generateRegroupingWorkbench = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type RegroupingWorkbenchConfig = {
     operation?: 'addition' | 'subtraction';
     gradeBand?: '1-2' | '3-4';
     maxPlace?: 'tens' | 'hundreds' | 'thousands';
@@ -579,8 +577,14 @@ export const generateRegroupingWorkbench = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  }
+};
+
+export const generateRegroupingWorkbench = async (
+  ctx: GenerationContext,
 ): Promise<RegroupingWorkbenchData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as RegroupingWorkbenchConfig;
   // Resolve eval mode from catalog (single source of truth)
   const evalConstraint = resolveEvalModeConstraint(
     'regrouping-workbench',

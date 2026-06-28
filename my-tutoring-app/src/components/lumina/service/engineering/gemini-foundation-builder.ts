@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -91,10 +92,11 @@ const foundationBuilderSchema: Schema = {
  * @returns FoundationBuilderData with complete configuration
  */
 export const generateFoundationBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<FoundationBuilderData>
+  ctx: GenerationContext,
 ): Promise<FoundationBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<FoundationBuilderData>;
   const prompt = `
 Create an educational Foundation Builder simulator for teaching "${topic}" to ${gradeLevel} students.
 

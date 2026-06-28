@@ -16,7 +16,7 @@
  * Usage: import './registry/generators/literacyGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Wave 1 Imports (highest priority)
@@ -57,31 +57,6 @@ import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 import { generateWordSorter } from '../../literacy/gemini-word-sorter';
 
 // ============================================================================
-// Helper Types
-// ============================================================================
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyConfig = Record<string, any>;
-
-/**
- * Helper to safely extract config values with proper typing
- */
-const getConfig = (item: { config?: unknown }): AnyConfig => {
-  return (item.config as AnyConfig) || {};
-};
-
-/**
- * Map individual grade levels to ELA grade bands
- */
-const getGradeBand = (gradeContext: string): string => {
-  const grade = gradeContext.replace(/[^0-9K]/gi, '').toUpperCase();
-  if (grade === 'K' || grade === '1') return 'K-1';
-  if (grade === '2' || grade === '3') return '2-3';
-  if (grade === '4' || grade === '5') return '4-5';
-  return '5-6';
-};
-
-// ============================================================================
 // Wave 1: Writing — Paragraph Architect
 // ============================================================================
 
@@ -98,17 +73,11 @@ const getGradeBand = (gradeContext: string): string => {
  * - Grade 2-3: Full hamburger, linking words
  * - Grade 4-6: Multi-paragraph preview, varying sentence structure
  */
-registerGenerator('paragraph-architect', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'paragraph-architect',
-    instanceId: item.instanceId,
-    data: await generateParagraphArchitect(topic, gradeContext, {
-      ...config,
-    }),
-  };
-});
+registerContextGenerator('paragraph-architect', async (ctx) => ({
+  type: 'paragraph-architect',
+  instanceId: ctx.instanceId,
+  data: await generateParagraphArchitect(ctx),
+}));
 
 // ============================================================================
 // Wave 1: Language — Sentence Builder
@@ -128,15 +97,11 @@ registerGenerator('paragraph-architect', async (item, topic, gradeContext) => {
  * - Grade 3: Compound with conjunctions (6-7 tiles)
  * - Grade 4-6: Complex and compound-complex (7-10 tiles)
  */
-registerGenerator('sentence-builder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'sentence-builder',
-    instanceId: item.instanceId,
-    data: await generateSentenceBuilder(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('sentence-builder', async (ctx) => ({
+  type: 'sentence-builder',
+  instanceId: ctx.instanceId,
+  data: await generateSentenceBuilder(ctx),
+}));
 
 // ============================================================================
 // Wave 1: Reading Literature — Story Map
@@ -156,15 +121,11 @@ registerGenerator('sentence-builder', async (item, topic, gradeContext) => {
  * - Grade 2-3: Story mountain
  * - Grade 4-6: Full plot diagram with conflict types
  */
-registerGenerator('story-map', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'story-map',
-    instanceId: item.instanceId,
-    data: await generateStoryMap(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('story-map', async (ctx) => ({
+  type: 'story-map',
+  instanceId: ctx.instanceId,
+  data: await generateStoryMap(ctx),
+}));
 
 // ============================================================================
 // Wave 1: Speaking & Listening — Listen and Respond
@@ -202,19 +163,11 @@ registerGenerator('story-map', async (item, topic, gradeContext) => {
  * - Grade 1: CVCE, blends, digraphs, short vs long vowels
  * - Grade 2: R-controlled, diphthongs, multisyllabic blending
  */
-registerGenerator('phonics-blender', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  const patternType = config.patternType || undefined;
-
-  return {
-    type: 'phonics-blender',
-    instanceId: item.instanceId,
-    data: await generatePhonicsBlender(topic, gradeContext, {
-      patternType,
-      ...config,
-    }),
-  };
-});
+registerContextGenerator('phonics-blender', async (ctx) => ({
+  type: 'phonics-blender',
+  instanceId: ctx.instanceId,
+  data: await generatePhonicsBlender(ctx),
+}));
 
 // ============================================================================
 // Wave 2: Reading Foundational Skills — Decodable Reader
@@ -234,15 +187,11 @@ registerGenerator('phonics-blender', async (item, topic, gradeContext) => {
  * - Grade 1: 4-6 sentences, CVCE, blends, digraphs
  * - Grade 2: 6-8 sentences, r-controlled, diphthongs, multisyllabic
  */
-registerGenerator('decodable-reader', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'decodable-reader',
-    instanceId: item.instanceId,
-    data: await generateDecodableReader(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('decodable-reader', async (ctx) => ({
+  type: 'decodable-reader',
+  instanceId: ctx.instanceId,
+  data: await generateDecodableReader(ctx),
+}));
 
 // ============================================================================
 // Wave 2: Reading Informational Text — Evidence Finder
@@ -263,15 +212,11 @@ registerGenerator('decodable-reader', async (item, topic, gradeContext) => {
  * - Grade 4: CER enabled, evidence strength rating, 1-2 claims
  * - Grade 5-6: Competing claims, nuanced evidence quality
  */
-registerGenerator('evidence-finder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'evidence-finder',
-    instanceId: item.instanceId,
-    data: await generateEvidenceFinder(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('evidence-finder', async (ctx) => ({
+  type: 'evidence-finder',
+  instanceId: ctx.instanceId,
+  data: await generateEvidenceFinder(ctx),
+}));
 
 // ============================================================================
 // Wave 2: Language — Context Clues Detective
@@ -292,80 +237,61 @@ registerGenerator('evidence-finder', async (item, topic, gradeContext) => {
  * - Grade 5: Emphasis on inference, Greek/Latin root connections
  * - Grade 6: Connotation vs denotation, multiple-meaning words
  */
-registerGenerator('context-clues-detective', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-
-  return {
-    type: 'context-clues-detective',
-    instanceId: item.instanceId,
-    data: await generateContextCluesDetective(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('context-clues-detective', async (ctx) => ({
+  type: 'context-clues-detective',
+  instanceId: ctx.instanceId,
+  data: await generateContextCluesDetective(ctx),
+}));
 
 // ============================================================================
 // Wave 3: Writing — Opinion Builder
 // ============================================================================
 
-registerGenerator('opinion-builder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'opinion-builder',
-    instanceId: item.instanceId,
-    data: await generateOpinionBuilder(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('opinion-builder', async (ctx) => ({
+  type: 'opinion-builder',
+  instanceId: ctx.instanceId,
+  data: await generateOpinionBuilder(ctx),
+}));
 
 // ============================================================================
 // Wave 3: Reading Informational Text — Text Structure Analyzer
 // ============================================================================
 
-registerGenerator('text-structure-analyzer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'text-structure-analyzer',
-    instanceId: item.instanceId,
-    data: await generateTextStructureAnalyzer(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('text-structure-analyzer', async (ctx) => ({
+  type: 'text-structure-analyzer',
+  instanceId: ctx.instanceId,
+  data: await generateTextStructureAnalyzer(ctx),
+}));
 
 // ============================================================================
 // Wave 3: Reading Literature — Character Web
 // ============================================================================
 
-registerGenerator('character-web', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'character-web',
-    instanceId: item.instanceId,
-    data: await generateCharacterWeb(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('character-web', async (ctx) => ({
+  type: 'character-web',
+  instanceId: ctx.instanceId,
+  data: await generateCharacterWeb(ctx),
+}));
 
 // ============================================================================
 // Wave 3: Language — Figurative Language Finder
 // ============================================================================
 
-registerGenerator('figurative-language-finder', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'figurative-language-finder',
-    instanceId: item.instanceId,
-    data: await generateFigurativeLanguageFinder(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('figurative-language-finder', async (ctx) => ({
+  type: 'figurative-language-finder',
+  instanceId: ctx.instanceId,
+  data: await generateFigurativeLanguageFinder(ctx),
+}));
 
 // ============================================================================
 // Wave 4: Reading Literature — Poetry Lab
 // ============================================================================
 
-registerGenerator('poetry-lab', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'poetry-lab',
-    instanceId: item.instanceId,
-    data: await generatePoetryLab(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('poetry-lab', async (ctx) => ({
+  type: 'poetry-lab',
+  instanceId: ctx.instanceId,
+  data: await generatePoetryLab(ctx),
+}));
 
 // ============================================================================
 // Registration Complete
@@ -375,66 +301,51 @@ registerGenerator('poetry-lab', async (item, topic, gradeContext) => {
 // Wave 4: Reading Foundational Skills — Read Aloud Studio
 // ============================================================================
 
-registerGenerator('read-aloud-studio', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'read-aloud-studio',
-    instanceId: item.instanceId,
-    data: await generateReadAloudStudio(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('read-aloud-studio', async (ctx) => ({
+  type: 'read-aloud-studio',
+  instanceId: ctx.instanceId,
+  data: await generateReadAloudStudio(ctx),
+}));
 
 // ============================================================================
 // Wave 4: Writing — Story Planner
 // ============================================================================
 
-registerGenerator('story-planner', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'story-planner',
-    instanceId: item.instanceId,
-    data: await generateStoryPlanner(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('story-planner', async (ctx) => ({
+  type: 'story-planner',
+  instanceId: ctx.instanceId,
+  data: await generateStoryPlanner(ctx),
+}));
 
 // ============================================================================
 // Wave 4: Writing — Revision Workshop
 // ============================================================================
 
-registerGenerator('revision-workshop', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'revision-workshop',
-    instanceId: item.instanceId,
-    data: await generateRevisionWorkshop(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('revision-workshop', async (ctx) => ({
+  type: 'revision-workshop',
+  instanceId: ctx.instanceId,
+  data: await generateRevisionWorkshop(ctx),
+}));
 
 // ============================================================================
 // Wave 4: Reading Literature — Genre Explorer
 // ============================================================================
 
-registerGenerator('genre-explorer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'genre-explorer',
-    instanceId: item.instanceId,
-    data: await generateGenreExplorer(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('genre-explorer', async (ctx) => ({
+  type: 'genre-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateGenreExplorer(ctx),
+}));
 
 // ============================================================================
 // Wave 4: Language — Spelling Pattern Explorer
 // ============================================================================
 
-registerGenerator('spelling-pattern-explorer', async (item, topic, gradeContext) => {
-  const config = getConfig(item);
-  return {
-    type: 'spelling-pattern-explorer',
-    instanceId: item.instanceId,
-    data: await generateSpellingPatternExplorer(topic, gradeContext, config),
-  };
-});
+registerContextGenerator('spelling-pattern-explorer', async (ctx) => ({
+  type: 'spelling-pattern-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateSpellingPatternExplorer(ctx),
+}));
 
 // ============================================================================
 // Kindergarten Phonics & Alphabet — Rhyme Studio
@@ -453,10 +364,10 @@ registerGenerator('spelling-pattern-explorer', async (item, topic, gradeContext)
  * - Grade 1: CVCE words, 3-option identification, near-miss distractors
  * - Grade 2: Multisyllabic words, trickier pairs, broader vocabulary
  */
-registerGenerator('rhyme-studio', async (item, topic, gradeContext) => ({
+registerContextGenerator('rhyme-studio', async (ctx) => ({
   type: 'rhyme-studio',
-  instanceId: item.instanceId,
-  data: await generateRhymeStudio(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateRhymeStudio(ctx),
 }));
 
 // ============================================================================
@@ -476,10 +387,10 @@ registerGenerator('rhyme-studio', async (item, topic, gradeContext) => ({
  * - Grade 1: Wider vocabulary, 1-4 syllable words
  * - Grade 2: Academic words, compound words, prefixed/suffixed words
  */
-registerGenerator('syllable-clapper', async (item, topic, gradeContext) => ({
+registerContextGenerator('syllable-clapper', async (ctx) => ({
   type: 'syllable-clapper',
-  instanceId: item.instanceId,
-  data: await generateSyllableClapper(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSyllableClapper(ctx),
 }));
 
 // ============================================================================
@@ -500,10 +411,10 @@ registerGenerator('syllable-clapper', async (item, topic, gradeContext) => ({
  * - Grade 1: Blends, digraphs, 3-4 phoneme words, blend onsets
  * - Grade 2: Complex onsets, r-controlled vowels, 3-5 phoneme words
  */
-registerGenerator('phoneme-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('phoneme-explorer', async (ctx) => ({
   type: 'phoneme-explorer',
-  instanceId: item.instanceId,
-  data: await generatePhonemeExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePhonemeExplorer(ctx),
 }));
 
 // ============================================================================
@@ -523,10 +434,10 @@ registerGenerator('phoneme-explorer', async (item, topic, gradeContext) => ({
  * - Grade 1: CVC/CVCC words, blends, digraphs
  * - Grade 2: CCVC, CVCC, multisyllabic, r-controlled vowels
  */
-registerGenerator('sound-swap', async (item, topic, gradeContext) => ({
+registerContextGenerator('sound-swap', async (ctx) => ({
   type: 'sound-swap',
-  instanceId: item.instanceId,
-  data: await generateSoundSwap(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSoundSwap(ctx),
 }));
 
 // ============================================================================
@@ -548,12 +459,10 @@ registerGenerator('sound-swap', async (item, topic, gradeContext) => ({
  * - Grade 1: Groups 2-3, uppercase/lowercase discrimination
  * - Grade 2: Groups 3-4, full alphabet review with similar-letter distractors
  */
-registerGenerator('letter-spotter', async (item, topic, gradeContext) => ({
+registerContextGenerator('letter-spotter', async (ctx) => ({
   type: 'letter-spotter',
-  instanceId: item.instanceId,
-  data: await generateLetterSpotter(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateLetterSpotter(ctx),
 }));
 
 // ============================================================================
@@ -575,12 +484,10 @@ registerGenerator('letter-spotter', async (item, topic, gradeContext) => ({
  * - Grade 1: Groups 2-3, c/k disambiguation, more distractors
  * - Grade 2: Groups 3-4, full alphabet including x=/ks/ and qu=/kw/
  */
-registerGenerator('letter-sound-link', async (item, topic, gradeContext) => ({
+registerContextGenerator('letter-sound-link', async (ctx) => ({
   type: 'letter-sound-link',
-  instanceId: item.instanceId,
-  data: await generateLetterSoundLink(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateLetterSoundLink(ctx),
 }));
 
 // ============================================================================
@@ -601,10 +508,10 @@ registerGenerator('letter-sound-link', async (item, topic, gradeContext) => ({
  * - Grade 1: Letter groups 2-3, wider CVC vocabulary
  * - Grade 2: Letter groups 3-4, full consonant set, review and fluency
  */
-registerGenerator('cvc-speller', async (item, topic, gradeContext) => ({
+registerContextGenerator('cvc-speller', async (ctx) => ({
   type: 'cvc-speller',
-  instanceId: item.instanceId,
-  data: await generateCvcSpeller(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateCvcSpeller(ctx),
 }));
 
 // ============================================================================
@@ -626,10 +533,10 @@ registerGenerator('cvc-speller', async (item, topic, gradeContext) => ({
  * - Grade 1: Wider CVC vocabulary, mixed vowels
  * - Grade 2: Full CVC mastery review, fluency focus
  */
-registerGenerator('word-workout', async (item, topic, gradeContext) => ({
+registerContextGenerator('word-workout', async (ctx) => ({
   type: 'word-workout',
-  instanceId: item.instanceId,
-  data: await generateWordWorkout(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateWordWorkout(ctx),
 }));
 
 // ============================================================================
@@ -649,10 +556,10 @@ registerGenerator('word-workout', async (item, topic, gradeContext) => ({
  * - Grade 1: Nouns/verbs, singular/plural, beginning sounds
  * - Grade 2: Tense sorting, compound words, synonyms/antonyms
  */
-registerGenerator('word-sorter', async (item, topic, gradeContext) => ({
+registerContextGenerator('word-sorter', async (ctx) => ({
   type: 'word-sorter',
-  instanceId: item.instanceId,
-  data: await generateWordSorter(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateWordSorter(ctx),
 }));
 
 console.log('📚 Literacy generators registered: 27 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter)');

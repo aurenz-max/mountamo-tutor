@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { CvcSpellerData } from "../../primitives/visual-primitives/literacy/CvcSpeller";
 import {
   resolveEvalModeConstraint,
@@ -419,16 +420,19 @@ const VOWEL_MAP: Record<string, string> = {
  * Audio-first: words are delivered via AI tutor voice, not shown as text.
  * AI scaffolding provides progressive phoneme segmentation at each level.
  */
+type CvcSpellerConfig = Partial<CvcSpellerData & {
+  targetEvalMode?: string;
+  /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
+   *  difficulty = how much scaffolding within the mode. NEVER changes numbers/words. */
+  difficulty?: string;
+}>;
+
 export const generateCvcSpeller = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<CvcSpellerData & {
-    targetEvalMode?: string;
-    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
-     *  difficulty = how much scaffolding within the mode. NEVER changes numbers/words. */
-    difficulty?: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<CvcSpellerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CvcSpellerConfig;
 
   // -------------------------------------------------------------------------
   // Eval mode resolution

@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/engineeringGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // Engineering Generator Imports
 import { generateLeverLab } from '../../engineering/gemini-lever-lab';
@@ -40,173 +40,173 @@ import { generateTransportChallenge } from '../../engineering/gemini-transport-c
 // ============================================================================
 
 // Lever Lab
-registerGenerator('lever-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('lever-lab', async (ctx) => ({
   type: 'lever-lab',
-  instanceId: item.instanceId,
-  data: await generateLeverLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateLeverLab(ctx),
 }));
 
 // Pulley System Builder
-registerGenerator('pulley-system-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('pulley-system-builder', async (ctx) => ({
   type: 'pulley-system-builder',
-  instanceId: item.instanceId,
-  data: await generatePulleySystemBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePulleySystemBuilder(ctx),
 }));
 
 // Ramp Lab
-registerGenerator('ramp-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('ramp-lab', async (ctx) => ({
   type: 'ramp-lab',
-  instanceId: item.instanceId,
-  data: await generateRampLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateRampLab(ctx),
 }));
 
 // Wheel & Axle Explorer
-registerGenerator('wheel-axle-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('wheel-axle-explorer', async (ctx) => ({
   type: 'wheel-axle-explorer',
-  instanceId: item.instanceId,
-  data: await generateWheelAxleExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateWheelAxleExplorer(ctx),
 }));
 
 // Gear Train Builder
-registerGenerator('gear-train-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('gear-train-builder', async (ctx) => ({
   type: 'gear-train-builder',
-  instanceId: item.instanceId,
-  data: await generateGearTrainBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateGearTrainBuilder(ctx),
 }));
 
 // Bridge Builder
-registerGenerator('bridge-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('bridge-builder', async (ctx) => ({
   type: 'bridge-builder',
-  instanceId: item.instanceId,
-  data: await generateBridgeBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateBridgeBuilder(ctx),
 }));
 
 // Tower Stacker
-registerGenerator('tower-stacker', async (item, topic, gradeContext) => ({
+registerContextGenerator('tower-stacker', async (ctx) => ({
   type: 'tower-stacker',
-  instanceId: item.instanceId,
-  data: await generateTowerStacker(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTowerStacker(ctx),
 }));
 
 // Shape Strength Tester
-registerGenerator('shape-strength-tester', async (item, topic, gradeContext) => ({
+registerContextGenerator('shape-strength-tester', async (ctx) => ({
   type: 'shape-strength-tester',
-  instanceId: item.instanceId,
-  data: await generateShapeStrengthTester(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateShapeStrengthTester(ctx),
 }));
 
 // Foundation Builder
-registerGenerator('foundation-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('foundation-builder', async (ctx) => ({
   type: 'foundation-builder',
-  instanceId: item.instanceId,
-  data: await generateFoundationBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFoundationBuilder(ctx),
 }));
 
 // Excavator Arm Simulator
-registerGenerator('excavator-arm-simulator', async (item, topic, gradeContext) => ({
+registerContextGenerator('excavator-arm-simulator', async (ctx) => ({
   type: 'excavator-arm-simulator',
-  instanceId: item.instanceId,
-  data: await generateExcavatorArmSimulator(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateExcavatorArmSimulator(ctx),
 }));
 
 // Dump Truck Loader
-registerGenerator('dump-truck-loader', async (item, topic, gradeContext) => ({
+registerContextGenerator('dump-truck-loader', async (ctx) => ({
   type: 'dump-truck-loader',
-  instanceId: item.instanceId,
-  data: await generateDumpTruckLoader(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateDumpTruckLoader(ctx),
 }));
 
 // Construction Sequence Planner
-registerGenerator('construction-sequence-planner', async (item, topic, gradeContext) => ({
+registerContextGenerator('construction-sequence-planner', async (ctx) => ({
   type: 'construction-sequence-planner',
-  instanceId: item.instanceId,
-  data: await generateConstructionSequencePlanner(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateConstructionSequencePlanner(ctx),
 }));
 
 // Blueprint Canvas
-registerGenerator('blueprint-canvas', async (item, topic, gradeContext) => ({
+registerContextGenerator('blueprint-canvas', async (ctx) => ({
   type: 'blueprint-canvas',
-  instanceId: item.instanceId,
-  data: await generateBlueprintCanvas(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateBlueprintCanvas(ctx),
 }));
 
 // Machine Profile (display-only vehicle/machine profiles)
-registerGenerator('machine-profile', async (item, topic, gradeContext) => ({
+registerContextGenerator('machine-profile', async (ctx) => ({
   type: 'machine-profile',
-  instanceId: item.instanceId,
-  data: await generateMachineProfile(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateMachineProfile(ctx),
 }));
 
 // Flight Forces Explorer (interactive four forces of flight)
-registerGenerator('flight-forces-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('flight-forces-explorer', async (ctx) => ({
   type: 'flight-forces-explorer',
-  instanceId: item.instanceId,
-  data: await generateFlightForcesExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFlightForcesExplorer(ctx),
 }));
 
 // Airfoil Lab (wing shape and lift exploration)
-registerGenerator('airfoil-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('airfoil-lab', async (ctx) => ({
   type: 'airfoil-lab',
-  instanceId: item.instanceId,
-  data: await generateAirfoilLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateAirfoilLab(ctx),
 }));
 
 // Vehicle Comparison Lab (side-by-side vehicle data analysis)
-registerGenerator('vehicle-comparison-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('vehicle-comparison-lab', async (ctx) => ({
   type: 'vehicle-comparison-lab',
-  instanceId: item.instanceId,
-  data: await generateVehicleComparisonLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateVehicleComparisonLab(ctx),
 }));
 
 // Propulsion Lab (Newton's Third Law across propulsion types)
-registerGenerator('propulsion-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('propulsion-lab', async (ctx) => ({
   type: 'propulsion-lab',
-  instanceId: item.instanceId,
-  data: await generatePropulsionLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePropulsionLab(ctx),
 }));
 
 // Propulsion Timeline (history of transportation)
-registerGenerator('propulsion-timeline', async (item, topic, gradeContext) => ({
+registerContextGenerator('propulsion-timeline', async (ctx) => ({
   type: 'propulsion-timeline',
-  instanceId: item.instanceId,
-  data: await generatePropulsionTimeline(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePropulsionTimeline(ctx),
 }));
 
 // Paper Airplane Designer (engineering design process: design-build-test-iterate)
-registerGenerator('paper-airplane-designer', async (item, topic, gradeContext) => ({
+registerContextGenerator('paper-airplane-designer', async (ctx) => ({
   type: 'paper-airplane-designer',
-  instanceId: item.instanceId,
-  data: await generatePaperAirplaneDesigner(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePaperAirplaneDesigner(ctx),
 }));
 
 // Engine Explorer (interactive engine cutaway view)
-registerGenerator('engine-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('engine-explorer', async (ctx) => ({
   type: 'engine-explorer',
-  instanceId: item.instanceId,
-  data: await generateEngineExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateEngineExplorer(ctx),
 }));
 
 // Vehicle Design Studio (drag-and-drop vehicle designer with physics simulation)
-registerGenerator('vehicle-design-studio', async (item, topic, gradeContext) => ({
+registerContextGenerator('vehicle-design-studio', async (ctx) => ({
   type: 'vehicle-design-studio',
-  instanceId: item.instanceId,
-  data: await generateVehicleDesignStudio(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateVehicleDesignStudio(ctx),
 }));
 
 // Hydraulics Lab (Pascal's Law — hydraulic force multiplication)
-registerGenerator('hydraulics-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('hydraulics-lab', async (ctx) => ({
   type: 'hydraulics-lab',
-  instanceId: item.instanceId,
-  data: await generateHydraulicsLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateHydraulicsLab(ctx),
 }));
 
 // Transport Challenge (living transport simulation — vehicle optimization)
-registerGenerator('transport-challenge', async (item, topic, gradeContext) => ({
+registerContextGenerator('transport-challenge', async (ctx) => ({
   type: 'transport-challenge',
-  instanceId: item.instanceId,
-  data: await generateTransportChallenge(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTransportChallenge(ctx),
 }));
 
 // ============================================================================
-// Migration status: 24/24 engineering primitives registered
+// Migration status: 24/24 engineering primitives registered (context-native)
 // ============================================================================

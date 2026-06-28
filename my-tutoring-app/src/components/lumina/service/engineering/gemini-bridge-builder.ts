@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -136,10 +137,11 @@ const bridgeBuilderSchema: Schema = {
  * @returns BridgeBuilderData with complete configuration
  */
 export const generateBridgeBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<BridgeBuilderData>
+  ctx: GenerationContext,
 ): Promise<BridgeBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<BridgeBuilderData>;
   const prompt = `
 Create an educational Bridge Builder visualization for teaching "${topic}" to ${gradeLevel} students.
 

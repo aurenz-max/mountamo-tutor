@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { SpellingPatternExplorerData, PatternType } from "../../primitives/visual-primitives/literacy/SpellingPatternExplorer";
 import {
   resolveEvalModeConstraint,
@@ -52,11 +53,14 @@ const spellingPatternExplorerSchema: Schema = {
   required: ["title", "gradeLevel", "patternType", "patternWords", "highlightPattern", "ruleTemplate", "correctRule", "dictationWords"]
 };
 
+type SpellingPatternExplorerConfig = Partial<SpellingPatternExplorerData & { targetEvalMode: string }>;
+
 export const generateSpellingPatternExplorer = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<SpellingPatternExplorerData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<SpellingPatternExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SpellingPatternExplorerConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
 
   const evalConstraint = resolveEvalModeConstraint(

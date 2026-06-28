@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { OrdinalLineData, OrdinalLineChallenge } from "../../primitives/visual-primitives/math/OrdinalLine";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -1282,26 +1283,29 @@ async function buildSingleModeChallenges(
 // Main Generator (public API)
 // ============================================================================
 
+type OrdinalLineConfig = {
+  maxPosition?: number;
+  context?: 'race' | 'parade' | 'lunch-line' | 'train' | 'bookshelf';
+  showOrdinalLabels?: boolean;
+  labelFormat?: 'word' | 'symbol' | 'both';
+  gradeBand?: 'K' | '1';
+  /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding (+ structural shape) within it.
+   * NEVER changes the number range (bounded by maxPosition either way).
+   */
+  difficulty?: string;
+};
+
 export const generateOrdinalLine = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    maxPosition?: number;
-    context?: 'race' | 'parade' | 'lunch-line' | 'train' | 'bookshelf';
-    showOrdinalLabels?: boolean;
-    labelFormat?: 'word' | 'symbol' | 'both';
-    gradeBand?: 'K' | '1';
-    /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding (+ structural shape) within it.
-     * NEVER changes the number range (bounded by maxPosition either way).
-     */
-    difficulty?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<OrdinalLineData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as OrdinalLineConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'ordinal-line',

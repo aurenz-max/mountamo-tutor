@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { AnalogClockData } from "../../primitives/visual-primitives/math/AnalogClock";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -235,20 +236,23 @@ const analogClockSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
+type AnalogClockConfig = {
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-clock reading scaffolding within it. NEVER changes
+   * the time value (eval-mode/grade-band axis owns that).
+   */
+  difficulty?: string;
+};
+
 export const generateAnalogClock = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-clock reading scaffolding within it. NEVER changes
-     * the time value (eval-mode/grade-band axis owns that).
-     */
-    difficulty?: string;
-  },
+  ctx: GenerationContext,
 ): Promise<AnalogClockData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as AnalogClockConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'analog-clock',

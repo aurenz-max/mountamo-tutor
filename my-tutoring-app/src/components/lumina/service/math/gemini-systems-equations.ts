@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -972,10 +973,7 @@ const systemsEquationsSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateSystemsEquations = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type SystemsEquationsConfig = {
     /** How many systems-of-equations challenges in this session. Default 4, max 6. */
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
@@ -989,8 +987,14 @@ export const generateSystemsEquations = async (
      * difficulty = how much on-screen solving help within it. NEVER changes numbers.
      */
     difficulty?: string;
-  }
+};
+
+export const generateSystemsEquations = async (
+  ctx: GenerationContext,
 ): Promise<SystemsEquationsVisualizerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SystemsEquationsConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'systems-equations-visualizer',
     config?.targetEvalMode,

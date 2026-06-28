@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -421,10 +422,7 @@ function enforceModeFlags(data: { challengeType?: string; guidedMode?: boolean; 
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateFactorTree = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type FactorTreeConfig = {
     /** Legacy single-value override. If provided, it pins challenge #1. */
     rootValue?: number;
     /** How many factor trees in this session. Default 4, max 6. */
@@ -441,8 +439,14 @@ export const generateFactorTree = async (
      * difficulty = how much scaffolding + how deep a tree within it. NEVER changes magnitude.
      */
     difficulty?: string;
-  }
+};
+
+export const generateFactorTree = async (
+  ctx: GenerationContext,
 ): Promise<FactorTreeData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FactorTreeConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'factor-tree',

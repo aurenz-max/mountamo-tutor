@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -876,10 +877,11 @@ ${buildTierSection('compare_datasets', tier)}`;
  * fields) and SP-3 (cross-contamination) by construction.
  */
 export const generateDotPlot = async (
-  topic: string,
-  gradeLevel: string,
-  config?: DotPlotConfig,
+  ctx: GenerationContext,
 ): Promise<DotPlotData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as DotPlotConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'dot-plot',
     config?.targetEvalMode,

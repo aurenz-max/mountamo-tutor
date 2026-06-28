@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -111,10 +112,11 @@ const vehicleComparisonLabSchema: Schema = {
  * Generate Vehicle Comparison Lab data
  */
 export const generateVehicleComparisonLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<VehicleComparisonLabData>
+  ctx: GenerationContext,
 ): Promise<VehicleComparisonLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<VehicleComparisonLabData>;
   const prompt = `
 Create a Vehicle Comparison Lab for teaching "${topic}" to ${gradeLevel} students.
 

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 /**
  * Lever Load - represents objects placed on the lever
@@ -162,10 +163,11 @@ const leverLabSchema: Schema = {
  * @returns LeverLabData with complete configuration
  */
 export const generateLeverLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<LeverLabData>
+  ctx: GenerationContext,
 ): Promise<LeverLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<LeverLabData>;
   // Generate random UNBALANCED scenarios for problem-solving
   // These are intentionally NOT balanced so students must solve them
   const randomScenarios = [

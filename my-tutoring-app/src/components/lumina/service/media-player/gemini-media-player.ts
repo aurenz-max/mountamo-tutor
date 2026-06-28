@@ -1,6 +1,27 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { MediaPlayerData, LessonSegment, FullLessonSegment } from "../../types";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
+
+// Helper to infer grade level from context string
+const inferGradeLevel = (gradeContext: string): string => {
+  const lower = gradeContext.toLowerCase();
+  if (lower.includes('preschool') || lower.includes('prek')) return 'preschool';
+  if (lower.includes('kindergarten')) return 'kindergarten';
+  if (lower.includes('grade 1') || lower.includes('1st')) return 'grade1';
+  if (lower.includes('grade 2') || lower.includes('2nd')) return 'grade2';
+  if (lower.includes('grade 3') || lower.includes('3rd')) return 'grade3';
+  if (lower.includes('grade 4') || lower.includes('4th')) return 'grade4';
+  if (lower.includes('grade 5') || lower.includes('5th')) return 'grade5';
+  if (lower.includes('middle')) return 'middle';
+  if (lower.includes('high')) return 'high';
+  return 'elementary';
+};
+
+type MediaPlayerConfig = {
+  segmentCount?: number;
+  imageResolution?: '1K' | '2K' | '4K';
+};
 
 /**
  * Convert grade level to descriptive educational context for prompts
@@ -179,11 +200,13 @@ export const generateMediaImage = async (
  * Audio narration is handled natively by Lumina AI at runtime.
  */
 export const generateMediaPlayer = async (
-  topic: string,
-  gradeLevel: string = 'elementary',
-  segmentCount: number = 4,
-  imageResolution: '1K' | '2K' | '4K' = '1K'
+  ctx: GenerationContext
 ): Promise<MediaPlayerData> => {
+  const config = ctx.raw as MediaPlayerConfig;
+  const topic = ctx.intent || ctx.title || ctx.topic;
+  const gradeLevel = inferGradeLevel(ctx.gradeContext);
+  const segmentCount = config.segmentCount ?? 4;
+  const imageResolution = config.imageResolution ?? '1K';
   try {
     console.log('🎬 Generating Media Player content for:', topic);
 

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { RevisionWorkshopData, RevisionSkill } from "../../primitives/visual-primitives/literacy/RevisionWorkshop";
 import {
   resolveEvalModeConstraint,
@@ -65,11 +66,14 @@ const revisionWorkshopSchema: Schema = {
   required: ["title", "gradeLevel", "revisionSkill", "draft", "targets"]
 };
 
+type RevisionWorkshopConfig = Partial<RevisionWorkshopData & { targetEvalMode: string }>;
+
 export const generateRevisionWorkshop = async (
-  topic: string,
-  gradeLevel: string = '4',
-  config?: Partial<RevisionWorkshopData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<RevisionWorkshopData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as RevisionWorkshopConfig;
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
   // ── Eval mode resolution ────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -91,10 +92,11 @@ const shapeStrengthTesterSchema: Schema = {
  * @returns ShapeStrengthTesterData with complete configuration
  */
 export const generateShapeStrengthTester = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ShapeStrengthTesterData>
+  ctx: GenerationContext,
 ): Promise<ShapeStrengthTesterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<ShapeStrengthTesterData>;
   const prompt = `
 Create an educational Free-Form Structural Building Simulator for teaching "${topic}" to ${gradeLevel} students.
 

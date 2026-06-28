@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { LengthLabData } from "../../primitives/visual-primitives/math/LengthLab";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -390,20 +391,23 @@ const lengthLabSchema: Schema = {
  * - K: direct visual comparison (longer/shorter/same), tiling with cubes
  * - Grade 1: ordering 3 objects, indirect comparison with clues
  */
+type LengthLabConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second field of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding (and structural shape) within it.
+   * NEVER changes raw magnitude — only structure and help.
+   */
+  difficulty?: string;
+}>;
+
 export const generateLengthLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second field of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding (and structural shape) within it.
-     * NEVER changes raw magnitude — only structure and help.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<LengthLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as LengthLabConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'length-lab',

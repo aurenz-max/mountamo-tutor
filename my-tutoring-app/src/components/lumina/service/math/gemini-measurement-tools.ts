@@ -4,6 +4,7 @@ import {
   MeasurementToolsChallenge,
 } from "../../primitives/visual-primitives/math/MeasurementTools";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -315,10 +316,7 @@ const measurementToolsSchema: Schema = {
  * - `selectMeasurementChallenges` deterministically picks N distinct shapes.
  * - Per-mode width pools enforce pedagogical range + precision invariants.
  */
-export const generateMeasurementTools = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type MeasurementToolsConfig = {
     unit?: 'inches' | 'centimeters';
     precision?: 'whole' | 'half';
     gradeBand?: 'K-2' | '3-5';
@@ -330,8 +328,14 @@ export const generateMeasurementTools = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateMeasurementTools = async (
+  ctx: GenerationContext,
 ): Promise<MeasurementToolsData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as MeasurementToolsConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'measurement-tools',

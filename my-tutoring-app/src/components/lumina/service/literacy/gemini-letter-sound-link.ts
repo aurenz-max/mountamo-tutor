@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   LetterSoundLinkData,
   LetterSoundLinkChallenge,
@@ -238,15 +239,18 @@ function pickDistractor(targetLetter: string, cumulativeLetters: string[]): stri
  * @param config - Optional config with letterGroup override and targetEvalMode
  * @returns LetterSoundLinkData with challenges across all three modes
  */
+type LetterSoundLinkConfig = Partial<{
+  letterGroup: number;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+}>;
+
 export const generateLetterSoundLink = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<{
-    letterGroup: number;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<LetterSoundLinkData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as LetterSoundLinkConfig;
 
   // -------------------------------------------------------------------------
   // Eval mode resolution

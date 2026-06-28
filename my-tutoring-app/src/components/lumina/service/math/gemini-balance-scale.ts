@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from '../../primitives/visual-primitives/math/BalanceScale';
 import {
   resolveEvalModeConstraint,
@@ -449,10 +450,7 @@ const balanceScaleSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateBalanceScale = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type BalanceScaleConfig = {
     /** How many equations in this session. Defaults from COUNT_BY_MODE (5 for T2 modes, 4 for T3). */
     instanceCount?: number;
     showTilt?: boolean;
@@ -464,8 +462,14 @@ export const generateBalanceScale = async (
      * difficulty = how much on-screen balance feedback within it. NEVER changes numbers.
      */
     difficulty?: string;
-  }
+};
+
+export const generateBalanceScale = async (
+  ctx: GenerationContext,
 ): Promise<BalanceScaleData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as BalanceScaleConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'balance-scale',

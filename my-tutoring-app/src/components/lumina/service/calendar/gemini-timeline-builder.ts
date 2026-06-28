@@ -5,6 +5,7 @@ import {
   TimelineEvent,
 } from "../../primitives/visual-primitives/calendar/TimelineBuilder";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -445,11 +446,14 @@ const FALLBACKS: Record<string, TimelineBuilderChallenge> = {
 // Main generator — dispatches to per-type sub-generators in parallel
 // ===========================================================================
 
+type TimelineBuilderConfig = Partial<{ targetEvalMode?: string }>;
+
 export const generateTimelineBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<TimelineBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TimelineBuilderConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "timeline-builder",

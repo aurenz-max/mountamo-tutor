@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { RatioTableData, RatioTableChallenge } from "../../primitives/visual-primitives/math/RatioTable";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -253,10 +254,7 @@ const ratioTableSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns RatioTableData with challenges array
  */
-export const generateRatioTable = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<RatioTableData> & {
+type RatioTableConfig = Partial<RatioTableData> & {
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode?: string;
     /**
@@ -267,8 +265,14 @@ export const generateRatioTable = async (
      * makes the hint ladder terser.
      */
     difficulty?: string;
-  }
+};
+
+export const generateRatioTable = async (
+  ctx: GenerationContext,
 ): Promise<RatioTableData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as RatioTableConfig;
   // ---------------------------------------------------------------------------
   // Eval mode resolution
   // ---------------------------------------------------------------------------

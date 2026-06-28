@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -278,10 +279,11 @@ function validateAndEnrichObject(obj: CelestialObject): CelestialObject {
 // ============================================================================
 
 export const generateScaleComparator = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ScaleComparatorData>
+  ctx: GenerationContext,
 ): Promise<ScaleComparatorData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<ScaleComparatorData>;
   const gradeConfig = getGradeConfig(gradeLevel);
 
   // Build the prompt for Gemini to generate appropriate objects

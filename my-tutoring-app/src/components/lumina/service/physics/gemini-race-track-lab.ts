@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -648,16 +649,19 @@ function getTypeDistribution(
 // GENERATOR FUNCTION
 // ============================================================================
 
-export const generateRaceTrackLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type RaceTrackLabConfig = Partial<{
     targetEvalMode?: string;
     /** Per-component support tier from the manifest ('easy'|'medium'|'hard').
      *  Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateRaceTrackLab = async (
+  ctx: GenerationContext,
 ): Promise<RaceTrackLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as RaceTrackLabConfig;
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
   const validGrades = ['K', '1', '2', '3', '4', '5'];

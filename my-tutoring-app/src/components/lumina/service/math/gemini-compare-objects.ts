@@ -5,6 +5,7 @@ import type {
   CompareObject,
 } from "../../primitives/visual-primitives/math/CompareObjects";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -959,19 +960,22 @@ Return exactly ${count} challenges.
  * When targetEvalMode is set, only the relevant sub-generator(s) run.
  * When no eval mode, all 4 types are generated for a mixed-difficulty session.
  */
+type CompareObjectsConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = within-mode scaffolding + structural shape. NEVER magnitude.
+   */
+  difficulty?: string;
+}>;
+
 export const generateCompareObjects = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = within-mode scaffolding + structural shape. NEVER magnitude.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<CompareObjectsData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CompareObjectsConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'compare-objects',

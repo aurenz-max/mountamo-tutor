@@ -12,6 +12,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from '../generation/generationContext';
 import type {
   DeepDiveData,
   DeepDiveBlock,
@@ -1606,11 +1607,14 @@ async function generateBlock(
 // Main Export
 // ═══════════════════════════════════════════════════════════════════════
 
+type DeepDiveConfig = Partial<{ targetEvalMode?: string; templateId?: string; layoutOverride?: string }>;
+
 export async function generateDeepDive(
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string; templateId?: string; layoutOverride?: string }>,
+  ctx: GenerationContext,
 ): Promise<DeepDiveData> {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as DeepDiveConfig;
   const evalMode = config?.targetEvalMode;
   const templateId = config?.templateId;
   const layoutOverride = config?.layoutOverride;

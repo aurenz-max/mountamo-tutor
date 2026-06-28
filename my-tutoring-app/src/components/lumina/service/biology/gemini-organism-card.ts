@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { OrganismCardData } from "../../primitives/visual-primitives/biology/OrganismCard";
@@ -167,11 +168,51 @@ const GRADE_BAND_FIELDS: Record<string, string[]> = {
  * @param config - Optional partial configuration to override generated values
  * @returns OrganismCardData with grade-appropriate organism information
  */
-export const generateOrganismCard = async (
+/**
+ * Build a minimal GenerationContext for internal callers (the card-set wrapper)
+ * that still invoke generateOrganismCard positionally. Behavior-preserving:
+ * organismName + gradeBand flow through ctx.raw.
+ */
+const makeOrganismCardContext = (
   organismName: string,
-  gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
-  config?: Partial<OrganismCardData>
+  gradeBand: 'K-2' | '3-5' | '6-8'
+): GenerationContext =>
+  ({
+    componentId: 'organism-card',
+    instanceId: '',
+    topic: organismName,
+    gradeLevel: gradeBand,
+    gradeContext: gradeBand,
+    objective: {},
+    scope: {} as GenerationContext['scope'],
+    raw: { organismName, gradeBand },
+  } as GenerationContext);
+
+export const generateOrganismCard = async (
+  ctx: GenerationContext
 ): Promise<OrganismCardData> => {
+  const config = ctx.raw as Partial<OrganismCardData>;
+  // Extract organism name from config or topic (derivation moved from the handler)
+  const raw = ctx.raw as { organismName?: string; speciesName?: string };
+  const organismName = raw.organismName || raw.speciesName || ctx.topic;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {
@@ -430,7 +471,9 @@ Return ONLY the organism names, one per line, nothing else.`;
 
     // Generate cards for each suggested organism
     for (const organismName of organismNames) {
-      const card = await generateOrganismCard(organismName, gradeBand);
+      const card = await generateOrganismCard(
+        makeOrganismCardContext(organismName, gradeBand)
+      );
       cards.push(card);
     }
 

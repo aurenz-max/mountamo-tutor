@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { EquationBuilderData } from "../../primitives/visual-primitives/math/EquationBuilder";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -1196,23 +1197,27 @@ function getFallbackChallenges(
  * @param config - Optional configuration hints from the manifest
  * @returns EquationBuilderData with complete configuration
  */
+type EquationBuilderConfig = Partial<{
+  maxNumber: number;
+  challengeTypes: string[];
+  challengeCount: number;
+  /** Target eval mode from the IRT calibration system */
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
+   */
+  difficulty: string;
+}>;
+
 export const generateEquationBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    maxNumber: number;
-    challengeTypes: string[];
-    challengeCount: number;
-    /** Target eval mode from the IRT calibration system */
-    targetEvalMode: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
-     */
-    difficulty: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<EquationBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as EquationBuilderConfig;
+
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'equation-builder',

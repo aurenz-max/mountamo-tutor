@@ -18,6 +18,7 @@ import {
   FractionBarChallenge,
 } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -445,10 +446,7 @@ function buildChallenges(
 // Main generator
 // ---------------------------------------------------------------------------
 
-export const generateFractionBar = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type FractionBarConfig = {
     targetEvalMode?: string;
     /** Number of challenges in this session. Default 3 (matches §6e pilot). */
     instanceCount?: number;
@@ -460,8 +458,14 @@ export const generateFractionBar = async (
      * within it. NEVER changes the fractions (denominator windows own magnitude).
      */
     difficulty?: string;
-  },
+};
+
+export const generateFractionBar = async (
+  ctx: GenerationContext,
 ): Promise<FractionBarData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FractionBarConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'fraction-bar',

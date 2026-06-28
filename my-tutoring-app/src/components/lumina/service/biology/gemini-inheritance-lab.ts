@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { InheritanceLabData } from "../../primitives/visual-primitives/biology/InheritanceLab";
@@ -168,10 +169,20 @@ const inheritanceLabSchema: Schema = {
  * @returns InheritanceLabData with Punnett square, ratios, and simulation config
  */
 export const generateInheritanceLab = async (
-  topic: string,
-  gradeBand: '6-7' | '8' = '6-7',
-  config?: Partial<InheritanceLabData>
+  ctx: GenerationContext
 ): Promise<InheritanceLabData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<InheritanceLabData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '6-7' | '8'> = {
+    '6': '6-7',
+    '7': '6-7',
+    '8': '8',
+    '6-7': '6-7',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '6-7';
 
   const gradeContext = {
     '6-7': `

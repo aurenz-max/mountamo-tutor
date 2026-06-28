@@ -1,6 +1,14 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { FoundationExplorerData, FoundationConcept } from "../../types";
+
+type FoundationExplorerConfig = {
+  objectiveId?: string;
+  objectiveText?: string;
+  objectiveVerb?: string;
+  conceptCount?: number;
+};
 
 /**
  * Schema for a single foundational concept
@@ -126,15 +134,11 @@ const foundationExplorerSchema: Schema = {
  * @returns FoundationExplorerData
  */
 export const generateFoundationExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    objectiveId?: string;
-    objectiveText?: string;
-    objectiveVerb?: string;
-    conceptCount?: number;
-  }
+  ctx: GenerationContext
 ): Promise<FoundationExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FoundationExplorerConfig;
   const objectiveVerb = config?.objectiveVerb || 'identify';
   const conceptCount = config?.conceptCount || 3;
 

@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ThreeDShapeExplorerData } from "../../primitives/visual-primitives/math/ThreeDShapeExplorer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -312,21 +313,24 @@ const threeDShapeExplorerSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns ThreeDShapeExplorerData with complete configuration
  */
+type ThreeDShapeExplorerConfig = Partial<ThreeDShapeExplorerData> & {
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much annotation-overlay support within it. NEVER changes
+   * which solid is shown or the answer.
+   */
+  difficulty?: string;
+};
+
 export const generateThreeDShapeExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ThreeDShapeExplorerData> & {
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much annotation-overlay support within it. NEVER changes
-     * which solid is shown or the answer.
-     */
-    difficulty?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<ThreeDShapeExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ThreeDShapeExplorerConfig;
   // ---------------------------------------------------------------------------
   // Eval mode resolution
   // ---------------------------------------------------------------------------

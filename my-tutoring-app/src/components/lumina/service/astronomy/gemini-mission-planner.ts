@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -245,10 +246,11 @@ const missionPlannerSchema: Schema = {
  * @returns MissionPlannerData with complete configuration
  */
 export const generateMissionPlanner = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<MissionPlannerData>
+  ctx: GenerationContext,
 ): Promise<MissionPlannerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<MissionPlannerData>;
   const prompt = `
 Create an educational Mission Planner visualization for teaching "${topic}" to ${gradeLevel} students.
 

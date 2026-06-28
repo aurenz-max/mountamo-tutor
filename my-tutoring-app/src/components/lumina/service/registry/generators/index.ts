@@ -39,7 +39,9 @@ export {
   hasGenerator,
   getRegisteredIds,
   getRegisteredCount,
+  isContextNative,
   CONTENT_GENERATORS,
+  CONTEXT_NATIVE_IDS,
 } from '../contentRegistry';
 
 export type {

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { DnaExplorerData } from "../../primitives/visual-primitives/biology/DnaExplorer";
@@ -187,10 +188,22 @@ const dnaExplorerSchema: Schema = {
  * @returns DnaExplorerData with sequence, nucleotides, challenges, and zoom levels
  */
 export const generateDnaExplorer = async (
-  topic: string,
-  gradeBand: '5-6' | '7-8' = '5-6',
-  config?: Partial<DnaExplorerData>
+  ctx: GenerationContext
 ): Promise<DnaExplorerData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<DnaExplorerData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '5-6' | '7-8'> = {
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
 
   const gradeContext = {
     '5-6': `

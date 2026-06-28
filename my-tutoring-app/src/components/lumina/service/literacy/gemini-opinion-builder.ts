@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { OpinionBuilderData } from "../../primitives/visual-primitives/literacy/OpinionBuilder";
 import {
   resolveEvalModeConstraint,
@@ -59,11 +60,14 @@ const opinionBuilderSchema: Schema = {
   required: ["title", "gradeLevel", "framework", "prompt", "scaffold"]
 };
 
+type OpinionBuilderConfig = Partial<OpinionBuilderData> & { targetEvalMode?: string };
+
 export const generateOpinionBuilder = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<OpinionBuilderData> & { targetEvalMode?: string },
+  ctx: GenerationContext,
 ): Promise<OpinionBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as OpinionBuilderConfig;
 
   // ---------------------------------------------------------------------------
   // Eval mode resolution

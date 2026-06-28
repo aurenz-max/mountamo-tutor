@@ -4,6 +4,7 @@ import {
   CalendarExplorerChallenge,
 } from "../../primitives/visual-primitives/calendar/CalendarExplorer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -639,11 +640,14 @@ const FALLBACKS: Record<string, CalendarExplorerChallenge> = {
 // Main generator — dispatches to per-type sub-generators in parallel
 // ===========================================================================
 
+type CalendarExplorerConfig = Partial<{ targetEvalMode?: string }>;
+
 export const generateCalendarExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<CalendarExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CalendarExplorerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "calendar-explorer",

@@ -22,6 +22,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -483,10 +484,7 @@ function correctInvertedRatio(contextQuestion: string, unitRateOutput: number): 
 // Orchestrator
 // ---------------------------------------------------------------------------
 
-export const generateDoubleNumberLine = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type DoubleNumberLineConfig = {
     topLabel?: string;
     bottomLabel?: string;
     topScale?: ScaleConfig;
@@ -504,8 +502,14 @@ export const generateDoubleNumberLine = async (
      * ratio numbers or the scale magnitude.
      */
     difficulty?: string;
-  },
+};
+
+export const generateDoubleNumberLine = async (
+  ctx: GenerationContext,
 ): Promise<DoubleNumberLineData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as DoubleNumberLineConfig;
   // Resolve eval mode from catalog (single source of truth)
   const evalConstraint = resolveEvalModeConstraint(
     'double-number-line',
@@ -628,7 +632,7 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
 
   // ---- Build session context ----
   const { topScale, bottomScale } = buildScales(maxInput, unitRate);
-  const ctx: SessionContext = {
+  const session: SessionContext = {
     topLabel,
     bottomLabel,
     unitRate,
@@ -655,14 +659,14 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
     let core: Pick<DoubleNumberLineChallenge, 'givenPoints' | 'targetPoints' | 'prompt' | 'hint'>;
     switch (challengeType) {
       case 'find_missing':
-        core = buildFindMissingChallenge(ctx, askInput, givenReference);
+        core = buildFindMissingChallenge(session, askInput, givenReference);
         break;
       case 'unit_rate':
-        core = buildUnitRateChallenge(ctx, askInput, givenReference, i === 0);
+        core = buildUnitRateChallenge(session, askInput, givenReference, i === 0);
         break;
       case 'equivalent_ratios':
       default:
-        core = buildEquivalentRatiosChallenge(ctx, askInput);
+        core = buildEquivalentRatiosChallenge(session, askInput);
         break;
     }
     challenges.push({

@@ -6,6 +6,7 @@ import {
   ShapeComposerComponent,
 } from "../../primitives/visual-primitives/math/ShapeComposer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -1459,10 +1460,7 @@ const FALLBACKS: Record<string, ShapeComposerChallenge> = {
 // Main generator — dispatches to per-type sub-generators
 // ===========================================================================
 
-export const generateShapeComposer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
+type ShapeComposerConfig = Partial<{
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
@@ -1471,8 +1469,14 @@ export const generateShapeComposer = async (
      * withdraws decomposition seams + snap guides, NEVER the target/piece set.
      */
     difficulty?: string;
-  }>,
+  }>;
+
+export const generateShapeComposer = async (
+  ctx: GenerationContext,
 ): Promise<ShapeComposerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ShapeComposerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "shape-composer",

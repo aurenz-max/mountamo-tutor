@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   PercentBarData,
   PercentBarChallenge,
@@ -758,28 +759,31 @@ const percentBarSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
+type PercentBarConfig = {
+  /** How many challenges in this session. Default 4, max 6. */
+  instanceCount?: number;
+  showPercentLabels?: boolean;
+  showValueLabels?: boolean;
+  benchmarkLines?: number[];
+  doubleBar?: boolean;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes the
+   * target percent or whole-value magnitude (the benchmark-vs-any rate lever
+   * draws from the SAME pool, so it is structural, not magnitude).
+   */
+  difficulty?: string;
+};
+
 export const generatePercentBar = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
-    /** How many challenges in this session. Default 4, max 6. */
-    instanceCount?: number;
-    showPercentLabels?: boolean;
-    showValueLabels?: boolean;
-    benchmarkLines?: number[];
-    doubleBar?: boolean;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes the
-     * target percent or whole-value magnitude (the benchmark-vs-any rate lever
-     * draws from the SAME pool, so it is structural, not magnitude).
-     */
-    difficulty?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<PercentBarData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PercentBarConfig;
   // Resolve eval mode from catalog (single source of truth)
   const evalConstraint = resolveEvalModeConstraint(
     'percent-bar',

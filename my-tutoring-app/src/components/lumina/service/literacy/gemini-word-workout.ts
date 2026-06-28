@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type {
   WordWorkoutData,
   WordWorkoutMode,
@@ -426,17 +427,20 @@ async function generateModeChallenges(
 //   - With config.mode or targetEvalMode → single/filtered-mode generation
 // ============================================================================
 
+type WordWorkoutConfig = Partial<{
+  mode: WordWorkoutMode;
+  challengeCount: number;
+  masteredVowels: string[];
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+}>;
+
 export const generateWordWorkout = async (
-  topic: string,
-  gradeLevel: string = "K",
-  config?: Partial<{
-    mode: WordWorkoutMode;
-    challengeCount: number;
-    masteredVowels: string[];
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<WordWorkoutData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as WordWorkoutConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'word-workout',

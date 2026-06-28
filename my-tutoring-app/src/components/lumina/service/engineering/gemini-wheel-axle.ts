@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 /**
  * Wheel & Axle Explorer Data - complete configuration for wheel/axle visualization
@@ -100,10 +101,11 @@ const wheelAxleSchema: Schema = {
  * @returns WheelAxleExplorerData with complete configuration
  */
 export const generateWheelAxleExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<WheelAxleExplorerData>
+  ctx: GenerationContext,
 ): Promise<WheelAxleExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<WheelAxleExplorerData>;
   // Generate random scenarios for variety
   const randomScenarios = [
     { wheel: 8, axle: 2, load: 4 },   // 4:1 ratio

@@ -12,7 +12,7 @@
  * Usage: import './registry/generators/chemistryGenerators';
  */
 
-import { registerGenerator, registerContextGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Chemistry Component Imports (from dedicated service files)
@@ -65,32 +65,35 @@ const inferGradeLevel = (gradeContext: string): string => {
 // Chemistry Primitive Registrations
 // ============================================================================
 
-// Molecule Viewer (3D molecular structure)
-registerGenerator('molecule-viewer', async (item, topic, gradeContext) => {
-  const gradeLevel = inferGradeLevel(gradeContext);
-  const moleculePrompt = item.intent || item.title || topic;
+// Molecule Viewer (3D molecular structure). Special case: the molecule prompt is
+// the per-component intent/title, and generateMoleculeData takes (prompt, grade),
+// so this stays a thin ctx adapter rather than a (topic, grade, config) generator.
+registerContextGenerator('molecule-viewer', async (ctx) => {
+  const gradeLevel = inferGradeLevel(ctx.gradeContext);
+  const moleculePrompt = ctx.intent || ctx.title || ctx.topic;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = await generateMoleculeData(moleculePrompt, gradeLevel as any);
   return {
     type: 'molecule-viewer',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
 
-// Periodic Table (interactive elements table)
-registerGenerator('periodic-table', async (item, _topic, _gradeContext) => {
-  const config = getConfig(item);
+// Periodic Table (interactive elements table). Self-contained — built inline from
+// the manifest title/intent/config, sourced from ctx.
+registerContextGenerator('periodic-table', async (ctx) => {
+  const config = getConfig({ config: ctx.raw });
   // Periodic table is self-contained with all element data
   const data = {
-    title: item.title || 'Periodic Table of Elements',
-    description: item.intent || 'Explore the elements and their properties',
+    title: ctx.title || 'Periodic Table of Elements',
+    description: ctx.intent || 'Explore the elements and their properties',
     highlightElements: config.highlightElements || [],
     focusCategory: config.focusCategory
   };
   return {
     type: 'periodic-table',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -131,38 +134,38 @@ registerContextGenerator('molecule-constructor', async (ctx) => ({
 }));
 
 // Equation Balancer (interactive chemical equation balancing)
-registerGenerator('equation-balancer', async (item, topic, gradeContext) => ({
+registerContextGenerator('equation-balancer', async (ctx) => ({
   type: 'equation-balancer',
-  instanceId: item.instanceId,
-  data: await generateEquationBalancer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateEquationBalancer(ctx),
 }));
 
 // Energy of Reactions (exothermic/endothermic enthalpy diagrams)
-registerGenerator('energy-of-reactions', async (item, topic, gradeContext) => ({
+registerContextGenerator('energy-of-reactions', async (ctx) => ({
   type: 'energy-of-reactions',
-  instanceId: item.instanceId,
-  data: await generateEnergyOfReactions(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateEnergyOfReactions(ctx),
 }));
 
 // Mixing and Dissolving (interactive solutions/mixtures explorer)
-registerGenerator('mixing-and-dissolving', async (item, topic, gradeContext) => ({
+registerContextGenerator('mixing-and-dissolving', async (ctx) => ({
   type: 'mixing-and-dissolving',
-  instanceId: item.instanceId,
-  data: await generateMixingAndDissolving(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateMixingAndDissolving(ctx),
 }));
 
 // pH Explorer (interactive acid-base rainbow)
-registerGenerator('ph-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('ph-explorer', async (ctx) => ({
   type: 'ph-explorer',
-  instanceId: item.instanceId,
-  data: await generatePhExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePhExplorer(ctx),
 }));
 
 // Safety Lab (lab safety training & virtual PPE)
-registerGenerator('safety-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('safety-lab', async (ctx) => ({
   type: 'safety-lab',
-  instanceId: item.instanceId,
-  data: await generateSafetyLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSafetyLab(ctx),
 }));
 
 // Stoichiometry Lab (mole conversions, limiting reagent, theoretical yield)

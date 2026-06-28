@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -746,11 +747,14 @@ Generate 3 complex optimization scenarios.
 // Main Generator (Orchestrator Pattern)
 // ============================================================================
 
+type TransportChallengeConfig = Partial<{ targetEvalMode?: string }>;
+
 export const generateTransportChallenge = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<TransportChallengeData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TransportChallengeConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "transport-challenge",

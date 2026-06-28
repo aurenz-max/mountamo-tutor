@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -689,10 +690,7 @@ const transformationLabSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateTransformationLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type TransformationLabConfig = {
     instanceCount?: number;
     targetEvalMode?: string;
     /**
@@ -701,8 +699,14 @@ export const generateTransformationLab = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateTransformationLab = async (
+  ctx: GenerationContext,
 ): Promise<TransformationLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TransformationLabConfig;
   const validTypes: TransformationLabChallengeType[] = [
     'apply_translation_reflection', 'apply_rotation', 'identify_transformation',
     'compose_sequence', 'dilation_similarity',

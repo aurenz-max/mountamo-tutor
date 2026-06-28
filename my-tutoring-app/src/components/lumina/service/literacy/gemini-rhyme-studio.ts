@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
 import {
   resolveEvalModeConstraint,
@@ -155,15 +156,18 @@ const rhymeStudioSchema: Schema = {
  * @param config - Optional configuration overrides (e.g., challengeCount, targetEvalMode)
  * @returns RhymeStudioData with grade-appropriate rhyming challenges
  */
-export const generateRhymeStudio = async (
-  topic: string,
-  gradeLevel: string = "K",
-  config?: Partial<{
+type RhymeStudioConfig = Partial<{
     challengeCount: number;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
-  }>
+  }>;
+
+export const generateRhymeStudio = async (
+  ctx: GenerationContext,
 ): Promise<RhymeStudioData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as RhymeStudioConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'rhyme-studio',

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -122,11 +123,14 @@ const propulsionLabSchema: Schema = {
 // Generator
 // ============================================================================
 
+type PropulsionLabConfig = Partial<{ targetEvalMode?: string }>;
+
 export const generatePropulsionLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>
+  ctx: GenerationContext,
 ): Promise<PropulsionLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PropulsionLabConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'propulsion-lab',

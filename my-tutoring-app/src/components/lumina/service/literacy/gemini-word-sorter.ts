@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   WordSorterData,
   WordSorterChallenge,
@@ -458,11 +459,14 @@ Generate 3-4 challenges with different matching criteria.`;
  * @param config - Optional partial configuration to override generated values
  * @returns WordSorterData with grade-appropriate word sorting challenges
  */
+type WordSorterConfig = Partial<WordSorterData & { targetEvalMode: string }>;
+
 export const generateWordSorter = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<WordSorterData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<WordSorterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as WordSorterConfig;
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

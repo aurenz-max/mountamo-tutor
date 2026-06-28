@@ -11,6 +11,7 @@
 import { Type, Schema } from "@google/genai";
 import { ParameterExplorerData, ParameterExplorerChallenge } from "../../primitives/visual-primitives/math/ParameterExplorer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -726,20 +727,23 @@ ${paramList}`;
 // Main Export — Orchestrator
 // ═══════════════════════════════════════════════════════════════════════════
 
+type ParameterExplorerConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which prediction
+   * task, difficulty = how much explanatory overlay within it. NEVER changes
+   * the formula, parameters, or ranges — only withdraws on-screen overlays.
+   */
+  difficulty?: string;
+}>;
+
 export const generateParameterExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which prediction
-     * task, difficulty = how much explanatory overlay within it. NEVER changes
-     * the formula, parameters, or ranges — only withdraws on-screen overlays.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<ParameterExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ParameterExplorerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'parameter-explorer',

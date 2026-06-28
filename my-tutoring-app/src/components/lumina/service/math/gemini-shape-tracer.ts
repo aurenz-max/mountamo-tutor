@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ShapeTracerData, ShapeTracerChallenge } from "../../primitives/visual-primitives/math/ShapeTracer";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -996,10 +997,11 @@ async function generateChallengeByType(
  * @returns ShapeTracerData with complete configuration
  */
 export const generateShapeTracer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: ShapeTracerConfig
+  ctx: GenerationContext,
 ): Promise<ShapeTracerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ShapeTracerConfig;
   // Resolve eval mode constraint (null = mixed difficulty)
   const evalConstraint = resolveEvalModeConstraint(
     'shape-tracer',

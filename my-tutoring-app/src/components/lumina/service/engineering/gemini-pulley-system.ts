@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 /**
  * Pulley Position - represents a pulley in the system
@@ -180,10 +181,11 @@ const pulleySystemSchema: Schema = {
  * @returns PulleySystemBuilderData with complete configuration
  */
 export const generatePulleySystemBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<PulleySystemBuilderData>
+  ctx: GenerationContext,
 ): Promise<PulleySystemBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<PulleySystemBuilderData>;
 
   const prompt = `
 Create an educational Pulley System Builder visualization for teaching "${topic}" to ${gradeLevel} students.

@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/foundationGenerators';
  */
 
-import { registerGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // Foundation Generator Imports
 import { generateFoundationExplorer } from '../../foundation-explorer/gemini-foundation-explorer';
@@ -17,10 +17,10 @@ import { generateFoundationExplorer } from '../../foundation-explorer/gemini-fou
 // ============================================================================
 
 // Foundation Explorer
-registerGenerator('foundation-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('foundation-explorer', async (ctx) => ({
   type: 'foundation-explorer',
-  instanceId: item.instanceId,
-  data: await generateFoundationExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFoundationExplorer(ctx),
 }));
 
 // ============================================================================

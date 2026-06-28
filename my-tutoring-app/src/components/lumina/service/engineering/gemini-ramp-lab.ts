@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 /**
  * Load types for the ramp
@@ -128,10 +129,11 @@ const rampLabSchema: Schema = {
  * @returns RampLabData with complete configuration
  */
 export const generateRampLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<RampLabData>
+  ctx: GenerationContext,
 ): Promise<RampLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<RampLabData>;
   // Generate random scenarios for variety
   const randomScenarios = [
     { angle: 20, weight: 3, friction: 'low' as FrictionLevel, load: 'wheel' as LoadType },

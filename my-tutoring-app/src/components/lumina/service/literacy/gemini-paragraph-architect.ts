@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { ParagraphArchitectData } from "../../primitives/visual-primitives/literacy/ParagraphArchitect";
 import {
   resolveEvalModeConstraint,
@@ -130,11 +131,14 @@ const paragraphArchitectSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns ParagraphArchitectData with grade-appropriate scaffolding
  */
+type ParagraphArchitectConfig = Partial<ParagraphArchitectData & { targetEvalMode: string }>;
+
 export const generateParagraphArchitect = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<ParagraphArchitectData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<ParagraphArchitectData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ParagraphArchitectConfig;
 
   // ---------------------------------------------------------------------------
   // Eval mode resolution

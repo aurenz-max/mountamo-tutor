@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { BodySystemExplorerData } from "../../primitives/visual-primitives/biology/BodySystemExplorer";
@@ -157,10 +158,68 @@ const bodySystemExplorerSchema: Schema = {
  * @returns BodySystemExplorerData with interactive anatomy content
  */
 export const generateBodySystemExplorer = async (
-  system: string,
-  gradeBand: '2-4' | '5-6' | '7-8' = '5-6',
-  config?: Partial<BodySystemExplorerData>
+  ctx: GenerationContext
 ): Promise<BodySystemExplorerData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<BodySystemExplorerData>;
+
+  // Map grade context to grade band for body system explorer
+  const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
+    '2': '2-4',
+    '3': '2-4',
+    '4': '2-4',
+    '5': '5-6',
+    '6': '5-6',
+    '7': '7-8',
+    '8': '7-8',
+    '2-4': '2-4',
+    '5-6': '5-6',
+    '7-8': '7-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
+
+  // Extract system from config or try to infer from topic (derivation moved from the handler)
+  const systemKeywords: Record<string, string> = {
+    'digest': 'digestive',
+    'stomach': 'digestive',
+    'intestine': 'digestive',
+    'heart': 'circulatory',
+    'blood': 'circulatory',
+    'circul': 'circulatory',
+    'lung': 'respiratory',
+    'breath': 'respiratory',
+    'respir': 'respiratory',
+    'brain': 'nervous',
+    'nerve': 'nervous',
+    'neuron': 'nervous',
+    'bone': 'skeletal',
+    'skeleton': 'skeletal',
+    'muscle': 'muscular',
+    'immune': 'immune',
+    'lymph': 'immune',
+    'hormone': 'endocrine',
+    'gland': 'endocrine',
+    'kidney': 'urinary',
+    'bladder': 'urinary',
+    'urin': 'urinary',
+  };
+
+  let system: string = (ctx.raw as { system?: string }).system || '';
+  if (!system) {
+    const topicLower = topic.toLowerCase();
+    for (const [keyword, systemName] of Object.entries(systemKeywords)) {
+      if (topicLower.includes(keyword)) {
+        system = systemName;
+        break;
+      }
+    }
+  }
+
+  // Default to digestive if no system detected
+  if (!system) {
+    system = 'digestive';
+  }
 
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {

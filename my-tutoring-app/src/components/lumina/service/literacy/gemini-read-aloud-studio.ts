@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { ReadAloudStudioData } from "../../primitives/visual-primitives/literacy/ReadAloudStudio";
 import {
   resolveEvalModeConstraint,
@@ -92,14 +93,17 @@ const readAloudStudioSchema: Schema = {
   required: ["title", "gradeLevel", "passage", "passageWords", "targetWPM", "lexileLevel", "expressionMarkers"]
 };
 
+type ReadAloudStudioConfig = Partial<ReadAloudStudioData> & {
+  /** Target eval mode from the IRT calibration system (accuracy | expression | dialogue). */
+  targetEvalMode?: string;
+};
+
 export const generateReadAloudStudio = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<ReadAloudStudioData> & {
-    /** Target eval mode from the IRT calibration system (accuracy | expression | dialogue). */
-    targetEvalMode?: string;
-  }
+  ctx: GenerationContext,
 ): Promise<ReadAloudStudioData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ReadAloudStudioConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
 
   // ── Eval mode resolution ────────────────────────────────────────────

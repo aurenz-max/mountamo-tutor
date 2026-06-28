@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -186,13 +187,16 @@ const GRADE_CONFIGURATIONS: Record<string, { theme: SoundLabTheme; numChallenges
 // GENERATOR FUNCTION
 // ============================================================================
 
-export const generateSoundWaveExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type SoundWaveExplorerConfig = {
     targetEvalMode?: string;
-  },
+  };
+
+export const generateSoundWaveExplorer = async (
+  ctx: GenerationContext,
 ): Promise<SoundWaveExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SoundWaveExplorerConfig;
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1') as
     'K' | '1' | '2' | '3';
   const validGrades = ['K', '1', '2', '3'];

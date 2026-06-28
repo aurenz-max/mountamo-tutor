@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -147,10 +148,11 @@ const machineProfileSchema: Schema = {
  * @returns MachineProfileData with complete profile information
  */
 export const generateMachineProfile = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<MachineProfileData>
+  ctx: GenerationContext,
 ): Promise<MachineProfileData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<MachineProfileData>;
   const prompt = `
 Create a comprehensive Machine Profile for "${topic}" appropriate for ${gradeLevel} students.
 

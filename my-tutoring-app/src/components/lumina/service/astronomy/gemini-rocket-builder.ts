@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -174,10 +175,11 @@ const rocketBuilderSchema: Schema = {
  * @returns RocketBuilderData with complete configuration
  */
 export const generateRocketBuilder = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<RocketBuilderData>
+  ctx: GenerationContext,
 ): Promise<RocketBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<RocketBuilderData>;
   const prompt = `
 Create an educational Rocket Builder configuration for teaching "${topic}" to ${gradeLevel} students.
 

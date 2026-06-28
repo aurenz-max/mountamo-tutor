@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { ContextCluesDetectiveData } from "../../primitives/visual-primitives/literacy/ContextCluesDetective";
 import {
   resolveEvalModeConstraint,
@@ -378,15 +379,18 @@ const contextCluesDetectiveSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns ContextCluesDetectiveData with passages, target words, and clue information
  */
+type ContextCluesDetectiveConfig = Partial<ContextCluesDetectiveData & {
+  targetEvalMode: string;
+  /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers (here: never changes the passage, clue type, or meaning). */
+  difficulty?: string;
+}>;
+
 export const generateContextCluesDetective = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<ContextCluesDetectiveData & {
-    targetEvalMode: string;
-    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers (here: never changes the passage, clue type, or meaning). */
-    difficulty?: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<ContextCluesDetectiveData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as ContextCluesDetectiveConfig;
 
   const gradeContext: Record<string, string> = {
     '2': `

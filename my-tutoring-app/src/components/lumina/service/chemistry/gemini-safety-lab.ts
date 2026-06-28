@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   SafetyLabData,
 } from "../../primitives/visual-primitives/chemistry/SafetyLab";
@@ -340,11 +341,10 @@ const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" | "6-8" => {
  * @param config - Optional partial SafetyLabData for overrides
  * @returns SafetyLabData ready for the SafetyLab component
  */
-export const generateSafetyLab = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<SafetyLabData>
-): Promise<SafetyLabData> => {
+export const generateSafetyLab = async (ctx: GenerationContext): Promise<SafetyLabData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<SafetyLabData>;
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

@@ -8,6 +8,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { DigitalSkillsSimData } from '../../primitives/visual-primitives/core/DigitalSkillsSim';
 import {
   resolveEvalModeConstraint,
@@ -172,18 +173,17 @@ function validateDigitalSkillsSimData(raw: any): DigitalSkillsSimData {
 // Generator
 // ---------------------------------------------------------------------------
 
+type DigitalSkillsSimConfig = Partial<{ targetEvalMode?: string }>;
+
 /**
  * Generate a DigitalSkillsSim activity with click, drag, and type challenges.
- *
- * @param topic      - The topic or context for the activity
- * @param gradeLevel - Grade level string (e.g. "Kindergarten", "Elementary")
- * @param config     - Optional overrides including targetEvalMode
  */
 export const generateDigitalSkillsSim = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<DigitalSkillsSimData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as DigitalSkillsSimConfig;
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(

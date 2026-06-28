@@ -1,6 +1,12 @@
 import { ImageComparisonData } from '../../types';
 import { ai } from '../geminiClient';
 import { Type } from '@google/genai';
+import type { GenerationContext } from '../generation/generationContext';
+
+type ImageComparisonConfig = {
+  focusArea?: string;
+  aspectRatio?: string;
+};
 
 /**
  * Generate an image using Gemini's image generation model
@@ -54,13 +60,15 @@ const generateImage = async (prompt: string, referenceImageBase64?: string): Pro
  * @returns ImageComparisonData with generated before/after images
  */
 export async function generateImageComparison(
-  topic: string,
-  gradeContext: string,
-  config?: {
-    focusArea?: string;
-    aspectRatio?: string;
-  }
+  ctx: GenerationContext
 ): Promise<ImageComparisonData> {
+  const topic = ctx.topic;
+  const gradeContext = ctx.gradeContext;
+  const rawConfig = ctx.raw as ImageComparisonConfig;
+  const config: ImageComparisonConfig = {
+    focusArea: ctx.intent || rawConfig.focusArea,
+    aspectRatio: rawConfig.aspectRatio || '1:1',
+  };
   const focusArea = config?.focusArea || '';
 
   // Step 1: Analyze the topic to determine the best before/after progression

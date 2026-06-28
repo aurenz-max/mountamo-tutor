@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { FoodWebBuilderData } from "../../primitives/visual-primitives/biology/FoodWebBuilder";
@@ -139,10 +140,24 @@ const foodWebBuilderSchema: Schema = {
  * @returns FoodWebBuilderData with grade-appropriate food web content
  */
 export const generateFoodWebBuilder = async (
-  topic: string,
-  gradeBand: '3-5' | '6-8' = '3-5',
-  config?: Partial<FoodWebBuilderData>
+  ctx: GenerationContext
 ): Promise<FoodWebBuilderData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<FoodWebBuilderData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '3-5' | '6-8'> = {
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
   // Grade-specific complexity and content instructions
   const gradeContext = {

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { SentenceBuilderData } from "../../primitives/visual-primitives/literacy/SentenceBuilder";
 import {
   resolveEvalModeConstraint,
@@ -298,15 +299,18 @@ const sentenceBuilderSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns SentenceBuilderData with grade-appropriate sentence challenges
  */
+type SentenceBuilderConfig = Partial<SentenceBuilderData & {
+  targetEvalMode: string;
+  /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers/tiles. */
+  difficulty: string;
+}>;
+
 export const generateSentenceBuilder = async (
-  topic: string,
-  gradeLevel: string = '2',
-  config?: Partial<SentenceBuilderData & {
-    targetEvalMode: string;
-    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers/tiles. */
-    difficulty: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<SentenceBuilderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SentenceBuilderConfig;
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

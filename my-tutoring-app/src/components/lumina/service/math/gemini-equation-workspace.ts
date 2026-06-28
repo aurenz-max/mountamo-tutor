@@ -6,6 +6,7 @@ import {
   EquationWorkspaceOperation,
 } from "../../primitives/visual-primitives/math/EquationWorkspace";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -602,20 +603,23 @@ IMPORTANT:
 // Main generator
 // ---------------------------------------------------------------------------
 
+type EquationWorkspaceConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much solving scaffolding within it. NEVER changes the
+   * equation, its coefficients, the step count, or the answer.
+   */
+  difficulty?: string;
+}>;
+
 export const generateEquationWorkspace = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much solving scaffolding within it. NEVER changes the
-     * equation, its coefficients, the step count, or the answer.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<EquationWorkspaceData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as EquationWorkspaceConfig;
   const evalConstraint = resolveEvalModeConstraint(
     "equation-workspace",
     config?.targetEvalMode,

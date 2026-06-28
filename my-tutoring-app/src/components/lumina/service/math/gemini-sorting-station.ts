@@ -6,6 +6,7 @@ import {
   SortingCategory,
 } from "../../primitives/visual-primitives/math/SortingStation";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -766,10 +767,11 @@ interface SortingStationConfig {
 }
 
 export const generateSortingStation = async (
-  topic: string,
-  gradeLevel: string,
-  config?: SortingStationConfig,
+  ctx: GenerationContext,
 ): Promise<SortingStationData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SortingStationConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'sorting-station',
     config?.targetEvalMode,

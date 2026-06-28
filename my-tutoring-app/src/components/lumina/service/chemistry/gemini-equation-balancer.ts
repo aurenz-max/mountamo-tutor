@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   type EquationBalancerData,
   type EquationData,
@@ -391,11 +392,10 @@ const resolveGradeBand = (gradeLevel: string): "6-7" | "7-8" => {
  * @param config - Optional partial EquationBalancerData for overrides
  * @returns EquationBalancerData ready for the EquationBalancer component
  */
-export const generateEquationBalancer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<EquationBalancerData>
-): Promise<EquationBalancerData> => {
+export const generateEquationBalancer = async (ctx: GenerationContext): Promise<EquationBalancerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<EquationBalancerData>;
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

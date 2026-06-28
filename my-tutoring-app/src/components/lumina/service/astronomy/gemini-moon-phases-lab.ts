@@ -1,5 +1,6 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import data types from component (single source of truth)
 import type {
@@ -205,10 +206,11 @@ const GRADE_CONFIGURATIONS: Record<string, Partial<MoonPhasesLabData>> = {
 // ============================================================================
 
 export const generateMoonPhasesLab = async (
-  topic: string,
-  gradeContext: string,
-  config?: Partial<MoonPhasesLabData>
+  ctx: GenerationContext,
 ): Promise<MoonPhasesLabData> => {
+  const { topic } = ctx;
+  const gradeContext = ctx.gradeContext;
+  const config = ctx.raw as Partial<MoonPhasesLabData>;
   const gradeLevel = config?.gradeLevel || (gradeContext.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as 'K' | '1' | '2' | '3' | '4' | '5';
   const gradeConfig = GRADE_CONFIGURATIONS[gradeLevel] || GRADE_CONFIGURATIONS['3'];
 

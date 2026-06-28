@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { TextStructureAnalyzerData, StructureType } from "../../primitives/visual-primitives/literacy/TextStructureAnalyzer";
 import {
   resolveEvalModeConstraint,
@@ -391,16 +392,19 @@ function recomputeSignalWordOffsets(
   return recomputed;
 }
 
+type TextStructureAnalyzerConfig = Partial<TextStructureAnalyzerData> & {
+  targetEvalMode?: string;
+  /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
+   *  difficulty = how much scaffolding within the mode. NEVER changes numbers/content. */
+  difficulty?: string;
+};
+
 export const generateTextStructureAnalyzer = async (
-  topic: string,
-  gradeLevel: string = '4',
-  config?: Partial<TextStructureAnalyzerData> & {
-    targetEvalMode?: string;
-    /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
-     *  difficulty = how much scaffolding within the mode. NEVER changes numbers/content. */
-    difficulty?: string;
-  },
+  ctx: GenerationContext,
 ): Promise<TextStructureAnalyzerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TextStructureAnalyzerConfig;
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
 
   // -------------------------------------------------------------------------

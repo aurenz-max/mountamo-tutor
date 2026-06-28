@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { GenreExplorerData } from "../../primitives/visual-primitives/literacy/GenreExplorer";
 import {
   resolveEvalModeConstraint,
@@ -97,11 +98,15 @@ const genreExplorerSchema: Schema = {
   required: ["title", "gradeLevel", "excerpts", "genreOptions", "comparisonEnabled"]
 };
 
+type GenreExplorerConfig = Partial<GenreExplorerData> & { targetEvalMode?: string };
+
 export const generateGenreExplorer = async (
-  topic: string,
-  gradeLevel: string = '3',
-  config?: Partial<GenreExplorerData> & { targetEvalMode?: string }
+  ctx: GenerationContext,
 ): Promise<GenreExplorerData> => {
+
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as GenreExplorerConfig;
 
   // ── Eval mode resolution (legacy literacy pattern) ──────────────────
   const evalConstraint = resolveEvalModeConstraint(

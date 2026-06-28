@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { DecodableReaderData } from "../../primitives/visual-primitives/literacy/DecodableReader";
 import {
   resolveEvalModeConstraint,
@@ -196,11 +197,14 @@ const decodableReaderSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns DecodableReaderData with grade-appropriate passage and comprehension question
  */
+type DecodableReaderConfig = Partial<DecodableReaderData> & { targetEvalMode?: string };
+
 export const generateDecodableReader = async (
-  topic: string,
-  gradeLevel: string = 'K',
-  config?: Partial<DecodableReaderData> & { targetEvalMode?: string }
+  ctx: GenerationContext,
 ): Promise<DecodableReaderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as DecodableReaderConfig;
 
   // ── Eval mode resolution (LEGACY pattern: explicit pin → schema enum) ──
   const evalConstraint = resolveEvalModeConstraint(

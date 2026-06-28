@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { StoryMapData } from "../../primitives/visual-primitives/literacy/StoryMap";
@@ -247,11 +248,14 @@ function getStructureType(
  * @param config - Optional partial configuration to override generated values
  * @returns StoryMapData with complete story mapping activity
  */
+type StoryMapConfig = Partial<StoryMapData & { targetEvalMode: string }>;
+
 export const generateStoryMap = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<StoryMapData & { targetEvalMode: string }>
+  ctx: GenerationContext,
 ): Promise<StoryMapData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as StoryMapConfig;
 
   // -------------------------------------------------------------------------
   // Eval mode resolution

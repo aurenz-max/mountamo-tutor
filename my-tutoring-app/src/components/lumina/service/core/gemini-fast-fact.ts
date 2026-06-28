@@ -13,7 +13,28 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type { FastFactData, FastFactChallenge } from '../../primitives/visual-primitives/core/FastFact';
+
+/**
+ * Infer the grade-level label from the grade-context prose string.
+ *
+ * Copied verbatim from coreGenerators.ts so this generator is self-contained
+ * under the context-native calling convention. The mapping MUST stay identical
+ * to the original handler's `inferGradeLevel`.
+ */
+function inferGradeLevelFromContext(gradeContext: string): string {
+  if (gradeContext.includes('toddler')) return 'Toddler';
+  if (gradeContext.includes('preschool')) return 'Preschool';
+  if (gradeContext.includes('kindergarten')) return 'Kindergarten';
+  if (gradeContext.includes('elementary') || gradeContext.includes('grades 1-5')) return 'Elementary';
+  if (gradeContext.includes('middle') || gradeContext.includes('grades 6-8')) return 'Middle School';
+  if (gradeContext.includes('high') || gradeContext.includes('grades 9-12')) return 'High School';
+  if (gradeContext.includes('undergraduate')) return 'Undergraduate';
+  if (gradeContext.includes('graduate')) return 'Graduate';
+  if (gradeContext.includes('phd')) return 'PhD';
+  return 'Elementary';
+}
 
 // ============================================================================
 // Grade-Level Context Helper
@@ -318,18 +339,17 @@ function validateFastFactData(raw: any): FastFactData {
 // Generator
 // ============================================================================
 
+type FastFactConfig = Record<string, unknown>;
+
 /**
  * Generate a FastFact timed fluency drill for any subject.
- *
- * @param topic  - The topic or learning objective
- * @param gradeLevel - Grade level string (e.g. "Elementary", "Middle School")
- * @param config - Optional overrides
  */
 export const generateFastFact = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Record<string, unknown>,
+  ctx: GenerationContext,
 ): Promise<FastFactData> => {
+  const { topic } = ctx;
+  const gradeLevel = inferGradeLevelFromContext(ctx.gradeContext);
+  const config = ctx.raw as FastFactConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const challengeCount = (config?.challengeCount as number) || 10;
 

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { SpeciesProfileData } from "../../primitives/biology-primitives/SpeciesProfile";
@@ -210,11 +211,34 @@ Show the organism in its natural habitat with clear details. No text in the imag
  * @param config - Optional partial configuration to override generated values
  * @returns SpeciesProfileData with comprehensive species information (imageUrl will be null)
  */
-export const generateSpeciesProfile = async (
+/**
+ * Build a minimal GenerationContext for internal callers (collection/with-image
+ * wrappers) that still invoke generateSpeciesProfile positionally. Behavior-preserving:
+ * speciesName flows through ctx.raw + ctx.topic, gradeLevel through ctx.gradeContext.
+ */
+const makeSpeciesProfileContext = (
   speciesName: string,
-  gradeLevel: string = "K-5",
+  gradeLevel: string,
   config?: Partial<SpeciesProfileData>
+): GenerationContext =>
+  ({
+    componentId: 'species-profile',
+    instanceId: '',
+    topic: speciesName,
+    gradeLevel,
+    gradeContext: gradeLevel,
+    objective: {},
+    scope: {} as GenerationContext['scope'],
+    raw: { ...(config ?? {}), speciesName },
+  } as GenerationContext);
+
+export const generateSpeciesProfile = async (
+  ctx: GenerationContext
 ): Promise<SpeciesProfileData> => {
+  const config = ctx.raw as Partial<SpeciesProfileData>;
+  // Extract species name from config or topic (derivation moved from the handler)
+  const speciesName = (ctx.raw as { speciesName?: string }).speciesName || ctx.topic;
+  const gradeLevel = ctx.gradeContext;
   const educationalContext = `
 Educational Context: This is for ${gradeLevel} students.
 - Use age-appropriate vocabulary and explanations
@@ -360,7 +384,9 @@ export const generateSpeciesProfileWithImage = async (
   config?: Partial<SpeciesProfileData>
 ): Promise<SpeciesProfileData> => {
   // Phase 1: Generate metadata (including imagePrompt)
-  const profileData = await generateSpeciesProfile(speciesName, gradeLevel, config);
+  const profileData = await generateSpeciesProfile(
+    makeSpeciesProfileContext(speciesName, gradeLevel, config)
+  );
 
   // Phase 2: Generate the actual image using the imagePrompt
   let imageUrl: string | null = null;
@@ -428,7 +454,9 @@ export const generateSpeciesCollection = async (
 
     // Generate profiles for each suggested species
     for (const speciesName of speciesNames.slice(0, count)) {
-      const profile = await generateSpeciesProfile(speciesName.trim(), gradeLevel);
+      const profile = await generateSpeciesProfile(
+        makeSpeciesProfileContext(speciesName.trim(), gradeLevel)
+      );
       collection.push(profile);
     }
 

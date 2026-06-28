@@ -79,160 +79,150 @@ import { generatePercentBar } from '../../math/gemini-percent-bar';
 // ============================================================================
 
 // Place Value Chart
-registerGenerator('place-value-chart', async (item, topic, gradeContext) => ({
+registerContextGenerator('place-value-chart', async (ctx) => ({
   type: 'place-value-chart',
-  instanceId: item.instanceId,
-  data: await generatePlaceValueChart(topic, gradeContext, { ...item.config }),
+  instanceId: ctx.instanceId,
+  data: await generatePlaceValueChart(ctx),
 }));
 
 // Fraction Bar
-registerGenerator('fraction-bar', async (item, topic, gradeContext) => ({
+registerContextGenerator('fraction-bar', async (ctx) => ({
   type: 'fraction-bar',
-  instanceId: item.instanceId,
-  data: await generateFractionBar(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateFractionBar(ctx),
 }));
 
 // Area Model
-registerGenerator('area-model', async (item, topic, gradeContext) => ({
+registerContextGenerator('area-model', async (ctx) => ({
   type: 'area-model',
-  instanceId: item.instanceId,
-  data: await generateAreaModel(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateAreaModel(ctx),
 }));
 
 // Array Grid
-registerGenerator('array-grid', async (item, topic, gradeContext) => ({
+registerContextGenerator('array-grid', async (ctx) => ({
   type: 'array-grid',
-  instanceId: item.instanceId,
-  data: await generateArrayGrid(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateArrayGrid(ctx),
 }));
 
 // Double Number Line
-registerGenerator('double-number-line', async (item, topic, gradeContext) => ({
+registerContextGenerator('double-number-line', async (ctx) => ({
   type: 'double-number-line',
-  instanceId: item.instanceId,
-  data: await generateDoubleNumberLine(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateDoubleNumberLine(ctx),
 }));
 
 // Tape Diagram
-registerGenerator('tape-diagram', async (item, topic, gradeContext) => ({
+registerContextGenerator('tape-diagram', async (ctx) => ({
   type: 'tape-diagram',
-  instanceId: item.instanceId,
-  data: await generateTapeDiagram(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTapeDiagram(ctx),
 }));
 
 // Factor Tree
-registerGenerator('factor-tree', async (item, topic, gradeContext) => ({
+registerContextGenerator('factor-tree', async (ctx) => ({
   type: 'factor-tree',
-  instanceId: item.instanceId,
-  data: await generateFactorTree(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFactorTree(ctx),
 }));
 
 // Ratio Table
-registerGenerator('ratio-table', async (item, topic, gradeContext) => ({
+registerContextGenerator('ratio-table', async (ctx) => ({
   type: 'ratio-table',
-  instanceId: item.instanceId,
-  data: await generateRatioTable(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateRatioTable(ctx),
 }));
 
 // Balance Scale
-registerGenerator('balance-scale', async (item, topic, gradeContext) => ({
+registerContextGenerator('balance-scale', async (ctx) => ({
   type: 'balance-scale',
-  instanceId: item.instanceId,
-  data: await generateBalanceScale(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateBalanceScale(ctx),
 }));
 
 // Function Machine
-registerGenerator('function-machine', async (item, topic, gradeContext) => ({
+registerContextGenerator('function-machine', async (ctx) => ({
   type: 'function-machine',
-  instanceId: item.instanceId,
-  data: await generateFunctionMachine(topic, gradeContext, { ...item.config }),
+  instanceId: ctx.instanceId,
+  data: await generateFunctionMachine(ctx),
 }));
 
 // Coordinate Graph
-registerGenerator('coordinate-graph', async (item, topic, gradeContext) => ({
+registerContextGenerator('coordinate-graph', async (ctx) => ({
   type: 'coordinate-graph',
-  instanceId: item.instanceId,
-  data: await generateCoordinateGraph(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateCoordinateGraph(ctx),
 }));
 
 // Slope Triangle
-registerGenerator('slope-triangle', async (item, topic, gradeContext) => ({
+registerContextGenerator('slope-triangle', async (ctx) => ({
   type: 'slope-triangle',
-  instanceId: item.instanceId,
-  data: await generateSlopeTriangle(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSlopeTriangle(ctx),
 }));
 
 // Polygon Area Builder (6-7 area via composing/decomposing polygons)
-registerGenerator('polygon-area-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('polygon-area-builder', async (ctx) => ({
   type: 'polygon-area-builder',
-  instanceId: item.instanceId,
-  data: await generatePolygonAreaBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePolygonAreaBuilder(ctx),
 }));
 
 // Circle Explorer (grade 7 circles — discover π, circumference, area, reverse, composite)
-registerGenerator('circle-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('circle-explorer', async (ctx) => ({
   type: 'circle-explorer',
-  instanceId: item.instanceId,
-  data: await generateCircleExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateCircleExplorer(ctx),
 }));
 
 // Angle Workshop
-registerGenerator('angle-workshop', async (item, topic, gradeContext) => ({
+registerContextGenerator('angle-workshop', async (ctx) => ({
   type: 'angle-workshop',
-  instanceId: item.instanceId,
-  data: await generateAngleWorkshop(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateAngleWorkshop(ctx),
 }));
 
 // Transformation Lab
-registerGenerator('transformation-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('transformation-lab', async (ctx) => ({
   type: 'transformation-lab',
-  instanceId: item.instanceId,
-  data: await generateTransformationLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTransformationLab(ctx),
 }));
 
 // Systems of Equations Visualizer
-registerGenerator('systems-equations-visualizer', async (item, topic, gradeContext) => ({
+registerContextGenerator('systems-equations-visualizer', async (ctx) => ({
   type: 'systems-equations-visualizer',
-  instanceId: item.instanceId,
-  data: await generateSystemsEquations(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSystemsEquations(ctx),
 }));
 
 // Matrix Display
-registerGenerator('matrix-display', async (item, topic, gradeContext) => ({
+registerContextGenerator('matrix-display', async (ctx) => ({
   type: 'matrix-display',
-  instanceId: item.instanceId,
-  data: await generateMatrix(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateMatrix(ctx),
 }));
 
 // Dot Plot
-registerGenerator('dot-plot', async (item, topic, gradeContext) => ({
+registerContextGenerator('dot-plot', async (ctx) => ({
   type: 'dot-plot',
-  instanceId: item.instanceId,
-  data: await generateDotPlot(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateDotPlot(ctx),
 }));
 
 // Histogram
-registerGenerator('histogram', async (item, topic, gradeContext) => ({
+registerContextGenerator('histogram', async (ctx) => ({
   type: 'histogram',
-  instanceId: item.instanceId,
-  data: await generateHistogram(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateHistogram(ctx),
 }));
 
 // Two-Way Table
-registerGenerator('two-way-table', async (item, topic, gradeContext) => ({
+registerContextGenerator('two-way-table', async (ctx) => ({
   type: 'two-way-table',
-  instanceId: item.instanceId,
-  data: await generateTwoWayTable(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTwoWayTable(ctx),
 }));
 
 // ============================================================================
@@ -254,10 +244,10 @@ registerContextGenerator('counting-board', async (ctx) => ({
 }));
 
 // Pattern Builder (K-3 algebraic thinking)
-registerGenerator('pattern-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('pattern-builder', async (ctx) => ({
   type: 'pattern-builder',
-  instanceId: item.instanceId,
-  data: await generatePatternBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generatePatternBuilder(ctx),
 }));
 
 // Skip Counting Runner (1-3 multiplication foundations)
@@ -268,12 +258,10 @@ registerContextGenerator('skip-counting-runner', async (ctx) => ({
 }));
 
 // Regrouping Workbench (1-4 addition/subtraction with carry/borrow)
-registerGenerator('regrouping-workbench', async (item, topic, gradeContext) => ({
+registerContextGenerator('regrouping-workbench', async (ctx) => ({
   type: 'regrouping-workbench',
-  instanceId: item.instanceId,
-  data: await generateRegroupingWorkbench(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateRegroupingWorkbench(ctx),
 }));
 
 // Multiplication Explorer (2-4 multi-representation multiplication)
@@ -284,12 +272,10 @@ registerContextGenerator('multiplication-explorer', async (ctx) => ({
 }));
 
 // Measurement Tools (1-5 measurement with real-world tools)
-registerGenerator('measurement-tools', async (item, topic, gradeContext) => ({
+registerContextGenerator('measurement-tools', async (ctx) => ({
   type: 'measurement-tools',
-  instanceId: item.instanceId,
-  data: await generateMeasurementTools(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateMeasurementTools(ctx),
 }));
 
 // Shape Builder (K-5 geometric construction & properties)
@@ -300,10 +286,10 @@ registerContextGenerator('shape-builder', async (ctx) => ({
 }));
 
 // Comparison Builder (K-1 quantity comparison & inequality symbols)
-registerGenerator('comparison-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('comparison-builder', async (ctx) => ({
   type: 'comparison-builder',
-  instanceId: item.instanceId,
-  data: await generateComparisonBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateComparisonBuilder(ctx),
 }));
 
 // Number Sequencer (K-1 sequential number understanding)
@@ -314,10 +300,10 @@ registerContextGenerator('number-sequencer', async (ctx) => ({
 }));
 
 // Number Bond (K-1 part-part-whole relationships)
-registerGenerator('number-bond', async (item, topic, gradeContext) => ({
+registerContextGenerator('number-bond', async (ctx) => ({
   type: 'number-bond',
-  instanceId: item.instanceId,
-  data: await generateNumberBond(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateNumberBond(ctx),
 }));
 
 // Addition/Subtraction Scene (K-1 story-based addition & subtraction)
@@ -328,42 +314,38 @@ registerContextGenerator('addition-subtraction-scene', async (ctx) => ({
 }));
 
 // Ordinal Line (K-1 ordinal position sequencing)
-registerGenerator('ordinal-line', async (item, topic, gradeContext) => ({
+registerContextGenerator('ordinal-line', async (ctx) => ({
   type: 'ordinal-line',
-  instanceId: item.instanceId,
-  data: await generateOrdinalLine(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateOrdinalLine(ctx),
 }));
 
 // Sorting Station (K-1 categorization & data organization)
-registerGenerator('sorting-station', async (item, topic, gradeContext) => ({
+registerContextGenerator('sorting-station', async (ctx) => ({
   type: 'sorting-station',
-  instanceId: item.instanceId,
-  data: await generateSortingStation(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateSortingStation(ctx),
 }));
 
 // Shape Sorter (K-1 shape identification, naming, matching & classification)
-registerGenerator('shape-sorter', async (item, topic, gradeContext) => ({
+registerContextGenerator('shape-sorter', async (ctx) => ({
   type: 'shape-sorter',
-  instanceId: item.instanceId,
-  data: await generateShapeSorter(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateShapeSorter(ctx),
 }));
 
 // 3D Shape Explorer (K-1 3D shape identification, properties & comparison)
-registerGenerator('3d-shape-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('3d-shape-explorer', async (ctx) => ({
   type: '3d-shape-explorer',
-  instanceId: item.instanceId,
-  data: await generateThreeDShapeExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateThreeDShapeExplorer(ctx),
 }));
 
 // Shape Tracer (K-1 shape construction through tracing, drawing & completion)
-registerGenerator('shape-tracer', async (item, topic, gradeContext) => ({
+registerContextGenerator('shape-tracer', async (ctx) => ({
   type: 'shape-tracer',
-  instanceId: item.instanceId,
-  data: await generateShapeTracer(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generateShapeTracer(ctx),
 }));
 
 // Math Fact Fluency (K-1 rapid recall of addition & subtraction facts)
@@ -374,10 +356,10 @@ registerContextGenerator('math-fact-fluency', async (ctx) => ({
 }));
 
 // Strategy Picker (K-1 multi-strategy problem solving & computational flexibility)
-registerGenerator('strategy-picker', async (item, topic, gradeContext) => ({
+registerContextGenerator('strategy-picker', async (ctx) => ({
   type: 'strategy-picker',
-  instanceId: item.instanceId,
-  data: await generateStrategyPicker(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateStrategyPicker(ctx),
 }));
 
 // Number Tracer (K-2 canvas-based numeral writing practice)
@@ -391,94 +373,94 @@ registerContextGenerator('number-tracer', async (ctx) => ({
 }));
 
 // Hundreds Chart (1-4 skip-counting patterns and sequence discovery)
-registerGenerator('hundreds-chart', async (item, topic, gradeContext) => ({
+registerContextGenerator('hundreds-chart', async (ctx) => ({
   type: 'hundreds-chart',
-  instanceId: item.instanceId,
-  data: await generateHundredsChart(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateHundredsChart(ctx),
 }));
 
 // Length Lab (K-1 direct comparison & non-standard measurement)
-registerGenerator('length-lab', async (item, topic, gradeContext) => ({
+registerContextGenerator('length-lab', async (ctx) => ({
   type: 'length-lab',
-  instanceId: item.instanceId,
-  data: await generateLengthLab(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateLengthLab(ctx),
 }));
 
 // Analog Clock (K-5 telling time, elapsed time, clock reading)
-registerGenerator('analog-clock', async (item, topic, gradeContext) => ({
+registerContextGenerator('analog-clock', async (ctx) => ({
   type: 'analog-clock',
-  instanceId: item.instanceId,
-  data: await generateAnalogClock(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateAnalogClock(ctx),
 }));
 
 // Coin Counter (K-3 coin identification, counting, making amounts, comparing, making change)
-registerGenerator('coin-counter', async (item, topic, gradeContext) => ({
+registerContextGenerator('coin-counter', async (ctx) => ({
   type: 'coin-counter',
-  instanceId: item.instanceId,
-  data: await generateCoinCounter(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateCoinCounter(ctx),
 }));
 
 // Time Sequencer (K-2 event ordering, time-of-day matching, before/after, duration, schedules)
-registerGenerator('time-sequencer', async (item, topic, gradeContext) => ({
+registerContextGenerator('time-sequencer', async (ctx) => ({
   type: 'time-sequencer',
-  instanceId: item.instanceId,
-  data: await generateTimeSequencer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateTimeSequencer(ctx),
 }));
 
 // Spatial Scene (K-1 grid-based spatial reasoning: positions, placement, directions)
-registerGenerator('spatial-scene', async (item, topic, gradeContext) => ({
+registerContextGenerator('spatial-scene', async (ctx) => ({
   type: 'spatial-scene',
-  instanceId: item.instanceId,
-  data: await generateSpatialScene(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateSpatialScene(ctx),
 }));
 
 // Shape Composer (K-1 shape composition, decomposition & spatial reasoning)
-registerGenerator('shape-composer', async (item, topic, gradeContext) => ({
+registerContextGenerator('shape-composer', async (ctx) => ({
   type: 'shape-composer',
-  instanceId: item.instanceId,
-  data: await generateShapeComposer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateShapeComposer(ctx),
 }));
 
 // Net Folder (3-5 3D shapes, nets, surface area, spatial reasoning)
-registerGenerator('net-folder', async (item, topic, gradeContext) => ({
+registerContextGenerator('net-folder', async (ctx) => ({
   type: 'net-folder',
-  instanceId: item.instanceId,
-  data: await generateNetFolder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateNetFolder(ctx),
 }));
 
 // Equation Builder (K-2 equation understanding — build, evaluate, balance equations)
-registerGenerator('equation-builder', async (item, topic, gradeContext) => ({
+registerContextGenerator('equation-builder', async (ctx) => ({
   type: 'equation-builder',
-  instanceId: item.instanceId,
-  data: await generateEquationBuilder(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateEquationBuilder(ctx),
 }));
 
 // Compare Objects (K-1 measurable attribute comparison: length, height, weight, capacity)
-registerGenerator('compare-objects', async (item, topic, gradeContext) => ({
+registerContextGenerator('compare-objects', async (ctx) => ({
   type: 'compare-objects',
-  instanceId: item.instanceId,
-  data: await generateCompareObjects(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateCompareObjects(ctx),
 }));
 
 // Parameter Explorer (6-12+ multi-variable formula exploration with sliders & predictions)
-registerGenerator('parameter-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('parameter-explorer', async (ctx) => ({
   type: 'parameter-explorer',
-  instanceId: item.instanceId,
-  data: await generateParameterExplorer(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateParameterExplorer(ctx),
 }));
 
 // Equation Workspace (9-12+ algebraic manipulation)
-registerGenerator('equation-workspace', async (item, topic, gradeContext) => ({
+registerContextGenerator('equation-workspace', async (ctx) => ({
   type: 'equation-workspace',
-  instanceId: item.instanceId,
-  data: await generateEquationWorkspace(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateEquationWorkspace(ctx),
 }));
 
 // Function Sketch (9-12+ qualitative function reasoning)
-registerGenerator('function-sketch', async (item, topic, gradeContext) => ({
+registerContextGenerator('function-sketch', async (ctx) => ({
   type: 'function-sketch',
-  instanceId: item.instanceId,
-  data: await generateFunctionSketch(topic, gradeContext, item.config),
+  instanceId: ctx.instanceId,
+  data: await generateFunctionSketch(ctx),
 }));
 
 // Distribution Explorer (probability distributions: explore → identify → compute)
@@ -544,12 +526,10 @@ registerContextGenerator('fraction-circles', async (ctx) => ({
 }));
 
 // Percent Bar (percentage visualization)
-registerGenerator('percent-bar', async (item, topic, gradeContext) => ({
+registerContextGenerator('percent-bar', async (ctx) => ({
   type: 'percent-bar',
-  instanceId: item.instanceId,
-  data: await generatePercentBar(topic, gradeContext, {
-    ...item.config,
-  }),
+  instanceId: ctx.instanceId,
+  data: await generatePercentBar(ctx),
 }));
 
 // ============================================================================

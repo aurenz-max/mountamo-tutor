@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
 import {
   resolveEvalModeConstraint,
@@ -210,15 +211,18 @@ const phonemeExplorerSchema: Schema = {
  * @param config - Optional configuration overrides
  * @returns PhonemeExplorerData with phoneme awareness challenges
  */
-export const generatePhonemeExplorer = async (
-  topic: string,
-  gradeLevel: string = "K",
-  config?: Partial<{
+type PhonemeExplorerConfig = Partial<{
     mode: string;
     /** Target eval mode from the IRT calibration system. */
     targetEvalMode: string;
-  }>
+  }>;
+
+export const generatePhonemeExplorer = async (
+  ctx: GenerationContext,
 ): Promise<PhonemeExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PhonemeExplorerConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'phoneme-explorer',

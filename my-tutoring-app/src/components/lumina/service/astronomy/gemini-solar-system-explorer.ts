@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import types from the component - single source of truth
 import type {
@@ -163,10 +164,11 @@ const solarSystemExplorerSchema: Schema = {
  * @returns SolarSystemExplorerData with complete configuration
  */
 export const generateSolarSystemExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<SolarSystemExplorerData>
+  ctx: GenerationContext,
 ): Promise<SolarSystemExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<SolarSystemExplorerData>;
   const prompt = `
 Create an educational Solar System Explorer visualization for teaching "${topic}" to ${gradeLevel} students.
 

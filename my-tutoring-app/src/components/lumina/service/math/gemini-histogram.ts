@@ -6,6 +6,7 @@ import {
   HistogramShapeKind,
 } from "../../primitives/visual-primitives/math/Histogram";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -713,10 +714,7 @@ const histogramSchema: Schema = {
  * - Per-mode dataset builders enforce pedagogical clarity (clear shape, clean
  *   modal bin, non-trivial target frequency, snapped target center).
  */
-export const generateHistogram = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type HistogramConfig = {
     targetEvalMode?: string;
     instanceCount?: number;
     gradeBand?: '6-7' | '7-8';
@@ -727,8 +725,14 @@ export const generateHistogram = async (
      * problem is within it. NEVER changes numbers/magnitude.
      */
     difficulty?: string;
-  },
+};
+
+export const generateHistogram = async (
+  ctx: GenerationContext,
 ): Promise<HistogramData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as HistogramConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     'histogram',

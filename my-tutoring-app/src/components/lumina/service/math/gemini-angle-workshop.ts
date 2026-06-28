@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -966,10 +967,7 @@ function conceptHint(ch: AngleWorkshopChallenge, named: boolean): string {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateAngleWorkshop = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type AngleWorkshopConfig = {
     instanceCount?: number;
     targetEvalMode?: string;
     /**
@@ -978,8 +976,14 @@ export const generateAngleWorkshop = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateAngleWorkshop = async (
+  ctx: GenerationContext,
 ): Promise<AngleWorkshopData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as AngleWorkshopConfig;
   const validTypes: AngleWorkshopChallengeType[] = [
     'measure', 'classify_pairs', 'solve_unknown', 'solve_algebraic', 'transversal',
   ];

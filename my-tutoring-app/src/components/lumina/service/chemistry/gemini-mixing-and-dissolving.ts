@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   MixingAndDissolvingData,
 } from "../../primitives/visual-primitives/chemistry/MixingAndDissolving";
@@ -335,11 +336,10 @@ const resolveGradeBand = (gradeLevel: string): "3-5" | "6-7" => {
  * @param config - Optional partial MixingAndDissolvingData for overrides
  * @returns MixingAndDissolvingData ready for the MixingAndDissolving component
  */
-export const generateMixingAndDissolving = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<MixingAndDissolvingData>
-): Promise<MixingAndDissolvingData> => {
+export const generateMixingAndDissolving = async (ctx: GenerationContext): Promise<MixingAndDissolvingData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as Partial<MixingAndDissolvingData>;
   const gradeBand = resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {

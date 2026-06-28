@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -837,10 +838,7 @@ const circleExplorerSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateCircleExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type CircleExplorerConfig = {
     instanceCount?: number;
     targetEvalMode?: string;
     /**
@@ -849,8 +847,14 @@ export const generateCircleExplorer = async (
      * difficulty = how much on-screen scaffolding within it. NEVER changes numbers.
      */
     difficulty?: string;
-  },
+};
+
+export const generateCircleExplorer = async (
+  ctx: GenerationContext,
 ): Promise<CircleExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CircleExplorerConfig;
   const validTypes: CircleExplorerChallengeType[] = [
     'discover_pi',
     'circumference',

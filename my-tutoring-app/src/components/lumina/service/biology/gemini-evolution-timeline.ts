@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { EvolutionTimelineData } from "../../primitives/visual-primitives/biology/EvolutionTimeline";
@@ -134,10 +135,24 @@ showing natural selection at work.`
  * @returns Complete EvolutionTimelineData
  */
 export const generateEvolutionTimeline = async (
-  topic: string,
-  gradeBand: '4-5' | '6-8' = '4-5',
-  config?: Partial<EvolutionTimelineData>
+  ctx: GenerationContext
 ): Promise<EvolutionTimelineData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<EvolutionTimelineData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, '4-5' | '6-8'> = {
+    '4': '4-5',
+    '5': '4-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    '4-5': '4-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '4-5';
+
   const prompt = `Create an interactive deep-time evolution timeline for the topic: "${topic}"
 
 TARGET GRADE BAND: ${gradeBand}

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { FigurativeLanguageFinderData, FigurativeType } from "../../primitives/visual-primitives/literacy/FigurativeLanguageFinder";
 import {
   resolveEvalModeConstraint,
@@ -317,18 +318,21 @@ function buildReducedClassifyChoices(
   return availableTypes.filter((t) => chosen.has(t));
 }
 
+type FigurativeLanguageFinderConfig = Partial<FigurativeLanguageFinderData & {
+  targetEvalMode: string;
+  /** Per-component tier from the manifest ('easy'|'medium'|'hard'). Second field of
+   *  the contract: difficulty = how much scaffolding (axis 1) AND how hard a problem
+   *  structurally (axis 2: instance count + distractor confusability). Stays in-band
+   *  and in-mode — never changes magnitude or which eval mode this is. */
+  difficulty?: string;
+}>;
+
 export const generateFigurativeLanguageFinder = async (
-  topic: string,
-  gradeLevel: string = '4',
-  config?: Partial<FigurativeLanguageFinderData & {
-    targetEvalMode: string;
-    /** Per-component tier from the manifest ('easy'|'medium'|'hard'). Second field of
-     *  the contract: difficulty = how much scaffolding (axis 1) AND how hard a problem
-     *  structurally (axis 2: instance count + distractor confusability). Stays in-band
-     *  and in-mode — never changes magnitude or which eval mode this is. */
-    difficulty?: string;
-  }>
+  ctx: GenerationContext,
 ): Promise<FigurativeLanguageFinderData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as FigurativeLanguageFinderConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'figurative-language-finder',
     config?.targetEvalMode,

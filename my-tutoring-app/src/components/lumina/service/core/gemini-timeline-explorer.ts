@@ -11,6 +11,7 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import { TimelineExplorerData } from '../../primitives/visual-primitives/core/TimelineExplorer';
 import {
   resolveEvalModeConstraint,
@@ -359,18 +360,17 @@ function validateTimelineExplorerData(raw: any): TimelineExplorerData {
 // Generator
 // ---------------------------------------------------------------------------
 
+type TimelineExplorerConfig = Partial<{ targetEvalMode?: string }>;
+
 /**
  * Generate a TimelineExplorer chronological event exploration.
- *
- * @param topic      - The topic or historical period to explore
- * @param gradeLevel - Grade level string (e.g. "Elementary", "Middle School")
- * @param config     - Optional overrides including targetEvalMode
  */
 export const generateTimelineExplorer = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  ctx: GenerationContext,
 ): Promise<TimelineExplorerData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as TimelineExplorerConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
 
   // ── Resolve eval mode from the catalog (single source of truth) ──

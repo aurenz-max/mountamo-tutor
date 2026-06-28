@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 
 // Import the data type from the component (single source of truth)
 import { ClassificationSorterData } from "../../primitives/visual-primitives/biology/ClassificationSorter";
@@ -125,10 +126,28 @@ const classificationSorterSchema: Schema = {
  * @returns ClassificationSorterData with categorization activity
  */
 export const generateClassificationSorter = async (
-  topic: string,
-  gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
-  config?: Partial<ClassificationSorterData>
+  ctx: GenerationContext
 ): Promise<ClassificationSorterData> => {
+  const { topic } = ctx;
+  const config = ctx.raw as Partial<ClassificationSorterData>;
+
+  // Map grade context to grade band
+  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
+    'K': 'K-2',
+    '1': 'K-2',
+    '2': 'K-2',
+    '3': '3-5',
+    '4': '3-5',
+    '5': '3-5',
+    '6': '6-8',
+    '7': '6-8',
+    '8': '6-8',
+    'K-2': 'K-2',
+    '3-5': '3-5',
+    '6-8': '6-8',
+  };
+
+  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
   // Grade-specific complexity and content guidance
   const gradeContext = {

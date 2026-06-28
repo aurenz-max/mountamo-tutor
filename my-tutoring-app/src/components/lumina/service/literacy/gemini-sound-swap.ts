@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import type { SoundSwapData, SoundSwapChallenge } from "../../primitives/visual-primitives/literacy/SoundSwap";
 import {
   resolveEvalModeConstraint,
@@ -670,10 +671,7 @@ function deriveOperationFields(raw: RawChallenge): SoundSwapChallenge {
  * @param config - Optional configuration overrides (challengeCount, operations, targetEvalMode)
  * @returns SoundSwapData with grade-appropriate phoneme manipulation challenges
  */
-export const generateSoundSwap = async (
-  topic: string,
-  gradeLevel: string = "K",
-  config?: Partial<{
+type SoundSwapConfig = Partial<{
     challengeCount: number;
     operations: string[];
     /** Target eval mode from the IRT calibration system. */
@@ -683,8 +681,14 @@ export const generateSoundSwap = async (
      *  beginning→end→middle) and scaffolding (how much help). NEVER changes the
      *  operation or lengthens the word past the grade band. */
     difficulty: string;
-  }>
+  }>;
+
+export const generateSoundSwap = async (
+  ctx: GenerationContext,
 ): Promise<SoundSwapData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SoundSwapConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'sound-swap',

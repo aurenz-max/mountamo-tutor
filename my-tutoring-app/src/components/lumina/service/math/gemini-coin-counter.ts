@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { CoinCounterData, CoinCounterChallenge, CoinDef, CoinType } from "../../primitives/visual-primitives/math/CoinCounter";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -741,19 +742,22 @@ const FALLBACKS: Record<string, CoinCounterChallenge> = {
 // Main generator — dispatches to per-type sub-generators
 // ===========================================================================
 
+type CoinCounterConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER inflates magnitude.
+   */
+  difficulty?: string;
+}>;
+
 export const generateCoinCounter = async (
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER inflates magnitude.
-     */
-    difficulty?: string;
-  }>,
+  ctx: GenerationContext,
 ): Promise<CoinCounterData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as CoinCounterConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "coin-counter",

@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import type { GenerationContext } from "../generation/generationContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -706,10 +707,7 @@ const slopeTriangleSchema: Schema = {
 // Generator
 // ---------------------------------------------------------------------------
 
-export const generateSlopeTriangle = async (
-  topic: string,
-  gradeLevel: string,
-  config?: {
+type SlopeTriangleGenConfig = {
     /** How many slope-triangle challenges in this session. Defaults from COUNT_BY_MODE (5 for all T2 modes). */
     instanceCount?: number;
     /** Target eval mode from the IRT calibration system. */
@@ -723,8 +721,14 @@ export const generateSlopeTriangle = async (
     /** Optional axis range overrides. */
     xRange?: [number, number];
     yRange?: [number, number];
-  }
+};
+
+export const generateSlopeTriangle = async (
+  ctx: GenerationContext,
 ): Promise<SlopeTriangleData> => {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as SlopeTriangleGenConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'slope-triangle',

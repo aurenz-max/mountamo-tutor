@@ -14,6 +14,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import type { GenerationContext } from '../generation/generationContext';
 import type {
   PassageStudioData,
   PassageStimulus,
@@ -767,11 +768,14 @@ Set minLength (default 30) and maxLength (default 500) characters.`,
 // Main export
 // ═══════════════════════════════════════════════════════════════════════
 
+type PassageStudioConfig = Partial<{ targetEvalMode?: string; layoutOverride?: PassageLayout }>;
+
 export async function generatePassageStudio(
-  topic: string,
-  gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string; layoutOverride?: PassageLayout }>,
+  ctx: GenerationContext,
 ): Promise<PassageStudioData> {
+  const { topic } = ctx;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PassageStudioConfig;
   const evalMode = config?.targetEvalMode;
   const layoutOverride = config?.layoutOverride;
 
