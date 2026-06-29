@@ -687,6 +687,7 @@ export const generateSoundSwap = async (
   ctx: GenerationContext,
 ): Promise<SoundSwapData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SoundSwapConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -774,7 +775,7 @@ GRADE 2 GUIDELINES:
   );
 
   const generationPrompt = `Create a phoneme manipulation (Sound Swap) activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}

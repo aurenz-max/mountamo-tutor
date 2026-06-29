@@ -199,10 +199,23 @@ export const generateCompareContrast = async (
   entityB: string,
   gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
   mode: 'side-by-side' | 'venn-interactive' = 'side-by-side',
-  config?: Partial<CompareContrastData>
+  config?: Partial<CompareContrastData>,
+  intent: string = ''
 ): Promise<CompareContrastData> => {
 
   const gradeContext = GRADE_BAND_GUIDELINES[gradeBand];
+
+  // Per-primitive intent: the specific objective the manifest assigned to THIS comparison.
+  // The entities stay fixed; intent biases which attributes get the spotlight.
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This comparison is being used to teach: "${intent}".
+Keep every attribute and the key insight scientifically accurate and complete, but lead with
+and expand the attributes and shared/different dimensions most relevant to this focus (e.g. a
+habitat focus means richer habitat attributes; an adaptation focus means richer adaptation rows).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
 
   const generationPrompt = `Create a biological comparison between "${entityA}" and "${entityB}".
 
@@ -290,6 +303,7 @@ QUALITY GUIDELINES:
 - Balance similarities and differences (not all unique, not all shared)
 - Use parallel categories (if comparing "diet" for entityA, compare "diet" for entityB)
 - Age-appropriate vocabulary and complexity for ${gradeBand}
+${intentFocus}
 
 EXAMPLE (K-2: Dog vs Cat):
 {
@@ -426,7 +440,8 @@ Now generate a comparison for "${entityA}" vs "${entityB}" at grade level ${grad
 export const generateCompareContrastFromTopic = async (
   topic: string,
   gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
-  mode: 'side-by-side' | 'venn-interactive' = 'side-by-side'
+  mode: 'side-by-side' | 'venn-interactive' = 'side-by-side',
+  intent: string = ''
 ): Promise<CompareContrastData> => {
   // Parse topic to extract entities
   const parts = topic.split(/\s+(?:vs\.?|versus)\s+/i);
@@ -437,5 +452,5 @@ export const generateCompareContrastFromTopic = async (
 
   const [entityA, entityB] = parts.map(s => s.trim());
 
-  return generateCompareContrast(entityA, entityB, gradeBand, mode);
+  return generateCompareContrast(entityA, entityB, gradeBand, mode, undefined, intent);
 };

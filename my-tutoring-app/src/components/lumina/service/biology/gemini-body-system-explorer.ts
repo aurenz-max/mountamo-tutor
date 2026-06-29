@@ -162,6 +162,17 @@ export const generateBodySystemExplorer = async (
 ): Promise<BodySystemExplorerData> => {
   const { topic } = ctx;
   const config = ctx.raw as Partial<BodySystemExplorerData>;
+  // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
+  // Steers the authored title/overview/organ/pathway wording only — the body
+  // system itself is code keyword-matched from the topic (see systemKeywords below).
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specifically target "${intent}".
+Foreground this focus in the title, overview, and the organ/pathway descriptions you author.
+Do not reveal the answer to any challenge the student will be asked.`
+    : "";
 
   // Map grade context to grade band for body system explorer
   const gradeBandMap: Record<string, '2-4' | '5-6' | '7-8'> = {
@@ -180,6 +191,7 @@ export const generateBodySystemExplorer = async (
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
 
   // Extract system from config or try to infer from topic (derivation moved from the handler)
+  // TODO: intent steers prompt text only; object/value library is code-picked (Tier-2).
   const systemKeywords: Record<string, string> = {
     'digest': 'digestive',
     'stomach': 'digestive',
@@ -406,6 +418,7 @@ KEY REQUIREMENTS:
 5. Include fun facts that will engage and excite students
 6. Make connections (connectedTo) accurate for the system
 7. Ensure pathway steps are clear and educational
+${intentFocus}
 
 Now generate a body system explorer for the "${system}" system at grade level ${gradeBand}.`;
 

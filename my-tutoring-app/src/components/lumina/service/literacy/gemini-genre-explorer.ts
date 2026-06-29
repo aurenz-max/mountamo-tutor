@@ -105,6 +105,7 @@ export const generateGenreExplorer = async (
 ): Promise<GenreExplorerData> => {
 
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as GenreExplorerConfig;
 
@@ -145,6 +146,7 @@ export const generateGenreExplorer = async (
   );
 
   const prompt = `Create a genre classification activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}.
 ${challengeTypeSection}
 ${!evalConstraint ? `EXCERPTS: ${excerptCount}. COMPARISON: ${comparison}.

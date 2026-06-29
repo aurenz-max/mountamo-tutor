@@ -46,16 +46,18 @@ export const generateCompareContrastWithImages = async (
   entityB: string,
   gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
   mode: 'side-by-side' | 'venn-interactive' = 'side-by-side',
-  config?: Partial<CompareContrastData>
+  config?: Partial<CompareContrastData>,
+  intent: string = ''
 ): Promise<CompareContrastData> => {
 
-  // Step 1: Generate the base comparison data
+  // Step 1: Generate the base comparison data (intent threads into the base content prompt)
   const comparisonData = await generateCompareContrast(
     entityA,
     entityB,
     gradeBand,
     mode,
-    config
+    config,
+    intent
   );
 
   // Step 2: Generate images for both entities in parallel
@@ -95,7 +97,8 @@ export const generateCompareContrastWithImages = async (
 export const generateCompareContrastWithImagesFromTopic = async (
   topic: string,
   gradeBand: 'K-2' | '3-5' | '6-8' = '3-5',
-  mode: 'side-by-side' | 'venn-interactive' = 'side-by-side'
+  mode: 'side-by-side' | 'venn-interactive' = 'side-by-side',
+  intent: string = ''
 ): Promise<CompareContrastData> => {
   // Parse topic to extract entities
   const parts = topic.split(/\s+(?:vs\.?|versus)\s+/i);
@@ -106,5 +109,5 @@ export const generateCompareContrastWithImagesFromTopic = async (
 
   const [entityA, entityB] = parts.map(s => s.trim());
 
-  return generateCompareContrastWithImages(entityA, entityB, gradeBand, mode);
+  return generateCompareContrastWithImages(entityA, entityB, gradeBand, mode, undefined, intent);
 };

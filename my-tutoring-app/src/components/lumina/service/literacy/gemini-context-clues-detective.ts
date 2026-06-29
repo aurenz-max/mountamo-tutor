@@ -389,6 +389,7 @@ export const generateContextCluesDetective = async (
   ctx: GenerationContext,
 ): Promise<ContextCluesDetectiveData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ContextCluesDetectiveConfig;
 
@@ -493,7 +494,7 @@ GRADE 6 GUIDELINES:
     : '';
 
   const generationPrompt = `Create a context clues detective activity about: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeContext[gradeLevelKey] || gradeContext['3']}

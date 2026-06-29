@@ -203,6 +203,7 @@ export const generateDecodableReader = async (
   ctx: GenerationContext,
 ): Promise<DecodableReaderData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as DecodableReaderConfig;
 
@@ -271,7 +272,7 @@ GRADE 2 GUIDELINES:
   const gradeLevelKey = ['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K';
 
   const generationPrompt = `Create a decodable reading passage about: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeContext[gradeLevelKey] || gradeContext['K']}

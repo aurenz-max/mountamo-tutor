@@ -169,6 +169,19 @@ export const generateProteinFolder = async (
   const config = ctx.raw as Partial<ProteinFolderData>;
   const gradeBand: '7-8' = '7-8';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS activity.
+  // The protein (topic) stays fixed; intent biases which folding facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep every residue, interaction, and mutation scientifically accurate and complete, but lead
+with and expand the facets most relevant to this focus (e.g. a mutation/disease focus means
+richer mutation challenges; a structure-levels focus means richer folding-level descriptions).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   const generationPrompt = `Create an interactive protein folding simulation activity for: "${topic}".
 
 TARGET GRADE BAND: ${gradeBand} (middle school advanced biology)
@@ -218,6 +231,7 @@ CRITICAL RULES:
 - Mutation positions MUST reference actual residues in the sequence
 - Use engaging, accessible language for 7th-8th graders
 - Colors should be consistent: all hydrophobic = amber, charged+ = rose, charged- = violet, polar = emerald
+${intentFocus}
 
 Now generate the protein folding activity for "${topic}".`;
 

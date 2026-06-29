@@ -9,6 +9,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import { DigitalSkillsSimData } from '../../primitives/visual-primitives/core/DigitalSkillsSim';
 import {
   resolveEvalModeConstraint,
@@ -211,9 +212,12 @@ export const generateDigitalSkillsSim = async (
     ? `Generate exactly 5 challenges of the allowed type.`
     : `Generate 15 challenges total — 5 of each type (click, drag, type), interleaved.`;
 
+  const scopeSection = buildScopePromptSection(ctx.scope);
+
   const prompt = `You are a curriculum expert creating a fun digital skills practice activity for young learners (K-1).
 
 TOPIC / CONTEXT: ${topic}
+${scopeSection}
 TARGET AUDIENCE: ${gradeLevel} students (ages 5-7)
 
 ## Your Mission:

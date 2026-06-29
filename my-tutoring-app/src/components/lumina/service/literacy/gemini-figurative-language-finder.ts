@@ -331,6 +331,7 @@ export const generateFigurativeLanguageFinder = async (
   ctx: GenerationContext,
 ): Promise<FigurativeLanguageFinderData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FigurativeLanguageFinderConfig;
   const evalConstraint = resolveEvalModeConstraint(
@@ -396,6 +397,7 @@ export const generateFigurativeLanguageFinder = async (
   void pinnedType; // pinnedType drives prompt TONE only — the scaffold is type-agnostic.
 
   const prompt = `Create a figurative language identification activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['4']}
 

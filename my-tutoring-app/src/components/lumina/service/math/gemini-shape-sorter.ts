@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import type { ShapeSorterData } from "../../primitives/visual-primitives/math/ShapeSorter";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 
 // Local copy of shape properties — duplicated from ShapeSorter.tsx to avoid
 // importing a 'use client' module into server-side eval-test routes (SS-1).
@@ -305,10 +306,15 @@ export const generateShapeSorter = async (
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  // Authoritative scope (topic + objective + intent). The LLM authors the shape set,
+  // so this binds the intent's focus (e.g. "triangles and hexagons") to the shapes
+  // shown — scope-context-contract wire. Correctness is unaffected (the checker reads
+  // SHAPE_PROPERTIES, and the eval mode still owns the sorted attribute).
+  const scopeSection = buildScopePromptSection(ctx.scope);
 
   const prompt = `
 Create a shape sorting activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 GOAL: Teach Defining Attributes (shape, sides, curved) vs Non-Defining Attributes (color, size, rotation).
 
 SUPPORTED SHAPES: circle, square, triangle, rectangle, diamond, rhombus, hexagon, pentagon, oval

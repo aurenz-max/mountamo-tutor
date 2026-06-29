@@ -221,6 +221,7 @@ export const generatePhonemeExplorer = async (
   ctx: GenerationContext,
 ): Promise<PhonemeExplorerData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PhonemeExplorerConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -279,7 +280,7 @@ export const generatePhonemeExplorer = async (
   );
 
   const generationPrompt = `Create a phoneme awareness activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}

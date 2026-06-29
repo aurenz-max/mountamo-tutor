@@ -397,6 +397,16 @@ export const generateEquationBalancer = async (ctx: GenerationContext): Promise<
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EquationBalancerData>;
   const gradeBand = resolveGradeBand(gradeLevel);
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The topic stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep all chemistry accurate and complete, but lead with and expand the equations,
+reaction types, and explanations most relevant to this focus. Do not state or reveal
+the answer to any challenge the student will be asked.`
+    : "";
 
   const gradeBandDescriptions: Record<string, string> = {
     "6-7":
@@ -423,6 +433,7 @@ export const generateEquationBalancer = async (ctx: GenerationContext): Promise<
   };
 
   const generationPrompt = `Create an Equation Balancer activity about "${topic}" for ${gradeBand} students.
+${intentFocus}
 
 GRADE BAND REQUIREMENTS (${gradeBand}):
 ${gradeBandDescriptions[gradeBand]}

@@ -346,6 +346,16 @@ export const generateSafetyLab = async (ctx: GenerationContext): Promise<SafetyL
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<SafetyLabData>;
   const gradeBand = resolveGradeBand(gradeLevel);
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The topic stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+LEARNING FOCUS: This training is being used to teach: "${intent}".
+Keep all safety content accurate and complete, but lead with and expand the hazards,
+PPE, symbols, and procedures most relevant to this focus. Do not state or reveal the
+answer to any challenge the student will be asked.`
+    : "";
 
   const gradeBandDescriptions: Record<string, string> = {
     "K-2":
@@ -387,6 +397,7 @@ export const generateSafetyLab = async (ctx: GenerationContext): Promise<SafetyL
   };
 
   const generationPrompt = `Create a Lab Safety Training activity about "${topic}" for ${gradeBand} students.
+${intentFocus}
 
 GRADE BAND REQUIREMENTS (${gradeBand}):
 ${gradeBandDescriptions[gradeBand]}

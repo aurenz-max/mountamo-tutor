@@ -154,6 +154,7 @@ export const generatePhonicsBlender = async (
   ctx: GenerationContext,
 ): Promise<PhonicsBlenderData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PhonicsBlenderConfig;
 
@@ -229,7 +230,7 @@ GRADE 2 GUIDELINES:
   );
 
   const generationPrompt = `Create a phonics blending activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['K']) : ''}

@@ -205,6 +205,19 @@ export const generateDnaExplorer = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS activity.
+  // The genetics topic stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep every sequence, nucleotide, and feature scientifically accurate and complete, but lead
+with and expand the aspects most relevant to this focus (e.g. a base-pairing focus means
+richer pairing content; a structure focus means richer backbone/groove content).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   const gradeContext = {
     '5-6': `
 GRADE 5-6 GUIDELINES:
@@ -280,6 +293,7 @@ CRITICAL: Make sure:
 - Zoom levels progress from largest (chromosome) to smallest
 - Grade-appropriate vocabulary throughout
 - Title and description are engaging for the target age group
+${intentFocus}
 
 Now generate the DNA exploration activity for "${topic}" at grade level ${gradeBand}.`;
 

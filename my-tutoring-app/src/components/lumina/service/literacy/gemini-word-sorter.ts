@@ -283,9 +283,10 @@ function reconstructMatchPairsChallenge(flat: FlatChallenge): WordSorterChalleng
 async function generateBinarySortChallenges(
   topic: string,
   gradeKey: string,
+  intent?: string,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const prompt = `Create an interactive 2-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
@@ -336,9 +337,10 @@ Generate 3-4 challenges with different sorting criteria.`;
 async function generateTernarySortChallenges(
   topic: string,
   gradeKey: string,
+  intent?: string,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const prompt = `Create an interactive 3-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
@@ -389,9 +391,10 @@ Generate 3-4 challenges with different sorting criteria.`;
 async function generateMatchPairsChallenges(
   topic: string,
   gradeKey: string,
+  intent?: string,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
   const prompt = `Create an interactive word PAIR MATCHING activity for "${topic}" (Grade ${gradeKey}).
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the terms and matches toward "${intent}" when possible — but always keep the pairing age-appropriate and unambiguous. Never reveal the match answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 
 For each challenge:
@@ -465,6 +468,7 @@ export const generateWordSorter = async (
   ctx: GenerationContext,
 ): Promise<WordSorterData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as WordSorterConfig;
 
@@ -488,13 +492,13 @@ export const generateWordSorter = async (
   const generators: Promise<SubResult>[] = [];
 
   if (allowedTypes.includes('binary_sort')) {
-    generators.push(generateBinarySortChallenges(topic, gradeKey));
+    generators.push(generateBinarySortChallenges(topic, gradeKey, intent));
   }
   if (allowedTypes.includes('ternary_sort')) {
-    generators.push(generateTernarySortChallenges(topic, gradeKey));
+    generators.push(generateTernarySortChallenges(topic, gradeKey, intent));
   }
   if (allowedTypes.includes('match_pairs')) {
-    generators.push(generateMatchPairsChallenges(topic, gradeKey));
+    generators.push(generateMatchPairsChallenges(topic, gradeKey, intent));
   }
 
   const subResults = await Promise.all(generators);

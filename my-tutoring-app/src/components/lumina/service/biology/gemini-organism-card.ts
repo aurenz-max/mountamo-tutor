@@ -214,6 +214,19 @@ export const generateOrganismCard = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The organism (topic) stays fixed; intent biases which attributes get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This card is being used to teach: "${intent}".
+Keep every field scientifically accurate and complete, but lead with and expand the
+attributes, adaptations, and details most relevant to this focus (e.g. a diet focus means
+richer diet content; a habitat focus means richer habitat content).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {
     'K-2': `
@@ -288,6 +301,7 @@ REQUIRED INFORMATION:
 
 5. **Theme Color** (optional):
    - Suggest a hex color that matches the organism's appearance or kingdom
+${intentFocus}
 
 EXAMPLES:
 

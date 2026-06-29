@@ -154,6 +154,19 @@ export const generateMicroscopeViewer = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS viewer.
+  // The specimen (topic) stays fixed; intent biases which structures get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This microscope viewer is being used to teach: "${intent}".
+Keep every specimen, structure, and observation scientifically accurate and complete, but
+lead with and expand the structures and observations most relevant to this focus (e.g. a
+cell-wall focus means richer cell-wall content; a nucleus focus means richer nucleus content).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {
     '3-5': `
@@ -257,6 +270,7 @@ OBSERVATION PROMPT GUIDELINES:
 - Low power: "What overall shape do you notice?" / "How are the cells arranged?"
 - Medium power: "Can you see any structures inside the cells?" / "What differences do you notice?"
 - High power: "What structures can you identify inside the cell?" / "How does this compare to what you expected?"
+${intentFocus}
 
 EXAMPLE - Onion Epidermal Cell (Grade 3-5):
 {

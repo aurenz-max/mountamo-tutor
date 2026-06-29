@@ -133,6 +133,7 @@ export const generateSyllableClapper = async (
   ctx: GenerationContext,
 ): Promise<SyllableClapperData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config: SyllableClapperConfig = { ...(ctx.raw as SyllableClapperConfig), intent: ctx.intent };
   const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
@@ -191,7 +192,7 @@ GRADE 2 GUIDELINES:
   };
 
   const generationPrompt = `Create a syllable clapping activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${challengeTypeSection}

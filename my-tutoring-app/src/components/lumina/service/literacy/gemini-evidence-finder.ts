@@ -179,6 +179,7 @@ export const generateEvidenceFinder = async (
   ctx: GenerationContext,
 ): Promise<EvidenceFinderData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as EvidenceFinderConfig;
 
@@ -259,7 +260,7 @@ GRADE 6 GUIDELINES:
   const useCER = parseInt(gradeLevelKey) >= 4;
 
   const generationPrompt = `Create an evidence finding activity about: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['3']) : ''}

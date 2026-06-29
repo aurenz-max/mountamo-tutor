@@ -6,6 +6,7 @@ import {
 } from "../../primitives/visual-primitives/math/SpatialScene";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -677,9 +678,14 @@ export const generateSpatialScene = async (
       : undefined;
   const tierScaffold =
     pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
-  const tierSection = tierScaffold
+  // Authoritative scope (topic + objective + intent) folded into the threaded
+  // tierSection so it reaches all sub-prompts with no signature change. The LLM
+  // authors the scene objects, so this binds the intent's theme/focus to what's
+  // shown. scope-context-contract wire; correctness is code-owned downstream.
+  const scopeSection = buildScopePromptSection(ctx.scope);
+  const tierSection = (tierScaffold
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT scene/relation change)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join("\n")}\n`
-    : "";
+    : "") + scopeSection;
 
   const theme = randomTheme();
 

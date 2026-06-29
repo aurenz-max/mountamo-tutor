@@ -104,6 +104,7 @@ const moonPhasesLabResponseSchema: Schema = {
 // GRADE-APPROPRIATE CONFIGURATION
 // ============================================================================
 
+// TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
 const GRADE_CONFIGURATIONS: Record<string, Partial<MoonPhasesLabData>> = {
   K: {
     viewMode: 'from_earth',
@@ -211,6 +212,14 @@ export const generateMoonPhasesLab = async (
   const { topic } = ctx;
   const gradeContext = ctx.gradeContext;
   const config = ctx.raw as Partial<MoonPhasesLabData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and every learning objective/question foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const gradeLevel = config?.gradeLevel || (gradeContext.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as 'K' | '1' | '2' | '3' | '4' | '5';
   const gradeConfig = GRADE_CONFIGURATIONS[gradeLevel] || GRADE_CONFIGURATIONS['3'];
 
@@ -280,6 +289,7 @@ ${topic.toLowerCase().includes('challenge') || topic.toLowerCase().includes('fin
 Include a challengePhase to ask students to identify a specific Moon phase.
 Choose a phase appropriate for the grade level.
 ` : ''}
+${intentFocus}
 
 Generate a complete, educationally sound activity configuration.
 `;

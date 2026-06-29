@@ -75,7 +75,8 @@ export const generateIntroBriefing = async (
   subject: string,
   gradeLevel: string,
   estimatedTime: string = '15-20 minutes',
-  persona?: StudentPersona | null
+  persona?: StudentPersona | null,
+  intent?: string
 ): Promise<IntroBriefingData> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const voiceBlock = buildBriefVoiceBlock(persona);
@@ -259,7 +260,9 @@ Generate an Intro Briefing schema for the following topic:
 **Topic:** ${topic}
 **Subject:** ${subject}
 **Grade Level:** ${gradeLevel}
-**Estimated Lesson Time:** ${estimatedTime}
+**Estimated Lesson Time:** ${estimatedTime}${intent ? `
+**This Lesson's Specific Focus:** ${intent}
+> The broad topic above sets the theme, but THIS briefing must orient the student to the specific focus on this line. Aim the hook, big idea, and objectives at this focus — stay within the range/scope it implies (the grade level is a ceiling, not a target), and never restate the focus verbatim as a quick-check answer.` : ''}
 
 ## Educational Context
 This content is for ${gradeLevelContext}${voiceBlock}

@@ -341,6 +341,16 @@ export const generateMixingAndDissolving = async (ctx: GenerationContext): Promi
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MixingAndDissolvingData>;
   const gradeBand = resolveGradeBand(gradeLevel);
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The topic stays fixed; intent biases which facets the authored challenge text leads with.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep all chemistry accurate and complete, but lead with and expand the challenges,
+particle explanations, and separation steps most relevant to this focus. Do not state
+or reveal the answer to any challenge the student will be asked.`
+    : "";
 
   const gradeBandDescriptions: Record<string, string> = {
     "3-5":
@@ -373,6 +383,7 @@ export const generateMixingAndDissolving = async (ctx: GenerationContext): Promi
   };
 
   const generationPrompt = `Create a Mixing and Dissolving activity about "${topic}" for ${gradeBand} students.
+${intentFocus}
 
 GRADE BAND REQUIREMENTS (${gradeBand}):
 ${gradeBandDescriptions[gradeBand]}
@@ -495,6 +506,7 @@ CRITICAL REQUIREMENTS:
     }
 
     // Ensure substances array exists and each entry has required fields
+    // TODO: intent does not yet steer the code-picked substance pool (Tier-2)
     if (!result.substances || !Array.isArray(result.substances)) {
       result.substances = [
         {

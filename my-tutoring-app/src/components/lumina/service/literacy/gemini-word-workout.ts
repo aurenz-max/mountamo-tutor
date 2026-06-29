@@ -186,10 +186,14 @@ function getModePrompt(
   topic: string,
   gradeLevel: string,
   masteredVowels: string[],
-  count: number
+  count: number,
+  intent?: string
 ): string {
   const vowelStr = masteredVowels.join(", ");
-  const base = `Topic: "${topic}". Grade: ${gradeLevel}. Mastered vowels: ${vowelStr}.\nGenerate exactly ${count} challenges with IDs "c1", "c2", etc.\n`;
+  const focusLine = intent
+    ? `SPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the CVC/phonics accuracy rules below over this focus.\n`
+    : "";
+  const base = `Topic: "${topic}". Grade: ${gradeLevel}. Mastered vowels: ${vowelStr}.\n${focusLine}Generate exactly ${count} challenges with IDs "c1", "c2", etc.\n`;
 
   switch (mode) {
     case "real-vs-nonsense":
@@ -358,10 +362,11 @@ async function generateModeChallenges(
   topic: string,
   gradeLevel: string,
   masteredVowels: string[],
-  count: number
+  count: number,
+  intent?: string
 ): Promise<WordWorkoutChallenge[]> {
   try {
-    const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count);
+    const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count, intent);
 
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -439,6 +444,7 @@ export const generateWordWorkout = async (
   ctx: GenerationContext,
 ): Promise<WordWorkoutData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as WordWorkoutConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -464,7 +470,8 @@ export const generateWordWorkout = async (
       topic,
       gradeLevel,
       masteredVowels,
-      count
+      count,
+      intent
     );
 
     // Re-assign sequential IDs
@@ -496,7 +503,8 @@ export const generateWordWorkout = async (
 
   const results = await Promise.all(
     modesToGenerate.map(mode => generateModeChallenges(mode, topic, gradeLevel, masteredVowels,
-      mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode
+      mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode,
+      intent
     ))
   );
 

@@ -12,6 +12,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import { buildScopePromptSection } from '../scopeContext';
 import type { GenerationContext } from '../generation/generationContext';
 import type {
   DeepDiveData,
@@ -91,11 +92,13 @@ function buildOrchestratorPrompt(
   gradeLevel: string,
   evalMode?: string,
   templateId?: string,
+  scopeSection?: string,
 ): string {
   const evalGuidance = getEvalModeGuidance(evalMode);
   const { promptHint } = matchTemplate(evalMode, templateId);
 
   return `You are an expert learning experience designer. Plan a DeepDive lesson on "${topic}" for ${gradeLevel} students.
+${scopeSection ?? ''}
 
 A DeepDive is a vertical scroll experience assembled from modular blocks. Your job is to plan which blocks to use, in what order, write a content brief for each, and choose a wrapper layout strategy.
 
@@ -177,8 +180,9 @@ async function runOrchestrator(
   gradeLevel: string,
   evalMode?: string,
   templateId?: string,
+  scopeSection?: string,
 ): Promise<OrchestratorPlan> {
-  const prompt = buildOrchestratorPrompt(topic, gradeLevel, evalMode, templateId);
+  const prompt = buildOrchestratorPrompt(topic, gradeLevel, evalMode, templateId, scopeSection);
   const { template } = matchTemplate(evalMode, templateId);
 
   const response = await ai.models.generateContent({
@@ -1621,8 +1625,10 @@ export async function generateDeepDive(
 
   console.log(`[DeepDive] Starting orchestration for "${topic}" (grade: ${gradeLevel}, eval: ${evalMode || 'default'})`);
 
-  // Stage 1: Orchestrator plans the blocks
-  const plan = await runOrchestrator(topic, gradeLevel, evalMode, templateId);
+  // Stage 1: Orchestrator plans the blocks. The scope block focuses every
+  // block brief on THIS component's intent + the lesson's pedagogical range.
+  const scopeSection = buildScopePromptSection(ctx.scope);
+  const plan = await runOrchestrator(topic, gradeLevel, evalMode, templateId, scopeSection);
   // Resolve layout — explicit override > orchestrator choice > default stack
   const validLayouts = new Set(['stack', 'grid_2col', 'reveal_progressive', 'masonry']);
   const resolvedLayout: WrapperLayout = (layoutOverride && validLayouts.has(layoutOverride))

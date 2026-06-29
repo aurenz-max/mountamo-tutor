@@ -280,14 +280,14 @@ registerContextGenerator('bio-compare-contrast', async (ctx) => {
       return {
         type: 'bio-compare-contrast',
         instanceId: ctx.instanceId,
-        data: await generateCompareContrastWithImagesFromTopic(vsSource, gradeBand, mode),
+        data: await generateCompareContrastWithImagesFromTopic(vsSource, gradeBand, mode, ctx.intent || ''),
       };
     } else {
       const { generateCompareContrastFromTopic } = await import('../../biology/gemini-compare-contrast');
       return {
         type: 'bio-compare-contrast',
         instanceId: ctx.instanceId,
-        data: await generateCompareContrastFromTopic(vsSource, gradeBand, mode),
+        data: await generateCompareContrastFromTopic(vsSource, gradeBand, mode, ctx.intent || ''),
       };
     }
   }
@@ -308,13 +308,13 @@ registerContextGenerator('bio-compare-contrast', async (ctx) => {
     return {
       type: 'bio-compare-contrast',
       instanceId: ctx.instanceId,
-      data: await generateCompareContrastWithImages(entityA, entityB, gradeBand, mode, config),
+      data: await generateCompareContrastWithImages(entityA, entityB, gradeBand, mode, config, ctx.intent || ''),
     };
   } else {
     return {
       type: 'bio-compare-contrast',
       instanceId: ctx.instanceId,
-      data: await generateCompareContrast(entityA, entityB, gradeBand, mode, config),
+      data: await generateCompareContrast(entityA, entityB, gradeBand, mode, config, ctx.intent || ''),
     };
   }
 });

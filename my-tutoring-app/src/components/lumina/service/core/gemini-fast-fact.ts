@@ -14,6 +14,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import type { FastFactData, FastFactChallenge } from '../../primitives/visual-primitives/core/FastFact';
 
 /**
@@ -352,10 +353,12 @@ export const generateFastFact = async (
   const config = ctx.raw as FastFactConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const challengeCount = (config?.challengeCount as number) || 10;
+  const scopeSection = buildScopePromptSection(ctx.scope);
 
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
+${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${config?.context ? `ADDITIONAL CONTEXT: ${config.context}\n` : ''}
 NUMBER OF CHALLENGES: ${challengeCount} (8-12 range)

@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -324,8 +325,23 @@ const CIRCLE_IN_SQUARE_CTX = [
 
 type RawChallenge = Omit<CircleExplorerChallenge, 'id'>;
 
+// ── Tier-2 radius scope cap (CLASS-3) ──────────────────────────────────────
+// The builders pick the radius in CODE (for variety), so intent can't reach it via the
+// prompt. `selectCircleExplorerChallenges`/`...Mixed` run SYNCHRONOUSLY (no await between
+// the cap being set and the builders reading it), so a module-scoped cap is reentrancy-
+// safe: the whole selection completes atomically before any other generation can run.
+// null → no narrowing (byte-identical original behavior).
+let activeRadiusCap: { min: number; max: number } | null = null;
+
+/** Clamp a radius into the active scope cap (narrow-only). Applied at pick time so every
+ *  value derived from the radius (diameter, square side, expected answer, givenValue) stays
+ *  self-consistent. Integer caps keep whole radii whole. */
+function clampRadius(r: number): number {
+  return activeRadiusCap ? Math.max(activeRadiusCap.min, Math.min(activeRadiusCap.max, r)) : r;
+}
+
 function buildDiscoverPi(): RawChallenge {
-  const radius = randInt(3, 10);     // whole-number diameter (2r) in [6, 20]
+  const radius = clampRadius(randInt(3, 10));     // whole-number diameter (2r) in [6, 20]
   const unitLabel = pick(UNIT_POOL);
   return {
     type: 'discover_pi',
@@ -345,8 +361,8 @@ function buildDiscoverPi(): RawChallenge {
 function buildCircumference(variant: 'radius' | 'diameter'): RawChallenge {
   const unitLabel = pick(UNIT_POOL);
   if (variant === 'diameter') {
-    const d = randInt(4, 24);
-    const radius = d / 2;
+    const radius = clampRadius(randInt(4, 24) / 2);
+    const d = 2 * radius; // keep the displayed diameter consistent with the clamped radius
     const expected = round2(PI_APPROX * d);
     return {
       type: 'circumference',
@@ -362,7 +378,7 @@ function buildCircumference(variant: 'radius' | 'diameter'): RawChallenge {
       tolerance: lengthTol(expected),
     };
   }
-  const r = randInt(2, 15);
+  const r = clampRadius(randInt(2, 15));
   const expected = round2(2 * PI_APPROX * r);
   return {
     type: 'circumference',
@@ -384,11 +400,10 @@ function buildArea(variant: 'radius' | 'diameter'): RawChallenge {
   let r: number;
   let given: 'radius' | 'diameter';
   if (variant === 'diameter') {
-    const d = 2 * randInt(2, 10); // even diameter → whole radius
-    r = d / 2;
+    r = clampRadius(randInt(2, 10)); // whole radius (even diameter = 2r)
     given = 'diameter';
   } else {
-    r = randInt(2, 12);
+    r = clampRadius(randInt(2, 12));
     given = 'radius';
   }
   const expected = round2(PI_APPROX * r * r);
@@ -409,7 +424,7 @@ function buildArea(variant: 'radius' | 'diameter'): RawChallenge {
 
 function buildReverse(variant: 'circumference' | 'area'): RawChallenge {
   const unitLabel = pick(UNIT_POOL);
-  const r = randInt(3, 15);
+  const r = clampRadius(randInt(3, 15));
   if (variant === 'circumference') {
     const givenValue = round1(2 * PI_APPROX * r);
     return {
@@ -449,8 +464,8 @@ function buildReverse(variant: 'circumference' | 'area'): RawChallenge {
 function buildComposite(shape: CircleCompositeShape): RawChallenge {
   const unitLabel = pick(UNIT_POOL);
   if (shape === 'circle_in_square') {
-    const s = 2 * randInt(2, 8); // even side → whole inscribed radius
-    const r = s / 2;
+    const r = clampRadius(randInt(2, 8)); // whole inscribed radius (side = 2r)
+    const s = 2 * r;
     const expected = round2(s * s - PI_APPROX * r * r);
     return {
       type: 'composite',
@@ -468,7 +483,7 @@ function buildComposite(shape: CircleCompositeShape): RawChallenge {
       tolerance: areaTol(expected),
     };
   }
-  const r = randInt(2, 12);
+  const r = clampRadius(randInt(2, 12));
   if (shape === 'semicircle_perimeter') {
     const expected = round2(PI_APPROX * r + 2 * r);
     return {
@@ -952,13 +967,28 @@ Return ONLY the wrapper fields described above.
       : (evalConstraint?.allowedTypes[0] as CircleExplorerChallengeType) ?? 'circumference';
   if (!validTypes.includes(challengeType)) challengeType = 'circumference';
 
+  // ── Tier-2: narrow the code-owned radius band to the lesson scope (CLASS-3) ──
+  // Radii are code-picked for variety; intent can't reach them via the prompt. Resolve a
+  // {min,max} for the radius from topic+intent. Ceiling = the widest builder radius span
+  // (2..15) → narrow-only; null → grade default (no regression).
+  const radiusCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    "the circle's radius (half the diameter)",
+    { min: 2, max: 15 },
+  );
+  if (radiusCap) console.log(`⭕ Circle Explorer radius cap → ${radiusCap.min}..${radiusCap.max} (from intent)`);
+
   // ── Build the per-challenge pool locally ──
   // supportTier is threaded into the pool builders so the SECOND axis (structural
   // chain-depth via resolveProblemShape) is enforced at construction. Absent →
-  // null → byte-identical original variance behavior.
+  // null → byte-identical original variance behavior. activeRadiusCap is read by the
+  // builders' clampRadius; set it across the SYNCHRONOUS selection only, then clear it.
+  activeRadiusCap = radiusCap;
   const challenges = isMixed
     ? selectMixedCircleExplorerChallenges(config?.instanceCount, supportTier)
     : selectCircleExplorerChallenges(challengeType, config?.instanceCount, supportTier);
+  activeRadiusCap = null;
 
   // ── Post-validation: every expectedAnswer must match its geometry ──
   for (const ch of challenges) {

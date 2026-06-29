@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ThreeDShapeExplorerData } from "../../primitives/visual-primitives/math/ThreeDShapeExplorer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -350,6 +351,12 @@ export const generateThreeDShapeExplorer = async (
     CHALLENGE_TYPE_DOCS,
   );
 
+  // Authoritative pedagogical scope (topic + objective + intent), resolved once at
+  // the registry boundary. The LLM authors which solids appear, so this binds the
+  // intent's focus (e.g. "cylinders and cones") to the shapes shown — the proven
+  // scope-context-contract wire, same as base-ten-blocks/counting-board.
+  const scopeSection = buildScopePromptSection(ctx.scope);
+
   // ── Within-mode support tier (annotation-overlay scaffolding only) ──
   // supportTier is the STUDENT's tier — it DRIVES the per-challenge application.
   // pinnedType is ONLY for the prompt tone (a single pinned mode has one task to
@@ -367,7 +374,7 @@ export const generateThreeDShapeExplorer = async (
 
   const prompt = `
 Create an educational 3D shape exploration activity for teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 CONTEXT:
 - Students explore 3D (solid) shapes: cube, sphere, cylinder, cone, rectangular-prism
 - Activities build understanding of 2D vs 3D shapes, shape properties, and real-world connections

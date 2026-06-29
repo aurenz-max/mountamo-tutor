@@ -41,13 +41,37 @@ number-bond, double-number-line, dot-plot, equation-builder, tape-diagram,
 compare-objects, parameter-explorer, pattern-builder, equation-workspace,
 function-sketch, ratio-table, analog-clock, coin-counter, coordinate-graph
 
-### DEAD-FIELD, code-picked/na scope (~31) — theme-flavor only, low payoff
-place-value, polygon-area-builder, fraction-bar, circle-explorer, comparison-builder,
-area-model, time-sequencer, array-grid, spatial-scene, shape-composer, angle-workshop,
-ordinal-line, net-folder, transformation-lab, sorting-station, systems-equations, matrix,
-shape-sorter, 3d-shape-explorer, histogram, two-way-table, shape-tracer, strategy-picker,
-regrouping-workbench, factor-tree, measurement-tools, percent-bar, length-lab,
-balance-scale, function-machine, slope-triangle, shape-builder
+### ~~DEAD-FIELD, code-picked/na scope (~31) — theme-flavor only, low payoff~~ → RE-TRIAGED 2026-06-28
+
+**The old bucket was mis-axed.** It bucketed by "does code touch the value?" The correct
+axis is **"is code-picking required for CORRECTNESS?"** Re-classified all 31 by value-origin
+(4 parallel reads + spot-probes). The flat "theme-only, low payoff" verdict was wrong for
+**21 of 31**. Three sub-classes:
+
+**CLASS-1 — value LLM-authored → TIER-1 WIRE. ALL RESOLVED + probe-verified (see _RESWEEP-2026-06-28.md).**
+- ✅ comparison-builder — FIXED, probe-verified (teen→11-20, small→1-5, generic→full band).
+- ✅ time-sequencer — FIXED, probe-verified (half-hour→:00/:30, o'clock→:00, AM/PM track).
+- ✅ 3d-shape-explorer — FIXED (scopeSection), probe-verified (cylinders/cones vs cubes/prisms track).
+- ✅ shape-sorter — FIXED (scopeSection), probe-verified (triangles+hexagons crisp).
+- ✅ shape-tracer — FIXED (scope→generateSetup), probe-verified (triangles→all triangles).
+- ✅ shape-builder — ALREADY HONORED via scopeSection (the static check missed it; not a dead field).
+- ↪ spatial-scene — NA-leaning: intent is the position objective, not a scene theme (random flavor).
+  Wired scopeSection (standard contract); no crisp lever by design.
+- ↪ net-folder — HYBRID: main lever (solid) is code-picked (`randomSolid`) → moved to CLASS-3/Tier-2.
+
+**CLASS-2 — value code-derived for arithmetic CORRECTNESS → genuinely THEME-ONLY (10).**
+The LLM would get the answer/distractors wrong; code must own them ([[llm-window-code-builds-structure]]).
+Intent is legitimately theme-flavor here — leave as-is.
+- place-value, ordinal-line, sorting-station, systems-equations, strategy-picker,
+  regrouping-workbench, percent-bar, length-lab, balance-scale, slope-triangle
+
+**CLASS-3 — value code-picked for ENTROPY/convergence only → TIER-2 RESOLVER (14).**
+Code-picking is a mode-collapse workaround, NOT a correctness necessity. The eval-mode owns
+the band; a scoped resolver (number-line `resolveTopicNumberRange` pattern) could let intent
+narrow it. NOT "low payoff" — deferred Tier-2 work.
+- array-grid, polygon-area-builder, fraction-bar, circle-explorer, area-model, shape-composer,
+  angle-workshop, transformation-lab, matrix, histogram, two-way-table, factor-tree,
+  measurement-tools, function-machine
 
 ## Fixes applied (2026-06-28)
 

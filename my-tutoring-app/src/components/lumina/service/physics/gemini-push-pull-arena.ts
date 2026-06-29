@@ -163,6 +163,7 @@ interface ObjectTemplate {
   emoji: string;
 }
 
+// TODO: intent steers prompt text only; object/value library is code-picked (Tier-2).
 const OBJECT_LIBRARY: ObjectTemplate[] = [
   { name: 'Tennis Ball', weight: 1, emoji: '🎾' },
   { name: 'Soccer Ball', weight: 2, emoji: '⚽' },
@@ -352,6 +353,17 @@ export const generatePushPullArena = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PushPullArenaConfig;
+  // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
+  // Steers the authored title/description/instruction/question wording only — the
+  // objects and grade-config numbers are code-picked (see OBJECT_LIBRARY / GRADE_CONFIGS).
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specifically target "${intent}".
+Foreground this focus in the title, description, and each challenge's instruction/question wording.
+Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
   const validGrades = ['K', '1', '2', '3', '4', '5'];
@@ -409,7 +421,8 @@ Physics rules the student should discover:
 - Two opposite pushes can CANCEL OUT (balanced forces = no movement).
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${intentFocus}
+
 Available objects (use EXACT names in objectName / object2Name):
 - Tennis Ball (1kg), Soccer Ball (2kg), Toy Car (2kg), Book (3kg)
 - Brick (4kg), Backpack (5kg), Watermelon (6kg)

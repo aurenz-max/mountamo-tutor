@@ -14,6 +14,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import { buildScopePromptSection } from '../scopeContext';
 import type { GenerationContext } from '../generation/generationContext';
 import type {
   PassageStudioData,
@@ -97,8 +98,9 @@ const ORCHESTRATOR_SCHEMA: Schema = {
   required: ['title', 'subtitle', 'narrativeArc', 'layout', 'stimulusKind', 'stimulusText', 'blocks'],
 };
 
-function buildOrchestratorPrompt(topic: string, gradeLevel: string, evalMode?: string): string {
+function buildOrchestratorPrompt(topic: string, gradeLevel: string, evalMode?: string, scopeSection?: string): string {
   return `You are an expert language-arts learning designer. Plan a PassageStudio lesson on "${topic}" for ${gradeLevel} students.
+${scopeSection ?? ''}
 
 A PassageStudio is a multi-block close-reading experience anchored to a single text stimulus. Your job is to:
 1. Pick the stimulus kind (prose excerpt, poem, dialogue, or sentence set).
@@ -202,8 +204,9 @@ async function runOrchestrator(
   topic: string,
   gradeLevel: string,
   evalMode?: string,
+  scopeSection?: string,
 ): Promise<OrchestratorPlan> {
-  const prompt = buildOrchestratorPrompt(topic, gradeLevel, evalMode);
+  const prompt = buildOrchestratorPrompt(topic, gradeLevel, evalMode, scopeSection);
 
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -782,9 +785,10 @@ export async function generatePassageStudio(
   const totalStart = Date.now();
   console.log(`[PassageStudio] Orchestrating "${topic}" (grade: ${gradeLevel}, eval: ${evalMode || 'default'})`);
 
-  // Stage 1: Orchestrator
+  // Stage 1: Orchestrator. Scope block focuses stimulus + blocks on intent/range.
   const orchStart = Date.now();
-  const plan = await runOrchestrator(topic, gradeLevel, evalMode);
+  const scopeSection = buildScopePromptSection(ctx.scope);
+  const plan = await runOrchestrator(topic, gradeLevel, evalMode, scopeSection);
   const orchSec = ((Date.now() - orchStart) / 1000).toFixed(1);
 
   // Resolve stimulus kind + layout

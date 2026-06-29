@@ -128,7 +128,7 @@ const inferGradeLevel = (gradeContext: string): string => {
 registerGenerator('curator-brief', async (item, topic, gradeContext) => {
   const subject = inferSubject(topic);
   const gradeLevel = inferGradeLevel(gradeContext);
-  const data = await generateIntroBriefing(topic, subject, gradeLevel);
+  const data = await generateIntroBriefing(topic, subject, gradeLevel, undefined, undefined, item.intent);
   return {
     type: 'curator-brief',
     instanceId: item.instanceId,
@@ -381,7 +381,9 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLeve
     useOrchestrator: true,
     count: config.count || config.problemCount || 1,
     context: config.context,
-    objectiveText: config.objectiveText,
+    // Fall back to this instance's manifest intent so the per-component
+    // objective reaches the orchestrator + every problem prompt (ADDITIONAL CONTEXT).
+    objectiveText: config.objectiveText || (item.intent as string | undefined),
     bloomsTier: config.targetEvalMode as BloomsTier | undefined,
   });
   return {

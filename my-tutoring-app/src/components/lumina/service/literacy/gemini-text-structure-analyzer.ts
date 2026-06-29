@@ -403,6 +403,7 @@ export const generateTextStructureAnalyzer = async (
   ctx: GenerationContext,
 ): Promise<TextStructureAnalyzerData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TextStructureAnalyzerConfig;
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
@@ -487,6 +488,7 @@ export const generateTextStructureAnalyzer = async (
     : '';
 
   const prompt = `Create a text structure analysis activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['4']}
 

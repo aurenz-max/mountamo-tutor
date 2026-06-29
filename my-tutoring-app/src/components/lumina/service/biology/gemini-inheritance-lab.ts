@@ -184,6 +184,19 @@ export const generateInheritanceLab = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '6-7';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS activity.
+  // The genetics topic stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep every trait, genotype, and ratio scientifically and mathematically correct, but lead
+with and expand the aspects most relevant to this focus (e.g. a phenotypic-ratio focus means
+richer ratio reasoning; an inheritance-pattern focus means a clearer cross of that pattern).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   const gradeContext = {
     '6-7': `
 GRADE 6-7 GUIDELINES:
@@ -262,6 +275,7 @@ CRITICAL: Make sure:
 - Ratios add up to 1 (or the correct total fraction)
 - Phenotypes match the inheritance pattern
 - Row/column indices are 0-based
+${intentFocus}
 
 Now generate the activity for "${topic}" at grade level ${gradeBand}.`;
 

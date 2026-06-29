@@ -326,6 +326,16 @@ export const generatePhExplorer = async (ctx: GenerationContext): Promise<PhExpl
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PhExplorerData>;
   const gradeBand = resolveGradeBand(gradeLevel);
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The topic stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep all chemistry accurate and complete, but lead with and expand the substances,
+indicators, and explanations most relevant to this focus. Do not state or reveal the
+answer to any challenge the student will be asked.`
+    : "";
 
   const gradeBandDescriptions: Record<string, string> = {
     "4-6":
@@ -355,6 +365,7 @@ export const generatePhExplorer = async (ctx: GenerationContext): Promise<PhExpl
   };
 
   const generationPrompt = `Create a pH Explorer activity about "${topic}" for ${gradeBand} students.
+${intentFocus}
 
 GRADE BAND REQUIREMENTS (${gradeBand}):
 ${gradeBandDescriptions[gradeBand]}

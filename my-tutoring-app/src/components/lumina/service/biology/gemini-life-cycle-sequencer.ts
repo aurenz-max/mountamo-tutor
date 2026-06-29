@@ -136,6 +136,19 @@ export const generateLifeCycleSequencer = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS sequencer.
+  // The cycle (topic) stays fixed; intent biases which stages/transitions get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This sequencer is being used to teach: "${intent}".
+Keep every stage, transition, and ordering scientifically accurate and complete, but lead
+with and expand the stages and details most relevant to this focus (e.g. a metamorphosis
+focus means richer transition content; a timing focus means richer duration/scale content).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {
     'K-2': `
@@ -227,6 +240,7 @@ REQUIRED INFORMATION:
      * Frog: "Students think tadpoles just grow legs and become frogs" → "Tadpoles undergo metamorphosis, losing their tail and gills while growing legs and lungs!"
 
 6. **Grade Band**: ${gradeBand}
+${intentFocus}
 
 EXAMPLES:
 

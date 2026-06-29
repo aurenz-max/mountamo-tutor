@@ -431,6 +431,7 @@ export const generateCvcSpeller = async (
   ctx: GenerationContext,
 ): Promise<CvcSpellerData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as CvcSpellerConfig;
 
@@ -496,7 +497,7 @@ export const generateCvcSpeller = async (
     : '';
 
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
 VOWEL FOCUS: ${vowelFocus} (the vowel "${targetVowel}")
 CONFUSABLE VOWEL PAIR: "${targetVowel}" vs "${structuralContrast}" (${VOWEL_KEYWORDS[targetVowel]} vs ${VOWEL_KEYWORDS[structuralContrast]})

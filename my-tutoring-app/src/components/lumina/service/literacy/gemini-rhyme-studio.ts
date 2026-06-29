@@ -166,6 +166,7 @@ export const generateRhymeStudio = async (
   ctx: GenerationContext,
 ): Promise<RhymeStudioData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RhymeStudioConfig;
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -225,7 +226,7 @@ GRADE 2 GUIDELINES:
   );
 
   const generationPrompt = `Create a rhyming practice activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}

@@ -181,6 +181,19 @@ export const generateProcessAnimator = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '5-6';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS animation.
+  // The process (topic) stays fixed; intent biases which stages get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This process animation is being used to teach: "${intent}".
+Keep every stage, molecule, and equation scientifically accurate and complete, but lead with
+and expand the stages and details most relevant to this focus (e.g. an energy-flow focus means
+richer energyChange content; an inputs/outputs focus means clearer reactant/product framing).
+Do not state or reveal the answer to any challenge or checkpoint question the student will be asked.`
+    : "";
+
   // Grade-specific vocabulary and complexity instructions
   const gradeContext = {
     '2-4': `
@@ -386,6 +399,7 @@ CHECKPOINT QUESTION GUIDELINES:
 - Grade 2-4: Basic recall ("What happens next?", "What is produced?")
 - Grade 5-6: Causal understanding ("Why does this happen?", "What is the purpose of X?")
 - Grade 7-8: Application and synthesis ("What would happen if X was removed?", "How does this relate to Y?")
+${intentFocus}
 
 Now generate a process animator for "${topic}" at grade level ${gradeBand}.`;
 

@@ -328,6 +328,7 @@ interface RacerTemplate {
   color: string;
 }
 
+// TODO: intent steers prompt text only; object/value library is code-picked (Tier-2).
 const RACER_LIBRARY: RacerTemplate[] = [
   { name: 'Rocket Rabbit', emoji: '🐇', color: '#60A5FA' },
   { name: 'Turbo Turtle', emoji: '🐢', color: '#34D399' },
@@ -662,6 +663,17 @@ export const generateRaceTrackLab = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RaceTrackLabConfig;
+  // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
+  // Steers the authored title/description/instruction/question wording only — the
+  // racers and speeds are code-picked (see RACER_LIBRARY / assignSpeeds / GRADE_CONFIGS).
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specifically target "${intent}".
+Foreground this focus in the title, description, and each challenge's instruction/question wording.
+Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
   const validGrades = ['K', '1', '2', '3', '4', '5'];
@@ -789,7 +801,8 @@ Topic: ${topic}
 Grade Guidance: ${gradeConfig.guidance}
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${intentFocus}
+
 I have pre-assigned racers and speeds for each challenge. Write the instruction, question, correctAnswer, distractors, and hint for EACH challenge. The correctAnswer MUST be mathematically correct based on the racer data below.
 
 ${challengeDescriptions}

@@ -768,6 +768,17 @@ export const generateTimeSequencer = async (
 ): Promise<TimeSequencerData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  // Per-component objective (≠ broad topic). The LLM authors the events + times here
+  // (post-process is only flat→structured), so feeding intent into the prompt is a
+  // genuine Tier-1 scope lever — it moves which events/times the LLM picks. Folded into
+  // the tierSection string so it reaches all five sub-prompts with no signature change.
+  const intent = ctx.intent || topic;
+  const intentSection = ctx.intent
+    ? `\nTHIS ACTIVITY'S SPECIFIC FOCUS: ${intent}\n`
+      + `- Choose the events and times to target that focus (e.g. "telling time to the half hour" `
+      + `→ use times on the hour/half hour; "morning routine" → morning events). Keep times `
+      + `grade-appropriate. Do NOT reveal the correct chronological order in any label.\n`
+    : "";
   const config = ctx.raw as TimeSequencerConfig;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -811,7 +822,7 @@ export const generateTimeSequencer = async (
   const results = await Promise.all(
     allowedTypes
       .filter((t) => GENERATOR_MAP[t])
-      .map((t) => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType, buildTierSection(t))),
+      .map((t) => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType, buildTierSection(t) + intentSection)),
   );
 
   // ── Combine results ──

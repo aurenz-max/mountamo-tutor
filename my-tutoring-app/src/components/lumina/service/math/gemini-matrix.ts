@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -462,6 +463,8 @@ interface BuildContext {
    *  to the pre-tier behavior); 'easy' = floor shape; 'hard' = ceiling shape (grade-clamped).
    *  Changes SHAPE/depth only — number ranges stay bound by rangeForGrade. */
   tier: SupportTier | null;
+  /** Tier-2 entry-value scope cap (narrows the rangeForGrade band only; never dimensions). */
+  scopeCap?: { min: number; max: number } | null;
 }
 
 function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
@@ -473,8 +476,17 @@ function rangeForGrade(gradeBand: BuildContext['gradeBand']): [number, number] {
   }
 }
 
+/** Narrow an entry-value range to the Tier-2 scope cap (entries only; never dimensions).
+ *  Narrow-only; guards against an inverted range (keeps ≥1-wide). */
+function clampEntryRange([min, max]: [number, number], ctx: BuildContext): [number, number] {
+  if (!ctx.scopeCap) return [min, max];
+  const lo = Math.max(min, ctx.scopeCap.min);
+  const hi = Math.min(max, ctx.scopeCap.max);
+  return hi > lo ? [lo, hi] : [min, max];
+}
+
 function buildTransposeChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
-  const [min, max] = rangeForGrade(ctx.gradeBand);
+  const [min, max] = clampEntryRange(rangeForGrade(ctx.gradeBand), ctx);
   // Structural lever (single source of truth = resolveProblemShape): entry count / shape
   // size. Numbers stay in grade range; only the shape grows. tier=null reproduces the
   // prior alternating 2×3 / 3×2 byte-for-byte.
@@ -500,15 +512,15 @@ function buildAddSubtractChallenge(
   operation: 'add' | 'subtract',
   idx: number,
 ): MatrixDisplayChallenge {
-  const [min, max] = rangeForGrade(ctx.gradeBand);
+  const [eMin, eMax] = clampEntryRange(rangeForGrade(ctx.gradeBand), ctx);
   // Structural lever (single source of truth = resolveProblemShape): # of element-wise
   // cells to coordinate. Both operands share the shape; the operation stays position-by-
   // position. tier=null reproduces the prior alternating 2×2 / 2×3 byte-for-byte.
   const shape = resolveProblemShape(operation, ctx.tier, ctx.gradeBand, idx);
   const rows = shape.rows!;
   const cols = shape.cols!;
-  const a = makeMatrix(rows, cols, min, max);
-  const b = makeMatrix(rows, cols, min, max);
+  const a = makeMatrix(rows, cols, eMin, eMax);
+  const b = makeMatrix(rows, cols, eMin, eMax);
   const expectedMatrix = operation === 'add' ? addMatrices(a, b) : subtractMatrices(a, b);
   return {
     id: `matrix-${idx + 1}`,
@@ -528,7 +540,8 @@ function buildAddSubtractChallenge(
 }
 
 function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
-  const [min, max] = ctx.gradeBand === '7-8' ? [1, 6] : ctx.gradeBand === 'algebra2' ? [-6, 6] : rangeForGrade(ctx.gradeBand);
+  const baseRange: [number, number] = ctx.gradeBand === '7-8' ? [1, 6] : ctx.gradeBand === 'algebra2' ? [-6, 6] : rangeForGrade(ctx.gradeBand);
+  const [min, max] = clampEntryRange(baseRange, ctx);
   // Structural lever (single source of truth = resolveProblemShape): dot-product DEPTH =
   // inner dim k. Result is PINNED 2×2 so answer magnitude never grows with the lever; the
   // tightened factor range above keeps depth from smuggling in bigger sums. tier=null
@@ -555,7 +568,7 @@ function buildMultiplyChallenge(ctx: BuildContext, idx: number): MatrixDisplayCh
 }
 
 function buildDeterminantChallenge(ctx: BuildContext, idx: number): MatrixDisplayChallenge {
-  const [min, max] = rangeForGrade(ctx.gradeBand);
+  const [min, max] = clampEntryRange(rangeForGrade(ctx.gradeBand), ctx);
   // Structural lever (single source of truth = resolveProblemShape): determinant ORDER =
   // computation depth (2×2 → two diagonal products; 3×3 → Sarrus, six signed products).
   // Grade ceiling wins inside resolveProblemShape: 7-8 stays 2×2 at EVERY tier (3×3 is out
@@ -649,6 +662,9 @@ export interface SelectMatrixChallengesOptions {
   gradeBand?: '7-8' | 'algebra2' | 'precalculus' | 'advanced';
   /** Structural-difficulty tier (drives per-mode matrix shape/depth). Defaults to null. */
   tier?: SupportTier | null;
+  /** Tier-2 scope cap (from resolveScopeRange): narrow the matrix ENTRY VALUE range to the
+   *  lesson scope. Bounds entries only — never the matrix dimensions (those are structural). */
+  scopeCap?: { min: number; max: number } | null;
 }
 
 function buildChallengeOfType(
@@ -685,7 +701,7 @@ export function selectMatrixChallenges(
       options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
     ),
   );
-  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2', tier: options.tier ?? null };
+  const ctx: BuildContext = { gradeBand: options.gradeBand ?? 'algebra2', tier: options.tier ?? null, scopeCap: options.scopeCap ?? null };
 
   // For bundled modes, interleave the allowed types across the session so every advertised
   // type is surfaced. Shuffle once per session so order varies session-to-session (e.g.
@@ -877,6 +893,19 @@ Return ONLY the wrapper fields described above.
 
   const gradeBand = (wrapper.gradeBand as '7-8' | 'algebra2' | 'precalculus' | 'advanced' | undefined) ?? inferGradeBand(gradeLevel);
 
+  // ── Tier-2: narrow the code-owned matrix ENTRY range to the lesson scope (CLASS-3) ──
+  // Entries are code-picked; intent can't reach them via the prompt. Resolve a {min,max}
+  // from topic+intent (bounds entries only, never dimensions). Ceiling = widest grade band
+  // (-12..12) → narrow-only; null → grade default (no regression). Note: matrix intent
+  // rarely bounds entry magnitude, so this usually no-ops — kept for the cases that do.
+  const scopeCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the numeric entries inside the matrices',
+    { min: -12, max: 12 },
+  );
+  if (scopeCap) console.log(`▦ Matrix entry cap → ${scopeCap.min}..${scopeCap.max} (from intent)`);
+
   // ── Pre-select challenges (local, deterministic-variance) ────────
   //    The structural tier shapes each matrix at build time (grade-clamped per mode);
   //    tier=null reproduces the prior alternating shapes byte-for-byte.
@@ -884,6 +913,7 @@ Return ONLY the wrapper fields described above.
     count: config?.instanceCount,
     gradeBand,
     tier: supportTier,
+    scopeCap,
   });
 
   // ── Within-mode support tier: withdraw on-screen scaffolding (never the numbers).

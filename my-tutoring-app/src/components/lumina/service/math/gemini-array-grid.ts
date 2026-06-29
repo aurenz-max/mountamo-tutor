@@ -15,6 +15,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -243,8 +244,19 @@ function dimensionRangeFor(
 function selectDimensionPairs(
   type: ArrayGridChallengeType,
   count: number,
+  /** Tier-2 scope cap (from resolveScopeRange). Narrows the per-mode dimension band
+   *  to the lesson's scope; absent → the mode's grade-band default stands. */
+  cap?: { min: number; max: number },
 ): DimensionPair[] {
-  const { rowMin, rowMax, colMin, colMax } = dimensionRangeFor(type);
+  let { rowMin, rowMax, colMin, colMax } = dimensionRangeFor(type);
+  if (cap) {
+    // Narrow ONLY — never widen past the mode's grade band. max caps the top,
+    // min lifts the floor (clamped under the capped max so the range stays valid).
+    rowMax = Math.min(rowMax, cap.max);
+    colMax = Math.min(colMax, cap.max);
+    rowMin = Math.min(Math.max(rowMin, cap.min), rowMax);
+    colMin = Math.min(Math.max(colMin, cap.min), colMax);
+  }
   const pairs: DimensionPair[] = [];
   const seen = new Set<string>();
   const maxAttempts = count * 12;
@@ -279,8 +291,9 @@ function selectDimensionPairs(
 function buildChallenges(
   type: ArrayGridChallengeType,
   count: number,
+  cap?: { min: number; max: number },
 ): ArrayGridChallenge[] {
-  const pairs = selectDimensionPairs(type, count);
+  const pairs = selectDimensionPairs(type, count, cap);
   return pairs.map((pair, idx) => ({
     id: `array-grid-${idx + 1}`,
     targetRows: pair.rows,
@@ -400,7 +413,22 @@ Return ONLY the wrapper metadata in the response schema.
     (evalConstraint?.allowedTypes[0] as ArrayGridChallengeType) ||
     'build_array';
 
-  const challenges = buildChallenges(challengeType, instanceCount);
+  // ── Tier-2: narrow the code-owned dimension band to the lesson scope (CLASS-3) ──
+  // The dimensions are code-picked for variety, so intent can't reach them via the
+  // prompt. Resolve a {min,max} cap from topic+intent and clamp the band. Gated inside
+  // resolveScopeRange on scope carrying intent/objective; null → grade-band default
+  // (no regression). Ceiling = the component button caps (2..8) so it can only narrow.
+  const scopeCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the array dimensions (the rows and columns, i.e. the multiplication facts practiced)',
+    { min: 2, max: Math.max(ROW_BUTTON_CAP, COL_BUTTON_CAP) },
+  );
+  if (scopeCap) {
+    console.log(`⊞ Array Grid scope cap → ${scopeCap.min}..${scopeCap.max} (from intent)`);
+  }
+
+  const challenges = buildChallenges(challengeType, instanceCount, scopeCap ?? undefined);
 
   const iconType: ArrayGridIconType =
     (config?.iconType as ArrayGridIconType) ||

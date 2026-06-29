@@ -2,6 +2,8 @@ import { Type, Schema } from "@google/genai";
 import { ShapeTracerData, ShapeTracerChallenge } from "../../primitives/visual-primitives/math/ShapeTracer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
+import type { PedagogicalScope } from "../scopeContext";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -514,6 +516,7 @@ async function generateSetup(
   gradeLevel: string,
   config?: ShapeTracerConfig,
   evalConstraint?: EvalModeConstraint | null,
+  scope?: PedagogicalScope,
 ): Promise<SetupResult> {
   const challengeTypeSection = buildChallengeTypePromptSection(
     evalConstraint ?? null,
@@ -524,9 +527,14 @@ async function generateSetup(
     ? constrainSetupPlanEnum(setupSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
     : setupSchema;
 
+  // The setup call is where each challenge's targetShape is chosen, so the
+  // authoritative scope (topic + objective + intent) must bind HERE — wiring it
+  // into the per-challenge prompts would be too late. scope-context-contract wire.
+  const scopeSection = scope ? buildScopePromptSection(scope) : "";
+
   const prompt = `
 Create a plan for a shape tracing activity teaching "${topic}" to ${gradeLevel} students.
-
+${scopeSection}
 ${challengeTypeSection}
 
 GUIDELINES:
@@ -1013,8 +1021,8 @@ export const generateShapeTracer = async (
   // The STUDENT's tier — DRIVES application (single OR blended session).
   const supportTier = normalizeSupportTier(config?.difficulty);
 
-  // Step 1: Setup call (lightweight, with eval mode constraint)
-  const setup = await generateSetup(topic, gradeLevel, config, evalConstraint);
+  // Step 1: Setup call (lightweight, with eval mode constraint + authoritative scope)
+  const setup = await generateSetup(topic, gradeLevel, config, evalConstraint, ctx.scope);
 
   // Step 2: Parallel challenge calls (one per plan entry, focused schemas).
   // The tier tunes only the prompt TONE per challenge; the show* scaffolds are

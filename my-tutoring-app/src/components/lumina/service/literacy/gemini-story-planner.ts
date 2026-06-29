@@ -87,6 +87,7 @@ export const generateStoryPlanner = async (
   ctx: GenerationContext,
 ): Promise<StoryPlannerData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as StoryPlannerConfig;
   // ── Eval mode resolution (legacy literacy pattern: explicit pin only) ──
@@ -122,6 +123,7 @@ export const generateStoryPlanner = async (
   };
 
   const prompt = `Create a narrative story planning activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (sentences, paragraphs, prompts, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['3']}
 ${challengeTypeSection}

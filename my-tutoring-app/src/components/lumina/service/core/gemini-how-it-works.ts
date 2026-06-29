@@ -12,6 +12,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import { HowItWorksData } from '../../primitives/visual-primitives/core/HowItWorks';
 import {
   resolveEvalModeConstraint,
@@ -384,9 +385,12 @@ export const generateHowItWorks = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  const scopeSection = buildScopePromptSection(ctx.scope);
+
   const prompt = `You are a curriculum expert creating an interactive step-by-step process breakdown.
 
 TOPIC / PROCESS: ${topic}
+${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ## Your Mission:

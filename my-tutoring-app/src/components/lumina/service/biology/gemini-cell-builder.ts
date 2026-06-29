@@ -186,6 +186,19 @@ export const generateCellBuilder = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '4-5';
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS activity.
+  // The cell (topic) stays fixed; intent biases which organelles/functions get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This activity is being used to teach: "${intent}".
+Keep every organelle, zone, and function scientifically accurate and complete, but lead with
+and expand the organelles and reasoning most relevant to this focus (e.g. an energy focus
+means richer mitochondria content; a photosynthesis focus means richer chloroplast content).
+Do not state or reveal the answer to any challenge or question the student will be asked.`
+    : "";
+
   const gradeContext = {
     '4-5': `
 GRADE 4-5 GUIDELINES:
@@ -289,6 +302,7 @@ COMMON DISTRACTOR PAIRINGS:
 - Plant cell distractors: centrioles, lysosomes (fewer in plants)
 - Prokaryotic cell distractors: nucleus, mitochondria, ER, Golgi (no membrane-bound organelles!)
 - Fungal cell distractors: chloroplasts, centrioles
+${intentFocus}
 
 Now generate the activity for "${topic}" at grade level ${gradeBand}.`;
 

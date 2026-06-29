@@ -239,6 +239,17 @@ export const generateSpeciesProfile = async (
   // Extract species name from config or topic (derivation moved from the handler)
   const speciesName = (ctx.raw as { speciesName?: string }).speciesName || ctx.topic;
   const gradeLevel = ctx.gradeContext;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The species (topic) stays fixed; intent biases which facets get the spotlight.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: This profile is being used to teach: "${intent}".
+Keep every section scientifically accurate and complete, but lead with and expand the
+facts, adaptations, and details most relevant to this focus (e.g. a diet focus means
+richer diet/hunting content; a habitat focus means richer habitat/niche content).`
+    : "";
   const educationalContext = `
 Educational Context: This is for ${gradeLevel} students.
 - Use age-appropriate vocabulary and explanations
@@ -294,6 +305,7 @@ REQUIREMENTS:
    - Be specific about pose, lighting, and setting
 
 9. **Category**: Choose the most appropriate category for styling
+${intentFocus}
 
 ${educationalContext}
 

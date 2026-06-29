@@ -83,6 +83,7 @@ const OBJECT_LIBRARY: Record<VibrationSource, VibrationObject> = {
 };
 
 /** Pick contrasting objects by grade — low+high pitch pair, expanding set for higher grades */
+// TODO: intent steers prompt text only; the object set is code-picked here (Tier-2).
 function objectsForGrade(grade: string): VibrationObject[] {
   switch (grade) {
     case 'K':  return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.bell];
@@ -197,6 +198,13 @@ export const generateSoundWaveExplorer = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SoundWaveExplorerConfig;
+  // Per-primitive intent: the broad subject is the topic, but THIS activity targets a
+  // specific objective. Intent steers the LLM-authored text (title/description/challenge
+  // wording); the object set itself stays code-picked (see TODO at objectsForGrade).
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `\nThis activity must specifically target: "${intent}". Foreground that objective in the title, description, and challenge wording. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1') as
     'K' | '1' | '2' | '3';
   const validGrades = ['K', '1', '2', '3'];
@@ -229,7 +237,7 @@ export const generateSoundWaveExplorer = async (
   const prompt = `
 Create a Sound Wave Exploration Lab activity for Grade ${finalGrade} students.
 
-Topic: ${topic}
+Topic: ${topic}${intentFocus}
 Grade Guidance: ${gradeConfig.guidance}
 
 Available objects: ${objectNames}

@@ -59,6 +59,7 @@ export const generateSpellingPatternExplorer = async (
   ctx: GenerationContext,
 ): Promise<SpellingPatternExplorerData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SpellingPatternExplorerConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
@@ -103,6 +104,7 @@ export const generateSpellingPatternExplorer = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `Create a spelling pattern exploration activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}. PATTERN TYPE: ${selectedPattern}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['3']}
 ${challengeTypeSection}

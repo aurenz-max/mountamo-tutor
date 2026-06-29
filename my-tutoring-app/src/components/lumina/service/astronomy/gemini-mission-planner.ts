@@ -251,6 +251,14 @@ export const generateMissionPlanner = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MissionPlannerData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, learningFocus, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Mission Planner visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -356,6 +364,7 @@ ${config.crewed !== undefined ? `- Crewed: ${config.crewed}` : ''}
 ${config.showLaunchWindows !== undefined ? `- Show launch windows: ${config.showLaunchWindows}` : ''}
 ${config.gravityAssistOption !== undefined ? `- Gravity assist: ${config.gravityAssistOption}` : ''}
 ` : ''}
+${intentFocus}
 
 Return a complete Mission Planner configuration appropriate for the grade level and topic.
 `;
@@ -407,6 +416,7 @@ Return a complete Mission Planner configuration appropriate for the grade level 
   }));
 
   // Feature toggles by grade
+  // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.showTrajectory === undefined) data.showTrajectory = gradeLevel !== 'K';
   if (data.supplyCalculator === undefined) data.supplyCalculator = gradeLevel >= '2';
   if (data.showLaunchWindows === undefined) data.showLaunchWindows = gradeLevel >= '3';

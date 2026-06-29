@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -385,9 +386,26 @@ function shoelace(vs: PolygonVertex[]): number {
 
 type RawChallenge = Omit<PolygonAreaChallenge, 'id'>;
 
+// ── Tier-2 dimension scope cap (CLASS-3) ───────────────────────────────────
+// The builders pick side lengths in CODE (for variety), so intent can't reach them via
+// the prompt. The select functions run SYNCHRONOUSLY, so a module-scoped cap set around
+// the selection is reentrancy-safe (no await between set and the builders reading it).
+// Post-validation (recomputeArea) re-derives every answer, so a clamp is always correct;
+// at most a structural variant degrades gracefully (still a valid figure). null → no cap.
+let activeDimCap: { min: number; max: number } | null = null;
+
+/** Narrow a [lo,hi] dimension range to the active cap, NEVER below the figure's structural
+ *  floor `lo` (so a too-tight cap yields the smallest feasible figure, not an impossible one). */
+function capDims(lo: number, hi: number): [number, number] {
+  if (!activeDimCap) return [lo, hi];
+  const hiC = Math.min(hi, Math.max(lo, activeDimCap.max));
+  const loC = Math.min(Math.max(lo, activeDimCap.min), hiC);
+  return [loC, hiC];
+}
+
 function buildDecompose(): RawChallenge {
-  const base = randInt(5, 12);
-  const height = randInt(3, 9);
+  const base = randInt(...capDims(5, 12));
+  const height = randInt(...capDims(3, 9));
   const skew = randInt(1, Math.min(base - 1, 4));
   const unitLabel = pick(UNIT_POOL);
   return {
@@ -403,8 +421,8 @@ function buildDecompose(): RawChallenge {
 }
 
 function buildTriangleFA(): RawChallenge {
-  let base = randInt(4, 16);
-  let height = randInt(3, 12);
+  let base = randInt(...capDims(4, 16));
+  let height = randInt(...capDims(3, 12));
   if ((base * height) % 2 !== 0) {
     // make the product even so ½·b·h is an integer
     if (height < 12) height += 1; else base += 1;
@@ -424,8 +442,8 @@ function buildTriangleFA(): RawChallenge {
 }
 
 function buildParallelogramFA(): RawChallenge {
-  const base = randInt(4, 14);
-  const height = randInt(3, 10);
+  const base = randInt(...capDims(4, 14));
+  const height = randInt(...capDims(3, 10));
   const skew = randInt(1, 4);
   const unitLabel = pick(UNIT_POOL);
   return {
@@ -441,15 +459,19 @@ function buildParallelogramFA(): RawChallenge {
 }
 
 function buildTrapezoid(variant: TrapezoidVariant = 'isosceles'): RawChallenge {
-  const base2 = randInt(2, 8);                 // top base
+  const base2 = randInt(...capDims(2, 8));     // top base
   // `extra` = base − base2 (must be ≥ 1 so the top base is genuinely shorter).
   // For isosceles, keep `extra` EVEN so the centered topOffset = extra/2 is an
   // integer; right/scalene place the offset at an integer directly, so any
   // extra ≥ 1 is fine there. Area = ½·(base+base2)·height is independent of the
   // offset; we keep (base+base2)·height even so the area stays an integer.
-  const extra = variant === 'isosceles' ? 2 * randInt(1, 4) : randInt(1, 8);
+  // Bound `extra` so the bottom base (base2+extra) also respects the scope cap.
+  const extraCeil = activeDimCap ? Math.max(1, activeDimCap.max - base2) : 8;
+  const extra = variant === 'isosceles'
+    ? 2 * randInt(1, Math.max(1, Math.min(4, Math.floor(extraCeil / 2))))
+    : randInt(1, Math.max(1, Math.min(8, extraCeil)));
   const base = base2 + extra;                  // bottom base
-  let height = randInt(3, 10);
+  let height = randInt(...capDims(3, 10));
   if (((base + base2) * height) % 2 !== 0) {
     // make (b1+b2)·h even so ½·(b1+b2)·h is an integer
     height = height + 1 <= 10 ? height + 1 : height - 1;
@@ -497,7 +519,7 @@ function buildComposite(pieceCount = 2): RawChallenge {
     // rectangles stacked on top (a T / plateau outline). Per-piece bands are
     // TIGHTENED vs the 2-piece case so total area does NOT grow with the part
     // count (magnitude held — only the # of decompose-and-sum steps rises).
-    const W = randInt(5, 8);          // base width (tightened from 5-10)
+    const W = randInt(...capDims(5, 8));          // base width (tightened from 5-10)
     const h1 = randInt(2, 3);         // base height (tightened from 2-5)
     const wL = randInt(2, Math.max(2, W - 2)); // left top piece width
     const hL = randInt(2, 3);
@@ -516,7 +538,7 @@ function buildComposite(pieceCount = 2): RawChallenge {
       ];
     }
   } else {
-    const W = randInt(5, 10);      // bottom rectangle width
+    const W = randInt(...capDims(5, 10));      // bottom rectangle width
     const h1 = randInt(2, 5);      // bottom rectangle height
     const w2 = randInt(2, W - 1);  // top rectangle width (narrower → makes an L)
     const h2 = randInt(2, 5);      // top rectangle height
@@ -549,8 +571,8 @@ function buildCoordinate(variant: CoordinateVariant): RawChallenge {
   let vertices: PolygonVertex[];
   let expectedArea: number;
   if (variant === 'rectangle') {
-    const w = randInt(3, 8);
-    const h = randInt(2, 6);
+    const w = randInt(...capDims(3, 8));
+    const h = randInt(...capDims(2, 6));
     vertices = [
       { x: x0, y: y0 },
       { x: x0 + w, y: y0 },
@@ -564,7 +586,7 @@ function buildCoordinate(variant: CoordinateVariant): RawChallenge {
     // one side — a rectilinear L, so the shoelace area is ALWAYS an integer
     // (= W·hB + wC·hC). Coordinate range is held in the existing small band so
     // adding vertices does NOT grow magnitude.
-    const W = randInt(4, 7);          // overall base width
+    const W = randInt(...capDims(4, 7));          // overall base width
     const hB = randInt(2, 3);         // base strip height
     const wC = randInt(2, Math.max(2, W - 2)); // column width (< W → makes the notch)
     const hC = randInt(2, 4);         // column extra height above the base
@@ -589,8 +611,8 @@ function buildCoordinate(variant: CoordinateVariant): RawChallenge {
         ];
     expectedArea = W * hB + wC * hC;
   } else {
-    let a = randInt(3, 8);   // horizontal leg
-    let b = randInt(2, 7);   // vertical leg
+    let a = randInt(...capDims(3, 8));   // horizontal leg
+    let b = randInt(...capDims(2, 7));   // vertical leg
     if ((a * b) % 2 !== 0) { if (b < 7) b += 1; else a += 1; } // even product → integer area
     vertices = [
       { x: x0, y: y0 },
@@ -981,14 +1003,29 @@ Return ONLY the wrapper fields described above.
       : (evalConstraint?.allowedTypes[0] as PolygonAreaChallengeType) ?? 'find_area_triangle_parallelogram';
   if (!validTypes.includes(challengeType)) challengeType = 'find_area_triangle_parallelogram';
 
+  // ── Tier-2: narrow the code-owned side-length band to the lesson scope (CLASS-3) ──
+  // Dimensions are code-picked for variety; intent can't reach them via the prompt. Resolve
+  // a {min,max} for the side lengths from topic+intent. Ceiling = widest builder span (2..16)
+  // → narrow-only; null → grade default. Post-validation recomputes area, so correct always.
+  const dimCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the polygon side lengths (base, height, and vertex spans)',
+    { min: 2, max: 16 },
+  );
+  if (dimCap) console.log(`▱ Polygon Area dimension cap → ${dimCap.min}..${dimCap.max} (from intent)`);
+
   // ── Build the per-challenge pool locally ──
   // Axis 2: pass supportTier so the constructive builders make the structurally
   // HARDER shape per tier (trapezoid asymmetry / composite piece-count /
   // coordinate vertex-count / triangle bias). supportTier is null when
-  // config.difficulty is absent → byte-identical legacy figures.
+  // config.difficulty is absent → byte-identical legacy figures. activeDimCap is read by
+  // the builders' capDims; set it across the SYNCHRONOUS selection only, then clear it.
+  activeDimCap = dimCap;
   const challenges = isMixed
     ? selectMixedPolygonAreaChallenges(config?.instanceCount, supportTier)
     : selectPolygonAreaChallenges(challengeType, config?.instanceCount, supportTier);
+  activeDimCap = null;
 
   // ── Post-validation: every expectedArea must match its geometry ──
   for (const ch of challenges) {

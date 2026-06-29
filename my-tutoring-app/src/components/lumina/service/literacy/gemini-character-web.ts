@@ -142,6 +142,7 @@ export const generateCharacterWeb = async (
   ctx: GenerationContext,
 ): Promise<CharacterWebData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config: CharacterWebConfig = { ...(ctx.raw as CharacterWebConfig), intent: ctx.intent };
 
@@ -178,7 +179,7 @@ export const generateCharacterWeb = async (
   );
 
   const prompt = `Create a character analysis activity about: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 ${!evalConstraint ? `\n${gradeNotes[gradeLevelKey] || gradeNotes['4']}\n` : ''}
 ${challengeTypeSection}

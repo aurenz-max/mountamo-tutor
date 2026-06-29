@@ -417,6 +417,12 @@ export const generateComparisonBuilder = async (
 ): Promise<ComparisonBuilderData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  // The per-component objective the manifest assigned to THIS instance (≠ the
+  // broad topic). The LLM authors the actual numbers here (code only clamps to the
+  // grade band + recomputes the answer), so feeding intent into the prompt is a
+  // genuine Tier-1 scope lever — it moves which numbers/groups the LLM picks within
+  // the band, not just title/description flavor. See /topic-fidelity triage.
+  const intent = ctx.intent || topic;
   const config = ctx.raw as ComparisonBuilderConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -460,6 +466,12 @@ export const generateComparisonBuilder = async (
 
   const prompt = `
 Create an educational comparison activity for teaching "${topic}" to ${gradeLevel} students.
+
+THIS ACTIVITY'S SPECIFIC FOCUS: ${intent}
+Choose the numbers and group counts so the activity targets that focus (e.g. a focus on
+"teen numbers" → numbers in the 11-20 range; "numbers near each other" → close values).
+Stay within the grade band below — the grade is the CEILING and is never exceeded. Do NOT
+name or hint at any answer (more/less/=, the sorted order) in the instruction text.
 
 CONTEXT:
 - A comparison builder helps students learn to compare quantities and use inequality symbols (<, >, =)

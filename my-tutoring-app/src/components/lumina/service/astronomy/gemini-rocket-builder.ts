@@ -180,6 +180,14 @@ export const generateRocketBuilder = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<RocketBuilderData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, learningFocus, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Rocket Builder configuration for teaching "${topic}" to ${gradeLevel} students.
 
@@ -357,6 +365,7 @@ VALIDATION REQUIREMENTS:
 6. For 3-5: Include variety and cost for budget challenges
 7. hints array must have 3-5 progressive hints appropriate for grade level
 8. learningFocus must explain what students should discover (2-3 sentences)
+${intentFocus}
 
 Return a complete Rocket Builder configuration appropriate for the grade level and topic.
 `;
@@ -444,6 +453,7 @@ Return a complete Rocket Builder configuration appropriate for the grade level a
   }
 
   // Set sensible defaults
+  // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.maxStages === undefined) data.maxStages = 2;
   if (data.targetAltitudeKm === undefined) data.targetAltitudeKm = 100;
   if (data.simulationSpeed === undefined) data.simulationSpeed = 50;

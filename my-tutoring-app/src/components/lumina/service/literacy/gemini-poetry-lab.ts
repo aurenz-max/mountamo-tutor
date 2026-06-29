@@ -79,6 +79,7 @@ export const generatePoetryLab = async (
   ctx: GenerationContext,
 ): Promise<PoetryLabData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PoetryLabConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
@@ -128,6 +129,7 @@ export const generatePoetryLab = async (
   };
 
   const prompt = `Create a poetry ${requestedMode} activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}. MODE: ${requestedMode}.
 ${requestedMode === 'analysis' ? gradeNotes[gradeLevelKey] : compositionNotes[gradeLevelKey]}
 

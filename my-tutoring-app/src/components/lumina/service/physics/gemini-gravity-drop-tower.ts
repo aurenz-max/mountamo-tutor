@@ -148,6 +148,7 @@ interface ObjectTemplate {
   dragCoeff: number;
 }
 
+// TODO: intent steers prompt text only; object/value library is code-picked (Tier-2).
 const OBJECT_LIBRARY: ObjectTemplate[] = [
   { name: 'Marble',       emoji: '🔮', mass: 0.01,  dragCoeff: 0.1 },
   { name: 'Tennis Ball',   emoji: '🎾', mass: 0.06,  dragCoeff: 0.5 },
@@ -329,6 +330,17 @@ export const generateGravityDropTower = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as GravityDropTowerConfig;
+  // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
+  // Steers the authored title/description/instruction/question wording only — the
+  // objects and grade-config numbers are code-picked (see OBJECT_LIBRARY / GRADE_CONFIGS).
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specifically target "${intent}".
+Foreground this focus in the title, description, and each challenge's instruction/question wording.
+Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   // Parse grade
   const gradeMatch = gradeLevel.match(/grade\s*(\d+|K)/i)?.[1]?.toUpperCase() || '3';
   const validGrades = Object.keys(GRADE_CONFIGS);
@@ -379,7 +391,8 @@ This is the #1 misconception — most students (and adults!) think heavier = fas
 WITH air resistance, shape/drag coefficient matters — a feather floats, a rock plummets.
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${intentFocus}
+
 Available objects (use EXACT names for obj0Name / obj1Name):
 - Marble (0.01kg, low drag), Tennis Ball (0.06kg, medium drag)
 - Baseball (0.15kg, medium drag), Brick (2kg, low drag)

@@ -169,6 +169,7 @@ const dayNightSeasonsResponseSchema: Schema = {
 // GRADE-APPROPRIATE CONFIGURATION
 // ============================================================================
 
+// TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
 const GRADE_CONFIGURATIONS: Record<string, Partial<DayNightSeasonsData>> = {
   K: {
     focusMode: 'day-night',
@@ -257,6 +258,14 @@ export const generateDayNightSeasons = async (
   const { topic } = ctx;
   const gradeContext = ctx.gradeContext;
   const config = ctx.raw as Partial<DayNightSeasonsData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and every learning objective/question foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const gradeLevel = config?.gradeLevel || (gradeContext.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as 'K' | '1' | '2' | '3' | '4' | '5';
   const gradeConfig = GRADE_CONFIGURATIONS[gradeLevel] || GRADE_CONFIGURATIONS['3'];
 
@@ -361,6 +370,7 @@ ${focusMode === 'seasons' ? '- What causes seasons? (emphasize TILT, not distanc
 ${focusMode === 'both' ? '- Both day/night and seasonal concepts' : ''}
 ${gradeLevel === '3' || gradeLevel === '4' || gradeLevel === '5' ? '- Common misconceptions (distance vs tilt)' : ''}
 ${gradeLevel === '4' || gradeLevel === '5' ? '- Hemisphere differences, equinox/solstice, latitude effects' : ''}
+${intentFocus}
 
 Generate a complete, educationally sound activity configuration.
 `;

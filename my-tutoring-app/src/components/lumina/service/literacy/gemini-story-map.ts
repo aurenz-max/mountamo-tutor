@@ -254,6 +254,7 @@ export const generateStoryMap = async (
   ctx: GenerationContext,
 ): Promise<StoryMapData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as StoryMapConfig;
 
@@ -336,7 +337,7 @@ GRADE 4-6 GUIDELINES:
     gradeNum <= 1 ? "low" : gradeNum <= 3 ? "mid" : "high";
 
   const generationPrompt = `Create an educational story map activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
 STRUCTURE TYPE: ${structureType}
 

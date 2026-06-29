@@ -137,6 +137,7 @@ export const generateParagraphArchitect = async (
   ctx: GenerationContext,
 ): Promise<ParagraphArchitectData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ParagraphArchitectConfig;
 
@@ -265,7 +266,7 @@ GRADE 6 GUIDELINES:
   const paragraphTypeDescription = paragraphTypeDescriptions[targetParagraphType] || paragraphTypeDescriptions.informational;
 
   const generationPrompt = `Create a scaffolded paragraph writing activity for: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (sentences, paragraphs, prompts, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
 PARAGRAPH TYPE: ${paragraphTypeDescription}
 

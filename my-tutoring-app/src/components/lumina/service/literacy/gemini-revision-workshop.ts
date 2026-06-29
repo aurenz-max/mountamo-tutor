@@ -72,6 +72,7 @@ export const generateRevisionWorkshop = async (
   ctx: GenerationContext,
 ): Promise<RevisionWorkshopData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RevisionWorkshopConfig;
   const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
@@ -137,6 +138,7 @@ Rules:
 5. idealRevision shows the model answer`;
 
   const prompt = `Create a revision workshop activity about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (sentences, paragraphs, prompts, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}. SKILL: ${selectedSkill}.
 ${!evalConstraint ? (gradeNotes[gradeLevelKey] || gradeNotes['4']) : ''}
 

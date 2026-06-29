@@ -200,6 +200,14 @@ export const generateTelescopeSimulator = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<TelescopeSimulatorData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, learningFocus, hints, and any target/question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Telescope Simulator experience for teaching "${topic}" to ${gradeLevel} students.
 
@@ -323,6 +331,7 @@ ${config.focusMode ? `- Focus mode: ${config.focusMode}` : ''}
 ${config.journalMode !== undefined ? `- Journal: ${config.journalMode}` : ''}
 ${config.targetObjects ? `- Target objects: ${config.targetObjects.join(', ')}` : ''}
 ` : ''}
+${intentFocus}
 
 Return a complete Telescope Simulator configuration appropriate for the grade level and topic.
 REMEMBER: Venus MUST be included in celestialObjects and targetObjects!
@@ -401,6 +410,7 @@ REMEMBER: Venus MUST be included in celestialObjects and targetObjects!
   }));
 
   // Feature defaults by grade
+  // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.starFieldSeed === undefined) data.starFieldSeed = Math.floor(Math.random() * 10000);
   if (data.starCount === undefined) {
     data.starCount = gradeLevel === 'K' ? 200 : gradeLevel <= '2' ? 300 : gradeLevel <= '4' ? 400 : 500;

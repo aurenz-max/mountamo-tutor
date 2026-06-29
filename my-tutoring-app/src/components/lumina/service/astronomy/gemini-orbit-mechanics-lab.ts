@@ -250,6 +250,14 @@ export const generateOrbitMechanicsLab = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<OrbitMechanicsLabData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, challenge description, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Orbit Mechanics Lab visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -486,6 +494,7 @@ K: "The Moon is always orbiting around Earth, just like your rocket!"
 3: "Planets orbit the Sun in elliptical (stretched) orbits, not perfect circles!"
 4: "Astronauts on the ISS feel weightless because they're constantly falling around Earth!"
 5: "To reach Mars, spacecraft use a Hohmann transfer orbit that takes about 9 months!"
+${intentFocus}
 
 Return a complete Orbit Mechanics Lab configuration appropriate for the grade level and topic.
 `;
@@ -535,6 +544,7 @@ Return a complete Orbit Mechanics Lab configuration appropriate for the grade le
   }
 
   // Display options
+  // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.showOrbitPath === undefined) data.showOrbitPath = true;
   if (data.showVelocityVector === undefined) data.showVelocityVector = gradeLevel !== 'K' && gradeLevel !== '1';
   if (data.showApogeePerigee === undefined) data.showApogeePerigee = gradeLevel !== 'K' && gradeLevel !== '1';

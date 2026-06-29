@@ -309,6 +309,7 @@ export const generateSentenceBuilder = async (
   ctx: GenerationContext,
 ): Promise<SentenceBuilderData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SentenceBuilderConfig;
 
@@ -437,7 +438,7 @@ GRADE 6 GUIDELINES:
     : '';
 
   const generationPrompt = `Create an interactive sentence builder activity for: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (sentences, paragraphs, prompts, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${!evalConstraint ? (gradeContext[gradeLevelKey] || gradeContext['2']) : ''}

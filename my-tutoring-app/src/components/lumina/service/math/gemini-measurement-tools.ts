@@ -5,6 +5,7 @@ import {
 } from "../../primitives/visual-primitives/math/MeasurementTools";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -232,13 +233,23 @@ const selectMeasurementChallenges = (
   mode: ChallengeType,
   count: number,
   gradeBandHint?: 'K-2' | '3-5',
+  /** Tier-2 scope cap (from resolveScopeRange): narrow the width pool to the lesson's
+   *  range (inches). Applied only when ≥2 candidates survive, else the mode pool stands. */
+  cap?: { min: number; max: number } | null,
 ): MeasurementToolsChallenge[] => {
   const target = Math.min(Math.max(count, 3), MAX_INSTANCE_COUNT);
   const config = poolConfigFor(mode, gradeBandHint);
+  if (cap) {
+    const narrowed = config.widthCandidates.filter((w) => w >= cap.min && w <= cap.max);
+    if (narrowed.length >= 2) config.widthCandidates = narrowed;
+  }
 
   let widths = pickDistinctWidths(config.widthCandidates, target);
-  // Fallback: if pool was too small, repeat the smallest with offset (rare).
-  if (widths.length < target) {
+  // Fallback: if pool was too small, repeat the smallest with offset (rare). SKIP this
+  // when a scope cap is active — the offset fabricates widths OUTSIDE the capped range
+  // (e.g. a "1–3 inch" cap would otherwise leak a 6). With a cap, the narrowed pool is
+  // the whole truth: a tightly-scoped lesson simply has fewer distinct widths.
+  if (widths.length < target && !cap) {
     const extra = widths.length === 0 ? config.precisionStep : widths[widths.length - 1];
     while (widths.length < target) {
       widths.push(extra + config.precisionStep * widths.length);
@@ -462,7 +473,18 @@ Return only the session wrapper.
     Math.max(config?.instanceCount ?? DEFAULT_INSTANCE_COUNT, 3),
     MAX_INSTANCE_COUNT,
   );
-  const challenges = selectMeasurementChallenges(challengeType, instanceCount, gradeBand);
+  // ── Tier-2: narrow the code-owned width pool to the lesson scope (CLASS-3) ──
+  // Widths are code-picked for variety; intent can't reach them via the prompt. Resolve
+  // a {min,max} (inches) from topic+intent and filter the pool. Ceiling = widest band
+  // (1..10in) → narrow-only; null → grade-band default (no regression).
+  const scopeCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the shape widths to measure, in inches',
+    { min: 1, max: 10 },
+  );
+  if (scopeCap) console.log(`📏 Measurement Tools scope cap → ${scopeCap.min}..${scopeCap.max}in (from intent)`);
+  const challenges = selectMeasurementChallenges(challengeType, instanceCount, gradeBand, scopeCap);
 
   // Ruler length: large enough for the widest shape plus headroom.
   const maxWidth = Math.max(...challenges.map((c) => c.widthInches));

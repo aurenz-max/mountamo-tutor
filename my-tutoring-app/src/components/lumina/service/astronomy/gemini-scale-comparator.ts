@@ -180,6 +180,7 @@ const scaleComparatorResponseSchema: Schema = {
 // HELPER FUNCTIONS
 // ============================================================================
 
+// TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
 function getGradeConfig(gradeLevel: string): {
   compareType: 'size' | 'distance' | 'mass' | 'time';
   objectCount: { min: number; max: number };
@@ -286,6 +287,15 @@ export const generateScaleComparator = async (
   const config = ctx.raw as Partial<ScaleComparatorData>;
   const gradeConfig = getGradeConfig(gradeLevel);
 
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS comparison must specifically target: "${intent}". Make the title, description, and every object's description/funFact foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
+
   // Build the prompt for Gemini to generate appropriate objects
   const prompt = `
 You are an astronomy education expert creating a scale comparison activity for ${gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`} students.
@@ -354,6 +364,7 @@ Choose the most appropriate scope based on the topic. For example:
 ${Object.values(REFERENCE_DATA).map(r => `- ${r.id}: ${r.name} (${r.size || r.length}m)`).join('\n')}
 
 Choose 3-5 reference objects that make sense for the scale of comparison.
+${intentFocus}
 
 Generate an engaging comparison that will help students understand the incredible scales of the universe!
 `.trim();

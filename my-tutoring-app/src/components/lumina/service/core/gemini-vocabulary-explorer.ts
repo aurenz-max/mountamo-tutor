@@ -10,6 +10,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from "../scopeContext";
 import { VocabularyExplorerData } from '../../primitives/visual-primitives/core/VocabularyExplorer';
 import {
   resolveEvalModeConstraint,
@@ -435,9 +436,12 @@ export const generateVocabularyExplorer = async (
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
+  const scopeSection = buildScopePromptSection(ctx.scope);
+
   const prompt = `You are a vocabulary curriculum expert creating an engaging Vocabulary Explorer.
 
 TOPIC: ${topic}
+${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
 
 ## Your Mission:

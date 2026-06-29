@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -276,6 +277,13 @@ export interface SelectRootValuesOptions {
    * the SAME pool. null/absent → no bias (no-tier path is byte-identical to before).
    */
   splitDepthBias?: 'low' | 'high' | null;
+  /**
+   * Tier-2 scope cap (from resolveScopeRange): narrow the candidate composites to the
+   * lesson's range, e.g. "factor numbers within 50" → max 50. Applied ONLY when the
+   * narrowed pool still has enough composites to fill the session AND keep an odd
+   * available — otherwise the full pool stands (correctness/variance win over scope).
+   */
+  scopeCap?: { min: number; max: number } | null;
 }
 
 /**
@@ -296,7 +304,22 @@ export function selectFactorTreeRootValues(
       options.count ?? modeCount ?? DEFAULT_INSTANCE_COUNT,
     ),
   );
-  const pool = CANDIDATE_POOLS[challengeType] ?? CANDIDATE_POOLS.guided_small;
+  const fullPool = CANDIDATE_POOLS[challengeType] ?? CANDIDATE_POOLS.guided_small;
+  // Tier-2 scope narrowing: keep only composites inside the lesson's range — but ONLY
+  // if the narrowed set can still fill the session AND retains an odd composite (the
+  // pools are hand-picked composites; a too-tight cap could leave primes-only/too-few or
+  // kill the odd-inclusion guarantee). If it can't, the full pool stands (no regression).
+  let pool = fullPool;
+  if (options.scopeCap) {
+    const { min, max } = options.scopeCap;
+    const narrowed = fullPool.filter((n) => n >= min && n <= max);
+    // Adopt the narrowed pool as long as it can still fill the session with distinct
+    // composites. Scope-honoring (pedagogy #1: stay in the lesson's range) wins over the
+    // odd-inclusion VARIANCE nicety — the downstream odd guarantee degrades gracefully to
+    // all-even when no odd composite is in range (still valid factor trees). Pool entries
+    // are all composite, so correctness is preserved regardless.
+    if (narrowed.length >= Math.min(target, 3)) pool = narrowed;
+  }
 
   // Structural axis: restrict the candidate subset by split depth before shuffling.
   // The subset stays generous (≥ target + 1, ~55% of the pool) so the variance and
@@ -534,6 +557,18 @@ Return ONLY the wrapper fields described above.
     }
   }
 
+  // ── Tier-2: narrow the code-owned composite pool to the lesson scope (CLASS-3) ──
+  // The pools are code-picked for variety, so intent can't reach them via the prompt.
+  // Resolve a {min,max} from topic+intent; the selector adopts it only when composites
+  // remain (correctness-guarded). Ceiling = the widest pool span (6..100) → narrow-only.
+  const scopeCap = await resolveScopeRange(
+    ctx.scope,
+    gradeLevel,
+    'the whole number being factored (the composite root of each factor tree)',
+    { min: 6, max: 100 },
+  );
+  if (scopeCap) console.log(`🌳 Factor Tree scope cap → ${scopeCap.min}..${scopeCap.max} (from intent)`);
+
   // ── Pre-select rootValues for the session (local, deterministic-variance) ──
   // Structural axis (axis 2): bias the candidate split-depth by tier.
   const problemShape = supportTier ? resolveProblemShape(supportTier) : null;
@@ -541,6 +576,7 @@ Return ONLY the wrapper fields described above.
     count: config?.instanceCount,
     primary: config?.rootValue,
     splitDepthBias: problemShape?.splitDepthBias ?? null,
+    scopeCap,
   });
 
   const challenges: FactorTreeChallenge[] = rootValues.map((rootValue, idx) => ({

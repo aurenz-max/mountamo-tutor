@@ -102,6 +102,7 @@ export const generateReadAloudStudio = async (
   ctx: GenerationContext,
 ): Promise<ReadAloudStudioData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ReadAloudStudioConfig;
   const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
@@ -138,6 +139,7 @@ export const generateReadAloudStudio = async (
   );
 
   const prompt = `Create a fluency reading practice passage about: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 GRADE: ${gradeLevelKey}.
 ${gradeNotes[gradeLevelKey] || gradeNotes['3']}
 

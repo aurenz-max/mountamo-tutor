@@ -169,6 +169,14 @@ export const generateSolarSystemExplorer = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<SolarSystemExplorerData>;
+  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
+  // The subject (topic) stays broad; intent foregrounds it in student-facing text.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and each body's description/funFact foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Solar System Explorer visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -429,6 +437,7 @@ VALIDATION REQUIREMENTS:
 6. Ensure textureGradient is a valid CSS gradient string
 7. descriptions and funFacts must be age-appropriate and scientifically accurate
 8. timeScale should be higher for younger grades (faster = more engaging)
+${intentFocus}
 
 Return a complete Solar System Explorer configuration appropriate for the grade level and topic.
 `;
@@ -522,6 +531,7 @@ Return a complete Solar System Explorer configuration appropriate for the grade 
   }
 
   // Set sensible defaults
+  // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.showOrbits === undefined) data.showOrbits = true;
   if (data.showLabels === undefined) data.showLabels = true;
   if (data.scaleMode === undefined) data.scaleMode = 'hybrid';

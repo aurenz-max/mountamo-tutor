@@ -158,6 +158,16 @@ export const generateMotionDiagram = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MotionDiagramData>;
+  // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
+  // The broad subject (topic) stays fixed; intent foregrounds which facet to teach.
+  const intent = ctx.intent || "";
+  const intentFocus = intent
+    ? `
+
+LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specifically target "${intent}".
+Foreground this focus in the title, description, scenario choice, and motionType so the
+diagram is built around it. Do not reveal the answer to any challenge the student will be asked.`
+    : "";
   const prompt = `
 Create an educational Motion Diagram (Strobe Diagram) visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -283,6 +293,8 @@ ${config.motionType ? `- Motion type: ${config.motionType}` : ''}
 ${config.interactive !== undefined ? `- Interactive: ${config.interactive}` : ''}
 ${config.targetMotionType ? `- Target for evaluation: ${config.targetMotionType}` : ''}
 ` : ''}
+
+${intentFocus}
 
 Return a complete Motion Diagram configuration appropriate for the grade level and topic.
 If generating positions for evaluation mode, create realistic physics-based motion with proper velocity and acceleration vectors.

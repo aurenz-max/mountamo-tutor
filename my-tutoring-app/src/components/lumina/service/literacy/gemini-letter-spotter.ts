@@ -454,6 +454,7 @@ export const generateLetterSpotter = async (
   ctx: GenerationContext,
 ): Promise<LetterSpotterData> => {
   const { topic } = ctx;
+  const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as LetterSpotterConfig;
 
@@ -517,7 +518,7 @@ export const generateLetterSpotter = async (
     : '';
 
   const generationPrompt = `Create an interactive letter recognition activity for the topic: "${topic}".
-
+${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
 LETTER GROUP: ${letterGroup}
 CUMULATIVE LETTERS (all available): ${cumulativeLetters.join(', ')}
