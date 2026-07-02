@@ -47,7 +47,14 @@ import { ai } from '../geminiClient';
 import { getComponentById } from './catalog';
 import type { ExhibitManifest } from '../../types';
 
-const MODEL = 'gemini-3-flash-preview'; // same tier as the manifest
+const MODEL = 'gemini-flash-lite-latest'; // lighter/faster tier for this batched pick
+
+// Hard ceiling on the single batched resolution call. This stage is strictly an
+// ENHANCEMENT over the curator's inline pins, so a slow/stalled Gemini response
+// must never hold the whole lesson hostage — on timeout we abort the request and
+// fall through to the existing failure path (keep curator pins). Same contract as
+// the studentContext fetches, which also cap their network calls.
+const RESOLUTION_TIMEOUT_MS = 20000;
 
 /** A component object we may mutate in place (its .config.targetEvalMode). */
 interface MutableComponent {
@@ -261,12 +268,28 @@ export async function resolveLessonEvalModes(
         .join('\n'),
   );
 
+  const abort = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const result = await ai.models.generateContent({
+    const request = ai.models.generateContent({
       model: MODEL,
       contents: buildPrompt(topic, gradeLevel, slots),
-      config: { responseMimeType: 'application/json', responseSchema: buildSchema(), temperature: 0.3 },
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: buildSchema(),
+        temperature: 0.3,
+        abortSignal: abort.signal,
+      },
     });
+    // Cap the call: if Gemini stalls, abort it and reject so the catch below
+    // restores the curator pins instead of blocking the lesson indefinitely.
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        abort.abort();
+        reject(new Error(`eval-mode resolution timed out after ${RESOLUTION_TIMEOUT_MS}ms`));
+      }, RESOLUTION_TIMEOUT_MS);
+    });
+    const result = await Promise.race([request, timeout]);
     const parsed = result.text
       ? (JSON.parse(result.text) as {
           picks?: Array<{ slotId: string; chosenModes?: string[]; rationale?: string }>;
@@ -336,5 +359,7 @@ export async function resolveLessonEvalModes(
   } catch (err) {
     console.warn('[resolveLessonEvalModes] resolution failed — keeping curator pins:', err);
     return { slots: slots.length, changed: 0, kept: slots.length, mixed: 0, blend: 0 };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }

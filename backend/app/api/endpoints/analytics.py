@@ -1386,6 +1386,10 @@ async def get_knowledge_graph_progress(
             subject=subject,
             include_nodes=include_nodes,
             depth_limit=depth_limit,
+            # Grade-scope the graph lookup so a K student never gets a Grade 1
+            # graph via first-doc-wins scanning. For the common self-view case
+            # the requester's grade is the student's grade.
+            grade=user_context.get("grade_level"),
         )
 
         result = KnowledgeGraphProgressResponse(**result_data, cached=False)

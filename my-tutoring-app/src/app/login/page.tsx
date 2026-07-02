@@ -3,12 +3,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Brain, Eye, EyeOff, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Sparkles, ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { GenerativeBackground } from '@/components/lumina/primitives/GenerativeBackground';
+import {
+  LuminaMark,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaButton,
+  LuminaInput,
+  LuminaBadge,
+} from '@/components/lumina/ui';
 
 const LoginPage: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const searchParams = useSearchParams();
+  // Deep-link into signup from the landing page / in-app "save progress" prompt
+  // via ?mode=signup. Everything else opens in sign-in mode.
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -21,13 +33,14 @@ const LoginPage: React.FC = () => {
 
   const { login, register, user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // Redirect if already logged in
+  // Redirect if already logged in — honors ?redirect= (the lesson the visitor
+  // was in before signing up), falling back to the Lumina experience.
+  // `replace` (not push) so this hand-off page never lands in history.
   useEffect(() => {
     if (user) {
       const redirect = searchParams.get('redirect');
-      router.push(redirect || '/dashboard');
+      router.replace(redirect || '/lumina');
     }
   }, [user, router, searchParams]);
 
@@ -65,7 +78,7 @@ const LoginPage: React.FC = () => {
         setError('Display name is required');
         return false;
       }
-      
+
       if (password !== confirmPassword) {
         setError('Passwords do not match');
         return false;
@@ -80,7 +93,7 @@ const LoginPage: React.FC = () => {
       const hasUpperCase = /[A-Z]/.test(password);
       const hasLowerCase = /[a-z]/.test(password);
       const hasNumbers = /\d/.test(password);
-      
+
       if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
         setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
         return false;
@@ -102,26 +115,24 @@ const LoginPage: React.FC = () => {
     try {
       if (isLogin) {
         await login(email, password);
-        setSuccess('Login successful! Redirecting...');
-        
-        // Redirect after successful login
+        setSuccess('Welcome back! Redirecting...');
+
         setTimeout(() => {
           const redirect = searchParams.get('redirect');
-          router.push(redirect || '/dashboard');
+          router.push(redirect || '/lumina');
         }, 1000);
       } else {
         await register(email, password, displayName, gradeLevel);
-        setSuccess('Account created successfully! Redirecting...');
-        
-        // Redirect after successful registration
+        setSuccess('Account created! Taking you to your lesson...');
+
         setTimeout(() => {
           const redirect = searchParams.get('redirect');
-          router.push(redirect || '/dashboard');
+          router.push(redirect || '/lumina');
         }, 1000);
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      
+
       // Handle specific Firebase errors
       if (error.message.includes('auth/user-not-found')) {
         setError('No account found with this email address');
@@ -152,218 +163,240 @@ const LoginPage: React.FC = () => {
     setDisplayName('');
   };
 
-  // Don't render if user is already logged in
+  // Already signed in — render a clean, on-brand hand-off instead of the form.
+  // The effect above forwards to /lumina (or the carried ?redirect= lesson), so
+  // a signed-in visitor never sees the login form flash.
   if (user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-white p-4 rounded-full shadow-lg mb-4 mx-auto w-16 h-16 flex items-center justify-center">
-            <Brain className="h-8 w-8 text-blue-600" />
-          </div>
-          <p className="text-gray-600">Redirecting...</p>
+      <div className="dark relative flex min-h-screen items-center justify-center overflow-hidden text-slate-100">
+        <div aria-hidden className="fixed inset-0 -z-20 bg-slate-950" />
+        <GenerativeBackground color="#8b5cf6" intensity={0.4} />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <LuminaMark size={48} progress={100} />
+          <p className="flex items-center gap-2 text-sm text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Taking you to Lumina…
+          </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            <div className="flex justify-center mb-4">
-              <div className="bg-white p-3 rounded-full shadow-lg">
-                <Brain className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">AI Tutor</h1>
-          <p className="text-gray-600 mt-2">
-            {isLogin ? 'Welcome back!' : 'Join the learning revolution'}
-          </p>
-        </div>
+  // Shared glass field styling for the native <select> (no LuminaInput equivalent).
+  const selectClass =
+    'w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-slate-100 transition-colors ' +
+    'focus:outline-none focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/20 disabled:opacity-60';
+  const labelClass = 'block text-sm font-medium text-slate-300 mb-1.5';
 
-        {/* Auth Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {isLogin ? 'Sign In' : 'Create Account'}
-            </h2>
-            <p className="text-gray-600 text-sm mt-1">
-              {isLogin 
-                ? 'Enter your credentials to access your account' 
-                : 'Fill in your details to get started'
-              }
+  return (
+    <div className="dark relative min-h-screen overflow-x-hidden text-slate-100 selection:bg-purple-500/30">
+      {/* Shared canvas — same background the landing + app run on, so signup
+          feels like one continuous product. */}
+      <div aria-hidden className="fixed inset-0 -z-20 bg-slate-950" />
+      <GenerativeBackground color="#8b5cf6" intensity={0.4} />
+
+      {/* Back to the front door */}
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-400 transition-colors hover:text-slate-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
+      </div>
+
+      <div className="relative z-10 flex min-h-[calc(100vh-140px)] items-center justify-center px-4 pb-16">
+        <div className="w-full max-w-md">
+          {/* Brand */}
+          <div className="mb-8 flex flex-col items-center text-center">
+            <Link href="/" className="mb-4 inline-flex">
+              <LuminaMark size={48} />
+            </Link>
+            <LuminaBadge accent="purple" className="mb-4 gap-1.5 px-3 py-1 text-xs">
+              <Sparkles className="h-3.5 w-3.5" />
+              Adaptive learning for K–5
+            </LuminaBadge>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              {isLogin ? 'Welcome back' : 'Create your account'}
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              {isLogin
+                ? 'Sign in to pick up where you left off.'
+                : 'Save your progress and let every lesson adapt to you.'}
             </p>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
-              <AlertCircle className="h-4 w-4 text-red-500 mr-2 flex-shrink-0" />
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-              <span className="text-green-700 text-sm">{success}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name *
-                </label>
-                <input
-                  id="displayName"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Enter your full name"
-                  disabled={loading}
-                />
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address *
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="your@email.com"
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password *
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="••••••••"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-700"
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {!isLogin && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Must be at least 8 characters with uppercase, lowercase, and numbers
-                </p>
+          <LuminaCard surface="elevated">
+            <LuminaCardContent className="p-8">
+              {error && (
+                <div className="mb-4 flex items-center rounded-lg border border-rose-400/30 bg-rose-500/10 p-3">
+                  <AlertCircle className="mr-2 h-4 w-4 flex-shrink-0 text-rose-400" />
+                  <span className="text-sm text-rose-200">{error}</span>
+                </div>
               )}
-            </div>
 
-            {!isLogin && (
-              <>
+              {success && (
+                <div className="mb-4 flex items-center rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-3">
+                  <CheckCircle className="mr-2 h-4 w-4 flex-shrink-0 text-emerald-400" />
+                  <span className="text-sm text-emerald-200">{success}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <div>
+                    <label htmlFor="displayName" className={labelClass}>
+                      Full Name
+                    </label>
+                    <LuminaInput
+                      id="displayName"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="w-full"
+                      placeholder="Enter your full name"
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password *
+                  <label htmlFor="email" className={labelClass}>
+                    Email Address
                   </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="••••••••"
+                  <LuminaInput
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full"
+                    placeholder="your@email.com"
                     disabled={loading}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="gradeLevel" className="block text-sm font-medium text-gray-700 mb-1">
-                    Grade Level
+                  <label htmlFor="password" className={labelClass}>
+                    Password
                   </label>
-                  <select
-                    id="gradeLevel"
-                    value={gradeLevel}
-                    onChange={(e) => setGradeLevel(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  <div className="relative">
+                    <LuminaInput
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pr-10"
+                      placeholder="••••••••"
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-200"
+                      disabled={loading}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {!isLogin && (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      At least 8 characters with uppercase, lowercase, and numbers
+                    </p>
+                  )}
+                </div>
+
+                {!isLogin && (
+                  <>
+                    <div>
+                      <label htmlFor="confirmPassword" className={labelClass}>
+                        Confirm Password
+                      </label>
+                      <LuminaInput
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full"
+                        placeholder="••••••••"
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="gradeLevel" className={labelClass}>
+                        Grade Level
+                      </label>
+                      <select
+                        id="gradeLevel"
+                        value={gradeLevel}
+                        onChange={(e) => setGradeLevel(e.target.value)}
+                        className={selectClass}
+                        disabled={loading}
+                      >
+                        {gradeLevels.map((grade) => (
+                          <option key={grade.value} value={grade.value} className="bg-slate-900">
+                            {grade.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <LuminaButton
+                  type="submit"
+                  tone="primary"
+                  size="lg"
+                  disabled={loading}
+                  className="w-full gap-1.5"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {isLogin ? 'Signing in...' : 'Creating account...'}
+                    </>
+                  ) : isLogin ? (
+                    'Sign In'
+                  ) : (
+                    'Create Account'
+                  )}
+                </LuminaButton>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-slate-400">
+                  {isLogin ? "Don't have an account?" : 'Already have an account?'}
+                  <button
+                    onClick={toggleMode}
+                    className="ml-1.5 font-medium text-cyan-300 transition-colors hover:text-cyan-200"
                     disabled={loading}
                   >
-                    {gradeLevels.map((grade) => (
-                      <option key={grade.value} value={grade.value}>
-                        {grade.label}
-                      </option>
-                    ))}
-                  </select>
+                    {isLogin ? 'Sign up' : 'Sign in'}
+                  </button>
+                </p>
+              </div>
+
+              {isLogin && (
+                <div className="mt-3 text-center">
+                  <button className="text-sm text-slate-500 transition-colors hover:text-slate-300">
+                    Forgot your password?
+                  </button>
                 </div>
-              </>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  {isLogin ? 'Signing In...' : 'Creating Account...'}
-                </>
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
               )}
-            </button>
-          </form>
+            </LuminaCardContent>
+          </LuminaCard>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                onClick={toggleMode}
-                className="ml-1 text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                disabled={loading}
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </div>
-
-          {isLogin && (
-            <div className="mt-4 text-center">
-              <button className="text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                Forgot your password?
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="text-center mt-6 text-xs text-gray-500">
-          By creating an account, you agree to our{' '}
-          <Link href="/terms" className="text-blue-600 hover:underline">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="text-blue-600 hover:underline">
-            Privacy Policy
-          </Link>
+          <p className="mt-6 text-center text-xs text-slate-500">
+            By creating an account, you agree to our{' '}
+            <Link href="/terms" className="text-slate-400 underline hover:text-slate-200">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="text-slate-400 underline hover:text-slate-200">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>

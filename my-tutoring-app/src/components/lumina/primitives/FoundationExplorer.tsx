@@ -98,7 +98,9 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
       if (diagramImageUrl || imageLoading || !diagram.imagePrompt) return;
       setImageLoading(true);
       const url = await generateConceptImage(
-        `Educational diagram, clean schematic style: ${diagram.imagePrompt}. Clear labels, dark background, professional educational illustration. No photorealism.`,
+        `Minimal educational schematic illustration: ${diagram.imagePrompt}. ` +
+        `Style: glowing thin-line vector diagram, subtle neon accent glow, on a seamless deep navy-to-black background (#0f172a to #000000) that fills the entire frame edge-to-edge — NO solid boxes, NO letterbox bars, NO light or white background panels. ` +
+        `Clean thin labels in light slate. Soft depth, faint ambient glow, premium dark-UI aesthetic. Flat 2D, no photorealism, no drop shadows on a card.`,
         '16:9'
       );
       if (mounted && url) {

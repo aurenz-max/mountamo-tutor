@@ -27,21 +27,47 @@ const FALLBACK_STUDENT_ID = '1';
 
 interface StudentContextValue {
   studentId: string;
+  /**
+   * True when no real student is behind this session — no signed-in user and
+   * no dev pin, so studentId is the shared FALLBACK. Consumers use this to
+   * invite the visitor to create an account (the "sign up to save" on-ramp)
+   * before their progress is attributed to the anonymous fallback and lost.
+   */
+  isAnonymous: boolean;
+  /**
+   * True once identity is RESOLVED: dev pin, confirmed signed-out (anonymous),
+   * or the signed-in user's student mapping has arrived. While auth/profile
+   * are in flight, studentId is still the shared fallback — surfaces that
+   * fetch student-scoped data must wait for ready instead of firing requests
+   * for the fallback id (they 403 and get cached as empty).
+   */
+  ready: boolean;
 }
 
 const StudentContext = createContext<StudentContextValue>({
   studentId: DEV_PIN || FALLBACK_STUDENT_ID,
+  isAnonymous: !DEV_PIN,
+  ready: true,
 });
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userProfile } = useAuth();
+  const { user, userProfile, loading } = useAuth();
 
   const studentId =
     DEV_PIN ||
     (userProfile?.student_id != null ? String(userProfile.student_id) : FALLBACK_STUDENT_ID);
 
+  // A dev pin is a real (seeded) student for testing; only treat a session as
+  // anonymous when there's neither a pin nor a signed-in Firebase user.
+  const isAnonymous = !DEV_PIN && !user;
+
+  // Signed-in but profile not yet loaded (initial fetch or background retry
+  // after a transient failure) → not ready; AuthContext keeps retrying, so
+  // this resolves rather than sticking.
+  const ready = !!DEV_PIN || (!loading && (!user || userProfile?.student_id != null));
+
   return (
-    <StudentContext.Provider value={{ studentId }}>
+    <StudentContext.Provider value={{ studentId, isAnonymous, ready }}>
       {children}
     </StudentContext.Provider>
   );

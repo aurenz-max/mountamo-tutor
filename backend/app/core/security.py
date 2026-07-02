@@ -363,12 +363,26 @@ def get_client_ip(request: Request) -> str:
     # Fallback to direct connection
     return request.client.host if request.client else "unknown"
 
-def check_rate_limit(request: Request, limit: int, window_seconds: int = 60, 
+# Loopback addresses used for local development. In dev every request — across
+# every browser tab and every user — originates from the loopback IP, so a per-IP
+# limiter forces the whole app to share one budget. A single page load fires ~10
+# authenticated calls (~20 under React StrictMode double-mount), which blows the
+# token_verify budget and 429s unrelated requests (e.g. the profile fetch that
+# renders the badge). Never rate-limit loopback clients.
+_LOOPBACK_IPS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+def check_rate_limit(request: Request, limit: int, window_seconds: int = 60,
                     key_suffix: str = "") -> None:
     """Check rate limit and raise exception if exceeded"""
     client_ip = get_client_ip(request)
+
+    # Behind a real proxy, get_client_ip returns the forwarded client IP, so a
+    # genuine remote client is never mistaken for loopback here.
+    if client_ip in _LOOPBACK_IPS:
+        return
+
     key = f"{client_ip}:{key_suffix}" if key_suffix else client_ip
-    
+
     if rate_limiter.is_rate_limited(key, limit, window_seconds):
         remaining_time = window_seconds
         logger.warning(f"Rate limit exceeded for {client_ip} on {key_suffix or 'general'}")

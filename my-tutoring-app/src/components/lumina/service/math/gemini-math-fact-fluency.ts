@@ -212,7 +212,7 @@ const mathFactFluencySchema: Schema = {
     },
     maxNumber: {
       type: Type.NUMBER,
-      description: "Maximum number used in facts: 3, 5, or 10"
+      description: "Maximum number used in facts. Set this from the lesson scope/objective: 5 for 'within 5', 10 for 'within 10', 20 for 'within 20'. Supported up to 20. NEVER cap below what the topic asks for — if the objective says 'within 20', use 20."
     },
     includeSubtraction: {
       type: Type.BOOLEAN,
@@ -387,9 +387,10 @@ CONTEXT:
 ${challengeTypeSection}
 ${tierSection}
 ${!evalConstraint ? `
-GRADE GUIDELINES:
-- Kindergarten (gradeBand "K"): maxNumber 3-5, mostly addition, simple warm language
-- Grade 1 (gradeBand "1"): maxNumber 5-10, include subtraction, slightly more advanced
+PRIMITIVE RANGE (intent-driven, not grade-capped):
+- This primitive supports addition & subtraction facts through 20.
+- The LESSON TOPIC / OBJECTIVE above set the ACTUAL range — honor it exactly. "within 20" → use maxNumber 20; "within 10" → 10; "within 5" → 5. Never cap the range below what the topic asks for.
+- Use warm, encouraging language for young children.
 ` : ''}
 
 MATH RULES:
@@ -539,6 +540,11 @@ Return the complete math fact fluency configuration.
     if ((challenge.type === 'visual-fact' || challenge.type === 'match') && challenge.visualType) {
       if (!challenge.visualCount || challenge.visualCount < 0) {
         challenge.visualCount = challenge.correctAnswer;
+      }
+      // Fingers only represent up to 10 — for within-20 counts, fall back to the
+      // ten-frame (which now grows to a double frame) so the visual stays honest.
+      if (challenge.visualType === 'fingers' && challenge.visualCount > 10) {
+        challenge.visualType = 'ten-frame';
       }
     }
 

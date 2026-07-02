@@ -18,6 +18,7 @@ import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
+import { SaveProgressPrompt } from './components/SaveProgressPrompt';
 import { LuminaMark } from './ui';
 
 
@@ -37,8 +38,10 @@ export default function App({ initialTopic, initialGrade }: AppProps = {}) {
 }
 
 function LuminaApp({ initialTopic, initialGrade }: AppProps) {
-  // Student identity — resolved once by StudentProvider, never a literal
-  const { studentId } = useStudent();
+  // Student identity — resolved once by StudentProvider, never a literal.
+  // `ready` gates student-scoped data surfaces so they never fetch (and cache)
+  // the fallback student's data while the profile is still in flight.
+  const { studentId, isAnonymous, ready: studentReady } = useStudent();
 
   // Core lesson pipeline (brief → manifest → exhibit), personalized per student
   const { phase, brief, exhibit, progress, generate, reset: resetSession } = useExhibitSession(studentId);
@@ -87,6 +90,35 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
   // Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<string | null>(null);
+
+  // "Sign up to save" on-ramp — shown once to anonymous visitors at the first
+  // real signal of progress (a competency update), then suppressed for the
+  // rest of the browser session once resolved so it never nags.
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const savePromptResolvedRef = useRef(false);
+
+  const maybeOfferSaveProgress = useCallback(() => {
+    if (!isAnonymous || savePromptResolvedRef.current) return;
+    const dismissed =
+      typeof window !== 'undefined' &&
+      window.sessionStorage.getItem('lumina:savePromptDismissed') === '1';
+    if (dismissed) {
+      savePromptResolvedRef.current = true;
+      return;
+    }
+    savePromptResolvedRef.current = true;
+    setShowSavePrompt(true);
+  }, [isAnonymous]);
+
+  const handleDismissSavePrompt = useCallback(() => {
+    setShowSavePrompt(false);
+    savePromptResolvedRef.current = true;
+    try {
+      window.sessionStorage.setItem('lumina:savePromptDismissed', '1');
+    } catch {
+      /* sessionStorage unavailable (private mode) — dismiss for this mount only */
+    }
+  }, []);
 
   // Curriculum context (set when lesson initiated from CurriculumBrowser)
   const [curriculumContext, setCurriculumContext] = useState<CurriculumContext | null>(null);
@@ -305,8 +337,8 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
         <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">
-            {/* Signed-in student identity */}
-            <StudentBadge />
+            {/* Signed-in student identity + user menu (progress, sign out) */}
+            <StudentBadge onOpenActivity={() => setActivePanel('my-activity')} />
             {/* Session progress dots — shown while viewing the session panel (IDLE) */}
             {phase === GameState.IDLE && activePanel === 'daily-session' && sessionStats && sessionStats.total > 0 && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
@@ -414,7 +446,12 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
         )}
 
         {/* DAILY SESSION DRIVER STATE */}
-        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && (
+        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && !studentReady && (
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-sm text-slate-400 animate-pulse">Loading your profile…</span>
+          </div>
+        )}
+        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && studentReady && (
           <div className="flex-1 animate-fade-in max-w-4xl mx-auto w-full pt-2">
             <DailySessionView
               studentId={studentId}
@@ -469,6 +506,10 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             sessionEvalCount={sessionEvalCount}
             onCompetencyUpdate={(updates) => {
               console.log('Competency updates:', updates);
+              // Anonymous visitor just earned real progress that's being
+              // attributed to the shared fallback student — invite them to
+              // claim it with a free account before it's lost.
+              maybeOfferSaveProgress();
               if (sessionReturn) {
                 setSessionEvalCount(prev => prev + 1);
                 if (sessionCurrentBlock && updates.length > 0) {
@@ -495,6 +536,16 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
         )}
 
       </main>
+
+      {/* Anonymous → account on-ramp. Carries the live topic + grade into signup
+          so the visitor resumes this exact lesson, now personalized. */}
+      {showSavePrompt && (
+        <SaveProgressPrompt
+          topic={exhibit?.topic || topic}
+          gradeLevel={gradeLevel}
+          onDismiss={handleDismissSavePrompt}
+        />
+      )}
 
       {/* The Curator now lives inside LessonScreen (CuratorConsole), bound to the
           scaffold-aware lesson session rather than a separate browser-direct one. */}

@@ -29,9 +29,14 @@ const NavHeader = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // The Lumina marketing landing (/) and the Lumina app (/lumina) carry their
-  // own brand chrome — the legacy white nav would clash, so hide it there.
-  const hideNav = pathname === '/' || pathname === '/lumina' || pathname?.startsWith('/lumina/');
+  // The Lumina marketing landing (/), the Lumina app (/lumina), and the
+  // Lumina-themed auth page (/login) carry their own brand chrome — the legacy
+  // white nav would clash, so hide it there.
+  const hideNav =
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/lumina' ||
+    pathname?.startsWith('/lumina/');
 
   // Get AI Coach state and controls
   const { showAICoach, setShowAICoach, notificationCount, clearNotifications } = useGlobalAICoachUI();

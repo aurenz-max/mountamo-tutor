@@ -62,6 +62,7 @@ export interface HydraulicsLabData {
   observeNarration?: string;
   zoneDescriptions?: Record<string, ZoneDescription>;
   challenges?: HydraulicsChallenge[];
+  missions?: HydraulicsMission[];
   pascalsLawExplanation?: PascalsLawExplanation;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -152,42 +153,96 @@ const DEFAULT_ZONE_DESCS: Record<string, ZoneDescription> = {
   load: { analogy: 'Like the car sitting on a jack', explanation: 'This is what we\'re trying to lift. The hydraulic system multiplies your force to move heavy loads.' },
 };
 
-const DEFAULT_CHALLENGES: HydraulicsChallenge[] = [
+// ============================================================================
+// Missions — code-owned engineering puzzles (numbers = correctness).
+//
+// Each mission hands the student a real machine job with constraints. The
+// physics engine judges success (the load actually lifts). Gemini may theme
+// the *words* around this skeleton, but the numbers live in code so every
+// mission is guaranteed solvable within the slider ranges.
+//
+// Physics recap used to tune these:
+//   outputForce = inputForce * (largeDiameter / smallDiameter)^2   [N]
+//   required    = loadWeight * 9.81                                 [N]
+//   lifts when outputForce > required
+// Slider ranges: force 0-500, smallD 2-10, largeD 5-30.
+// ============================================================================
+
+type ControlKey = 'inputForce' | 'smallDiameter' | 'largeDiameter';
+
+interface MissionControl {
+  initial: number;   // value applied when the mission loads
+  locked?: boolean;  // if true, the student cannot change it (fixed by the job)
+  max?: number;      // optional cap on a free control ("your pump only pushes 45 N")
+}
+
+export interface HydraulicsMission {
+  id: string;
+  machineLabel: string;   // themed machine, e.g. "Excavator Bucket"
+  title: string;          // short mission name
+  brief: string;          // kid-friendly story + what to do
+  loadWeight: number;     // kg — the thing to lift, fixed & locked for this mission
+  controls: Record<ControlKey, MissionControl>;
+  successHint: string;    // shown only if the student asks for help
+  explainOnSolve: string; // the "why it worked" payoff after a successful lift
+}
+
+const DEFAULT_MISSIONS: HydraulicsMission[] = [
   {
-    id: 'ch1', type: 'predict',
-    instruction: 'If you make the output piston twice as wide, what happens to the output force?',
-    options: [
-      { id: 'a', text: 'It doubles' },
-      { id: 'b', text: 'It quadruples (4x)' },
-      { id: 'c', text: 'It stays the same' },
-      { id: 'd', text: 'It halves' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Force depends on AREA, not diameter. Area = pi * r^2. If the diameter doubles, the area becomes 4 times bigger...',
+    id: 'm1',
+    machineLabel: 'Excavator Bucket',
+    title: 'First Lift',
+    brief: "The excavator needs to scoop up a 150 kg pile of dirt. Push down on the pump to send pressure through the fluid and raise the bucket. Only the Input Force is yours to control — push until it lifts!",
+    loadWeight: 150,
+    controls: {
+      inputForce: { initial: 0 },
+      smallDiameter: { initial: 4, locked: true },
+      largeDiameter: { initial: 12, locked: true },
+    },
+    successHint: "Drag the glowing pump handle down, or slide Input Force up. Watch the output arrow grow until the bucket lifts.",
+    explainOnSolve: "You pushed on the small piston and the fluid carried that push over to the big piston. More push in = more lift out!",
   },
   {
-    id: 'ch2', type: 'observe',
-    instruction: 'Watch the fluid particles as you increase the input force. What happens to their color?',
-    options: [
-      { id: 'a', text: 'They turn green' },
-      { id: 'b', text: 'They change from blue to red everywhere at once' },
-      { id: 'c', text: 'Only the particles near the small piston change' },
-      { id: 'd', text: 'They stay the same color' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Look at ALL the particles in the system. Pascal\'s Law says pressure is transmitted equally...',
+    id: 'm2',
+    machineLabel: 'Excavator Arm',
+    title: 'Too Heavy!',
+    brief: "Now there's a 250 kg boulder. This old pump can only push 90 N — no harder, and the big cylinder is welded in place. Make the SMALL piston skinnier to squeeze more lifting power out of the same push.",
+    loadWeight: 250,
+    controls: {
+      inputForce: { initial: 90, locked: true },
+      smallDiameter: { initial: 6 },
+      largeDiameter: { initial: 16, locked: true },
+    },
+    successHint: "The same push on a smaller area makes higher pressure. Slide the Small Piston down toward its smallest size.",
+    explainOnSolve: "Same push on a smaller area = MORE pressure. That extra pressure reached the big piston and finally moved the boulder — without pushing any harder!",
   },
   {
-    id: 'ch3', type: 'adjust',
-    instruction: 'Try to lift the load using the smallest input force you can. What piston sizes work best?',
-    options: [
-      { id: 'a', text: 'Make both pistons the same size' },
-      { id: 'b', text: 'Make the input piston as small as possible and the output as large as possible' },
-      { id: 'c', text: 'Make the input piston very large' },
-      { id: 'd', text: 'Piston sizes don\'t matter, only force matters' },
-    ],
-    correctOptionId: 'b',
-    hint: 'A bigger area ratio means more force multiplication. Try the sliders and watch the force arrows...',
+    id: 'm3',
+    machineLabel: 'Dump Truck Bed',
+    title: 'Raise the Bed',
+    brief: "The dump truck is loaded with 200 kg of gravel. The pump is fixed at 50 N and the input piston can't change. Make the OUTPUT cylinder bigger so the same pressure turns into enough force to tip the bed.",
+    loadWeight: 200,
+    controls: {
+      inputForce: { initial: 50, locked: true },
+      smallDiameter: { initial: 4, locked: true },
+      largeDiameter: { initial: 8 },
+    },
+    successHint: "A bigger output piston has more area, so the same pressure pushes with more force. Slide the Large Piston up.",
+    explainOnSolve: "Pressure is the same everywhere in the fluid — but a bigger output area turns that pressure into a bigger force. Big enough to raise the loaded bed!",
+  },
+  {
+    id: 'm4',
+    machineLabel: 'Excavator — Full Control',
+    title: "Engineer's Challenge",
+    brief: "Real job: lift a 600 kg slab, but the engine can only spare 45 N for the pump. This time YOU control everything — input piston, output piston, and force. Engineer a setup that lifts it.",
+    loadWeight: 600,
+    controls: {
+      inputForce: { initial: 0, max: 45 },
+      smallDiameter: { initial: 6 },
+      largeDiameter: { initial: 12 },
+    },
+    successHint: "Make the force multiplier as big as you can: smallest input piston + biggest output piston, then push your 45 N.",
+    explainOnSolve: "You built a huge force multiplier — a tiny input piston and a giant output piston. A gentle 45 N push became a massive lifting force. That's exactly how a real excavator moves tons of rock!",
   },
 ];
 
@@ -244,11 +299,14 @@ const HydraulicsSimulation: React.FC<{
   largeDiameter: number;
   loadWeight: number;
   selectedZone: string | null;
+  dragDisabled?: boolean;
   onZoneClick: (zoneId: string) => void;
   onInputForceChange: (force: number) => void;
   callbacks: SimCallbacks;
-}> = ({ inputForce, smallDiameter, largeDiameter, loadWeight, selectedZone, onZoneClick, onInputForceChange, callbacks }) => {
+}> = ({ inputForce, smallDiameter, largeDiameter, loadWeight, selectedZone, dragDisabled, onZoneClick, onInputForceChange, callbacks }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dragDisabledRef = useRef(dragDisabled);
+  useEffect(() => { dragDisabledRef.current = dragDisabled; }, [dragDisabled]);
   const particlesRef = useRef<FluidParticle[]>([]);
   const simRef = useRef<SimState>({
     smallPistonY: 0, largePistonY: 0, systemPressure: 0,
@@ -869,6 +927,7 @@ const HydraulicsSimulation: React.FC<{
 
   // Mouse drag handlers for small piston
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (dragDisabledRef.current) return;
     const { x, y } = toCanvasCoords(e.clientX, e.clientY);
     if (isNearSmallPiston(x, y)) {
       isDraggingRef.current = true;
@@ -890,8 +949,8 @@ const HydraulicsSimulation: React.FC<{
       const force = yToForce(y);
       dragCallbackRef.current(force);
     } else {
-      // Show grab cursor when hovering over piston
-      canvas.style.cursor = isNearSmallPiston(x, y) ? 'grab' : 'pointer';
+      // Show grab cursor when hovering over piston (unless drag is locked out)
+      canvas.style.cursor = !dragDisabledRef.current && isNearSmallPiston(x, y) ? 'grab' : 'pointer';
     }
   }, [toCanvasCoords, isNearSmallPiston, yToForce]);
 
@@ -935,7 +994,7 @@ const HydraulicsSimulation: React.FC<{
     if (e.touches.length === 0) return;
     const { x, y } = toCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
 
-    if (isNearSmallPiston(x, y)) {
+    if (!dragDisabledRef.current && isNearSmallPiston(x, y)) {
       isDraggingRef.current = true;
       e.preventDefault();
       const force = yToForce(y);
@@ -1005,30 +1064,27 @@ const SCENARIO_ICONS: Record<string, string> = {
   brake_system: '\u{1F6D1}',
 };
 
-const CHALLENGE_TYPE_ACCENT: Record<HydraulicsChallenge['type'], 'emerald' | 'blue' | 'orange'> = {
-  predict: 'emerald',
-  observe: 'blue',
-  adjust: 'orange',
-};
-
 const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   const {
-    title, description, overview,
+    title, overview,
     scenario = 'car_lift', scenarioName, realWorldContext,
     gradeBand = '3-5', observeNarration,
-    zoneDescriptions, challenges: dataChallenges,
+    zoneDescriptions, missions: dataMissions,
     pascalsLawExplanation,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
 
   const zoneDescs = useMemo(() => ({ ...DEFAULT_ZONE_DESCS, ...zoneDescriptions }), [zoneDescriptions]);
-  const challenges = dataChallenges && dataChallenges.length > 0 ? dataChallenges : DEFAULT_CHALLENGES;
+  const missions = useMemo(
+    () => (dataMissions && dataMissions.length > 0 ? dataMissions : DEFAULT_MISSIONS),
+    [dataMissions],
+  );
 
   // ---- State ----
-  const [inputForce, setInputForce] = useState(50);
-  const [smallDiameter, setSmallDiameter] = useState(4);
-  const [largeDiameter, setLargeDiameter] = useState(12);
-  const [loadWeight, setLoadWeight] = useState(200);
+  const [inputForce, setInputForce] = useState(missions[0].controls.inputForce.initial);
+  const [smallDiameter, setSmallDiameter] = useState(missions[0].controls.smallDiameter.initial);
+  const [largeDiameter, setLargeDiameter] = useState(missions[0].controls.largeDiameter.initial);
+  const [loadWeight, setLoadWeight] = useState(missions[0].loadWeight);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [exploredZones, setExploredZones] = useState<Set<string>>(new Set());
   const [systemPressure, setSystemPressure] = useState(0);
@@ -1041,15 +1097,25 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   const [forceMultDiscovered, setForceMultDiscovered] = useState(false);
   const [workConservationSeen, setWorkConservationSeen] = useState(false);
   const [maxForceRatio, setMaxForceRatio] = useState(1);
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIdx, setCurrentChallengeIdx] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<{ id: string; correct: boolean }[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showHint, setShowHint] = useState(false);
-  const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'incorrect' | null>(null);
+
+  // ---- Mission state ----
+  const [currentMissionIdx, setCurrentMissionIdx] = useState(0);
+  const [solvedMissionIds, setSolvedMissionIds] = useState<Set<string>>(new Set());
+  const [showSolveCard, setShowSolveCard] = useState(false);
+  const [showMissionHint, setShowMissionHint] = useState(false);
+  const [missionAttempts, setMissionAttempts] = useState(0);
+
+  const currentMission = missions[currentMissionIdx];
+  const forceLocked = !!currentMission.controls.inputForce.locked;
+  const smallLocked = !!currentMission.controls.smallDiameter.locked;
+  const largeLocked = !!currentMission.controls.largeDiameter.locked;
+  const forceMax = currentMission.controls.inputForce.max ?? 500;
+  const requiredForceN = loadWeight * 9.81;
+  const liftProgress = requiredForceN > 0 ? Math.min(1, outputForce / requiredForceN) : 0;
+  const allMissionsSolved = solvedMissionIds.size >= missions.length;
+  const currentSolved = solvedMissionIds.has(currentMission.id);
 
   const resolvedInstanceId = instanceId ?? `hydraulics-lab-${Date.now()}`;
-  const allChallengesDone = challengeResults.length >= challenges.length;
 
   // Track max force ratio
   useEffect(() => {
@@ -1076,11 +1142,13 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     forceRatio: Math.round(forceRatio * 10) / 10,
     isLifting,
     zonesExplored: Array.from(exploredZones).join(', '),
-    challengeProgress: `${challengeResults.length}/${challenges.length}`,
+    missionTitle: currentMission.title,
+    missionGoal: `Lift ${loadWeight} kg`,
+    missionProgress: `${solvedMissionIds.size}/${missions.length} missions solved`,
     selectedZone: selectedZone || 'none',
   }), [scenario, scenarioName, realWorldContext, inputForce, smallDiameter, largeDiameter,
     loadWeight, systemPressure, outputForce, forceRatio, isLifting,
-    exploredZones, challengeResults.length, challenges.length, selectedZone]);
+    exploredZones, currentMission.title, solvedMissionIds.size, missions.length, selectedZone]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'hydraulics-lab',
@@ -1095,13 +1163,99 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     if (!isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
     sendText(
-      `[ACTIVITY_START] Student is exploring a hydraulic system simulation: ${scenarioName}. `
+      `[ACTIVITY_START] Student is starting a hands-on hydraulics engineering lab: ${scenarioName}. `
       + `Real-world context: ${realWorldContext}. Grade band: ${gradeBand}. `
       + `${observeNarration || overview}. `
-      + `Welcome them and point out the two pistons and the fluid particles — ask what they think will happen when they push on the small piston.`,
+      + `First mission "${currentMission.title}": ${currentMission.brief}. `
+      + `Welcome them warmly, explain they'll be SOLVING real machine jobs (not just watching), and nudge them to try the first mission.`,
       { silent: true },
     );
-  }, [isConnected, scenarioName, realWorldContext, gradeBand, observeNarration, overview, sendText]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
+
+  // ---- Apply a mission's starting controls when it becomes active ----
+  const applyMission = useCallback((m: HydraulicsMission) => {
+    setInputForce(m.controls.inputForce.initial);
+    setSmallDiameter(m.controls.smallDiameter.initial);
+    setLargeDiameter(m.controls.largeDiameter.initial);
+    setLoadWeight(m.loadWeight);
+    setShowSolveCard(false);
+    setShowMissionHint(false);
+    setMissionAttempts(0);
+  }, []);
+
+  // ---- Mission success detection (physics is the judge) ----
+  const liftHoldRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleMissionSolved = useCallback((m: HydraulicsMission) => {
+    setSolvedMissionIds(prev => {
+      if (prev.has(m.id)) return prev;
+      const next = new Set(prev);
+      next.add(m.id);
+      return next;
+    });
+    setShowSolveCard(true);
+    SoundManager.playStreak();
+    if (isConnected) {
+      sendText(
+        `[MISSION_SOLVED] The student solved mission "${m.title}" — the ${m.machineLabel} lifted its ${m.loadWeight} kg load! `
+        + `Why it worked: ${m.explainOnSolve} `
+        + `Celebrate their engineering, then explain WHY their setup worked in kid-friendly Pascal's-Law terms. Keep it short and excited.`,
+        { silent: true },
+      );
+    }
+  }, [isConnected, sendText]);
+
+  useEffect(() => {
+    if (!currentMission || currentSolved) return;
+    if (isLifting) {
+      if (!liftHoldRef.current) {
+        // Require the lift to hold briefly so a flicker doesn't count.
+        liftHoldRef.current = setTimeout(() => {
+          liftHoldRef.current = undefined;
+          handleMissionSolved(currentMission);
+        }, 700);
+      }
+    } else if (liftHoldRef.current) {
+      clearTimeout(liftHoldRef.current);
+      liftHoldRef.current = undefined;
+    }
+    return () => {
+      if (liftHoldRef.current) {
+        clearTimeout(liftHoldRef.current);
+        liftHoldRef.current = undefined;
+      }
+    };
+  }, [isLifting, currentMission, currentSolved, handleMissionSolved]);
+
+  const handleNextMission = useCallback(() => {
+    SoundManager.select();
+    if (currentMissionIdx < missions.length - 1) {
+      const nextIdx = currentMissionIdx + 1;
+      setCurrentMissionIdx(nextIdx);
+      applyMission(missions[nextIdx]);
+      if (isConnected) {
+        const nm = missions[nextIdx];
+        sendText(
+          `[MISSION_START] New mission "${nm.title}" for the ${nm.machineLabel}: ${nm.brief}. `
+          + `Introduce the job and what the student controls this time, without giving away the exact setup.`,
+          { silent: true },
+        );
+      }
+    }
+  }, [currentMissionIdx, missions, applyMission, isConnected, sendText]);
+
+  const handleRevealMissionHint = useCallback(() => {
+    setShowMissionHint(true);
+    SoundManager.pop();
+    if (isConnected) {
+      sendText(
+        `[HINT_REQUESTED] Student is stuck on mission "${currentMission.title}" (${missionAttempts} adjustments so far). `
+        + `Hint text: ${currentMission.successHint}. `
+        + `Give a gentle nudge toward the right control to change and why — do NOT just hand them the numbers.`,
+        { silent: true },
+      );
+    }
+  }, [isConnected, sendText, currentMission, missionAttempts]);
 
   // ---- Handlers ----
   const handleZoneClick = useCallback((zoneId: string) => {
@@ -1131,6 +1285,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     if (forceTimeoutRef.current) clearTimeout(forceTimeoutRef.current);
     forceTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
+      setMissionAttempts(a => a + 1);
       if (isConnected) {
         sendText(
           `[FORCE_CHANGED] Student set input force to ${val}N. `
@@ -1147,6 +1302,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     if (pistonTimeoutRef.current) clearTimeout(pistonTimeoutRef.current);
     pistonTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
+      setMissionAttempts(a => a + 1);
       if (isConnected) {
         sendText(
           `[PISTON_SIZE_CHANGED] Student changed small piston diameter to ${val}cm. `
@@ -1164,6 +1320,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     if (largePistonTimeoutRef.current) clearTimeout(largePistonTimeoutRef.current);
     largePistonTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
+      setMissionAttempts(a => a + 1);
       if (isConnected) {
         sendText(
           `[PISTON_SIZE_CHANGED] Student changed large piston diameter to ${val}cm. `
@@ -1174,22 +1331,6 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
       }
     }, 800);
   }, [isConnected, smallDiameter, sendText]);
-
-  const loadTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const handleLoadChange = useCallback((val: number) => {
-    setLoadWeight(val);
-    if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
-    loadTimeoutRef.current = setTimeout(() => {
-      setSliderAdjustCount(c => c + 1);
-      if (isConnected) {
-        sendText(
-          `[LOAD_CHANGED] Student set load to ${val}kg (${Math.round(val * 9.81)}N). `
-          + `Ask what happens when the load weight exceeds the output force.`,
-          { silent: true },
-        );
-      }
-    }, 800);
-  }, [isConnected, sendText]);
 
   const simCallbacks = useMemo<SimCallbacks>(() => ({
     onPressure: setSystemPressure,
@@ -1222,51 +1363,10 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     },
   }), [isConnected, scenarioName, sendText]);
 
-  // Challenge answer handler
-  const handleAnswer = useCallback((optionId: string) => {
-    if (answerFeedback) return;
-    setSelectedAnswer(optionId);
-    const challenge = challenges[currentChallengeIdx];
-    const correct = optionId === challenge.correctOptionId;
-    setAnswerFeedback(correct ? 'correct' : 'incorrect');
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
-      if (isConnected) {
-        sendText(
-          `[CHALLENGE_CORRECT] Student answered "${challenge.instruction}" correctly! `
-          + `Celebrate and connect to Pascal's Law and the simulation.`,
-          { silent: true },
-        );
-      }
-      setTimeout(() => {
-        setCurrentChallengeIdx(i => i + 1);
-        setSelectedAnswer(null);
-        setAnswerFeedback(null);
-        setShowHint(false);
-      }, 1500);
-    } else {
-      SoundManager.playIncorrect();
-      setShowHint(true);
-      if (isConnected) {
-        sendText(
-          `[CHALLENGE_INCORRECT] Student got "${challenge.instruction}" wrong (chose "${optionId}"). `
-          + `Hint: ${challenge.hint}. Guide gently — point them to the simulation.`,
-          { silent: true },
-        );
-      }
-      setTimeout(() => {
-        setSelectedAnswer(null);
-        setAnswerFeedback(null);
-      }, 2000);
-    }
-  }, [answerFeedback, challenges, currentChallengeIdx, isConnected, sendText]);
-
-  // Submit evaluation
+  // Submit evaluation — score is driven by missions solved
   const handleSubmitEvaluation = useCallback(() => {
     if (hasSubmittedEvaluation) return;
-    const correctCount = challengeResults.filter(r => r.correct).length;
+    const solvedCount = solvedMissionIds.size;
     const metrics: HydraulicsLabMetrics = {
       type: 'hydraulics-lab',
       zonesExplored: exploredZones.size,
@@ -1275,39 +1375,40 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
       forceMultiplicationDiscovered: forceMultDiscovered,
       workConservationObserved: workConservationSeen,
       maxForceRatio,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      challengesTotal: challenges.length,
+      // Missions map onto the challenge* metric fields for backward compatibility
+      challengesCompleted: solvedCount,
+      challengesCorrect: solvedCount,
+      challengesTotal: missions.length,
+      missionsSolved: solvedCount,
+      missionsTotal: missions.length,
       attemptsCount: 1,
     };
+    // Missions are the spine: solving them is 80% of the score.
     const score =
-      (exploredZones.size / 4) * 15 +
-      (Math.min(sliderAdjustCount, 5) / 5) * 15 +
-      (forceMultDiscovered ? 20 : 10) +
-      (correctCount / Math.max(challenges.length, 1)) * 50;
+      (solvedCount / Math.max(missions.length, 1)) * 80 +
+      (exploredZones.size / 4) * 10 +
+      (forceMultDiscovered ? 10 : 0);
 
-    submitEvaluation(score >= 40, Math.round(score), metrics, { scenario });
+    submitEvaluation(solvedCount >= Math.ceil(missions.length / 2), Math.round(score), metrics, { scenario });
 
     if (isConnected) {
       sendText(
-        `[ALL_COMPLETE] Student finished! Score: ${Math.round(score)}%. `
-        + `Zones: ${exploredZones.size}/4. `
-        + `Challenges: ${correctCount}/${challenges.length} correct. `
-        + `Max force ratio: ${maxForceRatio.toFixed(1)}x. Force mult discovered: ${forceMultDiscovered}. `
-        + `Celebrate and summarize Pascal's Law and how it powers real ${scenarioName} systems!`,
+        `[ALL_COMPLETE] Student finished the hydraulics lab! Score: ${Math.round(score)}%. `
+        + `Missions solved: ${solvedCount}/${missions.length}. Zones explored: ${exploredZones.size}/4. `
+        + `Max force ratio reached: ${maxForceRatio.toFixed(1)}x. `
+        + `Celebrate their engineering and recap Pascal's Law and how it powers real ${scenarioName} machines!`,
         { silent: true },
       );
     }
   }, [
     hasSubmittedEvaluation, exploredZones.size, sliderAdjustCount,
     forceMultDiscovered, workConservationSeen, maxForceRatio,
-    challengeResults, challenges.length, scenario, scenarioName,
+    solvedMissionIds.size, missions.length, scenario, scenarioName,
     submitEvaluation, isConnected, sendText,
   ]);
 
   // ---- Render ----
   const icon = SCENARIO_ICONS[scenario] || '⚙️';
-  const currentChallenge = challenges[currentChallengeIdx];
   const zoneInfo = selectedZone ? zoneDescs[selectedZone] : null;
 
   return (
@@ -1343,6 +1444,84 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-5">
+          {/* ── Mission briefing — the spine of the lab ── */}
+          <LuminaPanel accent="orange" className="p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <LuminaBadge accent="orange" className="text-xs">
+                  Mission {currentMissionIdx + 1} / {missions.length}
+                </LuminaBadge>
+                <span className="text-slate-400 text-xs font-mono uppercase tracking-wider">
+                  {currentMission.machineLabel}
+                </span>
+              </div>
+              {currentSolved && (
+                <span className="flex items-center gap-1 text-emerald-400 text-xs font-medium">✓ Solved</span>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-white font-semibold text-base">{currentMission.title}</h3>
+              <p className="text-slate-300 text-sm mt-1 leading-relaxed">{currentMission.brief}</p>
+            </div>
+
+            {/* Live goal / lift progress — the physics engine is the judge */}
+            <div>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-slate-400 font-mono">Lifting power</span>
+                <span className={`font-mono ${liftProgress >= 1 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {Math.round(outputForce)} / {Math.round(requiredForceN)} N
+                </span>
+              </div>
+              <div className="h-2.5 rounded-full bg-slate-700 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-200 ${liftProgress >= 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                  style={{ width: `${liftProgress * 100}%` }}
+                />
+              </div>
+              <p className="text-slate-500 text-[11px] mt-1">
+                {currentSolved
+                  ? 'Lifted! 🎉'
+                  : isLifting
+                    ? 'Lifting… hold it steady!'
+                    : `Reach ${Math.round(requiredForceN)} N of output force to lift the ${loadWeight} kg load.`}
+              </p>
+            </div>
+
+            {/* Hint — only on request, never auto-revealed */}
+            {!currentSolved && (
+              showMissionHint ? (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                  <p className="text-amber-300 text-xs">💡 {currentMission.successHint}</p>
+                </div>
+              ) : (
+                <button
+                  onClick={handleRevealMissionHint}
+                  className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <span>💡</span> Stuck? Get a hint
+                </button>
+              )
+            )}
+
+            {/* Solve card — the payoff: WHY it worked, then advance */}
+            {showSolveCard && currentSolved && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-3">
+                <p className="text-emerald-300 text-sm font-medium">🎉 Mission solved — you lifted it!</p>
+                <p className="text-slate-300 text-xs leading-relaxed">{currentMission.explainOnSolve}</p>
+                {currentMissionIdx < missions.length - 1 ? (
+                  <LuminaButton tone="primary" onClick={handleNextMission} className="w-full">
+                    Next Mission →
+                  </LuminaButton>
+                ) : !hasSubmittedEvaluation ? (
+                  <LuminaButton tone="primary" onClick={handleSubmitEvaluation} className="w-full">
+                    Finish &amp; Submit
+                  </LuminaButton>
+                ) : null}
+              </div>
+            )}
+          </LuminaPanel>
+
           {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
             <HydraulicsSimulation
@@ -1351,8 +1530,9 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               largeDiameter={largeDiameter}
               loadWeight={loadWeight}
               selectedZone={selectedZone}
+              dragDisabled={forceLocked}
               onZoneClick={handleZoneClick}
-              onInputForceChange={handleForceChange}
+              onInputForceChange={forceLocked ? () => {} : handleForceChange}
               callbacks={simCallbacks}
             />
             {/* Tap hint overlay */}
@@ -1402,58 +1582,74 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             </LuminaPanel>
           </div>
 
-          {/* Controls — range sliders are the direct-manipulation surface, kept native */}
+          {/* Controls — only the levers this mission leaves free are active.
+              Locked/capped controls are part of the puzzle constraints. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Input Force */}
-            <LuminaPanel>
+            <LuminaPanel className={forceLocked ? 'opacity-60' : ''}>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Input Force</label>
+                <label className="text-slate-300 text-sm font-mono flex items-center gap-1.5">
+                  Input Force
+                  {forceLocked && <span title="Fixed by this mission">🔒</span>}
+                  {!forceLocked && forceMax < 500 && (
+                    <span className="text-amber-400/80 text-[10px]">max {forceMax} N</span>
+                  )}
+                </label>
                 <span className="text-cyan-400 font-mono text-sm">{inputForce} N</span>
               </div>
               <input
-                type="range" min={0} max={500} step={5} value={inputForce}
+                type="range" min={0} max={forceMax} step={5} value={Math.min(inputForce, forceMax)}
+                disabled={forceLocked}
                 onChange={e => handleForceChange(Number(e.target.value))}
-                className="w-full accent-cyan-500 h-2 rounded-full bg-slate-700 cursor-pointer"
-              />
-            </LuminaPanel>
-
-            {/* Load Weight */}
-            <LuminaPanel>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Load Weight</label>
-                <span className="text-amber-400 font-mono text-sm">{loadWeight} kg</span>
-              </div>
-              <input
-                type="range" min={0} max={2000} step={10} value={loadWeight}
-                onChange={e => handleLoadChange(Number(e.target.value))}
-                className="w-full accent-amber-500 h-2 rounded-full bg-slate-700 cursor-pointer"
+                className="w-full accent-cyan-500 h-2 rounded-full bg-slate-700 cursor-pointer disabled:cursor-not-allowed"
               />
             </LuminaPanel>
 
             {/* Small Piston Diameter */}
-            <LuminaPanel>
+            <LuminaPanel className={smallLocked ? 'opacity-60' : ''}>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Small Piston ⌀</label>
+                <label className="text-slate-300 text-sm font-mono flex items-center gap-1.5">
+                  Small Piston ⌀
+                  {smallLocked && <span title="Fixed by this mission">🔒</span>}
+                </label>
                 <span className="text-sky-400 font-mono text-sm">{smallDiameter} cm</span>
               </div>
               <input
                 type="range" min={2} max={10} step={0.5} value={smallDiameter}
+                disabled={smallLocked}
                 onChange={e => handleSmallDiamChange(Number(e.target.value))}
-                className="w-full accent-sky-500 h-2 rounded-full bg-slate-700 cursor-pointer"
+                className="w-full accent-sky-500 h-2 rounded-full bg-slate-700 cursor-pointer disabled:cursor-not-allowed"
               />
             </LuminaPanel>
 
             {/* Large Piston Diameter */}
-            <LuminaPanel>
+            <LuminaPanel className={largeLocked ? 'opacity-60' : ''}>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-slate-300 text-sm font-mono">Large Piston ⌀</label>
+                <label className="text-slate-300 text-sm font-mono flex items-center gap-1.5">
+                  Large Piston ⌀
+                  {largeLocked && <span title="Fixed by this mission">🔒</span>}
+                </label>
                 <span className="text-violet-400 font-mono text-sm">{largeDiameter} cm</span>
               </div>
               <input
                 type="range" min={5} max={30} step={0.5} value={largeDiameter}
+                disabled={largeLocked}
                 onChange={e => handleLargeDiamChange(Number(e.target.value))}
-                className="w-full accent-violet-500 h-2 rounded-full bg-slate-700 cursor-pointer"
+                className="w-full accent-violet-500 h-2 rounded-full bg-slate-700 cursor-pointer disabled:cursor-not-allowed"
               />
+            </LuminaPanel>
+
+            {/* Load (fixed by the mission) */}
+            <LuminaPanel className="opacity-60">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-slate-300 text-sm font-mono flex items-center gap-1.5">
+                  Load <span title="Set by this mission">🔒</span>
+                </label>
+                <span className="text-amber-400 font-mono text-sm">{loadWeight} kg</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
+                <div className="h-full bg-amber-500/50 rounded-full" style={{ width: `${Math.min(100, (loadWeight / 2000) * 100)}%` }} />
+              </div>
             </LuminaPanel>
           </div>
 
@@ -1494,90 +1690,49 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             </LuminaAccordion>
           )}
 
-          {/* Challenges */}
-          {!showChallenges && !allChallengesDone && (
-            <LuminaButton
-              onClick={() => setShowChallenges(true)}
-              className="w-full"
-            >
-              Ready for a Challenge?
-            </LuminaButton>
-          )}
-
-          {showChallenges && currentChallenge && !allChallengesDone && (
-            <LuminaPanel className="p-5 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <LuminaBadge accent={CHALLENGE_TYPE_ACCENT[currentChallenge.type]} className="text-xs">
-                  {currentChallenge.type}
-                </LuminaBadge>
-                <span className="text-slate-500 text-xs">
-                  {challengeResults.length + 1} / {challenges.length}
-                </span>
-              </div>
-              <p className="text-slate-200 text-sm">{currentChallenge.instruction}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {currentChallenge.options.map(opt => {
-                  let state: AnswerChoiceState = 'idle';
-                  if (selectedAnswer === opt.id) {
-                    state = answerFeedback === 'correct' ? 'correct'
-                      : answerFeedback === 'incorrect' ? 'incorrect'
-                      : 'selected';
-                  }
-                  return (
-                    <LuminaAnswerChoice
-                      key={opt.id}
-                      state={state}
-                      onClick={() => handleAnswer(opt.id)}
-                      disabled={!!answerFeedback}
-                      className="p-3 text-sm"
-                    >
-                      <span className="text-slate-500 mr-2 font-mono">{opt.id}.</span>
-                      {opt.text}
-                    </LuminaAnswerChoice>
-                  );
-                })}
-              </div>
-              {showHint && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                  <p className="text-amber-300 text-xs">&#x1F4A1; {currentChallenge.hint}</p>
-                </div>
-              )}
-            </LuminaPanel>
-          )}
-
-          {/* Completion / Submit */}
-          {allChallengesDone && !hasSubmittedEvaluation && (
-            <div className="text-center space-y-3">
-              <p className="text-emerald-400 text-sm font-medium">
-                All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
-              </p>
-              <LuminaButton tone="primary" onClick={handleSubmitEvaluation}>
-                Submit Results
+          {/* Early-finish option once at least the first half of missions are done */}
+          {!allMissionsSolved && !hasSubmittedEvaluation && solvedMissionIds.size >= Math.ceil(missions.length / 2) && (
+            <div className="text-center">
+              <LuminaButton onClick={handleSubmitEvaluation}>
+                Finish here ({solvedMissionIds.size}/{missions.length} solved)
               </LuminaButton>
             </div>
           )}
 
           {hasSubmittedEvaluation && (
             <div className="text-center py-4">
-              <p className="text-emerald-400 font-medium">Results submitted!</p>
+              <p className="text-emerald-400 font-medium">Results submitted! 🏗️</p>
               <p className="text-slate-500 text-xs mt-1">
-                Zones: {exploredZones.size}/4 | Challenges: {challengeResults.filter(r => r.correct).length}/{challenges.length} |
-                Max ratio: {maxForceRatio.toFixed(1)}x
+                Missions solved: {solvedMissionIds.size}/{missions.length} | Zones: {exploredZones.size}/4 |
+                Max multiplier reached: {maxForceRatio.toFixed(1)}x
               </p>
             </div>
           )}
 
-          {/* Zone exploration progress */}
-          <div className="flex items-center gap-2 pt-2">
-            <span className="text-slate-600 text-xs font-mono">Zones:</span>
-            {['small_piston', 'large_piston', 'connecting_pipe', 'load'].map(z => (
-              <span
-                key={z}
-                className={`w-2 h-2 rounded-full ${exploredZones.has(z) ? 'bg-cyan-400' : 'bg-slate-700'}`}
-                title={z.replace(/_/g, ' ')}
-              />
-            ))}
-            <span className="text-slate-600 text-xs">{exploredZones.size}/4</span>
+          {/* Mission + zone progress */}
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-600 text-xs font-mono">Missions:</span>
+              {missions.map(m => (
+                <span
+                  key={m.id}
+                  className={`w-2.5 h-2.5 rounded-full ${solvedMissionIds.has(m.id) ? 'bg-emerald-400' : m.id === currentMission.id ? 'bg-amber-400' : 'bg-slate-700'}`}
+                  title={m.title}
+                />
+              ))}
+              <span className="text-slate-600 text-xs">{solvedMissionIds.size}/{missions.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-600 text-xs font-mono">Zones:</span>
+              {['small_piston', 'large_piston', 'connecting_pipe', 'load'].map(z => (
+                <span
+                  key={z}
+                  className={`w-2 h-2 rounded-full ${exploredZones.has(z) ? 'bg-cyan-400' : 'bg-slate-700'}`}
+                  title={z.replace(/_/g, ' ')}
+                />
+              ))}
+              <span className="text-slate-600 text-xs">{exploredZones.size}/4</span>
+            </div>
           </div>
         </LuminaCardContent>
       </LuminaCard>

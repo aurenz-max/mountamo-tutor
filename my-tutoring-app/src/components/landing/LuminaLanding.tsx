@@ -10,9 +10,10 @@
  * door and the product feel like one place. CTAs lead into /lumina, where the
  * real lesson pipeline lives.
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { GenerativeBackground } from '@/components/lumina/primitives/GenerativeBackground';
 import { SoundManager } from '@/components/lumina/utils/SoundManager';
 import {
@@ -31,6 +32,24 @@ const QUICK_TOPICS = ['the water cycle', 'adding fractions', 'telling time', 'wh
 
 export default function LuminaLanding() {
   const router = useRouter();
+  // Auth-aware CTAs: a signed-in visitor should go straight into the app, never
+  // bounce through /login. `loading` gates the auth-only buttons so they don't
+  // flash "Sign in" before the session resolves.
+  const { user, loading, logout } = useAuth();
+  const signedOut = !loading && !user;
+  const signedIn = !loading && !!user;
+
+  // Account menu (only rendered when signed in) — the new Lumina chrome hides
+  // the legacy nav, so this is the signed-in visitor's way to sign out.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    try {
+      await logout();
+    } catch (e) {
+      console.error('Sign out failed:', e);
+    }
+  };
 
   // Warm the (large) /lumina bundle on mount so the first click transitions
   // instantly instead of waiting on a cold chunk download.
@@ -48,6 +67,14 @@ export default function LuminaLanding() {
   const open = () => {
     SoundManager.navigate();
     router.push('/lumina');
+  };
+
+  // Create an account up front (vs. trying anonymously via `open`). The in-app
+  // "save your progress" prompt is the primary signup on-ramp; this is the
+  // explicit door for visitors who already know they want an account.
+  const signup = () => {
+    SoundManager.navigate();
+    router.push('/login?mode=signup');
   };
 
   return (
@@ -76,12 +103,53 @@ export default function LuminaLanding() {
           <span className="text-xl font-bold tracking-tight text-white">Lumina</span>
         </div>
         <div className="flex items-center gap-2">
-          <LuminaButton tone="subtle" onClick={() => router.push('/login')}>
-            Sign in
-          </LuminaButton>
+          {signedOut && (
+            <LuminaButton tone="subtle" onClick={() => router.push('/login')}>
+              Sign in
+            </LuminaButton>
+          )}
           <LuminaButton tone="primary" onClick={open}>
             Open Lumina
           </LuminaButton>
+          {signedIn && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="Account menu"
+                aria-expanded={menuOpen}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/10"
+              >
+                {(user?.displayName || user?.email || '?').charAt(0).toUpperCase()}
+              </button>
+              {menuOpen && (
+                <>
+                  {/* click-away */}
+                  <div
+                    className="fixed inset-0 z-30"
+                    aria-hidden
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-slate-900/90 shadow-2xl backdrop-blur-xl">
+                    <div className="border-b border-white/5 px-4 py-3">
+                      <p className="truncate text-sm font-medium text-slate-100">
+                        {user?.displayName || 'Signed in'}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">{user?.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -112,9 +180,11 @@ export default function LuminaLanding() {
             Open Lumina
             <ArrowRight className="h-4 w-4" />
           </LuminaButton>
-          <LuminaButton tone="subtle" size="lg" onClick={() => router.push('/login')}>
-            Sign in
-          </LuminaButton>
+          {signedOut && (
+            <LuminaButton tone="subtle" size="lg" onClick={() => router.push('/login')}>
+              Sign in
+            </LuminaButton>
+          )}
         </div>
 
         {/* Jump straight in — a light nod to "learn anything", not the app's search */}
@@ -224,9 +294,11 @@ export default function LuminaLanding() {
                 Open Lumina
                 <ArrowRight className="h-4 w-4" />
               </LuminaButton>
-              <LuminaButton tone="subtle" size="lg" onClick={() => router.push('/login')}>
-                Sign in
-              </LuminaButton>
+              {signedOut && (
+                <LuminaButton tone="subtle" size="lg" onClick={signup}>
+                  Create free account
+                </LuminaButton>
+              )}
             </div>
           </LuminaCardContent>
         </LuminaCard>

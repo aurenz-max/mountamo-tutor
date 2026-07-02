@@ -17,7 +17,7 @@
  * student-facing view. It's the input to the eventual activity-log PRD.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -152,9 +152,28 @@ export interface StudentActivityPanelProps {
   defaultStudentId?: number;
   /** Return to the dev launcher. When omitted, the back link is hidden. */
   onBack?: () => void;
+  /**
+   * Load `defaultStudentId`'s activity immediately on mount. Used by the
+   * student-facing entry (the header user menu), where the student is already
+   * known and shouldn't have to type an ID or click "Load".
+   */
+  autoLoad?: boolean;
+  /** Hide the manual student-ID input + load button (student-facing mode). */
+  hideControls?: boolean;
+  /** Override the card title (defaults to the dev/QA heading). */
+  title?: string;
+  /** Override the card description (defaults to the dev/QA blurb). */
+  description?: string;
 }
 
-export default function StudentActivityPanel({ defaultStudentId, onBack }: StudentActivityPanelProps) {
+export default function StudentActivityPanel({
+  defaultStudentId,
+  onBack,
+  autoLoad = false,
+  hideControls = false,
+  title,
+  description,
+}: StudentActivityPanelProps) {
   const [studentIdInput, setStudentIdInput] = useState(
     defaultStudentId != null ? String(defaultStudentId) : ''
   );
@@ -199,6 +218,16 @@ export default function StudentActivityPanel({ defaultStudentId, onBack }: Stude
       setLoading(false);
     }
   }, [studentIdInput]);
+
+  // Student-facing entry: load the known student's activity once on mount so
+  // the panel opens straight to their data instead of an empty ID prompt.
+  const autoLoaded = useRef(false);
+  useEffect(() => {
+    if (autoLoad && defaultStudentId != null && !autoLoaded.current) {
+      autoLoaded.current = true;
+      load();
+    }
+  }, [autoLoad, defaultStudentId, load]);
 
   const toggleRow = useCallback(
     async (index: number, row: ActivityHistoryRow) => {
@@ -247,42 +276,48 @@ export default function StudentActivityPanel({ defaultStudentId, onBack }: Stude
       )}
       <LuminaCard className="backdrop-blur-xl bg-slate-900/40 border-white/10 max-w-5xl">
         <LuminaCardHeader>
-          <LuminaCardTitle>Student Activity Log</LuminaCardTitle>
+          <LuminaCardTitle>{title ?? 'Student Activity Log'}</LuminaCardTitle>
           <LuminaCardDescription>
-            Dev/QA view of what the engagement pipeline captures per student — primitives used,
-            scores, success rate, and XP/level/streak. Click a history row to inspect its full
-            captured metadata.
+            {description ??
+              'Dev/QA view of what the engagement pipeline captures per student — primitives used, scores, success rate, and XP/level/streak. Click a history row to inspect its full captured metadata.'}
           </LuminaCardDescription>
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-6">
-          {/* Controls */}
-          <div className="flex items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                Student ID
-              </label>
-              <LuminaInput
-                type="number"
-                inputMode="numeric"
-                value={studentIdInput}
-                onChange={(e) => setStudentIdInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') load();
-                }}
-                placeholder="e.g. 1001"
-                className="w-40"
-              />
+          {/* Controls — hidden in student-facing mode (the student is already known) */}
+          {!hideControls && (
+            <div className="flex items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                  Student ID
+                </label>
+                <LuminaInput
+                  type="number"
+                  inputMode="numeric"
+                  value={studentIdInput}
+                  onChange={(e) => setStudentIdInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') load();
+                  }}
+                  placeholder="e.g. 1001"
+                  className="w-40"
+                />
+              </div>
+              <LuminaButton tone="primary" onClick={load} disabled={loading}>
+                {loading ? 'Loading…' : 'Load activity'}
+              </LuminaButton>
             </div>
-            <LuminaButton tone="primary" onClick={load} disabled={loading}>
-              {loading ? 'Loading…' : 'Load activity'}
-            </LuminaButton>
-          </div>
+          )}
 
           {error && (
             <div className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-200 text-sm">
               {error}
             </div>
+          )}
+
+          {/* Student-facing initial load (no visible button to reflect progress) */}
+          {hideControls && loading && !stats && (
+            <p className="text-slate-400 text-sm">Loading your activity…</p>
           )}
 
           {stats && (

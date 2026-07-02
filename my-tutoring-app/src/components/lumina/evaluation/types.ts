@@ -355,6 +355,10 @@ export interface DumpTruckLoaderMetrics extends BasePrimitiveMetrics {
 
   // Time
   timeElapsed: number;          // Time taken in seconds
+
+  // Job-board mode: density/capacity jobs the student solved
+  jobsSolved?: number;
+  jobsTotal?: number;
 }
 
 export interface BlueprintCanvasMetrics extends BasePrimitiveMetrics {
@@ -2936,6 +2940,9 @@ export interface HydraulicsLabMetrics extends BasePrimitiveMetrics {
   challengesCorrect: number;
   challengesTotal: number;
   attemptsCount: number;
+  /** Mission-based lab: engineering jobs the student solved (physics-judged). */
+  missionsSolved?: number;
+  missionsTotal?: number;
 }
 
 // -----------------------------------------------------------------------------

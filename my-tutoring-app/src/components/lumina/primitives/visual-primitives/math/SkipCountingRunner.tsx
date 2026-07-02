@@ -790,6 +790,60 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
 
   const isCountAlongComplete = currentPhase === 'watch' && nextExpectedPosition === null;
 
+  // Tap-to-place jump mode: for count_along challenges the student is meant to
+  // MAKE each jump (generator turns autoPlay off at medium/hard). Instead of a
+  // button that always lands correctly, the student taps the tick they think is
+  // next on the number line — so they actually demonstrate "the next multiple is
+  // here". autoPlay (easy tier) stays a passive watch demo; typed modes unchanged.
+  const isTapJumpMode =
+    currentChallenge?.type === 'count_along' &&
+    !autoPlay &&
+    !isCurrentChallengeComplete &&
+    !allChallengesComplete &&
+    nextExpectedPosition !== null;
+
+  const handleTickTap = useCallback(
+    (pos: number) => {
+      if (
+        isAnimating ||
+        hasSubmittedEvaluation ||
+        currentChallenge?.type !== 'count_along' ||
+        autoPlay ||
+        nextExpectedPosition === null
+      ) {
+        return;
+      }
+
+      // Correct target → make the jump (hop, arc, sound, streak via performJump).
+      if (pos === nextExpectedPosition) {
+        performJump();
+        return;
+      }
+
+      // Wrong target (a multiple too far) → count it as a real attempt and nudge,
+      // WITHOUT naming the next number. Feeds attempts into the hint gate + IRT.
+      const charName = character.type === 'custom' ? 'the character' : `the ${character.type}`;
+      incrementAttempts();
+      setCurrentStreak(0);
+      setFeedback(`One jump at a time! Where does ${charName} land right after ${currentPosition}?`);
+      setFeedbackType('error');
+      SoundManager.playIncorrect();
+      if (isConnected) {
+        sendText(
+          `[JUMP_WRONG_TARGET] Student tapped ${pos} but the next landing after ${currentPosition} is ${nextExpectedPosition} (skip value ${skipValue}). `
+          + `Nudge WITHOUT stating the answer: ask how far ${charName} hops each time and where it would land from ${currentPosition}.`
+          + tutorRevealClause('count_along'),
+          { silent: true },
+        );
+      }
+    },
+    [
+      isAnimating, hasSubmittedEvaluation, currentChallenge, autoPlay, nextExpectedPosition,
+      performJump, incrementAttempts, character.type, currentPosition, skipValue,
+      isConnected, sendText, tutorRevealClause,
+    ],
+  );
+
   // -------------------------------------------------------------------------
   // SVG Number Line Rendering
   // -------------------------------------------------------------------------
@@ -955,6 +1009,21 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
                       className="animate-pulse"
                     />
                   )}
+                  {/* Tap-to-place hit target — only the multiples AHEAD of the
+                       character are tappable (tapping the correct next one hops;
+                       tapping one further ahead is a wrong attempt). Past/current
+                       ticks aren't tappable so the student isn't penalized for
+                       touching where the character already is. */}
+                  {isTapJumpMode && isMultiple &&
+                    (direction === 'forward' ? n > currentPosition : n < currentPosition) && (
+                    <circle
+                      cx={x}
+                      cy={lineY}
+                      r={16}
+                      className="cursor-pointer fill-transparent hover:fill-orange-500/15 transition-colors"
+                      onClick={() => handleTickTap(n)}
+                    />
+                  )}
                 </g>
               );
             })}
@@ -1015,6 +1084,14 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
             )}
           </svg>
         </div>
+
+        {/* Tap-to-place cue — replaces the old always-correct Jump button for
+            count_along so the student actively chooses the next landing. */}
+        {isTapJumpMode && (
+          <div className="text-center text-orange-300/80 text-sm">
+            👆 Tap the number where {character.type === 'custom' ? 'the character' : `the ${character.type}`} lands next
+          </div>
+        )}
 
         {/* Sequence Display — gated by showSequenceChips. The written running
             record of landings (and the "→ ?" next cue) is a strong self-check
@@ -1157,8 +1234,11 @@ const SkipCountingRunner: React.FC<SkipCountingRunnerProps> = ({ data, className
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && !allChallengesComplete && (
               <>
-                {/* Jump button for watch/jump phases */}
-                {(currentPhase === 'watch' || currentPhase === 'jump') && nextExpectedPosition !== null && !autoPlay && (
+                {/* Jump button — retained ONLY for the jump-phase modes
+                    (fill_missing / find_skip_value) where hopping just builds the
+                    visible sequence. count_along now uses tap-to-place on the
+                    number line (isTapJumpMode) so the student picks the landing. */}
+                {currentPhase === 'jump' && nextExpectedPosition !== null && !autoPlay && (
                   <LuminaButton
                     className="bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300"
                     onClick={performJump}

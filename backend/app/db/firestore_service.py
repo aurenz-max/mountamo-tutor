@@ -6,6 +6,7 @@ from google.oauth2 import service_account
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Union
+import asyncio
 import logging
 import uuid
 import os
@@ -559,6 +560,34 @@ class FirestoreService:
            for i in range(1, 13)},
     }
 
+    def grade_to_subject_suffix(self, grade_level: Optional[str]) -> str:
+        """Convert a student grade_level to the curriculum subject-id suffix.
+
+        The inverse of the ``_GRADE_SUFFIX_HINTS`` table: turns a stored grade
+        ("K", "Kindergarten", "1st", "1", "Pre-K") into the suffix used to
+        grade-scope a subject id ("_GK", "_G1", "_GPK"). Returns "" when the
+        grade can't be resolved, so callers fall back to the (ambiguous) scan.
+        """
+        if not grade_level:
+            return ""
+        g = str(grade_level).strip().upper()
+        if g in ("PK", "PRE-K", "PREK", "PRE-KINDERGARTEN"):
+            return "_GPK"
+        if g in ("K", "KINDERGARTEN"):
+            return "_GK"
+        # Pull the leading number out of forms like "1", "1st", "12th".
+        digits = ""
+        for ch in g:
+            if ch.isdigit():
+                digits += ch
+            else:
+                break
+        if digits:
+            n = int(digits)
+            if 1 <= n <= 12:
+                return f"_G{n}"
+        return ""
+
     def _strip_grade_suffix(self, subject_id: str) -> tuple:
         """Strip grade suffix from subject_id, returning (bare_id, grade_hints).
 
@@ -733,19 +762,31 @@ class FirestoreService:
             # Strip grade suffix (e.g. MATHEMATICS_GK → MATHEMATICS)
             # and extract grade hints for fast resolution.
             bare_subject_id, grade_hints = self._strip_grade_suffix(subject_id)
+            published_only = version_type == "published"
 
-            grade = self._resolve_grade_for_subject(
-                bare_subject_id, collection_name, grade_hints
-            )
+            def _load_graph_blocking():
+                resolved_grade = self._resolve_grade_for_subject(
+                    bare_subject_id, collection_name, grade_hints
+                )
+                if not resolved_grade:
+                    return None, [], []
+                loaded_nodes = self._read_nodes_from_curriculum(
+                    resolved_grade, bare_subject_id, collection_name
+                )
+                loaded_edges = self._read_edges_from_graph(
+                    resolved_grade, bare_subject_id, published_only
+                )
+                return resolved_grade, loaded_nodes, loaded_edges
+
+            # These helpers issue synchronous Firestore .get()/.stream() calls.
+            # Run them in a worker thread so a graph build can't block the event
+            # loop (and stall every other in-flight request) while Firestore responds.
+            grade, nodes, edges = await asyncio.to_thread(_load_graph_blocking)
             if not grade:
                 logger.info(
                     f"No {collection_name} document found for {bare_subject_id}"
                 )
                 return None
-
-            nodes = self._read_nodes_from_curriculum(grade, bare_subject_id, collection_name)
-            published_only = version_type == "published"
-            edges = self._read_edges_from_graph(grade, bare_subject_id, published_only)
 
             now = datetime.now(timezone.utc).isoformat()
             skill_count = sum(1 for n in nodes if n.get("type") == "skill")

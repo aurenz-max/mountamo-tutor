@@ -1,6 +1,7 @@
 'use client';
 
 import React, { type ComponentType } from 'react';
+import { useStudent } from '../contexts/StudentContext';
 import type { GradeLevel } from './GradeLevelSelector';
 import { ManifestViewer } from './ManifestViewer';
 import { KnowledgeCheckTester } from './KnowledgeCheckTester';
@@ -20,6 +21,7 @@ import PracticeProblemTester from './PracticeProblemTester';
 import DistributionExplorerTester from './DistributionExplorerTester';
 import LuminaTutorTester from './LuminaTutorTester';
 import StudentActivityPanel from './StudentActivityPanel';
+import MyProgressPanel from './MyProgressPanel';
 import CalibrationSimulator from './CalibrationSimulator';
 import AtomRegistry from './AtomRegistry';
 import SoundLab from './SoundLab';
@@ -81,7 +83,31 @@ export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
   onBack,
   onNavigate,
 }) => {
+  const { studentId, ready } = useStudent();
+
   // Panels with bespoke props
+
+  // Student-facing progress view — the header user menu's "My activity".
+  // The curriculum-map hero (same screen as the home page) + the student's
+  // activity, auto-scoped to the signed-in student.
+  if (activePanel === 'my-activity') {
+    // Identity still resolving (profile fetch in flight) — mounting now would
+    // fetch and cache the fallback student's (403'd) data under the panel's
+    // load-once guards, so wait for the real id instead.
+    if (!ready) {
+      return (
+        <div className="flex-1 flex items-center justify-center pt-24">
+          <span className="text-sm text-slate-400 animate-pulse">Loading your profile…</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex-1 animate-fade-in">
+        <MyProgressPanel studentId={Number(studentId)} onBack={onBack} />
+      </div>
+    );
+  }
+
   if (activePanel === 'atom-registry') {
     return <AtomRegistry onBack={onBack} onOpenTester={onNavigate} />;
   }

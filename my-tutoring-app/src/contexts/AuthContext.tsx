@@ -12,6 +12,20 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
+// Error thrown by fetchUserProfile for transient (non-404) failures. Carries the
+// HTTP status and any server-provided Retry-After (ms) so the retry loop can back
+// off intelligently — e.g. wait exactly as long as a 429 asks.
+class ProfileFetchError extends Error {
+  status?: number;
+  retryAfterMs?: number;
+  constructor(message: string, status?: number, retryAfterMs?: number) {
+    super(message);
+    this.name = 'ProfileFetchError';
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 interface UserProfile {
   uid: string;
   email: string;
@@ -147,6 +161,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         return profile as UserProfile;
       } else if (response.status === 404) {
+        // A 404 is the one definitive "this user has no profile" answer — safe to
+        // clear. Every other failure is treated as transient (see catch below).
         console.log('ℹ️ Profile not found - will be created automatically');
         return null;
       } else {
@@ -155,13 +171,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           status: response.status,
           error: errorText
         });
-        return null;
+        // Transient (5xx, timeout surfaced as a status, auth hiccup, or a 429 from
+        // the token-verify rate limiter) — throw so callers keep any profile they
+        // already have instead of blanking it, which would flip the app to its
+        // logged-out/anonymous state. Preserve the status and Retry-After so the
+        // retry loop can honor them.
+        const retryAfterHeader = response.headers.get('Retry-After');
+        const retryAfterMs = retryAfterHeader
+          ? Math.max(0, parseInt(retryAfterHeader, 10) * 1000) || undefined
+          : undefined;
+        throw new ProfileFetchError(
+          `Profile fetch failed: ${response.status}`,
+          response.status,
+          retryAfterMs
+        );
       }
     } catch (error) {
+      // Network error / backend stall / thrown above — do NOT resolve to null and
+      // clobber a good profile. Let the caller decide (it keeps the prior value).
       console.error('❌ Error fetching user profile:', error);
-      return null;
+      throw error instanceof Error ? error : new Error('Profile fetch error');
     }
   }, [getAuthToken, getApiUrl]);
+
+  // Retry the profile fetch on transient failure so a single 429/5xx doesn't leave
+  // userProfile null for the whole session (the initial load has no prior profile to
+  // fall back on, so one miss would strand the badge until a manual refresh). A 404
+  // resolves to null and is NOT retried; only thrown transient errors are.
+  const fetchUserProfileWithRetry = useCallback(
+    async (userParam: User, maxAttempts = 4): Promise<UserProfile | null> => {
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          return await fetchUserProfile(userParam);
+        } catch (error) {
+          lastError = error;
+          if (attempt === maxAttempts) break;
+          const status = (error as ProfileFetchError)?.status;
+          const retryAfterMs = (error as ProfileFetchError)?.retryAfterMs;
+          // Honor Retry-After on a 429; otherwise exponential backoff (0.5s, 1s, 2s,
+          // capped at 5s) with jitter to avoid thundering-herd double-mounts.
+          const backoffMs =
+            status === 429 && retryAfterMs
+              ? retryAfterMs
+              : Math.min(500 * 2 ** (attempt - 1), 5000) + Math.floor(Math.random() * 250);
+          console.warn(
+            `⏳ Profile fetch attempt ${attempt}/${maxAttempts} failed (status=${status ?? 'network'}); retrying in ${backoffMs}ms`
+          );
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        }
+      }
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('Profile fetch failed after retries');
+    },
+    [fetchUserProfile]
+  );
 
   const refreshUserProfile = useCallback(async () => {
     console.log('🔄 Refreshing user profile...');
@@ -271,12 +336,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Pass firebaseUser directly to avoid race condition
         try {
-          const profile = await fetchUserProfile(firebaseUser);
+          const profile = await fetchUserProfileWithRetry(firebaseUser);
           console.log('📊 Profile fetch result:', !!profile);
           setUserProfile(profile);
         } catch (error) {
-          console.error('❌ Profile fetch error:', error);
-          setUserProfile(null);
+          // Transient failure (e.g. backend stalled). Keep whatever profile we
+          // already had rather than nulling it and appearing logged out; a later
+          // refresh will fill it in. On a genuine 404, fetchUserProfile returns
+          // null (handled above), not a throw.
+          console.error('❌ Profile fetch error (keeping existing profile):', error);
         } finally {
           console.log('✅ Setting loading to false');
           setLoading(false);

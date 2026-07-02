@@ -1013,7 +1013,8 @@ class LearningPathsService:
         self,
         student_id: int,
         subject_id: str,
-        include_drafts: bool = False
+        include_drafts: bool = False,
+        grade: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get curriculum graph decorated with student progress data.
@@ -1032,6 +1033,10 @@ class LearningPathsService:
             student_id: Student ID
             subject_id: Subject identifier (e.g., "MATHEMATICS")
             include_drafts: Include draft curriculum (default: False)
+            grade: Student grade_level (e.g., "K", "1st"). When provided, scopes
+                the curriculum-graph lookup to that grade so grade resolution
+                never falls into first-doc-wins scanning (a Kindergarten student
+                must not be handed a Grade 1 graph).
 
         Returns:
             {
@@ -1049,8 +1054,19 @@ class LearningPathsService:
             # Step 1: Fetch graph and proficiency from Firestore in parallel
             version_type = "draft" if include_drafts else "published"
 
+            # Grade-scope the graph lookup so get_curriculum_graph resolves the
+            # student's grade directly (via grade hints) instead of scanning all
+            # grade docs and returning the first that contains the subject —
+            # which, in lexicographic doc order, hands K students a Grade 1 graph.
+            # Proficiency stays keyed on the bare display subject.
+            graph_subject_id = subject_id
+            if grade:
+                suffix = self.firestore.grade_to_subject_suffix(grade)
+                if suffix and not subject_id.upper().endswith(suffix):
+                    graph_subject_id = f"{subject_id}{suffix}"
+
             graph_data, student_prof_map = await asyncio.gather(
-                self._get_graph(subject_id, version_type),
+                self._get_graph(graph_subject_id, version_type),
                 self.firestore.get_student_proficiency_map(student_id, subject=subject_id)
             )
 

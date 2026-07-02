@@ -57,7 +57,7 @@ export interface MathFactFluencyData {
   title: string;
   description?: string;
   challenges: MathFactFluencyChallenge[];
-  maxNumber: number;               // 3, 5, or 10
+  maxNumber: number;               // driven by lesson scope: 5, 10, or 20
   includeSubtraction: boolean;
   showVisualAids: boolean;
   // Goal response time in seconds, used ONLY as a silent automaticity signal for
@@ -118,24 +118,31 @@ function DotArray({ count, size = 120 }: { count: number; size?: number }) {
   );
 }
 
-/** Render a mini ten-frame */
+/** Render a mini ten-frame. Grows to a DOUBLE ten-frame (20 cells) when the count
+ *  exceeds 10 so within-20 facts render honestly instead of overflowing a single frame. */
 function TenFrameVisual({ count, size = 140 }: { count: number; size?: number }) {
+  const frames = count > 10 ? 2 : 1;
+  const cellCount = frames * 10;
   const cellW = size / 5;
   const cellH = cellW * 0.8;
-  const totalH = cellH * 2;
+  const frameGap = 6;
+  const totalH = cellH * 2 * frames + frameGap * (frames - 1);
 
   return (
     <svg width={size} height={totalH + 4} className="mx-auto">
-      {/* Grid */}
-      {Array.from({ length: 10 }, (_, i) => {
-        const col = i % 5;
-        const row = Math.floor(i / 5);
+      {/* Grid — one 5×2 frame per 10, stacked vertically */}
+      {Array.from({ length: cellCount }, (_, i) => {
+        const frame = Math.floor(i / 10);
+        const within = i % 10;
+        const col = within % 5;
+        const row = Math.floor(within / 5);
+        const y = frame * (cellH * 2 + frameGap) + row * cellH;
         const filled = i < count;
         return (
           <g key={i}>
             <rect
               x={col * cellW + 1}
-              y={row * cellH + 1}
+              y={y + 1}
               width={cellW - 2}
               height={cellH - 2}
               rx={3}
@@ -145,7 +152,7 @@ function TenFrameVisual({ count, size = 140 }: { count: number; size?: number })
             {filled && (
               <circle
                 cx={col * cellW + cellW / 2}
-                cy={row * cellH + cellH / 2}
+                cy={y + cellH / 2}
                 r={Math.min(cellW, cellH) / 3}
                 className="fill-blue-400"
               />

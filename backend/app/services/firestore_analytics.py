@@ -6,7 +6,7 @@
 import asyncio
 import logging
 import math
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, date, timedelta, timezone
 from typing import Dict, List, Any, Optional, Set, Tuple
 
@@ -1194,6 +1194,7 @@ class FirestoreAnalyticsService:
         subject: str,
         include_nodes: bool = True,
         depth_limit: Optional[int] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Compute knowledge graph progress for a student in a subject.
@@ -1227,7 +1228,7 @@ class FirestoreAnalyticsService:
             import asyncio
 
             student_graph_task = self.learning_paths.get_student_graph(
-                student_id, subject
+                student_id, subject, grade=grade
             )
             lifecycle_task = self.fs.get_all_mastery_lifecycles(
                 student_id, subject=subject
@@ -1256,32 +1257,37 @@ class FirestoreAnalyticsService:
 
             # Build adjacency for topological depth
             children: Dict[str, list] = defaultdict(list)
-            parents: Dict[str, list] = defaultdict(list)
+            for edge in edges:
+                children[edge.get("source", "")].append(edge.get("target", ""))
+
+            # Longest-path depth in topological order (Kahn's algorithm),
+            # O(nodes + edges). Re-expanding children on every deeper path
+            # enumerates all paths — combinatorial on dense graphs — and it
+            # runs on the event loop, so it must stay linear.
+            node_ids = {n["id"] for n in nodes}
+            in_degree: Dict[str, int] = {nid: 0 for nid in node_ids}
             for edge in edges:
                 src = edge.get("source", "")
                 tgt = edge.get("target", "")
-                children[src].append(tgt)
-                parents[tgt].append(src)
+                if src in node_ids and tgt in node_ids:
+                    in_degree[tgt] += 1
 
-            # Compute topological depth via BFS from roots
-            node_ids = {n["id"] for n in nodes}
-            roots = [nid for nid in node_ids if nid not in parents or not parents[nid]]
             depth_map: Dict[str, int] = {}
-            queue = [(r, 0) for r in roots]
+            queue = deque(nid for nid, deg in in_degree.items() if deg == 0)
+            for nid in queue:
+                depth_map[nid] = 0
             while queue:
-                nid, d = queue.pop(0)
-                if nid in depth_map:
-                    # Keep the max depth (longest path)
-                    if d > depth_map[nid]:
-                        depth_map[nid] = d
-                    else:
-                        continue
-                else:
-                    depth_map[nid] = d
+                nid = queue.popleft()
                 for child in children.get(nid, []):
-                    queue.append((child, d + 1))
+                    if child not in in_degree:
+                        continue  # edge points outside this graph's node set
+                    depth_map[child] = max(depth_map.get(child, 0), depth_map[nid] + 1)
+                    in_degree[child] -= 1
+                    if in_degree[child] == 0:
+                        queue.append(child)
 
-            # For nodes not reached (disconnected), set depth 0
+            # Nodes never dequeued (disconnected, or on a cycle in bad data)
+            # default to depth 0 rather than being dropped.
             for n in nodes:
                 if n["id"] not in depth_map:
                     depth_map[n["id"]] = 0

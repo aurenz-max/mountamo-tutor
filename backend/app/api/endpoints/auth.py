@@ -254,7 +254,37 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
             display_name=user_data.display_name,
             email_verified=not settings.AUTH_REQUIRE_EMAIL_VERIFICATION
         )
-        
+
+        # Eagerly provision the Lumina profile so the grade chosen at signup is
+        # honored from the very first lesson. Without this, the profile is
+        # created lazily on the first /user-profiles/profile call — and that
+        # path has no grade, so the signup selection is silently dropped.
+        # Non-fatal: if this fails, the lazy path still provisions a profile
+        # (grade-less) on first authenticated call, so we never block signup.
+        try:
+            from ...core.middleware import get_cosmos_db_service
+            from ...services.user_profiles import user_profiles_service
+
+            student_mapping = await get_cosmos_db_service().get_or_create_student_mapping(
+                firebase_uid=user_record.uid,
+                email=user_data.email,
+                display_name=user_data.display_name,
+            )
+            existing_profile = await user_profiles_service.get_user_profile(user_record.uid)
+            if not existing_profile:
+                await user_profiles_service.create_user_profile(
+                    uid=user_record.uid,
+                    student_id=student_mapping["student_id"],
+                    email=user_data.email,
+                    display_name=user_data.display_name,
+                    grade_level=user_data.grade_level,
+                )
+        except Exception as profile_err:
+            logger.warning(
+                f"⚠️ Eager profile provisioning failed for {user_data.email} "
+                f"(falling back to lazy creation): {profile_err}"
+            )
+
         # Log successful registration
         SecurityLogger.log_registration_attempt(
             request=request,

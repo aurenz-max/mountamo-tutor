@@ -890,15 +890,30 @@ export const HowItWorksDemo: React.FC = () => {
 // adaptive engine routes a learner through. Auto-plays, and every grade and
 // subject is clickable.
 
-type ShowcaseSubject = {
+export type ShowcaseSubject = {
   name: string;
   accent: LuminaAccent;
   icon: React.ReactNode;
-  units: [string, string, string, string];
+  units: string[]; // up to 4 rendered as the diamond graph; relaxed from a fixed tuple so real curricula (any length) fit
   total: number; // real unit count for this grade × subject ("+N more")
   inProgress?: boolean; // not yet published — titles borrowed from grade 4
+  /**
+   * Optional mastery status per unit (aligned to `units`), from the student's
+   * knowledge graph. When present, unit frames are tinted by status instead of
+   * the subject accent. Absent on the marketing demo (nodes stay accent-colored).
+   */
+  unitStatus?: string[];
 };
-type ShowcaseGrade = { label: string; full: string; subjects: ShowcaseSubject[] };
+
+// Mastery-status tint for a unit frame (used only when unitStatus is supplied).
+const UNIT_STATUS_CLASSES: Record<string, string> = {
+  mastered: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200',
+  frontier: 'border-amber-500/40 bg-amber-500/15 text-amber-200',
+  in_progress: 'border-blue-500/40 bg-blue-500/15 text-blue-200',
+  not_started: 'border-white/10 bg-white/[0.04] text-slate-400',
+  locked: 'border-slate-700/40 bg-slate-800/40 text-slate-600',
+};
+export type ShowcaseGrade = { label: string; full: string; subjects: ShowcaseSubject[] };
 
 const SUBJECT_META = {
   math: { name: 'Math', accent: 'cyan' as LuminaAccent, icon: <Calculator className="h-3.5 w-3.5" /> },
@@ -906,6 +921,23 @@ const SUBJECT_META = {
   science: { name: 'Science', accent: 'emerald' as LuminaAccent, icon: <FlaskConical className="h-3.5 w-3.5" /> },
   social: { name: 'Social Studies', accent: 'amber' as LuminaAccent, icon: <Globe2 className="h-3.5 w-3.5" /> },
 } as const;
+
+/**
+ * Map a curriculum-service subject name (e.g. "Mathematics", "Language Arts",
+ * "Social Studies") onto the showcase's visual language (accent + icon), so a
+ * real-data map reads identically to the demo. Falls back to a neutral accent
+ * for anything unrecognized.
+ */
+export function subjectVisual(subjectName: string): { accent: LuminaAccent; icon: React.ReactNode } {
+  const n = subjectName.toLowerCase();
+  if (n.includes('math')) return SUBJECT_META.math;
+  if (n.includes('read') || n.includes('language') || n.includes('english') || n.includes('ela') || n.includes('literacy'))
+    return SUBJECT_META.reading;
+  if (n.includes('science')) return SUBJECT_META.science;
+  if (n.includes('social') || n.includes('history') || n.includes('geograph') || n.includes('civic'))
+    return SUBJECT_META.social;
+  return { accent: 'purple', icon: <GraduationCap className="h-3.5 w-3.5" /> };
+}
 
 const sub = (
   key: keyof typeof SUBJECT_META,
@@ -1017,35 +1049,75 @@ const SHOWCASE_CSS = `
 }
 `;
 
-export const CurriculumShowcase: React.FC = () => {
-  const [g, setG] = useState(3); // grade index — open on Grade 3 (richest map)
+export interface CurriculumShowcaseProps {
+  /** Grades to render. Defaults to the built-in K–5 marketing demo data. */
+  grades?: ShowcaseGrade[];
+  /** Which grade the wheel opens on. Defaults to Grade 3 (the richest demo map). */
+  initialGradeIndex?: number;
+  /** Auto-walk subjects then grades. Defaults to true (marketing); turn off for a pinned student view. */
+  autoTour?: boolean;
+  /** Notified when a grade is selected — lets a data-driven parent lazily load that grade's units. */
+  onSelectGrade?: (gradeIndex: number) => void;
+  /**
+   * Notified when a subject becomes the featured one (on chip click and for the
+   * initial/grade-change selection) — lets a data-driven parent lazily load just
+   * that subject's mastery graph instead of all subjects at once.
+   */
+  onSelectSubject?: (gradeIndex: number, subjectIndex: number) => void;
+  /** Notified when a unit frame is clicked. When set, unit frames become clickable (deep dive). */
+  onSelectUnit?: (gradeIndex: number, subjectIndex: number, unitIndex: number) => void;
+}
+
+export const CurriculumShowcase: React.FC<CurriculumShowcaseProps> = ({
+  grades = GRADES,
+  initialGradeIndex = 3,
+  autoTour = true,
+  onSelectGrade,
+  onSelectSubject,
+  onSelectUnit,
+}) => {
+  const clamp = (i: number) => Math.min(Math.max(i, 0), Math.max(grades.length - 1, 0));
+  const [g, setG] = useState(() => clamp(initialGradeIndex)); // grade index
   const [s, setS] = useState(0); // featured subject index
 
-  // Auto-tour: walk the four subjects of a grade, then turn the wheel.
+  // Auto-tour: walk a grade's subjects, then turn the wheel. Off for pinned views.
   useEffect(() => {
+    if (!autoTour) return;
     const t = setTimeout(() => {
-      if (s < 3) setS(s + 1);
+      if (s < grades[g].subjects.length - 1) setS(s + 1);
       else {
         setS(0);
-        setG((prev) => (prev + 1) % GRADES.length);
+        setG((prev) => (prev + 1) % grades.length);
       }
     }, 2600);
     return () => clearTimeout(t);
-  }, [g, s]);
+  }, [g, s, autoTour, grades]);
 
-  const grade = GRADES[g];
-  const subject = grade.subjects[s];
-  const accent = subject.accent;
+  const grade = grades[g] ?? grades[0];
+  const subject = grade?.subjects[s] ?? grade?.subjects[0];
+  const accent = subject?.accent ?? 'cyan';
 
   const pickGrade = (i: number) => {
     SoundManager.tap();
     setG(i);
     setS(0);
+    onSelectGrade?.(i);
   };
   const pickSubject = (i: number) => {
     SoundManager.select();
     setS(i);
   };
+
+  // Lazily load the featured subject's mastery graph — on first paint and
+  // whenever the grade or featured subject changes (incl. chip clicks and
+  // auto-tour). Keeps the parent from building every subject's graph up front.
+  useEffect(() => {
+    onSelectSubject?.(g, s);
+  }, [g, s, onSelectSubject]);
+
+  // A data-driven parent can hand us an empty/still-loading grade; render nothing
+  // rather than crash until the units arrive.
+  if (!grade || !subject) return null;
 
   return (
     <LuminaCard surface="glass" topAccent="emerald">
@@ -1064,9 +1136,9 @@ export const CurriculumShowcase: React.FC = () => {
             </span>
           </div>
 
-          {/* Grade tokens around the ring */}
-          {GRADES.map((gr, i) => {
-            const ang = ((-90 + i * 60) * Math.PI) / 180;
+          {/* Grade tokens around the ring — evenly spaced for however many grades */}
+          {grades.map((gr, i) => {
+            const ang = ((-90 + i * (360 / grades.length)) * Math.PI) / 180;
             const x = 50 + 38 * Math.cos(ang);
             const y = 50 + 38 * Math.sin(ang);
             const active = i === g;
@@ -1130,60 +1202,102 @@ export const CurriculumShowcase: React.FC = () => {
             </div>
 
             <div key={`${g}-${s}`} className="relative h-52 w-full">
-              {/* Edge layer — prerequisite arrows, drawn behind the frames */}
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="absolute inset-0 h-full w-full"
-                aria-hidden
-              >
-                {EDGES.map(([a, b], i) => (
-                  <line
-                    key={i}
-                    x1={NODE_POS[a].x}
-                    y1={NODE_POS[a].y}
-                    x2={NODE_POS[b].x}
-                    y2={NODE_POS[b].y}
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    vectorEffect="non-scaling-stroke"
-                    pathLength={1}
-                    style={{ animationDelay: `${0.15 * i}s` }}
-                    className={`lumina-edge ${accentText[accent]} opacity-50`}
-                  />
-                ))}
-              </svg>
-
-              {/* Unit frames — uniform width, and opaque so the connectors
-                  tuck cleanly under each card edge instead of crossing through. */}
-              {subject.units.map((u, i) => (
-                <div
-                  key={i}
-                  style={{ left: `${NODE_POS[i].x}%`, top: `${NODE_POS[i].y}%` }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                >
-                  <div
-                    className="lumina-node relative w-[136px] overflow-hidden rounded-lg shadow-lg shadow-black/30"
-                    style={{ animationDelay: `${0.08 * i}s` }}
-                  >
-                    {/* Opaque base — occludes any connector running beneath the card */}
-                    <span className="absolute inset-0 bg-slate-950" />
-                    <div
-                      className={`relative flex min-h-[44px] items-center justify-center rounded-lg border px-2.5 py-1.5 text-center text-[10px] font-semibold leading-[1.2] ${accentSoftBorder[accent]} ${accentChipBg[accent]} ${accentText[accent]}`}
-                    >
-                      {u}
+              {/* Real curricula can carry any number of units; the diamond shows
+                  up to 4 (and "+N more"). Empty units mean the parent is still
+                  fetching this grade — show a shimmer instead of a bare frame. */}
+              {(() => {
+                const nodes = subject.units.slice(0, 4);
+                if (nodes.length === 0) {
+                  return (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <span className="text-xs text-slate-500 animate-pulse">Loading units…</span>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                }
+                return (
+                  <>
+                    {/* Edge layer — prerequisite arrows, drawn behind the frames.
+                        Only edges between rendered nodes, so fewer than 4 units
+                        never leave a connector dangling into empty space. */}
+                    <svg
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="none"
+                      className="absolute inset-0 h-full w-full"
+                      aria-hidden
+                    >
+                      {EDGES.filter(([a, b]) => a < nodes.length && b < nodes.length).map(([a, b], i) => (
+                        <line
+                          key={i}
+                          x1={NODE_POS[a].x}
+                          y1={NODE_POS[a].y}
+                          x2={NODE_POS[b].x}
+                          y2={NODE_POS[b].y}
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          vectorEffect="non-scaling-stroke"
+                          pathLength={1}
+                          style={{ animationDelay: `${0.15 * i}s` }}
+                          className={`lumina-edge ${accentText[accent]} opacity-50`}
+                        />
+                      ))}
+                    </svg>
 
-              {/* +N more — keeps "4 shown of {total}" honest */}
-              {subject.total > 4 && (
-                <span className="absolute bottom-0 right-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-400">
-                  +{subject.total - 4} more
-                </span>
-              )}
+                    {/* Unit frames — uniform width, and opaque so the connectors
+                        tuck cleanly under each card edge instead of crossing through.
+                        Clickable (deep dive) + status-tinted when the parent supplies
+                        those; otherwise a plain accent-colored frame (marketing demo). */}
+                    {nodes.map((u, i) => {
+                      const statusCls = subject.unitStatus?.[i]
+                        ? UNIT_STATUS_CLASSES[subject.unitStatus[i]]
+                        : undefined;
+                      const frameInner = (
+                        <>
+                          {/* Opaque base — occludes any connector running beneath the card */}
+                          <span className="absolute inset-0 bg-slate-950" />
+                          <div
+                            className={`relative flex min-h-[44px] items-center justify-center rounded-lg border px-2.5 py-1.5 text-center text-[10px] font-semibold leading-[1.2] ${
+                              statusCls ?? `${accentSoftBorder[accent]} ${accentChipBg[accent]} ${accentText[accent]}`
+                            }`}
+                          >
+                            {u}
+                          </div>
+                        </>
+                      );
+                      const nodeCls = 'lumina-node relative w-[136px] overflow-hidden rounded-lg shadow-lg shadow-black/30';
+                      return (
+                        <div
+                          key={i}
+                          style={{ left: `${NODE_POS[i].x}%`, top: `${NODE_POS[i].y}%` }}
+                          className="absolute -translate-x-1/2 -translate-y-1/2"
+                        >
+                          {onSelectUnit ? (
+                            <button
+                              type="button"
+                              onClick={() => onSelectUnit(g, s, i)}
+                              style={{ animationDelay: `${0.08 * i}s` }}
+                              className={`${nodeCls} cursor-pointer transition-transform hover:scale-[1.05] focus:outline-none focus:ring-2 focus:ring-white/40`}
+                            >
+                              {frameInner}
+                            </button>
+                          ) : (
+                            <div className={nodeCls} style={{ animationDelay: `${0.08 * i}s` }}>
+                              {frameInner}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* +N more — keeps "4 shown of {total}" honest */}
+                    {subject.total > 4 && (
+                      <span className="absolute bottom-0 right-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                        +{subject.total - 4} more
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Footer caption */}

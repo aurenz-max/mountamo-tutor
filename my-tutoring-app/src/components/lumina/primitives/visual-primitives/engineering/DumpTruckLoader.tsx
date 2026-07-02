@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   usePrimitiveEvaluation,
   type DumpTruckLoaderMetrics,
@@ -15,6 +15,8 @@ import {
   LuminaPanel,
   LuminaFeedbackCard,
   LuminaActionButton,
+  LuminaButton,
+  LuminaBadge,
 } from '../../../ui';
 
 /**
@@ -43,6 +45,7 @@ export interface DumpTruckLoaderData {
   timeLimit?: number;
   theme: 'realistic' | 'cartoon' | 'simple';
   truckColor: string;
+  jobs?: DumpTruckJob[];
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -55,6 +58,97 @@ interface DumpTruckLoaderProps {
   data: DumpTruckLoaderData;
   className?: string;
 }
+
+// ============================================================================
+// Density (weight per volume unit) — the heart of the lesson.
+// With a fixed bed (30) and weight cap (50): heavy materials hit the SCALE
+// before the bed fills; light materials fill the BED before they get heavy.
+//   full-bed weight = bedVolume * density  → if > capacity, WEIGHT-limited.
+// ============================================================================
+
+type MaterialType = 'dirt' | 'gravel' | 'sand' | 'debris';
+
+const DENSITY_BY_MATERIAL: Record<MaterialType, number> = {
+  debris: 1.0, // light & fluffy → bed fills first (volume-limited)
+  dirt: 1.5,   // medium → bed fills first, just under weight
+  gravel: 1.8, // heavy → weight-limited, bed ~83% full
+  sand: 2.5,   // wet sand, really heavy → weight-limited, bed ~67% full
+};
+
+const MATERIAL_LABEL: Record<MaterialType, string> = {
+  debris: 'light debris',
+  dirt: 'dirt',
+  gravel: 'gravel',
+  sand: 'wet sand',
+};
+
+// ============================================================================
+// Jobs — code-owned density puzzles (numbers = correctness).
+// Bed volume and weight capacity stay CONSTANT across jobs; only the material
+// (and therefore its density) changes, so the binding limit shifts. That
+// contrast is the whole lesson. Optional data.jobs can re-theme the words.
+// ============================================================================
+
+export interface DumpTruckJob {
+  id: string;
+  title: string;
+  material: MaterialType;
+  sourceSize: number;          // units of material at the pile for this job
+  goal: 'complete_loads' | 'clear_source';
+  targetLoads?: number;        // for 'complete_loads'
+  predict?: boolean;           // ask "which fills first?" before solving
+  brief: string;               // kid-friendly job description
+  hint: string;                // shown only on request
+  explainOnSolve: string;      // the density "why it worked" payoff
+}
+
+const DEFAULT_JOBS: DumpTruckJob[] = [
+  {
+    id: 'j1',
+    title: 'Light & Fluffy',
+    material: 'debris',
+    sourceSize: 60,
+    goal: 'complete_loads',
+    targetLoads: 2,
+    brief: "First job: haul this pile of light packing debris. Fill the bed right up and dump it at the dump zone — twice. Watch the two meters as you load: which one fills up first?",
+    hint: "Debris is light. Keep scooping — you'll fill the BED to the top long before the truck gets heavy.",
+    explainOnSolve: "Light debris is fluffy — the BED filled to the top while the weight scale barely moved. When material is light, the SIZE of the bed is your limit.",
+  },
+  {
+    id: 'j2',
+    title: 'Heavy Wet Sand',
+    material: 'sand',
+    sourceSize: 40,
+    goal: 'complete_loads',
+    targetLoads: 1,
+    predict: true,
+    brief: "New job: wet sand — and it's HEAVY. Load as much as you can safely carry, then dump it. First, make a prediction below.",
+    hint: "Try to fill the bed. You'll notice the truck refuses more sand while the bed still looks part-empty — that's the weight limit talking.",
+    explainOnSolve: "Wet sand is heavy! The SCALE hit the limit when the bed was only about two-thirds full. With heavy material, WEIGHT is your limit — not space. The bed can't fill all the way.",
+  },
+  {
+    id: 'j3',
+    title: 'Gravel Run',
+    material: 'gravel',
+    sourceSize: 50,
+    goal: 'complete_loads',
+    targetLoads: 1,
+    predict: true,
+    brief: "Gravel is heavier than dirt but lighter than wet sand. Predict which meter fills first, then load a full safe load and dump it.",
+    hint: "Gravel is heavy enough that the scale still wins — but the bed gets fuller than it did with the wet sand.",
+    explainOnSolve: "Gravel is heavy, so WEIGHT was still your limit — but because it's lighter than wet sand, the bed got fuller (about 83%) before the scale maxed out. Heavier material = less you can fit before the weight limit.",
+  },
+  {
+    id: 'j4',
+    title: 'The Big Haul',
+    material: 'sand',
+    sourceSize: 80,
+    goal: 'clear_source',
+    brief: "Big job: move ALL 80 units of wet sand to the dump zone. Because it's so heavy, each safe load is small — so how many trips will it take? Find out!",
+    hint: "Each safe load of wet sand is about 20 units (the scale limit). 80 units ÷ 20 per trip = 4 trips.",
+    explainOnSolve: "Heavy material means small safe loads, which means MORE trips. Wet sand only lets you carry ~20 units per trip, so moving 80 units took about 4 trips. Density decides your trip count!",
+  },
+];
 
 // Dump pile particle
 interface DumpPileParticle {
@@ -95,14 +189,11 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     description,
     truckCapacity = 50,
     bedVolume = 30,
-    materialType = 'dirt',
-    materialDensity = 1.5,
     showWeight = true,
     showFillLevel = true,
-    sourceSize = 150,
-    targetLoads,
     timeLimit,
     truckColor = '#F59E0B',
+    jobs: dataJobs,
     instanceId,
     skillId,
     subskillId,
@@ -110,6 +201,32 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // ---- Jobs (density-focused mission ladder) ----
+  const jobs = useMemo(
+    () => (dataJobs && dataJobs.length > 0 ? dataJobs : DEFAULT_JOBS),
+    [dataJobs],
+  );
+  const [currentJobIdx, setCurrentJobIdx] = useState(0);
+  const currentJob = jobs[currentJobIdx];
+
+  // Material + source are driven by the current job; caps stay constant.
+  const materialType = currentJob.material;
+  const materialDensity = DENSITY_BY_MATERIAL[materialType];
+  const sourceSize = currentJob.sourceSize;
+  const targetLoads = currentJob.goal === 'complete_loads' ? currentJob.targetLoads : undefined;
+
+  // Which limit binds for this material? (the lesson)
+  const bindingLimit: 'weight' | 'volume' = bedVolume * materialDensity > truckCapacity ? 'weight' : 'volume';
+
+  // ---- Job progression state ----
+  const [solvedJobIds, setSolvedJobIds] = useState<Set<string>>(new Set());
+  const [showSolveCard, setShowSolveCard] = useState(false);
+  const [showJobHint, setShowJobHint] = useState(false);
+  const [predictGuess, setPredictGuess] = useState<'weight' | 'volume' | null>(null);
+
+  const currentSolved = solvedJobIds.has(currentJob.id);
+  const allJobsSolved = solvedJobIds.size >= jobs.length;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -129,6 +246,8 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   const totalMaterialMovedRef = useRef(0);
   const operationCountRef = useRef(0);
   const overloadAttemptsRef = useRef(0);
+  const overloadReasonRef = useRef<'weight' | 'volume' | null>(null);
+  const overloadFlashRef = useRef(0); // frames remaining to show the overload reason
   const dumpPileRef = useRef<DumpPileParticle[]>([]);
   const fallingParticlesRef = useRef<FallingParticle[]>([]);
   const excavatorPhaseRef = useRef<ExcavatorPhase>('idle');
@@ -151,6 +270,8 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     nearSource: true,
     nearDump: false,
     isLoading: false,
+    overloadReason: null as 'weight' | 'volume' | null,
+    overloadActive: false,
   });
 
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -266,8 +387,13 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
       const loadAmount = Math.min(5, sourceRemainingRef.current);
       const loadWeight = loadAmount * materialDensity;
       const loadVolume = loadAmount;
-      if (currentWeightRef.current + loadWeight > truckCapacity || currentVolumeRef.current + loadVolume > bedVolume) {
+      const weightWouldExceed = currentWeightRef.current + loadWeight > truckCapacity;
+      const volumeWouldExceed = currentVolumeRef.current + loadVolume > bedVolume;
+      if (weightWouldExceed || volumeWouldExceed) {
         overloadAttemptsRef.current += 1;
+        // Capture WHICH limit refused the scoop — this is the density lesson.
+        overloadReasonRef.current = weightWouldExceed ? 'weight' : 'volume';
+        overloadFlashRef.current = 90; // ~1.5s at 60fps
       } else {
         excavatorPhaseRef.current = 'swinging-to-pile';
         scoopAmountRef.current = loadAmount;
@@ -394,6 +520,9 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     currentVolumeRef.current = Math.max(0, currentVolumeRef.current);
     currentWeightRef.current = Math.max(0, currentWeightRef.current);
 
+    // Decay the overload-reason flash
+    if (overloadFlashRef.current > 0) overloadFlashRef.current -= 1;
+
     // Sync to React state for UI (throttled to ~15fps for display)
     setUiState({
       sourceRemaining: sourceRemainingRef.current,
@@ -407,6 +536,8 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
       nearSource,
       nearDump,
       isLoading: excavatorPhaseRef.current !== 'idle',
+      overloadReason: overloadReasonRef.current,
+      overloadActive: overloadFlashRef.current > 0,
     });
 
     // --- RENDER PHASE ---
@@ -872,25 +1003,84 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
     };
   }, [gameLoop]);
 
-  // Challenge complete check
-  const isComplete = targetLoads
-    ? uiState.loadsCompleted >= targetLoads
+  // ---- Reset the whole sim when the active job changes ----
+  const resetForJob = useCallback((job: DumpTruckJob) => {
+    truckXRef.current = SOURCE_X;
+    bedAngleRef.current = 0;
+    currentWeightRef.current = 0;
+    currentVolumeRef.current = 0;
+    sourceRemainingRef.current = job.sourceSize;
+    loadsCompletedRef.current = 0;
+    totalMaterialMovedRef.current = 0;
+    operationCountRef.current = 0;
+    overloadAttemptsRef.current = 0;
+    overloadReasonRef.current = null;
+    overloadFlashRef.current = 0;
+    dumpPileRef.current = [];
+    fallingParticlesRef.current = [];
+    excavatorPhaseRef.current = 'idle';
+    excavatorArmAngleRef.current = 0;
+    excavatorBucketFullRef.current = false;
+    scoopAmountRef.current = 0;
+    lastDumpVolumeRef.current = 0;
+    facingRightRef.current = true;
+    setShowSolveCard(false);
+    setShowJobHint(false);
+    setPredictGuess(null);
+    setUiState(s => ({
+      ...s,
+      sourceRemaining: job.sourceSize,
+      currentWeight: 0, currentVolume: 0, loadsCompleted: 0,
+      overloadAttempts: 0, totalMaterialMoved: 0, bedAngle: 0,
+      truckX: SOURCE_X, overloadReason: null, overloadActive: false,
+    }));
+  }, []);
+
+  // Job completion check
+  const isJobComplete = currentJob.goal === 'complete_loads'
+    ? uiState.loadsCompleted >= (currentJob.targetLoads ?? 1)
     : uiState.sourceRemaining <= 0 && uiState.currentVolume <= 0.1;
+
   const efficiency = uiState.totalMaterialMoved > 0 && loadsCompletedRef.current > 0
     ? uiState.totalMaterialMoved / loadsCompletedRef.current
     : 0;
 
+  // Mark the current job solved once its goal is met (the sim is the judge)
+  useEffect(() => {
+    if (isJobComplete && !currentSolved) {
+      SoundManager.playStreak();
+      setSolvedJobIds(prev => {
+        if (prev.has(currentJob.id)) return prev;
+        const next = new Set(prev);
+        next.add(currentJob.id);
+        return next;
+      });
+      setShowSolveCard(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isJobComplete, currentSolved]);
+
+  const handleNextJob = () => {
+    if (currentJobIdx < jobs.length - 1) {
+      const nextIdx = currentJobIdx + 1;
+      setCurrentJobIdx(nextIdx);
+      resetForJob(jobs[nextIdx]);
+      SoundManager.tap();
+    }
+  };
+
   const handleSubmitEvaluation = () => {
     if (hasSubmitted) return;
-    const success = isComplete && (!timeLimit || elapsedTime <= timeLimit);
-    const score = Math.min(100, (uiState.totalMaterialMoved / sourceSize) * 100);
+    const solvedCount = solvedJobIds.size;
+    const success = solvedCount >= Math.ceil(jobs.length / 2);
+    const score = Math.round((solvedCount / Math.max(jobs.length, 1)) * 100);
     const metrics: DumpTruckLoaderMetrics = {
       type: 'dump-truck-loader',
-      targetLoads: targetLoads || Math.ceil(sourceSize / bedVolume),
+      targetLoads: currentJob.targetLoads ?? Math.ceil(sourceSize / bedVolume),
       loadsCompleted: uiState.loadsCompleted,
       totalMaterialMoved: uiState.totalMaterialMoved,
       sourceSize,
-      goalMet: isComplete,
+      goalMet: allJobsSolved,
       truckCapacity,
       bedVolume,
       materialType,
@@ -899,23 +1089,13 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
       overloadAttempts: uiState.overloadAttempts,
       operationCount: operationCountRef.current,
       timeElapsed: elapsedTime,
+      jobsSolved: solvedCount,
+      jobsTotal: jobs.length,
     };
     submitResult(success, score, metrics, {
-      studentWork: {
-        loadsCompleted: uiState.loadsCompleted,
-        totalMaterialMoved: uiState.totalMaterialMoved,
-        efficiency,
-        elapsedTime,
-      },
+      studentWork: { jobsSolved: solvedCount, jobsTotal: jobs.length, efficiency, elapsedTime },
     });
   };
-
-  useEffect(() => {
-    if (isComplete && !hasSubmitted && data.instanceId) {
-      handleSubmitEvaluation();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isComplete, hasSubmitted]);
 
   // Touch/mouse hold helpers for mobile controls
   const holdIntervalRef = useRef<ReturnType<typeof setInterval>>();
@@ -927,6 +1107,9 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
   const stopHold = (key: string) => {
     keysRef.current.delete(key);
   };
+
+  // Reveal which meter is the binding limit — but don't spoil a pending prediction.
+  const limitRevealed = !currentJob.predict || !!predictGuess || currentSolved;
 
   return (
     <LuminaCard className={`w-full max-w-7xl mx-auto my-8 animate-fade-in ${className || ''}`}>
@@ -945,6 +1128,95 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
       </LuminaCardHeader>
 
       <LuminaCardContent>
+        {/* ── Job Board — the spine: each job is a density puzzle ── */}
+        <LuminaPanel accent="amber" className="mb-4 p-5 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <LuminaBadge accent="amber" className="text-xs">
+                Job {currentJobIdx + 1} / {jobs.length}
+              </LuminaBadge>
+              <span className="text-slate-400 text-xs font-mono uppercase tracking-wider">
+                {MATERIAL_LABEL[materialType]}
+              </span>
+            </div>
+            {currentSolved && (
+              <span className="flex items-center gap-1 text-emerald-400 text-xs font-medium">✓ Done</span>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-white font-semibold text-base">{currentJob.title}</h3>
+            <p className="text-slate-300 text-sm mt-1 leading-relaxed">{currentJob.brief}</p>
+          </div>
+
+          {/* Goal / progress line */}
+          <p className="text-slate-400 text-xs">
+            {currentJob.goal === 'complete_loads'
+              ? `Goal: dump ${currentJob.targetLoads ?? 1} full load${(currentJob.targetLoads ?? 1) > 1 ? 's' : ''} — done ${uiState.loadsCompleted}/${currentJob.targetLoads ?? 1}.`
+              : `Goal: move all ${currentJob.sourceSize} units — ${Math.max(0, Math.round(uiState.sourceRemaining))} left at the pile.`}
+          </p>
+
+          {/* Predict: which meter fills first? (reinforces density) */}
+          {currentJob.predict && !predictGuess && !currentSolved && (
+            <div className="bg-slate-800/50 border border-white/10 rounded-lg p-3 space-y-2">
+              <p className="text-slate-200 text-xs font-medium">Predict: for {MATERIAL_LABEL[materialType]}, which fills up first?</p>
+              <div className="flex gap-2">
+                <LuminaButton onClick={() => { setPredictGuess('volume'); SoundManager.tap(); }} className="flex-1 text-xs">
+                  📦 The bed
+                </LuminaButton>
+                <LuminaButton onClick={() => { setPredictGuess('weight'); SoundManager.tap(); }} className="flex-1 text-xs">
+                  ⚖️ The scale
+                </LuminaButton>
+              </div>
+            </div>
+          )}
+          {currentJob.predict && predictGuess && !currentSolved && (
+            <p className="text-slate-500 text-[11px]">
+              Your guess: {predictGuess === 'weight' ? '⚖️ the scale' : '📦 the bed'} fills first. Now load up and find out!
+            </p>
+          )}
+
+          {/* Hint — only on request */}
+          {!currentSolved && (
+            showJobHint ? (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                <p className="text-amber-300 text-xs">💡 {currentJob.hint}</p>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setShowJobHint(true); SoundManager.tick(); }}
+                className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <span>💡</span> Stuck? Get a hint
+              </button>
+            )
+          )}
+
+          {/* Solve card — reveal prediction + explain the density lesson */}
+          {showSolveCard && currentSolved && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-3">
+              <p className="text-emerald-300 text-sm font-medium">🎉 Job done!</p>
+              {currentJob.predict && predictGuess && (
+                <p className={`text-xs font-medium ${predictGuess === bindingLimit ? 'text-emerald-300' : 'text-amber-300'}`}>
+                  {predictGuess === bindingLimit
+                    ? `✓ Your prediction was right — the ${bindingLimit === 'weight' ? 'scale' : 'bed'} filled first!`
+                    : `Close! You guessed the ${predictGuess === 'weight' ? 'scale' : 'bed'}, but the ${bindingLimit === 'weight' ? 'scale' : 'bed'} actually filled first.`}
+                </p>
+              )}
+              <p className="text-slate-300 text-xs leading-relaxed">{currentJob.explainOnSolve}</p>
+              {currentJobIdx < jobs.length - 1 ? (
+                <LuminaButton tone="primary" onClick={handleNextJob} className="w-full">
+                  Next Job →
+                </LuminaButton>
+              ) : !hasSubmitted ? (
+                <LuminaButton tone="primary" onClick={handleSubmitEvaluation} className="w-full">
+                  Finish &amp; Submit
+                </LuminaButton>
+              ) : null}
+            </div>
+          )}
+        </LuminaPanel>
+
         {/* Canvas — bespoke interaction surface, left untouched */}
         <div className="relative mb-4 bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 shadow-2xl">
           <canvas
@@ -954,6 +1226,20 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
             className="w-full"
             tabIndex={0}
           />
+          {/* Live density feedback — WHICH limit just refused a scoop */}
+          {uiState.overloadActive && uiState.overloadReason && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-white/15 px-4 py-2 rounded-xl shadow-lg max-w-[90%]">
+              {uiState.overloadReason === 'weight' ? (
+                <p className="text-orange-300 text-xs font-medium text-center">
+                  ⚖️ Weight limit! {MATERIAL_LABEL[materialType]} is heavy — the bed is only {Math.round((uiState.currentVolume / bedVolume) * 100)}% full but the truck is at its weight limit.
+                </p>
+              ) : (
+                <p className="text-blue-300 text-xs font-medium text-center">
+                  📦 Bed full! You filled the space — and the scale is only at {Math.round((uiState.currentWeight / truckCapacity) * 100)}%. {MATERIAL_LABEL[materialType]} is light.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* On-screen controls — the bespoke physics-driving buttons stay custom */}
@@ -1059,8 +1345,11 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           </LuminaPanel>
 
           {showFillLevel && (
-            <LuminaPanel className="group hover:border-blue-500/50 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Fill Level</div>
+            <LuminaPanel className={`group transition-all ${limitRevealed && bindingLimit === 'volume' ? 'border-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.2)]' : 'hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]'}`}>
+              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                <span>📦 Bed Fill</span>
+                {limitRevealed && bindingLimit === 'volume' && <span className="text-blue-400 text-[9px] normal-case">← your limit</span>}
+              </div>
               <div className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">
                 {Math.round((uiState.currentVolume / bedVolume) * 100)}
                 <span className="text-sm text-slate-400">%</span>
@@ -1075,8 +1364,11 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           )}
 
           {showWeight && (
-            <LuminaPanel className="group hover:border-purple-500/50 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Weight</div>
+            <LuminaPanel className={`group transition-all ${limitRevealed && bindingLimit === 'weight' ? 'border-orange-500/60 shadow-[0_0_20px_rgba(249,115,22,0.2)]' : 'hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]'}`}>
+              <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                <span>⚖️ Weight</span>
+                {limitRevealed && bindingLimit === 'weight' && <span className="text-orange-400 text-[9px] normal-case">← your limit</span>}
+              </div>
               <div className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors">
                 {Math.round(uiState.currentWeight)}
                 <span className="text-sm text-slate-400">/{truckCapacity}</span>
@@ -1099,13 +1391,6 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           </LuminaPanel>
         </div>
 
-        {/* Warnings / Status */}
-        {uiState.overloadAttempts > 0 && (
-          <LuminaFeedbackCard status="incorrect" label="Overloaded" className="mb-4">
-            Overload attempts: <span className="font-bold">{uiState.overloadAttempts}</span> — truck is at capacity! Drive to dump zone and raise the bed.
-          </LuminaFeedbackCard>
-        )}
-
         {timeLimit && (
           <div className="mb-4 text-sm font-mono text-slate-300 text-center">
             Time: <span className={elapsedTime > timeLimit ? 'text-red-400' : 'text-green-400'}>
@@ -1114,33 +1399,41 @@ const DumpTruckLoader: React.FC<DumpTruckLoaderProps> = ({ data, className }) =>
           </div>
         )}
 
-        {/* Completion */}
-        {isComplete && (
-          <LuminaFeedbackCard status="correct" label="Challenge Complete! 🎉" className="mb-4">
-            You moved <span className="font-semibold">{Math.round(uiState.totalMaterialMoved)}</span> units in{' '}
-            <span className="font-semibold">{uiState.loadsCompleted}</span> loads.
-            Average load: <span className="font-semibold">{efficiency.toFixed(1)}</span> units.
-          </LuminaFeedbackCard>
-        )}
-
-        {!hasSubmitted && isComplete && data.instanceId && (
+        {/* Early finish once at least half the jobs are done */}
+        {!allJobsSolved && !hasSubmitted && solvedJobIds.size >= Math.ceil(jobs.length / 2) && (
           <div className="mb-4 flex justify-center">
             <LuminaActionButton action="check" onClick={handleSubmitEvaluation}>
-              ✓ Submit Work
+              Finish here ({solvedJobIds.size}/{jobs.length} jobs)
             </LuminaActionButton>
           </div>
         )}
 
         {hasSubmitted && (
-          <LuminaFeedbackCard status="insight" label="Evaluation Submitted">
+          <LuminaFeedbackCard status="insight" label="Work Submitted 🏗️">
             <div className="flex items-center justify-between gap-4">
-              <span>Your work has been recorded.</span>
-              <LuminaActionButton action="retry" onClick={resetAttempt}>
+              <span>Jobs solved: {solvedJobIds.size}/{jobs.length}. Nice hauling!</span>
+              <LuminaActionButton
+                action="retry"
+                onClick={() => { resetAttempt(); setSolvedJobIds(new Set()); setCurrentJobIdx(0); resetForJob(jobs[0]); }}
+              >
                 ↺ Try Again
               </LuminaActionButton>
             </div>
           </LuminaFeedbackCard>
         )}
+
+        {/* Job progress dots */}
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-slate-600 text-xs font-mono">Jobs:</span>
+          {jobs.map(j => (
+            <span
+              key={j.id}
+              className={`w-2.5 h-2.5 rounded-full ${solvedJobIds.has(j.id) ? 'bg-emerald-400' : j.id === currentJob.id ? 'bg-amber-400' : 'bg-slate-700'}`}
+              title={j.title}
+            />
+          ))}
+          <span className="text-slate-600 text-xs">{solvedJobIds.size}/{jobs.length}</span>
+        </div>
       </LuminaCardContent>
     </LuminaCard>
   );
