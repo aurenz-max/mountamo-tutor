@@ -103,9 +103,26 @@ export const generateReadAloudStudio = async (
 ): Promise<ReadAloudStudioData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ReadAloudStudioConfig;
-  const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+
+  // ── Grade resolution ────────────────────────────────────────────────
+  // Read the canonical curriculum grade (ctx.grade) — the ONLY reliable grade
+  // signal. ctx.gradeLevel is a BAND key ('elementary' collapses grades 1-5) and
+  // ctx.gradeContext is prose, so neither can recover a numeric rung. This ladder
+  // defines rungs 1-6; below-floor (K/preschool) clamps to the floor rung '1',
+  // above-ceiling numeric grades clamp to the top rung '6', and a bare band with
+  // no numeric grade falls back to the mid rung '3'.
+  const LADDER = ['1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade === 'K' || ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool') {
+    gradeLevelKey = '1';
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else {
+    gradeLevelKey = '3';
+  }
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

@@ -73,9 +73,25 @@ export const generateRevisionWorkshop = async (
 ): Promise<RevisionWorkshopData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RevisionWorkshopConfig;
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+
+  // ── Grade resolution ────────────────────────────────────────────────
+  // Honor the objective's canonical curriculum grade (ctx.grade, the ONLY
+  // grade parser) so structural load (sentence/target counts, reading level)
+  // tracks grade. Legacy code read ctx.gradeContext (a PROSE sentence) and
+  // matched it against ['2'..'6'], which never hit — pinning every activity
+  // to grade 4. This ladder is grades 2-6 (see gradeNotes/skillsByGrade).
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && (ctx.grade === 'K' || parseInt(ctx.grade, 10) < 2)) {
+    gradeLevelKey = '2';                       // below-floor grade clamps to bottom rung
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';                       // above-ceiling grade clamps to top rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
 
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(

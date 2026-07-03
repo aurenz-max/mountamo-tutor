@@ -19,14 +19,16 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"analysis": Identify poetic elements in a given poem (β 3.5). `
       + `Student reads a poem and identifies mood, figurative language instances, and rhyme scheme. `
-      + `Grades 3-6. REQUIRED fields: poem, poemLines, correctMood, moodOptions, figurativeInstances, rhymeScheme, rhymeSchemeOptions.`,
+      + `Grades K-6 (the GRADE note governs complexity; K = nursery rhyme, identify rhyming words). `
+      + `REQUIRED fields: poem, poemLines, correctMood, moodOptions, figurativeInstances, rhymeScheme, rhymeSchemeOptions.`,
     schemaDescription: "'analysis' (identify poetic elements in a given poem)",
   },
   composition: {
     promptDoc:
       `"composition": Compose a poem using template structure (β 6.0). `
       + `Student writes a poem following a specific template (haiku, limerick, acrostic, free-verse, sonnet-intro). `
-      + `Grades 4-6. REQUIRED fields: compositionPrompt, templateType, templateConstraints. `
+      + `Grades K-6 (the GRADE note governs the template; K = finish-the-rhyme). `
+      + `REQUIRED fields: compositionPrompt, templateType, templateConstraints. `
       + `Do NOT include poem/poemLines/figurativeInstances/rhymeScheme/rhymeSchemeOptions.`,
     schemaDescription: "'composition' (compose a poem using template structure)",
   },
@@ -36,7 +38,7 @@ const poetryLabSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     title: { type: Type.STRING, description: "Engaging title for the poetry activity" },
-    gradeLevel: { type: Type.STRING, description: "Target grade level ('1' through '6')" },
+    gradeLevel: { type: Type.STRING, description: "Target grade level ('K' or '1' through '6')" },
     mode: { type: Type.STRING, enum: ["analysis", "composition"], description: "Activity mode" },
     poem: { type: Type.STRING, description: "Full poem text (analysis mode)" },
     poemLines: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Each line of the poem as separate strings" },
@@ -80,9 +82,23 @@ export const generatePoetryLab = async (
 ): Promise<PoetryLabData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PoetryLabConfig;
-  const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+
+  // Grade rung: ctx.grade is the canonical per-objective curriculum grade
+  // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
+  // clamped to this primitive's K-6 ladder. Without it (free-form lessons) fall
+  // back to the lesson band: kindergarten → 'K', anything else → '3' (the old
+  // prose-matching fallback could never hit and silently pinned every lesson
+  // to grade 4).
+  const LADDER = ['K', '1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '3';
+  }
 
   // ---------------------------------------------------------------------------
   // Eval mode resolution
@@ -111,6 +127,7 @@ export const generatePoetryLab = async (
   const requestedMode = evalConstraint?.allowedTypes[0] || config?.mode || 'analysis';
 
   const gradeNotes: Record<string, string> = {
+    'K': 'Kindergarten: Nursery-rhyme style. 4 very short lines (3-6 simple words each). AABB with loud, obvious rhyming word pairs (cat/hat). Task = hear and identify the rhyming words. NO figurative language. Mood options must be single simple feeling words (happy, sleepy, silly).',
     '1': 'Grade 1: Simple rhyming poem. Identify rhyming words. Repetition. 4-6 lines. AABB rhyme. No figurative language beyond simple repetition.',
     '2': 'Grade 2: Rhyming poem with sensory words. AABB or ABAB. 4-8 lines. 1-2 simple similes. Identify mood.',
     '3': 'Grade 3: Simile and alliteration. Haiku structure. Stanza structure. AABB/ABAB. 8-12 lines. 2-3 figurative instances.',
@@ -120,6 +137,7 @@ export const generatePoetryLab = async (
   };
 
   const compositionNotes: Record<string, string> = {
+    'K': 'Composition: Finish-the-rhyme — a 2-4 line nursery-style rhyme where the student supplies the final rhyming word(s). Very simple CVC-heavy vocabulary.',
     '1': 'Composition: Simple 4-line rhyming poem. AABB.',
     '2': 'Composition: 4-6 line poem with at least one simile.',
     '3': 'Composition: Haiku (5-7-5 syllables) or acrostic.',

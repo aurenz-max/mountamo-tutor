@@ -180,7 +180,6 @@ export const generateEvidenceFinder = async (
 ): Promise<EvidenceFinderData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as EvidenceFinderConfig;
 
   // ── Eval mode resolution (explicit pin → constrained task identity) ──────
@@ -256,7 +255,23 @@ GRADE 6 GUIDELINES:
 `
   };
 
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // ── Canonical curriculum grade → ladder rung ─────────────────────────────
+  // ctx.grade is the ONLY reliable numeric grade ('K'|'1'..'12'). ctx.gradeLevel
+  // is a collapsed band key ('elementary' spans 1-5) and ctx.gradeContext is a
+  // prose sentence — neither can be parsed back to a rung, so reading them here
+  // pinned every objective to the fallback. This generator's ladder is grades
+  // 2-6 (the rungs gradeContext defines); floor-clamp K/1 up to 2.
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to top rung
+  } else if (ctx.grade && parseInt(ctx.grade, 10) < 2) {
+    gradeLevelKey = '2'; // K / grade 1 clamp to the floor rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
   const useCER = parseInt(gradeLevelKey) >= 4;
 
   const generationPrompt = `Create an evidence finding activity about: "${topic}".

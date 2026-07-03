@@ -126,7 +126,9 @@ const characterWebSchema: Schema = {
  * emphasis — no post-filtering, no numeric trimming.
  *
  * @param topic - Theme for the story (e.g. "A New School", "Lost in the Woods")
- * @param gradeLevel - Grade level ('2' through '6') sets vocabulary/complexity for the mixed case
+ * ctx.grade (the canonical objective grade) drives realization — reading level,
+ * vocabulary, cast size, story length — via an unconditional grade note, clamped
+ * to this primitive's 2-6 ladder. Grade is orthogonal to the eval-mode axis.
  * @param config - Optional overrides + eval-mode routing (targetEvalMode / intent / objectiveText)
  */
 type CharacterWebConfig = Partial<CharacterWebData> & {
@@ -143,7 +145,6 @@ export const generateCharacterWeb = async (
 ): Promise<CharacterWebData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config: CharacterWebConfig = { ...(ctx.raw as CharacterWebConfig), intent: ctx.intent };
 
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -161,16 +162,34 @@ export const generateCharacterWeb = async (
       })
     : characterWebSchema;
 
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+  // Canonical curriculum grade (ctx.grade) drives realization — reading level,
+  // vocabulary, character count, structural load. ctx.gradeLevel is only a BAND
+  // key ('elementary' collapses 2-5) so it can never recover the numeric rung;
+  // read ctx.grade, clamp to this primitive's real 2-6 ladder, and fall back to
+  // the band only when no canonical grade is present.
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  const gradeNum = ctx.grade ? parseInt(ctx.grade, 10) : NaN;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (Number.isFinite(gradeNum) && gradeNum > 6) {
+    gradeLevelKey = '6';                       // above-ceiling numeric grade clamps to top rung
+  } else if (Number.isFinite(gradeNum) && gradeNum < 2) {
+    gradeLevelKey = '2';                       // below-floor numeric grade (grade 1) clamps to bottom rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
 
-  // Grade band shapes vocabulary / character count only for the MIXED (unconstrained)
-  // case — when a mode is pinned, the mode's own promptDoc governs the analytical task.
+  // Grade note = REALIZATION only (reading level, vocabulary, cast size, story
+  // length). It is orthogonal to the eval mode's cognitive KIND (analysisFocus)
+  // and is injected UNCONDITIONALLY so the objective grade governs how the story
+  // reads at every mode — the mode's promptDoc still owns the analytical task.
   const gradeNotes: Record<string, string> = {
-    '2': 'Grade 2: 1-2 characters. 2-3 simple traits per character (kind, brave, funny). Simple evidence. 1 relationship. Change = simple behavior change.',
-    '3': 'Grade 3: 2 characters for comparison. 3 traits each with evidence. 1-2 relationships. How a character changes from beginning to end.',
-    '4': 'Grade 4: 2-3 characters. Internal vs external traits. Motivations. 2-3 relationships. Character development arc.',
-    '5': 'Grade 5: 2-3 characters including a foil. Deeper motivation analysis. Character growth/decline. Thematic connections.',
-    '6': 'Grade 6: 2-3 complex characters. Multi-layered motivations. Character as symbol. Sophisticated analysis expected.',
+    '2': 'GRADE 2 READING LEVEL: keep the cast small (1-2 characters). Short, simple sentences; concrete everyday vocabulary; a 3-4 sentence story. Traits are plain single-word adjectives (kind, brave, funny) and evidence is one obvious action.',
+    '3': 'GRADE 3 READING LEVEL: 2 characters. Simple compound sentences; mostly familiar vocabulary with a few new words; a 4-5 sentence story. Traits are inferable from one clear action or line.',
+    '4': 'GRADE 4 READING LEVEL: 2-3 characters. Longer sentences with some subordinate clauses; grade-appropriate richer vocabulary; a 5-6 sentence story with a bit more description. Traits require light inference.',
+    '5': 'GRADE 5 READING LEVEL: 2-3 characters. Varied sentence structure; more advanced vocabulary and figurative touches; a 6-7 sentence story with layered detail. Traits require inference across more than one event.',
+    '6': 'GRADE 6 READING LEVEL: 2-3 characters. Complex, varied sentences; sophisticated vocabulary and nuance; a 7-8 sentence story with subtle characterization. Traits are indirect and demand inference from multiple lines.',
   };
 
   const challengeTypeSection = buildChallengeTypePromptSection(
@@ -181,7 +200,7 @@ export const generateCharacterWeb = async (
   const prompt = `Create a character analysis activity about: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
-${!evalConstraint ? `\n${gradeNotes[gradeLevelKey] || gradeNotes['4']}\n` : ''}
+${gradeNotes[gradeLevelKey] || gradeNotes['4']}
 ${challengeTypeSection}
 
 Provide:

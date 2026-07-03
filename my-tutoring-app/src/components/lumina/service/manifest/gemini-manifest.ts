@@ -34,7 +34,7 @@ import type { StudentGenerationContext } from '../studentContext/types';
  */
 export const flattenManifestToLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string }>,
+  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
 ): ManifestItem[] => {
   const layout: ManifestItem[] = [];
 
@@ -56,6 +56,10 @@ export const flattenManifestToLayout = (
       // its evidence belongs to.
       subskillId: auth?.subskillId,
       skillId: auth?.skillId,
+      // Canonical curriculum grade ('K'|'1'..'12') — precise where the lesson's
+      // gradeLevel is only a band. resolveGenerationContext normalizes it to
+      // ctx.grade so generators never parse grade out of prose.
+      grade: auth?.grade,
     };
   };
 
@@ -73,7 +77,7 @@ export const flattenManifestToLayout = (
   // 2. Add all components from each objective block
   if (manifest.objectiveBlocks) {
     for (const block of manifest.objectiveBlocks) {
-      const { objectiveText, objectiveVerb, subskillId, skillId } = resolveObjective(block);
+      const { objectiveText, objectiveVerb, subskillId, skillId, grade } = resolveObjective(block);
       for (const component of block.components) {
         layout.push({
           componentId: component.componentId,
@@ -92,6 +96,8 @@ export const flattenManifestToLayout = (
             // objective's subskill (undefined on unresolved/free-form lessons).
             subskillId,
             skillId,
+            // Canonical grade for this objective → ctx.grade at the generator boundary.
+            objectiveGrade: grade,
             // Belt-and-suspenders: also surface the component's intent INSIDE config
             // (it already rides at top-level item.intent). resolveGenerationContext
             // reads config.intent first, so this makes the documented scopeContext
@@ -121,6 +127,7 @@ export const flattenManifestToLayout = (
           text: o.text,
           subskillId: o.subskillId,
           skillId: o.skillId,
+          grade: o.grade,
         })),
       },
       objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
@@ -135,7 +142,7 @@ export const flattenManifestToLayout = (
  */
 export const enrichManifestWithLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string }>,
+  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
 ): ExhibitManifest => {
   return {
     ...manifest,
@@ -406,7 +413,7 @@ export interface ManifestProgressCallback {
 export const generateExhibitManifestStreaming = async (
   topic: string,
   gradeLevel: string = 'elementary',
-  objectives?: Array<{ id: string; text: string; verb: string; icon: string }>,
+  objectives?: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>,
   studentContext?: StudentGenerationContext | null,
   callbacks?: ManifestProgressCallback
 ): Promise<ExhibitManifest> => {
@@ -422,10 +429,13 @@ export const generateExhibitManifestStreaming = async (
       `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
     ).join('\n');
 
-    // Format objectives if provided
+    // Format objectives if provided. Curriculum-launched objectives carry a
+    // precise grade ('K'|'1'..'12') — surface it so the curator's primitive
+    // choice honors the exact grade, not just the coarse TARGET AUDIENCE band
+    // ('elementary' spans grades 1-5).
     const objectivesContext = objectives
-      ? `\n\nLEARNING OBJECTIVES (Use these to guide component selection):
-${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]`).join('\n')}`
+      ? `\n\nLEARNING OBJECTIVES (Use these to guide component selection${objectives.some(o => o.grade) ? '; each objective\'s Grade governs its age-appropriateness and primitive choice' : ''}):
+${objectives.map((obj, i) => `${i + 1}. ${obj.text} [${obj.verb}]${obj.grade ? ` (Grade ${obj.grade})` : ''}`).join('\n')}`
       : '';
 
     const prompt = `You are the Lead Curator designing an educational exhibit using an OBJECTIVE-CENTRIC approach.

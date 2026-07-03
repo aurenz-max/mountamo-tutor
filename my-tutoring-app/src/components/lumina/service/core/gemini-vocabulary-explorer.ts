@@ -55,6 +55,35 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Grade-Level Context Helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Map the canonical numeric grade (ctx.grade: 'K'|'1'..'12') to the audience BAND
+ * KEY that getGradeLevelContext is keyed by. This is the primary resolver.
+ */
+const gradeToBand = (g: string): string => {
+  if (g === 'K') return 'Kindergarten';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+  return '';
+};
+
+/**
+ * Fallback band resolver: parse the PROSE gradeContext sentence to a band KEY.
+ * Mirrors fast-fact's inferGradeLevelFromContext. Only used when ctx.grade is
+ * absent. Previously the generator passed the prose sentence straight into
+ * getGradeLevelContext, which never matched a key and silently pinned EVERY
+ * objective to 'Elementary' (K and grade-9 lessons got identical content).
+ */
+const inferGradeLevelFromContext = (gradeContext: string): string => {
+  const gc = (gradeContext || '').toLowerCase();
+  if (gc.includes('toddler')) return 'Toddler';
+  if (gc.includes('preschool')) return 'Preschool';
+  if (gc.includes('kindergarten')) return 'Kindergarten';
+  if (gc.includes('elementary') || gc.includes('grades 1-5')) return 'Elementary';
+  if (gc.includes('middle') || gc.includes('grades 6-8')) return 'Middle School';
+  if (gc.includes('high') || gc.includes('grades 9-12')) return 'High School';
+  return 'Elementary';
+};
+
 const getGradeLevelContext = (gradeLevel: string): string => {
   const contexts: Record<string, string> = {
     'Toddler': 'toddlers (ages 1-3) — very simple concepts, concrete examples.',
@@ -412,9 +441,17 @@ export const generateVocabularyExplorer = async (
   ctx: GenerationContext,
 ): Promise<VocabularyExplorerData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as VocabularyExplorerConfig;
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  // Resolve the audience BAND from the canonical numeric grade first, prose
+  // fallback second. Feeding a real map KEY (not the prose sentence) fixes the
+  // always-'Elementary' bug where K and grade-9 lessons got identical content.
+  const bandKey = (ctx.grade && gradeToBand(ctx.grade)) || inferGradeLevelFromContext(ctx.gradeContext);
+  const gradeLevel = bandKey;
+  const gradeLevelContext = getGradeLevelContext(bandKey);
+  // Surface the EXACT numeric grade so grade-2 ≠ grade-4 WITHIN a band.
+  const gradeLine = ctx.grade
+    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, definition length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -443,7 +480,7 @@ export const generateVocabularyExplorer = async (
 TOPIC: ${topic}
 ${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
-
+${gradeLine ? gradeLine + '\n' : ''}
 ## Your Mission:
 Create a rich vocabulary explorer about "${topic}" with 5-8 key terms, contextual definitions,
 example sentences, pronunciation guides, related words, and comprehension challenges.

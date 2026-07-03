@@ -37,6 +37,18 @@ function inferGradeLevelFromContext(gradeContext: string): string {
   return 'Elementary';
 }
 
+/**
+ * Map the canonical curriculum grade ('K' | '1'..'12') to the band label used as
+ * the getGradeLevelContext KEY. This is the PRIMARY source of the audience band —
+ * ctx.grade is authoritative when present; the prose-inferred band is the fallback.
+ */
+function gradeToBand(grade: string): string {
+  if (grade === 'K') return 'Kindergarten';
+  const n = parseInt(grade, 10);
+  if (isNaN(n)) return '';
+  return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+}
+
 // ============================================================================
 // Grade-Level Context Helper
 // ============================================================================
@@ -349,18 +361,26 @@ export const generateFastFact = async (
   ctx: GenerationContext,
 ): Promise<FastFactData> => {
   const { topic } = ctx;
-  const gradeLevel = inferGradeLevelFromContext(ctx.gradeContext);
+  // Band label: canonical curriculum grade first (authoritative), prose-inferred
+  // band as the fallback. Feeding a real map KEY to getGradeLevelContext.
+  const gradeLevel = (ctx.grade && gradeToBand(ctx.grade)) || inferGradeLevelFromContext(ctx.gradeContext);
   const config = ctx.raw as FastFactConfig;
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const challengeCount = (config?.challengeCount as number) || 10;
   const scopeSection = buildScopePromptSection(ctx.scope);
+  // Numeric-grade surfacing — discriminates grades WITHIN a band (grade 2 ≠ grade 5)
+  // by tuning realization (reading level, vocab, sentence length) only. Does NOT
+  // change the eval mode / challenge-type axis.
+  const gradeLine = ctx.grade
+    ? `EXACT TARGET GRADE: grade ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above). Set gradeBand to the band containing grade ${ctx.grade}.`
+    : '';
 
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 
 TOPIC / LEARNING OBJECTIVE: ${topic}
 ${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
-${config?.context ? `ADDITIONAL CONTEXT: ${config.context}\n` : ''}
+${gradeLine ? `${gradeLine}\n` : ''}${config?.context ? `ADDITIONAL CONTEXT: ${config.context}\n` : ''}
 NUMBER OF CHALLENGES: ${challengeCount} (8-12 range)
 
 ## Your Mission:

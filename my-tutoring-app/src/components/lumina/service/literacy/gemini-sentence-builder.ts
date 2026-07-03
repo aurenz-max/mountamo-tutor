@@ -310,7 +310,6 @@ export const generateSentenceBuilder = async (
 ): Promise<SentenceBuilderData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SentenceBuilderConfig;
 
   // ── Eval mode resolution ────────────────────────────────────────────
@@ -403,7 +402,22 @@ GRADE 6 GUIDELINES:
 `
   };
 
-  const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '2';
+  // ── Grade resolution: honor the objective's canonical curriculum grade (ctx.grade,
+  //    'K'|'1'..'12') — the ONLY reliable grade signal. ctx.gradeLevel is a band
+  //    ('elementary' collapses 1-5) and ctx.gradeContext is prose, so matching either
+  //    against ['1'..'6'] never hit and pinned every output to grade 2 (parse-and-fallback).
+  //    Ladder is 1-6; there is no K rung, so kindergarten maps to the lowest rung (grade 1). ──
+  const LADDER = ['1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade === 'K') {
+    gradeLevelKey = '1'; // no K rung — kindergarten maps to the lowest rung
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to the top rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '1' : '2';
+  }
   const sentenceTypeForGrade = gradeLevelKey <= '2' ? 'simple' : gradeLevelKey === '3' ? 'compound' : gradeLevelKey === '4' ? 'complex' : 'compound-complex';
 
   // ── Build prompt ────────────────────────────────────────────────────

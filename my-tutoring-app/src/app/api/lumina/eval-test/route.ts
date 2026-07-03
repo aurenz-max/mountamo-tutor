@@ -41,6 +41,11 @@ export async function GET(request: NextRequest) {
     // topic+intent fidelity is testable in isolation (see /topic-fidelity). Most
     // generators only read `topic`, so this is inert unless the generator reads it.
     const intent = searchParams.get('intent') || undefined;
+    // Optional ?grade= — the objective's canonical curriculum grade ('K'|'1'..'12').
+    // In production flattenManifestToLayout stamps it as config.objectiveGrade and
+    // resolveGenerationContext normalizes it to ctx.grade; threaded here so
+    // grade fidelity is testable in isolation (see /grade-fidelity).
+    const grade = searchParams.get('grade') || undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -54,6 +59,7 @@ export async function GET(request: NextRequest) {
         ...(objectiveVerb ? { objectiveVerb } : {}),
         ...(difficulty ? { difficulty } : {}),
         ...(intent ? { intent } : {}),
+        ...(grade ? { objectiveGrade: grade } : {}),
       },
     };
 

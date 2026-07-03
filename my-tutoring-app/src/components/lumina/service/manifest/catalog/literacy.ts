@@ -934,8 +934,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'poetry-lab',
-    description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, meter, figurative language, and structure. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). TTS read-aloud with expressive prosody. Perfect for grades 1-6 poetry.',
-    constraints: 'Best for grades 1-6. Analysis mode needs a poem; composition mode needs a template type.',
+    description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, meter, figurative language, and structure. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). TTS read-aloud with expressive prosody. Perfect for grades K-6 poetry — at K this means nursery rhymes and identifying rhyming words.',
+    constraints: 'Best for grades K-6; content scales to the objective\'s grade (K = nursery rhymes). Analysis mode needs a poem; composition mode needs a template type.',
     evalModes: [
       { evalMode: 'analysis', label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
       { evalMode: 'composition', label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },

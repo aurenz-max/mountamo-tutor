@@ -1617,7 +1617,12 @@ export async function generateDeepDive(
   ctx: GenerationContext,
 ): Promise<DeepDiveData> {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
+  // Surface the canonical NUMERIC grade to the orchestrator + every block
+  // generator. ctx.gradeContext is band prose only ('elementary' collapses
+  // grades 1-5), so a grade-2 and a grade-4 lesson would otherwise be
+  // indistinguishable. When ctx.grade is present, pass it through as a precise
+  // audience descriptor; fall back to the band prose on free-form lessons.
+  const gradeLevel = ctx.grade ? `grade ${ctx.grade} student` : ctx.gradeContext;
   const config = ctx.raw as DeepDiveConfig;
   const evalMode = config?.targetEvalMode;
   const templateId = config?.templateId;

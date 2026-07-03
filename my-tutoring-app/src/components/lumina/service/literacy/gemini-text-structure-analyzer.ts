@@ -404,9 +404,23 @@ export const generateTextStructureAnalyzer = async (
 ): Promise<TextStructureAnalyzerData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TextStructureAnalyzerConfig;
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+
+  // Grade ladder (2-6). ctx.grade is the ONLY reliable numeric grade (the canonical
+  // objective grade parsed by normalizeObjectiveGrade). ctx.gradeLevel is a BAND key
+  // ('elementary' collapses 1-5) and ctx.gradeContext is prose — neither is parseable
+  // back to a numeric rung, so reading them here pins the output at a constant fallback.
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to top rung
+  } else {
+    // Below-floor (K/1) or band-only: kindergarten/preschool clamp to the floor rung,
+    // everything else falls to the mid rung.
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
 
   // -------------------------------------------------------------------------
   // Eval mode resolution

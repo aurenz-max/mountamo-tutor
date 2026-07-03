@@ -5,7 +5,10 @@ Daily Activities API Endpoints — Algorithmic Firestore-Native Engine
 Replaces the BigQuery/AI/CosmosDB daily planner with a deterministic
 session router that reads live state from Firestore (PRD Section 5).
 
-Plans are computed on-demand — no stored plans needed.
+The flat /daily-plan queue is computed on-demand. The structured
+/daily-plan/{id}/session plan is get-or-create: generated once per day,
+persisted at students/{id}/dailySessionPlans/{date}, and re-read on every
+visit so student progress survives navigation.
 """
 
 from fastapi import APIRouter, HTTPException, Query, Depends, BackgroundTasks
@@ -99,23 +102,25 @@ async def get_daily_activities(
 @router.get("/daily-plan/{student_id}/session", response_model=DailySessionPlan)
 async def get_daily_session_plan(
     student_id: int,
+    refresh: bool = Query(False, description="Regenerate today's plan (completed blocks are carried forward)"),
     user_context: dict = Depends(get_user_context),
     service: PlanningService = Depends(get_planning_service),
 ):
     """
-    Get today's structured session plan as 4–5 lesson blocks.
+    Get-or-create today's structured session plan as 4–5 lesson blocks.
 
-    Unlike /daily-plan (flat skill list), this endpoint:
-      - Fills a 75-minute time budget (configurable)
-      - Groups related subskills into Bloom's-ordered lesson blocks
-      - Returns an ordered sequence ready for the session runner
+    The plan is generated once per day and persisted, so revisiting this
+    endpoint returns the same blocks with completion state intact. Pass
+    ?refresh=true to regenerate — finished blocks are carried forward.
 
     PRD §3.3 — Queue assembly with review cap (50% of budget for reviews).
     PRD §3.4 — Session shape: interleaved subjects, front-loaded new content.
     """
     try:
-        logger.info(f"GET /daily-activities/daily-plan/{student_id}/session")
-        plan = await service.get_daily_session_plan(student_id)
+        logger.info(
+            f"GET /daily-activities/daily-plan/{student_id}/session (refresh={refresh})"
+        )
+        plan = await service.get_daily_session_plan(student_id, force_refresh=refresh)
         return plan
     except Exception as e:
         logger.error(f"Error building session plan for student {student_id}: {e}")
@@ -123,6 +128,38 @@ async def get_daily_session_plan(
             status_code=500,
             detail=f"Failed to build session plan: {str(e)}",
         )
+
+
+@router.post("/daily-plan/{student_id}/session/blocks/{block_id}/complete")
+async def complete_session_block(
+    student_id: int,
+    block_id: str,
+    plan_date: Optional[str] = Query(None, description="Plan date (YYYY-MM-DD); defaults to today (UTC)"),
+    user_context: dict = Depends(get_user_context),
+    service: PlanningService = Depends(get_planning_service),
+):
+    """
+    Mark a session-plan lesson block as completed.
+
+    Writes the block id onto the day's persisted plan doc so progress
+    survives navigation, reloads, and device switches. Idempotent.
+    Mastery/competency updates flow through the existing eval path — this
+    records plan-level progress only.
+    """
+    try:
+        ok = await service.mark_session_block_complete(
+            student_id, block_id, plan_date=plan_date
+        )
+        if not ok:
+            raise HTTPException(
+                status_code=500, detail="Failed to persist block completion"
+            )
+        return {"success": True, "student_id": student_id, "block_id": block_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing block {block_id} for student {student_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
@@ -199,6 +236,7 @@ async def daily_activities_health():
             "bigquery_dependency": False,
             "ai_recommendations": False,
             "cosmos_db_persistence": False,
+            "session_plan_persistence": True,
         },
         "version": "2.0.0",
         "timestamp": datetime.now().isoformat(),

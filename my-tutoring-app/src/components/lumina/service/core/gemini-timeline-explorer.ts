@@ -57,6 +57,33 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // Grade-Level Context Helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Infer the band label from the grade-context prose string (fallback path when
+ * the canonical numeric grade is unavailable). Mirrors fast-fact's helper.
+ */
+function inferGradeLevelFromContext(gradeContext: string): string {
+  const g = (gradeContext || '').toLowerCase();
+  if (g.includes('toddler')) return 'Toddler';
+  if (g.includes('preschool')) return 'Preschool';
+  if (g.includes('kindergarten')) return 'Kindergarten';
+  if (g.includes('elementary') || g.includes('grades 1-5')) return 'Elementary';
+  if (g.includes('middle') || g.includes('grades 6-8')) return 'Middle School';
+  if (g.includes('high') || g.includes('grades 9-12')) return 'High School';
+  return 'Elementary';
+}
+
+/**
+ * Map the canonical numeric grade ('K'|'1'..'12') to a band label — the KEY that
+ * getGradeLevelContext expects. This is the primary grade signal; the prose
+ * fallback above only runs when ctx.grade is absent.
+ */
+function gradeToBand(g: string): string {
+  if (g === 'K') return 'Kindergarten';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+  return '';
+}
+
 const getGradeLevelContext = (gradeLevel: string): string => {
   const contexts: Record<string, string> = {
     'Toddler': 'toddlers (ages 1-3) — very simple concepts, concrete examples.',
@@ -370,9 +397,16 @@ export const generateTimelineExplorer = async (
   ctx: GenerationContext,
 ): Promise<TimelineExplorerData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TimelineExplorerConfig;
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  // Resolve the audience BAND from the canonical numeric grade first (a real map
+  // KEY), falling back to the prose band inference only when grade is absent.
+  const bandKey = (ctx.grade && gradeToBand(ctx.grade)) || inferGradeLevelFromContext(ctx.gradeContext);
+  const gradeLevel = bandKey;
+  const gradeLevelContext = getGradeLevelContext(bandKey);
+  // Surface the exact numeric grade so grade-2 ≠ grade-4 within the same band.
+  const gradeLine = ctx.grade
+    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -401,6 +435,7 @@ export const generateTimelineExplorer = async (
 TOPIC / HISTORICAL PERIOD: ${topic}
 ${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
+${gradeLine}
 
 ## Your Mission:
 Create an engaging, educational timeline about "${topic}" with 5-8 key events that students can explore chronologically.

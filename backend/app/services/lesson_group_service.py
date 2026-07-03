@@ -184,7 +184,13 @@ class LessonGroupService:
                 or s.get("skill_description")
                 or s.get("skill_id", "")
             )
-            bloom = cls.classify_bloom(desc)
+            # Model-state verb from the IRT selector (confirm→apply,
+            # learn→identify/explain) wins over keyword classification.
+            selection_verb = s.get("selection_verb")
+            try:
+                bloom = BloomLevel(selection_verb) if selection_verb else cls.classify_bloom(desc)
+            except ValueError:
+                bloom = cls.classify_bloom(desc)
             gate = s.get("mastery_gate") or 0
             item_type = s.get("type", "new")
             status = cls._status_from_type(item_type, gate)

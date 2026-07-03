@@ -777,7 +777,11 @@ export async function generatePassageStudio(
   ctx: GenerationContext,
 ): Promise<PassageStudioData> {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
+  // Grade fidelity: surface the objective's canonical numeric grade to the
+  // orchestrator + every block prompt so within-band grades differ (grade 2 vs
+  // grade 5 both fall in the "elementary" band prose otherwise). Band prose is
+  // the fallback when no canonical grade is stamped. ctx.grade is 'K'|'1'..'12'.
+  const gradeLevel = ctx.grade ? `grade ${ctx.grade} student` : ctx.gradeContext;
   const config = ctx.raw as PassageStudioConfig;
   const evalMode = config?.targetEvalMode;
   const layoutOverride = config?.layoutOverride;

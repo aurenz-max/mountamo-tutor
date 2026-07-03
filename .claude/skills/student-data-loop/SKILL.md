@@ -156,8 +156,22 @@ recommendation surfaces in the Deprecation Ledger below.
    `scripts/probe_session_targets.py --student N --subject S [--grade G]`
    (set PYTHONIOENCODING=utf-8 on Windows). The KG graph carries BOTH skill
    and subskill nodes — selectors must filter `entity_type == "subskill"`.
-   Next convergence: PlanningService daily blocks should consume the same
-   selector (one selection brain).
+   CONVERGED 2026-07-03: `PlanningService.get_daily_session_plan` Step 1b now
+   uses the same selector for new-skill picks (analytics_service injected via
+   dependencies — defined AFTER get_firestore_analytics_service, Depends()
+   binds at definition time). Selector verbs ride candidates as
+   `selection_verb` and win over keyword Bloom classification in
+   `LessonGroupService._build_block`. Legacy unlocked-scan remains the
+   fallback (subjects without published curriculum graphs, e.g.
+   ENGINEERING_G*, or selector errors). Mastery-retest scheduling is
+   deliberately NOT the selector's job — spaced retention stays lifecycle's.
+   ONE selection brain everywhere. Same slice: `_build_curriculum_lookup`
+   made grade-aware (merges ALL published grade docs per subject — bare
+   fetch missed K ids and authoring-pipeline `LANGUAGE_ARTS-U…` ids, which
+   are REAL published subskills, rendering blocks as "General" with raw-id
+   names), and the session plan now drops candidates with no curriculum
+   home (true orphans: old sentinel/free-form lifecycle docs — retire with
+   `scripts/cleanup_synthetic_lifecycle.py`, dry-run default).
 
 Division of labor: the selector/fill mode personalizes WHAT (which subskills,
 which verbs); generation-context personalizes HOW (difficulty framing, persona

@@ -69,10 +69,15 @@ class PlanningService:
         firestore_service: FirestoreService,
         curriculum_service: CurriculumService,
         learning_paths_service: Optional[Any] = None,  # LearningPathsService
+        analytics_service: Optional[Any] = None,  # FirestoreAnalyticsService
     ):
         self.firestore = firestore_service
         self.curriculum = curriculum_service
         self.learning_paths = learning_paths_service
+        # When present, daily-session new-skill selection uses the IRT
+        # session-scope selector (select_session_targets) — ONE selection
+        # brain shared with the Lesson Builder's Recommended fill mode.
+        self.analytics = analytics_service
         logger.info("PlanningService initialized")
 
     # ====================================================================
@@ -784,7 +789,83 @@ class PlanningService:
     # Structured Session Plan — PRD Daily Learning Experience §3
     # ====================================================================
 
-    async def get_daily_session_plan(self, student_id: int) -> "DailySessionPlan":
+    async def get_daily_session_plan(
+        self, student_id: int, force_refresh: bool = False
+    ) -> "DailySessionPlan":
+        """
+        Get-or-create today's structured session plan.
+
+        The plan is a daily commitment: generated once, persisted at
+        students/{id}/dailySessionPlans/{date}, and re-read on every visit so
+        backing out and returning never reshuffles the student's blocks or
+        zeroes their progress. Adaptivity happens *between* days — the date
+        key rolls over and tomorrow's plan regenerates from fresh mastery
+        state.
+
+        force_refresh regenerates today's plan but carries finished work
+        forward: completed blocks (and their completion marks) never
+        disappear from the student's view.
+        """
+        from ..models.lesson_plan import DailySessionPlan, LessonBlock
+
+        today_str = datetime.now(timezone.utc).date().isoformat()
+        stored = await self.firestore.get_daily_session_plan_doc(student_id, today_str)
+
+        if stored and not force_refresh:
+            try:
+                return DailySessionPlan.model_validate(
+                    {k: v for k, v in stored.items() if k in DailySessionPlan.model_fields}
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[SESSION_PLAN] Stored plan {student_id}/{today_str} unreadable, "
+                    f"regenerating: {e}"
+                )
+
+        plan = await self._build_daily_session_plan(student_id)
+
+        # Refresh carry-forward: keep every completed block visible even if
+        # the regenerated plan no longer selects it, and re-attach the marks.
+        if stored and stored.get("completed_block_ids"):
+            completed_ids = list(stored["completed_block_ids"])
+            new_ids = {b.block_id for b in plan.blocks}
+            carried: List[LessonBlock] = []
+            for raw in stored.get("blocks", []):
+                if raw.get("block_id") in completed_ids and raw.get("block_id") not in new_ids:
+                    try:
+                        carried.append(LessonBlock.model_validate(raw))
+                    except Exception:
+                        continue
+            if carried:
+                plan.blocks = carried + plan.blocks
+                for i, block in enumerate(plan.blocks):
+                    block.block_index = i + 1
+                plan.estimated_total_minutes = sum(b.estimated_minutes for b in plan.blocks)
+                plan.total_subskills = sum(len(b.subskills) for b in plan.blocks)
+                statuses = [ss.status for b in plan.blocks for ss in b.subskills]
+                plan.new_subskills = sum(1 for s in statuses if s == "new")
+                plan.review_subskills = sum(1 for s in statuses if s in ("review", "retest"))
+            final_ids = {b.block_id for b in plan.blocks}
+            plan.completed_block_ids = [bid for bid in completed_ids if bid in final_ids]
+
+        # Persist only real plans — an empty plan stays unsaved so content
+        # unlocked later today still gets picked up on the next visit.
+        if plan.blocks:
+            await self.firestore.save_daily_session_plan_doc(
+                student_id, today_str, plan.model_dump(mode="json")
+            )
+        return plan
+
+    async def mark_session_block_complete(
+        self, student_id: int, block_id: str, plan_date: Optional[str] = None
+    ) -> bool:
+        """Record a finished lesson block on the day's persisted session plan."""
+        target_date = plan_date or datetime.now(timezone.utc).date().isoformat()
+        return await self.firestore.add_completed_session_block(
+            student_id, target_date, block_id
+        )
+
+    async def _build_daily_session_plan(self, student_id: int) -> "DailySessionPlan":
         """
         Build today's structured session plan using lesson groups and a
         time-based capacity model.
@@ -827,10 +908,48 @@ class PlanningService:
         except Exception as e:
             logger.warning(f"[SESSION_PLAN] Mastery retests error: {e}")
 
-        # --- Step 1b: Unlocked new subskills (per subject) ---
+        # --- Step 1b: New subskills (per subject) ---
+        # IRT-first: the session-scope selector picks confirm/learn targets
+        # from P(correct) vs gate thresholds — the SAME brain as the Lesson
+        # Builder's Recommended fill (Lesson Entry Contract, one selection
+        # brain). Legacy unlocked-scan remains as the fallback when the
+        # analytics service is absent or the selector errors/returns nothing.
         if self.learning_paths:
             weekly_plan = await self.get_weekly_plan(student_id)
             for subj in weekly_plan.subjects:
+                selector_added = 0
+                if self.analytics:
+                    try:
+                        targets = await self.analytics.select_session_targets(
+                            student_id, subj, count=5
+                        )
+                        for o in targets.get("objectives", []):
+                            all_candidates.append({
+                                "skill_id":         o["subskillId"],
+                                "subject":          subj,
+                                "type":             "new",
+                                "mastery_gate":     o.get("currentGate", 0),
+                                # Model-state verb (confirm→apply, learn→
+                                # identify/explain) — wins over keyword
+                                # classification in the block builder.
+                                "selection_verb":   o.get("verb"),
+                                "selection_kind":   o.get("kind"),
+                                "selection_reason": o.get("reason"),
+                            })
+                            selector_added += 1
+                        if selector_added:
+                            logger.info(
+                                f"[SESSION_PLAN] Selector picked {selector_added} "
+                                f"targets for {subj}"
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"[SESSION_PLAN] Selector failed for {subj}, "
+                            f"falling back to unlocked scan: {e}"
+                        )
+                if selector_added:
+                    continue
+
                 try:
                     unlocked = await self.learning_paths.get_unlocked_entities(
                         student_id=student_id, entity_type="subskill", subject=subj
@@ -853,7 +972,7 @@ class PlanningService:
                             "skill_id":     sid,
                             "subject":      subj,
                             "type":         "new",
-                            "mastery_gate": gate,
+                            "mastery_gate": lc.get("current_gate", 0) if lc else 0,
                         })
                         added += 1
                         if added >= 20:   # cap per subject; time budget handles final selection
@@ -876,10 +995,20 @@ class PlanningService:
         session_subjects.discard("")
         curriculum_lookup = await self._build_curriculum_lookup(session_subjects)
 
+        # A candidate with no curriculum home cannot be taught or displayed
+        # honestly (its "name" would be a raw id, and its evidence would
+        # attribute to a phantom subskill). Drop it — the lookup is
+        # grade-aware, so a miss means the id genuinely isn't in any
+        # published curriculum (e.g. synthetic ids from old free-form
+        # lessons that leaked into mastery_lifecycle).
         enriched: List[Dict[str, Any]] = []
+        dropped: List[str] = []
         for c in all_candidates:
             sid  = c.get("skill_id", "")
-            meta = curriculum_lookup.get(sid, {})
+            meta = curriculum_lookup.get(sid)
+            if not meta:
+                dropped.append(sid)
+                continue
             enriched.append({
                 **c,
                 "unit_title":           meta.get("unit_title"),
@@ -887,6 +1016,22 @@ class PlanningService:
                 "skill_description":    meta.get("skill_description"),
                 "subskill_description": meta.get("subskill_description"),
             })
+        if dropped:
+            logger.warning(
+                f"[SESSION_PLAN] Dropped {len(dropped)} candidate(s) with no "
+                f"curriculum home (first 3: {dropped[:3]}) — run "
+                f"scripts/cleanup_synthetic_lifecycle.py to retire them"
+            )
+        if not enriched:
+            today = datetime.now(timezone.utc).date()
+            day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            return DailySessionPlan(
+                student_id=str(student_id),
+                date=today.isoformat(),
+                day_of_week=day_names[today.weekday()],
+                budget_minutes=budget_minutes,
+                warnings=["No curriculum-resolvable skills available for today."],
+            )
 
         # --- Step 3: Group into lesson blocks ---
         candidate_blocks = LessonGroupService.group_subskills_into_blocks(enriched)
@@ -956,13 +1101,35 @@ class PlanningService:
         """
         Build a subskill_id → {unit_title, skill_description, subskill_description}
         lookup from the curriculum hierarchy for the given subjects.
+
+        Grade-aware: subjects are published once PER GRADE under the same
+        name, and a bare-subject fetch resolves to a single grade's doc — so
+        a Kindergarten subskill would miss and its block would render as
+        "General" with a raw id. Load every published grade doc whose subject
+        matches and merge (ids are grade-unique; first entry wins).
         """
         lookup: Dict[str, Dict[str, str]] = {}
-        for subj in subjects:
+
+        # Resolve each requested subject to ALL of its published grade docs.
+        docs_to_load: List[tuple] = []
+        try:
+            published = await self.firestore.get_all_published_subjects()
+            want = {FirestoreService.rollup_subject_key(s) for s in subjects}
+            docs_to_load = [
+                (e.get("subject_id", ""), e.get("grade"))
+                for e in published
+                if FirestoreService.rollup_subject_key(e.get("subject_id")) in want
+            ]
+        except Exception as e:
+            logger.warning(f"Published-subjects listing failed, bare-subject fallback: {e}")
+        if not docs_to_load:
+            docs_to_load = [(subj, None) for subj in subjects]
+
+        for subj, grade in docs_to_load:
             try:
-                curriculum_data = await self.curriculum.get_curriculum(subj)
+                curriculum_data = await self.curriculum.get_curriculum(subj, grade=grade)
             except Exception as e:
-                logger.warning(f"Failed to load curriculum for {subj}: {e}")
+                logger.warning(f"Failed to load curriculum for {subj} (grade={grade}): {e}")
                 continue
             for unit in curriculum_data:
                 unit_title = unit.get("title", unit.get("id", ""))
@@ -972,7 +1139,7 @@ class PlanningService:
                     for subskill in skill.get("subskills", []):
                         ss_id = subskill.get("id", "")
                         ss_desc = subskill.get("description", ss_id)
-                        if ss_id:
+                        if ss_id and ss_id not in lookup:
                             lookup[ss_id] = {
                                 "unit_title": unit_title,
                                 "skill_id": skill_id,

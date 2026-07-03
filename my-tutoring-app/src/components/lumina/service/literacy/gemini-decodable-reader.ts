@@ -204,7 +204,6 @@ export const generateDecodableReader = async (
 ): Promise<DecodableReaderData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as DecodableReaderConfig;
 
   // ── Eval mode resolution (LEGACY pattern: explicit pin → schema enum) ──
@@ -269,7 +268,21 @@ GRADE 2 GUIDELINES:
 `
   };
 
-  const gradeLevelKey = ['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K';
+  // Grade rung: ctx.grade is the canonical per-objective curriculum grade
+  // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
+  // clamped to this primitive's K-2 decodable ladder. Without it (free-form
+  // lessons) fall back to the lesson band: kindergarten → 'K', anything else →
+  // '1' (mid rung). The old code matched ctx.gradeContext prose against
+  // ['K','1','2'], which could never hit, so every passage was pinned to 'K'.
+  const LADDER = ['K', '1', '2'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 2) {
+    gradeLevelKey = '2';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '1';
+  }
 
   const generationPrompt = `Create a decodable reading passage about: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}

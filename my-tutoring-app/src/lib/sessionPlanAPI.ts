@@ -60,6 +60,8 @@ export interface DailySessionPlan {
   intro_budget_minutes:     number;
   estimated_total_minutes:  number;
   blocks:                   LessonBlock[];
+  /** Block ids finished today — persisted server-side on the day's plan doc. */
+  completed_block_ids?:     string[];
   total_subskills:          number;
   new_subskills:            number;
   review_subskills:         number;
@@ -72,8 +74,25 @@ export interface DailySessionPlan {
 
 export async function fetchDailySessionPlan(
   studentId: string | number,
+  options?: { refresh?: boolean },
 ): Promise<DailySessionPlan> {
+  const query = options?.refresh ? '?refresh=true' : '';
   return authApi.get<DailySessionPlan>(
-    `/api/daily-activities/daily-plan/${studentId}/session`,
+    `/api/daily-activities/daily-plan/${studentId}/session${query}`,
+  );
+}
+
+/**
+ * Persist a finished block onto today's plan doc so progress survives
+ * navigation, reloads, and device switches. Idempotent server-side.
+ */
+export async function markSessionBlockComplete(
+  studentId: string | number,
+  blockId: string,
+  planDate?: string,
+): Promise<{ success: boolean }> {
+  const query = planDate ? `?plan_date=${encodeURIComponent(planDate)}` : '';
+  return authApi.post<{ success: boolean }>(
+    `/api/daily-activities/daily-plan/${studentId}/session/blocks/${encodeURIComponent(blockId)}/complete${query}`,
   );
 }

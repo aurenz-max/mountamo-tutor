@@ -795,6 +795,9 @@ export interface ObjectiveData {
    *  must attribute to THEIR objective's subskill, not the lesson-level one. */
   subskillId?: string;
   skillId?: string;
+  /** Canonical curriculum grade for this objective ('K'|'1'..'12'). Precise where
+   *  the lesson gradeLevel is only a band — flows to generators as ctx.grade. */
+  grade?: string;
 }
 
 export interface QuickCheckData {

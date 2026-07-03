@@ -71,6 +71,35 @@ const getGradeLevelContext = (gradeLevel: string): string => {
   return contexts[gradeLevel] || contexts['Elementary'];
 };
 
+/**
+ * Map the canonical numeric grade (ctx.grade: 'K'|'1'..'12') to a band KEY
+ * that getGradeLevelContext understands. Returns '' when grade is absent so
+ * the caller falls back to the prose-derived band.
+ */
+const gradeToBand = (g: string): string => {
+  if (g === 'K') return 'Kindergarten';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+  return '';
+};
+
+/**
+ * Fallback band resolver — infers the band label from the grade-context PROSE
+ * sentence when the canonical numeric grade is unavailable. Mirrors fast-fact's
+ * inferGradeLevelFromContext so a missing ctx.grade still lands on a real map key
+ * instead of silently defaulting to 'Elementary' for every objective.
+ */
+const inferGradeLevelFromContext = (gradeContext: string): string => {
+  const c = (gradeContext || '').toLowerCase();
+  if (c.includes('toddler')) return 'Toddler';
+  if (c.includes('preschool')) return 'Preschool';
+  if (c.includes('kindergarten')) return 'Kindergarten';
+  if (c.includes('elementary') || c.includes('grades 1-5')) return 'Elementary';
+  if (c.includes('middle') || c.includes('grades 6-8')) return 'Middle School';
+  if (c.includes('high') || c.includes('grades 9-12')) return 'High School';
+  return 'Elementary';
+};
+
 // ---------------------------------------------------------------------------
 // Gemini Schema
 // ---------------------------------------------------------------------------
@@ -361,9 +390,18 @@ export const generateHowItWorks = async (
   ctx: GenerationContext,
 ): Promise<HowItWorksData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as HowItWorksConfig;
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  // Resolve the audience BAND from the canonical numeric grade first, prose
+  // fallback second. Feeding a real map KEY (not the prose sentence) is what
+  // fixes the always-'Elementary' bug: ctx.gradeContext is a full sentence and
+  // never matched a getGradeLevelContext key.
+  const bandKey = (ctx.grade && gradeToBand(ctx.grade)) || inferGradeLevelFromContext(ctx.gradeContext);
+  const gradeLevel = bandKey;
+  const gradeLevelContext = getGradeLevelContext(bandKey);
+  // Surface the EXACT numeric grade so grade-2 ≠ grade-4 within a band.
+  const gradeLine = ctx.grade
+    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -392,7 +430,7 @@ export const generateHowItWorks = async (
 TOPIC / PROCESS: ${topic}
 ${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
-
+${gradeLine ? gradeLine + '\n' : ''}
 ## Your Mission:
 Create a clear, engaging "How It Works" explanation of "${topic}" that walks students through the sequential stages of the process. Make the content RICH and MAGAZINE-QUALITY — not a simple text slideshow.
 

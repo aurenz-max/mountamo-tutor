@@ -95,7 +95,7 @@ export const generateExhibitManifest = async (
 export const generateExhibitManifestWithObjectives = async (
   topic: string,
   gradeLevel: string,
-  objectives: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string }>
+  objectives: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>
 ): Promise<ExhibitManifest> => {
   return callAPI('generateExhibitManifestWithObjectives', { topic, gradeLevel, objectives });
 };
@@ -107,7 +107,7 @@ export const generateExhibitManifestWithObjectives = async (
 export const generateExhibitManifestWithObjectivesStreaming = async (
   topic: string,
   gradeLevel: string,
-  objectives: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string }>,
+  objectives: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>,
   callbacks?: ManifestProgressCallback,
   studentContext?: StudentGenerationContext | null
 ): Promise<ExhibitManifest> => {

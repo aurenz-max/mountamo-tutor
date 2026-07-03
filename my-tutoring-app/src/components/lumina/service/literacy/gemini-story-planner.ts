@@ -88,7 +88,6 @@ export const generateStoryPlanner = async (
 ): Promise<StoryPlannerData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as StoryPlannerConfig;
   // ── Eval mode resolution (legacy literacy pattern: explicit pin only) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -110,7 +109,18 @@ export const generateStoryPlanner = async (
     CHALLENGE_TYPE_DOCS,
   );
 
-  const gradeLevelKey = ['K', '1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // Grade governs realization (element count, arc shape, conflictTypes/dialogue rungs).
+  // ctx.grade is the ONLY canonical numeric grade; ctx.gradeLevel is a band key
+  // ('elementary' collapses 1-5) and ctx.gradeContext is prose — neither is parseable here.
+  const GRADE_LADDER = ['K', '1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (GRADE_LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to the top rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '3';
+  }
 
   const gradeNotes: Record<string, string> = {
     'K': 'K: 2 elements (Character, What Happened). 2-arc (Beginning, End). No conflict types. No dialogue.',

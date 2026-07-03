@@ -332,7 +332,6 @@ export const generateFigurativeLanguageFinder = async (
 ): Promise<FigurativeLanguageFinderData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FigurativeLanguageFinderConfig;
   const evalConstraint = resolveEvalModeConstraint(
     'figurative-language-finder',
@@ -347,7 +346,23 @@ export const generateFigurativeLanguageFinder = async (
       })
     : figurativeLanguageFinderSchema;
 
-  const gradeLevelKey = ['3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '4';
+  // Grade fidelity: read the CANONICAL curriculum grade (ctx.grade), never parse it
+  // out of the band key or prose (ctx.gradeLevel/ctx.gradeContext). This generator's
+  // grade ladder is 3-6 (see gradeNotes/typesByGrade below). Above-ceiling grades
+  // clamp to the top rung '6'; below-ladder grades (K/1/2) clamp to the bottom rung
+  // '3'; a missing objective grade falls back to the band (kindergarten → '3', else
+  // the mid rung '4'). See [[grade-fidelity-dead-band]].
+  const GRADE_LADDER = ['3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (GRADE_LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else if (ctx.grade && Number.isFinite(parseInt(ctx.grade, 10)) && parseInt(ctx.grade, 10) < 3) {
+    gradeLevelKey = '3';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '3' : '4';
+  }
 
   const gradeNotes: Record<string, string> = {
     '3': 'Grade 3: Focus on SIMILE (like/as) and ALLITERATION only. 3-4 instances. Simple passage. "What does it REALLY mean?" focus.',

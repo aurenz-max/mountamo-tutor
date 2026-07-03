@@ -161,7 +161,7 @@ interface IdleScreenProps {
     gradeLevel: GradeLevel;
     preBuiltObjectives: Array<{
       id: string; text: string; verb: string; icon: string;
-      subskillId?: string; skillId?: string;
+      subskillId?: string; skillId?: string; grade?: string;
     }>;
     curriculum: CurriculumContext;
   }) => void;
@@ -270,6 +270,9 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
       // personalization keys into β directly instead of re-deriving via embedding.
       subskillId: s.id,
       skillId: s.skillId,
+      // Precise curriculum grade — the mappedGrade band below loses it
+      // ('elementary' spans 1-5), so generators read this via ctx.grade.
+      grade: s.grade,
     }));
 
     const subjects = new Set(selectedSubskills.map(s => s.subject));

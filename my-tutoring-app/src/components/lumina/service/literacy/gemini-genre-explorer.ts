@@ -106,7 +106,6 @@ export const generateGenreExplorer = async (
 
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as GenreExplorerConfig;
 
   // ── Eval mode resolution (legacy literacy pattern) ──────────────────
@@ -124,7 +123,21 @@ export const generateGenreExplorer = async (
       })
     : genreExplorerSchema;
 
-  const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // Grade governs realization (reading level, structural load, option count),
+  // NOT the cognitive KIND of the eval mode. ctx.grade is the ONLY parsed grade
+  // (normalizeObjectiveGrade); ctx.gradeLevel is a BAND key and ctx.gradeContext
+  // is PROSE — neither can be matched against numeric rungs (parse-and-fallback).
+  const LADDER = ['1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to top rung
+  } else if (ctx.grade === 'K') {
+    gradeLevelKey = '1'; // no K rung on this ladder — clamp to lowest rung
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '1' : '3';
+  }
 
   const gradeNotes: Record<string, string> = {
     '1': 'Grade 1: Fiction vs nonfiction. 1 excerpt. 4-5 simple features (Has characters? Has real facts? Is make-believe?). 3 genre options.',

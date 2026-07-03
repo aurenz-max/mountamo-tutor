@@ -451,24 +451,6 @@ def get_calibration_engine(
     return _calibration_engine
 
 
-async def get_planning_service(
-    firestore_service: FirestoreService = Depends(get_firestore_service),
-    curriculum_service: CurriculumService = Depends(get_curriculum_service),
-    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
-) -> PlanningService:
-    """Get or create PlanningService singleton (Firestore-native planner)."""
-    global _planning_service
-    if _planning_service is None:
-        logger.info("Initializing PlanningService")
-        _planning_service = PlanningService(
-            firestore_service=firestore_service,
-            curriculum_service=curriculum_service,
-            learning_paths_service=learning_paths_service,
-        )
-        logger.info("✅ PlanningService initialized successfully")
-    return _planning_service
-
-
 def get_progress_display_service(
     firestore_service: FirestoreService = Depends(get_firestore_service),
 ) -> ProgressDisplayService:
@@ -535,6 +517,32 @@ async def get_firestore_analytics_service(
         )
         logger.info("✅ FirestoreAnalyticsService initialized successfully")
     return _firestore_analytics_service
+
+
+async def get_planning_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service),
+    learning_paths_service: LearningPathsService = Depends(get_learning_paths_service),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service),
+) -> PlanningService:
+    """Get or create PlanningService singleton (Firestore-native planner).
+
+    Defined AFTER get_firestore_analytics_service — Depends() resolves the
+    callable at definition time.
+    """
+    global _planning_service
+    if _planning_service is None:
+        logger.info("Initializing PlanningService")
+        _planning_service = PlanningService(
+            firestore_service=firestore_service,
+            curriculum_service=curriculum_service,
+            learning_paths_service=learning_paths_service,
+            # IRT session-scope selector — daily blocks share the same
+            # selection brain as the Lesson Builder's Recommended fill.
+            analytics_service=analytics_service,
+        )
+        logger.info("✅ PlanningService initialized successfully")
+    return _planning_service
 
 
 def get_daily_activities_service(

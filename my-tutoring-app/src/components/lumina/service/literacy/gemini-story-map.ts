@@ -255,8 +255,26 @@ export const generateStoryMap = async (
 ): Promise<StoryMapData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as StoryMapConfig;
+
+  // Grade rung: ctx.grade is the canonical per-objective curriculum grade
+  // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
+  // clamped to this primitive's K-6 ladder. Without it (free-form lessons) fall
+  // back to the lesson band: kindergarten → 'K', anything else → '3'. The old
+  // path read ctx.gradeContext PROSE ("elementary students (grades 1-5) …" /
+  // "kindergarten students (ages 5-6) …") and parseInt-stripped it to "15"/"56",
+  // which ALWAYS landed in the 'high' band — so every grade, even K, got
+  // plot-diagram + conflict analysis. grade governs realization only.
+  const LADDER = ['K', '1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '3';
+  }
+  const gradeNum = gradeLevelKey === 'K' ? 0 : parseInt(gradeLevelKey, 10);
 
   // -------------------------------------------------------------------------
   // Eval mode resolution
@@ -280,8 +298,7 @@ export const generateStoryMap = async (
   // -------------------------------------------------------------------------
   const structureType = evalConstraint
     ? evalConstraint.allowedTypes[0] as "bme" | "story-mountain" | "plot-diagram" | "heros-journey"
-    : (config?.structureType || getStructureType(gradeLevel));
-  const gradeNum = parseInt(gradeLevel.replace(/[^0-9]/g, ""), 10) || 0;
+    : (config?.structureType || getStructureType(gradeLevelKey));
 
   // -------------------------------------------------------------------------
   // Build prompt with eval-mode-scoped challenge type docs
@@ -338,7 +355,7 @@ GRADE 4-6 GUIDELINES:
 
   const generationPrompt = `Create an educational story map activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
-TARGET GRADE LEVEL: ${gradeLevel}
+TARGET GRADE LEVEL: ${gradeLevelKey}
 STRUCTURE TYPE: ${structureType}
 
 ${gradeContext[band]}

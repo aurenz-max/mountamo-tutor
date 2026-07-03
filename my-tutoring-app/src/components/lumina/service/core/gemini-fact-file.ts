@@ -65,6 +65,34 @@ const getGradeLevelContext = (gradeLevel: string): string => {
   return contexts[gradeLevel] || contexts['Elementary'];
 };
 
+/**
+ * Map a canonical numeric grade ('K'|'1'..'12') to a band KEY that
+ * getGradeLevelContext understands. Returns '' when no numeric grade.
+ */
+const gradeToBand = (g?: string): string => {
+  if (!g) return '';
+  if (g === 'K') return 'Kindergarten';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+  return '';
+};
+
+/**
+ * Fallback: infer a band KEY from the PROSE gradeContext sentence.
+ * ctx.gradeContext is a sentence, not a band key — a direct lookup would
+ * always miss and collapse every objective to 'Elementary'.
+ */
+const inferGradeLevelFromContext = (gradeContext: string): string => {
+  const g = (gradeContext || '').toLowerCase();
+  if (g.includes('toddler')) return 'Toddler';
+  if (g.includes('preschool')) return 'Preschool';
+  if (g.includes('kindergarten')) return 'Kindergarten';
+  if (g.includes('elementary') || g.includes('grades 1-5')) return 'Elementary';
+  if (g.includes('middle') || g.includes('grades 6-8')) return 'Middle School';
+  if (g.includes('high') || g.includes('grades 9-12')) return 'High School';
+  return 'Elementary';
+};
+
 // ---------------------------------------------------------------------------
 // Flat Gemini Schema
 // ---------------------------------------------------------------------------
@@ -372,9 +400,18 @@ export const generateFactFile = async (
   ctx: GenerationContext,
 ): Promise<FactFileData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FactFileConfig;
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  // Resolve the audience BAND from the canonical numeric grade first, then
+  // fall back to parsing the prose gradeContext. Feeding the raw prose
+  // sentence into getGradeLevelContext would always miss and collapse every
+  // objective to 'Elementary'.
+  const bandKey = gradeToBand(ctx.grade) || inferGradeLevelFromContext(ctx.gradeContext);
+  const gradeLevel = bandKey;
+  const gradeLevelContext = getGradeLevelContext(bandKey);
+  // Surface the EXACT numeric grade so grade-2 ≠ grade-4 within the same band.
+  const gradeLine = ctx.grade
+    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -402,7 +439,7 @@ export const generateFactFile = async (
 TOPIC / SUBJECT: ${topic}
 ${scopeSection}
 TARGET AUDIENCE: ${gradeLevelContext}
-
+${gradeLine ? gradeLine + '\n' : ''}
 ## Your Mission:
 Create a rich, informative Fact File about "${topic}" that reads like a page from a children's encyclopedia or magazine.
 

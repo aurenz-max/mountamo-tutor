@@ -98,6 +98,9 @@ class DailySessionPlan(BaseModel):
     intro_budget_minutes:    int = 0    # Guaranteed budget for new material
     estimated_total_minutes: int = 0    # Sum of selected block estimates
     blocks:                  List[LessonBlock] = Field(default_factory=list)
+    # Block ids the student has finished today — persisted on the day's plan
+    # doc so progress survives navigation and device switches.
+    completed_block_ids:     List[str] = Field(default_factory=list)
     total_subskills:         int = 0
     new_subskills:           int = 0
     review_subskills:        int = 0

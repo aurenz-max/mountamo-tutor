@@ -59,6 +59,15 @@ export interface GenerationContext {
   gradeLevel: string;
   /** Grade-appropriate prose for prompts (the `gradeLevelContext` string). */
   gradeContext: string;
+  /**
+   * Canonical curriculum grade for THIS component's objective — 'K' or '1'..'12'.
+   * Sourced from the objective's curriculum metadata (preBuiltObjectives →
+   * `config.objectiveGrade` stamped by `flattenManifestToLayout`), normalized once
+   * here at the boundary. Precise where `gradeLevel` is only a band ('elementary'
+   * collapses grades 1-5). Undefined on free-form lessons — generators fall back
+   * to their band defaults. NEVER parse grade out of `gradeContext` prose; read this.
+   */
+  grade?: string;
 
   // ── Objective / intent (the per-component assignment) ──────
   /** The manifest item's title (used by some narrative generators for framing). */

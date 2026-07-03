@@ -1864,6 +1864,73 @@ class FirestoreService:
             raise
 
     # ============================================================================
+    # DAILY SESSION PLANS (structured lesson-block plans — one doc per day)
+    #
+    # students/{student_id}/dailySessionPlans/{YYYY-MM-DD}
+    # A plan is generated once per day and re-read on every visit so the
+    # student sees the same blocks (and their completion state) all day.
+    # ============================================================================
+
+    def _session_plan_doc(self, student_id: int, plan_date: str):
+        return (
+            self._student_doc(student_id)
+            .collection("dailySessionPlans")
+            .document(plan_date)
+        )
+
+    async def get_daily_session_plan_doc(
+        self,
+        student_id: int,
+        plan_date: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Read the persisted session plan for one day, or None if not yet generated."""
+        try:
+            doc = self._session_plan_doc(student_id, plan_date).get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error reading session plan {student_id}/{plan_date}: {e}")
+            return None
+
+    async def save_daily_session_plan_doc(
+        self,
+        student_id: int,
+        plan_date: str,
+        plan_data: Dict[str, Any],
+    ) -> bool:
+        """Persist the day's generated session plan (full overwrite on refresh)."""
+        try:
+            await self._ensure_student_document(student_id)
+            data = self._prepare_firestore_data({
+                **plan_data,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
+            self._session_plan_doc(student_id, plan_date).set(data)
+            logger.info(f"Saved session plan for student {student_id} on {plan_date}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving session plan {student_id}/{plan_date}: {e}")
+            return False
+
+    async def add_completed_session_block(
+        self,
+        student_id: int,
+        plan_date: str,
+        block_id: str,
+    ) -> bool:
+        """Record a finished block on the day's plan (idempotent via ArrayUnion)."""
+        try:
+            self._session_plan_doc(student_id, plan_date).set(
+                {"completed_block_ids": firestore.ArrayUnion([block_id])},
+                merge=True,
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                f"Error marking block {block_id} complete for {student_id}/{plan_date}: {e}"
+            )
+            return False
+
+    # ============================================================================
     # SCHOOL YEAR CONFIG
     # ============================================================================
 

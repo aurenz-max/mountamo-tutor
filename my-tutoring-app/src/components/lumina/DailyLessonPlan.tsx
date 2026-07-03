@@ -7,17 +7,11 @@
  * Each block is a grouped set of related subskills ordered by Bloom's taxonomy.
  * "Start Block" fires onBlockStart(block) so the parent can launch the exhibit.
  *
- * completedBlockIds is an externally managed set passed from App.tsx so that
- * block completion state persists across remounts (e.g. after returning from
- * an exhibit). Internal completedBlocks is merged as an optimistic overlay.
- *
- * TODO (backend integration): On block completion, POST to
- *   /api/daily-activities/daily-plan/{studentId}/session/complete-block
- * with { block_id, lesson_group_id, subskill_ids[], eval_results[] }.
- * This lets the backend:
- *   - Update mastery lifecycle gate transitions
- *   - Mark the block as done so it doesn't re-appear tomorrow
- *   - Persist session progress for cross-device resumption
+ * The plan is get-or-create server-side (one doc per student per day), so a
+ * fresh fetch returns the same blocks with completed_block_ids intact —
+ * progress survives navigation and reloads. completedBlockIds is an
+ * optimistic overlay from App.tsx for completions in the current visit;
+ * it is merged with the persisted set carried on the plan itself.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -327,21 +321,20 @@ export function DailyLessonPlan({
   const [plan, setPlan]         = useState<DailySessionPlan | null>(initialPlan ?? null);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
-  // Internal optimistic state: merged with external completedBlockIds below
-  const [localCompleted, setLocalCompleted] = useState<Set<string>>(new Set());
 
-  // Merge external (persisted) + internal (optimistic) completed state
+  // Merge server-persisted completion (on the plan doc) with the parent's
+  // optimistic overlay for completions in the current visit.
   const effectiveCompleted: Set<string> = (() => {
-    const merged = new Set(Array.from(completedBlockIds ?? []));
-    localCompleted.forEach(id => merged.add(id));
+    const merged = new Set(plan?.completed_block_ids ?? []);
+    completedBlockIds?.forEach(id => merged.add(id));
     return merged;
   })();
 
-  const fetchPlan = useCallback(async () => {
+  const fetchPlan = useCallback(async (options?: { refresh?: boolean }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchDailySessionPlan(studentId);
+      const data = await fetchDailySessionPlan(studentId, options);
       setPlan(data);
       onPlanLoaded?.(data);
     } catch (e: any) {
@@ -359,16 +352,10 @@ export function DailyLessonPlan({
 
   const handleStartBlock = useCallback((block: LessonBlock) => {
     console.log('[DailyLessonPlan] Starting block:', block.block_id, block.title);
-    // Optimistic local mark (also set by parent via completedBlockIds on return)
-    setLocalCompleted(prev => new Set(Array.from(prev).concat(block.block_id)));
-    // Notify parent to launch the exhibit + track completion in App-level state
+    // Notify parent to launch the exhibit; completion is recorded (and
+    // persisted) by App.tsx when the exhibit finishes — abandoned blocks
+    // stay incomplete.
     onBlockStart?.(block);
-    // TODO (backend integration): POST block start event
-    // authApi.post(`/api/daily-activities/daily-plan/${studentId}/session/start-block`, {
-    //   block_id: block.block_id,
-    //   lesson_group_id: block.lesson_group_id,
-    //   subskill_ids: block.subskills.map(s => s.subskill_id),
-    // });
   }, [onBlockStart]);
 
   // ---------------------------------------------------------------------------
@@ -388,7 +375,7 @@ export function DailyLessonPlan({
     return (
       <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-6">
         <p className="text-rose-400 text-sm mb-3">{error}</p>
-        <Button variant="ghost" size="sm" onClick={fetchPlan}
+        <Button variant="ghost" size="sm" onClick={() => fetchPlan()}
           className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 text-sm">
           Try again
         </Button>
@@ -525,15 +512,13 @@ export function DailyLessonPlan({
             <p className="text-slate-500 text-sm mt-1">
               You finished all {totalBlocks} blocks. Great work today!
             </p>
-            {/* TODO (backend integration): POST session completion
-                authApi.post(`/api/daily-activities/daily-plan/${studentId}/session/complete`) */}
           </CardContent>
         </Card>
       )}
 
       {/* ---- Refresh ---- */}
       <div className="flex justify-end pt-1">
-        <Button variant="ghost" size="sm" onClick={fetchPlan} disabled={loading}
+        <Button variant="ghost" size="sm" onClick={() => fetchPlan({ refresh: true })} disabled={loading}
           className="text-slate-500 hover:text-slate-300 text-sm">
           <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh plan

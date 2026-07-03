@@ -60,9 +60,22 @@ export const generateSpellingPatternExplorer = async (
 ): Promise<SpellingPatternExplorerData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SpellingPatternExplorerConfig;
-  const gradeLevelKey = ['1', '2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // Grade ladder for this generator (gradeNotes/patternsByGrade define rungs 1-6).
+  // Read the canonical curriculum grade (ctx.grade); the legacy prose read of
+  // ctx.gradeContext never matched ['1'..'6'] and silently pinned every objective
+  // to grade 3 (parse-and-fallback). See /topic-fidelity --grade.
+  const LADDER = ['1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6'; // above-ceiling numeric grade clamps to top rung
+  } else {
+    // Band fallback only (no canonical grade): this ladder has no K rung, so
+    // kindergarten/preschool clamps to the grade-1 floor; other bands → mid rung.
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '1' : '3';
+  }
 
   const evalConstraint = resolveEvalModeConstraint(
     'spelling-pattern-explorer',

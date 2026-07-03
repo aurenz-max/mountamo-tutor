@@ -14,7 +14,7 @@ import { GeneratingScreen } from './components/GeneratingScreen';
 import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
 import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
-import type { DailySessionPlan, LessonBlock } from '@/lib/sessionPlanAPI';
+import { markSessionBlockComplete, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
@@ -162,7 +162,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     gradeLevel: GradeLevel;
     preBuiltObjectives: Array<{
       id: string; text: string; verb: string; icon: string;
-      subskillId?: string; skillId?: string;
+      subskillId?: string; skillId?: string; grade?: string;
     }>;
     curriculum: CurriculumContext;
   }) => {
@@ -253,10 +253,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
       : undefined;
 
     startGenerate({ topic: `${block.subject}: ${block.title}`, gradeLevel, preBuiltObjectives });
-    // TODO (backend integration): POST session block start to record attempt
-    // authApi.post(`/api/daily-activities/daily-plan/1/session/start-block`, {
-    //   block_id: block.block_id, lesson_group_id: block.lesson_group_id,
-    // });
   }, [startGenerate, gradeLevel]);
 
   // Derived: next block in session (for break screen preview)
@@ -274,13 +270,17 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     if (sessionCurrentBlock && !sessionCompletedBlocks.has(sessionCurrentBlock.block_id)) {
       setSessionCompletedBlocks(prev => new Set(prev).add(sessionCurrentBlock.block_id));
       setSessionStats(prev => prev ? { ...prev, completed: prev.completed + 1 } : prev);
+      // Persist onto today's plan doc so progress survives backing out,
+      // reloads, and device switches. Local state is already optimistic.
+      void markSessionBlockComplete(studentId, sessionCurrentBlock.block_id, sessionPlan?.date)
+        .catch(err => console.warn('[Session] Failed to persist block completion:', err));
     }
     resetSession();
     setTopic('');
     setCurriculumContext(null);
     setSessionPhase('break');
     // Session tracking state preserved: sessionReturn, sessionCurrentBlock, sessionEvalCount, sessionStats, sessionCompletedBlocks
-  }, [resetSession, sessionCurrentBlock, sessionCompletedBlocks]);
+  }, [resetSession, sessionCurrentBlock, sessionCompletedBlocks, studentId, sessionPlan]);
 
   // Break screen → start next block
   const handleBreakContinue = useCallback(() => {
@@ -463,10 +463,19 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
                   blockResults={sessionBlockResults}
                   initialPlan={sessionPlan}
                   onPlanLoaded={(plan: DailySessionPlan) => {
-                    if (!sessionPlan) {
-                      setSessionStats({ total: plan.blocks.length, completed: 0 });
-                      setSessionPlan(plan);
-                    }
+                    // Always adopt the fetched plan (a manual refresh must not
+                    // leave the parent holding stale block ids), and seed
+                    // completion from the server-persisted set — merged with
+                    // any optimistic completions from this visit.
+                    setSessionPlan(plan);
+                    const merged = new Set(plan.completed_block_ids ?? []);
+                    sessionCompletedBlocks.forEach(id => merged.add(id));
+                    setSessionCompletedBlocks(merged);
+                    const inPlan = new Set(plan.blocks.map(b => b.block_id));
+                    setSessionStats({
+                      total: plan.blocks.length,
+                      completed: Array.from(merged).filter(id => inPlan.has(id)).length,
+                    });
                   }}
                   onBlockStart={handleBlockStart}
                 />

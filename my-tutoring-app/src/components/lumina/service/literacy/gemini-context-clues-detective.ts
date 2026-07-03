@@ -390,7 +390,6 @@ export const generateContextCluesDetective = async (
 ): Promise<ContextCluesDetectiveData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ContextCluesDetectiveConfig;
 
   const gradeContext: Record<string, string> = {
@@ -474,7 +473,24 @@ GRADE 6 GUIDELINES:
     evalConstraint && evalConstraint.allowedTypes.length === 1
       ? evalConstraint.allowedTypes[0]
       : undefined;
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // ── Canonical grade → realization rung. ctx.grade ('K'|'1'..'12'|undefined) is the
+  //    ONLY reliable numeric grade; ctx.gradeLevel is a BAND key ('elementary' collapses
+  //    1-5) and ctx.gradeContext is prose — neither can be matched against numeric rungs.
+  //    This generator's ladder is 2-6 (the rungs gradeContext actually defines). Above the
+  //    ceiling clamps to the top rung; below the floor (K/1) clamps to the floor rung; only
+  //    when ctx.grade is missing do we fall back to the band (kindergarten→floor, else mid).
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  const gradeNum = ctx.grade ? parseInt(ctx.grade, 10) : NaN;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (!Number.isNaN(gradeNum) && gradeNum > 6) {
+    gradeLevelKey = '6';
+  } else if (!Number.isNaN(gradeNum) && gradeNum < 2) {
+    gradeLevelKey = '2';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
   const passageLen = PASSAGE_LEN_BY_GRADE[gradeLevelKey] ?? 4;
 
   // One key (the tier ENUM), two axes, ONE coherent prompt block: scaffolding

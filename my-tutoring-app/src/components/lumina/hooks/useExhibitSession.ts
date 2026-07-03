@@ -40,6 +40,8 @@ export interface GenerateOptions {
   preBuiltObjectives?: Array<{
     id: string; text: string; verb: string; icon: string;
     subskillId?: string; skillId?: string;
+    /** Canonical curriculum grade ('K'|'1'..'12') — flows to generators as ctx.grade. */
+    grade?: string;
   }>;
   /**
    * Set when the lesson was launched from a single known curriculum node (the

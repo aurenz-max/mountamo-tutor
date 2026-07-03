@@ -30,6 +30,24 @@ function normalizeSupportTier(difficulty: unknown): SupportTier | undefined {
 }
 
 /**
+ * Normalize the objective's curriculum grade to the canonical 'K' | '1'..'12'.
+ * Curriculum metadata arrives in several spellings ('K', 'Kindergarten', '2',
+ * 'Grade 2', '2nd'); anything unrecognized → undefined (band defaults stand).
+ * This is the ONLY place grade strings are parsed — generators read `ctx.grade`.
+ */
+function normalizeObjectiveGrade(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const g = raw.trim();
+  if (!g) return undefined;
+  if (/^(k|tk|kinder(garten)?)$/i.test(g)) return 'K';
+  const m = g.match(/^(?:grade\s*)?(\d{1,2})(?:st|nd|rd|th)?(?:\s*grade)?$/i);
+  if (!m) return undefined;
+  const n = parseInt(m[1], 10);
+  if (n === 0) return 'K';
+  return n >= 1 && n <= 12 ? String(n) : undefined;
+}
+
+/**
  * Build the `GenerationContext` from a manifest item plus the lesson framing the
  * dispatch site already has (topic, gradeContext prose, raw grade key).
  *
@@ -64,6 +82,8 @@ export function resolveGenerationContext(
     topic,
     gradeLevel,
     gradeContext,
+    // Canonical per-objective curriculum grade — stamped by flattenManifestToLayout.
+    grade: normalizeObjectiveGrade(config.objectiveGrade),
     title: item.title,
     intent,
     objective,

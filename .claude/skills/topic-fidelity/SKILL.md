@@ -1,4 +1,4 @@
-# Topic Fidelity — Does One Generator Honor Its topic + intent?
+# Topic Fidelity — Does One Generator Honor Its topic + intent (+ grade)?
 
 Take a SINGLE generator and verify that the lesson's `topic` and `intent` actually
 shape what it produces — then fix it if they don't, via an escalating fix ladder.
@@ -6,6 +6,12 @@ Outcome: the generator's student-facing output respects the scope and theme the
 topic+intent asked for ("counting to 10" → values ≤ 10; a topic about "frogs" →
 frog-flavored content), OR a clear verdict that this primitive is simply the wrong
 fit for the topic (not a bug).
+
+There is a third fidelity axis: **grade** (`--grade` modality, see its section
+below). Same probe → verdict → fix-ladder shape, but the axis under test is the
+objective's canonical curriculum grade (`ctx.grade`) instead of topic/intent, and
+the characteristic bug is a generator running forever on its hardcoded fallback
+grade (poetry-lab emitted grade-4 content for every lesson, including K).
 
 **This is the per-generator, fix-capable companion to the two assess-only skills:**
 - `/topic-trace` watches a topic propagate through the manifest into MANY primitives (finds the broken link).
@@ -16,6 +22,10 @@ fit for the topic (not a bug).
 - `/topic-fidelity number-line "Counting to 10" kindergarten`
 - Omit the topic and the skill picks a scope-bearing probe topic for the primitive's domain.
 - The topic SHOULD carry real scope or theme language ("to 10", "within 5", "about animals") — otherwise there is nothing to honor and every result looks fine.
+
+**Grade modality:** `/topic-fidelity <generator-id> --grade [topic]`
+- `/topic-fidelity poetry-lab --grade "rhyming words"`
+- Runs the GRADE probes/fix ladder (see "Grade modality" section) instead of the topic/intent ones. Run both modalities on a generator you're fully auditing.
 
 ## The core distinction: fidelity bug vs. primitive-fit mismatch
 
@@ -157,7 +167,7 @@ bespoke resolver, say so — that is the [[scope-context-contract]] rollout.
 
 ### Phase 4 — Verify
 
-1. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — compare to baseline (1419), no new errors (see [[tsc-verification-integrity]]).
+1. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — compare to the current baseline (1101 as of 2026-07-03; see [[tsc-verification-integrity]]), no new errors.
 2. Re-run all three Phase-1 probes. Assert: HONORED on the bound, TRACKS on the discrimination control, UNCHANGED grade default on the no-regression control.
 3. Confirm no answer leak was introduced (the topic/intent text must not name the answer).
 
@@ -188,6 +198,99 @@ Scope/theme intended: <e.g. "values ≤ 10">
 - Write a one-line memory pointer if the fix taught something general about the
   topic→generator contract.
 
+## Grade modality (`--grade`)
+
+Verify that the objective's canonical curriculum grade shapes what ONE generator
+produces — then migrate it onto `ctx.grade` if it doesn't. Outcome: content
+complexity (reading level, structural load, line/option counts, ladder rung)
+tracks the grade the objective carries, OR a verdict that the grade is outside the
+primitive's pedagogical range (routing, not a bug).
+
+### How grade reaches a generator (the contract)
+
+```
+preBuiltObjectives[].grade ('K'|'1'..'12', from curriculum metadata)
+  → flattenManifestToLayout stamps config.objectiveGrade per component
+  → resolveGenerationContext normalizes it (normalizeObjectiveGrade — the ONLY
+    place grade strings are parsed) → ctx.grade
+  → generator selects its ladder rung from ctx.grade
+```
+
+`ctx.gradeLevel` (band key: 'kindergarten', 'elementary'…) and `ctx.gradeContext`
+(prose) still exist as the BAND FALLBACK — note 'elementary' collapses grades 1–5,
+so a numeric grade is unrecoverable from the band. Free-form lessons have no
+`ctx.grade`; the band default must stand (that's the no-regression control).
+
+Three failure mechanisms (grade analogs of the topic/intent ones):
+1. **Legacy parse-and-fallback** (the ~25-generator class): the generator matches
+   `gradeLevel`/`gradeContext` against `['1'..'6']` or regexes `/grade\s*(\d|K)/i`
+   — the match never hits the band/prose strings, so output is CONSTANT at the
+   hardcoded fallback ('4', '3', 'K'…). Only a discrimination probe exposes this;
+   a K-fallback generator looks HONORED on a K probe ([[value-origin-not-code-touch]]
+   — always probe, never grep).
+2. **Missing rung**: `ctx.grade` is consumed but the gradeNotes/ladder has no entry
+   for that grade (e.g. no 'K' row) → undefined interpolates into the prompt or the
+   clamp silently lands on the wrong rung.
+3. **Dead grade**: generator reads `ctx.grade` into a variable that never reaches
+   the prompt or the value-pickers.
+
+### Verdicts
+
+Same table as topic/intent, grade-flavored:
+- **HONORED** — output complexity tracks `&grade=` across probes AND falls back to
+  the band default without it.
+- **FIDELITY BUG** — constant output across grades (mechanism 1), a missing rung
+  (2), or a dead field (3) → run the grade fix.
+- **WRONG PRIMITIVE** — the grade is outside the primitive's ladder by design
+  (grade 8 objective on a K-6 primitive): clamping to the ceiling rung is CORRECT,
+  report as routing. Also correct: a K-2-only primitive (phonics) refusing to
+  scale up.
+
+### Probes
+
+Same eval-test engine; `&grade=` mirrors `&intent=` (forwarded to
+`config.objectiveGrade` → `ctx.grade`):
+
+```bash
+ID=poetry-lab; M=analysis; T="rhyming words"
+probe(){ curl -s -m 90 "http://localhost:3000/api/lumina/eval-test?componentId=$ID&evalMode=$M&topic=$(enc "$T")&grade=$1&gradeLevel=$2"; }
+
+# 1. HONORED test — the grade the objective carries
+probe K kindergarten
+# 2. DISCRIMINATION control — different grades; output complexity must TRACK
+#    (this is the run that exposes a constant-fallback generator)
+probe 2 elementary
+probe 5 elementary
+# 3. NO-REGRESSION control — no &grade= at all; band default must stand
+curl -s -m 90 ".../eval-test?componentId=$ID&evalMode=$M&topic=$(enc "$T")&gradeLevel=elementary"
+```
+
+Judge on STRUCTURAL signals, not just the echoed `gradeLevel` field: line/item
+counts, vocabulary level, which ladder-rung features appear (K = no figurative
+language; 5 = free verse + hyperbole). An echoed "K" wrapping grade-4 content is
+still a FIDELITY BUG.
+
+### Grade fix (single tier — no resolver needed)
+
+Grade arrives already structured, so there is no Tier-2 micro-LLM step. The fix is
+the `ctx.grade` consumption pattern (reference: `gemini-poetry-lab.ts`):
+1. Replace the legacy string-match with: use `ctx.grade` when it's on the
+   primitive's ladder; clamp above-ceiling numeric grades to the top rung; else
+   band fallback (map 'kindergarten'/'preschool' → 'K' where the ladder has K,
+   otherwise the primitive's sensible mid default).
+2. Add missing rungs the primitive can pedagogically serve (K = the common gap);
+   update the catalog description/constraints so the curator knows the new range.
+3. Keep the eval-mode/challenge-type docs consistent with the new range — a
+   promptDoc saying "Grades 3-6" next to `GRADE: K` is a contradiction in the
+   same prompt.
+4. Never let grade change the eval mode's cognitive KIND — grade governs
+   realization (reading level, structural load, option count); the tier/mode axis
+   stays intact ([[evalmode-resolver-grade-blind]] grade-precedence rule).
+
+Then verify exactly as Phase 4 (tsc vs baseline + re-run all probes) and report to
+`my-tutoring-app/qa/topic-fidelity/<generator>-grade-<YYYY-MM-DD>.md` with the
+same table shape (probe | grade | structural signals | verdict).
+
 ## Gotchas
 
 - **eval-test forwards `intent` only as of this skill's creation** — older transcripts that passed `&intent=` were silently ignored. Confirm the route has the `intent` passthrough.
@@ -196,14 +299,19 @@ Scope/theme intended: <e.g. "values ≤ 10">
 - **`identify`-style hardcoded modes** (number-line caps `identify` at 0–10 by design) are correct, not bugs — don't "fix" an intentional fixed range.
 - **WRONG PRIMITIVE is a success outcome of this skill**, not a failure to chase. Stop and report it; the fix lives in manifest routing, not the generator.
 - **Don't widen scope to fit a topic.** A fix makes the generator honor a TIGHTER topic bound; it must never let `hard`/a big topic push values past the grade ceiling (pedagogy rule #1, [[structural-difficulty-not-numeric]]).
+- **(--grade) A matching fallback masks the bug.** K-band phonics generators hardcode fallback 'K' — a K probe reads HONORED while grade is fully ignored. The grade-2/grade-5 discrimination runs are the real test, exactly like the scope constant.
+- **(--grade) eval-test forwards `grade` only as of 2026-07-03** — confirm the route has the `objectiveGrade` passthrough before trusting probes.
+- **(--grade) Never parse grade from `gradeContext` prose in a generator.** That's the original bug class. If normalization is needed, it belongs in `normalizeObjectiveGrade` at the boundary — generators only compare `ctx.grade` against their ladder.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/app/api/lumina/eval-test/route.ts` | Test engine (now forwards `topic`, `intent`, `difficulty`, `verb`) |
+| `src/app/api/lumina/eval-test/route.ts` | Test engine (forwards `topic`, `intent`, `difficulty`, `verb`, `grade`) |
 | `src/components/lumina/service/<domain>/gemini-*.ts` | The generator under test |
 | `src/components/lumina/service/math/gemini-number-line.ts` | Reference Tier-2 resolver (`resolveTopicNumberRange`) |
+| `src/components/lumina/service/generation/resolveGenerationContext.ts` | `normalizeObjectiveGrade` — the ONLY grade-string parser (→ `ctx.grade`) |
+| `src/components/lumina/service/literacy/gemini-poetry-lab.ts` | Reference `ctx.grade` consumption + K rung (the grade-fix pattern) |
 | `src/components/lumina/service/**/scopeContext.ts` | `buildScopePromptSection` — shared scope binding (long-term Tier-2 home) |
 | `src/components/lumina/service/registry/generators/*Generators.ts` | Where `intent` is injected into `config` |
 | `my-tutoring-app/qa/topic-fidelity/` | Report output directory |

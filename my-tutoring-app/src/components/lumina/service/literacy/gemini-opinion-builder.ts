@@ -67,7 +67,6 @@ export const generateOpinionBuilder = async (
 ): Promise<OpinionBuilderData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as OpinionBuilderConfig;
 
   // ---------------------------------------------------------------------------
@@ -90,7 +89,20 @@ export const generateOpinionBuilder = async (
   // ---------------------------------------------------------------------------
   // Grade & framework setup
   // ---------------------------------------------------------------------------
-  const gradeLevelKey = ['2', '3', '4', '5', '6'].includes(gradeLevel) ? gradeLevel : '3';
+  // Grade fidelity: ctx.grade is the ONLY reliable numeric grade (band/prose keys
+  // never match the ['2'..'6'] ladder). Opinion writing ladder is grades 2-6;
+  // below-floor grades (K/1) clamp to '2', above-ceiling to '6'.
+  const LADDER = ['2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else if (ctx.grade && (ctx.grade === 'K' || parseInt(ctx.grade, 10) < 2)) {
+    gradeLevelKey = '2';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? '2' : '4';
+  }
   const useOREO = parseInt(gradeLevelKey) <= 4;
   const fw = evalConstraint
     ? evalConstraint.allowedTypes[0]

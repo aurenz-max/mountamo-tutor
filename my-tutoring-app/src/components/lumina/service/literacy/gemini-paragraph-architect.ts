@@ -138,7 +138,6 @@ export const generateParagraphArchitect = async (
 ): Promise<ParagraphArchitectData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ParagraphArchitectConfig;
 
   // ---------------------------------------------------------------------------
@@ -249,8 +248,25 @@ GRADE 6 GUIDELINES:
 `
   };
 
-  // Default to grade 3 context if grade not found
-  const selectedGradeContext = gradeContext[gradeLevel] || gradeContext['3'];
+  // Grade rung: ctx.grade is the canonical per-objective curriculum grade
+  // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
+  // clamped to this primitive's K-6 paragraph ladder. Above-ceiling numeric
+  // grades clamp to '6' (top rung). Without ctx.grade (free-form lessons) fall
+  // back to the lesson band: kindergarten/preschool → 'K', anything else → '3'
+  // (mid rung). The old code read ctx.gradeContext prose into `gradeLevel` and
+  // matched it against ['K'..'6'], which could never hit, so every activity was
+  // pinned to the grade-3 guideline.
+  const LADDER = ['K', '1', '2', '3', '4', '5', '6'] as const;
+  let gradeLevelKey: string;
+  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+    gradeLevelKey = ctx.grade;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 6) {
+    gradeLevelKey = '6';
+  } else {
+    gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '3';
+  }
+
+  const selectedGradeContext = gradeContext[gradeLevelKey] || gradeContext['3'];
 
   // Determine paragraph type label
   const paragraphTypeDescriptions: Record<string, string> = {
@@ -267,7 +283,7 @@ GRADE 6 GUIDELINES:
 
   const generationPrompt = `Create a scaffolded paragraph writing activity for: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (sentences, paragraphs, prompts, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
-TARGET GRADE LEVEL: ${gradeLevel}
+TARGET GRADE LEVEL: ${gradeLevelKey}
 PARAGRAPH TYPE: ${paragraphTypeDescription}
 
 ${challengeTypeSection}
@@ -313,7 +329,7 @@ REQUIRED INFORMATION:
    - Must use the hamburger structure (topic sentence, detail sentences, concluding sentence)
    - Written at the target grade level's reading and vocabulary level
    - The topic sentence should clearly state the main idea
-   - Include ${gradeLevel === 'K' || gradeLevel === '1' ? '2' : gradeLevel === '2' || gradeLevel === '3' ? '3' : '3-4'} detail sentences
+   - Include ${gradeLevelKey === 'K' || gradeLevelKey === '1' ? '2' : gradeLevelKey === '2' || gradeLevelKey === '3' ? '3' : '3-4'} detail sentences
    - The concluding sentence should wrap up or restate the main idea
    - Use some of the provided linking words naturally
 
@@ -356,7 +372,7 @@ EXAMPLE OUTPUT FOR GRADE 3, INFORMATIONAL:
   }
 }
 
-Now generate a paragraph architect activity for "${topic}" at grade level ${gradeLevel} with paragraph type "${targetParagraphType}".`;
+Now generate a paragraph architect activity for "${topic}" at grade level ${gradeLevelKey} with paragraph type "${targetParagraphType}".`;
 
   try {
     const response = await ai.models.generateContent({
