@@ -57,7 +57,7 @@
 | double-number-line | 3 | 3 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/double-number-line-2026-06-14.md) |
 | place-value-chart | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/place-value-chart-2026-06-20.md) |
 | function-machine | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/function-machine-2026-06-14.md) |
-| knowledge-check | 4 | 4 | 0 | 2026-03-21 | [report](eval-reports/knowledge-check-2026-03-21.md) |
+| knowledge-check | 4 | 4 | 0 | 2026-07-02 | [grade-precedence fix](eval-reports/knowledge-check-2026-07-02.md) |
 | how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
 | light-shadow-lab | 4 | 4 | 0 | 2026-06-21 | [structural sweep](eval-reports/light-shadow-lab-2026-06-21.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
@@ -100,7 +100,7 @@
 | race-track-lab | 5 | 5 | 0 | 2026-06-21 | [structural sweep](eval-reports/race-track-lab-2026-06-21.md) |
 | vocabulary-explorer | 3 | 3 | 0 | 2026-06-25 | [report](eval-reports/vocabulary-explorer-2026-06-25.md) |
 
-**Totals:** 339/358 modes passing (94.7%) | 31 open issues (7 CRITICAL, 23 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 340/358 modes passing (95.0%) | 29 open issues (7 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -364,6 +364,40 @@ the missing-addend case (stated total = max of the three numbers) and recompute 
 missing PART instead of the sum. Mirrors SP-17's "deterministic post-process desyncs with
 LLM-authored text," specialized to the structural-difficulty enum lever.
 
+### SP-26: Ladder-style eval modes selected without a grade ceiling — young grades get the top Bloom tier
+**Status (2026-07-02):** knowledge-check (KC-1/KC-2) RESOLVED, but **NOT via the resolver ceiling
+this pattern proposed.** Product direction: the eval-mode ladder is a legitimate difficulty
+axis and must NOT be clamped upstream. The real defect there was that **grade was under-weighted
+in the KC orchestrator + generator prompts** relative to the Bloom tier block — grade reached
+both stages but as a lone line. Fix = make grade the dominant driver of the orchestrator and
+per-question generators (grade governs reading level, structural load, and option count; the
+tier sets cognitive KIND only, expressed *within* the grade band). The resolver/catalog were
+left untouched. **Open question for future ladder primitives (scale-spectrum, DOK-tiered
+assessments):** the grade-precedence-in-prompt approach only works when the downstream generator
+actually re-weights on grade. A primitive that hard-branches on β (no grade-aware realization
+path) would still need either the prompt fix *or* the resolver ceiling below. Keep this pattern
+as the fallback for that case; prefer grade-precedence-in-realization when the generator supports it.
+**Affected:** knowledge-check (KC-1). Any primitive whose `evalModes` form a *difficulty
+ladder* rather than parallel skills — i.e. the modes carry a monotonic β and a cognitive-tier
+label (knowledge-check's recall→apply→analyze→evaluate is the archetype; watch scale-spectrum
+and any future Bloom/DOK-tiered assessment primitive).
+**Risk:** `resolveLessonEvalModes` is built on the premise that "each eval mode is a DISTINCT
+skill — NOT a difficulty level," so it matches by objective verb + intent and deliberately
+ignores difficulty. For ladder-style modes that premise is false: matching "compare / pick the
+best" to `evaluate` hands a grades-1–5 lesson the hardest tier (β=6.0). `gradeLevel` reaches
+the prompt but no rule caps the tier, and nothing downstream re-floors it. Result: a
+developmentally-out-of-band assessment that also drags the generated reading level up (KC-2).
+**Root cause:** A single selector treats two different eval-mode semantics — parallel skills
+(most primitives) vs. a difficulty ladder (assessment primitives) — with the parallel-skill
+rule. The ladder case needs a grade→max-tier ceiling; the parallel case does not.
+**Fix pattern:** Tag ladder-style eval modes in the catalog (e.g. a `tierOrder` / `minGrade`
+per mode, or a primitive-level `evalModesAreDifficultyLadder: true`), and have the resolver
+clamp the pick to the highest tier permitted for the resolved grade band before writing
+`targetEvalMode`. Early elementary tops out ~`apply`; `analyze`/`evaluate` require
+upper-elementary+. Mirrors the grade-blindness class in [[project_graph-agent-grade-blindness]]
+and the structural-not-numeric principle (difficulty is a real axis here, and grade is its
+ceiling).
+
 ---
 
 ## Open Issues — CRITICAL / HIGH
@@ -457,6 +491,8 @@ LLM-authored text," specialized to the structural-difficulty enum lever.
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| KC-1 | knowledge-check | 2026-07-02 | GENERATOR PROMPT (grade-precedence, NOT a Bloom ceiling — product overrode SP-26). Root cause: grade reached both the KC orchestrator and the per-question generators but as a lone line, while the Bloom tier was a large forceful block that dominated cognitive load. Fix: added a prominent **GRADE-LEVEL FIT (HARD CONSTRAINT)** block to `buildOrchestratorPrompt` ([gemini-knowledge-check-orchestrator.ts](../../src/components/lumina/service/knowledge-check/gemini-knowledge-check-orchestrator.ts)) that overrides the tier for scenario complexity + concepts-per-problem (early grades: concrete familiar contexts, one concept, short sentences); reframed the Cognitive Level section so "hard" = hard *for this grade*. The eval-mode ladder + resolver are left untouched. Verified `evaluate` @ elementary ×3 + @ kindergarten: now a genuine grade-level judgment ("which truck to clean a long street with 100 houses" / "which street is safest to play"), all PASS; recall/apply/analyze no regression. tsc 1417 (baseline 1419). |
+| KC-2 | knowledge-check | 2026-07-02 | GENERATOR PROMPT + OPTION-COUNT CAP. Reading-level half of the same fix. `buildBloomsTierPrompt` ([gemini-knowledge-check.ts](../../src/components/lumina/service/knowledge-check/gemini-knowledge-check.ts)) now closes with a **GRADE TAKES PRECEDENCE OVER TIER** clause — the tier sets cognitive KIND only and must not raise vocabulary/sentence complexity above the target grade band (one edit covers all six per-type generators). Added `maxOptionsForGrade` + grade-capped `getMcOptionLabels(tier, gradeLevel)`: kindergarten & below → 3, elementary → 4, middle-school+ → tier count, so the `evaluate` tier's hard-coded 5 options no longer reaches young grades. Verified: `evaluate` @ elementary = 4 options grade-appropriate wording (was "city planners maximize the volume of refuse"), @ kindergarten = 3 options. |
 | NS-2 | number-sequencer | 2026-06-11 | GENERATOR (band constraint, SP-22 option 1). `numberSequencerStepBand` now returns a pinned `step = 1` for `count_from` — the instruction template ("Count forward from X!") never surfaces a step, so any step > 1 was invisible and the challenge unanswerable (G4 violation). User decision: the mode's pedagogy doc is "sequential counting, Grades K-1"; skip counting belongs to fill_missing (step derivable from visible terms) and skip-counting-runner. Difficulty still scales via maxBand ([5,10]→[10,20]→[20,30]), length (4→6), and backward counting at high levels. fill_missing/order_cards keep their stepped bands (steps derivable from visible data). Verified at θ=5.9 and θ=1.0: all count_from sequences consecutive; all 5 modes re-tested PASS, no regression; tsc clean (1441 baseline). |
 | CE-1 | circle-explorer | 2026-06-06 | GENERATOR (SP-21 round-robin). Identical pattern to PAB-1: "Auto (mixed)" produced a single tier (`discover_pi ×4`) because the null eval constraint still let the root-level `challengeType` enum pick one tier and `selectCircleExplorerChallenges(oneType)` built the whole session from it. Fix: added `TIER_ORDER` (discover_pi→circumference→area→reverse→composite)/`TIER_RANK` + `MIXED_INSTANCE_COUNT=8`, a `buildForType(type)` dispatch over the existing per-type builders, and `selectMixedCircleExplorerChallenges()` (shuffled round-robin so all tiers appear, dedup, sort by `(TIER_RANK, radius)`). `generateCircleExplorer` routes the `evalConstraint === null` path to the mixed builder; top-level `challengeType`='discover_pi' (metadata only — component renders per-challenge `currentChallenge.type`), `gradeBand`='7'. Verified: Auto → 8 challenges, all 5 tiers, ordered easy→hard; 5 IRT-pinned modes still PASS single-type count=4 (no regression); tsc clean. |
 | PAB-1 | polygon-area-builder | 2026-06-06 | GENERATOR (SP-21 round-robin). "Auto (mixed)" produced a single tier because the null eval constraint still let the root-level `challengeType` enum pick one tier and `selectPolygonAreaChallenges(oneType)` built the whole session from it. DEC-PAB-1 decided: mix all five tiers, scale low→high, >4 problems. Fix: added `TIER_ORDER`/`TIER_RANK` + `MIXED_INSTANCE_COUNT=8`, a `buildForType(type)` dispatch over the existing per-type builders, and `selectMixedPolygonAreaChallenges()` (shuffled round-robin so all tiers appear, dedup within session, sort by `(TIER_RANK, expectedArea)`). `generatePolygonAreaBuilder` routes the `evalConstraint === null` path to the mixed builder; top-level `challengeType`='decompose' (metadata only — component renders per-challenge `currentChallenge.type`), `gradeBand`='7'. Verified: Auto → 8 challenges, all 5 tiers, ordered easy→hard; 5 IRT-pinned modes still PASS single-type count=4 (no regression); tsc clean. |
@@ -611,3 +647,4 @@ Decisions that need product input before engineering can proceed.
 | 10 | balance-scale (DEC-BS-1) | **RESOLVED 2026-05-21** as option 3 (hybrid): generator decomposes RHS as `[answer, b]` for all subtract-path modes; component now supports whole-side divide/multiply for the multiply-path modes (one_step_hard, two_step_intro, two_step). Both fixes coexist — generator handles "remove same from both sides" pedagogy, component handles "divide both sides by k" pedagogy. | — | — |
 | 11 | ten-frame (TF-3) | Should the make_ten eval mode ever use a double frame? It is defined as "complement to 10," but double-frame mode makes it "complement to 20" and is where the instruction/equation/answer desync occurs. | A) Force `mode: 'single'` for make_ten (single-frame already passes clean); add a separate "make 20" mode later if wanted B) Keep double frame but fix the validator + align the instruction to "make 20" C) Both — single-frame make_ten now, dedicated make_twenty mode later | Option A — cheapest, matches the eval mode's stated purpose, eliminates the bug class by construction |
 | 12 | polygon-area-builder (DEC-PAB-1) | What should "Auto (mixed)" do? Today it builds a single-tier session (SP-21 / PAB-1) — Gemini picks one of the five tiers and all 3–6 figures are that type. | A) True mixed session — round-robin all five tiers across the figures (spans Grade 6→7 in one sitting) B) Same-grade mix only — interleave tiers within the resolved gradeBand C) Keep single-tier and rename the tester label to "Auto (single tier)" so it stops promising a mix | Option B — gives real cross-figure variety without jumping grade bands mid-session; generator change is the SP-18 round-robin restricted to same-grade tiers. Component already renders per-challenge figureType, so no component work. |
+| 13 | knowledge-check (KC-1/KC-2, SP-26) | How should Bloom tier be bounded by grade, and is "elementary" (grades 1–5) too coarse a band? | A) Add a grade→max-tier ceiling in `resolveLessonEvalModes` for ladder-style eval modes (early elementary caps at `apply`; `analyze`/`evaluate` need upper-elementary+); leave the "elementary" band as-is B) Also split "elementary" into early (1–2) / upper (3–5) so `getGradeLevelContext` carries a real reading-level target C) Both A + B | Option C — the tier ceiling fixes the immediate too-hard case and generalizes via SP-26; the band split additionally floors reading level (KC-2). A alone leaves grade-1 and grade-5 sharing one prompt. |

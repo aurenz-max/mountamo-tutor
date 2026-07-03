@@ -160,7 +160,7 @@ export const generateMediaImage = async (
 ): Promise<string | null> => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-image-preview",
+      model: "gemini-3.1-flash-lite-image",
       contents: {
         parts: [{ text: prompt }]
       },

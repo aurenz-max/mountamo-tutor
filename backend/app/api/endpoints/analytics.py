@@ -75,8 +75,10 @@ class SubskillModel(BaseModel):
     # Mastery lifecycle fields
     current_gate: int = 0
     completion_pct: float = 0.0
-    passes: int = 0
-    fails: int = 0
+    # Score-weighted credit, not counts: an 85% eval adds 0.85 to passes and
+    # 0.15 to fails (see MasteryLifecycleEngine), so these are fractional.
+    passes: float = 0.0
+    fails: float = 0.0
     lesson_eval_count: int = 0
     next_retest_eligible: Optional[str] = None
     estimated_remaining_attempts: int = 0
@@ -176,25 +178,6 @@ class AIRecommendationResponse(BaseModel):
     session_plan: Dict = Field(default_factory=dict)
     generated_at: str
 
-class VelocityMetric(BaseModel):
-    subject: str
-    actual_progress: int
-    expected_progress: float
-    total_subskills: int
-    velocity_percentage: float
-    days_ahead_behind: float
-    velocity_status: str
-    last_updated: str
-
-class VelocityMetricsResponse(BaseModel):
-    student_id: int
-    student_name: str
-    subject: Optional[str] = None
-    metrics: List[VelocityMetric]
-    last_updated: str
-    generated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    cached: bool = False
-
 class ScoreDistributionItem(BaseModel):
     level: str  # "subject", "unit", or "skill"
     id: str
@@ -248,6 +231,13 @@ class KnowledgeGraphNode(BaseModel):
     status: str  # mastered | inferred | in_review | in_progress | frontier | not_started | locked
     current_gate: int = 0
     theta: Optional[float] = None
+    # θ uncertainty + evidence count — consumers must qualify p_correct with
+    # these (the mastery engine only acts on θ when σ is below gate thresholds).
+    sigma: Optional[float] = None
+    ability_observations: Optional[int] = None
+    # P(correct) at the subskill's hardest curriculum-assigned mode β —
+    # the continuous signal gate thresholds (0.70/0.75/0.80/0.90) check against.
+    p_correct: Optional[float] = None
     earned_level: Optional[float] = None
     inferred_from: Optional[str] = None
     prerequisite_ids: List[str] = Field(default_factory=list)
@@ -504,13 +494,20 @@ def get_ai_recommendation_service() -> AIRecommendationService:
 async def get_student_metrics(
     student_id: int,
     subject: Optional[str] = None,
+    grade: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
-    """Get comprehensive hierarchical metrics for a student"""
+    """Get comprehensive hierarchical metrics for a student.
+
+    `grade` disambiguates which grade's published curriculum to join against —
+    subjects exist per grade with identical names and colliding unit/skill IDs,
+    so omitting it joins student data to an arbitrary grade's subskill roster.
+    Prefer passing subject_id (e.g. MATHEMATICS) over the display name.
+    """
 
     user_id = user_context["user_id"]
 
@@ -524,7 +521,8 @@ async def get_student_metrics(
 
     # Check cache first (15 minute TTL)
     cache_key = get_cache_key("metrics", student_id=student_id,
-                             subject=subject, start_date=start_date, end_date=end_date)
+                             subject=subject, grade=grade,
+                             start_date=start_date, end_date=end_date)
 
     cached_result = get_from_cache(cache_key, ttl_minutes=15)
     if cached_result:
@@ -537,7 +535,7 @@ async def get_student_metrics(
 
         # Fetch from Firestore (real-time)
         metrics = await analytics_service.get_hierarchical_metrics(
-            student_id, subject, start_date, end_date
+            student_id, subject, start_date, end_date, grade=grade
         )
 
         result = MetricsResponse(
@@ -574,6 +572,7 @@ async def get_student_metrics_timeseries(
     unit_id: Optional[str] = None,
     skill_id: Optional[str] = None,
     include_hierarchy: bool = Query(False),
+    grade: Optional[str] = Query(None, description="Grade whose published curriculum to join against (unit/skill IDs repeat across grades)"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
@@ -594,7 +593,7 @@ async def get_student_metrics_timeseries(
     cache_key = get_cache_key("timeseries", student_id=student_id, subject=subject,
                              interval=interval, level=level, start_date=start_date,
                              end_date=end_date, unit_id=unit_id, skill_id=skill_id,
-                             include_hierarchy=include_hierarchy)
+                             include_hierarchy=include_hierarchy, grade=grade)
 
     cached_result = get_from_cache(cache_key, ttl_minutes=10)
     if cached_result:
@@ -608,7 +607,7 @@ async def get_student_metrics_timeseries(
         # Fetch from Firestore (real-time)
         timeseries = await analytics_service.get_timeseries_metrics(
             student_id, subject, interval, level, start_date, end_date,
-            unit_id, skill_id, include_hierarchy
+            unit_id, skill_id, include_hierarchy, grade=grade
         )
 
         result = TimeseriesResponse(
@@ -763,113 +762,13 @@ async def get_ai_recommendations(
             detail=f"Error generating AI recommendations: {str(e)}"
         )
 
-@router.get("/student/{student_id}/velocity-metrics", response_model=VelocityMetricsResponse,
-             deprecated=True)
-async def get_student_velocity_metrics(
-    student_id: int,
-    subject: Optional[str] = None,
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-    user_context: dict = Depends(get_user_context),
-    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
-):
-    """DEPRECATED: Use GET /api/velocity/{student_id} instead.
-
-    This endpoint returns a simplified velocity model. The /api/velocity/ endpoint
-    provides pipeline-adjusted mastery velocity with decomposition, trend sparklines,
-    and school year progress.
-    """
-
-    user_id = user_context["user_id"]
-
-    # Validate access
-    if user_context["student_id"] != student_id:
-        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied to student {student_id} velocity analytics"
-            )
-
-    # Check cache (15 minute TTL for velocity metrics)
-    cache_key = get_cache_key("velocity_metrics", student_id=student_id, subject=subject)
-
-    cached_result = get_from_cache(cache_key, ttl_minutes=15)
-    if cached_result:
-        cached_result["cached"] = True
-        return VelocityMetricsResponse(**cached_result)
-
-    try:
-        logger.info(f"User {user_context['email']} retrieving velocity metrics for student {student_id}")
-
-        # Fetch from Firestore (real-time)
-        velocity_data = await analytics_service.get_velocity_metrics(student_id, subject)
-
-        if not velocity_data:
-            result = VelocityMetricsResponse(
-                student_id=student_id,
-                student_name="Unknown",
-                subject=subject,
-                metrics=[],
-                last_updated=datetime.utcnow().isoformat(),
-                cached=False
-            )
-        else:
-            metrics = []
-            latest_update = None
-            student_name = velocity_data[0].get('student_name', 'Unknown')
-
-            for row in velocity_data:
-                last_updated_val = row.get('last_updated')
-                if isinstance(last_updated_val, str):
-                    last_updated_str = last_updated_val
-                elif hasattr(last_updated_val, 'isoformat'):
-                    last_updated_str = last_updated_val.isoformat()
-                else:
-                    last_updated_str = datetime.utcnow().isoformat()
-
-                metric = VelocityMetric(
-                    subject=row['subject'],
-                    actual_progress=int(row['actual_progress']),
-                    expected_progress=float(row['expected_progress']),
-                    total_subskills=int(row.get('total_subskills_in_subject', row.get('total_subskills', 0))),
-                    velocity_percentage=float(row['velocity_percentage']),
-                    days_ahead_behind=float(row['days_ahead_behind']),
-                    velocity_status=row['velocity_status'],
-                    last_updated=last_updated_str
-                )
-                metrics.append(metric)
-
-                if last_updated_val:
-                    if latest_update is None or last_updated_str > (latest_update if isinstance(latest_update, str) else latest_update.isoformat()):
-                        latest_update = last_updated_str
-
-            result = VelocityMetricsResponse(
-                student_id=student_id,
-                student_name=student_name,
-                subject=subject,
-                metrics=metrics,
-                last_updated=latest_update if latest_update else datetime.utcnow().isoformat(),
-                cached=False
-            )
-
-        # Cache the result
-        set_cache(cache_key, result.dict())
-
-        logger.info(f"Velocity metrics retrieved: {len(result.metrics)} subjects for student {student_id}")
-        return result
-
-    except Exception as e:
-        logger.error(f"Velocity metrics error for user {user_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error retrieving velocity metrics: {str(e)}"
-        )
-
 @router.get("/student/{student_id}/score-distribution", response_model=ScoreDistributionResponse)
 async def get_score_distribution(
     student_id: int,
     subject: str = Query(..., description="Subject to analyze (e.g., 'Language Arts')"),
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    grade: Optional[str] = Query(None, description="Grade whose published curriculum to join against"),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
@@ -892,7 +791,8 @@ async def get_score_distribution(
         student_id=student_id,
         subject=subject,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        grade=grade
     )
 
     cached_result = get_from_cache(cache_key, ttl_minutes=10)
@@ -908,7 +808,8 @@ async def get_score_distribution(
             student_id=student_id,
             subject=subject,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            grade=grade
         )
 
         result = ScoreDistributionResponse(
@@ -1151,6 +1052,7 @@ async def get_detailed_recent_activity(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     include_reviews: bool = Query(True, description="Include reviews and problem context"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of activities"),
+    grade: Optional[str] = Query(None, description="Grade whose published curriculum to join against"),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
@@ -1168,12 +1070,13 @@ async def get_detailed_recent_activity(
     
     # Check cache (5 minute TTL for recent activity)
     cache_key = get_cache_key(
-        "detailed_recent_activity", 
-        student_id=student_id, 
+        "detailed_recent_activity",
+        student_id=student_id,
         hours=hours,
         subject=subject,
         include_reviews=include_reviews,
-        limit=limit
+        limit=limit,
+        grade=grade
     )
     
     cached_result = get_from_cache(cache_key, ttl_minutes=5)
@@ -1189,7 +1092,8 @@ async def get_detailed_recent_activity(
             hours=hours,
             subject=subject,
             include_reviews=include_reviews,
-            limit=limit
+            limit=limit,
+            grade=grade
         )
         
         result = {
@@ -1221,6 +1125,7 @@ async def get_mistake_patterns(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     days: int = Query(30, ge=1, le=365, description="Days to analyze for patterns"),
     min_feedback_length: int = Query(20, ge=10, le=100, description="Minimum feedback length to consider"),
+    grade: Optional[str] = Query(None, description="Grade whose published curriculum to join against"),
     user_context: dict = Depends(get_user_context),
     analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
 ):
@@ -1238,11 +1143,12 @@ async def get_mistake_patterns(
     
     # Check cache (15 minute TTL for mistake patterns)
     cache_key = get_cache_key(
-        "mistake_patterns", 
-        student_id=student_id, 
+        "mistake_patterns",
+        student_id=student_id,
         subject=subject,
         days=days,
-        min_feedback_length=min_feedback_length
+        min_feedback_length=min_feedback_length,
+        grade=grade
     )
     
     cached_result = get_from_cache(cache_key, ttl_minutes=15)
@@ -1257,7 +1163,8 @@ async def get_mistake_patterns(
             student_id=student_id,
             subject=subject,
             days=days,
-            min_feedback_length=min_feedback_length
+            min_feedback_length=min_feedback_length,
+            grade=grade
         )
         
         # Cache the result

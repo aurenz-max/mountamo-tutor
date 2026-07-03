@@ -53,6 +53,12 @@ export interface UnitSubskillDetail {
   status: MasteryStatus;
   gate: number;
   theta: number | null;
+  /** θ uncertainty (σ) — high means the estimate hasn't settled yet. */
+  sigma: number | null;
+  /** How many items the ability estimate is based on. */
+  abilityObservations: number;
+  /** P(correct) at this subskill's reference difficulty (0–1). */
+  pCorrect: number | null;
 }
 export interface UnitSkillDetail {
   id: string;
@@ -63,6 +69,11 @@ export interface UnitDetail {
   id: string;
   title: string;
   subject: string;
+  /** Canonical subject_id (e.g. MATHEMATICS) — unambiguous, unlike the display name. */
+  subjectId?: string;
+  /** The published-curriculum grade this unit was fetched from (e.g. "Kindergarten", "1").
+   *  Unit/skill IDs repeat across grades, so analytics joins must be grade-scoped. */
+  grade?: string;
   skills: UnitSkillDetail[];
 }
 
@@ -159,7 +170,9 @@ export function useStudentCurriculumMap(studentId: number): StudentCurriculumMap
   // subject the student is actually looking at.
   const subjectGraphRef = useRef<Set<string>>(new Set());
   // Full units per "gradeIndex:subjectIndex", for the deep-dive drawer.
-  const fullUnitsRef = useRef<Map<string, { subject: string; units: CurriculumUnit[] }>>(new Map());
+  const fullUnitsRef = useRef<
+    Map<string, { subject: string; subjectId?: string; grade?: string; units: CurriculumUnit[] }>
+  >(new Map());
   // Knowledge-graph nodes per subject name (shared across grades; a subject's DAG
   // spans all grades), keyed subskill_id → node.
   const kgRef = useRef<Map<string, Map<string, KnowledgeGraphNode>>>(new Map());
@@ -200,12 +213,18 @@ export function useStudentCurriculumMap(studentId: number): StudentCurriculumMap
       await Promise.all(
         meta.subjects.map(async (s, subjectIndex) => {
           const lookup = s.subject_id ?? s.subject_name;
+          const rawGrade = s.grade ?? meta.rawGrade;
           try {
-            const data = (await authApi.getSubjectCurriculum(lookup, s.grade ?? meta.rawGrade)) as {
+            const data = (await authApi.getSubjectCurriculum(lookup, rawGrade)) as {
               curriculum: CurriculumUnit[];
             };
             const units = data?.curriculum ?? [];
-            fullUnitsRef.current.set(`${gradeIndex}:${subjectIndex}`, { subject: s.subject_name, units });
+            fullUnitsRef.current.set(`${gradeIndex}:${subjectIndex}`, {
+              subject: s.subject_name,
+              subjectId: s.subject_id,
+              grade: rawGrade,
+              units,
+            });
             const shown = units.slice(0, 4);
             setGrades((prev) =>
               patchSubject(prev, gradeIndex, subjectIndex, {
@@ -270,6 +289,8 @@ export function useStudentCurriculumMap(studentId: number): StudentCurriculumMap
         id: unit.id,
         title: unit.title,
         subject: stored.subject,
+        subjectId: stored.subjectId,
+        grade: stored.grade,
         skills: (unit.skills ?? []).map((sk) => ({
           id: sk.id,
           description: sk.description,
@@ -281,6 +302,9 @@ export function useStudentCurriculumMap(studentId: number): StudentCurriculumMap
               status: node?.status ?? (hasKg ? 'not_started' : 'unknown'),
               gate: node?.current_gate ?? 0,
               theta: node?.theta ?? null,
+              sigma: node?.sigma ?? null,
+              abilityObservations: node?.ability_observations ?? 0,
+              pCorrect: node?.p_correct ?? null,
             };
           }),
         })),

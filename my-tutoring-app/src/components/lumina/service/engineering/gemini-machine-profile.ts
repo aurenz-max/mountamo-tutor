@@ -349,7 +349,7 @@ Return a complete Machine Profile with rich, accurate, and engaging content for 
 export const generateMachineImage = async (imagePrompt: string): Promise<string | null> => {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3.1-flash-lite-image',
       contents: [{
         role: 'user',
         parts: [{
@@ -359,7 +359,7 @@ Show the machine/vehicle with clear details and dramatic perspective. No text in
         }]
       }],
       config: {
-        responseModalities: ['IMAGE', 'TEXT'],
+        responseModalities: ['image', 'text'],
         imageConfig: {
           aspectRatio: '16:9',
         },

@@ -11,6 +11,7 @@ Centralizes all submission logic that was previously in the problems endpoint.
 """
 
 import logging
+import uuid
 from typing import Dict, Any, Optional
 from datetime import datetime
 
@@ -104,7 +105,9 @@ class SubmissionService:
             # STEP 4: Convert evaluation to review format
             review = self._convert_evaluation_to_review(evaluation, standard_question)
 
-            # STEP 5: Update competency
+            # STEP 5: Update competency (attempt_id is shared with the review
+            # saved in STEP 6 so the two docs join directly)
+            attempt_id = str(uuid.uuid4())
             competency_result = await self._update_competency(
                 student_id=student_id,
                 skill_id=submission.skill_id or standard_question.metadata.get('skill_id', 'default_skill'),
@@ -113,6 +116,7 @@ class SubmissionService:
                 subject=submission.subject or standard_question.metadata.get('subject', 'math'),
                 evaluation={'score': evaluation.score, 'correct': evaluation.is_correct},
                 source=eval_source,
+                attempt_id=attempt_id,
             )
 
             # STEP 5.5: MISCONCEPTION-DRIVEN PRACTICE ENGINE
@@ -247,7 +251,8 @@ class SubmissionService:
                     review['metadata']['misconception_created'] = True
 
                 await self._save_review(
-                    submission, user_context, review, standard_question.dict()
+                    submission, user_context, review, standard_question.dict(),
+                    attempt_id=attempt_id,
                 )
 
             # STEP 7: Return standardized result
@@ -617,6 +622,10 @@ class SubmissionService:
         # competency update below, which owns attempt persistence).
         review["metadata"]["eval_mode"] = eval_mode
 
+        # One id per submission, shared by the attempt and review docs so they
+        # join directly (previously linked only by nearest-timestamp).
+        attempt_id = str(uuid.uuid4())
+
         # Update competency. This also persists the attempt (with primitive_type /
         # eval_mode / success) and threads them to the calibration hook.
         competency_result = await self._update_competency(
@@ -629,6 +638,7 @@ class SubmissionService:
             source=eval_source,
             primitive_type=primitive_type,
             eval_mode=eval_mode,
+            attempt_id=attempt_id,
         )
 
         # Save the review (the attempt was persisted by the competency update above)
@@ -639,7 +649,8 @@ class SubmissionService:
                     "primitive_type": primitive_type,
                     "metrics": metrics,
                     "student_work": primitive_response.get('student_work'),
-                }
+                },
+                attempt_id=attempt_id,
             )
 
         logger.info(f"[LUMINA_PRIMITIVE] Submission processed — score: {backend_score}, correct: {is_correct}, eval_mode: {eval_mode}")
@@ -699,17 +710,20 @@ class SubmissionService:
         score = self._extract_score(review)
         is_correct = score >= 7
         
+        attempt_id = str(uuid.uuid4())
         competency_result = await self._update_competency(
             student_id,
             submission.problem.get('skill_id', 'default_skill'),
             submission.problem.get('subskill_id', 'default_subskill'),
-            is_correct
+            is_correct,
+            attempt_id=attempt_id,
         )
-        
+
         # Save both attempt and review to CosmosDB
         if self.cosmos_db:
             await self._save_review(
-                submission, user_context, review, problem_data
+                submission, user_context, review, problem_data,
+                attempt_id=attempt_id,
             )
         
         return SubmissionResult(
@@ -750,6 +764,7 @@ class SubmissionService:
         source: str = "practice",
         primitive_type: Optional[str] = None,
         eval_mode: Optional[str] = None,
+        attempt_id: Optional[str] = None,
     ) -> dict:
         """Update student competency and return result"""
         try:
@@ -769,6 +784,7 @@ class SubmissionService:
                 source=source,
                 primitive_type=primitive_type,
                 eval_mode=eval_mode,
+                attempt_id=attempt_id,
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")
@@ -779,7 +795,8 @@ class SubmissionService:
         submission: ProblemSubmission,
         user_context: dict,
         review: dict,
-        problem_content: dict
+        problem_content: dict,
+        attempt_id: Optional[str] = None
     ) -> None:
         """Save the problem review to CosmosDB and Firestore (dual write).
 
@@ -821,7 +838,11 @@ class SubmissionService:
 
             if self.firestore_service:
                 try:
-                    await self.firestore_service.save_problem_review(**review_kwargs)
+                    # attempt_id goes to Firestore only — it's the join key to the
+                    # attempt doc written by CompetencyService in this same request.
+                    await self.firestore_service.save_problem_review(
+                        **review_kwargs, attempt_id=attempt_id
+                    )
                     logger.info(f"Saved review to Firestore for student {student_id}")
                 except Exception as e:
                     logger.error(f"Error saving review to Firestore: {str(e)}")

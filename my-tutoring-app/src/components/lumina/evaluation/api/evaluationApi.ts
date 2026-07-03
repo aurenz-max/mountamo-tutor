@@ -527,14 +527,21 @@ export interface ActivityDetail {
 }
 
 /**
- * Fetch the full captured metadata for one attempt. The attempt and its review
- * share no id, so the row is matched by subskill + nearest timestamp.
+ * Fetch the full captured metadata for one attempt. Reviews carry the shared
+ * attempt_id stamped at submission, so pass attemptId for a direct join; the
+ * subskill + nearest-timestamp fields remain as a fallback for legacy rows.
  */
 export async function getActivityDetail(
   studentId: number,
-  opts: { subskillId?: string | null; timestamp?: string | null; primitiveType?: string | null }
+  opts: {
+    attemptId?: string | null;
+    subskillId?: string | null;
+    timestamp?: string | null;
+    primitiveType?: string | null;
+  }
 ): Promise<ActivityDetail> {
   const params = new URLSearchParams();
+  if (opts.attemptId) params.append('attempt_id', opts.attemptId);
   if (opts.subskillId) params.append('subskill_id', opts.subskillId);
   if (opts.timestamp) params.append('timestamp', opts.timestamp);
   if (opts.primitiveType) params.append('primitive_type', opts.primitiveType);

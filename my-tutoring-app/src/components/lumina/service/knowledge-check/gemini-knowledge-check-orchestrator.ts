@@ -91,6 +91,12 @@ function buildOrchestratorPrompt(
 
 Your job is to decide the optimal MIX of problem types and rich inline content (insets) that will best assess this topic at this level. You are NOT generating the problems — you are planning them. A separate generator will produce each problem from your brief.
 
+## GRADE-LEVEL FIT (HARD CONSTRAINT — overrides the cognitive tier below)
+Every problem must be readable and doable by a ${gradeLevel} student. This governs BOTH:
+- **Reading level**: vocabulary, sentence length, and phrasing must match ${gradeLevel}. Do NOT use adult or technical words a student at this grade would not know.
+- **Structural + cognitive load**: scenario complexity, number of concepts per problem, and options-per-problem must fit ${gradeLevel}. For early grades (toddler/preschool/kindergarten/elementary): concrete, familiar contexts; ONE concept per problem; short sentences; 3–4 options maximum.
+When the requested cognitive tier and the grade band conflict, the GRADE WINS — express the tier's thinking with grade-appropriate words and a context a student at this grade can actually reason about (a "which is better?" judgment a young child can make), never by raising the reading level.
+
 First, set "subject" to the single closest curriculum subject this assessment tests — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Judge from the actual content being assessed, not the assessment format. Pick the best fit even when the topic is cross-cutting.
 
 ## Available Problem Types
@@ -116,13 +122,15 @@ Insets are rendered ABOVE the problem and make the question richer. Only use whe
 ## Cognitive Level
 ${tierGuidance}
 
+The cognitive tier sets the KIND of thinking, expressed WITHIN the ${gradeLevel} band — "hard" means hard FOR THIS GRADE, never adult-level vocabulary or scenarios. The GRADE-LEVEL FIT constraint above overrides the tier whenever they conflict.
+
 ${context ? `## Additional Context\n${context}\n` : ''}
 ## Rules
 1. **Diversity**: Use at least 2 different problem types for sets of 3+, at least 3 different types for sets of 5+. Don't default to all multiple choice.
 2. **Inset fit**: Only attach an inset when it genuinely enhances the problem. Math topics should get katex. Reading/history should get passages. Data topics should get tables or charts. Generic topics may not need any insets.
 3. **Difficulty progression**: Sequence from easier to harder within the set. First problem should be accessible, last should challenge.
 4. **Brief quality**: Each brief must be detailed enough that a separate AI can generate the problem without seeing the other problems. Include: what concept to test, what angle, what the inset should show, what misconceptions to target.
-5. **Topic and grade in every brief**: Always mention "${topic}" and "${gradeLevel}" context in the brief so generators stay on-target.
+5. **Topic and grade in every brief**: Always mention "${topic}" and "${gradeLevel}" context in the brief, AND state the grade-appropriate reading level and option count (3–4 for early grades) so generators stay on-target and in-band.
 6. **Inset-problem coherence**: When using an inset, the brief must describe both the inset content AND the question — they are generated together as one unit.
 
 Plan the ${count} problems now.`;

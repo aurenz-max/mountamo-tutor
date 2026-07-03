@@ -15,7 +15,7 @@ import { ai } from "../geminiClient";
 const generateConceptImage = async (prompt: string): Promise<string | null> => {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
+      model: 'gemini-3.1-flash-lite-image',
       contents: [{
         role: 'user',
         parts: [{ text: `Generate an educational illustration for: ${prompt}. Style: Clean, educational, suitable for students. No text in the image.` }]

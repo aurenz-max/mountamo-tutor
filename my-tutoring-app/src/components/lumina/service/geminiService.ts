@@ -105,7 +105,7 @@ export const generateConceptImage = async (prompt: string, aspectRatio?: string)
       },
       config: {
         responseModalities: ['image', 'text'],
-        ...(aspectRatio ? { imageGenerationConfig: { aspectRatio } } : {}),
+        ...(aspectRatio ? { imageConfig: { aspectRatio } } : {}),
       },
     });
 

@@ -361,13 +361,13 @@ export const generateItemDetail = async (contextTopic: string, item: string): Pr
 export const generateConceptImage = async (prompt: string, aspectRatio?: string): Promise<string | null> => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3.1-flash-lite-image",
       contents: {
         parts: [{ text: prompt }]
       },
       config: {
         responseModalities: ['image', 'text'],
-        ...(aspectRatio ? { imageGenerationConfig: { aspectRatio } } : {}),
+        ...(aspectRatio ? { imageConfig: { aspectRatio } } : {}),
       },
     });
 

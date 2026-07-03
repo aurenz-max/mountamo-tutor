@@ -217,8 +217,13 @@ class CompetencyService:
         source: str = "practice",
         primitive_type: Optional[str] = None,
         eval_mode: Optional[str] = None,
+        attempt_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Update competency based on problem evaluation"""
+        """Update competency based on problem evaluation.
+
+        `attempt_id` is the shared submission id (also stamped on the review
+        doc by submission_service) so attempt and review join directly.
+        """
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
         logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
         
@@ -343,6 +348,7 @@ class CompetencyService:
                         analysis=analysis,
                         feedback=feedback,
                         additional_data=attempt_extra,
+                        attempt_id=attempt_id,
                     )
                     firestore_success = True
                     logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to Firestore (source={source})")
@@ -403,17 +409,18 @@ class CompetencyService:
             except Exception as e:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Failed to update competency in CosmosDB: {str(e)}")
             
-            # Update in Firestore
+            # Update in Firestore via the unified incremental writer — shares
+            # count basis and blend math with PulseEngine so the two paths
+            # compose instead of overwriting each other (raw item score in,
+            # blend computed against the doc's own running average).
             if self.firestore_service:
                 try:
-                    await self.firestore_service.update_competency(
+                    await self.firestore_service.apply_competency_eval(
                         student_id=student_id,
                         subject=subject,
                         skill_id=skill_id,
                         subskill_id=subskill_id,
-                        score=blended_score,
-                        credibility=credibility,
-                        total_attempts=len(attempts)
+                        score=score,
                     )
                     firestore_comp_success = True
                     logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in Firestore")

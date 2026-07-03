@@ -291,6 +291,14 @@ class MasteryLifecycleEngine:
             gate_reference_beta=gate_reference_beta,
         )
 
+        # Track lesson completions here — the unified path above no longer
+        # routes through _handle_lesson_eval, which used to own this counter,
+        # so without this the count stays frozen for all new work (the
+        # curriculum map's "lessons" column reads it). Same semantics as the
+        # old handler: passed lesson evals only.
+        if source == "lesson" and passed:
+            lifecycle.lesson_eval_count += 1
+
         # Append to gate history (capped to prevent unbounded doc growth)
         lifecycle.gate_history.append(
             GateHistoryEntry(

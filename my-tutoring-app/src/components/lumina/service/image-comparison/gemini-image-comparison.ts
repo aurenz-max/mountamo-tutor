@@ -32,7 +32,7 @@ const generateImage = async (prompt: string, referenceImageBase64?: string): Pro
     parts.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3.1-flash-lite-image',
       contents: { parts },
       config: {
         imageConfig: { aspectRatio: '1:1' }

@@ -240,6 +240,13 @@ export interface KnowledgeGraphNode {
   status: 'mastered' | 'inferred' | 'in_review' | 'in_progress' | 'frontier' | 'not_started' | 'locked';
   current_gate: number;
   theta?: number;
+  /** θ uncertainty — the engine only trusts θ when σ is below gate thresholds. */
+  sigma?: number;
+  /** How many items the θ estimate is based on. */
+  ability_observations?: number;
+  /** P(correct) at the subskill's hardest curriculum-assigned mode β —
+   *  the continuous signal mastery-gate thresholds check against. */
+  p_correct?: number;
   earned_level?: number;
   inferred_from?: string;
   prerequisite_ids: string[];
@@ -331,16 +338,24 @@ export const analyticsApi = {
   async getStudentMetrics(
     studentId: number,
     options: {
+      /** Prefer the subject_id (e.g. MATHEMATICS) over the display name. */
       subject?: string;
+      /**
+       * Which grade's published curriculum to join against. Subjects exist
+       * per grade with identical names and colliding unit/skill IDs, so
+       * omitting this joins student data to an arbitrary grade's roster.
+       */
+      grade?: string;
       startDate?: string;
       endDate?: string;
     } = {}
   ): Promise<StudentMetrics> {
-    const { subject, startDate, endDate } = options;
-    
+    const { subject, grade, startDate, endDate } = options;
+
     // Build query parameters
     const params = new URLSearchParams();
     if (subject) params.append('subject', subject);
+    if (grade) params.append('grade', grade);
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
@@ -430,7 +445,11 @@ export const analyticsApi = {
     return authApi.get<Array<Recommendation>>(endpoint);
   },
 
-  // Get velocity metrics for a student
+  // Get velocity metrics for a student.
+  // Adapter over GET /api/velocity/{id} (the canonical velocity engine) —
+  // the old /api/analytics/.../velocity-metrics endpoint computed a simplified
+  // duplicate of the same numbers and has been removed. Legacy consumers keep
+  // the VelocityMetricsResponse shape.
   async getVelocityMetrics(
     studentId: number,
     options: {
@@ -438,16 +457,63 @@ export const analyticsApi = {
     } = {}
   ): Promise<VelocityMetricsResponse> {
     const { subject } = options;
-    
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (subject) params.append('subject', subject);
-    
-    const queryString = params.toString();
-    const endpoint = `/api/analytics/student/${studentId}/velocity-metrics${queryString ? `?${queryString}` : ''}`;
-    
-    // Use authApiClient with authentication
-    return authApi.get<VelocityMetricsResponse>(endpoint);
+
+    interface ModernVelocityResponse {
+      studentId: string;
+      asOfDate: string;
+      schoolYear: { fractionElapsed: number; weeksCompleted: number; weeksRemaining: number };
+      aggregate: { earnedMastery: number; adjustedExpectedMastery: number; velocity: number; trend: number[] };
+      subjects: Record<string, {
+        totalSkills: number;
+        closed: number;
+        earnedMastery: number;
+        adjustedExpectedMastery: number;
+        velocity: number;
+      }>;
+    }
+
+    const modern = await authApi.get<ModernVelocityResponse>(`/api/velocity/${studentId}`);
+
+    const schoolYearDays =
+      (modern.schoolYear.weeksCompleted + modern.schoolYear.weeksRemaining) * 7 || 1;
+
+    const toStatus = (pct: number): string => {
+      if (pct >= 120) return 'Significantly Ahead';
+      if (pct >= 100) return 'On Track';
+      if (pct >= 80) return 'Slightly Behind';
+      if (pct >= 60) return 'Behind';
+      return 'Significantly Behind';
+    };
+
+    const metrics: VelocityMetric[] = Object.entries(modern.subjects)
+      .filter(([name]) => !subject || name === subject)
+      .map(([name, s]) => {
+        const pct = Math.round(s.velocity * 10000) / 100;
+        const dailyRate = s.totalSkills / schoolYearDays;
+        const daysDiff = dailyRate > 0
+          ? Math.round(((s.earnedMastery - s.adjustedExpectedMastery) / dailyRate) * 10) / 10
+          : 0;
+        return {
+          subject: name,
+          actual_progress: s.closed,
+          expected_progress: s.adjustedExpectedMastery,
+          total_subskills: s.totalSkills,
+          velocity_percentage: pct,
+          days_ahead_behind: daysDiff,
+          velocity_status: toStatus(pct),
+          last_updated: modern.asOfDate,
+        };
+      });
+
+    return {
+      student_id: studentId,
+      student_name: 'Student',
+      subject,
+      metrics,
+      last_updated: modern.asOfDate,
+      generated_at: modern.asOfDate,
+      cached: false,
+    };
   },
 
   // Get score trends over time

@@ -248,6 +248,7 @@ def _review_to_detail(r: Dict[str, Any]) -> Dict[str, Any]:
 @router.get("/student/{student_id}/attempt-detail")
 async def get_attempt_detail(
     student_id: int,
+    attempt_id: Optional[str] = Query(None),
     subskill_id: Optional[str] = Query(None),
     timestamp: Optional[str] = Query(None),
     primitive_type: Optional[str] = Query(None),
@@ -255,12 +256,19 @@ async def get_attempt_detail(
 ) -> Dict[str, Any]:
     """Full captured metadata for one attempt, resolved from its review.
 
-    An attempt row and its review are written in the same submission, so we
-    locate the review by subskill + nearest timestamp (no shared id exists). This
-    reads existing data — including legacy rows, whose reviews still carry metrics.
+    Reviews now carry the shared `attempt_id` stamped by the submission handler,
+    so the primary lookup is a direct join. Legacy rows predate the key, so the
+    subskill + nearest-timestamp window remains as a fallback for them.
     """
     try:
         fs = get_firestore_service()
+
+        # Primary path: direct join on the shared submission id.
+        if attempt_id:
+            review = await fs.get_review_by_attempt_id(student_id, attempt_id)
+            if review:
+                return _review_to_detail(review)
+
         target = _parse_iso(timestamp)
 
         # Query a narrow timestamp window around the attempt (the review is

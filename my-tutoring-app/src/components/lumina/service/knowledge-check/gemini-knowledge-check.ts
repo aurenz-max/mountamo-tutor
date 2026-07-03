@@ -144,15 +144,47 @@ ${t.questionGuidance}
 ${t.distractorGuidance}
 
 IMPORTANT: Every question in this batch MUST be at the ${tier.toUpperCase()} cognitive level. Do NOT mix tiers.
+
+### GRADE TAKES PRECEDENCE OVER TIER
+This tier sets the KIND of thinking ONLY — it must NOT raise the reading level. Keep vocabulary, sentence length, and scenario complexity locked to the TARGET AUDIENCE grade band stated above, even at higher tiers. A higher tier means a harder JUDGMENT *for that grade* (e.g. "which truck is better for a small, crowded street — the big one or the small one?"), never harder WORDS or an adult scenario. Where the tier phrasing ("expert reasoning", "synthesis of multiple concepts", "mostly hard", "5 highly plausible options") conflicts with the grade band, the GRADE WINS: express the same cognitive move with grade-appropriate words, concrete and familiar contexts, and short sentences.
 `;
 }
 
 /**
- * Get MC option letters for a given tier (4 or 5 options).
+ * Grade bands in ascending developmental order (canonical keys from
+ * normalizeGradeLevel). Used to make grade a real ceiling on structural load.
  */
-function getMcOptionLabels(tier?: BloomsTier): string[] {
-  const count = (tier && BLOOMS_TIER_PROMPTS[tier]?.mcOptionCount) || 4;
-  return count === 5 ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+const GRADE_BAND_ORDER = [
+  'toddler', 'preschool', 'kindergarten', 'elementary',
+  'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd',
+];
+
+function gradeRank(gradeLevel?: string): number {
+  const i = GRADE_BAND_ORDER.indexOf(gradeLevel ?? '');
+  return i === -1 ? GRADE_BAND_ORDER.indexOf('elementary') : i;
+}
+
+/**
+ * Grade governs structural load, not just the eval tier. A young student should
+ * never face 5 defensible options just because the resolved tier is `evaluate`.
+ * kindergarten & below → 3; elementary → 4; middle-school and up → tier's count.
+ */
+function maxOptionsForGrade(gradeLevel?: string): number {
+  const r = gradeRank(gradeLevel);
+  if (r <= GRADE_BAND_ORDER.indexOf('kindergarten')) return 3;
+  if (r === GRADE_BAND_ORDER.indexOf('elementary')) return 4;
+  return 5;
+}
+
+/**
+ * Get MC option letters, capped by BOTH the tier and the grade band. The tier
+ * proposes an option count (recall/apply=4, analyze/evaluate=5); the grade caps
+ * it so early grades never exceed a developmentally sensible number.
+ */
+function getMcOptionLabels(tier?: BloomsTier, gradeLevel?: string): string[] {
+  const tierCount = (tier && BLOOMS_TIER_PROMPTS[tier]?.mcOptionCount) || 4;
+  const count = Math.max(2, Math.min(tierCount, maxOptionsForGrade(gradeLevel)));
+  return ['A', 'B', 'C', 'D', 'E'].slice(0, count);
 }
 
 // ============================================================================
@@ -427,7 +459,7 @@ export const generateMultipleChoiceProblems = async (
   insetType?: InsetType
 ): Promise<MultipleChoiceProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
-  const optionLabels = getMcOptionLabels(bloomsTier);
+  const optionLabels = getMcOptionLabels(bloomsTier, gradeLevel);
   const optionCount = optionLabels.length;
 
   const multipleChoiceSchema: Schema = {

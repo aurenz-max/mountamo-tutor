@@ -242,6 +242,7 @@ export default function StudentActivityPanel({
       const studentId = parseInt(studentIdInput, 10);
       try {
         const d = await getActivityDetail(studentId, {
+          attemptId: row.attemptId,
           subskillId: row.subskillId,
           timestamp: row.completedAt,
           primitiveType: row.primitiveType !== 'unknown' ? row.primitiveType : null,

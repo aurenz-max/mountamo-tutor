@@ -6,11 +6,37 @@
 import asyncio
 import logging
 import math
+import re
 from collections import defaultdict, deque
 from datetime import datetime, date, timedelta, timezone
 from typing import Dict, List, Any, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+def _norm_subject(s: Optional[str]) -> str:
+    """Canonicalize a subject label for matching.
+
+    Student docs carry the subject in every historical spelling — display name
+    ("Mathematics"), subject_id ("MATHEMATICS"), lowercase, space/underscore
+    variants, and grade-suffixed subject_ids ("MATHEMATICS_G1") from the cosmos
+    migration. An exact Firestore where('subject','==',…) therefore silently
+    drops most of a student's history. Normalize both sides instead:
+    uppercase, unify separators, strip a trailing grade suffix (a G1 math doc
+    still counts toward Mathematics — the subskill_id join against the
+    subject's curriculum tree is what actually scopes results).
+    """
+    if not s:
+        return ""
+    s = re.sub(r"[\s\-]+", "_", s.strip().upper())
+    return re.sub(r"_G\d+$", "", s)
+
+
+def _subject_matches(doc_subject: Optional[str], wanted: Optional[str]) -> bool:
+    """True when the doc belongs to `wanted` (None/'' = no filter)."""
+    if not wanted:
+        return True
+    return _norm_subject(doc_subject) == _norm_subject(wanted)
 
 # Avoid circular imports — use TYPE_CHECKING for type hints only
 from typing import TYPE_CHECKING
@@ -84,9 +110,14 @@ class FirestoreAnalyticsService:
         """
         from app.services.subskill_id_resolver import subskill_id_resolver
 
-        docs = await self.fs.get_all_competencies(student_id, subject)
+        # Fetch unfiltered and match subjects in Python — the Firestore
+        # where() is an exact string match and misses historical spellings
+        # ("MATHEMATICS", "mathematics", "MATHEMATICS_G1", …).
+        docs = await self.fs.get_all_competencies(student_id, None)
         result = {}
         for d in docs:
+            if not _subject_matches(d.get("subject"), subject):
+                continue
             sid = d.get("subskill_id")
             if not sid:
                 continue
@@ -107,11 +138,20 @@ class FirestoreAnalyticsService:
                 "subject": d.get("subject"),
                 "skill_id": d.get("skill_id"),
             }
-            # If canonical already exists, merge (take higher score)
-            if canonical in result and canonical != sid:
+            # Merge whenever the canonical key already exists. Duplicates come
+            # from lineage renames AND from the same subskill stored under
+            # multiple subject-spelling doc IDs ("Mathematics_…" vs
+            # "MATHEMATICS_G1_…"), where canonical == sid — the old
+            # `canonical != sid` guard let those silently last-write-win and
+            # drop attempts. Sum attempts; score/credibility follow the most
+            # recently updated doc.
+            if canonical in result:
                 existing = result[canonical]
-                if entry["current_score"] > existing["current_score"]:
-                    result[canonical] = entry
+                merged_attempts = existing["total_attempts"] + entry["total_attempts"]
+                newer = entry if str(entry.get("last_updated") or "") >= str(existing.get("last_updated") or "") else existing
+                merged = {**newer, "total_attempts": merged_attempts}
+                merged["mastery"] = merged["proficiency"] * merged["credibility"]
+                result[canonical] = merged
             else:
                 result[canonical] = entry
         return result
@@ -125,15 +165,20 @@ class FirestoreAnalyticsService:
         """
         from app.services.subskill_id_resolver import subskill_id_resolver
 
-        docs = await self.fs.get_all_mastery_lifecycles(student_id, subject)
+        # Unfiltered fetch + normalized match, same reason as competencies.
+        docs = await self.fs.get_all_mastery_lifecycles(student_id, None)
         result = {}
         for d in docs:
+            if not _subject_matches(d.get("subject"), subject):
+                continue
             sid = d.get("subskill_id")
             if not sid:
                 continue
             canonical = await subskill_id_resolver.resolve(sid)
-            # If canonical already exists (merge scenario), keep higher gate
-            if canonical in result and canonical != sid:
+            # If canonical already exists (lineage rename OR duplicate doc for
+            # the same subskill), keep the higher gate — no `canonical != sid`
+            # guard, so a duplicate can't silently overwrite a merged entry.
+            if canonical in result:
                 existing_gate = result[canonical].get("current_gate", 0)
                 new_gate = d.get("current_gate", 0)
                 if new_gate > existing_gate:
@@ -150,10 +195,19 @@ class FirestoreAnalyticsService:
         end_date: Optional[str] = None,
         limit: int = 1000,
     ) -> List[Dict[str, Any]]:
-        """Load attempts with optional date range filter."""
-        return await self.fs.get_student_attempts_date_range(
-            student_id, subject, start_date, end_date, limit
+        """Load attempts with optional date range filter.
+
+        Subject matching happens here (normalized — see _norm_subject), not in
+        the Firestore query, so historical subject spellings are included.
+        Over-fetch when filtering since the Firestore limit applies pre-filter.
+        """
+        fetch_limit = min(limit * 4, 5000) if subject else limit
+        docs = await self.fs.get_student_attempts_date_range(
+            student_id, None, start_date, end_date, fetch_limit
         )
+        if subject:
+            docs = [d for d in docs if _subject_matches(d.get("subject"), subject)]
+        return docs[:limit]
 
     async def _load_reviews(
         self,
@@ -163,15 +217,27 @@ class FirestoreAnalyticsService:
         end_date: Optional[str] = None,
         limit: int = 1000,
     ) -> List[Dict[str, Any]]:
-        """Load reviews with optional date range filter."""
-        return await self.fs.get_problem_reviews_date_range(
-            student_id, subject, start_date, end_date, limit
+        """Load reviews with optional date range filter.
+
+        Normalized subject matching in Python, same as _load_attempts.
+        """
+        fetch_limit = min(limit * 4, 5000) if subject else limit
+        docs = await self.fs.get_problem_reviews_date_range(
+            student_id, None, start_date, end_date, fetch_limit
         )
+        if subject:
+            docs = [d for d in docs if _subject_matches(d.get("subject"), subject)]
+        return docs[:limit]
 
     async def _build_curriculum_hierarchy(
-        self, subject: Optional[str] = None
+        self, subject: Optional[str] = None, grade: Optional[str] = None
     ) -> Dict[str, Any]:
         """Build flat subskill lookup and structured hierarchy from CurriculumService.
+
+        Pass `grade` whenever the caller knows it: curricula are published per
+        grade under identical subject names (and unit/skill IDs repeat across
+        grades), so a bare subject resolves ambiguously — historically to
+        grade "1" — and joins student data against the wrong grade's roster.
 
         Returns:
             {
@@ -180,7 +246,7 @@ class FirestoreAnalyticsService:
                 "total_subskills_by_subject": {subject: int},
             }
         """
-        ck = self._cache_key("curriculum_hierarchy", subject=subject)
+        ck = self._cache_key("curriculum_hierarchy", subject=subject, grade=grade)
         cached = self._cache_get(ck)
         if cached:
             return cached
@@ -192,14 +258,14 @@ class FirestoreAnalyticsService:
         if subject:
             subjects_to_load = [subject]
         else:
-            all_subj = await self.curriculum.get_available_subjects()
+            all_subj = await self.curriculum.get_available_subjects(grade=grade)
             subjects_to_load = [
                 s.get("subject_id") or s.get("subject_name") or s
                 for s in all_subj
             ]
 
         for subj in subjects_to_load:
-            units = await self.curriculum.get_curriculum(subj)
+            units = await self.curriculum.get_curriculum(subj, grade=grade)
             hierarchy[subj] = units
             count = 0
             for unit in units:
@@ -382,101 +448,6 @@ class FirestoreAnalyticsService:
             }
 
     # --------------------------------------------------------------------
-    # VELOCITY METRICS
-    # --------------------------------------------------------------------
-
-    async def get_velocity_metrics(
-        self, student_id: int, subject: Optional[str] = None
-    ) -> List[Dict]:
-        """Compute live velocity metrics from mastery lifecycle + curriculum."""
-        ck = self._cache_key("velocity", student_id=student_id, subject=subject)
-        cached = self._cache_get(ck)
-        if cached is not None:
-            return cached
-
-        try:
-            cur = await self._build_curriculum_hierarchy(subject)
-            totals = cur["total_subskills_by_subject"]
-            lifecycle_docs = await self.fs.get_all_mastery_lifecycles(student_id, subject)
-
-            # Count closed (gate 4) per subject
-            closed_by_subject: Dict[str, int] = defaultdict(int)
-            last_updated_by_subject: Dict[str, Optional[str]] = {}
-            for lc in lifecycle_docs:
-                subj = lc.get("subject", "Unknown")
-                if lc.get("current_gate", 0) >= 4:
-                    closed_by_subject[subj] += 1
-                lu = lc.get("last_updated") or lc.get("updated_at")
-                if lu:
-                    prev = last_updated_by_subject.get(subj)
-                    if prev is None or str(lu) > str(prev):
-                        last_updated_by_subject[subj] = lu
-
-            # School year fraction elapsed
-            school_cfg = await self.fs.get_school_year_config()
-            now = datetime.now(timezone.utc)
-            if school_cfg:
-                start_str = school_cfg.get("startDate", "2025-08-25")
-                end_str = school_cfg.get("endDate", "2026-05-29")
-            else:
-                start_str, end_str = "2025-08-25", "2026-05-29"
-            try:
-                year_start = datetime.fromisoformat(start_str).replace(tzinfo=timezone.utc)
-                year_end = datetime.fromisoformat(end_str).replace(tzinfo=timezone.utc)
-            except (ValueError, TypeError):
-                year_start = datetime(2025, 8, 25, tzinfo=timezone.utc)
-                year_end = datetime(2026, 5, 29, tzinfo=timezone.utc)
-
-            total_days = max((year_end - year_start).days, 1)
-            elapsed_days = max(min((now - year_start).days, total_days), 0)
-            fraction_elapsed = elapsed_days / total_days
-
-            results = []
-            subjects_to_report = [subject] if subject else list(totals.keys())
-            for subj in subjects_to_report:
-                total = totals.get(subj, 0)
-                if total == 0:
-                    continue
-                actual = closed_by_subject.get(subj, 0)
-                expected = round(fraction_elapsed * total, 2)
-                velocity_pct = round((actual / expected) * 100, 2) if expected > 0 else 100.0
-                daily_rate = total / total_days if total_days > 0 else 1
-                days_diff = round((actual - expected) / daily_rate, 1) if daily_rate > 0 else 0
-
-                if velocity_pct >= 120:
-                    status = "Significantly Ahead"
-                elif velocity_pct >= 100:
-                    status = "On Track"
-                elif velocity_pct >= 80:
-                    status = "Slightly Behind"
-                elif velocity_pct >= 60:
-                    status = "Behind"
-                else:
-                    status = "Significantly Behind"
-
-                lu = last_updated_by_subject.get(subj) or now.isoformat()
-                results.append({
-                    "student_id": student_id,
-                    "student_name": "Student",
-                    "subject": subj,
-                    "actual_progress": actual,
-                    "expected_progress": expected,
-                    "total_subskills_in_subject": total,
-                    "velocity_percentage": velocity_pct,
-                    "days_ahead_behind": days_diff,
-                    "velocity_status": status,
-                    "last_updated": self._parse_timestamp(lu) or now,
-                    "calculation_date": now,
-                })
-
-            self._cache_set(ck, results)
-            return results
-
-        except Exception as e:
-            logger.error(f"Error computing velocity metrics: {e}")
-            return []
-
-    # --------------------------------------------------------------------
     # ENGAGEMENT METRICS
     # --------------------------------------------------------------------
 
@@ -564,11 +535,13 @@ class FirestoreAnalyticsService:
         subject: Optional[str] = None,
         include_reviews: bool = True,
         limit: int = 100,
+        grade: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get detailed recent activity with optional review context."""
         ck = self._cache_key(
             "recent_activity", student_id=student_id, hours=hours,
             subject=subject, include_reviews=include_reviews, limit=limit,
+            grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -587,7 +560,7 @@ class FirestoreAnalyticsService:
                     review_lookup[key] = r
 
             # Curriculum metadata for enrichment
-            cur = await self._build_curriculum_hierarchy(subject)
+            cur = await self._build_curriculum_hierarchy(subject, grade=grade)
             lookup = cur["subskill_lookup"]
 
             activities = []
@@ -641,11 +614,17 @@ class FirestoreAnalyticsService:
         subject: Optional[str] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Compute hierarchical metrics: units → skills → subskills with mastery/proficiency."""
+        """Compute hierarchical metrics: units → skills → subskills with mastery/proficiency.
+
+        `grade` selects which grade's published curriculum the student data is
+        joined against (see _build_curriculum_hierarchy) — without it the
+        subject resolves to an arbitrary grade's roster.
+        """
         ck = self._cache_key(
             "hierarchical", student_id=student_id, subject=subject,
-            start_date=start_date, end_date=end_date,
+            start_date=start_date, end_date=end_date, grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -654,7 +633,7 @@ class FirestoreAnalyticsService:
         try:
             comp_map = await self._load_competency_map(student_id, subject)
             lifecycle_map = await self._load_lifecycle_map(student_id, subject)
-            cur = await self._build_curriculum_hierarchy(subject)
+            cur = await self._build_curriculum_hierarchy(subject, grade=grade)
             hierarchy = cur["hierarchy"]
 
             # Get unlocked set for readiness
@@ -794,11 +773,12 @@ class FirestoreAnalyticsService:
         subject: str,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Compute score distribution histograms at subject/unit/skill levels."""
         ck = self._cache_key(
             "score_dist", student_id=student_id, subject=subject,
-            start_date=start_date, end_date=end_date,
+            start_date=start_date, end_date=end_date, grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -809,7 +789,7 @@ class FirestoreAnalyticsService:
             end_iso = end_date.isoformat() if end_date else None
             reviews = await self._load_reviews(student_id, subject, start_iso, end_iso)
 
-            cur = await self._build_curriculum_hierarchy(subject)
+            cur = await self._build_curriculum_hierarchy(subject, grade=grade)
             lookup = cur["subskill_lookup"]
 
             # Build histograms at all three levels
@@ -1019,11 +999,12 @@ class FirestoreAnalyticsService:
         subject: Optional[str] = None,
         days: int = 30,
         min_feedback_length: int = 20,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Identify recurring mistake patterns from low-score reviews."""
         ck = self._cache_key(
             "mistakes", student_id=student_id, subject=subject,
-            days=days, min_feedback_length=min_feedback_length,
+            days=days, min_feedback_length=min_feedback_length, grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -1033,7 +1014,7 @@ class FirestoreAnalyticsService:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             reviews = await self._load_reviews(student_id, subject, start_date=cutoff)
 
-            cur = await self._build_curriculum_hierarchy(subject)
+            cur = await self._build_curriculum_hierarchy(subject, grade=grade)
             lookup = cur["subskill_lookup"]
 
             # Filter to low-score reviews with meaningful feedback
@@ -1107,12 +1088,14 @@ class FirestoreAnalyticsService:
         unit_id: Optional[str] = None,
         skill_id: Optional[str] = None,
         include_hierarchy: bool = False,
+        grade: Optional[str] = None,
     ) -> List[Dict]:
         """Compute metrics over time intervals."""
         ck = self._cache_key(
             "timeseries", student_id=student_id, subject=subject,
             interval=interval, level=level, start_date=start_date,
             end_date=end_date, unit_id=unit_id, skill_id=skill_id,
+            grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -1131,7 +1114,7 @@ class FirestoreAnalyticsService:
 
             # Optional unit/skill filtering
             if unit_id or skill_id:
-                cur = await self._build_curriculum_hierarchy(subject)
+                cur = await self._build_curriculum_hierarchy(subject, grade=grade)
                 lookup = cur["subskill_lookup"]
                 filtered = []
                 for a in attempts:
@@ -1145,7 +1128,7 @@ class FirestoreAnalyticsService:
                 attempts = filtered
 
             # Get total curriculum items for completion calculation
-            cur_data = await self._build_curriculum_hierarchy(subject)
+            cur_data = await self._build_curriculum_hierarchy(subject, grade=grade)
             total_curriculum_items = sum(cur_data["total_subskills_by_subject"].values())
 
             # Group by interval
@@ -1227,12 +1210,17 @@ class FirestoreAnalyticsService:
             # --- Parallel data loading ---
             import asyncio
 
+            # Lazy imports (module avoids top-level app imports — see header)
+            from app.config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
+            from app.models.pulse import max_beta_for_modes
+            from app.services.calibration_engine import CalibrationEngine, p_correct
+
             student_graph_task = self.learning_paths.get_student_graph(
                 student_id, subject, grade=grade
             )
-            lifecycle_task = self.fs.get_all_mastery_lifecycles(
-                student_id, subject=subject
-            )
+            # Unfiltered fetch + normalized subject match — exact where()
+            # misses historical subject spellings (see _norm_subject).
+            lifecycle_task = self.fs.get_all_mastery_lifecycles(student_id, None)
             ability_task = self.fs.get_all_student_abilities(student_id)
 
             student_graph, lifecycles_list, abilities_list = await asyncio.gather(
@@ -1242,6 +1230,8 @@ class FirestoreAnalyticsService:
             # Index mastery lifecycle by subskill_id
             lifecycle_map: Dict[str, Dict] = {}
             for lc in lifecycles_list:
+                if not _subject_matches(lc.get("subject"), subject):
+                    continue
                 sid = lc.get("subskill_id") or lc.get("id", "")
                 lifecycle_map[sid] = lc
 
@@ -1394,6 +1384,37 @@ class FirestoreAnalyticsService:
                     }
                     if theta is not None:
                         node_detail["theta"] = round(theta, 2)
+                        # Uncertainty context so consumers can qualify the
+                        # prediction: σ (the engine only trusts θ when σ is
+                        # below the gate thresholds) and how many items the
+                        # estimate is based on.
+                        sigma = ab.get("sigma")
+                        if sigma is not None:
+                            node_detail["sigma"] = round(sigma, 2)
+                        node_detail["ability_observations"] = int(
+                            ab.get("total_items_seen", 0) or 0
+                        )
+                        # P(correct) at this subskill's reference difficulty —
+                        # the hardest curriculum-assigned eval mode's β (the
+                        # same reference derive_gate_from_irt uses for Gate 4),
+                        # falling back to the student's tested-item β median.
+                        # θ is per-SKILL, so this is what actually varies
+                        # per subskill and what gate thresholds are checked
+                        # against — report it instead of raw θ in UIs.
+                        ref_beta = max_beta_for_modes(
+                            node.get("primitive_type", ""), node.get("eval_modes")
+                        )
+                        if ref_beta is None:
+                            ref_beta = CalibrationEngine.compute_skill_beta_median(ab)
+                        node_detail["p_correct"] = round(
+                            p_correct(
+                                theta,
+                                DEFAULT_DISCRIMINATION_PRIOR.a,
+                                ref_beta,
+                                DEFAULT_DISCRIMINATION_PRIOR.c,
+                            ),
+                            3,
+                        )
                     if earned_level is not None:
                         node_detail["earned_level"] = round(earned_level, 1)
                     if is_inferred:

@@ -1051,24 +1051,23 @@ class PulseEngine:
         # Without this write, get_student_proficiency_map() returns 0 for
         # all subskills → depth-1+ children in the curriculum graph never
         # unlock → students get stuck at root subskills only.
-        attempt_count = (
-            (old_lifecycle.get("lesson_eval_count", 0) if old_lifecycle else 0) + 1
-        )
+        # Routed through apply_competency_eval — the unified incremental
+        # writer shared with the practice path (same count basis + blend
+        # math), so pulse and practice writes compose instead of clobbering
+        # each other with conflicting credibility formulas.
         competency_entry = {
             "student_id": student_id,
             "subject": subject,
             "skill_id": skill_id,
             "subskill_id": subskill_id,
             "score": result.score,
-            "credibility": min(1.0, attempt_count / 10.0),
-            "total_attempts": attempt_count,
         }
         if defer_competency:
             session.setdefault("_pending_competency_writes", []).append(
                 competency_entry
             )
         else:
-            await self.firestore.update_competency(**competency_entry)
+            await self.firestore.apply_competency_eval(**competency_entry)
 
         # Record primitive usage in rolling history
         if not defer_primitive_history:
@@ -1252,8 +1251,10 @@ class PulseEngine:
         ]
 
         if defer_competency:
-            # Append to the same deferred batch as regular competency writes
-            session.setdefault("_pending_competency_writes", []).extend(
+            # Seeds go in their own deferred batch — they write via
+            # update_competency directly (fixed floor for unlock propagation),
+            # unlike eval writes which blend via apply_competency_eval.
+            session.setdefault("_pending_competency_seeds", []).extend(
                 leapfrog_competency_entries
             )
         else:
@@ -1535,12 +1536,21 @@ class PulseEngine:
                     self.learning_paths.recalculate_unlocks(student_id, subj)
                 )
 
-        # Flush pending competency writes (parallel batch)
+        # Flush pending competency writes. Leapfrog seeds are independent
+        # overwrites (parallel-safe); eval writes are incremental
+        # read-modify-writes via apply_competency_eval, so they run
+        # sequentially — the same subskill can appear more than once in a
+        # session and concurrent increments would lose updates.
         pending_competency: List[Dict] = session.pop("_pending_competency_writes", [])
-        competency_coros = [
+        pending_seeds: List[Dict] = session.pop("_pending_competency_seeds", [])
+        seed_coros = [
             self.firestore.update_competency(**entry)
-            for entry in pending_competency
+            for entry in pending_seeds
         ]
+
+        async def _apply_evals_sequentially() -> None:
+            for entry in pending_competency:
+                await self.firestore.apply_competency_eval(**entry)
 
         # Run session save + unlock refreshes + competency writes in parallel
         await asyncio.gather(
@@ -1553,11 +1563,13 @@ class PulseEngine:
                 **({"leapfrogs": session["leapfrogs"]} if "leapfrogs" in session else {}),
             }),
             *unlock_coros,
-            *competency_coros,
+            *seed_coros,
+            _apply_evals_sequentially(),
         )
-        if pending_competency:
+        if pending_competency or pending_seeds:
             logger.info(
-                f"[PULSE] Flushed {len(pending_competency)} deferred competency writes"
+                f"[PULSE] Flushed {len(pending_competency)} deferred competency "
+                f"evals + {len(pending_seeds)} leapfrog seeds"
             )
 
     async def flush_primitive_history(
@@ -1594,13 +1606,23 @@ class PulseEngine:
         Writes are independent so all go out concurrently.
         """
         pending: List[Dict] = session.pop("_pending_competency_writes", [])
-        if not pending:
+        pending_seeds: List[Dict] = session.pop("_pending_competency_seeds", [])
+        if not pending and not pending_seeds:
             return
-        await asyncio.gather(*(
-            self.firestore.update_competency(**entry)
-            for entry in pending
-        ))
-        logger.info(f"[PULSE] Flushed {len(pending)} deferred competency writes")
+        # Seeds overwrite independent docs — safe in parallel. Eval writes are
+        # incremental read-modify-writes on possibly-repeated subskills, so
+        # they run sequentially to avoid losing increments.
+        if pending_seeds:
+            await asyncio.gather(*(
+                self.firestore.update_competency(**entry)
+                for entry in pending_seeds
+            ))
+        for entry in pending:
+            await self.firestore.apply_competency_eval(**entry)
+        logger.info(
+            f"[PULSE] Flushed {len(pending)} deferred competency evals "
+            f"+ {len(pending_seeds)} leapfrog seeds"
+        )
 
     @staticmethod
     def _get_eval_source(band: str, gate: int) -> str:
