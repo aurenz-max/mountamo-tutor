@@ -117,6 +117,23 @@ function attemptScore(attempts: number): number {
   return 25;
 }
 
+/**
+ * A count-and-compare question may reference only a SUBSET of the on-screen groups —
+ * e.g. "Are there more red apples or yellow bananas?" while a third Green group is also
+ * shown (hard tier uses 3 groups). Return the categories the question explicitly names so
+ * scoring and answer options stay aligned with what was asked. If fewer than 2 are named,
+ * it's a global question ("which group has the most?") — return ALL categories.
+ * Returned references come from `cats`, so callers can use `cats.indexOf()` to map back.
+ */
+function comparedCategories(
+  cats: SortingCategory[],
+  comparisonQuestion: string | undefined,
+): SortingCategory[] {
+  const q = (comparisonQuestion || '').toLowerCase();
+  const named = cats.filter(c => c.label && q.includes(c.label.toLowerCase()));
+  return named.length >= 2 ? named : cats;
+}
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -509,7 +526,14 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
 
       // ── Phase 2: Compare ──
       if (!comparisonAnswer) return;
-      const allEqual = binCounts.length > 0 && binCounts.every(b => b.count === binCounts[0].count);
+      // The question may reference only SOME of the groups (e.g. "more red or yellow?" with a
+      // third Green group present) — compare only the named groups, not the global max/min.
+      const comparedCats = comparedCategories(cats, currentChallenge.comparisonQuestion);
+      const comparedCounts = comparedCats.map(cat => ({
+        label: cat.label,
+        count: (autoSortedBins.get(cats.indexOf(cat)) || []).length,
+      }));
+      const allEqual = comparedCounts.length > 0 && comparedCounts.every(b => b.count === comparedCounts[0].count);
       const question = (currentChallenge.comparisonQuestion || '').toLowerCase();
       const asksFewer = /fewer|fewest|less|least|smallest/.test(question);
 
@@ -517,11 +541,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       if (allEqual) {
         correctLabel = '__equal__';
       } else if (asksFewer) {
-        const min = Math.min(...binCounts.map(b => b.count));
-        correctLabel = binCounts.find(b => b.count === min)!.label;
+        const min = Math.min(...comparedCounts.map(b => b.count));
+        correctLabel = comparedCounts.find(b => b.count === min)!.label;
       } else {
-        const max = Math.max(...binCounts.map(b => b.count));
-        correctLabel = binCounts.find(b => b.count === max)!.label;
+        const max = Math.max(...comparedCounts.map(b => b.count));
+        correctLabel = comparedCounts.find(b => b.count === max)!.label;
       }
 
       const correct = comparisonAnswer === correctLabel;
@@ -1039,8 +1063,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       }
 
       // Phase 2: Comparison question (counts locked, shown as badges)
+      // Only offer the groups the question actually names — offering a group it never
+      // mentions (e.g. Green for "more red or yellow?") is a misleading distractor.
+      const comparedCats = comparedCategories(cats, currentChallenge.comparisonQuestion);
       const answerOptions = [
-        ...cats.map(cat => ({ value: cat.label, display: cat.label })),
+        ...comparedCats.map(cat => ({ value: cat.label, display: cat.label })),
         { value: '__equal__', display: "They're equal!" },
       ];
       return (

@@ -139,27 +139,54 @@ export interface TimeSeriesData {
   }>;
 }
 
-export interface Recommendation {
-  type: string;
-  priority: string;
-  unit_id: string;
-  unit_title: string;
-  skill_id: string;
-  skill_description: string;
-  subskill_id: string;
-  subskill_description: string;
-  proficiency: number;
-  mastery: number;
-  avg_score: number;
-  priority_level: string;
-  priority_order: number;
-  readiness_status: string;
-  is_ready: boolean;
-  completion: number;
-  attempt_count: number;
-  is_attempted: boolean;
-  next_subskill: string | null;
-  message: string;
+// IRT session-scope selector picks (Lesson Entry Contract fill mode #3).
+// preBuiltObjectives-shaped: feed straight into the Lesson Builder tray /
+// useExhibitSession.generate.
+export interface SessionTargetObjective {
+  id: string;
+  text: string;
+  verb: 'identify' | 'explain' | 'apply';
+  subskillId: string;
+  skillId: string;
+  skillDescription: string;
+  unitId: string;
+  unitTitle: string;
+  kind: 'confirm' | 'learn' | 'cold_start';
+  reason: string;
+  pCorrect: number | null;
+  currentGate: number;
+}
+
+export interface SessionTargetsResponse {
+  student_id: number;
+  subject: string;
+  grade: string | null;
+  objectives: SessionTargetObjective[];
+  pool_sizes: { confirm: number; learn: number; cold_start: number };
+}
+
+// Before/after IRT state for the subskills a lesson exercised — powers the
+// lesson-review close-out. "Before" is derived server-side from timestamped
+// theta_history / gate_history, so no client-side snapshot is needed.
+export interface SessionProgressTarget {
+  subskillId: string;
+  skillId: string;
+  description: string;
+  gateBefore: number;
+  gateAfter: number;
+  gateAdvanced: boolean;
+  pBefore: number | null;
+  pAfter: number | null;
+  /** True when this session produced the skill's first θ evidence. */
+  firstMeasurement: boolean;
+}
+
+export interface SessionProgressResponse {
+  student_id: number;
+  subject: string;
+  grade: string | null;
+  since: string;
+  targets: SessionProgressTarget[];
 }
 
 export interface VelocityMetric {
@@ -472,28 +499,6 @@ export const analyticsApi = {
     return data;
   },
 
-  // Get recommendations for a student
-  async getRecommendations(
-    studentId: number,
-    options: {
-      subject?: string;
-      limit?: number;
-    } = {}
-  ): Promise<Array<Recommendation>> {
-    const { subject, limit } = options;
-    
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (subject) params.append('subject', subject);
-    if (limit) params.append('limit', limit.toString());
-    
-    const queryString = params.toString();
-    const endpoint = `/api/analytics/student/${studentId}/recommendations${queryString ? `?${queryString}` : ''}`;
-    
-    // Use authApiClient with authentication
-    return authApi.get<Array<Recommendation>>(endpoint);
-  },
-
   // Get velocity metrics for a student.
   // Adapter over GET /api/velocity/{id} (the canonical velocity engine) —
   // the old /api/analytics/.../velocity-metrics endpoint computed a simplified
@@ -657,13 +662,44 @@ export const analyticsApi = {
     const queryString = params.toString();
     const endpoint = `/api/analytics/student/${studentId}/profile${queryString ? `?${queryString}` : ''}`;
     return authApi.get<StudentProfileResponse>(endpoint);
+  },
+
+  // IRT session-scope selector: what should this student's next lesson in a
+  // subject target, and why. Pass grade whenever known (bare subject
+  // resolves ambiguously on the backend).
+  async getSessionTargets(
+    studentId: number,
+    options: { subject: string; grade?: string; count?: number }
+  ): Promise<SessionTargetsResponse> {
+    const params = new URLSearchParams();
+    params.append('subject', options.subject);
+    if (options.grade) params.append('grade', options.grade);
+    if (options.count) params.append('count', options.count.toString());
+
+    const endpoint = `/api/analytics/student/${studentId}/session-targets?${params.toString()}`;
+    return authApi.get<SessionTargetsResponse>(endpoint);
+  },
+
+  // Before/after IRT deltas for a finished lesson's targeted subskills.
+  async getSessionProgress(
+    studentId: number,
+    body: {
+      subject: string;
+      grade?: string;
+      since: string;
+      targets: Array<{ subskillId: string; skillId: string }>;
+    }
+  ): Promise<SessionProgressResponse> {
+    return authApi.post<SessionProgressResponse>(
+      `/api/analytics/student/${studentId}/session-progress`,
+      body
+    );
   }
 };
 
 // For backward compatibility, also export individual functions
 export const getStudentMetrics = analyticsApi.getStudentMetrics;
 export const getTimeSeriesMetrics = analyticsApi.getTimeSeriesMetrics;
-export const getRecommendations = analyticsApi.getRecommendations;
 export const getVelocityMetrics = analyticsApi.getVelocityMetrics;
 export const getScoreTrends = analyticsApi.getScoreTrends;
 export const getEngagementMetrics = analyticsApi.getEngagementMetrics;

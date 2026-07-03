@@ -58,6 +58,8 @@ interface CurriculumBrowserProps {
   selectedIds?: Set<string>;
   /** Called when a subskill checkbox is toggled */
   onToggleSubskill?: (subskill: SelectedSubskill) => void;
+  /** Fired when the browsed subject pill changes (null on toggle-off) */
+  onActiveSubjectChange?: (subject: { name: string; grade?: string } | null) => void;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -230,6 +232,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
   selectionMode,
   selectedIds,
   onToggleSubskill,
+  onActiveSubjectChange,
 }) => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<SubjectInfo[]>([]);
@@ -271,10 +274,12 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
       // Toggle off
       setSelectedSubject(null);
       setCurriculumData(null);
+      onActiveSubjectChange?.(null);
       return;
     }
 
     setSelectedSubject(subject);
+    onActiveSubjectChange?.({ name: subject.subject_name, grade: subject.grade ?? undefined });
     setError(null);
 
     // Check cache
@@ -298,7 +303,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
     } finally {
       setLoadingCurriculum(false);
     }
-  }, [selectedSubject]);
+  }, [selectedSubject, onActiveSubjectChange]);
 
   // Don't render for unauthenticated users
   if (!user) return null;

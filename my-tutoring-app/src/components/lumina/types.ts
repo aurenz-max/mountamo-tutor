@@ -579,6 +579,13 @@ export interface BaseProblemData {
    *  attribution, so an interdisciplinary lesson's KC attributes to its own subject rather
    *  than the lesson's dominant one. Stamped onto every problem of a KC. */
   subject?: string;
+  /** Which lesson objective this problem assesses (KC orchestrator's per-problem
+   *  tag). Rides the problem's evaluation submission so a cross-objective
+   *  assessment attributes each problem to ITS objective's subskill. */
+  objectiveId?: string;
+  /** Curriculum IDs of the tagged objective — the evaluation attribution keys. */
+  subskillId?: string;
+  skillId?: string;
 }
 
 // Multiple Choice Problem
@@ -783,6 +790,11 @@ export interface ObjectiveData {
   text: string;
   verb: 'identify' | 'explain' | 'create' | 'analyze' | 'compare' | 'apply' | 'evaluate';
   icon: string;
+  /** Curriculum IDs carried by preBuiltObjectives (group / recommended /
+   *  daily-plan lessons). Each objective is a distinct subskill — submissions
+   *  must attribute to THEIR objective's subskill, not the lesson-level one. */
+  subskillId?: string;
+  skillId?: string;
 }
 
 export interface QuickCheckData {
@@ -1665,6 +1677,9 @@ export interface KnowledgeCheckProblemPlan {
   brief: string;
   /** Why this problem is placed here in the sequence */
   cognitiveNote: string;
+  /** Lesson objective this problem primarily assesses (null when the lesson
+   *  didn't provide objectives, or the model couldn't pick one honestly). */
+  objectiveId?: string | null;
 }
 
 /**

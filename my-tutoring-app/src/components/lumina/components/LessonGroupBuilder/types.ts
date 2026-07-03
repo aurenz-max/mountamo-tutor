@@ -11,4 +11,6 @@ export interface SelectedSubskill {
   subject: string;
   grade?: string;
   bloomPhase: BloomPhase;
+  /** Why the IRT selector picked this (recommended-fill only) */
+  reason?: string;
 }

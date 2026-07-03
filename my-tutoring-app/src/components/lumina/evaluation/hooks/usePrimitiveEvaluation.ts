@@ -8,6 +8,7 @@ import type {
   IdSource,
 } from '../types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
+import { useExhibitContext } from '../../contexts/ExhibitContext';
 
 /**
  * Configuration options for the usePrimitiveEvaluation hook.
@@ -163,6 +164,9 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
 
   // Get context (may be null if no provider)
   const evaluationContext = useEvaluationContext();
+  // Exhibit context maps this component instance → its manifest objective(s),
+  // which carry per-objective curriculum IDs on multi-subskill lessons.
+  const exhibitContext = useExhibitContext();
 
   // Attempt state
   const [attemptId, setAttemptId] = useState(() => generateAttemptId());
@@ -236,16 +240,28 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - new Date(startedAt).getTime();
 
+    // Per-objective attribution: on multi-subskill lessons (group / recommended
+    // / daily-plan) each objective IS a distinct subskill, so this component's
+    // own objective must win over the lesson-level context (which only carries
+    // the FIRST objective's subskill). Only trust the mapping when the
+    // component belongs to exactly ONE objective — a cross-objective component
+    // (e.g. the final knowledge-check) has no single honest subskill.
+    const componentObjectives = exhibitContext.getObjectivesForComponent(instanceId);
+    const objectiveOwn =
+      componentObjectives.length === 1 && componentObjectives[0].subskillId
+        ? componentObjectives[0]
+        : undefined;
+
     // Use curriculum IDs from context as fallbacks when the component doesn't provide them
-    const resolvedSkillId = skillId || evaluationContext?.curriculumSkillId;
-    const resolvedSubskillId = subskillId || evaluationContext?.curriculumSubskillId;
+    const resolvedSkillId = skillId || objectiveOwn?.skillId || evaluationContext?.curriculumSkillId;
+    const resolvedSubskillId = subskillId || objectiveOwn?.subskillId || evaluationContext?.curriculumSubskillId;
 
     // Determine provenance of the IDs so the backend knows whether to trust them
     // or route to CurriculumMappingService.
     let idSource: IdSource | undefined;
     if (resolvedSkillId && resolvedSubskillId) {
-      // We have IDs — they came from either the component prop or the provider context
-      idSource = skillId ? 'curriculum' : 'planner';
+      // We have IDs — component prop / this component's objective / provider context
+      idSource = skillId || objectiveOwn ? 'curriculum' : 'planner';
     } else {
       // No curriculum IDs available — explicitly mark as free-form
       idSource = 'free-form';
@@ -286,7 +302,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       metrics,
       skillId: resolvedSkillId,
       subskillId: resolvedSubskillId,
-      objectiveId,
+      objectiveId: objectiveId || objectiveOwn?.id,
       exhibitId,
       lessonContext,
       studentWork,
@@ -342,6 +358,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     onSubmitSuccess,
     onSubmitError,
     evaluationContext,
+    exhibitContext,
   ]);
 
   /**

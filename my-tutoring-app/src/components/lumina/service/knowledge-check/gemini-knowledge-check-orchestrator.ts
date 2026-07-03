@@ -64,8 +64,13 @@ const ORCHESTRATOR_SCHEMA: Schema = {
             type: Type.STRING,
             description: 'Why this problem type, difficulty, and inset were chosen for this position in the sequence',
           },
+          objectiveId: {
+            type: Type.STRING,
+            nullable: true,
+            description: 'The id of the SINGLE lesson objective this problem primarily assesses (from the Lesson Objectives list), or null if no objectives were provided',
+          },
         },
-        required: ['index', 'problemType', 'difficulty', 'insetType', 'brief', 'cognitiveNote'],
+        required: ['index', 'problemType', 'difficulty', 'insetType', 'brief', 'cognitiveNote', 'objectiveId'],
       },
     },
   },
@@ -76,12 +81,21 @@ const ORCHESTRATOR_SCHEMA: Schema = {
 // Orchestrator Prompt
 // ============================================================================
 
+/** Lesson objective the KC can attribute problems to. */
+export interface KcLessonObjective {
+  id: string;
+  text: string;
+  subskillId?: string;
+  skillId?: string;
+}
+
 function buildOrchestratorPrompt(
   topic: string,
   gradeLevel: string,
   count: number,
   bloomsTier?: BloomsTier,
   context?: string,
+  objectives?: KcLessonObjective[],
 ): string {
   const tierGuidance = bloomsTier
     ? getTierGuidance(bloomsTier)
@@ -125,6 +139,11 @@ ${tierGuidance}
 The cognitive tier sets the KIND of thinking, expressed WITHIN the ${gradeLevel} band — "hard" means hard FOR THIS GRADE, never adult-level vocabulary or scenarios. The GRADE-LEVEL FIT constraint above overrides the tier whenever they conflict.
 
 ${context ? `## Additional Context\n${context}\n` : ''}
+${objectives && objectives.length > 0 ? `## Lesson Objectives (tag every problem)
+This assessment covers these lesson objectives:
+${objectives.map(o => `- ${o.id}: "${o.text}"`).join('\n')}
+Set each problem's "objectiveId" to the id of the SINGLE objective it primarily assesses. Spread coverage — every objective should be assessed at least once when the problem count allows.
+` : ''}
 ## Rules
 1. **Diversity**: Use at least 2 different problem types for sets of 3+, at least 3 different types for sets of 5+. Don't default to all multiple choice.
 2. **Inset fit**: Only attach an inset when it genuinely enhances the problem. Math topics should get katex. Reading/history should get passages. Data topics should get tables or charts. Generic topics may not need any insets.
@@ -190,8 +209,9 @@ export async function runKnowledgeCheckOrchestrator(
   count: number,
   bloomsTier?: BloomsTier,
   context?: string,
+  objectives?: KcLessonObjective[],
 ): Promise<KnowledgeCheckPlan> {
-  const prompt = buildOrchestratorPrompt(topic, gradeLevel, count, bloomsTier, context);
+  const prompt = buildOrchestratorPrompt(topic, gradeLevel, count, bloomsTier, context, objectives);
 
   console.log('[KC Orchestrator] Planning assessment:', { topic, gradeLevel, count, bloomsTier });
 
@@ -210,6 +230,7 @@ export async function runKnowledgeCheckOrchestrator(
   const raw = JSON.parse(text);
 
   // Validate and filter to known types
+  const providedObjectiveIds = new Set((objectives ?? []).map(o => o.id));
   const validProblems: KnowledgeCheckProblemPlan[] = [];
   for (const p of raw.problems || []) {
     if (!VALID_PROBLEM_TYPES.has(p.problemType)) {
@@ -220,6 +241,8 @@ export async function runKnowledgeCheckOrchestrator(
       p.difficulty = 'medium';
     }
 
+    // Keep the objectiveId only when it names a provided objective — a
+    // hallucinated id must not attribute evidence to the wrong subskill.
     validProblems.push({
       index: validProblems.length,
       problemType: p.problemType as ProblemType,
@@ -229,6 +252,10 @@ export async function runKnowledgeCheckOrchestrator(
         : null,
       brief: p.brief || `Generate a ${p.problemType} problem about "${topic}" for ${gradeLevel} students.`,
       cognitiveNote: p.cognitiveNote || '',
+      objectiveId:
+        typeof p.objectiveId === 'string' && providedObjectiveIds.has(p.objectiveId)
+          ? p.objectiveId
+          : null,
     });
   }
 
@@ -259,6 +286,7 @@ export async function runKnowledgeCheckOrchestrator(
       type: p.problemType,
       difficulty: p.difficulty,
       inset: p.insetType || 'none',
+      objective: p.objectiveId || 'untagged',
     })),
   });
 

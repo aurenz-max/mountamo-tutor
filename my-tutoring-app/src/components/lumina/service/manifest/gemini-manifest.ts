@@ -34,7 +34,7 @@ import type { StudentGenerationContext } from '../studentContext/types';
  */
 export const flattenManifestToLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string }>,
+  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string }>,
 ): ManifestItem[] => {
   const layout: ManifestItem[] = [];
 
@@ -51,6 +51,11 @@ export const flattenManifestToLayout = (
     return {
       objectiveText: auth?.text ?? block.objectiveText,
       objectiveVerb: auth?.verb ?? block.objectiveVerb,
+      // Curriculum IDs resolved once at lesson start (generation-context /
+      // preBuiltObjectives) — stamped so each component knows which subskill
+      // its evidence belongs to.
+      subskillId: auth?.subskillId,
+      skillId: auth?.skillId,
     };
   };
 
@@ -68,7 +73,7 @@ export const flattenManifestToLayout = (
   // 2. Add all components from each objective block
   if (manifest.objectiveBlocks) {
     for (const block of manifest.objectiveBlocks) {
-      const { objectiveText, objectiveVerb } = resolveObjective(block);
+      const { objectiveText, objectiveVerb, subskillId, skillId } = resolveObjective(block);
       for (const component of block.components) {
         layout.push({
           componentId: component.componentId,
@@ -83,6 +88,10 @@ export const flattenManifestToLayout = (
             objectiveId: block.objectiveId,
             objectiveText,
             objectiveVerb,
+            // Attribution keys — this component's evidence belongs to ITS
+            // objective's subskill (undefined on unresolved/free-form lessons).
+            subskillId,
+            skillId,
             // Belt-and-suspenders: also surface the component's intent INSIDE config
             // (it already rides at top-level item.intent). resolveGenerationContext
             // reads config.intent first, so this makes the documented scopeContext
@@ -95,14 +104,25 @@ export const flattenManifestToLayout = (
     }
   }
 
-  // 3. Add final assessment last
+  // 3. Add final assessment last. It spans ALL objectives, so it gets the
+  // full list (with curriculum IDs) — the KC orchestrator tags each planned
+  // problem with the objective it assesses, and each problem's evaluation
+  // attributes to that objective's subskill.
   if (manifest.finalAssessment) {
     layout.push({
       componentId: manifest.finalAssessment.componentId,
       instanceId: manifest.finalAssessment.instanceId,
       title: manifest.finalAssessment.title,
       intent: manifest.finalAssessment.intent,
-      config: manifest.finalAssessment.config,
+      config: {
+        ...manifest.finalAssessment.config,
+        lessonObjectives: (objectives ?? []).map(o => ({
+          id: o.id,
+          text: o.text,
+          subskillId: o.subskillId,
+          skillId: o.skillId,
+        })),
+      },
       objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
     });
   }
@@ -115,7 +135,7 @@ export const flattenManifestToLayout = (
  */
 export const enrichManifestWithLayout = (
   manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string }>,
+  objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string }>,
 ): ExhibitManifest => {
   return {
     ...manifest,

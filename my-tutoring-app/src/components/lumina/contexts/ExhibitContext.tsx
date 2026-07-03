@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { ObjectiveData, ManifestItem } from '../types';
 
 interface ExhibitContextType {
@@ -17,21 +17,33 @@ interface ExhibitProviderProps {
   children: React.ReactNode;
 }
 
+// Stable no-provider fallback — consumers hold context values in hook
+// dependency arrays, so identity must not churn per call.
+const EMPTY_EXHIBIT_CONTEXT: ExhibitContextType = {
+  objectives: [],
+  manifestItems: [],
+  getObjectivesForComponent: () => [],
+};
+
 export const ExhibitProvider: React.FC<ExhibitProviderProps> = ({
   objectives,
   manifestItems,
   children
 }) => {
-  // Build a map for quick lookup
-  const getObjectivesForComponent = (instanceId: string): ObjectiveData[] => {
-    const item = manifestItems.find(m => m.instanceId === instanceId);
-    if (!item || !item.objectiveIds) return [];
-
-    return objectives.filter(obj => item.objectiveIds?.includes(obj.id));
-  };
+  // Memoized so consumers (e.g. usePrimitiveEvaluation's submitResult) keep a
+  // stable identity across unrelated re-renders.
+  const value = useMemo<ExhibitContextType>(() => ({
+    objectives,
+    manifestItems,
+    getObjectivesForComponent: (instanceId: string): ObjectiveData[] => {
+      const item = manifestItems.find(m => m.instanceId === instanceId);
+      if (!item || !item.objectiveIds) return [];
+      return objectives.filter(obj => item.objectiveIds?.includes(obj.id));
+    },
+  }), [objectives, manifestItems]);
 
   return (
-    <ExhibitContext.Provider value={{ objectives, manifestItems, getObjectivesForComponent }}>
+    <ExhibitContext.Provider value={value}>
       {children}
     </ExhibitContext.Provider>
   );
@@ -40,12 +52,8 @@ export const ExhibitProvider: React.FC<ExhibitProviderProps> = ({
 export const useExhibitContext = () => {
   const context = useContext(ExhibitContext);
   if (!context) {
-    // Return empty default if not in context (graceful degradation)
-    return {
-      objectives: [],
-      manifestItems: [],
-      getObjectivesForComponent: () => []
-    };
+    // Empty default if not in context (graceful degradation)
+    return EMPTY_EXHIBIT_CONTEXT;
   }
   return context;
 };

@@ -244,13 +244,13 @@ function generateCirclePositions(count: number): Array<{ x: number; y: number }>
   });
 }
 
-function generatePositions(count: number, arrangement: string, groupSize?: number | null): Array<{ x: number; y: number }> {
+function generatePositions(count: number, arrangement: string, groupSize?: number | null, seed: number = 42): Array<{ x: number; y: number }> {
   switch (arrangement) {
     case 'line': return generateLinePositions(count);
     case 'groups': return generateGroupPositions(count, groupSize || 5);
     case 'circle': return generateCirclePositions(count);
     case 'scattered':
-    default: return generateScatteredPositions(count);
+    default: return generateScatteredPositions(count, seed);
   }
 }
 
@@ -367,9 +367,21 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     return challenges[currentChallengeIndex] || null;
   }, [challenges, currentChallengeIndex]);
 
+  // Per-challenge scatter seed: stable within a challenge (positions don't jump
+  // as the student taps) but varied across challenges so no two scattered boards
+  // land in identical spots. Line/groups/circle arrangements ignore the seed.
+  const scatterSeed = useMemo(() => {
+    const src = rawChallenge?.id ?? `${currentChallengeIndex}`;
+    let h = 0;
+    for (let i = 0; i < src.length; i++) {
+      h = (h * 31 + src.charCodeAt(i)) >>> 0;
+    }
+    return (h % 2147483646) + 1; // Lehmer RNG needs a seed in 1..2147483646 (never 0)
+  }, [rawChallenge?.id, currentChallengeIndex]);
+
   const positions = useMemo(() =>
-    generatePositions(challengeCount, challengeArrangement, challengeGroupSize),
-    [challengeCount, challengeArrangement, challengeGroupSize]
+    generatePositions(challengeCount, challengeArrangement, challengeGroupSize, scatterSeed),
+    [challengeCount, challengeArrangement, challengeGroupSize, scatterSeed]
   );
 
   // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per challenge.

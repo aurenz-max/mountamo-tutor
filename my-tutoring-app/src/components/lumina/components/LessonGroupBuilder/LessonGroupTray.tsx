@@ -127,8 +127,12 @@ export const LessonGroupTray: React.FC<LessonGroupTrayProps> = ({
                         {BLOOM_LABELS[subskill.bloomPhase]}
                       </button>
 
-                      {/* Subskill description */}
-                      <span className="text-xs text-slate-300 max-w-[200px] truncate">
+                      {/* Subskill description — tooltip carries the selector's
+                          why when this pick came from the recommended fill */}
+                      <span
+                        className="text-xs text-slate-300 max-w-[200px] truncate"
+                        title={subskill.reason ?? subskill.description}
+                      >
                         {subskill.description}
                       </span>
 

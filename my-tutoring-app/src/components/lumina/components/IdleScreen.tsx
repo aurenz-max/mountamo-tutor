@@ -7,6 +7,8 @@ import { SpotlightCard } from './SpotlightCard';
 import { ParticleField } from './ParticleField';
 import { TopicExplorer } from './TopicExplorer';
 import { SoundManager } from '../utils/SoundManager';
+import { useStudent } from '../contexts/StudentContext';
+import { analyticsApi } from '@/lib/studentAnalyticsAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
 
 // ── Cycling word animator ──────────────────────────────────────────────
@@ -181,6 +183,50 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
   const [lessonGroupTrayCollapsed, setLessonGroupTrayCollapsed] = useState(false);
   const [mode, setMode] = useState<HomeMode>('learn');
+
+  // Recommended fill (Lesson Entry Contract fill mode #3): the IRT selector
+  // pre-populates the same tray the student fills by hand.
+  const { studentId, isAnonymous, ready: studentReady } = useStudent();
+  const [browsedSubject, setBrowsedSubject] = useState<{ name: string; grade?: string } | null>(null);
+  const [recLoading, setRecLoading] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
+
+  const handleRecommendedFill = useCallback(async () => {
+    if (!browsedSubject || recLoading || !studentReady || isAnonymous) return;
+    setRecLoading(true);
+    setRecError(null);
+    try {
+      const result = await analyticsApi.getSessionTargets(Number(studentId), {
+        subject: browsedSubject.name,
+        grade: browsedSubject.grade,
+        count: 4,
+      });
+      if (result.objectives.length < 2) {
+        setRecError('Not enough progress data yet — pick subskills by hand.');
+        return;
+      }
+      setSelectedSubskills(
+        result.objectives.map(o => ({
+          id: o.subskillId,
+          description: o.text,
+          skillId: o.skillId,
+          skillDescription: o.skillDescription,
+          unitTitle: o.unitTitle || o.unitId,
+          subject: browsedSubject.name,
+          grade: browsedSubject.grade,
+          // The selector's verb IS model state: confirm→apply, learn→identify/explain
+          bloomPhase: o.verb,
+          reason: o.reason,
+        }))
+      );
+      setLessonGroupMode(true);
+      setLessonGroupTrayCollapsed(false);
+    } catch {
+      setRecError('Could not load recommendations.');
+    } finally {
+      setRecLoading(false);
+    }
+  }, [browsedSubject, recLoading, studentReady, isAnonymous, studentId]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,7 +444,36 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
 
         {/* Curriculum Browser */}
         <div>
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end items-center gap-2 mb-2">
+            {recError && (
+              <span className="text-xs text-amber-400/80">{recError}</span>
+            )}
+            {studentReady && !isAnonymous && !browsedSubject && !recError && (
+              <span className="text-xs text-slate-500">
+                Pick a subject below to unlock
+              </span>
+            )}
+            {studentReady && !isAnonymous && (
+              <button
+                onClick={handleRecommendedFill}
+                disabled={!browsedSubject || recLoading}
+                title={
+                  browsedSubject
+                    ? `Fill the Lesson Builder with what the model says to work on next in ${browsedSubject.name}`
+                    : 'Pick a subject below first'
+                }
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+                  browsedSubject && !recLoading
+                    ? 'bg-violet-500/15 border-violet-500/40 text-violet-200 hover:bg-violet-500/25'
+                    : 'bg-white/5 border-white/10 text-slate-600 cursor-not-allowed'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                {recLoading ? 'Picking targets…' : 'Recommended Lesson'}
+              </button>
+            )}
             <button
               onClick={() => {
                 setLessonGroupMode(prev => !prev);
@@ -421,6 +496,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
             selectionMode={lessonGroupMode}
             selectedIds={new Set(selectedSubskills.map(s => s.id))}
             onToggleSubskill={handleToggleSubskill}
+            onActiveSubjectChange={setBrowsedSubject}
           />
         </div>
 

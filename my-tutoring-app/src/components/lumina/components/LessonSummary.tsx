@@ -30,6 +30,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useEvaluationContext } from '../evaluation';
 import type { DemonstratedSkill, PrimitiveEvaluationResult } from '../evaluation';
 import {
+  analyticsApi,
+  type SessionProgressTarget,
+  type SessionTargetObjective,
+} from '@/lib/studentAnalyticsAPI';
+import {
   LuminaCard,
   LuminaCardContent,
   LuminaButton,
@@ -61,6 +66,17 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+}
+
+/** Lumina GradeLevel → curriculum grade string; only exact matches map. */
+function toCurriculumGrade(gradeLevel?: string): string | undefined {
+  if (gradeLevel === 'kindergarten') return 'Kindergarten';
+  if (gradeLevel === 'preschool') return 'Preschool';
+  return undefined;
+}
+
+function formatPct(p: number | null): string {
+  return p === null ? '—' : `${Math.round(p * 100)}%`;
 }
 
 /**
@@ -317,6 +333,84 @@ const SkillCard: React.FC<{ group: SkillGroup }> = ({ group }) => {
   );
 };
 
+/** One targeted subskill's before→after movement. */
+const ProgressRow: React.FC<{ row: SessionProgressTarget; fallbackDescription?: string }> = ({
+  row,
+  fallbackDescription,
+}) => {
+  const description = row.description || fallbackDescription || humanize(row.subskillId);
+  const deltaPts =
+    row.pBefore !== null && row.pAfter !== null
+      ? Math.round((row.pAfter - row.pBefore) * 100)
+      : null;
+  const mastered = row.gateAdvanced && row.gateAfter >= 4;
+
+  return (
+    <div className="rounded-xl bg-white/[0.02] border border-white/5 px-4 py-3 flex items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm text-slate-200 leading-snug line-clamp-2">{description}</div>
+        <div className="text-xs text-slate-500 mt-1">
+          {row.firstMeasurement ? (
+            <span className="text-cyan-300">First measurement</span>
+          ) : (
+            <>Predicted success</>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="text-sm font-mono">
+          <span className="text-slate-500">{row.firstMeasurement ? 'new' : formatPct(row.pBefore)}</span>
+          <span className="text-slate-600 mx-1.5">{'→'}</span>
+          <span className={`font-bold ${accentText[row.pAfter !== null && row.pAfter >= 0.7 ? 'emerald' : 'amber']}`}>
+            {formatPct(row.pAfter)}
+          </span>
+          {deltaPts !== null && deltaPts !== 0 && (
+            <span className={`ml-1.5 text-xs ${deltaPts > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {deltaPts > 0 ? '+' : ''}{deltaPts}
+            </span>
+          )}
+        </div>
+        {mastered ? (
+          <LuminaBadge accent="emerald">Mastered!</LuminaBadge>
+        ) : row.gateAdvanced ? (
+          <LuminaBadge accent="emerald">
+            Gate {row.gateBefore} {'→'} {row.gateAfter}
+          </LuminaBadge>
+        ) : (
+          <LuminaBadge accent="blue">Gate {row.gateAfter}</LuminaBadge>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const NEXT_KIND_LABEL: Record<string, { label: string; accent: LuminaAccent }> = {
+  confirm: { label: 'ready to confirm', accent: 'emerald' },
+  learn: { label: 'learning edge', accent: 'amber' },
+  cold_start: { label: 'new frontier', accent: 'cyan' },
+};
+
+/** One selector pick for the next session. */
+const NextPickRow: React.FC<{ pick: SessionTargetObjective }> = ({ pick }) => {
+  const kind = NEXT_KIND_LABEL[pick.kind] ?? NEXT_KIND_LABEL.learn;
+  return (
+    <div
+      className="rounded-lg bg-white/[0.02] border border-white/5 px-3 py-2 flex items-center gap-3"
+      title={pick.reason}
+    >
+      <LuminaBadge accent={kind.accent}>{kind.label}</LuminaBadge>
+      <span className="text-sm text-slate-300 leading-snug line-clamp-2 flex-1 min-w-0">
+        {pick.text}
+      </span>
+      {pick.pCorrect !== null && (
+        <span className="text-xs font-mono text-slate-500 flex-shrink-0">
+          {Math.round(pick.pCorrect * 100)}%
+        </span>
+      )}
+    </div>
+  );
+};
+
 const PrimitiveBreakdownRow: React.FC<{ row: PrimitiveBreakdown }> = ({ row }) => (
   <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02]">
     <span className="text-sm text-slate-300 truncate">{humanize(row.primitiveType)}</span>
@@ -337,8 +431,11 @@ const LessonSummaryModal: React.FC<{
   breakdown: PrimitiveBreakdown[];
   engagement: { xpEarned: number; level: number; leveledUp: boolean; streak: number };
   topic?: string;
+  progress: SessionProgressTarget[];
+  progressDescriptions: Map<string, string>;
+  nextPicks: SessionTargetObjective[];
   onClose: () => void;
-}> = ({ stats, groups, breakdown, engagement, topic, onClose }) => {
+}> = ({ stats, groups, breakdown, engagement, topic, progress, progressDescriptions, nextPicks, onClose }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -442,6 +539,23 @@ const LessonSummaryModal: React.FC<{
             )}
           </div>
 
+          {/* Progress delta — the loop made visible: how the model's estimate
+              of each targeted subskill moved because of THIS session. */}
+          {progress.length > 0 && (
+            <div>
+              <LuminaSectionLabel>Your progress</LuminaSectionLabel>
+              <div className="mt-2 space-y-2">
+                {progress.map((row) => (
+                  <ProgressRow
+                    key={row.subskillId}
+                    row={row}
+                    fallbackDescription={progressDescriptions.get(row.subskillId)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Per-subject curriculum skill groups */}
           {groups.length > 0 && (
             <div className="space-y-5">
@@ -471,6 +585,21 @@ const LessonSummaryModal: React.FC<{
             </div>
           )}
 
+          {/* Up next — what the IRT selector would target after this session. */}
+          {nextPicks.length > 0 && (
+            <div>
+              <LuminaSectionLabel>Up next</LuminaSectionLabel>
+              <p className="text-xs text-slate-500 mt-1 mb-2">
+                Based on today{"'"}s work, here{"'"}s what to tackle in your next lesson.
+              </p>
+              <div className="space-y-1">
+                {nextPicks.slice(0, 3).map((pick) => (
+                  <NextPickRow key={pick.subskillId} pick={pick} />
+                ))}
+              </div>
+            </div>
+          )}
+
           <LuminaButton tone="primary" className="w-full" onClick={onClose}>
             Done
           </LuminaButton>
@@ -487,6 +616,8 @@ const LessonSummaryModal: React.FC<{
 export const LessonSummary: React.FC = () => {
   const context = useEvaluationContext();
   const [open, setOpen] = useState(false);
+  const [progress, setProgress] = useState<SessionProgressTarget[]>([]);
+  const [nextPicks, setNextPicks] = useState<SessionTargetObjective[]>([]);
 
   const results = context?.submittedResults ?? [];
   const log = context?.demonstratedSkillLog ?? [];
@@ -503,6 +634,65 @@ export const LessonSummary: React.FC = () => {
     const resultByAttempt = new Map(results.map((r) => [r.attemptId, r]));
     return buildSkillGroups(log, resultByAttempt);
   }, [log, results]);
+
+  // Local subskill descriptions as fallback for progress rows (the delta
+  // endpoint's description is best-effort from the knowledge graph).
+  const progressDescriptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const entry of log) {
+      if (entry.subskillId && entry.subskillDescription && !map.has(entry.subskillId)) {
+        map.set(entry.subskillId, entry.subskillDescription);
+      }
+    }
+    return map;
+  }, [log]);
+
+  // On modal open, fetch the loop close-out: before→after IRT deltas for the
+  // subskills this session exercised, and the selector's next picks. Both are
+  // fail-quiet — the summary renders fine without them.
+  useEffect(() => {
+    if (!open) return;
+    const studentId = Number(context?.studentId);
+    if (!Number.isFinite(studentId) || log.length === 0) return;
+
+    // Dominant subject of the session (lessons are subject-scoped in practice).
+    const subjectCounts = new Map<string, number>();
+    for (const entry of log) {
+      const s = entry.subject || '';
+      if (s) subjectCounts.set(s, (subjectCounts.get(s) ?? 0) + 1);
+    }
+    const rawSubject = Array.from(subjectCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!rawSubject) return;
+    const subject = humanize(rawSubject);
+    const grade = toCurriculumGrade(context?.gradeLevel);
+
+    const seen = new Set<string>();
+    const targets: Array<{ subskillId: string; skillId: string }> = [];
+    for (const entry of log) {
+      if (!entry.subskillId || !entry.skillId || seen.has(entry.subskillId)) continue;
+      seen.add(entry.subskillId);
+      targets.push({ subskillId: entry.subskillId, skillId: entry.skillId });
+    }
+    if (targets.length === 0) return;
+
+    const earliest = results
+      .map((r) => r.startedAt)
+      .filter(Boolean)
+      .sort()[0];
+    const since = earliest
+      ? new Date(new Date(earliest).getTime() - 60_000).toISOString()
+      : new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+    analyticsApi
+      .getSessionProgress(studentId, { subject, grade, since, targets })
+      .then((r) => setProgress(r.targets ?? []))
+      .catch(() => setProgress([]));
+    analyticsApi
+      .getSessionTargets(studentId, { subject, grade, count: 3 })
+      .then((r) => setNextPicks(r.objectives ?? []))
+      .catch(() => setNextPicks([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Nothing completed yet (or a tester harness with no provider) → render nothing.
   if (stats.activities === 0 && log.length === 0) return null;
@@ -547,6 +737,9 @@ export const LessonSummary: React.FC = () => {
           breakdown={breakdown}
           engagement={engagement}
           topic={context?.topic}
+          progress={progress}
+          progressDescriptions={progressDescriptions}
+          nextPicks={nextPicks}
           onClose={() => setOpen(false)}
         />
       )}

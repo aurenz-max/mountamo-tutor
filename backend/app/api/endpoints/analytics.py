@@ -161,23 +161,6 @@ class RecommendationResponse(BaseModel):
     next_subskill: Optional[str]
     message: str
 
-class AIRecommendationResponse(BaseModel):
-    subject: str
-    skill_description: str
-    subskill_description: str
-    subskill_id: str
-    priority: str
-    priority_rank: int
-    reason: str
-    estimated_time: int
-    difficulty_start: Optional[float]
-    difficulty_end: Optional[float]
-    target_difficulty: Optional[float]
-    grade: Optional[str]
-    unit_title: Optional[str]
-    session_plan: Dict = Field(default_factory=dict)
-    generated_at: str
-
 class ScoreDistributionItem(BaseModel):
     level: str  # "subject", "unit", or "skill"
     id: str
@@ -686,80 +669,6 @@ async def get_student_recommendations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail=f"Error generating recommendations: {str(e)}"
-        )
-
-@router.get("/student/{student_id}/ai-recommendations", response_model=List[AIRecommendationResponse])
-async def get_ai_recommendations(
-    student_id: int,
-    target_count: Optional[int] = Query(None, ge=1, le=10, description="Target number of recommendations (AI will choose if not specified)"),
-    session_type: str = Query("daily", regex="^(daily|intensive|catch_up|review|challenge)$", description="Type of learning session"),
-    focus_subjects: Optional[str] = Query(None, description="Comma-separated subjects to focus on"),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-    user_context: dict = Depends(get_user_context),
-    ai_service: AIRecommendationService = Depends(get_ai_recommendation_service)
-):
-    """Get AI-powered personalized recommendations using velocity and mastery data"""
-    
-    user_id = user_context["user_id"]
-    
-    # Validate access
-    if user_context["student_id"] != student_id:
-        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied to student {student_id} analytics"
-            )
-    
-    # Parse focus subjects if provided
-    focus_subjects_list = None
-    if focus_subjects:
-        focus_subjects_list = [s.strip() for s in focus_subjects.split(",")]
-    
-    # Check cache (3 minute TTL for AI recommendations - shorter due to dynamic nature)
-    cache_key = get_cache_key(
-        "ai_recommendations", 
-        student_id=student_id, 
-        target_count=target_count,
-        session_type=session_type, 
-        focus_subjects=focus_subjects
-    )
-    
-    cached_result = get_from_cache(cache_key, ttl_minutes=3)
-    if cached_result:        
-        return cached_result
-    
-    try:
-        logger.info(f"User {user_context['email']} generating AI recommendations for student {student_id}, session_type={session_type}")
-        
-        # Get AI recommendations
-        recommendations = await ai_service.get_ai_recommendations(
-            student_id=student_id,
-            target_count=target_count,
-            session_type=session_type,
-            focus_subjects=focus_subjects_list
-        )
-        
-        # Convert to response format
-        ai_recommendations = [
-            AIRecommendationResponse(**rec) for rec in recommendations
-        ]
-        
-        # Cache the result
-        set_cache(cache_key, ai_recommendations)
-        
-        # Log success details
-        if ai_recommendations:
-            session_plan = ai_recommendations[0].session_plan
-            total_time = sum(rec.estimated_time for rec in ai_recommendations)
-            logger.info(f"AI recommendations generated: {len(ai_recommendations)} subskills, ~{total_time} minutes, focus: {session_plan.get('session_focus', 'balanced')}")
-        
-        return ai_recommendations
-        
-    except Exception as e:        
-        logger.error(f"AI recommendations error for user {user_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error generating AI recommendations: {str(e)}"
         )
 
 @router.get("/student/{student_id}/score-distribution", response_model=ScoreDistributionResponse)
@@ -1307,6 +1216,120 @@ async def get_student_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving student profile: {str(e)}"
+        )
+
+
+@router.get("/student/{student_id}/session-targets")
+async def get_session_targets(
+    student_id: int,
+    subject: str = Query(..., description="Subject to select targets in (e.g. 'Mathematics')"),
+    grade: Optional[str] = Query(None, description="Grade filter — pass it whenever known (bare subject resolves ambiguously)"),
+    count: int = Query(4, ge=2, le=5, description="How many target subskills to pick"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """IRT session-scope selector — Lesson Entry Contract fill mode #3.
+
+    Picks the next lesson's target subskills from knowledge-graph state
+    (P(correct) at hardest-assigned-mode β vs mastery-gate thresholds):
+    "confirm" targets the model believes are ready to advance a gate, and
+    "learn" targets closest to the decision boundary. Returns
+    preBuiltObjectives-shaped picks with per-pick reasons, ready for the
+    Lesson Builder tray / useExhibitSession.generate.
+    """
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    cache_key = get_cache_key(
+        "session_targets",
+        student_id=student_id, subject=subject, grade=grade, count=count,
+    )
+    cached_result = get_from_cache(cache_key, ttl_minutes=1)
+    if cached_result:
+        return cached_result
+
+    try:
+        logger.info(
+            f"User {user_context['email']} selecting session targets for "
+            f"student {student_id}, subject={subject}, grade={grade}"
+        )
+        result = await analytics_service.select_session_targets(
+            student_id, subject, grade=grade, count=count
+        )
+        set_cache(cache_key, result)
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session targets error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error selecting session targets: {str(e)}"
+        )
+
+
+class SessionProgressTarget(BaseModel):
+    subskillId: str
+    skillId: str
+
+
+class SessionProgressRequest(BaseModel):
+    subject: str
+    grade: Optional[str] = None
+    since: str  # ISO timestamp — start of the lesson window
+    targets: List[SessionProgressTarget]
+
+
+@router.post("/student/{student_id}/session-progress")
+async def get_session_progress(
+    student_id: int,
+    body: SessionProgressRequest,
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Before/after IRT state for the subskills a lesson exercised.
+
+    Powers the lesson-review close-out: per targeted subskill, P(correct)
+    before the lesson (from timestamped theta_history) vs now, plus mastery
+    gate before/after. Uncached — the whole point is showing the movement
+    this session just caused.
+    """
+    user_id = user_context["user_id"]
+
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} analytics"
+            )
+
+    if not body.targets:
+        return {
+            "student_id": student_id, "subject": body.subject,
+            "grade": body.grade, "since": body.since, "targets": [],
+        }
+
+    try:
+        return await analytics_service.get_subskill_progress_delta(
+            student_id,
+            body.subject,
+            [{"subskill_id": t.subskillId, "skill_id": t.skillId} for t in body.targets],
+            body.since,
+            grade=body.grade,
+        )
+    except Exception as e:
+        logger.error(f"Session progress error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error computing session progress: {str(e)}"
         )
 
 # ============================================================================

@@ -603,6 +603,31 @@ Return the complete counting board configuration.
     data.showOptions.showGroupCircles = true;
   }
 
+  // ── Pedagogical defaults for the untiered / mixed-mode path ──
+  // When a support tier is active (single pinned mode) the block below owns
+  // showOptions. Otherwise the values come straight from flash-lite, which is
+  // unreliable here: showOptions is ONE global object but the prompt gives
+  // per-type guidance, so a mixed board (count_all + subitize + ...) gets
+  // contradictory instructions for a single field and can silently drop the
+  // per-object cardinality tags — the student taps to count but no number
+  // appears on each object. Code owns these core counting scaffolds instead.
+  if (!tierScaffold) {
+    if (!data.showOptions) {
+      data.showOptions = {
+        showRunningCount: true,
+        showGroupCircles: hasGroupChallenges,
+        highlightOnTap: true,
+        showLastNumber: true,
+      };
+    }
+    // The per-object counter is the count_all cardinality scaffold; the tap ring
+    // is always on. Both are inert in subitize modes (no tapping), so forcing
+    // them on here is safe across a mixed board. showRunningCount is left as-is
+    // (its "N / total" tally exposes the target, so we don't force it on).
+    data.showOptions.showLastNumber = true;
+    data.showOptions.highlightOnTap = true;
+  }
+
   // ── Apply the support-tier structure deterministically (code owns the SUPPORT
   // structure; the LLM only chose counts/arrangements). Withdraws scaffolds as the
   // tier hardens — never alters the counts. Runs AFTER the group-circle enable so

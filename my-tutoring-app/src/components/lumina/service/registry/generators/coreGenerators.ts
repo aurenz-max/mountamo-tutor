@@ -385,6 +385,12 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLeve
     // objective reaches the orchestrator + every problem prompt (ADDITIONAL CONTEXT).
     objectiveText: config.objectiveText || (item.intent as string | undefined),
     bloomsTier: config.targetEvalMode as BloomsTier | undefined,
+    // Lesson objectives with curriculum IDs (stamped by flattenManifestToLayout
+    // on the final assessment) — the orchestrator tags each problem with the
+    // objective it assesses so its evaluation attributes to THAT subskill.
+    objectives: config.lessonObjectives as
+      | Array<{ id: string; text: string; subskillId?: string; skillId?: string }>
+      | undefined,
   });
   return {
     type: 'knowledge-check',

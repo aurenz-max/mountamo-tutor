@@ -220,6 +220,25 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     return count;
   }, [passage, tappedWordIds]);
 
+  // ── Legible, help-positive score ────────────────────────────────────────
+  // Comprehension is the judged act, so it is the BASE (and the pass gate).
+  // Independent reading is a POSITIVE bonus you earn on top — tapping a word
+  // for help only earns a smaller bonus, it NEVER subtracts from the base.
+  // Both parts are shown by name in the review so the number is never a mystery.
+  const scoreBreakdown = useMemo(() => {
+    const independentWords = Math.max(0, totalWords - tappedWordIds.size);
+    const decodingRate = totalWords > 0 ? independentWords / totalWords : 1;
+    const comprehensionPoints = comprehensionCorrect === true ? 70 : 0;
+    const readingBonus = Math.round(30 * decodingRate);
+    return {
+      independentWords,
+      comprehensionPoints,
+      readingBonus,
+      total: comprehensionPoints + readingBonus,
+      passed: comprehensionCorrect === true,
+    };
+  }, [totalWords, tappedWordIds.size, comprehensionCorrect]);
+
   // AI tutoring context
   const aiPrimitiveData = useMemo(() => ({
     title,
@@ -345,13 +364,13 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
       attemptsOnComprehension: comprehensionAttempts,
     };
 
-    // Score: blend of independent reading (70%) + comprehension (30%)
-    const readingScore = totalWords > 0 ? ((totalWords - wordsTapped) / totalWords) * 70 : 70;
-    const compScore = comprehensionCorrect ? 30 : 0;
-    const score = Math.round(readingScore + compScore);
+    // Comprehension (the judged act) is the base and the pass gate; independent
+    // reading is a positive bonus that help can never subtract from. See the
+    // scoreBreakdown memo — the review shows these exact named parts.
+    const score = scoreBreakdown.total;
 
     submitEvaluation(
-      score >= 50,
+      scoreBreakdown.passed,
       score,
       metrics,
       {
@@ -378,6 +397,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     comprehensionAttempts,
     phonicsPatternsInPassage,
     sightWordsIndependent,
+    scoreBreakdown,
     gradeLevel,
     selectedAnswer,
     shortAnswer,
@@ -649,6 +669,30 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         <LuminaStat label="Read Independently" value={totalWords - tappedWordIds.size} />
       </div>
 
+      {/* Score breakdown — the number shown by name, no hidden math */}
+      <LuminaPanel accent={scoreBreakdown.passed ? 'emerald' : 'amber'} className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-300">Comprehension</span>
+          <span className={`text-sm font-medium ${comprehensionCorrect ? 'text-emerald-300' : 'text-slate-400'}`}>
+            {comprehensionCorrect ? 'Answered correctly' : 'Not answered'} · +{scoreBreakdown.comprehensionPoints}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-slate-300">Reading</span>
+          <span className="text-sm font-medium text-slate-200">
+            Read {scoreBreakdown.independentWords} of {totalWords} on your own · +{scoreBreakdown.readingBonus}
+          </span>
+        </div>
+        <div className="h-px bg-white/10 my-1" />
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-slate-100">Score</span>
+          <span className="text-lg font-bold text-slate-100">{scoreBreakdown.total}%</span>
+        </div>
+        <p className="text-xs text-slate-500 pt-1">
+          Tapping a word for help is free — it never lowers your score below your comprehension result.
+        </p>
+      </LuminaPanel>
+
       {/* Tapped words indicator */}
       <LuminaPanel>
         <p className="text-xs text-slate-500 mb-2">
@@ -715,9 +759,10 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
           </LuminaActionButton>
         ) : (
           <LuminaPanel accent="emerald" className="text-center space-y-2 w-full">
-            <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
+            <p className="text-emerald-300 font-semibold text-lg">Session Complete! — {scoreBreakdown.total}%</p>
             <p className="text-slate-400 text-sm">
-              You read {totalWords - tappedWordIds.size} of {totalWords} words independently.
+              You read {scoreBreakdown.independentWords} of {totalWords} words on your own
+              {comprehensionCorrect ? ' and understood the story.' : '.'}
             </p>
           </LuminaPanel>
         )}

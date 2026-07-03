@@ -386,7 +386,12 @@ class CurriculumService:
         if self._use_firestore and self.firestore_service:
             try:
                 if subject:
-                    # Direct lookup — single document read
+                    # Direct lookup — single document read. On a MISS, fall
+                    # through to the all-subjects scan: subject names are
+                    # published once PER GRADE, so an ambiguous bare name
+                    # resolves to one grade's doc while the subskill may live
+                    # in a sibling grade's doc (e.g. "Mathematics" resolves to
+                    # one grade but COUNT001-04-D is Kindergarten's).
                     resolved_id = await self._resolve_subject_id(subject)
                     doc = await self._get_firestore_doc(resolved_id)
                     if not doc:
@@ -395,17 +400,23 @@ class CurriculumService:
                         metadata = doc["subskill_index"][subskill_id]
                         self._cache_set(cache_key, metadata)
                         return metadata
-                else:
-                    # Fallback: scan all subjects
-                    published = await self.firestore_service.get_all_published_subjects()
-                    for subj in published:
-                        doc = await self._get_firestore_doc(subj["subject_id"])
-                        if not doc:
-                            doc = await self.firestore_service.get_published_curriculum(subj["subject_id"])
-                        if doc and "subskill_index" in doc and subskill_id in doc["subskill_index"]:
-                            metadata = doc["subskill_index"][subskill_id]
-                            self._cache_set(cache_key, metadata)
-                            return metadata
+
+                # Scan all subjects (no subject given, or the direct lookup
+                # missed). MUST pass each entry's grade — subject_id alone is
+                # shared across grades and resolves to a single grade's doc.
+                published = await self.firestore_service.get_all_published_subjects()
+                for subj in published:
+                    doc = await self._get_firestore_doc(
+                        subj["subject_id"], grade=subj.get("grade")
+                    )
+                    if not doc:
+                        doc = await self.firestore_service.get_published_curriculum(
+                            subj["subject_id"], grade=subj.get("grade")
+                        )
+                    if doc and "subskill_index" in doc and subskill_id in doc["subskill_index"]:
+                        metadata = doc["subskill_index"][subskill_id]
+                        self._cache_set(cache_key, metadata)
+                        return metadata
             except Exception as e:
                 logger.warning(f"Firestore subskill_metadata lookup failed: {e}")
 

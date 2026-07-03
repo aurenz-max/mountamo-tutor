@@ -159,6 +159,30 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
         if (studentContext && persona && !studentContext.studentProfile) {
           studentContext = { ...studentContext, studentProfile: persona };
         }
+
+        // Persist the objective→subskill resolution this call just computed:
+        // stamp curriculum IDs onto the objectives so submissions attribute
+        // per objective (ExhibitContext → usePrimitiveEvaluation) and the
+        // manifest flatten stamps per-component/per-KC-problem attribution
+        // keys. preBuiltObjectives already carry IDs (kept via ??); this makes
+        // free-form and single-subskill browser lessons attribution-complete too.
+        if (studentContext?.objectives?.length) {
+          const resolvedById = new Map(
+            studentContext.objectives
+              .filter(o => o.subskillId)
+              .map(o => [o.objectiveId, o])
+          );
+          if (resolvedById.size > 0) {
+            objectives = objectives.map(o => {
+              const r = resolvedById.get(o.id);
+              return r
+                ? { ...o, subskillId: o.subskillId ?? r.subskillId, skillId: o.skillId ?? r.skillId }
+                : o;
+            });
+            generatedBrief = { ...generatedBrief, objectives };
+            setBrief(generatedBrief);
+          }
+        }
       }
 
       // STEP 2: Manifest generation with streaming

@@ -11,6 +11,8 @@ This is Lumina — an adaptive learning platform where students interact with vi
 
 **Key architectural principle:** The curriculum defines *what* to teach (skills, standards, prerequisites). The manifest resolves *how* to teach it (which primitive, which eval mode) at runtime from the live catalog. Never pre-map primitives into curriculum data — it creates a maintenance treadmill every time a primitive is added or changed.
 
+**Lesson-entry principle:** Every Lumina lesson launches through `useExhibitSession.generate`, scoped by `preBuiltObjectives`. New lesson-selection intelligence ships as a Lesson Builder fill mode (a producer of `preBuiltObjectives`) — never as a new launch surface, page, or endpoint without a consumer. Contract + deprecation ledger: `.claude/skills/student-data-loop/SKILL.md` §7.
+
 ## Primitives
 
 When building new primitives, always use the Gemini generator pattern — never hardcode test data. Follow the established registration pattern: component, types, catalog entry, generator, and tester. Follow the `ADDING_PRIMITIVES.md` checklist exactly. Create all files before moving to verification.

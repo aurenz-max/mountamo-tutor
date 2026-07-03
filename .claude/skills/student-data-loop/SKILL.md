@@ -110,12 +110,137 @@ everything from L0 and OVERWRITES (dry-run default; `--student N` / `--all` /
 four stat tiles, per-subject mastery bars. It fails quietly (renders null) so
 the rest of the profile view never blocks on it.
 
-### 7. Closing the loop
+### 7. Closing the loop — the Lesson Entry Contract
 The same L1 state the profile displays is what selects the next problem: θ/σ
 feed Fisher-information item selection and P(correct) gate checks (pure IRT —
-no hand-tuned urgency formulas), and the generation-context endpoint folds
-ability + lifecycle into the STUDENT PROFILE block Gemini sees when generating
-content. A submission literally changes what the student sees next.
+no hand-tuned urgency formulas), and the generation-context endpoint
+(`POST /api/student-profile/generation-context`) folds ability + lifecycle
+into the STUDENT PROFILE block Gemini sees when generating content. A
+submission literally changes what the student sees next.
+
+How lessons get launched is governed by three rules (the Lesson Entry
+Contract). Past violations of these rules are what produced the orphaned
+recommendation surfaces in the Deprecation Ledger below.
+
+1. **One launch verb.** Every Lumina lesson starts via
+   `useExhibitSession.generate`
+   (`my-tutoring-app/src/components/lumina/hooks/useExhibitSession.ts`),
+   wrapped by `startGenerate` in `App.tsx`. It is the ONLY caller of
+   `generateExhibitManifestWithObjectivesStreaming`.
+2. **One scope shape.** The canonical scope is `preBuiltObjectives[]`
+   (2–5 objectives, each with `subskillId`/`skillId`/`verb`);
+   `curriculumContext` (one subskill) and bare `topic` are degenerate forms.
+   Objectives carrying subskill ids let generation-context skip embedding
+   retrieval and produce an accurate STUDENT PROFILE block.
+3. **One composer, N fill modes.** The Lesson Builder tray
+   (`lumina/components/LessonGroupBuilder/`, state in `IdleScreen.tsx`) is
+   where multi-objective lessons are assembled/edited. New "what should the
+   student do next" intelligence ships ONLY as a fill mode for the tray — a
+   producer of `preBuiltObjectives` — NEVER as a new launch surface, page, or
+   endpoint-with-no-consumer. Current fill modes: hand-picked (curriculum
+   browser `selectionMode`) and the daily plan (`DailyLessonPlan` →
+   `handleBlockStart`, backed by `PlanningService`). Third (shipped
+   2026-07-03): the IRT session-scope selector — "Recommended Lesson" in
+   `IdleScreen.tsx` next to Build Lesson. Chain:
+   `FirestoreAnalyticsService.select_session_targets` (picks learn/confirm
+   targets from per-subskill P(correct) at hardest-assigned-mode β vs
+   `GATE_P_THRESHOLDS`; confirm→apply, learn→identify/explain; per-pick
+   `reason`; titles enriched via `_build_curriculum_hierarchy`) →
+   `GET /api/analytics/student/{id}/session-targets?subject&grade&count`
+   (analytics.py, /profile auth+cache pattern) →
+   `analyticsApi.getSessionTargets` → fills the SAME `selectedSubskills`
+   tray state (bloomPhase = selector verb, reason on chip tooltip), then the
+   normal Launch Lesson path. Subject/grade come from the browsed
+   CurriculumBrowser pill (`onActiveSubjectChange`); button gated on
+   StudentContext `ready && !isAnonymous`. Probe:
+   `scripts/probe_session_targets.py --student N --subject S [--grade G]`
+   (set PYTHONIOENCODING=utf-8 on Windows). The KG graph carries BOTH skill
+   and subskill nodes — selectors must filter `entity_type == "subskill"`.
+   Next convergence: PlanningService daily blocks should consume the same
+   selector (one selection brain).
+
+Division of labor: the selector/fill mode personalizes WHAT (which subskills,
+which verbs); generation-context personalizes HOW (difficulty framing, persona
+voice). Note the two compute P(correct) differently today: generation-context
+uses median item β, the KG uses hardest-assigned-mode β (what gates check).
+Selection should use the KG number.
+
+The loop's close-out is visible to the student (shipped 2026-07-03):
+`POST /api/analytics/student/{id}/session-progress` →
+`FirestoreAnalyticsService.get_subskill_progress_delta` computes before/after
+P(correct) + gate per exercised subskill — "before" derived SERVER-SIDE from
+timestamped `theta_history` (ability doc) and `gate_history` (lifecycle doc),
+no client snapshotting, at the same per-row reference β (KG hardest-mode,
+median fallback). `LessonSummary.tsx` renders it as "Your progress"
+(before→after %, gate advancement / Mastered badges) plus "Up next" — a fresh
+`getSessionTargets` call — so every review screen ends by pointing at the
+next lesson. Targets come from `demonstratedSkillLog` (subskillId+skillId);
+`since` = earliest submission `startedAt` − 60s. Gotchas fixed along the way
+(2026-07-03, found by the close-out coming up empty on a live lesson):
+- KG in-process cache key now includes `grade` (cross-grade stale reads).
+- **Per-objective attribution**: multi-subskill lessons submitted EVERY
+  attempt under the FIRST objective's subskill (lesson-level
+  `curriculumSubskillId` fallback) — poisons θ/gates. Fixed in
+  `usePrimitiveEvaluation`: a component belonging to exactly ONE manifest
+  objective attributes to that objective's `subskillId`/`skillId` (carried on
+  `ObjectiveData` from preBuiltObjectives); cross-objective components
+  (final knowledge-check) keep the lesson-level fallback.
+- **Attribution made structural** (same day): the objective→subskill
+  resolution generation-context computes is now PERSISTED — `useExhibitSession`
+  stamps resolved `subskillId`/`skillId` onto the lesson objectives for ALL
+  launch paths (free-form included), `flattenManifestToLayout` stamps them
+  into every component's config + a `lessonObjectives` list onto the final
+  assessment, and the KC orchestrator tags each planned problem with the
+  `objectiveId` it assesses (validated against provided ids) so each KC
+  problem's evaluation attributes to ITS objective's subskill. Inner problem
+  primitives already passed `data.subskillId/skillId/objectiveId` to
+  `usePrimitiveEvaluation` — the ids just were never stamped upstream.
+- `CurriculumService.get_subskill_metadata(id, subject)` returned None for
+  any id outside the bare-subject-resolved grade doc → blank
+  `skill_description` on reviews → `extractDemonstratedSkill` abstains →
+  empty `demonstratedSkillLog` → no skill cards, no close-out. Fixed: direct
+  lookup now falls through to an all-subjects scan that passes each published
+  entry's GRADE (the old scan fetched by subject_id alone = same doc 6×).
+
+## Deprecation Ledger — do not resurrect
+
+Every entry here was a "use student data to pick what's next" attempt that
+shipped as a parallel surface instead of a `preBuiltObjectives` producer.
+Before building ANY next-activity/recommendation feature, read this list.
+
+**Removed 2026-07-03** (deleted in the lesson-entry-contract slice):
+- `components/dashboard/EnhancedLearningDashboard.tsx`,
+  `DailyBriefingComponent.tsx`, `EnhancedActivityCard.tsx` — dead dashboard
+  generation, imported nowhere.
+- `lib/use-student-analytics.tsx` + `lib/hooks/useStudentAnalytics.ts` —
+  orphaned hooks, imported nowhere.
+- `studentAnalyticsAPI.getRecommendations` — client for the BigQuery
+  recommendations endpoint; its only caller was the orphaned hook above.
+- `GET /api/analytics/student/{id}/ai-recommendations` — endpoint had zero
+  consumers (the `/briefing` page uses a WebSocket, not this GET).
+- `components/analytics/archive/` (33 tracked components, the pre-Lumina
+  analytics dashboard archived 2025-11-14) and `components/dashboard/archive/`
+  (untracked, gitignored) — both folders deleted; `.gitignore`'s `archive/`
+  rule had hidden them from ripgrep while tsc still compiled them (~300 of the
+  old error baseline). Untracked leftovers were backed up to the session
+  scratchpad before removal.
+
+**Superseded / legacy-live** (do not extend; retire with their host):
+- `AIRecommendationService` (`app/services/ai_recommendations.py`) — still
+  imported by `daily_activities.py` (old service, not `planning_service.py`)
+  and `parent_portal.py`; dies when those migrate.
+- `GET .../recommendations` (BigQuery, `analytics.py`) — consumed only by
+  legacy `/gemini` `/tutoring` `/practice` SyllabusSelectors via
+  `api.ts getAdvancedRecommendations`; dies with those routes.
+- `ProblemRecommender` (`app/services/recommender.py`) — injected only into
+  deprecated `POST /problems/generate` (which legacy pages still call).
+- `GET .../subject-recommendations` — live only via the legacy `/analytics`
+  page (`VelocityMetricsCard`).
+- `/briefing` page (WebSocket daily briefing) and `/daily-learning/[subskillId]`
+  stub — URL-only, no nav path from Lumina, no Lumina launch.
+- Legacy launcher stacks `/gemini` `/tutoring` `/practice` — parallel
+  pre-Lumina engines; no path from the Lumina app reaches them. Deletion is
+  its own future slice.
 
 ## Invariants — Violating Any of These Is a Bug
 
@@ -156,7 +281,8 @@ content. A submission literally changes what the student sees next.
 - Rollup integrity: backfill dry-run and compare to `profile/summary`.
 - Scripts touching Firestore MUST get their client via
   `FirestoreService().client` — hand-rolled clients hit 403s.
-- Frontend: tsc baseline 1417 (`./node_modules/.bin/tsc --noEmit`).
+- Frontend: tsc baseline 1101 as of 2026-07-03 (`./node_modules/.bin/tsc
+  --noEmit`); dropped from 1417 when the dead `archive/` folders were deleted.
 
 ## Known Rough Edges (checked 2026-07-02)
 
@@ -164,8 +290,9 @@ content. A submission literally changes what the student sees next.
   unfixed.
 - `badges[]` is plumbed end-to-end but NOTHING awards badges
   (`engagement_service` hard-codes `badges_earned=[]`) and no UI renders them.
-- `getRecommendations` (frontend) + its BigQuery endpoint are orphaned — zero
-  live UI callers.
+- Recommendation-surface debt is tracked in the Deprecation Ledger above —
+  frontend `getRecommendations` and `GET /ai-recommendations` were removed
+  2026-07-03; the BigQuery endpoint survives only for legacy routes.
 - `competencies` retirement is pending the proficiency-map migration.
 - Reviews all carry `source_system='cosmos_migration'` even for new writes —
   mislabeled by the current submit path; don't use that field to filter.

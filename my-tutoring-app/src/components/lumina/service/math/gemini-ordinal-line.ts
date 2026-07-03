@@ -313,6 +313,98 @@ const buildSequenceSchema: Schema = {
 };
 
 // ============================================================================
+// Ordinal position-window resolver (micro-LLM) — Tier-2 topic/intent fidelity
+// ============================================================================
+//
+// The manifest does NOT emit an ordinal position window (which positions the
+// lesson questions about) — that scope is pedagogy's, not the curator's. Without
+// it, topic/intent only ever reached prompt PROSE, while the target positions are
+// picked in CODE off [1..maxPosition]. So an intent of "positions 6th through 10th"
+// still rendered questions across the whole line from 1st (the parade bug). This
+// reads the lesson's OWN words and returns the ordinal window it is actually about
+// ("first to fifth" → 1-5; "Meeting the Tenth Place: 6th through 10th" → 6-10).
+// The grade is a CEILING (K → 5, G1 → 10). On any failure — or when the lesson is
+// general ordinal practice with no explicit window — we return null and callers
+// keep their grade-band defaults (no regression). Schema, not regex — see memory
+// [[schema-over-regex-and-prompt]].
+
+/** The ordinal positions the lesson QUESTIONS about (1-indexed, inclusive). The
+ *  visible line is still 1..maxPosition; the window narrows only what is asked. */
+type PositionWindow = { start: number; end: number };
+
+/** Grade ceiling on ordinal magnitude — a 10th position needs a 10-long lineup. */
+function gradeMaxPosition(gradeLevel: string): number {
+  return gradeLevel.toLowerCase().includes('kinder') ? 5 : 10;
+}
+
+const positionWindowSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    hasExplicitWindow: {
+      type: Type.BOOLEAN,
+      description:
+        "True ONLY if the topic/intent names a specific ordinal position range " +
+        "(e.g. 'positions 6th through 10th', 'first to fifth', 'the tenth place'). " +
+        "False for general ordinal practice with no stated range.",
+    },
+    startPosition: {
+      type: Type.NUMBER,
+      description: "First ordinal position the lesson questions about (1-indexed). 1 unless the lesson starts higher (e.g. '6th through 10th' → 6).",
+    },
+    endPosition: {
+      type: Type.NUMBER,
+      description: "Last ordinal position the lesson questions about (1-indexed), inferred from the topic/intent (e.g. 'to the fifth' → 5, 'tenth place' → 10).",
+    },
+  },
+  required: ["hasExplicitWindow", "startPosition", "endPosition"],
+};
+
+async function resolveOrdinalPositionWindow(
+  topic: string,
+  intent: string | undefined,
+  gradeLevel: string,
+): Promise<PositionWindow | null> {
+  try {
+    const prompt = `An ordinal-positions lesson needs its position window inferred from what it is teaching.
+
+TOPIC: "${topic}"
+${intent ? `INTENT: "${intent}"\n` : ''}GRADE: ${gradeLevel}
+
+Return the 1-indexed ordinal positions the student is actually QUESTIONED about in THIS lesson.
+- Read the topic/intent for an explicit range: "first to fifth" → 1-5; "positions 6th through 10th" → 6-10; "Meeting the Tenth Place" → the lesson reaches the 10th, so include it.
+- If the lesson is general ordinal practice with NO stated range, set hasExplicitWindow=false.
+- The grade is a CEILING: never return an endPosition above ${gradeMaxPosition(gradeLevel)} for this grade.`;
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: positionWindowSchema,
+      },
+    });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text);
+    if (!parsed?.hasExplicitWindow) return null;
+
+    const gradeMax = gradeMaxPosition(gradeLevel);
+    let start = Math.round(Number(parsed?.startPosition));
+    let end = Math.round(Number(parsed?.endPosition));
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+    // Grade stays the ceiling; clamp the window into [1..gradeMax].
+    start = Math.max(1, Math.min(start, gradeMax));
+    end = Math.max(1, Math.min(end, gradeMax));
+    if (end < start) return null;
+    // A whole-line window (1..gradeMax) is not a narrowing — let grade defaults stand.
+    if (start <= 1 && end >= gradeMax) return null;
+    return { start, end };
+  } catch (e) {
+    console.warn('[OrdinalLine] position window resolution failed:', e);
+    return null;
+  }
+}
+
+// ============================================================================
 // Setup Generator
 // ============================================================================
 
@@ -324,6 +416,7 @@ async function generateSetup(
     gradeBand?: string;
     maxPosition?: number;
   },
+  window?: PositionWindow | null,
 ): Promise<SetupResult> {
   const prompt = `
 Create a fun theme for an ordinal positions activity teaching "${topic}" to ${gradeLevel} students.
@@ -358,6 +451,15 @@ showOrdinalLabels should be true.
   }
   if (data.gradeBand === 'K' && data.maxPosition > 5) data.maxPosition = 5;
   if (data.maxPosition > 10) data.maxPosition = 10;
+
+  // Position window (topic/intent): the line must be long enough to contain the
+  // window's last position — a "6th through 10th" lesson needs a 10-long lineup so
+  // a 10th character exists. Only ever RAISES maxPosition toward the window end
+  // (never shrinks the grade default); the resolver already clamped end to the
+  // grade ceiling, so this can't push past what the grade allows.
+  if (window) {
+    data.maxPosition = Math.min(gradeMaxPosition(gradeLevel), Math.max(data.maxPosition, window.end));
+  }
 
   const validContexts = ['race', 'parade', 'lunch-line', 'train', 'bookshelf'];
   if (!validContexts.includes(data.context)) data.context = 'race';
@@ -407,21 +509,28 @@ function characterListStr(setup: SetupResult): string {
   return setup.characters.map((c, i) => `${i + 1}. ${c.emoji} ${c.name}`).join(', ');
 }
 
-function sharedContext(setup: SetupResult, gradeLevel: string): string {
+function sharedContext(setup: SetupResult, gradeLevel: string, window?: PositionWindow | null): string {
+  // The line always shows 1..maxPosition; the window narrows which positions the
+  // QUESTION targets (a "6th through 10th" intent must not ask about the 1st).
+  const windowFocus = window
+    ? `\nTHIS activity targets ordinal positions ${window.start} through ${window.end} — every question must be about a position in ${window.start}..${window.end} (the other characters stay on the line as context).`
+    : '';
   return `
 Context: A "${setup.context}" with these characters in order: ${characterListStr(setup)}.
 Max position: ${setup.maxPosition}. Grade: ${gradeLevel}.
-Use warm, encouraging language for young children. Only reference positions 1 through ${setup.maxPosition}.
+Use warm, encouraging language for young children. Only reference positions 1 through ${setup.maxPosition}.${windowFocus}
 `;
 }
 
-async function generateIdentify(setup: SetupResult, topic: string, gradeLevel: string) {
+async function generateIdentify(setup: SetupResult, topic: string, gradeLevel: string, window?: PositionWindow | null) {
+  const lo = window ? Math.max(1, window.start) : 1;
+  const hi = window ? Math.min(setup.maxPosition, window.end) : setup.maxPosition;
   const prompt = `
 Create an IDENTIFY challenge for an ordinal positions activity about "${topic}".
-${sharedContext(setup, gradeLevel)}
+${sharedContext(setup, gradeLevel, window)}
 
 The student sees the character lineup and must tap the character at a specific ordinal position.
-- Pick a position between 1 and ${setup.maxPosition}
+- Pick a position between ${lo} and ${hi}
 - Write a fun instruction like "Tap the third animal!"
 - correctAnswer is the position number as a string (e.g., "3")
 `;
@@ -435,24 +544,28 @@ The student sees the character lineup and must tap the character at a specific o
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) return fallbackIdentify(setup);
 
-  // Validate
-  if (!data.targetPosition || data.targetPosition < 1 || data.targetPosition > setup.maxPosition) {
-    data.targetPosition = Math.min(3, setup.maxPosition);
+  // Validate — clamp into the question window (falls back to a mid-window default).
+  if (!data.targetPosition || data.targetPosition < lo || data.targetPosition > hi) {
+    data.targetPosition = Math.min(Math.max(lo, Math.min(3, hi)), hi);
+    data.targetOrdinalWord = ORDINAL_WORDS[data.targetPosition - 1];
+    data.targetOrdinalSymbol = ORDINAL_SYMBOLS[data.targetPosition - 1];
   }
   if (!data.correctAnswer) data.correctAnswer = String(data.targetPosition);
 
   return data;
 }
 
-async function generateMatch(setup: SetupResult, topic: string, gradeLevel: string) {
+async function generateMatch(setup: SetupResult, topic: string, gradeLevel: string, window?: PositionWindow | null) {
   const pairCount = setup.gradeBand === 'K' ? '3-5' : '5-8';
+  const lo = window ? Math.max(1, window.start) : 1;
+  const hi = window ? Math.min(setup.maxPosition, window.end) : setup.maxPosition;
   const prompt = `
 Create a MATCH challenge for an ordinal positions activity about "${topic}".
-${sharedContext(setup, gradeLevel)}
+${sharedContext(setup, gradeLevel, window)}
 
 The student matches ordinal words to their symbols (e.g., "first" → "1st").
 - Provide ${pairCount} matchPairs
-- Only use ordinals up to ${setup.maxPosition}th
+- Only use ordinals between ${lo}th and ${hi}th
 - Instruction should be encouraging
 `;
 
@@ -473,14 +586,18 @@ The student matches ordinal words to their symbols (e.g., "first" → "1st").
   return data;
 }
 
-async function generateRelative(setup: SetupResult, topic: string, gradeLevel: string) {
+async function generateRelative(setup: SetupResult, topic: string, gradeLevel: string, window?: PositionWindow | null) {
+  // Reference position drawn from the question window; before/after neighbours may
+  // fall just outside it but are real characters on the line, so the reasoning holds.
+  const refLo = window ? Math.max(1, window.start) : 2;
+  const refHi = window ? Math.min(setup.maxPosition, window.end) : setup.maxPosition - 1;
   const prompt = `
 Create a RELATIVE-POSITION challenge for an ordinal positions activity about "${topic}".
-${sharedContext(setup, gradeLevel)}
+${sharedContext(setup, gradeLevel, window)}
 
 Ask "Who is BEFORE/AFTER the Nth character?" The student picks from multiple-choice options.
 - Pick relativeQuery: "before" or "after"
-- Pick a targetPosition between 2 and ${setup.maxPosition - 1} (so before/after exists)
+- Pick a targetPosition between ${refLo} and ${refHi} (so before/after exists on the line)
 - Provide 3-4 options (character names from the lineup)
 - correctAnswer must be the correct character name
 - The correct character is the one directly before/after the target position
@@ -495,9 +612,9 @@ Ask "Who is BEFORE/AFTER the Nth character?" The student picks from multiple-cho
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) return fallbackRelative(setup);
 
-  // Validate targetPosition is within bounds and before/after exists
-  if (!data.targetPosition || data.targetPosition < 1 || data.targetPosition > setup.maxPosition) {
-    data.targetPosition = 2;
+  // Validate targetPosition is within the question window and before/after exists
+  if (!data.targetPosition || data.targetPosition < refLo || data.targetPosition > refHi) {
+    data.targetPosition = Math.min(Math.max(refLo, 2), refHi >= refLo ? refHi : setup.maxPosition);
   }
   if (data.relativeQuery !== 'before' && data.relativeQuery !== 'after') {
     data.relativeQuery = 'after';
@@ -876,23 +993,46 @@ function resolveProblemShape(type: string, tier: SupportTier): ProblemShape {
   }
 }
 
-/** identify: easy biases anchor positions (1st/2nd/last — easy to land on),
- *  hard biases interior positions (must count to them). When count covers the
- *  whole line (K, maxPosition≤count) every position appears → lever is a no-op. */
+/** The 1-indexed positions a lesson QUESTIONS about. Without a window this is the
+ *  whole visible line (1..maxPosition, byte-identical to before); with one it is the
+ *  topic/intent sub-range [start..end] clamped to the line (degrades to the full
+ *  line if the intersection is empty). The line itself always shows 1..maxPosition. */
+function questionPositions(
+  maxPosition: number,
+  window: PositionWindow | null,
+): number[] {
+  if (!window) return Array.from({ length: maxPosition }, (_, i) => i + 1);
+  const lo = Math.max(1, window.start);
+  const hi = Math.min(maxPosition, window.end);
+  const out: number[] = [];
+  for (let p = lo; p <= hi; p++) out.push(p);
+  return out.length > 0 ? out : Array.from({ length: maxPosition }, (_, i) => i + 1);
+}
+
+/** identify: easy biases anchor positions (window-start/next/last — easy to land
+ *  on), hard biases interior positions (must count to them). Draws from the
+ *  question window, not the whole line, so a "6th through 10th" intent never asks
+ *  about the 1st. When count covers the whole window every position appears → the
+ *  tier lever is a no-op (unchanged behaviour). */
 function pickPositionsByTier(
   maxPosition: number,
   count: number,
   tier: SupportTier | null,
+  window: PositionWindow | null,
 ): number[] {
-  const take = Math.min(count, maxPosition);
-  if (!tier) return pickDistinctPositions(maxPosition, count);
+  const base = questionPositions(maxPosition, window);
+  const take = Math.min(count, base.length);
 
-  const locus = resolveProblemShape('identify', tier).positionLocus; // floor: still 1..maxPosition
-  if (locus === 'unbiased') return pickDistinctPositions(maxPosition, count);
+  if (!tier || resolveProblemShape('identify', tier).positionLocus === 'unbiased') {
+    return shuffleInPlace([...base]).slice(0, take);
+  }
+  const locus = resolveProblemShape('identify', tier).positionLocus;
 
-  const all = Array.from({ length: maxPosition }, (_, i) => i + 1);
-  const anchors = Array.from(new Set([1, 2, maxPosition])).filter((p) => p >= 1 && p <= maxPosition);
-  const interior = shuffleInPlace(all.filter((p) => !anchors.includes(p)));
+  // anchors relative to the QUESTION window (its two front positions + its last).
+  const anchors = Array.from(
+    new Set([base[0], base[1], base[base.length - 1]]),
+  ).filter((p): p is number => p !== undefined);
+  const interior = shuffleInPlace(base.filter((p) => !anchors.includes(p)));
   const ordered =
     locus === 'anchor'
       ? [...anchors, ...interior]
@@ -933,8 +1073,9 @@ function buildIdentifyChallenges(
   setup: SetupResult,
   count: number,
   tier: SupportTier | null,
+  window: PositionWindow | null,
 ): OrdinalLineChallenge[] {
-  const positions = pickPositionsByTier(setup.maxPosition, count, tier);
+  const positions = pickPositionsByTier(setup.maxPosition, count, tier, window);
   const noun = contextNoun(setup.context);
   return positions.map((pos, i) => ({
     id: `c${i + 1}`,
@@ -955,10 +1096,13 @@ function buildIdentifyChallenges(
 function buildMatchChallenges(
   setup: SetupResult,
   count: number,
+  window: PositionWindow | null,
 ): OrdinalLineChallenge[] {
-  const minPairs = setup.gradeBand === 'K' ? 3 : 5;
-  const maxPairs = Math.min(setup.gradeBand === 'K' ? 5 : 8, setup.maxPosition);
-  const allPositions = Array.from({ length: setup.maxPosition }, (_, i) => i + 1);
+  // Pairs are drawn from the QUESTION window so a "6th through 10th" intent matches
+  // only 6th–10th word↔symbol pairs. Pair count is capped to the window size.
+  const allPositions = questionPositions(setup.maxPosition, window);
+  const minPairs = Math.min(setup.gradeBand === 'K' ? 3 : 5, allPositions.length);
+  const maxPairs = Math.min(setup.gradeBand === 'K' ? 5 : 8, allPositions.length);
 
   const challenges: OrdinalLineChallenge[] = [];
   const seenKeys = new Set<string>();
@@ -994,10 +1138,14 @@ function buildRelativeChallenges(
   setup: SetupResult,
   count: number,
   tier: SupportTier | null,
+  window: PositionWindow | null,
 ): OrdinalLineChallenge[] {
-  // Enumerate all valid (position, query) tuples
+  // The REFERENCE position ("who is before/after the Nth?") is drawn from the
+  // QUESTION window; before/after neighbours may fall just outside it but are real
+  // characters on the visible line, so the positional reasoning stays valid.
+  const refPositions = questionPositions(setup.maxPosition, window);
   const validTuples: Array<{ pos: number; query: 'before' | 'after' }> = [];
-  for (let p = 1; p <= setup.maxPosition; p++) {
+  for (const p of refPositions) {
     if (p > 1) validTuples.push({ pos: p, query: 'before' });
     if (p < setup.maxPosition) validTuples.push({ pos: p, query: 'after' });
   }
@@ -1261,16 +1409,19 @@ async function buildSingleModeChallenges(
   topic: string,
   gradeLevel: string,
   tier: SupportTier | null,
+  window: PositionWindow | null,
 ): Promise<OrdinalLineChallenge[]> {
   const count = resolveCount(singleType);
   switch (singleType) {
     case 'identify':
-      return buildIdentifyChallenges(setup, count, tier);
+      return buildIdentifyChallenges(setup, count, tier, window);
     case 'match':
-      return buildMatchChallenges(setup, count);
+      return buildMatchChallenges(setup, count, window);
     case 'relative-position':
-      return buildRelativeChallenges(setup, count, tier);
+      return buildRelativeChallenges(setup, count, tier, window);
     case 'build-sequence':
+      // build/story order the WHOLE visible line (1..maxPosition), so the window
+      // governs line length (via setup) but not which slots are used.
       return buildBuildSequenceChallenges(setup, count, tier);
     case 'sequence-story':
       return buildStoryChallenges(setup, topic, gradeLevel, count, tier);
@@ -1306,6 +1457,10 @@ export const generateOrdinalLine = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as OrdinalLineConfig;
+  // The per-component objective the manifest assigned to THIS activity. Context-
+  // native, so it's always delivered — but this generator historically dropped it,
+  // so a "positions 6th through 10th" intent still questioned from the 1st.
+  const intent = ctx.intent;
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
     'ordinal-line',
@@ -1322,8 +1477,26 @@ export const generateOrdinalLine = async (
   const allTypes = ['identify', 'match', 'relative-position', 'sequence-story', 'build-sequence'];
   const allowedTypes = new Set(evalConstraint?.allowedTypes ?? allTypes);
 
-  // Step 1: Setup call (always needed)
-  const setup = await generateSetup(topic, gradeLevel, config);
+  // ── Resolve the topic/intent position window (Tier-2 fidelity) ──
+  // The manifest never pins an explicit window (config.maxPosition is the legacy
+  // override), so infer it from the lesson's OWN topic + intent. Gated on the
+  // explicit override being absent; null on failure / general practice → the
+  // grade-band default stands (no regression). Narrows WHICH positions are
+  // questioned; the grade remains the ceiling on magnitude.
+  let positionWindow: PositionWindow | null = null;
+  if (config?.maxPosition === undefined) {
+    positionWindow = await resolveOrdinalPositionWindow(topic, intent, gradeLevel);
+    if (positionWindow) {
+      console.log(
+        `[OrdinalLine] topic-resolved position window:`, positionWindow,
+        `(topic="${topic}", intent="${intent ?? ''}")`,
+      );
+    }
+  }
+
+  // Step 1: Setup call (always needed) — window forces the line long enough to
+  // contain the window's last position (a 10th needs a 10-long lineup).
+  const setup = await generateSetup(topic, gradeLevel, config, positionWindow);
 
   // Step 2: Build challenges.
   //
@@ -1335,12 +1508,12 @@ export const generateOrdinalLine = async (
 
   if (allowedTypes.size === 1) {
     const [singleType] = Array.from(allowedTypes);
-    challenges = await buildSingleModeChallenges(singleType, setup, topic, gradeLevel, supportTier);
+    challenges = await buildSingleModeChallenges(singleType, setup, topic, gradeLevel, supportTier, positionWindow);
   } else {
     const [identify, match, relative, story, build] = await Promise.all([
-      allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel) : null,
-      allowedTypes.has('match') ? generateMatch(setup, topic, gradeLevel) : null,
-      allowedTypes.has('relative-position') ? generateRelative(setup, topic, gradeLevel) : null,
+      allowedTypes.has('identify') ? generateIdentify(setup, topic, gradeLevel, positionWindow) : null,
+      allowedTypes.has('match') ? generateMatch(setup, topic, gradeLevel, positionWindow) : null,
+      allowedTypes.has('relative-position') ? generateRelative(setup, topic, gradeLevel, positionWindow) : null,
       allowedTypes.has('sequence-story') ? generateStory(setup, topic, gradeLevel) : null,
       allowedTypes.has('build-sequence') ? generateBuild(setup, topic, gradeLevel) : null,
     ]);

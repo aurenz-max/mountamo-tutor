@@ -1464,6 +1464,7 @@ class FirestoreAnalyticsService:
             subject=subject,
             include_nodes=include_nodes,
             depth_limit=depth_limit,
+            grade=grade,
         )
         cached = self._cache_get(ck)
         if cached is not None:
@@ -1637,6 +1638,7 @@ class FirestoreAnalyticsService:
                     node_detail: Dict[str, Any] = {
                         "subskill_id": nid,
                         "skill_id": skill_id if skill_id != nid else node.get("skill_id", ""),
+                        "entity_type": entity_type,
                         "description": description,
                         "depth": node_depth,
                         "status": status,
@@ -1681,6 +1683,9 @@ class FirestoreAnalyticsService:
                             ),
                             3,
                         )
+                        # Reference β so before/after deltas can be computed
+                        # against the same difficulty this p_correct used.
+                        node_detail["ref_beta"] = round(ref_beta, 2)
                     if earned_level is not None:
                         node_detail["earned_level"] = round(earned_level, 1)
                     if is_inferred:
@@ -1745,6 +1750,312 @@ class FirestoreAnalyticsService:
         except Exception as e:
             logger.error(f"Error computing knowledge graph progress: {e}")
             raise
+
+    # ------------------------------------------------------------------
+    # Session-scope selector (Lesson Entry Contract fill mode)
+    # ------------------------------------------------------------------
+
+    async def select_session_targets(
+        self,
+        student_id: int,
+        subject: str,
+        grade: Optional[str] = None,
+        count: int = 4,
+        max_per_skill: int = 2,
+    ) -> Dict[str, Any]:
+        """
+        Pick the next lesson's target subskills from knowledge-graph state.
+
+        Pure IRT selection over get_knowledge_graph_progress nodes — the same
+        p_correct (at hardest-assigned-mode β) the mastery gates check, no
+        hand-tuned urgency formulas. Two target kinds:
+
+        - "confirm": p_correct >= next gate's GATE_P_THRESHOLDS entry — the
+          model believes the student is ready; the lesson's job is to produce
+          the eval evidence that advances the gate.
+        - "learn": p_correct below the next gate threshold — ranked by
+          p_correct descending, so picks sit closest to the decision boundary
+          (most productive practice, most informative evidence).
+
+        Nodes without IRT data (untested skills) are "cold_start" fallbacks,
+        shallowest-first. max_per_skill bounds lesson composition (diversity),
+        not priority. Output objectives are preBuiltObjectives-shaped so any
+        consumer (tray fill mode, daily plan) can launch them directly.
+        """
+        from app.models.mastery_lifecycle import GATE_P_THRESHOLDS
+
+        kg = await self.get_knowledge_graph_progress(
+            student_id, subject, include_nodes=True, grade=grade
+        )
+        nodes = kg.get("nodes", [])
+        status_by_id = {n["subskill_id"]: n["status"] for n in nodes}
+
+        ELIGIBLE = {"frontier", "in_progress", "in_review"}
+        confirm: List[Dict[str, Any]] = []
+        learn: List[Dict[str, Any]] = []
+        cold_start: List[Dict[str, Any]] = []
+
+        for n in nodes:
+            # The graph carries both skill and subskill nodes; lessons target
+            # subskills only (skill nodes have no eval modes or lifecycle).
+            if n.get("entity_type") != "subskill":
+                continue
+            if n["status"] not in ELIGIBLE:
+                continue
+            prereqs = n.get("prerequisite_ids", [])
+            prereqs_ready = all(
+                status_by_id.get(p) in ("mastered", "inferred") for p in prereqs
+            )
+            gate = n.get("current_gate", 0)
+            next_gate = min(gate + 1, 4)
+            threshold = GATE_P_THRESHOLDS[next_gate]
+            p = n.get("p_correct")
+
+            candidate = {
+                "subskill_id": n["subskill_id"],
+                "skill_id": n.get("skill_id", ""),
+                "description": n.get("description", ""),
+                "status": n["status"],
+                "current_gate": gate,
+                "next_gate": next_gate,
+                "gate_threshold": threshold,
+                "p_correct": p,
+                "sigma": n.get("sigma"),
+                "depth": n.get("depth", 0),
+                "prereqs_ready": prereqs_ready,
+            }
+
+            if p is None:
+                candidate["kind"] = "cold_start"
+                candidate["reason"] = (
+                    "no IRT estimate yet (untested skill) - frontier node, "
+                    f"depth {candidate['depth']}"
+                )
+                cold_start.append(candidate)
+            elif p >= threshold:
+                candidate["kind"] = "confirm"
+                candidate["reason"] = (
+                    f"P(correct) {p:.3f} >= gate-{next_gate} threshold "
+                    f"{threshold:.2f} - evaluate to confirm and advance the gate"
+                )
+                confirm.append(candidate)
+            else:
+                candidate["kind"] = "learn"
+                candidate["reason"] = (
+                    f"P(correct) {p:.3f} below gate-{next_gate} threshold "
+                    f"{threshold:.2f} - productive practice at the learning edge"
+                )
+                learn.append(candidate)
+
+        # Rank: confirm by readiness (highest p first, prereqs-ready first);
+        # learn by closeness to the decision boundary (highest p first);
+        # cold_start shallowest-first so prerequisites come before dependents.
+        confirm.sort(key=lambda c: (not c["prereqs_ready"], -(c["p_correct"] or 0)))
+        learn.sort(key=lambda c: (not c["prereqs_ready"], -(c["p_correct"] or 0)))
+        cold_start.sort(key=lambda c: (not c["prereqs_ready"], c["depth"]))
+
+        # Compose: aim for half confirm / half learn, backfill from whichever
+        # pool has supply, then cold_start. Cap per skill for lesson diversity.
+        per_skill: Dict[str, int] = defaultdict(int)
+        picked: List[Dict[str, Any]] = []
+
+        def take(pool: List[Dict[str, Any]], want: int) -> None:
+            for c in pool:
+                if want <= 0 or len(picked) >= count:
+                    return
+                if c in picked or per_skill[c["skill_id"]] >= max_per_skill:
+                    continue
+                picked.append(c)
+                per_skill[c["skill_id"]] += 1
+                want -= 1
+
+        take(confirm, count - count // 2)
+        take(learn, count - len(picked))
+        take(confirm, count - len(picked))
+        take(cold_start, count - len(picked))
+
+        # Curriculum titles for the picks (unit title, skill description) so
+        # consumers like the Lesson Builder tray can render/compose the topic
+        # without a second lookup. Best-effort: the CLI probe runs without a
+        # CurriculumService and still works.
+        subskill_lookup: Dict[str, Dict[str, Any]] = {}
+        if self.curriculum and picked:
+            try:
+                hierarchy = await self._build_curriculum_hierarchy(subject, grade)
+                subskill_lookup = hierarchy.get("subskill_lookup", {})
+            except Exception as e:
+                logger.warning(f"session-targets curriculum enrichment failed: {e}")
+
+        # preBuiltObjectives shape (Lesson Entry Contract): verb comes from
+        # model state — confirm targets get "apply" (produce gate evidence),
+        # learn targets "identify"/"explain" by whether the gate is open yet.
+        objectives = []
+        for c in picked:
+            if c["kind"] == "confirm":
+                verb = "apply"
+            elif c["current_gate"] == 0:
+                verb = "identify"
+            else:
+                verb = "explain"
+            cur = subskill_lookup.get(c["subskill_id"], {})
+            objectives.append(
+                {
+                    "id": c["subskill_id"],
+                    "text": c["description"],
+                    "verb": verb,
+                    "subskillId": c["subskill_id"],
+                    "skillId": c["skill_id"],
+                    "skillDescription": cur.get("skill_description", ""),
+                    "unitId": cur.get("unit_id", ""),
+                    "unitTitle": cur.get("unit_title", ""),
+                    "kind": c["kind"],
+                    "reason": c["reason"],
+                    "pCorrect": c["p_correct"],
+                    "currentGate": c["current_gate"],
+                }
+            )
+
+        return {
+            "student_id": student_id,
+            "subject": subject,
+            "grade": grade,
+            "objectives": objectives,
+            "pool_sizes": {
+                "confirm": len(confirm),
+                "learn": len(learn),
+                "cold_start": len(cold_start),
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Session progress delta (lesson-review close-out)
+    # ------------------------------------------------------------------
+
+    async def get_subskill_progress_delta(
+        self,
+        student_id: int,
+        subject: str,
+        targets: List[Dict[str, str]],
+        since: str,
+        grade: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Before/after IRT state for the subskills a lesson exercised.
+
+        "Before" is derived server-side from the timestamped `theta_history`
+        on the ability doc (last entry before `since`) and `gate_history` on
+        the lifecycle doc — no client-side snapshotting, works after refresh.
+        Before and after are evaluated at the SAME reference β per subskill
+        (the KG node's hardest-assigned-mode β when resolvable, else the
+        student's tested-item β median), so each row's delta is meaningful
+        even when β references differ across rows.
+
+        targets: [{"subskill_id": ..., "skill_id": ...}] — skill_id is the
+        θ join key (θ is per-skill; p_correct is what varies per subskill).
+        """
+        import asyncio
+
+        from app.config.discrimination_priors import DEFAULT_DISCRIMINATION_PRIOR
+        from app.services.calibration_engine import CalibrationEngine, p_correct
+
+        def _parse_ts(value: Any) -> Optional[datetime]:
+            if not value:
+                return None
+            try:
+                dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+                return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                return None
+
+        since_dt = _parse_ts(since) or datetime.now(timezone.utc)
+
+        subskill_ids = [t["subskill_id"] for t in targets]
+        abilities_task = self.fs.get_all_student_abilities(student_id)
+        lifecycles_task = self.fs.get_mastery_lifecycles_batch(student_id, subskill_ids)
+        abilities_list, lifecycle_map = await asyncio.gather(
+            abilities_task, lifecycles_task
+        )
+        ability_map = {
+            (ab.get("skill_id") or ab.get("id", "")): ab for ab in abilities_list
+        }
+
+        # Hardest-assigned-mode β per subskill from the KG (best-effort — the
+        # per-row median-β fallback keeps deltas valid when unresolvable).
+        ref_beta_map: Dict[str, float] = {}
+        desc_map: Dict[str, str] = {}
+        try:
+            kg = await self.get_knowledge_graph_progress(
+                student_id, subject, include_nodes=True, grade=grade
+            )
+            for n in kg.get("nodes", []):
+                if n.get("ref_beta") is not None:
+                    ref_beta_map[n["subskill_id"]] = n["ref_beta"]
+                if n.get("description"):
+                    desc_map[n["subskill_id"]] = n["description"]
+        except Exception as e:
+            logger.warning(f"session-progress: KG ref_beta lookup failed: {e}")
+
+        a = DEFAULT_DISCRIMINATION_PRIOR.a
+        c = DEFAULT_DISCRIMINATION_PRIOR.c
+        rows: List[Dict[str, Any]] = []
+
+        for t in targets:
+            sid = t["subskill_id"]
+            skill_id = t.get("skill_id", "")
+            ab = ability_map.get(skill_id)
+            lc = lifecycle_map.get(sid) or {}
+
+            gate_after = lc.get("current_gate", 0)
+            gate_before = 0
+            for gh in lc.get("gate_history", []):
+                ts = _parse_ts(gh.get("timestamp"))
+                if ts and ts < since_dt:
+                    gate_before = max(gate_before, gh.get("gate", 0))
+
+            row: Dict[str, Any] = {
+                "subskillId": sid,
+                "skillId": skill_id,
+                "description": desc_map.get(sid, ""),
+                "gateBefore": gate_before,
+                "gateAfter": gate_after,
+                "gateAdvanced": gate_after > gate_before,
+                "pBefore": None,
+                "pAfter": None,
+                "firstMeasurement": False,
+            }
+
+            if ab and ab.get("theta") is not None:
+                ref_beta = ref_beta_map.get(sid)
+                if ref_beta is None:
+                    ref_beta = CalibrationEngine.compute_skill_beta_median(ab)
+
+                theta_after = ab["theta"]
+                row["pAfter"] = round(p_correct(theta_after, a, ref_beta, c), 3)
+
+                theta_before: Optional[float] = None
+                before_ts: Optional[datetime] = None
+                for th in ab.get("theta_history", []):
+                    ts = _parse_ts(th.get("timestamp"))
+                    if ts and ts < since_dt and (before_ts is None or ts > before_ts):
+                        before_ts = ts
+                        theta_before = th.get("theta")
+
+                if theta_before is not None:
+                    row["pBefore"] = round(p_correct(theta_before, a, ref_beta, c), 3)
+                else:
+                    # No θ evidence for this skill before the lesson — this
+                    # session produced the first measurement.
+                    row["firstMeasurement"] = True
+
+            rows.append(row)
+
+        return {
+            "student_id": student_id,
+            "subject": subject,
+            "grade": grade,
+            "since": since,
+            "targets": rows,
+        }
 
     # ------------------------------------------------------------------
     # Pulse session history

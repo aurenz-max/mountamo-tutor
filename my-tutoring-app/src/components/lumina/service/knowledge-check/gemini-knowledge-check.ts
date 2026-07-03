@@ -28,7 +28,7 @@ import {
   Inset,
   KnowledgeCheckPlan,
 } from "../../types";
-import { runKnowledgeCheckOrchestrator } from './gemini-knowledge-check-orchestrator';
+import { runKnowledgeCheckOrchestrator, type KcLessonObjective } from './gemini-knowledge-check-orchestrator';
 
 // ============================================================================
 // BLOOM'S TAXONOMY TIERS (IRT §6.8)
@@ -1589,6 +1589,10 @@ export const generateKnowledgeCheck = async (
     insetType?: InsetType;
     /** Force orchestrator even when problemType is set */
     useOrchestrator?: boolean;
+    /** Lesson objectives (with curriculum IDs) — the orchestrator tags each
+     *  problem with the objective it assesses, and the ids are stamped onto
+     *  the problem so its evaluation attributes to THAT objective's subskill. */
+    objectives?: KcLessonObjective[];
   }
 ): Promise<ProblemData[]> => {
   const count = config?.count || 1;
@@ -1602,12 +1606,32 @@ export const generateKnowledgeCheck = async (
   if (useOrchestrator) {
     console.log('[Knowledge Check] Orchestrated mode:', { topic, gradeLevel, count, bloomsTier });
 
-    const plan = await runKnowledgeCheckOrchestrator(topic, gradeLevel, count, bloomsTier, context);
+    const plan = await runKnowledgeCheckOrchestrator(
+      topic, gradeLevel, count, bloomsTier, context, config?.objectives
+    );
 
     // Stage 2: parallel generation from the plan
     const results = await Promise.all(
       plan.problems.map(p => generateFromPlan(p, topic, gradeLevel, bloomsTier))
     );
+
+    // Per-problem objective attribution: stamp BEFORE filtering nulls so the
+    // index join with plan.problems stays aligned. The ids ride the problem
+    // into its evaluation submission (inner primitives pass data.subskillId /
+    // skillId / objectiveId to usePrimitiveEvaluation).
+    if (config?.objectives?.length) {
+      const objectiveById = new Map(config.objectives.map(o => [o.id, o]));
+      results.forEach((prob, i) => {
+        const objId = plan.problems[i]?.objectiveId;
+        const obj = objId ? objectiveById.get(objId) : undefined;
+        if (!prob || !obj) return;
+        prob.objectiveId = obj.id;
+        if (obj.subskillId) {
+          prob.subskillId = obj.subskillId;
+          prob.skillId = obj.skillId;
+        }
+      });
+    }
 
     const problems = results.filter((p): p is ProblemData => p !== null);
 
