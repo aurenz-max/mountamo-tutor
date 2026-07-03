@@ -29,7 +29,7 @@ const isMastered = (s: MasteryStatus) => s === 'mastered' || s === 'inferred';
 // ── Per-skill analytics (from getStudentMetrics) ─────────────────────
 interface SkillMetric {
   mastery: number; // 0–1
-  avgScore: number; // 0–10
+  avgScore: number; // 0–1 (attempt-weighted over ATTEMPTED subskills)
   attempts: number; // raw count
   lessons: number; // summed lesson_eval_count across subskills
   subskills: Map<string, SubskillData>; // subskill_id → full metrics row
@@ -148,7 +148,7 @@ const SubskillRow: React.FC<{ sub: UnitSubskillDetail; metric?: SubskillData }> 
           </span>
         )}
         {attempts > 0 && metric && (
-          <span className="text-[10px] text-slate-400">avg {Math.round(metric.avg_score * 10)}%</span>
+          <span className="text-[10px] text-slate-400">avg {Math.round(metric.avg_score * 100)}%</span>
         )}
         {lessons > 0 && (
           <span className="text-[10px] text-slate-400">
@@ -253,13 +253,24 @@ export const UnitSkillsPanel: React.FC<UnitSkillsPanelProps> = ({ detail, studen
           for (const sk of unit.skills ?? []) {
             const subs = new Map<string, SubskillData>();
             let lessons = 0;
+            // The backend's skill-level avg_score averages over EVERY subskill
+            // (unattempted ones contribute 0), so a strong start on 2 of 7
+            // focuses reads as a failing score. Recompute it attempt-weighted
+            // over attempted subskills: "avg score" = average on work done.
+            let scoreWeighted = 0;
+            let scoredAttempts = 0;
             for (const ss of sk.subskills ?? []) {
               subs.set(ss.subskill_id, ss);
               lessons += ss.lesson_eval_count ?? 0;
+              const n = ss.attempt_count ?? 0;
+              if (n > 0) {
+                scoreWeighted += (ss.avg_score ?? 0) * n;
+                scoredAttempts += n;
+              }
             }
             map.set(sk.skill_id, {
               mastery: sk.mastery ?? 0,
-              avgScore: sk.avg_score ?? 0,
+              avgScore: scoredAttempts > 0 ? scoreWeighted / scoredAttempts : sk.avg_score ?? 0,
               attempts: sk.attempt_count ?? 0,
               lessons,
               subskills: subs,
@@ -303,7 +314,7 @@ export const UnitSkillsPanel: React.FC<UnitSkillsPanelProps> = ({ detail, studen
         if (ss.status === 'frontier') ready += 1;
       }
     }
-    const avgScorePct = problems > 0 ? Math.round((scoreWeighted / problems) * 10) : null;
+    const avgScorePct = problems > 0 ? Math.round((scoreWeighted / problems) * 100) : null;
     const hasMastery = detail.skills.some((sk) => sk.subskills.some((ss) => ss.status !== 'unknown'));
     return { problems, lessons, avgScorePct, done, total, ready, hasMastery };
   }, [detail, metrics]);
@@ -379,7 +390,7 @@ export const UnitSkillsPanel: React.FC<UnitSkillsPanelProps> = ({ detail, studen
             const tier = m ? masteryTier(m.mastery) : null;
             const st = SKILL_STATUS[status];
             const masteryPct = m ? Math.round(m.mastery * 100) : 0;
-            const scorePct = m ? Math.round(m.avgScore * 10) : 0;
+            const scorePct = m ? Math.round(m.avgScore * 100) : 0;
             const rollupPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
             return (

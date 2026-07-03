@@ -5,6 +5,8 @@
  * header user menu (StudentBadge → "My activity").
  *
  * Composition, not new UI:
+ *   - "Snapshot" header card reads the canonical profile endpoint in one call
+ *     (StudentProfileSummary — level/XP/streak, weekly activity, subject mastery).
  *   - "Your journey" hero reuses the SAME curriculum screen shown on the public
  *     home page (`CurriculumShowcase`), now driven by REAL curriculum-service
  *     data for the signed-in student's grade and lit up with their mastery from
@@ -19,6 +21,7 @@ import { CurriculumShowcase } from '@/components/landing/LandingPrimitiveDemos';
 import { useStudentCurriculumMap, type UnitDetail } from '../hooks/useStudentCurriculumMap';
 import { LuminaSectionLabel, LuminaBadge } from '../ui';
 import StudentActivityPanel from './StudentActivityPanel';
+import StudentProfileSummary from './StudentProfileSummary';
 import UnitSkillsPanel from './UnitSkillsPanel';
 
 /** The curriculum-map hero, driven by the student's real grade + curriculum + mastery. */
@@ -83,6 +86,9 @@ export default function MyProgressPanel({ studentId, onBack }: MyProgressPanelPr
           &larr; Back
         </button>
       )}
+
+      {/* ── Snapshot — one-call profile read (level/XP/streak + subject mastery) ── */}
+      <StudentProfileSummary studentId={studentId} />
 
       {/* ── Your journey — the same curriculum map as the home page, real data ── */}
       <YourJourney studentId={studentId} />

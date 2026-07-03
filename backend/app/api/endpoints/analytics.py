@@ -1228,11 +1228,85 @@ async def get_engagement_metrics(
         logger.info(f"Retrieved engagement metrics for student {student_id}: {engagement['summary']['total_active_days']} active days")
         return engagement
         
-    except Exception as e:        
+    except Exception as e:
         logger.error(f"Engagement metrics error for user {user_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving engagement metrics: {str(e)}"
+        )
+
+# ============================================================================
+# CANONICAL STUDENT PROFILE ENDPOINT
+# ============================================================================
+
+@router.get("/student/{student_id}/profile")
+async def get_student_profile(
+    student_id: int,
+    days: int = Query(7, ge=1, le=90, description="Window for the recent-activity block"),
+    user_context: dict = Depends(get_user_context),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service)
+):
+    """Canonical one-call profile read for the student profile page.
+
+    Composes the whole read model:
+      - engagement: XP / level / streak / badges — the STORED Cosmos values
+        written by the engagement engine (the single source; do not recompute).
+        Null when requesting another student's profile (Cosmos profiles are
+        keyed by the caller's firebase_uid, not student_id).
+      - totals: lifetime attempt counters from students/{sid}/profile/summary (L2).
+      - recent: last-N-days window from daily_rollups (L2).
+      - skill_state: per-subject mastery-lifecycle gate counts (L1).
+    """
+    user_id = user_context["user_id"]
+
+    # Validate access
+    if user_context["student_id"] != student_id:
+        if not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied to student {student_id} profile"
+            )
+
+    cache_key = get_cache_key("student_profile", student_id=student_id, days=days)
+    cached_result = get_from_cache(cache_key, ttl_minutes=2)
+    if cached_result:
+        return cached_result
+
+    try:
+        logger.info(f"User {user_context['email']} retrieving profile for student {student_id}")
+
+        profile = await analytics_service.get_student_profile(student_id=student_id, days=days)
+
+        # Attach canonical XP/level/streak from the Cosmos user profile — only
+        # when the caller IS this student (profiles are keyed by firebase_uid).
+        engagement = None
+        firebase_uid = user_context.get("firebase_uid")
+        if firebase_uid and user_context["student_id"] == student_id:
+            try:
+                user_profile = await user_profiles_service.get_user_profile(firebase_uid)
+                if user_profile:
+                    engagement = {
+                        "total_xp": getattr(user_profile, "total_xp", 0),
+                        "current_level": getattr(user_profile, "current_level", 1),
+                        "xp_for_next_level": getattr(user_profile, "xp_for_next_level", None),
+                        "current_streak": getattr(user_profile, "current_streak", 0),
+                        "longest_streak": getattr(user_profile, "longest_streak", 0),
+                        "badges": getattr(user_profile, "badges", []) or [],
+                    }
+            except Exception as e:
+                logger.warning(f"Could not attach engagement block for student {student_id}: {e}")
+        profile["engagement"] = engagement
+
+        set_cache(cache_key, profile)
+        return profile
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Student profile error for user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving student profile: {str(e)}"
         )
 
 # ============================================================================

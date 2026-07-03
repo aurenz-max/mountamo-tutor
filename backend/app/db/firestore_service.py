@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional, Union
 import asyncio
 import logging
 import math
+import re
 import uuid
 import os
 from ..core.config import settings
@@ -198,6 +199,21 @@ class FirestoreService:
             doc_ref = self._attempts_subcollection(student_id).document(attempt_id)
             doc_ref.set(firestore_data)
 
+            # L2 read model: increment the day's rollup counters + profile
+            # summary. Best-effort — rollups are rebuildable from attempts
+            # (scripts/backfill_daily_rollups.py), so a failure here must
+            # never fail the attempt write itself.
+            try:
+                await self.apply_attempt_rollup(
+                    student_id=student_id,
+                    subject=subject,
+                    subskill_id=subskill_id,
+                    score=score,
+                    timestamp=timestamp,
+                )
+            except Exception as e:
+                logger.warning(f"Rollup update failed for student {student_id} (attempt {attempt_id}): {e}")
+
             logger.info(f"Saved attempt {attempt_id} to Firestore for student {student_id}")
             return firestore_data
 
@@ -266,6 +282,120 @@ class FirestoreService:
         except Exception as e:
             logger.error(f"Error getting attempts by date range from Firestore: {str(e)}")
             return []
+
+    # ============================================================================
+    # DAILY ROLLUPS + PROFILE SUMMARY (L2 read model)
+    # ============================================================================
+    # students/{sid}/daily_rollups/{YYYY-MM-DD} — per-day counter docs kept in
+    # sync by apply_attempt_rollup on every attempt write. Purely derived from
+    # the attempts subcollection (L0) and rebuildable at any time via
+    # scripts/backfill_daily_rollups.py — that replay property is the contract.
+    # students/{sid}/profile/summary — lifetime totals, same maintenance.
+
+    def _daily_rollups_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/daily_rollups"""
+        return self._student_doc(student_id).collection('daily_rollups')
+
+    def _profile_summary_ref(self, student_id: int):
+        """Get reference to students/{student_id}/profile/summary"""
+        return self._student_doc(student_id).collection('profile').document('summary')
+
+    @staticmethod
+    def rollup_subject_key(subject: Optional[str]) -> str:
+        """Canonical map key for a subject inside rollup docs.
+
+        Mirrors firestore_analytics._norm_subject: attempts carry the subject
+        in every historical spelling ("Mathematics", "MATHEMATICS_G1", …);
+        rollup counters must land on ONE key or per-subject sums fragment.
+        """
+        if not subject:
+            return "UNKNOWN"
+        s = re.sub(r"[\s\-]+", "_", subject.strip().upper())
+        return re.sub(r"_G\d+$", "", s) or "UNKNOWN"
+
+    async def apply_attempt_rollup(
+        self,
+        student_id: int,
+        subject: str,
+        subskill_id: str,
+        score: float,
+        timestamp: Optional[str] = None,
+    ) -> None:
+        """Increment the day's rollup doc and the profile summary for one attempt.
+
+        Uses Firestore Increment/ArrayUnion sentinels so concurrent submissions
+        compose without a read-modify-write. Called from save_attempt; only
+        the backfill script should ever write these docs any other way.
+        """
+        ts = timestamp or datetime.now(timezone.utc).isoformat()
+        day = ts[:10]
+        subj_key = self.rollup_subject_key(subject)
+        score = float(score)
+
+        rollup_update = {
+            "date": day,
+            "student_id": student_id,
+            "attempts": firestore.Increment(1),
+            "sum_score": firestore.Increment(score),
+            "subskills": firestore.ArrayUnion([subskill_id]),
+            "subjects": {
+                subj_key: {
+                    "name": subject,
+                    "attempts": firestore.Increment(1),
+                    "sum_score": firestore.Increment(score),
+                    "subskills": firestore.ArrayUnion([subskill_id]),
+                }
+            },
+            "updated_at": ts,
+        }
+        self._daily_rollups_subcollection(student_id).document(day).set(rollup_update, merge=True)
+
+        profile_update = {
+            "student_id": student_id,
+            "total_attempts": firestore.Increment(1),
+            "sum_score": firestore.Increment(score),
+            "last_activity_at": ts,
+            "last_subject": subject,
+            "last_subskill_id": subskill_id,
+            "subjects": {
+                subj_key: {
+                    "name": subject,
+                    "attempts": firestore.Increment(1),
+                    "sum_score": firestore.Increment(score),
+                    "last_activity_at": ts,
+                }
+            },
+            "updated_at": ts,
+        }
+        self._profile_summary_ref(student_id).set(profile_update, merge=True)
+
+    async def get_daily_rollups(
+        self,
+        student_id: int,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Read daily rollup docs, optionally bounded by YYYY-MM-DD strings (inclusive)."""
+        try:
+            query = self._daily_rollups_subcollection(student_id)
+            if start_date:
+                query = query.where('date', '>=', start_date[:10])
+            if end_date:
+                query = query.where('date', '<=', end_date[:10])
+            query = query.order_by('date')
+            return [doc.to_dict() for doc in query.stream()]
+        except Exception as e:
+            logger.error(f"Error reading daily rollups for student {student_id}: {str(e)}")
+            return []
+
+    async def get_profile_summary(self, student_id: int) -> Optional[Dict[str, Any]]:
+        """Read the profile summary doc; None if it has never been written."""
+        try:
+            doc = self._profile_summary_ref(student_id).get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error reading profile summary for student {student_id}: {str(e)}")
+            return None
 
     # ============================================================================
     # REVIEWS METHODS

@@ -277,7 +277,7 @@ export const EvaluationResultsIndicator: React.FC = () => {
   const t = TIER[tier];
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex items-end gap-2">
+    <div className="fixed bottom-6 left-6 z-40 flex items-end gap-2">
       {/* Keyframes */}
       <style>{`
         @keyframes slideIn {

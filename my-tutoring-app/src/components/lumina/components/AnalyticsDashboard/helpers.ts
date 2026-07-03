@@ -4,8 +4,10 @@ export function pct(v: number): string {
   return `${Math.round(v * 100)}%`;
 }
 
+// avg_score from getStudentMetrics is a 0–1 proficiency (current_score/10
+// normalized in _load_competency_map), NOT the raw 0–10 eval score.
 export function scorePct(v: number): string {
-  return `${Math.round(v * 10)}%`;
+  return `${Math.round(v * 100)}%`;
 }
 
 export function masteryColor(v: number): string {

@@ -1509,18 +1509,80 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-3">
                 <p className="text-emerald-300 text-sm font-medium">🎉 Mission solved — you lifted it!</p>
                 <p className="text-slate-300 text-xs leading-relaxed">{currentMission.explainOnSolve}</p>
-                {currentMissionIdx < missions.length - 1 ? (
+                {currentMissionIdx < missions.length - 1 && (
                   <LuminaButton tone="primary" onClick={handleNextMission} className="w-full">
                     Next Mission →
                   </LuminaButton>
-                ) : !hasSubmittedEvaluation ? (
-                  <LuminaButton tone="primary" onClick={handleSubmitEvaluation} className="w-full">
-                    Finish &amp; Submit
-                  </LuminaButton>
-                ) : null}
+                )}
+                {/* On the final mission the debrief below owns Finish & Submit. */}
               </div>
             )}
           </LuminaPanel>
+
+          {/* ── Engineer's Debrief — phase summary once every mission is solved ── */}
+          {allMissionsSolved && (
+            <LuminaPanel accent="emerald" className="p-5 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🏆</span>
+                <div>
+                  <h3 className="text-white font-semibold text-base">Engineer's Debrief</h3>
+                  <p className="text-slate-400 text-xs mt-0.5">
+                    You solved every mission — here's the machine you engineered.
+                  </p>
+                </div>
+              </div>
+
+              {/* Headline stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center bg-slate-800/40 rounded-lg p-3">
+                  <p className="text-emerald-400 text-xl font-bold">{solvedMissionIds.size}/{missions.length}</p>
+                  <p className="text-slate-500 text-[10px] font-mono uppercase tracking-wider">Missions</p>
+                </div>
+                <div className="text-center bg-slate-800/40 rounded-lg p-3">
+                  <p className="text-cyan-400 text-xl font-bold">{maxForceRatio.toFixed(1)}x</p>
+                  <p className="text-slate-500 text-[10px] font-mono uppercase tracking-wider">Peak Multiplier</p>
+                </div>
+                <div className="text-center bg-slate-800/40 rounded-lg p-3">
+                  <p className="text-sky-400 text-xl font-bold">{exploredZones.size}/4</p>
+                  <p className="text-slate-500 text-[10px] font-mono uppercase tracking-wider">Zones Explored</p>
+                </div>
+              </div>
+
+              {/* Mission-by-mission journey — the arc of what each lever taught */}
+              <div className="space-y-2">
+                {missions.map((m, i) => (
+                  <div key={m.id} className="flex items-start gap-3 bg-slate-800/30 rounded-lg p-3">
+                    <span className="text-emerald-400 text-sm mt-0.5">✓</span>
+                    <div>
+                      <p className="text-slate-200 text-sm font-medium">
+                        {i + 1}. {m.title}
+                        <span className="text-slate-500 font-normal"> · {m.machineLabel}</span>
+                      </p>
+                      <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">{m.explainOnSolve}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* The throughline that tied every mission together */}
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
+                <p className="text-cyan-300 text-xs leading-relaxed">
+                  <span className="font-semibold">The big idea:</span> every mission was Pascal's Law —
+                  pressure is the same everywhere in the fluid, so a gentle push on a small piston becomes
+                  a huge force on a big one. Shrink the input, grow the output, and you multiply force.
+                  That's how real machines lift tons.
+                </p>
+              </div>
+
+              {!hasSubmittedEvaluation ? (
+                <LuminaButton tone="primary" onClick={handleSubmitEvaluation} className="w-full">
+                  Finish &amp; Submit
+                </LuminaButton>
+              ) : (
+                <p className="text-emerald-400 text-sm text-center font-medium">Results submitted! 🏗️</p>
+              )}
+            </LuminaPanel>
+          )}
 
           {/* Simulation Canvas — bespoke interaction surface, left untouched */}
           <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
@@ -1699,7 +1761,7 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             </div>
           )}
 
-          {hasSubmittedEvaluation && (
+          {hasSubmittedEvaluation && !allMissionsSolved && (
             <div className="text-center py-4">
               <p className="text-emerald-400 font-medium">Results submitted! 🏗️</p>
               <p className="text-slate-500 text-xs mt-1">

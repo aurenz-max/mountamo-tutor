@@ -1,7 +1,10 @@
 // src/lib/studentAnalyticsAPI.ts - FIXED VERSION WITH AUTHENTICATION
 import { authApi } from './authApiClient';
 
-// Keep all your existing types (they're correct)
+// SCALE NOTE — getStudentMetrics (hierarchical): mastery / proficiency /
+// avg_score are all 0–1 (avg_score is the competency current_score/10, a
+// credibility-blended proficiency). This DIFFERS from getStudentProfile
+// totals.avg_score and score-trends avg_score, which are raw 0–10.
 export interface StudentMetrics {
   student_id: number;
   subject?: string;
@@ -229,6 +232,52 @@ export interface EngagementMetricsResponse {
   summary: EngagementSummary;
   daily_breakdown: DailyBreakdown[];
   generated_at?: string;
+}
+
+// Canonical student profile (GET /api/analytics/student/{id}/profile)
+export interface ProfileSubjectTotals {
+  key: string;
+  name: string;
+  attempts: number;
+  avg_score: number;
+  last_activity_at: string | null;
+}
+
+export interface ProfileSkillState {
+  key: string;
+  subskills: number;
+  /** Count of subskills at each mastery-lifecycle gate, keyed by gate number as string. */
+  gates: Record<string, number>;
+  /** Count of subskills by retention state (not_started / active / mastered / ...). */
+  states: Record<string, number>;
+}
+
+export interface StudentProfileResponse {
+  student_id: number;
+  /** Stored Cosmos XP/level/streak — the single source. Null when viewing another student. */
+  engagement: {
+    total_xp: number;
+    current_level: number;
+    xp_for_next_level: number | null;
+    current_streak: number;
+    longest_streak: number;
+    badges: string[];
+  } | null;
+  totals: {
+    total_attempts: number;
+    avg_score: number;
+    last_activity_at: string | null;
+    last_subject: string | null;
+    last_subskill_id: string | null;
+    subjects: ProfileSubjectTotals[];
+  };
+  /** Streak fields intentionally absent here — `engagement` is the single streak source. */
+  recent: Omit<EngagementSummary, 'streak_current' | 'streak_longest'> & {
+    days: number;
+    daily_breakdown: DailyBreakdown[];
+  };
+  skill_state: { subjects: ProfileSkillState[] };
+  generated_at: string;
 }
 
 // Knowledge Graph types (Pulse-native)
@@ -594,6 +643,20 @@ export const analyticsApi = {
     const queryString = params.toString();
     const endpoint = `/api/analytics/student/${studentId}/engagement-metrics${queryString ? `?${queryString}` : ''}`;
     return authApi.get<EngagementMetricsResponse>(endpoint);
+  },
+
+  // Canonical one-call profile read: XP/level/streak (stored Cosmos values),
+  // lifetime totals, recent engagement window, and per-subject skill state.
+  async getStudentProfile(
+    studentId: number,
+    options: { days?: number } = {}
+  ): Promise<StudentProfileResponse> {
+    const params = new URLSearchParams();
+    if (options.days) params.append('days', options.days.toString());
+
+    const queryString = params.toString();
+    const endpoint = `/api/analytics/student/${studentId}/profile${queryString ? `?${queryString}` : ''}`;
+    return authApi.get<StudentProfileResponse>(endpoint);
   }
 };
 
@@ -606,3 +669,4 @@ export const getScoreTrends = analyticsApi.getScoreTrends;
 export const getEngagementMetrics = analyticsApi.getEngagementMetrics;
 export const getKnowledgeGraphProgress = analyticsApi.getKnowledgeGraphProgress;
 export const getPulseSessionHistory = analyticsApi.getPulseSessionHistory;
+export const getStudentProfile = analyticsApi.getStudentProfile;

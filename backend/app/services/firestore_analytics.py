@@ -457,12 +457,90 @@ class FirestoreAnalyticsService:
         subject: Optional[str] = None,
         days: int = 7,
     ) -> Dict[str, Any]:
-        """Compute engagement metrics from recent attempts."""
+        """Engagement metrics served from daily_rollups counter docs (L2).
+
+        Falls back to the legacy attempt scan only when the student has no
+        rollup docs in the window (i.e. backfill hasn't run yet) — once
+        rollups exist they are authoritative.
+        """
         ck = self._cache_key("engagement", student_id=student_id, subject=subject, days=days)
         cached = self._cache_get(ck)
         if cached is not None:
             return cached
 
+        try:
+            now = datetime.now(timezone.utc)
+            cutoff_day = (now - timedelta(days=days)).date().isoformat()
+            rollups = await self.fs.get_daily_rollups(student_id, start_date=cutoff_day)
+            if not rollups:
+                result = await self._engagement_from_attempts(student_id, subject, days)
+                self._cache_set(ck, result)
+                return result
+
+            subj_key = self.fs.rollup_subject_key(subject) if subject else None
+
+            daily_breakdown = []
+            active_dates: List[date] = []
+            total_attempts = 0
+            total_score = 0.0
+            all_subskills: set = set()
+            for r in rollups:
+                slice_ = r.get("subjects", {}).get(subj_key) if subj_key else r
+                if not slice_:
+                    continue
+                n = int(slice_.get("attempts", 0))
+                if n <= 0:
+                    continue
+                day_score = float(slice_.get("sum_score", 0.0))
+                day_subskills = slice_.get("subskills", []) or []
+                daily_breakdown.append({
+                    "date": r["date"],
+                    "attempts": n,
+                    "avg_score": round(day_score / n, 2),
+                    "distinct_subskills": len(set(day_subskills)),
+                })
+                active_dates.append(date.fromisoformat(r["date"]))
+                total_attempts += n
+                total_score += day_score
+                all_subskills.update(day_subskills)
+
+            current_streak, longest_streak = self._compute_streaks(active_dates)
+            total_active_days = len(active_dates)
+
+            result = {
+                "student_id": student_id,
+                "subject_filter": subject,
+                "days_analyzed": days,
+                "summary": {
+                    "total_active_days": total_active_days,
+                    "total_attempts": total_attempts,
+                    "avg_daily_attempts": round(total_attempts / max(total_active_days, 1), 1),
+                    "distinct_subskills": len(all_subskills),
+                    "avg_score": round(total_score / max(total_attempts, 1), 2),
+                    "streak_current": current_streak,
+                    "streak_longest": longest_streak,
+                },
+                "daily_breakdown": daily_breakdown,
+                "generated_at": now.isoformat(),
+            }
+            self._cache_set(ck, result)
+            return result
+
+        except Exception as e:
+            logger.error(f"Error computing engagement metrics: {e}")
+            return {
+                "student_id": student_id,
+                "summary": {"total_active_days": 0},
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+    async def _engagement_from_attempts(
+        self,
+        student_id: int,
+        subject: Optional[str] = None,
+        days: int = 7,
+    ) -> Dict[str, Any]:
+        """Legacy path: compute engagement by scanning raw attempts (L0)."""
         try:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             attempts = await self._load_attempts(student_id, subject, start_date=cutoff)
@@ -513,16 +591,92 @@ class FirestoreAnalyticsService:
                 "daily_breakdown": daily_breakdown,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
-            self._cache_set(ck, result)
             return result
 
         except Exception as e:
-            logger.error(f"Error computing engagement metrics: {e}")
+            logger.error(f"Error computing engagement metrics (legacy path): {e}")
             return {
                 "student_id": student_id,
                 "summary": {"total_active_days": 0},
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
+
+    # --------------------------------------------------------------------
+    # STUDENT PROFILE (canonical read-model serve)
+    # --------------------------------------------------------------------
+
+    async def get_student_profile(self, student_id: int, days: int = 7) -> Dict[str, Any]:
+        """One-call profile read: lifetime totals + recent engagement + skill state.
+
+        Sources: students/{sid}/profile/summary (L2 lifetime counters),
+        daily_rollups via get_engagement_metrics (L2, legacy fallback inside),
+        and mastery_lifecycle gate counts (L1). XP/level/streak live in Cosmos
+        and are attached by the endpoint layer, not here.
+        """
+        ck = self._cache_key("student_profile", student_id=student_id, days=days)
+        cached = self._cache_get(ck)
+        if cached is not None:
+            return cached
+
+        summary_doc = await self.fs.get_profile_summary(student_id) or {}
+        engagement = await self.get_engagement_metrics(student_id, days=days)
+        lifecycle = await self._load_lifecycle_map(student_id)
+
+        total_attempts = int(summary_doc.get("total_attempts", 0))
+        sum_score = float(summary_doc.get("sum_score", 0.0))
+        subjects = []
+        for key, s in sorted((summary_doc.get("subjects") or {}).items()):
+            n = int(s.get("attempts", 0))
+            subjects.append({
+                "key": key,
+                "name": s.get("name") or key,
+                "attempts": n,
+                "avg_score": round(float(s.get("sum_score", 0.0)) / max(n, 1), 2),
+                "last_activity_at": s.get("last_activity_at"),
+            })
+
+        # Skill state: per-subject counts by lifecycle gate and retention state.
+        skill_state: Dict[str, Dict[str, Any]] = {}
+        for d in lifecycle.values():
+            key = self.fs.rollup_subject_key(d.get("subject"))
+            entry = skill_state.setdefault(key, {
+                "key": key, "subskills": 0, "gates": defaultdict(int), "states": defaultdict(int),
+            })
+            entry["subskills"] += 1
+            gate = int(d.get("current_gate", 0) or 0)
+            entry["gates"][str(gate)] += 1
+            state = d.get("retention_state") or ("active" if gate > 0 else "not_started")
+            entry["states"][state] += 1
+        skill_state_out = [
+            {**e, "gates": dict(e["gates"]), "states": dict(e["states"])}
+            for e in sorted(skill_state.values(), key=lambda e: e["key"])
+        ]
+
+        result = {
+            "student_id": student_id,
+            "totals": {
+                "total_attempts": total_attempts,
+                "avg_score": round(sum_score / max(total_attempts, 1), 2),
+                "last_activity_at": summary_doc.get("last_activity_at"),
+                "last_subject": summary_doc.get("last_subject"),
+                "last_subskill_id": summary_doc.get("last_subskill_id"),
+                "subjects": subjects,
+            },
+            # Streak keys are deliberately dropped: the profile's canonical
+            # streak is the stored Cosmos value in the endpoint's engagement
+            # block — a second window-scoped definition here would reintroduce
+            # the three-serves inconsistency this endpoint exists to end.
+            "recent": {
+                "days": days,
+                **{k: v for k, v in engagement.get("summary", {}).items()
+                   if k not in ("streak_current", "streak_longest")},
+                "daily_breakdown": engagement.get("daily_breakdown", []),
+            },
+            "skill_state": {"subjects": skill_state_out},
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        self._cache_set(ck, result)
+        return result
 
     # --------------------------------------------------------------------
     # DETAILED RECENT ACTIVITY
@@ -880,6 +1034,27 @@ class FirestoreAnalyticsService:
     # SCORE TRENDS
     # --------------------------------------------------------------------
 
+    @staticmethod
+    def _period_bounds(period_key: str, granularity: str, now: datetime) -> Tuple[str, datetime, datetime]:
+        """(label, start, end) for a period key like '2025-W01' or '2025-01'."""
+        if granularity == "weekly":
+            try:
+                yr, wk = period_key.split("-W")
+                label = f"Week {wk}, {yr}"
+                p_start = datetime.strptime(f"{yr}-W{wk}-1", "%Y-W%W-%w")
+                p_end = p_start + timedelta(days=6)
+            except (ValueError, IndexError):
+                label, p_start, p_end = period_key, now, now
+        else:
+            try:
+                p_start = datetime.strptime(period_key, "%Y-%m")
+                label = p_start.strftime("%B %Y")
+                next_month = p_start.replace(day=28) + timedelta(days=4)
+                p_end = next_month - timedelta(days=next_month.day)
+            except ValueError:
+                label, p_start, p_end = period_key, now, now
+        return label, p_start, p_end
+
     async def get_score_trends(
         self,
         student_id: int,
@@ -888,7 +1063,14 @@ class FirestoreAnalyticsService:
         lookback_months: Optional[int] = None,
         subjects: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Compute score trends over time grouped by period."""
+        """Score trends served from daily_rollups counter docs (L2).
+
+        Groups per-day counters into weekly/monthly periods per subject —
+        no review scan. Falls back to the legacy N×5000-review scan only when
+        the student has no rollup docs in the window (backfill not yet run).
+        `total_reviews` in each period is the attempt count (1:1 with scored
+        reviews on the current submit path); field name kept for API shape.
+        """
         ck = self._cache_key(
             "score_trends", student_id=student_id, granularity=granularity,
             lookback_weeks=lookback_weeks, lookback_months=lookback_months,
@@ -898,6 +1080,92 @@ class FirestoreAnalyticsService:
         if cached is not None:
             return cached
 
+        try:
+            now = datetime.now(timezone.utc)
+            if granularity == "weekly":
+                lookback_val = lookback_weeks or 52
+                cutoff_day = (now - timedelta(weeks=lookback_val)).date().isoformat()
+            else:
+                lookback_val = lookback_months or 12
+                cutoff_day = (now - timedelta(days=lookback_val * 30)).date().isoformat()
+
+            rollups = await self.fs.get_daily_rollups(student_id, start_date=cutoff_day)
+            if not rollups:
+                result = await self._score_trends_from_reviews(
+                    student_id, granularity, lookback_weeks, lookback_months, subjects
+                )
+                self._cache_set(ck, result)
+                return result
+
+            wanted_keys = (
+                {self.fs.rollup_subject_key(s) for s in subjects} if subjects else None
+            )
+
+            # {subject_key: {period_key: [attempts, sum_score]}}
+            by_subject: Dict[str, Dict[str, List[float]]] = defaultdict(
+                lambda: defaultdict(lambda: [0, 0.0])
+            )
+            display_names: Dict[str, str] = {}
+            for r in rollups:
+                d = date.fromisoformat(r["date"])
+                if granularity == "weekly":
+                    iso = d.isocalendar()
+                    period_key = f"{iso[0]}-W{iso[1]:02d}"
+                else:
+                    period_key = f"{d.year}-{d.month:02d}"
+                for subj_key, slice_ in (r.get("subjects") or {}).items():
+                    if wanted_keys and subj_key not in wanted_keys:
+                        continue
+                    n = int(slice_.get("attempts", 0))
+                    if n <= 0:
+                        continue
+                    display_names.setdefault(subj_key, slice_.get("name") or subj_key)
+                    acc = by_subject[subj_key][period_key]
+                    acc[0] += n
+                    acc[1] += float(slice_.get("sum_score", 0.0))
+
+            trends = []
+            for subj_key in sorted(by_subject.keys(), key=lambda k: display_names[k]):
+                periods = []
+                for period_key in sorted(by_subject[subj_key].keys()):
+                    total, score_sum = by_subject[subj_key][period_key]
+                    avg = score_sum / max(total, 1)
+                    label, p_start, p_end = self._period_bounds(period_key, granularity, now)
+                    periods.append({
+                        "period_key": period_key,
+                        "period_label": label,
+                        "start_date": p_start.strftime("%Y-%m-%d"),
+                        "end_date": p_end.strftime("%Y-%m-%d"),
+                        "avg_score": round(avg, 2),
+                        "avg_score_pct": round(avg / 10.0, 4),
+                        "total_reviews": int(total),
+                        "score_sum": round(score_sum, 2),
+                    })
+                trends.append({"subject": display_names[subj_key], "periods": periods})
+
+            result = {
+                "trends": trends,
+                "date_range": {
+                    "lookback": lookback_val,
+                    "granularity": granularity,
+                },
+            }
+            self._cache_set(ck, result)
+            return result
+
+        except Exception as e:
+            logger.error(f"Error computing score trends: {e}")
+            raise
+
+    async def _score_trends_from_reviews(
+        self,
+        student_id: int,
+        granularity: str,
+        lookback_weeks: Optional[int] = None,
+        lookback_months: Optional[int] = None,
+        subjects: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Legacy path: compute score trends by scanning raw reviews (L0)."""
         try:
             now = datetime.now(timezone.utc)
             if granularity == "weekly":
@@ -975,18 +1243,16 @@ class FirestoreAnalyticsService:
 
                 trends.append({"subject": subj, "periods": periods})
 
-            result = {
+            return {
                 "trends": trends,
                 "date_range": {
                     "lookback": lookback_val,
                     "granularity": granularity,
                 },
             }
-            self._cache_set(ck, result)
-            return result
 
         except Exception as e:
-            logger.error(f"Error computing score trends: {e}")
+            logger.error(f"Error computing score trends (legacy path): {e}")
             raise
 
     # --------------------------------------------------------------------
