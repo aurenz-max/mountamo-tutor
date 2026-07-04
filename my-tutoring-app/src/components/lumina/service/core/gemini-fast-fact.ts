@@ -121,7 +121,7 @@ const flatChallengeSchema: Schema = {
     options: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "Answer options (3-4 items). Must include the correct answer. Required for every challenge",
+      description: "Answer options: exactly 2 for yes/no or true/false questions, 3-4 otherwise. Must include the correct answer. Never add filler options. Required for every challenge",
     },
     explanation: {
       type: Type.STRING,
@@ -242,9 +242,21 @@ function reconstructChallenge(flat: any, index: number): FastFactChallenge {
     options.splice(insertIdx, 0, correctStr);
   }
 
-  // Ensure at least 3 options (pad with placeholders if Gemini failed)
-  while (options.length < 3) {
-    options.push(`Option ${options.length + 1}`);
+  // Binary questions (yes/no, true/false) legitimately have exactly 2 options.
+  // NEVER pad with placeholder junk ('Option 3') — a visibly-fake option is
+  // trivially eliminable, reveals structure, and violates pedagogy. The only
+  // guarantee we enforce is that a real second choice exists so the button row
+  // isn't a single-answer giveaway.
+  if (options.length < 2) {
+    if (correctLower === 'yes' || correctLower === 'no') {
+      options = ['Yes', 'No'];
+    } else if (correctLower === 'true' || correctLower === 'false') {
+      options = ['True', 'False'];
+    } else {
+      // Pathological: Gemini returned no usable distractors. Keep the correct
+      // answer alone rather than inventing a fake — the UI can degrade gracefully.
+      options = [correctStr];
+    }
   }
 
   // Build visual (only if type is not 'none')
@@ -394,7 +406,7 @@ Create a Fast Fact fluency drill for "${topic}". Infer the subject area from the
 
 ## Challenge Design:
 - Each challenge must have a SINGLE clear correct answer.
-- ALL challenges use CHOICE mode (multiple choice). Provide 3-4 options with plausible distractors. The correct answer MUST be one of the options.
+- ALL challenges use CHOICE mode (multiple choice). Match the option count to the question: exactly 2 options for yes/no or true/false questions, 3-4 options for everything else. NEVER invent filler options to reach a count — every option must be a plausible, real answer. The correct answer MUST be one of the options.
 - responseMode must always be "choice". Never use "type".
 - NEVER reveal answers in promptText, promptSubtext, or visual content.
 - Use emojis (visualType: "emoji") or large text (visualType: "text-large") where pedagogically helpful (math expressions, symbols, etc.).

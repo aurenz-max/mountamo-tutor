@@ -1043,6 +1043,7 @@ class PlanningService:
                 student_id=str(student_id),
                 date=today.isoformat(),
                 day_of_week=day_names[today.weekday()],
+                grade_level=student_grade,
                 budget_minutes=budget_minutes,
                 warnings=["No skills due or available for today."],
             )
@@ -1086,12 +1087,26 @@ class PlanningService:
                 student_id=str(student_id),
                 date=today.isoformat(),
                 day_of_week=day_names[today.weekday()],
+                grade_level=student_grade,
                 budget_minutes=budget_minutes,
                 warnings=["No curriculum-resolvable skills available for today."],
             )
 
-        # --- Step 3: Group into lesson blocks ---
-        candidate_blocks = LessonGroupService.group_subskills_into_blocks(enriched)
+        # --- Step 3: Divert measurement into the daily pulse beat, group
+        #     the rest into lesson blocks ---
+        # Due mastery checks + the selector's confirm targets become ONE
+        # ~4-min pulse block, first beat of the day — pulse is the
+        # measurement half of the evidence economy, not a separate practice
+        # surface. What used to ship as singleton Mastery Check blocks
+        # ships inside the beat.
+        pulse_items, teaching = LessonGroupService.split_pulse_candidates(enriched)
+        candidate_blocks = LessonGroupService.group_subskills_into_blocks(teaching)
+        if pulse_items:
+            candidate_blocks.append(LessonGroupService.build_pulse_block(pulse_items))
+            logger.info(
+                f"[SESSION_PLAN] Pulse beat: {len(pulse_items)} measurement "
+                f"item(s) absorbed for student {student_id}"
+            )
 
         # --- Step 4–5: Fill budget and shape session ---
         subject_budgets = (
@@ -1105,6 +1120,9 @@ class PlanningService:
             subject_budgets=subject_budgets,
         )
         plan.allocation = allocation
+        # Grade of record rides on the plan so the launch surface generates
+        # at the student's ACTUAL grade, not the UI's default band.
+        plan.grade_level = student_grade
         return plan
 
     async def _allocate_subject_minutes(

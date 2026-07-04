@@ -14,7 +14,9 @@ import { authApi } from './authApiClient';
 // ---------------------------------------------------------------------------
 
 export type BloomLevel = 'identify' | 'explain' | 'apply';
-export type BlockType  = 'lesson' | 'practice' | 'retest';
+// 'pulse' = the daily measurement beat: one ~4-min first block absorbing due
+// mastery checks + IRT-confirmed targets (may span subjects).
+export type BlockType  = 'lesson' | 'practice' | 'retest' | 'pulse';
 export type SkillStatus = 'new' | 'review' | 'retest' | 'mastered';
 
 export interface BlockSubskill {
@@ -22,6 +24,8 @@ export interface BlockSubskill {
   // Parent skill id resolved from the curriculum hierarchy. Optional because
   // plans generated before this field existed won't carry it.
   skill_id?:     string;
+  /** Own subject — pulse blocks may span subjects; fall back to block.subject. */
+  subject?:      string;
   subskill_name: string;
   bloom_phase:   BloomLevel;
   gate:          number;
@@ -82,6 +86,10 @@ export interface DailySessionPlan {
   student_id:               string;
   date:                     string;   // YYYY-MM-DD
   day_of_week:              string;
+  /** Grade of record ('K'|'1'..'12') — launch surfaces derive the generation
+   *  grade from THIS, never from the home screen's UI band. Absent on plans
+   *  persisted before the field existed. */
+  grade_level?:             string | null;
   budget_minutes:           number;
   review_budget_minutes:    number;
   intro_budget_minutes:     number;
@@ -97,6 +105,27 @@ export interface DailySessionPlan {
   new_subskills:            number;
   review_subskills:         number;
   warnings:                 string[];
+}
+
+// ---------------------------------------------------------------------------
+// Display helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Student-facing subject name: "SOCIAL_STUDIES" / "science" → "Social Studies"
+ * / "Science". Plan blocks carry whatever spelling the backend graph or
+ * lifecycle doc used — raw keys must never reach the student (or a Gemini
+ * topic string).
+ */
+export function prettySubject(s: string): string {
+  if (!s) return '';
+  if (s.trim().toUpperCase() === 'ELA') return 'ELA';
+  return s
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .split(' ')
+    .map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
 }
 
 // ---------------------------------------------------------------------------

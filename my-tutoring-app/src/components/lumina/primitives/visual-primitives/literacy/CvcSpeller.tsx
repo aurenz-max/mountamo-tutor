@@ -18,6 +18,7 @@ import {
 } from '../../../evaluation';
 import type { CvcSpellerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -202,6 +203,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const [consonantCorrect, setConsonantCorrect] = useState(0);
   const [stretchUsedCount, setStretchUsedCount] = useState(0);
   const [errorPatterns, setErrorPatterns] = useState<string[]>([]);
+  // Words the student said ALOUD (judge-confirmed) — the culminating production beat
+  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
   // Stable instance ID
   const stableInstanceIdRef = useRef(instanceId || `cvc-speller-${Date.now()}`);
@@ -700,9 +703,55 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   }, [currentChallenge, wordComplete, hasSubmittedEvaluation, currentAttempts, vowelFocus, incrementAttempts, recordResult, sendText]);
 
   // -------------------------------------------------------------------------
+  // Spoken production beat — once the word is solved and displayed, the student
+  // says the WHOLE word aloud; the judge ladder (Azure dual-signal → Gemini,
+  // utils/spokenWordJudge.ts) confirms it. Purely additive: the mic never
+  // bypasses the decoding challenge (it appears only after wordComplete), the
+  // Next Word button is always available, and 'no-match' is never penalized.
+  //   'match'   → celebrate + track (bonus production credit)
+  //   'no-match'→ tutor models the word by voice, NO penalty
+  //   'unclear' → invite a retry, silently
+  // -------------------------------------------------------------------------
+  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
+    if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
+    if (result.outcome === 'match') {
+      SoundManager.playCorrect();
+      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
+      sendText(
+        `[STUDENT_SAID_WORD] The student said "${currentChallenge.targetWord}" out loud all by themselves! Celebrate enthusiastically that they SAID the whole word (one sentence).`,
+        { silent: true }
+      );
+    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      sendText(
+        `[SPOKEN_MISS] The student tried to say "${currentChallenge.targetWord}" aloud but it sounded like "${result.verdict.heard}". Gently model it — stretch the sounds "${currentChallenge.targetPhonemes.join('... ')}", then say the whole word — and invite one more try. Warm, never scolding. Two short sentences max.`,
+        { silent: true }
+      );
+    } else {
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to say "${currentChallenge.targetWord}" again a little louder, or just tap Next Word.`,
+        { silent: true }
+      );
+    }
+  }, [currentChallenge, spokenWords, sendText]);
+
+  const spokenCapture = useSpokenWordCapture({
+    targetWord: currentChallenge?.targetWord ?? '',
+    gradeLevel: 'K',
+    onResult: handleSpokenResult,
+    onNoSpeech: () => {
+      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say "${currentChallenge.targetWord}" again a little louder, or just tap Next Word.`,
+        { silent: true }
+      );
+    },
+  });
+
+  // -------------------------------------------------------------------------
   // Move to next word or submit evaluation
   // -------------------------------------------------------------------------
   const handleNextWord = useCallback(() => {
+    spokenCapture.cancel(); // never carry a live mic across challenges
     const advanced = advanceProgress();
 
     if (!advanced) {
@@ -729,7 +778,10 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           attemptsCount: totalAttempts,
         };
 
-        submitEvaluation(overallAcc >= 60, overallAcc, metrics, { challengeResults });
+        submitEvaluation(overallAcc >= 60, overallAcc, metrics, {
+          challengeResults,
+          spokenWords: Array.from(spokenWords),
+        });
 
         const phaseStr = phaseResults.length > 0
           ? phaseResults.map(p => `${p.label} ${p.score}%`).join(', ')
@@ -747,9 +799,23 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   }, [
     advanceProgress, challenges, challengeResults, hasSubmittedEvaluation,
     vowelCorrect, vowelErrors, consonantCorrect, consonantErrors,
-    errorPatterns, stretchUsedCount, vowelFocus, phaseResults,
-    submitEvaluation, sendText, resetDomainState,
+    errorPatterns, stretchUsedCount, vowelFocus, phaseResults, spokenWords,
+    submitEvaluation, sendText, resetDomainState, spokenCapture,
   ]);
+
+  // Keep a live ref so the auto-advance timer always calls the latest handler.
+  const handleNextWordRef = useRef(handleNextWord);
+  handleNextWordRef.current = handleNextWord;
+
+  // Strong-flow UX: once the student says the word aloud (judge-confirmed), glide
+  // to the next challenge on their behalf — no extra click. The mic itself stays
+  // tap-to-start (push-to-talk is the echo gate against the tutor's voice), but
+  // everything after a successful production advances automatically.
+  useEffect(() => {
+    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
+    const t = setTimeout(() => handleNextWordRef.current(), 1400);
+    return () => clearTimeout(t);
+  }, [spokenWords, currentChallenge]);
 
   const handleClearAll = useCallback(() => {
     setSlots([null, null, null]);
@@ -1140,15 +1206,84 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           </LuminaFeedbackCard>
         )}
 
-        {/* Next / Finish button */}
-        {wordComplete && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaActionButton
-              action="next"
-              onClick={handleNextWord}
-            >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-            </LuminaActionButton>
+        {/* Culminating production beat — say the whole word aloud. Once solved,
+            this IS the next step: a single prominent mic CTA, and a successful
+            spoken word auto-advances (no click). Next Word is a quiet skip. */}
+        {wordComplete && !allChallengesComplete && currentChallenge && (
+          <div className="flex flex-col items-center gap-3">
+            {spokenWords.has(currentChallenge.id) ? (
+              // Said it → celebrate, then auto-glide to the next challenge (effect above)
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-emerald-300 text-base font-semibold">
+                  {'🎉'} You said “{currentChallenge.targetWord}” out loud!
+                </span>
+                <span className="text-slate-500 text-xs">Next word coming up…</span>
+              </div>
+            ) : spokenCapture.isSupported ? (
+              // Mic available → the say-it beat is the PRIMARY next step
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-slate-300 text-sm font-medium">Your turn — say the word!</p>
+                <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
+                  {spokenCapture.state === 'idle' && (
+                    <LuminaButton
+                      tone="primary"
+                      onClick={() => void spokenCapture.start()}
+                      className="text-lg px-8 py-3"
+                    >
+                      {'🎙️'} Say “{currentChallenge.targetWord}”!
+                    </LuminaButton>
+                  )}
+                  {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm font-semibold ${
+                          spokenCapture.state === 'recording'
+                            ? 'text-emerald-300'
+                            : 'text-amber-300 animate-pulse'
+                        }`}
+                      >
+                        {spokenCapture.state === 'recording'
+                          ? 'Listening…'
+                          : `Say “${currentChallenge.targetWord}”!`}
+                      </span>
+                      <div className="w-20 h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-75"
+                          style={{ width: `${Math.min(100, Math.round((spokenCapture.level / 0.12) * 100))}%` }}
+                        />
+                      </div>
+                      <button
+                        onClick={spokenCapture.cancel}
+                        className="text-slate-500 text-xs hover:text-slate-300"
+                        aria-label="Stop listening"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {spokenCapture.state === 'judging' && (
+                    <span className="text-blue-300 text-sm animate-pulse">Checking…</span>
+                  )}
+                </div>
+                {/* Quiet skip — never traps a student who can't or won't speak */}
+                {spokenCapture.state === 'idle' && (
+                  <button
+                    onClick={handleNextWord}
+                    className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
+                  >
+                    {currentChallengeIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              // No mic → original prominent Next / Finish
+              <LuminaActionButton
+                action="next"
+                onClick={handleNextWord}
+              >
+                {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
+              </LuminaActionButton>
+            )}
           </div>
         )}
 
@@ -1159,7 +1294,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
             overallScore={submittedResult?.score ?? localOverallScore}
             durationMs={elapsedMs}
             heading="Spelling Complete!"
-            celebrationMessage={`You got ${challengeResults.filter(r => r.correct).length} out of ${challenges.length} correct!`}
+            celebrationMessage={`You got ${challengeResults.filter(r => r.correct).length} out of ${challenges.length} correct!${spokenWords.size > 0 ? ` You said ${spokenWords.size} out loud — amazing!` : ''}`}
             className="mt-4"
           />
         )}

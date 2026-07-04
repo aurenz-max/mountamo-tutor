@@ -12,14 +12,24 @@ import type { StudentPersona } from "../studentContext/types";
  * student by name and tie today's topic to their last session. Returns '' when
  * no persona is given, so the prompt is byte-identical for unpersonalized runs.
  */
-const buildBriefVoiceBlock = (persona?: StudentPersona | null): string => {
-  if (!persona) return '';
+const buildBriefVoiceBlock = (
+  persona?: StudentPersona | null,
+  sessionHandoff?: string | null,
+): string => {
+  if (!persona && !sessionHandoff) return '';
 
   const facts: string[] = [];
-  if (persona.firstName) facts.push(`- Name: ${persona.firstName} (greet the student directly by name)`);
-  if (persona.interests?.length) facts.push(`- Interests: ${persona.interests.join(', ')}`);
-  if ((persona.currentStreak ?? 0) >= 2) facts.push(`- Learning streak: ${persona.currentStreak} days running`);
-  if (persona.lastSession?.summary) facts.push(`- Last session: ${persona.lastSession.summary}`);
+  if (persona?.firstName) facts.push(`- Name: ${persona.firstName} (greet the student directly by name)`);
+  if (persona?.interests?.length) facts.push(`- Interests: ${persona.interests.join(', ')}`);
+  if (sessionHandoff) {
+    // Mid-session: continuity comes from the block the student JUST finished,
+    // minutes ago. Cross-day facts (streak, yesterday's session) read as
+    // stale/robotic when the day is already in motion — suppress them.
+    facts.push(`- Moments ago, in THIS session: ${sessionHandoff}`);
+  } else {
+    if ((persona?.currentStreak ?? 0) >= 2) facts.push(`- Learning streak: ${persona?.currentStreak} days running`);
+    if (persona?.lastSession?.summary) facts.push(`- Last session: ${persona?.lastSession.summary}`);
+  }
   if (facts.length === 0) return '';
 
   return `
@@ -28,7 +38,9 @@ const buildBriefVoiceBlock = (persona?: StudentPersona | null): string => {
 ${facts.join('\n')}
 
 HOW TO USE THE VOICE:
-- hook.content: open by greeting the student by name. If a last-session fact is present, connect today's topic to it in one short phrase (e.g. "Last time you worked with ten frames — today we build on that"). Acknowledge an active streak in at most one short clause.
+- hook.content: open by greeting the student by name.${sessionHandoff
+    ? ' A "Moments ago" fact is present: the student is mid-session and just finished that block — open by handing off from it in one warm phrase (e.g. "Nice work exploring landforms — now let\'s play with word sounds"). Do NOT mention streaks, previous days, or any earlier session: the handoff is the only continuity that belongs here.'
+    : ' If a last-session fact is present, connect today\'s topic to it in one short phrase (e.g. "Last time you worked with ten frames — today we build on that"). Acknowledge an active streak in at most one short clause.'}
 - mindset.encouragement: you may address the student warmly by name.
 - Where an interest fits the topic NATURALLY, you may theme the hook around it — the hook only, and only if it genuinely fits.
 
@@ -76,10 +88,13 @@ export const generateIntroBriefing = async (
   gradeLevel: string,
   estimatedTime: string = '15-20 minutes',
   persona?: StudentPersona | null,
-  intent?: string
+  intent?: string,
+  /** Mid-session continuity: what the student finished moments ago (daily
+   *  session blocks). Supersedes streak/last-session facts in the voice. */
+  sessionHandoff?: string | null
 ): Promise<IntroBriefingData> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
-  const voiceBlock = buildBriefVoiceBlock(persona);
+  const voiceBlock = buildBriefVoiceBlock(persona, sessionHandoff);
 
   const schema: Schema = {
     type: Type.OBJECT,

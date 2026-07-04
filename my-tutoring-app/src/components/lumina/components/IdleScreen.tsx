@@ -166,6 +166,8 @@ interface IdleScreenProps {
     curriculum: CurriculumContext;
   }) => void;
   onNavigate: (panel: string) => void;
+  /** Today's Session ribbon (App-wired) — ambient state under the hero. */
+  sessionRibbon?: React.ReactNode;
 }
 
 export const IdleScreen: React.FC<IdleScreenProps> = ({
@@ -178,6 +180,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   onCurriculumSelect,
   onLaunchGroupLesson,
   onNavigate,
+  sessionRibbon,
 }) => {
   const [lessonGroupMode, setLessonGroupMode] = useState(false);
   const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
@@ -394,24 +397,17 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
       {/* ── Below the fold ── */}
       <div className="relative z-10 max-w-5xl mx-auto w-full px-4 pb-16 space-y-12">
 
-        {/* Quick launch row (Practice now lives in the home-screen mode slider) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <SpotlightCard
-            color="34, 211, 238"
-            onClick={() => onNavigate('daily-session')}
-            className="bg-gradient-to-br from-cyan-900/20 to-violet-900/20"
-          >
-            <div className="p-5 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/30 to-violet-500/30 border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-2xl">&#x26A1;</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Today's Session</h4>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-semibold uppercase tracking-wider">Ready</span>
-              </div>
-            </div>
-          </SpotlightCard>
+        {/* Today's Session — ambient ribbon directly under the hero. One tap
+            to launch the next beat; the drawer holds the full plan. Replaces
+            the old two-click card → interstitial path. */}
+        {sessionRibbon && (
+          <div className="-mt-10 text-center">
+            {sessionRibbon}
+          </div>
+        )}
 
+        {/* Quick launch row (Practice now lives in the home-screen mode slider) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <SpotlightCard
             color="168, 85, 247"
             onClick={() => onNavigate('scratch-pad')}
@@ -547,6 +543,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               { panel: 'calibration-simulator', icon: '\uD83D\uDCC8', title: 'IRT Simulator', color: '251, 146, 60', cardClass: 'bg-gradient-to-br from-orange-900/20 to-amber-900/20', iconClass: 'bg-orange-500/20', hoverTitle: 'group-hover:text-orange-200', hoverArrow: 'group-hover:text-orange-400' },
               { panel: 'atom-registry', icon: '\uD83D\uDD2C', title: 'Atom Registry', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-sky-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },
               { panel: 'sound-lab', icon: '\uD83D\uDD0A', title: 'Sound Lab', color: '20, 184, 166', cardClass: 'bg-gradient-to-br from-teal-900/20 to-cyan-900/20', iconClass: 'bg-teal-500/20', hoverTitle: 'group-hover:text-teal-200', hoverArrow: 'group-hover:text-teal-400' },
+              { panel: 'blend-judge-lab', icon: '\uD83C\uDF99\uFE0F', title: 'Blend Judge Lab', color: '52, 211, 153', cardClass: 'bg-gradient-to-br from-emerald-900/20 to-teal-900/20', iconClass: 'bg-emerald-500/20', hoverTitle: 'group-hover:text-emerald-200', hoverArrow: 'group-hover:text-emerald-400' },
               { panel: 'design-studio', icon: '\uD83C\uDFA8', title: 'Design Studio', color: '168, 85, 247', cardClass: 'bg-gradient-to-br from-purple-900/20 to-fuchsia-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
               { panel: 'analytics-dashboard', icon: '📊', title: 'Analytics', color: '139, 92, 246', cardClass: 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20', iconClass: 'bg-purple-500/20', hoverTitle: 'group-hover:text-purple-200', hoverArrow: 'group-hover:text-purple-400' },
               { panel: 'student-activity-panel', icon: '📈', title: 'Student Activity', color: '34, 211, 238', cardClass: 'bg-gradient-to-br from-cyan-900/20 to-teal-900/20', iconClass: 'bg-cyan-500/20', hoverTitle: 'group-hover:text-cyan-200', hoverArrow: 'group-hover:text-cyan-400' },

@@ -287,9 +287,11 @@ export const buildCompleteExhibitFromManifestStreaming = async (
 export const generateIntroBriefing = async (
   topic: string,
   gradeLevel: string,
-  persona?: StudentPersona | null
+  persona?: StudentPersona | null,
+  /** Mid-session continuity fact ("just finished a Social Studies lesson…"). */
+  sessionHandoff?: string | null
 ): Promise<IntroBriefingData> => {
-  return callAPI('generateIntroBriefing', { topic, gradeLevel, persona });
+  return callAPI('generateIntroBriefing', { topic, gradeLevel, persona, sessionHandoff });
 };
 
 // ============================================

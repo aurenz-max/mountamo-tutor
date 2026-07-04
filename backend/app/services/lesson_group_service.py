@@ -10,6 +10,7 @@ Responsibilities:
 
 import hashlib
 import logging
+import math
 import random
 import re
 
@@ -18,7 +19,6 @@ from datetime import date
 from typing import Any, Dict, List, Optional, Union
 
 from ..models.lesson_plan import (
-    BLOCK_DURATION_MINUTES,
     DEFAULT_DAILY_BUDGET_MINUTES,
     DEFAULT_REVIEW_CAP_PCT,
     BloomLevel,
@@ -27,6 +27,7 @@ from ..models.lesson_plan import (
     BlockType,
     DailySessionPlan,
     LessonBlock,
+    block_cost_minutes,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,14 @@ _CELEBRATIONS: Dict[str, List[str]] = {
 }
 
 MAX_GROUP_SIZE = 5
+# Blocks below this size merge up into sibling groups within the same unit —
+# the singleton scatter that fragmented daily plans came from skill-exact
+# bucketing with no second pass.
+MIN_GROUP_SIZE = 2
+
+# The daily pulse beat holds at most this many measurement items (~4-6 min
+# at the pulse cost model). Overflow keeps the normal retest/lesson path.
+PULSE_BEAT_MAX_ITEMS = 4
 
 
 class LessonGroupService:
@@ -133,8 +142,15 @@ class LessonGroupService:
         Grouping rules (PRD §2.2):
             - Same domain (unit_title) → same group
             - Further clustered by parent skill_description
-            - 2–5 subskills per block; larger clusters are chunked
+            - Merge-up pass: undersized skill groups combine with siblings
+              in the same unit, so singletons never ship alone when related
+              work exists (skill-exact bucketing with no second pass was the
+              root of daily-plan fragmentation)
+            - 2–5 subskills per block; larger clusters are chunked evenly
             - Ordered by Bloom's level within each block
+            - Mastery retests never merge with teaching work — a check is
+              measurement, not instruction (most are absorbed upstream by
+              the daily pulse beat; overflow keeps dedicated blocks)
         """
         if not candidates:
             return []
@@ -151,20 +167,70 @@ class LessonGroupService:
         blocks: List[LessonBlock] = []
 
         for (subject, unit_title), skills in domain_buckets.items():
-            # Second-level bucket: parent skill_description
-            skill_buckets: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+            retest_pool: List[Dict[str, Any]] = []
+            teach_pool: List[Dict[str, Any]] = []
             for s in skills:
-                skill_key = s.get("skill_description") or unit_title
-                skill_buckets[skill_key].append(s)
+                status = cls._status_from_type(
+                    s.get("type", "new"), s.get("mastery_gate") or 0
+                )
+                (retest_pool if status == "retest" else teach_pool).append(s)
 
-            for skill_key, skill_group in skill_buckets.items():
-                # Chunk into groups of MAX_GROUP_SIZE
-                for i in range(0, len(skill_group), MAX_GROUP_SIZE):
-                    chunk = skill_group[i: i + MAX_GROUP_SIZE]
-                    block = cls._build_block(chunk, subject, unit_title, skill_key)
-                    blocks.append(block)
+            def skill_buckets(items: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+                b: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+                for s in items:
+                    b[s.get("skill_description") or unit_title].append(s)
+                return b
+
+            # Retests: per-skill chunking, no merging
+            for skill_key, group in skill_buckets(retest_pool).items():
+                for chunk in cls._chunk_evenly(group):
+                    blocks.append(cls._build_block(chunk, subject, unit_title, skill_key))
+
+            # Teaching work: skill buckets, then merge-up so singletons combine
+            merged = cls._merge_up(list(skill_buckets(teach_pool).values()))
+            for group in merged:
+                # Merged groups may span skills — title falls back to the unit
+                keys = {s.get("skill_description") or unit_title for s in group}
+                skill_key = keys.pop() if len(keys) == 1 else unit_title
+                for chunk in cls._chunk_evenly(group):
+                    blocks.append(cls._build_block(chunk, subject, unit_title, skill_key))
 
         return blocks
+
+    @staticmethod
+    def _merge_up(groups: List[List[Dict[str, Any]]]) -> List[List[Dict[str, Any]]]:
+        """
+        Combine undersized sibling groups (already same subject + unit) so
+        singleton blocks only survive when a subskill genuinely has no
+        related work today. Best-fit-decreasing: each fragment lands in the
+        fullest receiver that still has room, keeping blocks full and block
+        count low; fragments that fit nowhere pool into unit-level groups.
+        """
+        keep = [list(g) for g in groups if len(g) >= MIN_GROUP_SIZE]
+        fragments = sorted(
+            (list(g) for g in groups if 0 < len(g) < MIN_GROUP_SIZE),
+            key=len,
+            reverse=True,
+        )
+        leftovers: List[Dict[str, Any]] = []
+        for frag in fragments:
+            receivers = [g for g in keep if len(g) + len(frag) <= MAX_GROUP_SIZE]
+            if receivers:
+                max(receivers, key=len).extend(frag)
+            else:
+                leftovers.extend(frag)
+        for i in range(0, len(leftovers), MAX_GROUP_SIZE):
+            keep.append(leftovers[i: i + MAX_GROUP_SIZE])
+        return keep
+
+    @staticmethod
+    def _chunk_evenly(group: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        """Split an oversized group into balanced chunks (7 → 4+3, not 5+2)."""
+        if len(group) <= MAX_GROUP_SIZE:
+            return [group] if group else []
+        n_chunks = math.ceil(len(group) / MAX_GROUP_SIZE)
+        size = math.ceil(len(group) / n_chunks)
+        return [group[i: i + size] for i in range(0, len(group), size)]
 
     @classmethod
     def _build_block(
@@ -198,6 +264,7 @@ class LessonGroupService:
             subskills.append(BlockSubskill(
                 subskill_id=s.get("skill_id", ""),
                 skill_id=s.get("parent_skill_id") or "",
+                subject=s.get("subject", ""),
                 subskill_name=desc,
                 bloom_phase=bloom,
                 gate=gate,
@@ -216,14 +283,11 @@ class LessonGroupService:
             BlockType.LESSON
         )
 
-        duration = BLOCK_DURATION_MINUTES[block_type]
+        # Linear cost model: base + marginal × n, so a merged 5-pack and a
+        # genuine singleton are priced by what they actually contain.
+        duration = block_cost_minutes(block_type, len(subskills))
 
-        # Per-phase duration
-        minutes_per_phase = (
-            6 if block_type == BlockType.LESSON   else
-            3 if block_type == BlockType.PRACTICE else
-            2
-        )
+        minutes_per_phase = max(1, round(duration / max(1, len(subskills))))
 
         bloom_phases = [
             BloomPhase(
@@ -268,6 +332,104 @@ class LessonGroupService:
             bloom_phases=bloom_phases,
             priority_score=priority,
             celebration_message=cls._pick_celebration(subject, block_type),
+        )
+
+    # ------------------------------------------------------------------
+    # 2b. Daily pulse beat — the measurement half of the evidence economy
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def split_pulse_candidates(
+        cls,
+        candidates: List[Dict[str, Any]],
+    ) -> tuple:
+        """
+        Divert measurement work into the daily pulse beat: due mastery
+        retests (most overdue first), then the IRT selector's "confirm"
+        targets — subskills the model already believes are ready, where the
+        block's only job is to produce the gate-advancing evidence.
+
+        Returns (pulse_items, remaining). Overflow beyond
+        PULSE_BEAT_MAX_ITEMS keeps the normal retest/lesson block path;
+        "learn" targets are never diverted — they are instruction, not
+        measurement.
+        """
+        retests = [
+            c for c in candidates
+            if cls._status_from_type(c.get("type", "new"), c.get("mastery_gate") or 0) == "retest"
+        ]
+        retests.sort(key=lambda c: -c.get("days_overdue", 0))
+        confirms = [c for c in candidates if c.get("selection_kind") == "confirm"]
+
+        pulse = (retests + confirms)[:PULSE_BEAT_MAX_ITEMS]
+        pulse_ids = {id(c) for c in pulse}
+        remaining = [c for c in candidates if id(c) not in pulse_ids]
+        return pulse, remaining
+
+    @classmethod
+    def build_pulse_block(cls, items: List[Dict[str, Any]]) -> LessonBlock:
+        """
+        Build the day's single pulse-beat block: a ~4-min measurement beat
+        scheduled first, absorbing what used to ship as singleton Mastery
+        Check blocks. May span subjects — measurement follows the lifecycle
+        scheduler, not the subject pacer; block.subject carries the majority
+        subject for display and interleaving only.
+        """
+        subskills: List[BlockSubskill] = []
+        for s in items:
+            desc = (
+                s.get("subskill_description")
+                or s.get("skill_description")
+                or s.get("skill_id", "")
+            )
+            gate = s.get("mastery_gate") or 0
+            subskills.append(BlockSubskill(
+                subskill_id=s.get("skill_id", ""),
+                skill_id=s.get("parent_skill_id") or "",
+                subject=s.get("subject", ""),
+                subskill_name=desc,
+                # Measurement asks the student to produce, not to meet the
+                # material — every pulse item runs at the apply level.
+                bloom_phase=BloomLevel.APPLY,
+                gate=gate,
+                status=cls._status_from_type(s.get("type", "new"), gate),
+            ))
+
+        subject_counts: Dict[str, int] = defaultdict(int)
+        for s in items:
+            subject_counts[s.get("subject", "")] += 1
+        subject = max(subject_counts, key=subject_counts.get) if subject_counts else ""
+
+        duration = block_cost_minutes(BlockType.PULSE, len(subskills))
+        per_item = max(1, round(duration / max(1, len(subskills))))
+        bloom_phases = [
+            BloomPhase(
+                phase=ss.bloom_phase,
+                subskill_id=ss.subskill_id,
+                subskill_name=ss.subskill_name,
+                estimated_minutes=per_item,
+            )
+            for ss in subskills
+        ]
+
+        member_hash = hashlib.md5(
+            ",".join(ss.subskill_id for ss in subskills).encode()
+        ).hexdigest()[:6]
+        max_overdue = max((s.get("days_overdue", 0) for s in items), default=0)
+
+        return LessonBlock(
+            block_id=f"lg-pulse-{member_hash}",
+            block_index=0,
+            type=BlockType.PULSE,
+            lesson_group_id="lg-pulse",
+            title="Daily Pulse",
+            subject=subject,
+            unit_title=None,
+            estimated_minutes=duration,
+            subskills=subskills,
+            bloom_phases=bloom_phases,
+            priority_score=2000 + max_overdue,
+            celebration_message="Evidence in — your progress map just got sharper!",
         )
 
     @staticmethod
@@ -342,6 +504,7 @@ class LessonGroupService:
         intro_budget  = budget_minutes - review_budget
 
         # Partition and sort by priority
+        pulses    = [b for b in candidate_blocks if b.type == BlockType.PULSE]
         retests   = sorted(
             [b for b in candidate_blocks if b.type == BlockType.RETEST],
             key=lambda b: -b.priority_score,
@@ -373,6 +536,14 @@ class LessonGroupService:
             if cap is None:
                 return True
             return subject_used[key] + block.estimated_minutes <= cap
+
+        # 0. The pulse beat always ships — it is the day's measurement beat
+        #    (~4-6 min), counted against the review budget but never dropped
+        #    and never subject-capped (it may span subjects; measurement
+        #    timing belongs to the lifecycle, not the pacer).
+        for block in pulses:
+            selected.append(block)
+            review_minutes_used += block.estimated_minutes
 
         # 1. Fill retests first (counted against review budget; exempt from
         #    subject caps — retention timing is lifecycle's, not the pacer's)
@@ -459,6 +630,7 @@ class LessonGroupService:
     def _shape_session(blocks: List[LessonBlock]) -> List[LessonBlock]:
         """
         Interleave blocks for cognitive variety (PRD §3.4):
+          - Pulse beat first — the day opens on its measurement beat
           - Front-load new lessons (highest attention window)
           - Alternate subjects — never same subject back-to-back
           - Weave pattern: lesson → practice/retest → lesson → ...
@@ -466,12 +638,15 @@ class LessonGroupService:
         if len(blocks) <= 1:
             return list(blocks)
 
+        pulses    = [b for b in blocks if b.type == BlockType.PULSE]
         lessons   = [b for b in blocks if b.type == BlockType.LESSON]
         practices = [b for b in blocks if b.type == BlockType.PRACTICE]
         retests   = [b for b in blocks if b.type == BlockType.RETEST]
 
         last_subject: Optional[str] = None
-        ordered: List[LessonBlock] = []
+        ordered: List[LessonBlock] = list(pulses)
+        if ordered:
+            last_subject = ordered[-1].subject
 
         def pop_different(lst: List[LessonBlock]) -> Optional[LessonBlock]:
             nonlocal last_subject

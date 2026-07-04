@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Activity,
   BookOpen,
   Brain,
   ChevronRight,
@@ -34,6 +35,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 
 import {
   fetchDailySessionPlan,
+  prettySubject,
   type DailySessionPlan,
   type LessonBlock,
   type BloomLevel,
@@ -69,6 +71,12 @@ const BLOCK_TYPE_CONFIG: Record<BlockType, {
     icon: Zap,
     ringClass: 'ring-rose-500/30',
   },
+  pulse: {
+    label: 'Daily Pulse',
+    badgeClass: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
+    icon: Activity,
+    ringClass: 'ring-fuchsia-500/30',
+  },
 };
 
 const BLOOM_CONFIG: Record<BloomLevel, { label: string; dotClass: string }> = {
@@ -86,14 +94,17 @@ const STATUS_CONFIG: Record<SkillStatus, string> = {
 
 const SUBJECT_COLORS: Record<string, string> = {
   ELA:              'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'Language Arts':  'bg-violet-500/20 text-violet-300 border-violet-500/30',
   Math:             'bg-blue-500/20   text-blue-300   border-blue-500/30',
+  Mathematics:      'bg-blue-500/20   text-blue-300   border-blue-500/30',
   Science:          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   'Social Studies': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
   _default:         'bg-slate-500/20 text-slate-300 border-slate-500/30',
 };
 
+// Keyed by the PRETTY name — callers pass raw block.subject and we normalize.
 function subjectBadgeClass(subject: string): string {
-  return SUBJECT_COLORS[subject] ?? SUBJECT_COLORS._default;
+  return SUBJECT_COLORS[prettySubject(subject)] ?? SUBJECT_COLORS._default;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +152,7 @@ function BlockCard({
 
             {/* Subject badge */}
             <Badge className={`text-xs border px-2.5 py-0.5 ${subjectBadgeClass(block.subject)}`}>
-              {block.subject}
+              {prettySubject(block.subject)}
             </Badge>
 
             {/* Duration */}

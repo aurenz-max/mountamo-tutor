@@ -86,8 +86,17 @@ export const ObjectivesViewer: React.FC<ObjectivesViewerProps> = ({ objectives, 
         </p>
       </div>
 
-      {/* Objectives Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Objectives Grid — cap the column count AND narrow/center the grid for few objectives so a lone card
+          doesn't get squeezed into one of three columns and left-align */}
+      <div
+        className={`grid gap-4 w-full ${
+          objectives.length === 1
+            ? 'grid-cols-1 max-w-md mx-auto'
+            : objectives.length === 2
+            ? 'grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto'
+            : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+        }`}
+      >
         {objectives.map((objective, index) => {
           const color = getVerbColor(objective.verb);
           const icon = getVerbIcon(objective.icon, objective.verb);

@@ -2,11 +2,14 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Sparkles } from 'lucide-react';
-import type { LessonBlock } from '@/lib/sessionPlanAPI';
+import { prettySubject, type LessonBlock } from '@/lib/sessionPlanAPI';
 
+// Keyed by the PRETTY subject name (see prettySubject).
 const SUBJECT_COLORS: Record<string, string> = {
   ELA: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'Language Arts': 'bg-violet-500/20 text-violet-300 border-violet-500/30',
   Math: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  Mathematics: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   Science: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   'Social Studies': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
 };
@@ -18,7 +21,8 @@ interface ExhibitCompleteFooterProps {
 }
 
 export default function ExhibitCompleteFooter({ block, evalCount, onContinue }: ExhibitCompleteFooterProps) {
-  const subjectStyle = SUBJECT_COLORS[block.subject] ?? 'bg-slate-500/20 text-slate-300 border-slate-500/30';
+  const subjectName = prettySubject(block.subject);
+  const subjectStyle = SUBJECT_COLORS[subjectName] ?? 'bg-slate-500/20 text-slate-300 border-slate-500/30';
   const message = block.celebration_message || 'Great work on this block!';
 
   return (
@@ -40,7 +44,7 @@ export default function ExhibitCompleteFooter({ block, evalCount, onContinue }: 
 
           <div className="flex items-center justify-center gap-3 mb-6">
             <span className={`text-xs px-2.5 py-1 rounded-full border ${subjectStyle}`}>
-              {block.subject}
+              {subjectName}
             </span>
             <span className="text-slate-400 text-sm">{block.title}</span>
             {evalCount > 0 && (

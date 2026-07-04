@@ -282,6 +282,16 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
     evaluableChallenges, blocks.length, submitResult,
   ]);
 
+  // Synchronous score for the summary panel. submittedResult is populated in an
+  // effect that runs *after* the panel first mounts, so without this fallback the
+  // panel mounts with score 0 → 'needs-work' tier → the once-only celebration
+  // (sound + confetti) fires silently and its guard never lets it re-fire.
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || evaluableChallenges.length === 0) return 0;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    return Math.round((correctCount / evaluableChallenges.length) * 100);
+  }, [allChallengesComplete, challengeResults, evaluableChallenges.length]);
+
   // ── AI Tutor ──────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     title,
@@ -662,7 +672,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? 0}
+          overallScore={submittedResult?.score ?? localOverallScore}
           durationMs={elapsedMs}
           heading="Deep Dive Complete!"
           celebrationMessage={`You explored ${blocks.length} blocks and answered ${evaluableChallenges.length} questions.`}

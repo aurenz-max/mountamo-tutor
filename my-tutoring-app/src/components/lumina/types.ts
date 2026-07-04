@@ -46,9 +46,11 @@ export interface FoundationConcept {
     whereToFind: string;        // "The fulcrum is the center post"
   };
 
-  // Self-check (verb-appropriate)
+  // Self-check (verb-appropriate) — a quick graded multiple-choice check
   selfCheck: {
-    prompt: string;             // "Can you point to the fulcrum?"
+    prompt: string;             // "Which part is the fulcrum?"
+    options: string[];          // 2-3 answer choices (one correct, rest plausible distractors)
+    correctIndex: number;       // index into options of the correct choice
     hint: string;               // "Look for the triangle in the middle"
   };
 
@@ -1619,8 +1621,10 @@ export interface ExhibitManifest {
    *  or content (see BaseProblemData.subject). */
   subject?: string;
 
-  // The curator brief introduces all objectives
-  curatorBrief: CuratorBriefManifest;
+  // The curator brief introduces all objectives. Optional: measurement-shaped
+  // exhibits (the daily pulse beat) are code-built with NO narrative intro —
+  // every consumer already guards for absence.
+  curatorBrief?: CuratorBriefManifest;
 
   // Each objective has its own dedicated components
   objectiveBlocks: ObjectiveBlock[];

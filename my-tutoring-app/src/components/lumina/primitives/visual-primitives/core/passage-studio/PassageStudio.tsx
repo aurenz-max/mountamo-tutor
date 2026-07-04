@@ -182,6 +182,16 @@ const PassageStudio: React.FC<PassageStudioProps> = ({ data, className }) => {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<PrimitiveEvaluationResult<PassageStudioMetrics> | null>(null);
 
+  // Synchronous score for the summary panel. submittedResult is set in an effect
+  // that runs *after* the panel first mounts — without this fallback the panel
+  // mounts at score 0 ('needs-work' tier) and the once-only celebration (sound +
+  // confetti) fires silently, then its guard blocks re-firing.
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || evaluableBlocks.length === 0) return 0;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    return Math.round((correctCount / evaluableBlocks.length) * 100);
+  }, [allChallengesComplete, challengeResults, evaluableBlocks.length]);
+
   useEffect(() => {
     if (!allChallengesComplete || hasSubmitted || !hasEval) return;
     setHasSubmitted(true);
@@ -609,7 +619,7 @@ const PassageStudio: React.FC<PassageStudioProps> = ({ data, className }) => {
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? 0}
+          overallScore={submittedResult?.score ?? localOverallScore}
           durationMs={elapsedMs}
           heading="Passage Studio Complete!"
           celebrationMessage={`You worked through ${blocks.length} blocks across "${title}".`}

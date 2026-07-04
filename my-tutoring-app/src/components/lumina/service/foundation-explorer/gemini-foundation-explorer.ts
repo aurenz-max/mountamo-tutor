@@ -51,14 +51,23 @@ const foundationConceptSchema: Schema = {
       properties: {
         prompt: {
           type: Type.STRING,
-          description: "A question the student can use to check understanding. Should match the objective verb. IDENTIFY: 'Can you point to...?' EXPLAIN: 'Can you tell why...?' APPLY: 'Where would you use...?'"
+          description: "A CLOSED question with one clearly correct answer, matching the objective verb. IDENTIFY: 'Which part is the fulcrum?' EXPLAIN: 'Why does the fulcrum matter?' APPLY: 'Where would you use a fulcrum?'"
+        },
+        options: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "EXACTLY 3 short answer choices. One is correct; the other two are PLAUSIBLE distractors (common misconceptions or the other concepts in this diagram) — never obviously wrong or joke answers. Do NOT reveal which is correct in the wording."
+        },
+        correctIndex: {
+          type: Type.INTEGER,
+          description: "0-based index into options of the correct choice. VARY this across concepts — do not always use 0."
         },
         hint: {
           type: Type.STRING,
-          description: "A helpful hint if they're stuck. Don't give away the answer directly."
+          description: "A helpful nudge toward the correct choice if they're stuck. Do NOT state the answer directly."
         }
       },
-      required: ["prompt", "hint"]
+      required: ["prompt", "options", "correctIndex", "hint"]
     },
     color: {
       type: Type.STRING,
@@ -207,11 +216,15 @@ CRITICAL REQUIREMENTS:
    - briefDefinition: ONE sentence only, grade-appropriate language
    - diagramHighlight: Where to find it in the central diagram
    - inContext: Real-world example they can relate to
-   - selfCheck: Question matching the ${objectiveVerb.toUpperCase()} verb
+   - selfCheck: A quick 3-option multiple-choice check matching the ${objectiveVerb.toUpperCase()} verb
 
-3. SELF-CHECK ALIGNMENT:
-   - Every selfCheck.prompt MUST match the objective verb
+3. SELF-CHECK ALIGNMENT (this is a GRADED multiple-choice question, not a reflection prompt):
+   - Every selfCheck.prompt MUST be a closed question with ONE correct answer, matching the objective verb
    - ${objectiveVerb.toUpperCase()} verbs need ${objectiveVerb}-style questions (see guidance above)
+   - Provide EXACTLY 3 options: one correct + two PLAUSIBLE distractors (use the OTHER concepts in
+     this diagram, or a common misconception, as distractors). Never joke/obviously-wrong options.
+   - Set correctIndex to the correct option and VARY it across concepts (not always 0)
+   - The student must not be able to guess the answer from wording, length, or option order
 
 4. VISUAL IDENTITY:
    - Each concept gets a distinct color
@@ -245,8 +258,10 @@ EXAMPLE OUTPUT STRUCTURE (for levers with IDENTIFY verb):
         "whereToFind": "The fulcrum is the center post that the seesaw sits on and pivots around."
       },
       "selfCheck": {
-        "prompt": "Can you point to the fulcrum in the diagram?",
-        "hint": "Look for something in the middle that the beam rests on."
+        "prompt": "Which part of the lever is the fulcrum?",
+        "options": ["The heavy box on the left", "The triangle in the middle the beam rests on", "The hand pushing down on the right"],
+        "correctIndex": 1,
+        "hint": "Look for something in the middle that the beam rests on and pivots around."
       },
       "color": "#F59E0B"
     },
@@ -281,10 +296,22 @@ Return a complete Foundation Explorer configuration.
   // Validation: ensure each concept has required fields
   data.concepts = data.concepts.map((concept: FoundationConcept, index: number) => {
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+    const sc = concept.selfCheck || ({} as FoundationConcept['selfCheck']);
+    // Guard the graded self-check: guarantee ≥2 options and an in-range correctIndex,
+    // so a malformed generation can never render an unanswerable check.
+    const options = Array.isArray(sc.options) ? sc.options.filter(Boolean) : [];
+    const safeOptions = options.length >= 2 ? options : [];
+    const correctIndex =
+      typeof sc.correctIndex === 'number' &&
+      sc.correctIndex >= 0 &&
+      sc.correctIndex < safeOptions.length
+        ? sc.correctIndex
+        : 0;
     return {
       ...concept,
       id: concept.id || `concept-${index}`,
-      color: concept.color || colors[index % colors.length]
+      color: concept.color || colors[index % colors.length],
+      selfCheck: { ...sc, options: safeOptions, correctIndex },
     };
   });
 

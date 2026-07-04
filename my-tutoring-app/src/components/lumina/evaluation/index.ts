@@ -187,6 +187,7 @@ export type {
   WordSorterMetrics,
   SentenceAnalyzerMetrics,
   // Core metrics
+  FoundationExplorerMetrics,
   FactFileMetrics,
   HowItWorksMetrics,
   TimelineExplorerMetrics,

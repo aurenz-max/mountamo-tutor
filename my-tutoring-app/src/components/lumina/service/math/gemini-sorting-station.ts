@@ -156,10 +156,10 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
     case 'sort-by-attribute':
       promptLines.push(
         tier === 'easy'
-          ? 'Offer 2 clear sortable attributes so the choice is approachable; the instruction may nudge which attribute works well.'
+          ? 'Give exactly 2 sortable attributes with clearly distinct values so either choice is approachable; the instruction may nudge which attribute works well.'
           : tier === 'hard'
-            ? 'Offer 3 or more meaningfully sortable attributes so picking a productive sort criterion is genuinely the challenge; do NOT name which attribute to use.'
-            : 'Offer 2-3 sortable attributes; the student decides which to use without being told.',
+            ? 'Give exactly 2 sortable attributes, but make their values subtler/closer (and let the group count run to the upper end) so deciding which produces a clean sort is genuinely the challenge; do NOT name which attribute to use.'
+            : 'Give exactly 2 sortable attributes; the student decides which to use without being told.',
       );
       break;
     case 'count-and-compare':
@@ -490,8 +490,11 @@ async function generateSortChallenges(
       'Use a DIFFERENT sorting attribute for each challenge to create variety. ' +
       'Instruction MUST ask students to sort/group — NEVER ask "which has more" or "which doesn\'t belong".',
     'sort-by-attribute':
-      'Objects have multiple interesting attributes. Student picks HOW to sort. ' +
-      'Give objects at least 2-3 meaningful attributes so there are multiple valid sort criteria.',
+      'The student picks HOW to sort, so give every object EXACTLY TWO clean sortable attributes ' +
+      '(e.g. color AND type) — no more. EVERY object must have BOTH attributes filled in, and each ' +
+      'attribute must have ≥2 distinct values across the set, so BOTH axes form valid groups and ' +
+      'the student has a real choice. Do NOT add a third or fourth attribute (size/shape) — extra ' +
+      'axes are wasted authoring and get hidden from the chooser anyway.',
     'tally-record':
       'Sort objects and tally the count of each group. ' +
       'Each challenge sorts by ONE attribute. Every object MUST match a group. ' +

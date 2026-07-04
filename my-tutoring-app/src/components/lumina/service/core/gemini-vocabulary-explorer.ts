@@ -136,14 +136,17 @@ const challengeSchema: Schema = {
     matchDef2: { type: Type.STRING, description: "Third match definition (for match type)" },
     matchTerm3: { type: Type.STRING, description: "Fourth match term (for match type)" },
     matchDef3: { type: Type.STRING, description: "Fourth match definition (for match type)" },
-    // For fill_blank / context / identify (multiple choice)
-    sentence: { type: Type.STRING, description: "Sentence with blank (for fill_blank)" },
-    option0: { type: Type.STRING, description: "First answer option" },
-    option1: { type: Type.STRING, description: "Second answer option" },
-    option2: { type: Type.STRING, description: "Third answer option" },
-    option3: { type: Type.STRING, description: "Fourth answer option" },
-    correctAnswer: { type: Type.STRING, description: "The EXACT text of the correct option — copy one of option0-option3 verbatim" },
-    correctIndex: { type: Type.NUMBER, description: "Backup: index (0-3) of the correct option" },
+    // For fill_blank / context / identify (multiple choice).
+    // The correct answer and the distractors are SEPARATE fields — code assembles
+    // and shuffles them into the option list and derives the index from the
+    // placement it just made. The model never tracks which slot the answer lands
+    // in; that positional bookkeeping is exactly what VE-1 / SP-25 kept getting
+    // wrong. (Mirrors how knowledge-check binds the answer to an option identity.)
+    sentence: { type: Type.STRING, description: "Sentence containing a '_____' blank (for fill_blank)" },
+    correctAnswer: { type: Type.STRING, description: "The correct answer text: the WORD for fill_blank/context, the DEFINITION for identify" },
+    distractor0: { type: Type.STRING, description: "A plausible but WRONG answer (same kind as correctAnswer)" },
+    distractor1: { type: Type.STRING, description: "A second plausible but wrong answer" },
+    distractor2: { type: Type.STRING, description: "A third plausible but wrong answer" },
     // Common
     explanation: { type: Type.STRING, description: "Explanation shown after answering (1-2 sentences)" },
     relatedTermId: { type: Type.STRING, description: "Term ID this challenge relates to" },
@@ -368,33 +371,45 @@ function validateVocabularyExplorerData(raw: any, allowedTypes?: string[]): Voca
         }
         return { ...base, matchPairs };
       } else {
-        // fill_blank, context, identify — reconstruct options from flat fields
-        const options = [
-          c.option0 ?? c.options?.[0],
-          c.option1 ?? c.options?.[1],
-          c.option2 ?? c.options?.[2],
-          c.option3 ?? c.options?.[3],
-        ].map((o: any) => (o == null ? '' : String(o).trim()));
+        // fill_blank, context, identify — CORRECT BY CONSTRUCTION.
+        //
+        // VE-4 (supersedes VE-1's text-matching): the model emits the answer and
+        // the distractors as SEPARATE fields; CODE assembles + shuffles the option
+        // list and reads correctIndex off the placement it just made. There is no
+        // model-authored option list and no positional pointer to be wrong, so the
+        // whole SP-25 failure class (correctIndex anchoring to 0, correctAnswer not
+        // matching an option) is structurally impossible here — the same reason
+        // MultipleChoiceProblem/knowledge-check bind the answer to an option
+        // identity rather than a slot. No text-matching heuristics.
+        const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+        const correct = c.correctAnswer != null ? String(c.correctAnswer).trim() : '';
 
-        // VE-3 (SP-14): Flash Lite drops the flat option fields → no real options.
-        // Don't ship "Option A-D" placeholders; derive a real challenge from terms.
-        if (!options.every(o => o.length > 0)) {
-          console.warn('[VocabularyExplorer] Challenge missing real options — deriving from terms (VE-3)');
+        const distractors: string[] = [c.distractor0, c.distractor1, c.distractor2]
+          .map((d: any) => (d == null ? '' : String(d).trim()))
+          .filter((d: string) => d.length > 0 && norm(d) !== norm(correct));
+
+        // Flash Lite drops flat fields (SP-14): no usable answer/distractors →
+        // derive a real challenge from the terms (also correct by construction).
+        if (!correct || distractors.length === 0) {
+          console.warn('[VocabularyExplorer] Missing answer/distractors — deriving from terms (VE-4/SP-14)');
           return buildMcChallengeFromTerms(terms, usedDerived, type as 'fill_blank' | 'context' | 'identify');
         }
 
-        // VE-1: derive correctIndex from the answer TEXT, not the positional index
-        // (Gemini's correctIndex is wrong in the majority of generations — it anchors
-        // to 0). Mirrors knowledge-check's correctOptionId pattern.
-        const correctAnswer = c.correctAnswer != null ? String(c.correctAnswer).trim() : '';
-        let correctIndex = correctAnswer
-          ? options.findIndex(o => o.toLowerCase() === correctAnswer.toLowerCase())
-          : -1;
-        if (correctIndex < 0) {
-          // Last resort only: trust the LLM's positional index (clamped).
-          correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
-          if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+        // Top up to 3 distractors from other terms so we still render 4 options
+        // when the model under-delivers. identify → definitions, else → words.
+        if (distractors.length < 3) {
+          const pool = type === 'identify' ? terms.map(t => t.definition) : terms.map(t => t.word);
+          for (const cand of pool) {
+            if (distractors.length >= 3) break;
+            const s = String(cand || '').trim();
+            if (s && norm(s) !== norm(correct) && !distractors.some(d => norm(d) === norm(s))) {
+              distractors.push(s);
+            }
+          }
         }
+
+        const options = shuffle([correct, ...distractors.slice(0, 3)]);
+        const correctIndex = options.indexOf(correct); // exact: code placed `correct`
 
         return {
           ...base,
@@ -506,9 +521,9 @@ ${challengeTypeSection}
 - Each challenge references a relatedTermId from the terms above
 - Challenge types:
   - "match": Provide 3-4 term-definition pairs using matchTerm0/matchDef0 through matchTerm3/matchDef3
-  - "fill_blank": Provide a sentence with a blank, 4 options (option0-option3), and correctAnswer (exact text of the right option)
-  - "context": Provide a new context sentence, 4 usage options (option0-option3), and correctAnswer (exact text of the right option)
-  - "identify": Provide a word and 4 possible definitions (option0-option3), and correctAnswer (exact text of the right definition)
+  - "fill_blank": Provide a sentence containing a "_____" blank, the correctAnswer (the word that fills it), and three WRONG words in distractor0/distractor1/distractor2
+  - "context": Provide a new context sentence, the correctAnswer (the word/usage that fits), and three WRONG ones in distractor0/distractor1/distractor2
+  - "identify": Provide the correctAnswer (the correct definition of the term) and three WRONG definitions in distractor0/distractor1/distractor2
 
 ## Grade-Level Adaptation:
 - For K-2: Simple, high-frequency words; short definitions; concrete examples
@@ -519,8 +534,8 @@ ${challengeTypeSection}
 1. All definitions must be accurate and age-appropriate
 2. Example sentences must use the word naturally — no awkward "the word X means..." patterns
 3. NEVER reveal answers in challenge questions, option labels, or placeholder text
-4. correctAnswer must be the EXACT verbatim text of the correct option (copy it from option0-option3). Also set correctIndex to its position as a backup.
-5. Every challenge must have exactly 4 real, non-empty options (for non-match types) — never leave an option blank
+4. correctAnswer is the RIGHT answer; distractor0/distractor1/distractor2 are three WRONG answers. Do NOT build a numbered option list or pick an index — the app shuffles the answer in among the distractors for you.
+5. Provide exactly three distractors (for non-match types), each a real non-empty string that is plausibly wrong for the target grade — never blank, never a duplicate of correctAnswer
 6. Match challenges need 3-4 term-definition pairs
 7. Distractors should be plausible but clearly wrong for the target grade level
 

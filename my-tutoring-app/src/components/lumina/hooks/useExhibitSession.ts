@@ -9,6 +9,7 @@ import { GameState, type ExhibitData, type IntroBriefingData } from '../types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
 import { fetchGenerationContext, fetchStudentPersona } from '../service/studentContext/fetchGenerationContext';
 import type { StudentGenerationContext } from '../service/studentContext/types';
+import { buildPulseCheckManifest, buildPulseBrief } from '../service/manifest/pulse-check-manifest';
 
 export interface ComponentStatus {
   id: string;
@@ -49,6 +50,21 @@ export interface GenerateOptions {
    * objectives all resolve to it — no retrieval sweep needed.
    */
   curriculumContext?: { subject: string; skillId: string; subskillId: string };
+  /**
+   * Exhibit shape. 'lesson' (default) runs the full curated pipeline
+   * (brief → manifest → build). 'pulse' is the daily measurement beat: NO
+   * narrative brief, NO manifest LLM — a code-built knowledge-check over the
+   * preBuiltObjectives, launched fast. Measurement, not instruction.
+   */
+  sessionShape?: 'lesson' | 'pulse';
+  /**
+   * Mid-session continuity for the curator brief: one sentence describing
+   * what the student finished MOMENTS AGO in this same session ("a Social
+   * Studies lesson: Places And Environments"). When present, the brief's
+   * hook hands off from it and cross-day facts (streak, yesterday's session)
+   * are suppressed — the day is already in motion.
+   */
+  sessionHandoff?: string;
 }
 
 export interface ExhibitSession {
@@ -93,6 +109,49 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
     setComponentStatuses([]);
     setBrief(null);
 
+    // PULSE SHAPE — the daily measurement beat. Deterministic and fast: no
+    // persona, no curator brief, no manifest LLM. A code-built manifest holds
+    // one orchestrated knowledge-check spanning the block's objectives, each
+    // problem attributing to its own objective's subskill. The exhibit opens
+    // straight on the check (no intro card is emitted without a curatorBrief).
+    if (options.sessionShape === 'pulse' && preBuiltObjectives?.length) {
+      try {
+        setMessage('⚡ Preparing your Daily Pulse — a few quick wins…');
+        const pulseBrief = buildPulseBrief(topic, gradeLevel, preBuiltObjectives);
+        setBrief(pulseBrief);
+        const manifest = buildPulseCheckManifest(topic, gradeLevel, preBuiltObjectives);
+
+        const pulseStatuses: ComponentStatus[] = (manifest.layout || []).map((item, index) => ({
+          id: item.instanceId,
+          name: item.componentId,
+          status: 'building' as const,
+          index: index + 1,
+          total: manifest.layout?.length || 1,
+          title: item.title,
+          intent: item.intent,
+        }));
+        setComponentStatuses(pulseStatuses);
+
+        const data = await buildCompleteExhibitFromManifestStreaming(
+          manifest,
+          pulseBrief,
+          {
+            onComponentComplete: (event) => {
+              setComponentStatuses(prev => prev.map(c =>
+                c.id === event.instanceId ? { ...c, status: 'completed' as const } : c
+              ));
+            },
+          }
+        );
+        setExhibit(data);
+        setPhase(GameState.PLAYING);
+      } catch (error) {
+        console.error(error);
+        setPhase(GameState.ERROR);
+      }
+      return;
+    }
+
     try {
       // STEP 0: Lightweight persona fetch (name + last session) so the brief can
       // greet by name. Pure identity — no objectives, no curriculum retrieval —
@@ -104,7 +163,9 @@ export function useExhibitSession(studentId?: string): ExhibitSession {
 
       // STEP 1: Curator brief
       setMessage('🎯 Generating lesson introduction...');
-      let generatedBrief = await generateIntroBriefing(topic, gradeLevel, persona);
+      let generatedBrief = await generateIntroBriefing(
+        topic, gradeLevel, persona, options.sessionHandoff
+      );
       console.log('📚 Curator brief generated:', generatedBrief);
 
       let objectives = generatedBrief.objectives;

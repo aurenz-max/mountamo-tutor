@@ -1761,7 +1761,7 @@ class FirestoreAnalyticsService:
         subject: str,
         grade: Optional[str] = None,
         count: int = 4,
-        max_per_skill: int = 2,
+        diversity_lambda: float = 0.7,
     ) -> Dict[str, Any]:
         """
         Pick the next lesson's target subskills from knowledge-graph state.
@@ -1778,9 +1778,20 @@ class FirestoreAnalyticsService:
           (most productive practice, most informative evidence).
 
         Nodes without IRT data (untested skills) are "cold_start" fallbacks,
-        shallowest-first. max_per_skill bounds lesson composition (diversity),
-        not priority. Output objectives are preBuiltObjectives-shaped so any
-        consumer (tray fill mode, daily plan) can launch them directly.
+        shallowest-first.
+
+        diversity_lambda shapes lesson COMPOSITION, never priority: each
+        candidate's score is discounted by λ^k where k = picks already made
+        from its parent skill, so a skill's 2nd/3rd subskill must beat other
+        skills' best by a widening margin. λ=1 recovers the pure ranking
+        exactly (no discount); λ→0 approaches strict round-robin. This
+        replaces the old max_per_skill hard cap, which both scattered picks
+        AND stranded budget at every massed-practice-decay setting in the
+        planner-lab toy sim. The default 0.7 is an aesthetic prior; the
+        pulse-planner harness is what will calibrate it.
+
+        Output objectives are preBuiltObjectives-shaped so any consumer
+        (tray fill mode, daily plan) can launch them directly.
         """
         from app.models.mastery_lifecycle import GATE_P_THRESHOLDS
 
@@ -1855,24 +1866,39 @@ class FirestoreAnalyticsService:
         cold_start.sort(key=lambda c: (not c["prereqs_ready"], c["depth"]))
 
         # Compose: aim for half confirm / half learn, backfill from whichever
-        # pool has supply, then cold_start. Cap per skill for lesson diversity.
+        # pool has supply, then cold_start. Diversity via λ discount, not a cap.
         per_skill: Dict[str, int] = defaultdict(int)
         picked: List[Dict[str, Any]] = []
 
-        def take(pool: List[Dict[str, Any]], want: int) -> None:
-            for c in pool:
-                if want <= 0 or len(picked) >= count:
+        def take(pool: List[Dict[str, Any]], want: int, base_score) -> None:
+            # Greedy: each step picks the candidate maximizing
+            # (prereqs_ready, base_score × λ^k). Pools are pre-sorted, so
+            # ties resolve to the pool's pure-IRT order (λ=1 ⇒ identical).
+            while want > 0 and len(picked) < count:
+                best: Optional[Dict[str, Any]] = None
+                best_key: Optional[tuple] = None
+                for c in pool:
+                    if c in picked:
+                        continue
+                    discount = diversity_lambda ** per_skill[c["skill_id"]]
+                    key = (c["prereqs_ready"], base_score(c) * discount)
+                    if best is None or key > best_key:
+                        best, best_key = c, key
+                if best is None:
                     return
-                if c in picked or per_skill[c["skill_id"]] >= max_per_skill:
-                    continue
-                picked.append(c)
-                per_skill[c["skill_id"]] += 1
+                picked.append(best)
+                per_skill[best["skill_id"]] += 1
                 want -= 1
 
-        take(confirm, count - count // 2)
-        take(learn, count - len(picked))
-        take(confirm, count - len(picked))
-        take(cold_start, count - len(picked))
+        # confirm/learn score on p_correct (both pools rank highest-p first);
+        # cold_start scores shallowest-first so prereqs precede dependents.
+        p_score = lambda c: c["p_correct"] or 0.0
+        depth_score = lambda c: 1.0 / (1.0 + max(0, c["depth"]))
+
+        take(confirm, count - count // 2, p_score)
+        take(learn, count - len(picked), p_score)
+        take(confirm, count - len(picked), p_score)
+        take(cold_start, count - len(picked), depth_score)
 
         # Curriculum titles for the picks (unit title, skill description) so
         # consumers like the Lesson Builder tray can render/compose the topic
@@ -1919,6 +1945,7 @@ class FirestoreAnalyticsService:
             "student_id": student_id,
             "subject": subject,
             "grade": grade,
+            "diversity_lambda": diversity_lambda,
             "objectives": objectives,
             "pool_sizes": {
                 "confirm": len(confirm),

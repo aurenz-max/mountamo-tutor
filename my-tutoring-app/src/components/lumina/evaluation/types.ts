@@ -3065,6 +3065,17 @@ export interface TimelineExplorerMetrics extends BasePrimitiveMetrics {
   explorationPattern: string;
 }
 
+export interface FoundationExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'foundation-explorer';
+  totalConcepts: number;
+  conceptsMastered: number;
+  overallAccuracy: number;   // 0-100, attempts-weighted
+  firstTryCount: number;
+  totalAttempts: number;
+  hintsViewed: number;
+  objectiveVerb: string;
+}
+
 export interface VocabularyExplorerMetrics extends BasePrimitiveMetrics {
   type: 'vocabulary-explorer';
   termsExplored: number;
@@ -3369,6 +3380,7 @@ export type PrimitiveMetrics =
   | WordSorterMetrics
   | WordBuilderMetrics
   // Core
+  | FoundationExplorerMetrics
   | FactFileMetrics
   | HowItWorksMetrics
   | TimelineExplorerMetrics

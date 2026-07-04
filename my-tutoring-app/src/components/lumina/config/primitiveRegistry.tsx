@@ -1822,7 +1822,8 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
-    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+    containerClassName: 'max-w-7xl mx-auto mb-20',
   },
 
   // Literacy Primitives — Wave 1 (K-6 ELA)

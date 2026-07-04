@@ -11,7 +11,6 @@ import {
   LuminaButton,
   LuminaActionButton,
   LuminaFeedbackCard,
-  LuminaScoreRing,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -20,7 +19,9 @@ import {
 } from '../../../evaluation';
 import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -118,6 +119,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   const [isCelebrating, setIsCelebrating] = useState(false);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isBlended, setIsBlended] = useState(false);
+  // Words the student blended ALOUD (judge-confirmed) — the production beat
+  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
   // Tracking
   const [attemptsPerWord, setAttemptsPerWord] = useState<Record<string, number>>({});
@@ -134,6 +137,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
+    submittedResult,
+    elapsedMs,
   } = usePrimitiveEvaluation<PhonicsBlenderMetrics>({
     primitiveType: 'phonics-blender',
     instanceId: resolvedInstanceId,
@@ -145,6 +150,24 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   });
 
   const currentWord = words[currentWordIndex];
+
+  // Per-word rows for the shared PhaseSummaryPanel (manual PhaseResult[] —
+  // words are the natural breakdown, same pattern as DoubleNumberLine).
+  const wordResults = useMemo<PhaseResult[]>(() => {
+    if (!hasSubmittedEvaluation) return [];
+    return words.map(word => {
+      const attempts = attemptsPerWord[word.id] || 1;
+      const firstTry = correctOnFirstTry.has(word.id);
+      const completed = completedWords.has(word.id);
+      return {
+        label: word.targetWord,
+        icon: word.emoji || '🔤',
+        score: completed ? (firstTry ? 100 : Math.max(50, 100 - (attempts - 1) * 25)) : 0,
+        attempts,
+        firstTry,
+      };
+    });
+  }, [hasSubmittedEvaluation, words, attemptsPerWord, correctOnFirstTry, completedWords]);
 
   // ---------------------------------------------------------------------------
   // AI Tutoring Integration — the AI tutor is the voice of this primitive.
@@ -342,7 +365,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes, sendText]);
 
   // Complete blending for current word
-  const handleBlendComplete = useCallback(() => {
+  const handleBlendComplete = useCallback((spokenAloud = false) => {
     if (!currentWord) return;
     setIsBlended(true);
     setCompletedWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
@@ -351,13 +374,54 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
     // Tell the AI the student blended successfully — triggers a spoken response
     sendText(
-      `[STUDENT_BLENDED] The student successfully blended the word "${currentWord.targetWord}"! Celebrate briefly (one sentence).`,
+      spokenAloud
+        ? `[STUDENT_BLENDED_ALOUD] The student said "${currentWord.targetWord}" out loud and blended it correctly! Celebrate enthusiastically that they SAID it themselves (one sentence).`
+        : `[STUDENT_BLENDED] The student successfully blended the word "${currentWord.targetWord}"! Celebrate briefly (one sentence).`,
       { silent: true }
     );
   }, [currentWord, sendText]);
 
+  // ---------------------------------------------------------------------------
+  // Spoken production beat — the student says the word aloud; the judge ladder
+  // (Azure dual-signal → Gemini, utils/spokenWordJudge.ts) confirms it.
+  // Asymmetric by design: 'match' awards the blend; 'no-match' becomes tutor
+  // coaching with NO penalty; 'unclear' invites a retry or the Blend button.
+  // ---------------------------------------------------------------------------
+  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
+    if (!currentWord || isBlended) return;
+    if (result.outcome === 'match') {
+      SoundManager.playCorrect();
+      setSpokenWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
+      handleBlendComplete(true);
+    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      sendText(
+        `[SPOKEN_BLEND_MISS] The student tried to say "${currentWord.targetWord}" aloud but said "${result.verdict.heard}". Gently model the correct blend — each sound slowly, then the whole word — and invite one more try. Warm, never scolding. Two short sentences max.`,
+        { silent: true }
+      );
+    } else {
+      sendText(
+        `[SPOKEN_BLEND_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to try saying "${currentWord.targetWord}" again a little louder, or tap the Blend button instead.`,
+        { silent: true }
+      );
+    }
+  }, [currentWord, isBlended, handleBlendComplete, sendText]);
+
+  const spokenCapture = useSpokenWordCapture({
+    targetWord: currentWord?.targetWord ?? '',
+    gradeLevel,
+    onResult: handleSpokenResult,
+    onNoSpeech: () => {
+      if (!currentWord || isBlended) return;
+      sendText(
+        `[SPOKEN_BLEND_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to try saying "${currentWord.targetWord}" again a little louder, or tap the Blend button instead.`,
+        { silent: true }
+      );
+    },
+  });
+
   // Move to next word
   const handleNextWord = useCallback(() => {
+    spokenCapture.cancel(); // never carry a live mic across words
     if (currentWordIndex < words.length - 1) {
       const nextWord = words[currentWordIndex + 1];
       setCurrentWordIndex(prev => prev + 1);
@@ -381,7 +445,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       // All words done - submit evaluation
       submitFinalEvaluation();
     }
-  }, [currentWordIndex, words, sendText]);
+  }, [currentWordIndex, words, sendText, spokenCapture]);
 
   // Advance from listen to build phase
   const handleStartBuild = useCallback(() => {
@@ -434,13 +498,21 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       metrics,
       {
         completedWords: Array.from(completedWords),
+        spokenWords: Array.from(spokenWords),
         blendTimes,
         attemptsPerWord,
       }
     );
+
+    // Spoken wrap-up from the AI tutor alongside the summary panel
+    sendText(
+      `[SESSION_COMPLETE] The student finished all ${wordsTotal} words (${wordsBlended} blended, ${soundsCorrectFirst} on the first try). Give a warm one-sentence wrap-up celebrating their blending practice.`,
+      { silent: true }
+    );
   }, [
     hasSubmittedEvaluation,
     completedWords,
+    spokenWords,
     currentWord,
     words,
     correctOnFirstTry,
@@ -449,6 +521,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     patternType,
     gradeLevel,
     submitEvaluation,
+    sendText,
   ]);
 
   // ============================================================================
@@ -752,16 +825,59 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           )}
         </div>
 
-        {/* Blend button or next */}
-        <div className="flex justify-center gap-3">
+        {/* Say it / Blend / Next controls */}
+        <div className="flex flex-col items-center gap-2">
           {!isBlended ? (
-            <LuminaButton
-              tone="primary"
-              onClick={handleBlendComplete}
-              className="text-lg px-8 py-3"
-            >
-              Blend!
-            </LuminaButton>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              {/* Spoken production beat — push-to-talk, judge-confirmed */}
+              {spokenCapture.isSupported && spokenCapture.state === 'idle' && (
+                <LuminaButton
+                  onClick={() => void spokenCapture.start()}
+                  className="text-lg px-6 py-3"
+                >
+                  🎙️ Say it!
+                </LuminaButton>
+              )}
+              {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-semibold ${
+                      spokenCapture.state === 'recording'
+                        ? 'text-emerald-300'
+                        : 'text-amber-300 animate-pulse'
+                    }`}
+                  >
+                    {spokenCapture.state === 'recording'
+                      ? 'Listening…'
+                      : `Say “${currentWord.targetWord}”!`}
+                  </span>
+                  <div className="w-20 h-2 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-75"
+                      style={{ width: `${Math.min(100, Math.round((spokenCapture.level / 0.12) * 100))}%` }}
+                    />
+                  </div>
+                  <button
+                    onClick={spokenCapture.cancel}
+                    className="text-slate-500 text-xs hover:text-slate-300"
+                    aria-label="Stop listening"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {spokenCapture.state === 'judging' && (
+                <span className="text-blue-300 text-sm animate-pulse">Checking…</span>
+              )}
+              {/* Deterministic fallback — always available, never penalized */}
+              <LuminaButton
+                tone="primary"
+                onClick={() => handleBlendComplete()}
+                className="text-lg px-8 py-3"
+              >
+                Blend!
+              </LuminaButton>
+            </div>
           ) : (
             <LuminaActionButton action="next" onClick={handleNextWord}>
               {currentWordIndex < words.length - 1 ? 'Next Word' : 'Finish'}
@@ -808,45 +924,37 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Phase Progress */}
-        {renderPhaseProgress()}
+        {!hasSubmittedEvaluation && (
+          <>
+            {/* Phase Progress */}
+            {renderPhaseProgress()}
 
-        {/* Word Counter */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">
-            Word {currentWordIndex + 1} of {words.length}
-          </span>
-          <span className="text-slate-500 text-xs">
-            {completedWords.size} completed
-          </span>
-        </div>
-
-        {/* Phase Content */}
-        {currentPhase === 'listen' && renderListenPhase()}
-        {currentPhase === 'build' && renderBuildPhase()}
-        {currentPhase === 'blend' && renderBlendPhase()}
-
-        {/* Final Results */}
-        {hasSubmittedEvaluation && (
-          <LuminaPanel accent="emerald" className="flex flex-col items-center text-center gap-3">
-            <LuminaScoreRing
-              score={words.length > 0 ? Math.round((completedWords.size / words.length) * 100) : 0}
-            />
-            <div className="space-y-1">
-              <p className="text-emerald-300 font-semibold text-lg">Session Complete!</p>
-              <p className="text-slate-400 text-sm">
-                You blended {completedWords.size} out of {words.length} words!
-              </p>
-            </div>
-            <div className="flex justify-center gap-4 text-xs text-slate-500">
-              <span>
-                Attempts: {Object.values(attemptsPerWord).reduce((s, v) => s + v, 0)}
+            {/* Word Counter */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-400">
+                Word {currentWordIndex + 1} of {words.length}
               </span>
-              <span>
-                First try: {correctOnFirstTry.size}
+              <span className="text-slate-500 text-xs">
+                {completedWords.size} completed
               </span>
             </div>
-          </LuminaPanel>
+
+            {/* Phase Content */}
+            {currentPhase === 'listen' && renderListenPhase()}
+            {currentPhase === 'build' && renderBuildPhase()}
+            {currentPhase === 'blend' && renderBlendPhase()}
+          </>
+        )}
+
+        {/* Final Results — shared summary panel (celebration sound + confetti live there) */}
+        {hasSubmittedEvaluation && wordResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={wordResults}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Session Complete!"
+            celebrationMessage={`You blended ${completedWords.size} out of ${words.length} words!${spokenWords.size > 0 ? ` You said ${spokenWords.size} out loud — amazing!` : ''}`}
+          />
         )}
       </LuminaCardContent>
     </LuminaCard>

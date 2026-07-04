@@ -165,6 +165,16 @@ export const SOUND_SPECS: SoundSpec[] = [
       { freq: NOTE.A3, start: 0.1, duration: 0.07, waveform: 'sine', gain: 0.4 },
     ],
   },
+  {
+    id: 'processing',
+    label: 'Processing',
+    group: 'interaction',
+    description: 'Sustained "thinking" pulse while the app evaluates something (AI judging, loading). One gentle rising blip + soft low answer per cycle; loops seamlessly via startProcessing()/stopProcessing(). Quiet by design — it fills a wait, it must never demand attention.',
+    notes: [
+      { freq: NOTE.C5, start: 0, duration: 0.09, waveform: 'sine', gain: 0.22, glideTo: NOTE.E5 },
+      { freq: NOTE.G4, start: 0.25, duration: 0.09, waveform: 'sine', gain: 0.14 },
+    ],
+  },
 
   // ── Feedback: answer evaluation ──
   {
@@ -273,6 +283,7 @@ class SoundManagerImpl {
   private reverb: ConvolverNode | null = null;
   private enabled = true;
   private volume = 0.3; // 0–1 master
+  private processingTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.loadPrefs();
@@ -476,6 +487,23 @@ class SoundManagerImpl {
   playIncorrect() { this.play(SPECS_BY_ID.incorrect); }
   playStreak() { this.play(SPECS_BY_ID.streak); }
   playPerfect() { this.play(SPECS_BY_ID.perfect); }
+
+  // ── Sustained "thinking" loop (the one non-one-shot sound) ──
+  // Fills judged waits (AI evaluation in flight) so silence never reads as
+  // "broken". Idempotent: extra starts are ignored; always pair with
+  // stopProcessing() on every exit path (verdict, error, unmount).
+  startProcessing() {
+    if (this.processingTimer !== null) return;
+    this.play(SPECS_BY_ID.processing);
+    this.processingTimer = setInterval(() => this.play(SPECS_BY_ID.processing), 500);
+  }
+
+  stopProcessing() {
+    if (this.processingTimer !== null) {
+      clearInterval(this.processingTimer);
+      this.processingTimer = null;
+    }
+  }
 }
 
 export const SoundManager = new SoundManagerImpl();

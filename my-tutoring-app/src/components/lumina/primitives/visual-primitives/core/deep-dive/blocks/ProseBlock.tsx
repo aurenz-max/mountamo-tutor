@@ -39,7 +39,16 @@ function useRevealAnimation(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) return;
-    return () => { observerRef.current?.disconnect(); };
+    // Safety net: absolute-positioned renderers (columns/inset/figure) lay out
+    // asynchronously, so the ref may attach to a zero-height element and the
+    // IntersectionObserver can never fire isIntersecting — leaving the text
+    // pinned at opacity:0 forever. Always reveal after a short delay so content
+    // can never be permanently hidden, even if the observer path fails.
+    const fallback = setTimeout(() => setVisible(true), 600);
+    return () => {
+      clearTimeout(fallback);
+      observerRef.current?.disconnect();
+    };
   }, [enabled]);
 
   const revealRef = useCallback(
@@ -501,14 +510,19 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
           </div>
         )}
 
+        {/* NOTE: `reveal` (line-by-line fade-in) is ONLY safe for SimpleProse.
+            The absolute-positioned renderers (masonry/columns/inset-facts/figure)
+            lay out asynchronously in two passes, so the reveal IntersectionObserver
+            attaches to a zero-height element and `visible` can never flip — leaving
+            a tall, blank card. Always paint those at full opacity. */}
         {resolvedLayout === 'masonry' ? (
-          <MasonryRenderer paragraphs={paragraphs} reveal={reveal} />
+          <MasonryRenderer paragraphs={paragraphs} reveal={false} />
         ) : resolvedLayout === 'columns' ? (
-          <ColumnRenderer paragraphs={paragraphs} reveal={reveal} />
+          <ColumnRenderer paragraphs={paragraphs} reveal={false} />
         ) : resolvedLayout === 'inset-facts' ? (
-          <InsetFactsRenderer paragraphs={paragraphs} insetFacts={insetFacts!} reveal={reveal} />
+          <InsetFactsRenderer paragraphs={paragraphs} insetFacts={insetFacts!} reveal={false} />
         ) : hasFigure ? (
-          <FigureRenderer paragraphs={paragraphs} figure={figure!} reveal={reveal} />
+          <FigureRenderer paragraphs={paragraphs} figure={figure!} reveal={false} />
         ) : (
           <SimpleProse paragraphs={paragraphs} reveal={reveal} />
         )}

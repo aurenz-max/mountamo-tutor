@@ -127,20 +127,58 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Initialize canvas
+  // Keep the latest hasDrawings available to the (mount-time) resize handler
+  const hasDrawingsRef = useRef(false);
   useEffect(() => {
+    hasDrawingsRef.current = hasDrawings;
+  }, [hasDrawings]);
+
+  // Fit the canvas bitmap to its displayed size so it renders crisp 1:1
+  // instead of being CSS-stretched from a stale mount-time measurement.
+  // Preserves existing drawing across re-fits (e.g. responsive height changes).
+  const fitCanvasToDisplay = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
 
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
+    if (w === 0 || h === 0) return;
+    if (canvas.width === w && canvas.height === h) return;
+
+    // Snapshot current pixels (grid + drawing) before resizing wipes them
+    let snapshot: HTMLCanvasElement | null = null;
+    if (canvas.width > 0 && canvas.height > 0 && hasDrawingsRef.current) {
+      snapshot = document.createElement('canvas');
+      snapshot.width = canvas.width;
+      snapshot.height = canvas.height;
+      snapshot.getContext('2d')?.drawImage(canvas, 0, 0);
+    }
+
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const parent = canvas.parentElement;
-    if (parent) {
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
-      clearCanvas();
+    if (snapshot) {
+      ctx.drawImage(snapshot, 0, 0, w, h);
+    } else {
+      drawGrid(ctx, w, h);
     }
+  };
+
+  // Initialize + keep the canvas sized to its container
+  useEffect(() => {
+    fitCanvasToDisplay();
+
+    const parent = canvasRef.current?.parentElement;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+
+    const ro = new ResizeObserver(() => fitCanvasToDisplay());
+    ro.observe(parent);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const drawGrid = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
@@ -387,26 +425,38 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
     <div className={`${className || ''}`}>
       {/* Header */}
       <div className="mb-4">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <div className="bg-cyan-500/20 p-2 rounded-lg">
-            <Compass size={24} className="text-cyan-300" />
+            <Compass size={22} className="text-cyan-300" />
           </div>
           <div>
             <h3 className="text-xl font-bold text-slate-100">{title}</h3>
             <p className="text-sm text-slate-400">{description}</p>
           </div>
         </div>
-        {(challengeText || targetElementCount) && (
-          <p className="text-sm text-slate-300 mt-2">
-            {challengeText || `Challenge: Draw at least ${targetElementCount} ${elementLabel}`}
-          </p>
-        )}
       </div>
 
-      {/* Main Canvas Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Prominent Challenge Card */}
+      {(challengeText || targetElementCount) && (
+        <div className="mb-4 flex items-start gap-3 rounded-xl border border-cyan-400/30 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent p-4">
+          <div className="mt-0.5 shrink-0 rounded-lg bg-cyan-500/20 p-2">
+            <Ruler size={18} className="text-cyan-300" />
+          </div>
+          <div className="min-w-0">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-cyan-300/90">
+              Your Challenge
+            </p>
+            <p className="text-base font-medium leading-relaxed text-slate-100">
+              {challengeText || `Draw at least ${targetElementCount} ${elementLabel}`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Canvas Area — wide canvas, compact sidebar */}
+      <div className="flex flex-col gap-4 lg:flex-row">
         {/* Drawing Canvas — bespoke interaction surface (technical-drawing frame + toolbar) */}
-        <div className={`${colors.bg} rounded-xl overflow-hidden shadow-2xl border-2 ${colors.border}`}>
+        <div className={`${colors.bg} min-w-0 flex-1 rounded-xl overflow-hidden shadow-2xl border-2 ${colors.border}`}>
           <div className="p-3 flex items-center justify-between border-b border-slate-700 bg-slate-900">
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-wider text-sm uppercase text-blue-400">
@@ -462,7 +512,7 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
             </div>
           </div>
 
-          <div className="relative cursor-crosshair h-96 overflow-hidden">
+          <div className="relative cursor-crosshair h-[460px] sm:h-[560px] lg:h-[640px] overflow-hidden">
             <canvas
               ref={canvasRef}
               onMouseDown={startDrawing}
@@ -486,15 +536,15 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
           </div>
         </div>
 
-        {/* Info Panel */}
-        <div className="space-y-4">
+        {/* Info Panel — narrow sidebar */}
+        <div className="w-full space-y-3 lg:w-[300px] lg:shrink-0">
           {/* View Type Info */}
-          <LuminaPanel accent="cyan">
-            <h4 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
-              <Layout size={20} />
+          <LuminaPanel accent="cyan" className="p-3">
+            <h4 className="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-2">
+              <Layout size={16} />
               Drawing Info
             </h4>
-            <div className="space-y-2 text-sm text-slate-300">
+            <div className="space-y-1.5 text-xs text-slate-300">
               <div className="flex justify-between">
                 <span>View Type:</span>
                 <span className="font-mono text-blue-400">{viewType.toUpperCase()}</span>
@@ -520,13 +570,13 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
 
           {/* Progress */}
           {targetElementCount && (
-            <LuminaPanel accent="blue">
-              <h4 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
-                <Layers size={20} />
+            <LuminaPanel accent="blue" className="p-3">
+              <h4 className="text-sm font-semibold text-slate-100 mb-2 flex items-center gap-2">
+                <Layers size={16} />
                 Progress
               </h4>
               <div className="space-y-2">
-                <div className="flex justify-between text-sm text-slate-300">
+                <div className="flex justify-between text-xs text-slate-300">
                   <span>{elementLabel.charAt(0).toUpperCase() + elementLabel.slice(1)} Detected:</span>
                   <span className="font-bold text-blue-400">{detectedRooms.length} / {targetElementCount}</span>
                 </div>
@@ -541,8 +591,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
           )}
 
           {/* Actions */}
-          <LuminaPanel>
-            <h4 className="text-lg font-semibold text-slate-100 mb-3">Actions</h4>
+          <LuminaPanel className="p-3">
+            <h4 className="text-sm font-semibold text-slate-100 mb-2">Actions</h4>
             <div className="space-y-2">
               <LuminaButton
                 onClick={downloadBlueprint}
@@ -675,8 +725,8 @@ const BlueprintCanvas: React.FC<BlueprintCanvasProps> = ({ data, className }) =>
           })()}
 
           {/* Instructions */}
-          <LuminaPanel accent="blue">
-            <h4 className="text-sm font-semibold text-blue-300 mb-2">Tips:</h4>
+          <LuminaPanel accent="blue" className="p-3">
+            <h4 className="text-xs font-semibold text-blue-300 mb-2">Tips:</h4>
             <ul className="text-xs text-slate-300 space-y-1">
               <li>• Use the grid to keep your drawing aligned</li>
               <li>• Draw lines to outline {elementLabel} and features</li>

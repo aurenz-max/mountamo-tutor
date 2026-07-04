@@ -86,7 +86,9 @@ export async function POST(request: NextRequest) {
 
       case 'generateIntroBriefing':
         console.log('📚 API ROUTE: generateIntroBriefing called for topic:', params.topic);
-        const introBriefing = await generateIntroBriefing(params.topic, params.gradeLevel, params.persona);
+        const introBriefing = await generateIntroBriefing(
+          params.topic, params.gradeLevel, params.persona, params.sessionHandoff
+        );
         return NextResponse.json(introBriefing);
 
       case 'generateCuratorBrief':
@@ -319,6 +321,33 @@ export async function POST(request: NextRequest) {
           params.gradeLevel
         );
         return NextResponse.json(blueprintEvaluation);
+
+      case 'judgeBlendAudio': {
+        // "azure:*" model ids route to the Pronunciation Assessment judge;
+        // everything else goes to the Gemini clip judge.
+        if (typeof params.model === 'string' && params.model.startsWith('azure')) {
+          const { judgeBlendAzure } = await import(
+            '@/components/lumina/service/literacy/azure-blend-judge'
+          );
+          const azureVerdict = await judgeBlendAzure({
+            audioBase64: params.audioBase64,
+            targetWord: params.targetWord,
+          });
+          return NextResponse.json(azureVerdict);
+        }
+        const { judgeBlendAudio } = await import(
+          '@/components/lumina/service/literacy/gemini-blend-judge'
+        );
+        const blendVerdict = await judgeBlendAudio({
+          audioBase64: params.audioBase64,
+          mimeType: params.mimeType,
+          targetWord: params.targetWord,
+          gradeLevel: params.gradeLevel,
+          model: params.model,
+          thinkingLevel: params.thinkingLevel,
+        });
+        return NextResponse.json(blendVerdict);
+      }
 
       case 'evaluateDigitDrawing': {
         const { evaluateDigitDrawing } = await import(

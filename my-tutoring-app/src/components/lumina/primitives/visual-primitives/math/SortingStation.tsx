@@ -279,13 +279,22 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   }, [currentChallenge]);
 
   // ─── Available attributes for sort-by-attribute chooser ────────
+  // Only offer an axis the student can actually finish a clean sort on: EVERY object must
+  // carry a value for it (else some object has no valid bin), AND there must be ≥2 distinct
+  // values (else it's one group, not a sort). This hides dead/half-populated axes so the
+  // chooser shows only choices that form valid groups — and lets the generator author just
+  // the two clean attributes it needs instead of padding objects across four.
   const availableAttributes = useMemo(() => {
     if (!currentChallenge || currentChallenge.type !== 'sort-by-attribute') return [];
-    const attrs = new Set<string>();
-    for (const obj of currentChallenge.objects) {
-      for (const key of Object.keys(obj.attributes)) attrs.add(key);
-    }
-    return Array.from(attrs);
+    const objects = currentChallenge.objects;
+    if (objects.length === 0) return [];
+    const keys = new Set<string>();
+    for (const obj of objects) for (const key of Object.keys(obj.attributes)) keys.add(key);
+    return Array.from(keys).filter(key => {
+      const values = objects.map(o => o.attributes[key]).filter(Boolean);
+      if (values.length !== objects.length) return false; // some object lacks this attribute
+      return new Set(values).size >= 2;                    // needs ≥2 groups to be a real sort
+    });
   }, [currentChallenge]);
 
   // ─── Evaluation ────────────────────────────────────────────────

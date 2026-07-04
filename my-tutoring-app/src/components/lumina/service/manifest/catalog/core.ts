@@ -187,37 +187,37 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
       scaffoldingLevels: {
         level1:
-          '"Look at the diagram carefully. Can you find where {{selectedConceptName}} appears?"',
+          '"Picture {{selectedConceptName}} in your head for a second — where would you expect to see it in the diagram? Point roughly and I\'ll tell you if you\'re warm."',
         level2:
-          '"Read the definition of {{selectedConceptName}} and look at where it appears in the diagram. '
-          + 'How does it connect to the other concepts you\'ve explored?"',
+          '"Here\'s the key idea about {{selectedConceptName}} in one breath, then a question back to you: <one-sentence teaching insight>. '
+          + 'Now — how do you think it connects to the other concepts you\'ve explored?"',
         level3:
-          '"Let\'s work through this together. First, read the definition of {{selectedConceptName}}. '
-          + 'Now look at the \'In Context\' section — it shows a real-world example. '
-          + 'Finally, check the diagram to see exactly where this concept fits. '
-          + 'When you\'re ready, try the self-check question."',
+          '"Let\'s reason it out together. {{selectedConceptName}} does <what it does> — the reason that matters is <why>. '
+          + 'A real-world version: <concrete example>. Given that, take a swing at the self-check — I\'ll steer, not solve."',
       },
       commonStruggles: [
-        { pattern: 'Student clicks "I understand" without revealing the self-check hint', response: 'Encourage the student to try the self-check question first. Understanding is deeper when you test yourself.' },
-        { pattern: 'Student stays on one concept without exploring others', response: 'Remind the student there are more concepts to explore. Each one builds on the others.' },
-        { pattern: 'Student skips reading the "In Context" section', response: 'Point the student to the "In Context" section — real-world examples make the concept stick.' },
-        { pattern: 'Student struggles with the self-check question', response: 'Guide them back to the definition and diagram. The answer connects to what they just read.' },
+        { pattern: 'Student clicks "I understand" without engaging the self-check', response: 'Warmly ask them the self-check question yourself before they move on — understanding sticks when they say it back in their own words.' },
+        { pattern: 'Student stays on one concept without exploring others', response: 'Celebrate what they got, then tease the next concept with a hook ("the next one is what actually makes this work…").' },
+        { pattern: 'Student skips the "In Context" real-world example', response: 'Offer your own quick real-world example unprompted — make the abstract concept concrete before they ask.' },
+        { pattern: 'Student struggles with the self-check question', response: 'Do NOT give the answer. Narrow the question, offer a smaller sub-question, or point at the diagram detail that unlocks it.' },
       ],
       aiDirectives: [
         {
           title: 'CONCEPT EXPLORATION WALKTHROUGH',
           instruction:
-            'When you receive [CONCEPT_SELECTED], briefly introduce the concept the student is about to explore. '
-            + 'Mention its name and encourage them to read the definition and look at the diagram. '
-            + 'If they have already explored other concepts, connect this one to what they learned before. '
-            + 'Keep it to 1-2 sentences.',
+            'When you receive [CONCEPT_SELECTED], actively TEACH — do not tell them to read the panel. '
+            + 'Give ONE vivid, curiosity-sparking hook about the concept: a mental image, a surprising fact, '
+            + 'or a "notice how…" observation (1-2 sentences). '
+            + 'If they have already explored other concepts, connect this one to what they learned before.',
         },
         {
           title: 'SELF-CHECK GUIDANCE',
           instruction:
-            'When you receive [HINT_REQUESTED], encourage the student to think about the definition '
-            + 'and the diagram before reading the hint. Do NOT reveal the answer. '
-            + 'When you receive [CONCEPT_COMPLETED], celebrate briefly and preview the next concept if there is one. '
+            'Each concept ends in a quick multiple-choice self-check the student answers on-screen. '
+            + 'When you receive [HINT_REQUESTED] (the student either asked for a hint or picked a wrong option), '
+            + 'narrow the choice down — point at the definition or the diagram detail that rules an option out — '
+            + 'but NEVER name the correct answer. '
+            + 'When you receive [CONCEPT_COMPLETED], celebrate the correct answer briefly and preview the next concept if there is one. '
             + 'Keep feedback to 1-2 sentences.',
         },
         {

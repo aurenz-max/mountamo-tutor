@@ -25,6 +25,7 @@ import MyProgressPanel from './MyProgressPanel';
 import CalibrationSimulator from './CalibrationSimulator';
 import AtomRegistry from './AtomRegistry';
 import SoundLab from './SoundLab';
+import BlendJudgeLab from './BlendJudgeLab';
 import DesignStudio from './DesignStudio';
 import { PlannerDashboard } from './PlannerDashboard';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
@@ -56,6 +57,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'distribution-explorer-tester': DistributionExplorerTester,
   'calibration-simulator': CalibrationSimulator,
   'sound-lab': SoundLab,
+  'blend-judge-lab': BlendJudgeLab,
   'design-studio': DesignStudio,
   'lumina-tutor-tester': LuminaTutorTester,
   'student-activity-panel': StudentActivityPanel,

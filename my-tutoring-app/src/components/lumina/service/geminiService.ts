@@ -277,10 +277,13 @@ export const buildCompleteExhibitFromManifest = async (
 export const generateIntroBriefing = async (
   topic: string,
   gradeLevel: string,
-  persona?: StudentPersona | null
+  persona?: StudentPersona | null,
+  sessionHandoff?: string | null
 ): Promise<any> => {
   // Auto-infer subject as "General" - the curator brief will adapt to the topic
-  return generateIntroBriefingWithSubject(topic, 'General', gradeLevel, undefined, persona);
+  return generateIntroBriefingWithSubject(
+    topic, 'General', gradeLevel, undefined, persona, undefined, sessionHandoff
+  );
 };
 
 // Re-export hint generator from problems service

@@ -13,8 +13,8 @@ import { DevPanelRouter } from './components/DevPanelRouter';
 import { GeneratingScreen } from './components/GeneratingScreen';
 import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
-import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
-import { markSessionBlockComplete, markSessionBlockStarted, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
+import { SessionRibbon } from './components/SessionRibbon';
+import { fetchDailySessionPlan, markSessionBlockComplete, markSessionBlockStarted, prettySubject, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
@@ -133,16 +133,52 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
   const [sessionCurrentBlock, setSessionCurrentBlock] = useState<LessonBlock | null>(null);
   // Count of evaluation results received during current exhibit block
   const [sessionEvalCount, setSessionEvalCount] = useState(0);
+  // When the current block was launched — the "since" for the break screen's
+  // evidence recap (before/after IRT deltas are derived server-side from it)
+  const [sessionBlockStartedAt, setSessionBlockStartedAt] = useState<string | null>(null);
   // Per-block results: block_id → { evalCount, scoreSum } (for showing results on completed blocks)
   const [sessionBlockResults, setSessionBlockResults] = useState<
     Record<string, { evalCount: number; scoreSum: number }>
   >({});
   // Full session plan — lifted to App to prevent re-fetch from clobbering block IDs
   const [sessionPlan, setSessionPlan] = useState<DailySessionPlan | null>(null);
+  const [sessionPlanLoading, setSessionPlanLoading] = useState(false);
   // Convenience: block list derived from plan
   const sessionBlocks = sessionPlan?.blocks ?? [];
   // Session sub-phase: null = normal, 'break' = showing break/transition screen
   const [sessionPhase, setSessionPhase] = useState<'break' | null>(null);
+  // Free-form hero lessons that produced evidence today ("detours") — their
+  // submissions already attribute server-side; the ribbon just says so.
+  const [detourTopics, setDetourTopics] = useState<Set<string>>(new Set());
+
+  // Adopt a fetched plan: seed completion from the server-persisted set
+  // (merged with any optimistic completions from this visit) and derive the
+  // header stats. Shared by the home-screen fetch and the drawer's refresh.
+  const adoptPlan = useCallback((plan: DailySessionPlan) => {
+    setSessionPlan(plan);
+    const merged = new Set(plan.completed_block_ids ?? []);
+    sessionCompletedBlocks.forEach(id => merged.add(id));
+    setSessionCompletedBlocks(merged);
+    const inPlan = new Set(plan.blocks.map(b => b.block_id));
+    setSessionStats({
+      total: plan.blocks.length,
+      completed: Array.from(merged).filter(id => inPlan.has(id)).length,
+    });
+  }, [sessionCompletedBlocks]);
+
+  // Today's Session is ambient home state: fetch the plan once the student
+  // identity is real (never for the anonymous fallback), so the ribbon under
+  // the hero is live without any navigation.
+  const planFetchStartedRef = useRef(false);
+  useEffect(() => {
+    if (!studentReady || isAnonymous || planFetchStartedRef.current) return;
+    planFetchStartedRef.current = true;
+    setSessionPlanLoading(true);
+    fetchDailySessionPlan(studentId)
+      .then(adoptPlan)
+      .catch(err => console.warn('[Session] Home plan fetch failed:', err))
+      .finally(() => setSessionPlanLoading(false));
+  }, [studentReady, isAnonymous, studentId, adoptPlan]);
 
   // Handle curriculum browser selection
   const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel, curriculum?: CurriculumContext) => {
@@ -181,32 +217,13 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     setSessionReturn(null);
     setSessionCurrentBlock(null);
     setSessionEvalCount(0);
-    if (!returnPanel) {
-      setSessionStats(null);
-      setSessionCompletedBlocks(new Set());
-      setSessionPlan(null);
-      setSessionBlockResults({});
-    }
-    setActivePanel(returnPanel);
+    // Session plan state is ambient home state now (the ribbon) — it is
+    // never cleared by navigation, only replaced by a fresh fetch. A block
+    // launched from the ribbon "returns to session" = returns home.
+    setActivePanel(returnPanel === 'daily-session' ? null : returnPanel);
   };
 
-  // Clear session state when leaving the daily-session panel via ← Back
   const handleBackFromPanel = useCallback(() => {
-    if (activePanel === 'daily-session') {
-      setSessionStats(null);
-      setSessionCompletedBlocks(new Set());
-      setSessionPlan(null);
-      setSessionBlockResults({});
-      setSessionCurrentBlock(null);
-      setSessionEvalCount(0);
-      setSessionPhase(null);
-    }
-    setActivePanel(null);
-    setPracticeTopic('');
-  }, [activePanel]);
-
-  // Back handler for dev panels (testers, dashboards, practice mode)
-  const handlePanelBack = useCallback(() => {
     setActivePanel(null);
     setPracticeTopic('');
   }, []);
@@ -214,6 +231,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
   const handleBlockStart = useCallback((block: LessonBlock) => {
     setSessionCurrentBlock(block);
     setSessionEvalCount(0);
+    setSessionBlockStartedAt(new Date().toISOString());
     setSessionReturn('daily-session');
 
     // Time ledger: stamp the launch so completed_at − start yields an
@@ -238,6 +256,22 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
       setCurriculumContext(null);
     }
 
+    // Grade of record from the plan doc ('K'|'1'..'12') — the generation
+    // grade comes from HERE, not the home screen's band selector (which
+    // defaults to 'elementary' and was serving grade 1-5 briefs/manifests
+    // to a K student). Plans persisted before the field existed carry none;
+    // the UI band remains the fallback.
+    const planGrade = sessionPlan?.grade_level || undefined;
+    const bandFromGrade = (g?: string): GradeLevel => {
+      if (!g) return gradeLevel;
+      const s = g.toLowerCase().trim();
+      if (s.includes('pre')) return 'preschool';
+      if (s === 'k' || s.includes('kinder')) return 'kindergarten';
+      const n = parseInt(s, 10);
+      if (!isNaN(n)) return n <= 5 ? 'elementary' : n <= 8 ? 'middle-school' : 'high-school';
+      return gradeLevel;
+    };
+
     // Generate against the block's own subskills, not just a topic string —
     // they ride the existing preBuiltObjectives path so the manifest targets
     // what the block actually teaches.
@@ -254,11 +288,57 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             || (ss.subskill_id.lastIndexOf('.') > 0
                 ? ss.subskill_id.substring(0, ss.subskill_id.lastIndexOf('.'))
                 : ss.subskill_id),
+          // Canonical curriculum grade → generators read it as ctx.grade
+          // (the ONLY grade parser is normalizeObjectiveGrade downstream).
+          grade: planGrade,
         }))
       : undefined;
 
-    startGenerate({ topic: `${block.subject}: ${block.title}`, gradeLevel, preBuiltObjectives });
-  }, [startGenerate, gradeLevel, studentId, sessionPlan]);
+    // Mid-session continuity for the curator brief: hand off from the block
+    // the student JUST finished, not from yesterday's persona facts. In the
+    // break→continue flow the closure's sessionCurrentBlock is still the
+    // just-finished block; after a mid-day return it's null, so fall back to
+    // the nearest preceding completed block in plan order.
+    const typeNoun: Record<string, string> = {
+      lesson: 'lesson',
+      practice: 'practice block',
+      retest: 'mastery check',
+      pulse: 'Daily Pulse check',
+    };
+    const blockIdx = sessionBlocks.findIndex(b => b.block_id === block.block_id);
+    const justFinished =
+      (sessionCurrentBlock
+        && sessionCurrentBlock.block_id !== block.block_id
+        && sessionCompletedBlocks.has(sessionCurrentBlock.block_id))
+        ? sessionCurrentBlock
+        : [...sessionBlocks.slice(0, Math.max(blockIdx, 0))]
+            .reverse()
+            .find(b => sessionCompletedBlocks.has(b.block_id)) ?? null;
+    const sessionHandoff = justFinished
+      ? `finished a ${prettySubject(justFinished.subject)} ${typeNoun[justFinished.type] ?? 'block'}`
+        + (justFinished.type === 'pulse' ? '' : ` on "${justFinished.title}"`)
+        + (blockIdx >= 0 ? ` (now starting block ${blockIdx + 1} of ${sessionBlocks.length} today)` : '')
+      : undefined;
+
+    // Pulse blocks are measurement, not lessons: sessionShape 'pulse' skips
+    // the narrative brief + manifest LLM entirely (code-built quick check).
+    // Their topic stays subject-neutral — a pulse beat can span subjects, and
+    // the subskill scope rides on the objectives, not the topic string.
+    // The topic string reaches the student (exhibit title) AND the Gemini
+    // prompts — always the pretty subject name, never a raw graph key like
+    // "SOCIAL_STUDIES". curriculumContext keeps the raw spelling: it is an
+    // attribution key, not display text.
+    const isPulse = block.type === 'pulse';
+    startGenerate({
+      topic: isPulse
+        ? 'Daily Pulse — quick skill check'
+        : `${prettySubject(block.subject)}: ${block.title}`,
+      gradeLevel: bandFromGrade(planGrade),
+      preBuiltObjectives,
+      sessionShape: isPulse ? 'pulse' : 'lesson',
+      sessionHandoff,
+    });
+  }, [startGenerate, gradeLevel, studentId, sessionPlan, sessionBlocks, sessionCurrentBlock, sessionCompletedBlocks]);
 
   // Derived: next block in session (for break screen preview)
   const currentBlockIndex = sessionCurrentBlock
@@ -295,13 +375,14 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     }
   }, [nextSessionBlock, handleBlockStart]);
 
-  // Break screen → finish session (last block)
+  // Break screen → finish session (last block). Lands back on home, where
+  // the ribbon's done-state celebrates INTO exploration under the hero.
   const handleSessionFinish = useCallback(() => {
     setSessionPhase(null);
     setSessionReturn(null);
     setSessionCurrentBlock(null);
     setSessionEvalCount(0);
-    setActivePanel('daily-session');
+    setActivePanel(null);
   }, []);
 
   const handleDetailItemClick = (item: string) => {
@@ -344,28 +425,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
         <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">
             {/* Signed-in student identity + user menu (progress, sign out) */}
             <StudentBadge onOpenActivity={() => setActivePanel('my-activity')} />
-            {/* Session progress dots — shown while viewing the session panel (IDLE) */}
-            {phase === GameState.IDLE && activePanel === 'daily-session' && sessionStats && sessionStats.total > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: sessionStats.total }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-full transition-all duration-300 ${
-                        i < sessionStats.completed
-                          ? 'w-2 h-2 bg-cyan-400'
-                          : i === sessionStats.completed
-                          ? 'w-2.5 h-2.5 bg-cyan-400/60 animate-pulse'
-                          : 'w-2 h-2 bg-white/15'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-slate-400">
-                  {sessionStats.completed}/{sessionStats.total}
-                </span>
-              </div>
-            )}
             {/* Exhibit tracker — shown during an exhibit launched from a session block.
                 completed excludes the in-flight block, so the dot at index
                 `completed` is the one currently being worked. */}
@@ -410,8 +469,9 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
 
       <main className="relative z-10 container mx-auto px-4 min-h-screen flex flex-col pt-24 pb-12">
 
-        {/* IDLE STATE — Home Screen */}
-        {phase === GameState.IDLE && activePanel === null && (
+        {/* IDLE STATE — Home Screen. Today's Session rides along as the
+            ribbon under the hero (ambient state, one tap to launch). */}
+        {phase === GameState.IDLE && activePanel === null && !sessionPhase && (
           <IdleScreen
             topic={topic}
             onTopicChange={setTopic}
@@ -422,16 +482,36 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             onCurriculumSelect={handleCurriculumSelect}
             onLaunchGroupLesson={handleLaunchGroupLesson}
             onNavigate={setActivePanel}
+            sessionRibbon={
+              studentReady && !isAnonymous ? (
+                <SessionRibbon
+                  plan={sessionPlan}
+                  loading={sessionPlanLoading}
+                  completedBlockIds={sessionCompletedBlocks}
+                  detourCount={detourTopics.size}
+                  onContinue={handleBlockStart}
+                >
+                  <DailyLessonPlan
+                    studentId={studentId}
+                    completedBlockIds={sessionCompletedBlocks}
+                    blockResults={sessionBlockResults}
+                    initialPlan={sessionPlan}
+                    onPlanLoaded={adoptPlan}
+                    onBlockStart={handleBlockStart}
+                  />
+                </SessionRibbon>
+              ) : null
+            }
           />
         )}
 
         {/* DEV PANELS — testers, dashboards, labs (everything except the student flow) */}
-        {phase === GameState.IDLE && activePanel !== null && activePanel !== 'daily-session' && (
+        {phase === GameState.IDLE && activePanel !== null && (
           <DevPanelRouter
             activePanel={activePanel}
             gradeLevel={gradeLevel}
             practiceTopic={practiceTopic}
-            onBack={handlePanelBack}
+            onBack={handleBackFromPanel}
             onNavigate={setActivePanel}
           />
         )}
@@ -445,48 +525,11 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             blocks={sessionBlocks}
             completedBlockIds={sessionCompletedBlocks}
             evalCount={sessionEvalCount}
+            studentId={studentId}
+            blockStartedAt={sessionBlockStartedAt}
             onContinue={handleBreakContinue}
             onFinish={handleSessionFinish}
           />
-        )}
-
-        {/* DAILY SESSION DRIVER STATE */}
-        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && !studentReady && (
-          <div className="flex-1 flex items-center justify-center">
-            <span className="text-sm text-slate-400 animate-pulse">Loading your profile…</span>
-          </div>
-        )}
-        {phase === GameState.IDLE && activePanel === 'daily-session' && !sessionPhase && studentReady && (
-          <div className="flex-1 animate-fade-in max-w-4xl mx-auto w-full pt-2">
-            <DailySessionView
-              studentId={studentId}
-              onStartPulse={() => setActivePanel('practice-mode')}
-              renderLessonPlan={() => (
-                <DailyLessonPlan
-                  studentId={studentId}
-                  completedBlockIds={sessionCompletedBlocks}
-                  blockResults={sessionBlockResults}
-                  initialPlan={sessionPlan}
-                  onPlanLoaded={(plan: DailySessionPlan) => {
-                    // Always adopt the fetched plan (a manual refresh must not
-                    // leave the parent holding stale block ids), and seed
-                    // completion from the server-persisted set — merged with
-                    // any optimistic completions from this visit.
-                    setSessionPlan(plan);
-                    const merged = new Set(plan.completed_block_ids ?? []);
-                    sessionCompletedBlocks.forEach(id => merged.add(id));
-                    setSessionCompletedBlocks(merged);
-                    const inPlan = new Set(plan.blocks.map(b => b.block_id));
-                    setSessionStats({
-                      total: plan.blocks.length,
-                      completed: Array.from(merged).filter(id => inPlan.has(id)).length,
-                    });
-                  }}
-                  onBlockStart={handleBlockStart}
-                />
-              )}
-            />
-          </div>
         )}
 
         {/* GENERATING STATE */}
@@ -540,6 +583,14 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
                     };
                   });
                 }
+              } else if (sessionPlan && exhibit?.topic) {
+                // Evidence from a free-form hero lesson while today's session
+                // exists = a detour. It already attributes server-side; the
+                // ribbon celebrates it ("detour · counted") instead of
+                // treating curiosity as off-plan.
+                setDetourTopics(prev =>
+                  prev.has(exhibit.topic) ? prev : new Set(prev).add(exhibit.topic),
+                );
               }
             }}
             onDetailItemClick={handleDetailItemClick}

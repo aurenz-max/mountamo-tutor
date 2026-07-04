@@ -479,6 +479,16 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   const [showingAnswer, setShowingAnswer] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
 
+  // Synchronous score for the summary panel. submittedResult is set in the
+  // auto-submit effect, which runs *after* the panel first mounts — without this
+  // fallback the panel mounts at score 0 ('needs-work' tier) and the once-only
+  // celebration (sound + confetti) fires silently, then its guard blocks re-firing.
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challengeResults.length === 0) return 0;
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    return Math.round((correctCount / challengeResults.length) * 100);
+  }, [allChallengesComplete, challengeResults]);
+
   // ── Auto-submit evaluation when all challenges complete ──────────
   const hasAutoSubmitted = useRef(false);
   useEffect(() => {
@@ -735,7 +745,7 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? 0}
+            overallScore={submittedResult?.score ?? localOverallScore}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You explored pushes and pulls!"

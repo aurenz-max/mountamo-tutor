@@ -28,6 +28,9 @@ class BlockType(str, Enum):
     LESSON   = "lesson"    # New introduction — full Bloom's cycle (~18 min)
     PRACTICE = "practice"  # Review at practice depth (~10 min)
     RETEST   = "retest"    # Mastery gate assessment (~5 min)
+    PULSE    = "pulse"     # Daily measurement beat (~4 min, first block):
+                           # absorbs due mastery checks + selector confirm
+                           # targets into one quick evidence-producing block
 
 
 # ---------------------------------------------------------------------------
@@ -39,6 +42,9 @@ class BlockSubskill(BaseModel):
     subskill_id:   str
     # Parent skill id from the curriculum hierarchy (empty if unresolved)
     skill_id:      str = ""
+    # Own subject — pulse blocks may span subjects, so per-subskill evidence
+    # reads (session-progress deltas) can't rely on the block's subject.
+    subject:       str = ""
     subskill_name: str
     bloom_phase:   BloomLevel
     gate:          int = 0   # Current mastery gate (0–4)
@@ -142,6 +148,11 @@ class DailySessionPlan(BaseModel):
     student_id:              str
     date:                    str   # YYYY-MM-DD
     day_of_week:             str
+    # Grade of record (students/{id}.grade_level, e.g. 'K'). The launch
+    # surface derives the generation grade band + per-objective grade from
+    # THIS — never from the home screen's UI band, which defaults to
+    # 'elementary' and would serve grade 1-5 content to a K student.
+    grade_level:             Optional[str] = None
     budget_minutes:          int = 75   # Configurable daily time budget
     review_budget_minutes:   int = 0    # 50% cap on reviews (PRD §3.3)
     intro_budget_minutes:    int = 0    # Guaranteed budget for new material
@@ -180,12 +191,40 @@ PRIMITIVE_TIME_DEFAULTS: Dict[str, float] = {
     "pattern_builder":  3.0,
 }
 
-# Duration (minutes) per block type — PRD §3.2
+# Duration (minutes) per block type — PRD §3.2. LEGACY flat costs: charged a
+# 1-subskill block like a 5-pack, which made merged blocks impossible to price.
+# Kept only for readers of old plan docs; new blocks use block_cost_minutes().
 BLOCK_DURATION_MINUTES: Dict[str, int] = {
     BlockType.LESSON:   18,
     BlockType.PRACTICE: 10,
     BlockType.RETEST:   5,
+    BlockType.PULSE:    4,
 }
+
+# Linear block cost model: minutes = base + marginal × n_subskills.
+# Constants are ASSUMED — chosen so typical block sizes reproduce the old
+# flat durations (lesson×4→18, practice×3→10, retest×1→5) — until the block
+# time ledger (BlockTimeEntry) accumulates enough observations to fit real
+# ones. Fitting those constants from telemetry is the ledger's whole point.
+BLOCK_COST_BASE_MINUTES: Dict[str, float] = {
+    BlockType.LESSON:   6.0,
+    BlockType.PRACTICE: 4.0,
+    BlockType.RETEST:   3.5,
+    BlockType.PULSE:    2.0,
+}
+BLOCK_COST_MARGINAL_MINUTES: Dict[str, float] = {
+    BlockType.LESSON:   3.0,
+    BlockType.PRACTICE: 2.0,
+    BlockType.RETEST:   1.5,
+    BlockType.PULSE:    1.0,
+}
+
+
+def block_cost_minutes(block_type: BlockType, n_subskills: int) -> int:
+    """Estimated minutes for a block of n subskills (linear cost model)."""
+    n = max(1, n_subskills)
+    cost = BLOCK_COST_BASE_MINUTES[block_type] + BLOCK_COST_MARGINAL_MINUTES[block_type] * n
+    return max(1, round(cost))
 
 DEFAULT_DAILY_BUDGET_MINUTES: int = 75
 DEFAULT_REVIEW_CAP_PCT: float = 0.50   # PRD §3.3
