@@ -130,6 +130,38 @@ async def get_daily_session_plan(
         )
 
 
+@router.post("/daily-plan/{student_id}/session/blocks/{block_id}/start")
+async def start_session_block(
+    student_id: int,
+    block_id: str,
+    plan_date: Optional[str] = Query(None, description="Plan date (YYYY-MM-DD); defaults to today (UTC)"),
+    user_context: dict = Depends(get_user_context),
+    service: PlanningService = Depends(get_planning_service),
+):
+    """
+    Stamp a block-start timestamp on the day's time ledger.
+
+    Append-only: relaunching an abandoned block records another start, so
+    the ledger distinguishes first exposure from the run that finished.
+    Together with completed_at this yields OBSERVED block durations — the
+    telemetry that eventually replaces the invented per-type estimates.
+    """
+    try:
+        ok = await service.mark_session_block_started(
+            student_id, block_id, plan_date=plan_date
+        )
+        if not ok:
+            raise HTTPException(
+                status_code=500, detail="Failed to persist block start"
+            )
+        return {"success": True, "student_id": student_id, "block_id": block_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting block {block_id} for student {student_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/daily-plan/{student_id}/session/blocks/{block_id}/complete")
 async def complete_session_block(
     student_id: int,

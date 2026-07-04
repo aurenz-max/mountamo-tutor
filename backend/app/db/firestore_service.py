@@ -868,10 +868,18 @@ class FirestoreService:
             if doc_ref.get().exists:
                 return hint
 
-        # Slow path: scan all grade documents
+        # Slow path: scan all grade documents. First match wins and doc ids
+        # stream lexicographically ("1" < "Kindergarten"), so a subject that
+        # is published in several grades resolves to Grade 1 — this scan is
+        # a GUESS. Callers should pass a grade (students/{id}.grade_level).
         for grade_doc in self.client.collection(collection_name).stream():
             subj_ref = grade_doc.reference.collection("subjects").document(subject_id)
             if subj_ref.get().exists:
+                logger.warning(
+                    f"Grade-ambiguous resolution: {subject_id} matched grade doc "
+                    f"'{grade_doc.id}' by first-doc-wins scan — pass a grade to "
+                    f"avoid serving the wrong grade's curriculum"
+                )
                 return grade_doc.id
         return None
 
@@ -1839,14 +1847,46 @@ class FirestoreService:
             if not doc.exists:
                 return {}
             data = doc.to_dict()
-            return {
+            fields = {
                 "daily_session_capacity": data.get("daily_session_capacity", 25),
                 "development_patterns": data.get("development_patterns", {}),
                 "aggregate_metrics": data.get("aggregate_metrics", {}),
+                # Planning-side grade of record (see set_student_grade_level).
+                # Without it every bare-subject graph fetch falls into the
+                # first-doc-wins scan and hands K students the Grade 1 graph.
+                "grade_level": data.get("grade_level"),
             }
+            # Only surface when actually set — callers use .get(key, DEFAULT)
+            # and a present-but-None key would shadow their default.
+            if data.get("daily_budget_minutes") is not None:
+                fields["daily_budget_minutes"] = data["daily_budget_minutes"]
+            return fields
         except Exception as e:
             logger.error(f"Error getting planning fields for student {student_id}: {e}")
             return {}
+
+    async def set_student_grade_level(
+        self, student_id: int, grade_level: str
+    ) -> bool:
+        """
+        Set the planning-side grade of record on the student document.
+
+        The user-facing grade lives on the Cosmos user profile (keyed by the
+        CALLER's firebase_uid), which backend services can't reach from a
+        bare student_id — this Firestore field is the copy the planner,
+        selector, and forecast read. Written through from profile updates
+        (user_profiles.py) and settable via scripts/set_student_grade.py.
+        """
+        try:
+            await self._ensure_student_document(student_id)
+            self._student_doc(student_id).set(
+                {"grade_level": grade_level}, merge=True
+            )
+            logger.info(f"Set grade_level={grade_level!r} on student {student_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error setting grade_level for student {student_id}: {e}")
+            return False
 
     async def update_student_planning_fields(
         self,
@@ -1917,10 +1957,22 @@ class FirestoreService:
         plan_date: str,
         block_id: str,
     ) -> bool:
-        """Record a finished block on the day's plan (idempotent via ArrayUnion)."""
+        """
+        Record a finished block on the day's plan (idempotent via ArrayUnion).
+
+        Also stamps the block's completed_at on the time ledger — actual
+        block duration is completed_at minus the last recorded start.
+        """
         try:
             self._session_plan_doc(student_id, plan_date).set(
-                {"completed_block_ids": firestore.ArrayUnion([block_id])},
+                {
+                    "completed_block_ids": firestore.ArrayUnion([block_id]),
+                    "block_times": {
+                        block_id: {
+                            "completed_at": datetime.now(timezone.utc).isoformat(),
+                        }
+                    },
+                },
                 merge=True,
             )
             return True
@@ -1929,6 +1981,97 @@ class FirestoreService:
                 f"Error marking block {block_id} complete for {student_id}/{plan_date}: {e}"
             )
             return False
+
+    async def mark_session_block_started(
+        self,
+        student_id: int,
+        plan_date: str,
+        block_id: str,
+    ) -> bool:
+        """
+        Append a start timestamp to the block's time ledger.
+
+        Append-only on purpose: a student who abandons and re-launches a block
+        adds another entry, so the ledger distinguishes first exposure from
+        the run that actually finished. No read-modify-write — ArrayUnion in
+        a merge keeps concurrent stamps composable.
+        """
+        try:
+            self._session_plan_doc(student_id, plan_date).set(
+                {
+                    "block_times": {
+                        block_id: {
+                            "starts": firestore.ArrayUnion(
+                                [datetime.now(timezone.utc).isoformat()]
+                            ),
+                        }
+                    },
+                },
+                merge=True,
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                f"Error marking block {block_id} started for {student_id}/{plan_date}: {e}"
+            )
+            return False
+
+    # ============================================================================
+    # FORECAST DOCS (materialized daily — students/{id}/forecasts/{date})
+    # ============================================================================
+
+    def _forecast_doc(self, student_id: int, forecast_date: str):
+        return (
+            self._student_doc(student_id)
+            .collection("forecasts")
+            .document(forecast_date)
+        )
+
+    async def get_forecast_doc(
+        self, student_id: int, forecast_date: str
+    ) -> Optional[Dict[str, Any]]:
+        """Read the materialized forecast for one day, or None."""
+        try:
+            doc = self._forecast_doc(student_id, forecast_date).get()
+            return doc.to_dict() if doc.exists else None
+        except Exception as e:
+            logger.error(f"Error reading forecast {student_id}/{forecast_date}: {e}")
+            return None
+
+    async def save_forecast_doc(
+        self, student_id: int, forecast_date: str, data: Dict[str, Any]
+    ) -> bool:
+        """Persist the day's forecast (full overwrite on refresh)."""
+        try:
+            await self._ensure_student_document(student_id)
+            self._forecast_doc(student_id, forecast_date).set(
+                self._prepare_firestore_data(data)
+            )
+            logger.info(f"Saved forecast for student {student_id} on {forecast_date}")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving forecast {student_id}/{forecast_date}: {e}")
+            return False
+
+    async def get_latest_forecast_doc_before(
+        self, student_id: int, forecast_date: str
+    ) -> Optional[Dict[str, Any]]:
+        """Most recent forecast strictly before the given date (for drift)."""
+        try:
+            docs = (
+                self._student_doc(student_id)
+                .collection("forecasts")
+                .where("date", "<", forecast_date)
+                .order_by("date", direction=firestore.Query.DESCENDING)
+                .limit(1)
+                .get()
+            )
+            for doc in docs:
+                return doc.to_dict()
+            return None
+        except Exception as e:
+            logger.error(f"Error reading prior forecast for {student_id}: {e}")
+            return None
 
     # ============================================================================
     # SCHOOL YEAR CONFIG

@@ -20,6 +20,8 @@ from ...models.user_profiles import (
 
 # Import authentication and middleware
 from ...core.middleware import get_user_context
+from ...db.firestore_service import FirestoreService
+from ...dependencies import get_firestore_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -63,20 +65,35 @@ async def get_current_user_profile(user_context: dict = Depends(get_user_context
 @router.put("/profile", response_model=UserProfile)
 async def update_current_user_profile(
     profile_updates: UserProfileUpdate,
-    user_context: dict = Depends(get_user_context)
+    user_context: dict = Depends(get_user_context),
+    firestore_service: FirestoreService = Depends(get_firestore_service),
 ):
     """Update user profile with onboarding support"""
     try:
         firebase_uid = user_context['firebase_uid']
         student_id = user_context['student_id']
         updates = {}
-        
+
         # Handle basic profile updates
         if profile_updates.display_name is not None:
             updates['display_name'] = profile_updates.display_name
-        
+
         if profile_updates.grade_level is not None:
             updates['grade_level'] = profile_updates.grade_level
+            # Write-through to the Firestore student doc: backend services
+            # (planner, selector, forecast) can't reach the Cosmos profile
+            # from a bare student_id, and without a grade the curriculum
+            # graph resolves first-doc-wins → Grade 1. Best-effort — the
+            # profile update itself must not fail on this.
+            try:
+                await firestore_service.set_student_grade_level(
+                    student_id, profile_updates.grade_level
+                )
+            except Exception as sync_err:
+                logger.warning(
+                    f"grade_level write-through to student doc failed "
+                    f"(student {student_id}): {sync_err}"
+                )
         
         if profile_updates.preferences is not None:
             updates['preferences'] = profile_updates.preferences

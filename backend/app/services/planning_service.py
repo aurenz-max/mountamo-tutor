@@ -806,7 +806,7 @@ class PlanningService:
         forward: completed blocks (and their completion marks) never
         disappear from the student's view.
         """
-        from ..models.lesson_plan import DailySessionPlan, LessonBlock
+        from ..models.lesson_plan import BlockTimeEntry, DailySessionPlan, LessonBlock
 
         today_str = datetime.now(timezone.utc).date().isoformat()
         stored = await self.firestore.get_daily_session_plan_doc(student_id, today_str)
@@ -823,6 +823,18 @@ class PlanningService:
                 )
 
         plan = await self._build_daily_session_plan(student_id)
+
+        # Refresh carry-forward: the time ledger is observed data — never
+        # regenerate it away. Keyed by block_id, so entries for blocks the
+        # new plan dropped remain readable for telemetry.
+        if stored and stored.get("block_times"):
+            carried_times: Dict[str, BlockTimeEntry] = {}
+            for bid, raw in stored["block_times"].items():
+                try:
+                    carried_times[bid] = BlockTimeEntry.model_validate(raw)
+                except Exception:
+                    continue
+            plan.block_times = {**carried_times, **plan.block_times}
 
         # Refresh carry-forward: keep every completed block visible even if
         # the regenerated plan no longer selects it, and re-attach the marks.
@@ -865,6 +877,15 @@ class PlanningService:
             student_id, target_date, block_id
         )
 
+    async def mark_session_block_started(
+        self, student_id: int, block_id: str, plan_date: Optional[str] = None
+    ) -> bool:
+        """Append a start timestamp to the block's time ledger (append-only)."""
+        target_date = plan_date or datetime.now(timezone.utc).date().isoformat()
+        return await self.firestore.mark_session_block_started(
+            student_id, target_date, block_id
+        )
+
     async def _build_daily_session_plan(self, student_id: int) -> "DailySessionPlan":
         """
         Build today's structured session plan using lesson groups and a
@@ -888,6 +909,10 @@ class PlanningService:
 
         planning = await self.firestore.get_student_planning_fields(student_id)
         budget_minutes = planning.get("daily_budget_minutes", DEFAULT_DAILY_BUDGET_MINUTES)
+        # Grade of record (students/{id}.grade_level). Without it the graph
+        # fetch falls into first-doc-wins scanning and a K student is served
+        # the Grade 1 curriculum everywhere downstream.
+        student_grade = planning.get("grade_level")
 
         all_candidates: List[Dict[str, Any]] = []
 
@@ -914,14 +939,46 @@ class PlanningService:
         # Builder's Recommended fill (Lesson Entry Contract, one selection
         # brain). Legacy unlocked-scan remains as the fallback when the
         # analytics service is absent or the selector errors/returns nothing.
+        #
+        # Pace-aware allocation: each subject's share of the minute budget is
+        # proportional to its REMAINING work (subskill nodes not mastered),
+        # so a nearly-done subject tapers off instead of idling while a
+        # behind subject starves. The selector count per subject follows its
+        # minute share; the allocation itself caps block fill downstream.
+        allocation = None
+        pace_by_subject: Dict[str, Any] = {}
         if self.learning_paths:
             weekly_plan = await self.get_weekly_plan(student_id)
+            if self.analytics:
+                allocation = await self._allocate_subject_minutes(
+                    student_id, list(weekly_plan.subjects), budget_minutes,
+                    grade=student_grade,
+                )
+                if allocation:
+                    pace_by_subject = {p.subject: p for p in allocation.subjects}
             for subj in weekly_plan.subjects:
+                pace = pace_by_subject.get(subj)
+                if pace_by_subject and pace is None:
+                    # No published curriculum graph (e.g. ENGINEERING_G*):
+                    # the selector AND the unlocked scan can only fail here —
+                    # skip instead of burning three Firestore round-trips.
+                    logger.info(
+                        f"[SESSION_PLAN] {subj}: no curriculum graph — "
+                        f"excluded from pace allocation, skipped"
+                    )
+                    continue
+                if pace is not None and pace.remaining_subskills == 0:
+                    # Nothing left to learn; due retests still arrive via
+                    # Step 1a (retention is lifecycle's job, not the pacer's).
+                    continue
                 selector_added = 0
                 if self.analytics:
                     try:
                         targets = await self.analytics.select_session_targets(
-                            student_id, subj, count=5
+                            student_id,
+                            subj,
+                            grade=student_grade,
+                            count=pace.selector_count if pace else 5,
                         )
                         for o in targets.get("objectives", []):
                             all_candidates.append({
@@ -1037,10 +1094,119 @@ class PlanningService:
         candidate_blocks = LessonGroupService.group_subskills_into_blocks(enriched)
 
         # --- Step 4–5: Fill budget and shape session ---
-        return LessonGroupService.build_session_plan(
+        subject_budgets = (
+            {p.subject: p.allocated_minutes for p in allocation.subjects}
+            if allocation else None
+        )
+        plan = LessonGroupService.build_session_plan(
             student_id=student_id,
             candidate_blocks=candidate_blocks,
             budget_minutes=budget_minutes,
+            subject_budgets=subject_budgets,
+        )
+        plan.allocation = allocation
+        return plan
+
+    async def _allocate_subject_minutes(
+        self,
+        student_id: int,
+        subjects: List[str],
+        budget_minutes: int,
+        grade: Optional[str] = None,
+    ) -> Optional["PlanAllocation"]:
+        """
+        Pace-aware minute allocation: minutes ∝ remaining work per subject.
+
+        Remaining work = subskill nodes not mastered/inferred in the same
+        knowledge graph the selector reads (include_nodes=True warms exactly
+        the cache entry select_session_targets will hit next). The KG carries
+        both skill and subskill nodes — count subskills only.
+
+        Subjects whose graph fails to load (no published curriculum) are
+        omitted from the returned allocation; the caller skips them entirely.
+        Returns None when no subject has a graph (caller keeps legacy flow).
+        """
+        from ..models.lesson_plan import (
+            ASSUMED_MIN_PER_SUBSKILL,
+            PlanAllocation,
+            SubjectPace,
+        )
+
+        if not self.analytics:
+            return None
+
+        paces: List[SubjectPace] = []
+        for subj in subjects:
+            try:
+                kg = await self.analytics.get_knowledge_graph_progress(
+                    student_id, subj, include_nodes=True, grade=grade
+                )
+            except Exception as e:
+                logger.info(
+                    f"[SESSION_PLAN] Pace allocation: no graph for {subj} ({e})"
+                )
+                continue
+            subskill_nodes = [
+                n for n in kg.get("nodes", [])
+                if n.get("entity_type") == "subskill"
+            ]
+            total = len(subskill_nodes)
+            done = sum(
+                1 for n in subskill_nodes
+                if n.get("status") in ("mastered", "inferred")
+            )
+            paces.append(SubjectPace(
+                subject=subj,
+                total_subskills=total,
+                remaining_subskills=total - done,
+                weight=0.0,
+                allocated_minutes=0.0,
+                selector_count=0,
+            ))
+        if not paces:
+            return None
+
+        total_remaining = sum(p.remaining_subskills for p in paces)
+        for p in paces:
+            p.weight = (
+                p.remaining_subskills / total_remaining if total_remaining else 0.0
+            )
+            p.allocated_minutes = round(budget_minutes * p.weight, 1)
+            # Candidate-pool sizing, not a quota: budget fill trims, so aim a
+            # little above what the subject's minutes can hold (~8 min/target).
+            p.selector_count = (
+                0 if p.remaining_subskills == 0
+                else max(2, min(8, math.ceil(p.allocated_minutes / 8)))
+            )
+
+        # Pace signal for UIs/telemetry: what finishing on time would take.
+        # Denominated in the ASSUMED per-subskill cost until the block time
+        # ledger yields an observed one — the field name carries the caveat.
+        config = await self._get_school_year_config()
+        try:
+            year_end = date.fromisoformat(config.end_date)
+        except (ValueError, TypeError):
+            year_end = date.today()
+        weeks_left = self._school_weeks_remaining(
+            date.today(), year_end, config.breaks
+        )
+        required = (
+            total_remaining * ASSUMED_MIN_PER_SUBSKILL / (weeks_left * 5)
+            if weeks_left > 0 else 0.0
+        )
+        logger.info(
+            f"[SESSION_PLAN] Pace allocation for {student_id}: "
+            + ", ".join(
+                f"{p.subject}={p.allocated_minutes}m ({p.remaining_subskills} left)"
+                for p in paces
+            )
+            + f" | required to finish: {required:.0f} min/day vs {budget_minutes} budget"
+        )
+        return PlanAllocation(
+            weeks_remaining=weeks_left,
+            assumed_min_per_subskill=ASSUMED_MIN_PER_SUBSKILL,
+            required_minutes_per_day=round(required, 1),
+            subjects=paces,
         )
 
     def _compute_days_overdue(self, ml: Dict[str, Any]) -> int:
@@ -1092,8 +1258,11 @@ class PlanningService:
                 continue
             effective_start = max(b_start, today)
             break_days += max(0, (b_end - effective_start).days)
+        # total_days − break_days is CALENDAR days of remaining term, so a
+        # week is 7 of them. Dividing by 5 here (the old code) counted
+        # weekends as school days and overstated remaining weeks by 1.4×.
         school_days = max(0, total_days - break_days)
-        return max(1, school_days // 5)  # 5 school days per week
+        return max(1, school_days // 7)
 
     async def _build_curriculum_lookup(
         self, subjects: set[str]

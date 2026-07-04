@@ -8,13 +8,15 @@ that reads live state from Firestore (PRD Section 4).
 Plans are computed on-demand — no stored plans, no CosmosDB, no BigQuery.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from datetime import datetime
 import logging
 
 from ...core.middleware import get_user_context
 from ...services.planning_service import PlanningService
-from ...dependencies import get_planning_service
+from ...services.forecast_service import ForecastService
+from ...dependencies import get_planning_service, get_forecast_service
+from ...models.forecast import StudentForecast
 from ...models.planning import MonthlyPlanResponse, WeeklyPlanResponse
 
 logger = logging.getLogger(__name__)
@@ -82,6 +84,38 @@ async def get_monthly_plan(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to compute monthly plan: {str(e)}",
+        )
+
+
+# ============================================================================
+# FORECAST (skill-level forward projection — materialized daily)
+# ============================================================================
+
+@router.get("/{student_id}/forecast", response_model=StudentForecast)
+async def get_student_forecast(
+    student_id: int,
+    refresh: bool = Query(False, description="Force regeneration of today's forecast"),
+    user_context: dict = Depends(get_user_context),
+    service: ForecastService = Depends(get_forecast_service),
+):
+    """
+    Get-or-create today's skill-level forecast: which units and subskills the
+    student is projected to reach, and when — per subject, with optimistic /
+    best / pessimistic ETAs, retention triage, and drift vs the prior forecast.
+
+    Materialized once per day at students/{id}/forecasts/{date}; consecutive
+    docs make ETA drift ("Place Value moved +2 weeks") a first-class signal.
+    A projection, not a promise — the daily session plan stays the plan of
+    record.
+    """
+    try:
+        logger.info(f"GET /weekly-planner/{student_id}/forecast (refresh={refresh})")
+        return await service.get_student_forecast(student_id, force_refresh=refresh)
+    except Exception as e:
+        logger.error(f"Error building forecast for student {student_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to build forecast: {str(e)}",
         )
 
 

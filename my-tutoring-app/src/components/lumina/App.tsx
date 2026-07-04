@@ -14,7 +14,7 @@ import { GeneratingScreen } from './components/GeneratingScreen';
 import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
 import { DailySessionView } from './components/PlannerDashboard/DailySessionView';
-import { markSessionBlockComplete, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
+import { markSessionBlockComplete, markSessionBlockStarted, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
@@ -216,6 +216,11 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     setSessionEvalCount(0);
     setSessionReturn('daily-session');
 
+    // Time ledger: stamp the launch so completed_at − start yields an
+    // OBSERVED block duration. Fire-and-forget — never block the launch.
+    void markSessionBlockStarted(studentId, block.block_id, sessionPlan?.date)
+      .catch(err => console.warn('[Session] Failed to persist block start:', err));
+
     // Set curriculum context from block data so EvaluationProvider passes real
     // subskill IDs to the backend instead of falling back to primitive-type defaults.
     // Uses the first subskill; per-primitive attribution (DL-010) is a later enhancement.
@@ -253,7 +258,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
       : undefined;
 
     startGenerate({ topic: `${block.subject}: ${block.title}`, gradeLevel, preBuiltObjectives });
-  }, [startGenerate, gradeLevel]);
+  }, [startGenerate, gradeLevel, studentId, sessionPlan]);
 
   // Derived: next block in session (for break screen preview)
   const currentBlockIndex = sessionCurrentBlock

@@ -481,8 +481,10 @@ class VelocityService:
                 continue
             effective_start = max(b_start, today)
             break_days += max(0, (b_end - effective_start).days)
+        # total_days − break_days is CALENDAR days of remaining term, so a
+        # week is 7 of them (dividing by 5 counted weekends as school days).
         school_days = max(0, total_days - break_days)
-        return max(1, school_days // 5)
+        return max(1, school_days // 7)
 
     @staticmethod
     def _count_subskills(curriculum_data: List[Dict]) -> int:

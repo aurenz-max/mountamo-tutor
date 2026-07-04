@@ -20,6 +20,7 @@ import React, { useState } from 'react';
 import { CurriculumShowcase } from '@/components/landing/LandingPrimitiveDemos';
 import { useStudentCurriculumMap, type UnitDetail } from '../hooks/useStudentCurriculumMap';
 import { LuminaSectionLabel, LuminaBadge } from '../ui';
+import ForecastTimeline from './ForecastTimeline';
 import StudentActivityPanel from './StudentActivityPanel';
 import StudentProfileSummary from './StudentProfileSummary';
 import UnitSkillsPanel from './UnitSkillsPanel';
@@ -92,6 +93,9 @@ export default function MyProgressPanel({ studentId, onBack }: MyProgressPanelPr
 
       {/* ── Your journey — the same curriculum map as the home page, real data ── */}
       <YourJourney studentId={studentId} />
+
+      {/* ── The road ahead — skill-level forecast (unit ETAs, up-next, drift) ── */}
+      <ForecastTimeline studentId={studentId} />
 
       {/* ── Activity — XP/level/streak + prior lessons (real data, auto-scoped) ── */}
       <StudentActivityPanel

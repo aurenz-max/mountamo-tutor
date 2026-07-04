@@ -216,6 +216,42 @@ next lesson. Targets come from `demonstratedSkillLog` (subskillId+skillId);
   lookup now falls through to an all-subjects scan that passes each published
   entry's GRADE (the old scan fetched by subject_id alone = same doc 6×).
 
+## Grade of Record — students/{id}.grade_level (added 2026-07-04)
+
+A student's grade lives in TWO places, and confusing them serves the wrong
+curriculum:
+
+- **Cosmos user profile `grade_level`** — the user-facing value, keyed by the
+  CALLER's firebase_uid. Frontend reads it (`userProfile?.grade_level`);
+  backend services **cannot reach it from a bare student_id**.
+- **Firestore `students/{id}.grade_level`** — the planning-side grade of
+  record, added 2026-07-04. Surfaced via `get_student_planning_fields`;
+  written through automatically when `PUT /user-profiles/profile` updates
+  grade_level (best-effort, in `user_profiles.py`); settable directly with
+  `scripts/set_student_grade.py --student N --grade K` for pre-existing or
+  test students.
+
+**Why it matters:** curriculum is published once per grade under the same
+subject id. A bare-subject graph fetch falls into `_resolve_grade_for_subject`'s
+first-doc-wins scan, and grade docs stream lexicographically — `'1'` beats
+`'Kindergarten'` — so a gradeless student is silently served the **Grade 1**
+curriculum in the daily plan, the IRT selector, the KG progress view, and the
+forecast. (Found when a K student's forecast showed grade-1 Math; the scan now
+logs a warning when it fires.)
+
+**Rule:** any server-side flow that touches curriculum graphs for a student
+reads `grade_level` from planning fields once and passes `grade=` down —
+`get_knowledge_graph_progress`, `select_session_targets`, and
+`get_student_graph` all accept it (the fetch appends the grade suffix so
+resolution uses O(1) hints instead of the scan). As of 2026-07-04 the daily
+session plan (allocator + Step 1b), ForecastService, and the analytics
+endpoints (explicit `grade` query param) are threaded; the scan survives only
+as a warned fallback for genuinely gradeless students.
+
+Note: `get_student_planning_fields` also surfaces `daily_budget_minutes` only
+when actually set on the doc (a present-but-None key would shadow callers'
+defaults) — same pattern applies to future planning fields.
+
 ## Deprecation Ledger — do not resurrect
 
 Every entry here was a "use student data to pick what's next" attempt that

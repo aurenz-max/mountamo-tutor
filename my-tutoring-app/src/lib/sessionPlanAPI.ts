@@ -51,6 +51,33 @@ export interface LessonBlock {
   celebration_message:  string;
 }
 
+/** Observed start/complete timestamps for one block (the time ledger). */
+export interface BlockTimeEntry {
+  /** Append-only ISO timestamps — a relaunch adds another entry. */
+  starts?:       string[];
+  completed_at?: string | null;
+}
+
+/** Per-subject pace state + the minute share it earned today. */
+export interface SubjectPace {
+  subject:             string;
+  total_subskills:     number;
+  remaining_subskills: number;
+  weight:              number;
+  allocated_minutes:   number;
+  selector_count:      number;
+}
+
+/** How today's minute budget was split across subjects (pace-aware). */
+export interface PlanAllocation {
+  policy:                   string;   // "pace_proportional"
+  weeks_remaining:          number;
+  /** Assumed, not measured — see backend ASSUMED_MIN_PER_SUBSKILL. */
+  assumed_min_per_subskill: number;
+  required_minutes_per_day: number;
+  subjects:                 SubjectPace[];
+}
+
 export interface DailySessionPlan {
   student_id:               string;
   date:                     string;   // YYYY-MM-DD
@@ -62,6 +89,10 @@ export interface DailySessionPlan {
   blocks:                   LessonBlock[];
   /** Block ids finished today — persisted server-side on the day's plan doc. */
   completed_block_ids?:     string[];
+  /** Observed block timestamps keyed by block_id. */
+  block_times?:             Record<string, BlockTimeEntry>;
+  /** Pace-aware allocation that shaped this plan (absent on legacy plans). */
+  allocation?:              PlanAllocation | null;
   total_subskills:          number;
   new_subskills:            number;
   review_subskills:         number;
@@ -79,6 +110,22 @@ export async function fetchDailySessionPlan(
   const query = options?.refresh ? '?refresh=true' : '';
   return authApi.get<DailySessionPlan>(
     `/api/daily-activities/daily-plan/${studentId}/session${query}`,
+  );
+}
+
+/**
+ * Stamp a block-start timestamp on the day's time ledger. Append-only
+ * server-side: relaunching an abandoned block records another start.
+ * Fire-and-forget — the ledger is telemetry, never block the launch on it.
+ */
+export async function markSessionBlockStarted(
+  studentId: string | number,
+  blockId: string,
+  planDate?: string,
+): Promise<{ success: boolean }> {
+  const query = planDate ? `?plan_date=${encodeURIComponent(planDate)}` : '';
+  return authApi.post<{ success: boolean }>(
+    `/api/daily-activities/daily-plan/${studentId}/session/blocks/${encodeURIComponent(blockId)}/start${query}`,
   );
 }
 

@@ -70,6 +70,7 @@ _calibration_engine: Optional[CalibrationEngine] = None
 _planning_service: Optional[PlanningService] = None
 _velocity_service: Optional[VelocityService] = None
 _firestore_analytics_service: Optional[FirestoreAnalyticsService] = None
+_forecast_service = None  # ForecastService (imported lazily in its getter)
 _progress_display_service: Optional[ProgressDisplayService] = None
 _pulse_engine: Optional[PulseEngine] = None
 
@@ -543,6 +544,29 @@ async def get_planning_service(
         )
         logger.info("✅ PlanningService initialized successfully")
     return _planning_service
+
+
+async def get_forecast_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service),
+    curriculum_service: CurriculumService = Depends(get_curriculum_service),
+    analytics_service: FirestoreAnalyticsService = Depends(get_firestore_analytics_service),
+) -> "ForecastService":
+    """Get or create ForecastService singleton (skill-level forward projection).
+
+    Defined AFTER get_firestore_analytics_service — Depends() resolves the
+    callable at definition time.
+    """
+    global _forecast_service
+    if _forecast_service is None:
+        from .services.forecast_service import ForecastService
+        logger.info("Initializing ForecastService")
+        _forecast_service = ForecastService(
+            firestore_service=firestore_service,
+            curriculum_service=curriculum_service,
+            analytics_service=analytics_service,
+        )
+        logger.info("✅ ForecastService initialized successfully")
+    return _forecast_service
 
 
 def get_daily_activities_service(

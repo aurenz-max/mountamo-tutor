@@ -271,6 +271,17 @@ class LessonGroupService:
         )
 
     @staticmethod
+    def _subject_key(subject: str) -> str:
+        """
+        Normalize a subject for budget-map lookups (mirrors
+        FirestoreService.rollup_subject_key): lifecycle docs carry original
+        spellings ("Language Arts") while allocations use graph keys
+        ("LANGUAGE_ARTS") — cap checks must not miss on spelling.
+        """
+        s = re.sub(r"[^A-Za-z0-9]+", "_", (subject or "").strip()).upper().strip("_")
+        return re.sub(r"_G\d+$", "", s)
+
+    @staticmethod
     def _status_from_type(item_type: str, gate: int) -> str:
         if gate >= 4:
             return "mastered"
@@ -302,6 +313,7 @@ class LessonGroupService:
         candidate_blocks: List[LessonBlock],
         budget_minutes: int = DEFAULT_DAILY_BUDGET_MINUTES,
         review_cap_pct: float = DEFAULT_REVIEW_CAP_PCT,
+        subject_budgets: Optional[Dict[str, float]] = None,
     ) -> DailySessionPlan:
         """
         Fill the daily time budget with lesson blocks.
@@ -310,6 +322,13 @@ class LessonGroupService:
           1. Retest blocks (most overdue first)
           2. Practice/review blocks (up to review_cap_pct of budget)
           3. New lesson blocks (fill remaining intro budget)
+
+        subject_budgets (pace-aware allocation) caps how many minutes each
+        subject may claim, so a subject with little remaining work can't
+        crowd out one that's behind. RETEST blocks are exempt — spaced
+        retention timing belongs to the mastery lifecycle, not the pacer.
+        A subject with unused budget releases it in a final global pass so
+        thin supply in one subject never strands total capacity.
 
         Returns a DailySessionPlan with 4–5 blocks shaped per PRD §3.4.
         """
@@ -340,27 +359,64 @@ class LessonGroupService:
         review_minutes_used:  int = 0
         intro_minutes_used:   int = 0
         warnings:             List[str] = []
+        subject_used:         Dict[str, float] = defaultdict(float)
+        norm_budgets: Dict[str, float] = (
+            {cls._subject_key(k): v for k, v in subject_budgets.items()}
+            if subject_budgets else {}
+        )
 
-        # 1. Fill retests first (counted against review budget)
+        def subject_fits(block: LessonBlock) -> bool:
+            if not norm_budgets:
+                return True
+            key = cls._subject_key(block.subject)
+            cap = norm_budgets.get(key)
+            if cap is None:
+                return True
+            return subject_used[key] + block.estimated_minutes <= cap
+
+        # 1. Fill retests first (counted against review budget; exempt from
+        #    subject caps — retention timing is lifecycle's, not the pacer's)
         for block in retests:
             if review_minutes_used + block.estimated_minutes <= review_budget:
                 selected.append(block)
                 review_minutes_used += block.estimated_minutes
+                subject_used[cls._subject_key(block.subject)] += block.estimated_minutes
 
-        # 2. Fill practice reviews (up to review cap)
+        # 2. Fill practice reviews (up to review cap, within subject budgets)
         for block in practices:
-            if review_minutes_used + block.estimated_minutes <= review_budget:
+            if (review_minutes_used + block.estimated_minutes <= review_budget
+                    and subject_fits(block)):
                 selected.append(block)
                 review_minutes_used += block.estimated_minutes
+                subject_used[cls._subject_key(block.subject)] += block.estimated_minutes
 
         if practices and review_minutes_used >= review_budget:
             warnings.append("Review cap reached — some reviews deferred to tomorrow")
 
-        # 3. Fill new lessons with remaining intro budget
+        # 3. Fill new lessons with remaining intro budget (within subject budgets)
         for block in lessons:
-            if intro_minutes_used + block.estimated_minutes <= intro_budget:
+            if (intro_minutes_used + block.estimated_minutes <= intro_budget
+                    and subject_fits(block)):
                 selected.append(block)
                 intro_minutes_used += block.estimated_minutes
+                subject_used[cls._subject_key(block.subject)] += block.estimated_minutes
+
+        # 3b. Release pass: if subject caps left global budget on the table
+        #     (a capped subject had supply, another had none), refill ignoring
+        #     subject caps. Global review-cap and intro-budget still hold.
+        if subject_budgets:
+            for block in practices:
+                if block in selected:
+                    continue
+                if review_minutes_used + block.estimated_minutes <= review_budget:
+                    selected.append(block)
+                    review_minutes_used += block.estimated_minutes
+            for block in lessons:
+                if block in selected:
+                    continue
+                if intro_minutes_used + block.estimated_minutes <= intro_budget:
+                    selected.append(block)
+                    intro_minutes_used += block.estimated_minutes
 
         # 4. Shape the session for cognitive variety (PRD §3.4)
         ordered = cls._shape_session(selected)

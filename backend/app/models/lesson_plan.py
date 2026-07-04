@@ -82,6 +82,55 @@ class LessonBlock(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Time ledger — observed block durations (the minutes currency, measured)
+# ---------------------------------------------------------------------------
+
+class BlockTimeEntry(BaseModel):
+    """
+    Observed timestamps for one block on one day's plan.
+
+    `starts` is append-only (a re-launch after abandoning appends another
+    entry), `completed_at` is stamped once at completion. Actual duration =
+    completed_at − last start; total engagement ≈ completed_at − first start.
+    This ledger is what eventually replaces the invented per-type durations
+    in BLOCK_DURATION_MINUTES with telemetry-fit costs.
+    """
+    starts:       List[str] = Field(default_factory=list)  # ISO timestamps
+    completed_at: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Pace-aware allocation metadata
+# ---------------------------------------------------------------------------
+
+class SubjectPace(BaseModel):
+    """Per-subject pace state + the minute share it earned today."""
+    subject:             str
+    total_subskills:     int
+    remaining_subskills: int   # subskill nodes not mastered/inferred
+    weight:              float # remaining / Σ remaining
+    allocated_minutes:   float
+    selector_count:      int   # targets requested from the IRT selector
+
+
+class PlanAllocation(BaseModel):
+    """
+    How today's minute budget was split across subjects.
+
+    Policy 'pace_proportional': minutes ∝ remaining work, so the furthest-
+    behind subject owns the widest share and nearly-done subjects taper off
+    instead of idling. required_minutes_per_day uses an ASSUMED per-subskill
+    cost until the block time ledger calibrates a real one — the field name
+    carries that caveat on purpose.
+    """
+    policy:                   str = "pace_proportional"
+    weeks_remaining:          int = 0
+    assumed_min_per_subskill: int = 0
+    required_minutes_per_day: float = 0.0
+    subjects:                 List[SubjectPace] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
 # Session-level plan
 # ---------------------------------------------------------------------------
 
@@ -101,6 +150,11 @@ class DailySessionPlan(BaseModel):
     # Block ids the student has finished today — persisted on the day's plan
     # doc so progress survives navigation and device switches.
     completed_block_ids:     List[str] = Field(default_factory=list)
+    # Observed start/complete timestamps per block_id (the time ledger).
+    block_times:             Dict[str, BlockTimeEntry] = Field(default_factory=dict)
+    # Pace-aware minute allocation that shaped this plan (None on legacy
+    # plans and when the analytics service is unavailable).
+    allocation:              Optional[PlanAllocation] = None
     total_subskills:         int = 0
     new_subskills:           int = 0
     review_subskills:        int = 0
@@ -135,3 +189,9 @@ BLOCK_DURATION_MINUTES: Dict[str, int] = {
 
 DEFAULT_DAILY_BUDGET_MINUTES: int = 75
 DEFAULT_REVIEW_CAP_PCT: float = 0.50   # PRD §3.3
+
+# ASSUMED cost to take one subskill through its gate ladder. This number is
+# NOT measured anywhere yet — it exists only to translate remaining work into
+# a "required minutes/day" pace signal. The block time ledger (BlockTimeEntry)
+# is what will replace it with an observed value; do not build new logic on it.
+ASSUMED_MIN_PER_SUBSKILL: int = 30
