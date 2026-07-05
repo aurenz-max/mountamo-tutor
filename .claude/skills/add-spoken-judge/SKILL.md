@@ -18,7 +18,7 @@ Use when a literacy primitive has a moment where the student *knows the word* an
 **DO NOT use this skill for:**
 - Free-form speech (sentences, retells) — the judge is single-word/short-phrase only
 - Math or non-verbal primitives
-- Anything that would *auto-listen* — capture must always be a push-to-talk user gesture
+- An open mic paired with a *coaching* tutor — if you go always-listening (`useSpokenTurn`), the tutor MUST fall silent on every non-match (see **Capture architecture**). Never pair a continuously-open mic with a voice that talks over the student.
 
 ## Architecture (why it's shaped this way)
 
@@ -45,7 +45,7 @@ This split exists because Gemini Live tool-calling stalls/blocks (bench 2026-07,
 
 **The asymmetric grading law (non-negotiable):**
 - `match` → award credit, `SoundManager.playCorrect()`, celebrate
-- `no-match` → tutor coaches by voice (`sendText`), **nothing is scored against the student**, the tap fallback stays available
+- `no-match` → **nothing is scored against the student**, the fallback stays available. Whether the tutor *coaches by voice* here is architecture-dependent (see **Capture architecture**): push-to-talk may coach into the closed mic; always-listening stays silent and leans on the visible fallback.
 - `unclear` → invite a retry or the fallback, silently — no error state, no red X
 
 A kid who said the word right but got misheard must never be punished by the judge.
@@ -56,10 +56,28 @@ The warmth channel should be RARE, not per-beat. A tutor that says *"say it! …
 
 - **Frame once, up front** ("say each word as it comes up"), then step back. Don't re-elicit ("what is this? say it!") every beat when the screen already prompts it.
 - **Routine `match` → no voice.** Let `playCorrect()` + the visual + auto-advance carry it. Reserve `sendText` celebration for a moment that earns it: the student's **first spoken word** of the session, or a **comeback right after a miss**.
-- **`no-match` / `unclear` → one short warm sentence, at most a tiny clue.** This is the tutor's real job; keep it, keep it terse, never scold.
+- **`no-match` / `unclear` → depends on the capture architecture (below).** *Push-to-talk:* one short warm sentence, at most a tiny clue — this is the tutor's real job; keep it terse, never scold. *Always-listening:* **say nothing** — the mic is open, so any "try again!" lands on top of the child who is already trying; lean on the always-visible fallback choices instead.
 - **Speak only to deliver audio the screen can't** (a word to be tapped, a sentence to be completed for a pre-reader). If the beat is self-evident on screen, the tutor stays silent.
 
 Net: a smooth multi-word session should be ~3 tutor utterances (open, first-voice, finish), not one per word. Encode the same restraint in the catalog `aiDirectives` ("routine successes will NOT ping you — that silence is by design; do not fill it") so the tutor stays terse even when invoked.
+
+**Capture architecture — pick one, and mind the tutor rule it carries:**
+
+There are two capture hooks. They are interchangeable at the judge/grading layer, but they impose **opposite** tutor rules because one closes the mic between tries and the other never does.
+
+| | `useSpokenWordCapture` (push-to-talk) | `useSpokenTurn` (always-listening) |
+|---|---|---|
+| Mic | Closed until the student taps 🎙️ | Open continuously; self-re-arms between tries |
+| Best for | A single culminating word ("now say it") | A conversational run of items (PictureVocabulary) |
+| Echo gate | The tap — the student presses when the tutor is quiet | **None** — the mic never closes |
+| **Tutor on `no-match` / `unclear` / no-speech** | **May** coach by voice — the closed mic means nothing is talked over | **Must stay SILENT** — a voice plays straight over the student's next attempt |
+| Miss support net | The tutor's warm re-invite | The **always-visible fallback choices** |
+
+**Default to push-to-talk.** It's simpler, and its tap is an echo gate that keeps the tutor's voice out of the clip *and* out of the student's way. Reach for always-listening only when re-pressing the mic for every item is real friction — a vocabulary drill, a rhyme volley. The moment you do, you inherit its discipline (user ruling, PictureVocabulary 2026-07-04 — memory `spoken-mic-decoupled-from-tutor`):
+
+- **Mic decoupled from tutor state.** Never gate capture on "tutor is busy" — a missed student answer is worse than a little tutor bleed (which only ever lands as `no-match`/`unclear`, never a false positive).
+- **Tutor silent on every non-match.** No coach on `no-match`, `unclear`, or no-speech. The visible fallback choices are the support net; reveal them from the start of each item.
+- **Celebration still applies** (first-voice, comeback, finish) — those fire *after* the student has stopped speaking, so they don't collide.
 
 ## Step-by-Step Workflow
 
@@ -119,18 +137,28 @@ If you can't find a replace-the-report click, you're in the second shape — don
 
 ### Phase 3: Render the Beat
 
-8. Next to the existing fallback button (never replacing it):
+8. Render the capture surface with the shared **`LuminaMicListener`** — never hand-roll a mic button + level bar. (Six primitives each hand-rolled a slightly different meter before this component existed; that's the whole reason it exists.) Import it from the ui barrel and feed it the hook's state directly, next to the existing fallback (never replacing it):
    ```tsx
-   {spokenCapture.isSupported && spokenCapture.state === 'idle' && (
-     <LuminaButton onClick={() => void spokenCapture.start()}>🎙️ Say it!</LuminaButton>
-   )}
-   {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
-     /* "Say “word”!" prompt + level meter from spokenCapture.level + ✕ cancel */
-   )}
-   {spokenCapture.state === 'judging' && <span>Checking…</span>}
+   import { LuminaMicListener } from '../../../ui';
+   ...
+   {/* push-to-talk: OMIT `dormant` — for this hook `idle` alone means "offer the button" */}
+   <LuminaMicListener
+     state={spokenCapture.state}          // 'idle' | 'armed' | 'recording' | 'judging'
+     level={spokenCapture.level}          // raw RMS; the orb normalizes it internally
+     isSupported={spokenCapture.isSupported}
+     onStart={() => void spokenCapture.start()}
+     onCancel={spokenCapture.cancel}      // renders a quiet "✕ stop" while live
+     accent="emerald"                     // tint to the primitive / phase accent
+     idleLabel="Say it!"                  // prompt on the tap-to-talk orb
+     listeningLabel="Your turn — say it!" // prompt while armed/recording (optional)
+   />
    ```
-   `isSupported === false` → the beat simply doesn't render; the primitive works exactly as before.
-9. Do NOT add capture sounds — the hook already plays `snap()` ("heard you") and the sustained processing pulse. The primitive adds only `playCorrect()` on match (Phase 2). No sound on miss — the tutor's voice IS the miss feedback.
+   The component owns **every** visual state — the tap-to-talk orb, the breathing "mic is live" ring, the voice-reactive spike ring driven by `level`, and the "Checking…" settle spinner while the judge runs. You own only *when* to mount it and *what the answer means*. `isSupported === false` → it renders nothing, so the primitive falls back to the tap path exactly as before.
+
+   **Always-listening variant (`useSpokenTurn`):** the same component, but **pass `dormant={spokenTurn.dormant}`** so it shows the tap-to-talk orb *only* when the loop has truly stopped — a mid-rearm `idle` keeps the live orb instead of flickering back to a button. Wire `onStart={() => spokenTurn.startManual()}` and `onCancel={() => spokenTurn.cancel()}`, and gate the whole surface behind your `spokenActive` flag. See PictureVocabulary's `renderListeningState()` for the reference wiring.
+
+   Props at a glance: `state`, `level`, `isSupported`, `onStart` (required); `onCancel`, `dormant`, `accent` (`LuminaAccent`), `size` (`'sm'|'md'|'lg'`), and the four labels `idleLabel`/`listeningLabel`/`recordingLabel`/`judgingLabel` (optional).
+9. Do NOT add capture sounds — the hook already plays `snap()` ("heard you") and the sustained processing pulse. The primitive adds only `playCorrect()` on match (Phase 2). No sound on miss — for push-to-talk the tutor's voice IS the miss feedback; for always-listening the revealed fallback choices are (the tutor stays silent).
 
 ### Phase 3b (optional but high-value): Make the beat the primary flow
 
@@ -162,7 +190,7 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 ## Design Rules (Do / Don't)
 
 - **Do** keep the deterministic path reachable — the beat is additive, never a gate. "Additive" ≠ "visually co-equal": it's fine (better, even) to make the mic the primary CTA and demote the fallback to a quiet skip, as long as the skip is always there.
-- **Do** start *capture* only from a user gesture (push-to-talk). Never auto-listen. Advancing the *flow* automatically after a judged match is fine and encouraged — auto-advance yes, auto-listen no.
+- **Do** default to starting *capture* from a user gesture (push-to-talk) — its tap is the echo gate that keeps the tutor's voice out of the clip. Always-listening (`useSpokenTurn`) is allowed for multi-item runs, but only with its full discipline: mic decoupled from tutor state **and** tutor silent on every non-match (see **Capture architecture**). Advancing the *flow* automatically after a judged match is fine either way — auto-advance yes; auto-*listen* only under the always-listening discipline, never bolted onto push-to-talk.
 - **Don't** let a `no-match` write anything into attempts/accuracy metrics.
 - **Don't** call the judge with anything but the hook — the endpointing, sounds, and ladder policy live there for a reason.
 - **Don't** substitute `gemini-flash-lite` anywhere in the ladder — it false-positives minimal pairs with high confidence (benched).
@@ -182,7 +210,10 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 |---|---|
 | `primitives/visual-primitives/literacy/PhonicsBlender.tsx` | **Replace-the-report** archetype: mic replaces the "Blend!" click. Full wiring — handler, hook, cancel-on-advance, UI beat, metrics, tutor cues |
 | `primitives/visual-primitives/literacy/CvcSpeller.tsx` | **Culminate-after-solve** archetype: beat gated on `wordComplete`, primary-CTA/quiet-skip layout, auto-advance on match (Phase 3b) |
-| `hooks/useSpokenWordCapture.ts` | The capability — capture, endpointing, ladder, outcome mapping |
+| `primitives/visual-primitives/literacy/PictureVocabulary.tsx` | **Always-listening** archetype (`useSpokenTurn`): open-mic run of items, tutor SILENT on every non-match, always-visible fallback choices. See `renderListeningState()` |
+| `ui/LuminaMicListener.tsx` | The shared capture surface — state-driven orb + voice-reactive spike ring. Feed it either hook's state; don't hand-roll a mic UI |
+| `hooks/useSpokenWordCapture.ts` | The push-to-talk capability — capture, endpointing, ladder, outcome mapping |
+| `hooks/useSpokenTurn.ts` | The always-listening loop — self-re-arm, dormancy, `startManual`/`cancel` |
 | `utils/spokenWordJudge.ts` | Ladder policy + outcome semantics |
 | `service/literacy/azure-blend-judge.ts` | Azure dual-signal + tunable thresholds |
 | `service/literacy/gemini-blend-judge.ts` | LLM rung (escalation tier) |
@@ -193,9 +224,9 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 - [ ] Found the production moment; fallback click-path unchanged
 - [ ] `useSpokenWordCapture` wired with asymmetric outcome handling
 - [ ] `spokenCapture.cancel()` on item advance
-- [ ] Push-to-talk button + level meter + judging state rendered; hidden when `!isSupported`
+- [ ] Capture surface rendered via `LuminaMicListener` (not hand-rolled); hidden when `!isSupported`; `dormant` passed only for the always-listening variant
 - [ ] `playCorrect()` on match only; no sounds added for capture (hook owns them)
-- [ ] Tutor `sendText` cues for miss/unclear (warm, never scolding)
+- [ ] Tutor-on-miss matches the architecture: **push-to-talk** → warm `sendText` cues for miss/unclear (never scolding); **always-listening** → miss/unclear/no-speech are voice-SILENT, fallback choices revealed
 - [ ] Quiet-tutor law honored: framed once up front, routine `match` is voice-silent, celebration `sendText` gated on first-voice/comeback
 - [ ] `spokenWords` in evaluation extras
 - [ ] (culminate-after-solve) beat is the primary CTA, fallback demoted to a quiet skip; auto-advance on match with a double-advance guard

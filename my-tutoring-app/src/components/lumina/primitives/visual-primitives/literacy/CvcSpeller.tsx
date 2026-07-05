@@ -11,6 +11,7 @@ import {
   LuminaPanel,
   LuminaActionButton,
   LuminaFeedbackCard,
+  LuminaMicListener,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -1224,46 +1225,16 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
               <div className="flex flex-col items-center gap-3">
                 <p className="text-slate-300 text-sm font-medium">Your turn — say the word!</p>
                 <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
-                  {spokenCapture.state === 'idle' && (
-                    <LuminaButton
-                      tone="primary"
-                      onClick={() => void spokenCapture.start()}
-                      className="text-lg px-8 py-3"
-                    >
-                      {'🎙️'} Say “{currentChallenge.targetWord}”!
-                    </LuminaButton>
-                  )}
-                  {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-sm font-semibold ${
-                          spokenCapture.state === 'recording'
-                            ? 'text-emerald-300'
-                            : 'text-amber-300 animate-pulse'
-                        }`}
-                      >
-                        {spokenCapture.state === 'recording'
-                          ? 'Listening…'
-                          : `Say “${currentChallenge.targetWord}”!`}
-                      </span>
-                      <div className="w-20 h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-emerald-500 transition-all duration-75"
-                          style={{ width: `${Math.min(100, Math.round((spokenCapture.level / 0.12) * 100))}%` }}
-                        />
-                      </div>
-                      <button
-                        onClick={spokenCapture.cancel}
-                        className="text-slate-500 text-xs hover:text-slate-300"
-                        aria-label="Stop listening"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                  {spokenCapture.state === 'judging' && (
-                    <span className="text-blue-300 text-sm animate-pulse">Checking…</span>
-                  )}
+                  <LuminaMicListener
+                    state={spokenCapture.state}
+                    level={spokenCapture.level}
+                    isSupported={spokenCapture.isSupported}
+                    onStart={() => void spokenCapture.start()}
+                    onCancel={spokenCapture.cancel}
+                    size="sm"
+                    idleLabel={`Say “${currentChallenge.targetWord}”!`}
+                    listeningLabel={`Say “${currentChallenge.targetWord}”!`}
+                  />
                 </div>
                 {/* Quiet skip — never traps a student who can't or won't speak */}
                 {spokenCapture.state === 'idle' && (

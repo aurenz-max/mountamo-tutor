@@ -12,6 +12,7 @@ import {
   LuminaChallengeCounter,
   LuminaProgress,
   LuminaFeedbackCard,
+  LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
@@ -117,8 +118,6 @@ const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string
 
 const MAX_WRONG_TAPS = 3;
 const AUTO_ADVANCE_MS = 1600;
-/** Spoken-coaching turns per challenge — bounds the tutor↔open-mic ping-pong. */
-const MAX_SPOKEN_COACH_SENDS = 2;
 
 const isSpokenMode = (t: PictureVocabChallengeType | undefined) =>
   t === 'naming' || t === 'opposite' || t === 'association'
@@ -340,17 +339,12 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     hasStarted && !showSummary && !showResult && !spokenMatched
     && voiceMode === 'auto' && isSpokenMode(currentChallenge?.type);
 
-  // The mic stays open across the tutor's turns, so a capture of the tutor's
-  // own coaching would otherwise spawn another coaching turn, forever. Cap
-  // spoken-coaching sends per challenge; past the cap the mic keeps listening
-  // but misses stay UI-only (choices are already revealed by then).
-  const spokenCoachSendsRef = useRef(0);
-  const sendSpokenCoach = useCallback((message: string) => {
-    if (spokenCoachSendsRef.current >= MAX_SPOKEN_COACH_SENDS) return;
-    spokenCoachSendsRef.current += 1;
-    sendText(message, { silent: true });
-  }, [sendText]);
-
+  // DESIGN LAW: the tutor NEVER speaks in response to a miss, an unclear catch,
+  // or silence. The mic is open and decoupled from tutor state, so any coaching
+  // audio here plays straight over a student who is still thinking or already
+  // forming their next try — worst on opposite/association, where the answer
+  // takes the longest to reach. The always-visible tap choices ARE the support
+  // net; the tutor stays quiet and lets the student's voice have the floor.
   const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
     if (!currentChallenge || showResult || spokenMatched) return;
     if (result.outcome === 'match') {
@@ -375,29 +369,23 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
         );
       }
     } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      // Heard a real but wrong word. Stay silent — the choices are already on
+      // screen as a support net, and the mic keeps listening for another try.
       setSpokenMisses(m => m + 1);
       setTotalSpokenMisses(t => t + 1);
-      setChoicesRevealed(true);
-      sendSpokenCoach(
-        `[SPOKEN_MISS] Student tried to say "${currentChallenge.word}" but the judge heard "${result.verdict.heard}". `
-        + `Gently and warmly invite one more try WITHOUT saying "${currentChallenge.word}" yourself (e.g. "So close — look again, what is it?"). `
-        + `Never scold. The microphone is still listening; the tap choices are now visible as a backup.`,
-      );
     } else {
+      // Mic didn't catch a clear word (silence/noise). Stay silent and keep
+      // listening; a spoken "say it again" here just talks over the student.
       setSpokenMisses(m => m + 1);
-      sendSpokenCoach(
-        `[SPOKEN_UNCLEAR] The mic didn't catch it. One friendly sentence inviting them to say it again, a little louder. Do NOT say "${currentChallenge.word}".`,
-      );
     }
-  }, [currentChallenge, showResult, spokenMatched, spokenWords, spokenMisses, completeCurrentChallenge, sendText, sendSpokenCoach]);
+  }, [currentChallenge, showResult, spokenMatched, spokenWords, spokenMisses, completeCurrentChallenge, sendText]);
 
   const handleNoSpeech = useCallback(() => {
     if (!currentChallenge || showResult || spokenMatched) return;
-    setChoicesRevealed(true);
-    sendSpokenCoach(
-      `[SPOKEN_NO_SPEECH] Student didn't say anything. One warm nudge: they can say the answer (the microphone is still listening), or tap one of the choices now on screen. Do NOT say "${currentChallenge.word}".`,
-    );
-  }, [currentChallenge, showResult, spokenMatched, sendSpokenCoach]);
+    // The student went quiet — almost always still thinking (opposites and
+    // associations take a beat). The tutor stays silent and the mic keeps
+    // listening; the choices are already visible if they'd rather tap.
+  }, [currentChallenge, showResult, spokenMatched]);
 
   const spokenTurn = useSpokenTurn({
     targetWord: currentChallenge?.word ?? '',
@@ -537,7 +525,6 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     setFeedbackType('');
     setIsShaking(false);
     recordedRef.current = false;
-    spokenCoachSendsRef.current = 0;
     // Clear the auto-advance latch so this fresh challenge can schedule its own
     // advance. Runs after the auto-advance effect in the transition commit, so
     // it wipes any latch that effect set on stale (still-true) spokenMatched.
@@ -560,41 +547,21 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
 
   const renderListeningState = () => {
     if (!spokenActive || !spokenTurn.isSupported) return null;
+    // The mic is tinted to the live challenge's mode accent so the orb reads as
+    // part of the same beat (emerald=naming, amber=opposite, pink=association…).
     return (
-      <div className="flex flex-col items-center gap-2 min-h-[64px] justify-center">
-        {spokenTurn.state === 'judging' ? (
-          <span className="text-slate-400 text-sm animate-pulse">Checking…</span>
-        ) : spokenTurn.dormant ? (
-          <LuminaButton
-            tone="primary"
-            onClick={() => spokenTurn.startManual()}
-            className="px-6 py-2.5"
-          >
-            {'🎙️'} Say it!
-          </LuminaButton>
-        ) : (
-          // Live mic surface: idle here is only the brief (re)arm cooldown, so
-          // render it like 'armed' — one stable state, no flicker.
-          <div className="flex flex-col items-center gap-1.5">
-            <span className={`text-sm font-semibold ${
-              spokenTurn.state === 'recording' ? 'text-emerald-300' : 'text-amber-300 animate-pulse'
-            }`}>
-              {spokenTurn.state === 'recording' ? 'Listening…' : '🎙️ Your turn — say it!'}
-            </span>
-            <div className="w-40 h-1.5 rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-emerald-400/80 transition-all duration-75"
-                style={{ width: `${Math.min(100, spokenTurn.level * 600)}%` }}
-              />
-            </div>
-            <button
-              onClick={() => spokenTurn.cancel()}
-              className="text-slate-500 text-xs hover:text-slate-300"
-            >
-              ✕ stop listening
-            </button>
-          </div>
-        )}
+      <div className="flex justify-center min-h-[64px] items-center">
+        <LuminaMicListener
+          state={spokenTurn.state}
+          level={spokenTurn.level}
+          isSupported={spokenTurn.isSupported}
+          dormant={spokenTurn.dormant}
+          onStart={() => spokenTurn.startManual()}
+          onCancel={() => spokenTurn.cancel()}
+          accent={modeMeta.accent}
+          idleLabel="Say it!"
+          listeningLabel="Your turn — say it!"
+        />
       </div>
     );
   };

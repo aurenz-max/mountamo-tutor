@@ -93,6 +93,13 @@ export { LuminaInput, type LuminaInputProps } from './LuminaInput';
 // Brand — the Aurora Core mark, doubling as a progress ring.
 export { LuminaMark, type LuminaMarkProps } from './LuminaMark';
 
+// Spoken production — the shared "mic is live, speak now" capture surface.
+export {
+  default as LuminaMicListener,
+  type LuminaMicListenerProps,
+  type MicListenerState,
+} from './LuminaMicListener';
+
 export {
   surface,
   text,
