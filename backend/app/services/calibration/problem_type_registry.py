@@ -561,6 +561,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "spell_word": PriorConfig(2.5, "Guided: spell full CVC word in Elkonin boxes"),
         "word_sort":  PriorConfig(3.5, "Application: sort words into vowel-sound buckets"),
     },
+    "picture-vocabulary": {
+        "receptive_match": PriorConfig(1.5, "Receptive vocabulary — hear a word, tap the matching picture"),
+        "naming":          PriorConfig(2.5, "Expressive naming — see a picture, say the word aloud (speech-judged)"),
+        "association":     PriorConfig(3.0, "Word associations — say the thing that goes with a shown word (sock→shoe)"),
+        "opposite":        PriorConfig(3.5, "Word relationships — produce the opposite of a shown word aloud"),
+        "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word in a spoken sentence frame"),
+        "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of an ordered low→high word gradient"),
+    },
     "character-web": {
         "trait_id":         PriorConfig(1.5, "Identify traits from a character's actions and words"),
         "trait_evidence":   PriorConfig(2.5, "Support trait claims with text evidence quotes"),

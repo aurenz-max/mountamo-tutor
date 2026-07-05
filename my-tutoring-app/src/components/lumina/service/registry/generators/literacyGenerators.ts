@@ -55,6 +55,7 @@ import { generateLetterSoundLink } from '../../literacy/gemini-letter-sound-link
 import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 import { generateWordSorter } from '../../literacy/gemini-word-sorter';
+import { generatePictureVocabulary } from '../../literacy/gemini-picture-vocabulary';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -562,4 +563,28 @@ registerContextGenerator('word-sorter', async (ctx) => ({
   data: await generateWordSorter(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 27 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter)');
+// ============================================================================
+// Speaking & Listening / Language — Picture Vocabulary
+// ============================================================================
+
+/**
+ * Picture Vocabulary - Spoken picture vocabulary with speech judge (tap fallback)
+ *
+ * Perfect for:
+ * - K-1 oral vocabulary development and word production
+ * - Listen & Find: hear a word, tap the matching picture
+ * - Say It: see a picture, name it aloud (speech-judged)
+ * - Opposites: see a word+picture, say its opposite
+ * - Finish the Sentence: hear a sentence with a blank, say the missing word
+ *
+ * Grade Scaling:
+ * - K: everyday concrete nouns (animals, foods, clothes, home)
+ * - Grade 1: broader vocabulary, opposites, sentence-frame production
+ */
+registerContextGenerator('picture-vocabulary', async (ctx) => ({
+  type: 'picture-vocabulary',
+  instanceId: ctx.instanceId,
+  data: await generatePictureVocabulary(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 28 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary)');

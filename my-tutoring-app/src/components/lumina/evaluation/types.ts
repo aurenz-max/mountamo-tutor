@@ -2293,6 +2293,18 @@ export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
+  type: 'picture-vocabulary';
+  challengeType: 'receptive_match' | 'naming' | 'association' | 'opposite' | 'sentence_frame' | 'gradable_scale';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   type: 'word-workout';
   mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
@@ -3375,6 +3387,7 @@ export type PrimitiveMetrics =
   | LetterSpotterMetrics
   | LetterSoundLinkMetrics
   | CvcSpellerMetrics
+  | PictureVocabularyMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics

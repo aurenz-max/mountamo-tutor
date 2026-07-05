@@ -271,6 +271,7 @@ export function useLuminaAI({
     // State
     isConnected: context.isConnected,
     isAIResponding: context.isAIResponding,
+    isAudioPlaying: context.isAudioPlaying,
     isListening: context.isListening,
     conversation: context.conversation,
 

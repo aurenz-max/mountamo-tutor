@@ -720,6 +720,118 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'picture-vocabulary',
+    description:
+      'Spoken picture-vocabulary activity — the student SAYS their answers out loud and a speech judge confirms them (conversational voice mode; tap fallback always available). '
+      + 'Six progressive modes: Listen & Find (hear a word, tap the matching picture), Say It (see a picture, name it aloud — "What is this?"), '
+      + 'Goes Together (see a thing, say what naturally goes with it — sock→shoe), Opposites (see a word, say its opposite), '
+      + 'Finish the Sentence (hear a sentence with a blank, say the missing word), Word Scale (see an ordered word gradient with a missing rung and say it — freezing→cold→__→warm→hot). '
+      + 'Matches vocabulary words to pictures, builds oral vocabulary and word production. ESSENTIAL for K-1 vocabulary development and oral language.',
+    constraints:
+      'Use concrete, picturable words with clear emoji matches. K: everyday nouns (animals, foods, clothes, home). '
+      + 'The manifest must NOT supply specific words — the generator builds the word pool and challenges deterministically from the eval mode.',
+    evalModes: [
+      {
+        evalMode: 'receptive_match',
+        label: 'Listen & Find (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['receptive_match'],
+        description: 'Receptive vocabulary — hear a word spoken, tap the matching picture from 4.',
+      },
+      {
+        evalMode: 'naming',
+        label: 'Say It (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['naming'],
+        description: 'Expressive naming — see a picture, say the word aloud (speech-judged; tap fallback).',
+      },
+      {
+        evalMode: 'association',
+        label: 'Goes Together (Tier 3)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['association'],
+        description: 'Word associations — see a thing, say what naturally goes with it (sock→shoe; speech-judged, tap fallback).',
+      },
+      {
+        evalMode: 'opposite',
+        label: 'Opposites (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['opposite'],
+        description: 'Word relationships — see a word+picture, produce its opposite aloud.',
+      },
+      {
+        evalMode: 'sentence_frame',
+        label: 'Finish the Sentence (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['sentence_frame'],
+        description: 'Vocabulary in context — hear a sentence with a missing word, say the word that completes it.',
+      },
+      {
+        evalMode: 'gradable_scale',
+        label: 'Word Scale (Tier 5)',
+        beta: 6.0,
+        scaffoldingMode: 5,
+        challengeTypes: ['gradable_scale'],
+        description: 'Gradable vocabulary — order a low→high gradient and say the missing rung (freezing→cold→__→warm→hot).',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Multi-challenge spoken vocabulary session — student answers by SPEAKING (or tapping as fallback). '
+        + 'Currently on {{challengeType}} challenge {{currentChallengeIndex}} of {{totalChallenges}}. Voice mode: {{voiceMode}}.',
+      contextKeys: [
+        'challengeType',
+        'currentChallengeIndex',
+        'totalChallenges',
+        'attempts',
+        'voiceMode',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look closely at the picture. What do you see? Take your time and say it out loud!"',
+        level2: '"Think about where you see this at home or outside. What do you call it? Say the word!"',
+        level3: '"Listen to the first sound of the word — I\'ll give you a clue about what it does or where it lives. Now you say the whole word!"',
+      },
+      commonStruggles: [
+        { pattern: 'Says a related word instead of the target (e.g. "puppy" for "dog")', response: 'Warmly accept the meaning, then ask for the specific word: "Yes, it IS a puppy — and a puppy is a baby...?"' },
+        { pattern: 'Silent / will not speak', response: 'Never pressure. Point them to the tap choices: "You can tap it too! Which one is it?"' },
+        { pattern: 'Speaks too quietly for the mic', response: 'Make it a game: "The microphone is a little sleepy — say it BIG and proud!"' },
+      ],
+      aiDirectives: [
+        {
+          title: 'PROMPT LAW — NEVER SAY THE ANSWER',
+          instruction:
+            'In Say It, Goes Together, Opposites, Finish the Sentence, and Word Scale modes the microphone auto-opens the moment you stop talking. '
+            + 'You must NEVER speak the answer word (or any rhyme/first-sound of it) in your question, hints, or encouragement until the student has succeeded or the answer is revealed. '
+            + 'If your voice contained the answer, the judge could hear YOU instead of the student. Ask short questions, then be silent and wait. '
+            + 'Exception: Listen & Find mode — there you MUST say the target word clearly, because the student answers by tapping.',
+        },
+        {
+          title: 'QUIET BY DEFAULT — LESS IS MORE',
+          instruction:
+            'This is a spoken {{totalChallenges}}-picture session and your voice should be RARE, not constant. '
+            + 'Set the game up in ONE warm sentence at the very start, then STEP BACK. Do NOT re-ask "what is this?" every round — '
+            + 'the picture on screen and the live microphone already prompt the child. Most correct answers need NO words from you: '
+            + 'a happy sound and the next picture are enough. The silence between pictures is intentional — it gives the child room to talk. '
+            + 'Speak up ONLY when it earns it: the child\'s first spoken answer, a gentle clue after a real miss, or the final celebration. '
+            + 'When you do speak, ONE short sentence, then stop.',
+        },
+        {
+          title: 'SPOKEN OUTCOME HANDLING',
+          instruction:
+            'You are only pinged to react at moments that matter — routine successes will NOT ping you, and that silence is by design; do not fill it. '
+            + 'On [SPOKEN_MATCH]: ONE joyful sentence (you may say the word now), then STOP. '
+            + 'On [SPOKEN_MISS]/[SPOKEN_UNCLEAR]/[SPOKEN_NO_SPEECH]: ONE warm, no-pressure sentence with at most a tiny concrete clue (category, use, location) — never scold, never say the answer word. The mic re-opens after you finish.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+  {
     id: 'cvc-speller',
     description:
       'Audio-first CVC word encoding with three progressive task modes. Fill-the-Vowel: hear a word, see consonant frame (c_t), '

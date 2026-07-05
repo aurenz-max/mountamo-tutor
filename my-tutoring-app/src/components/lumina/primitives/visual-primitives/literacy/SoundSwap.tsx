@@ -20,6 +20,7 @@ import {
 } from '../../../evaluation';
 import type { SoundSwapMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -257,6 +258,10 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   const [swappedPhoneme, setSwappedPhoneme] = useState<string | null>(null);
   const [addedPhoneme, setAddedPhoneme] = useState<string | null>(null);
 
+  // New words the student said ALOUD (judge-confirmed) — the culminating
+  // production beat. Tracked by challenge id, cumulative across the session.
+  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
+
   // ── Timing ────────────────────────────────────────────────────────
   const startTimeRef = useRef(Date.now());
 
@@ -458,7 +463,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       overallPct >= 60,
       overallPct,
       metrics,
-      { durationMs: elapsed, challengeResults },
+      { durationMs: elapsed, challengeResults, spokenWords: Array.from(spokenWords) },
     );
 
     // AI celebration
@@ -472,7 +477,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     );
   }, [
     hasSubmittedEvaluation, challengeResults, challenges, currentChallenge,
-    computeAccuracies, phaseResults, submitEvaluation, sendText,
+    computeAccuracies, phaseResults, submitEvaluation, sendText, spokenWords,
   ]);
 
   // ── Handle deletion — student taps a phoneme tile to remove ───────
@@ -668,8 +673,63 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     }
   }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
 
+  // ── Spoken production beat ────────────────────────────────────────
+  // Every operation ends by producing a new word ("what word do you get?"). The
+  // tile-tap only reports it; once the challenge is resolved the mic turns that
+  // into real oral production — the student SAYS the new word, and the judge
+  // ladder (Azure dual-signal → Gemini, utils/spokenWordJudge.ts) confirms it.
+  // Purely additive: the beat only appears after showResult, the Skip/Next path
+  // is always reachable, and a 'no-match' is never scored against the student.
+  //   'match'   → celebrate + track (bonus production credit)
+  //   'no-match'→ tutor models the new word by voice, NO penalty
+  //   'unclear' → invite a retry, silently
+  const spokenTargetWord = currentChallenge?.resultWord ?? '';
+
+  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
+    if (!currentChallenge || !spokenTargetWord || spokenWords.has(currentChallenge.id)) return;
+
+    if (result.outcome === 'match') {
+      SoundManager.playCorrect();
+      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
+      sendText(
+        `[STUDENT_SAID_WORD] The student said the new word "${spokenTargetWord}" out loud all by themselves — `
+        + `the result of the sound swap on "${currentChallenge.originalWord}"! `
+        + `Celebrate enthusiastically that they SAID the new word (one sentence).`,
+        { silent: true },
+      );
+    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      sendText(
+        `[SPOKEN_MISS] The student tried to say the new word "${spokenTargetWord}" aloud but it sounded like "${result.verdict.heard}". `
+        + `Gently model it — stretch the sounds "${currentChallenge.resultPhonemes.join('... ')}", then say "${spokenTargetWord}" — and invite one more try. `
+        + `Warm, never scolding. Two short sentences max.`,
+        { silent: true },
+      );
+    } else {
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't catch it. One friendly sentence: invite them to say "${spokenTargetWord}" `
+        + `again a little louder, or just tap Next.`,
+        { silent: true },
+      );
+    }
+  }, [currentChallenge, spokenTargetWord, spokenWords, sendText]);
+
+  const spokenCapture = useSpokenWordCapture({
+    targetWord: spokenTargetWord,
+    gradeLevel,
+    onResult: handleSpokenResult,
+    onNoSpeech: () => {
+      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say `
+        + `"${spokenTargetWord}" again a little louder, or just tap Next.`,
+        { silent: true },
+      );
+    },
+  });
+
   // ── Advance to next challenge ─────────────────────────────────────
   const handleNext = useCallback(() => {
+    spokenCapture.cancel(); // never carry a live mic across challenges
     if (!advanceProgress()) {
       // All challenges done — submit evaluation and show summary
       submitFinalEvaluation();
@@ -680,7 +740,19 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
       `[NEXT_CHALLENGE] Moving to challenge ${currentIndex + 2} of ${challenges.length}.`,
       { silent: true },
     );
-  }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation]);
+  }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation, spokenCapture]);
+
+  // Strong-flow UX: once the student says the new word aloud (judge-confirmed),
+  // glide to the next challenge on their behalf — no extra click. The mic itself
+  // stays tap-to-start (push-to-talk is the echo gate against the tutor's voice);
+  // only the advance is automatic — auto-advance yes, auto-listen no.
+  const handleNextRef = useRef(handleNext);
+  handleNextRef.current = handleNext;
+  useEffect(() => {
+    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
+    const t = setTimeout(() => handleNextRef.current(), 1400);
+    return () => clearTimeout(t);
+  }, [spokenWords, currentChallenge]);
 
   // ── Render: Phoneme tile row ──────────────────────────────────────
   // INTERACTION SURFACE — the phoneme tiles the student taps/manipulates.
@@ -1070,13 +1142,89 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
           </LuminaFeedbackCard>
         )}
 
-        {/* Next / Finish button */}
-        {showResult && !showSummary && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNext}>
-              {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </LuminaActionButton>
-          </div>
+        {/* Resolved footer. The culminating say-it beat is the PRIMARY next step
+            (auto-advances on a judged new word); it applies to every operation
+            because each ends by producing a single result word. The mic is always
+            additive — a quiet Skip is always reachable and 'no-match' is never
+            scored. When the mic isn't supported, it falls back to Next / Finish. */}
+        {showResult && !showSummary && currentChallenge && (
+          spokenCapture.isSupported && spokenTargetWord ? (
+            <div className="flex flex-col items-center gap-3">
+              {spokenWords.has(currentChallenge.id) ? (
+                // Said it → celebrate, then auto-glide to the next challenge (effect above)
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-emerald-300 text-base font-semibold">
+                    🎉 You said “{spokenTargetWord}” out loud!
+                  </span>
+                  <span className="text-slate-500 text-xs">
+                    {currentIndex < challenges.length - 1 ? 'Next challenge coming up…' : 'Wrapping up…'}
+                  </span>
+                </div>
+              ) : (
+                // Mic available → the say-the-new-word beat is the PRIMARY next step
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-slate-300 text-sm font-medium">Your turn — say the new word!</p>
+                  <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
+                    {spokenCapture.state === 'idle' && (
+                      <LuminaButton
+                        tone="primary"
+                        onClick={() => void spokenCapture.start()}
+                        className="text-lg px-8 py-3"
+                      >
+                        🎙️ Say “{spokenTargetWord}”!
+                      </LuminaButton>
+                    )}
+                    {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-sm font-semibold ${
+                            spokenCapture.state === 'recording'
+                              ? 'text-emerald-300'
+                              : 'text-amber-300 animate-pulse'
+                          }`}
+                        >
+                          {spokenCapture.state === 'recording'
+                            ? 'Listening…'
+                            : `Say “${spokenTargetWord}”!`}
+                        </span>
+                        <div className="w-20 h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-500 transition-all duration-75"
+                            style={{ width: `${Math.min(100, Math.round((spokenCapture.level / 0.12) * 100))}%` }}
+                          />
+                        </div>
+                        <button
+                          onClick={spokenCapture.cancel}
+                          className="text-slate-500 text-xs hover:text-slate-300"
+                          aria-label="Stop listening"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                    {spokenCapture.state === 'judging' && (
+                      <span className="text-blue-300 text-sm animate-pulse">Checking…</span>
+                    )}
+                  </div>
+                  {/* Quiet skip — never traps a student who can't or won't speak */}
+                  {spokenCapture.state === 'idle' && (
+                    <button
+                      onClick={handleNext}
+                      className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
+                    >
+                      {currentIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <LuminaActionButton action="next" onClick={handleNext}>
+                {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
+              </LuminaActionButton>
+            </div>
+          )
         )}
 
         {/* Phase summary panel */}
@@ -1086,7 +1234,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
             overallScore={submittedScore ?? undefined}
             durationMs={elapsedMs}
             heading="Sound Swap Complete!"
-            celebrationMessage="You practiced adding, removing, and swapping sounds in words!"
+            celebrationMessage={`You practiced adding, removing, and swapping sounds in words!${spokenWords.size > 0 ? ` You said ${spokenWords.size} new word${spokenWords.size === 1 ? '' : 's'} out loud — amazing!` : ''}`}
             className="mb-6"
           />
         )}

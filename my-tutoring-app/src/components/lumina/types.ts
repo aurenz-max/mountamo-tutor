@@ -1298,6 +1298,7 @@ export type ComponentId =
   | 'evidence-finder'           // Text evidence citing with CER framework (grades 2-6)
   | 'paragraph-architect'       // Scaffolded paragraph construction (grades 1-6)
   | 'phoneme-explorer'          // Interactive phoneme exploration and manipulation
+  | 'picture-vocabulary'        // Picture-based vocabulary learning and practice
   | 'story-planner'             // Narrative pre-writing organizer (K-6)
   | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
@@ -1925,6 +1926,7 @@ export type { TransformationLabData } from './primitives/visual-primitives/math/
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';
 export type { SyllableClapperData } from './primitives/visual-primitives/literacy/SyllableClapper';
 export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';
+export type { PictureVocabularyData } from './primitives/visual-primitives/literacy/PictureVocabulary';
 export type { SoundSwapData } from './primitives/visual-primitives/literacy/SoundSwap';
 export type { LetterSpotterData } from './primitives/visual-primitives/literacy/LetterSpotter';
 export type { LetterSoundLinkData } from './primitives/visual-primitives/literacy/LetterSoundLink';

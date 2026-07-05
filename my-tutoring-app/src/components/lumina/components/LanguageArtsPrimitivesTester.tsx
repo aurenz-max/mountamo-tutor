@@ -36,6 +36,7 @@ import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoun
 import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
+import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
 
 import {
   EvaluationProvider,
@@ -65,7 +66,8 @@ type PrimitiveType =
   | 'letter-sound-link'
   | 'cvc-speller'
   | 'word-workout'
-  | 'word-sorter';
+  | 'word-sorter'
+  | 'picture-vocabulary';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -111,6 +113,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'figurative-language-finder', label: 'Figurative Language', icon: '🎨', topic: 'Finding similes and metaphors', strand: 'L', wave: 3 },
   { value: 'spelling-pattern-explorer', label: 'Spelling Patterns', icon: '🔠', topic: 'Silent-e spelling rule', strand: 'L', wave: 4 },
   { value: 'word-sorter', label: 'Word Sorter', icon: '📂', topic: 'Sorting nouns and verbs', strand: 'L', wave: 5 },
+  { value: 'picture-vocabulary', label: 'Picture Vocabulary', icon: '🗣️', topic: 'Animals', strand: 'L', wave: 5 },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -192,6 +195,8 @@ const PrimitiveRenderer: React.FC<{
       return <WordWorkout data={data as Parameters<typeof WordWorkout>[0]['data']} />;
     case 'word-sorter':
       return <WordSorter data={data as Parameters<typeof WordSorter>[0]['data']} />;
+    case 'picture-vocabulary':
+      return <PictureVocabulary data={data as Parameters<typeof PictureVocabulary>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -302,6 +307,15 @@ const EvaluationResultsPanel: React.FC = () => {
                 </div>
                 {result.metrics && 'type' in result.metrics && (
                   <p className="text-xs text-slate-400 mt-1">{result.metrics.type}</p>
+                )}
+                {result.metrics.type === 'picture-vocabulary' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
                 )}
               </div>
             ))}

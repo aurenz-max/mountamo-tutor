@@ -50,6 +50,17 @@ This split exists because Gemini Live tool-calling stalls/blocks (bench 2026-07,
 
 A kid who said the word right but got misheard must never be punished by the judge.
 
+**The quiet-tutor law (spoken modality is where "less is more" bites hardest):**
+
+The warmth channel should be RARE, not per-beat. A tutor that says *"say it! … good job! … say it! … good job!"* on every single word makes a student want to turn the tutor off (user ruling, PictureVocabulary 2026-07-04). The mic prompt, the level meter, and the `playCorrect()` snap already tell the student what to do and that they succeeded — the tutor voicing it too is redundant weight, and its voice competes with the very silence the student needs to speak into.
+
+- **Frame once, up front** ("say each word as it comes up"), then step back. Don't re-elicit ("what is this? say it!") every beat when the screen already prompts it.
+- **Routine `match` → no voice.** Let `playCorrect()` + the visual + auto-advance carry it. Reserve `sendText` celebration for a moment that earns it: the student's **first spoken word** of the session, or a **comeback right after a miss**.
+- **`no-match` / `unclear` → one short warm sentence, at most a tiny clue.** This is the tutor's real job; keep it, keep it terse, never scold.
+- **Speak only to deliver audio the screen can't** (a word to be tapped, a sentence to be completed for a pre-reader). If the beat is self-evident on screen, the tutor stays silent.
+
+Net: a smooth multi-word session should be ~3 tutor utterances (open, first-voice, finish), not one per word. Encode the same restraint in the catalog `aiDirectives` ("routine successes will NOT ping you — that silence is by design; do not fill it") so the tutor stays terse even when invoked.
+
 ## Step-by-Step Workflow
 
 ### Phase 1: Find the Production Moment
@@ -81,6 +92,13 @@ If you can't find a replace-the-report click, you're in the second shape — don
      if (!currentItem || alreadyDone) return;
      if (result.outcome === 'match') {
        SoundManager.playCorrect();
+       // Quiet-tutor law: SFX + auto-advance carry a routine success. Only speak
+       // when earned — first spoken word this session, or a comeback after a miss.
+       const firstVoice = spokenWords.size === 0;
+       const recovered = missesThisItem > 0;
+       if (firstVoice || recovered) {
+         sendText(`[SPOKEN_MATCH] Student said "${target}" out loud${firstVoice ? ' — their FIRST spoken answer' : ' after trying again'}! ONE short joyful sentence, then STOP.`, { silent: true });
+       }
        setSpokenWords(prev => new Set(Array.from(prev).concat(currentItem.id)));
        handleExistingSuccessPath(/* spokenAloud */ true);
      } else if (result.outcome === 'no-match' && result.verdict?.heard) {
@@ -149,6 +167,7 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 - **Don't** call the judge with anything but the hook — the endpointing, sounds, and ladder policy live there for a reason.
 - **Don't** substitute `gemini-flash-lite` anywhere in the ladder — it false-positives minimal pairs with high confidence (benched).
 - **Don't** send the tutor a `sendText` right before starting capture — the tutor's voice can bleed into the clip. Let the student press the mic when the tutor is quiet (push-to-talk is the echo gate).
+- **Don't** voice-celebrate every `match` — that's the "good job × 5" chatter students turn off. Speak on success only when it's earned (first spoken word, or a comeback after a miss); let `playCorrect()` + auto-advance carry the rest. See **the quiet-tutor law**.
 
 ## Gotchas
 
@@ -177,6 +196,7 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 - [ ] Push-to-talk button + level meter + judging state rendered; hidden when `!isSupported`
 - [ ] `playCorrect()` on match only; no sounds added for capture (hook owns them)
 - [ ] Tutor `sendText` cues for miss/unclear (warm, never scolding)
+- [ ] Quiet-tutor law honored: framed once up front, routine `match` is voice-silent, celebration `sendText` gated on first-voice/comeback
 - [ ] `spokenWords` in evaluation extras
 - [ ] (culminate-after-solve) beat is the primary CTA, fallback demoted to a quiet skip; auto-advance on match with a double-advance guard
 - [ ] `npx tsc --noEmit` holds baseline

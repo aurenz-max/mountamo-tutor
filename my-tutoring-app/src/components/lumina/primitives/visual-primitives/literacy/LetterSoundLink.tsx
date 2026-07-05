@@ -7,6 +7,7 @@ import {
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
+  LuminaButton,
   LuminaProgress,
   LuminaActionButton,
   LuminaFeedbackCard,
@@ -20,6 +21,7 @@ import {
 } from '../../../evaluation';
 import type { LetterSoundLinkMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -207,6 +209,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const [confusedPairs, setConfusedPairs] = useState<Array<[string, string]>>([]);
   const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
   const [showKeywordHint, setShowKeywordHint] = useState(false);
+  // Keywords the student said ALOUD (judge-confirmed) — the culminating production beat
+  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
   // Per-mode tracking for evaluation metrics
   const [seeHearResults, setSeeHearResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
@@ -530,7 +534,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       overallScore >= 60,
       overallScore,
       metrics,
-      { challengeResults, durationMs: elapsedMs },
+      { challengeResults, durationMs: elapsedMs, spokenWords: Array.from(spokenWords) },
     );
 
     // AI celebration
@@ -541,13 +545,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       `[ALL_COMPLETE] Student finished all ${total} letter-sound challenges! `
       + `Score: ${correct}/${total} (${overallScore}%). ${phaseScoreStr}. `
       + (uniquePairs.length > 0 ? `Confused sound pairs: ${uniquePairs.join(', ')}. ` : '')
+      + (spokenWords.size > 0 ? `They also said ${spokenWords.size} keyword${spokenWords.size > 1 ? 's' : ''} out loud! ` : '')
       + `Celebrate and give encouraging feedback about their letter-sound knowledge!`,
       { silent: true },
     );
   }, [
     hasSubmittedEvaluation, challengeResults, letterGroup, confusedPairs,
     seeHearResults, hearSeeResults, vowelResults, consonantResults,
-    phaseResults, submitEvaluation, sendText,
+    phaseResults, spokenWords, submitEvaluation, sendText,
   ]);
 
   // Auto-submit when complete
@@ -567,9 +572,57 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   }, [allChallengesComplete, challengeResults]);
 
   // ---------------------------------------------------------------------------
+  // Spoken production beat — once a challenge is resolved, the student says the
+  // KEYWORD aloud (the anchor of the letter-sound link — "A makes /a/ like
+  // APPLE — now YOU say APPLE!"). The judge ladder (Azure dual-signal → Gemini,
+  // utils/spokenWordJudge.ts) confirms it. Purely additive: the mic never
+  // bypasses the recognition challenge (it appears only after isLocked), the
+  // Next button is always available, and 'no-match' is never penalized.
+  //   'match'   → celebrate + track (bonus production credit)
+  //   'no-match'→ tutor models the keyword by voice, NO penalty
+  //   'unclear' → invite a retry, silently
+  // ---------------------------------------------------------------------------
+  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
+    if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
+    const target = currentChallenge.keywordWord;
+    if (result.outcome === 'match') {
+      SoundManager.playCorrect();
+      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
+      sendText(
+        `[STUDENT_SAID_WORD] The student said the keyword "${target}" out loud all by themselves — the word for the letter "${currentChallenge.targetLetter.toUpperCase()}" that makes the sound ${currentChallenge.targetSound}! Celebrate enthusiastically that they SAID the whole word (one sentence).`,
+        { silent: true },
+      );
+    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      sendText(
+        `[SPOKEN_MISS] The student tried to say the keyword "${target}" aloud but it sounded like "${result.verdict.heard}". Gently model it — start with the ${currentChallenge.targetSound} sound, then say the whole word "${target}" — and invite one more try. Warm, never scolding. Two short sentences max.`,
+        { silent: true },
+      );
+    } else {
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to say "${target}" again a little louder, or just tap Next.`,
+        { silent: true },
+      );
+    }
+  }, [currentChallenge, spokenWords, sendText]);
+
+  const spokenCapture = useSpokenWordCapture({
+    targetWord: currentChallenge?.keywordWord ?? '',
+    gradeLevel: 'K',
+    onResult: handleSpokenResult,
+    onNoSpeech: () => {
+      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
+      sendText(
+        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say "${currentChallenge.keywordWord}" again a little louder, or just tap Next.`,
+        { silent: true },
+      );
+    },
+  });
+
+  // ---------------------------------------------------------------------------
   // Advance to next challenge
   // ---------------------------------------------------------------------------
   const handleNextChallenge = useCallback(() => {
+    spokenCapture.cancel(); // never carry a live mic across challenges
     setSelectedOption(null);
     setListenedOption(null);
     setPlayingOption(null);
@@ -595,7 +648,21 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       + `Briefly introduce the new challenge.`,
       { silent: true },
     );
-  }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText]);
+  }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText, spokenCapture]);
+
+  // Keep a live ref so the auto-advance timer always calls the latest handler.
+  const handleNextChallengeRef = useRef(handleNextChallenge);
+  handleNextChallengeRef.current = handleNextChallenge;
+
+  // Strong-flow UX: once the student says the keyword aloud (judge-confirmed),
+  // glide to the next challenge on their behalf — no extra click. The mic itself
+  // stays tap-to-start (push-to-talk is the echo gate against the tutor's voice),
+  // but everything after a successful production advances automatically.
+  useEffect(() => {
+    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
+    const t = setTimeout(() => handleNextChallengeRef.current(), 1400);
+    return () => clearTimeout(t);
+  }, [spokenWords, currentChallenge]);
 
   // ============================================================================
   // Render: Speaker Bubble (shared by see-hear & keyword-match modes)
@@ -966,12 +1033,83 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           </LuminaFeedbackCard>
         )}
 
-        {/* Next / Finish button */}
-        {isLocked && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNextChallenge}>
-              {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </LuminaActionButton>
+        {/* Culminating production beat — say the KEYWORD aloud. Once a challenge
+            is resolved, this IS the next step: a single prominent mic CTA, and a
+            successful spoken keyword auto-advances (no click). Next is a quiet skip. */}
+        {isLocked && !allChallengesComplete && currentChallenge && (
+          <div className="flex flex-col items-center gap-3">
+            {spokenWords.has(currentChallenge.id) ? (
+              // Said it → celebrate, then auto-glide to the next challenge (effect above)
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-emerald-300 text-base font-semibold">
+                  {'🎉'} You said “{currentChallenge.keywordWord}” out loud!
+                </span>
+                <span className="text-slate-500 text-xs">Next one coming up…</span>
+              </div>
+            ) : spokenCapture.isSupported ? (
+              // Mic available → the say-it beat is the PRIMARY next step
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-slate-300 text-sm font-medium">
+                  Your turn — say “{currentChallenge.keywordWord}”!
+                </p>
+                <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
+                  {spokenCapture.state === 'idle' && (
+                    <LuminaButton
+                      tone="primary"
+                      onClick={() => void spokenCapture.start()}
+                      className="text-lg px-8 py-3"
+                    >
+                      {'🎙️'} Say “{currentChallenge.keywordWord}”!
+                    </LuminaButton>
+                  )}
+                  {(spokenCapture.state === 'armed' || spokenCapture.state === 'recording') && (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm font-semibold ${
+                          spokenCapture.state === 'recording'
+                            ? 'text-emerald-300'
+                            : 'text-amber-300 animate-pulse'
+                        }`}
+                      >
+                        {spokenCapture.state === 'recording'
+                          ? 'Listening…'
+                          : `Say “${currentChallenge.keywordWord}”!`}
+                      </span>
+                      <div className="w-20 h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-75"
+                          style={{ width: `${Math.min(100, Math.round((spokenCapture.level / 0.12) * 100))}%` }}
+                        />
+                      </div>
+                      <button
+                        onClick={spokenCapture.cancel}
+                        className="text-slate-500 text-xs hover:text-slate-300"
+                        aria-label="Stop listening"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {spokenCapture.state === 'judging' && (
+                    <span className="text-blue-300 text-sm animate-pulse">Checking…</span>
+                  )}
+                </div>
+                {/* Quiet skip — never traps a student who can't or won't speak */}
+                {spokenCapture.state === 'idle' && (
+                  <button
+                    onClick={handleNextChallenge}
+                    className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
+                  >
+                    {currentChallengeIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              // No mic → original prominent Next / Finish
+              <LuminaActionButton action="next" onClick={handleNextChallenge}>
+                {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
+              </LuminaActionButton>
+            )}
           </div>
         )}
 
@@ -982,7 +1120,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
             overallScore={submittedResult?.score ?? localOverallScore}
             durationMs={elapsedMs}
             heading="Letter-Sound Link Complete!"
-            celebrationMessage="Great job connecting letters to their sounds!"
+            celebrationMessage={`Great job connecting letters to their sounds!${spokenWords.size > 0 ? ` You said ${spokenWords.size} keyword${spokenWords.size > 1 ? 's' : ''} out loud — amazing!` : ''}`}
             className="mb-6"
           />
         )}

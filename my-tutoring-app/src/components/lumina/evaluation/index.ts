@@ -183,6 +183,7 @@ export type {
   LetterSpotterMetrics,
   LetterSoundLinkMetrics,
   CvcSpellerMetrics,
+  PictureVocabularyMetrics,
   WordWorkoutMetrics,
   WordSorterMetrics,
   SentenceAnalyzerMetrics,

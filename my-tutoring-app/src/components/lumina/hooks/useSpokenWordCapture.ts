@@ -193,6 +193,10 @@ export function useSpokenWordCapture(options: UseSpokenWordCaptureOptions): Spok
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       const ctx = new AudioContext();
+      // A context can come up 'suspended' (autoplay policy, or contention with
+      // the live-tutor audio graph). Suspended → onaudioprocess never fires, so
+      // the mic looks 'armed' but never hears the student. Resume before wiring.
+      if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       streamRef.current = stream;

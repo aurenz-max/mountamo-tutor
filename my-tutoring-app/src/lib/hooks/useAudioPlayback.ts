@@ -1,5 +1,5 @@
 // hooks/useAudioPlayback.ts
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 
 interface UseAudioPlaybackProps {
   sampleRate?: number;
@@ -22,6 +22,11 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
   const preBufferRef = useRef<AudioBuffer[]>([]);
   const preBufferDurationRef = useRef(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  // True while any scheduled buffer is still playing (or queued). Consumers
+  // combine this with isAIResponding to know when the tutor is fully quiet —
+  // the response stream can finish well before the audio tail drains.
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -70,9 +75,11 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
 
     // Track active sources so stopAudioPlayback can cancel them
     activeSourcesRef.current.push(source);
+    setIsAudioPlaying(true);
     source.onended = () => {
       const idx = activeSourcesRef.current.indexOf(source);
       if (idx !== -1) activeSourcesRef.current.splice(idx, 1);
+      if (activeSourcesRef.current.length === 0) setIsAudioPlaying(false);
     };
 
     nextStartTimeRef.current += audioBuffer.duration;
@@ -151,11 +158,13 @@ export const useAudioPlayback = ({ sampleRate = DEFAULT_SAMPLE_RATE }: UseAudioP
     preBufferDurationRef.current = 0;
     isStreamingRef.current = false;
     nextStartTimeRef.current = 0;
+    setIsAudioPlaying(false);
   }, []);
 
   return {
     processAndPlayRawAudio,
     stopAudioPlayback,
     resetForNextTurn,
+    isAudioPlaying,
   };
 };

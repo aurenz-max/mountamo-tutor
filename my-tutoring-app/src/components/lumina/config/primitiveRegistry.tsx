@@ -186,6 +186,7 @@ import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudS
 import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
 import SyllableClapper from '../primitives/visual-primitives/literacy/SyllableClapper';
 import PhonemeExplorer from '../primitives/visual-primitives/literacy/PhonemeExplorer';
+import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
 import SoundSwap from '../primitives/visual-primitives/literacy/SoundSwap';
 import LetterSpotter from '../primitives/visual-primitives/literacy/LetterSpotter';
 import LetterSoundLink from '../primitives/visual-primitives/literacy/LetterSoundLink';
@@ -2011,6 +2012,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'phoneme-explorer': {
     component: PhonemeExplorer,
     sectionTitle: 'Phoneme Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'picture-vocabulary': {
+    component: PictureVocabulary,
+    sectionTitle: 'Picture Vocabulary',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

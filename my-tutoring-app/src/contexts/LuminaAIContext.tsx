@@ -113,6 +113,8 @@ interface LuminaAIContextType {
   // State
   conversation: Message[];
   isAIResponding: boolean;
+  /** True while tutor audio is still audibly playing (the audio tail can outlive isAIResponding). */
+  isAudioPlaying: boolean;
   aiMetrics: AIMetrics;
 
   // Audio
@@ -172,7 +174,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   >(null);
 
   // Use the proven queued audio playback hook
-  const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn } = useAudioPlayback({ sampleRate: 24000 });
+  const { processAndPlayRawAudio, stopAudioPlayback, resetForNextTurn, isAudioPlaying } = useAudioPlayback({ sampleRate: 24000 });
 
   // Call hooks at top level (Rules of Hooks) and store in refs for use in callbacks
   const exhibitContext = useExhibitContext();
@@ -907,6 +909,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateContext,
     conversation,
     isAIResponding,
+    isAudioPlaying,
     aiMetrics,
     startListening,
     stopListening,

@@ -816,7 +816,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-flash-lite-latest",
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
