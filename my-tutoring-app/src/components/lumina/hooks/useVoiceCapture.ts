@@ -604,6 +604,19 @@ export function useVoiceCapture<V, C>(options: UseVoiceCaptureOptions<V, C>): Vo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.activationKey]);
 
+  // autoStart flipping off→on is ALSO a fresh activation (a consumer's
+  // `active` gate, or the studio's auto-arm toggle, coming back on). Without
+  // this, a stop() issued while inactive deadlocks the FIRST activation —
+  // the activation key never changed, so the latch never cleared and the
+  // mic silently never opens under a live-looking orb. stop() means "stop
+  // this activation", never "never again". Declared BEFORE the autoStart
+  // effect below so the latch is clear within the same commit.
+  const prevAutoStartRef = useRef(false);
+  useEffect(() => {
+    if (options.autoStart && !prevAutoStartRef.current) stopLatchRef.current = false;
+    prevAutoStartRef.current = !!options.autoStart;
+  }, [options.autoStart]);
+
   // Session-level auto-listen switch: OFF suppresses auto-start and stops
   // any live ambient session. Explicit gestures stay allowed.
   const autoListenEnabled = useAutoListenEnabled();

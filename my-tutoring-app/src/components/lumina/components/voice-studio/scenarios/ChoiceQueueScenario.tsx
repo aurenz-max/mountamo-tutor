@@ -3,41 +3,24 @@
 /**
  * Choice-queue scenario — voice CONTROL over a multi-problem surface.
  *
- * Two problems, each a board of spoken options, wrapped in LuminaVoiceTarget
- * frames (MMO-style targeting): exactly one problem holds the voice focus;
- * saying an option answers it; correct → focus advances to the next unsolved
- * problem. Tap a frame to re-target, tap an option to answer directly —
- * voice and tap actuate the same controls.
- *
- * Control policy (from studio config levers):
- *  - actOn 'high': low-confidence selections DEGRADE to highlight + confirm
- *  - voiceAction 'highlight': voice only arms the option; a tap submits
- * Verdicts actuate the problem frozen into the utterance at capture time,
- * so a late verdict never lands on the wrong board.
+ * All the voice-control machinery (targeting, actuation levers, grading,
+ * focus advance, engine wiring) lives in hooks/useVoiceChoice — this file is
+ * exactly what a real primitive writes: items in, controller state painted
+ * onto its own boards. Everything else here is studio bench apparatus
+ * (config panels, the demo boards, trial reporting via the judge override).
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { LuminaButton, LuminaPanel, LuminaVoiceTarget } from '../../../ui';
-import { SoundManager } from '../../../utils/SoundManager';
 import {
-  useVoiceCapture,
-  type CapturedUtterance,
-  type VoiceCapture,
-} from '../../../hooks/useVoiceCapture';
+  useVoiceChoice,
+  type SpokenChoiceVerdict,
+  type VoiceChoiceContext,
+} from '../../../hooks/useVoiceChoice';
+import type { CapturedUtterance, VoiceJudgePass } from '../../../hooks/useVoiceCapture';
 import { judgeForPass } from '../studioJudge';
-import { DISTRACTOR_POOL, PRESET_WORDS, type LabVerdict, type StudioScenarioProps } from '../types';
+import { DISTRACTOR_POOL, PRESET_WORDS, type StudioScenarioProps } from '../types';
 import CaptureSurface from '../CaptureSurface';
-
-interface ChoiceContext {
-  idx: number;
-  answer: string;
-  options: string[];
-}
-
-interface ProblemDef {
-  answer: string;
-  options: string[];
-}
 
 const SCENARIO_ID = 'choice-queue';
 
@@ -46,18 +29,12 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
   const [customWord, setCustomWord] = useState('');
   const [distractors, setDistractors] = useState<string[]>(['mop', 'cat', 'sun']);
   const [customOption, setCustomOption] = useState('');
-  const [note, setNote] = useState('');
-
-  const [focusIdx, setFocusIdx] = useState(0);
-  const [answers, setAnswers] = useState<Array<{ word: string; correct: boolean } | null>>([null, null]);
-  const [voiceChoice, setVoiceChoice] = useState<{ idx: number; word: string } | null>(null);
 
   const resolvedWord = (customWord.trim() || targetWord).toLowerCase();
 
   // Problem 1 is operator-configured; Problem 2 auto-builds from the
-  // remaining pool so the boards differ. Alphabetical order so the answer's
-  // position is never a tell.
-  const problems = useMemo<ProblemDef[]>(() => {
+  // remaining pool. (A real primitive gets its items from generator content.)
+  const items = useMemo(() => {
     const p1Options = Array.from(
       new Set([resolvedWord, ...distractors.filter((d) => d && d !== resolvedWord)]),
     ).sort();
@@ -73,164 +50,42 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
     ];
   }, [resolvedWord, distractors]);
 
-  const configRef = useRef(config);
+  // Studio judge override: benched models + trial rows instead of the
+  // production ladder. Primitives omit `judge` entirely.
+  const configRef = React.useRef(config);
   configRef.current = config;
-  const problemsRef = useRef(problems);
-  problemsRef.current = problems;
-  const focusIdxRef = useRef(0);
-  const answersRef = useRef(answers);
-  const allSolvedRef = useRef(false);
-  const voiceRef = useRef<VoiceCapture | null>(null);
-
-  const allSolved = answers.length > 0 && answers.every((a) => a?.correct);
-
-  const resetQueue = useCallback(() => {
-    const blank = problemsRef.current.map(() => null);
-    answersRef.current = blank;
-    setAnswers(blank);
-    allSolvedRef.current = false;
-    focusIdxRef.current = 0;
-    setFocusIdx(0);
-    setVoiceChoice(null);
-    setNote('');
-  }, []);
-
-  useEffect(() => {
-    resetQueue();
-  }, [problems, resetQueue]);
-
-  /** Native control: submit an option to problem `idx` (voice or tap). */
-  const submitChoiceAt = useCallback((idx: number, word: string): boolean => {
-    const prob = problemsRef.current[idx];
-    if (!prob || answersRef.current[idx]?.correct) return false;
-    const correct = word === prob.answer;
-    const next = answersRef.current.map((a, i) => (i === idx ? { word, correct } : a));
-    answersRef.current = next;
-    setAnswers(next);
-    setVoiceChoice(null);
-    if (correct) {
-      SoundManager.playCorrect();
-      const nextIdx = next.findIndex((a) => !a?.correct);
-      if (nextIdx === -1) {
-        allSolvedRef.current = true;
-        setNote('All problems answered! 🎉');
-        // Queue cleared: a turn activation is complete; open mic stays hot.
-        if (configRef.current.modality === 'turn') voiceRef.current?.stop();
-      } else {
-        focusIdxRef.current = nextIdx;
-        setFocusIdx(nextIdx);
-        setNote('');
-      }
-    } else {
-      SoundManager.playIncorrect();
-      focusIdxRef.current = idx;
-      setFocusIdx(idx);
-    }
-    return correct;
-  }, []);
-
-  // Voice actuation policy — the levers live here. Never a silent no-op
-  // when something was heard.
-  const applyActuation = useCallback(
-    (verdict: LabVerdict | null, idx: number) => {
-      if (!verdict) {
-        SoundManager.invalid();
-        setNote('Judge error — try again.');
-        return;
-      }
-      if (answersRef.current[idx]?.correct) {
-        SoundManager.tick(); // late verdict on an already-solved problem
-        return;
-      }
-      const sel = verdict.selectedOption ?? null;
-      if (!sel) {
-        SoundManager.tick();
-        setNote(
-          verdict.heard
-            ? `Heard “${verdict.heard}” — that isn't one of the options.`
-            : 'Could not make that out — say one of the options.',
-        );
-        return;
-      }
-      const confident = configRef.current.actOn === 'any' || verdict.confidence === 'high';
-      if (!confident || configRef.current.voiceAction === 'highlight') {
-        setVoiceChoice({ idx, word: sel });
-        SoundManager.select();
-        setNote(
-          confident
-            ? `Heard “${sel}” — tap it to confirm.`
-            : `Maybe “${sel}”? Tap to confirm, or say it again.`,
-        );
-        return;
-      }
-      setNote('');
-      submitChoiceAt(idx, sel);
-    },
-    [submitChoiceAt],
-  );
-
-  const judge = useCallback(
-    (utt: CapturedUtterance<ChoiceContext>, pass: 'spec' | 'escalate' | 'fresh') =>
-      judgeForPass(
+  const studioJudge = useCallback(
+    async (utt: CapturedUtterance<VoiceChoiceContext>, pass: VoiceJudgePass): Promise<SpokenChoiceVerdict | null> => {
+      const v = await judgeForPass(
         { kind: 'choice', options: utt.context.options, word: utt.context.answer },
         utt,
         pass,
         configRef.current,
         SCENARIO_ID,
         recordTrial,
-        setNote,
-      ),
+      );
+      return v ? { heard: v.heard, selectedOption: v.selectedOption ?? null, confidence: v.confidence } : null;
+    },
     [recordTrial],
   );
 
-  const onSettle = useCallback(
-    (verdict: LabVerdict | null, utt: CapturedUtterance<ChoiceContext>) => {
-      applyActuation(verdict, utt.context.idx);
+  // ── The part a real primitive writes ───────────────────────────
+  const choice = useVoiceChoice({
+    items,
+    modality: config.modality,
+    actOn: config.actOn,
+    voiceAction: config.voiceAction,
+    autoStart: config.autoArm,
+    judge: studioJudge,
+    onVerdict: (verdict, utt) =>
       reportUtterance({
         utterance: utt,
         kind: { kind: 'choice', options: utt.context.options, word: utt.context.answer },
         scenario: SCENARIO_ID,
-      });
-    },
-    [applyActuation, reportUtterance],
-  );
-
-  const voice = useVoiceCapture<LabVerdict, ChoiceContext>({
-    modality: config.modality,
-    getContext: () => {
-      const idx = focusIdxRef.current;
-      const prob = problemsRef.current[idx];
-      return { idx, answer: prob.answer, options: prob.options };
-    },
-    judge,
-    isConfident: (v) => v.confidence === 'high',
-    onSettle,
-    onNoSpeech: useCallback(() => {
-      if (configRef.current.modality === 'ptt') {
-        SoundManager.invalid();
-        setNote('No speech detected — try again closer to the mic.');
-      }
-    }, []),
-    autoStart: config.autoArm,
-    activationKey: `${SCENARIO_ID}:${problems.map((p) => p.answer).join('|')}`,
+      }),
     armDelayMs: config.armDelayMs,
     cooldownMs: config.cooldownMs,
   });
-  voiceRef.current = voice;
-
-  const tapOption = useCallback(
-    (idx: number, word: string) => {
-      submitChoiceAt(idx, word);
-    },
-    [submitChoiceAt],
-  );
-
-  const focusProblem = useCallback((idx: number) => {
-    if (answersRef.current[idx]?.correct) return;
-    focusIdxRef.current = idx;
-    setFocusIdx(idx);
-    setVoiceChoice(null);
-  }, []);
 
   const addCustomOption = useCallback(() => {
     const w = customOption.trim().toLowerCase();
@@ -239,13 +94,13 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
     setCustomOption('');
   }, [customOption]);
 
-  const listeningLabel = allSolved
+  const listeningLabel = choice.allSolved
     ? 'All answered — still listening'
-    : `Problem ${focusIdx + 1}: say one of its options`;
+    : `Problem ${choice.focusIdx + 1}: say one of its options`;
 
   return (
     <div className="space-y-4">
-      {/* Problem 1 config */}
+      {/* Problem 1 config (studio apparatus) */}
       <LuminaPanel className="space-y-3">
         <p className="text-xs text-slate-500 uppercase tracking-wider">Problem 1 — correct answer</p>
         <div className="flex flex-wrap gap-2">
@@ -301,12 +156,12 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
         </p>
       </LuminaPanel>
 
-      {/* The voice-controlled queue */}
+      {/* The voice-controlled queue — painted from controller state */}
       <LuminaPanel className="text-center space-y-4 py-6">
         <div className="grid sm:grid-cols-2 gap-4 pt-2 pb-1 text-left">
-          {problems.map((p, i) => {
-            const done = !!answers[i]?.correct;
-            const isFocus = i === focusIdx && !allSolved;
+          {items.map((p, i) => {
+            const done = !!choice.answers[i]?.correct;
+            const isFocus = i === choice.focusIdx && !choice.allSolved;
             return (
               <LuminaVoiceTarget
                 key={`${p.answer}-${i}`}
@@ -314,11 +169,11 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
                 active={isFocus}
                 done={done}
                 accent={config.modality === 'open' ? 'purple' : 'cyan'}
-                onFocus={() => focusProblem(i)}
+                onFocus={() => choice.focusItem(i)}
                 activeHint={
-                  voice.state === 'recording'
+                  choice.voice.state === 'recording'
                     ? 'hearing you…'
-                    : voice.state === 'armed'
+                    : choice.voice.state === 'armed'
                       ? 'listening…'
                       : 'targeted'
                 }
@@ -328,12 +183,12 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {p.options.map((w) => {
-                    const isVoice = voiceChoice?.idx === i && voiceChoice.word === w;
-                    const sub = answers[i]?.word === w ? answers[i] : null;
+                    const isVoice = choice.highlight?.idx === i && choice.highlight.word === w;
+                    const sub = choice.answers[i]?.word === w ? choice.answers[i] : null;
                     return (
                       <button
                         key={w}
-                        onClick={(e) => { e.stopPropagation(); tapOption(i, w); }}
+                        onClick={(e) => { e.stopPropagation(); choice.tapOption(i, w); }}
                         className={`px-4 py-3 rounded-xl border-2 text-lg font-bold transition-all ${
                           sub
                             ? sub.correct
@@ -357,15 +212,20 @@ const ChoiceQueueScenario: React.FC<StudioScenarioProps> = ({ config, recordTria
           })}
         </div>
 
-        {allSolved && <LuminaButton onClick={resetQueue}>↺ Play again</LuminaButton>}
+        {choice.allSolved && (
+          <div className="space-y-2">
+            <p className="text-amber-300 text-sm">All problems answered! 🎉</p>
+            <LuminaButton onClick={choice.reset}>↺ Play again</LuminaButton>
+          </div>
+        )}
 
         <CaptureSurface
-          voice={voice}
+          voice={choice.voice}
           modality={config.modality}
           idleLabel="Answer by voice"
           listeningLabel={listeningLabel}
           startLabel={config.modality === 'open' ? 'Open mic' : 'Start turn — answer the problems'}
-          statusNote={note}
+          statusNote={choice.note}
         />
       </LuminaPanel>
     </div>

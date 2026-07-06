@@ -22,7 +22,7 @@ import {
 } from '../../../evaluation';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useSpokenTurn, type SpokenJudgeResult } from '../../../hooks/useSpokenTurn';
+import { useVoiceAnswer, type SpokenJudgeResult } from '../../../hooks/useVoiceAnswer';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -387,11 +387,16 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     // listening; the choices are already visible if they'd rather tap.
   }, [currentChallenge, showResult, spokenMatched]);
 
-  const spokenTurn = useSpokenTurn({
+  // Open-mic persistence on the useVoiceCapture engine (migrated off the
+  // deprecated useSpokenTurn window loop): while spokenActive the mic is
+  // simply hot — no silence strikes, no re-arm windows. Stale verdicts are
+  // dropped by the hook (target word frozen per utterance), the honest
+  // 'opening' orb state flows through LuminaMicListener, and the global
+  // auto-listen switch (navbar/Ctrl+M) is enforced by the engine.
+  const spokenTurn = useVoiceAnswer({
     targetWord: currentChallenge?.word ?? '',
     gradeLevel,
     active: spokenActive,
-    mode: 'auto',
     onResult: handleSpokenResult,
     onNoSpeech: handleNoSpeech,
   });

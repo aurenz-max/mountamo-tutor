@@ -19,8 +19,9 @@
  */
 
 import type { BlendJudgeVerdict } from '../service/literacy/gemini-blend-judge';
+import type { ChoiceJudgeVerdict } from '../service/literacy/gemini-choice-judge';
 
-export type { BlendJudgeVerdict };
+export type { BlendJudgeVerdict, ChoiceJudgeVerdict };
 
 export const AZURE_ENGINE = 'azure:pronunciation-assessment';
 export const ESCALATION_MODEL = 'gemini-flash-latest';
@@ -69,10 +70,70 @@ export async function judgeClipOnce(
   return (await res.json()) as BlendJudgeVerdict;
 }
 
-function toOutcome(verdict: BlendJudgeVerdict | null): SpokenJudgeOutcome {
+/** Asymmetric outcome mapping — exported so controllers built on the
+ * useVoiceCapture engine map raw verdicts the same way this ladder does. */
+export function verdictToOutcome(verdict: BlendJudgeVerdict | null): SpokenJudgeOutcome {
   if (!verdict) return 'unclear';
   if (verdict.isMatch) return 'match';
   return verdict.confidence === 'high' ? 'no-match' : 'unclear';
+}
+const toOutcome = verdictToOutcome;
+
+// ── Choice lane (closed-set voice selection) ─────────────────────
+// Same ladder shape over action judgeChoiceAudio: the judge identifies WHICH
+// on-screen option was said (the correct answer is never sent — the caller
+// grades). Azure = one plain-recognition call + option matching (~300ms);
+// LLM second opinion when Azure is unsure or the transcript matched nothing.
+
+/** One choice-judge call. Throws on HTTP/network error. */
+export async function judgeChoiceClipOnce(
+  audioBase64: string,
+  options: string[],
+  opts: JudgeClipOptions = {},
+): Promise<ChoiceJudgeVerdict> {
+  const res = await fetch('/api/lumina', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'judgeChoiceAudio',
+      params: {
+        audioBase64,
+        mimeType: 'audio/wav',
+        options,
+        gradeLevel: opts.gradeLevel ?? 'Kindergarten',
+        model: opts.model ?? AZURE_ENGINE,
+        thinkingLevel: opts.thinkingLevel ?? 'MINIMAL',
+      },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`choice judge HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  }
+  return (await res.json()) as ChoiceJudgeVerdict;
+}
+
+/**
+ * Full choice ladder on one clip. Never throws — worst case is a null
+ * verdict (treat as "heard nothing actionable").
+ */
+export async function judgeSpokenChoice(
+  audioBase64: string,
+  options: string[],
+  gradeLevel?: string,
+): Promise<ChoiceJudgeVerdict | null> {
+  let azureVerdict: ChoiceJudgeVerdict | null = null;
+  try {
+    azureVerdict = await judgeChoiceClipOnce(audioBase64, options, { gradeLevel, model: AZURE_ENGINE });
+  } catch (err) {
+    console.warn('[spokenWordJudge] Azure choice rung failed:', err);
+  }
+  if (azureVerdict && azureVerdict.confidence === 'high') return azureVerdict;
+  try {
+    return await judgeChoiceClipOnce(audioBase64, options, { gradeLevel, model: ESCALATION_MODEL });
+  } catch (err) {
+    console.warn('[spokenWordJudge] LLM choice rung failed:', err);
+    return azureVerdict;
+  }
 }
 
 /**
