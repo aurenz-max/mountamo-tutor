@@ -25,9 +25,11 @@ Use this skill when:
 - **Multi-mode** (2+ challenge types): Full generator refactoring with the `resolveEvalModes` resolver + schema constraining (Phase 3)
 - **Single-mode** (no constrainable enum): Catalog + registry + generator wiring for config flow and logging (Phase 3-S)
 
+**Newborn densification (the standard entry path):** `/primitive` births primitives at lifecycle **L0** — ONE core challenge type, the challenge-type field already in the schema, `supportsEvaluation: true`, NO `evalModes` field, and a generator registration that already spreads `...item.config` + passes `intent`. Running this skill on a newborn is the **L0→L1** step, not an exception. Before Phase 1, read the birth certificate (`my-tutoring-app/qa/eval-reports/<id>-birth.md`) — it lists the ladder candidates the design or PRD implied, written while the design was fresh. Ladder definitions: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
+
 **DO NOT use this skill for:**
-- Creating new primitives (use the `/primitive` skill — it includes eval mode steps)
 - Display-only / non-evaluable primitives
+- Building the primitive itself (that's `/primitive` — it deliberately ships NO eval-mode ladder; this skill is the single source of truth for it)
 
 ## Prerequisites
 
@@ -288,6 +290,27 @@ Math primitives use `challenges.items.properties.type`. Literacy primitives use 
     }
     ```
 
+14b. **⚠️ Fork A pool-service generators — build the mixed path explicitly (SP-21).**
+    If the generator is Fork A (Gemini emits only a session wrapper; local code builds all N
+    challenges from ONE root-level `challengeType`), constraining the schema enum handles the
+    pinned and blend cases — but the unconstrained path (`resolution === null`: the tester's
+    "Auto (mixed)" button and the manifest's no-pin path) does NOT mix tiers. Gemini picks one
+    enum value and every challenge in the session is that type: the "mixed" label is a lie, and
+    per-mode eval-test won't catch it (each pinned mode is correctly single-type).
+
+    Build a `selectMixed<Name>Challenges(count)` sibling of the per-type selector:
+    - rotate a shuffled `TIER_ORDER` so every tier appears ≥1× (count > 4, covering all tiers)
+    - dedup via the existing `canonKey`
+    - sort tier-rank first, in-tier difficulty driver as tiebreaker (easy → hard)
+    - assign index-derived IDs after selection
+    - route `resolution === null` to it; pinned/blend paths stay untouched
+
+    The component must already render per-challenge from `currentChallenge.type` — never the
+    top-level `challengeType`, which on the mixed path is representative metadata only.
+    Reference fixes: `service/math/gemini-polygon-area-builder.ts`
+    (`selectMixedPolygonAreaChallenges`), `service/math/gemini-circle-explorer.ts`
+    (`selectMixedCircleExplorerChallenges`). See EVAL_TRACKER SP-21.
+
 15. **Apply the within-mode support tier ONLY for a single resolved mode**
 
     `config.difficulty` ('easy' | 'medium' | 'hard') is the structural SUPPORT tier — how much on-screen scaffolding the student gets *within one skill* (see ten-frame's `resolveSupportStructure`). A curated **blend** has no single tier surface, so gate it:
@@ -430,4 +453,5 @@ Ten Frame is the reference. Read these files for the complete pattern:
 - [ ] Prompt built with `buildModeConstraintSection(resolution, ...)` (no hardcoded mode hints)
 - [ ] Removed old eval mode code (constraint maps, post-filtering, mode hint strings, legacy `resolveEvalModeConstraint`/`buildChallengeTypePromptSection` calls)
 - [ ] Fallback uses `resolution?.allowedTypes[0]` for correct fallback type
+- [ ] **Fork A pool-service: unconstrained (mixed) path routes to a `selectMixed<Name>Challenges` builder covering all tiers (SP-21)** — never built from one Gemini-picked tier
 - [ ] Support tier gated on `resolution.modes.length === 1` (single mode only)

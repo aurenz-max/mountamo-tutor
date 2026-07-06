@@ -446,12 +446,13 @@ Technical health check for a domain's primitive pipeline.
 ### Checks
 
 1. **Generator registration:** Every catalog entry has a matching generator
-2. **Backend registry:** Every evaluable primitive has calibrated beta priors
+2. **Backend registry:** Every evaluable primitive with catalog `evalModes[]` has calibrated beta priors. A primitive with NO `evalModes` field is not a failure — it's a lifecycle **L0 newborn** awaiting `/add-eval-modes` (check 8 classifies it); flag as `L0-pending`, not FAIL
 3. **Type safety:** Run `npx tsc --noEmit` and filter errors to the domain
 4. **Eval mode consistency:** Catalog betas match backend registry betas
 5. **Eval mode ordering:** Betas are monotonically increasing within each primitive
 6. **Tester coverage:** Every visual primitive has a tester entry
-7. **Orphaned components:** Built components not in the catalog
+7. **Orphaned components:** Built components not in the catalog. Also the reverse tutoring orphan: catalog `tutoring:` without `useLuminaAI` in the component, or hooks without the block (stuck between L0 and L2)
+8. **Lifecycle layer:** Classify each primitive on the L0-L5 ladder using the detection signals in `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md` (evalModes → L1, tutoring+useLuminaAI → L2, resolveSupportStructure → L3, resolveProblemShape → L4, SoundManager/spoken → L5). Report the distribution and the oldest newborns (birth certificates in `qa/eval-reports/*-birth.md` with unworked queues)
 
 ### Output
 
@@ -467,6 +468,7 @@ Technical health check for a domain's primitive pipeline.
 | Beta ordering | PASS | All monotonic |
 | Tester coverage | PASS | All 24 primitives in tester |
 | Orphaned components | INFO | 1 component not in catalog (legacy?) |
+| Lifecycle layers | INFO | L1: 3, L2: 14, L3: 5, L4: 2 — 2 newborns at L0 with unworked birth queues |
 
 ### Issues Detail
 ...

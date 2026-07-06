@@ -100,6 +100,19 @@ export {
   type MicListenerState,
 } from './LuminaMicListener';
 
+// Voice targeting — the "current target" frame when several units of work
+// share a screen with an always-on mic.
+export {
+  default as LuminaVoiceTarget,
+  type LuminaVoiceTargetProps,
+} from './LuminaVoiceTarget';
+
+// Session-level auto-listen switch — navbar chip over utils/voiceMode (Ctrl+M).
+export {
+  default as LuminaVoiceToggle,
+  type LuminaVoiceToggleProps,
+} from './LuminaVoiceToggle';
+
 export {
   surface,
   text,

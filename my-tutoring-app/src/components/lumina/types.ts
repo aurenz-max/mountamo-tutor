@@ -147,6 +147,7 @@ export interface SentenceSchemaData {
 
 // Re-export rebuilt SentenceAnalyzer types
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
+export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
@@ -1300,6 +1301,7 @@ export type ComponentId =
   | 'phoneme-explorer'          // Interactive phoneme exploration and manipulation
   | 'picture-vocabulary'        // Picture-based vocabulary learning and practice
   | 'story-planner'             // Narrative pre-writing organizer (K-6)
+  | 'story-talk'                // Interactive listen-and-tell oral narrative practice
   | 'opinion-builder'           // Argument/persuasive writing scaffold (grades 2-6)
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
   | 'letter-sound-link'         // Interactive letter-sound linking

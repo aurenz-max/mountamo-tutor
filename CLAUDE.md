@@ -19,9 +19,11 @@ When building new primitives, always use the Gemini generator pattern — never 
 
 When Gemini schemas are too complex (6+ types, deeply nested), the LLM will produce malformed JSON. Simplify schemas proactively to 3-4 types max and reduce redundancy.
 
-**Key skills:** `/primitive` (build new), `/add-eval-modes` (wire IRT), `/eval-test` (verify), `/eval-fix` (fix issues).
+**Lifecycle:** primitives are built in layers, not one pass. `/primitive` births at L0 (sound, measurable, single core mode) and ends with a birth certificate + follow-up queue; the add- skills raise it one layer each (`/add-eval-modes` L1 → `/add-tutoring-scaffold` L2 → `/add-support-tiers` L3 → `/add-structural-difficulty` L4 → `/add-sound`, `/add-spoken-judge` L5), with `/eval-test` closing every layer. Ladder + detection signals: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
 
-**Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`
+**Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify), `/eval-fix` (fix issues).
+
+**Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`, `PRIMITIVE_LIFECYCLE.md`
 
 ## Development Workflow
 

@@ -2,6 +2,8 @@
 
 Test that a primitive's generated data works with its component. Report only what's actually broken.
 
+**This is the QA loop of the primitive lifecycle** (`my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`): a layer only counts as done when eval-test passes at that layer — single-mode at birth (L0), per-mode + the Auto/mixed path after `/add-eval-modes` (L1), tier sweep (`&difficulty=`) after `/add-support-tiers` / `/add-structural-difficulty` (L3/L4). Findings route through `/eval-fix`.
+
 **Arguments:** `/eval-test <primitive-id> [eval-mode]`
 - Omit eval-mode to test all modes for that primitive
 - Omit both to list all primitives with eval modes

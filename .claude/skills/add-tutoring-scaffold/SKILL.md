@@ -15,8 +15,10 @@ Use this skill when:
 - Adding pedagogical speech triggers (`sendText`) to a primitive component
 - Improving AI responses for a primitive that currently uses the generic fallback
 
+**Newborn scaffolding (the standard entry path):** `/primitive` births primitives at lifecycle **L0** with `useLuminaAI` + `sendText` hooks already wired in the component but NO catalog `tutoring:` block — the newborn runs on the generic tutor until this skill adds it (the **L2** layer; ladder: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`). Read the birth certificate first (`my-tutoring-app/qa/eval-reports/<id>-birth.md`) — it lists contextKeys candidates and struggles observed during birth QA.
+
 **DO NOT use this skill for:**
-- Creating new primitives (use the `primitive` skill instead)
+- Building the primitive itself (that's `/primitive` — it deliberately ships no `tutoring:` block; this skill is the single source of truth for it)
 - Migrating primitives to shadcn/ui (use the `migrate-primitive` skill instead)
 - Fixing bugs in existing scaffolding
 - Backend changes — the backend is **primitive-agnostic** and requires no modifications

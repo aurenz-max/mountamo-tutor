@@ -37,6 +37,7 @@ import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
+import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
 
 import {
   EvaluationProvider,
@@ -67,7 +68,8 @@ type PrimitiveType =
   | 'cvc-speller'
   | 'word-workout'
   | 'word-sorter'
-  | 'picture-vocabulary';
+  | 'picture-vocabulary'
+  | 'story-talk';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -107,6 +109,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'revision-workshop', label: 'Revision Workshop', icon: '🔧', topic: 'Strengthening word choice in a draft', strand: 'W', wave: 4 },
   // ===== SL: Speaking & Listening =====
   { value: 'read-aloud-studio', label: 'Read Aloud Studio', icon: '🎙️', topic: 'Fluency practice with model reading', strand: 'SL', wave: 4 },
+  { value: 'story-talk', label: 'Story Talk', icon: '👂', topic: 'A squirrel hides an acorn', strand: 'SL', wave: 5 },
   // ===== L: Language =====
   { value: 'sentence-builder', label: 'Sentence Builder', icon: '🧱', topic: 'Building compound sentences', strand: 'L', wave: 1 },
   { value: 'context-clues-detective', label: 'Context Clues', icon: '🕵️', topic: 'Determining word meaning from context', strand: 'L', wave: 2 },
@@ -197,6 +200,8 @@ const PrimitiveRenderer: React.FC<{
       return <WordSorter data={data as Parameters<typeof WordSorter>[0]['data']} />;
     case 'picture-vocabulary':
       return <PictureVocabulary data={data as Parameters<typeof PictureVocabulary>[0]['data']} />;
+    case 'story-talk':
+      return <StoryTalk data={data as Parameters<typeof StoryTalk>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -309,6 +314,15 @@ const EvaluationResultsPanel: React.FC = () => {
                   <p className="text-xs text-slate-400 mt-1">{result.metrics.type}</p>
                 )}
                 {result.metrics.type === 'picture-vocabulary' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'story-talk' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>

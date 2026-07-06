@@ -3,6 +3,14 @@
 /**
  * useSpokenTurn — conversational spoken-answer orchestration.
  *
+ * ⚠ DEPRECATED (user ruling 2026-07-05, memory `open-mic-over-turn-windows`):
+ * the windowed re-arm shape below (arm timeouts, silence strikes, dormancy
+ * taps) is legacy — it surfaces "tap the orb when ready" friction and pays a
+ * cold mic re-open per window, while an open mic costs nothing during
+ * silence. DO NOT build new consumers on this hook. New always-listening
+ * work uses hooks/useVoiceCapture with modality 'open'. This file survives
+ * only until PictureVocabulary (its sole consumer) migrates.
+ *
  * Wraps useSpokenWordCapture so a primitive can run the natural
  * parent-child turn shape WITHOUT a per-item button press:
  *

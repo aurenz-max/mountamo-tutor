@@ -6,10 +6,11 @@ This skill adds a **spoken production beat** to an existing literacy primitive: 
 
 ## Required Reading
 
-- `my-tutoring-app/src/components/lumina/hooks/useSpokenWordCapture.ts` — the hook (capture, endpointing, ladder, outcomes). This is the only API a primitive touches.
+- `my-tutoring-app/src/components/lumina/hooks/useSpokenWordCapture.ts` — the shipped push-to-talk hook (capture, endpointing, ladder, outcomes).
+- `my-tutoring-app/src/components/lumina/hooks/useVoiceCapture.ts` — the NEW generic engine (all modalities, honest cue timing, frozen capture context). New always-listening work targets this.
 - `my-tutoring-app/src/components/lumina/primitives/visual-primitives/literacy/PhonicsBlender.tsx` — reference implementation (Blend phase).
 
-Tune thresholds and bench models in the **Blend Judge Lab** dev tool (IdleScreen → Developer Tools → 🎙️ Blend Judge Lab).
+**Design in the Voice Studio first** (IdleScreen → Developer Tools → 🎙️ Blend Judge Lab, now the Voice Studio): pick a scenario, tune modality + control levers + judge against real voice, then hit **📋 Copy Spec** — the exported JSON (capture/judge/control blocks) is the configuration this skill wires, so attach it to the task instead of re-describing settings. New interaction shapes get benched by adding a scenario plug-in (`components/voice-studio/scenarios/` — one component + one registry entry; `SayWordScenario.tsx` is the minimal reference).
 
 ## When to Use This Skill
 
@@ -18,7 +19,7 @@ Use when a literacy primitive has a moment where the student *knows the word* an
 **DO NOT use this skill for:**
 - Free-form speech (sentences, retells) — the judge is single-word/short-phrase only
 - Math or non-verbal primitives
-- An open mic paired with a *coaching* tutor — if you go always-listening (`useSpokenTurn`), the tutor MUST fall silent on every non-match (see **Capture architecture**). Never pair a continuously-open mic with a voice that talks over the student.
+- An open mic paired with a *coaching* tutor — if you go always-listening (open mic), the tutor MUST fall silent on every non-match (see **Capture architecture**). Never pair a continuously-open mic with a voice that talks over the student.
 
 ## Architecture (why it's shaped this way)
 
@@ -43,6 +44,14 @@ This split exists because Gemini Live tool-calling stalls/blocks (bench 2026-07,
 
 **Env (server-side, `my-tutoring-app/.env.local`):** `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` (same subscription as backend TTS), `GEMINI_API_KEY`.
 
+## Design Themes (doctrine settled 2026-07-05 — every spoken surface obeys these)
+
+1. **Honest speak cue.** Never show "Listening…" or cue "speak now" before audio frames actually flow — getUserMedia + AudioContext warm-up costs 200–800ms, and a premature cue clips the student's onset (THE "app feels buggy" root cause; it is not tutor bleed). The kit encodes it: `LuminaMicListener` has an `'opening'` state (dim, unbreathing orb), the ready earcon fires on the FIRST audio frame, and the engine keeps a ~250ms pre-roll so late-detected onsets still land in the clip. Never defensively gate the mic to protect against tutor pickup — honest cues are the fix, not blocked capture.
+2. **Open mic is the native always-listening shape; the turn loop is DEPRECATED.** `useSpokenTurn`'s windowed re-arm (arm timeouts, silence strikes, "tap the orb when ready") was spend plumbing that leaked into UX — and it isn't even cheaper: judges fire only on actual utterances, so silence on a hot mic costs zero API calls, while every window pays a cold mic re-open. New always-listening work uses `useVoiceCapture` with `modality: 'open'` (persistent mic, continuous utterance segmentation, judging overlaps listening; bounds = explicit stop + 60s walked-away idle close). Do not build new consumers on `useSpokenTurn` — it survives only until PictureVocabulary migrates.
+3. **Voice targeting.** When more than one answerable unit shares the screen with a live mic, exactly ONE must visibly hold the voice focus — wrap units in `LuminaVoiceTarget` (accent frame + "🎙 Problem N" chip + pulsing hint; tap-to-target; ✓ when done). The engine freezes the target context into each utterance at capture time, so a verdict landing after a focus switch still actuates what the student was aiming at.
+4. **Control levers for voice-control beats** (spoken choice / selection via `judgeChoiceAudio`): *act-on* (`high` confidence only vs `any` match) and *voice action* (`submit` vs `highlight — tap confirms`), with the degrade rule: low confidence under act-on:high degrades submit → highlight. Voice never silently no-ops when something was heard — surface what WAS heard. The judge identifies WHICH option; the primitive grades (the correct answer is never sent).
+5. **Session-level auto-listen switch.** Hands-free listening is globally gated by `utils/voiceMode.ts` — mount `LuminaVoiceToggle` in the lesson/Pulse navbar; Ctrl+M toggles it. OFF suppresses auto-starts and stops live ambient sessions in one place; explicit gestures (push-to-talk taps, a manual "Open mic" press) still work. `useVoiceCapture` enforces this automatically — never wire a primitive that bypasses it.
+
 **The asymmetric grading law (non-negotiable):**
 - `match` → award credit, `SoundManager.playCorrect()`, celebrate
 - `no-match` → **nothing is scored against the student**, the fallback stays available. Whether the tutor *coaches by voice* here is architecture-dependent (see **Capture architecture**): push-to-talk may coach into the closed mic; always-listening stays silent and leans on the visible fallback.
@@ -63,17 +72,17 @@ Net: a smooth multi-word session should be ~3 tutor utterances (open, first-voic
 
 **Capture architecture — pick one, and mind the tutor rule it carries:**
 
-There are two capture hooks. They are interchangeable at the judge/grading layer, but they impose **opposite** tutor rules because one closes the mic between tries and the other never does.
+Two live shapes (plus one deprecated). Interchangeable at the judge/grading layer, but they impose **opposite** tutor rules because one closes the mic between tries and the other never does.
 
-| | `useSpokenWordCapture` (push-to-talk) | `useSpokenTurn` (always-listening) |
-|---|---|---|
-| Mic | Closed until the student taps 🎙️ | Open continuously; self-re-arms between tries |
-| Best for | A single culminating word ("now say it") | A conversational run of items (PictureVocabulary) |
-| Echo gate | The tap — the student presses when the tutor is quiet | **None** — the mic never closes |
-| **Tutor on `no-match` / `unclear` / no-speech** | **May** coach by voice — the closed mic means nothing is talked over | **Must stay SILENT** — a voice plays straight over the student's next attempt |
-| Miss support net | The tutor's warm re-invite | The **always-visible fallback choices** |
+| | Push-to-talk (`useSpokenWordCapture`, or `useVoiceCapture` `'ptt'`) | Open mic (`useVoiceCapture` `'open'`) | ~~Turn loop (`useSpokenTurn`)~~ DEPRECATED |
+|---|---|---|---|
+| Mic | Closed until the student taps 🎙️ | Opens once, stays hot; utterances segmented continuously | Windowed re-arm with dormancy taps |
+| Best for | A single culminating word ("now say it") | A run of items / voice-controlled surface | Nothing new — legacy comparison only |
+| Echo gate | The tap — the student presses when the tutor is quiet | **None** — the mic never closes | — |
+| **Tutor on `no-match` / `unclear` / no-speech** | **May** coach by voice — the closed mic means nothing is talked over | **Must stay SILENT** — a voice plays straight over the student's next attempt | (same as open) |
+| Miss support net | The tutor's warm re-invite | The **always-visible fallback choices** | — |
 
-**Default to push-to-talk.** It's simpler, and its tap is an echo gate that keeps the tutor's voice out of the clip *and* out of the student's way. Reach for always-listening only when re-pressing the mic for every item is real friction — a vocabulary drill, a rhyme volley. The moment you do, you inherit its discipline (user ruling, PictureVocabulary 2026-07-04 — memory `spoken-mic-decoupled-from-tutor`):
+**Push-to-talk for a single culminating word; open mic for a run of items or a voice-controlled surface.** The tap is an echo gate that keeps the tutor's voice out of the clip; the open mic trades that gate for zero friction and leans on the safety rails (asymmetric grading, PROMPT LAW, echoCancellation). Do NOT reach for `useSpokenTurn` — its window shape is the deprecated legacy (user ruling 2026-07-05, memory `open-mic-over-turn-windows`). Going always-listening inherits this discipline (user rulings, PictureVocabulary 2026-07-04 — memory `spoken-mic-decoupled-from-tutor`):
 
 - **Mic decoupled from tutor state.** Never gate capture on "tutor is busy" — a missed student answer is worse than a little tutor bleed (which only ever lands as `no-match`/`unclear`, never a false positive).
 - **Tutor silent on every non-match.** No coach on `no-match`, `unclear`, or no-speech. The visible fallback choices are the support net; reveal them from the start of each item.
@@ -190,7 +199,7 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 ## Design Rules (Do / Don't)
 
 - **Do** keep the deterministic path reachable — the beat is additive, never a gate. "Additive" ≠ "visually co-equal": it's fine (better, even) to make the mic the primary CTA and demote the fallback to a quiet skip, as long as the skip is always there.
-- **Do** default to starting *capture* from a user gesture (push-to-talk) — its tap is the echo gate that keeps the tutor's voice out of the clip. Always-listening (`useSpokenTurn`) is allowed for multi-item runs, but only with its full discipline: mic decoupled from tutor state **and** tutor silent on every non-match (see **Capture architecture**). Advancing the *flow* automatically after a judged match is fine either way — auto-advance yes; auto-*listen* only under the always-listening discipline, never bolted onto push-to-talk.
+- **Do** pick the capture shape by the moment: push-to-talk for one culminating word (the tap is the echo gate); open mic (`useVoiceCapture` `'open'`) for multi-item runs and voice-controlled surfaces, with its full discipline: mic decoupled from tutor state **and** tutor silent on every non-match (see **Capture architecture**). Auto-listen must respect the global switch (`utils/voiceMode`) — the engine enforces it; don't bypass. Never build new work on `useSpokenTurn`.
 - **Don't** let a `no-match` write anything into attempts/accuracy metrics.
 - **Don't** call the judge with anything but the hook — the endpointing, sounds, and ladder policy live there for a reason.
 - **Don't** substitute `gemini-flash-lite` anywhere in the ladder — it false-positives minimal pairs with high confidence (benched).
@@ -210,14 +219,17 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 |---|---|
 | `primitives/visual-primitives/literacy/PhonicsBlender.tsx` | **Replace-the-report** archetype: mic replaces the "Blend!" click. Full wiring — handler, hook, cancel-on-advance, UI beat, metrics, tutor cues |
 | `primitives/visual-primitives/literacy/CvcSpeller.tsx` | **Culminate-after-solve** archetype: beat gated on `wordComplete`, primary-CTA/quiet-skip layout, auto-advance on match (Phase 3b) |
-| `primitives/visual-primitives/literacy/PictureVocabulary.tsx` | **Always-listening** archetype (`useSpokenTurn`): open-mic run of items, tutor SILENT on every non-match, always-visible fallback choices. See `renderListeningState()` |
-| `ui/LuminaMicListener.tsx` | The shared capture surface — state-driven orb + voice-reactive spike ring. Feed it either hook's state; don't hand-roll a mic UI |
-| `hooks/useSpokenWordCapture.ts` | The push-to-talk capability — capture, endpointing, ladder, outcome mapping |
-| `hooks/useSpokenTurn.ts` | The always-listening loop — self-re-arm, dormancy, `startManual`/`cancel` |
+| `primitives/visual-primitives/literacy/PictureVocabulary.tsx` | **Always-listening** archetype: tutor SILENT on every non-match, always-visible fallback choices. ⚠ still on deprecated `useSpokenTurn` — pending migration to `useVoiceCapture` `'open'` |
+| `ui/LuminaMicListener.tsx` | The shared capture surface — state-driven orb (incl. honest `'opening'` state), voice-reactive spike ring + mini sound bar. Don't hand-roll a mic UI |
+| `ui/LuminaVoiceTarget.tsx` | The "current target" frame — required when several answerable units share a screen with a live mic |
+| `ui/LuminaVoiceToggle.tsx` + `utils/voiceMode.ts` | Session-level auto-listen switch (navbar chip, Ctrl+M) — the engine honors it automatically |
+| `hooks/useVoiceCapture.ts` | The NEW generic engine — all modalities, first-frame cue, pre-roll, frozen capture context, auto-start. Target for new always-listening work |
+| `hooks/useSpokenWordCapture.ts` | The shipped push-to-talk capability — capture, endpointing, ladder, outcome mapping |
+| `hooks/useSpokenTurn.ts` | ⚠ DEPRECATED window loop — do not build new consumers; kept until PictureVocabulary migrates |
 | `utils/spokenWordJudge.ts` | Ladder policy + outcome semantics |
-| `service/literacy/azure-blend-judge.ts` | Azure dual-signal + tunable thresholds |
-| `service/literacy/gemini-blend-judge.ts` | LLM rung (escalation tier) |
-| `components/BlendJudgeLab.tsx` | Bench/tuning tool — not a wiring template |
+| `service/literacy/azure-blend-judge.ts` | Azure dual-signal ('say') + plain-recognition choice lane; tunable thresholds |
+| `service/literacy/gemini-blend-judge.ts` / `gemini-choice-judge.ts` | LLM rungs: production yes/no + closed-set option discrimination |
+| `components/voice-studio/` | The Voice Studio — design bench, scenario plug-ins, spec export. Not a wiring template; the spec it exports IS the wiring input |
 
 ## Checklist
 

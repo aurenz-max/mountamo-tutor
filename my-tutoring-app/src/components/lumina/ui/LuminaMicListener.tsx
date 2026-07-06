@@ -21,6 +21,13 @@
  * (always-listening loop: pass `dormant`). The component owns all the visual
  * states; the primitive owns when to mount it and what the answer means.
  *
+ * TIMING HONESTY: the 'opening' state exists because getUserMedia + AudioContext
+ * warm-up takes real time (~200-800ms). Showing "Listening…" during that window
+ * is a lie — the student speaks, the onset is clipped, and the app reads as
+ * buggy. Callers should pass 'opening' from mic-request until the FIRST audio
+ * frame actually flows, then flip to 'armed' (ideally with an earcon at that
+ * moment). Never cue "speak now" before frames flow.
+ *
  *   <LuminaMicListener
  *     state={spoken.state} level={spoken.level} isSupported={spoken.isSupported}
  *     onStart={() => void spoken.start()} onCancel={spoken.cancel}
@@ -34,8 +41,12 @@
 import React, { useEffect, useId, useReducer, useRef } from 'react';
 import type { LuminaAccent } from './tokens';
 
-/** Capture lifecycle — matches SpokenCaptureState without coupling to the hook. */
-export type MicListenerState = 'idle' | 'armed' | 'recording' | 'judging';
+/**
+ * Capture lifecycle — superset of SpokenCaptureState without coupling to the
+ * hook. 'opening' = mic requested but no audio frames flowing yet; the orb
+ * renders dim and unbreathing so "speak now" is never signalled early.
+ */
+export type MicListenerState = 'idle' | 'opening' | 'armed' | 'recording' | 'judging';
 
 export interface LuminaMicListenerProps {
   /** Capture lifecycle from the spoken hook. */
@@ -59,6 +70,8 @@ export interface LuminaMicListenerProps {
   size?: 'sm' | 'md' | 'lg';
   /** Prompt on the tap-to-talk orb. */
   idleLabel?: string;
+  /** Prompt while the mic is being requested but cannot hear yet. */
+  openingLabel?: string;
   /** Prompt while armed/waiting for the first sound. */
   listeningLabel?: string;
   /** Prompt while a voice is being captured. */
@@ -97,6 +110,13 @@ const CY = 100;
 const INNER = 52; // spike base radius
 const MAX_LEN = 34; // spike length at full level
 const BASE_LEN = 2.5; // resting spike nub
+// Mini ".|...||...|" sound bar inside the orb: quiet frames read as dots,
+// speech as bars, newest sample enters at the right. Same rolling buffer as
+// the spike ring — this is the close-up "it hears me" readout.
+const STRIP_BARS = 12;
+const STRIP_PITCH = 4.5;
+const STRIP_BASE = CY + 34; // baseline sits inside the core ring (r=46)
+const STRIP_MAX_H = 12;
 
 const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
   state,
@@ -108,6 +128,7 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
   accent = 'emerald',
   size = 'md',
   idleLabel = 'Tap to talk',
+  openingLabel = 'One sec…',
   listeningLabel = 'Listening…',
   recordingLabel = 'Listening…',
   judgingLabel = 'Checking…',
@@ -133,7 +154,7 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
   // Drain the ring the moment we stop actively listening, so old spikes don't
   // freeze on screen during judging / after the turn ends.
   useEffect(() => {
-    if (state === 'idle' || state === 'judging') {
+    if (state === 'idle' || state === 'opening' || state === 'judging') {
       barsRef.current = new Array(NUM_BARS).fill(0);
       tick();
     }
@@ -149,18 +170,24 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
   const live = !showButton;
   const judging = state === 'judging';
   const recording = state === 'recording';
+  const opening = state === 'opening';
+  // "hot" = the mic is genuinely hearing right now — the ONLY state that may
+  // breathe, glow bright, and read as "speak now".
+  const hot = live && !opening && !judging;
 
   const bars = barsRef.current;
   const currentNorm = bars[0] ?? 0;
-  const coreScale = live && !judging ? 1 + currentNorm * 0.08 : 1;
+  const coreScale = hot ? 1 + currentNorm * 0.08 : 1;
 
   const label = showButton
     ? idleLabel
-    : judging
-      ? judgingLabel
-      : recording
-        ? recordingLabel
-        : listeningLabel;
+    : opening
+      ? openingLabel
+      : judging
+        ? judgingLabel
+        : recording
+          ? recordingLabel
+          : listeningLabel;
 
   const spikes = bars.map((v, i) => {
     const a = (i / NUM_BARS) * Math.PI * 2 - Math.PI / 2;
@@ -177,7 +204,7 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
         stroke={color}
         strokeWidth={2.4}
         strokeLinecap="round"
-        opacity={live ? 0.3 + v * 0.7 : 0.16}
+        opacity={hot ? 0.3 + v * 0.7 : 0.16}
       />
     );
   });
@@ -187,8 +214,8 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
       <svg viewBox="0 0 200 200" className="w-full h-full">
         <defs>
           <radialGradient id={gradId} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={color} stopOpacity={live ? 0.5 : 0.28} />
-            <stop offset="65%" stopColor={color} stopOpacity={live ? 0.12 : 0.07} />
+            <stop offset="0%" stopColor={color} stopOpacity={hot ? 0.5 : 0.28} />
+            <stop offset="65%" stopColor={color} stopOpacity={hot ? 0.12 : 0.07} />
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </radialGradient>
         </defs>
@@ -198,6 +225,25 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
         <g transform={`translate(${CX} ${CY}) scale(${coreScale}) translate(${-CX} ${-CY})`}>
           {spikes}
         </g>
+        {/* mini sound bar — rolling RMS strip under the mic glyph */}
+        <g>
+          {bars.slice(0, STRIP_BARS).map((v, i) => {
+            const x = CX + (STRIP_BARS / 2 - i - 0.5) * STRIP_PITCH;
+            const h = 2 + v * STRIP_MAX_H;
+            return (
+              <rect
+                key={`strip-${i}`}
+                x={x - 1}
+                y={STRIP_BASE - h}
+                width={2}
+                height={h}
+                rx={1}
+                fill={color}
+                opacity={hot ? 0.35 + v * 0.65 : 0.18}
+              />
+            );
+          })}
+        </g>
         {/* core ring — breathes when live-and-ready to signal an open mic */}
         <circle
           cx={CX}
@@ -206,8 +252,8 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
           fill="none"
           stroke={color}
           strokeWidth={2}
-          strokeOpacity={live ? 0.55 : 0.3}
-          className={live && !judging ? 'animate-pulse' : undefined}
+          strokeOpacity={hot ? 0.55 : 0.3}
+          className={hot ? 'animate-pulse' : undefined}
         />
       </svg>
       {/* center glyph: mic when armed/ready, a settle spinner while judging */}
@@ -218,7 +264,10 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
             style={{ width: sz.mic, height: sz.mic }}
           />
         ) : (
-          <span style={{ fontSize: sz.mic }} className="leading-none select-none">
+          <span
+            style={{ fontSize: sz.mic, transform: 'translateY(-12%)' }}
+            className={`leading-none select-none ${opening ? 'opacity-40' : ''}`}
+          >
             🎙️
           </span>
         )}
@@ -248,7 +297,7 @@ const LuminaMicListener: React.FC<LuminaMicListenerProps> = ({
         role="status"
         aria-live="polite"
         className={`${sz.label} font-semibold text-center ${
-          judging ? 'text-slate-400 animate-pulse' : live ? 'text-slate-200' : 'text-slate-300'
+          judging || opening ? 'text-slate-400 animate-pulse' : live ? 'text-slate-200' : 'text-slate-300'
         }`}
       >
         {label}

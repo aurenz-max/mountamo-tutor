@@ -349,6 +349,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(blendVerdict);
       }
 
+      case 'judgeChoiceAudio': {
+        // Closed-set voice selection: which on-screen option did the student
+        // say? "azure:*" model ids route to plain speech recognition +
+        // option matching; everything else goes to the Gemini choice judge.
+        if (typeof params.model === 'string' && params.model.startsWith('azure')) {
+          const { judgeChoiceAzure } = await import(
+            '@/components/lumina/service/literacy/azure-blend-judge'
+          );
+          const azureChoice = await judgeChoiceAzure({
+            audioBase64: params.audioBase64,
+            options: params.options,
+          });
+          return NextResponse.json(azureChoice);
+        }
+        const { judgeChoiceAudio } = await import(
+          '@/components/lumina/service/literacy/gemini-choice-judge'
+        );
+        const choiceVerdict = await judgeChoiceAudio({
+          audioBase64: params.audioBase64,
+          mimeType: params.mimeType,
+          options: params.options,
+          gradeLevel: params.gradeLevel,
+          model: params.model,
+          thinkingLevel: params.thinkingLevel,
+        });
+        return NextResponse.json(choiceVerdict);
+      }
+
       case 'evaluateDigitDrawing': {
         const { evaluateDigitDrawing } = await import(
           '@/components/lumina/service/math/gemini-digit-evaluation'

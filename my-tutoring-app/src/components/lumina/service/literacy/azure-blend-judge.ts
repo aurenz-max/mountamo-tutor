@@ -1,5 +1,6 @@
 import 'server-only';
 import type { BlendJudgeVerdict } from './gemini-blend-judge';
+import type { ChoiceJudgeVerdict } from './gemini-choice-judge';
 
 /**
  * Azure Pronunciation Assessment blend judge — the streaming-ASR lane.
@@ -72,6 +73,77 @@ async function recognize(
     throw new Error(`Azure STT HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
   }
   return res.json();
+}
+
+// ── Choice lane ──────────────────────────────────────────────────
+// Closed-set voice selection: ONE plain-recognition call (no PA header —
+// pronunciation scoring is irrelevant when the question is WHICH option),
+// transcript token-matched against the on-screen options. Exactly one match
+// = high-confidence selection; zero or multiple = low confidence with no
+// selection, which the ladder escalates to the LLM choice judge (the
+// kid-articulation net: Azure hears "mat" for a mumbled "map").
+
+const CHOICE_MODEL_LABEL = 'azure:speech-recognition';
+
+export interface AzureChoiceJudgeParams {
+  /** Base64 16kHz 16-bit mono PCM WAV, no data: prefix */
+  audioBase64: string;
+  /** The options visible on screen */
+  options: string[];
+}
+
+export async function judgeChoiceAzure(params: AzureChoiceJudgeParams): Promise<ChoiceJudgeVerdict> {
+  const key = process.env.AZURE_SPEECH_KEY;
+  const region = process.env.AZURE_SPEECH_REGION;
+  if (!key || !region) {
+    throw new Error('AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set (my-tutoring-app/.env.local)');
+  }
+
+  const audio = Buffer.from(params.audioBase64.replace(/^data:audio\/\w+;base64,/, ''), 'base64');
+
+  const started = Date.now();
+  const plain = await recognize(audio, key, region);
+  const judgeLatencyMs = Date.now() - started;
+
+  const base: Pick<ChoiceJudgeVerdict, 'model' | 'usedSchemaFallback' | 'judgeLatencyMs'> = {
+    model: CHOICE_MODEL_LABEL,
+    usedSchemaFallback: false,
+    judgeLatencyMs,
+  };
+
+  if (plain.RecognitionStatus !== 'Success') {
+    return {
+      ...base,
+      heard: '',
+      selectedOption: null,
+      confidence: 'low',
+      reasoning: `Azure recognition status: ${plain.RecognitionStatus}`,
+    };
+  }
+
+  const heard = String(plain.DisplayText ?? plain.NBest?.[0]?.Display ?? '')
+    .toLowerCase()
+    .replace(/[^a-z' ]/g, '')
+    .trim();
+  const tokens = heard.split(/\s+/).filter(Boolean);
+  // "includes" not "equals": a sounding-out transcript like "m a map" counts.
+  const matched = params.options.filter((o) => tokens.includes(o.toLowerCase().trim()));
+
+  const selectedOption = matched.length === 1 ? matched[0] : null;
+  // Zero matches stays 'low' even with clear speech — the LLM rung gets a
+  // second listen before the primitive concludes "not an option".
+  const confidence: 'high' | 'low' = matched.length === 1 ? 'high' : 'low';
+
+  return {
+    ...base,
+    heard,
+    selectedOption,
+    confidence,
+    reasoning:
+      matched.length === 1
+        ? `transcript "${heard}" matched option "${matched[0]}"`
+        : `transcript "${heard || '∅'}" matched ${matched.length} options`,
+  };
 }
 
 export async function judgeBlendAzure(params: AzureBlendJudgeParams): Promise<BlendJudgeVerdict> {

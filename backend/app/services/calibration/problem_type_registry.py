@@ -569,6 +569,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word in a spoken sentence frame"),
         "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of an ordered low→high word gradient"),
     },
+    "story-talk": {
+        "who_what_where": PriorConfig(2.0, "Literal recall — answer who/what/where from a read-aloud story"),
+        "feeling_check":  PriorConfig(3.0, "Emotion inference — how a character felt from story events (not stated)"),
+        "why_because":    PriorConfig(4.0, "Causal inference — why something happened in the story"),
+    },
     "character-web": {
         "trait_id":         PriorConfig(1.5, "Identify traits from a character's actions and words"),
         "trait_evidence":   PriorConfig(2.5, "Support trait claims with text evidence quotes"),

@@ -6,9 +6,21 @@ All paths below are relative to `my-tutoring-app/src/components/`.
 
 ## Design contract — multi-instance is the default
 
-Every evaluable primitive built with this skill ships as multi-instance from day one, following the canonical schema in [PRD_WITHIN_MODE_INSTANCE_DENSITY.md §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern). The PRD's §5 playbook rules are the authoritative source for every decision this skill makes — pool service vs orchestrator, stale-state guards, answer-leak gating, metrics shape. Read it once before your first primitive build; reference it when an edge case comes up.
+Every evaluable primitive built with this skill ships as multi-instance from day one, following the canonical schema in [PRD_WITHIN_MODE_INSTANCE_DENSITY.md §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern). The PRD's §5 playbook rules are the authoritative source for every decision this skill makes — pool service vs orchestrator, stale-state guards, answer-leak gating, metrics shape. Read it once before your first primitive build; reference it when an edge case comes up.
 
-**Why this matters:** singular-schema primitives are Bucket A by definition. They produce one binary signal per session, fail to demonstrate mastery, and require an expensive refactor later. The 16 Workstream 3 ships in [SHIPPED_LOG.md](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) each averaged ~2 hours to densify. Don't create new debt — get the schema right at creation.
+**Why this matters:** singular-schema primitives are Bucket A by definition. They produce one binary signal per session, fail to demonstrate mastery, and require an expensive refactor later. The 16 Workstream 3 ships in [SHIPPED_LOG.md](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) each averaged ~2 hours to densify. Don't create new debt — get the schema right at creation.
+
+## Scope — the birth contract (L0)
+
+This skill builds **L0 of the primitive lifecycle** (ladder: [PRIMITIVE_LIFECYCLE.md](../../../my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md)): a pedagogically sound, kit-styled, multi-instance, answer-leak-audited primitive whose generator reliably produces its **one core task identity**, registered end-to-end and passing eval-test. Capabilities are layered on afterward by the add- skills — each is the single source of truth for its layer. Never inline another skill's template here.
+
+**Deliberately NOT built at birth** (deferred to layers):
+- **Eval-mode ladder** — catalog `evalModes[]`, β priors, backend `problem_type_registry.py`, mixed-path (SP-21) handling → `/add-eval-modes`
+- **Catalog `tutoring:` block** — scaffoldingLevels, commonStruggles, aiDirectives → `/add-tutoring-scaffold`. The component's `useLuminaAI` + `sendText` hooks ARE wired at birth (cheap in-flow, painful to retrofit); until scaffolded the primitive gets the generic tutor — acceptable degradation.
+- **Support tiers, structural difficulty, sound, spoken judge** → their skills, in the ladder order the birth certificate prints (Phase 8).
+
+**Never deferred** (expensive or impossible to retrofit — the reason this skill front-loads them):
+multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, and `onEvaluationSubmit` wiring. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
 
 ## Architecture: Sequential Focused Agents
 
@@ -17,11 +29,12 @@ This skill uses **sequential agent phases** to maximize quality at each step. Th
 ```
 Phase 1: Requirements        (main agent)
 Phase 2: Component            (main agent — creative work)
-Phase 3: Mechanical registration (4-5 parallel subagents — types, catalog, eval, tester, backend)
+Phase 3: Mechanical registration (2-3 parallel subagents — types, catalog, eval+tester)
 Phase 4: Generator             (FOCUSED agent — schema, prompt, post-validation)
 Phase 5: Type check            (main agent — compile everything)
-Phase 6: QA                    (FOCUSED agent — eval-test + G1-G5 sync rules)
+Phase 6: QA                    (FOCUSED agent — eval-test + G1/G2/G4/G5 sync rules)
 Phase 7: Report / Fix loop     (main agent — incl. /curriculum-fit home check)
+Phase 8: Birth certificate     (main agent — lifecycle L0 record + follow-up queue)
 ```
 
 **Why the generator gets its own phase:** The generator is where quality lives or dies. It needs the component's render logic as input (to know which fields are required per challenge type) and focused attention on schema design and post-validation. Doing it in parallel with mechanical tasks produces sloppy generators.
@@ -32,7 +45,7 @@ Phase 7: Report / Fix loop     (main agent — incl. /curriculum-fit home check)
 
 ## Phase 1: Gather Requirements (Main Agent)
 
-**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD.
+**If a PRD file is passed as an argument**, extract all requirements from it instead of asking the user. Read the PRD, identify the primitive(s) defined, and confirm with the user which one(s) to build. PRDs typically specify: name, domain, data structure, eval modes, challenge types, tutoring scaffold, and metrics — skip any questions already answered by the PRD. Build only the birth contract now: pick the CORE challenge type from the PRD's list and carry the rest (eval-mode ladder, tutoring scaffold) into the birth certificate as follow-up-queue input for `/add-eval-modes` and `/add-tutoring-scaffold`.
 
 **Otherwise**, ask the user for:
 - **Primitive name** (e.g., "CountingBoard", "FractionBar")
@@ -40,7 +53,7 @@ Phase 7: Report / Fix loop     (main agent — incl. /curriculum-fit home check)
 - **Purpose** (what it teaches)
 - **Interactive or display-only?** (interactive = evaluation + tutoring)
 - **Grade range** (K-2, 3-5, 6-8, 9-12, etc.)
-- **Challenge types** (if interactive with 2+ types: what are the distinct difficulty modes? e.g., build/subitize/make_ten/add/subtract)
+- **Core task identity** (the ONE challenge type the primitive ships with at birth — its central skill, e.g. `build` for a counting board. If the design or PRD implies more types, record them as ladder candidates for the birth certificate's `/add-eval-modes` follow-up — do NOT build the ladder now)
 
 ## Phase 2: Design & Write the Component (Main Agent)
 
@@ -64,7 +77,7 @@ Pick one from the same domain:
 
 Create: `lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
 
-**The data interface MUST follow the canonical multi-instance shape from [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).** Singular schemas (one problem per session, no `challenges[]` array) are Bucket A by definition and require an immediate multi-instance refactor — don't create new ones.
+**The data interface MUST follow the canonical multi-instance shape from [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).** Singular schemas (one problem per session, no `challenges[]` array) are Bucket A by definition and require an immediate multi-instance refactor — don't create new ones.
 
 ```tsx
 import React, { useState, useEffect, useRef } from 'react';
@@ -100,7 +113,8 @@ export interface <Name>Data {
   challenges: <Name>Challenge[];
 
   // Session-level config — keep flat. Per-challenge overrides are YAGNI.
-  challengeType: '<modeA>' | '<modeB>'; // matches catalog evalMode challengeTypes
+  challengeType: '<coreType>'; // core task identity at birth. The field MUST exist from day one
+                               // (schema surgery is expensive; /add-eval-modes widening this union is cheap).
   // ... other session-wide flags ...
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -113,11 +127,11 @@ export interface <Name>Data {
 }
 ```
 
-**`challenges` is required, not optional.** Optional `challenges?` fields are a smell — they create the latent gap where the generator never populates the array and the multi-instance code path is dead. See [SHIPPED_LOG §6j #1](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) (balance-scale post-mortem).
+**`challenges` is required, not optional.** Optional `challenges?` fields are a smell — they create the latent gap where the generator never populates the array and the multi-instance code path is dead. See [SHIPPED_LOG §6j #1](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md) (balance-scale post-mortem).
 
 **Schema decision — pool service vs orchestrator (REQUIRED before Phase 4):**
 
-Classify the per-challenge data BEFORE designing the schema. This determines whether the generator uses Fork A (pool service) or Fork B (orchestrator) per [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#generator-pick-a-fork):
+Classify the per-challenge data BEFORE designing the schema. This determines whether the generator uses Fork A (pool service) or Fork B (orchestrator) per [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#generator-pick-a-fork):
 
 | Per-challenge data | Fork | Examples |
 |---|---|---|
@@ -162,8 +176,8 @@ sendText('[ALL_COMPLETE] Student finished all items! Celebrate.', { silent: true
 ```tsx
 // Module-level phase config (one entry per challengeType; single-mode sessions get one entry)
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  '<modeA>': { label: 'Mode A', icon: '🧱', accentColor: 'purple' },
-  '<modeB>': { label: 'Mode B', icon: '👁️', accentColor: 'blue' },
+  '<coreType>': { label: '<Core Mode Label>', icon: '🧱', accentColor: 'purple' },
+  // /add-eval-modes adds one entry per ladder rung later
 };
 
 // Inside the component — replaces ~100 lines of manual state + useMemo:
@@ -263,9 +277,9 @@ After writing the component, note:
 - The **exported data interface name** (e.g., `CountingBoardData`)
 - The **component file path** relative to lumina/
 - Whether it's **interactive** (needs evaluation + tutoring)
-- The **pedagogical moments** you wired (for catalog tutoring field)
-- The **key data fields** the AI tutor needs to see (for contextKeys)
-- Whether it has **2+ challenge types** that warrant eval modes (for IRT difficulty targeting)
+- The **pedagogical moments** you wired (sendText tags — birth-certificate input for `/add-tutoring-scaffold`)
+- The **key data fields** the AI tutor needs to see (birth-certificate input for `/add-tutoring-scaffold`'s contextKeys)
+- **Additional challenge types the design implies** (birth-certificate ladder candidates for `/add-eval-modes` — NOT built now)
 - The **required fields per challenge type** — for each `render<Type>Challenge()` function in the component, list every data field it reads. This is the CONTRACT the generator must fulfill.
 
 **IMPORTANT — Required Fields Manifest:** Before proceeding to Phase 3, create a structured list like this:
@@ -283,7 +297,7 @@ This manifest is passed to the Generator Agent in Phase 4. It prevents the #1 so
 
 ## Phase 3: Parallel Mechanical Subagents
 
-After the component is written, launch **4-5 parallel subagents** using the Agent tool. Each reads only the files it needs. These are all mechanical registration tasks — no creative decisions.
+After the component is written, launch **2-3 parallel subagents** using the Agent tool (A: types+registry, B: catalog, C: evaluation+tester — C only if interactive). Each reads only the files it needs. These are all mechanical registration tasks — no creative decisions.
 
 **IMPORTANT: The generator is NOT built here.** It gets its own focused phase next.
 
@@ -323,7 +337,7 @@ Tasks:
 Both edits are append operations — match the existing style in each file.
 ```
 
-### Subagent B: "Add catalog entry with tutoring"
+### Subagent B: "Add catalog entry"
 
 Prompt template:
 ```
@@ -333,10 +347,7 @@ Component ID: `<id>`
 Purpose: <what the primitive teaches>
 Grade range: <grade range>
 Interactive: <yes/no>
-Pedagogical moments: <list from Phase 2c>
-Key data fields for AI tutor: <list from Phase 2c>
-Has eval modes: <yes/no — yes if 2+ challenge types>
-Eval modes (if yes): <list of { evalMode, label, beta, scaffoldingMode, challengeTypes, description }>
+Core challenge type: `<coreType>`
 
 Tasks:
 1. Read `my-tutoring-app/src/components/lumina/service/manifest/catalog/<domain>.ts` to see the existing pattern
@@ -346,58 +357,15 @@ Tasks:
    {
      id: '<id>',
      description: '<Clear description>. Perfect for <use case>. ESSENTIAL for <grade> <subject>.',
-     constraints: '<Any limitations>',
-     <if eval modes, add evalModes field:>
-     evalModes: [
-       {
-         evalMode: '<mode_key>',
-         label: '<Mode Label (Tier)>',
-         beta: <IRT prior beta>,
-         scaffoldingMode: <1-6>,
-         challengeTypes: ['<type1>'],
-         description: '<What this mode tests>',
-       },
-       // ... more modes, ordered lowest beta to highest beta
-     ],
-     <if interactive, add tutoring field:>
-     tutoring: {
-       taskDescription: '<Multi-X session — describe the per-challenge work>. Currently on {{challengeType}} challenge {{currentChallengeIndex}} of {{totalChallenges}}.',
-       contextKeys: [
-         'challengeType',
-         'currentChallengeIndex',
-         'totalChallenges',
-         // ... scalar active-challenge fields (no per-challenge arrays — PRD §5 rule 15)
-       ],
-       scaffoldingLevels: {
-         level1: '"<Gentle nudge — ask a question>"',
-         level2: '"<Specific guidance — break into steps, use {{key}}>"',
-         level3: '"<Detailed walkthrough — step-by-step with concrete details>"',
-       },
-       commonStruggles: [
-         { pattern: '<Observable behavior>', response: '<Actionable tutor response>' },
-       ],
-       aiDirectives: [
-         {
-           title: 'MULTI-<X> PACING',
-           instruction:
-             'This is a {{totalChallenges}}-challenge session. After each correct answer the student clicks "Next <X> →". '
-             + 'Encourage progression: "Nice — on to <x> {{currentChallengeIndex}}!" '
-             + 'After a wrong attempt, point at the specific step that needs another look — do NOT just repeat the whole method.',
-         },
-       ],
-     },
-     supportsEvaluation: true,
+     constraints: '<Any limitations>. The manifest must NOT supply specific per-challenge values — the pool service or orchestrator builds challenges deterministically.',
+     supportsEvaluation: <true if interactive>,
    },
    ```
 
-Rules for tutoring field:
-- taskDescription describes WHAT the student is doing across the SESSION, not a single problem. ALWAYS template `{{totalChallenges}}` and `{{currentChallengeIndex}}` so the tutor knows it's a multi-problem session.
-- `contextKeys` MUST be scalar session-level or active-challenge fields only. NEVER include per-challenge array fields (`challenges`, full `equations`, dataset arrays) — they flood the tutor prompt with hundreds of fields per turn (PRD §5 rule 15). The student sees the work; the tutor sees the pacing.
-- Use {{key}} for runtime primitive_data values
-- Never give the answer at any scaffolding level
-- commonStruggles describe OBSERVABLE behavior, not vague labels
-- Add a `MULTI-<X> PACING` aiDirective (canonical pattern across all multi-instance primitives — see `MULTI-EQUATION PACING` in balance-scale, `MULTI-FUNCTION PACING` in function-sketch, `MULTI-HISTOGRAM PACING` in histogram).
-- `constraints` MUST clarify the manifest must NOT supply specific per-challenge values — the pool service or orchestrator builds challenges deterministically from the eval mode.
+Rules:
+- `description` is the retrieval surface for BOTH manifest selection and /curriculum-fit — name the skill taught, the grade band, and the subject explicitly.
+- Do NOT add an `evalModes` field — the eval-mode ladder is /add-eval-modes' layer (it owns β priors + the backend registry, and is the single source of truth for the template).
+- Do NOT add a `tutoring` field — the tutoring scaffold is /add-tutoring-scaffold's layer. Until it runs, the primitive uses the generic tutor (the component's sendText hooks still fire) — expected L0 behavior, listed on the birth certificate.
 ```
 
 ### Subagent C: "Evaluation types & tester"
@@ -410,7 +378,7 @@ Component ID: `<id>`
 Component name: `<Name>`
 Domain: `<domain>`
 Data interface: `<Name>Data`
-Challenge types (eval mode keys): <list, e.g. 'modeA' | 'modeB'>
+Challenge type(s): `<coreType>` (single core mode at birth)
 
 Tasks:
 
@@ -419,7 +387,7 @@ Tasks:
      ```typescript
      export interface <Name>Metrics extends BasePrimitiveMetrics {
        type: '<id>';
-       challengeType: '<modeA>' | '<modeB>' | /* ... */;
+       challengeType: '<coreType>'; // union widens when /add-eval-modes builds the ladder
        totalChallenges: number;
        correctCount: number;
        attemptsCount: number;          // total tries across all challenges
@@ -486,30 +454,7 @@ Tasks:
 
 **Why `onEvaluationSubmit` MUST be passed:** Every recent multi-instance ship (function-sketch, balance-scale, measurement-tools, slope-triangle, matrix-display, histogram, systems-equations) passes `onEvaluationSubmit`. The old "do NOT pass onEvaluationSubmit to avoid double submission" guidance was wrong — `usePrimitiveEvaluation` guards via `submittedRef` against double submission, and omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch §6i had this gap; matrix-display §6m had this gap). Always pass it.
 
-### Subagent D: "Backend problem type registry" (only if eval modes)
-
-Prompt template:
-```
-Register eval mode prior betas for a new Lumina primitive in the backend calibration registry.
-
-Component ID: `<id>`
-Eval modes: <list of { evalMode, beta, description }>
-
-Tasks:
-1. Read `backend/app/services/calibration/problem_type_registry.py`
-   - Find the `PROBLEM_TYPE_REGISTRY` dict
-   - Add a new entry at the end (before the closing `}`), in the appropriate section:
-     ```python
-     "<id>": {
-         "<eval_mode>": PriorConfig(<beta>, "<description>"),
-         # ... more modes
-     },
-     ```
-   - Beta values MUST match the catalog entry exactly
-   - Use the existing comment-section style (e.g., `# Core / general-content primitives`)
-
-Write the edit. Do not just describe the change.
-```
+**There is no backend-registry subagent at birth.** β priors in `backend/app/services/calibration/problem_type_registry.py` are registered by `/add-eval-modes` together with the catalog `evalModes[]` — the two must match, so one skill owns both.
 
 ---
 
@@ -553,7 +498,7 @@ The component READS these fields — if any are missing, the challenge renders b
 
 ### Task 2: Design the schema
 
-Design a Gemini schema that reliably produces multi-instance valid data. **Read [PRD §4 + §5](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md) before designing anything — the schema decision is upstream of the schema text.**
+Design a Gemini schema that reliably produces multi-instance valid data. **Read [PRD §4 + §5](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md) before designing anything — the schema decision is upstream of the schema text.**
 
 **CRITICAL SCHEMA RULES:**
 
@@ -580,35 +525,9 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
    return { ...wrapper, challenges };
    ```
 
-   Reference: [gemini-factor-tree.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-factor-tree.ts), [gemini-balance-scale.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-balance-scale.ts), [gemini-histogram.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-histogram.ts), [gemini-systems-equations.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
+   Reference: [gemini-factor-tree.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-factor-tree.ts), [gemini-balance-scale.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-balance-scale.ts), [gemini-histogram.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-histogram.ts), [gemini-systems-equations.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
 
-   > ⚠️ **Fork A trap — the "Auto (mixed)" path silently ships a single tier (SP-21).** When the schema has ONE root-level `challengeType` enum and `selectFooChallenges(oneType)` builds the whole session from it, the unconstrained path (`resolveEvalModeConstraint(...) === null` — the tester's "Auto (mixed)" button and the manifest's no-`targetEvalMode` path) does NOT mix tiers. The null constraint just lets Gemini pick **one** enum value, so every challenge in the session is that one type — the "mixed" label is a lie, and a plain `tsc` + per-mode eval-test won't catch it (each IRT-pinned mode is correctly single-type). **If your primitive has 2+ challengeType tiers, build the mixed path explicitly:**
-   > ```typescript
-   > // Tier difficulty order (easy → hard) — used ONLY on the unconstrained Auto path.
-   > const TIER_ORDER: FooChallengeType[] = ['tierA', 'tierB', /* ... */];
-   > const TIER_RANK = TIER_ORDER.reduce((a, t, i) => { a[t] = i; return a; }, {} as Record<FooChallengeType, number>);
-   >
-   > // buildForType() dispatches to the existing per-type builders (no new figure code).
-   > export function selectMixedFooChallenges(count = 8): FooChallenge[] {        // >4, covers all tiers
-   >   const rotation = shuffle(TIER_ORDER);                                      // every tier appears ≥1×
-   >   const raw = []; const seen = new Set<string>();
-   >   for (let a = 0; a < count * 12 && raw.length < count; a++) {
-   >     const ch = buildForType(rotation[raw.length % rotation.length]);
-   >     if (!seen.has(canonKey(ch))) { seen.add(canonKey(ch)); raw.push(ch); }
-   >   }
-   >   // Scale low → high: tier rank primary, in-tier difficulty driver (area/radius/...) as tiebreaker.
-   >   return raw.sort((x, y) => (TIER_RANK[x.type] - TIER_RANK[y.type]) || (x.difficulty - y.difficulty))
-   >             .map((ch, i) => ({ ...ch, id: `foo-${i + 1}` }));
-   > }
-   >
-   > // In the generator: route the null-constraint path to the mixed builder.
-   > const isMixed = evalConstraint === null;
-   > const challenges = isMixed ? selectMixedFooChallenges(config?.instanceCount)
-   >                            : selectFooChallenges(challengeType, config?.instanceCount);
-   > // Top-level `challengeType` on the mixed path is representative metadata only — the component
-   > // must already render per-challenge from `currentChallenge.type`, never the top-level field.
-   > ```
-   > IRT-pinned modes pass a non-null constraint → the single-type path is untouched. Reference fixes: [gemini-polygon-area-builder.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-polygon-area-builder.ts) (`selectMixedPolygonAreaChallenges`), [gemini-circle-explorer.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-circle-explorer.ts) (`selectMixedCircleExplorerChallenges`). See EVAL_TRACKER SP-21.
+   > Note: the Fork A "Auto (mixed)" single-tier trap (**SP-21**) only exists once a primitive has 2+ challengeType tiers. At birth there is one challengeType, so it cannot fire — `/add-eval-modes` owns the mixed-path fix and documents it when the ladder is built. Design the pool builder so a `selectMixed<Name>Challenges` sibling is easy to add later (per-type builder functions, `canonKey` dedup — both already required below).
 
    **Fork B — Orchestrator (content-bearing per-challenge data).** N parallel Gemini calls (Promise.all) of a per-mode sub-generator; results merged into `challenges[]`. Use **orchestrator-same-mode** (one call shape, N copies) when the session pins to a single eval mode (the common case). Use **orchestrator-mixed-type** only when one render spans multiple challenge types.
 
@@ -621,9 +540,9 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
    return { ...firstResult.wrapper, challenges };
    ```
 
-   Reference: [gemini-bar-model.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-bar-model.ts), [gemini-tape-diagram.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-tape-diagram.ts), [gemini-function-sketch.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-function-sketch.ts).
+   Reference: [gemini-bar-model.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-bar-model.ts), [gemini-tape-diagram.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-tape-diagram.ts), [gemini-function-sketch.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-function-sketch.ts).
 
-2. **Structured-output Gemini is CONVERGENT on values (PRD §5 rule 2).** With `responseMimeType: "application/json"` + `responseSchema`, Gemini IGNORES temperature for numeric/categorical values — same composites, same coordinates, same scenarios on every call, even at temperature 0.9. This is documented in [NUMBER_POOL_SERVICE.md](../../my-tutoring-app/src/components/lumina/service/math/NUMBER_POOL_SERVICE.md).
+2. **Structured-output Gemini is CONVERGENT on values (PRD §5 rule 2).** With `responseMimeType: "application/json"` + `responseSchema`, Gemini IGNORES temperature for numeric/categorical values — same composites, same coordinates, same scenarios on every call, even at temperature 0.9. This is documented in [NUMBER_POOL_SERVICE.md](../../../my-tutoring-app/src/components/lumina/service/math/NUMBER_POOL_SERVICE.md).
 
    **Implication:** if you put per-challenge value fields in the Gemini schema and rely on temperature for variance, the N challenges will be near-identical. ALWAYS pre-randomize value-only fields in code (Fork A) or use N independent parallel calls so independent draws produce variance (Fork B). NEVER rely on prompt-level "spread coverage" instructions to Gemini — they don't work.
 
@@ -646,7 +565,7 @@ Design a Gemini schema that reliably produces multi-instance valid data. **Read 
 
 4. **Pre-compute expected answers in the generator (PRD §5 rule 4).** For deterministic-answer challenges, store `expectedScalar` / `expectedMatrix` / `expectedX,Y` / `targetAnswer` on the challenge object. Submit-time scoring becomes `parseFloat(input) === expected`. NEVER re-derive at submit — that's a class of stale-state bugs the multi-instance refactor exists to eliminate.
 
-5. **Back-solve from the integer answer when constraints depend on it (PRD §5 rule 5).** Don't forward-search for integer solutions; pick `(x₀, y₀)` freely, then derive equation parameters that make both lines pass through it. Acceptance rate goes from ~5% to ~95%. Reference: `buildSlopeInterceptChallenge` in [gemini-systems-equations.ts](../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
+5. **Back-solve from the integer answer when constraints depend on it (PRD §5 rule 5).** Don't forward-search for integer solutions; pick `(x₀, y₀)` freely, then derive equation parameters that make both lines pass through it. Acceptance rate goes from ~5% to ~95%. Reference: `buildSlopeInterceptChallenge` in [gemini-systems-equations.ts](../../../my-tutoring-app/src/components/lumina/service/math/gemini-systems-equations.ts).
 
 6. **Canonical-key dedup** prevents duplicate challenges within a session:
 
@@ -689,20 +608,8 @@ import { Type, Schema } from "@google/genai";
 import { <Name>Data } from "../../primitives/visual-primitives/<domain>/<Name>";
 import { ai } from "../geminiClient";
 
-// If 2+ challenge types, import eval mode utilities:
-import {
-  resolveEvalModeConstraint, constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection, logEvalModeResolution,
-  type ChallengeTypeDoc,
-} from '../evalMode';
-
-// If 2+ challenge types, define CHALLENGE_TYPE_DOCS:
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  '<type>': {
-    promptDoc: `"<type>": <detailed description of what Gemini should generate>`,
-    schemaDescription: "'<type>' (<short label>)",
-  },
-};
+// NO eval-mode utilities at birth — /add-eval-modes wires resolveEvalModes,
+// CHALLENGE_TYPE_DOCS, and schema constraining when it builds the ladder.
 
 // Schema definition...
 // Generator function...
@@ -714,8 +621,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 export const generate<Name> = async (
   topic: string,
   gradeLevel: string,
-  config?: Partial<{ targetEvalMode?: string }>,
+  config?: { intent?: string; [key: string]: unknown },
 ): Promise<<Name>Data> => { ... };
+// Keep config open — /add-eval-modes adds targetEvalMode/objectiveText to this type later.
 ```
 
 **Post-validation checklist (MANDATORY):**
@@ -725,12 +633,8 @@ export const generate<Name> = async (
 4. Recompute derived answers from visual data (e.g., correctTotal from displayedCoins)
 5. Log rejection counts so we can debug
 6. If all challenges rejected, use type-appropriate hardcoded fallback
-7. If eval mode requires semantic differentiation beyond challengeType
-   (e.g., "count-like" = single coin type), apply post-filter
-8. **If 2+ challengeType tiers AND a single root-level `challengeType` enum (Fork A wrapper):**
-   build the unconstrained "Auto (mixed)" path explicitly — when `evalConstraint === null`,
-   round-robin all tiers + sort easy→hard instead of building from one Gemini-picked tier.
-   Otherwise Auto silently ships a single tier (SP-21). See Task 1 Fork A trap callout.
+7. (Eval-mode semantic differentiation and the SP-21 mixed path are /add-eval-modes'
+   checklist, not birth's — there is exactly one challengeType at birth.)
 
 **Anti-patterns to AVOID:**
 - `correctTotal ?? 10` — silent fallback masks broken generation
@@ -746,7 +650,10 @@ Read `my-tutoring-app/src/components/lumina/service/registry/generators/<domain>
   registerGenerator('<id>', async (item, topic, gradeContext) => ({
     type: '<id>',
     instanceId: item.instanceId,
-    data: await generate<Name>(topic, gradeContext, item.config),
+    data: await generate<Name>(topic, gradeContext, {
+      ...item.config,                     // config pass-through — carries tester params now, targetEvalMode/objectiveText once /add-eval-modes runs
+      intent: item.intent || item.title,  // routing + topic-fidelity signal — bake the correct pattern at birth so densification never has to fix it
+    }),
   }));
   ```
 
@@ -781,7 +688,7 @@ Fix any errors. Common issues:
 
 After type-check passes, launch a focused QA agent that runs eval-test and verifies generator↔component sync.
 
-**Only run if the primitive has eval modes.** Skip for display-only or single-phase primitives.
+**Run for every evaluable primitive.** Skip only for display-only primitives.
 
 ### QA Agent Prompt Template
 
@@ -794,19 +701,20 @@ the generator produces data that the component can actually render correctly.
 Component ID: `<id>`
 Component file: `my-tutoring-app/src/components/lumina/primitives/visual-primitives/<domain>/<Name>.tsx`
 Generator file: `my-tutoring-app/src/components/lumina/service/<domain>/gemini-<id>.ts`
-Eval modes: <list of eval mode keys>
+Core challenge type: `<coreType>` (single mode at birth — no evalMode param)
 
 ## REQUIRED FIELDS CONTRACT
 <paste the same manifest from Phase 2c>
 
 ## Your Tasks
 
-### Task 1: Run eval-test for every eval mode
+### Task 1: Run eval-test
 
-For each eval mode:
 ```bash
-curl -s "http://localhost:3000/api/lumina/eval-test?componentId=<id>&evalMode=<mode>"
+curl -s "http://localhost:3000/api/lumina/eval-test?componentId=<id>"
 ```
+
+Run it 2-3 times — the variance rules (pool rotation, dedup) only show up across runs.
 
 If connection refused, STOP and report: "Dev server not running — user must start it."
 
@@ -814,7 +722,7 @@ Display the response JSON for the user.
 
 ### Task 2: Apply G1-G5 Sync Rules
 
-For each eval mode's response, check ALL of these:
+For each eval-test response, check ALL of these:
 
 **G1 — Required fields per challenge type:**
 For each challenge in fullData, check every field in the Required Fields Contract.
@@ -824,9 +732,8 @@ If a required field is missing or empty, flag as CRITICAL.
 If the generator uses flat indexed fields (e.g., option0, option1), check whether
 reconstruction actually produced arrays. If >50% of challenges have empty arrays, flag CRITICAL.
 
-**G3 — Eval mode semantic differentiation:**
-If two eval modes share the same challengeTypes, verify their output actually differs.
-Generate both and compare. If indistinguishable, flag HIGH.
+**G3 — (reserved for /add-eval-modes):**
+Eval-mode semantic differentiation applies once the ladder exists. At birth, mark G3 N/A.
 
 **G4 — Answer derivability:**
 For each challenge, verify the correct answer can be computed from the visible data:
@@ -847,9 +754,9 @@ For each one:
 Print a results table:
 ```
 QA Results — <id>
-| Eval Mode | API Status | Challenges | G1 | G2 | G3 | G4 | G5 | Verdict |
-|-----------|-----------|------------|----|----|----|----|----| --------|
-| <mode>    | pass      | 5          | OK | OK | OK | OK | OK | PASS    |
+| Run | API Status | Challenges | G1 | G2 | G3 | G4 | G5 | Verdict |
+|-----|-----------|------------|----|----|----|----|----|---------|
+| birth (`<coreType>`) | pass | 5 | OK | OK | N/A | OK | OK | PASS |
 ```
 
 For any failures, include:
@@ -877,9 +784,9 @@ Format:
 # Eval Report: <id> — <YYYY-MM-DD>
 
 ## Results
-| Eval Mode | Status | Issues |
-|-----------|--------|--------|
-| <mode>    | PASS   | —      |
+| Run | Status | Issues |
+|-----|--------|--------|
+| birth (`<coreType>`) | PASS | — |
 
 ## G1-G5 Sync Check: ALL PASS
 (or list any issues found and fixed)
@@ -892,12 +799,9 @@ Format:
 
 After QA passes, report to the user:
 - Files created/modified (list all)
-- Pedagogical moments wired (if interactive)
-- sendText tags defined
-- Tutoring scaffold added (or why skipped for display-only)
-- Eval modes added (if 2+ challenge types — list each mode with beta value)
-- QA results (pass/fail per mode, any G1-G5 issues found and fixed)
-- Backend problem_type_registry.py updated (if eval modes — confirm beta values match catalog)
+- Pedagogical moments wired (if interactive) + sendText tags defined
+- Answer-leak audit result (what was walked, what got gated)
+- QA results (pass/fail, any G1/G2/G4/G5 issues found and fixed)
 
 **If QA found and fixed issues**, mention what was caught and how. This validates the phased approach.
 
@@ -912,14 +816,41 @@ This is report-only; it won't edit curriculum or catalog. See `.claude/skills/cu
 
 ---
 
-## Phase 8: Wire Sound (Main Agent — recommended for interactive primitives)
+## Phase 8: Birth Certificate (Main Agent — REQUIRED, the last act of every run)
 
-Once the primitive renders and QA passes, run the **`/add-sound`** skill to give the primitive interactive audio. You only wire the **interaction** sounds — the rest is already automatic:
+End every `/primitive` run by printing the **birth certificate**: the record of what was born and the ordered queue of layers still to apply. This is what keeps the layered framework from becoming a forgetting machine — the follow-up skills are only as reliable as this handoff. Ladder definitions and code-detection signals: [PRIMITIVE_LIFECYCLE.md](../../../my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md).
 
-- **Automatic:** `navigate` on challenge advance (via `useChallengeProgress.advance()`), and `correct`/`incorrect`/`streak`/`perfect` on final submit (via `CelebrationLayer`).
-- **You wire (per-primitive):** tactile `SoundManager.tap()`/`select()`/`snap()`/`tick()` on manipulation handlers, and per-challenge `SoundManager.playCorrect()`/`playIncorrect()` at each "Check Answer" (intermediate checks are otherwise silent).
+Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-birth.md` so a later session can pick up the queue cold.
 
-Keep it sparse — 2–4 sound points. Skip entirely for display-only primitives. Full palette, integration mechanics, and checklist: `.claude/skills/add-sound/SKILL.md`.
+```markdown
+# Birth Certificate — <id> (<YYYY-MM-DD>)
+
+**Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode, generic tutor.
+
+- Core task identity: `<coreType>`
+- Generator fork: <A pool service | B orchestrator>
+- sendText tags wired: [ANSWER_CORRECT], [ANSWER_INCORRECT], [NEXT_ITEM], [ALL_COMPLETE]<, extras>
+- Answer-leak audit: <what was walked, what got gated>
+- Curriculum home: <MATCH <skill-id> | MISS — <gap/description/scoping> + action taken>
+
+## Follow-up queue (run in order — each skill is the single source of truth for its layer)
+
+| # | Skill | Layer | Input from this birth |
+|---|-------|-------|----------------------|
+| 1 | `/add-eval-modes` | L1 eval-dense | Ladder candidates: <types the design/PRD implied beyond `<coreType>`, or "design from scratch"> |
+| 2 | `/add-tutoring-scaffold` | L2 tutored | contextKeys candidates: <key data fields from Phase 2c>; struggles seen in QA: <...> |
+| 3 | `/add-support-tiers` | L3 tiered | Scaffolding intrinsic to the interaction that could withdraw: <...> |
+| 4 | `/add-structural-difficulty` | L4 shaped | (requires L3) Candidate structural lever by archetype: <...> |
+| 5 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
+| 6 | `/add-spoken-judge` | L5 polished | <only if a spoken-production primitive; else omit this row> |
+| ✓ | `/eval-test <id>` | QA loop | Run after EVERY layer lands (`/eval-fix` for findings) — a layer only counts when eval-test passes at that layer |
+```
+
+Rules:
+- **Every row gets real input, not placeholders.** The birth session is when the design is freshest — ladder candidates and withdrawal-scaffold observations written now save the follow-up session its discovery phase.
+- L1 and L2 are ordered first because they change what students experience most (routing + tutoring); L3→L4 order is a hard prerequisite (structural difficulty rides the support-tier harness).
+- `/eval-test` is the cross-cutting QA loop, not a rung: birth already ran it once (Phase 6); every follow-up skill re-runs it at its layer (per-mode after L1, tier sweep after L3/L4).
+- A display-only primitive's certificate marks rows 1-4 and 6 N/A and notes why.
 
 ---
 
@@ -947,20 +878,21 @@ When adding a **new domain** (not new primitive in existing domain), also update
 
 1. **Single source of truth**: Data interface defined and exported ONLY in the component file. Generator imports it.
 2. **Pass `onEvaluationSubmit` in the tester**: `usePrimitiveEvaluation` guards against double submission via `submittedRef`. Omitting the prop silently suppresses ALL metrics submission from the tester (function-sketch and matrix-display both had this silent gap before the multi-instance refactors). **Always pass it.**
-3. **Multi-instance is the default**: Every new evaluable primitive ships with `challenges: <Name>Challenge[]` and `useChallengeProgress`. Singular `<Name>Data` shapes are Bucket A by definition — don't create new ones. See [PRD §4](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).
+3. **Multi-instance is the default**: Every new evaluable primitive ships with `challenges: <Name>Challenge[]` and `useChallengeProgress`. Singular `<Name>Data` shapes are Bucket A by definition — don't create new ones. See [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#4-canonical-multi-instance-schema-pattern).
 4. **Compose ALL chrome from the Lumina UI kit (`lumina/ui`)** — read the barrel `lumina/ui/index.ts` for the live list. Containers/controls (`LuminaCard`/`LuminaButton`/`LuminaBadge`/`LuminaPanel`/`LuminaTable`/`LuminaAccordion`), the multi-phase scaffold (`LuminaModeTabs`/`LuminaChallengeCounter`/`LuminaPrompt`/`LuminaStepper`/`LuminaInlineStat`), and the eval loop (`LuminaAnswerChoice`/`LuminaFeedbackCard`/`LuminaActionButton`/`LuminaHintDisclosure`/`LuminaScoreRing`) all come from the kit — never re-derive glass strings, hand-roll a +/- stepper or answer FSM, or build a local TIER_CONFIG. Only genuinely uncovered shadcn parts (Tabs, Switch, Select) drop to `@/components/ui/*` themed via tokens. The kit is the frame, not the bespoke interaction surface.
 5. **Write complete component files**: Use Write tool, not incremental edits, to prevent broken JSX.
 6. **Required Fields Manifest**: Always create one in Phase 2c (includes the Fork A vs Fork B decision from PRD §5 rule 1) and pass it to Phases 4 and 6.
 7. **Generator rejects, never silently falls back**: Missing visual data = reject challenge + log. Never `?? defaultValue` for fields the component renders.
-8. **Fork A (pool service) vs Fork B (orchestrator) — decision is value-only vs content-bearing, NOT by challenge-type count**. Value-only data (numbers, coordinates, matrix values) → pool service even with N challenge types. Content-bearing data (word problems, scenarios) → orchestrator. See [PRD §5 rule 1](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
-9. **Mode-specific answer-leak audit before declaring done**: walk every label, tooltip, panel, stats display in the rendered UI — would it disclose the current mode's correct answer? Fix by gating visibility on `currentChallenge.challengeType`. See [PRD §5 rule 7](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
-10. **No hardcoded mock fixtures in the tester** — they mask all generator changes. Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`. See [SHIPPED_LOG §6k #4](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md).
+8. **Fork A (pool service) vs Fork B (orchestrator) — decision is value-only vs content-bearing, NOT by challenge-type count**. Value-only data (numbers, coordinates, matrix values) → pool service even with N challenge types. Content-bearing data (word problems, scenarios) → orchestrator. See [PRD §5 rule 1](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
+9. **Mode-specific answer-leak audit before declaring done**: walk every label, tooltip, panel, stats display in the rendered UI — would it disclose the current mode's correct answer? Fix by gating visibility on `currentChallenge.challengeType`. See [PRD §5 rule 7](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#5-the-playbook-refactor-rules).
+10. **No hardcoded mock fixtures in the tester** — they mask all generator changes. Always spread the generator's `data` via `...(data as Parameters<...>[0]['data'])`. See [SHIPPED_LOG §6k #4](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md).
+11. **Birth ends with a birth certificate** (Phase 8). One core task identity at birth; the eval-mode ladder, tutoring block, support tiers, structural difficulty, and sound are layered by the add- skills in the printed queue order. Never inline another skill's template here — one source of truth per layer, or the copies drift (the pre-refactor version of this skill carried a legacy `resolveEvalModeConstraint` template that /add-eval-modes had already retired).
 
 ## PRD Reference
 
 This skill's design contract is defined by:
-- **[PRD_WITHIN_MODE_INSTANCE_DENSITY.md](../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md)** — canonical multi-instance schema (§4), refactor playbook rules (§5), current backlog (§6). READ THIS BEFORE building any new primitive — the patterns this skill enforces are documented there.
-- **[SHIPPED_LOG.md](../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md)** — per-primitive post-mortems for 16 shipped primitives. Useful as worked examples when you hit an unusual case.
+- **[PRD_WITHIN_MODE_INSTANCE_DENSITY.md](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md)** — canonical multi-instance schema (§4), refactor playbook rules (§5), current backlog (§6). READ THIS BEFORE building any new primitive — the patterns this skill enforces are documented there.
+- **[SHIPPED_LOG.md](../../../my-tutoring-app/src/components/lumina/docs/SHIPPED_LOG.md)** — per-primitive post-mortems for 16 shipped primitives. Useful as worked examples when you hit an unusual case.
 
 Domain-specific PRDs:
 - `lumina/docs/space-primitives-prd.md` — Astronomy/space primitives

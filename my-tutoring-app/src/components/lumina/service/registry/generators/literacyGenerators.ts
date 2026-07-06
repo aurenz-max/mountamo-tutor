@@ -56,6 +56,7 @@ import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 import { generateWordSorter } from '../../literacy/gemini-word-sorter';
 import { generatePictureVocabulary } from '../../literacy/gemini-picture-vocabulary';
+import { generateStoryTalk } from '../../literacy/gemini-story-talk';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -587,4 +588,27 @@ registerContextGenerator('picture-vocabulary', async (ctx) => ({
   data: await generatePictureVocabulary(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 28 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary)');
+// ============================================================================
+// Speaking & Listening — Story Talk
+// ============================================================================
+
+/**
+ * Story Talk - Kindergarten listening comprehension (tutor reads a short story,
+ * child taps the picture that answers a literal-recall question)
+ *
+ * Perfect for:
+ * - K listening comprehension and literal recall
+ * - Who / What / Where questions about a heard 3-5 sentence story
+ * - Emoji-picture answers so a pre-reader can respond
+ *
+ * Grade Scaling:
+ * - K: 3-5 short simple sentences, single picturable answer word
+ * - Grade 1: slightly richer stories, same tap-a-picture recall
+ */
+registerContextGenerator('story-talk', async (ctx) => ({
+  type: 'story-talk',
+  instanceId: ctx.instanceId,
+  data: await generateStoryTalk(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 29 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Story Talk)');

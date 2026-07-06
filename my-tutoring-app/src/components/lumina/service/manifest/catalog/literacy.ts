@@ -1033,6 +1033,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     },
   },
   {
+    id: 'story-talk',
+    description:
+      'Listening-comprehension activity for Kindergarten — the tutor READS a short 3-5 sentence story ALOUD with character voices, then the student answers a literal-recall question ("Who hid the acorn?", "What did Milo find?", "Where did it happen?") by tapping the matching picture from 4 options. Builds oral listening comprehension, recall of key story details, and who/what/where questioning. ESSENTIAL for K Reading Comprehension and Speaking & Listening (recall key details from a read-aloud). Answers are single picturable words shown as pictures, so it works for pre-readers.',
+    constraints:
+      'Story stays audio-only while the student answers (a listening task) — do not rely on the child reading. Answers must be single concrete, picturable words with a clear emoji. K comprehension: 3-5 short sentences, one scene, one problem. The manifest must NOT supply story text, questions, or answers — the generator authors the mini-stories and questions deterministically from the topic.',
+    evalModes: [
+      { evalMode: 'who_what_where', label: 'Listen & Tell (Tier 1)', beta: 2.0, scaffoldingMode: 2, challengeTypes: ['who_what_where'], description: 'Literal recall — answer a who/what/where question about a detail the story stated aloud.' },
+      { evalMode: 'feeling_check', label: 'How Did They Feel? (Tier 2)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['feeling_check'], description: 'Emotion inference — infer how a character felt from what happened (the feeling is not stated).' },
+      { evalMode: 'why_because', label: 'Why Did It Happen? (Tier 3)', beta: 4.0, scaffoldingMode: 3, challengeTypes: ['why_because'], description: 'Causal inference — tap the picture of WHY something happened in the story.' },
+    ],
+    supportsEvaluation: true,
+  },
+  {
     id: 'character-web',
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',

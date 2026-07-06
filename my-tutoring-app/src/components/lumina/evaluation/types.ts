@@ -2305,6 +2305,18 @@ export interface PictureVocabularyMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface StoryTalkMetrics extends BasePrimitiveMetrics {
+  type: 'story-talk';
+  challengeType: 'who_what_where' | 'feeling_check' | 'why_because';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total tries across all challenges
+  firstTryCount: number;          // challenges answered correctly on the first tap
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
   type: 'word-workout';
   mode: 'real-vs-nonsense' | 'picture-match' | 'word-chains' | 'sentence-reading';
@@ -3388,6 +3400,7 @@ export type PrimitiveMetrics =
   | LetterSoundLinkMetrics
   | CvcSpellerMetrics
   | PictureVocabularyMetrics
+  | StoryTalkMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics
