@@ -5,7 +5,8 @@
  * engine. The student says a target word; the Azure→Gemini ladder judges it;
  * the primitive gets one asymmetric SpokenJudgeResult per utterance.
  *
- * This is the successor to useSpokenTurn (deprecated window loop): open-mic
+ * This is the successor to useSpokenTurn (window loop, deleted 2026-07-05):
+ * open-mic
  * persistence instead of windowed re-arm — while `active`, the mic is simply
  * hot; utterances are segmented continuously; there are no silence strikes,
  * no re-arm cooldowns, no per-window dormancy taps. The only bounds are the

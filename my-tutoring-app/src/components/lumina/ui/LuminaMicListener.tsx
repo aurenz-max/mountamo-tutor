@@ -17,9 +17,10 @@
  *   ● a settle spinner + "Checking…" while the judge runs
  *
  * It is state-driven and hook-agnostic. Feed it the capture state + level from
- * either useSpokenWordCapture (push-to-talk: omit `dormant`) or useSpokenTurn
- * (always-listening loop: pass `dormant`). The component owns all the visual
- * states; the primitive owns when to mount it and what the answer means.
+ * useSpokenWordCapture (push-to-talk: omit `dormant`) or useVoiceAnswer /
+ * useVoiceChoice (always-listening: pass `dormant`). The component owns all
+ * the visual states; the primitive owns when to mount it and what the answer
+ * means.
  *
  * TIMING HONESTY: the 'opening' state exists because getUserMedia + AudioContext
  * warm-up takes real time (~200-800ms). Showing "Listening…" during that window
@@ -60,7 +61,7 @@ export interface LuminaMicListenerProps {
   /** Stop listening. Renders a quiet "✕ stop" while live when provided. */
   onCancel?: () => void;
   /**
-   * Auto-listening loop has stopped (useSpokenTurn.dormant) — show the
+   * Auto-listening loop has stopped (useVoiceAnswer.dormant) — show the
    * tap-to-talk orb. OMIT for push-to-talk, where `idle` alone means "offer
    * the button". While an auto loop is mid-rearm (idle but not dormant) the
    * live surface is kept so it never flickers back to a button.

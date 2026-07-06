@@ -71,7 +71,7 @@ const MODALITIES: Array<{ id: VoiceModality; label: string; blurb: string }> = [
   {
     id: 'turn',
     label: 'Turn loop (legacy)',
-    blurb: 'useSpokenTurn v2 window shape, kept to bench against open mic.',
+    blurb: 'The old window shape (re-arm cooldowns, dormancy taps), kept to bench against open mic.',
   },
 ];
 
