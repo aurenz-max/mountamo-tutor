@@ -26,21 +26,36 @@ export const generateProblemHint = async (
 
   const hintInstruction = hintLevelDescriptions[hintLevel as keyof typeof hintLevelDescriptions] || hintLevelDescriptions[1];
 
-  let problemContext = `Question: ${problem.question}\n`;
-
-  // Add problem-type specific context
-  if (problem.type === 'multiple_choice' && problem.options) {
-    problemContext += `\nOptions:\n${problem.options.map(opt => `${opt.id}. ${opt.text}`).join('\n')}`;
-  } else if (problem.type === 'true_false' && problem.statement) {
-    problemContext += `\nStatement: ${problem.statement}`;
-  } else if (problem.type === 'fill_in_blanks' && problem.sentence) {
-    problemContext += `\nSentence: ${problem.sentence}`;
-  } else if (problem.type === 'categorization_activity' && problem.categories) {
-    problemContext += `\nCategories: ${problem.categories.map(c => c.label).join(', ')}`;
-  } else if (problem.type === 'sequencing_activity' && problem.items) {
-    problemContext += `\nItems to sequence: ${problem.items.map(i => i.content).join(', ')}`;
-  } else if (problem.type === 'matching_activity' && problem.pairs) {
-    problemContext += `\nMatching pairs needed`;
+  // Build problem-type specific context from each variant's real fields
+  let problemContext = '';
+  switch (problem.type) {
+    case 'multiple_choice':
+      problemContext = `Question: ${problem.question}\n`;
+      problemContext += `\nOptions:\n${problem.options.map(opt => `${opt.id}. ${opt.text}`).join('\n')}`;
+      break;
+    case 'short_answer':
+      problemContext = `Question: ${problem.question}\n`;
+      break;
+    case 'true_false':
+      problemContext = `Statement: ${problem.statement}\n`;
+      break;
+    case 'fill_in_blanks':
+      problemContext = `Fill in the blanks: ${problem.textWithBlanks}\n`;
+      break;
+    case 'categorization_activity':
+      problemContext = `Instruction: ${problem.instruction}\n`;
+      problemContext += `\nCategories: ${problem.categories.join(', ')}`;
+      break;
+    case 'sequencing_activity':
+      problemContext = `Instruction: ${problem.instruction}\n`;
+      problemContext += `\nItems to sequence: ${problem.items.join(', ')}`;
+      break;
+    case 'matching_activity':
+      problemContext = `Prompt: ${problem.prompt}\n\nMatching pairs needed`;
+      break;
+    case 'scenario_question':
+      problemContext = `Scenario: ${problem.scenario}\nQuestion: ${problem.scenarioQuestion}\n`;
+      break;
   }
 
   const prompt = `You are a helpful AI tutor assisting a student with a practice problem. Your goal is to guide them to understand the concept and arrive at the answer themselves.

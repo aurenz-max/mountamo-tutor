@@ -284,7 +284,7 @@ const BodySystemExplorer: React.FC<BodySystemExplorerProps> = ({ data, className
                     What Happens Here
                   </div>
                   <p className="text-base text-slate-200 leading-relaxed">
-                    {currentStep.action}
+                    {currentStep?.action}
                   </p>
                 </div>
 

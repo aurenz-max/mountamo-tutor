@@ -721,7 +721,7 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
 
   // Phase navigation
   const advancePhase = useCallback(() => {
-    setCompletedPhases((prev) => new Set([...prev, currentPhase]));
+    setCompletedPhases((prev) => new Set(prev).add(currentPhase));
     const currentIndex = availablePhases.indexOf(currentPhase);
     if (currentIndex < availablePhases.length - 1) {
       setCurrentPhase(availablePhases[currentIndex + 1]);

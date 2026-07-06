@@ -367,7 +367,8 @@ const MotionDiagram: React.FC<MotionDiagramProps> = ({ data, className }) => {
     const metrics: MotionDiagramMetrics = {
       type: 'motion-diagram',
       motionType: identifiedMotionType || motionType,
-      targetMotionType,
+      // 'custom' motion is not a discrete identification target, so it maps to no target
+      targetMotionType: targetMotionType === 'custom' ? undefined : targetMotionType,
       motionTypeCorrect,
       markersPlaced: positions.length,
       markerCount,

@@ -258,13 +258,20 @@ export type SpecializedExhibit = EquationData | SentenceSchemaData | MathVisualD
 
 // ---------------------------
 
-// FeatureExhibit types now defined in generator service (single source of truth)
-export type {
+// FeatureExhibit types now defined in generator service (single source of truth).
+// Imported locally (so ExhibitData can reference them) AND re-exported for consumers.
+import type {
   FeatureSection,
   EvidenceClaim,
   SynthesisOption,
   FeatureExhibitData,
 } from './service/feature-exhibit/gemini-feature-exhibit';
+export type {
+  FeatureSection,
+  EvidenceClaim,
+  SynthesisOption,
+  FeatureExhibitData,
+};
 
 export interface RelatedTopic {
   title: string;
@@ -375,6 +382,7 @@ export interface SoundSortData {
 export type VisualPrimitiveType =
   | 'object-collection'
   | 'comparison-panel'
+  | 'letter-tracing'
   | 'letter-picture'
   | 'alphabet-sequence'
   | 'rhyming-pairs'
@@ -911,7 +919,9 @@ import type { RichAnnotatedExampleData as _AnnotatedExampleData } from './primit
 export type AnnotatedExampleData = _AnnotatedExampleData;
 
 
-// Re-export from component (single source of truth)
+// Re-export from component (single source of truth). Imported locally too so
+// ExhibitData can reference ImagePanelData.
+import type { ImagePanelData } from './primitives/ImagePanel';
 export type { ImagePanelData, ImageAnnotation, StudentPlacement } from './primitives/ImagePanel';
 
 // Take Home Activity Types
@@ -1812,9 +1822,7 @@ export interface PracticeSessionSummary {
 // Re-export component data types for external use
 export type { FactFileData } from './primitives/visual-primitives/core/FactFile';
 export type { HowItWorksData } from './primitives/visual-primitives/core/HowItWorks';
-export type { CounterexamplePairData } from './primitives/visual-primitives/core/CounterexamplePair';
 export type { FastFactData } from './primitives/visual-primitives/core/FastFact';
-export type { DecisionFlowchartData, DecisionNode } from './primitives/visual-primitives/core/DecisionFlowchart';
 export type { TimelineExplorerData } from './primitives/visual-primitives/core/TimelineExplorer';
 export type { VocabularyExplorerData } from './primitives/visual-primitives/core/VocabularyExplorer';
 export type { DeepDiveData } from './primitives/visual-primitives/core/deep-dive/types';

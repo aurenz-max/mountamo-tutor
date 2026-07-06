@@ -56,7 +56,7 @@ const TakeHomeActivity: React.FC<TakeHomeActivityProps> = ({ data, className }) 
       }
       // Auto-expand next step
       if (stepNum < data.steps.length) {
-        setExpandedSteps(new Set([...expandedSteps, stepNum + 1]));
+        setExpandedSteps(new Set(expandedSteps).add(stepNum + 1));
       }
     }
     setCompletedSteps(newCompleted);

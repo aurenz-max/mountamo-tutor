@@ -347,7 +347,7 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
   // Track explored phases
   useEffect(() => {
     const phaseKey = getPhaseKey(currentPhase.name);
-    setPhasesExplored(prev => new Set([...prev, phaseKey]));
+    setPhasesExplored(prev => new Set(prev).add(phaseKey));
   }, [currentPhase.name]);
 
   // Animation loop

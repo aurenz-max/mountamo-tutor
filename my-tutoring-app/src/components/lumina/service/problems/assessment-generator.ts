@@ -38,10 +38,24 @@ export const generatePracticeAssessment = async (
   const uniqueTypes = Array.from(new Set(problemTypes));
   const topicsList = problems
     .map(p => {
-      if (p.topic) return p.topic;
-      if (p.question) return p.question.substring(0, 50);
-      if (p.statement) return p.statement.substring(0, 50);
-      return 'Practice problem';
+      switch (p.type) {
+        case 'multiple_choice':
+        case 'short_answer':
+          return p.question.substring(0, 50);
+        case 'true_false':
+          return p.statement.substring(0, 50);
+        case 'matching_activity':
+          return p.prompt.substring(0, 50);
+        case 'fill_in_blanks':
+          return p.textWithBlanks.substring(0, 50);
+        case 'sequencing_activity':
+        case 'categorization_activity':
+          return p.instruction.substring(0, 50);
+        case 'scenario_question':
+          return p.scenario.substring(0, 50);
+        default:
+          return 'Practice problem';
+      }
     })
     .slice(0, 5);
 

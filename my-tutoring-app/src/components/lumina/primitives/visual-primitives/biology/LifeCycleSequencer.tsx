@@ -478,7 +478,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
         style={{
           minHeight: isEmpty ? '120px' : 'auto',
           borderColor: isDropTarget ? colors.primary : undefined,
-          ringColor: isDropTarget ? colors.primary : undefined,
+          // Drive Tailwind's ring color (see the `ring-2` class above) via its CSS variable
+          ...(isDropTarget ? ({ '--tw-ring-color': colors.primary } as React.CSSProperties) : {}),
         }}
       >
         {isEmpty ? (

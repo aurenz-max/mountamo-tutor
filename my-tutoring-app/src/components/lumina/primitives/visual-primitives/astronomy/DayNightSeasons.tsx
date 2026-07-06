@@ -1414,7 +1414,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
                     )?.[0] || 'custom'
                   }
                   onChange={(e) => {
-                    const position = e.target.value as keyof typeof ORBITAL_POSITIONS;
+                    const position = e.target.value as keyof typeof ORBITAL_POSITIONS | 'custom';
                     if (position !== 'custom') {
                       setEarthOrbitPosition(ORBITAL_POSITIONS[position]);
                     }

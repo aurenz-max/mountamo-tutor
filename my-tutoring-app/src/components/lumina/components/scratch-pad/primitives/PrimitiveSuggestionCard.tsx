@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { PrimitiveSuggestion } from '../types';
+import { PrimitiveSuggestion } from '../../../service/scratch-pad/gemini-scratch-pad-enhanced';
 
 interface PrimitiveSuggestionCardProps {
   suggestion: PrimitiveSuggestion;

@@ -13,7 +13,7 @@ import { useExhibitContext } from '../../contexts/ExhibitContext';
 /**
  * Configuration options for the usePrimitiveEvaluation hook.
  */
-export interface UsePrimitiveEvaluationOptions {
+export interface UsePrimitiveEvaluationOptions<TMetrics extends PrimitiveMetrics = PrimitiveMetrics> {
   /** The type of primitive component */
   primitiveType: ComponentId;
 
@@ -46,13 +46,13 @@ export interface UsePrimitiveEvaluationOptions {
   contentSubject?: string;
 
   /** Callback fired when result is submitted */
-  onSubmit?: (result: PrimitiveEvaluationResult) => void;
+  onSubmit?: (result: PrimitiveEvaluationResult<TMetrics>) => void;
 
   /** Callback fired when submission succeeds */
-  onSubmitSuccess?: (result: PrimitiveEvaluationResult) => void;
+  onSubmitSuccess?: (result: PrimitiveEvaluationResult<TMetrics>) => void;
 
   /** Callback fired when submission fails */
-  onSubmitError?: (error: Error, result: PrimitiveEvaluationResult) => void;
+  onSubmitError?: (error: Error, result: PrimitiveEvaluationResult<TMetrics>) => void;
 
   /** Whether to auto-submit on component unmount if there's pending work */
   autoSubmitOnUnmount?: boolean;
@@ -144,7 +144,7 @@ function generateAttemptId(): string {
  * ```
  */
 export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
-  options: UsePrimitiveEvaluationOptions
+  options: UsePrimitiveEvaluationOptions<TMetrics>
 ): UsePrimitiveEvaluationReturn<TMetrics> {
   const {
     primitiveType,

@@ -8,8 +8,9 @@ interface ManifestViewerProps {
   isLoading: boolean;
 }
 
-// Icon mapping for visual representation
-const componentIcons: Record<ComponentId, string> = {
+// Icon mapping for visual representation. Only a subset of ComponentIds have a
+// bespoke icon; lookups fall back to a default glyph (see below).
+const componentIcons: Partial<Record<ComponentId, string>> = {
   'curator-brief': '📖',
   'concept-card-grid': '🃏',
   'feature-exhibit': '🎨',
@@ -75,12 +76,12 @@ export const ManifestViewer: React.FC<ManifestViewerProps> = ({ manifest, isLoad
       <div className="space-y-4">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-slate-400 text-sm font-mono uppercase tracking-widest">
-            Component Layout ({manifest.layout.length} components)
+            Component Layout ({manifest.layout?.length ?? 0} components)
           </span>
           <div className="h-px flex-1 bg-gradient-to-r from-slate-700 to-transparent"></div>
         </div>
 
-        {manifest.layout.map((item, index) => (
+        {(manifest.layout ?? []).map((item, index) => (
           <div
             key={item.instanceId}
             className="group relative p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700 rounded-xl hover:border-blue-500/30 transition-all duration-300"

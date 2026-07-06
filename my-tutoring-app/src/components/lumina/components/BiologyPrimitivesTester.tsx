@@ -307,9 +307,6 @@ const EvaluationResultsPanel: React.FC = () => {
                     {result.score}%
                   </span>
                 </div>
-                {result.feedback && (
-                  <p className="text-xs text-slate-400 mt-1">{result.feedback}</p>
-                )}
               </div>
             ))}
           </div>
@@ -603,7 +600,7 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
               </div>
             )}
 
-            {generatedData && (
+            {generatedData != null && (
               <div className="space-y-6">
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}

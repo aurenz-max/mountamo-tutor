@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LetterTracingData } from '../../types';
+import { LetterTracingData } from '../types';
 import { LuminaCallout } from '../ui';
 
 interface LetterTracingProps {
@@ -56,9 +56,6 @@ export const LetterTracing: React.FC<LetterTracingProps> = ({ data }) => {
                 style={{
                   fontFamily: '"Comic Sans MS", "Comic Sans", cursive',
                   WebkitTextStroke: showDottedGuide ? '2px rgba(147, 197, 253, 0.6)' : '0',
-                  textStroke: showDottedGuide ? '2px rgba(147, 197, 253, 0.6)' : '0',
-                  WebkitTextStrokeStyle: showDottedGuide ? 'dotted' : 'solid',
-                  textStrokeStyle: showDottedGuide ? 'dotted' : 'solid',
                 }}
               >
                 {displayLetter}

@@ -964,7 +964,7 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
                       <button
                         key={comp.id}
                         onClick={() => addComponentToStage(comp.id, stages.length - 1)}
-                        disabled={isLaunching || (budgetRemaining !== null && comp.cost && budgetRemaining < comp.cost)}
+                        disabled={isLaunching || (budgetRemaining !== null && comp.cost != null && budgetRemaining < comp.cost)}
                         className={`w-full text-left p-2 rounded-lg border transition-all ${
                           selectedComponent === comp.id
                             ? 'border-blue-500 bg-blue-500/20'
