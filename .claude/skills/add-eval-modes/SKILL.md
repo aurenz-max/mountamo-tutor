@@ -59,6 +59,8 @@ Math primitives use `challenges.items.properties.type`. Literacy primitives use 
 
 **In Phase 1, identify which pattern the generator uses** and note the config needed for Phase 3.
 
+> **Pilot-then-sweep gate (mandatory):** never fan this skill out across multiple primitives (workflow / parallel subagents) until ONE pilot's new modes have been exercised **at runtime** — pinned in the Primitives Tester or `/eval-test`-generated for real — and the user has seen the result. A type-checked pilot is not a validated pilot (CLAUDE.md Verification Doctrine).
+
 ## Step-by-Step Workflow
 
 ### Phase 1: Analyze the Primitive
@@ -393,8 +395,9 @@ Math primitives use `challenges.items.properties.type`. Literacy primitives use 
 
 20. **Run type check**
     ```bash
-    cd my-tutoring-app && npx tsc --noEmit
+    cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
     ```
+    (Project-local binary, absolute path — bare `npx tsc` false-passes. Zero NEW errors vs. baseline.)
 
 21. **Report results to the user**
     - Catalog modes added (list each with β value)

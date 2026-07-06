@@ -389,10 +389,10 @@ LOCATION: Generator eval-mode wiring
 ### 4a. Type Check (mandatory)
 
 ```bash
-cd my-tutoring-app && npx tsc --noEmit
+cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
 ```
 
-Fix any type errors before proceeding.
+(Project-local binary, absolute path — bare `npx tsc` from repo root false-passes.) Zero NEW errors vs. baseline before proceeding.
 
 ### 4b. Re-test Fixed Modes
 
@@ -526,7 +526,7 @@ All paths relative to `my-tutoring-app/src/components/lumina/` unless otherwise 
 - [ ] Applied fixes in order: wiring → prompt → schema → derive → validate → orchestrate → component
 - [ ] Preferred derivation over validation where possible
 - [ ] Checked fix approach guide — post-process validators won't create false negatives
-- [ ] TypeScript compiles cleanly (`npx tsc --noEmit`)
+- [ ] Project-local `tsc --noEmit` holds baseline (absolute path; never bare `npx tsc`)
 - [ ] Re-tested the fixed eval mode(s)
 - [ ] G1-G5 sync verification passed on fixed modes
 - [ ] Re-tested ALL modes for regressions

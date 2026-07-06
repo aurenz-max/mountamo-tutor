@@ -71,7 +71,7 @@ Skip eval modes for:
 | 1 | `catalog/[domain].ts` | Add `evalModes` array to catalog entry |
 | 2 | `service/[domain]/gemini-[primitive].ts` | Add `CHALLENGE_TYPE_DOCS` + wire `resolveEvalModes` |
 | 3 | `registry/generators/[domain]Generators.ts` | Registration spreads `...item.config` **and** passes `intent` |
-| 4 | Verify | `npx tsc --noEmit` + Primitives Tester (pins) + `/topic-trace` (intent resolution) |
+| 4 | Verify | project-local `tsc --noEmit` (never bare `npx tsc`) + Primitives Tester (pins) + `/topic-trace` (intent resolution) |
 
 No new files needed — the shared utilities in `service/evalMode/index.ts` already exist.
 
@@ -400,8 +400,10 @@ If the primitive previously had a single `"default"` entry, replace it with one 
 ### Type check
 
 ```bash
-cd my-tutoring-app && npx tsc --noEmit
+cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
 ```
+
+(Project-local binary, absolute path — bare `npx tsc` from repo root false-passes. Zero NEW errors vs. baseline.)
 
 ### Test the two paths
 
@@ -509,7 +511,7 @@ export interface EvalModeResolution {
 - [ ] Logging added (inline `console.log` from 2h)
 - [ ] Generator registration spreads `...item.config` **and** passes `intent`
 - [ ] Backend `PROBLEM_TYPE_REGISTRY` updated with matching β priors (or confirmed existing match)
-- [ ] TypeScript compiles without errors (`npx tsc --noEmit`)
+- [ ] Project-local `tsc --noEmit` holds baseline (absolute path; never bare `npx tsc`)
 - [ ] Tested explicit pins in the Primitives Tester + intent resolution via `/topic-trace`
 - [ ] Tested no-mode (mixed) path — unchanged
 

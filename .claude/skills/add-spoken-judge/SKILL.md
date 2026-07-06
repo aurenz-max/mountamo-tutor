@@ -192,7 +192,7 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 
 ### Phase 5: Verify
 
-11. `cd my-tutoring-app && npx tsc --noEmit` — hold the error baseline.
+11. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — hold the error baseline (project-local binary, absolute path; bare `npx tsc` false-passes).
 12. Test by voice in the domain tester: clean word, a minimal-pair neighbor (say "mop" for "map"), a mumble, and silence. Confirm: match celebrates; miss gets voice coaching and no penalty; unclear invites retry; the fallback button always works.
 13. If verdicts feel wrong, bench in the Blend Judge Lab (same clip, `auto:ladder` vs individual engines) and tune `MATCH_THRESHOLD` in `service/literacy/azure-blend-judge.ts`.
 
@@ -242,5 +242,5 @@ If the beat sits at a *culminate-after-solve* moment, don't leave it as a peer b
 - [ ] Quiet-tutor law honored: framed once up front, routine `match` is voice-silent, celebration `sendText` gated on first-voice/comeback
 - [ ] `spokenWords` in evaluation extras
 - [ ] (culminate-after-solve) beat is the primary CTA, fallback demoted to a quiet skip; auto-advance on match with a double-advance guard
-- [ ] `npx tsc --noEmit` holds baseline
+- [ ] Project-local `tsc --noEmit` holds baseline (never bare `npx tsc`)
 - [ ] Voice-tested: clean / minimal-pair / mumble / silence, all four behave per the asymmetric law

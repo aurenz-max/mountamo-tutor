@@ -165,9 +165,11 @@ Do sequentially: Tier 1 first (cheapest), Tier 2 only if Tier 1 proved insuffici
 If the right long-term home is the shared `scopeContext.ts` binding rather than a
 bespoke resolver, say so — that is the [[scope-context-contract]] rollout.
 
+> **Pilot-then-sweep gate (mandatory):** when the same fix pattern applies across many generators, apply it to ONE, run the full Phase 4 probe battery on that one, and show the user the before/after probes — only then sweep the rest via workflow. Static triage lies (see [[value-origin-not-code-touch]]: grep both under- and over-counts); only probes qualify a pattern for fan-out (CLAUDE.md Verification Doctrine).
+
 ### Phase 4 — Verify
 
-1. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — compare to the current baseline (1101 as of 2026-07-03; see [[tsc-verification-integrity]]), no new errors.
+1. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — compare to the current baseline (measure before editing; don't trust hardcoded counts — see [[tsc-verification-integrity]]), no new errors.
 2. Re-run all three Phase-1 probes. Assert: HONORED on the bound, TRACKS on the discrimination control, UNCHANGED grade default on the no-regression control.
 3. Confirm no answer leak was introduced (the topic/intent text must not name the answer).
 

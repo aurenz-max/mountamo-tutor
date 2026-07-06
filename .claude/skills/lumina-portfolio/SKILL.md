@@ -447,7 +447,7 @@ Technical health check for a domain's primitive pipeline.
 
 1. **Generator registration:** Every catalog entry has a matching generator
 2. **Backend registry:** Every evaluable primitive with catalog `evalModes[]` has calibrated beta priors. A primitive with NO `evalModes` field is not a failure — it's a lifecycle **L0 newborn** awaiting `/add-eval-modes` (check 8 classifies it); flag as `L0-pending`, not FAIL
-3. **Type safety:** Run `npx tsc --noEmit` and filter errors to the domain
+3. **Type safety:** Run `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` (never bare `npx tsc` from repo root — it false-passes) and filter errors to the domain
 4. **Eval mode consistency:** Catalog betas match backend registry betas
 5. **Eval mode ordering:** Betas are monotonically increasing within each primitive
 6. **Tester coverage:** Every visual primitive has a tester entry

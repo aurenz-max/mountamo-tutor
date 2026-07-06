@@ -59,6 +59,8 @@ There is **one in-mode structural lever per mode**. Classify the primitive by ar
 
 > **CAUTION on the floor:** if a mode's *identity* IS a structural property ("with regrouping"), the easy tier must still satisfy it — `add_regroup` easy keeps ≥1 carry; dropping to 0 silently becomes its `_no_regroup` sibling = a forbidden eval-mode jump. Read the catalog `evalModes` and set the floor per mode.
 
+> **Pilot-then-sweep gate (mandatory):** this skill runs as campaigns, so the gate matters here most. Never fan out across multiple generators until ONE pilot has passed the full Phase 5 verify **at runtime** (offline builder stress test + live `/eval-test` tier sweep) and the user has seen the result. A type-checked pilot is not a validated pilot; the regrouping-workbench pilot is the model — it earned the campaign (CLAUDE.md Verification Doctrine).
+
 ## Step-by-Step Workflow
 
 ### Phase 1: Pick the in-mode lever per mode (the design)
@@ -88,7 +90,7 @@ There is **one in-mode structural lever per mode**. Classify the primitive by ar
 
 ### Phase 5: Verify
 
-9. **Project-local tsc** (per [[tsc-verification-integrity]]): `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit`; confirm zero new errors vs. the baseline global count (~1419/1444) and zero in the two files.
+9. **Project-local tsc** (per [[tsc-verification-integrity]]): `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit`; confirm zero new errors vs. the current baseline global count (measure before editing; don't trust hardcoded counts) and zero in the two files.
 10. **Stress-test the builders offline** — extract the constructive builders + counters into a throwaway node script and assert, over thousands of random runs across every mode/tier/band, that the produced values hit the exact target, stay in band, and preserve invariants (this is how the regrouping pilot caught an `M==S` 0-borrow bug).
 11. **Live `/eval-test` sweep** with the tier param: `…/eval-test?componentId=<id>&evalMode=<mode>&difficulty=<easy|medium|hard>` (add `&gradeLevel=grade%204` to reach a wider band). Confirm the problem gets structurally harder across tiers, the **floor holds** (easy never drops below the mode's defining property), the band **saturates honestly** at the small end (no out-of-band inflation), and the math is consistent (claimed lever == actual). Report what you saw.
 

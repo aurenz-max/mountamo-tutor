@@ -673,7 +673,7 @@ If any required field can reach the component as undefined/empty, fix the genera
 
 ## Phase 5: Type Check (Main Agent)
 
-After all agents complete, run: `cd my-tutoring-app && npx tsc --noEmit`
+After all agents complete, run: `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` (project-local binary, absolute path — bare `npx tsc` from repo root false-passes; zero NEW errors vs. baseline)
 
 Fix any errors. Common issues:
 - Missing `ComponentId` entry in types.ts

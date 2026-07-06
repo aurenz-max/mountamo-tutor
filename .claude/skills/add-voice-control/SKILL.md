@@ -115,7 +115,7 @@ Paint your existing UI from controller state (no new buttons):
 
 ## Phase 4: Verify
 
-6. `cd my-tutoring-app && npx tsc --noEmit` — hold the baseline.
+6. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — hold the baseline (project-local binary, absolute path; bare `npx tsc` false-passes).
 7. **Voice smoke (per shape, ~5 minutes in the domain tester):**
    - correct word → credits + advances; mic auto-reopens for the next item (ready chirp)
    - wrong word / minimal pair → choice: selects the wrong option or highlights; answer: nothing scored
@@ -159,4 +159,4 @@ Paint your existing UI from controller state (no new buttons):
 - [ ] `LuminaVoiceTarget` targeting when >1 answerable unit shares the screen
 - [ ] Tutor discipline per architecture (open mic ⇒ silent misses; PROMPT LAW)
 - [ ] Voice outcomes in `submitEvaluation` extras
-- [ ] `npx tsc --noEmit` holds baseline; Phase 4 voice smoke passed (incl. ✕ stop → tappable orb, Ctrl+M kill)
+- [ ] Project-local `tsc --noEmit` holds baseline (never bare `npx tsc`); Phase 4 voice smoke passed (incl. ✕ stop → tappable orb, Ctrl+M kill)

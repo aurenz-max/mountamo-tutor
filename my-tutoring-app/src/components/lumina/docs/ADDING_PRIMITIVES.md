@@ -1117,7 +1117,7 @@ Registration only proves the primitive *exists*; it doesn't prove the adaptive e
 
 Engine: `backend/scripts/curriculum_fit_probe.py` · Skill: `.claude/skills/curriculum-fit/SKILL.md` · Origin: `docs/QA_curriculum_mapping_misattribution.md`.
 
-**Note:** TypeScript compilation checking (`npx tsc --noEmit`) may fail due to syntax issues in other parts of the codebase. Focus on verifying the four integration points above instead.
+**Note:** Type-check with the project-local compiler: `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` (bare `npx tsc` from repo root false-passes without compiling). Pre-existing errors elsewhere are fine — the bar is **zero NEW errors vs. baseline, and zero in your files** — but never skip the check.
 
 ---
 

@@ -279,7 +279,7 @@ After migration, verify:
 - [ ] `advanceProgress()` is the only way to move to the next challenge
 - [ ] `allChallengesComplete` replaces any manual completion check
 - [ ] `PhaseSummaryPanel` renders when `allChallengesComplete && phaseResults.length > 0`
-- [ ] `npx tsc --noEmit` passes (grep for your component name in the output)
+- [ ] Project-local `tsc --noEmit` holds baseline — `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit`, never bare `npx tsc` (grep for your component name in the output)
 
 ---
 

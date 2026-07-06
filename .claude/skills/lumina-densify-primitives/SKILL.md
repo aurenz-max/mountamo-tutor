@@ -357,8 +357,10 @@ The generator uses a single monolithic schema with 3+ types. Refactor to orchest
 ## Phase 4: Type Check
 
 ```bash
-cd my-tutoring-app && npx tsc --noEmit
+cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
 ```
+
+(Project-local binary, absolute path — bare `npx tsc` from repo root false-passes. Zero NEW errors vs. baseline.)
 
 Fix any errors. **Known pre-existing error to IGNORE:** `ManifestViewer.tsx` incomplete `Record<ComponentId, string>`.
 
@@ -455,6 +457,8 @@ Present the final state:
 ---
 
 ## Batch Mode
+
+> **Pilot-then-sweep gate (mandatory):** before batching, run ONE primitive through all phases including the Phase 5 eval-test **at runtime** and show the user the result. Only a runtime-validated pilot qualifies the pattern for the batch — a sweep multiplies whatever the pilot got wrong (CLAUDE.md Verification Doctrine).
 
 When processing multiple primitives (from PRD or domain audit):
 

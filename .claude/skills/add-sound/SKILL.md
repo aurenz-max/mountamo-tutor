@@ -146,8 +146,9 @@ Only if no existing sound fits. The palette is data-driven:
 
 10. **Type check:**
     ```bash
-    cd my-tutoring-app && npx tsc --noEmit
+    cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit
     ```
+    (Project-local binary, absolute path — bare `npx tsc` false-passes. Zero NEW errors vs. baseline.)
 
 11. **Report** which events were wired to which sounds, and flag the double-sound decision from step 7.
 
@@ -181,5 +182,5 @@ Only if no existing sound fits. The palette is data-driven:
 - [ ] Checked the final-challenge double-sound case and made a decision
 - [ ] Did NOT manually call celebration sounds or re-wire `navigate`
 - [ ] (If new sound) Added `SoundSpec` to `SOUND_SPECS`, tuned in Sound Lab
-- [ ] `npx tsc --noEmit` passes
+- [ ] Project-local `tsc --noEmit` holds baseline (absolute path; never bare `npx tsc`)
 - [ ] Reminded the user to test by ear in the Primitives Tester + Sound Lab

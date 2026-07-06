@@ -56,6 +56,8 @@ Each pool exposes `pool.toPromptSection(opts)` → the prompt block to inject (i
 - `createNumberPool` / `createSubRangePool` `toPromptSection` options: `label`, `usePrimaryInstruction` (set `false` when there's no single "primary" value), `extraInstructions` (per-primitive assignment rules + the answer-derivation instruction).
 - `createDiscretePool` `toPromptSection` options: `label`, `noun` (e.g. `'skip value'`), `authoritativeSource` (e.g. `'the topic'` — emits "the topic is AUTHORITATIVE: if it names a {noun} use THAT, else use the first candidate; don't go outside this list"), `extraInstructions`. The shuffle reorders the set each call (a different suggested first value) — that reordering *is* the entropy; `pool.suggested` is `values[0]` if code ever needs it.
 
+> **Pilot-then-sweep gate (mandatory):** never roll this pattern across multiple generators until ONE pilot has been re-generated 2–3× **at runtime** and the numeric spread verified (step 7) with the user seeing before/after. This exact pattern was once swept onto 17+ generators off a type-checked pilot and fully retracted — the concept, not the code, was wrong, and only runtime output revealed it (CLAUDE.md Verification Doctrine).
+
 ## Workflow
 
 1. **Confirm the symptom.** Generate the mode a couple of times (or read a multi-instance session) and show the user the clustered numerics — especially the **answers**. No clustering → don't add it.
@@ -98,7 +100,7 @@ Each pool exposes `pool.toPromptSection(opts)` → the prompt block to inject (i
 6. **Keep the pool tier-independent.** If the primitive has support tiers, the tier changes problem *structure*; the pool range/set stays the same. (Two systems, two axes.)
 
 7. **Verify:**
-   - Project-local tsc, not bare `npx tsc` ([[tsc-verification-integrity]]): `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — zero new errors vs. baseline (~1444).
+   - Project-local tsc, not bare `npx tsc` ([[tsc-verification-integrity]]): `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — zero new errors vs. the current baseline (don't trust hardcoded counts; measure before editing).
    - Re-run the generator 2–3× and assert the numerics (especially **answers**) now spread — report distinct-count before/after.
    - For a **target-number** primitive, also run the `/eval-test` scope-conflict case (a "to 5"/"to 10" topic, or "by 5s" for a discrete target) and confirm **every** pooled value still respects the ceiling / stays in the legal set, and that a topic-named value still wins. This is the "Counting to 10" regression.
 

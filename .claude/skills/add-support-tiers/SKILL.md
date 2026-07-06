@@ -103,6 +103,8 @@ Run `/add-eval-modes` **first** — the primitive needs a generator that resolve
 - **No real levers across the whole modality catalog** (a genuinely single-step task — a bare flashcard) → it can't have meaningful tiers; stop and tell the user. But check #2 first: most "single display" primitives still have an identify/setup step the instruction can scaffold.
 - **Don't use this to scale magnitude by tier** — bigger/smaller numbers is the retired numeric path (already banned by the one hard rule). If a generator still scales magnitude from a theta/band, *remove* it here (Phase 4).
 
+> **Pilot-then-sweep gate (mandatory):** never fan this skill out across multiple primitives (workflow / parallel subagents / batch) until ONE pilot has passed Phase 5 **at runtime** — tiers toggled in the Primitives Tester or `/eval-test`-swept with real generations — and the user has seen the result. A type-checked pilot is not a validated pilot; a sweep multiplies whatever the pilot got wrong (CLAUDE.md Verification Doctrine).
+
 ## Step-by-Step Workflow
 
 ### Phase 1: Discover the support levers (the creative core)

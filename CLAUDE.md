@@ -27,21 +27,27 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 
 ## Development Workflow
 
-This is a TypeScript project. Always ensure edits compile cleanly before considering a task done. Run `npx tsc --noEmit` after significant changes to catch type errors early rather than discovering them after multiple edits.
+### Verification Doctrine
+
+A change is "fixed" or "done" only after the affected flow has been **exercised at runtime** — driven in the running app, an `/eval-test` run, or a probe with real inputs. A type check is never verification of behavior.
+
+- **Type check (necessary, not sufficient):** run exactly `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — project-local binary with an absolute path. Bare `npx tsc --noEmit` from the repo root false-passes without compiling anything. Zero NEW errors vs. the current baseline.
+- **Runtime/UI bugs (rendering, CSS, timing, mic, races):** tsc says nothing about these. Reproduce the failure, fix, then re-drive the exact flow that failed before calling it fixed.
+- **If you cannot exercise the flow yourself,** say so explicitly: report *"should work — needs a browser check on \<flow\>"*, never "fixed and verified". A fix the user has to bounce back with "same issue" was not verified.
+- **Close the channel, not the symptom:** when a fix removes a symptom, hunt the mechanism that produced it (index fallbacks, positional bindings, object-identity effect keys) before declaring done — otherwise it regresses.
+- **Pilot-then-sweep:** never roll a pattern across generators/primitives via workflow until the pilot has been exercised at runtime, not just type-checked.
 
 When editing React components, prefer writing complete replacement files over incremental multi-step edits. Partial edits with missing closing tags or broken JSX structure have caused repeated issues.
 
 ## UI / Styling
 
-This project uses a Lumina design system with glass card styling built on shadcn/ui components.
+Lumina has a UI kit at `my-tutoring-app/src/components/lumina/ui/` (glass aesthetic): `LuminaCard`, `LuminaButton`, `LuminaPanel`, `LuminaAccordion`, `LuminaPrompt`, `LuminaFeedbackCard`, `LuminaAnswerChoice`, `LuminaChallengeCounter`, `LuminaMicListener`, and more — see `ui/index.ts` and design tokens in `ui/tokens.ts`.
 
-**IMPORTANT: Always use shadcn/ui components with Lumina theming for primitives.** Do not create custom div-based UI patterns.
+**IMPORTANT: build primitive UI from the Lumina kit — not raw shadcn, not custom div patterns.** `/migrate-primitive` exists to move older raw-shadcn primitives onto the kit; never author new code that would need migrating.
 
-**Lumina theming pattern:**
-- Cards: `<Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">`
-- Buttons: `<Button variant="ghost" className="bg-white/5 border border-white/20 hover:bg-white/10">`
-- Accordions: Use `<Accordion>` for expandable sections instead of custom state management
-- Text colors: `text-slate-100` (primary), `text-slate-400` (secondary), `text-slate-600` (muted)
+**The kit is the frame only, never the interaction surface.** Headers, cards, buttons, feedback, counters, prompts come from the kit; the core manipulative (canvas, draggable objects, simulation) is bespoke per primitive.
+
+For surfaces the kit doesn't cover, fall back to shadcn/ui with Lumina theming: glass `bg-slate-900/40 border-white/10 backdrop-blur-xl`, text `text-slate-100` (primary) / `text-slate-400` (secondary) / `text-slate-600` (muted).
 
 ## Curriculum Rules
 

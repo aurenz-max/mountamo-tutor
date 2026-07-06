@@ -270,7 +270,7 @@ Prefer kit components and the exported tokens. The raw strings below are what `t
 3. **Evaluable problem primitives** (TrueFalseProblem, MultipleChoiceProblem) — highest debt: migrate the answer FSM + feedback + action buttons onto the eval-loop kit (Pattern 6). Biggest payoff per file.
 4. **Interactive / multi-phase primitives** — migrate the scaffold + eval chrome; leave canvas/SVG/drag untouched.
 
-When migrating in bulk, the state-2 swaps (already-shadcn) are highly parallelizable — good work for parallel subagents, one primitive each.
+When migrating in bulk, the state-2 swaps (already-shadcn) are highly parallelizable — good work for parallel subagents, one primitive each. **Pilot-then-sweep gate:** before fanning out, migrate ONE primitive of that state end-to-end and render it in the tester — a type-checked migration is not a validated one; the sweep replicates whatever the pilot got wrong (CLAUDE.md Verification Doctrine).
 
 ## Success Metrics
 

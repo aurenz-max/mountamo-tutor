@@ -48,6 +48,8 @@ Use this skill when:
 
 Adding scaffolding is a **frontend-only** task. No backend changes needed.
 
+> **Pilot-then-sweep gate (mandatory):** never fan this skill out across multiple primitives (workflow / parallel subagents) until ONE pilot's scaffold has been exercised **at runtime** with the Lumina Tutor Tester — moments fire, no answer-revealing copy — and the user has seen it. A type-checked pilot is not a validated pilot (CLAUDE.md Verification Doctrine).
+
 ## Step-by-Step Workflow
 
 ### Phase 1: Preparation
@@ -206,8 +208,8 @@ Adding scaffolding is a **frontend-only** task. No backend changes needed.
 ### Phase 4: Verification
 
 14. **Run type check**
-    - Execute: `cd my-tutoring-app && npx tsc --noEmit`
-    - Fix any TypeScript errors before proceeding
+    - Execute: `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` (project-local binary, absolute path — bare `npx tsc` false-passes)
+    - Zero NEW errors vs. baseline before proceeding
 
 15. **Report results**
     - Catalog file modified and field added
@@ -287,7 +289,7 @@ Add tutoring to the appropriate domain file:
 - [ ] Added `sendText('[TAG] ...', { silent: true })` at each pedagogical moment
 - [ ] Each `sendText` includes context (answers, attempt count) and brief instructions
 - [ ] Special tags documented in `aiDirectives` if they require non-default AI behavior
-- [ ] TypeScript compiles without errors (`npx tsc --noEmit`)
+- [ ] Project-local `tsc --noEmit` holds baseline (absolute path; never bare `npx tsc`)
 - [ ] Reminded user to test with Lumina Tutor Tester
 
 ## Important Notes

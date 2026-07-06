@@ -90,6 +90,13 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
    `remediationFocus` becomes a typed `GenerationContext` field resolved at the
    registry boundary — the same shape as `intentFocus` in the topic-fidelity
    work, and the shape the GenerationContext harmonization PRD proposes.
+7. **Remediation composes with supportTier; it never becomes a tier.** Support
+   tiers are ordered, ability-driven, and withdraw scaffolds globally.
+   Remediation is unordered, diagnosis-driven, and re-introduces exactly ONE
+   lever — the one that isolates the confused distinction. A hard-tier student
+   with an active misconception gets hard problems WITH the targeted move.
+   Rule: `remediationFocus` may pin individual scaffolding levers the tier
+   would have withdrawn; it never changes tier, β, or eval mode.
 
 ## 4. Architecture — six stations
 
@@ -249,10 +256,37 @@ remediationFocus?: string;
 > misconception or the correct rule in any student-visible text — the content
 > tests it; the tutor and feedback address it.
 
-4. The manifest prompt does **not** consume misconception text in v1. (Possible
+4. **Prefer schema over prose — remediation moves are structural.** The prompt
+   block above is the floor, not the ceiling. Where a primitive has structural
+   levers, the generator translates `remediationFocus` into a schema-constrained
+   move instead of hoping the LLM improvises one: the response schema gains an
+   optional `remediationMove` enum (present only when `remediationFocus` is
+   set), the LLM *picks* the move that matches the misconception, and code
+   *enforces* it — the same LLM-picks-within-code-enforced-enum shape as the
+   regrouping pilot and story-primitive structural tiers.
+
+   **Remediation affordances** = each primitive's per-eval-mode inventory of
+   such moves. Tape-diagram pilot inventory:
+
+   | Eval mode | Affordances |
+   |---|---|
+   | `represent` | `force_gap_segment` (diagram can't be completed without creating a difference segment) |
+   | `solve_part_whole` | — (misconception not expressible; generates normally) |
+   | `solve_comparison` | `require_gap_identification`, `diagnostic_distractor`, `reversed_ask` |
+   | `multi_step` | `explicit_intermediate` (comparison result must be produced before it's used) |
+
+   Affordances are the same lever inventory `/add-support-tiers` withdraws —
+   selected differently (see ruling 7). They're also the structural sibling of
+   the catalog's `tutoring.commonStruggles`: same anticipated failure patterns,
+   but consumed by the generator (what the content DOES) instead of the tutor
+   (what the tutor SAYS). Going forward, `/add-support-tiers` should emit a
+   failure-mode → lever map as a byproduct while its lever analysis is fresh;
+   a later `/add-remediation-affordances` pass (Phase 4 here) wires the enums.
+   Existing tiered primitives are NOT re-touched wholesale — pilot-first.
+5. The manifest prompt does **not** consume misconception text in v1. (Possible
    later: curator sees a boolean "remediation pending" for phase weighting —
    only after the registry path proves out, to avoid re-laundering.)
-5. Tutoring scaffold (where present) MAY receive the misconception so the
+6. Tutoring scaffold (where present) MAY receive the misconception so the
    Gemini Live tutor can address it verbally — this is the one place the
    misconception may be *spoken about*, never shown as text.
 
@@ -305,6 +339,8 @@ producer without its consumer.
 ### Phase 2 — Exposure + consumption
 - S4 field in generation-context; S5 threading (`studentSignals` →
   `remediationFocus`); prompt-inject in the pilot generators (same 3–4 math gens).
+- Tape-diagram additionally pilots the structural form: `remediationMove` enum
+  in its response schema (affordance table in S5), code-enforced.
 - **Verify:** topic-fidelity-style probe — seed a misconception on student 1004,
   run `/eval-test`-pattern generation for the pilot generators, assert the output
   (a) stresses the seeded distinction, (b) includes the diagnostic distractor,
@@ -325,8 +361,43 @@ producer without its consumer.
   product — every `/add-spoken-judge` primitive becomes a tier-A source).
 - Evidence packets + prompt blocks for the next generator cohorts (reuse the
   support-tiers rollout ordering).
+- Executed via the skill suite (§5.1), one family per run, spoken judges first.
+  Amend `/add-support-tiers` to emit a failure-mode → lever map as a byproduct
+  on future runs (capture only — no schema work in that skill).
 - **Verify:** per-cohort Phase 2 probe; Diagnosis Lab scenarios grow with each
   new evidence shape.
+
+### 5.1 The skill suite (how phases 1–4 execute without hand-work)
+
+This is a campaign with the same shape as support tiers / structural
+difficulty: a per-family build pass closed by a per-generator LIVE probe —
+because a context field can be delivered and still dropped from the prompt
+(the `ctx.intent` dead-field lesson; value-origin, never grep).
+
+**`/add-misconception-loop <primitive-family>`** — build skill; raises the
+family to the personalization layer. Creative pass (main agent): author the
+per-eval-mode affordance inventory from the family's scaffolding levers +
+`tutoring.commonStruggles`; map component state → evidence-packet fields.
+Mechanical pass (parallel subagents): `remediationMove` enum in the response
+schema, conditional prompt block, evidence wiring at submit, `misconception`
+field on judge schemas where a judge exists. Ends by invoking the test skill —
+the layer isn't raised until it closes.
+
+**`/misconception-test <primitive-family>`** — verify skill; real Gemini, no
+mocks (`/eval-test` + `/topic-fidelity` DNA). Three probes:
+
+| Probe | Input | Checks | Verdicts | Ship gate |
+|---|---|---|---|---|
+| **D — Distiller honesty** | Golden evidence set: 8–12 scripted packets/family — clear signatures, must-abstain slips, noise, tier-A judge cases | Real flash distill; code checks (one sentence, banned phrases, no answer text) + LLM judge on the four criteria | GENERATIVE / VAGUE / OVERREACH / LEAK | 0 OVERREACH, 0 LEAK; ≥80% GENERATIVE on clear signatures |
+| **G — Generation fidelity** | Canned misconception seeded per eval mode → real generator call with `remediationFocus` | Diagnostic distractor equals the misconception-consistent answer (code-computable for math, e.g. `min(a,b)`); leakage scan of student-visible strings; null run byte-identical to baseline; structural drift guard (IRT lane untouched) | TARGETED / DEAD-FIELD / LEAKY / DRIFTED | All TARGETED per generator × eval mode |
+| **R — Round-trip** | Pulse-agent synthetic student playing a scripted mental model, headless, real pipeline | wrong ×3 → store write; next gen TARGETED; answers distractor → stays active; answers ≥80 → resolved; next gen baseline | CLOSED / NO-CAPTURE / STUCK-ACTIVE / PREMATURE-RESOLVE | CLOSED; runs on every family rollout (permanent regression) |
+
+Phase gates: Phase 0 closes on bench review of the golden set; Phase 1 on
+Probe D; Phase 2 on Probe G; Phase 3 on the first CLOSED Probe R; Phase 4
+families each close on a full `/misconception-test`. The golden evidence set
+is the campaign's compounding asset — every family adds its failure signatures
+and must-abstain cases, and every distiller/prompt change re-runs against all
+of it (diagnosis quality gets a regression baseline like tsc).
 
 ### Explicitly deferred (do not build yet)
 - Misconception taxonomy / structured error codes — free text until the loop
