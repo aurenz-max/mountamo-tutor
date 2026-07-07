@@ -519,6 +519,27 @@ function tutorRevealPolicy(
   }
 }
 
+/**
+ * Parse a per-challenge `targetFact` string ("3 × 4 = 12") into its factors.
+ * This primitive renders a single shared `data.fact`, but each challenge carries
+ * its OWN fact — a fluency drill legitimately varies the fact per challenge. The
+ * challenge's targetFact is the source of truth for what is asked and how the
+ * answer is judged; `data.fact` is the fallback for the exploration modes
+ * (build/connect/…), whose targetFact always equals the shared fact. Product is
+ * recomputed from the factors — a shipped "= p" that disagrees is never trusted.
+ */
+function parseTargetFact(
+  targetFact?: string,
+): { factor1: number; factor2: number; product: number } | null {
+  if (!targetFact) return null;
+  const nums = targetFact.match(/-?\d+/g);
+  if (!nums || nums.length < 2) return null;
+  const factor1 = parseInt(nums[0], 10);
+  const factor2 = parseInt(nums[1], 10);
+  if (!Number.isFinite(factor1) || !Number.isFinite(factor2)) return null;
+  return { factor1, factor2, product: factor1 * factor2 };
+}
+
 const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, className }) => {
   const {
     fact,
@@ -560,6 +581,15 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const [fluencyStart, setFluencyStart] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>(data.activeRepresentation === 'all' ? 'groups' : data.activeRepresentation);
   const currentChallenge = challenges[challengeIndex] ?? null;
+
+  // The fact the CURRENT challenge asks about. Fluency challenges each carry their
+  // own targetFact; the exploration modes fall back to the shared `data.fact`
+  // (their targetFact equals it). This is the single source of truth for the
+  // equation display AND for grading — so the two can never disagree.
+  const activeFact = useMemo(
+    () => parseTargetFact(currentChallenge?.targetFact) ?? fact,
+    [currentChallenge, fact],
+  );
 
   // AI tutoring integration
   const aiPrimitiveData = useMemo(() => ({
@@ -630,11 +660,11 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const getExpectedAnswer = useCallback((): number | null => {
     if (!currentChallenge) return null;
     const { hiddenValue } = currentChallenge;
-    if (hiddenValue === 'product') return fact.product;
-    if (hiddenValue === 'factor1') return fact.factor1;
-    if (hiddenValue === 'factor2') return fact.factor2;
-    return fact.product; // default: product is the answer
-  }, [currentChallenge, fact]);
+    if (hiddenValue === 'product') return activeFact.product;
+    if (hiddenValue === 'factor1') return activeFact.factor1;
+    if (hiddenValue === 'factor2') return activeFact.factor2;
+    return activeFact.product; // default: product is the answer
+  }, [currentChallenge, activeFact]);
 
   const handleSubmitAnswer = useCallback(() => {
     const expected = getExpectedAnswer();
@@ -683,7 +713,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
       // AI: celebrate
       sendText(
-        `[ANSWER_CORRECT] Student answered ${fact.factor1} × ${fact.factor2} = ${userAnswer} correctly ` +
+        `[ANSWER_CORRECT] Student answered ${activeFact.factor1} × ${activeFact.factor2} = ${userAnswer} correctly ` +
         `on attempt ${attemptsCount + 1}. Challenge: "${currentChallenge?.instruction}". ` +
         `Congratulate briefly and introduce the next step.` +
         tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
@@ -699,14 +729,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       // AI: hint
       sendText(
         `[ANSWER_INCORRECT] Student answered "${userAnswer}" but correct is ${expected}. ` +
-        `Fact: ${fact.factor1} × ${fact.factor2} = ${fact.product}. ` +
+        `Fact: ${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}. ` +
         `Challenge: "${currentChallenge?.instruction}". Attempt ${attemptsCount + 1}. ` +
         `Give a brief hint without revealing the answer.` +
         tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
         { silent: true }
       );
     }
-  }, [answer, getExpectedAnswer, currentChallenge, fact, attemptsCount, challengeAttempts, challengeResults, fluencyStart, sendText, supportTier]);
+  }, [answer, getExpectedAnswer, currentChallenge, activeFact, attemptsCount, challengeAttempts, challengeResults, fluencyStart, sendText, supportTier]);
 
   const handleNextChallenge = useCallback(() => {
     if (challengeIndex < challenges.length - 1) {
@@ -953,8 +983,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         {/* Fact Display */}
         <div className="text-center py-2">
           <p className="text-3xl font-bold text-slate-100 font-mono tracking-wider">
-            {flipped ? fact.factor2 : fact.factor1} &times; {flipped ? fact.factor1 : fact.factor2}
-            {showOptions.showProduct && <span> = {fact.product}</span>}
+            {flipped ? activeFact.factor2 : activeFact.factor1} &times; {flipped ? activeFact.factor1 : activeFact.factor2}
+            {showOptions.showProduct && <span> = {activeFact.product}</span>}
           </p>
         </div>
 

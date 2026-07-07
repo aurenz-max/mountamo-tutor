@@ -37,11 +37,19 @@ describe('multiplication-explorer oracle', () => {
     expect(multiplicationExplorerOracle.verify(clean, ctx).violations).toEqual([]);
   });
 
-  it('flags answer-key desync — targetFact fact differs from the shared judged fact (the live build/fluency bug)', () => {
+  it('does NOT flag a fluency drill of distinct facts — each challenge is judged on its own targetFact (post-fix contract)', () => {
+    // Before the 2026-07-07 fix, the component judged every challenge against the
+    // ONE shared fact, so these distinct facts marked correct answers wrong. The
+    // component now grades each challenge on its own targetFact, so this is valid.
     const data = JSON.parse(JSON.stringify(clean));
-    data.challenges[1].targetFact = '2 × 5 = 10'; // asks 2×5=10 but judge accepts only 20
+    data.challenges = [
+      { id: 'f1', type: 'fluency', instruction: 'Quick! 2 × 2?', targetFact: '2 × 2 = 4', hiddenValue: 'product', timeLimit: 6, hint: '', narration: '' },
+      { id: 'f2', type: 'fluency', instruction: 'Quick! 3 × 3?', targetFact: '3 × 3 = 9', hiddenValue: 'product', timeLimit: 6, hint: '', narration: '' },
+      { id: 'f3', type: 'fluency', instruction: 'Quick! 2 × 5?', targetFact: '2 × 5 = 10', hiddenValue: 'product', timeLimit: 6, hint: '', narration: '' },
+      { id: 'f4', type: 'fluency', instruction: 'Quick! 4 × 5?', targetFact: '4 × 5 = 20', hiddenValue: 'product', timeLimit: 6, hint: '', narration: '' },
+    ];
     const v = multiplicationExplorerOracle.verify(data, ctx).violations;
-    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c2'))).toBe(true);
+    expect(v).toEqual([]);
   });
 
   it('flags answer-key desync — shipped fact.product contradicts the factors', () => {
@@ -51,12 +59,11 @@ describe('multiplication-explorer oracle', () => {
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'fact')).toBe(true);
   });
 
-  it('flags answer-key desync — targetFact internally inconsistent (a × b ≠ c)', () => {
+  it('flags schema — targetFact internally inconsistent (a × b ≠ c)', () => {
     const data = JSON.parse(JSON.stringify(clean));
-    // keep it the same fact so the cross-check stays clean; only the RHS is wrong.
     data.challenges[0].targetFact = '4 × 5 = 21';
     const v = multiplicationExplorerOracle.verify(data, ctx).violations;
-    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c1') && /inconsistent/.test(x.detail))).toBe(true);
+    expect(v.some((x) => x.check === 'schema' && x.where.startsWith('c1') && /inconsistent/.test(x.detail))).toBe(true);
   });
 
   it('flags answer-key desync — missing_factor hides the product instead of a factor', () => {

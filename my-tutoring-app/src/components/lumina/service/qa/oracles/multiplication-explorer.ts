@@ -2,70 +2,64 @@ import type { ContentOracle, OracleResult, OracleViolation } from './types';
 import { asRecordArray, parseScopeCeiling } from './helpers';
 
 /**
- * multiplication-explorer oracle — a CALCULATION oracle for a SINGLE-FACT
- * primitive. The whole activity explores ONE fact (`data.fact` = factor1 ×
- * factor2 = product) through many representations; the component judges EVERY
- * challenge's typed answer against that single shared fact.
+ * multiplication-explorer oracle — a CALCULATION oracle. Each challenge carries
+ * its OWN `targetFact` string ("2 × 5 = 10"); a fluency drill legitimately varies
+ * the fact per challenge while the exploration modes (build/connect/…) keep the
+ * one shared `data.fact`.
  *
- * The component (MultiplicationExplorer.tsx:630-643) judges correctness as:
- *   getExpectedAnswer(): hiddenValue==='product' → fact.product
- *                        hiddenValue==='factor1' → fact.factor1
- *                        hiddenValue==='factor2' → fact.factor2
- *                        (null / anything else)  → fact.product   // default
+ * The component (MultiplicationExplorer.tsx, post-fix 2026-07-07) judges each
+ * challenge against its OWN fact:
+ *   activeFact = parseTargetFact(currentChallenge.targetFact) ?? data.fact
+ *   getExpectedAnswer(): hiddenValue==='product' → activeFact.product
+ *                        hiddenValue==='factor1' → activeFact.factor1
+ *                        hiddenValue==='factor2' → activeFact.factor2
+ *                        (null / anything else)  → activeFact.product   // default
  *   isCorrect = parseInt(answer) === getExpectedAnswer()
- * There is NO per-challenge `correctAnswer` field and the per-challenge
- * `targetFact` string is NOT consulted by the judge — the answer is derived
- * purely from the ONE shared `data.fact`.
+ * The equation display renders `activeFact` too, so what's asked and what's judged
+ * can never disagree. `parseTargetFact` recomputes the product from the factors —
+ * a shipped "= p" that disagrees is ignored. `data.fact` is now only the display
+ * source for the shared representations and the fallback when a targetFact can't
+ * be parsed.
  *
- * THE INDEPENDENCE RULE here: each challenge carries its own `targetFact`
- * string (e.g. "2 × 5 = 10") which — with its instruction — is the fact the
- * student is actually asked to work. We re-derive the student's INTENDED answer
- * by PARSING that string (a field the generator never reconciles against
- * `fact`), then compare it to what the component would actually JUDGE (the
- * shared `fact[hiddenValue]`). We never trust `fact.product`; we recompute it
- * from the factors. This catches the live bug seen in build/fluency modes where
- * the generator emits 5 DIFFERENT facts as challenges but the component grades
- * them all against one product — a student who correctly solves "2 × 5 = 10" is
- * marked wrong because the judge only accepts 20.
+ * (History: before the fix, the component judged EVERY challenge against the one
+ * shared `data.fact`, so a fluency session emitting 5 different facts marked
+ * correct answers wrong. This oracle caught it — 20 desyncs across 5 runs. The
+ * fix moved the judge onto the per-challenge targetFact; the check below now
+ * verifies that contract instead of the shared-fact one.)
+ *
+ * THE INDEPENDENCE RULE: parse each challenge's `targetFact` OURSELVES and
+ * recompute the product from the factors — never trust the shipped RHS or
+ * `fact.product`. Then verify the fact the student is asked-and-judged on is
+ * self-consistent, in scope, and that the hidden slot is coherent.
  *
  * Checks:
- *  - answer-key-desync : (a) shipped fact.product must equal factor1 × factor2
- *    (regression guard — the generator reconciles this at line 507); (b) each
- *    challenge's targetFact must be internally consistent (a × b = c); (c) the
- *    intended answer parsed from targetFact+hiddenValue must equal the shared
- *    fact's judged answer for that hiddenValue — the core cross-check; (d) a
- *    missing_factor challenge must hide a FACTOR (factor1/factor2), never the
- *    product, else the judge accepts the product while the prompt asks for a
- *    factor.
- *  - scope             : shared factors + product AND every targetFact's
- *    factors/product within [1, ceiling]; ceiling = scopeMax ?? topic ?? 144.
+ *  - answer-key-desync : (a) missing_factor must hide a FACTOR (factor1/factor2),
+ *    never the product — else the judge accepts the product while the prompt asks
+ *    for a factor; (b) shipped fact.product must equal factor1 × factor2
+ *    (regression guard on the generator's reconciliation at line 507).
+ *  - schema            : targetFact must parse as "a × b = c" and be internally
+ *    consistent (a × b === c). The component recomputes the product from the
+ *    factors, so an inconsistent RHS no longer misgrades — but it is still a
+ *    generator defect (a self-contradictory fact string) worth surfacing.
+ *  - scope             : every targetFact's factors + product AND the shared
+ *    fact within [1, ceiling]; ceiling = scopeMax ?? topic ?? 144.
  *  - answer-leak       : the on-screen product readout (showOptions.showProduct
- *    drives the big fact header + every per-rep "= product") must be OFF
- *    whenever any challenge's asked value IS the product (hiddenValue==='product').
- *    This is the exact code-owned guard the generator enforces (lines 615/672);
- *    re-deriving it independently makes it a regression guard. Narrow by design —
- *    see the deliberate skip below.
+ *    drives the big header + per-rep "= product") must be OFF whenever any
+ *    challenge hides the product — the exact code-owned guard the generator
+ *    enforces (lines 615/672), re-derived here as a regression guard.
  *  - clustering        : no exact-duplicate challenge card (same type +
- *    hiddenValue + targetFact + instruction). The student would see a
- *    byte-identical card twice.
+ *    hiddenValue + targetFact + instruction).
  *
  * Deliberately NOT checked:
- *  - answer-variety ("every answer is N"): this is a SINGLE-FACT primitive — the
- *    component judges nearly every challenge (build/connect/commutative/
- *    distributive/fluency) against the SAME shared product by design, so the
- *    judged answers legitimately cluster on one value. A checkAnswerVariety over
- *    judged answers would false-positive on every valid single-mode session. The
- *    meaningful clustering signal here is the duplicate-card check above.
- *  - broad answer-leak (text scan): the factors appear in instructions by design
+ *  - answer-variety ("every answer is N"): the exploration modes (build/connect/
+ *    commutative/distributive) legitimately drill the ONE shared fact across
+ *    several challenges, so judged answers cluster on one value by design. A
+ *    checkAnswerVariety over judged answers would false-positive on every valid
+ *    single-fact session. The duplicate-card check is the meaningful signal.
+ *  - broad answer-leak (text scan): factors appear in instructions by design
  *    ("Build 2 packs of 5 stickers"), and showProduct legitimately renders the
  *    product for factor-hidden (missing_factor) challenges where the product is
- *    GIVEN. A whole-number text-leak test would false-positive constantly and
- *    route phantom bugs to /eval-fix — worse than an honest gap. Instruction
- *    quality / pedagogy stays with /eval-test.
- *
- * All six challenge types share the one answer contract above, so none are left
- * unchecked numerically. Whether a connect/commutative/distributive challenge
- * actually TEACHES its relationship is qualitative — that stays /eval-test's job.
+ *    GIVEN. A whole-number text-leak test would false-positive constantly.
  */
 
 const VALID_TYPES = new Set(['build', 'connect', 'commutative', 'distributive', 'missing_factor', 'fluency']);
@@ -85,13 +79,6 @@ function parseTargetFact(tf: string): ParsedFact | null {
   const rhsMatch = parts[1].match(/-?\d+/);
   if (factors.length < 2 || !rhsMatch) return null;
   return { factors, rhs: parseInt(rhsMatch[0], 10) };
-}
-
-/** The component's answer selector, parameterised over a (factor1, factor2, product) source. */
-function answerFor(hiddenValue: string, factor1: number, factor2: number, product: number): number {
-  if (hiddenValue === 'factor1') return factor1;
-  if (hiddenValue === 'factor2') return factor2;
-  return product; // 'product' and every non-factor value (incl. null) → product default
 }
 
 export const multiplicationExplorerOracle: ContentOracle = {
@@ -117,7 +104,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
     if (!factOk) {
       violations.push({ check: 'schema', where: 'fact', detail: `fact.factor1/factor2 not integers: ${JSON.stringify(fact)}` });
     } else {
-      // (a) regression guard: shipped product must match the factors.
+      // (b) regression guard: shipped product must match the factors.
       if (fact.product !== sharedProduct) {
         violations.push({
           check: 'answer-key-desync',
@@ -125,7 +112,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
           detail: `shipped fact.product ${JSON.stringify(fact.product)} but ${sharedF1} × ${sharedF2} = ${sharedProduct}`,
         });
       }
-      // scope: the shared fact itself.
+      // scope: the shared fact itself (drives the representations).
       for (const [label, val] of [['factor1', sharedF1], ['factor2', sharedF2], ['product', sharedProduct]] as const) {
         if (!Number.isInteger(val) || val < 1 || val > ceiling) {
           violations.push({
@@ -152,7 +139,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
       violations.push({
         check: 'answer-leak',
         where: 'showOptions.showProduct',
-        detail: `showProduct is true while a challenge hides the product (hiddenValue==='product') — the on-screen "= ${sharedProduct}" readout is the answer`,
+        detail: `showProduct is true while a challenge hides the product (hiddenValue==='product') — the on-screen "= product" readout is the answer`,
       });
     }
 
@@ -176,7 +163,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
         violations.push({ check: 'schema', where, detail: `invalid hiddenValue ${JSON.stringify(c.hiddenValue)} — component silently defaults it to the product` });
       }
 
-      // (d) missing_factor must hide a FACTOR, not the product.
+      // (a) missing_factor must hide a FACTOR, not the product.
       if (type === 'missing_factor' && hiddenValue !== 'factor1' && hiddenValue !== 'factor2') {
         violations.push({
           check: 'answer-key-desync',
@@ -185,7 +172,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
         });
       }
 
-      // ── Parse the challenge's own targetFact and re-derive the INTENDED answer ──
+      // ── Parse the challenge's own targetFact — the fact the student is asked AND judged on ──
       const targetFact = String(c.targetFact ?? '');
       const parsed = parseTargetFact(targetFact);
       if (!parsed) {
@@ -194,32 +181,20 @@ export const multiplicationExplorerOracle: ContentOracle = {
         const [ta, tb] = parsed.factors;
         const tProduct = parsed.factors.reduce((a, b) => a * b, 1); // INDEPENDENT product from the string
 
-        // (b) targetFact internal consistency.
+        // targetFact internal consistency. The component recomputes the product
+        // from the factors, so an inconsistent RHS no longer misgrades — but a
+        // self-contradictory fact string is still a generator defect.
         if (tProduct !== parsed.rhs) {
           violations.push({
-            check: 'answer-key-desync',
+            check: 'schema',
             where,
             detail: `targetFact "${targetFact}" is inconsistent: ${parsed.factors.join(' × ')} = ${tProduct}, not ${parsed.rhs}`,
           });
         }
-        // targetFact scope (the student is presented THIS fact).
+        // scope: the student is presented AND graded on THIS fact.
         for (const [label, val] of [['factor1', ta], ['factor2', tb], ['product', tProduct]] as const) {
           if (val < 1 || val > ceiling) {
             violations.push({ check: 'scope', where, detail: `targetFact ${label} ${val} outside [1, ${ceiling}] (topic "${ctx.topic}")` });
-          }
-        }
-
-        // (c) THE CORE CROSS-CHECK: intended answer (from this challenge's
-        // targetFact) vs the answer the component actually judges (shared fact).
-        if (factOk) {
-          const intended = answerFor(hiddenValue, ta, tb, tProduct);
-          const judged = answerFor(hiddenValue, sharedF1, sharedF2, sharedProduct);
-          if (intended !== judged) {
-            violations.push({
-              check: 'answer-key-desync',
-              where,
-              detail: `challenge asks "${targetFact}" (hiddenValue="${hiddenValue}") → student answers ${intended}, but the component judges against the shared fact ${sharedF1} × ${sharedF2} = ${sharedProduct} → only ${judged} is accepted`,
-            });
           }
         }
       }
