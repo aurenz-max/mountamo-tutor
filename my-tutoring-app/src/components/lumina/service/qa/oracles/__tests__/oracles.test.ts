@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { mathFactFluencyOracle } from '../math-fact-fluency';
 import { tenFrameOracle } from '../ten-frame';
 import { vocabularyExplorerOracle } from '../vocabulary-explorer';
 
@@ -109,6 +110,104 @@ describe('vocabulary-explorer oracle', () => {
     const data = JSON.parse(JSON.stringify(vocabClean));
     data.challenges[1].correctIndex = 9;
     const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
+    expect(v.some((x) => x.check === 'schema')).toBe(true);
+  });
+});
+
+const mffCtx = { componentId: 'math-fact-fluency', evalMode: 'equation-solve', topic: 'Addition facts to 5', gradeLevel: 'kindergarten' };
+
+const mffClean = {
+  maxNumber: 5,
+  challenges: [
+    { id: 'c1', type: 'visual-fact', instruction: 'How many in all?', equation: '1 + 2 = 3', operation: 'addition', operand1: 1, operand2: 2, result: 3, unknownPosition: 'result', correctAnswer: 3, options: [2, 3, 4, 1], visualType: 'dot-array', visualCount: 3 },
+    { id: 'c2', type: 'equation-solve', instruction: 'Solve this one.', equation: '1 + 4 = 5', operation: 'addition', operand1: 1, operand2: 4, result: 5, unknownPosition: 'result', correctAnswer: 5, options: [3, 4, 5, 2] },
+    { id: 'c3', type: 'missing-number', instruction: 'What number plus 1 makes 3?', equation: '2 + 1 = 3', operation: 'addition', operand1: 2, operand2: 1, result: 3, unknownPosition: 'operand1', correctAnswer: 2 },
+    { id: 'c4', type: 'match', instruction: 'Which equation shows these 4 objects?', equation: '2 + 2 = 4', operation: 'addition', operand1: 2, operand2: 2, result: 4, unknownPosition: 'result', correctAnswer: 4, matchDirection: 'visual-to-equation', equationOptions: ['1 + 1 = 2', '2 + 2 = 4', '3 + 2 = 5', '1 + 0 = 1'] },
+  ],
+};
+
+describe('math-fact-fluency oracle', () => {
+  it('passes clean data', () => {
+    expect(mathFactFluencyOracle.verify(mffClean, mffCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key desync — result contradicts the operands', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.challenges[1].result = 6; // 1 + 4 = 5, not 6
+    data.challenges[1].correctAnswer = 6;
+    data.challenges[1].equation = '1 + 4 = 6';
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c2'))).toBe(true);
+  });
+
+  it('flags answer-key desync — correctAnswer wrong for unknownPosition', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.challenges[2].correctAnswer = 1; // operand1 is 2, not 1
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c3'))).toBe(true);
+  });
+
+  it('flags answer-key desync — correct answer missing from options', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.challenges[1].options = [3, 4, 6, 2]; // 5 is gone
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where.startsWith('c2'))).toBe(true);
+  });
+
+  it('flags answer-key desync — ambiguous match (two equationOptions share the result)', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.challenges[3].equationOptions = ['2 + 2 = 4', '1 + 3 = 4', '1 + 1 = 2', '1 + 0 = 1'];
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && /ambiguous/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope violation — an operand exceeds the topic ceiling (the "facts to 5 taught to 10" class)', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.challenges[1] = { id: 'c2', type: 'equation-solve', instruction: 'Solve.', equation: '3 + 6 = 9', operation: 'addition', operand1: 3, operand2: 6, result: 9, unknownPosition: 'result', correctAnswer: 9, options: [8, 9, 10, 7] };
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where.startsWith('c2'))).toBe(true);
+  });
+
+  it('flags scope violation — maxNumber wider than the objective ceiling', () => {
+    const data = JSON.parse(JSON.stringify(mffClean));
+    data.maxNumber = 10; // topic is "to 5"
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'maxNumber')).toBe(true);
+  });
+
+  it('flags clustering — every answer is the same value', () => {
+    const data = {
+      maxNumber: 5,
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `c${i}`, type: 'equation-solve', instruction: 'Solve.', equation: `${i} + ${5 - i} = 5`, operation: 'addition', operand1: i, operand2: 5 - i, result: 5, unknownPosition: 'result', correctAnswer: 5, options: [3, 4, 5, 6] })),
+    };
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags clustering — an exact-duplicate challenge (same fact + type + unknown)', () => {
+    const dup = { id: 'c4', type: 'equation-solve', instruction: 'Solve.', equation: '1 + 4 = 5', operation: 'addition', operand1: 1, operand2: 4, result: 5, unknownPosition: 'result', correctAnswer: 5, options: [3, 4, 5, 2] };
+    const data = { maxNumber: 5, challenges: [...mffClean.challenges, dup] };
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.some((x) => x.check === 'clustering' && /identical/.test(x.detail))).toBe(true);
+  });
+
+  it('does NOT flag the same fact shown as a different type/unknown (legitimate multi-representation)', () => {
+    // 2 + 1 = 3 already appears as missing-number(operand1) in c3; add it as an
+    // equation-solve(result) — same fact, different task. Must stay clean.
+    const data = {
+      maxNumber: 5,
+      challenges: [
+        ...mffClean.challenges,
+        { id: 'c5', type: 'equation-solve', instruction: 'Solve.', equation: '2 + 1 = 3', operation: 'addition', operand1: 2, operand2: 1, result: 3, unknownPosition: 'result', correctAnswer: 3, options: [2, 3, 4, 1] },
+      ],
+    };
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
+    expect(v.filter((x) => x.check === 'clustering')).toEqual([]);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { maxNumber: 5, challenges: [{ id: 'c1', type: 'equation-solve', instruction: 'Solve.', equation: '2 + 3 = 5', operation: 'addition', operand1: 2, operand2: 3, result: 5, unknownPosition: 'result', correctAnswer: 5, options: [4, 5, 6, 3] }] };
+    const v = mathFactFluencyOracle.verify(data, mffCtx).violations;
     expect(v.some((x) => x.check === 'schema')).toBe(true);
   });
 });
