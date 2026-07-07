@@ -59,6 +59,20 @@ Phase 8: Birth certificate     (main agent — lifecycle L0 record + follow-up q
 
 This is the **only creative work**. Read ONE reference component from the same domain for patterns, then design and write the component.
 
+### Design gate — answer these five BEFORE writing code
+
+Five principles distilled from shipped-then-corrected primitives. Write a one-line answer to each; a principle the design can't pass needs an explicit justification surfaced to the user before proceeding. Some primitives ARE legitimate exceptions (a vocabulary card has no simulation) — but the exception must be *chosen*, never defaulted into.
+
+1. **Direct manipulation first** — What does the student TOUCH that is the learning object itself? Sliders and buttons may set parameters; they never replace the core interaction. A "Launch" button is a spectator sport; dragging the rocket upward is an experience. ([[direct-manipulation-first]])
+2. **Living simulation** — If the primitive depicts a system or process, the visual must BE the explanation: the component owns real state/physics that visibly responds to the student, Gemini owns the words. A labeled diagram + MCQ is a worksheet in glass chrome — ask "how would this teach a student how a steam engine works?" ([[living-simulation-pattern]])
+3. **Production over recognition** — Does the student *produce* (build, place, arrange, say, write) rather than only choose among options? Where the skill allows production, recognition-only is the weaker birth. And multi-step reasoning gets built INTO the interaction as explicit steps (PercentBar's `steps[]`), never collapsed into one slider/control. ([[production-modality-roadmap]], [[multistep-over-single-slider]])
+4. **No visible timers on fluency** — If this primitive measures fluency or speed, capture response time silently in metrics; never render a countdown or ticking clock. Visible time pressure changes what's being measured and punishes anxious students. ([[no-timer-on-fact-fluency]])
+5. **No answer-leak by layout** — Can the challenge be solved from the default UI state, placeholder text, labels, option phrasing, or the visual layout alone? Phase 6 audits leaks, but a leak *designed into the layout* costs a rewrite — design it out now. (CLAUDE.md Pedagogy rule #1)
+
+*Spoken-modality primitive?* The tutor doctrine is quiet-by-default — frame once up front, silent per-round, celebrate rarely — and the elicitation copy must never contain the answer word. The full doctrine lives in `/add-spoken-judge` (L5), but the component's copy is born here; don't write chatty per-round tutor lines it will have to delete.
+
+Record the five answers — they go into the Phase 8 birth certificate.
+
 ### 2a. Read a reference component
 
 Pick one from the same domain:
@@ -831,6 +845,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 - Generator fork: <A pool service | B orchestrator>
 - sendText tags wired: [ANSWER_CORRECT], [ANSWER_INCORRECT], [NEXT_ITEM], [ALL_COMPLETE]<, extras>
 - Answer-leak audit: <what was walked, what got gated>
+- Design gate (Phase 2): <five one-liners — manipulation / simulation / production / timer / layout-leak — each "pass: <how>" or "exception: <justification shown to user>">
 - Curriculum home: <MATCH <skill-id> | MISS — <gap/description/scoping> + action taken>
 
 ## Follow-up queue (run in order — each skill is the single source of truth for its layer)

@@ -113,7 +113,6 @@ const termSchema: Schema = {
     relatedWord1: { type: Type.STRING, description: "Second related word" },
     relatedWord2: { type: Type.STRING, description: "Third related word" },
     wordOrigin: { type: Type.STRING, description: "Optional: origin/etymology of the word" },
-    imagePrompt: { type: Type.STRING, description: "Optional: prompt for AI image generation" },
   },
   required: ["id", "word", "partOfSpeech", "definition", "exampleSentence", "relatedWord0", "relatedWord1", "relatedWord2"],
 };
@@ -163,12 +162,18 @@ const vocabularyExplorerSchema: Schema = {
     terms: {
       type: Type.ARRAY,
       items: termSchema,
-      description: "5-8 vocabulary terms with definitions and examples",
+      // Bounded (VE-5 / SP-6): unbounded arrays let flash-lite loop into a
+      // multi-hundred-KB runaway that truncates at MAX_TOKENS → unterminated JSON.
+      minItems: "5",
+      maxItems: "8",
+      description: "EXACTLY 5-8 vocabulary terms with definitions and examples",
     },
     challenges: {
       type: Type.ARRAY,
       items: challengeSchema,
-      description: "3-4 comprehension challenges testing vocabulary knowledge",
+      minItems: "3",
+      maxItems: "4",
+      description: "EXACTLY 3-4 comprehension challenges testing vocabulary knowledge",
     },
   },
   required: ["title", "topic", "introduction", "terms", "challenges"],
@@ -315,7 +320,6 @@ function validateVocabularyExplorerData(raw: any, allowedTypes?: string[]): Voca
         exampleSentence: String(t.exampleSentence || ''),
         relatedWords: relatedWords.length > 0 ? relatedWords : ['related'],
         wordOrigin: t.wordOrigin || undefined,
-        imagePrompt: t.imagePrompt || undefined,
       };
     });
   }
@@ -514,7 +518,6 @@ ${challengeTypeSection}
   - exampleSentence: a sentence using the word naturally in the topic context
   - relatedWord0, relatedWord1, relatedWord2: three related words (synonyms, antonyms, or topic-related)
   - wordOrigin: optional etymology or origin
-  - imagePrompt: optional prompt for AI image generation depicting the concept
 
 ### Challenges (3-4 items)
 - Test vocabulary comprehension — NEVER reveal answers in the question text
@@ -543,32 +546,58 @@ Now generate the Vocabulary Explorer.`;
 
   logEvalModeResolution('VocabularyExplorer', config?.targetEvalMode, evalConstraint);
 
-  try {
+  // VE-5 / SP-6: bounded retry + degrade-to-skeleton. A single unguarded
+  // JSON.parse threw a raw `Unterminated string in JSON` to the app whenever
+  // flash-lite ran long and truncated at MAX_TOKENS. Generators run under
+  // Promise.all in the build pipeline, so a thrown SyntaxError fails the WHOLE
+  // exhibit — we retry once, then degrade rather than throw. The schema now caps
+  // terms/challenges (5-8 / 3-4) and maxOutputTokens backstops any runaway, so a
+  // truncation is now the rare exception, not the load-bearing failure mode.
+  const MAX_ATTEMPTS = 2;
+  let raw: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: activeSchema,
+        // Hard backstop against a multi-hundred-KB runaway. Sized generously for
+        // a full 8-term + 4-challenge payload; a legit generation lands far below.
+        maxOutputTokens: 8192,
       },
     });
 
-    if (!response.text) throw new Error("No content generated for vocabulary-explorer");
-
-    const raw = JSON.parse(response.text);
-    const data = validateVocabularyExplorerData(raw, evalConstraint?.allowedTypes);
-
-    console.log('[VocabularyExplorer] Generated:', {
-      topic,
-      gradeLevel,
-      title: data.title,
-      termsCount: data.terms.length,
-      challengesCount: data.challenges?.length ?? 0,
-    });
-
-    return data;
-  } catch (error) {
-    console.error("[VocabularyExplorer] Generation error:", error);
-    throw error;
+    if (!response.text) {
+      console.warn(`[VocabularyExplorer] Empty response on attempt ${attempt}/${MAX_ATTEMPTS}.`);
+      continue;
+    }
+    try {
+      raw = JSON.parse(response.text);
+      break;
+    } catch (err) {
+      console.warn(
+        `[VocabularyExplorer] JSON parse failed on attempt ${attempt}/${MAX_ATTEMPTS} `
+        + `(${response.text.length} chars; finishReason=${response.candidates?.[0]?.finishReason ?? 'unknown'}). `
+        + `${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
+
+  if (!raw || typeof raw !== 'object') {
+    console.warn('[VocabularyExplorer] All attempts failed — degrading to skeleton (validate pads terms/challenges).');
+    raw = {};
+  }
+
+  const data = validateVocabularyExplorerData(raw, evalConstraint?.allowedTypes);
+
+  console.log('[VocabularyExplorer] Generated:', {
+    topic,
+    gradeLevel,
+    title: data.title,
+    termsCount: data.terms.length,
+    challengesCount: data.challenges?.length ?? 0,
+  });
+
+  return data;
 };

@@ -21,7 +21,7 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 
 **Lifecycle:** primitives are built in layers, not one pass. `/primitive` births at L0 (sound, measurable, single core mode) and ends with a birth certificate + follow-up queue; the add- skills raise it one layer each (`/add-eval-modes` L1 → `/add-tutoring-scaffold` L2 → `/add-support-tiers` L3 → `/add-structural-difficulty` L4 → `/add-sound`, `/add-spoken-judge`, `/add-voice-control` L5), with `/eval-test` closing every layer. Ladder + detection signals: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
 
-**Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify), `/eval-fix` (fix issues).
+**Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify, agent-judged), `/oracle-test` (verify, code-judged content contracts — CI-able), `/eval-fix` (fix issues).
 
 **Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`, `PRIMITIVE_LIFECYCLE.md`
 

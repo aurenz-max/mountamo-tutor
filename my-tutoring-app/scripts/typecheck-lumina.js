@@ -30,15 +30,33 @@ const tscBin = path.join(
   process.platform === 'win32' ? 'tsc.cmd' : 'tsc'
 );
 
-const result = spawnSync(tscBin, ['--noEmit'], {
-  cwd: path.join(__dirname, '..'),
-  encoding: 'utf8',
-  shell: process.platform === 'win32', // .cmd shim needs a shell on Windows
-});
+// Quote the binary: with shell:true an unquoted path containing spaces
+// ("claude web tutor") silently fails to spawn, tsc never runs, and the empty
+// output reads as "0 errors" — a false PASS. Same trap class as bare `npx tsc`.
+const result = spawnSync(
+  process.platform === 'win32' ? `"${tscBin}"` : tscBin,
+  ['--noEmit'],
+  {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+    shell: process.platform === 'win32', // .cmd shim needs a shell on Windows
+    maxBuffer: 64 * 1024 * 1024,
+  }
+);
 
 // tsc prints diagnostics to stdout. Normalise separators so the marker matches
 // on Windows (backslash paths) too.
 const output = `${result.stdout || ''}${result.stderr || ''}`.replace(/\\/g, '/');
+
+// Integrity guard: never report PASS unless tsc demonstrably ran. tsc exits 0
+// (clean) or 2 (diagnostics); a spawn failure exits 1/null with no `error TS`
+// lines — which the location filter below would misread as "0 lumina errors".
+if (result.error || result.status === null || (result.status !== 0 && !/error TS\d+/.test(output))) {
+  console.error('✗ typecheck-lumina: tsc DID NOT RUN — refusing to report a pass.');
+  if (result.error) console.error(String(result.error));
+  console.error(output.slice(0, 2000));
+  process.exit(1);
+}
 
 const luminaErrors = output
   .split(/\r?\n/)

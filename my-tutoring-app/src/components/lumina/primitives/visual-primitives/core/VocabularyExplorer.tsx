@@ -41,7 +41,6 @@ export interface VocabularyExplorerData {
     exampleSentence: string;
     relatedWords: string[];
     wordOrigin?: string;
-    imagePrompt?: string;
   }>;
 
   challenges?: Array<{
