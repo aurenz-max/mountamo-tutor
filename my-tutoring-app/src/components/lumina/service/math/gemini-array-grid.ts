@@ -217,6 +217,26 @@ function canonKey(a: number, b: number): string {
   return a <= b ? `${a}x${b}` : `${b}x${a}`;
 }
 
+/**
+ * Parse a PRODUCT ceiling ("to 20", "within 25", "up to 12") from the lesson
+ * scope. The dimensions are code-owned and `resolveScopeRange` only narrows the
+ * dimension band — it never bounds the PRODUCT, and it doesn't fire topic-only.
+ * But "multiplication to 20" is a product ceiling: a 6×8 array has fine
+ * dimensions yet a product of 48. We scan the topic + objective + intent for the
+ * same `to|within|up to N` bound the oracle checks (service/qa/oracles/helpers
+ * parseScopeCeiling), so the generator and the content check agree. Returns
+ * undefined when no bound is stated → the grade-band dimension ranges stand.
+ */
+function parseProductCeiling(scope: {
+  topic?: string;
+  objectiveText?: string;
+  intent?: string;
+}): number | undefined {
+  const text = [scope.topic, scope.objectiveText, scope.intent].filter(Boolean).join(' ');
+  const m = text.match(/\b(?:to|within|up to)\s+(\d{1,4})\b/i);
+  return m ? parseInt(m[1], 10) : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Per-mode dimension generators
 // ---------------------------------------------------------------------------
@@ -247,6 +267,10 @@ function selectDimensionPairs(
   /** Tier-2 scope cap (from resolveScopeRange). Narrows the per-mode dimension band
    *  to the lesson's scope; absent → the mode's grade-band default stands. */
   cap?: { min: number; max: number },
+  /** Objective PRODUCT ceiling (rows × columns) from parseProductCeiling. A pair
+   *  whose product exceeds it is out of scope ("multiplication to 20" → 5×8=40 is
+   *  past the objective); absent → no product bound. Narrows only. */
+  productMax?: number,
 ): DimensionPair[] {
   let { rowMin, rowMax, colMin, colMax } = dimensionRangeFor(type);
   if (cap) {
@@ -257,6 +281,8 @@ function selectDimensionPairs(
     rowMin = Math.min(Math.max(rowMin, cap.min), rowMax);
     colMin = Math.min(Math.max(colMin, cap.min), colMax);
   }
+  // A pair is admissible if non-trivial, non-square, and within the product ceiling.
+  const withinProduct = (r: number, c: number) => productMax === undefined || r * c <= productMax;
   const pairs: DimensionPair[] = [];
   const seen = new Set<string>();
   const maxAttempts = count * 12;
@@ -268,16 +294,23 @@ function selectDimensionPairs(
     if (rows < 2 || columns < 2) continue;
     // Avoid squares — they don't differentiate "rows" from "columns".
     if (rows === columns) continue;
+    // Honor the objective product ceiling — an over-ceiling array is out of scope.
+    if (!withinProduct(rows, columns)) continue;
     const key = canonKey(rows, columns);
     if (seen.has(key)) continue;
     seen.add(key);
     pairs.push({ rows, columns });
   }
 
-  // Fallback: if dedup killed too many, accept duplicates rather than blocking.
-  while (pairs.length < count) {
+  // Fallback: if dedup killed too many, accept duplicates rather than blocking —
+  // but STILL honor the product ceiling (out-of-scope content is worse than a
+  // repeated card). If the ceiling is so tight nothing admissible remains, we
+  // exit with fewer pairs rather than emit an over-scope array.
+  let guard = count * 24;
+  while (pairs.length < count && guard-- > 0) {
     const rows = randInt(rowMin, Math.min(rowMax, ROW_BUTTON_CAP));
     const columns = randInt(colMin, Math.min(colMax, COL_BUTTON_CAP));
+    if (rows < 2 || columns < 2 || !withinProduct(rows, columns)) continue;
     pairs.push({ rows, columns });
   }
 
@@ -292,8 +325,9 @@ function buildChallenges(
   type: ArrayGridChallengeType,
   count: number,
   cap?: { min: number; max: number },
+  productMax?: number,
 ): ArrayGridChallenge[] {
-  const pairs = selectDimensionPairs(type, count, cap);
+  const pairs = selectDimensionPairs(type, count, cap, productMax);
   return pairs.map((pair, idx) => ({
     id: `array-grid-${idx + 1}`,
     targetRows: pair.rows,
@@ -428,7 +462,15 @@ Return ONLY the wrapper metadata in the response schema.
     console.log(`⊞ Array Grid scope cap → ${scopeCap.min}..${scopeCap.max} (from intent)`);
   }
 
-  const challenges = buildChallenges(challengeType, instanceCount, scopeCap ?? undefined);
+  // Objective PRODUCT ceiling ("multiplication to 20" → 20). Distinct from the
+  // dimension cap above: this bounds rows × columns so an in-dimension array
+  // (6×8, both within the button panel) can't exceed the objective's fact range.
+  const productCeiling = parseProductCeiling(ctx.scope);
+  if (productCeiling !== undefined) {
+    console.log(`⊞ Array Grid product ceiling → ${productCeiling} (from scope)`);
+  }
+
+  const challenges = buildChallenges(challengeType, instanceCount, scopeCap ?? undefined, productCeiling);
 
   const iconType: ArrayGridIconType =
     (config?.iconType as ArrayGridIconType) ||

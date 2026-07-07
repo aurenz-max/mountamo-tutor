@@ -155,6 +155,26 @@ function coinDefTotal(defs: { type: string; count: number }[]): number {
   return defs.reduce((sum, d) => sum + (COIN_VALUES[d.type] ?? 0) * d.count, 0);
 }
 
+/**
+ * Canonical, order-insensitive signature of a challenge — mirrors the oracle's
+ * duplicate-card key. The LLM occasionally emits the same coin set / amount
+ * twice (worse when it drops coins it named in the instruction, collapsing two
+ * intended-distinct cards into one); dedup on this so a byte-identical card
+ * never ships.
+ */
+function challengeSignature(c: CoinCounterChallenge): string {
+  const sig = (defs?: { type: string; count: number }[]) =>
+    (defs ?? []).map((d) => `${d.type}:${d.count}`).sort().join("+");
+  switch (c.type) {
+    case "count": return `count|${sig(c.displayedCoins)}`;
+    case "compare": return `compare|A=${sig(c.groupA)}|B=${sig(c.groupB)}`;
+    case "make-amount": return `make-amount|${c.targetAmount}|${[...(c.availableCoins ?? [])].sort().join("+")}`;
+    case "make-change": return `make-change|${c.paidAmount}-${c.itemCost}`;
+    case "identify": return `identify|${c.targetCoin}|${[...(c.options ?? [])].sort().join("+")}`;
+    default: return JSON.stringify(c);
+  }
+}
+
 function gradeCoinPool(gradeBand: string): CoinType[] {
   if (gradeBand === "K") return ["penny", "nickel", "dime"];
   if (gradeBand === "1") return ["penny", "nickel", "dime", "quarter"];
@@ -481,6 +501,8 @@ For each challenge:
 - Optionally set displayedCoin2Type/Count and displayedCoin3Type/Count for harder challenges.
 - Each count is how many of that coin (e.g., displayedCoin0Type="nickel", displayedCoin0Count=3 means 3 nickels).
 - Start with 2 coin slots and progress to 3-4 for harder challenges.
+- INSTRUCTION RULE (critical): the instruction MUST be generic and MUST NOT name the specific coins or their counts. The coins the student counts are the displayedCoin fields shown on screen — the ONLY source of truth. Write "How much money is shown here?", "Count the coins in the jar.", "Add up these coins.". NEVER write "You have 1 dime and 3 pennies" or otherwise enumerate coins in the instruction: if the words disagree with the displayed coins (e.g. you name pennies you did not put in a displayedCoin slot), the student counts the coins, gets a different total than the words imply, and is marked wrong.
+- Make each challenge's coin set DISTINCT — do not repeat the same combination of coins across challenges.
 ${buildTierSection("count", tier)}
 Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instructions.
 `;
@@ -818,6 +840,20 @@ export const generateCoinCounter = async (
 
   // ── Combine results ──
   let challenges: CoinCounterChallenge[] = results.flat();
+
+  // ── Dedup: drop cards the student would perceive as byte-identical (same coin
+  // set / amount). Mirrors the oracle's duplicate-card check so a dup never ships. ──
+  const seenSig = new Set<string>();
+  const beforeDedup = challenges.length;
+  challenges = challenges.filter((c) => {
+    const s = challengeSignature(c);
+    if (seenSig.has(s)) return false;
+    seenSig.add(s);
+    return true;
+  });
+  if (challenges.length < beforeDedup) {
+    console.log(`[CoinCounter] Deduped ${beforeDedup - challenges.length} duplicate card(s)`);
+  }
 
   // Re-assign IDs sequentially
   challenges = challenges.map((c, i) => ({ ...c, id: `c${i + 1}` }));
