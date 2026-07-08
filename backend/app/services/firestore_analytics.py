@@ -621,26 +621,78 @@ class FirestoreAnalyticsService:
         summary_doc = await self.fs.get_profile_summary(student_id) or {}
         engagement = await self.get_engagement_metrics(student_id, days=days)
         lifecycle = await self._load_lifecycle_map(student_id)
+        planning = await self.fs.get_student_planning_fields(student_id)
+
+        # The student's grade of record — the Snapshot's default filter.
+        student_grade = self.fs.normalize_grade_code(planning.get("grade_level"))
+        if student_grade == "UNKNOWN":
+            student_grade = None
+
+        # Keys that are never real curriculum subjects — write-path defaults
+        # ("General") and unresolved orphans. Dropped from the read model; the
+        # backfill re-attributes their attempts to the true subject.
+        NON_SUBJECTS = {"GENERAL", "UNKNOWN", ""}
 
         total_attempts = int(summary_doc.get("total_attempts", 0))
         sum_score = float(summary_doc.get("sum_score", 0.0))
+
+        # totals.subjects is emitted per (subject, grade): a subject practiced
+        # across grades yields one labeled row per grade. Newer entries carry a
+        # nested `grades` breakdown; legacy entries (pre-grade write) fall back
+        # to a single grade-less row until the backfill populates them.
         subjects = []
         for key, s in sorted((summary_doc.get("subjects") or {}).items()):
-            n = int(s.get("attempts", 0))
-            subjects.append({
-                "key": key,
-                "name": s.get("name") or key,
-                "attempts": n,
-                "avg_score": round(float(s.get("sum_score", 0.0)) / max(n, 1), 2),
-                "last_activity_at": s.get("last_activity_at"),
-            })
+            if key in NON_SUBJECTS:
+                continue
+            name = s.get("name") or key
+            grades_map = s.get("grades") or {}
+            if grades_map:
+                for gcode, g in sorted(grades_map.items()):
+                    if gcode in NON_SUBJECTS:
+                        continue  # orphan attempts under a real subject — drop
+                    gn = int(g.get("attempts", 0))
+                    if gn <= 0:
+                        continue
+                    subjects.append({
+                        "key": key,
+                        "grade": gcode,
+                        "name": name,
+                        "attempts": gn,
+                        "avg_score": round(float(g.get("sum_score", 0.0)) / max(gn, 1), 2),
+                        "last_activity_at": g.get("last_activity_at"),
+                    })
+            else:
+                n = int(s.get("attempts", 0))
+                if n <= 0:
+                    continue
+                subjects.append({
+                    "key": key,
+                    "grade": None,
+                    "name": name,
+                    "attempts": n,
+                    "avg_score": round(float(s.get("sum_score", 0.0)) / max(n, 1), 2),
+                    "last_activity_at": s.get("last_activity_at"),
+                })
 
-        # Skill state: per-subject counts by lifecycle gate and retention state.
-        skill_state: Dict[str, Dict[str, Any]] = {}
-        for d in lifecycle.values():
-            key = self.fs.rollup_subject_key(d.get("subject"))
-            entry = skill_state.setdefault(key, {
-                "key": key, "subskills": 0, "gates": defaultdict(int), "states": defaultdict(int),
+        # Skill state: per (subject, grade) counts by lifecycle gate and
+        # retention state. Grade is resolved from each skill's subskill_id via
+        # the curriculum (lineage-aware); skills that don't resolve to a
+        # published node are dropped, matching the orphan rule for totals.
+        skill_state: Dict[tuple, Dict[str, Any]] = {}
+        for canonical_sid, d in lifecycle.items():
+            loc = await self.fs.resolve_subskill_location(canonical_sid)
+            if loc:
+                subj_key = self.fs.rollup_subject_key(loc["subject"])
+                gcode = self.fs.normalize_grade_code(loc.get("grade"))
+            else:
+                subj_key = self.fs.rollup_subject_key(d.get("subject"))
+                gcode = "UNKNOWN"
+            if subj_key in NON_SUBJECTS or gcode in NON_SUBJECTS:
+                continue
+            k = (subj_key, gcode)
+            entry = skill_state.setdefault(k, {
+                "key": subj_key, "grade": gcode, "subskills": 0,
+                "gates": defaultdict(int), "states": defaultdict(int),
             })
             entry["subskills"] += 1
             gate = int(d.get("current_gate", 0) or 0)
@@ -649,11 +701,12 @@ class FirestoreAnalyticsService:
             entry["states"][state] += 1
         skill_state_out = [
             {**e, "gates": dict(e["gates"]), "states": dict(e["states"])}
-            for e in sorted(skill_state.values(), key=lambda e: e["key"])
+            for e in sorted(skill_state.values(), key=lambda e: (e["key"], e["grade"]))
         ]
 
         result = {
             "student_id": student_id,
+            "student_grade": student_grade,
             "totals": {
                 "total_attempts": total_attempts,
                 "avg_score": round(sum_score / max(total_attempts, 1), 2),

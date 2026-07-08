@@ -264,6 +264,8 @@ export interface EngagementMetricsResponse {
 // Canonical student profile (GET /api/analytics/student/{id}/profile)
 export interface ProfileSubjectTotals {
   key: string;
+  /** Normalized grade code the row belongs to ("K", "1".."12"); null for legacy grade-less rows. */
+  grade: string | null;
   name: string;
   attempts: number;
   avg_score: number;
@@ -272,6 +274,8 @@ export interface ProfileSubjectTotals {
 
 export interface ProfileSkillState {
   key: string;
+  /** Normalized grade code this per-subject skill bucket belongs to. */
+  grade: string | null;
   subskills: number;
   /** Count of subskills at each mastery-lifecycle gate, keyed by gate number as string. */
   gates: Record<string, number>;
@@ -281,6 +285,8 @@ export interface ProfileSkillState {
 
 export interface StudentProfileResponse {
   student_id: number;
+  /** The student's grade of record — the Snapshot's default grade filter. Null if unset. */
+  student_grade: string | null;
   /** Stored Cosmos XP/level/streak — the single source. Null when viewing another student. */
   engagement: {
     total_xp: number;

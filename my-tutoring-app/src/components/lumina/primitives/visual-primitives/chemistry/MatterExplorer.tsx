@@ -369,23 +369,41 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Temperature Slider
   // -------------------------------------------------------------------------
+  // Spoken state-change narration is gated so the tutor illuminates, not nags:
+  //   - settle timer: the range onChange fires on every integer step, so speak
+  //     only once the student stops dragging (~1s), never mid-scrub.
+  //   - witnessed Set (per object): each object's state change narrates once —
+  //     scrubbing back and forth through its transition temp stays silent.
+  // The tutor still tracks live temperature via the silent context-update channel.
+  const stateChangeSpeakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const witnessedStateChangesRef = useRef<Set<string>>(new Set());
+
   const handleTemperatureChange = useCallback((newTemp: number) => {
     setTemperature(newTemp);
     if (!temperatureSliderUsed) setTemperatureSliderUsed(true);
 
-    // Check for state changes in objects
-    objects.forEach(obj => {
-      if (obj.canChangeState && obj.stateChangeTemp != null) {
-        if (Math.abs(newTemp - obj.stateChangeTemp) < 3) {
-          sendText(
-            `[STATE_CHANGE] Temperature near ${newTemp}°C. "${obj.name}" changes state around ${obj.stateChangeTemp}°C. `
-            + `Narrate: "Look! The ${obj.name} is changing! Can you see what's happening?"`,
-            { silent: true }
-          );
-        }
-      }
-    });
+    if (stateChangeSpeakTimerRef.current) clearTimeout(stateChangeSpeakTimerRef.current);
+    stateChangeSpeakTimerRef.current = setTimeout(() => {
+      objects.forEach(obj => {
+        if (!obj.canChangeState || obj.stateChangeTemp == null) return;
+        if (Math.abs(newTemp - obj.stateChangeTemp) >= 3) return;
+        if (witnessedStateChangesRef.current.has(obj.id)) return;
+        witnessedStateChangesRef.current.add(obj.id);
+        sendText(
+          `[STATE_CHANGE] Temperature near ${newTemp}°C. "${obj.name}" changes state around ${obj.stateChangeTemp}°C. `
+          + `Narrate: "Look! The ${obj.name} is changing! Can you see what's happening?"`,
+          { silent: true }
+        );
+      });
+    }, 1000);
   }, [temperatureSliderUsed, objects, sendText]);
+
+  // Clear any pending state-change narration on unmount.
+  useEffect(() => {
+    return () => {
+      if (stateChangeSpeakTimerRef.current) clearTimeout(stateChangeSpeakTimerRef.current);
+    };
+  }, []);
 
   // -------------------------------------------------------------------------
   // Challenge Checking

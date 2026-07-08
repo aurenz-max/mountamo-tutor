@@ -3,8 +3,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { DiagramBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaBadge } from '../../../../../ui';
+import { LuminaActionButton, LuminaButton, LuminaBadge } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import BlockTutorHelp from './BlockTutorHelp';
+
+// Strategy-only scaffold. Diagram content is instance-specific, so the hint
+// teaches an approach (place-what-you-know → eliminate) without pointing at any
+// label's location.
+const LABEL_STRATEGY_HINT =
+  'Place the labels you are most sure of first, then use elimination for the rest. For each one, look closely at the shape, position, and role of the feature and match it to what the label names. You can drag a placed label to a new spot or tap it to remove it before you check.';
 
 // ── Shared types ───────────────────────────────────────────────────
 interface DiagramExploreProps {
@@ -17,12 +24,13 @@ interface DiagramLabelProps {
   index: number;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
+  onAskTutor?: (message: string) => void;
 }
 
 type DiagramBlockProps =
   | DiagramExploreProps
   | DiagramLabelProps
-  | { data: DiagramBlockData; index: number; onAnswer?: (blockId: string, correct: boolean, attempts: number) => void; answered?: boolean };
+  | { data: DiagramBlockData; index: number; onAnswer?: (blockId: string, correct: boolean, attempts: number) => void; answered?: boolean; onAskTutor?: (message: string) => void };
 
 interface LabelPlacement {
   labelId: string;
@@ -254,9 +262,11 @@ const LabelMode: React.FC<{
   data: DiagramBlockData;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
-}> = ({ data, onAnswer, answered: answeredProp }) => {
+  onAskTutor?: (message: string) => void;
+}> = ({ data, onAnswer, answered: answeredProp, onAskTutor }) => {
   const [placements, setPlacements] = useState<LabelPlacement[]>([]);
   const [draggedLabel, setDraggedLabel] = useState<string | null>(null);
+  const [hintShown, setHintShown] = useState(false);
   const [submitted, setSubmitted] = useState(answeredProp ?? false);
   const [feedback, setFeedback] = useState<{
     perLabel: Array<{ labelId: string; correct: boolean; reasoning: string }>;
@@ -309,6 +319,15 @@ const LabelMode: React.FC<{
     if (submitted) return;
     setPlacements((prev) => prev.filter((p) => p.labelId !== labelId));
   };
+
+  // Clear every placement at once — an unambiguous "start over" that beats
+  // removing markers one by one.
+  const handleReset = useCallback(() => {
+    if (submitted) return;
+    SoundManager.tap();
+    setPlacements([]);
+    setDraggedLabel(null);
+  }, [submitted]);
 
   const handleSubmit = useCallback(async () => {
     if (submitted || placements.length !== data.labels.length) return;
@@ -483,14 +502,47 @@ const LabelMode: React.FC<{
           </div>
 
           {!submitted && (
-            <LuminaActionButton
-              action="check"
-              onClick={handleSubmit}
-              disabled={!allPlaced || isEvaluating}
-              className="w-full"
-            >
-              {isEvaluating ? 'Evaluating...' : 'Check Placement'}
-            </LuminaActionButton>
+            <div className="space-y-2">
+              <LuminaActionButton
+                action="check"
+                onClick={handleSubmit}
+                disabled={!allPlaced || isEvaluating}
+                className="w-full"
+              >
+                {isEvaluating ? 'Evaluating...' : 'Check Placement'}
+              </LuminaActionButton>
+              <div className="flex flex-wrap items-center gap-2">
+                {placements.length > 0 && (
+                  <LuminaButton tone="subtle" size="sm" onClick={handleReset} disabled={isEvaluating}>
+                    Reset
+                  </LuminaButton>
+                )}
+                {!hintShown && (
+                  <LuminaButton
+                    tone="subtle"
+                    size="sm"
+                    onClick={() => {
+                      SoundManager.tap();
+                      setHintShown(true);
+                    }}
+                  >
+                    💡 Hint
+                  </LuminaButton>
+                )}
+                <BlockTutorHelp
+                  onAskTutor={onAskTutor}
+                  message={`[STUDENT_HELP_REQUEST] The student is dragging labels onto a diagram (${data.caption || data.altText || 'a labeled diagram'}). The labels to place are: ${data.labels.map((l) => l.text).join(', ')}. Guide them to reason about where each feature belongs — do NOT tell them the exact location of any label.`}
+                />
+              </div>
+              {hintShown && (
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300/70 mb-1">
+                    Hint
+                  </div>
+                  <p className="text-xs text-amber-100/90 leading-relaxed">{LABEL_STRATEGY_HINT}</p>
+                </div>
+              )}
+            </div>
           )}
 
           {feedback && (
@@ -529,6 +581,7 @@ const DiagramBlock: React.FC<DiagramBlockProps> = (props) => {
           data={data}
           onAnswer={'onAnswer' in props && props.onAnswer ? props.onAnswer : () => {}}
           answered={'answered' in props ? props.answered : false}
+          onAskTutor={'onAskTutor' in props ? props.onAskTutor : undefined}
         />
       ) : (
         <ExploreMode data={data} />

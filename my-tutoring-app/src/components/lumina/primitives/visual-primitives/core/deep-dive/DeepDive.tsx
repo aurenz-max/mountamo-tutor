@@ -422,6 +422,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
           />
         );
       case 'timeline':
@@ -433,6 +434,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
           />
         );
       case 'compare-contrast':
@@ -446,6 +448,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
+              onAskTutor={(msg) => sendText(msg)}
             />
           );
         }
@@ -460,6 +463,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
+              onAskTutor={(msg) => sendText(msg)}
             />
           );
         }
@@ -474,6 +478,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
+              onAskTutor={(msg) => sendText(msg)}
             />
           );
         }
@@ -486,6 +491,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
           />
         );
       default:
@@ -496,7 +502,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           </div>
         );
     }
-  }, [handleBlockAnswer, answeredBlockIds]);
+  }, [handleBlockAnswer, answeredBlockIds, sendText]);
 
   // ── Layout renderers ───────────────────────────────────────────
 

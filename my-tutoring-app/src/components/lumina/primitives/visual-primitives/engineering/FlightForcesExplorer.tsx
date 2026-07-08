@@ -866,13 +866,19 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     }
   }, [isConnected, sendText]);
 
+  // Deduped like the AoA handler below: after settling, speak only on a meaningful
+  // (>=10%) move from the last narrated thrust, so sliding back and forth is silent.
   const thrustTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedThrustRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleThrustChange = useCallback((val: number) => {
     SoundManager.tick();
     setThrustPct(val);
     if (thrustTimeoutRef.current) clearTimeout(thrustTimeoutRef.current);
     thrustTimeoutRef.current = setTimeout(() => {
-      if (isConnected) sendText(`[THRUST_CHANGED] Thrust at ${val}%. Watch the force arrows!`, { silent: true });
+      if (isConnected && Math.abs(val - lastNarratedThrustRef.current) >= 10) {
+        lastNarratedThrustRef.current = val;
+        sendText(`[THRUST_CHANGED] Thrust at ${val}%. Watch the force arrows!`, { silent: true });
+      }
     }, 800);
   }, [isConnected, sendText]);
 
@@ -895,15 +901,24 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     }, 900);
   }, [isConnected, sendText, acDef.stallAngle]);
 
+  // Deduped: threshold scales with the aircraft (maxCargo = 30% of empty weight),
+  // so a meaningful cargo change narrates but small back-and-forth nudges stay silent.
   const cargoTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedCargoRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleCargoChange = useCallback((val: number) => {
     setCargoWeight(val);
     if (cargoTimeoutRef.current) clearTimeout(cargoTimeoutRef.current);
     cargoTimeoutRef.current = setTimeout(() => {
-      if (isConnected) sendText(`[CARGO_CHANGED] Cargo weight: ${val}kg. Total weight increased — what needs to change?`, { silent: true });
+      const cargoThreshold = Math.max(10, acDef.emptyWeight * 0.03);
+      if (isConnected && Math.abs(val - lastNarratedCargoRef.current) >= cargoThreshold) {
+        lastNarratedCargoRef.current = val;
+        sendText(`[CARGO_CHANGED] Cargo weight: ${val}kg. Total weight increased — what needs to change?`, { silent: true });
+      }
     }, 800);
-  }, [isConnected, sendText]);
+  }, [isConnected, sendText, acDef.emptyWeight]);
 
+  // Latch so the "grabbed for the first time" narration actually fires only once.
+  const planeGrabSpokenRef = useRef(false);
   const simCallbacks = useMemo<SimCallbacks>(() => ({
     onFlightState: setFlightState,
     onForces: setForces,
@@ -921,7 +936,8 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     onAoaChange: handleAoaChange,
     onGrab: () => {
       setHasGrabbedPlane(true);
-      if (isConnected) {
+      if (isConnected && !planeGrabSpokenRef.current) {
+        planeGrabSpokenRef.current = true;
         sendText(
           `[PLANE_GRABBED] Student just grabbed the plane for the first time. Encourage them to pull the nose up and watch what happens to the particles and the force arrows.`,
           { silent: true },

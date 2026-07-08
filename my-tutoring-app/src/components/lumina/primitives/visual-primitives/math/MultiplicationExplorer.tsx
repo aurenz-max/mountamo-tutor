@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   LuminaCard,
@@ -773,16 +773,23 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     );
   }, [sendText, supportTier, currentChallenge]);
 
+  // Narrate the commutative question once per fact — flipping back and forth on
+  // the same fact shouldn't re-ask it; a new challenge (new fact) re-enables it.
+  const lastFlipNarratedFactRef = useRef<string>('');
   const handleFlip = useCallback(() => {
     SoundManager.toggle(!flipped);
     setFlipped((f) => !f);
     setCommutativeExplored(true);
 
-    sendText(
-      `[COMMUTATIVE_FLIP] Student flipped ${fact.factor1} × ${fact.factor2} to ${fact.factor2} × ${fact.factor1}. ` +
-      `Ask: "Is the total the same? Why?"`,
-      { silent: true }
-    );
+    const factKey = `${fact.factor1}x${fact.factor2}`;
+    if (lastFlipNarratedFactRef.current !== factKey) {
+      lastFlipNarratedFactRef.current = factKey;
+      sendText(
+        `[COMMUTATIVE_FLIP] Student flipped ${fact.factor1} × ${fact.factor2} to ${fact.factor2} × ${fact.factor1}. ` +
+        `Ask: "Is the total the same? Why?"`,
+        { silent: true }
+      );
+    }
   }, [fact, flipped, sendText]);
 
   const handleShowFactFamily = useCallback(() => {

@@ -10,6 +10,7 @@ import {
   type AnswerChoiceState,
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import BlockTutorHelp from './BlockTutorHelp';
 
 interface PerspectivesBlockProps {
   data: PerspectivesBlockData;
@@ -18,6 +19,8 @@ interface PerspectivesBlockProps {
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
+  /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
+  onAskTutor?: (message: string) => void;
 }
 
 const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
@@ -25,6 +28,7 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
   index,
   onAnswer,
   answered: answeredProp,
+  onAskTutor,
 }) => {
   const { perspectives, eventDescription, comprehension, label } = data;
 
@@ -216,11 +220,19 @@ const PerspectivesBlock: React.FC<PerspectivesBlockProps> = ({
               </div>
 
               {!answered && (
-                <LuminaActionButton
-                  action="check"
-                  onClick={handleSubmit}
-                  disabled={selectedIndex === null || !enoughViewed}
-                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <LuminaActionButton
+                    action="check"
+                    onClick={handleSubmit}
+                    disabled={selectedIndex === null || !enoughViewed}
+                  />
+                  {enoughViewed && (
+                    <BlockTutorHelp
+                      onAskTutor={onAskTutor}
+                      message={`[STUDENT_HELP_REQUEST] The student is answering a comprehension question after reading multiple perspectives on: "${eventDescription}". Question: "${comprehension.question}". Options: ${comprehension.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('; ')}. The correct answer is "${comprehension.options[comprehension.correctIndex]}". Guide them to weigh the perspectives — do NOT reveal or name the correct option.`}
+                    />
+                  )}
+                </div>
               )}
 
               {showExplanation && (

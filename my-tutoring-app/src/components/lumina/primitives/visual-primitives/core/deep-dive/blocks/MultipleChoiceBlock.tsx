@@ -5,6 +5,7 @@ import type { MultipleChoiceBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
 import { LuminaAnswerChoice, LuminaActionButton, LuminaFeedbackCard, type AnswerChoiceState } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import BlockTutorHelp from './BlockTutorHelp';
 
 interface MultipleChoiceBlockProps {
   data: MultipleChoiceBlockData;
@@ -13,6 +14,8 @@ interface MultipleChoiceBlockProps {
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   /** Whether the block has already been answered (from parent state) */
   answered?: boolean;
+  /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
+  onAskTutor?: (message: string) => void;
 }
 
 const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
@@ -20,6 +23,7 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
   index,
   onAnswer,
   answered: answeredProp,
+  onAskTutor,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [attempts, setAttempts] = useState(0);
@@ -99,11 +103,17 @@ const MultipleChoiceBlock: React.FC<MultipleChoiceBlockProps> = ({
         </div>
 
         {!answered && (
-          <LuminaActionButton
-            action="check"
-            onClick={handleSubmit}
-            disabled={selectedIndex === null}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <LuminaActionButton
+              action="check"
+              onClick={handleSubmit}
+              disabled={selectedIndex === null}
+            />
+            <BlockTutorHelp
+              onAskTutor={onAskTutor}
+              message={`[STUDENT_HELP_REQUEST] The student is stuck on this multiple-choice question: "${data.question}". Options: ${data.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('; ')}. The correct answer is "${data.options[data.correctIndex]}". Guide them toward the reasoning with a question or hint — do NOT reveal or name the correct option.`}
+            />
+          </div>
         )}
 
         {showExplanation && (

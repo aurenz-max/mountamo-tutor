@@ -13,12 +13,15 @@ import {
   type AnswerChoiceState,
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import BlockTutorHelp from './BlockTutorHelp';
 
 interface MiniSimBlockProps {
   data: MiniSimBlockData;
   index: number;
   onAnswer?: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
+  /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
+  onAskTutor?: (message: string) => void;
 }
 
 const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
@@ -26,6 +29,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   index,
   onAnswer,
   answered: answeredProp,
+  onAskTutor,
 }) => {
   const {
     scenario,
@@ -151,13 +155,19 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
         </div>
 
         {!predictionSubmitted && (
-          <LuminaActionButton
-            action="check"
-            onClick={handlePredictionSubmit}
-            disabled={predictionAnswer === null}
-          >
-            Lock In Prediction
-          </LuminaActionButton>
+          <div className="flex flex-wrap items-center gap-3">
+            <LuminaActionButton
+              action="check"
+              onClick={handlePredictionSubmit}
+              disabled={predictionAnswer === null}
+            >
+              Lock In Prediction
+            </LuminaActionButton>
+            <BlockTutorHelp
+              onAskTutor={onAskTutor}
+              message={`[STUDENT_HELP_REQUEST] The student is predicting the outcome of a simulation. Scenario: "${scenario}". Question: "${prediction.question}". Options: ${prediction.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('; ')}. The correct prediction is "${prediction.options[prediction.correctIndex]}". Guide them to reason about cause and effect — do NOT reveal or name the correct prediction.`}
+            />
+          </div>
         )}
 
         {predictionSubmitted && (

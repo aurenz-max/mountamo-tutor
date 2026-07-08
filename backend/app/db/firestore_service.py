@@ -4,7 +4,7 @@ from google.cloud import firestore
 from google.cloud.firestore import Client
 from google.oauth2 import service_account
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional, Union
 import asyncio
 import logging
@@ -60,6 +60,15 @@ class FirestoreService:
             from ..services.subskill_id_resolver import subskill_id_resolver
             self._resolver = subskill_id_resolver
             self._resolver.set_client(self.client)
+
+            # In-process subskill → {subject, subject_id, grade} location index,
+            # built from every published subject's subskill_index. Lets the
+            # write path stamp the CANONICAL subject + grade on each attempt
+            # rollup instead of trusting the caller's passed subject string
+            # (which is where phantom "General"/"Reading" labels leak in).
+            self._subskill_loc_cache: Dict[str, Dict[str, Any]] = {}
+            self._subskill_loc_refresh: Optional[datetime] = None
+            self._subskill_loc_lock = asyncio.Lock()
 
             logger.info(f"Firestore service initialized for project: {self.project_id}")
 
@@ -301,6 +310,28 @@ class FirestoreService:
         return self._student_doc(student_id).collection('profile').document('summary')
 
     @staticmethod
+    def normalize_grade_code(grade: Optional[str]) -> str:
+        """Canonical short grade code for keying + labeling.
+
+        Curriculum grade fields arrive in many spellings ("Kindergarten", "K",
+        "3rd Grade", "3", "Grade 3"). Collapse them to "K" or "1".."12" so
+        per-grade rollup buckets don't fragment. "UNKNOWN" when unresolvable.
+        """
+        if grade is None or str(grade).strip() == "":
+            return "UNKNOWN"
+        g = str(grade).strip().upper()
+        if g in ("K", "KINDERGARTEN", "GRADE K", "GRADE-K"):
+            return "K"
+        if g in ("PK", "PRE-K", "PREK"):
+            return "PK"
+        m = re.search(r"(\d{1,2})", g)
+        if m:
+            n = int(m.group(1))
+            if 1 <= n <= 12:
+                return str(n)
+        return "UNKNOWN"
+
+    @staticmethod
     def rollup_subject_key(subject: Optional[str]) -> str:
         """Canonical map key for a subject inside rollup docs.
 
@@ -312,6 +343,72 @@ class FirestoreService:
             return "UNKNOWN"
         s = re.sub(r"[\s\-]+", "_", subject.strip().upper())
         return re.sub(r"_G\d+$", "", s) or "UNKNOWN"
+
+    async def _ensure_subskill_loc_cache(self) -> None:
+        """Load/refresh the subskill → {subject, subject_id, grade} index.
+
+        Built once from every published subject's subskill_index (K–12 × a
+        handful of subjects — small). Refreshed on the same 10-minute cadence
+        as the lineage resolver; a load failure keeps the stale cache rather
+        than blanking it, so the write path degrades to the passed subject.
+        """
+        now = datetime.now(timezone.utc)
+        if (
+            self._subskill_loc_refresh is not None
+            and (now - self._subskill_loc_refresh) < timedelta(minutes=10)
+        ):
+            return
+        async with self._subskill_loc_lock:
+            if (
+                self._subskill_loc_refresh is not None
+                and (datetime.now(timezone.utc) - self._subskill_loc_refresh) < timedelta(minutes=10)
+            ):
+                return
+            try:
+                new_cache: Dict[str, Dict[str, Any]] = {}
+                for grade_doc in self.client.collection('curriculum_published').stream():
+                    grade_id = grade_doc.id
+                    for doc in grade_doc.reference.collection('subjects').stream():
+                        data = doc.to_dict() or {}
+                        subject_name = data.get("subject_name", doc.id)
+                        grade = data.get("grade", grade_id)
+                        for ss_id, entry in (data.get("subskill_index") or {}).items():
+                            new_cache[ss_id] = {
+                                "subject": (entry or {}).get("subject") or subject_name,
+                                "subject_id": doc.id,
+                                "grade": (entry or {}).get("grade") or grade,
+                            }
+                self._subskill_loc_cache = new_cache
+                self._subskill_loc_refresh = datetime.now(timezone.utc)
+                if new_cache:
+                    logger.info(f"Subskill location index loaded: {len(new_cache)} subskills")
+            except Exception as e:
+                logger.error(f"Failed to load subskill location index: {e}")
+                if not self._subskill_loc_cache:
+                    self._subskill_loc_refresh = datetime.now(timezone.utc)
+
+    async def resolve_subskill_location(self, subskill_id: str) -> Optional[Dict[str, Any]]:
+        """Resolve a subskill_id to its canonical {subject, subject_id, grade}.
+
+        Routes the id through the lineage resolver first (so deprecated ids land
+        on their successor) before the curriculum lookup. Returns None for a
+        true orphan — an id that resolves to no published subskill — so the
+        caller can flag it instead of inventing a subject.
+        """
+        await self._ensure_subskill_loc_cache()
+        if not subskill_id:
+            return None
+        loc = self._subskill_loc_cache.get(subskill_id)
+        if loc:
+            return loc
+        # Deprecated id? Follow lineage to the canonical successor, then retry.
+        try:
+            canonical = await self._resolver.resolve(subskill_id)
+        except Exception:
+            canonical = subskill_id
+        if canonical and canonical != subskill_id:
+            return self._subskill_loc_cache.get(canonical)
+        return None
 
     async def apply_attempt_rollup(
         self,
@@ -326,26 +423,58 @@ class FirestoreService:
         Uses Firestore Increment/ArrayUnion sentinels so concurrent submissions
         compose without a read-modify-write. Called from save_attempt; only
         the backfill script should ever write these docs any other way.
+
+        The subject the caller passes is UNTRUSTED — several submission paths
+        default it to "General" (or spell it "Reading" vs "Language Arts").
+        We resolve the CANONICAL subject + grade from the curriculum via the
+        subskill_id (lineage-aware) and stamp those; the raw subject is only a
+        fallback for a true orphan, flagged so the read model can drop it.
         """
         ts = timestamp or datetime.now(timezone.utc).isoformat()
         day = ts[:10]
-        subj_key = self.rollup_subject_key(subject)
         score = float(score)
 
+        loc = await self.resolve_subskill_location(subskill_id)
+        if loc:
+            canonical_subject = loc["subject"]
+            grade = loc.get("grade")
+            unresolved = False
+        else:
+            canonical_subject = subject
+            grade = None
+            unresolved = True
+        subj_key = self.rollup_subject_key(canonical_subject)
+        grade_key = self.normalize_grade_code(grade)
+
+        # Per-subject entry carries a nested per-grade breakdown so a subject
+        # practiced across grades (e.g. K review + on-grade work) yields one
+        # labeled row per grade instead of collapsing into a single bar.
+        def _subject_entry(with_subskills: bool) -> Dict[str, Any]:
+            grade_bucket = {
+                "attempts": firestore.Increment(1),
+                "sum_score": firestore.Increment(score),
+                "last_activity_at": ts,
+            }
+            if with_subskills:
+                grade_bucket["subskills"] = firestore.ArrayUnion([subskill_id])
+            return {
+                "name": canonical_subject,
+                "unresolved": unresolved,
+                "attempts": firestore.Increment(1),
+                "sum_score": firestore.Increment(score),
+                "last_activity_at": ts,
+                "grades": {grade_key: grade_bucket},
+            }
+
+        rollup_entry = _subject_entry(with_subskills=True)
+        rollup_entry["subskills"] = firestore.ArrayUnion([subskill_id])
         rollup_update = {
             "date": day,
             "student_id": student_id,
             "attempts": firestore.Increment(1),
             "sum_score": firestore.Increment(score),
             "subskills": firestore.ArrayUnion([subskill_id]),
-            "subjects": {
-                subj_key: {
-                    "name": subject,
-                    "attempts": firestore.Increment(1),
-                    "sum_score": firestore.Increment(score),
-                    "subskills": firestore.ArrayUnion([subskill_id]),
-                }
-            },
+            "subjects": {subj_key: rollup_entry},
             "updated_at": ts,
         }
         self._daily_rollups_subcollection(student_id).document(day).set(rollup_update, merge=True)
@@ -355,16 +484,9 @@ class FirestoreService:
             "total_attempts": firestore.Increment(1),
             "sum_score": firestore.Increment(score),
             "last_activity_at": ts,
-            "last_subject": subject,
+            "last_subject": canonical_subject,
             "last_subskill_id": subskill_id,
-            "subjects": {
-                subj_key: {
-                    "name": subject,
-                    "attempts": firestore.Increment(1),
-                    "sum_score": firestore.Increment(score),
-                    "last_activity_at": ts,
-                }
-            },
+            "subjects": {subj_key: _subject_entry(with_subskills=False)},
             "updated_at": ts,
         }
         self._profile_summary_ref(student_id).set(profile_update, merge=True)

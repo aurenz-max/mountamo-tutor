@@ -1279,14 +1279,21 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     });
   }, [isConnected, zoneDescs, sendText]);
 
+  // Slider narration is debounced AND deduped: after settling, speak only if the
+  // value moved a meaningful amount from what was last narrated. Sliding a control
+  // back and forth (or nudging it near an already-narrated value) stays silent —
+  // the live value still reaches the tutor via the silent context channel. Mission
+  // metrics (adjust count / attempts) still tick on every settle.
   const forceTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedForceRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleForceChange = useCallback((val: number) => {
     setInputForce(val);
     if (forceTimeoutRef.current) clearTimeout(forceTimeoutRef.current);
     forceTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
       setMissionAttempts(a => a + 1);
-      if (isConnected) {
+      if (isConnected && Math.abs(val - lastNarratedForceRef.current) >= 15) {
+        lastNarratedForceRef.current = val;
         sendText(
           `[FORCE_CHANGED] Student set input force to ${val}N. `
           + `Ask them to watch the particles change color and the output force arrow grow.`,
@@ -1297,13 +1304,15 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   }, [isConnected, sendText]);
 
   const pistonTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedSmallDiaRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleSmallDiamChange = useCallback((val: number) => {
     setSmallDiameter(val);
     if (pistonTimeoutRef.current) clearTimeout(pistonTimeoutRef.current);
     pistonTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
       setMissionAttempts(a => a + 1);
-      if (isConnected) {
+      if (isConnected && Math.abs(val - lastNarratedSmallDiaRef.current) >= 1.5) {
+        lastNarratedSmallDiaRef.current = val;
         sendText(
           `[PISTON_SIZE_CHANGED] Student changed small piston diameter to ${val}cm. `
           + `Area ratio is now ${(Math.PI * (largeDiameter / 2) ** 2 / Math.max(Math.PI * (val / 2) ** 2, 0.01)).toFixed(1)}x. `
@@ -1315,13 +1324,15 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
   }, [isConnected, largeDiameter, sendText]);
 
   const largePistonTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedLargeDiaRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleLargeDiamChange = useCallback((val: number) => {
     setLargeDiameter(val);
     if (largePistonTimeoutRef.current) clearTimeout(largePistonTimeoutRef.current);
     largePistonTimeoutRef.current = setTimeout(() => {
       setSliderAdjustCount(c => c + 1);
       setMissionAttempts(a => a + 1);
-      if (isConnected) {
+      if (isConnected && Math.abs(val - lastNarratedLargeDiaRef.current) >= 3) {
+        lastNarratedLargeDiaRef.current = val;
         sendText(
           `[PISTON_SIZE_CHANGED] Student changed large piston diameter to ${val}cm. `
           + `Area ratio is now ${(Math.PI * (val / 2) ** 2 / Math.max(Math.PI * (smallDiameter / 2) ** 2, 0.01)).toFixed(1)}x. `

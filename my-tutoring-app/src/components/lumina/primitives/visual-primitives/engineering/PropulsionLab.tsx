@@ -766,16 +766,21 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
   }, [propulsion, pDef, isConnected, sendText, trackCombo]);
 
   const throttleTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const throttleHighSpokenRef = useRef(false);
   const handleThrottleChange = useCallback((val: number) => {
     setThrottle(val);
     if (throttleTimeoutRef.current) clearTimeout(throttleTimeoutRef.current);
     throttleTimeoutRef.current = setTimeout(() => {
-      if (isConnected && val > 50) {
-        sendText(
-          `[THROTTLE_HIGH] Throttle at ${val}%. Watch the exhaust particles and force arrows!`,
-          { silent: true },
-        );
-      }
+      // Announce entering the high-throttle zone once; reset when they drop back
+      // below 50% so a later climb can re-announce. Prevents re-narration while
+      // the student nudges the throttle around above the threshold.
+      if (val <= 50) { throttleHighSpokenRef.current = false; return; }
+      if (!isConnected || throttleHighSpokenRef.current) return;
+      throttleHighSpokenRef.current = true;
+      sendText(
+        `[THROTTLE_HIGH] Throttle at ${val}%. Watch the exhaust particles and force arrows!`,
+        { silent: true },
+      );
     }, 1000);
   }, [isConnected, sendText]);
 

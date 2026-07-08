@@ -354,7 +354,12 @@ const comparisonBuilderSchema: Schema = {
           numbers: {
             type: Type.ARRAY,
             items: { type: Type.NUMBER },
-            description: "For order challenges: array of numbers to arrange in ascending or descending order"
+            // Bounded (same class as VE-5): an unbounded number array lets
+            // flash-lite loop into a runaway that truncates at MAX_TOKENS →
+            // unterminated JSON. Order tasks use 3-5 values by design.
+            minItems: "3",
+            maxItems: "5",
+            description: "For order challenges: EXACTLY 3-5 numbers to arrange in ascending or descending order"
           },
           direction: {
             type: Type.STRING,
@@ -371,7 +376,9 @@ const comparisonBuilderSchema: Schema = {
         },
         required: ["id", "type", "instruction"]
       },
-      description: "Array of 4-6 progressive challenges"
+      minItems: "3",
+      maxItems: "6",
+      description: "EXACTLY 4-6 progressive challenges"
     },
     gradeBand: {
       type: Type.STRING,
@@ -529,19 +536,47 @@ Return the complete comparison builder configuration.
 
   logEvalModeResolution('ComparisonBuilder', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // Same class as VE-5: an unguarded JSON.parse threw a raw truncation
+  // SyntaxError ("Expected ',' or '}' … at position 65700") whenever flash-lite
+  // ran into a runaway and truncated at MAX_TOKENS. Generators run under
+  // Promise.all in the build pipeline, so a thrown SyntaxError fails the WHOLE
+  // exhibit — retry once, then degrade to the per-mode fallback challenge below.
+  // The schema now bounds challenges (3-6) and order numbers (3-5), and
+  // maxOutputTokens backstops any runaway.
+  const MAX_ATTEMPTS = 2;
+  let data: any = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+        // Hard backstop against a runaway. Sized generously for a full
+        // 6-challenge payload; a legit generation lands far below.
+        maxOutputTokens: 8192,
+      },
+    });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+    if (!result.text) {
+      console.warn(`[ComparisonBuilder] Empty response on attempt ${attempt}/${MAX_ATTEMPTS}.`);
+      continue;
+    }
+    try {
+      data = JSON.parse(result.text);
+      break;
+    } catch (err) {
+      console.warn(
+        `[ComparisonBuilder] JSON parse failed on attempt ${attempt}/${MAX_ATTEMPTS} `
+        + `(${result.text.length} chars; finishReason=${result.candidates?.[0]?.finishReason ?? 'unknown'}). `
+        + `${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
 
-  if (!data) {
-    throw new Error('No valid comparison builder data returned from Gemini API');
+  if (!data || typeof data !== 'object') {
+    console.warn('[ComparisonBuilder] All attempts failed — degrading to skeleton (fallback challenge fills in).');
+    data = { title: 'Comparison Practice', description: 'Compare, order, and reason about numbers.' };
   }
 
   // ── Structural validation ──

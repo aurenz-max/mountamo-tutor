@@ -273,10 +273,9 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       setFeedback('Correct!');
       setFeedbackType('success');
       setSelectedWordId(null);
-      sendText(
-        `[ANSWER_CORRECT] Student correctly sorted "${word.word}" into "${bucketLabel}". Brief encouragement.`,
-        { silent: true },
-      );
+      // No spoken cue on a routine correct sort — the SFX + on-screen "Correct!"
+      // carry it. The tutor speaks at the meaningful beats (challenge advance +
+      // completion); narrating every tile is over-talk (quiet-by-default).
     } else {
       SoundManager.playIncorrect();
       incrementAttempts();
@@ -311,10 +310,8 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       setSelectedTermId(null);
       setFeedback(`"${pair.term}" → "${pair.match}"`);
       setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student matched "${pair.term}" with "${pair.match}". Brief encouragement.`,
-        { silent: true },
-      );
+      // No spoken cue on a routine correct match — SFX + on-screen feedback carry
+      // it; the tutor speaks on advance/completion, not every pairing.
     } else {
       SoundManager.playIncorrect();
       const wrongMatch = currentChallenge.pairs.find(p => p.id === matchId);

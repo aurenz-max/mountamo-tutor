@@ -743,6 +743,8 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
   }, [compareModeActive, sendText]);
 
   // ---- Sim callbacks ----
+  // Latch so the "grabbed for the first time" narration actually fires only once.
+  const airfoilGrabSpokenRef = useRef(false);
   const tunnelCallbacks = useMemo<TunnelCallbacks>(() => ({
     onStall: (isStalling) => {
       if (isStalling && !stallDiscovered) {
@@ -757,10 +759,13 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     onAoaChange: handleAngleChange,
     onGrab: () => {
       setHasGrabbedAirfoil(true);
-      sendText(
-        `[AIRFOIL_GRABBED] Student just grabbed the airfoil for the first time. Encourage them to pull the leading edge up gently and watch the particles above spread apart and speed up.`,
-        { silent: true },
-      );
+      if (!airfoilGrabSpokenRef.current) {
+        airfoilGrabSpokenRef.current = true;
+        sendText(
+          `[AIRFOIL_GRABBED] Student just grabbed the airfoil for the first time. Encourage them to pull the leading edge up gently and watch the particles above spread apart and speed up.`,
+          { silent: true },
+        );
+      }
     },
   }), [handleAngleChange, sendText, stallDiscovered]);
 

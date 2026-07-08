@@ -7,7 +7,7 @@ import type {
   HypothesisVariableRole,
 } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaBadge, LuminaFeedbackCard } from '../../../../../ui';
+import { LuminaActionButton, LuminaButton, LuminaBadge, LuminaFeedbackCard } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 type Zone = 'pool' | 'iv' | 'dv' | 'control';
@@ -17,6 +17,12 @@ interface HypothesisLabBlockProps {
   index: number;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
+  /**
+   * Optional bridge to the DeepDive live tutor. When provided, the "Ask the
+   * tutor" affordance forwards an answer-free help request so the student can
+   * ask questions. Omitted in standalone/preview contexts with no tutor.
+   */
+  onAskTutor?: (message: string) => void;
 }
 
 const ZONE_LABEL: Record<Exclude<Zone, 'pool'>, string> = {
@@ -31,6 +37,14 @@ const ZONE_SUBLABEL: Record<Exclude<Zone, 'pool'>, string> = {
   control: 'one or more',
 };
 
+// Conceptual, answer-free scaffolding. Each tier teaches HOW to distinguish the
+// roles without naming which factor belongs where — the puzzle stays intact.
+const HINT_TIERS: string[] = [
+  'Every experiment changes ONE thing on purpose and watches what happens. The independent variable is the single factor the scientist deliberately changes from one test to the next.',
+  'The dependent variable is what you measure to see the effect — the outcome or number you record each time. The things kept exactly the same in every test (so the comparison stays fair) are held constant.',
+  'Re-read the scenario. Which factor is different across the setups? That one is independent. What do they measure or record each time? That is dependent. What is kept identical every test? Those are held constant — and a detail that never changes the result is not part of the experiment at all.',
+];
+
 function correctZoneFor(role: HypothesisVariableRole): Zone {
   if (role === 'iv') return 'iv';
   if (role === 'dv') return 'dv';
@@ -43,6 +57,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   index,
   onAnswer,
   answered: answeredProp,
+  onAskTutor,
 }) => {
   const { scenario, prompt, variables, explanation, label } = data;
 
@@ -55,6 +70,8 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   const [showExplanation, setShowExplanation] = useState(false);
   const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
   const [wasCorrect, setWasCorrect] = useState(false);
+  // Progressive hint scaffold — number of tiers revealed (0 = none shown yet).
+  const [hintsShown, setHintsShown] = useState(0);
 
   const ivOccupant = useMemo(
     () => Object.entries(positions).find(([, z]) => z === 'iv')?.[0] ?? null,
@@ -74,6 +91,8 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   );
 
   const canSubmit = ivOccupant !== null && dvOccupant !== null && !answered;
+  // Anything moved out of the pool → a reset is meaningful.
+  const hasPlacements = poolOccupants.length < variables.length;
 
   const handleChipClick = useCallback(
     (id: string) => {
@@ -83,6 +102,13 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       // Clicking a chip already in a zone returns it to the pool.
       if (currentZone !== 'pool') {
         setPositions((p) => ({ ...p, [id]: 'pool' }));
+        // A returned chip is no longer "wrong" — clear its error flag.
+        setWrongIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
         if (selectedId === id) setSelectedId(null);
         return;
       }
@@ -113,6 +139,31 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
     },
     [answered, selectedId],
   );
+
+  // Clear every placement back to the pool. Available any time before the answer
+  // is locked — gives students an unambiguous "start over" instead of tapping
+  // each chip back one by one.
+  const handleReset = useCallback(() => {
+    if (answered) return;
+    SoundManager.tap();
+    setPositions(Object.fromEntries(variables.map((v) => [v.id, 'pool' as Zone])));
+    setSelectedId(null);
+    setWrongIds(new Set());
+  }, [answered, variables]);
+
+  const handleHint = useCallback(() => {
+    SoundManager.tap();
+    setHintsShown((n) => Math.min(n + 1, HINT_TIERS.length));
+  }, []);
+
+  const handleAskTutor = useCallback(() => {
+    if (!onAskTutor) return;
+    SoundManager.tap();
+    const placed = variables.length - poolOccupants.length;
+    onAskTutor(
+      `[STUDENT_HELP_REQUEST] In the "Lab Setup" activity the student is sorting ${variables.length} factors into Independent Variable, Dependent Variable, and Held Constant. They have placed ${placed} so far and asked for help. Guide them with questions about what the experimenter deliberately changes, what they measure, and what they keep the same. Do NOT tell them which specific factor goes in which zone.`,
+    );
+  }, [onAskTutor, variables.length, poolOccupants.length]);
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
@@ -199,7 +250,12 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       <button
         key={v.id}
         type="button"
-        onClick={() => handleChipClick(v.id)}
+        onClick={(e) => {
+          // Chips live inside a clickable zone — stop the tap from bubbling to
+          // the zone so returning a placed chip never also re-triggers placement.
+          e.stopPropagation();
+          handleChipClick(v.id);
+        }}
         disabled={answered}
         className={chipClasses}
       >
@@ -228,12 +284,24 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       zoneClasses += 'bg-slate-950/40 border-white/10 ';
     }
 
+    // A plain <div> (not a <button>) so the interactive chips it contains are
+    // not nested inside a button — nested buttons are invalid HTML and made
+    // tapping a placed chip to return it unreliable.
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={isClickable ? 0 : -1}
+        aria-disabled={!isClickable}
+        aria-label={`Place selected factor in ${ZONE_LABEL[zone]}`}
         onClick={() => handleZoneClick(zone)}
-        disabled={answered || selectedId === null}
-        className={`${zoneClasses} text-left disabled:cursor-default`}
+        onKeyDown={(e) => {
+          if (!isClickable) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleZoneClick(zone);
+          }
+        }}
+        className={`${zoneClasses} text-left ${isClickable ? '' : 'cursor-default'}`}
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[10px] font-mono uppercase tracking-widest text-teal-300/70">
@@ -256,7 +324,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
             <span className="text-[10px] text-teal-300/70 italic self-center">+ add</span>
           )}
         </div>
-      </button>
+      </div>
     );
   };
 
@@ -302,9 +370,43 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
           {renderZone('control', controlOccupants)}
         </div>
 
+        {/* Tutoring scaffold — progressive conceptual hints, answer-free.
+            Available before the answer is locked so students can get unstuck. */}
+        {!answered && (
+          <div className="space-y-2">
+            {hintsShown > 0 && (
+              <div className="space-y-2">
+                {HINT_TIERS.slice(0, hintsShown).map((hint, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-4 py-3"
+                  >
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300/70 mb-1">
+                      Hint {i + 1}
+                    </div>
+                    <p className="text-sm text-amber-100/90 leading-relaxed">{hint}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {hintsShown < HINT_TIERS.length && (
+                <LuminaButton tone="subtle" size="sm" onClick={handleHint}>
+                  {hintsShown === 0 ? '💡 Stuck? Get a hint' : 'Another hint'}
+                </LuminaButton>
+              )}
+              {onAskTutor && (
+                <LuminaButton tone="subtle" size="sm" onClick={handleAskTutor}>
+                  Ask the tutor
+                </LuminaButton>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Submit */}
         {!answered && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <LuminaActionButton
               action="check"
               onClick={handleSubmit}
@@ -312,6 +414,11 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
             >
               Check My Design
             </LuminaActionButton>
+            {hasPlacements && (
+              <LuminaButton tone="subtle" size="sm" onClick={handleReset}>
+                Reset
+              </LuminaButton>
+            )}
             {!canSubmit && (
               <span className="text-xs text-slate-500 italic">
                 Place an Independent and Dependent Variable to check.

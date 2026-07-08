@@ -627,7 +627,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     parallelAllowed,
   }), [projectType, gradeLevel, tasks.length, targetWeeks, criticalPath.length, parallelAllowed]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'construction-sequence-planner',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -938,15 +938,19 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
   // ---- Task map for lookups ----
   const taskMap = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks]);
 
-  // Send intro message
+  // Send intro message — once, after the tutor connects (ref-guarded so React
+  // StrictMode's double-invoke and any remount don't re-fire it).
+  const hasIntroducedRef = useRef(false);
   useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
     sendText(
       `[INTRO] Student is planning a ${projectType} construction project with ${tasks.length} tasks. ` +
       `Target: ${targetWeeks} weeks. Grade ${gradeLevel}. ` +
       `Introduce the project briefly and encourage them to think about what needs to happen first.`,
       { silent: true },
     );
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isConnected, projectType, tasks.length, targetWeeks, gradeLevel, sendText]);
 
   // Feedback banner → kit FeedbackCard status mapping
   const feedbackStatus: FeedbackStatus =

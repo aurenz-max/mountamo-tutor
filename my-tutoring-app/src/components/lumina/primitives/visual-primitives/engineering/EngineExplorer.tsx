@@ -819,14 +819,19 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
     });
   }, [isConnected, zoneDescs, layout.zones.length, sendText]);
 
+  // Debounced AND deduped: after settling, speak only if the value moved a
+  // meaningful amount (>=10%) from what was last narrated, so nudging a slider
+  // back and forth doesn't re-narrate. The live value still reaches the tutor via
+  // the silent context channel; the adjust-count metric ticks on every settle.
   const fuelTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedFuelRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleFuelChange = useCallback((val: number) => {
     setFuel(val);
-    // Debounced AI trigger
     if (fuelTimeoutRef.current) clearTimeout(fuelTimeoutRef.current);
     fuelTimeoutRef.current = setTimeout(() => {
       setFuelAdjustCount(c => c + 1);
-      if (isConnected) {
+      if (isConnected && Math.abs(val - lastNarratedFuelRef.current) >= 10) {
+        lastNarratedFuelRef.current = val;
         sendText(
           `[FUEL_CHANGED] Student set fuel to ${val}%. `
           + `Ask them to watch what happens to the particles and the wheel speed.`,
@@ -837,12 +842,14 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
   }, [isConnected, sendText]);
 
   const loadTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const lastNarratedLoadRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const handleLoadChange = useCallback((val: number) => {
     setLoad(val);
     if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
     loadTimeoutRef.current = setTimeout(() => {
       setLoadAdjustCount(c => c + 1);
-      if (isConnected) {
+      if (isConnected && Math.abs(val - lastNarratedLoadRef.current) >= 10) {
+        lastNarratedLoadRef.current = val;
         sendText(
           `[LOAD_CHANGED] Student set load to ${val}%. `
           + `Ask what happens to the engine when the load increases.`,

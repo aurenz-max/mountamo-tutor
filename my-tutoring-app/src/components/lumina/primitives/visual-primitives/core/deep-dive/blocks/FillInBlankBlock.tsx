@@ -12,12 +12,15 @@ import {
   type FillBlankState,
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
+import BlockTutorHelp from './BlockTutorHelp';
 
 interface FillInBlankBlockProps {
   data: FillInBlankBlockData;
   index: number;
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
+  /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
+  onAskTutor?: (message: string) => void;
 }
 
 const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
@@ -25,6 +28,7 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
   index,
   onAnswer,
   answered: answeredProp,
+  onAskTutor,
 }) => {
   const { sentence, blankIndex, correctAnswer, wordBank, label } = data;
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -137,7 +141,13 @@ const FillInBlankBlock: React.FC<FillInBlankBlockProps> = ({
 
         {/* Submit button */}
         {!answered && (
-          <LuminaActionButton action="check" onClick={handleSubmit} disabled={!selectedWord} />
+          <div className="flex flex-wrap items-center gap-3">
+            <LuminaActionButton action="check" onClick={handleSubmit} disabled={!selectedWord} />
+            <BlockTutorHelp
+              onAskTutor={onAskTutor}
+              message={`[STUDENT_HELP_REQUEST] The student is choosing a word to complete this sentence: "${sentence}". The word bank is: ${wordBank.join(', ')}. The correct word is "${correctAnswer}". Guide them to reason about which word fits — do NOT reveal or name the correct word.`}
+            />
+          </div>
         )}
 
         {/* Result */}

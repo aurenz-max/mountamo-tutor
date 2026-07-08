@@ -9,10 +9,12 @@
  *   - Level / XP / streak from the stored engagement values (the single
  *     source — null when viewing another student, tiles hide gracefully)
  *   - This week's activity from the daily-rollups window
- *   - Per-subject lifetime totals + mastery progress from the skill state
+ *   - Per-(subject, grade) lifetime totals + mastery progress from the skill
+ *     state, behind a grade selector that defaults to the student's grade of
+ *     record and surfaces any off-grade activity on demand.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -20,6 +22,7 @@ import {
   LuminaProgress,
   LuminaSectionLabel,
   LuminaBadge,
+  LuminaChoiceChip,
   type LuminaAccent,
 } from '../ui';
 import { analyticsApi, type StudentProfileResponse } from '@/lib/studentAnalyticsAPI';
@@ -40,13 +43,29 @@ const prettySubject = (key: string, name?: string): string => {
     .join(' ');
 };
 
+/** "K" → "K", "3" → "G3"; null/empty → "" (legacy grade-less row). */
+const gradeLabel = (grade: string | null): string =>
+  !grade ? '' : grade === 'K' || grade === 'PK' ? grade : `G${grade}`;
+
+/** Sort order for grade codes: PK, K, then numeric. */
+const gradeOrder = (grade: string | null): number => {
+  if (!grade) return 999; // legacy grade-less rows sort last
+  if (grade === 'PK') return -1;
+  if (grade === 'K') return 0;
+  const n = parseInt(grade, 10);
+  return Number.isNaN(n) ? 998 : n;
+};
+
 const scoreAccent = (avg: number): LuminaAccent =>
   avg >= 8 ? 'emerald' : avg >= 5 ? 'amber' : 'rose';
+
+const ALL = '__all__';
 
 export default function StudentProfileSummary({ studentId, days = 7 }: StudentProfileSummaryProps) {
   const [profile, setProfile] = useState<StudentProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +87,22 @@ export default function StudentProfileSummary({ studentId, days = 7 }: StudentPr
     };
   }, [studentId, days]);
 
+  // Grades the student actually has subject activity in, sorted.
+  const gradesPresent = useMemo(() => {
+    if (!profile) return [] as string[];
+    const set = new Set<string>();
+    for (const s of profile.totals.subjects) if (s.grade) set.add(s.grade);
+    return Array.from(set).sort((a, b) => gradeOrder(a) - gradeOrder(b));
+  }, [profile]);
+
+  // Default the selector to the student's grade of record once loaded; fall
+  // back to "all grades" when it's unset or has no activity to show.
+  useEffect(() => {
+    if (!profile) return;
+    const g = profile.student_grade;
+    setSelectedGrade(g && gradesPresent.includes(g) ? g : ALL);
+  }, [profile, gradesPresent]);
+
   if (loading) {
     return <div className="h-44 w-full animate-pulse rounded-2xl border border-white/10 bg-slate-900/40" />;
   }
@@ -78,11 +113,15 @@ export default function StudentProfileSummary({ studentId, days = 7 }: StudentPr
 
   const { engagement, totals, recent, skill_state } = profile;
 
-  // Join lifetime totals with skill state by canonical subject key.
-  const stateByKey = new Map(skill_state.subjects.map((s) => [s.key, s]));
-  const subjects = totals.subjects
-    .filter((s) => s.attempts > 0)
-    .sort((a, b) => b.attempts - a.attempts);
+  // Join skill state to totals by (subject, grade).
+  const stateByKey = new Map(skill_state.subjects.map((s) => [`${s.key}::${s.grade ?? ''}`, s]));
+
+  const showSelector = gradesPresent.length > 1;
+  const activeGrade = selectedGrade ?? ALL;
+
+  const rows = totals.subjects
+    .filter((s) => activeGrade === ALL || s.grade === activeGrade)
+    .sort((a, b) => gradeOrder(a.grade) - gradeOrder(b.grade) || b.attempts - a.attempts);
 
   return (
     <LuminaCard topAccent="cyan">
@@ -123,17 +162,43 @@ export default function StudentProfileSummary({ studentId, days = 7 }: StudentPr
           />
         </div>
 
-        {subjects.length > 0 && (
+        {showSelector && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs uppercase tracking-wide text-slate-500">Grade</span>
+            <LuminaChoiceChip
+              accent="cyan"
+              label="All grades"
+              selected={activeGrade === ALL}
+              onClick={() => setSelectedGrade(ALL)}
+              className="px-3 py-1.5 text-xs"
+            />
+            {gradesPresent.map((g) => (
+              <LuminaChoiceChip
+                key={g}
+                accent="cyan"
+                label={gradeLabel(g)}
+                selected={activeGrade === g}
+                onClick={() => setSelectedGrade(g)}
+                className="px-3 py-1.5 text-xs"
+              />
+            ))}
+          </div>
+        )}
+
+        {rows.length > 0 && (
           <div className="space-y-2.5">
-            {subjects.map((s) => {
-              const state = stateByKey.get(s.key);
+            {rows.map((s) => {
+              const state = stateByKey.get(`${s.key}::${s.grade ?? ''}`);
               const touched = state?.subskills ?? 0;
               const mastered = state?.states['mastered'] ?? 0;
               const pct = touched > 0 ? Math.round((mastered / touched) * 100) : 0;
+              const label = prettySubject(s.key, s.name);
+              const gl = gradeLabel(s.grade);
               return (
-                <div key={s.key} className="flex items-center gap-3">
+                <div key={`${s.key}::${s.grade ?? ''}`} className="flex items-center gap-3">
                   <span className="w-36 shrink-0 truncate text-sm text-slate-100">
-                    {prettySubject(s.key, s.name)}
+                    {label}
+                    {gl && <span className="text-slate-500"> · {gl}</span>}
                   </span>
                   <LuminaProgress value={pct} accent={pct >= 50 ? 'emerald' : 'cyan'} className="flex-1" />
                   <span className="w-40 shrink-0 text-right text-xs text-slate-400">

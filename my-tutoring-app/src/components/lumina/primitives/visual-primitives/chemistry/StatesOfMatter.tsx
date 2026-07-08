@@ -483,6 +483,18 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
   const [lastCrossedTransition, setLastCrossedTransition] = useState<'melting' | 'boiling' | null>(null);
   const [previousState, setPreviousState] = useState<MatterState | null>(null);
 
+  // Spoken-narration gating (see the phase-change effect below). The tutor should
+  // illuminate a phase change, not narrate every scrub of the slider:
+  //   - settle timer: only speak once the student has LANDED in the new state and
+  //     held it, so dragging back and forth across a threshold stays silent.
+  //   - witnessed set: speak each (substance, transition) at most once — the first
+  //     melt is illuminating, the fifth is nagging.
+  // The tutor still tracks live temperature/state the whole time via the silent
+  // context-update channel, so quiet ≠ unaware.
+  const speakTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const witnessedTransitionsRef = useRef<Set<string>>(new Set());
+  const prevSubstanceNameRef = useRef(initialSubstance.name);
+
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `states-of-matter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -591,35 +603,72 @@ const StatesOfMatter: React.FC<StatesOfMatterProps> = ({ data, className }) => {
   // Phase change detection
   // -------------------------------------------------------------------------
   useEffect(() => {
+    // Switching substances re-seeds currentState from a new preset (e.g. liquid
+    // water → solid nitrogen). That is not a student-driven phase change, so
+    // resync the baseline silently — never narrate it as "you froze it."
+    if (prevSubstanceNameRef.current !== substance.name) {
+      prevSubstanceNameRef.current = substance.name;
+      if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
+      setPreviousState(currentState);
+      return;
+    }
+
     if (previousState && previousState !== currentState) {
       const transition = (previousState === 'solid' && currentState === 'liquid') ? 'melting'
         : (previousState === 'liquid' && currentState === 'gas') ? 'boiling'
         : null;
 
+      // Immediate, local reward — the tight visual feedback loop + the mastery
+      // metric. Cheap and self-clearing, so it may fire on every genuine crossing.
       if (transition) {
         setLastCrossedTransition(transition);
         setPhaseChangeIdentified(true);
         setTimeout(() => setLastCrossedTransition(null), 2000);
-
-        sendText(
-          `[PHASE_CHANGE] ${substance.name} changed from ${previousState} to ${currentState} at ${temperature}°C! `
-          + `${transition === 'melting' ? 'The particles broke free from their fixed positions and started sliding!' : 'The particles escaped completely and are flying freely!'} `
-          + `Celebrate and explain: "Did you see that? The ${substance.name} just ${transition === 'melting' ? 'melted' : 'boiled'}! The particles ${transition === 'melting' ? 'got enough energy to slide past each other' : 'got so much energy they flew apart'}!"`,
-          { silent: true }
-        );
       }
 
-      const reverseTransition = (previousState === 'liquid' && currentState === 'solid') || (previousState === 'gas' && currentState === 'liquid');
-      if (reverseTransition) {
-        sendText(
-          `[REVERSE_CHANGE] ${substance.name} changed back from ${previousState} to ${currentState} at ${temperature}°C. `
-          + `The student cooled it down! Narrate: "You reversed it! When we take away heat, the particles slow down and ${currentState === 'solid' ? 'lock back into place' : 'come closer together'}."`,
-          { silent: true }
-        );
+      const reverseTransition = (previousState === 'liquid' && currentState === 'solid') ? 'freezing'
+        : (previousState === 'gas' && currentState === 'liquid') ? 'condensing'
+        : null;
+
+      // Spoken narration is settle-gated + once-per-transition. Capture the
+      // crossing values now; if the student keeps scrubbing, this timer is
+      // cleared and replaced before it ever speaks.
+      if (transition || reverseTransition) {
+        if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
+        const fromState = previousState;
+        const toState = currentState;
+        const crossingTemp = temperature;
+        speakTransitionTimerRef.current = setTimeout(() => {
+          const key = `${substance.name}:${fromState}->${toState}`;
+          if (witnessedTransitionsRef.current.has(key)) return;
+          witnessedTransitionsRef.current.add(key);
+
+          if (transition) {
+            sendText(
+              `[PHASE_CHANGE] ${substance.name} changed from ${fromState} to ${toState} at ${crossingTemp}°C! `
+              + `${transition === 'melting' ? 'The particles broke free from their fixed positions and started sliding!' : 'The particles escaped completely and are flying freely!'} `
+              + `Celebrate and explain: "Did you see that? The ${substance.name} just ${transition === 'melting' ? 'melted' : 'boiled'}! The particles ${transition === 'melting' ? 'got enough energy to slide past each other' : 'got so much energy they flew apart'}!"`,
+              { silent: true }
+            );
+          } else if (reverseTransition) {
+            sendText(
+              `[REVERSE_CHANGE] ${substance.name} changed back from ${fromState} to ${toState} at ${crossingTemp}°C. `
+              + `The student cooled it down! Narrate: "You reversed it! When we take away heat, the particles slow down and ${toState === 'solid' ? 'lock back into place' : 'come closer together'}."`,
+              { silent: true }
+            );
+          }
+        }, 1200);
       }
     }
     setPreviousState(currentState);
   }, [currentState, previousState, substance.name, temperature, sendText]);
+
+  // Clear any pending narration timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (speakTransitionTimerRef.current) clearTimeout(speakTransitionTimerRef.current);
+    };
+  }, []);
 
   // -------------------------------------------------------------------------
   // Handlers

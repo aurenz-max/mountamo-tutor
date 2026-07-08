@@ -7,9 +7,17 @@ This script is the replay half of that contract: it recomputes every rollup
 doc and the profile summary deterministically from the attempts subcollection
 and OVERWRITES what's there (set without merge), so it can also repair drift.
 
+Like the live write path, it does NOT trust the subject string on the attempt
+(several submission paths default it to "General" or spell it "Reading" vs
+"Language Arts"). It resolves the CANONICAL subject + grade from the curriculum
+via the attempt's subskill_id (lineage-aware) and stamps a per-grade breakdown;
+the raw subject survives only as a fallback for a true orphan, flagged so the
+read model can drop it.
+
 Run it once per student before trusting the rollup-served endpoints
 (engagement-metrics, score-trends) — students with history but no rollups
-fall back to the legacy scans until then.
+fall back to the legacy scans until then. Re-running also re-attributes any
+legacy "General"/mis-labeled rows to their true subject + grade.
 
 Usage:
     python scripts/backfill_daily_rollups.py --student 1004        # dry run, one student
@@ -18,6 +26,7 @@ Usage:
 """
 
 import argparse
+import asyncio
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -38,8 +47,13 @@ def get_service():
     return FirestoreService()
 
 
-def aggregate_student(fs, student_id: int):
-    """Return (rollups: {day: doc}, profile: doc, attempt_count) from attempts."""
+async def aggregate_student(fs, student_id: int):
+    """Return (rollups: {day: doc}, profile: doc, attempt_count) from attempts.
+
+    Subject + grade are resolved canonically per attempt (lineage → curriculum)
+    to match apply_attempt_rollup, so the rebuilt read model carries the nested
+    per-grade breakdown and drops phantom "General" labels.
+    """
     rollups = {}
     profile = {
         "student_id": student_id,
@@ -50,7 +64,9 @@ def aggregate_student(fs, student_id: int):
         "last_subskill_id": None,
         "subjects": {},
     }
-    subskill_sets = defaultdict(lambda: defaultdict(set))  # day -> scope -> set
+    # day -> scope -> set   and   day -> subj_key -> grade -> set
+    subskill_sets = defaultdict(lambda: defaultdict(set))
+    grade_subskill_sets = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
 
     count = 0
     for doc in fs._attempts_subcollection(student_id).stream():
@@ -59,15 +75,26 @@ def aggregate_student(fs, student_id: int):
         if len(ts) < 10:
             continue
         day = ts[:10]
-        subject = a.get("subject") or ""
+        raw_subject = a.get("subject") or ""
         subskill_id = a.get("subskill_id") or ""
         try:
             score = float(a.get("score", 0))
         except (TypeError, ValueError):
             score = 0.0
-        subj_key = fs.rollup_subject_key(subject)
+
+        loc = await fs.resolve_subskill_location(subskill_id)
+        if loc:
+            canonical_subject = loc["subject"]
+            grade_key = fs.normalize_grade_code(loc.get("grade"))
+            unresolved = False
+        else:
+            canonical_subject = raw_subject
+            grade_key = "UNKNOWN"
+            unresolved = True
+        subj_key = fs.rollup_subject_key(canonical_subject)
         count += 1
 
+        # --- daily rollup ---
         r = rollups.setdefault(day, {
             "date": day,
             "student_id": student_id,
@@ -81,48 +108,73 @@ def aggregate_student(fs, student_id: int):
         r["updated_at"] = max(r["updated_at"], ts)
         subskill_sets[day]["__all__"].add(subskill_id)
         subskill_sets[day][subj_key].add(subskill_id)
+        grade_subskill_sets[day][subj_key][grade_key].add(subskill_id)
 
-        s = r["subjects"].setdefault(subj_key, {"name": subject, "attempts": 0, "sum_score": 0.0})
+        s = r["subjects"].setdefault(
+            subj_key, {"name": canonical_subject, "unresolved": unresolved, "attempts": 0, "sum_score": 0.0, "grades": {}}
+        )
         s["attempts"] += 1
         s["sum_score"] += score
+        s["unresolved"] = s["unresolved"] and unresolved
+        sg = s["grades"].setdefault(grade_key, {"attempts": 0, "sum_score": 0.0, "last_activity_at": ts})
+        sg["attempts"] += 1
+        sg["sum_score"] += score
+        sg["last_activity_at"] = max(sg["last_activity_at"], ts)
 
+        # --- profile summary ---
         profile["total_attempts"] += 1
         profile["sum_score"] += score
         p = profile["subjects"].setdefault(
-            subj_key, {"name": subject, "attempts": 0, "sum_score": 0.0, "last_activity_at": ts}
+            subj_key,
+            {"name": canonical_subject, "unresolved": unresolved, "attempts": 0, "sum_score": 0.0, "last_activity_at": ts, "grades": {}},
         )
         p["attempts"] += 1
         p["sum_score"] += score
+        p["unresolved"] = p["unresolved"] and unresolved
+        pg = p["grades"].setdefault(grade_key, {"attempts": 0, "sum_score": 0.0, "last_activity_at": ts})
+        pg["attempts"] += 1
+        pg["sum_score"] += score
+        if ts > (pg["last_activity_at"] or ""):
+            pg["last_activity_at"] = ts
         if ts > (p["last_activity_at"] or ""):
             p["last_activity_at"] = ts
         if ts > (profile["last_activity_at"] or ""):
             profile["last_activity_at"] = ts
-            profile["last_subject"] = subject
+            profile["last_subject"] = canonical_subject
             profile["last_subskill_id"] = subskill_id
 
     for day, r in rollups.items():
         r["subskills"] = sorted(subskill_sets[day]["__all__"])
         for subj_key, s in r["subjects"].items():
             s["subskills"] = sorted(subskill_sets[day][subj_key])
+            for grade_key, sg in s["grades"].items():
+                sg["subskills"] = sorted(grade_subskill_sets[day][subj_key][grade_key])
 
     profile["updated_at"] = profile["last_activity_at"]
     return rollups, profile, count
 
 
-def backfill_student(fs, student_id: int, apply: bool) -> None:
-    rollups, profile, count = aggregate_student(fs, student_id)
+async def backfill_student(fs, student_id: int, apply: bool) -> None:
+    rollups, profile, count = await aggregate_student(fs, student_id)
     if count == 0:
         print(f"student {student_id}: no attempts, skipping")
         return
 
     days = sorted(rollups.keys())
-    subj_summary = ", ".join(
-        f"{k}={v['attempts']}" for k, v in sorted(profile["subjects"].items())
-    )
+    # Show the per-(subject, grade) shape the read model will serve.
+    parts = []
+    for k, v in sorted(profile["subjects"].items()):
+        grades = ",".join(
+            f"{gk}:{gv['attempts']}" for gk, gv in sorted(v.get("grades", {}).items())
+        )
+        flag = " *unresolved" if v.get("unresolved") else ""
+        parts.append(f"{k}[{grades}]{flag}")
+    subj_summary = "  ".join(parts)
     print(
         f"student {student_id}: {count} attempts -> {len(rollups)} rollup days "
         f"({days[0]}..{days[-1]}), avg score "
-        f"{profile['sum_score'] / max(profile['total_attempts'], 1):.2f}  [{subj_summary}]"
+        f"{profile['sum_score'] / max(profile['total_attempts'], 1):.2f}\n"
+        f"    {subj_summary}"
     )
     if not apply:
         return
@@ -141,16 +193,7 @@ def backfill_student(fs, student_id: int, apply: bool) -> None:
     print(f"  WROTE {len(rollups)} rollup docs + profile summary")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--student", type=int, action="append", help="Student id (repeatable)")
-    parser.add_argument("--all", action="store_true", help="Backfill every student doc")
-    parser.add_argument("--apply", action="store_true", help="Write docs (default: dry run)")
-    args = parser.parse_args()
-
-    if not args.student and not args.all:
-        parser.error("pass --student N (repeatable) or --all")
-
+async def run(args) -> None:
     fs = get_service()
 
     if args.all:
@@ -162,10 +205,23 @@ def main() -> None:
         student_ids = args.student
 
     for sid in student_ids:
-        backfill_student(fs, sid, apply=args.apply)
+        await backfill_student(fs, sid, apply=args.apply)
 
     if not args.apply:
         print("\nDRY RUN - nothing written. Re-run with --apply to write rollups.")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--student", type=int, action="append", help="Student id (repeatable)")
+    parser.add_argument("--all", action="store_true", help="Backfill every student doc")
+    parser.add_argument("--apply", action="store_true", help="Write docs (default: dry run)")
+    args = parser.parse_args()
+
+    if not args.student and not args.all:
+        parser.error("pass --student N (repeatable) or --all")
+
+    asyncio.run(run(args))
 
 
 if __name__ == "__main__":
