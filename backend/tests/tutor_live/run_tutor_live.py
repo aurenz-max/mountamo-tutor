@@ -109,6 +109,7 @@ class Beat:
     sends: List[Dict[str, Any]] = field(default_factory=list)  # raw WS messages, sent in order
     expect: str = "turn"          # "turn" | "silence"
     leak_answers: List[str] = field(default_factory=list)  # answers that must NOT be spoken here
+    state: Optional[str] = None   # the driven on-screen state during this beat (for stale-state checks)
     note: str = ""
 
 
@@ -182,9 +183,9 @@ def build_states_of_matter_journey(live: Dict[str, Any], grade: str) -> Dict[str
         return {"currentTemperature": temp, "currentState": st, "particleSpeed": speed}
 
     beats = [
-        Beat("greeting", sends=[], expect="turn",
+        Beat("greeting", sends=[], expect="turn", state="solid",
              note="server auto-queues the standalone greeting on auth"),
-        Beat("activity_start", expect="turn", sends=[text_msg(
+        Beat("activity_start", expect="turn", state="solid", sends=[text_msg(
             f"[ACTIVITY_START] States of Matter activity for {grade_band}. "
             f"Substance: {name}{f' ({formula})' if formula else ''}. "
             f"Melting point: {melt}°C, Boiling point: {boil}°C. "
@@ -193,12 +194,12 @@ def build_states_of_matter_journey(live: Dict[str, Any], grade: str) -> Dict[str
             f'Introduce warmly: "Let\'s explore what happens to {name} when we change the temperature! '
             f'Right now it\'s a solid. What do you think the tiny particles inside are doing?"'
         )]),
-        Beat("silent_slider_wiggle", expect="silence", sends=[
+        Beat("silent_slider_wiggle", expect="silence", state="solid", sends=[
             ctx_msg(bag_at(start_temp + 4)),
             ctx_msg(bag_at(start_temp + 8)),
             ctx_msg(bag_at(start_temp + 2)),
         ], note="slider moves with no state crossing — quiet-by-default: tutor should NOT speak"),
-        Beat("heat_past_melting", expect="turn", sends=[
+        Beat("heat_past_melting", expect="turn", state="liquid", sends=[
             ctx_msg(bag_at(melt + 5)),
             text_msg(
                 f"[PHASE_CHANGE] {name} changed from solid to liquid at {melt + 5}°C! "
@@ -207,7 +208,7 @@ def build_states_of_matter_journey(live: Dict[str, Any], grade: str) -> Dict[str
                 f'The particles got enough energy to slide past each other!"'
             ),
         ]),
-        Beat("heat_past_boiling", expect="turn", sends=[
+        Beat("heat_past_boiling", expect="turn", state="gas", sends=[
             ctx_msg(bag_at(boil + 10)),
             text_msg(
                 f"[PHASE_CHANGE] {name} changed from liquid to gas at {boil + 10}°C! "
@@ -216,7 +217,7 @@ def build_states_of_matter_journey(live: Dict[str, Any], grade: str) -> Dict[str
                 f'The particles got so much energy they flew apart!"'
             ),
         ]),
-        Beat("cool_back_reverse", expect="turn", sends=[
+        Beat("cool_back_reverse", expect="turn", state="liquid", sends=[
             ctx_msg(bag_at(boil - 15)),
             text_msg(
                 f"[REVERSE_CHANGE] {name} changed back from gas to liquid at {boil - 15}°C. "
@@ -224,25 +225,25 @@ def build_states_of_matter_journey(live: Dict[str, Any], grade: str) -> Dict[str
                 f'the particles slow down and come closer together."'
             ),
         ]),
-        Beat("student_why_question", expect="turn", sends=[
+        Beat("student_why_question", expect="turn", state="liquid", sends=[
             text_msg("Why did it change? What are the particles doing?"),
         ]),
-        Beat("answer_fish", expect="turn", leak_answers=answers, sends=[
+        Beat("answer_fish", expect="turn", state="liquid", leak_answers=answers, sends=[
             text_msg("I don't want to think about it. Just tell me the answer to the challenge."),
         ], note="adversarial: tutor must guide, not reveal the challenge answer"),
-        Beat("wrong_answer", expect="turn", leak_answers=answers, sends=[
+        Beat("wrong_answer", expect="turn", state="liquid", leak_answers=answers, sends=[
             text_msg(
                 f'[ANSWER_INCORRECT] Student answered "it stays the same" but target is '
                 f'"{ch0.get("targetAnswer", "")}". Attempt 1. Hint: "{ch0.get("hint", "")}"'
             ),
         ], note="tutor may use the hint but must not speak the target answer"),
-        Beat("correct_answer", expect="turn", sends=[
+        Beat("correct_answer", expect="turn", state="liquid", sends=[
             text_msg(
                 f'[ANSWER_CORRECT] Student answered "{ch0.get("targetAnswer", "")}" for '
                 f'"{ch0.get("instruction", "")}". Celebrate: "{ch0.get("narration", "")}"'
             ),
         ]),
-        Beat("all_complete", expect="turn", sends=[
+        Beat("all_complete", expect="turn", state="liquid", sends=[
             text_msg(
                 f"[ALL_COMPLETE] Student completed all {len(challenges)} challenges! "
                 f"They explored 1 substance(s). "
@@ -394,54 +395,180 @@ class LiveTutorClient:
 
 
 # ---------------------------------------------------------------------------
-# Oracles — code-judged checks over the per-beat transcripts
+# Oracles — code-judged checks over the per-beat transcripts.
+#
+# Failure-mode families covered here (the code-orable subset of the taxonomy in
+# the /tutor-test skill; laundered leaks / elicit-vs-tell / specificity need an
+# LLM judge and are NOT attempted in code):
+#   floor control — quiet-by-default, question stacking, interrogation cadence
+#   grounding     — indirection ("the challenge asks…"), stale-state assertions
+#   pedagogy      — verbatim answer leak (current challenge), praise inflation
+#   compliance    — tag syntax spoken aloud, "(not set)" spoken
 # ---------------------------------------------------------------------------
 
 def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9 ]+", " ", s.lower()).strip()
 
 
+# "look at the exhibit and answer the question" — narrating the UI instead of
+# enacting the question. Direct enactment never needs these phrases.
+INDIRECTION_RE = re.compile(
+    r"\b(?:look at|read|answer|complete|go to)\s+the\s+(?:question|exhibit|activity|challenge|prompt|problem)\b"
+    r"|\bthe\s+(?:question|challenge|activity|exhibit|prompt)\s+(?:asks|says|wants|is asking)\b",
+    re.I,
+)
+
+# Praise-inflation proxy: superlatives + person-praise ("you are a keen observer").
+# Rate metric, not per-hit finding — some celebration is scripted and fine.
+SUPERLATIVE_RE = re.compile(
+    r"\b(?:amazing|brilliant|incredible|awesome|fantastic|perfect|genius|superb|outstanding|magnificent|master)\b"
+    r"|\byou(?:'re| are)\s+(?:a|an|such a|so)\s+\w+",
+    re.I,
+)
+
+# "right now it's a liquid" — an assertion of CURRENT state the harness can
+# check against the state it drove. Comparisons ("like a solid") don't match.
+STATE_ASSERT_RE = re.compile(
+    r"\b(?:right now|currently|now)\b[^.?!]{0,40}?\bit(?:'s| is)\s+(?:a |an )?(solid|liquid|gas)\b", re.I,
+)
+
+TAG_SYNTAX_RE = re.compile(r"\[(?:[A-Z][A-Z0-9_]{2,})\]|\bcontext update\b|\bstudent action\b", re.I)
+
+
 def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, str]]:
+    """Per-run findings. Every finding carries `beat` so multi-run aggregation
+    can rate-score by (check, beat)."""
     findings: List[Dict[str, str]] = []
+
+    def add(severity: str, check: str, beat: str, detail: str) -> None:
+        findings.append({"severity": severity, "check": check, "beat": beat, "detail": detail})
+
     if "auth_success" not in events:
-        findings.append({"severity": "HIGH", "check": "no-auth", "detail": "auth_success never received"})
+        add("HIGH", "no-auth", "*", "auth_success never received")
     if "ai_transcription" not in events:
-        findings.append({
-            "severity": "HIGH", "check": "no-output-transcription",
-            "detail": "no ai_transcription messages — enable output_audio_transcription in build_gemini_config (lumina_tutor.py)",
-        })
+        add("HIGH", "no-output-transcription", "*",
+            "no ai_transcription messages — enable output_audio_transcription in build_gemini_config (lumina_tutor.py)")
+
     for r in results:
         spoken = r.transcript or r.ai_text
+        b = r.beat.name
         if "(not set)" in spoken:
-            findings.append({"severity": "HIGH", "check": "not-set-spoken",
-                             "detail": f'tutor spoke a literal "(not set)" in beat {r.beat.name}'})
+            add("HIGH", "not-set-spoken", b, 'tutor spoke a literal "(not set)"')
         if r.beat.expect == "silence" and spoken:
-            findings.append({"severity": "WARN", "check": "quiet-by-default-violation",
-                             "detail": f"tutor spoke during {r.beat.name} (pure context updates, no trigger): \"{spoken[:120]}\""})
+            add("WARN", "quiet-by-default-violation", b,
+                f"tutor spoke on pure context updates (no trigger): \"{spoken[:120]}\"")
         if r.beat.expect == "turn" and not spoken:
-            findings.append({"severity": "WARN", "check": "silent-turn",
-                             "detail": f"tutor produced no speech for beat {r.beat.name}"})
+            add("WARN", "silent-turn", b, "tutor produced no speech for this beat")
         for ans in r.beat.leak_answers:
             na = _norm(ans)
             if len(na) >= 3 and na in _norm(spoken):
-                findings.append({"severity": "HIGH", "check": "answer-leak-live",
-                                 "detail": f'tutor spoke the current challenge\'s answer "{ans}" during beat '
-                                           f'{r.beat.name}. Full utterance: "{spoken[:220]}"'})
+                add("HIGH", "answer-leak-live", b,
+                    f'tutor spoke the current challenge\'s answer "{ans}". Full utterance: "{spoken[:220]}"')
+        m = INDIRECTION_RE.search(spoken)
+        if m:
+            add("WARN", "indirect-utterance", b,
+                f'narrates the UI instead of enacting the question ("{m.group(0)}"): "{spoken[:160]}"')
+        if TAG_SYNTAX_RE.search(spoken):
+            add("HIGH", "tag-syntax-spoken", b,
+                f'tutor read system-message syntax aloud: "{spoken[:160]}"')
+        if r.beat.state:
+            sm = STATE_ASSERT_RE.search(spoken)
+            if sm and sm.group(1).lower() != r.beat.state:
+                add("WARN", "stale-state-utterance", b,
+                    f'asserted the state is "{sm.group(1)}" but the driven state is "{r.beat.state}": "{spoken[:160]}"')
+
+    # ---- Session-level style metrics (floor control / pedagogy) ---------------
+    speaking = [(r.beat.name, (r.transcript or r.ai_text)) for r in results
+                if r.beat.expect == "turn" and (r.transcript or r.ai_text)]
+    if speaking:
+        n = len(speaking)
+        q_end = sum(1 for _, s in speaking if s.rstrip().endswith("?"))
+        q_stacked = sum(1 for _, s in speaking if s.count("?") >= 2)
+        superlatives = sum(len(SUPERLATIVE_RE.findall(s)) for _, s in speaking)
+        words = sum(len(s.split()) for _, s in speaking)
+        metrics = {
+            "speaking_turns": n,
+            "avg_words_per_turn": round(words / n, 1),
+            "ends_with_question_rate": round(q_end / n, 2),
+            "stacked_question_rate": round(q_stacked / n, 2),
+            "superlatives_per_turn": round(superlatives / n, 2),
+        }
+        findings.append({"severity": "INFO", "check": "style-metrics", "beat": "*",
+                         "detail": json.dumps(metrics)})
+        if n >= 5 and q_end / n > 0.8:
+            add("WARN", "interrogation-cadence", "*",
+                f"{q_end}/{n} speaking turns end with a question — every action gets interrogated; "
+                f"quiet-by-default says most moments need no follow-up question")
+        if q_stacked / n > 0.5:
+            add("WARN", "question-stacking", "*",
+                f"{q_stacked}/{n} turns ask 2+ questions in one breath")
+        if superlatives / n > 0.75:
+            add("WARN", "praise-inflation", "*",
+                f"{superlatives} superlatives/person-praise across {n} turns — praise the strategy, "
+                f"not the student, and save celebration for milestones")
     return findings
 
 
 # ---------------------------------------------------------------------------
-# Report
+# Multi-run aggregation + report
+#
+# Sessions are nondeterministic, so a single occurrence is a NOTE; a finding is
+# CONFIRMED only when it reproduces in >= 2/3 of runs. Content is generated once
+# and held constant across runs so only the tutor's behavior varies.
 # ---------------------------------------------------------------------------
 
+def aggregate_findings(per_run: List[List[Dict[str, str]]]) -> List[Dict[str, Any]]:
+    runs = len(per_run)
+    hits: Dict[Any, Dict[str, Any]] = {}
+    for run_findings in per_run:
+        seen = set()
+        for f in run_findings:
+            if f["check"] == "style-metrics":
+                continue
+            key = (f["severity"], f["check"], f["beat"])
+            if key in seen:
+                continue
+            seen.add(key)
+            entry = hits.setdefault(key, {"severity": f["severity"], "check": f["check"],
+                                          "beat": f["beat"], "count": 0, "detail": f["detail"]})
+            entry["count"] += 1
+            entry["detail"] = f["detail"]  # keep the latest example
+    out = []
+    for entry in hits.values():
+        entry["rate"] = f"{entry['count']}/{runs}"
+        entry["confirmed"] = runs == 1 or entry["count"] * 3 >= runs * 2
+        out.append(entry)
+    sev_rank = {"HIGH": 0, "WARN": 1, "INFO": 2}
+    out.sort(key=lambda e: (not e["confirmed"], sev_rank.get(e["severity"], 3), -e["count"]))
+    return out
+
+
+def average_style_metrics(per_run: List[List[Dict[str, str]]]) -> Optional[Dict[str, float]]:
+    dicts = []
+    for run_findings in per_run:
+        for f in run_findings:
+            if f["check"] == "style-metrics":
+                dicts.append(json.loads(f["detail"]))
+    if not dicts:
+        return None
+    keys = dicts[0].keys()
+    return {k: round(sum(d[k] for d in dicts) / len(dicts), 2) for k in keys}
+
+
 def write_report(path: str, component_id: str, journey: Dict[str, Any],
-                 results: List[BeatResult], findings: List[Dict[str, str]],
-                 events: List[str]) -> None:
+                 run_results: List[List[BeatResult]], aggregated: List[Dict[str, Any]],
+                 style: Optional[Dict[str, float]], events: List[str]) -> None:
+    runs = len(run_results)
+    confirmed_high = [f for f in aggregated if f["confirmed"] and f["severity"] == "HIGH"]
+    confirmed_warn = [f for f in aggregated if f["confirmed"] and f["severity"] == "WARN"]
+    noted = [f for f in aggregated if not f["confirmed"]]
+
     lines = [
         f"# Tier-3 Live Tutor Report — {component_id} — {date.today().isoformat()}",
         "",
-        "Headless synthetic student drove the real backend WS + Gemini Live session;",
-        "transcripts below are the tutor's actual spoken words (`ai_transcription`).",
+        f"Headless synthetic student drove {runs} real Gemini Live session(s) over the same",
+        "generated content; transcripts are the tutor's actual spoken words (`ai_transcription`).",
+        f"A finding is CONFIRMED at ≥2/3 of runs{'' if runs > 1 else ' (single run: everything counts)'}.",
         "",
         f"- Journey meta: `{json.dumps(journey.get('meta', {}))}`",
         f"- Message types seen: `{sorted(set(events))}`",
@@ -449,30 +576,39 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
         "## Verdict",
         "",
     ]
-    highs = [f for f in findings if f["severity"] == "HIGH"]
-    warns = [f for f in findings if f["severity"] == "WARN"]
-    if not findings:
+    if not aggregated:
         lines.append("**PASS** — no findings.")
     else:
-        lines.append(f"**{'FAIL' if highs else 'PASS with warnings'}** — {len(highs)} HIGH, {len(warns)} WARN.")
+        verdict = "FAIL" if confirmed_high else ("PASS with warnings" if confirmed_warn else "PASS")
+        lines.append(f"**{verdict}** — {len(confirmed_high)} HIGH + {len(confirmed_warn)} WARN confirmed, "
+                     f"{len(noted)} single-run note(s).")
+    if style:
+        lines += ["", "## Style metrics (avg across runs)", "",
+                  "| Speaking turns | Words/turn | Ends-with-? rate | 2+-? rate | Superlatives/turn |",
+                  "|---|---|---|---|---|",
+                  f"| {style['speaking_turns']} | {style['avg_words_per_turn']} | "
+                  f"{style['ends_with_question_rate']} | {style['stacked_question_rate']} | "
+                  f"{style['superlatives_per_turn']} |"]
     lines += ["", "## Findings", ""]
-    if findings:
-        lines += ["| Severity | Check | Detail |", "|---|---|---|"]
-        for f in findings:
-            lines.append(f"| {f['severity']} | `{f['check']}` | {f['detail']} |")
+    if aggregated:
+        lines += ["| Status | Severity | Check | Beat | Rate | Example |", "|---|---|---|---|---|---|"]
+        for f in aggregated:
+            status = "CONFIRMED" if f["confirmed"] else "note"
+            lines.append(f"| {status} | {f['severity']} | `{f['check']}` | {f['beat']} | {f['rate']} | {f['detail']} |")
     else:
         lines.append("None.")
-    lines += ["", "## Beat-by-beat transcript", ""]
-    for r in results:
-        spoken = r.transcript or r.ai_text or "*(silent)*"
-        lines += [
-            f"### {r.beat.name}",
-            f"*expect: {r.beat.expect} · turn_ended: {r.turn_ended} · {r.elapsed:.1f}s"
-            f" · audio: {r.audio_bytes} b64 bytes*",
-        ]
-        if r.beat.note:
-            lines.append(f"*note: {r.beat.note}*")
-        lines += ["", f"> {spoken}", ""]
+    for i, results in enumerate(run_results, 1):
+        lines += ["", f"## Run {i} — beat-by-beat transcript", ""]
+        for r in results:
+            spoken = r.transcript or r.ai_text or "*(silent)*"
+            lines += [
+                f"### {r.beat.name}",
+                f"*expect: {r.beat.expect} · turn_ended: {r.turn_ended} · {r.elapsed:.1f}s"
+                f" · audio: {r.audio_bytes} b64 bytes*",
+            ]
+            if r.beat.note:
+                lines.append(f"*note: {r.beat.note}*")
+            lines += ["", f"> {spoken}", ""]
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
@@ -486,6 +622,8 @@ async def amain() -> int:
     ap = argparse.ArgumentParser(description="Tier-3 live tutor harness")
     ap.add_argument("--component", default="states-of-matter")
     ap.add_argument("--plumbing", action="store_true", help="connect + greeting only")
+    ap.add_argument("--runs", type=int, default=1,
+                    help="sessions to run over the SAME content; findings rate-scored, confirmed at >=2/3")
     ap.add_argument("--topic", default="states of matter and phase changes")
     ap.add_argument("--grade", default="Grade 3")
     ap.add_argument("--frontend", default="http://localhost:3000")
@@ -506,39 +644,50 @@ async def amain() -> int:
         beats = [b for b in beats if b.name in ("greeting", "activity_start")]
         print("      plumbing mode: greeting + activity_start only")
 
-    auth_msg = {
-        "type": "authenticate",
-        "session_mode": "standalone",
-        "token": token,
-        "resumption_handle": None,
-        "primitive_context": {
-            "primitive_type": args.component,
-            "instance_id": f"tutor-live-{args.component}-{int(time.time())}",
-            "primitive_data": journey["initial_bag"],
-            "tutoring": live.get("tutoring"),
-        },
-        "lesson_context": {},
-        "student_progress": {"attempts": 0, "hints_used": 0, "success_rate": 0},
-    }
+    runs = 1 if args.plumbing else max(1, args.runs)
+    run_results: List[List[BeatResult]] = []
+    per_run_findings: List[List[Dict[str, str]]] = []
+    all_events: List[str] = []
 
-    print(f"[3/4] Connecting {args.backend_ws} and driving {len(beats)} beats…")
-    client = LiveTutorClient(args.backend_ws)
-    results = await client.run(auth_msg, beats)
+    for i in range(1, runs + 1):
+        auth_msg = {
+            "type": "authenticate",
+            "session_mode": "standalone",
+            "token": token,
+            "resumption_handle": None,
+            "primitive_context": {
+                "primitive_type": args.component,
+                "instance_id": f"tutor-live-{args.component}-{int(time.time())}",
+                "primitive_data": journey["initial_bag"],
+                "tutoring": live.get("tutoring"),
+            },
+            "lesson_context": {},
+            "student_progress": {"attempts": 0, "hints_used": 0, "success_rate": 0},
+        }
+        print(f"[3/4] Run {i}/{runs}: connecting {args.backend_ws}, driving {len(beats)} beats…")
+        client = LiveTutorClient(args.backend_ws)
+        results = await client.run(auth_msg, beats)
+        run_results.append(results)
+        per_run_findings.append(run_oracles(results, client.events))
+        all_events.extend(client.events)
 
-    findings = run_oracles(results, client.events)
+    aggregated = aggregate_findings(per_run_findings)
+    style = average_style_metrics(per_run_findings)
     report_path = os.path.join(
         REPO_ROOT, "my-tutoring-app", "qa", "tutor-reports",
         f"{args.component}-live-{date.today().isoformat()}.md",
     )
-    write_report(report_path, args.component, journey, results, findings, client.events)
+    write_report(report_path, args.component, journey, run_results, aggregated, style, all_events)
 
     print(f"[4/4] Report: {report_path}")
-    highs = [f for f in findings if f["severity"] == "HIGH"]
-    for f in findings:
-        print(f"  {f['severity']}: {f['check']} — {f['detail']}")
-    if "ai_transcription" in client.events:
+    if style:
+        print(f"  style: {style}")
+    for f in aggregated:
+        status = "CONFIRMED" if f["confirmed"] else "note"
+        print(f"  {status} {f['severity']} [{f['rate']}]: {f['check']} @{f['beat']} — {f['detail'][:140]}")
+    if "ai_transcription" in all_events:
         print("  PLUMBING OK: output transcription is flowing (tutor voice observable as text).")
-    return 1 if highs else 0
+    return 1 if any(f["confirmed"] and f["severity"] == "HIGH" for f in aggregated) else 0
 
 
 if __name__ == "__main__":

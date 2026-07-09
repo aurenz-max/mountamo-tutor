@@ -445,6 +445,29 @@ function collectSpokenSectionVars(scaffold: TutoringScaffold): Set<string> {
 
 const ANSWER_KEY_RE = /correct|answer|solution/i;
 
+/**
+ * Indirection — the script narrates the UI ("look at the exhibit and answer the
+ * question") instead of enacting the question directly ("[question], what do you
+ * think?"). Direct enactment never needs these phrases. Mirrored in the Tier-3
+ * live harness (run_tutor_live.py INDIRECTION_RE) for model-improvised speech;
+ * here it lints the CATALOG layer, where the fix is a copy edit.
+ */
+const INDIRECTION_RE =
+  /\b(?:look at|read|answer|complete|go to)\s+the\s+(?:question|exhibit|activity|challenge|prompt|problem)\b|\bthe\s+(?:question|challenge|activity|exhibit|prompt)\s+(?:asks|says|wants|is asking)\b/i;
+
+/** Spoken script sections: name → text. These are lines the tutor reads aloud. */
+function spokenScripts(scaffold: TutoringScaffold): Array<{ where: string; text: string }> {
+  const out: Array<{ where: string; text: string }> = [];
+  const levels = scaffold.scaffoldingLevels ?? ({} as TutoringScaffold['scaffoldingLevels']);
+  for (const level of ['level1', 'level2', 'level3'] as const) {
+    if (levels?.[level]) out.push({ where: `scaffoldingLevels.${level}`, text: levels[level] });
+  }
+  (scaffold.commonStruggles ?? []).forEach((s, i) => {
+    if (s.response) out.push({ where: `commonStruggles[${i}].response`, text: s.response });
+  });
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Audit
 // ---------------------------------------------------------------------------
@@ -543,6 +566,32 @@ export function auditScaffold(entry: ComponentDefinition, index: SourceIndex): S
           `{{${v}}} is interpolated inside a scaffolding level or struggle response — `
           + 'these are scripts the tutor reads to the student; the answer must never appear in them. '
           + '(Answer keys in contextKeys/RUNTIME STATE are fine — that is tutor-reference only.)',
+      });
+    }
+  }
+
+  // --- Script-quality lint (spoken sections only) --------------------------------
+  // Catalog-layer instances of the live failure modes: fix = copy edit, no
+  // Live session needed. Kept conservative — only patterns that are never right.
+  for (const script of spokenScripts(scaffold)) {
+    const im = INDIRECTION_RE.exec(script.text);
+    if (im) {
+      findings.push({
+        check: 'indirect-script',
+        severity: 'WARN',
+        message:
+          `${script.where} narrates the UI ("${im[0]}") instead of enacting the question directly — `
+          + 'say the question itself ("[question], what do you think?"), don\'t point the student at it.',
+      });
+    }
+    const questionCount = (script.text.match(/\?/g) ?? []).length;
+    if (questionCount >= 3) {
+      findings.push({
+        check: 'stacked-questions-script',
+        severity: 'WARN',
+        message:
+          `${script.where} asks ${questionCount} questions in one scripted line — a spoken tutor `
+          + 'interrogates when it stacks questions; keep each scripted moment to one question.',
       });
     }
   }

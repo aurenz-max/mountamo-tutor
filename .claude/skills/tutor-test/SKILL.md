@@ -25,12 +25,42 @@ Tiers 1–2 are this skill's fast path. Tier 3 runs on demand for scaffolds that
 # plumbing gate (connect + auth + greeting transcript only)
 cd backend/tests/tutor_live && python run_tutor_live.py --component <id> --plumbing
 # full journey (intro → natural student actions → boundary pokes → adversarial probes)
-cd backend/tests/tutor_live && python run_tutor_live.py --component <id>
+cd backend/tests/tutor_live && python run_tutor_live.py --component <id> --runs 3
 ```
 
-Needs backend :8000 + frontend :3000 running, and `content-pipeline/.env` Firebase test creds. The harness fetches real generated content + the raw tutoring block via `&probe=1&live=1`, authenticates on `/api/lumina-tutor` exactly like `LuminaAIContext`, replays the component's sendText `[TAG]` templates and `update_context` slider moves beat by beat, and judges the transcript with code oracles: `answer-leak-live` (current challenge's answer spoken during answer-fish/wrong-answer beats), `not-set-spoken`, `quiet-by-default-violation` (speech during pure context updates), `silent-turn`, `no-output-transcription`. Report: `qa/tutor-reports/<id>-live-<date>.md` with the full beat-by-beat transcript — always read it; oracles are tripwires, the transcript is the evidence.
+Needs backend :8000 + frontend :3000 running, and `content-pipeline/.env` Firebase test creds. The harness fetches real generated content + the raw tutoring block via `&probe=1&live=1`, authenticates on `/api/lumina-tutor` exactly like `LuminaAIContext`, replays the component's sendText `[TAG]` templates and `update_context` slider moves beat by beat, and judges the per-beat transcript with the code oracles below. Report: `qa/tutor-reports/<id>-live-<date>.md` with all runs' transcripts — always read it; oracles are tripwires, the transcript is the evidence.
+
+**Rate-based scoring:** sessions are nondeterministic — `--runs N` replays the same journey over the SAME generated content; a finding is **CONFIRMED at ≥2/3 of runs**, otherwise it's a single-run note. Default to `--runs 3`; never file a finding off one run.
 
 Journeys live in `run_tutor_live.py` (`JOURNEYS` registry — `states-of-matter` is the template; unknown ids get a generic greeting/orientation/answer-fish journey). A bespoke journey mirrors the component's actual sendText templates — keep them in sync when the component changes.
+
+## Failure modes — what "bad tutor" actually means, and which tier catches it
+
+Each journey beat encodes a pedagogical moment with an expected move (greet-brief, stay-silent, celebrate-then-explain, elicit-don't-tell, hint-don't-reveal). Failures cluster into five families:
+
+| Family | Failure | Check / method | Tier |
+|---|---|---|---|
+| **Floor control** | speaks with no trigger on context updates | `quiet-by-default-violation` | 3 |
+| | every turn ends with a question (interrogation) | `interrogation-cadence` (>80% of turns) | 3 |
+| | 2+ questions in one breath | `question-stacking` (>50% of turns); `stacked-questions-script` (≥3 ?s in a scripted line) | 3 / **1** |
+| **Grounding** | narrates the UI — "the challenge asks…" instead of asking the question | `indirect-utterance`; `indirect-script` | 3 / **1** |
+| | asserts the wrong current state ("right now it's a solid" when it's gas) | `stale-state-utterance` (vs the harness-driven state) | 3 |
+| | generic-tutor drift (utterance fits any primitive) | LLM judge (not built) | — |
+| **Pedagogy** | verbatim answer leak (current challenge only — other challenges' answers as framing are NOT leaks) | `answer-leak-live`; `answer-leak-in-scaffold` | 3 / 1 |
+| | laundered leak ("starts with L…", eliminating options), telling instead of eliciting, hint-level jumping | LLM judge (not built) | — |
+| | praise inflation / person-praise ("you are a keen observer!") | `praise-inflation` (>0.75 superlatives/turn) | 3 |
+| **Compliance** | reads tag syntax / "[STUDENT ACTION]" aloud | `tag-syntax-spoken` | 3 |
+| | speaks a literal "(not set)" | `not-set-spoken` | 3 |
+| **Modality** | dead air after a trigger; silent beat | per-beat elapsed + `silent-turn` | 3 |
+
+The report's **style metrics** row (words/turn, ends-with-? rate, stacked-? rate, superlatives/turn) is the trend line — watch it across reports even when no threshold trips.
+
+**Triage by layer — every finding must name where the fix lives:**
+1. **CATALOG script** (`indirect-script`, `stacked-questions-script`, leak-in-scaffold): the scaffold text itself is bad — copy edit, caught free in Tier 1.
+2. **Backend system prompt** (`quiet-by-default-violation`, cadence/praise habits): cross-primitive model behavior — fix once in `lumina_tutor.py` prompt, benefits all 130 scaffolds.
+3. **Model improv** (`indirect-utterance`, `stale-state-utterance` on otherwise-clean scripts): what Gemini adds around a good script — prompt phrasing rules ("at most one question per turn", "praise the strategy, not the student").
+
+The harness knows exactly what script it fed each beat, so diff the utterance against the script before blaming the model: if the bad phrase is IN the script, it's layer 1.
 
 Gotchas: sessions are nondeterministic — rerun before trusting a single-run finding; a stale uvicorn `--reload` worker on :8000 closes the WS with 1012 right after `session_ready` (restart the backend); the Next dev server intermittently 404s API routes mid-recompile (harness retries 3×, worst case restart `npm run dev`).
 
@@ -64,6 +94,8 @@ Severity semantics (mirror eval-test discipline — only flag what's actually br
 | `answer-leak-in-scaffold` | HIGH | answer key interpolated into a spoken script (levels / struggle responses) | CATALOG |
 | `no-sendtext-moments` | WARN | tutor goes silent after the greeting | COMPONENT |
 | `directive-tag-never-emitted` | WARN | dead directive prompt text | CATALOG or COMPONENT |
+| `indirect-script` | WARN | script narrates the UI ("answer the question") instead of enacting the question | CATALOG (copy edit) |
+| `stacked-questions-script` | WARN | one scripted line asks 3+ questions | CATALOG (copy edit) |
 | `data-bag-unparsed` / dynamic-bag downgrades | WARN | static analysis couldn't see the key set | verify via `--probe` or Tutor Tester |
 
 `staleHookIds` in the sweep = `primitiveType` literals that match no catalog id — the auth message ships `tutoring: null`. Always HIGH.
