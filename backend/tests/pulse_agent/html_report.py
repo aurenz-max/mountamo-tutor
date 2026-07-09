@@ -18,6 +18,14 @@ TEMPLATE_PATH = Path(__file__).parent / "loop_report_template.html"
 DATA_PLACEHOLDER = "/*__DATA__*/"
 
 
+def _subject_tag(t: Dict[str, Any]) -> str:
+    """Filename tag: the subject id, or MULTI_G<grade> for multi-subject runs."""
+    subjects = t.get("subjects") or []
+    if len(subjects) > 1:
+        return f"MULTI_G{t.get('grade', '')}"
+    return t.get("subject", "")
+
+
 def build_loop_report_data(timeline: Any, results: List[Any]) -> Dict[str, Any]:
     """Compact, JSON-serializable payload the template's JS renders from."""
     t = asdict(timeline) if is_dataclass(timeline) else dict(timeline)
@@ -77,12 +85,12 @@ def build_loop_report_data(timeline: Any, results: List[Any]) -> Dict[str, Any]:
     ]
 
     name = str(t.get("profile_name", "")).replace(" ", "_")
-    subject = t.get("subject", "")
+    subject = _subject_tag(t)
     return {
         "meta": {
             "profile": t.get("profile_name"),
             "archetype": t.get("archetype"),
-            "subject": subject,
+            "subject": ", ".join(t.get("subjects") or []) or t.get("subject", ""),
             "grade": t.get("grade"),
             "student": t.get("student_id"),
             "seeded_from": t.get("seeded_from"),
@@ -116,6 +124,6 @@ def generate_loop_html(timeline: Any, results: List[Any], output_dir: Path) -> P
     t = asdict(timeline) if is_dataclass(timeline) else dict(timeline)
     output_dir.mkdir(parents=True, exist_ok=True)
     name = str(t.get("profile_name", "")).replace(" ", "_")
-    path = output_dir / f"loop_report_{name}_{t.get('subject', '')}.html"
+    path = output_dir / f"loop_report_{name}_{_subject_tag(t)}.html"
     path.write_text(render_loop_html(timeline, results), encoding="utf-8")
     return path

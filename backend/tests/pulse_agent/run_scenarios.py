@@ -504,49 +504,56 @@ def main():
             list(ALL_PROFILES.values()) if args.all else [ALL_PROFILES[args.profile]]
         )
 
-        for subject_id in args.subject_ids:
-            for profile in profiles:
-                profile.subject = subject_id
-                print(f"\n{'─'*60}")
-                print(f"  Loop journey: {profile.name} — {subject_id}, {args.days} days")
-                print(f"{'─'*60}")
+        # ONE journey per profile across ALL subjects — a real daily session
+        # spans 3-4 subjects; the planner allocates each day across them.
+        subject_tag = (
+            args.subject_ids[0] if len(args.subject_ids) == 1
+            else "MULTI" + grade_suffix
+        )
+        for profile in profiles:
+            profile.subject = args.subject_ids[0]
+            print(f"\n{'─'*60}")
+            print(f"  Loop journey: {profile.name} — "
+                  f"{', '.join(args.subject_ids)}, {args.days} days")
+            print(f"{'─'*60}")
 
-                if args.seed_from:
-                    print(f"  Seeding from real student {args.seed_from} (one batched read)...")
-                    real_fs = FirestoreService()
-                    counts = asyncio.run(seed_from_student(
-                        real_fs, firestore_service, args.seed_from, profile.student_id
-                    ))
-                    print(f"  Seeded: {counts}")
-
-                timeline = asyncio.run(loop_runner.run_profile(
-                    profile,
-                    days=args.days,
-                    grade=grade_raw,
-                    seeded_from=args.seed_from,
+            if args.seed_from:
+                print(f"  Seeding from real student {args.seed_from} (one batched read)...")
+                real_fs = FirestoreService()
+                counts = asyncio.run(seed_from_student(
+                    real_fs, firestore_service, args.seed_from, profile.student_id
                 ))
+                print(f"  Seeded: {counts}")
 
-                results = run_loop_assertions(timeline)
-                print(f"\n  {profile.name}: {timeline.total_items} items over {len(timeline.days)} days")
-                all_passed = True
-                for r in results:
-                    icon = "PASS" if r.passed else "FAIL"
-                    print(f"  [{icon}] {r.name}: {r.message}")
-                    all_passed = all_passed and r.passed
-                print(f"\n  >> {'ALL LOOP ASSERTIONS PASSED' if all_passed else 'SOME LOOP ASSERTIONS FAILED'}")
+            timeline = asyncio.run(loop_runner.run_profile(
+                profile,
+                days=args.days,
+                grade=grade_raw,
+                seeded_from=args.seed_from,
+                subjects=args.subject_ids,
+            ))
 
-                if output_dir:
-                    report = generate_loop_report(timeline, results)
-                    output_dir.mkdir(parents=True, exist_ok=True)
-                    name = profile.name.replace(" ", "_")
-                    path = output_dir / f"loop_report_{name}_{subject_id}.md"
-                    path.write_text(report, encoding="utf-8")
-                    save_loop_timeline(timeline, output_dir)
-                    html_path = generate_loop_html(timeline, results, output_dir)
-                    print(f"  Report: {path}")
-                    print(f"  HTML:   {html_path}")
+            results = run_loop_assertions(timeline)
+            print(f"\n  {profile.name}: {timeline.total_items} items over {len(timeline.days)} days")
+            all_passed = True
+            for r in results:
+                icon = "PASS" if r.passed else "FAIL"
+                print(f"  [{icon}] {r.name}: {r.message}")
+                all_passed = all_passed and r.passed
+            print(f"\n  >> {'ALL LOOP ASSERTIONS PASSED' if all_passed else 'SOME LOOP ASSERTIONS FAILED'}")
 
-                firestore_service.clear_student(profile.student_id)
+            if output_dir:
+                report = generate_loop_report(timeline, results)
+                output_dir.mkdir(parents=True, exist_ok=True)
+                name = profile.name.replace(" ", "_")
+                path = output_dir / f"loop_report_{name}_{subject_tag}.md"
+                path.write_text(report, encoding="utf-8")
+                save_loop_timeline(timeline, output_dir)
+                html_path = generate_loop_html(timeline, results, output_dir)
+                print(f"  Report: {path}")
+                print(f"  HTML:   {html_path}")
+
+            firestore_service.clear_student(profile.student_id)
         return
 
     runner = PulseAgentRunner(

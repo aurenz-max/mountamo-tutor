@@ -20,6 +20,14 @@ real student or browser. Three modes, increasing scope:
    (replay(L0) == incremental rollups) via the production backfill logic on
    every run. Loop mode always uses the truth model.
 
+   Loop days are **multi-subject** when several `--subject` flags are given
+   (real sessions span 3-4 subjects): ONE journey per profile, the planner
+   splits each day's minute budget across subjects by remaining work, the
+   student does the whole served plan, and the daily pulse beat rotates
+   through the subjects. Retest scheduling runs on the virtual clock (the
+   planner and MasteryLifecycleEngine follow `store.virtual_now`), so review
+   blocks surface on the days retests fall due.
+
 **All modes are in-memory.** The only Firestore reads are the one-time
 curriculum bootstrap and (optionally) a `--seed-from` snapshot; loop mode has
 NO Firestore variant — a loop day fans each attempt into ~6 doc writes.
@@ -34,6 +42,9 @@ Cosmos is deprecated: the loop runs `CompetencyService` with `cosmos_db=None`
 - `/pulse-agent all --truth` — truth-model sweep (12 archetypes)
 - `/pulse-agent steady --loop` — full-loop journey, 20 virtual days
 - `/pulse-agent steady --loop --days 40` — longer journey
+- `/pulse-agent steady --loop --days 30 --subject Mathematics --subject Science
+  --subject "Language Arts" --subject "Social Studies"` — multi-subject days
+  (one journey, plan split across subjects; report tag `MULTI_G<grade>`)
 - `/pulse-agent steady --loop --seed-from 1004` — mid-year persona: ONE
   batched read of a real student's docs seeds the store, then the journey
   diverges privately (zero writes back; parity oracle auto-skips)
@@ -95,7 +106,7 @@ cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> \
 
 Loop mode logs one line per virtual day:
 ```
-Day 3/15: plan=8 subskills, did 12 lesson + 6 pulse items, avg=7.7, profile_attempts=36
+Day 3/15: plan=8 subskills, did 24 lesson + 6 pulse items, avg=7.7, mastered=24, leapfrogs=1
 ```
 
 ### Step 4: Present Results
@@ -112,8 +123,14 @@ gate distribution; rendered from `loop_report_template.html` by
 presenting results. The markdown report
 (`reports/<grade>/loop_report_<name>_<subject>.md`) has:
 - Assertions (parity, serve integrity, plan coverage, responsiveness,
-  mastered-leaves-targets, weakness routing)
-- Day Timeline (planned → done → profile attempts → learn targets per day)
+  mastered-leaves-targets, plan-not-stale, leapfrogging-active,
+  reviews-surfaced, weakness routing)
+- Curriculum Progression (per subject: total subskills, mastered day 1 →
+  final, % mastered, still-active — "how far did the student get")
+- Day Timeline (planned → done, per-subject item split, gate advances,
+  leapfrogs, cumulative mastered, learn targets per day)
+- Leapfrog Audit (every graph jump: day, subject, frontier probe passed,
+  ancestors inferred, score — "is leapfrogging occurring" is answered here)
 - Recommendation Audit (first/mid/last day: every selector pick with its
   kind/verb/P(correct)/reason — read this to judge whether the selection
   brain behaves sensibly)
@@ -133,6 +150,19 @@ presenting results. The markdown report
   disagree. On SEEDED runs this can be a real-data finding (e.g. legacy gate
   inflation) — check the subskill's ability vs lifecycle docs before blaming
   the selector.
+- `plan_not_stale` FAIL → a mastered subskill was re-planned as "new". This
+  is the regression gate for subject-string filtering: lifecycle docs carry
+  non-canonical subjects ("math", "MATHEMATICS_GK", "general"), so any
+  `get_all_mastery_lifecycles(sid, subject=...)` string filter drops them
+  and the planner/selector re-serves mastered work. Classify by subskill-id
+  membership (or fetch unfiltered + key by id); also check `_norm_subject` /
+  `rollup_subject_key` strip `_GK` as well as `_G<digits>`.
+- `leapfrogging_active` FAIL → a capable student never jumped ahead. Check
+  frontier probe assembly (pulse band mix) and `_check_leapfrog` ancestor
+  inference; also confirm the harness is reading `result.leapfrog`.
+- `reviews_surfaced` FAIL → retests fell due (virtual clock) but no
+  review/retest blocks appeared in daily plans. Check `get_mastery_retests_due`
+  wiring and that plan blocks label them `review`/`retest`.
 - `weakness_routed` FAIL → selector never surfaced truly-weak skills; check
   KG p_correct emission and Fisher-information ranking.
 
@@ -168,19 +198,23 @@ All profiles are subject-agnostic; subject/grade set at runtime.
 | All items same band every session | Transfer prior broken in `_assemble_unified()` |
 | Leapfrogs on low scores | Frontier pass threshold bug |
 | `plan=0 subskills` every loop day | CurriculumService not initialized, published curriculum not loaded at bootstrap, or velocity allocator sees 0 weeks remaining (school-year config) |
+| Same subskills planned as "new" day after day | Subject-string filter on lifecycle reads (see `plan_not_stale` above) — mastered docs invisible to planner/selector |
 | Profile attempts frozen across loop days | Analytics TTL cache not cleared per virtual day |
 | Session errors (in-memory) | Missing method on InMemoryFirestoreService — mirror the FirestoreService method and add it |
 | Truth MAE huge but coverage passes | Expected: prior anchoring at θ=3.0 with sparse per-skill items; coverage (2.5σ) is the honest test |
 
 ## Known Limitations (loop mode)
 
-- Lesson-path lifecycle/θ timestamps use wall clock (only PulseEngine accepts
-  `now_override`), so spaced-retest scheduling lags virtual days; retests
-  surface less than they would live.
 - Lesson items use a fixed primitive identity (`ten-frame`) with β from item
   calibration priors — the fan-out is production-real, item diversity is not.
 - Pulse results do not write L0 attempts (matches production: only
   `update_competency_from_problem` calls save_attempt).
+- Curriculum-progression denominators come from the published hierarchy,
+  which can exceed the graph's reachable subskills (e.g. GK math 166 vs 138
+  graph nodes) — 100% mastery of the graph reads as ~85% of the hierarchy.
+
+(Retest scheduling formerly lagged virtual days — fixed 2026-07-08: the
+planner and MasteryLifecycleEngine follow `store.virtual_now` when set.)
 
 ## Key Files
 

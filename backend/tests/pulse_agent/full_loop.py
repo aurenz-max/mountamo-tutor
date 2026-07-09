@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta, timezone
@@ -55,10 +56,22 @@ from .truth_model import TRUTH_PARAMS, LatentStudent, DEFAULT_DISCRIMINATION_A
 logger = logging.getLogger(__name__)
 
 # Lesson-work knobs: how much of the plan the student does per day.
-MAX_LESSON_SUBSKILLS_PER_DAY = 4
+# The student works the WHOLE served plan (the planner already sizes it to
+# the session budget); the cap is a runaway backstop, not a session model —
+# truncating to a fixed prefix hid "planned but never done" subskills.
+MAX_LESSON_SUBSKILLS_PER_DAY = 20
 ITEMS_PER_SUBSKILL = 3          # mastery-over-demo: 3+ instances per target
 DEFAULT_PRIMITIVE = "ten-frame"  # fallback primitive identity for lesson items
 PULSE_ITEMS_PER_DAY = 6
+
+
+def base_subject_key(subject: Optional[str]) -> str:
+    """Planner-side subject key for a grade-prefixed graph id.
+
+    The curriculum graphs are keyed per grade ("MATHEMATICS_GK") while the
+    published curriculum / planner iterate base subjects ("MATHEMATICS").
+    """
+    return re.sub(r"_G\w+$", "", (subject or "").upper())
 
 
 # ── Timeline dataclasses ─────────────────────────────────────────────────────
@@ -72,7 +85,8 @@ class DaySnapshot:
 
     # Morning: what the platform served
     plan_subskills: List[Dict[str, Any]] = field(default_factory=list)
-    # [{subskill_id, skill_id, type, verb}]
+    # [{subskill_id, skill_id, type, verb, subject}]
+    retests_due_morning: int = 0
     targets: List[Dict[str, Any]] = field(default_factory=list)
     # selector objectives: [{subskillId, skillId, verb, kind, reason, pCorrect}]
 
@@ -81,6 +95,11 @@ class DaySnapshot:
     pulse_items: int = 0
     avg_score: float = 0.0
     gate_advances: int = 0
+    lesson_items_by_subject: Dict[str, int] = field(default_factory=dict)
+    pulse_subject: str = ""
+    # Leapfrog unlocks fired by today's pulse session:
+    # [{probed_skills, inferred_skills, aggregate_score, subject}]
+    leapfrogs: List[Dict[str, Any]] = field(default_factory=list)
 
     # Evening: canonical profile serve
     profile_total_attempts: int = 0
@@ -88,6 +107,10 @@ class DaySnapshot:
     profile_active_days: int = 0
     truth_snapshot: Dict[str, float] = field(default_factory=dict)
     theta_snapshot: Dict[str, float] = field(default_factory=dict)
+    # Evening lifecycle census (graph position — "how far has she gotten")
+    mastered_by_subject: Dict[str, int] = field(default_factory=dict)
+    active_by_subject: Dict[str, int] = field(default_factory=dict)
+    mastered_subskills: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -96,8 +119,9 @@ class LoopTimeline:
     student_id: int
     profile_name: str
     archetype: str
-    subject: str
+    subject: str                    # primary graph id (backward compat)
     grade: str
+    subjects: List[str] = field(default_factory=list)  # all graph ids in play
     seeded_from: Optional[int] = None
     initial_profile_attempts: int = 0
     days: List[DaySnapshot] = field(default_factory=list)
@@ -107,10 +131,19 @@ class LoopTimeline:
     parity: Dict[str, Any] = field(default_factory=dict)
     mastery_final: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     ability_final: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # base subject key → total subskills in that curriculum (progression denominator)
+    curriculum_totals: Dict[str, int] = field(default_factory=dict)
+    # subskills never submitted through the lesson path but mastered anyway
+    # (frontier probes + leapfrog inference) — the leapfrog fingerprint
+    inferred_mastery_count: int = 0
 
     @property
     def total_items(self) -> int:
         return sum(d.lesson_items + d.pulse_items for d in self.days)
+
+    @property
+    def total_leapfrogs(self) -> int:
+        return sum(len(d.leapfrogs) for d in self.days)
 
 
 # ── Runner ───────────────────────────────────────────────────────────────────
@@ -203,19 +236,31 @@ class FullLoopRunner:
                     "skill_id": self._skill_for_subskill(sid, parent),
                     "type": entry.get("status") or entry.get("type", "new"),
                     "verb": str(verb),
+                    "subject": base_subject_key(
+                        entry.get("subject")
+                        or (getattr(block, "subject", None) if not isinstance(block, dict)
+                            else block.get("subject"))
+                    ),
                 })
         return out
 
     async def _do_lesson_work(
         self,
         profile: SyntheticProfile,
-        student: LatentStudent,
+        students: Dict[str, LatentStudent],
         work: List[Dict[str, Any]],
     ) -> tuple:
         """Submit lesson items through the production fan-out. Sequential —
-        same subskill can repeat and concurrent RMW loses increments."""
+        same subskill can repeat and concurrent RMW loses increments.
+
+        `students` is keyed by base subject key; each target is answered by
+        the latent student of its own subject."""
         scores: List[float] = []
+        items_by_subject: Dict[str, int] = {}
+        primary = base_subject_key(profile.subject)
         for target in work:
+            subj_key = target.get("subject") or primary
+            student = students.get(subj_key) or students[primary]
             eval_mode = target["verb"]
             beta = await self._item_beta(DEFAULT_PRIMITIVE, eval_mode)
             for _ in range(ITEMS_PER_SUBSKILL):
@@ -232,7 +277,7 @@ class FullLoopRunner:
 
                 await self.competency.update_competency_from_problem(
                     student_id=profile.student_id,
-                    subject=profile.subject,
+                    subject=subj_key,
                     skill_id=target["skill_id"],
                     subskill_id=target["subskill_id"],
                     evaluation={"score": score, "correct": score >= 7.0},
@@ -242,23 +287,30 @@ class FullLoopRunner:
                     attempt_id=str(uuid.uuid4()),
                 )
                 scores.append(score)
-        return len(scores), scores
+                items_by_subject[subj_key] = items_by_subject.get(subj_key, 0) + 1
+        return len(scores), scores, items_by_subject
 
     async def _do_pulse_session(
         self,
         profile: SyntheticProfile,
         student: LatentStudent,
         virtual_now: datetime,
+        subject_id: Optional[str] = None,
     ) -> tuple:
-        """One pulse session via PulseEngine's production path."""
+        """One pulse session via PulseEngine's production path.
+
+        Returns (n_items, scores, gate_advances, leapfrogs) — leapfrog
+        unlock events are the graph-jump evidence the report audits."""
+        pulse_subject = subject_id or profile.subject
         session_resp = await self.engine.assemble_session(
             student_id=profile.student_id,
-            subject=profile.subject,
+            subject=pulse_subject,
             item_count=PULSE_ITEMS_PER_DAY,
             now_override=virtual_now,
         )
         scores: List[float] = []
         gate_advances = 0
+        leapfrogs: List[Dict[str, Any]] = []
         for item in session_resp.items:
             score = student.answer(item)
             result = await self.engine.process_result(
@@ -275,8 +327,15 @@ class FullLoopRunner:
             )
             if result.gate_update and result.gate_update.new_gate > result.gate_update.old_gate:
                 gate_advances += 1
+            if result.leapfrog:
+                leapfrogs.append({
+                    "subject": pulse_subject,
+                    "probed_skills": list(result.leapfrog.probed_skills),
+                    "inferred_skills": list(result.leapfrog.inferred_skills),
+                    "aggregate_score": result.leapfrog.aggregate_score,
+                })
             scores.append(score)
-        return len(scores), scores, gate_advances
+        return len(scores), scores, gate_advances, leapfrogs
 
     # -- journey ---------------------------------------------------------------
 
@@ -287,15 +346,34 @@ class FullLoopRunner:
         grade: str = "K",
         seeded_from: Optional[int] = None,
         include_pulse: bool = True,
+        subjects: Optional[List[str]] = None,
     ) -> LoopTimeline:
+        """Walk one synthetic student through N virtual days.
+
+        `subjects` — grade-prefixed graph ids (e.g. ["MATHEMATICS_GK",
+        "SCIENCE_GK"]). A real daily session spans 3-4 subjects; the planner
+        allocates the day across all of them and the sim follows the plan.
+        Defaults to [profile.subject] (single-subject journey).
+        """
         params = TRUTH_PARAMS.get(profile.archetype)
         if params is None:
             raise ValueError(f"No truth params for archetype '{profile.archetype}'")
+        subjects = list(subjects or ([profile.subject] if profile.subject else []))
+        if not subjects:
+            raise ValueError("run_profile needs at least one subject")
+        profile.subject = subjects[0]
+
         import random as _random
-        student = LatentStudent(
-            params, profile.subject,
-            _random.Random(self.seed or profile.student_id),
-        )
+        # One latent student per subject: same archetype, per-subject weak
+        # clusters, deterministic per-subject rng. Skill ids are globally
+        # unique, so snapshots merge cleanly.
+        base_seed = self.seed or profile.student_id
+        students: Dict[str, LatentStudent] = {
+            base_subject_key(s): LatentStudent(
+                params, s, _random.Random(base_seed + idx)
+            )
+            for idx, s in enumerate(subjects)
+        }
         gap_days = profile.session_gap_days or 1.0
 
         timeline = LoopTimeline(
@@ -304,6 +382,7 @@ class FullLoopRunner:
             archetype=profile.archetype,
             subject=profile.subject or "",
             grade=grade,
+            subjects=subjects,
             seeded_from=seeded_from,
         )
 
@@ -314,11 +393,28 @@ class FullLoopRunner:
         if not self.curriculum._use_firestore:
             await self.curriculum.initialize()
 
+        # Curriculum membership per subject — progression denominators and
+        # the evening census bucket lifecycles by subskill-id membership
+        # (never by the subject string on the doc).
+        from app.services.planning_service import PlanningService as _PS
+        subject_id_sets: Dict[str, set] = {}
+        for s in subjects:
+            key = base_subject_key(s)
+            try:
+                curriculum_data = await self.curriculum.get_curriculum(key)
+                subject_id_sets[key] = _PS._collect_subskill_ids(curriculum_data)
+            except Exception as e:
+                logger.warning(f"No curriculum hierarchy for {key}: {e}")
+                subject_id_sets[key] = set()
+            timeline.curriculum_totals[key] = len(subject_id_sets[key])
+
         virtual_now = datetime.now(timezone.utc)
 
         # Baseline for serve-integrity (nonzero on seeded runs)
         initial_summary = await self.fs.get_profile_summary(profile.student_id) or {}
         timeline.initial_profile_attempts = int(initial_summary.get("total_attempts", 0) or 0)
+
+        lesson_worked: set = set()   # subskills ever submitted via the lesson path
 
         for day_num in range(1, days + 1):
             self.fs.virtual_now = virtual_now
@@ -330,6 +426,13 @@ class FullLoopRunner:
 
             # 1. MORNING — what would the platform serve today?
             try:
+                due = await self.fs.get_mastery_retests_due(
+                    profile.student_id, virtual_now.isoformat()
+                )
+                day.retests_due_morning = len(due)
+            except Exception:
+                pass
+            try:
                 plan = await self.planning.get_daily_session_plan(
                     profile.student_id, force_refresh=True
                 )
@@ -337,20 +440,28 @@ class FullLoopRunner:
             except Exception as e:
                 logger.warning(f"  Day {day_num}: daily plan failed: {e}")
 
-            try:
-                targets_resp = await self.analytics.select_session_targets(
-                    profile.student_id, subject=profile.subject, count=4
-                )
-                day.targets = [
-                    {k: o.get(k) for k in
-                     ("subskillId", "skillId", "verb", "kind", "reason", "pCorrect")}
-                    for o in targets_resp.get("objectives", [])
-                ]
-            except Exception as e:
-                logger.warning(f"  Day {day_num}: session targets failed: {e}")
+            for subj_id in subjects:
+                try:
+                    targets_resp = await self.analytics.select_session_targets(
+                        profile.student_id, subject=subj_id, count=4
+                    )
+                    day.targets.extend(
+                        {**{k: o.get(k) for k in
+                            ("subskillId", "skillId", "verb", "kind", "reason", "pCorrect")},
+                         "subject": base_subject_key(subj_id)}
+                        for o in targets_resp.get("objectives", [])
+                    )
+                except Exception as e:
+                    logger.warning(f"  Day {day_num}: session targets failed for {subj_id}: {e}")
 
-            # 2. DAYTIME — the student does the plan (production fan-out) …
+            # 2. DAYTIME — the student does the WHOLE served plan (the
+            # planner already sized it to the session; the cap is a backstop)
             all_scores: List[float] = []
+            if len(day.plan_subskills) > MAX_LESSON_SUBSKILLS_PER_DAY:
+                logger.warning(
+                    f"  Day {day_num}: plan has {len(day.plan_subskills)} "
+                    f"subskills, trimming to {MAX_LESSON_SUBSKILLS_PER_DAY}"
+                )
             work = day.plan_subskills[:MAX_LESSON_SUBSKILLS_PER_DAY]
             if not work and day.targets:
                 # Planner empty (e.g. cold start) → fall back to selector picks
@@ -360,22 +471,34 @@ class FullLoopRunner:
                         "skill_id": self._skill_for_subskill(t["subskillId"], t.get("skillId")),
                         "type": t["kind"],
                         "verb": t.get("verb") or "identify",
+                        "subject": t.get("subject") or base_subject_key(profile.subject),
                     }
                     for t in day.targets if t.get("subskillId")
                 ]
             if work:
-                n, scores = await self._do_lesson_work(profile, student, work)
+                n, scores, by_subject = await self._do_lesson_work(
+                    profile, students, work
+                )
                 day.lesson_items = n
+                day.lesson_items_by_subject = by_subject
                 all_scores.extend(scores)
+                lesson_worked.update(t["subskill_id"] for t in work)
 
-            # … plus the daily pulse measurement beat
+            # … plus the daily pulse measurement beat, rotating through the
+            # subjects so every curriculum gets its measurement cadence
             if include_pulse:
+                pulse_subject = subjects[(day_num - 1) % len(subjects)]
+                day.pulse_subject = pulse_subject
                 try:
-                    n, scores, adv = await self._do_pulse_session(
-                        profile, student, virtual_now
+                    n, scores, adv, leapfrogs = await self._do_pulse_session(
+                        profile,
+                        students[base_subject_key(pulse_subject)],
+                        virtual_now,
+                        subject_id=pulse_subject,
                     )
                     day.pulse_items = n
                     day.gate_advances = adv
+                    day.leapfrogs = leapfrogs
                     all_scores.extend(scores)
                 except Exception as e:
                     logger.warning(f"  Day {day_num}: pulse session failed: {e}")
@@ -396,25 +519,46 @@ class FullLoopRunner:
             except Exception as e:
                 logger.warning(f"  Day {day_num}: profile serve failed: {e}")
 
-            day.truth_snapshot = student.snapshot()
+            day.truth_snapshot = {}
+            for st in students.values():
+                day.truth_snapshot.update(st.snapshot())
             abilities = await self.fs.get_all_student_abilities(profile.student_id)
             day.theta_snapshot = {
                 a.get("skill_id", ""): round(a.get("theta", 3.0), 3) for a in abilities
             }
 
+            # Lifecycle census — graph position by subject (id membership)
+            lifecycles = await self.fs.get_all_mastery_lifecycles(profile.student_id)
+            for lc in lifecycles:
+                sid = lc.get("subskill_id", "")
+                gate = lc.get("current_gate", 0)
+                for key, id_set in subject_id_sets.items():
+                    if sid in id_set:
+                        if gate >= 4:
+                            day.mastered_by_subject[key] = day.mastered_by_subject.get(key, 0) + 1
+                            day.mastered_subskills.append(sid)
+                        elif gate >= 1:
+                            day.active_by_subject[key] = day.active_by_subject.get(key, 0) + 1
+                        break
+            day.mastered_subskills.sort()
+
             timeline.days.append(day)
             logger.info(
                 f"  Day {day_num}/{days}: plan={len(day.plan_subskills)} subskills, "
                 f"did {day.lesson_items} lesson + {day.pulse_items} pulse items, "
-                f"avg={day.avg_score:.1f}, profile_attempts={day.profile_total_attempts}"
+                f"avg={day.avg_score:.1f}, mastered={sum(day.mastered_by_subject.values())}, "
+                f"leapfrogs={len(day.leapfrogs)}"
             )
 
             # night — forgetting + next day
-            student.sleep(gap_days)
+            for st in students.values():
+                st.sleep(gap_days)
             virtual_now += timedelta(days=gap_days)
 
         self.fs.virtual_now = None
-        timeline.truth_snapshot = student.snapshot()
+        timeline.truth_snapshot = {}
+        for st in students.values():
+            timeline.truth_snapshot.update(st.snapshot())
 
         lifecycles = await self.fs.get_all_mastery_lifecycles(profile.student_id)
         timeline.mastery_final = {
@@ -424,6 +568,10 @@ class FullLoopRunner:
             }
             for lc in lifecycles
         }
+        timeline.inferred_mastery_count = sum(
+            1 for sid, m in timeline.mastery_final.items()
+            if m.get("current_gate", 0) >= 4 and sid not in lesson_worked
+        )
         abilities = await self.fs.get_all_student_abilities(profile.student_id)
         timeline.ability_final = {
             a.get("skill_id", ""): {
@@ -626,12 +774,36 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         ),
     ))
 
-    # 3. The platform planned work every day
-    days_with_plan = sum(1 for d in days if d.plan_subskills or d.targets)
+    # 3. The platform planned work every day — empty days are acceptable
+    # only as a TERMINAL streak with high mastery (curriculum genuinely
+    # exhausted: nothing to plan is the correct answer). A mid-journey
+    # empty day, or an empty streak with low mastery (stuck planner —
+    # "plan=0 subskills every loop day"), still fails.
+    total_curriculum = sum((timeline.curriculum_totals or {}).values())
+    first_terminal_empty = len(days)
+    for i in range(len(days) - 1, -1, -1):
+        if days[i].plan_subskills or days[i].targets:
+            break
+        first_terminal_empty = i
+    days_with_plan = 0
+    exhausted_days = 0
+    for i, d in enumerate(days):
+        if d.plan_subskills or d.targets:
+            days_with_plan += 1
+        elif (
+            i >= first_terminal_empty
+            and total_curriculum
+            and sum(d.mastered_by_subject.values()) >= 0.7 * total_curriculum
+        ):
+            exhausted_days += 1
     results.append(AssertionResult(
         name="plan_every_day",
-        passed=days_with_plan == len(days) and len(days) > 0,
-        message=f"Plan or targets produced on {days_with_plan}/{len(days)} days",
+        passed=(days_with_plan + exhausted_days) == len(days) and len(days) > 0,
+        message=(
+            f"Plan or targets produced on {days_with_plan}/{len(days)} days"
+            + (f" (+{exhausted_days} terminal empty day(s) with curriculum "
+               f"≥70% mastered — exhausted)" if exhausted_days else "")
+        ),
     ))
 
     # 4. Responsiveness: what's recommended changes as the student progresses
@@ -656,10 +828,15 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         # deliberately still servable — the selector classifies learn/confirm
         # by P(correct) at hardest-assigned-mode β, and a gate-3 subskill can
         # legitimately need more work at its hardest mode.
-        mastered = {
-            sid for sid, m in timeline.mastery_final.items()
-            if m.get("current_gate", 0) >= 4
-        }
+        # Judged against the PREVIOUS evening's mastery: final-day targets
+        # are picked that morning, before the day's own gate advances exist.
+        mastered = (
+            set(days[-2].mastered_subskills) if len(days) >= 2
+            else {
+                sid for sid, m in timeline.mastery_final.items()
+                if m.get("current_gate", 0) >= 4
+            }
+        )
         final_learn = {
             t["subskillId"] for t in days[-1].targets
             if t.get("kind") == "learn" and t.get("subskillId")
@@ -676,7 +853,64 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
                 ),
             ))
 
-    # 6. Weakness routing (selective_weakness only): truly-weak skills get picked
+    # 6. STALE-PLAN GUARD: a subskill mastered by yesterday evening must not
+    # be served as a "new" plan item today. This is the regression gate for
+    # the 2026-07-08 subject-key bug (lifecycle docs invisible to the planner
+    # → the same 4 mastered subskills re-planned as "new" for 50 days).
+    stale_hits: List[str] = []
+    for i in range(1, len(days)):
+        mastered_prev = set(days[i - 1].mastered_subskills)
+        if not mastered_prev:
+            continue
+        for p in days[i].plan_subskills:
+            if p.get("type") == "new" and p.get("subskill_id") in mastered_prev:
+                stale_hits.append(f"day{days[i].day_number}:{p['subskill_id']}")
+    results.append(AssertionResult(
+        name="plan_not_stale",
+        passed=not stale_hits,
+        message=(
+            "No mastered subskill re-planned as 'new'" if not stale_hits
+            else f"{len(stale_hits)} stale plan entries (first 5: {stale_hits[:5]})"
+        ),
+    ))
+
+    # 7. LEAPFROGGING: capable students in a grade-level curriculum should
+    # jump ahead via frontier probes. Low-ability archetypes are exempt.
+    from .truth_model import TRUTH_PARAMS as _TP
+    theta0 = getattr(_TP.get(timeline.archetype), "base_theta", 0.0)
+    lf = timeline.total_leapfrogs
+    inferred = timeline.inferred_mastery_count
+    expected = theta0 >= 4.5 and len(days) >= 10
+    results.append(AssertionResult(
+        name="leapfrogging_active",
+        passed=(lf > 0 or inferred > 0) if expected else True,
+        message=(
+            f"{lf} leapfrog events; {inferred} subskills mastered without "
+            f"lesson work (frontier/leapfrog inference)"
+            + ("" if expected else " — not expected for this archetype, informational")
+        ),
+    ))
+
+    # 8. REVIEWS SURFACE: when mastery retests fall due on the virtual
+    # timeline, the daily plan must carry review blocks. (High-ability
+    # archetypes can jump G0→G4 directly and never owe a retest — then
+    # there is nothing to surface and this passes vacuously.)
+    due_days = sum(1 for d in days if d.retests_due_morning > 0)
+    review_days = sum(
+        1 for d in days
+        if any(p.get("type") in ("review", "retest") for p in d.plan_subskills)
+    )
+    results.append(AssertionResult(
+        name="reviews_surfaced",
+        passed=review_days > 0 if due_days > 0 else True,
+        message=(
+            f"Retests due on {due_days}/{len(days)} days; review blocks "
+            f"planned on {review_days} days"
+            + ("" if due_days else " — none fell due, nothing to surface")
+        ),
+    ))
+
+    # 9. Weakness routing (selective_weakness only): truly-weak skills get picked
     if timeline.archetype == "selective_weakness" and timeline.truth_snapshot:
         truths = timeline.truth_snapshot
         mean_truth = sum(truths.values()) / len(truths)
@@ -709,10 +943,12 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
     lines: List[str] = []
     _h = lines.append
 
+    subjects = timeline.subjects or [timeline.subject]
     _h(f"# Full-Loop Journey — {timeline.profile_name} ({timeline.archetype})")
     _h("")
-    _h(f"- Student: {timeline.student_id}  |  Subject: {timeline.subject}  |  Grade: {timeline.grade}")
+    _h(f"- Student: {timeline.student_id}  |  Subjects: {', '.join(subjects)}  |  Grade: {timeline.grade}")
     _h(f"- Days: {len(timeline.days)}  |  Items: {timeline.total_items}"
+       f"  |  Leapfrog events: {timeline.total_leapfrogs}"
        + (f"  |  Seeded from: {timeline.seeded_from}" if timeline.seeded_from else ""))
     _h("")
 
@@ -724,18 +960,63 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
         _h(f"| {r.name} | {'PASS' if r.passed else 'FAIL'} | {r.message} |")
     _h("")
 
+    # Curriculum progression — how far through each subject's graph
+    if timeline.days and timeline.curriculum_totals:
+        _h("## Curriculum Progression")
+        _h("")
+        _h("| Subject | Total subskills | Mastered day 1 | Mastered final | % mastered | Active final |")
+        _h("|---------|-----------------|----------------|----------------|------------|--------------|")
+        first, last = timeline.days[0], timeline.days[-1]
+        for key, total in sorted(timeline.curriculum_totals.items()):
+            m0 = first.mastered_by_subject.get(key, 0)
+            m1 = last.mastered_by_subject.get(key, 0)
+            act = last.active_by_subject.get(key, 0)
+            pct = (100.0 * m1 / total) if total else 0.0
+            _h(f"| {key} | {total} | {m0} | {m1} | {pct:.0f}% | {act} |")
+        _h("")
+        _h(f"- Subskills mastered WITHOUT lesson work (frontier probes + "
+           f"leapfrog inference): **{timeline.inferred_mastery_count}**")
+        _h("")
+
     _h("## Day Timeline")
     _h("")
-    _h("| Day | Date | Planned | Done (lesson+pulse) | Avg | Gate adv | Profile attempts | Learn targets |")
-    _h("|-----|------|---------|---------------------|-----|----------|------------------|---------------|")
+    _h("| Day | Date | Planned | Done (lesson+pulse) | By subject | Avg | Gate adv | Leapfrogs | Mastered | Learn targets |")
+    _h("|-----|------|---------|---------------------|------------|-----|----------|-----------|----------|---------------|")
     for d in timeline.days:
         learn = [t["subskillId"] for t in d.targets if t.get("kind") == "learn"]
+        by_subj = " ".join(
+            f"{k.split('_')[0][:4]}:{v}"
+            for k, v in sorted(d.lesson_items_by_subject.items())
+        ) or "-"
         _h(
             f"| {d.day_number} | {d.date} | {len(d.plan_subskills)} | "
-            f"{d.lesson_items}+{d.pulse_items} | {d.avg_score:.1f} | "
-            f"{d.gate_advances} | {d.profile_total_attempts} | "
+            f"{d.lesson_items}+{d.pulse_items} | {by_subj} | {d.avg_score:.1f} | "
+            f"{d.gate_advances} | {len(d.leapfrogs)} | "
+            f"{sum(d.mastered_by_subject.values())} | "
             f"{', '.join(learn[:3])}{'…' if len(learn) > 3 else ''} |"
         )
+    _h("")
+
+    # Leapfrog audit — every graph jump, with what it inferred
+    all_leapfrogs = [
+        (d.day_number, lf) for d in timeline.days for lf in d.leapfrogs
+    ]
+    _h("## Leapfrog Audit")
+    _h("")
+    if all_leapfrogs:
+        _h("| Day | Subject | Probed (frontier pass) | Inferred ancestors | Score |")
+        _h("|-----|---------|------------------------|--------------------|-------|")
+        for day_num, lf in all_leapfrogs[:40]:
+            probed = ", ".join(lf.get("probed_skills", [])[:3])
+            inferred = lf.get("inferred_skills", [])
+            inf_str = ", ".join(inferred[:4]) + ("…" if len(inferred) > 4 else "")
+            _h(f"| {day_num} | {lf.get('subject', '')} | {probed} | "
+               f"{inf_str} ({len(inferred)}) | {lf.get('aggregate_score', 0):.1f} |")
+        if len(all_leapfrogs) > 40:
+            _h("")
+            _h(f"…and {len(all_leapfrogs) - 40} more events.")
+    else:
+        _h("No leapfrog events fired this journey.")
     _h("")
 
     # Recommendation audit — why the selector picked what it picked
@@ -789,8 +1070,12 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
 def save_loop_timeline(timeline: LoopTimeline, output_dir: Path) -> Path:
     import json
     output_dir.mkdir(parents=True, exist_ok=True)
+    tag = (
+        f"MULTI_G{timeline.grade}" if len(timeline.subjects) > 1
+        else timeline.subject
+    )
     path = output_dir / (
-        f"loop_{timeline.profile_name.replace(' ', '_')}_{timeline.subject}.json"
+        f"loop_{timeline.profile_name.replace(' ', '_')}_{tag}.json"
     )
     with open(path, "w", encoding="utf-8") as f:
         json.dump(asdict(timeline), f, indent=2, default=str)
