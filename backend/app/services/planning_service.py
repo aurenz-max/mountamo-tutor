@@ -80,6 +80,18 @@ class PlanningService:
         self.analytics = analytics_service
         logger.info("PlanningService initialized")
 
+    def _now(self) -> datetime:
+        """Current time, following the storage layer's virtual clock when set.
+
+        Simulation harnesses (pulse-agent loop mode) advance `virtual_now` on
+        their in-memory store so retest due-dates and pacing math run on the
+        simulated timeline. Production FirestoreService has no such attribute
+        → wall clock, unchanged behavior. The isinstance guard also keeps
+        MagicMock stores (unit tests) on the wall clock.
+        """
+        vn = getattr(self.firestore, "virtual_now", None)
+        return vn if isinstance(vn, datetime) else datetime.now(timezone.utc)
+
     # ====================================================================
     # Status mapping (PRD §16.5 — stability-based retention model)
     # ====================================================================
@@ -99,12 +111,35 @@ class PlanningService:
         return "not_started"
 
     @staticmethod
+    def _collect_subskill_ids(curriculum_data: List[Dict]) -> set:
+        """All subskill ids in a curriculum hierarchy — the canonical way to
+        decide whether a lifecycle doc belongs to a subject. Lifecycle docs
+        carry the subject string the submitter sent ("math", "Mathematics",
+        "MATHEMATICS_GK", …), so string equality against curriculum subject
+        ids silently drops docs; subskill-id membership does not."""
+        ids = set()
+        for unit in curriculum_data:
+            for skill in unit.get("skills", []):
+                for subskill in skill.get("subskills", []):
+                    ssid = subskill.get("id")
+                    if ssid:
+                        ids.add(ssid)
+        return ids
+
+    @staticmethod
     def _count_by_gate_status(
-        lifecycles: List[Dict[str, Any]], subject: str
+        lifecycles: List[Dict[str, Any]],
+        subject: str,
+        subject_subskill_ids: Optional[set] = None,
     ) -> Tuple[int, int, int, int, List[Dict[str, Any]]]:
         """
         Count closed / in_review / learning / not_started from mastery
         lifecycle state for a given subject.
+
+        Subject membership is decided by subskill-id membership in the
+        subject's curriculum when `subject_subskill_ids` is provided
+        (robust to non-canonical subject strings on lifecycle docs);
+        falls back to raw subject-string equality otherwise.
 
         Retention state mapping (PRD §16.5):
           mastered (or gate >= 4)           → closed
@@ -114,7 +149,13 @@ class PlanningService:
 
         Returns: (closed, in_review, learning, total_subskills_in_subject, subj_lifecycles)
         """
-        subj_lcs = [lc for lc in lifecycles if lc.get("subject") == subject]
+        if subject_subskill_ids:
+            subj_lcs = [
+                lc for lc in lifecycles
+                if lc.get("subskill_id") in subject_subskill_ids
+            ]
+        else:
+            subj_lcs = [lc for lc in lifecycles if lc.get("subject") == subject]
         closed = 0
         in_review = 0
         learning = 0
@@ -140,7 +181,7 @@ class PlanningService:
         not started; whether the student is ahead or behind; and how many
         new skills per week are needed to finish the curriculum by year end.
         """
-        today = datetime.now(timezone.utc).date()
+        today = self._now().date()
         monday = today - timedelta(days=today.weekday())
 
         # 1. Load school year config
@@ -178,9 +219,9 @@ class PlanningService:
             curriculum_data = await self.curriculum.get_curriculum(subj)
             total_subskills = self._count_subskills(curriculum_data)
 
-            # Count by gate status (PRD §5.1)
+            # Count by gate status (PRD §5.1) — membership via curriculum ids
             closed, in_review, learning_count, _, subj_lcs = self._count_by_gate_status(
-                all_lifecycles, subj
+                all_lifecycles, subj, self._collect_subskill_ids(curriculum_data)
             )
             not_started = max(0, total_subskills - closed - in_review - learning_count)
 
@@ -259,7 +300,7 @@ class PlanningService:
           Each retest costs 1 session.
           Total daily load for N new/day: 3N (lessons) + 3N (retests) = 6N
         """
-        today = datetime.now(timezone.utc).date()
+        today = self._now().date()
 
         # 1. Load shared inputs
         config = await self._get_school_year_config()
@@ -291,7 +332,7 @@ class PlanningService:
             total_subskills = self._count_subskills(curriculum_data)
 
             closed, in_review, learning_count, _, subj_lcs = self._count_by_gate_status(
-                all_lifecycles, subj
+                all_lifecycles, subj, self._collect_subskill_ids(curriculum_data)
             )
             not_started = max(0, total_subskills - closed - in_review - learning_count)
 
@@ -502,7 +543,7 @@ class PlanningService:
 
         return MonthlyPlanResponse(
             studentId=str(student_id),
-            generatedAt=datetime.now(timezone.utc).isoformat(),
+            generatedAt=self._now().isoformat(),
             schoolYear={
                 "fractionElapsed": round(fraction_elapsed, 3),
                 "weeksRemaining": weeks_remaining,
@@ -523,7 +564,7 @@ class PlanningService:
         Step 3: Select new skills using knowledge graph / curriculum sequence.
         Step 4: Merge and return.
         """
-        today = datetime.now(timezone.utc).date()
+        today = self._now().date()
         today_str = today.isoformat()
         day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -536,7 +577,7 @@ class PlanningService:
         review_queue: List[Dict[str, Any]] = []
         try:
             mastery_due = await self.firestore.get_mastery_retests_due(
-                student_id, datetime.now(timezone.utc).isoformat()
+                student_id, self._now().isoformat()
             )
             for ml in mastery_due:
                 retest_eligible = ml.get("next_retest_eligible", "")
@@ -597,6 +638,19 @@ class PlanningService:
             total_deficit = sum(d for _, d in subject_deficits) or 1
             allocated = 0
 
+            # One unfiltered fetch, keyed by subskill_id. Never filter
+            # lifecycles by subject string here: docs carry whatever subject
+            # the submitter sent ("math", "MATHEMATICS_GK", …), so a string
+            # filter drops them and mastered subskills get re-planned as
+            # "new" forever. The unlocked lists below are already
+            # subject-scoped by the curriculum graph.
+            all_lifecycles = await self.firestore.get_all_mastery_lifecycles(
+                student_id
+            )
+            lifecycle_by_id = {
+                lc.get("subskill_id"): lc for lc in all_lifecycles
+            }
+
             for subj, deficit in subject_deficits:
                 slots_for_subj = max(1, round(new_skill_slots * deficit / total_deficit))
                 if allocated + slots_for_subj > new_skill_slots:
@@ -618,13 +672,6 @@ class PlanningService:
                     continue
 
                 # Filter to not_started only (PRD §5.3)
-                mastery_lifecycles = await self.firestore.get_all_mastery_lifecycles(
-                    student_id, subject=subj
-                )
-                lifecycle_by_id = {
-                    lc.get("subskill_id"): lc for lc in mastery_lifecycles
-                }
-
                 not_started_ids = [
                     sid for sid in unlocked
                     if sid not in lifecycle_by_id
@@ -808,7 +855,7 @@ class PlanningService:
         """
         from ..models.lesson_plan import BlockTimeEntry, DailySessionPlan, LessonBlock
 
-        today_str = datetime.now(timezone.utc).date().isoformat()
+        today_str = self._now().date().isoformat()
         stored = await self.firestore.get_daily_session_plan_doc(student_id, today_str)
 
         if stored and not force_refresh:
@@ -872,7 +919,7 @@ class PlanningService:
         self, student_id: int, block_id: str, plan_date: Optional[str] = None
     ) -> bool:
         """Record a finished lesson block on the day's persisted session plan."""
-        target_date = plan_date or datetime.now(timezone.utc).date().isoformat()
+        target_date = plan_date or self._now().date().isoformat()
         return await self.firestore.add_completed_session_block(
             student_id, target_date, block_id
         )
@@ -881,7 +928,7 @@ class PlanningService:
         self, student_id: int, block_id: str, plan_date: Optional[str] = None
     ) -> bool:
         """Append a start timestamp to the block's time ledger (append-only)."""
-        target_date = plan_date or datetime.now(timezone.utc).date().isoformat()
+        target_date = plan_date or self._now().date().isoformat()
         return await self.firestore.mark_session_block_started(
             student_id, target_date, block_id
         )
@@ -919,7 +966,7 @@ class PlanningService:
         # --- Step 1a: Due mastery retests (reviews) ---
         try:
             mastery_due = await self.firestore.get_mastery_retests_due(
-                student_id, datetime.now(timezone.utc).isoformat()
+                student_id, self._now().isoformat()
             )
             for ml in mastery_due:
                 all_candidates.append({
@@ -1015,8 +1062,12 @@ class PlanningService:
                     logger.warning(f"[SESSION_PLAN] Unlocked entities error for {subj}: {e}")
                     continue
 
+                # Unfiltered fetch — lifecycle docs carry non-canonical
+                # subject strings, and a string filter here made mastered
+                # subskills look not_started (served as "new" forever).
+                # `unlocked` is already subject-scoped by the graph.
                 lifecycles = await self.firestore.get_all_mastery_lifecycles(
-                    student_id, subject=subj
+                    student_id
                 )
                 lc_by_id = {lc.get("subskill_id"): lc for lc in lifecycles}
 
@@ -1037,7 +1088,7 @@ class PlanningService:
 
         # Empty state
         if not all_candidates:
-            today = datetime.now(timezone.utc).date()
+            today = self._now().date()
             day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             return DailySessionPlan(
                 student_id=str(student_id),
@@ -1081,7 +1132,7 @@ class PlanningService:
                 f"scripts/cleanup_synthetic_lifecycle.py to retire them"
             )
         if not enriched:
-            today = datetime.now(timezone.utc).date()
+            today = self._now().date()
             day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             return DailySessionPlan(
                 student_id=str(student_id),
@@ -1204,9 +1255,9 @@ class PlanningService:
         try:
             year_end = date.fromisoformat(config.end_date)
         except (ValueError, TypeError):
-            year_end = date.today()
+            year_end = self._now().date()
         weeks_left = self._school_weeks_remaining(
-            date.today(), year_end, config.breaks
+            self._now().date(), year_end, config.breaks
         )
         required = (
             total_remaining * ASSUMED_MIN_PER_SUBSKILL / (weeks_left * 5)
@@ -1229,7 +1280,7 @@ class PlanningService:
 
     def _compute_days_overdue(self, ml: Dict[str, Any]) -> int:
         """Days elapsed since a mastery lifecycle retest was due."""
-        today = datetime.now(timezone.utc).date()
+        today = self._now().date()
         retest_eligible = ml.get("next_retest_eligible", "")
         try:
             return max(0, (today - date.fromisoformat(retest_eligible[:10])).days)
@@ -1510,7 +1561,7 @@ class PlanningService:
 
         All reads are from Firestore via cached services — no LLM, no BigQuery.
         """
-        now = datetime.now(timezone.utc).isoformat()
+        now = self._now().isoformat()
 
         # ── 1. Load shared data ──────────────────────────────────────
         all_lifecycles = await self.firestore.get_all_mastery_lifecycles(student_id)
@@ -1550,7 +1601,7 @@ class PlanningService:
 
             total_subskills = self._count_subskills(curriculum_data)
             closed, in_review, learning_count, _, _ = self._count_by_gate_status(
-                all_lifecycles, subj
+                all_lifecycles, subj, self._collect_subskill_ids(curriculum_data)
             )
             not_started = max(0, total_subskills - closed - in_review - learning_count)
 

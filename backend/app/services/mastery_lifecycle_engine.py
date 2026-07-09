@@ -224,7 +224,13 @@ class MasteryLifecycleEngine:
         Returns:
             Updated mastery lifecycle dict.
         """
-        now = datetime.now(timezone.utc)
+        # Event time follows the storage layer's virtual clock when set
+        # (pulse-agent loop mode advances `virtual_now` per simulated day so
+        # retest due-dates land on the virtual timeline). Production
+        # FirestoreService has no such attribute → wall clock, unchanged;
+        # the isinstance guard keeps MagicMock stores (unit tests) there too.
+        _vn = getattr(self.firestore, "virtual_now", None)
+        now = _vn if isinstance(_vn, datetime) else datetime.now(timezone.utc)
         ts = timestamp or now.isoformat()
         passed = score >= MASTERY_THRESHOLD
 

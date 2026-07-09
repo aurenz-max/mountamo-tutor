@@ -342,7 +342,9 @@ class FirestoreService:
         if not subject:
             return "UNKNOWN"
         s = re.sub(r"[\s\-]+", "_", subject.strip().upper())
-        return re.sub(r"_G\d+$", "", s) or "UNKNOWN"
+        # _GK (kindergarten) too — \d+ alone left K docs unnormalized, so
+        # every K student's subject keys fragmented from their base subject.
+        return re.sub(r"_G(?:\d+|K)$", "", s) or "UNKNOWN"
 
     async def _ensure_subskill_loc_cache(self) -> None:
         """Load/refresh the subskill → {subject, subject_id, grade} index.

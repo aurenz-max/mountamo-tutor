@@ -441,7 +441,7 @@ class LessonGroupService:
         ("LANGUAGE_ARTS") — cap checks must not miss on spelling.
         """
         s = re.sub(r"[^A-Za-z0-9]+", "_", (subject or "").strip()).upper().strip("_")
-        return re.sub(r"_G\d+$", "", s)
+        return re.sub(r"_G(?:\d+|K)$", "", s)  # _GK too, not just _G<digits>
 
     @staticmethod
     def _status_from_type(item_type: str, gate: int) -> str:

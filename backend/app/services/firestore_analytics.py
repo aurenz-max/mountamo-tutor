@@ -29,7 +29,10 @@ def _norm_subject(s: Optional[str]) -> str:
     if not s:
         return ""
     s = re.sub(r"[\s\-]+", "_", s.strip().upper())
-    return re.sub(r"_G\d+$", "", s)
+    # _GK (kindergarten) too — \d+ alone left K docs unnormalized, making
+    # pulse-written "MATHEMATICS_GK" lifecycles invisible to KG progress
+    # (and thus servable as "new" by the selector after mastery).
+    return re.sub(r"_G(?:\d+|K)$", "", s)
 
 
 def _subject_matches(doc_subject: Optional[str], wanted: Optional[str]) -> bool:
