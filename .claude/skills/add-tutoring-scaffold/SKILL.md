@@ -218,14 +218,22 @@ Adding scaffolding is a **frontend-only** task. No backend changes needed.
     - Any `aiDirectives` added
     - Context keys configured
 
-### Phase 5: Testing Reminder
+### Phase 5: Verify the Connection
 
-16. **Remind the user to test**
+16. **Run `/tutor-test <primitive-id>`** (curl `http://localhost:3000/api/lumina/tutor-test?componentId=<id>`)
+    - This is the L2 QA gate — the scaffold isn't "wired" until it passes.
+    - Tier 1 (static, free) confirms: the hook is wired, every `{{key}}` and
+      contextKey resolves against the component's `aiPrimitiveData`, tagged
+      `sendText` calls are silent, directive tags are actually emitted, and no
+      answer key is interpolated into spoken scaffold text.
+    - Add `&probe=1` (Tier 2) to see the assembled system-prompt section built
+      from real generated content — any literal `(not set)` is a break.
+    - Fix HIGH findings before reporting done. See `.claude/skills/tutor-test/SKILL.md`.
+
+17. **Remind the user to do the Tier-3 live check** (behavior, not connection)
     - Use the **Lumina Tutor Tester** to verify:
-      - Scaffold is sent correctly in the WebSocket auth message
-      - `{{key}}` template variables resolve to actual runtime values
       - AI responds with context-aware scaffolding at each trigger
-      - `sendText` triggers produce appropriate AI speech
+      - `sendText` triggers produce appropriate AI speech (no answer reveals)
       - Silent messages don't appear in the conversation UI
 
 ## Understanding the Two Communication Channels
@@ -290,7 +298,8 @@ Add tutoring to the appropriate domain file:
 - [ ] Each `sendText` includes context (answers, attempt count) and brief instructions
 - [ ] Special tags documented in `aiDirectives` if they require non-default AI behavior
 - [ ] Project-local `tsc --noEmit` holds baseline (absolute path; never bare `npx tsc`)
-- [ ] Reminded user to test with Lumina Tutor Tester
+- [ ] `/tutor-test <id>` passes (no HIGH findings) — the L2 connection gate
+- [ ] Reminded user to do the Tier-3 live check with Lumina Tutor Tester
 
 ## Important Notes
 

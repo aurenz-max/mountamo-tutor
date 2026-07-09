@@ -253,6 +253,8 @@ const DotPlot: React.FC<DotPlotProps> = ({ data, className }) => {
     challengeType: currentChallenge?.evalMode ?? 'whole_number_plot',
     instruction: currentChallenge?.instruction ?? '',
     dataPoints,
+    dataCount: dataPoints.length,
+    parallel,
     secondaryDataPoints: parallel ? secondaryDataPoints : undefined,
     primaryLabel: parallel ? primaryLabel : undefined,
     secondaryLabel: parallel ? secondaryLabel : undefined,

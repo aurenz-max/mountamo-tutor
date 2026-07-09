@@ -447,3 +447,275 @@ def run_assertions_for_archetype(
         logger.warning(f"No assertion suite for archetype '{archetype}'")
 
     return results
+
+
+# ── Truth-model assertions (Pulse Agent v2, Phase 1) ────────────────────────
+#
+# These only run when the journey was driven by the LatentStudent truth model
+# (timeline.truth_mode). They validate the ESTIMATOR against ground truth —
+# something scripted scores can never do.
+
+
+def _truth_pairs(
+    timeline: JourneyTimeline,
+    min_items_seen: int = 5,
+) -> List[tuple]:
+    """(skill_id, theta_true, theta_est) for skills with enough evidence."""
+    truth = timeline.truth_snapshot
+    abilities = timeline.latest_abilities()
+    pairs = []
+    for skill_id, t_true in truth.items():
+        ab = abilities.get(skill_id)
+        if not ab:
+            continue
+        if ab.get("total_items_seen", 0) < min_items_seen:
+            continue
+        pairs.append((skill_id, t_true, ab.get("theta", 3.0)))
+    return pairs
+
+
+def _effective_truth(
+    timeline: JourneyTimeline,
+    skill_id: str,
+    theta_true: float,
+) -> float:
+    """Compression-corrected convergence target for one skill.
+
+    The LatentStudent emits weights w = g + (1-g-s)·P(θ_true, β), so even a
+    perfect estimator converges not to θ_true but to the θ whose model
+    probability equals that compressed weight at the items' mean β:
+
+        θ_eff = β̄ + ln(w / (1 - w)) / a
+
+    Judging against θ_eff isolates estimator quality from the (known,
+    intentional) response-model compression.
+    """
+    import math as _math
+
+    meta = timeline.truth_meta or {}
+    g = float(meta.get("guess", 0.0))
+    s = float(meta.get("slip", 0.0))
+    a = float(meta.get("discrimination_a", 1.0)) or 1.0
+
+    betas = [
+        item.target_beta
+        for sess in timeline.sessions
+        for item in sess.items
+        if item.skill_id == skill_id
+    ]
+    if not betas:
+        return theta_true
+
+    beta_bar = sum(betas) / len(betas)
+    p_true = 1.0 / (1.0 + _math.exp(-max(-20.0, min(20.0, a * (theta_true - beta_bar)))))
+    w = g + (1.0 - g - s) * p_true
+    w = max(0.005, min(0.995, w))
+    theta_eff = beta_bar + _math.log(w / (1.0 - w)) / a
+    return max(0.0, min(10.0, theta_eff))
+
+
+def assert_truth_convergence(
+    timeline: JourneyTimeline,
+    sigma_k: float = 2.5,
+    floor: float = 0.8,
+    min_coverage: float = 0.7,
+    min_items_seen: int = 5,
+) -> AssertionResult:
+    """Coverage test: is the (compression-corrected) truth inside the
+    engine's own confidence interval?
+
+    For each well-evidenced skill, pass if |θ_eff - θ_est| <= max(k·σ, floor),
+    where σ is the engine's posterior uncertainty for that skill. This is
+    the statistically honest claim — with 3-6 items per skill some absolute
+    error is expected (prior anchoring at 3.0), but the engine must not be
+    confidently wrong. Requires >= min_coverage of skills within bound.
+    """
+    truth = timeline.truth_snapshot
+    abilities = timeline.latest_abilities()
+
+    rows = []  # (skill, theta_eff, theta_est, sigma, within)
+    for skill_id, t_true in truth.items():
+        ab = abilities.get(skill_id)
+        if not ab or ab.get("total_items_seen", 0) < min_items_seen:
+            continue
+        t_eff = _effective_truth(timeline, skill_id, t_true)
+        t_est = ab.get("theta", 3.0)
+        sigma = ab.get("sigma", 2.0)
+        bound = max(sigma_k * sigma, floor)
+        rows.append((skill_id, t_eff, t_est, sigma, abs(t_eff - t_est) <= bound))
+
+    if not rows:
+        return AssertionResult(
+            name="truth_convergence",
+            passed=True,
+            message=f"No skills with >= {min_items_seen} items — skipped",
+            details={"pairs": 0},
+        )
+
+    covered = sum(1 for r in rows if r[4])
+    coverage = covered / len(rows)
+    mae = sum(abs(r[2] - r[1]) for r in rows) / len(rows)
+    bias = sum(r[2] - r[1] for r in rows) / len(rows)
+    worst = max(rows, key=lambda r: abs(r[2] - r[1]))
+
+    return AssertionResult(
+        name="truth_convergence",
+        passed=coverage >= min_coverage,
+        message=(
+            f"Coverage {coverage:.0%} ({covered}/{len(rows)} skills within "
+            f"{sigma_k}σ of θ_eff; need >= {min_coverage:.0%}); "
+            f"MAE {mae:.2f}, bias {bias:+.2f}; worst: {worst[0]} "
+            f"eff={worst[1]:.2f} est={worst[2]:.2f} σ={worst[3]:.2f}"
+        ),
+        details={
+            "coverage": coverage, "pairs": len(rows),
+            "mae_vs_eff": mae, "bias_vs_eff": bias,
+        },
+    )
+
+
+def assert_truth_rank_agreement(
+    timeline: JourneyTimeline,
+    min_concordance: float = 0.6,
+    min_items_seen: int = 5,
+    truth_gap: float = 0.5,
+    min_comparable_pairs: int = 6,
+) -> AssertionResult:
+    """Pairwise order agreement between theta_true and theta_est.
+
+    The pedagogically load-bearing claim: the engine ranks the student's
+    skills the way the truth ranks them (weak skills look weak), even if
+    absolute values are attenuated. Only meaningful when the truth itself
+    is heterogeneous — pairs whose true thetas differ by < truth_gap carry
+    no ranking signal, and fewer than min_comparable_pairs of them is a
+    coin-flip sample, so homogeneous archetypes (e.g. gifted, where every
+    skill is uniformly strong) skip this check.
+    """
+    pairs = _truth_pairs(timeline, min_items_seen)
+
+    concordant = 0
+    total = 0
+    for i in range(len(pairs)):
+        for j in range(i + 1, len(pairs)):
+            _, true_i, est_i = pairs[i]
+            _, true_j, est_j = pairs[j]
+            if abs(true_i - true_j) < truth_gap:
+                continue  # truth ties carry no ranking signal
+            total += 1
+            if (true_i - true_j) * (est_i - est_j) > 0:
+                concordant += 1
+
+    if total < min_comparable_pairs:
+        return AssertionResult(
+            name="truth_rank_agreement",
+            passed=True,
+            message=(
+                f"Only {total} comparable pairs (truth gap >= {truth_gap}, "
+                f"need {min_comparable_pairs}) — truth too homogeneous, skipped"
+            ),
+            details={"comparable_pairs": total},
+        )
+
+    rate = concordant / total
+    return AssertionResult(
+        name="truth_rank_agreement",
+        passed=rate >= min_concordance,
+        message=(
+            f"Rank concordance {rate:.0%} ({concordant}/{total} pairs, "
+            f"need >= {min_concordance:.0%})"
+        ),
+        details={"concordance": rate, "pairs": total},
+    )
+
+
+def assert_weak_cluster_detected(
+    timeline: JourneyTimeline,
+    truth_gap: float = 1.5,
+    min_items_seen: int = 3,
+) -> AssertionResult:
+    """For selective-weakness truth runs: skills that are TRULY weak
+    (bottom cluster of theta_true) must be ESTIMATED weaker than the rest."""
+    pairs = _truth_pairs(timeline, min_items_seen)
+    if len(pairs) < 3:
+        return AssertionResult(
+            name="weak_cluster_detected",
+            passed=True,
+            message=f"Only {len(pairs)} evidenced skills — skipped",
+            details={"pairs": len(pairs)},
+        )
+
+    mean_true = sum(p[1] for p in pairs) / len(pairs)
+    weak = [p for p in pairs if p[1] <= mean_true - truth_gap / 2]
+    strong = [p for p in pairs if p[1] >= mean_true + truth_gap / 2]
+    if not weak or not strong:
+        return AssertionResult(
+            name="weak_cluster_detected",
+            passed=True,
+            message="Truth thetas form no separable clusters — skipped",
+            details={"weak": len(weak), "strong": len(strong)},
+        )
+
+    est_weak = sum(p[2] for p in weak) / len(weak)
+    est_strong = sum(p[2] for p in strong) / len(strong)
+
+    return AssertionResult(
+        name="weak_cluster_detected",
+        passed=est_weak < est_strong,
+        message=(
+            f"Estimated θ: weak cluster {est_weak:.2f} ({len(weak)} skills) "
+            f"vs strong cluster {est_strong:.2f} ({len(strong)} skills)"
+        ),
+        details={"est_weak": est_weak, "est_strong": est_strong},
+    )
+
+
+# Per-archetype σ multipliers: archetypes whose truth MOVES between
+# measurement and snapshot (decay, drift) or drowns in response noise get a
+# wider band — the lag is the archetype's point, not an estimator failure.
+_TRUTH_SIGMA_K: Dict[str, float] = {
+    "volatile": 3.5,
+    "forgetful": 3.0,
+    "regressing": 3.0,
+    "bursty": 3.0,
+    "struggling": 3.0,
+}
+
+
+def run_truth_assertions(
+    timeline: JourneyTimeline,
+    archetype: str,
+) -> List[AssertionResult]:
+    """Assertion suite for truth-model journeys: estimator validity first,
+    then the qualitative archetype expectations that remain meaningful."""
+    results: List[AssertionResult] = []
+
+    results.append(assert_skill_diversity(timeline, min_unique_skills=2))
+    results.append(assert_truth_convergence(
+        timeline, sigma_k=_TRUTH_SIGMA_K.get(archetype, 2.5)
+    ))
+
+    # Rank agreement compares FINAL truth to estimates made at different
+    # times. When truth drifts every session (regressing), estimates are
+    # stale by construction and ranking reflects measurement timing, not
+    # estimator quality — skip it there.
+    drift = abs(float((timeline.truth_meta or {}).get("session_drift", 0.0)))
+    if drift < 1e-9:
+        results.append(assert_truth_rank_agreement(timeline))
+
+    if archetype in ("gifted", "steady", "accelerating", "forgetful", "bursty"):
+        results.append(assert_theta_trend(timeline, direction="increasing"))
+        results.append(assert_gate_progression(timeline, min_gate_advances=1))
+    elif archetype == "regressing":
+        results.append(assert_theta_trend(timeline, direction="decreasing", tolerance=0.3))
+    elif archetype == "volatile":
+        results.append(assert_theta_trend(timeline, direction="stable", tolerance=1.5))
+    elif archetype == "struggling":
+        results.append(assert_struggling_no_leapfrog(timeline))
+    elif archetype == "cold_start":
+        results.append(assert_cold_start_frontier_heavy(timeline))
+    elif archetype == "selective_weakness":
+        results.append(assert_weak_cluster_detected(timeline))
+    elif archetype == "plateau":
+        results.append(assert_theta_trend(timeline, direction="increasing", tolerance=0.5))
+
+    return results

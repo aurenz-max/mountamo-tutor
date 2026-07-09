@@ -699,6 +699,81 @@ def generate_graph_report(
     return "\n".join(lines)
 
 
+def generate_truth_report(timeline: JourneyTimeline) -> str:
+    """Truth vs Estimate section (truth-model runs only).
+
+    Shows, per skill with evidence, the ground-truth theta the LatentStudent
+    actually had at journey end vs the engine's estimate — the estimator
+    validity picture v1's scripted scores could never draw.
+    """
+    if not timeline.truth_snapshot:
+        return ""
+
+    lines: List[str] = []
+    _h = lines.append
+
+    _h("## Truth vs Estimate (Latent Student Model)")
+    _h("")
+    _h("Ground-truth θ per skill vs the engine's final estimate. `n` = items")
+    _h("the engine saw for that skill; skills with little evidence are noisy")
+    _h("by construction.")
+    _h("")
+    _h("| Skill | θ_true | θ_est | Δ | σ | n |")
+    _h("|-------|--------|-------|---|---|---|")
+
+    abilities = timeline.latest_abilities()
+    rows = []
+    for skill_id, t_true in sorted(timeline.truth_snapshot.items()):
+        ab = abilities.get(skill_id)
+        if ab is None:
+            continue
+        t_est = ab.get("theta", 3.0)
+        rows.append((skill_id, t_true, t_est,
+                     ab.get("sigma", 2.0), ab.get("total_items_seen", 0)))
+
+    evidenced = [r for r in rows if r[4] >= 5]
+    for skill_id, t_true, t_est, sigma, n in rows:
+        _h(
+            f"| {skill_id} | {t_true:.2f} | {t_est:.2f} | "
+            f"{t_est - t_true:+.2f} | {sigma:.2f} | {n} |"
+        )
+
+    _h("")
+    if evidenced:
+        mae = sum(abs(r[2] - r[1]) for r in evidenced) / len(evidenced)
+        bias = sum(r[2] - r[1] for r in evidenced) / len(evidenced)
+        _h(
+            f"**Well-evidenced skills (n >= 5):** {len(evidenced)} — "
+            f"MAE {mae:.2f}, bias {bias:+.2f}"
+        )
+    else:
+        _h("**No skill accumulated >= 5 items — run more sessions for a convergence read.**")
+    _h("")
+
+    # Convergence over time: session-by-session MAE on final evidenced skills
+    tracked = {r[0] for r in evidenced}
+    if tracked:
+        _h("### Convergence over sessions (MAE on evidenced skills)")
+        _h("")
+        _h("| Session | MAE | Skills measured |")
+        _h("|---------|-----|-----------------|")
+        for s in timeline.sessions:
+            if not s.truth_snapshot:
+                continue
+            errs = []
+            for skill_id in tracked:
+                t_true = s.truth_snapshot.get(skill_id)
+                ab = s.ability_snapshot.get(skill_id)
+                if t_true is None or ab is None:
+                    continue
+                errs.append(abs(ab.get("theta", 3.0) - t_true))
+            if errs:
+                _h(f"| {s.session_number} | {sum(errs)/len(errs):.2f} | {len(errs)} |")
+        _h("")
+
+    return "\n".join(lines)
+
+
 def save_report(report: str, output_dir: Path, profile_name: str, subject: str = "") -> Path:
     """Save a report to a Markdown file.
 

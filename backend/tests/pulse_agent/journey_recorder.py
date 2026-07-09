@@ -76,6 +76,9 @@ class SessionSnapshot:
     ability_snapshot: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     # {skill_id: {theta, sigma, earned_level, total_items_seen}}
 
+    # Ground-truth theta per skill (truth-model runs only; empty otherwise)
+    truth_snapshot: Dict[str, float] = field(default_factory=dict)
+
     timestamp: str = ""
 
 
@@ -90,6 +93,12 @@ class JourneyTimeline:
     started_at: str = ""
     completed_at: str = ""
     total_curriculum_nodes: int = 0  # total subskill nodes in the DAG
+
+    # Truth-model runs: final ground-truth theta per skill (empty in v1 runs)
+    truth_mode: bool = False
+    truth_snapshot: Dict[str, float] = field(default_factory=dict)
+    # Response-model parameters (guess/slip/noise_sd) for bias-corrected assertions
+    truth_meta: Dict[str, float] = field(default_factory=dict)
 
     @property
     def total_sessions(self) -> int:

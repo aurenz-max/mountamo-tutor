@@ -120,6 +120,11 @@ class PulseAgentRunner:
                     f"bands={snapshot.band_counts}"
                 )
 
+                # Truth-model runs: stamp ground-truth theta alongside the estimate
+                truth = getattr(strategy, "truth_thetas", None)
+                if truth is not None:
+                    snapshot.truth_snapshot = dict(truth)
+
                 if on_session_complete:
                     await on_session_complete(snapshot)
 
@@ -135,6 +140,12 @@ class PulseAgentRunner:
             virtual_now += timedelta(days=gap_days)
 
         timeline.completed_at = datetime.now(timezone.utc).isoformat()
+
+        final_truth = getattr(strategy, "truth_thetas", None)
+        if final_truth is not None:
+            timeline.truth_mode = True
+            timeline.truth_snapshot = dict(final_truth)
+            timeline.truth_meta = dict(getattr(strategy, "truth_meta", {}) or {})
 
         logger.info(
             f">> Journey complete: {profile.name} -- "

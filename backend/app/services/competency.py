@@ -228,9 +228,16 @@ class CompetencyService:
         logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
         
         try:
-            # Check if cosmos_db is available
+            # Cosmos is deprecated (Firestore-exclusive direction, 2026-07-08):
+            # tolerate cosmos_db=None and run the Firestore-only fan-out.
+            # Firestore must be present — it's the loop's source of truth.
             if not self.cosmos_db:
-                logger.error(f"❌ COMPETENCY_SERVICE: CosmosDB service not initialized")
+                logger.warning(
+                    f"⚠️ COMPETENCY_SERVICE: CosmosDB not configured — "
+                    f"running Firestore-only fan-out (Cosmos is deprecated)"
+                )
+            if not self.firestore_service:
+                logger.error(f"❌ COMPETENCY_SERVICE: FirestoreService not initialized")
                 return {
                     "error": "Database service not available",
                     "student_id": student_id,
@@ -238,7 +245,7 @@ class CompetencyService:
                     "skill_id": skill_id,
                     "subskill_id": subskill_id
                 }
-                    
+
             # Extract score from evaluation, handling multiple formats
             score = 0.0
             if isinstance(evaluation.get('evaluation'), dict):
@@ -320,21 +327,22 @@ class CompetencyService:
             cosmos_success = False
             firestore_success = False
             
-            # Save to CosmosDB
-            try:
-                await self.cosmos_db.save_attempt(
-                    student_id=student_id,
-                    subject=subject,
-                    skill_id=skill_id,
-                    subskill_id=subskill_id,
-                    score=score,
-                    analysis=analysis,
-                    feedback=feedback
-                )
-                cosmos_success = True
-                logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to CosmosDB")
-            except Exception as e:
-                logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to CosmosDB: {str(e)}")
+            # Save to CosmosDB (legacy dual-write — skipped when Cosmos absent)
+            if self.cosmos_db:
+                try:
+                    await self.cosmos_db.save_attempt(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        score=score,
+                        analysis=analysis,
+                        feedback=feedback
+                    )
+                    cosmos_success = True
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully saved attempt to CosmosDB")
+                except Exception as e:
+                    logger.error(f"🔍 COMPETENCY_SERVICE: Failed to save attempt to CosmosDB: {str(e)}")
 
             # Save to Firestore (includes eval source tag — PRD 6.1)
             if self.firestore_service:
@@ -365,63 +373,64 @@ class CompetencyService:
             else:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Both database writes failed for attempt")
             
-            # Get all attempts for this skill
-            logger.info(f"🔍 COMPETENCY_SERVICE: Getting student attempts...")
-            attempts = await self.cosmos_db.get_student_attempts(
-                student_id=student_id,
-                subject=subject,
-                skill_id=skill_id,
-                subskill_id=subskill_id
-            )
-            
-            logger.info(f"🔍 COMPETENCY_SERVICE: Found {len(attempts)} attempts")
-            
-            # Move calculations to a thread since they're CPU bound
-            from asyncio import to_thread
-            def calculate_scores():
-                average_score = sum(attempt["score"] for attempt in attempts) / len(attempts)
-                credibility = min(1.0, math.sqrt(len(attempts) / self.full_credibility_standard))
-                blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
-                return blended_score, credibility
-            
-            blended_score, credibility = await to_thread(calculate_scores)
-            logger.info(f"🔍 COMPETENCY_SERVICE: Calculated scores - blended: {blended_score}, credibility: {credibility}")
-
-            # Update competency in both CosmosDB and Firestore (dual write)
+            # Legacy CosmosDB competency blend — needs Cosmos attempt history;
+            # skipped entirely when Cosmos is absent (Firestore's incremental
+            # writer below is self-contained and independent of this block).
             logger.info(f"🔍 COMPETENCY_SERVICE: Updating competency in databases...")
             cosmos_comp_success = False
             firestore_comp_success = False
             result = None
-            
-            # Update in CosmosDB
-            try:
-                result = await self.cosmos_db.update_competency(
-                    student_id=student_id,
-                    subject=subject,
-                    skill_id=skill_id,
-                    subskill_id=subskill_id,
-                    score=blended_score,
-                    credibility=credibility,
-                    total_attempts=len(attempts)
-                )
-                cosmos_comp_success = True
-                logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in CosmosDB")
-            except Exception as e:
-                logger.error(f"🔍 COMPETENCY_SERVICE: Failed to update competency in CosmosDB: {str(e)}")
-            
+
+            if self.cosmos_db:
+                try:
+                    attempts = await self.cosmos_db.get_student_attempts(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id
+                    )
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Found {len(attempts)} attempts")
+
+                    # Move calculations to a thread since they're CPU bound
+                    from asyncio import to_thread
+                    def calculate_scores():
+                        average_score = sum(attempt["score"] for attempt in attempts) / len(attempts)
+                        credibility = min(1.0, math.sqrt(len(attempts) / self.full_credibility_standard))
+                        blended_score = (average_score * credibility) + (self.default_score * (1 - credibility))
+                        return blended_score, credibility
+
+                    blended_score, credibility = await to_thread(calculate_scores)
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Calculated scores - blended: {blended_score}, credibility: {credibility}")
+
+                    result = await self.cosmos_db.update_competency(
+                        student_id=student_id,
+                        subject=subject,
+                        skill_id=skill_id,
+                        subskill_id=subskill_id,
+                        score=blended_score,
+                        credibility=credibility,
+                        total_attempts=len(attempts)
+                    )
+                    cosmos_comp_success = True
+                    logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in CosmosDB")
+                except Exception as e:
+                    logger.error(f"🔍 COMPETENCY_SERVICE: Failed to update competency in CosmosDB: {str(e)}")
+
             # Update in Firestore via the unified incremental writer — shares
             # count basis and blend math with PulseEngine so the two paths
             # compose instead of overwriting each other (raw item score in,
             # blend computed against the doc's own running average).
             if self.firestore_service:
                 try:
-                    await self.firestore_service.apply_competency_eval(
+                    firestore_result = await self.firestore_service.apply_competency_eval(
                         student_id=student_id,
                         subject=subject,
                         skill_id=skill_id,
                         subskill_id=subskill_id,
                         score=score,
                     )
+                    if result is None:
+                        result = firestore_result
                     firestore_comp_success = True
                     logger.info(f"🔍 COMPETENCY_SERVICE: Successfully updated competency in Firestore")
                 except Exception as e:

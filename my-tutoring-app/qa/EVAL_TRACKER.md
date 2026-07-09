@@ -403,10 +403,22 @@ ceiling).
 
 ---
 
+### SP-27: Tutoring scaffold references keys the component's primitiveData never emits — tutor silently context-blind
+
+**Affected:** 44 primitives (see `qa/tutor-reports/sweep-2026-07-08.md` for the full list; worst: sound-wave-explorer, push-pull-arena, length-lab, gravity-drop-tower, sentence-analyzer — ALL scaffold keys broken). ~~dot-plot~~ fixed 2026-07-08.
+**Risk:** Every `/add-tutoring-scaffold` pass authored against an intended data model rather than the component's actual `aiPrimitiveData`; any component refactor can re-introduce it.
+**Root cause:** The backend's `interpolate_template` (lumina_tutor.py) renders unresolvable `{{key}}`s and contextKeys as the literal `(not set)` with no error or log — the join between catalog scaffold and component bag was never checked anywhere.
+**Fix pattern:** Add the missing derived keys to `aiPrimitiveData` (preferred — scaffold copy is the reviewed artifact) or rename the scaffold reference. Template: dot-plot (`dataCount: dataPoints.length`, `parallel` added to the bag).
+**Detection:** `/tutor-test` (`/api/lumina/tutor-test`, `service/qa/tutoring/scaffoldAudit.ts`) — deterministic, CI-able; sweep mode covers all scaffolds in one call. `/add-tutoring-scaffold` Phase 5 now gates on it.
+
 ## Open Issues — CRITICAL / HIGH
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
+| TU-1 | fast-fact | tutoring | HIGH | Answer leak | `{{correctAnswer}}` interpolated into a scaffolding level — a script the tutor reads aloud (fine in contextKeys, not in spoken text). `/tutor-test` sweep 2026-07-08. | CATALOG |
+| TU-2 | comparison-builder | tutoring | HIGH | Answer leak | `{{correctAnswer}}` interpolated into a scaffolding level (same class as TU-1). | CATALOG |
+| TU-3 | word-sorter | tutoring | HIGH | Answer leak | `{{correctCategory}}` in a scaffolding level — doubly broken: it's also unresolvable (not in the bag), so today it reads `(not set)`; naively "fixing" the key would START leaking. Reword the level instead. | CATALOG |
+| TU-4 | machine-profile | tutoring | HIGH | Orphan scaffold | Full tutoring block in catalog/engineering.ts but the component never calls useLuminaAI — scaffold never sent, generic tutor. Wire the hook or drop the block. | COMPONENT |
 | ~~VE-1~~ | ~~vocabulary-explorer~~ | ~~recall, apply~~ | ~~CRITICAL~~ | ~~Wrong answer key~~ | ~~LLM-emitted positional `correctIndex` wrong in the majority of MC generations (anchors to 0).~~ RESOLVED 2026-06-25: added `correctAnswer` TEXT field; derive `correctIndex = options.indexOf(correctAnswer)` in post-process (SP-25 / knowledge-check pattern). **REGRESSED — see VE-4.** | GENERATOR |
 | ~~VE-4~~ | ~~vocabulary-explorer~~ | ~~recall, apply~~ | ~~CRITICAL~~ | ~~Wrong answer key (VE-1 regression)~~ | ~~VE-1's last-resort fallback to the raw `c.correctIndex` re-anchored to 0 whenever flash-lite dropped `correctAnswer` (SP-14 class) — field-reported: fill_blank keyed "Elevation" (opt 0) correct while explanation described "Terrain".~~ RESOLVED 2026-07-04 via **correct-by-construction**: dropped `option0-3`/`correctIndex` from the schema; model emits `correctAnswer` + `distractor0/1/2`, code shuffles + derives the index (`indexOf`). No positional pointer, no text-matching heuristics. Verified 22/22 MC keyed correctly across 8 live gens; also fixed context mode's empty-sentence output. | GENERATOR |
 | ~~VE-2~~ | ~~vocabulary-explorer~~ | ~~explore~~ | ~~HIGH~~ | ~~Trivial challenge~~ | ~~`match` definitions render in term order; correctness = positional identity, solvable row-to-row.~~ RESOLVED 2026-06-25: Definitions column rendered in shuffled order (`shuffledDefOrder`, values = original indices); grading unchanged so it stays correct. | COMPONENT |

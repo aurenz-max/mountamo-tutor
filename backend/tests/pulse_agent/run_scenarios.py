@@ -48,12 +48,17 @@ from app.core.config import settings
 from tests.pulse_agent.agent import PulseAgentRunner
 from tests.pulse_agent.in_memory_firestore import InMemoryFirestoreService
 from tests.pulse_agent.profiles import ALL_PROFILES, SyntheticProfile
-from tests.pulse_agent.assertions import run_assertions_for_archetype
+from tests.pulse_agent.assertions import (
+    run_assertions_for_archetype,
+    run_truth_assertions,
+)
 from tests.pulse_agent.journey_recorder import JourneyRecorder
+from tests.pulse_agent.truth_model import get_truth_strategy
 from tests.pulse_agent.reports import (
     generate_journey_report,
     generate_graph_report,
     generate_comparison_report,
+    generate_truth_report,
     save_report,
 )
 
@@ -86,7 +91,11 @@ def build_engine() -> tuple:
     return pulse_engine, firestore_service
 
 
-async def build_engine_in_memory(subjects: list[str] | None = None) -> tuple:
+async def build_engine_in_memory(
+    subjects: list[str] | None = None,
+    grade: str | None = None,
+    load_published: bool = False,
+) -> tuple:
     """Instantiate PulseEngine backed by in-memory storage.
 
     Fetches curriculum graphs from Firestore ONCE per subject, then runs
@@ -120,6 +129,24 @@ async def build_engine_in_memory(subjects: list[str] | None = None) -> tuple:
         node_count = len(graph_data.get("graph", {}).get("nodes", []))
         logger.info(f"[InMemory] Loaded {subject_id}: {node_count} nodes")
 
+        # Full-loop mode also needs the published curriculum doc (hierarchy
+        # + subskill_index) for CurriculumService / planning / rollup
+        # subject resolution. One extra read per subject at bootstrap.
+        if load_published:
+            import re as _re
+            base_id = _re.sub(r"_G\w+$", "", subject_id)
+            doc = None
+            for candidate in (base_id, subject_id):
+                doc = await real_fs.get_published_curriculum(candidate, grade=grade)
+                if doc:
+                    mem_fs.load_published_curriculum(candidate, doc)
+                    break
+            if not doc:
+                logger.warning(
+                    f"[InMemory] No published curriculum found for "
+                    f"{base_id}/{subject_id} (grade={grade}) — planning may be degraded"
+                )
+
     # Wire up all services with the in-memory store
     calibration_engine = CalibrationEngine(mem_fs)
     mastery_lifecycle_engine = MasteryLifecycleEngine(mem_fs)
@@ -148,16 +175,23 @@ async def run_single_profile(
     clean: bool = False,
     output_dir: Path | None = None,
     include_graph: bool = False,
+    truth: bool = False,
 ) -> None:
     """Run one profile and print results."""
 
     if clean:
         await runner.cleanup_student(profile.student_id)
 
-    timeline = await runner.run_profile(profile, session_limit=session_limit)
+    strategy_override = get_truth_strategy(profile, seed=runner.seed) if truth else None
+    timeline = await runner.run_profile(
+        profile, strategy_override=strategy_override, session_limit=session_limit
+    )
 
-    # Run assertions
-    results = run_assertions_for_archetype(timeline, profile.archetype)
+    # Run assertions (truth-model journeys get the estimator-validity suite)
+    if truth:
+        results = run_truth_assertions(timeline, profile.archetype)
+    else:
+        results = run_assertions_for_archetype(timeline, profile.archetype)
 
     # Print summary
     print(f"\n{'='*60}")
@@ -188,6 +222,12 @@ async def run_single_profile(
     if output_dir:
         report = generate_journey_report(timeline, results)
 
+        # Truth-model runs get the Truth vs Estimate section
+        if timeline.truth_mode:
+            truth_section = generate_truth_report(timeline)
+            if truth_section:
+                report += "\n\n" + truth_section
+
         # Append graph analysis if requested
         if include_graph:
             print("  Fetching curriculum graph...")
@@ -206,6 +246,7 @@ async def run_all_profiles(
     clean: bool = False,
     output_dir: Path | None = None,
     include_graph: bool = False,
+    truth: bool = False,
 ) -> None:
     """Run all profiles and generate a comparison report."""
     from .journey_recorder import JourneyTimeline
@@ -220,10 +261,16 @@ async def run_all_profiles(
         if clean:
             await runner.cleanup_student(profile.student_id)
 
-        timeline = await runner.run_profile(profile, session_limit=session_limit)
+        strategy_override = get_truth_strategy(profile, seed=runner.seed) if truth else None
+        timeline = await runner.run_profile(
+            profile, strategy_override=strategy_override, session_limit=session_limit
+        )
         timelines.append(timeline)
 
-        results = run_assertions_for_archetype(timeline, profile.archetype)
+        if truth:
+            results = run_truth_assertions(timeline, profile.archetype)
+        else:
+            results = run_assertions_for_archetype(timeline, profile.archetype)
         passed = sum(1 for r in results if r.passed)
         total = len(results)
         print(f"  Assertions: {passed}/{total} passed")
@@ -238,8 +285,16 @@ async def run_all_profiles(
     if output_dir:
         # Save individual + comparison reports
         for timeline in timelines:
-            results = run_assertions_for_archetype(timeline, timeline.archetype)
+            if timeline.truth_mode:
+                results = run_truth_assertions(timeline, timeline.archetype)
+            else:
+                results = run_assertions_for_archetype(timeline, timeline.archetype)
             report = generate_journey_report(timeline, results)
+
+            if timeline.truth_mode:
+                truth_section = generate_truth_report(timeline)
+                if truth_section:
+                    report += "\n\n" + truth_section
 
             if include_graph:
                 graph = await runner.fetch_graph(timeline.subject)
@@ -311,6 +366,43 @@ def main():
         help="Use in-memory storage (fetches graph once, then 0 Firestore calls). ~100x faster.",
     )
     parser.add_argument(
+        "--truth",
+        action="store_true",
+        help=(
+            "Drive scores from the LatentStudent truth model (2PL vs item β, "
+            "learning + forgetting) instead of scripted archetype scores. "
+            "Enables estimator-validity assertions (θ_est vs θ_true)."
+        ),
+    )
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help=(
+            "Full student-data-loop journey: each virtual day fetches the "
+            "daily plan + selector targets, does the work through the REAL "
+            "submission fan-out (attempts → rollups → profile), and audits "
+            "the canonical profile serve. Implies --in-memory and the truth "
+            "model. Verifies the L2 rebuild contract at journey end."
+        ),
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=20,
+        help="Number of virtual days for --loop mode (default: 20)",
+    )
+    parser.add_argument(
+        "--seed-from",
+        type=int,
+        default=None,
+        help=(
+            "Mid-year persona: ONE batched Firestore read of this real "
+            "student's docs (ability/lifecycle/attempts/rollups/profile) "
+            "seeds the in-memory store, then the journey diverges privately "
+            "— zero writes back. Loop mode only."
+        ),
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="List available profiles and exit",
@@ -371,6 +463,11 @@ def main():
     if not args.profile and not args.all:
         parser.error("Specify --profile <name> or --all")
 
+    # Full-loop mode is in-memory ONLY (a loop day fans each attempt into
+    # ~6 doc writes — real Firestore I/O would be absurd and slow).
+    if args.loop:
+        args.in_memory = True
+
     # Build output dir with grade subfolder: reports/GK/, reports/G1/, etc.
     output_dir = Path(args.output) / grade_suffix.lstrip("_") if args.output else None
 
@@ -379,13 +476,78 @@ def main():
         subjects_str = ", ".join(args.subject_ids)
         print(f"[InMemory] Bootstrapping — fetching graph(s) for: {subjects_str}...")
         pulse_engine, firestore_service = asyncio.run(
-            build_engine_in_memory(subjects=args.subject_ids)
+            build_engine_in_memory(
+                subjects=args.subject_ids,
+                grade=grade_raw,
+                load_published=args.loop,
+            )
         )
         # In-memory mode: always clean (start fresh) and skip Firestore cleanup
         args.clean = False
         print("[InMemory] Ready — all subsequent operations are in-memory\n")
     else:
         pulse_engine, firestore_service = build_engine()
+
+    # ── Full-loop mode dispatch ──────────────────────────────────────────
+    if args.loop:
+        from tests.pulse_agent.full_loop import (
+            FullLoopRunner,
+            generate_loop_report,
+            run_loop_assertions,
+            save_loop_timeline,
+            seed_from_student,
+        )
+        from tests.pulse_agent.html_report import generate_loop_html
+
+        loop_runner = FullLoopRunner(firestore_service, pulse_engine, seed=args.seed)
+        profiles = (
+            list(ALL_PROFILES.values()) if args.all else [ALL_PROFILES[args.profile]]
+        )
+
+        for subject_id in args.subject_ids:
+            for profile in profiles:
+                profile.subject = subject_id
+                print(f"\n{'─'*60}")
+                print(f"  Loop journey: {profile.name} — {subject_id}, {args.days} days")
+                print(f"{'─'*60}")
+
+                if args.seed_from:
+                    print(f"  Seeding from real student {args.seed_from} (one batched read)...")
+                    real_fs = FirestoreService()
+                    counts = asyncio.run(seed_from_student(
+                        real_fs, firestore_service, args.seed_from, profile.student_id
+                    ))
+                    print(f"  Seeded: {counts}")
+
+                timeline = asyncio.run(loop_runner.run_profile(
+                    profile,
+                    days=args.days,
+                    grade=grade_raw,
+                    seeded_from=args.seed_from,
+                ))
+
+                results = run_loop_assertions(timeline)
+                print(f"\n  {profile.name}: {timeline.total_items} items over {len(timeline.days)} days")
+                all_passed = True
+                for r in results:
+                    icon = "PASS" if r.passed else "FAIL"
+                    print(f"  [{icon}] {r.name}: {r.message}")
+                    all_passed = all_passed and r.passed
+                print(f"\n  >> {'ALL LOOP ASSERTIONS PASSED' if all_passed else 'SOME LOOP ASSERTIONS FAILED'}")
+
+                if output_dir:
+                    report = generate_loop_report(timeline, results)
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    name = profile.name.replace(" ", "_")
+                    path = output_dir / f"loop_report_{name}_{subject_id}.md"
+                    path.write_text(report, encoding="utf-8")
+                    save_loop_timeline(timeline, output_dir)
+                    html_path = generate_loop_html(timeline, results, output_dir)
+                    print(f"  Report: {path}")
+                    print(f"  HTML:   {html_path}")
+
+                firestore_service.clear_student(profile.student_id)
+        return
 
     runner = PulseAgentRunner(
         pulse_engine, firestore_service,
@@ -405,7 +567,7 @@ def main():
                 p.subject = subject_id
             asyncio.run(run_all_profiles(
                 runner, args.sessions, args.clean, output_dir,
-                include_graph=args.graph,
+                include_graph=args.graph, truth=args.truth,
             ))
         else:
             profile = ALL_PROFILES[args.profile]
@@ -413,7 +575,7 @@ def main():
             asyncio.run(
                 run_single_profile(
                     runner, profile, args.sessions, args.clean, output_dir,
-                    include_graph=args.graph,
+                    include_graph=args.graph, truth=args.truth,
                 )
             )
 

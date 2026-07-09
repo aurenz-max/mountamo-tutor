@@ -1,216 +1,201 @@
 # Pulse Agent — Synthetic Student Journey Simulator
 
-Run synthetic student profiles through the Pulse adaptive loop to validate progression logic (IRT-derived mastery, unified item selection, leapfrog unlock propagation) without a real student or browser.
+Run synthetic student profiles through Lumina's adaptive machinery without a
+real student or browser. Three modes, increasing scope:
 
-**Architecture note:** The engine uses a unified model where θ+σ are the single source of truth for mastery state. Gates are derived from `derive_gate_from_irt(θ, σ)` — no stability multipliers or fast-track. Item selection uses a single utility function (pure Fisher information) — no 3-band allocation percentages, no depth_preference multipliers. Frontier probes use a **transfer prior** (student's average θ across known skills) instead of the global default, so strong students' frontier info is realistically low and review items compete fairly via forgetting-driven info rise. Band labels (frontier/current/review) are derived from state for frontend display. Leapfrog only seeds competency docs for unlock propagation — no fabricated θ/σ/lifecycle docs.
+1. **Engine mode** (v1, default) — scripted archetype scores drive PulseEngine
+   directly. Validates IRT-derived mastery, unified item selection, leapfrog
+   unlock propagation.
+2. **Truth mode** (`--truth`) — scores come from a LatentStudent ground-truth
+   model (2PL response vs item β on the engine's 0-10 θ scale, with learning,
+   forgetting, and per-skill weakness clusters). Validates the ESTIMATOR:
+   does θ_est converge to θ_true, does the engine rank weak skills weak?
+3. **Loop mode** (`--loop`) — the full student-data-loop, day by virtual day:
+   morning plan (PlanningService + session-targets selector) → student does
+   the work through the REAL submission fan-out
+   (`CompetencyService.update_competency_from_problem` → save_attempt →
+   apply_attempt_rollup → apply_competency_eval → CalibrationEngine →
+   MasteryLifecycleEngine) plus a daily pulse session → evening canonical
+   profile serve + tomorrow's targets. Verifies the L2 rebuild contract
+   (replay(L0) == incremental rollups) via the production backfill logic on
+   every run. Loop mode always uses the truth model.
+
+**All modes are in-memory.** The only Firestore reads are the one-time
+curriculum bootstrap and (optionally) a `--seed-from` snapshot; loop mode has
+NO Firestore variant — a loop day fans each attempt into ~6 doc writes.
+Cosmos is deprecated: the loop runs `CompetencyService` with `cosmos_db=None`
+(Firestore-only fan-out, warn-and-continue).
 
 **Arguments:** `/pulse-agent [command] [options]`
 - `/pulse-agent` or `/pulse-agent list` — list available profiles
-- `/pulse-agent gifted` — run a single profile (in-memory, ~3s)
-- `/pulse-agent all` — run all profiles with comparison report (in-memory, ~5s)
-- `/pulse-agent gifted --sessions 3` — quick smoke test (fewer sessions)
-- `/pulse-agent gifted --firestore` — run against real Firestore (slow, for production validation)
-- `/pulse-agent gifted --clean` — wipe Firestore data before running (Firestore mode only)
-- `/pulse-agent gifted --graph` — include curriculum DAG analysis in the report
-- `/pulse-agent gifted --subject Science` — run against a specific subject (default: Mathematics)
-- `/pulse-agent gifted --grade 1` — run against 1st grade (default: K)
-- `/pulse-agent gifted --subject Science --grade 1` — 1st grade Science
-- `/pulse-agent gifted --subject Science --subject "Language Arts" --grade 1` — multiple 1st grade subjects
+- `/pulse-agent gifted` — engine mode, single profile (in-memory, ~3s)
+- `/pulse-agent all` — engine mode, all profiles + comparison report
+- `/pulse-agent gifted --truth` — truth-model run with estimator-validity assertions
+- `/pulse-agent all --truth` — truth-model sweep (12 archetypes)
+- `/pulse-agent steady --loop` — full-loop journey, 20 virtual days
+- `/pulse-agent steady --loop --days 40` — longer journey
+- `/pulse-agent steady --loop --seed-from 1004` — mid-year persona: ONE
+  batched read of a real student's docs seeds the store, then the journey
+  diverges privately (zero writes back; parity oracle auto-skips)
+- `--sessions N` (engine/truth), `--subject Science`, `--grade 1`, `--seed N`,
+  `--graph`, `--firestore` (engine mode only, production validation)
 
 ## Required Reading
 
 Before modifying the framework, read:
-- `backend/docs/PULSE_AGENT_TESTING.md` — full documentation
-- `backend/tests/pulse_agent/profiles.py` — student definitions
-- `backend/tests/pulse_agent/scenarios.py` — score strategies
+- `backend/docs/PULSE_AGENT_TESTING.md` — v1 documentation
+- `backend/docs/PRD_PULSE_AGENT_V2.md` — v2 design (truth model + full loop)
+- `backend/tests/pulse_agent/truth_model.py` — LatentStudent + archetype params
+- `backend/tests/pulse_agent/full_loop.py` — day-loop runner + loop assertions
 
 ## When to Use This Skill
 
-- Testing Pulse engine changes (IRT-derived mastery, unified selection, leapfrog)
-- Validating that student archetypes progress as expected after code changes
-- Smoke-testing the adaptive loop before deploying
-- Comparing progression behavior before vs after a change
-- Investigating unexpected student trajectories
+- Testing Pulse engine changes (engine mode)
+- Validating estimator quality after IRT/calibration changes (truth mode)
+- Testing ANY stage of the student data loop end-to-end: submission fan-out,
+  rollups/profile serves, session-targets selector, daily session plan (loop mode)
+- Simulating how a live student's week/month will play out before shipping a
+  planner/selector change (loop mode, optionally seeded from a real student)
+- Smoke-testing before deploy; comparing behavior before vs after a change
 
 **DO NOT use this skill for:**
-- Testing frontend/UI rendering (use `/eval-test` instead)
-- Testing individual primitives or generators
-- Non-Pulse backend changes
+- Frontend/UI rendering (use `/eval-test`)
+- Individual primitives or generators (use `/eval-test`, `/oracle-test`)
 
 ## Workflow
 
 ### Step 1: Parse Arguments
 
-Parse the user's command. Map to CLI flags:
-
 | User says | CLI command |
 |-----------|------------|
-| `/pulse-agent` or `/pulse-agent list` | `--list` |
-| `/pulse-agent gifted` | `--profile gifted --in-memory --output ./reports` → `reports/GK/` |
-| `/pulse-agent all` | `--all --in-memory --output ./reports` → `reports/GK/` |
-| `/pulse-agent steady --sessions 5` | `--profile steady --sessions 5 --in-memory --output ./reports` |
-| `/pulse-agent gifted --graph` | `--profile gifted --graph --in-memory --output ./reports` |
-| `/pulse-agent gifted --firestore` | `--profile gifted --clean --output ./reports` |
-| `/pulse-agent gifted --subject Science` | `--profile gifted --subject Science --in-memory --output ./reports` |
-| `/pulse-agent gifted --grade 1` | `--profile gifted --grade 1 --in-memory --output ./reports` → `reports/G1/` |
-| `/pulse-agent gifted --subject Science --grade 1` | `--profile gifted --subject Science --grade 1 --in-memory --output ./reports` → `reports/G1/` |
-| `/pulse-agent all --subject "Language Arts" --grade 1` | `--all --subject "Language Arts" --grade 1 --in-memory --output ./reports` → `reports/G1/` |
+| `/pulse-agent gifted` | `--profile gifted --in-memory --output ./reports` |
+| `/pulse-agent all --truth` | `--all --truth --in-memory --output ./reports` |
+| `/pulse-agent steady --loop` | `--profile steady --loop --output ./reports` (loop implies in-memory) |
+| `/pulse-agent steady --loop --days 40 --grade 1` | `--profile steady --loop --days 40 --grade 1 --output ./reports` |
+| `/pulse-agent steady --loop --seed-from 1004` | `--profile steady --loop --seed-from 1004 --output ./reports` |
 
-Default behavior:
-- Always use `--in-memory` unless user says `--firestore` (500x faster, fetches graph once then runs locally)
-- Always use `--output ./reports` (reports saved to `reports/<grade>/`, e.g. `reports/GK/`)
-- Only use `--clean` in Firestore mode (in-memory always starts fresh)
-- Default seed is 42 (reproducible)
-- Default subject is Mathematics (backward compatible)
+Defaults: `--in-memory`, `--output ./reports` (→ `reports/<grade>/`), seed 42,
+subject Mathematics, grade K, loop days 20.
 
 ### Step 2: Check Prerequisites
 
-Before running, verify:
-
-1. **Backend can import cleanly:**
 ```bash
 cd backend && python -c "from app.services.pulse_engine import PulseEngine; print('OK')"
-```
-
-2. **Firestore credentials are configured** (needed even in --in-memory mode for the one-time graph fetch):
-```bash
 cd backend && python -c "from app.core.config import settings; print(settings.FIREBASE_PROJECT_ID)"
 ```
+(Firestore credentials are needed even in-memory for the one-time graph fetch.)
 
-If either fails, tell the user what's missing and stop.
+### Step 3: Run
 
-### Step 3: Run the Agent
-
-For `list`:
 ```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --list
+cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> \
+    --subject <Subject> --grade <N> --in-memory --seed 42 --output ./reports \
+    [--truth] [--loop --days N] [--seed-from ID] [--sessions N] [--graph]
 ```
 
-For a single profile (in-memory, ~3s):
-```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --in-memory --sessions <N> --seed 42 --output ./reports
+Loop mode logs one line per virtual day:
 ```
-
-For a single profile with graph analysis:
-```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --in-memory --graph --sessions <N> --seed 42 --output ./reports
-```
-
-For all profiles (in-memory, ~5s):
-```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --all --subject <Subject> --grade <N> --in-memory --seed 42 --output ./reports
-```
-
-For Firestore mode (production validation, slow):
-```bash
-cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> --subject <Subject> --grade <N> --clean --sessions <N> --seed 42 --output ./reports
-```
-
-**Note:** `--subject` defaults to `Mathematics`, `--grade` defaults to `K` (kindergarten). The grade and subject are combined to form the Firestore subject_id: `Mathematics` + grade `1` → `MATHEMATICS_G1`. Repeat `--subject` to load multiple graphs for the same grade.
-
-Show the user the real-time output as sessions run. Each session logs:
-```
-Session 3/15: avg=9.2, leapfrogs=1, gate_advances=2, bands={'frontier': 1, 'current': 4, 'review': 1}
+Day 3/15: plan=8 subskills, did 12 lesson + 6 pulse items, avg=7.7, profile_attempts=36
 ```
 
 ### Step 4: Present Results
 
-After the run completes, present a clear summary:
+**Engine/truth mode:** assertion table, session timeline, notable events
+(leapfrogs, θ trends). Truth runs add the Truth vs Estimate section (θ_true
+vs θ_est per skill, MAE/bias, convergence-over-sessions).
 
-**For single profile:**
-1. Show the assertion results (PASS/FAIL table)
-2. Read the generated report file and show the Session Timeline table
-3. Highlight any notable events (leapfrogs, rapid theta growth, stuck skills)
-4. If `--graph` was used, read the Curriculum DAG Analysis section and discuss:
-   - Whether the nodes/edges in the DAG match expected skill progression
-   - Whether leapfrog ancestor chains follow valid prerequisite paths
-   - What the next-step candidates are and whether they make sense
-   - Any orphan inferences (skills inferred that aren't in the DAG ancestor chain)
-5. If any assertions failed, explain what went wrong and what to investigate
+**Loop mode:** every run also emits a self-contained interactive HTML dashboard
+(`reports/<grade>/loop_report_<name>_<subject>.html` — score trend, gate
+advances per day, truth-vs-estimate small multiples, final-ability dumbbell,
+gate distribution; rendered from `loop_report_template.html` by
+`html_report.py`). Open it in a browser or publish it as an Artifact when
+presenting results. The markdown report
+(`reports/<grade>/loop_report_<name>_<subject>.md`) has:
+- Assertions (parity, serve integrity, plan coverage, responsiveness,
+  mastered-leaves-targets, weakness routing)
+- Day Timeline (planned → done → profile attempts → learn targets per day)
+- Recommendation Audit (first/mid/last day: every selector pick with its
+  kind/verb/P(correct)/reason — read this to judge whether the selection
+  brain behaves sensibly)
+- Truth vs Estimate (final)
+- L2 Rebuild Contract detail
 
-**For all profiles:**
-1. Show the comparison table from the comparison report
-2. Flag any profiles where assertions failed
-3. Summarize the overall health of the Pulse engine
+### Step 5: Investigate Failures
 
-### Step 5: Investigate Failures (if any)
-
-If assertions fail or the user wants to dig deeper:
-
-1. Read the full journey report: `backend/reports/<Grade>/journey_report_<ProfileName>_<SUBJECT_ID>.md`
-2. Check the theta progression table — is theta trending correctly?
-3. Check the gate progression table — are gates advancing at the right pace?
-4. Check leapfrog events — did they fire when expected?
-5. Look at band distribution — are bands emergent from utility ranking as expected?
-
-Offer to:
-- Re-run with more sessions (`--sessions 30`) for a longer journey
-- Re-run with a different seed to check if the failure is seed-dependent
-- Read PulseEngine source to diagnose the root cause
+- `rollup_replay_parity` FAIL → the incremental L2 write path diverged from
+  the backfill replay. Diff the mismatch lines; suspect apply_attempt_rollup
+  edits or a new attempt writer bypassing save_attempt.
+- `serve_integrity` FAIL → an attempt writer isn't reaching profile/summary,
+  or the analytics cache is serving stale data.
+- `truth_convergence` FAIL → estimator is confidently wrong (truth outside
+  2.5σ after compression correction). Check CalibrationEngine changes.
+- `mastered_leaves_targets` FAIL → lifecycle gate and selector P(correct)
+  disagree. On SEEDED runs this can be a real-data finding (e.g. legacy gate
+  inflation) — check the subskill's ability vs lifecycle docs before blaming
+  the selector.
+- `weakness_routed` FAIL → selector never surfaced truly-weak skills; check
+  KG p_correct emission and Fisher-information ranking.
 
 ### Step 6: Save Results Summary
 
-After presenting results, offer to update the eval tracker or save a dated summary:
-
-```
-backend/reports/<Grade>/pulse-agent-<YYYY-MM-DD>.md
-```
+Offer to save a dated summary: `backend/reports/<Grade>/pulse-agent-<YYYY-MM-DD>.md`.
 
 ## Available Profiles
 
-| Profile | Archetype | What it tests |
-|---------|-----------|---------------|
-| `gifted` | High scores (9-10) | IRT-derived gate progression, leapfrog unlock propagation |
-| `steady` | Mid scores (7-8) | Linear IRT convergence, gradual gate advancement |
-| `struggling` | Low scores (4-6) | IRT convergence stability, stuck at gate 0 |
-| `fraction_weakness` | Mixed (high + low on subject-specific cluster) | Selective weakness detection (fractions/forces/grammar by subject) |
-| `cold_start` | No history | Cold-start frontier probe assembly |
-| `forgetful` | Good scores, 20% review forgetting | Retention/stability model |
-| `accelerating` | Improving over time | Growth trajectory, accelerating gate advances |
-| `shallow_roots` | Aces frontier, fails prereqs | Leapfrog unlock + natural validation via utility scoring |
-| `regressing` | Starts strong, declines | θ decline, gate regression |
-| `volatile` | Alternating high/low sessions | σ convergence under noisy data |
-| `plateau` | Ramps to ~7.5 then flatlines | Mid-gate stall behavior |
-| `bursty` | Good scores, 7-day gaps | Effective θ decay formula |
+| Profile | Archetype | Truth params (0-10 θ scale) |
+|---------|-----------|------------------------------|
+| `gifted` | High ability | θ₀ 6.5, fast learning, low decay |
+| `steady` | Solid middle | θ₀ 4.3, steady learning |
+| `struggling` | Low ability | θ₀ 1.8, slow gains |
+| `fraction_weakness` | Selective weakness | θ₀ 5.8, weak cluster −3.2 (keyword match + md5 structural pick, works on any subject/grade) |
+| `cold_start` | No history | θ₀ 3.5, first session ever |
+| `forgetful` | Fast learn, fast forget | decay 0.20/day, retention 0.35 |
+| `accelerating` | Fast improver | θ₀ 2.5, learning rate 0.40 |
+| `shallow_roots` | Spiky knowledge | per-skill jitter 2.2 |
+| `regressing` | Declining | session drift −0.28 |
+| `volatile` | Noisy responder | response noise 0.30 |
+| `plateau` | Ramps then stalls | growth cap 5.6 |
+| `bursty` | 7-day gaps | decay 0.06, profile gap 7d |
 
-All profiles are **subject-agnostic** — the same archetype works against any curriculum graph. Subject is set at runtime via `--subject`.
-
-## Expected Behaviors (Quick Reference)
-
-| Archetype | Leapfrogs | Theta Trend | Gates (IRT-derived) | Cold Start | Band Mix |
-|-----------|-----------|-------------|---------------------|------------|----------|
-| gifted | Few (transfer prior keeps frontier info low) | Rising fast (+0.75 over 60s) | G4 ~13% by session 60 | N/A | Mostly current/review (0/6/0) |
-| steady | 0-2 | Rising slow | G1 via IRT convergence | N/A | Current-heavy |
-| struggling | 0 | Flat/stable | Stuck at G0 — P(correct) too low | N/A | Current-heavy |
-| cold_start | N/A | N/A | N/A | 80%+ frontier | All frontier (session 1 only) |
-| accelerating | Few, late | Rising (concave-up, +2.0 over 60s) | G3 by session 60, G4 needs more time | N/A | Frontier early → current/review late |
-| shallow_roots | >= 1 | Mixed | Ancestors unlocked, tested naturally | N/A | Mixed |
+All profiles are subject-agnostic; subject/grade set at runtime.
 
 ## Red Flags
 
 | Signal | Likely Issue |
 |--------|-------------|
 | Theta never changes | CalibrationEngine not writing abilities |
-| Gates stuck despite high θ and low σ | `derive_gate_from_irt()` thresholds misconfigured |
-| All items same band (e.g., 6/0/0 frontier every session) | Transfer prior not working — check `transfer_prior` computation in `_assemble_unified()`. Frontier info should be low for strong students. |
-| Gifted student not mastering (low G4 count) | Review items losing to frontier in utility ranking — verify no multipliers on frontier info (depth_preference was removed for this reason) |
+| Gates stuck despite high θ, low σ | `derive_gate_from_irt()` thresholds |
+| All items same band every session | Transfer prior broken in `_assemble_unified()` |
 | Leapfrogs on low scores | Frontier pass threshold bug |
-| Leapfrog-unlocked skills never appear | Competency docs not propagating unlocks |
-| Zero frontier on cold start | Cold-start detection broken |
-| Session errors (Firestore mode) | Firestore connectivity or missing curriculum data |
-| Session errors (in-memory mode) | Missing method on InMemoryFirestoreService — add it |
+| `plan=0 subskills` every loop day | CurriculumService not initialized, published curriculum not loaded at bootstrap, or velocity allocator sees 0 weeks remaining (school-year config) |
+| Profile attempts frozen across loop days | Analytics TTL cache not cleared per virtual day |
+| Session errors (in-memory) | Missing method on InMemoryFirestoreService — mirror the FirestoreService method and add it |
+| Truth MAE huge but coverage passes | Expected: prior anchoring at θ=3.0 with sparse per-skill items; coverage (2.5σ) is the honest test |
+
+## Known Limitations (loop mode)
+
+- Lesson-path lifecycle/θ timestamps use wall clock (only PulseEngine accepts
+  `now_override`), so spaced-retest scheduling lags virtual days; retests
+  surface less than they would live.
+- Lesson items use a fixed primitive identity (`ten-frame`) with β from item
+  calibration priors — the fan-out is production-real, item diversity is not.
+- Pulse results do not write L0 attempts (matches production: only
+  `update_competency_from_problem` calls save_attempt).
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `backend/tests/pulse_agent/agent.py` | Core runner — drives sessions |
-| `backend/tests/pulse_agent/in_memory_firestore.py` | In-memory FirestoreService (500x faster) |
+| `backend/tests/pulse_agent/agent.py` | v1 session runner (engine/truth modes) |
+| `backend/tests/pulse_agent/truth_model.py` | LatentStudent + TRUTH_PARAMS + TruthModelStrategy |
+| `backend/tests/pulse_agent/full_loop.py` | FullLoopRunner (day loop), loop assertions, loop report, seed_from_student |
+| `backend/tests/pulse_agent/in_memory_firestore.py` | In-memory FirestoreService (L0/L1/L2 + planning + raw-client shims) |
 | `backend/tests/pulse_agent/profiles.py` | Synthetic student definitions |
-| `backend/tests/pulse_agent/scenarios.py` | Score strategies per archetype |
-| `backend/tests/pulse_agent/journey_recorder.py` | Firestore state snapshots |
-| `backend/tests/pulse_agent/assertions.py` | Progression validation rules |
-| `backend/tests/pulse_agent/reports.py` | Markdown report generation |
-| `backend/tests/pulse_agent/run_scenarios.py` | CLI entry point (`--in-memory` flag) |
-| `backend/docs/PULSE_AGENT_TESTING.md` | Full documentation |
-| `backend/app/services/pulse_engine.py` | The engine being tested |
+| `backend/tests/pulse_agent/scenarios.py` | v1 scripted score strategies |
+| `backend/tests/pulse_agent/journey_recorder.py` | Session snapshots (+ truth snapshots) |
+| `backend/tests/pulse_agent/assertions.py` | Engine + truth assertion suites |
+| `backend/tests/pulse_agent/reports.py` | Markdown reports (+ Truth vs Estimate) |
+| `backend/tests/pulse_agent/html_report.py` | Loop HTML dashboard (renders `loop_report_template.html`) |
+| `backend/tests/pulse_agent/run_scenarios.py` | CLI entry point |
+| `backend/scripts/backfill_daily_rollups.py` | `aggregate_student` = the L2 parity oracle |
+| `backend/app/services/pulse_engine.py` | Engine under test |

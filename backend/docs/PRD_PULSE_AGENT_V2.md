@@ -1,7 +1,15 @@
 # PRD — Pulse Agent v2: Full-Loop Synthetic Student Simulator
 
-**Status:** Proposed (2026-07-07). Pulse Agent v1 remains the engine-regression
-harness; v2 adds a full student-data-loop journey mode on top of it.
+**Status:** SHIPPED Phases 1–3 (2026-07-08). Phase 4 (close-out delta +
+generation-context block) remains open. v1 engine mode unchanged; `--truth`
+and `--loop` (with `--days`, `--seed-from`) landed in
+`tests/pulse_agent/{truth_model,full_loop}.py` + CLI. Verified: 12/12
+archetypes pass truth mode; steady/gifted/fraction_weakness/struggling pass
+all loop assertions over 15 days (rollup replay parity MATCH); seeded run
+from student 1004 works and surfaced a real gate-4-vs-selector disagreement.
+Cosmos optionality shipped in competency.py (warn-and-continue). Also fixed:
+in-memory `apply_competency_eval` was missing — every v1 session had been
+failing at the deferred flush. Current usage: `.claude/skills/pulse-agent/SKILL.md`.
 
 ## Problem
 
