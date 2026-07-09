@@ -74,6 +74,34 @@ def base_subject_key(subject: Optional[str]) -> str:
     return re.sub(r"_G\w+$", "", (subject or "").upper())
 
 
+def _trim_hierarchy(curriculum_data: Any) -> List[Dict[str, Any]]:
+    """Reduce a CurriculumService hierarchy to the id/label spine the report
+    needs — units → skills → subskills — dropping difficulty/primitive fields
+    so the embedded JSON stays small."""
+    out: List[Dict[str, Any]] = []
+    for unit in curriculum_data or []:
+        skills = []
+        for skill in unit.get("skills", []) or []:
+            subs = [
+                {"id": ss.get("id"), "desc": ss.get("description") or ""}
+                for ss in (skill.get("subskills", []) or [])
+                if ss.get("id")
+            ]
+            if subs:
+                skills.append({
+                    "id": skill.get("id"),
+                    "desc": skill.get("description") or "",
+                    "subskills": subs,
+                })
+        if skills:
+            out.append({
+                "id": unit.get("id"),
+                "title": unit.get("title") or "",
+                "skills": skills,
+            })
+    return out
+
+
 # ── Timeline dataclasses ─────────────────────────────────────────────────────
 
 
@@ -133,9 +161,15 @@ class LoopTimeline:
     ability_final: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     # base subject key → total subskills in that curriculum (progression denominator)
     curriculum_totals: Dict[str, int] = field(default_factory=dict)
+    # base subject key → trimmed hierarchy [{id,title,skills:[{id,description,
+    # subskills:[{id,description}]}]}] — lets the report show WHERE the student
+    # landed in the curriculum (which units/skills mastered), not just counts.
+    curriculum_hierarchy: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     # subskills never submitted through the lesson path but mastered anyway
     # (frontier probes + leapfrog inference) — the leapfrog fingerprint
     inferred_mastery_count: int = 0
+    # the actual subskill ids in that set (for badging in the report)
+    inferred_subskills: List[str] = field(default_factory=list)
 
     @property
     def total_items(self) -> int:
@@ -403,6 +437,7 @@ class FullLoopRunner:
             try:
                 curriculum_data = await self.curriculum.get_curriculum(key)
                 subject_id_sets[key] = _PS._collect_subskill_ids(curriculum_data)
+                timeline.curriculum_hierarchy[key] = _trim_hierarchy(curriculum_data)
             except Exception as e:
                 logger.warning(f"No curriculum hierarchy for {key}: {e}")
                 subject_id_sets[key] = set()
@@ -568,10 +603,11 @@ class FullLoopRunner:
             }
             for lc in lifecycles
         }
-        timeline.inferred_mastery_count = sum(
-            1 for sid, m in timeline.mastery_final.items()
+        timeline.inferred_subskills = sorted(
+            sid for sid, m in timeline.mastery_final.items()
             if m.get("current_gate", 0) >= 4 and sid not in lesson_worked
         )
+        timeline.inferred_mastery_count = len(timeline.inferred_subskills)
         abilities = await self.fs.get_all_student_abilities(profile.student_id)
         timeline.ability_final = {
             a.get("skill_id", ""): {

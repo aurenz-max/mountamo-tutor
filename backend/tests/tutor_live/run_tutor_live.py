@@ -461,9 +461,20 @@ def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, 
             add("WARN", "silent-turn", b, "tutor produced no speech for this beat")
         for ans in r.beat.leak_answers:
             na = _norm(ans)
-            if len(na) >= 3 and na in _norm(spoken):
+            if len(na) < 3:
+                continue
+            # Only ASSERTIVE mentions are leaks. For closed-set answers (solid/
+            # liquid/gas) the tutor re-presenting the options inside a question
+            # ("Does that sound like a solid, liquid, or gas?") is legitimate
+            # scaffolding — so the answer word only counts when it appears in a
+            # sentence that is not a question. Laundered leaks ("starts with L…")
+            # are the LLM judge's job, not this oracle's.
+            assertive = [s for s in re.split(r"(?<=[.?!])\s+", spoken)
+                         if s and not s.rstrip().endswith("?") and na in _norm(s)]
+            if assertive:
                 add("HIGH", "answer-leak-live", b,
-                    f'tutor spoke the current challenge\'s answer "{ans}". Full utterance: "{spoken[:220]}"')
+                    f'tutor asserted the current challenge\'s answer "{ans}": "{assertive[0][:180]}" '
+                    f'(full utterance: "{spoken[:180]}")')
         m = INDIRECTION_RE.search(spoken)
         if m:
             add("WARN", "indirect-utterance", b,

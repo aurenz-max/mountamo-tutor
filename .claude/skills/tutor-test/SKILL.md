@@ -46,7 +46,7 @@ Each journey beat encodes a pedagogical moment with an expected move (greet-brie
 | **Grounding** | narrates the UI — "the challenge asks…" instead of asking the question | `indirect-utterance`; `indirect-script` | 3 / **1** |
 | | asserts the wrong current state ("right now it's a solid" when it's gas) | `stale-state-utterance` (vs the harness-driven state) | 3 |
 | | generic-tutor drift (utterance fits any primitive) | LLM judge (not built) | — |
-| **Pedagogy** | verbatim answer leak (current challenge only — other challenges' answers as framing are NOT leaks) | `answer-leak-live`; `answer-leak-in-scaffold` | 3 / 1 |
+| **Pedagogy** | answer leak — current challenge's answer in an ASSERTIVE sentence ("it's a liquid!"). Option-listing questions ("solid, liquid, or gas?") and other challenges' answers as framing are NOT leaks | `answer-leak-live`; `answer-leak-in-scaffold` | 3 / 1 |
 | | laundered leak ("starts with L…", eliminating options), telling instead of eliciting, hint-level jumping | LLM judge (not built) | — |
 | | praise inflation / person-praise ("you are a keen observer!") | `praise-inflation` (>0.75 superlatives/turn) | 3 |
 | **Compliance** | reads tag syntax / "[STUDENT ACTION]" aloud | `tag-syntax-spoken` | 3 |

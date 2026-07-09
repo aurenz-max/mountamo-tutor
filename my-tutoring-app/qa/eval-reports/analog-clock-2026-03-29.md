@@ -4,10 +4,10 @@
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| read      | PASS (after fix) | 1 (fixed) |
+| read      | PASS (2026-07-08 re-verify) | 2 (fixed: AC-1, AC-6) |
 | set_time  | PASS (after fix) | 3 (fixed) |
-| match     | PASS (after fix) | 1 (fixed) |
-| elapsed   | PASS (after fix) | 2 (fixed) |
+| match     | PASS (2026-07-08 re-verify) | 2 (fixed: AC-1, AC-6) |
+| elapsed   | PASS (2026-07-08 re-verify) | 3 (fixed: AC-5→AC-6) |
 
 ## Issues (all fixed)
 
@@ -52,3 +52,19 @@ All fixes applied across component and generator:
 2. **AC-2**: Drag handler uses `prevMinuteRef` (ref) with `>= 45` / `<= 15` boundaries
 3. **AC-4**: `displayedTime` removed from `aiPrimitiveData`
 4. **AC-5**: Generator computes elapsed duration and derives `correctOptionIndex` from options
+
+---
+
+## Addendum — 2026-07-08: AC-6 (POST-PROCESS-DERIVE; supersedes AC-5's approach)
+
+### AC-6: read / match / elapsed — MC options dropped + elapsed substring-match desync
+- **Severity:** CRITICAL
+- **What was broken (two channels, one root cause — the LLM owned the options):**
+  1. **Missing options + desync.** `option0-3`/`correctOptionIndex` were **not** in the schema's `required` list, so flash-lite silently dropped some/all (SP-14). When *some* dropped, the component's `getOptions()` filters out the `undefined` slots and the rendered indices shift — but `correctOptionIndex` still pointed into the original 0–3 space → wrong button marked correct. When *all* dropped → zero buttons → dead challenge.
+  2. **Elapsed substring match.** The generator picked `correctOptionIndex` via `option.includes(candidate)` — `"5 minutes"` ⊂ `"45 minutes"`, `"1 hour"` ⊂ `"1 hour 30 minutes"`, raw `"15"` ⊂ `"150"` → wrong option marked correct, else fell through to `0`.
+- **Fix (POST-PROCESS-DERIVE + SCHEMA-SIMPLIFY):** The **system now owns the options**.
+  - Removed `option0-3` + `correctOptionIndex` from the schema and stopped asking for them in the prompt/CHALLENGE_TYPE_DOCS (closes the nullable-drop channel at its source; simpler schema for flash-lite, SP-6).
+  - `synthesizeMCOptions()` computes the correct answer from the time values the LLM chose (read/match = target time; elapsed = end − start), synthesizes `[correct + 3 distractors]` in **one canonical format** (grade-band-aligned time distractors; duration distractors via offset pool), shuffles, and sets `correctOptionIndex` to the correct slot. Always emits exactly 4 → `getOptions()` can never desync; zero string matching.
+- **Fix in:** GENERATOR
+- **Verification (2026-07-08, live eval-test):** all 4 modes PASS. For every read/match/elapsed challenge across G3 + K, the option at `correctOptionIndex` equals the independently-derived answer, with exactly 4 unique options; K distractors stay on the :00/:30 grid. set_time unaffected (no MC).
+- **Supersedes:** AC-5's elapsed derivation (the substring-match mechanism that this replaces).

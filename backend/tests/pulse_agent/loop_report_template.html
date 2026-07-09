@@ -145,6 +145,40 @@
   table.data td:first-child { color: var(--ink); }
 
   footer { font-size: 12px; color: var(--muted); }
+
+  /* subject proficiency / mastery bars */
+  .subjrow { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--grid); }
+  .subjrow:last-child { border-bottom: none; }
+  .subjrow .sname { font-weight: 600; font-size: 12.5px; }
+  .subjrow .sname small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  .segbar { display: flex; height: 16px; border-radius: 5px; overflow: hidden; background: var(--grid); }
+  .segbar span { display: block; height: 100%; }
+  .seg-m { background: var(--gate-4); } .seg-p { background: var(--gate-2); } .seg-n { background: var(--grid); }
+  .subjrow .snums { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .subjrow .snums b { color: var(--ink); }
+
+  /* curriculum tree */
+  .tree { display: flex; flex-direction: column; gap: 8px; }
+  .subjtree > summary { list-style: none; cursor: pointer; padding: 8px 4px; display: flex; align-items: center; gap: 10px; }
+  .subjtree > summary::-webkit-details-marker { display: none; }
+  .subjtree > summary::before, .unittree > summary::before { content: "▸"; color: var(--muted); font-size: 11px; transition: transform 120ms; }
+  .subjtree[open] > summary::before, .unittree[open] > summary::before { transform: rotate(90deg); }
+  .subjtree > summary .sname { font-weight: 650; font-size: 13px; }
+  .unittree { margin: 2px 0 2px 18px; }
+  .unittree > summary { list-style: none; cursor: pointer; padding: 5px 4px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .unittree > summary::-webkit-details-marker { display: none; }
+  .ratio { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; font-variant-numeric: tabular-nums; font-size: 11.5px; color: var(--ink-2); }
+  .ratio .mini { width: 54px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .ratio .mini span { display: block; height: 100%; background: var(--gate-4); }
+  .ratio.done { color: var(--good-text); font-weight: 600; }
+  .skillblock { margin: 4px 0 8px 26px; }
+  .skillhead { font-size: 12px; color: var(--ink-2); margin: 6px 0 4px; display: flex; align-items: baseline; gap: 8px; }
+  .skillhead code { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: var(--ink); }
+  .chipgrid { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sschip { width: 16px; height: 16px; border-radius: 4px; cursor: default; position: relative; }
+  .sschip.lf { box-shadow: 0 0 0 1.5px var(--truth); }
+  .g0 { background: var(--gate-0); } .g1 { background: var(--gate-1); } .g2 { background: var(--gate-2); } .g3 { background: var(--gate-3); } .g4 { background: var(--gate-4); }
+
   @media (prefers-reduced-motion: no-preference) {
     .card { transition: border-color 120ms ease; }
   }
@@ -204,6 +238,38 @@
       <h2>How to read this run</h2>
       <div class="notes" id="notes"></div>
     </div>
+
+    <div class="card span-12" id="subjectCard">
+      <h2>Proficiency &amp; mastery by subject</h2>
+      <p class="desc">Where the student stands in each subject after the journey. The bar splits every subject's subskills into <strong>mastered</strong> (gate 4), <strong>in&nbsp;progress</strong> (gates 1–3), and <strong>not&nbsp;started</strong>. θ is mean latent ability on the 0–10 scale (estimate, and truth where the model provides it).</p>
+      <div class="legend">
+        <span class="key"><span class="swatch" style="background: var(--gate-4)"></span>mastered</span>
+        <span class="key"><span class="swatch" style="background: var(--gate-2)"></span>in progress</span>
+        <span class="key"><span class="swatch" style="background: var(--grid)"></span>not started</span>
+      </div>
+      <div id="subjectBars" style="margin-top: 6px;"></div>
+    </div>
+
+    <div class="card span-12" id="curriculumCard">
+      <h2 id="curriculumTitle">Where she is in the curriculum</h2>
+      <p class="desc">The full curriculum, unit by unit. Each row shows how many subskills reached mastery; expand to see the skills and the individual subskills, colored by mastery gate. A green ring marks a subskill mastered without lesson work (frontier probe / leapfrog inference). Hover any square for its name and gate.</p>
+      <div class="legend">
+        <span class="key"><span class="swatch g0" style="width:10px;height:10px;border-radius:3px"></span>gate 0</span>
+        <span class="key"><span class="swatch g1" style="width:10px;height:10px;border-radius:3px"></span>1</span>
+        <span class="key"><span class="swatch g2" style="width:10px;height:10px;border-radius:3px"></span>2</span>
+        <span class="key"><span class="swatch g3" style="width:10px;height:10px;border-radius:3px"></span>3</span>
+        <span class="key"><span class="swatch g4" style="width:10px;height:10px;border-radius:3px"></span>4 · mastered</span>
+        <span class="key"><span class="swatch" style="width:10px;height:10px;border-radius:3px;background:transparent;box-shadow:0 0 0 1.5px var(--truth)"></span>leapfrog</span>
+      </div>
+      <div class="tree" id="curriculumTree" style="margin-top: 8px;"></div>
+    </div>
+
+    <div class="card span-12" id="leapfrogCard">
+      <h2>Leapfrog events</h2>
+      <p class="desc">Every graph jump the engine made: a frontier skill was probed and passed, so its unmet ancestors were inferred as mastered without direct lesson work. This is the adaptive engine skipping content the student already knows.</p>
+      <div class="tablewrap" style="padding: 4px 0 0;"><table class="data" id="leapfrogTable"></table></div>
+      <p class="empty-note" id="leapfrogEmpty" style="display:none;">No leapfrog events fired this journey.</p>
+    </div>
   </section>
 
   <details class="tableview" id="tableCard">
@@ -230,6 +296,7 @@ function el(tag, attrs, children) {
 function txt(tag, attrs, s) { const n = el(tag, attrs); n.textContent = s; return n; }
 function esc(s) { const d = document.createElement("span"); d.textContent = String(s); return d.innerHTML; }
 const fmt = (v, d = 2) => v == null ? "—" : Number(v).toFixed(d);
+const pretty = (s) => String(s || "").toLowerCase().replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 function scale(domain, range) {
   const [d0, d1] = domain, [r0, r1] = range;
   const span = (d1 - d0) || 1;
@@ -295,6 +362,7 @@ $("tiles").innerHTML = `
   <div class="tile"><span class="label">Items completed</span><span class="value">${totalLesson + totalPulse}</span><span class="sub">${totalLesson} lesson + ${totalPulse} pulse</span></div>
   <div class="tile"><span class="label">Daily avg score</span><span class="value">${wkFirst.toFixed(1)} → ${wkLast.toFixed(1)}</span><span class="sub"><span class="${delta >= 0 ? "up" : "down"}">${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(1)}</span> first ${win} days → last ${win}</span></div>
   <div class="tile"><span class="label">Gate advances</span><span class="value">${totalGates}</span><span class="sub">${mastered} subskills to mastery (gate 4)</span></div>
+  <div class="tile"><span class="label">Leapfrogs</span><span class="value">${(DATA.leapfrogs || []).length}</span><span class="sub">graph jumps · ${(DATA.subject_stats || []).reduce((s, x) => s + x.mastered, 0) || mastered} mastered of ${(DATA.subject_stats || []).reduce((s, x) => s + x.total, 0) || (DATA.n_subskills || 0)}</span></div>
   <div class="tile"><span class="label">Loop assertions</span><span class="value ${allPass ? "good" : "bad"}">${nPass}/${nAss}</span><span class="sub">${allPass ? "all checks passed" : "check the failing chips above"}</span></div>`;
 
 $("scoreDesc").textContent = `Mean score across the day's lesson + pulse items (0–10). Hover for the day's detail.`;
@@ -548,6 +616,108 @@ $("scoreDesc").textContent = `Mean score across the day's lesson + pulse items (
     `<thead><tr><th>Skill</th><th>θ true</th><th>θ estimate</th><th>σ</th><th>Items seen</th><th>Gap</th></tr></thead><tbody>` +
     rows.map(r => `<tr><td>${esc(r.s)}</td><td>${fmt(r.true)}</td><td>${fmt(r.est)}</td><td>${fmt(r.sigma)}</td><td>${r.n}</td><td>${r.true == null ? "—" : fmt(r.true - r.est)}</td></tr>`).join("") +
     `</tbody>`;
+})();
+
+/* ---------- 6. proficiency & mastery by subject ---------- */
+(function subjectBars() {
+  const stats = DATA.subject_stats || [];
+  if (!stats.length) { $("subjectCard").style.display = "none"; return; }
+  $("subjectBars").innerHTML = stats.map(s => {
+    const pM = s.total ? 100 * s.mastered / s.total : 0;
+    const pP = s.total ? 100 * s.in_progress / s.total : 0;
+    const pN = Math.max(0, 100 - pM - pP);
+    const theta = s.avg_theta_est == null ? ""
+      : `θ ${s.avg_theta_est.toFixed(1)}` + (s.avg_theta_true == null ? "" : ` <span class="t-dim">/ ${s.avg_theta_true.toFixed(1)} true</span>`);
+    const title = `${s.mastered} mastered · ${s.in_progress} in progress · ${s.not_started} not started`;
+    return `<div class="subjrow">
+      <div class="sname">${esc(pretty(s.subject))}<small>${s.total} subskills · ${s.pct}% mastered</small></div>
+      <div class="segbar" title="${esc(title)}">
+        <span class="seg-m" style="width:${pM}%"></span>
+        <span class="seg-p" style="width:${pP}%"></span>
+        <span class="seg-n" style="width:${pN}%"></span>
+      </div>
+      <div class="snums"><b>${s.mastered}</b> · ${s.in_progress} · ${s.not_started}${theta ? "<br>" + theta : ""}</div>
+    </div>`;
+  }).join("");
+})();
+
+/* ---------- 7. curriculum position tree ---------- */
+(function curriculumTree() {
+  const subjects = DATA.curriculum || [];
+  if (!subjects.length) { $("curriculumCard").style.display = "none"; return; }
+  $("curriculumTitle").textContent = `Where ${meta.profile.split(" ")[0]} is in the curriculum after ${N} days`;
+  const GATE_NAME = ["untouched", "emerging", "developing", "proficient", "mastered"];
+  const container = $("curriculumTree");
+
+  function ratioHtml(m, tot) {
+    const pct = tot ? Math.round(100 * m / tot) : 0;
+    const done = tot > 0 && m === tot;
+    return `<span class="ratio${done ? " done" : ""}"><span class="mini"><span style="width:${pct}%"></span></span>${m}/${tot}</span>`;
+  }
+  const mono = 'font-family:ui-monospace,Consolas,monospace;font-size:11px';
+
+  subjects.forEach((subj, si) => {
+    const tM = subj.units.reduce((a, u) => a + u.mastered, 0);
+    const tT = subj.units.reduce((a, u) => a + u.total, 0);
+    const sd = document.createElement("details");
+    sd.className = "subjtree";
+    if (si === 0) sd.open = true;
+    sd.innerHTML = `<summary><span class="sname">${esc(pretty(subj.subject))}</span>${ratioHtml(tM, tT)}</summary>`;
+    const body = document.createElement("div");
+
+    subj.units.forEach(u => {
+      const ud = document.createElement("details");
+      ud.className = "unittree";
+      ud.innerHTML = `<summary><code style="${mono}">${esc(u.id || "")}</code>&nbsp;${esc(u.title)}${ratioHtml(u.mastered, u.total)}</summary>`;
+      const ub = document.createElement("div");
+
+      u.skills.forEach(sk => {
+        const block = document.createElement("div");
+        block.className = "skillblock";
+        const head = document.createElement("div");
+        head.className = "skillhead";
+        head.innerHTML = `<code>${esc(sk.id || "")}</code><span>${esc(sk.desc)}</span><span class="t-dim" style="margin-left:auto">${sk.mastered}/${sk.total}</span>`;
+        block.appendChild(head);
+        const grid = document.createElement("div");
+        grid.className = "chipgrid";
+        sk.subskills.forEach(ss => {
+          const chip = document.createElement("div");
+          chip.className = `sschip g${ss.gate}` + (ss.lf ? " lf" : "");
+          chip.addEventListener("mousemove", ev => showTip(
+            `<div class="t-title">${esc(ss.id)}</div>
+             <div class="t-row"><span class="t-dim">gate</span><span>${ss.gate} · ${GATE_NAME[ss.gate]}</span></div>` +
+            (ss.lf ? `<div class="t-dim">leapfrog-inferred (no lesson work)</div>` : "") +
+            (ss.desc ? `<div class="t-dim">${esc(ss.desc)}</div>` : ""), ev));
+          chip.addEventListener("mouseleave", hideTip);
+          grid.appendChild(chip);
+        });
+        block.appendChild(grid);
+        ub.appendChild(block);
+      });
+      ud.appendChild(ub);
+      body.appendChild(ud);
+    });
+    sd.appendChild(body);
+    container.appendChild(sd);
+  });
+})();
+
+/* ---------- 8. leapfrog events ---------- */
+(function leapfrogTable() {
+  const lf = DATA.leapfrogs || [];
+  if (!lf.length) { $("leapfrogTable").style.display = "none"; $("leapfrogEmpty").style.display = "block"; return; }
+  $("leapfrogTable").innerHTML =
+    `<thead><tr><th>Day</th><th style="text-align:left">Subject</th><th style="text-align:left">Probed (passed)</th><th style="text-align:left">Inferred ancestors</th><th>Score</th></tr></thead><tbody>` +
+    lf.map(e => {
+      const probed = (e.probed || []).map(esc).join(", ") || "—";
+      const inf = e.inferred || [];
+      const infTxt = inf.length
+        ? `<b>${inf.length}</b> — ${inf.slice(0, 6).map(esc).join(", ")}${inf.length > 6 ? ` +${inf.length - 6} more` : ""}`
+        : "—";
+      return `<tr><td>${e.day}</td><td style="text-align:left">${esc(pretty(e.subject))}</td>` +
+        `<td style="text-align:left;color:var(--ink)">${probed}</td>` +
+        `<td style="text-align:left;color:var(--ink-2)">${infTxt}</td><td>${e.score.toFixed(1)}</td></tr>`;
+    }).join("") + `</tbody>`;
 })();
 
 $("footer").innerHTML =

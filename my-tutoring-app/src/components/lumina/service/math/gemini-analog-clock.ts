@@ -19,8 +19,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   read: {
     promptDoc:
       `"read": Student reads an analog clock face and picks the correct time from 4 options. `
-      + `Generate 4 multiple-choice options (option0-option3) as "H:MM" strings with exactly one correct answer. `
-      + `Set correctOptionIndex (0-3) to indicate the correct option.`,
+      + `Provide only targetHour and targetMinute (the time on the dial) — the system builds the 4 options and marks the correct one. Do NOT author options.`,
     schemaDescription: "'read' (read analog clock face)",
   },
   set_time: {
@@ -33,16 +32,14 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   match: {
     promptDoc:
       `"match": Student matches an analog clock face to the correct digital time from 4 options. `
-      + `Generate 4 multiple-choice options (option0-option3) as "H:MM" strings with exactly one correct answer. `
-      + `Set correctOptionIndex (0-3) to indicate the correct option.`,
+      + `Provide only targetHour and targetMinute (the time on the dial) — the system builds the 4 options and marks the correct one. Do NOT author options.`,
     schemaDescription: "'match' (match analog to digital time)",
   },
   elapsed: {
     promptDoc:
       `"elapsed": Student watches a stopwatch and determines elapsed time. `
-      + `Set startHour/startMinute for the starting time, targetHour/targetMinute for the ending time. `
-      + `Include elapsedDescription (e.g., "30 minutes later"). `
-      + `Generate 4 MC options (option0-option3) for "how much time passed?" and set correctOptionIndex.`,
+      + `Set startHour/startMinute for the starting time and targetHour/targetMinute for the ending time (the system computes elapsed = end − start, builds the 4 duration options, and marks the correct one — do NOT author options). `
+      + `Include elapsedDescription (e.g., "30 minutes later") for flavor.`,
     schemaDescription: "'elapsed' (determine elapsed time)",
   },
 };
@@ -145,6 +142,136 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
 }
 
 // ---------------------------------------------------------------------------
+// Deterministic MC synthesis (POST-PROCESS-DERIVE — AC-1)
+// ---------------------------------------------------------------------------
+// The LLM cannot reliably author 4 well-formed, non-leaking MC options with a
+// correct index: flash-lite drops the nullable option fields (SP-14), and its
+// free-text elapsed-duration strings defeat any substring match (e.g. "5 minutes"
+// ⊂ "45 minutes"). So the SYSTEM owns the options — we compute the correct answer
+// from the time values the LLM chose, synthesize [correct + 3 distractors] in ONE
+// canonical format, shuffle, and set correctOptionIndex to the correct slot.
+// Always emits exactly 4 options → the component's getOptions() filter never drops
+// a slot, so the rendered indices can never desync from correctOptionIndex.
+
+/** "H:MM" — mirrors the component's formatTime (hour normalized to 1–12). */
+function formatClockTime(hour: number, minute: number): string {
+  const h = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${h}:${String(minute).padStart(2, '0')}`;
+}
+
+/** Canonical elapsed-duration phrasing — used for BOTH the correct option and the
+ *  distractors so the correct answer can't be spotted by format. */
+function formatDuration(totalMins: number): string {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h > 0 && m > 0) return `${h} hour${h > 1 ? 's' : ''} ${m} minute${m > 1 ? 's' : ''}`;
+  if (h > 0) return `${h} hour${h > 1 ? 's' : ''}`;
+  return `${m} minute${m > 1 ? 's' : ''}`;
+}
+
+/** Grade-band minute granularity — distractors stay on the same grid as the answer
+ *  so the correct time isn't the only "clean" value on the dial. */
+function allowedMinutesFor(gradeBand: string): number[] {
+  if (gradeBand === 'K') return [0, 30];
+  if (gradeBand === '1-2') return [0, 15, 30, 45];
+  return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+}
+
+/** Shift an hour by ±n keeping it in the 1–12 range. */
+function shiftHour(hour: number, delta: number): number {
+  return ((hour - 1 + delta) % 12 + 12) % 12 + 1;
+}
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** 3 plausible wrong "H:MM" times, distinct from the correct time and each other. */
+function buildTimeDistractors(targetHour: number, targetMinute: number, gradeBand: string): string[] {
+  const correct = formatClockTime(targetHour, targetMinute);
+  const minutes = allowedMinutesFor(gradeBand);
+  const hours = [targetHour, shiftHour(targetHour, 1), shiftHour(targetHour, -1), shiftHour(targetHour, 2), shiftHour(targetHour, -2)];
+  const pool = new Set<string>();
+  for (const h of hours) {
+    for (const m of minutes) {
+      const s = formatClockTime(h, m);
+      if (s !== correct) pool.add(s);
+    }
+  }
+  return shuffleInPlace(Array.from(pool)).slice(0, 3);
+}
+
+/** 3 plausible wrong elapsed durations, distinct from the correct duration. */
+function buildDurationDistractors(elapsedMins: number): string[] {
+  const correct = formatDuration(elapsedMins);
+  const seen = new Set<string>([correct]);
+  const out: string[] = [];
+  const offsets = [15, 30, 45, 60, 90, -15, -30, -60, 120, 180];
+  for (const off of shuffleInPlace([...offsets])) {
+    const v = elapsedMins + off;
+    if (v <= 0) continue;
+    const s = formatDuration(v);
+    if (!seen.has(s)) { seen.add(s); out.push(s); }
+    if (out.length === 3) break;
+  }
+  // Defensive fill — the offset pool is always large enough in practice.
+  let mult = 1;
+  while (out.length < 3 && mult <= 6) {
+    const s = formatDuration(elapsedMins + 60 * mult++);
+    if (!seen.has(s)) { seen.add(s); out.push(s); }
+  }
+  return out.slice(0, 3);
+}
+
+/** Synthesize option0-3 + correctOptionIndex on a read/match/elapsed challenge,
+ *  DISCARDING any options the LLM produced. Correct-by-construction: no dropped
+ *  fields, no string matching. */
+function synthesizeMCOptions(
+  ch: {
+    type: string;
+    targetHour: number;
+    targetMinute: number;
+    startHour?: number;
+    startMinute?: number;
+    option0?: string;
+    option1?: string;
+    option2?: string;
+    option3?: string;
+    correctOptionIndex?: number;
+  },
+  gradeBand: string,
+): void {
+  let correctStr: string;
+  let distractors: string[];
+
+  if (ch.type === 'elapsed') {
+    const sH = ch.startHour ?? ch.targetHour;
+    const sM = ch.startMinute ?? 0;
+    const startTotal = (sH % 12) * 60 + sM;
+    let endTotal = (ch.targetHour % 12) * 60 + ch.targetMinute;
+    if (endTotal <= startTotal) endTotal += 720; // crossed 12
+    const elapsedMins = endTotal - startTotal;
+    correctStr = formatDuration(elapsedMins);
+    distractors = buildDurationDistractors(elapsedMins);
+  } else {
+    // read / match — the answer is the time shown on the dial
+    correctStr = formatClockTime(ch.targetHour, ch.targetMinute);
+    distractors = buildTimeDistractors(ch.targetHour, ch.targetMinute, gradeBand);
+  }
+
+  const options = shuffleInPlace([correctStr, ...distractors]);
+  ch.option0 = options[0];
+  ch.option1 = options[1];
+  ch.option2 = options[2];
+  ch.option3 = options[3];
+  ch.correctOptionIndex = options.indexOf(correctStr);
+}
+
+// ---------------------------------------------------------------------------
 // Gemini JSON schema
 // ---------------------------------------------------------------------------
 
@@ -188,26 +315,11 @@ const analogClockSchema: Schema = {
             type: Type.NUMBER,
             description: "Target minute (0-59)",
           },
-          option0: {
-            type: Type.STRING,
-            description: "Multiple-choice option 0 as 'H:MM' string (for read/match/elapsed types)",
-          },
-          option1: {
-            type: Type.STRING,
-            description: "Multiple-choice option 1 as 'H:MM' string",
-          },
-          option2: {
-            type: Type.STRING,
-            description: "Multiple-choice option 2 as 'H:MM' string",
-          },
-          option3: {
-            type: Type.STRING,
-            description: "Multiple-choice option 3 as 'H:MM' string",
-          },
-          correctOptionIndex: {
-            type: Type.NUMBER,
-            description: "Index (0-3) of the correct MC option",
-          },
+          // NOTE: option0-3 and correctOptionIndex are intentionally NOT in this
+          // schema. The system synthesizes the 4 MC options and the correct index
+          // deterministically from the time values (see synthesizeMCOptions). Asking
+          // flash-lite for them caused dropped fields (SP-14) and substring-match
+          // desync (AC-1).
           startHour: {
             type: Type.NUMBER,
             description: "Starting hour for elapsed-time challenges (1-12)",
@@ -299,19 +411,18 @@ GRADE-LEVEL TIME GRANULARITY (CRITICAL):
 - Grades 3-5 (gradeBand "3-5"): Use 5-minute intervals. targetMinute must be a multiple of 5 (0, 5, 10, 15, ..., 55).
 
 CHALLENGE TYPE RULES:
-- "read" and "match": Provide 4 MC options (option0-option3) as "H:MM" strings. Set correctOptionIndex (0-3). Make distractors plausible (e.g., swap hour/minute hand reading, off by 1 hour).
+- "read" and "match": Provide ONLY targetHour and targetMinute (the time on the dial). The system synthesizes the 4 MC options and the correct index — do NOT author options.
 - "set_time": Only needs targetHour, targetMinute, and instruction. No MC options needed.
-- "elapsed": Set startHour/startMinute and targetHour/targetMinute (the end time). Include elapsedDescription. Provide 4 MC options for the elapsed duration (e.g., "30 minutes", "1 hour 15 minutes") and set correctOptionIndex.
+- "elapsed": Set startHour/startMinute and targetHour/targetMinute (the end time). Include elapsedDescription. The system computes elapsed = end − start and synthesizes the 4 duration options and the correct index — do NOT author options.
 
 CRITICAL RULES:
 1. Generate 4-6 challenges that progress in difficulty
 2. Do NOT reveal the answer in the instruction text
-3. For MC options, ensure exactly one correct answer and 3 plausible distractors
-4. Format all time options as "H:MM" (e.g., "3:00", "12:45", "9:05" — use leading zero for minutes < 10)
-5. targetHour must be 1-12, targetMinute must be 0-59
-6. Use warm, age-appropriate language
-7. Include helpful hints that guide without giving the answer
-8. Vary the hours used across challenges — do not repeat the same hour
+3. Do NOT author multiple-choice options — the system builds them deterministically from your time values. Just choose good, grade-appropriate times.
+4. targetHour must be 1-12, targetMinute must be 0-59
+5. Use warm, age-appropriate language
+6. Include helpful hints that guide without giving the answer
+7. Vary the hours used across challenges — do not repeat the same hour
 
 Return the complete analog clock configuration.
 `;
@@ -382,56 +493,9 @@ Return the complete analog clock configuration.
       }
     }
 
-    // Validate correctOptionIndex for MC types — auto-correct from target time
-    if (ch.type === 'read' || ch.type === 'match') {
-      const targetStr = `${ch.targetHour}:${String(ch.targetMinute).padStart(2, '0')}`;
-      const options = [ch.option0, ch.option1, ch.option2, ch.option3];
-      const matchIdx = options.findIndex(o => o === targetStr);
-      if (matchIdx >= 0) {
-        ch.correctOptionIndex = matchIdx;
-      } else if (ch.correctOptionIndex == null || ch.correctOptionIndex < 0 || ch.correctOptionIndex > 3) {
-        ch.correctOptionIndex = 0;
-      }
-    } else if (ch.type === 'elapsed') {
-      // Derive correctOptionIndex from actual elapsed time
-      const sH = ch.startHour ?? ch.targetHour;
-      const sM = ch.startMinute ?? 0;
-      const startTotal = (sH % 12) * 60 + sM;
-      let endTotal = (ch.targetHour % 12) * 60 + ch.targetMinute;
-      if (endTotal <= startTotal) endTotal += 720; // crossed 12
-      const elapsedMins = endTotal - startTotal;
-
-      // Build human-readable elapsed strings to match against options
-      const elapsedHrs = Math.floor(elapsedMins / 60);
-      const elapsedRem = elapsedMins % 60;
-      const elapsedCandidates: string[] = [];
-      if (elapsedHrs > 0 && elapsedRem > 0) {
-        elapsedCandidates.push(`${elapsedHrs} hour${elapsedHrs > 1 ? 's' : ''} ${elapsedRem} minute${elapsedRem > 1 ? 's' : ''}`);
-        elapsedCandidates.push(`${elapsedHrs} hour${elapsedHrs > 1 ? 's' : ''} and ${elapsedRem} minute${elapsedRem > 1 ? 's' : ''}`);
-        elapsedCandidates.push(`${elapsedHrs}h ${elapsedRem}m`);
-      } else if (elapsedHrs > 0) {
-        elapsedCandidates.push(`${elapsedHrs} hour${elapsedHrs > 1 ? 's' : ''}`);
-        elapsedCandidates.push(`${elapsedHrs}h`);
-      } else {
-        elapsedCandidates.push(`${elapsedRem} minute${elapsedRem > 1 ? 's' : ''}`);
-        elapsedCandidates.push(`${elapsedRem}m`);
-        elapsedCandidates.push(`${elapsedRem} min`);
-      }
-
-      const options = [ch.option0, ch.option1, ch.option2, ch.option3];
-      const matchIdx = options.findIndex(o =>
-        o != null && elapsedCandidates.some(c => o.toLowerCase().includes(c.toLowerCase())),
-      );
-      if (matchIdx >= 0) {
-        ch.correctOptionIndex = matchIdx;
-      } else {
-        // Fallback: try matching the raw minute count
-        const rawMatch = options.findIndex(o =>
-          o != null && (o.includes(String(elapsedMins)) || o.includes(String(elapsedMins) + ' min')),
-        );
-        ch.correctOptionIndex = rawMatch >= 0 ? rawMatch : (ch.correctOptionIndex ?? 0);
-      }
-    }
+    // MC options + correctOptionIndex are synthesized deterministically below
+    // (synthesizeMCOptions), AFTER the fallback so real and fallback challenges
+    // are handled uniformly. No string matching, no trust in LLM option fields.
 
     // Ensure hint exists
     if (!ch.hint) {
@@ -439,7 +503,7 @@ Return the complete analog clock configuration.
     }
   }
 
-  // ── Fallback if empty ──
+  // ── Fallback if empty ── (options synthesized by the pass below, not hardcoded)
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'read';
     console.log(`[AnalogClock] No valid challenges — using ${fallbackType} fallback`);
@@ -451,13 +515,27 @@ Return the complete analog clock configuration.
         : 'What time does the clock show?',
       targetHour: 3,
       targetMinute: 0,
-      option0: '3:00',
-      option1: '6:00',
-      option2: '12:15',
-      option3: '9:00',
-      correctOptionIndex: 0,
       hint: 'Look at the short hand first — it points to the hour.',
     }];
+  }
+
+  // ── Synthesize MC options + correctOptionIndex for every read/match/elapsed
+  // challenge (real or fallback). System owns the options — see synthesizeMCOptions. ──
+  for (const ch of data.challenges as Array<{
+    type: string;
+    targetHour: number;
+    targetMinute: number;
+    startHour?: number;
+    startMinute?: number;
+    option0?: string;
+    option1?: string;
+    option2?: string;
+    option3?: string;
+    correctOptionIndex?: number;
+  }>) {
+    if (ch.type === 'read' || ch.type === 'match' || ch.type === 'elapsed') {
+      synthesizeMCOptions(ch, data.gradeBand);
+    }
   }
 
   // ── Apply the within-mode support tier deterministically (reading-aids only;

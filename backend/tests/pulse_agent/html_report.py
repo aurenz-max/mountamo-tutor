@@ -8,11 +8,17 @@ Written alongside the markdown report on every `--loop` run.
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from dataclasses import asdict, is_dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List
+
+
+def _base_subject(subject: str) -> str:
+    """Strip the grade suffix ("MATHEMATICS_GK" → "MATHEMATICS")."""
+    return re.sub(r"_G\w+$", "", (subject or "").upper())
 
 TEMPLATE_PATH = Path(__file__).parent / "loop_report_template.html"
 DATA_PLACEHOLDER = "/*__DATA__*/"
@@ -74,6 +80,77 @@ def build_loop_report_data(timeline: Any, results: List[Any]) -> Dict[str, Any]:
         m.get("current_gate", 0) for m in (t.get("mastery_final") or {}).values()
     )
 
+    # --- Leapfrog events (flattened, chronological) ---
+    leapfrogs = []
+    for day in t.get("days") or []:
+        for lf in day.get("leapfrogs") or []:
+            leapfrogs.append({
+                "day": day["day_number"],
+                "date": day["date"],
+                "subject": _base_subject(lf.get("subject", "")),
+                "probed": lf.get("probed_skills") or [],
+                "inferred": lf.get("inferred_skills") or [],
+                "score": round(float(lf.get("aggregate_score") or 0), 2),
+            })
+
+    # --- Curriculum position tree + per-subject proficiency/mastery stats ---
+    hierarchy = t.get("curriculum_hierarchy") or {}
+    mastery = t.get("mastery_final") or {}
+    inferred = set(t.get("inferred_subskills") or [])
+
+    def _gate_of(sid: str) -> int:
+        return int((mastery.get(sid) or {}).get("current_gate", 0) or 0)
+
+    skill_subject: Dict[str, str] = {}   # skill_id → base subject (to bucket θ)
+    curriculum: List[Dict[str, Any]] = []
+    subject_stats: List[Dict[str, Any]] = []
+
+    for subj, units in sorted(hierarchy.items()):
+        unit_nodes = []
+        s_total = s_mastered = s_inprog = 0
+        for unit in units:
+            skill_nodes = []
+            for skill in unit.get("skills", []):
+                skill_subject[skill.get("id")] = subj
+                sub_nodes = []
+                for ss in skill.get("subskills", []):
+                    sid = ss.get("id")
+                    g = _gate_of(sid)
+                    sub_nodes.append({
+                        "id": sid, "desc": ss.get("desc") or "",
+                        "gate": g, "lf": sid in inferred,
+                    })
+                    s_total += 1
+                    if g >= 4:
+                        s_mastered += 1
+                    elif g >= 1:
+                        s_inprog += 1
+                sm = sum(1 for x in sub_nodes if x["gate"] >= 4)
+                skill_nodes.append({
+                    "id": skill.get("id"), "desc": skill.get("desc") or "",
+                    "mastered": sm, "total": len(sub_nodes), "subskills": sub_nodes,
+                })
+            unit_nodes.append({
+                "id": unit.get("id"), "title": unit.get("title") or "",
+                "mastered": sum(sk["mastered"] for sk in skill_nodes),
+                "total": sum(sk["total"] for sk in skill_nodes),
+                "skills": skill_nodes,
+            })
+        curriculum.append({"subject": subj, "units": unit_nodes})
+
+        est_vals = [ab["theta"] for sk, ab in ability.items() if skill_subject.get(sk) == subj]
+        true_vals = [truth[sk] for sk in truth if skill_subject.get(sk) == subj]
+        subject_stats.append({
+            "subject": subj,
+            "total": s_total,
+            "mastered": s_mastered,
+            "in_progress": s_inprog,
+            "not_started": s_total - s_mastered - s_inprog,
+            "pct": round(100 * s_mastered / s_total) if s_total else 0,
+            "avg_theta_est": round(sum(est_vals) / len(est_vals), 2) if est_vals else None,
+            "avg_theta_true": round(sum(true_vals) / len(true_vals), 2) if true_vals else None,
+        })
+
     assertions = [
         {
             "name": r.name,
@@ -105,6 +182,9 @@ def build_loop_report_data(timeline: Any, results: List[Any]) -> Dict[str, Any]:
         "final": final,
         "gates": {str(k): v for k, v in sorted(gates.items())},
         "n_subskills": len(t.get("mastery_final") or {}),
+        "leapfrogs": leapfrogs,
+        "curriculum": curriculum,
+        "subject_stats": subject_stats,
     }
 
 
