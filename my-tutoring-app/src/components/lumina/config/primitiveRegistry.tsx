@@ -194,6 +194,7 @@ import CvcSpeller from '../primitives/visual-primitives/literacy/CvcSpeller';
 import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
+import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 // Foundational Concept Teaching
 import FoundationExplorer from '../primitives/FoundationExplorer';
 import { ComponentId } from '../types';
@@ -1939,6 +1940,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'story-talk': {
     component: StoryTalk,
     sectionTitle: 'Listen & Tell',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'word-flip': {
+    component: WordFlip,
+    sectionTitle: 'Word Flip',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

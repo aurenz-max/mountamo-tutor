@@ -19,6 +19,7 @@ import type {
   SessionEngagement,
 } from '../types';
 import { submitEvaluationToBackend } from '../api/evaluationApi';
+import { captureMisconception } from '../diagnosis/captureMisconception';
 
 // =============================================================================
 // Context Types
@@ -316,6 +317,18 @@ export function EvaluationProvider({
           streak: eng.currentStreak || prev.streak,
         }));
       }
+
+      // Misconception Loop S2 — fires AFTER the submit round-trip resolved, so
+      // diagnosis never blocks XP or challenge advance. All gating (failure,
+      // evidence tier, once-per-subskill-per-session) lives in the capture
+      // module; results without an evidence packet are invisible to the loop.
+      // Subskill precedence: the result's authoritative ID, else the backend's
+      // resolved mapping from this very submission — no ID, no write.
+      void captureMisconception(result, {
+        sessionId,
+        subskillId: result.subskillId || skill?.subskillId,
+        gradeLevel,
+      });
     } catch (error) {
       console.error('[EvaluationContext] Submission failed:', error);
 
@@ -350,7 +363,7 @@ export function EvaluationProvider({
 
       throw error;
     }
-  }, [localOnly, isOnline, studentId, maxRetries, onCompetencyUpdate]);
+  }, [localOnly, isOnline, studentId, maxRetries, onCompetencyUpdate, sessionId, gradeLevel]);
 
   // =============================================================================
   // Flush All Pending to Backend

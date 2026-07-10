@@ -16,6 +16,7 @@ import {
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
+  type DiagnosisEvidence,
 } from '../../../evaluation';
 import type { CompareObjectsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -362,6 +363,32 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
     [challenges, currentChallengeIndex],
   );
 
+  // ── Misconception Loop S1 — session-scoped wrong-answer log ────────────────
+  // Every wrong submit appends one observation (what was asked, what the
+  // student picked, what was expected). On a failed session these become the
+  // Tier-B DiagnosisEvidence packet. DATA only — the shared distiller
+  // diagnoses; nothing here is ever student-visible.
+  const wrongObservationsRef = useRef<
+    Array<{ challenge: string; observed: string; expected: string }>
+  >([]);
+
+  const noteWrongAnswer = useCallback(
+    (asked: string, observedVal: string, expectedVal: string) => {
+      const instr = currentChallenge?.instruction
+        ? `"${currentChallenge.instruction}"`
+        : `a ${currentChallenge?.type ?? 'compare-objects'} challenge`;
+      // Bounded: keep the most recent 8 observations.
+      const log = wrongObservationsRef.current;
+      log.push({
+        challenge: `${instr} — ${asked}`,
+        observed: observedVal,
+        expected: expectedVal,
+      });
+      if (log.length > 8) log.shift();
+    },
+    [currentChallenge],
+  );
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -478,6 +505,11 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         } else {
           setFeedback(`Not quite. Look at the objects again - what can we measure about them?`);
           setFeedbackType('error');
+          noteWrongAnswer(
+            `identify the measurable attribute of ${currentChallenge.objects.map(o => o.name).join(', ')}`,
+            `picked "${selectedAttribute}"`,
+            `the correct attribute is "${currentChallenge.correctAttribute}"`,
+          );
           sendText(
             `[ANSWER_INCORRECT] Student chose "${selectedAttribute}" but correct attribute is "${currentChallenge.correctAttribute}". Give a hint about what's different between these objects.`
             + tutorRevealClause(currentChallenge.supportTier),
@@ -504,6 +536,11 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         } else {
           setFeedback(`Look more carefully - which one is ${currentChallenge.comparisonWord}?`);
           setFeedbackType('error');
+          noteWrongAnswer(
+            `pick which of ${currentChallenge.objects.map(o => o.name).join(', ')} is ${currentChallenge.comparisonWord} (attribute: ${currentChallenge.attribute})`,
+            `picked "${selectedObject}"`,
+            `the ${currentChallenge.correctAnswer} is ${currentChallenge.comparisonWord}`,
+          );
           sendText(
             `[ANSWER_INCORRECT] Student chose "${selectedObject}" but "${currentChallenge.correctAnswer}" is ${currentChallenge.comparisonWord}. Hint: "${currentChallenge.hint}".`
             + tutorRevealClause(currentChallenge.supportTier),
@@ -531,6 +568,11 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         } else {
           setFeedback(`Not quite the right order. Try again!`);
           setFeedbackType('error');
+          noteWrongAnswer(
+            `order ${currentChallenge.objects.map(o => o.name).join(', ')} by ${currentChallenge.attribute} (${currentChallenge.comparisonWord})`,
+            `ordered ${orderSelection.join(', ')}`,
+            `the correct order is ${correctOrder.join(', ')}`,
+          );
           setOrderSelection([]);
           sendText(
             `[ANSWER_INCORRECT] Student ordered: ${orderSelection.join(', ')} but correct is: ${correctOrder.join(', ')}. Hint: "${currentChallenge.hint}".`
@@ -559,6 +601,11 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
         } else {
           setFeedback(`Count the ${currentChallenge.unitName}s again carefully!`);
           setFeedbackType('error');
+          noteWrongAnswer(
+            `measure the ${currentChallenge.objects[0]?.name ?? 'object'} in ${currentChallenge.unitName}s`,
+            `entered ${answer}`,
+            `the correct count is ${currentChallenge.unitCount} ${currentChallenge.unitName}s`,
+          );
           sendText(
             `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${currentChallenge.unitCount} ${currentChallenge.unitName}s. Give a counting hint.`
             + tutorRevealClause(currentChallenge.supportTier),
@@ -594,6 +641,7 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
   }, [
     currentChallenge, selectedObject, selectedAttribute, orderSelection, nonStandardAnswer,
     currentAttempts, incrementAttempts, recordResult, sendText, hasSubmittedEvaluation, showCorrectAnswer,
+    noteWrongAnswer,
   ]);
 
   // -------------------------------------------------------------------------
@@ -630,11 +678,32 @@ const CompareObjects: React.FC<CompareObjectsProps> = ({ data, className }) => {
           totalChallenges: challenges.length,
         };
 
+        // Misconception Loop S1 — Tier-B evidence packet on failed sessions.
+        // Latest wrong observation is the headline; earlier ones become
+        // priorAttempts (the consistency signal the distiller needs to tell a
+        // mental model from a slip). Clean sessions carry no packet.
+        const goalMet = totalCorrect === challenges.length;
+        const wrongs = wrongObservationsRef.current;
+        const latest = wrongs[wrongs.length - 1];
+        const diagnosisEvidence: DiagnosisEvidence | undefined =
+          !goalMet && latest
+            ? {
+                challengeSummary: latest.challenge,
+                expected: latest.expected,
+                observed: latest.observed,
+                priorAttempts: wrongs
+                  .slice(0, -1)
+                  .map((w) => ({ challenge: w.challenge, observed: w.observed })),
+              }
+            : undefined;
+
         submitEvaluation(
-          totalCorrect === challenges.length,
+          goalMet,
           score,
           metrics,
           { challengeResults },
+          undefined,
+          diagnosisEvidence,
         );
       }
       return;

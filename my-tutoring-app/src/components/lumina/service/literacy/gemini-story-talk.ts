@@ -321,7 +321,9 @@ const SYSTEM_INSTRUCTION =
   + `a picture, so containing the answer would give it away. For literal-recall (who/what/where) and causal `
   + `(why) questions you STATE the answer plainly inside the story; for feeling questions you show the feeling `
   + `through events and NEVER name it. Every distractor you give is the SAME CATEGORY as the answer (another `
-  + `animal for an animal, another feeling for a feeling) so the pictures are a fair choice.`;
+  + `animal for an animal, another feeling for a feeling) so the pictures are a fair choice. The child may also `
+  + `answer by SAYING the word aloud, so all four option words must be easy for a 5-year-old to pronounce and `
+  + `must SOUND clearly different from each other — never rhymes, homophones, or near-homophones of one another.`;
 
 const callGemini = async (schema: Schema, prompt: string, corrective?: string): Promise<RawStoryPool> => {
   const response = await ai.models.generateContent({
@@ -362,6 +364,7 @@ STRICT RULES (this is the whole activity — follow every one):
 - answer: ONE concrete, PICTURABLE, lowercase word with a clear emoji (a feeling word for feeling_check).
 - question: MUST NOT contain the answer word anywhere.
 - distractor0/1/2 Word+Emoji: three DIFFERENT wrong choices in the SAME CATEGORY as the answer, each a lowercase single word with its own distinct emoji. None may equal the answer or each other.
+- SPOKEN-ANSWER RULE: the child may answer by SAYING a word aloud, so all four option words must be easy for a 5-year-old to say and must SOUND clearly different from each other — never rhymes, homophones, or near-homophones (not "bear"/"pear", not "sun"/"son").
 - Theme the stories to "${topic}" wherever it fits naturally; keep the language K-simple regardless.
 
 Also provide:

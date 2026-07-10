@@ -12,9 +12,11 @@ import {
   LuminaChallengeCounter,
   LuminaProgress,
   LuminaFeedbackCard,
+  LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
+import { useVoiceChoice } from '../../../hooks/useVoiceChoice';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -74,6 +76,12 @@ export interface StoryTalkData {
   /** 3-6 challenges. REQUIRED — built by the generator's story orchestrator. */
   challenges: StoryTalkChallenge[];
   gradeLevel?: string;
+  /**
+   * Screen-owner arbitration: when several voice-capable primitives stack on
+   * one screen, only one may hold the live mic (the engine has no global
+   * single-mic lock). Default true.
+   */
+  voiceEligible?: boolean;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -106,6 +114,22 @@ const MODE_META: Record<StoryTalkChallengeType, { badge: string; icon: string; a
 };
 
 const MAX_WRONG_TAPS = 3;
+
+// ── Voice sayability gate (see /add-voice-control) ─────────────────────────
+// The option captions are voice-selectable only when every one is a short
+// plain-English word a Kindergartner can say, and no two captions collide
+// after lowercasing (a spoken verdict would misroute). Gate fails → the mic
+// never renders and the tap path is exactly what it was before voice existed.
+const SAYABLE_WORD = /^[a-z][a-z' -]*$/;
+export function storyTalkVoiceReady(options: StoryTalkOption[], answer: string): boolean {
+  if (!options || options.length === 0) return false;
+  const words = options.map((o) => o.word.trim().toLowerCase());
+  if (new Set(words).size !== words.length) return false; // ambiguous when spoken
+  if (!words.includes(answer.trim().toLowerCase())) return false;
+  return words.every(
+    (w) => w.length > 0 && w.length <= 24 && w.split(/\s+/).length <= 2 && SAYABLE_WORD.test(w),
+  );
+}
 
 // ============================================================================
 // Component
@@ -195,7 +219,7 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
     question: currentChallenge?.question,
   }), [currentChallenge?.type, currentChallenge?.question, currentIndex, challenges.length, currentAttempts]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAIResponding, isAudioPlaying } = useLuminaAI({
     primitiveType: 'story-talk',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
@@ -257,15 +281,19 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
     });
   }, [currentChallenge, currentAttempts, recordResult]);
 
-  // ── Tap path ───────────────────────────────────────────────────
-  const handleOptionTap = useCallback((idx: number) => {
+  // ── Answer path (tap AND voice land here) ──────────────────────
+  // `viaVoice` submissions skip the outcome SoundManager calls — the voice
+  // controller already played them (useVoiceChoice owns actuation sounds).
+  const voiceCorrectCountRef = useRef(0);
+  const answerOption = useCallback((idx: number, viaVoice: boolean) => {
     if (!currentChallenge || showResult) return;
     const option = shuffledOptions[idx];
     if (!option) return;
     setSelectedIndex(idx);
 
     if (option.word === currentChallenge.answer) {
-      SoundManager.playCorrect();
+      if (viaVoice) voiceCorrectCountRef.current += 1;
+      else SoundManager.playCorrect();
       setShowResult(true);
       setFeedback(`Yes! ${currentChallenge.answerEmoji} "${currentChallenge.answer}"!`);
       setFeedbackType('success');
@@ -275,7 +303,7 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
-      SoundManager.playIncorrect();
+      if (!viaVoice) SoundManager.playIncorrect();
       incrementAttempts();
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -302,6 +330,51 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
     }
   }, [currentChallenge, showResult, shuffledOptions, currentAttempts, incrementAttempts, completeCurrentChallenge, sendText]);
 
+  const handleOptionTap = useCallback((idx: number) => answerOption(idx, false), [answerOption]);
+
+  // ── Voice: say the answer word to pick its picture ──────────────
+  // (/add-voice-control, spoken CHOICE shape.) A single-unit useVoiceChoice
+  // listens for one of the four captions and routes the verdict into the SAME
+  // answer path a tap uses — voice is purely additive, tap unchanged.
+  //
+  // ANSWER-LEAK GATE — a deliberate, narrow exception to the "never gate the
+  // mic on tutor-busy signals" rule: in THIS primitive the tutor reads the
+  // story aloud and the story contains the answer word verbatim. An open mic
+  // while tutor audio plays could hear the tutor say the answer and credit it.
+  // So the mic runs only while the tutor is fully quiet (`!isAIResponding &&
+  // !isAudioPlaying` — the response stream can end before the audio tail
+  // drains, hence both flags). This is the spoken twin of the hidden-story-
+  // text gate below, not a turn-taking window.
+  const voiceReady = useMemo(
+    () =>
+      (data.voiceEligible ?? true) &&
+      Boolean(currentChallenge) &&
+      storyTalkVoiceReady(shuffledOptions, currentChallenge?.answer ?? ''),
+    [data.voiceEligible, currentChallenge, shuffledOptions],
+  );
+
+  const voiceItems = useMemo(() => {
+    if (!voiceReady || !currentChallenge) return [];
+    return [{
+      answer: currentChallenge.answer.trim().toLowerCase(),
+      options: shuffledOptions.map((o) => o.word.trim().toLowerCase()),
+    }];
+  }, [voiceReady, currentChallenge, shuffledOptions]);
+
+  const tutorQuiet = !isAIResponding && !isAudioPlaying;
+  const voiceActive =
+    hasStarted && !showSummary && !showResult && tutorQuiet && voiceItems.length > 0;
+
+  const voiceChoice = useVoiceChoice({
+    items: voiceItems,
+    gradeLevel,
+    active: voiceActive,
+    onSubmit: (_unit, word) => {
+      const idx = shuffledOptions.findIndex((o) => o.word.trim().toLowerCase() === word);
+      if (idx !== -1) answerOption(idx, true);
+    },
+  });
+
   // ── Advance / submit ───────────────────────────────────────────
   const submitFinalEvaluation = useCallback(() => {
     if (hasSubmittedEvaluation) return;
@@ -324,6 +397,7 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
       hintsViewed: 0,
       overallAccuracy: overallPct,
       averageAttemptsPerChallenge: totalCount > 0 ? totalAttempts / totalCount : 0,
+      voiceAnswerCount: voiceCorrectCountRef.current,
     };
 
     setSubmittedScore(overallPct);
@@ -501,6 +575,30 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
                 );
               })}
             </div>
+
+            {/* Voice: say the answer word instead of tapping. The orb is HIDDEN
+                entirely while the tutor is reading — the story contains the
+                answer, so there must be no mic (not even a dormant tappable
+                one) until the tutor is fully quiet. */}
+            {voiceReady && !showResult && tutorQuiet && (
+              <div className="flex flex-col items-center">
+                <LuminaMicListener
+                  state={voiceChoice.voice.state}
+                  level={voiceChoice.voice.level}
+                  isSupported={voiceChoice.voice.isSupported}
+                  dormant={voiceChoice.voice.dormant}
+                  onStart={voiceChoice.voice.start}
+                  onCancel={voiceChoice.voice.stop}
+                  accent={modeMeta.accent}
+                  size="sm"
+                  idleLabel="Say your answer"
+                  listeningLabel="Say the answer!"
+                />
+                {voiceChoice.note && (
+                  <p className="text-amber-300 text-sm mt-2 text-center">{voiceChoice.note}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

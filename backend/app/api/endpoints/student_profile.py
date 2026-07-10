@@ -497,3 +497,56 @@ async def get_generation_context(
             "reason": "internal_error",
             "objectives": [],
         }
+
+
+# =============================================================================
+# Misconception Loop — S3 transport (PRD_MISCONCEPTION_LOOP.md)
+# =============================================================================
+# The frontend distiller (S2) POSTs a diagnosed misconception here after the
+# submission round-trip has already resolved — fire-and-forget, so this endpoint
+# must never grow LLM calls or block on anything slow. Backend's role is store
+# only; diagnosis happens at the point of primitive.
+
+
+class MisconceptionIn(BaseModel):
+    subskill_id: str
+    misconception_text: str = Field(..., min_length=1, max_length=600)
+    confidence: Optional[str] = None      # 'high' | 'medium' (distiller echo)
+    evidence_tier: Optional[str] = None   # 'judge' | 'structured' (distiller echo)
+    source_attempt_id: str
+
+
+@router.post("/misconceptions")
+async def record_misconception(
+    request: MisconceptionIn,
+    user_context: dict = Depends(get_user_context),
+):
+    """Store the active misconception for (student, subskill) — one slot,
+    overwritten on re-detection. Student identity comes from auth, never the body."""
+    firestore = get_firestore_service()
+    student_id = user_context.get("student_id")
+    if firestore is None or student_id is None:
+        # Fail-soft: a dropped write costs one diagnosis, never a submission.
+        return {"stored": False, "reason": "unavailable"}
+
+    try:
+        stored = await firestore.add_or_update_misconception(
+            student_id=int(student_id),
+            subskill_id=request.subskill_id,
+            misconception_text=request.misconception_text,
+            source_attempt_id=request.source_attempt_id,
+            confidence=request.confidence,
+            evidence_tier=request.evidence_tier,
+            firebase_uid=user_context.get("firebase_uid"),
+        )
+        return {
+            "stored": True,
+            "subskillId": stored.get("subskill_id"),
+            "status": stored.get("status"),
+        }
+    except Exception as e:
+        logger.error(
+            f"[MISCONCEPTION] Store failed for student {student_id}, "
+            f"subskill {request.subskill_id}: {e}"
+        )
+        return {"stored": False, "reason": "internal_error"}

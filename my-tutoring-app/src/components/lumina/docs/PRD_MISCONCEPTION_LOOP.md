@@ -362,18 +362,31 @@ producer without its consumer.
   Tier-C never called the model. `tsc` clean vs baseline. Run summary:
   `my-tutoring-app/qa/diagnosis-lab-phase0-2026-07-09.md`.
 
-### Phase 1 — Capture on the live path
-- Evidence packets from the pilot family: 3–4 math comparison/word-problem
-  primitives (tier B) + one judge-driven primitive (tier A, judge schema gains
-  `misconception`). Wire S2 into `EvaluationContext.submitEvaluation`
-  post-submit hook.
-- Backend: `POST /api/student-profile/misconceptions` → **new Firestore-native store**
-  (three `FirestoreService` methods, `students/{id}/misconceptions/{subskill_id}` —
-  see S3; NOT the deprecated Cosmos `user_profiles` store).
-- **Verify:** scripted wrong session on the pilot primitives → misconception doc
-  visible in **Firestore** at `students/{id}/misconceptions/{subskill_id}` with
-  correct subskill_id, tier, attempt link. Correct sessions and tier-C primitives
-  write nothing.
+### Phase 1 — Capture on the live path ✅ DONE 2026-07-10
+- Capture engine: `submitResult` gained an optional 6th arg `diagnosisEvidence`
+  (rides `PrimitiveEvaluationResult`); `EvaluationContext.submitEvaluation` calls
+  `evaluation/diagnosis/captureMisconception.ts` fire-and-forget AFTER the submit
+  round-trip resolves (gates: failure, tier A/B, real subskill, once per
+  (subskill, session) — latch set synchronously; subskill precedence: result's
+  authoritative ID, else the submit response's resolved `demonstratedSkill`).
+- Pilot family: **TapeDiagram** (all 4 modes, 5 wrong-answer sites),
+  **ComparisonBuilder** (all 4 challenge types — the flagship fewer/difference
+  surface), **CompareObjects** (all 4 types) as Tier B via a shared
+  `wrongObservationsRef` + `noteWrongAnswer` pattern (latest wrong = headline,
+  earlier = priorAttempts, bounded 8); **PhonicsBlender** as Tier A —
+  `blendJudgeSchema` gained optional flat `misconception` string (both parse
+  paths), failed verdicts logged and forwarded as `judgeFeedback`.
+- Backend: `POST /api/student-profile/misconceptions` (auth-derived student_id,
+  fail-soft) → three Firestore-native `FirestoreService` methods at
+  `students/{id}/misconceptions/{subskill_id}` (lineage-resolved doc id,
+  one-slot overwrite preserving created_at, resolve flip, batch active read).
+- **Verified 2026-07-10** (`my-tutoring-app/qa/misconception-phase1-2026-07-10.md`):
+  store + endpoint exercised against real Firestore (add/overwrite/resolve/
+  re-detect/batch-read + 422 validation); real distiller call with the exact
+  TapeDiagram-shaped comparison packet returned the acceptance-test diagnosis
+  (high confidence, no leak); tsc = baseline (0 new). NOT yet browser-driven:
+  the in-browser glue (primitive submit → capture fetch) needs one wrong-session
+  check on a pilot primitive.
 
 ### Phase 2 — Exposure + consumption
 - S4 field in generation-context; S5 threading (`studentSignals` →

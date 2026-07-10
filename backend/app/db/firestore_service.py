@@ -918,6 +918,127 @@ class FirestoreService:
             return []
 
     # ============================================================================
+    # MISCONCEPTION METHODS (Misconception Loop PRD — S3 store)
+    # ============================================================================
+    # Firestore-native store: one doc per subskill at
+    # students/{student_id}/misconceptions/{subskill_id}. Doc-id = the resolved
+    # subskill gives the one-slot-per-subskill overwrite semantics for free, so
+    # a retried/double-fired write is idempotent by construction. Field contract
+    # mirrors the legacy Cosmos StudentMisconception shape (subskill_id,
+    # misconception_text, source_attempt_id, last_detected_at, status,
+    # resolved_at) so a later Cosmos backfill is trivial.
+
+    def _misconceptions_subcollection(self, student_id: int):
+        """Get reference to students/{student_id}/misconceptions"""
+        return self._student_doc(student_id).collection('misconceptions')
+
+    async def add_or_update_misconception(
+        self,
+        student_id: int,
+        subskill_id: str,
+        misconception_text: str,
+        source_attempt_id: str,
+        confidence: Optional[str] = None,
+        evidence_tier: Optional[str] = None,
+        firebase_uid: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Write (or overwrite) the active misconception for a subskill.
+
+        One free-text slot per subskill; re-detection overwrites and resets
+        status to 'active'. `.set()` on a subskill-keyed doc makes double-fires
+        from the fire-and-forget frontend path safe.
+        """
+        try:
+            # Resolve through lineage — always write to canonical ID
+            subskill_id = await self._resolver.resolve(subskill_id)
+            timestamp = datetime.now(timezone.utc).isoformat()
+
+            misconception_data = {
+                "student_id": student_id,
+                "subskill_id": subskill_id,
+                "misconception_text": misconception_text,
+                "source_attempt_id": source_attempt_id,
+                "confidence": confidence,
+                "evidence_tier": evidence_tier,
+                "last_detected_at": timestamp,
+                "status": "active",
+                "resolved_at": None,
+                "firebase_uid": firebase_uid
+            }
+
+            await self._ensure_student_document(student_id, firebase_uid)
+
+            doc_ref = self._misconceptions_subcollection(student_id).document(subskill_id)
+            existing_doc = doc_ref.get()
+            if existing_doc.exists:
+                existing_data = existing_doc.to_dict()
+                misconception_data["created_at"] = existing_data.get("created_at", timestamp)
+            else:
+                misconception_data["created_at"] = timestamp
+
+            misconception_data = self._add_migration_metadata(misconception_data)
+            firestore_data = self._prepare_firestore_data(misconception_data)
+            doc_ref.set(firestore_data)
+
+            logger.info(f"Stored misconception for student {student_id}, subskill {subskill_id}")
+            return firestore_data
+
+        except Exception as e:
+            logger.error(f"Error storing misconception in Firestore: {str(e)}")
+            raise
+
+    async def resolve_misconception(
+        self,
+        student_id: int,
+        subskill_id: str
+    ) -> bool:
+        """Flip an active misconception to resolved. Returns False when none active."""
+        try:
+            subskill_id = await self._resolver.resolve(subskill_id)
+            doc_ref = self._misconceptions_subcollection(student_id).document(subskill_id)
+            doc = doc_ref.get()
+
+            if not doc.exists or doc.to_dict().get("status") != "active":
+                return False
+
+            doc_ref.update({
+                "status": "resolved",
+                "resolved_at": datetime.now(timezone.utc).isoformat()
+            })
+            logger.info(f"Resolved misconception for student {student_id}, subskill {subskill_id}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error resolving misconception in Firestore: {str(e)}")
+            return False
+
+    async def get_active_misconceptions(
+        self,
+        student_id: int,
+        subskill_ids: Optional[List[str]] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """Batch-read active misconceptions, keyed by canonical subskill_id.
+
+        When subskill_ids is given, only those (lineage-resolved) are returned —
+        one read inside the existing generation-context request (S4), never a
+        per-objective fan-out. Fail-soft: errors return {}.
+        """
+        try:
+            query = self._misconceptions_subcollection(student_id).where('status', '==', 'active')
+            active = {doc.id: doc.to_dict() for doc in query.stream()}
+
+            if subskill_ids is None:
+                return active
+
+            resolved = await self._resolver.resolve_batch(subskill_ids)
+            wanted = set(resolved.values()) | set(subskill_ids)
+            return {sid: data for sid, data in active.items() if sid in wanted}
+
+        except Exception as e:
+            logger.error(f"Error reading misconceptions from Firestore: {str(e)}")
+            return {}
+
+    # ============================================================================
     # CURRICULUM GRAPH METHODS (READ-ONLY)
     # ============================================================================
 

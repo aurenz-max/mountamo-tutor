@@ -38,6 +38,7 @@ import WordWorkout from '../primitives/visual-primitives/literacy/WordWorkout';
 import WordSorter from '../primitives/visual-primitives/literacy/WordSorter';
 import PictureVocabulary from '../primitives/visual-primitives/literacy/PictureVocabulary';
 import StoryTalk from '../primitives/visual-primitives/literacy/StoryTalk';
+import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 
 import {
   EvaluationProvider,
@@ -69,7 +70,8 @@ type PrimitiveType =
   | 'word-workout'
   | 'word-sorter'
   | 'picture-vocabulary'
-  | 'story-talk';
+  | 'story-talk'
+  | 'word-flip';
 
 type GradeLevel = 'K' | '1' | '2' | '3' | '4' | '5' | '6';
 
@@ -117,6 +119,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'spelling-pattern-explorer', label: 'Spelling Patterns', icon: '🔠', topic: 'Silent-e spelling rule', strand: 'L', wave: 4 },
   { value: 'word-sorter', label: 'Word Sorter', icon: '📂', topic: 'Sorting nouns and verbs', strand: 'L', wave: 5 },
   { value: 'picture-vocabulary', label: 'Picture Vocabulary', icon: '🗣️', topic: 'Animals', strand: 'L', wave: 5 },
+  { value: 'word-flip', label: 'Word Flip', icon: '🔁', topic: 'plurals — one and many', strand: 'L', wave: 5 },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -202,6 +205,8 @@ const PrimitiveRenderer: React.FC<{
       return <PictureVocabulary data={data as Parameters<typeof PictureVocabulary>[0]['data']} />;
     case 'story-talk':
       return <StoryTalk data={data as Parameters<typeof StoryTalk>[0]['data']} />;
+    case 'word-flip':
+      return <WordFlip data={data as Parameters<typeof WordFlip>[0]['data']} />;
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -323,6 +328,15 @@ const EvaluationResultsPanel: React.FC = () => {
                   </div>
                 )}
                 {result.metrics.type === 'story-talk' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'word-flip' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
                     <span>Mode: {result.metrics.challengeType}</span>
                     <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>

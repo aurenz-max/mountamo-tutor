@@ -5,6 +5,7 @@ import {
   usePrimitiveEvaluation,
   type TapeDiagramMetrics,
   type PrimitiveEvaluationResult,
+  type DiagnosisEvidence,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -337,6 +338,36 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
 
+  // ── Misconception Loop S1 — session-scoped wrong-answer log ────────────────
+  // Every wrong submit appends one observation (what was asked, what the
+  // student entered, what was expected). On a failed session these become the
+  // Tier-B DiagnosisEvidence packet. DATA only — the shared distiller
+  // diagnoses; nothing here is ever student-visible.
+  const wrongObservationsRef = useRef<
+    Array<{ challenge: string; observed: string; expected: string }>
+  >([]);
+
+  const noteWrongAnswer = useCallback(
+    (asked: string, observedVal: number | string, expectedVal: number | string) => {
+      const problem = currentChallenge?.wordProblem
+        ? `"${currentChallenge.wordProblem}"`
+        : `a ${currentChallenge?.challengeType ?? 'tape-diagram'} diagram`;
+      const cmp = currentChallenge?.comparisonData;
+      const cmpStr = cmp
+        ? ` (quantities ${cmp.quantity1} and ${cmp.quantity2}, comparison word "${cmp.comparisonWord}", asked for the ${cmp.unknownPart})`
+        : '';
+      // Bounded: keep the most recent 8 observations.
+      const log = wrongObservationsRef.current;
+      log.push({
+        challenge: `${problem} — ${asked}${cmpStr}`,
+        observed: `entered ${observedVal}`,
+        expected: `the correct value is ${expectedVal}`,
+      });
+      if (log.length > 8) log.shift();
+    },
+    [currentChallenge],
+  );
+
   // Reset per-challenge state when the active challenge changes.
   useEffect(() => {
     if (!currentChallenge) return;
@@ -618,16 +649,42 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
     if (!hasSubmittedEvaluation) {
       const goalMet = correctCount === challenges.length;
-      submitEvaluation(goalMet, overallAccuracy, metrics, {
-        studentWork: {
-          challengeCount: challenges.length,
-          challengeType: sessionMode,
-          attemptsPerChallenge: challenges.map((c) => {
-            const r = results.find((rr) => rr.challengeId === c.id);
-            return r?.attempts ?? 0;
-          }),
+
+      // Misconception Loop S1 — Tier-B evidence packet on failed sessions.
+      // Latest wrong observation is the headline; earlier ones become
+      // priorAttempts (the consistency signal the distiller needs to tell a
+      // mental model from a slip). Clean sessions carry no packet.
+      const wrongs = wrongObservationsRef.current;
+      const latest = wrongs[wrongs.length - 1];
+      const diagnosisEvidence: DiagnosisEvidence | undefined =
+        !goalMet && latest
+          ? {
+              challengeSummary: latest.challenge,
+              expected: latest.expected,
+              observed: latest.observed,
+              priorAttempts: wrongs
+                .slice(0, -1)
+                .map((w) => ({ challenge: w.challenge, observed: w.observed })),
+            }
+          : undefined;
+
+      submitEvaluation(
+        goalMet,
+        overallAccuracy,
+        metrics,
+        {
+          studentWork: {
+            challengeCount: challenges.length,
+            challengeType: sessionMode,
+            attemptsPerChallenge: challenges.map((c) => {
+              const r = results.find((rr) => rr.challengeId === c.id);
+              return r?.attempts ?? 0;
+            }),
+          },
         },
-      });
+        undefined,
+        diagnosisEvidence,
+      );
     }
   }, [
     isComplete, results, phaseResults, challenges,
@@ -800,6 +857,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
+      if (!isCorrect) noteWrongAnswer(`fill in the "${segment.label}" segment`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -903,6 +961,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         setTimeout(() => { setCurrentPhase('practice'); setFeedback({}); }, 1500);
       } else {
         SoundManager.playIncorrect();
+        noteWrongAnswer('find the whole (sum of the parts)', inputWhole, actualTotal);
         setFeedback({ explore: 'incorrect' });
         if (supportTier) nudgeOnWrong('solve_part_whole');
       }
@@ -920,6 +979,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
+      if (!isCorrect) noteWrongAnswer(`solve for the missing part "${segment.label}"`, userVal, segment.value);
       setPhaseAttempts((prev) => ({ ...prev, [currentPhase]: prev[currentPhase] + 1 }));
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
@@ -1071,6 +1131,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
+      if (!isCorrect) noteWrongAnswer(`solve the comparison segment "${segment.label}"`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -1176,6 +1237,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
+      if (!isCorrect) noteWrongAnswer(`solve step ${currentStepIndex + 1} ("${segment.label}")`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);

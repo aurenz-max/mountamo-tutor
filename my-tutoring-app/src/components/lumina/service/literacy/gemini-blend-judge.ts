@@ -36,6 +36,11 @@ const blendJudgeSchema: Schema = {
       type: Type.STRING,
       description: "One short sentence: what was heard and why it does or doesn't match",
     },
+    misconception: {
+      type: Type.STRING,
+      description:
+        "Optional. Only when isMatch is false and confidence is high AND the error suggests a consistent wrong rule (e.g. saying only the first phoneme, swapping a vowel): ONE sentence in student-model form describing the wrong rule ('The student blends only the first sound...'). Empty string when the mismatch looks like noise, mishearing, or a one-off slip. Never contains the target word.",
+    },
   },
   required: ["heard", "isMatch", "confidence", "reasoning"],
 };
@@ -45,6 +50,12 @@ export interface BlendJudgeVerdict {
   isMatch: boolean;
   confidence: "high" | "low";
   reasoning: string;
+  /**
+   * Misconception Loop S2 (Tier-A judge fast path): one student-model sentence
+   * describing a consistent wrong rule. Only on confident no-match; undefined
+   * when the miss looks like noise or a one-off slip. Never names the target word.
+   */
+  misconception?: string;
   /** Which model actually produced the verdict */
   model: string;
   /** True if the model rejected responseSchema and we fell back to prompt-JSON */
@@ -86,7 +97,8 @@ Report:
 - heard: your independent transcription from step 1 (empty string if there is no speech)
 - isMatch: true ONLY if the transcription is "${targetWord}". Be lenient about young-child articulation of the RIGHT word (soft consonants, stretched vowels, "sounding-out then the word" counts). Be strict about DIFFERENT words: a minimal-pair neighbor is NOT a match.
 - confidence: "high" if the audio is clear and your judgment is certain; "low" if the audio is quiet, mumbled, cut off, or ambiguous.
-- reasoning: one short sentence naming the phonemes you heard.`;
+- reasoning: one short sentence naming the phonemes you heard.
+- misconception: leave this as an empty string by default. Populate it ONLY when isMatch is false, confidence is "high", AND the error suggests a consistent wrong rule (e.g. the student said only the first phoneme, or swapped the vowel): write ONE sentence in student-model form describing the wrong rule ("The student blends only the first sound..."). Keep it empty when the mismatch looks like noise, mishearing, or a one-off slip. Never include the target word in this sentence.`;
 }
 
 /** Try to pull a JSON object out of a plain-text response (fenced or bare). */
@@ -153,6 +165,7 @@ export async function judgeBlendAudio(params: BlendJudgeParams): Promise<BlendJu
       isMatch: Boolean(parsed.isMatch),
       confidence: parsed.confidence === "high" ? "high" : "low",
       reasoning: String(parsed.reasoning ?? ""),
+      misconception: String(parsed.misconception ?? "").trim() || undefined,
       model,
       usedSchemaFallback: false,
       judgeLatencyMs: Date.now() - started,
@@ -169,7 +182,7 @@ export async function judgeBlendAudio(params: BlendJudgeParams): Promise<BlendJu
             {
               text:
                 prompt +
-                `\n\nRespond with ONLY a JSON object, no prose, shaped exactly like: {"heard": string, "isMatch": boolean, "confidence": "high"|"low", "reasoning": string}`,
+                `\n\nRespond with ONLY a JSON object, no prose, shaped exactly like: {"heard": string, "isMatch": boolean, "confidence": "high"|"low", "reasoning": string, "misconception": string}`,
             },
           ],
         },
@@ -183,6 +196,7 @@ export async function judgeBlendAudio(params: BlendJudgeParams): Promise<BlendJu
       isMatch: Boolean(parsed.isMatch),
       confidence: parsed.confidence === "high" ? "high" : "low",
       reasoning: String(parsed.reasoning ?? ""),
+      misconception: String(parsed.misconception ?? "").trim() || undefined,
       model,
       usedSchemaFallback: true,
       judgeLatencyMs: Date.now() - fallbackStarted,

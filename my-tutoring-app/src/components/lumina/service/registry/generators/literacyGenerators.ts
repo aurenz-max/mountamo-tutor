@@ -57,6 +57,7 @@ import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 import { generateWordSorter } from '../../literacy/gemini-word-sorter';
 import { generatePictureVocabulary } from '../../literacy/gemini-picture-vocabulary';
 import { generateStoryTalk } from '../../literacy/gemini-story-talk';
+import { generateWordFlip } from '../../literacy/gemini-word-flip';
 
 // ============================================================================
 // Wave 1: Writing — Paragraph Architect
@@ -611,4 +612,28 @@ registerContextGenerator('story-talk', async (ctx) => ({
   data: await generateStoryTalk(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 29 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Story Talk)');
+// ============================================================================
+// Grammar Basics — Word Flip
+// ============================================================================
+
+/**
+ * Word Flip - K-1 spoken grammar transformations (regular -s plurals at birth).
+ * Counted-picture frame ("One dog 🐕 · Three ___?"); the child SAYS the plural
+ * ("dogs"); tap chips are the receptive fallback.
+ *
+ * Perfect for:
+ * - K-1 regular plural formation (L.K.1c territory)
+ * - Spoken production practice with a tap-chip support net
+ * - One → many counting-frame vocabulary
+ *
+ * Grade Scaling:
+ * - K: everyday concrete nouns, counts 2-5
+ * - Grade 1: same frame; /add-eval-modes widens the transformation ladder
+ */
+registerContextGenerator('word-flip', async (ctx) => ({
+  type: 'word-flip',
+  instanceId: ctx.instanceId,
+  data: await generateWordFlip(ctx),
+}));
+
+console.log('📚 Literacy generators registered: 30 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Story Talk + Word Flip)');

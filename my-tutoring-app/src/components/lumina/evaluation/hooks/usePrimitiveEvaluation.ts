@@ -7,6 +7,7 @@ import type {
   PrimitiveMetrics,
   IdSource,
 } from '../types';
+import type { DiagnosisEvidence } from '../diagnosis/types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
 import { useExhibitContext } from '../../contexts/ExhibitContext';
 
@@ -86,7 +87,8 @@ export interface UsePrimitiveEvaluationReturn<TMetrics extends PrimitiveMetrics>
     score: number,
     metrics: TMetrics,
     studentWork?: unknown,
-    partialCredit?: number
+    partialCredit?: number,
+    diagnosisEvidence?: DiagnosisEvidence
   ) => PrimitiveEvaluationResult<TMetrics>;
 
   /** Reset to start a new attempt */
@@ -227,7 +229,10 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
     score: number,
     metrics: TMetrics,
     studentWork?: unknown,
-    partialCredit?: number
+    partialCredit?: number,
+    // Misconception Loop S1 — optional evidence packet for the shared
+    // distiller. Primitives supply DATA on failures; they never diagnose.
+    diagnosisEvidence?: DiagnosisEvidence
   ): PrimitiveEvaluationResult<TMetrics> => {
     // Submit-once latch: ignore repeat calls for the same attempt (re-firing
     // auto-submit effects, double-clicks). Return the already-built result so
@@ -306,6 +311,7 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       exhibitId,
       lessonContext,
       studentWork,
+      diagnosisEvidence,
     };
 
     // Store for potential unmount submission

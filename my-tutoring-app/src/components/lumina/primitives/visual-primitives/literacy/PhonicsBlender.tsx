@@ -17,6 +17,7 @@ import {
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
+  type DiagnosisEvidence,
 } from '../../../evaluation';
 import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -133,6 +134,12 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   // Stable fallback instance ID — must not change across renders
   const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // ── Misconception Loop S1 — Tier-A (judge-backed) failed-verdict log ────────
+  // Confident no-match verdicts from the spoken blend judge, bounded to the
+  // most recent 8. DATA only, never student-visible — on a failed session the
+  // latest becomes the DiagnosisEvidence packet at submit time.
+  const failedVerdictsRef = useRef<Array<{ word: string; heard: string; judgeFeedback: string }>>([]);
 
   // Evaluation hook
   const {
@@ -390,6 +397,19 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   // ---------------------------------------------------------------------------
   const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
     if (!currentWord || isBlended) return;
+    // Misconception Loop S1 — Tier-A capture: log the judge's no-match verdicts
+    // (data only, never student-visible) for the end-of-session evidence packet.
+    if (result.verdict && !result.verdict.isMatch) {
+      const { heard, reasoning, misconception } = result.verdict;
+      failedVerdictsRef.current = [
+        ...failedVerdictsRef.current,
+        {
+          word: currentWord.targetWord,
+          heard,
+          judgeFeedback: `${reasoning}${misconception ? ` Misconception: ${misconception}` : ''}`,
+        },
+      ].slice(-8);
+    }
     if (result.outcome === 'match') {
       SoundManager.playCorrect();
       setSpokenWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
@@ -493,8 +513,24 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       attemptsCount: totalAttempts,
     };
 
+    const success = accuracy >= 60;
+
+    // Misconception Loop S1 — Tier-A evidence packet on failed sessions. The
+    // judge already articulated the failure (judgeFeedback present ⇒ Tier A);
+    // earlier fails become priorAttempts, the consistency signal the distiller
+    // needs. Clean sessions carry no packet.
+    const fails = failedVerdictsRef.current;
+    const latest = fails[fails.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = !success && latest ? {
+      challengeSummary: `Blend the spoken phonemes into the word "${latest.word}" and say it aloud.`,
+      expected: `Say the blended word "${latest.word}".`,
+      observed: `Student said: "${latest.heard}".`,
+      judgeFeedback: latest.judgeFeedback,
+      priorAttempts: fails.slice(0, -1).map(f => ({ challenge: `blend "${f.word}"`, observed: `said "${f.heard}" — ${f.judgeFeedback}` })),
+    } : undefined;
+
     submitEvaluation(
-      accuracy >= 60,
+      success,
       accuracy,
       metrics,
       {
@@ -502,7 +538,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         spokenWords: Array.from(spokenWords),
         blendTimes,
         attemptsPerWord,
-      }
+      },
+      undefined,
+      diagnosisEvidence
     );
 
     // Spoken wrap-up from the AI tutor alongside the summary panel

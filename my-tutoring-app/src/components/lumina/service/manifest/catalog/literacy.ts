@@ -1046,6 +1046,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
   },
   {
+    id: 'word-flip',
+    description:
+      'Spoken grammar transformation game for Kindergarten and Grade 1 Language Arts: a counted-picture frame shows one object then several ("One dog 🐕 → three ___?") and the child SAYS the plural form aloud ("dogs") into an open mic, with tap chips as the fallback. Teaches regular -s plural formation (singular/plural nouns, "more than one"). Perfect for K grammar basics, plurals, and oral language production. ESSENTIAL for Kindergarten Language Arts grammar.',
+    constraints:
+      'Covers ONLY regular -s plurals at birth (no -es, no irregular plurals — those modes come later). Nouns must be concrete, picturable words with a clear emoji so pre-readers can play. The manifest must NOT supply specific per-challenge words — the generator authors the noun pool and code assembles the plural_s challenges deterministically.',
+    supportsEvaluation: true,
+  },
+  {
     id: 'character-web',
     description: 'Interactive node-and-edge graph for character analysis and relationship mapping. Students build character profiles with traits and text evidence citations, then map relationships between characters. Tracks character change over time. Perfect for literary analysis grades 2-6.',
     constraints: 'Requires narrative text with 2+ characters. Best for grades 2-6.',

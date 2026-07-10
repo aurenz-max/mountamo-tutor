@@ -27,6 +27,7 @@ import { placeValueChartOracle } from './place-value-chart';
 import { ratioTableOracle } from './ratio-table';
 import { regroupingWorkbenchOracle } from './regrouping-workbench';
 import { skipCountingRunnerOracle } from './skip-counting-runner';
+import { slopeTriangleOracle } from './slope-triangle';
 import { tapeDiagramOracle } from './tape-diagram';
 import { tenFrameOracle } from './ten-frame';
 import { twoWayTableOracle } from './two-way-table';
@@ -67,6 +68,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   ratioTableOracle,
   regroupingWorkbenchOracle,
   skipCountingRunnerOracle,
+  slopeTriangleOracle,
   tapeDiagramOracle,
   tenFrameOracle,
   twoWayTableOracle,

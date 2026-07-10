@@ -2327,6 +2327,20 @@ export interface StoryTalkMetrics extends BasePrimitiveMetrics {
   hintsViewed: number;
   overallAccuracy: number;        // 0-100, average per-challenge score
   averageAttemptsPerChallenge: number;
+  /** Challenges answered correctly via the spoken-choice mic (voice-usage signal). */
+  voiceAnswerCount?: number;
+}
+
+export interface WordFlipMetrics extends BasePrimitiveMetrics {
+  type: 'word-flip';
+  challengeType: 'plural_s'; // union widens when /add-eval-modes builds the ladder
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total tries across all challenges
+  firstTryCount: number;          // challenges answered correctly on the first try
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
 }
 
 export interface WordWorkoutMetrics extends BasePrimitiveMetrics {
@@ -3413,6 +3427,7 @@ export type PrimitiveMetrics =
   | CvcSpellerMetrics
   | PictureVocabularyMetrics
   | StoryTalkMetrics
+  | WordFlipMetrics
   // Literacy (Wave 5)
   | WordWorkoutMetrics
   | WordSorterMetrics

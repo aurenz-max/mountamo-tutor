@@ -18,6 +18,7 @@ import {
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
+  type DiagnosisEvidence,
 } from '../../../evaluation';
 import type { ComparisonBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -341,6 +342,32 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
   }, [currentChallenge, currentChallengeIndex]);
 
+  // ── Misconception Loop S1 — session-scoped wrong-answer log ────────────────
+  // Every wrong submit appends one observation (what was asked, what the
+  // student picked, what was expected). On a failed session these become the
+  // Tier-B DiagnosisEvidence packet. DATA only — the shared distiller
+  // diagnoses; nothing here is ever student-visible.
+  const wrongObservationsRef = useRef<
+    Array<{ challenge: string; observed: string; expected: string }>
+  >([]);
+
+  const noteWrongAnswer = useCallback(
+    (asked: string, observedVal: string, expectedVal: string) => {
+      const instr = currentChallenge?.instruction
+        ? `"${currentChallenge.instruction}"`
+        : `a ${currentChallenge?.type ?? 'comparison'} challenge`;
+      // Bounded: keep the most recent 8 observations.
+      const log = wrongObservationsRef.current;
+      log.push({
+        challenge: `${instr} — ${asked}`,
+        observed: observedVal,
+        expected: expectedVal,
+      });
+      if (log.length > 8) log.shift();
+    },
+    [currentChallenge],
+  );
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -474,6 +501,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     } else {
       setFeedback('Not quite — count each group carefully and try again!');
       setFeedbackType('error');
+      noteWrongAnswer(
+        `compare the groups (left: ${leftCount} ${currentChallenge.leftGroup?.objectType ?? 'objects'}, right: ${rightCount} ${currentChallenge.rightGroup?.objectType ?? 'objects'})`,
+        `picked "${selectedAnswer}" for the left group`,
+        `the left group has "${currentChallenge.correctAnswer}" (left ${leftCount} vs right ${rightCount})`,
+      );
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". `
         + `Left has ${leftCount}, right has ${rightCount}. Attempt ${currentAttempts + 1}. `
@@ -487,7 +519,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
     return correct;
   }, [
-    currentChallenge, selectedAnswer, incrementAttempts,
+    currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer,
     showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause,
   ]);
 
@@ -512,6 +544,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     } else {
       setFeedback('Not quite. Think about which number is bigger.');
       setFeedbackType('error');
+      noteWrongAnswer(
+        `choose the symbol comparing ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}`,
+        `picked "${selectedAnswer}"`,
+        `the correct symbol is "${currentChallenge.correctSymbol}" (${currentChallenge.leftNumber} ${currentChallenge.correctSymbol} ${currentChallenge.rightNumber})`,
+      );
       sendText(
         `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctSymbol}" `
         + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. `
@@ -525,7 +562,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, selectedAnswer, incrementAttempts, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — order
@@ -551,6 +588,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     } else {
       setFeedback('Not quite the right order. Try again!');
       setFeedbackType('error');
+      noteWrongAnswer(
+        `order the numbers ${currentChallenge.numbers.join(', ')} ${currentChallenge.direction ?? 'ascending'}`,
+        `ordered ${orderedNumbers.join(', ')}`,
+        `the correct ${currentChallenge.direction ?? 'ascending'} order is ${expected.join(', ')}`,
+      );
       sendText(
         `[ANSWER_INCORRECT] Student ordered: ${orderedNumbers.join(', ')} but correct is: `
         + `${expected.join(', ')} (${currentChallenge.direction}). `
@@ -562,7 +604,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, orderedNumbers, incrementAttempts, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, orderedNumbers, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
@@ -602,6 +644,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           : askFor === 'one-more'
             ? `${oneMoreAnswer ?? '?'}`
             : `${oneLessAnswer ?? '?'}`;
+      noteWrongAnswer(
+        `find one ${askFor === 'both' ? 'more and one less' : askFor === 'one-more' ? 'more' : 'less'} than ${target}`,
+        `answered ${studentAnswers}`,
+        `one more is ${target + 1}, one less is ${target - 1}`,
+      );
       sendText(
         `[ANSWER_INCORRECT] Target: ${target}, askFor: ${askFor}. Student answered: ${studentAnswers}. `
         + `Correct: one more=${target + 1}, one less=${target - 1}. `
@@ -613,7 +660,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     }
 
     return correct;
-  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, currentAttempts, sendText, tutorRevealClause]);
+  }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
   // Master check handler
@@ -713,11 +760,32 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
         };
 
+        // Misconception Loop S1 — Tier-B evidence packet on failed sessions.
+        // Latest wrong observation is the headline; earlier ones become
+        // priorAttempts (the consistency signal the distiller needs to tell a
+        // mental model from a slip). Clean sessions carry no packet.
+        const goalMet = totalCorrect === challenges.length;
+        const wrongs = wrongObservationsRef.current;
+        const latest = wrongs[wrongs.length - 1];
+        const diagnosisEvidence: DiagnosisEvidence | undefined =
+          !goalMet && latest
+            ? {
+                challengeSummary: latest.challenge,
+                expected: latest.expected,
+                observed: latest.observed,
+                priorAttempts: wrongs
+                  .slice(0, -1)
+                  .map((w) => ({ challenge: w.challenge, observed: w.observed })),
+              }
+            : undefined;
+
         submitEvaluation(
-          totalCorrect === challenges.length,
+          goalMet,
           overallAccuracy,
           metrics,
           { challengeResults },
+          undefined,
+          diagnosisEvidence,
         );
       }
       return;

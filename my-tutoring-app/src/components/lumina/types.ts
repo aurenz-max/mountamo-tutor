@@ -148,6 +148,7 @@ export interface SentenceSchemaData {
 // Re-export rebuilt SentenceAnalyzer types
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
+export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
@@ -1334,6 +1335,7 @@ export type ComponentId =
   | 'context-clues-detective'   // Determine word meaning from context clues (grades 2-6)
   | 'cvc-speller'               // Interactive CVC word spelling practice
   | 'figurative-language-finder' // Identify and interpret figurative language (grades 3-6)
+  | 'word-flip'                  // Interactive word transformation practice (flip base word to target form)
   | 'word-sorter'                // Interactive word sorting into categories
   | 'word-workout'               // Interactive word workout practice
   | 'sound-swap'                // Interactive sound substitution for phonemic awareness

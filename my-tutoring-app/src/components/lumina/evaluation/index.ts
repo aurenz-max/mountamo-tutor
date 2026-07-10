@@ -185,6 +185,7 @@ export type {
   CvcSpellerMetrics,
   PictureVocabularyMetrics,
   StoryTalkMetrics,
+  WordFlipMetrics,
   WordWorkoutMetrics,
   WordSorterMetrics,
   SentenceAnalyzerMetrics,
@@ -220,6 +221,17 @@ export {
   isBridgeBuilderMetrics,
   isMultipleChoiceMetrics,
 } from './types';
+
+// Misconception Loop — S1 evidence contract (primitives supply DATA on
+// failures; the shared distiller diagnoses). See diagnosis/types.ts.
+export {
+  classifyEvidenceTier,
+  type DiagnosisEvidence,
+  type EvidenceTier,
+  type MisconceptionDiagnosis,
+  type MisconceptionAbstain,
+  type MisconceptionResult,
+} from './diagnosis/types';
 
 // Hook
 export {
