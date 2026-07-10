@@ -621,6 +621,12 @@ export interface MultipleChoiceProblemData extends BaseProblemData {
   objectiveId?: string;
   exhibitId?: string;
   onEvaluationSubmit?: (result: any) => void;
+  /** Voice control (optional, injected by the screen owner — e.g. KnowledgeCheck —
+   *  to arbitrate ONE live mic across stacked problems; the engine has no global
+   *  single-mic lock, so only the eligible problem opens its mic. Absent ⇒ eligible
+   *  (standalone single-problem use). Voice also self-gates on option sayability
+   *  (no katex/number/symbol options). See /add-voice-control. */
+  voiceEligible?: boolean;
 }
 
 // True/False Problem
@@ -637,6 +643,11 @@ export interface TrueFalseProblemData extends BaseProblemData {
   objectiveId?: string;
   exhibitId?: string;
   onEvaluationSubmit?: (result: any) => void;
+  /** Voice control (optional, injected by the screen owner — e.g. KnowledgeCheck —
+   *  to arbitrate ONE live mic across stacked problems; the engine has no global
+   *  single-mic lock, so only the eligible problem opens its mic. Absent ⇒ eligible
+   *  (standalone single-problem use). See /add-voice-control. */
+  voiceEligible?: boolean;
 }
 
 // Fill in Blanks Problem

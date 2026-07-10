@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { TrueFalseProblemData, VisualObjectCollection, VisualComparisonData, LetterTracingData, LetterPictureData, AlphabetSequenceData, RhymingPairsData, SightWordCardData, SoundSortData } from '../../types';
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
 import { InsetRenderer } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
+import { useVoiceChoice } from '../../hooks/useVoiceChoice';
 import {
   usePrimitiveEvaluation,
   type TrueFalseMetrics,
@@ -16,6 +17,7 @@ import {
   LuminaAnswerChoice,
   LuminaFeedbackCard,
   LuminaActionButton,
+  LuminaMicListener,
   type AnswerChoiceState,
 } from '../../ui';
 
@@ -27,6 +29,14 @@ import {
  * - Submits evaluation metrics on answer submission
  * - Supports competency tracking via skillId/subskillId/objectiveId
  * - Enables retry mechanism with resetAttempt
+ *
+ * VOICE (see /add-voice-control): the student can answer hands-free by saying
+ * "true" / "false" — the single cleanest voice class (two phonetically distant
+ * words, universal across every grade/subject). A single-unit useVoiceChoice
+ * runs the mic/judge; a spoken verdict routes into the SAME select→submit path
+ * a tap uses, so the tap path is unchanged and voice is purely additive. When
+ * many problems stack on one screen, the screen owner passes `voiceEligible` so
+ * only one mic is ever live (the engine has no global single-mic lock).
  *
  * UI: answer FSM, feedback banner, and action buttons come from the Lumina UI
  * kit (LuminaAnswerChoice / LuminaFeedbackCard / LuminaActionButton). The
@@ -73,54 +83,90 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
     setSelectedAnswer(answer);
   };
 
-  const handleSubmit = () => {
-    if (selectedAnswer === null || hasSubmittedEvaluation) return;
+  // Grade + report a specific answer. `viaVoice` rides the studentWork so the
+  // screen owner can skip its outcome chime (useVoiceChoice already played one)
+  // and so voice usage is measurable. Both tap-Verify and voice land here.
+  const submitWith = useCallback((answer: boolean, viaVoice: boolean) => {
+    if (hasSubmittedEvaluation) return;
 
     setIsSubmitted(true);
 
-    const isCorrect = selectedAnswer === data.correct;
+    const isCorrect = answer === data.correct;
 
-    // Build evaluation metrics
     const metrics: TrueFalseMetrics = {
       type: 'true-false',
       isCorrect,
-      selectedAnswer,
+      selectedAnswer: answer,
       correctAnswer: data.correct,
     };
 
-    // Submit evaluation result
     submitEvaluation(
       isCorrect,
       isCorrect ? 100 : 0,
       metrics,
       {
         studentWork: {
-          selectedAnswer,
+          selectedAnswer: answer,
           statement: data.statement,
         },
+        viaVoice,
       }
     );
+  }, [hasSubmittedEvaluation, data.correct, data.statement, submitEvaluation]);
+
+  const handleSubmit = () => {
+    if (selectedAnswer === null) return;
+    submitWith(selectedAnswer, false);
   };
+
+  // ── Voice: say "true" / "false" to answer hands-free ───────────────────────
+  // The single answerable unit; options are the two spoken labels. `answer` is
+  // the grading key the controller never sends to the judge.
+  const voiceItems = useMemo(
+    () => [{ answer: data.correct ? 'true' : 'false', options: ['true', 'false'] }],
+    [data.correct],
+  );
+
+  // Eligible unless the screen owner parked this problem (only one mic may be
+  // live across stacked problems). Closed once answered.
+  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted;
+
+  const voice = useVoiceChoice({
+    items: voiceItems,
+    gradeLevel: data.gradeLevel,
+    active: voiceEligible,
+    onSubmit: (_idx, word) => {
+      if (isSubmitted) return;
+      const answer = word === 'true';
+      setSelectedAnswer(answer);
+      submitWith(answer, true);
+    },
+  });
 
   const handleReset = () => {
     setSelectedAnswer(null);
     setIsSubmitted(false);
     resetEvaluationAttempt();
+    voice.reset();
   };
 
   const isCorrect = selectedAnswer === data.correct;
 
-  // Answer-option state machine: which visual state each button is in.
-  const choiceState = (value: boolean): AnswerChoiceState =>
-    !isSubmitted
-      ? selectedAnswer === value
-        ? 'selected'
-        : 'idle'
-      : value === data.correct
-        ? 'correct'
-        : selectedAnswer === value
-          ? 'incorrect'
-          : 'dimmed';
+  // Answer-option state machine: which visual state each button is in. A voice
+  // verdict that degraded to a tap-confirm highlights its button pre-submit.
+  const choiceState = (value: boolean): AnswerChoiceState => {
+    if (!isSubmitted) {
+      if (selectedAnswer === value) return 'selected';
+      const label = value ? 'true' : 'false';
+      if (voice.highlight?.word === label) return 'selected';
+      return 'idle';
+    }
+    return value === data.correct
+      ? 'correct'
+      : selectedAnswer === value
+        ? 'incorrect'
+        : 'dimmed';
+  };
 
   return (
     <div className="w-full">
@@ -181,6 +227,28 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
           </LuminaAnswerChoice>
         ))}
       </div>
+
+      {/* Voice: hands-free "true" / "false". Orb only while the mic is in play
+          (eligible + unanswered) so stacked problems never show idle orbs. */}
+      {!isSubmitted && (data.voiceEligible ?? true) && (
+        <div className="flex flex-col items-center mb-8">
+          <LuminaMicListener
+            state={voice.voice.state}
+            level={voice.voice.level}
+            isSupported={voice.voice.isSupported}
+            dormant={voice.voice.dormant}
+            onStart={voice.voice.start}
+            onCancel={voice.voice.stop}
+            accent="blue"
+            size="sm"
+            idleLabel="Say “true” or “false”"
+            listeningLabel="Say “true” or “false”"
+          />
+          {voice.note && (
+            <p className="text-amber-300 text-sm mt-2 text-center">{voice.note}</p>
+          )}
+        </div>
+      )}
 
       {/* Action Area */}
       <div className="flex flex-col items-center">

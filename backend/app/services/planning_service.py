@@ -20,6 +20,7 @@ import math
 from datetime import datetime, date, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..core.config import settings
 from ..db.firestore_service import FirestoreService
 from ..services.curriculum_service import CurriculumService
 from ..models.planning import (
@@ -960,6 +961,14 @@ class PlanningService:
         # fetch falls into first-doc-wins scanning and a K student is served
         # the Grade 1 curriculum everywhere downstream.
         student_grade = planning.get("grade_level")
+        # Cross-grade progression: a subject whose frontier is exhausted can
+        # run ahead of the grade of record via a per-subject override
+        # ({"MATHEMATICS": "1"}). Detection lives in _allocate_subject_minutes
+        # (the one place remaining work is computed); promotion warnings ride
+        # on the plan so exhaustion is never silent again.
+        grade_overrides: Dict[str, str] = dict(planning.get("subject_grade_overrides") or {})
+        promotion_ready: Dict[str, Any] = dict(planning.get("promotion_ready") or {})
+        promo_warnings: List[str] = []
 
         all_candidates: List[Dict[str, Any]] = []
 
@@ -1000,6 +1009,9 @@ class PlanningService:
                 allocation = await self._allocate_subject_minutes(
                     student_id, list(weekly_plan.subjects), budget_minutes,
                     grade=student_grade,
+                    grade_overrides=grade_overrides,
+                    promotion_ready=promotion_ready,
+                    promo_warnings=promo_warnings,
                 )
                 if allocation:
                     pace_by_subject = {p.subject: p for p in allocation.subjects}
@@ -1024,7 +1036,7 @@ class PlanningService:
                         targets = await self.analytics.select_session_targets(
                             student_id,
                             subj,
-                            grade=student_grade,
+                            grade=self._subject_grade(subj, student_grade, grade_overrides),
                             count=pace.selector_count if pace else 5,
                         )
                         for o in targets.get("objectives", []):
@@ -1096,7 +1108,7 @@ class PlanningService:
                 day_of_week=day_names[today.weekday()],
                 grade_level=student_grade,
                 budget_minutes=budget_minutes,
-                warnings=["No skills due or available for today."],
+                warnings=["No skills due or available for today."] + promo_warnings,
             )
 
         # --- Step 2: Enrich with curriculum metadata ---
@@ -1173,7 +1185,11 @@ class PlanningService:
         plan.allocation = allocation
         # Grade of record rides on the plan so the launch surface generates
         # at the student's ACTUAL grade, not the UI's default band.
+        # (Per-subject overrides scope the GRAPH each subject plans from;
+        # a promoted subject's blocks carry next-grade subskill ids.)
         plan.grade_level = student_grade
+        if promo_warnings:
+            plan.warnings = list(plan.warnings or []) + promo_warnings
         return plan
 
     async def _allocate_subject_minutes(
@@ -1182,6 +1198,9 @@ class PlanningService:
         subjects: List[str],
         budget_minutes: int,
         grade: Optional[str] = None,
+        grade_overrides: Optional[Dict[str, str]] = None,
+        promotion_ready: Optional[Dict[str, Any]] = None,
+        promo_warnings: Optional[List[str]] = None,
     ) -> Optional["PlanAllocation"]:
         """
         Pace-aware minute allocation: minutes ∝ remaining work per subject.
@@ -1194,6 +1213,13 @@ class PlanningService:
         Subjects whose graph fails to load (no published curriculum) are
         omitted from the returned allocation; the caller skips them entirely.
         Returns None when no subject has a graph (caller keeps legacy flow).
+
+        Cross-grade progression: each subject plans at its EFFECTIVE grade
+        (per-subject override, else grade of record). This is also the one
+        place an exhausted frontier is visible (remaining == 0 on a nonempty
+        graph), so detection lives here: always record promotion-ready +
+        warn; with AUTO_GRADE_PROMOTION, apply the override and re-read the
+        next grade's graph so the plan continues immediately.
         """
         from ..models.lesson_plan import (
             ASSUMED_MIN_PER_SUBSKILL,
@@ -1204,17 +1230,10 @@ class PlanningService:
         if not self.analytics:
             return None
 
-        paces: List[SubjectPace] = []
-        for subj in subjects:
-            try:
-                kg = await self.analytics.get_knowledge_graph_progress(
-                    student_id, subj, include_nodes=True, grade=grade
-                )
-            except Exception as e:
-                logger.info(
-                    f"[SESSION_PLAN] Pace allocation: no graph for {subj} ({e})"
-                )
-                continue
+        async def _graph_counts(subj: str, subj_grade: Optional[str]) -> Optional[tuple]:
+            kg = await self.analytics.get_knowledge_graph_progress(
+                student_id, subj, include_nodes=True, grade=subj_grade
+            )
             subskill_nodes = [
                 n for n in kg.get("nodes", [])
                 if n.get("entity_type") == "subskill"
@@ -1224,6 +1243,46 @@ class PlanningService:
                 1 for n in subskill_nodes
                 if n.get("status") in ("mastered", "inferred")
             )
+            # New-learning channels the selector can still serve. NOT
+            # done==total: real graphs carry permanently-locked orphan nodes
+            # (ghost edges), so "everything mastered" never literally happens
+            # — exhaustion is "nothing left to TEACH". in_review is excluded:
+            # retention flows through retests regardless of grade.
+            teachable = sum(
+                1 for n in subskill_nodes
+                if n.get("status") in ("frontier", "in_progress")
+            )
+            return total, done, teachable
+
+        paces: List[SubjectPace] = []
+        for subj in subjects:
+            subj_grade = self._subject_grade(subj, grade, grade_overrides)
+            try:
+                total, done, teachable = await _graph_counts(subj, subj_grade)
+            except Exception as e:
+                logger.info(
+                    f"[SESSION_PLAN] Pace allocation: no graph for {subj} ({e})"
+                )
+                continue
+
+            # Grade frontier exhausted: mastery exists and no reachable
+            # subskill is left to teach. Record the signal (never silent),
+            # and with AUTO_GRADE_PROMOTION continue on the next grade's graph.
+            if total > 0 and done > 0 and teachable == 0 and subj_grade is not None:
+                promoted_grade = await self._handle_frontier_exhausted(
+                    student_id, subj, subj_grade, done,
+                    grade_overrides, promotion_ready, promo_warnings,
+                )
+                if promoted_grade:
+                    subj_grade = promoted_grade
+                    try:
+                        total, done, teachable = await _graph_counts(subj, subj_grade)
+                    except Exception as e:
+                        logger.warning(
+                            f"[SESSION_PLAN] Promoted {subj} to grade "
+                            f"{promoted_grade} but its graph failed to load: {e}"
+                        )
+
             paces.append(SubjectPace(
                 subject=subj,
                 total_subskills=total,
@@ -1277,6 +1336,147 @@ class PlanningService:
             required_minutes_per_day=round(required, 1),
             subjects=paces,
         )
+
+    @staticmethod
+    def _subject_grade(
+        subject: str,
+        grade: Optional[str],
+        grade_overrides: Optional[Dict[str, str]],
+    ) -> Optional[str]:
+        """Effective planning grade for a subject: per-subject override
+        (keyed by rollup_subject_key) wins over the grade of record."""
+        if grade_overrides:
+            override = grade_overrides.get(FirestoreService.rollup_subject_key(subject))
+            if override:
+                return override
+        return grade
+
+    async def _handle_frontier_exhausted(
+        self,
+        student_id: int,
+        subject: str,
+        current_grade: str,
+        mastered_count: int,
+        grade_overrides: Optional[Dict[str, str]],
+        promotion_ready: Optional[Dict[str, Any]],
+        promo_warnings: Optional[List[str]],
+    ) -> Optional[str]:
+        """A subject's grade frontier is exhausted — record it, and with
+        AUTO_GRADE_PROMOTION apply the per-subject override.
+
+        Always writes a promotion-ready record (once per from→to pair) so
+        exhaustion is observable by parent surfaces instead of reading as
+        "done for now". Returns the new effective grade when auto-promotion
+        applied, else None (the caller keeps the subject retention-only).
+
+        See backend/docs/ISSUE_CROSS_GRADE_PROGRESSION.md.
+        """
+        key = FirestoreService.rollup_subject_key(subject)
+        next_grade = FirestoreService.next_grade_level(current_grade)
+        if next_grade is None:
+            logger.info(
+                f"[PROMOTION] Student {student_id}: {key} grade "
+                f"{current_grade} exhausted with no higher grade to offer"
+            )
+            return None
+
+        # 1. Record promotion-ready (idempotent per from→to pair)
+        existing = (promotion_ready or {}).get(key) or {}
+        record = existing
+        if (
+            existing.get("from_grade") != str(current_grade)
+            or existing.get("to_grade") != next_grade
+        ):
+            record = {
+                "from_grade": str(current_grade),
+                "to_grade": next_grade,
+                "mastered_subskills": mastered_count,
+                "detected_at": self._now().isoformat(),
+            }
+            if promotion_ready is not None:
+                promotion_ready[key] = record
+            try:
+                await self.firestore.update_student_planning_fields(
+                    student_id, {"promotion_ready": {key: record}}
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[PROMOTION] Could not persist promotion-ready for "
+                    f"student {student_id}/{key}: {e}"
+                )
+            logger.info(
+                f"[PROMOTION] Student {student_id}: {key} grade "
+                f"{current_grade} frontier exhausted ({mastered_count} "
+                f"subskills mastered) — ready for grade {next_grade}"
+            )
+
+        if not settings.AUTO_GRADE_PROMOTION:
+            if promo_warnings is not None:
+                promo_warnings.append(
+                    f"{key}: grade {current_grade} curriculum complete "
+                    f"({mastered_count} subskills mastered) — ready to "
+                    f"advance to grade {next_grade} (awaiting approval)."
+                )
+            return None
+
+        # 2. Auto-apply: verify the next grade's graph actually exists
+        # before pointing the subject at it (promotion past the highest
+        # published grade must not strand the student on a missing graph).
+        try:
+            kg = await self.analytics.get_knowledge_graph_progress(
+                student_id, subject, include_nodes=True, grade=next_grade
+            )
+            has_subskills = any(
+                n.get("entity_type") == "subskill" for n in kg.get("nodes", [])
+            )
+        except Exception as e:
+            logger.info(
+                f"[PROMOTION] Student {student_id}: no grade-{next_grade} "
+                f"graph for {key} ({e}) — staying at {current_grade}"
+            )
+            has_subskills = False
+        if not has_subskills:
+            if promo_warnings is not None:
+                promo_warnings.append(
+                    f"{key}: grade {current_grade} curriculum complete but "
+                    f"no grade-{next_grade} curriculum is published — "
+                    f"retention only."
+                )
+            return None
+
+        if grade_overrides is not None:
+            grade_overrides[key] = next_grade
+        applied = {
+            **record,
+            "applied": True,
+            "applied_at": self._now().isoformat(),
+        }
+        if promotion_ready is not None:
+            promotion_ready[key] = applied
+        try:
+            await self.firestore.update_student_planning_fields(
+                student_id,
+                {
+                    "subject_grade_overrides": {key: next_grade},
+                    "promotion_ready": {key: applied},
+                },
+            )
+        except Exception as e:
+            logger.warning(
+                f"[PROMOTION] Could not persist grade override for "
+                f"student {student_id}/{key}: {e}"
+            )
+        if promo_warnings is not None:
+            promo_warnings.append(
+                f"{key}: advanced to grade {next_grade} — grade "
+                f"{current_grade} curriculum complete "
+                f"({mastered_count} subskills mastered)."
+            )
+        logger.info(
+            f"[PROMOTION] Student {student_id}: {key} auto-promoted "
+            f"{current_grade} → {next_grade}"
+        )
+        return next_grade
 
     def _compute_days_overdue(self, ml: Dict[str, Any]) -> int:
         """Days elapsed since a mastery lifecycle retest was due."""

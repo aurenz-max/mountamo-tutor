@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     CURRICULUM_CONTAINER_NAME: str = "curriculum-data"
     CURRICULUM_CACHE_TTL_MINUTES: int = 60  # Cache curriculum for 1 hour
 
+    # Cross-grade progression (backend/docs/ISSUE_CROSS_GRADE_PROGRESSION.md):
+    # when a subject's grade frontier is exhausted the planner always records
+    # a promotion-ready signal; with this flag on it also auto-applies the
+    # per-subject grade override so the next plan draws from the next grade.
+    # Default ON: a student who masters their grade advances automatically —
+    # the frontier never dead-ends. Set AUTO_GRADE_PROMOTION=false to hold
+    # promotion behind an explicit approval step instead (promotion_ready is
+    # still recorded either way).
+    AUTO_GRADE_PROMOTION: bool = Field(default=True, env="AUTO_GRADE_PROMOTION")
+
     LEARNING_PATHS_CONTAINER_NAME: str = "learning-paths-data"
 
     # BigQuery Configuration

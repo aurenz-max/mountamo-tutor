@@ -25,9 +25,13 @@ DATA_PLACEHOLDER = "/*__DATA__*/"
 
 
 def _subject_tag(t: Dict[str, Any]) -> str:
-    """Filename tag: the subject id, or MULTI_G<grade> for multi-subject runs."""
+    """Filename tag: the subject id, or MULTI_G<grade> for multi-subject runs.
+
+    Distinct BASE subjects decide multi-ness: an auto-promoted run carries
+    both MATHEMATICS_GK and MATHEMATICS_G1 but is still one subject.
+    """
     subjects = t.get("subjects") or []
-    if len(subjects) > 1:
+    if len({_base_subject(s) for s in subjects}) > 1:
         return f"MULTI_G{t.get('grade', '')}"
     return t.get("subject", "")
 

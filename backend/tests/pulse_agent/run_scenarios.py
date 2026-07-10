@@ -91,6 +91,49 @@ def build_engine() -> tuple:
     return pulse_engine, firestore_service
 
 
+async def load_subject_into_memory(
+    real_fs: FirestoreService,
+    mem_fs: InMemoryFirestoreService,
+    subject_id: str,
+    grade: str | None,
+    load_published: bool = False,
+) -> bool:
+    """Fetch one grade-prefixed subject's graph (and, for loop mode, its
+    published curriculum doc) from real Firestore into the in-memory store.
+
+    Returns False when no published graph exists for `subject_id` — the
+    caller decides whether that's fatal (bootstrap) or a promotion wall
+    (--promote reaching past the highest published grade).
+    """
+    graph_data = await real_fs.get_curriculum_graph(
+        subject_id=subject_id, version_type="published"
+    )
+    if not graph_data:
+        return False
+    mem_fs.load_curriculum_graph(subject_id, graph_data)
+    node_count = len(graph_data.get("graph", {}).get("nodes", []))
+    logger.info(f"[InMemory] Loaded {subject_id}: {node_count} nodes")
+
+    # Full-loop mode also needs the published curriculum doc (hierarchy
+    # + subskill_index) for CurriculumService / planning / rollup
+    # subject resolution. One extra read per subject.
+    if load_published:
+        import re as _re
+        base_id = _re.sub(r"_G\w+$", "", subject_id)
+        doc = None
+        for candidate in (base_id, subject_id):
+            doc = await real_fs.get_published_curriculum(candidate, grade=grade)
+            if doc:
+                mem_fs.load_published_curriculum(candidate, doc)
+                break
+        if not doc:
+            logger.warning(
+                f"[InMemory] No published curriculum found for "
+                f"{base_id}/{subject_id} (grade={grade}) — planning may be degraded"
+            )
+    return True
+
+
 async def build_engine_in_memory(
     subjects: list[str] | None = None,
     grade: str | None = None,
@@ -117,35 +160,14 @@ async def build_engine_in_memory(
     mem_fs = InMemoryFirestoreService()
 
     for subject_id in subjects:
-        graph_data = await real_fs.get_curriculum_graph(
-            subject_id=subject_id, version_type="published"
+        loaded = await load_subject_into_memory(
+            real_fs, mem_fs, subject_id, grade, load_published=load_published
         )
-        if not graph_data:
+        if not loaded:
             raise ValueError(
                 f"No published curriculum graph for {subject_id} in Firestore. "
                 f"The in-memory engine needs a real graph to run against."
             )
-        mem_fs.load_curriculum_graph(subject_id, graph_data)
-        node_count = len(graph_data.get("graph", {}).get("nodes", []))
-        logger.info(f"[InMemory] Loaded {subject_id}: {node_count} nodes")
-
-        # Full-loop mode also needs the published curriculum doc (hierarchy
-        # + subskill_index) for CurriculumService / planning / rollup
-        # subject resolution. One extra read per subject at bootstrap.
-        if load_published:
-            import re as _re
-            base_id = _re.sub(r"_G\w+$", "", subject_id)
-            doc = None
-            for candidate in (base_id, subject_id):
-                doc = await real_fs.get_published_curriculum(candidate, grade=grade)
-                if doc:
-                    mem_fs.load_published_curriculum(candidate, doc)
-                    break
-            if not doc:
-                logger.warning(
-                    f"[InMemory] No published curriculum found for "
-                    f"{base_id}/{subject_id} (grade={grade}) — planning may be degraded"
-                )
 
     # Wire up all services with the in-memory store
     calibration_engine = CalibrationEngine(mem_fs)
@@ -403,6 +425,43 @@ def main():
         ),
     )
     parser.add_argument(
+        "--promote",
+        action="store_true",
+        help=(
+            "Loop mode: auto-promote across grade boundaries. When a day "
+            "surfaces no new work at all (frontier exhausted), bump the "
+            "student's grade_level to the next grade and lazily fetch that "
+            "grade's graph + curriculum (one Firestore read per promotion). "
+            "Prototype for backend/docs/ISSUE_CROSS_GRADE_PROGRESSION.md. "
+            "grade_level is student-global, so with multiple --subject "
+            "flags promotion fires only when EVERY subject is exhausted."
+        ),
+    )
+    parser.add_argument(
+        "--promote-engine",
+        action="store_true",
+        help=(
+            "Loop mode: verify the PRODUCTION cross-grade promotion branch. "
+            "Pre-loads the next two grades' graphs, turns on "
+            "settings.AUTO_GRADE_PROMOTION, and lets PlanningService itself "
+            "detect exhaustion and write subject_grade_overrides — the "
+            "harness only mirrors the engine's decision. Mutually exclusive "
+            "with --promote (which prototypes promotion harness-side). "
+            "NOTE: engine promotion is now ON BY DEFAULT (production default "
+            "flipped) — this flag is only needed to force it back on after "
+            "--no-promote."
+        ),
+    )
+    parser.add_argument(
+        "--no-promote",
+        action="store_true",
+        help=(
+            "Loop mode: turn settings.AUTO_GRADE_PROMOTION OFF for a control "
+            "run. The student dead-ends at the grade frontier (promotion_ready "
+            "is still recorded, nothing auto-applied) — the pre-flip behavior."
+        ),
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="List available profiles and exit",
@@ -463,6 +522,11 @@ def main():
     if not args.profile and not args.all:
         parser.error("Specify --profile <name> or --all")
 
+    if args.promote and args.promote_engine:
+        parser.error("--promote and --promote-engine are mutually exclusive")
+    if args.no_promote and args.promote_engine:
+        parser.error("--no-promote and --promote-engine are mutually exclusive")
+
     # Full-loop mode is in-memory ONLY (a loop day fans each attempt into
     # ~6 doc writes — real Firestore I/O would be absurd and slow).
     if args.loop:
@@ -499,7 +563,65 @@ def main():
         )
         from tests.pulse_agent.html_report import generate_loop_html
 
-        loop_runner = FullLoopRunner(firestore_service, pulse_engine, seed=args.seed)
+        # Cross-grade auto-promotion mirrors production: settings.
+        # AUTO_GRADE_PROMOTION is ON BY DEFAULT, so PlanningService promotes a
+        # student across a grade boundary the moment its frontier is exhausted
+        # (ISSUE_CROSS_GRADE_PROGRESSION.md) — no flag needed. --no-promote
+        # holds the pre-flip dead-end behavior; the harness-side --promote
+        # prototype owns promotion itself, so it disables the engine branch to
+        # avoid a double-promote. --promote-engine is kept as an explicit
+        # force-on (only meaningful alongside a config that turned it off).
+        from app.core.config import settings as _settings
+        from app.db.firestore_service import FirestoreService as _FS
+        if args.no_promote or args.promote:
+            _settings.AUTO_GRADE_PROMOTION = False
+        elif args.promote_engine:
+            _settings.AUTO_GRADE_PROMOTION = True
+
+        # When the production planner will auto-promote, the next grades'
+        # graphs must already be resident — it cannot lazily fetch into the
+        # in-memory store. Pre-load two grades ahead.
+        if _settings.AUTO_GRADE_PROMOTION:
+            real_fs_ahead = FirestoreService()
+            g = grade_raw
+            for _ in range(2):
+                g = _FS.next_grade_level(g)
+                if not g:
+                    break
+                suffix_ahead = "_GK" if g.upper() == "K" else f"_G{g}"
+                for base in args.subject:
+                    gid = base.upper().replace(" ", "_") + suffix_ahead
+                    loaded = asyncio.run(load_subject_into_memory(
+                        real_fs_ahead, firestore_service, gid, g,
+                        load_published=True,
+                    ))
+                    if not loaded:
+                        print(f"[Promotion] No published graph for {gid} "
+                              f"— promotion will wall at grade {g}")
+            print("[Promotion] AUTO_GRADE_PROMOTION on — the planner "
+                  "auto-promotes across grade boundaries this run "
+                  "(--no-promote to disable)")
+
+        # --promote: lazy grade loader — fetches the next grade's graph +
+        # curriculum from real Firestore into the in-memory store the moment
+        # a promotion needs it (same one-batched-read doctrine as --seed-from).
+        grade_loader = None
+        if args.promote:
+            _promote_fs: dict = {}
+
+            async def grade_loader(graph_subject_id: str, grade_level: str) -> bool:
+                fs = _promote_fs.get("fs")
+                if fs is None:
+                    fs = _promote_fs["fs"] = FirestoreService()
+                return await load_subject_into_memory(
+                    fs, firestore_service, graph_subject_id, grade_level,
+                    load_published=True,
+                )
+
+        loop_runner = FullLoopRunner(
+            firestore_service, pulse_engine, seed=args.seed,
+            grade_loader=grade_loader,
+        )
         profiles = (
             list(ALL_PROFILES.values()) if args.all else [ALL_PROFILES[args.profile]]
         )
@@ -531,6 +653,8 @@ def main():
                 grade=grade_raw,
                 seeded_from=args.seed_from,
                 subjects=args.subject_ids,
+                auto_promote=args.promote,
+                engine_promote=_settings.AUTO_GRADE_PROMOTION and not args.promote,
             ))
 
             results = run_loop_assertions(timeline)

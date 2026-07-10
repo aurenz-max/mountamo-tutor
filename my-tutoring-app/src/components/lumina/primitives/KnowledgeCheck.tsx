@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
 import { LuminaPanel, LuminaButton } from '../ui';
+import { multipleChoiceVoiceReady } from './problem-primitives/MultipleChoiceProblem';
 
 /**
  * KnowledgeCheck Component
@@ -244,6 +245,22 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
   const instanceId = ('instanceId' in data ? data.instanceId : undefined) || `knowledge-check-${Date.now()}`;
   const exhibitId = 'exhibitId' in data ? data.exhibitId : undefined;
 
+  // ── Voice arbitration ──────────────────────────────────────────────────────
+  // Problems stack on one screen and the capture engine has no global single-mic
+  // lock, so only ONE voice-answerable problem may hold the mic at a time. Grant
+  // eligibility to the first unanswered voice-ready problem — every true/false,
+  // and any multiple-choice whose options are actually sayable — and as each is
+  // answered the next lights up (seamless hand-off). See /add-voice-control.
+  const firstVoiceIndex = useMemo(() => {
+    for (let i = 0; i < problems.length; i++) {
+      const p = problems[i];
+      if (evaluationResults.has(p.id)) continue;
+      if (p.type === 'true_false') return i;
+      if (p.type === 'multiple_choice' && multipleChoiceVoiceReady(p)) return i;
+    }
+    return -1;
+  }, [problems, evaluationResults]);
+
   // ── AI Tutoring Hook ───────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     problemCount: problems.length,
@@ -314,11 +331,15 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     const questionText = getQuestionText(problem);
 
     // Immediate per-problem answer feedback. Kept outside the state updater so
-    // StrictMode's double-invoke can't double-play it.
-    if (isCorrect) {
-      SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
+    // StrictMode's double-invoke can't double-play it. A voice answer already
+    // sounded its outcome inside the voice controller — skip the duplicate.
+    const viaVoice = result?.studentWork?.viaVoice === true;
+    if (!viaVoice) {
+      if (isCorrect) {
+        SoundManager.playCorrect();
+      } else {
+        SoundManager.playIncorrect();
+      }
     }
 
     setEvaluationResults((prev) => {
@@ -430,6 +451,10 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                     problemData={{
                       ...problem,
                       onEvaluationSubmit: (result: any) => handleEvaluationSubmit(problem.id, index, result),
+                      // Only the first unanswered voice-ready problem may open a mic.
+                      voiceEligible:
+                        (problem.type === 'true_false' || problem.type === 'multiple_choice') &&
+                        index === firstVoiceIndex,
                     }}
                   />
 

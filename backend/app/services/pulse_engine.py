@@ -136,7 +136,12 @@ class PulseEngine:
                 best_beta = config.prior_beta
                 best_name = eval_mode_name
 
-        return best_mode_num, best_beta, best_name
+        # mode_number is the 1-6 scaffolding TIER (PulseItemSpec, UI "Tier
+        # n/6", theta_to_mode), not a ladder index. Densified primitives
+        # carry 7+ eval modes, so the β-sorted index can exceed the scale —
+        # every mode past the 6th is top-tier. β and eval_mode_name stay
+        # exact; only the tier label clamps.
+        return min(best_mode_num, 6), best_beta, best_name
 
     # ------------------------------------------------------------------
     # Session assembly

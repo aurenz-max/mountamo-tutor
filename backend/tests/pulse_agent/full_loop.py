@@ -74,6 +74,12 @@ def base_subject_key(subject: Optional[str]) -> str:
     return re.sub(r"_G\w+$", "", (subject or "").upper())
 
 
+def next_grade_level(grade: str) -> Optional[str]:
+    """The grade after `grade` — delegates to the production ladder."""
+    from app.db.firestore_service import FirestoreService as _FS
+    return _FS.next_grade_level(grade)
+
+
 def _trim_hierarchy(curriculum_data: Any) -> List[Dict[str, Any]]:
     """Reduce a CurriculumService hierarchy to the id/label spine the report
     needs — units → skills → subskills — dropping difficulty/primitive fields
@@ -153,6 +159,10 @@ class LoopTimeline:
     seeded_from: Optional[int] = None
     initial_profile_attempts: int = 0
     days: List[DaySnapshot] = field(default_factory=list)
+    # Cross-grade auto-promotions (--promote): [{day, from_grade, to_grade,
+    # mastered_at_promotion, subjects}] — the ISSUE_CROSS_GRADE_PROGRESSION
+    # prototype evidence trail.
+    promotions: List[Dict[str, Any]] = field(default_factory=list)
 
     final_profile: Dict[str, Any] = field(default_factory=dict)
     truth_snapshot: Dict[str, float] = field(default_factory=dict)
@@ -192,10 +202,16 @@ class FullLoopRunner:
         mem_fs: InMemoryFirestoreService,
         pulse_engine: PulseEngine,
         seed: Optional[int] = None,
+        grade_loader: Optional[Any] = None,
     ):
         self.fs = mem_fs
         self.engine = pulse_engine
         self.seed = seed
+        # async (graph_subject_id, grade_level) -> bool. Fetches a grade's
+        # graph + published curriculum into the in-memory store on demand;
+        # auto-promote (--promote) uses it to cross grade boundaries lazily
+        # (one real Firestore read per promotion, same doctrine as --seed-from).
+        self.grade_loader = grade_loader
 
         # The SAME engine instances PulseEngine uses — one estimator state.
         self.calibration = CalibrationEngine(mem_fs)
@@ -381,6 +397,8 @@ class FullLoopRunner:
         seeded_from: Optional[int] = None,
         include_pulse: bool = True,
         subjects: Optional[List[str]] = None,
+        auto_promote: bool = False,
+        engine_promote: bool = False,
     ) -> LoopTimeline:
         """Walk one synthetic student through N virtual days.
 
@@ -388,6 +406,22 @@ class FullLoopRunner:
         "SCIENCE_GK"]). A real daily session spans 3-4 subjects; the planner
         allocates the day across all of them and the sim follows the plan.
         Defaults to [profile.subject] (single-subject journey).
+
+        `auto_promote` — prototype for the cross-grade progression gap
+        (backend/docs/ISSUE_CROSS_GRADE_PROGRESSION.md): when a day produces
+        no new work at all (empty plan-new + empty targets) while mastery
+        exists, bump grade_level to the next grade, load that grade's
+        graph(s), and keep the journey going. grade_level is student-global,
+        so promotion fires only when EVERY subject's frontier is exhausted —
+        per-subject grades are the production follow-up, not this prototype.
+
+        `engine_promote` — verification mode for the PRODUCTION promotion
+        branch: the harness makes NO promotion decisions. PlanningService
+        (under settings.AUTO_GRADE_PROMOTION) detects exhaustion and writes
+        subject_grade_overrides; each morning the harness mirrors those
+        overrides into its active graph ids + census membership. Requires
+        the next grades' graphs pre-loaded at bootstrap (the production
+        planner cannot lazily fetch into the in-memory store).
         """
         params = TRUTH_PARAMS.get(profile.archetype)
         if params is None:
@@ -416,7 +450,9 @@ class FullLoopRunner:
             archetype=profile.archetype,
             subject=profile.subject or "",
             grade=grade,
-            subjects=subjects,
+            # own copy — auto-promote swaps the working list in place, while
+            # the timeline keeps every graph id that was ever in play
+            subjects=list(subjects),
             seeded_from=seeded_from,
         )
 
@@ -450,6 +486,8 @@ class FullLoopRunner:
         timeline.initial_profile_attempts = int(initial_summary.get("total_attempts", 0) or 0)
 
         lesson_worked: set = set()   # subskills ever submitted via the lesson path
+        current_grade = grade
+        promotion_wall = False       # next grade unavailable — stop retrying
 
         for day_num in range(1, days + 1):
             self.fs.virtual_now = virtual_now
@@ -474,6 +512,19 @@ class FullLoopRunner:
                 day.plan_subskills = await self._extract_plan_subskills(plan)
             except Exception as e:
                 logger.warning(f"  Day {day_num}: daily plan failed: {e}")
+
+            # Production-branch verification: mirror any per-subject grade
+            # override the planner just wrote (AUTO_GRADE_PROMOTION) into
+            # the harness's active graph ids BEFORE targets/pulse/census.
+            if engine_promote:
+                try:
+                    await self._sync_engine_promotions(
+                        profile, timeline, subjects, subject_id_sets, day_num
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"  Day {day_num}: engine-promotion sync failed: {e}"
+                    )
 
             for subj_id in subjects:
                 try:
@@ -585,6 +636,25 @@ class FullLoopRunner:
                 f"leapfrogs={len(day.leapfrogs)}"
             )
 
+            # Cross-grade auto-promote: the grade frontier is exhausted when
+            # the day surfaced no NEW work anywhere (reviews/retests may
+            # still flow — retention is lifecycle's job, not the pacer's).
+            # Mastery > 0 distinguishes "done with the grade" from "broken
+            # bootstrap" (which also plans nothing).
+            frontier_exhausted = (
+                not any(p.get("type") == "new" for p in day.plan_subskills)
+                and not day.targets
+                and sum(day.mastered_by_subject.values()) > 0
+            )
+            if auto_promote and not promotion_wall and frontier_exhausted and day_num < days:
+                promoted_to = await self._promote_grade(
+                    profile, timeline, subjects, subject_id_sets, current_grade
+                )
+                if promoted_to:
+                    current_grade = promoted_to
+                else:
+                    promotion_wall = True
+
             # night — forgetting + next day
             for st in students.values():
                 st.sleep(gap_days)
@@ -623,6 +693,180 @@ class FullLoopRunner:
             profile.student_id, skip=seeded_from is not None
         )
         return timeline
+
+    # -- cross-grade auto-promote (ISSUE_CROSS_GRADE_PROGRESSION prototype) ----
+
+    async def _sync_engine_promotions(
+        self,
+        profile: SyntheticProfile,
+        timeline: LoopTimeline,
+        subjects: List[str],
+        subject_id_sets: Dict[str, set],
+        day_num: int,
+    ) -> None:
+        """Mirror PRODUCTION auto-promotions into the harness.
+
+        Under settings.AUTO_GRADE_PROMOTION, PlanningService detects an
+        exhausted grade frontier and writes students/{id}.subject_grade_overrides
+        itself. The harness makes no decisions here — it reads the override,
+        swaps its active graph id (targets + pulse follow the new grade), and
+        extends census membership so mastery keeps counting across grades.
+        """
+        from app.services.planning_service import PlanningService as _PS
+
+        fields = await self.fs.get_student_planning_fields(profile.student_id)
+        overrides = fields.get("subject_grade_overrides") or {}
+        if not overrides:
+            return
+        for i, gid in enumerate(list(subjects)):
+            key = base_subject_key(gid)
+            target_grade = overrides.get(key)
+            if not target_grade:
+                continue
+            suffix = self.fs.grade_to_subject_suffix(target_grade)
+            new_gid = f"{key}{suffix}" if suffix else gid
+            if new_gid == gid:
+                continue
+            subjects[i] = new_gid
+            if new_gid not in timeline.subjects:
+                timeline.subjects.append(new_gid)
+            try:
+                curriculum_data = await self.curriculum.get_curriculum(
+                    key, grade=target_grade
+                )
+                new_ids = _PS._collect_subskill_ids(curriculum_data)
+                subject_id_sets[key] = subject_id_sets.get(key, set()) | new_ids
+                timeline.curriculum_hierarchy.setdefault(key, []).extend(
+                    _trim_hierarchy(curriculum_data)
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[EnginePromote] No hierarchy for {key} grade {target_grade}: {e}"
+                )
+            timeline.curriculum_totals[key] = len(subject_id_sets.get(key, set()))
+
+            ready = (fields.get("promotion_ready") or {}).get(key) or {}
+            prev_mastered = (
+                sum(timeline.days[-1].mastered_by_subject.values())
+                if timeline.days else 0
+            )
+            timeline.promotions.append({
+                "day": day_num,
+                "from_grade": ready.get("from_grade") or "?",
+                "to_grade": target_grade,
+                "mastered_at_promotion": ready.get("mastered_subskills", prev_mastered),
+                "subjects": [new_gid],
+                "source": "engine",
+            })
+            logger.info(
+                f"  ── ENGINE-PROMOTED: {key} → grade {target_grade} "
+                f"({gid} → {new_gid}) — decision made by PlanningService, "
+                f"mirrored from subject_grade_overrides"
+            )
+        profile.subject = subjects[0]
+
+    async def _promote_grade(
+        self,
+        profile: SyntheticProfile,
+        timeline: LoopTimeline,
+        subjects: List[str],
+        subject_id_sets: Dict[str, set],
+        current_grade: str,
+    ) -> Optional[str]:
+        """Advance the student to the next grade and swap in its graphs.
+
+        Mutates `subjects` in place (the day loop keeps reading it) and
+        extends the census membership sets so mastery counts span both
+        grades. Returns the new grade level, or None when promotion is
+        impossible (no higher grade, graph missing, no loader).
+        """
+        from app.services.planning_service import PlanningService as _PS
+
+        nxt = next_grade_level(current_grade)
+        if nxt is None:
+            logger.warning(
+                f"[Promote] No grade above '{current_grade}' — promotion wall"
+            )
+            return None
+        suffix = self.fs.grade_to_subject_suffix(nxt)
+        if not suffix:
+            logger.warning(f"[Promote] Unresolvable grade '{nxt}' — promotion wall")
+            return None
+        new_subjects = [re.sub(r"_G\w+$", suffix, s) for s in subjects]
+
+        # Make sure every next-grade graph is resident (lazy one-time fetch)
+        for gid in new_subjects:
+            if await self.fs.get_curriculum_graph(subject_id=gid, version_type="published"):
+                continue
+            if not self.grade_loader:
+                logger.warning(
+                    f"[Promote] {gid} not loaded and no grade loader — promotion wall"
+                )
+                return None
+            try:
+                ok = await self.grade_loader(gid, nxt)
+            except Exception as e:
+                logger.warning(f"[Promote] Loading {gid} failed: {e}")
+                ok = False
+            if not ok:
+                logger.warning(
+                    f"[Promote] No published graph for {gid} — promotion wall"
+                )
+                return None
+
+        # Grade of record — the ONLY scope switch the production planner
+        # understands today (planning_service reads grade_level, learning
+        # paths suffix the subject with it).
+        await self.fs.set_student_grade_level(profile.student_id, nxt)
+
+        old_subjects = list(subjects)
+        subjects[:] = new_subjects
+        profile.subject = subjects[0]
+        for gid in new_subjects:
+            if gid not in timeline.subjects:
+                timeline.subjects.append(gid)
+
+        # Fresh caches: CurriculumService's TTL cache pre-dates the new grade
+        # docs (available_subjects, bare-subject curricula); the graph cache
+        # in learning-paths would otherwise serve the old grade's frontier.
+        self.curriculum._cache.clear()
+        self.curriculum._cache_timestamps.clear()
+        self.engine.learning_paths._invalidate_graph_cache()
+        self.analytics.clear_cache()
+
+        # Census membership + denominators now span both grades, so the
+        # evening lifecycle census keeps counting GK mastery while the
+        # student climbs G1.
+        for gid in new_subjects:
+            key = base_subject_key(gid)
+            try:
+                curriculum_data = await self.curriculum.get_curriculum(key, grade=nxt)
+                new_ids = _PS._collect_subskill_ids(curriculum_data)
+                subject_id_sets[key] = subject_id_sets.get(key, set()) | new_ids
+                timeline.curriculum_hierarchy.setdefault(key, []).extend(
+                    _trim_hierarchy(curriculum_data)
+                )
+            except Exception as e:
+                logger.warning(f"[Promote] No hierarchy for {key} grade {nxt}: {e}")
+            timeline.curriculum_totals[key] = len(subject_id_sets.get(key, set()))
+
+        last_day = timeline.days[-1] if timeline.days else None
+        timeline.promotions.append({
+            "day": last_day.day_number if last_day else 0,
+            "from_grade": current_grade,
+            "to_grade": nxt,
+            "mastered_at_promotion": (
+                sum(last_day.mastered_by_subject.values()) if last_day else 0
+            ),
+            "subjects": list(new_subjects),
+        })
+        logger.info(
+            f"  ── PROMOTED: grade {current_grade} → {nxt} "
+            f"({', '.join(old_subjects)} → {', '.join(new_subjects)}) — "
+            f"frontier exhausted with "
+            f"{timeline.promotions[-1]['mastered_at_promotion']} mastered"
+        )
+        return nxt
 
     # -- L2 parity oracle -------------------------------------------------------
 
@@ -812,10 +1056,13 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
 
     # 3. The platform planned work every day — empty days are acceptable
     # only as a TERMINAL streak with high mastery (curriculum genuinely
-    # exhausted: nothing to plan is the correct answer). A mid-journey
-    # empty day, or an empty streak with low mastery (stuck planner —
-    # "plan=0 subskills every loop day"), still fails.
+    # exhausted: nothing to plan is the correct answer) or as the trigger
+    # day of a grade promotion (--promote: exhaustion is detected on an
+    # empty day; planning resumes next morning on the new grade's graph).
+    # A mid-journey empty day, or an empty streak with low mastery (stuck
+    # planner — "plan=0 subskills every loop day"), still fails.
     total_curriculum = sum((timeline.curriculum_totals or {}).values())
+    promo_days = {p.get("day") for p in (timeline.promotions or [])}
     first_terminal_empty = len(days)
     for i in range(len(days) - 1, -1, -1):
         if days[i].plan_subskills or days[i].targets:
@@ -823,9 +1070,12 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         first_terminal_empty = i
     days_with_plan = 0
     exhausted_days = 0
+    promotion_days = 0
     for i, d in enumerate(days):
         if d.plan_subskills or d.targets:
             days_with_plan += 1
+        elif d.day_number in promo_days:
+            promotion_days += 1
         elif (
             i >= first_terminal_empty
             and total_curriculum
@@ -834,9 +1084,14 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
             exhausted_days += 1
     results.append(AssertionResult(
         name="plan_every_day",
-        passed=(days_with_plan + exhausted_days) == len(days) and len(days) > 0,
+        passed=(
+            (days_with_plan + exhausted_days + promotion_days) == len(days)
+            and len(days) > 0
+        ),
         message=(
             f"Plan or targets produced on {days_with_plan}/{len(days)} days"
+            + (f" (+{promotion_days} grade-promotion trigger day(s))"
+               if promotion_days else "")
             + (f" (+{exhausted_days} terminal empty day(s) with curriculum "
                f"≥70% mastered — exhausted)" if exhausted_days else "")
         ),
@@ -946,7 +1201,36 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         ),
     ))
 
-    # 9. Weakness routing (selective_weakness only): truly-weak skills get picked
+    # 9. PROMOTION CONTINUITY (--promote runs only): after a grade
+    # promotion, the loop must actually keep teaching — new-grade lesson
+    # work happens and mastery keeps growing past the promotion-day count.
+    # This is the runtime evidence the cross-grade issue asks for.
+    if timeline.promotions:
+        checks = []
+        for p in timeline.promotions:
+            after = [d for d in days if d.day_number > p["day"]]
+            if not after:
+                continue  # promotion on the final day — nothing to observe
+            lesson_after = sum(d.lesson_items for d in after)
+            gained = (
+                sum(after[-1].mastered_by_subject.values())
+                - p.get("mastered_at_promotion", 0)
+            )
+            checks.append((p, lesson_after, gained))
+        results.append(AssertionResult(
+            name="promotion_continuity",
+            passed=all(l > 0 and g > 0 for _, l, g in checks) if checks else True,
+            message="; ".join(
+                f"day {p['day']}: {p['from_grade']}→{p['to_grade']}, then "
+                f"{l} lesson items and +{g} mastered"
+                for p, l, g in checks
+            ) or (
+                f"{len(timeline.promotions)} promotion(s) on the final day — "
+                f"no post-promotion days to observe"
+            ),
+        ))
+
+    # 10. Weakness routing (selective_weakness only): truly-weak skills get picked
     if timeline.archetype == "selective_weakness" and timeline.truth_snapshot:
         truths = timeline.truth_snapshot
         mean_truth = sum(truths.values()) / len(truths)
@@ -982,7 +1266,10 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
     subjects = timeline.subjects or [timeline.subject]
     _h(f"# Full-Loop Journey — {timeline.profile_name} ({timeline.archetype})")
     _h("")
-    _h(f"- Student: {timeline.student_id}  |  Subjects: {', '.join(subjects)}  |  Grade: {timeline.grade}")
+    grade_path = str(timeline.grade) + "".join(
+        f" → {p['to_grade']}" for p in (timeline.promotions or [])
+    )
+    _h(f"- Student: {timeline.student_id}  |  Subjects: {', '.join(subjects)}  |  Grade: {grade_path}")
     _h(f"- Days: {len(timeline.days)}  |  Items: {timeline.total_items}"
        f"  |  Leapfrog events: {timeline.total_leapfrogs}"
        + (f"  |  Seeded from: {timeline.seeded_from}" if timeline.seeded_from else ""))
@@ -995,6 +1282,19 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
     for r in results:
         _h(f"| {r.name} | {'PASS' if r.passed else 'FAIL'} | {r.message} |")
     _h("")
+
+    if timeline.promotions:
+        _h("## Grade Promotions")
+        _h("")
+        _h("| Day | Grade | Mastered at promotion | New graphs |")
+        _h("|-----|-------|----------------------|------------|")
+        for p in timeline.promotions:
+            _h(
+                f"| {p.get('day')} | {p.get('from_grade')} → {p.get('to_grade')} "
+                f"| {p.get('mastered_at_promotion')} "
+                f"| {', '.join(p.get('subjects', []))} |"
+            )
+        _h("")
 
     # Curriculum progression — how far through each subject's graph
     if timeline.days and timeline.curriculum_totals:
@@ -1106,8 +1406,11 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
 def save_loop_timeline(timeline: LoopTimeline, output_dir: Path) -> Path:
     import json
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Distinct BASE subjects decide multi-ness — an auto-promoted run carries
+    # both MATHEMATICS_GK and MATHEMATICS_G1 but is still one subject.
     tag = (
-        f"MULTI_G{timeline.grade}" if len(timeline.subjects) > 1
+        f"MULTI_G{timeline.grade}"
+        if len({base_subject_key(s) for s in timeline.subjects}) > 1
         else timeline.subject
     )
     path = output_dir / (

@@ -127,9 +127,11 @@ class InMemoryFirestoreService:
         # curriculum_published/{grade}/subjects → list of subject dicts
         self._published_subjects: List[Dict[str, Any]] = []
 
-        # curriculum_published full docs keyed by subject_id (hierarchy +
-        # subskill_index) — needed by CurriculumService for planning
-        self._published_curricula: Dict[str, Dict[str, Any]] = {}
+        # curriculum_published full docs keyed by subject_id → LIST of grade
+        # docs in load order (hierarchy + subskill_index). Production stores
+        # one doc per (grade, subject); cross-grade promotion needs several
+        # grades of the same subject resident at once.
+        self._published_curricula: Dict[str, List[Dict[str, Any]]] = {}
 
         # subskill_id → {subject, subject_id, grade} (built from
         # subskill_index at load time; mirrors _ensure_subskill_loc_cache)
@@ -197,16 +199,33 @@ class InMemoryFirestoreService:
         Also registers the subject in the published-subjects list and builds
         the subskill → {subject, subject_id, grade} location index that
         apply_attempt_rollup uses for canonical subject/grade resolution.
+
+        A subject may be loaded once per grade (production keeps one doc per
+        (grade, subject)); same-grade reloads replace the earlier doc.
         """
-        self._published_curricula[subject_id] = curriculum_doc
-        subject_name = curriculum_doc.get("subject_name", subject_id)
+        from app.db.firestore_service import FirestoreService as _FS
+
         grade = curriculum_doc.get("grade", "")
+        grade_code = _FS.normalize_grade_code(grade)
+        docs = self._published_curricula.setdefault(subject_id, [])
+        for i, d in enumerate(docs):
+            if _FS.normalize_grade_code(d.get("grade")) == grade_code:
+                docs[i] = curriculum_doc
+                break
+        else:
+            docs.append(curriculum_doc)
+
+        subject_name = curriculum_doc.get("subject_name", subject_id)
         entry = {
             "subject_id": subject_id,
             "subject_name": subject_name,
             "grade": grade,
         }
-        if not any(s.get("subject_id") == subject_id for s in self._published_subjects):
+        if not any(
+            s.get("subject_id") == subject_id
+            and _FS.normalize_grade_code(s.get("grade")) == grade_code
+            for s in self._published_subjects
+        ):
             self._published_subjects.append(entry)
 
         index = curriculum_doc.get("subskill_index") or {}
@@ -217,8 +236,8 @@ class InMemoryFirestoreService:
                 "grade": (loc or {}).get("grade") or grade,
             }
         logger.info(
-            f"[InMemory] Loaded published curriculum {subject_id}: "
-            f"{len(index)} subskills indexed"
+            f"[InMemory] Loaded published curriculum {subject_id} "
+            f"(grade {grade_code}): {len(index)} subskills indexed"
         )
 
     # ------------------------------------------------------------------
@@ -897,6 +916,8 @@ class InMemoryFirestoreService:
             "development_patterns": data.get("development_patterns", {}),
             "aggregate_metrics": data.get("aggregate_metrics", {}),
             "grade_level": data.get("grade_level"),
+            "subject_grade_overrides": data.get("subject_grade_overrides", {}),
+            "promotion_ready": data.get("promotion_ready", {}),
         }
         if data.get("daily_budget_minutes") is not None:
             fields["daily_budget_minutes"] = data["daily_budget_minutes"]
@@ -988,22 +1009,31 @@ class InMemoryFirestoreService:
         self, subject_id: str, grade: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         self._read_count += 1
-        doc = self._published_curricula.get(subject_id)
-        if doc is None:
+        docs = self._published_curricula.get(subject_id)
+        if docs is None:
             # Case-insensitive fallback
             for k, v in self._published_curricula.items():
                 if k.upper() == subject_id.upper():
-                    doc = v
+                    docs = v
                     break
-        if doc is None:
+        if not docs:
             return None
         if grade:
             from app.db.firestore_service import FirestoreService as _FS
             want = _FS.normalize_grade_code(grade)
-            have = _FS.normalize_grade_code(doc.get("grade"))
-            if want != "UNKNOWN" and have != "UNKNOWN" and want != have:
+            if want != "UNKNOWN":
+                for d in docs:
+                    if _FS.normalize_grade_code(d.get("grade")) == want:
+                        return copy.deepcopy(d)
+                # Lenient fallback (pre-multi-grade behavior): a doc with no
+                # resolvable grade satisfies any grade request.
+                for d in docs:
+                    if _FS.normalize_grade_code(d.get("grade")) == "UNKNOWN":
+                        return copy.deepcopy(d)
                 return None
-        return copy.deepcopy(doc)
+        # No grade requested → first loaded doc wins (mirrors production's
+        # first-doc-wins scan when callers omit the grade).
+        return copy.deepcopy(docs[0])
 
     # ==================================================================
     # CLEANUP (for test isolation)

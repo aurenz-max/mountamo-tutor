@@ -961,6 +961,22 @@ class FirestoreService:
                 return f"_G{n}"
         return ""
 
+    @staticmethod
+    def next_grade_level(grade_level: Optional[str]) -> Optional[str]:
+        """The grade after `grade_level` in students/{id}.grade_level terms.
+
+        "PK" → "K" → "1" → … → "12" → None (nowhere higher to promote to).
+        Accepts any spelling normalize_grade_code understands.
+        """
+        code = FirestoreService.normalize_grade_code(grade_level)
+        if code == "PK":
+            return "K"
+        if code == "K":
+            return "1"
+        if code.isdigit() and 1 <= int(code) < 12:
+            return str(int(code) + 1)
+        return None
+
     def _strip_grade_suffix(self, subject_id: str) -> tuple:
         """Strip grade suffix from subject_id, returning (bare_id, grade_hints).
 
@@ -1979,6 +1995,12 @@ class FirestoreService:
                 # Without it every bare-subject graph fetch falls into the
                 # first-doc-wins scan and hands K students the Grade 1 graph.
                 "grade_level": data.get("grade_level"),
+                # Cross-grade progression: per-subject grade overrides
+                # ({"MATHEMATICS": "1"}) let one subject advance past the
+                # grade of record; promotion_ready records exhausted
+                # frontiers awaiting approval (or auto-apply).
+                "subject_grade_overrides": data.get("subject_grade_overrides", {}),
+                "promotion_ready": data.get("promotion_ready", {}),
             }
             # Only surface when actually set — callers use .get(key, DEFAULT)
             # and a present-but-None key would shadow their default.

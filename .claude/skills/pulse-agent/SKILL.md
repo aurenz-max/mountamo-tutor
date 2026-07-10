@@ -48,6 +48,22 @@ Cosmos is deprecated: the loop runs `CompetencyService` with `cosmos_db=None`
 - `/pulse-agent steady --loop --seed-from 1004` — mid-year persona: ONE
   batched read of a real student's docs seeds the store, then the journey
   diverges privately (zero writes back; parity oracle auto-skips)
+- `/pulse-agent gifted --loop --days 40 --promote` — cross-grade journey:
+  when a day surfaces no new work at all (grade frontier exhausted), bump
+  `grade_level` to the next grade and lazily fetch that grade's graph +
+  curriculum (one Firestore read per promotion). Prototype for
+  `backend/docs/ISSUE_CROSS_GRADE_PROGRESSION.md`; adds the
+  `promotion_continuity` assertion + a Grade Promotions report section.
+  grade_level is student-global, so with multiple `--subject` flags
+  promotion fires only when EVERY subject is exhausted.
+- `/pulse-agent gifted --loop --days 40 --promote-engine` — verify the
+  PRODUCTION promotion branch instead: pre-loads two grades ahead, sets
+  `settings.AUTO_GRADE_PROMOTION=True`, and PlanningService itself detects
+  the exhausted frontier (no frontier/in_progress subskills) and writes
+  `students/{id}.subject_grade_overrides`; the harness only mirrors the
+  engine's decision into its active graph ids. Mutually exclusive with
+  `--promote`. Without the flag the planner still records
+  `promotion_ready` + a plan warning (never silent).
 - `--sessions N` (engine/truth), `--subject Science`, `--grade 1`, `--seed N`,
   `--graph`, `--firestore` (engine mode only, production validation)
 
@@ -101,7 +117,8 @@ cd backend && python -c "from app.core.config import settings; print(settings.FI
 ```bash
 cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> \
     --subject <Subject> --grade <N> --in-memory --seed 42 --output ./reports \
-    [--truth] [--loop --days N] [--seed-from ID] [--sessions N] [--graph]
+    [--truth] [--loop --days N] [--seed-from ID] [--sessions N] [--graph] \
+    [--promote | --promote-engine]
 ```
 
 Loop mode logs one line per virtual day:
@@ -165,6 +182,14 @@ presenting results. The markdown report
   wiring and that plan blocks label them `review`/`retest`.
 - `weakness_routed` FAIL → selector never surfaced truly-weak skills; check
   KG p_correct emission and Fisher-information ranking.
+- `promotion_continuity` FAIL → a grade promotion happened but planning
+  never resumed on the new grade. Harness `--promote`: check the grade
+  loader fetched the next grade's graph + published curriculum and caches
+  were invalidated. `--promote-engine`: check PlanningService's detection
+  (`_allocate_subject_minutes` — exhausted = mastery>0 AND zero
+  frontier/in_progress subskills, NEVER done==total: graphs carry
+  permanently-locked orphan nodes) and that `subject_grade_overrides`
+  reached the selector via `_subject_grade`.
 
 ### Step 6: Save Results Summary
 
