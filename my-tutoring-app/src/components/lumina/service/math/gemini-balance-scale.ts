@@ -359,8 +359,23 @@ function equationKey(spec: EquationSpec): string {
 }
 
 /**
- * Build N distinct equations for a session of one challenge type. Retries on
- * collisions; falls back to the last attempt if the candidate space is too narrow.
+ * Cap on how many challenges in a session may share one variableValue. The
+ * content contract (balance-scale oracle, checkAnswerVariety) rejects a session
+ * when MORE than 60% of answers share a value; this keeps the relaxed pass
+ * strictly at-or-under that line.
+ */
+function maxRepeatsPerAnswer(target: number): number {
+  return Math.max(1, Math.floor(target * 0.6));
+}
+
+/**
+ * Build N distinct equations for a session of one challenge type. Selection
+ * spreads the ANSWER (variableValue), not just the equation shape — different
+ * constants around the same x still read as "the answer is always 6" to a
+ * student. Pass 1 requires an unseen answer; pass 2 relaxes to the clustering
+ * cap for modes whose answer space is smaller than the target (e.g.
+ * two_step_intro, x ∈ 2-6); the final fallback accepts duplicates rather than
+ * ship a short session.
  */
 export function selectBalanceScaleChallenges(
   challengeType: ChallengeType,
@@ -373,34 +388,44 @@ export function selectBalanceScaleChallenges(
   );
   const builder = BUILDERS[challengeType];
   const seen = new Set<string>();
+  const answerCounts = new Map<number, number>();
   const challenges: BalanceScaleChallenge[] = [];
 
+  const accept = (spec: EquationSpec) => {
+    answerCounts.set(spec.variableValue, (answerCounts.get(spec.variableValue) ?? 0) + 1);
+    challenges.push({
+      type: challengeType,
+      instruction: spec.instruction,
+      leftSide: spec.leftSide,
+      rightSide: spec.rightSide,
+      variableValue: spec.variableValue,
+      hint: spec.hint,
+    });
+  };
+
+  // Pass 1 — distinct equation AND distinct answer.
+  for (let i = 0; i < target * 8 && challenges.length < target; i++) {
+    const spec = builder();
+    const key = equationKey(spec);
+    if (seen.has(key) || answerCounts.has(spec.variableValue)) continue;
+    seen.add(key);
+    accept(spec);
+  }
+
+  // Pass 2 — distinct equation; repeated answers allowed up to the clustering cap.
+  const cap = maxRepeatsPerAnswer(target);
   for (let i = 0; i < target * 6 && challenges.length < target; i++) {
     const spec = builder();
     const key = equationKey(spec);
     if (seen.has(key)) continue;
+    if ((answerCounts.get(spec.variableValue) ?? 0) >= cap) continue;
     seen.add(key);
-    challenges.push({
-      type: challengeType,
-      instruction: spec.instruction,
-      leftSide: spec.leftSide,
-      rightSide: spec.rightSide,
-      variableValue: spec.variableValue,
-      hint: spec.hint,
-    });
+    accept(spec);
   }
 
   // Fallback — if we couldn't fill the target with distinct equations, accept duplicates.
   while (challenges.length < target) {
-    const spec = builder();
-    challenges.push({
-      type: challengeType,
-      instruction: spec.instruction,
-      leftSide: spec.leftSide,
-      rightSide: spec.rightSide,
-      variableValue: spec.variableValue,
-      hint: spec.hint,
-    });
+    accept(builder());
   }
 
   // Easier-to-harder by sum of constants on the right (proxy for magnitude).

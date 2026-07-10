@@ -3,16 +3,20 @@ import { additionSubtractionSceneOracle } from './addition-subtraction-scene';
 import { analogClockOracle } from './analog-clock';
 import { areaModelOracle } from './area-model';
 import { arrayGridOracle } from './array-grid';
+import { balanceScaleOracle } from './balance-scale';
 import { barModelOracle } from './bar-model';
 import { baseTenBlocksOracle } from './base-ten-blocks';
 import { coinCounterOracle } from './coin-counter';
 import { comparisonBuilderOracle } from './comparison-builder';
 import { countingBoardOracle } from './counting-board';
+import { dnaExplorerOracle } from './dna-explorer';
 import { doubleNumberLineOracle } from './double-number-line';
 import { factorTreeOracle } from './factor-tree';
+import { functionMachineOracle } from './function-machine';
 import { fractionBarOracle } from './fraction-bar';
 import { fractionCirclesOracle } from './fraction-circles';
 import { hundredsChartOracle } from './hundreds-chart';
+import { knowledgeCheckOracle } from './knowledge-check';
 import { mathFactFluencyOracle } from './math-fact-fluency';
 import { multiplicationExplorerOracle } from './multiplication-explorer';
 import { numberBondOracle } from './number-bond';
@@ -39,16 +43,20 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   analogClockOracle,
   areaModelOracle,
   arrayGridOracle,
+  balanceScaleOracle,
   barModelOracle,
   baseTenBlocksOracle,
   coinCounterOracle,
   comparisonBuilderOracle,
   countingBoardOracle,
+  dnaExplorerOracle,
   doubleNumberLineOracle,
   factorTreeOracle,
+  functionMachineOracle,
   fractionBarOracle,
   fractionCirclesOracle,
   hundredsChartOracle,
+  knowledgeCheckOracle,
   mathFactFluencyOracle,
   multiplicationExplorerOracle,
   numberBondOracle,

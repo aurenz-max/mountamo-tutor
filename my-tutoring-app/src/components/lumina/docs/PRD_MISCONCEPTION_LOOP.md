@@ -82,9 +82,15 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
 4. **Misconceptions stay out of the IRT lane.** They change content *emphasis*
    (which distinction is stressed, which distractor appears, what context frames
    the problem) — never β, θ updates, or selection urgency. Pure-IRT ruling holds.
-5. **v1 store is the existing store, unchanged.** One free-text active slot per
-   subskill, overwritten on re-detection. No error taxonomy until the loop
-   proves out. Honest abstain: weak evidence writes nothing.
+5. **v1 store is a new Firestore-native store — one free-text slot per subskill,
+   overwritten on re-detection.** *(Amended 2026-07-09.)* The original spec said
+   "reuse the existing store unchanged," but that store
+   (`user_profiles.add_or_update_misconception` / `resolve_misconception`) is
+   **Cosmos-only**, and Cosmos is deprecated (ruling 2026-07-08: Firestore is the
+   exclusive store; NullCosmos exists only to pass gates). Firestore holds NO
+   misconception data today. Phase 1 therefore ports the store's field contract
+   onto Firestore (see S3). No error taxonomy until the loop proves out. Honest
+   abstain: weak evidence writes nothing.
 6. **Consume at the registry boundary, not the manifest.** The manifest-prompt
    route is how personalization got laundered into a 3-level tier last time.
    `remediationFocus` becomes a typed `GenerationContext` field resolved at the
@@ -108,8 +114,8 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
   S2 shared distiller ──────┐                          │    (registry boundary)
   (frontend, Gemini flash,  │                          │
    schema-constrained,      │ S3 POST misconception    │ S4 generation-context
-   abstains on weak         ├────────► Cosmos store ───┘    objectives[].
-   evidence)                │          (existing)           activeMisconception
+   abstains on weak         ├────────► Firestore store ┘    objectives[].
+   evidence)                │          (Phase 1, new)       activeMisconception
                             │
   S6 resolution: remediation-tagged submit scores ≥80 → status: resolved
 ```
@@ -201,14 +207,40 @@ New endpoint: `POST /api/student-profile/misconceptions`
 }
 ```
 
-Handler is ~15 lines: auth-resolve student → `add_or_update_misconception`
-(existing, `user_profiles.py:399`). No new collection, no schema change to the
-frozen `/api/problems/submit` request. Sent fire-and-forget from S2; a dropped
-write costs one diagnosis, never a submission.
+Handler is ~15 lines: auth-resolve student → a NEW Firestore-native store method
+(see below). No schema change to the frozen `/api/problems/submit` request. Sent
+fire-and-forget from S2; a dropped write costs one diagnosis, never a submission.
 
 Why a separate endpoint instead of riding `/api/problems/submit`: diagnosis is
 async (fires after submit returns) and must not add LLM latency to the XP path;
 and the submit schema stays untouched.
+
+**Store: Firestore-native, new** *(amended 2026-07-09 — see ruling 5).* The legacy
+`user_profiles.add_or_update_misconception` / `resolve_misconception` /
+`get_active_misconception_for_subskill` are Cosmos-only (`user_profiles.py:399/538/477`);
+Firestore has no misconception data. Phase 1 adds three methods to
+`FirestoreService`, mirroring `update_competency` (`firestore_service.py:768`) —
+lineage-resolve the subskill, `datetime.now(timezone.utc).isoformat()` timestamps,
+`_add_migration_metadata`:
+
+- **Collection:** `students/{student_id}/misconceptions/{subskill_id}` — one doc
+  per subskill (doc-id = the resolved subskill_id) gives the required
+  one-slot-per-subskill overwrite semantics for free (a `.set()` overwrites; no
+  array scan like the Cosmos version's `replace_item`). Idempotent by construction.
+- **Field contract** (preserve the legacy `StudentMisconception` shape so a later
+  Cosmos→Firestore backfill is trivial): `subskill_id`, `misconception_text`,
+  `source_attempt_id`, `last_detected_at`, `status` (`'active'` | `'resolved'`),
+  `resolved_at`, plus the new `confidence` and `evidence_tier` echoes.
+- **Methods:** `add_or_update_misconception(student_id, subskill_id, text, source_attempt_id, confidence, evidence_tier)` → `.set()` with `status='active'`;
+  `resolve_misconception(student_id, subskill_id)` → `.update({status:'resolved', resolved_at})`;
+  `get_active_misconceptions(student_id, subskill_ids)` → batch read for S4
+  (single call inside the existing generation-context request — no per-objective
+  fan-out; the retrieval matcher's non-concurrency-safety guardrail in §6 holds).
+
+The upstream producers/consumers (`submission_service.py`, `assessment_service.py`,
+`review.analyze_misconception`) are store-agnostic — the loop's live path calls
+the FirestoreService methods, not the Cosmos service. The legacy Cosmos methods
+stay untouched for the deprecated standard-problem path (see §6 deferred item).
 
 ### S4 — Exposure (generation-context)
 
@@ -318,23 +350,30 @@ The consuming surface is **the content itself** (S5). Two supporting surfaces:
 Each phase is one commit-able slice with its own verification; no phase ships a
 producer without its consumer.
 
-### Phase 0 — Contracts + Diagnosis Lab (frontend only)
-- `DiagnosisEvidence`, `MisconceptionDiagnosis` types; `distillMisconception.ts`
-  with schema + gating + abstain.
-- Diagnosis Lab bench: ~8 canned evidence packets (tier A and B, including
-  2–3 that SHOULD abstain), rendered with distiller verdicts.
-- **Verify:** bench review — diagnoses are student-model sentences, abstains are
-  honest, no answer leakage. `tsc --noEmit` clean vs baseline.
+### Phase 0 — Contracts + Diagnosis Lab (frontend only) ✅ DONE 2026-07-09
+- `DiagnosisEvidence`, `MisconceptionDiagnosis`/`Abstain` types + `classifyEvidenceTier`
+  (`evaluation/diagnosis/types.ts`); `distillMisconception.ts` (flash-latest, schema,
+  gate, low-conf→abstain, Tier-C short-circuit, never throws); golden set of 10
+  packets (`scenarios.ts`); Diagnosis Lab (`components/DiagnosisLab.tsx`, wired into
+  DevPanelRouter + IdleScreen); `/api/lumina` `distillMisconception` action; optional
+  `diagnosisEvidence` handle on `PrimitiveEvaluationResult`.
+- **Verified:** live bench 10/10 expectation match — 6/6 clean student-model
+  diagnoses with 0 answer leakage, 4/4 honest abstains incl. the overreach trap;
+  Tier-C never called the model. `tsc` clean vs baseline. Run summary:
+  `my-tutoring-app/qa/diagnosis-lab-phase0-2026-07-09.md`.
 
 ### Phase 1 — Capture on the live path
 - Evidence packets from the pilot family: 3–4 math comparison/word-problem
   primitives (tier B) + one judge-driven primitive (tier A, judge schema gains
   `misconception`). Wire S2 into `EvaluationContext.submitEvaluation`
   post-submit hook.
-- Backend: `POST /api/student-profile/misconceptions` → existing store.
+- Backend: `POST /api/student-profile/misconceptions` → **new Firestore-native store**
+  (three `FirestoreService` methods, `students/{id}/misconceptions/{subskill_id}` —
+  see S3; NOT the deprecated Cosmos `user_profiles` store).
 - **Verify:** scripted wrong session on the pilot primitives → misconception doc
-  visible in the Cosmos profile with correct subskill_id, tier, attempt link.
-  Correct sessions and tier-C primitives write nothing.
+  visible in **Firestore** at `students/{id}/misconceptions/{subskill_id}` with
+  correct subskill_id, tier, attempt link. Correct sessions and tier-C primitives
+  write nothing.
 
 ### Phase 2 — Exposure + consumption
 - S4 field in generation-context; S5 threading (`studentSignals` →

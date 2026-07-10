@@ -27,6 +27,7 @@ import AtomRegistry from './AtomRegistry';
 import SoundLab from './SoundLab';
 import BlendJudgeLab from './BlendJudgeLab';
 import DesignStudio from './DesignStudio';
+import DiagnosisLab from './DiagnosisLab';
 import { PlannerDashboard } from './PlannerDashboard';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
 import { VisualPrimitivesGallery } from './VisualPrimitivesGallery';
@@ -59,6 +60,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'sound-lab': SoundLab,
   'blend-judge-lab': BlendJudgeLab,
   'design-studio': DesignStudio,
+  'diagnosis-lab': DiagnosisLab,
   'lumina-tutor-tester': LuminaTutorTester,
   'student-activity-panel': StudentActivityPanel,
   'planner-dashboard': PlannerDashboard,

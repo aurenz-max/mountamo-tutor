@@ -445,6 +445,24 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(hydratedItems);
       }
 
+      // ============================================
+      // MISCONCEPTION LOOP — S2 distiller (Diagnosis Lab / capture hook)
+      // ============================================
+
+      case 'distillMisconception': {
+        const { distillMisconception } = await import(
+          '@/components/lumina/evaluation/diagnosis/distillMisconception'
+        );
+        const diagnosis = await distillMisconception(params.evidence, {
+          score: params.score,
+          success: params.success,
+          subskillId: params.subskillId,
+          evalMode: params.evalMode,
+          gradeLevel: params.gradeLevel,
+        });
+        return NextResponse.json(diagnosis);
+      }
+
       case 'generateTopicSuggestions': {
         const { generateTopicSuggestions } = await import(
           '@/components/lumina/service/topic-suggestions/gemini-topic-suggestions'

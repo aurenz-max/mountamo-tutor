@@ -75,6 +75,12 @@ export interface PrimitiveEvaluationResult<TMetrics extends PrimitiveMetrics = P
 
   // Student work artifact (serializable state for replay)
   studentWork?: unknown;
+
+  // Misconception Loop S1 — optional evidence packet a primitive supplies on a
+  // failure so the shared distiller can diagnose it. DATA only; primitives never
+  // diagnose. Absent = invisible to the loop (Tier C). Populated in Phase 1.
+  // See evaluation/diagnosis/types.ts and docs/PRD_MISCONCEPTION_LOOP.md.
+  diagnosisEvidence?: import('./diagnosis/types').DiagnosisEvidence;
 }
 
 // =============================================================================
@@ -330,6 +336,12 @@ export interface ExcavatorArmSimulatorMetrics extends BasePrimitiveMetrics {
   finalBoomAngle: number;       // Final boom angle in degrees
   finalStickAngle: number;      // Final stick angle in degrees
   finalBucketAngle: number;     // Final bucket angle in degrees
+
+  // Dig-site job board (engine-judged mission ladder; optional for compat)
+  missionsSolved?: number;      // Jobs solved on the dig-site job board
+  missionsTotal?: number;       // Total jobs on the board
+  pipeStrikes?: number;         // Buried-pipe strikes (precision faults)
+  spilledUnits?: number;        // Units dumped outside the truck bed
 }
 
 export interface DumpTruckLoaderMetrics extends BasePrimitiveMetrics {
