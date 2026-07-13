@@ -746,7 +746,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: -1.5,
         scaffoldingMode: 1,
         challengeTypes: ['explore'],
-        description: 'Mostly display blocks with 1-2 easy MC questions. Low retrieval demand.',
+        description: 'Mostly display blocks (flip-card facts, tap-to-explore content) with 1-2 easy MC questions. Low retrieval demand.',
       },
       {
         evalMode: 'recall',
@@ -754,7 +754,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: -0.5,
         scaffoldingMode: 2,
         challengeTypes: ['recall'],
-        description: 'More MC questions testing direct recall from display blocks.',
+        description: 'More MC questions testing direct recall; compare-contrast blocks become graded sort-the-statements challenges.',
       },
       {
         evalMode: 'apply',
@@ -762,7 +762,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 0.5,
         scaffoldingMode: 3,
         challengeTypes: ['apply'],
-        description: 'Data tables + MC requiring cross-referencing and multi-step reasoning.',
+        description: 'Data tables gain graded find-the-pattern questions (compare rows), timelines become graded sequencing challenges, plus MC requiring cross-referencing.',
       },
       {
         evalMode: 'analyze',
@@ -770,25 +770,44 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 5,
         challengeTypes: ['analyze'],
-        description: 'Hard MC + synthesis questions. Student must analyze, not just retrieve.',
+        description: 'Hard MC + synthesis questions alongside graded sorting, sequencing, and pattern-finding. Student must analyze, not just retrieve.',
       },
     ],
     tutoring: {
       taskDescription:
         'Guide the student through an orchestrated DeepDive on "{{topic}}". The experience has {{blockCount}} blocks '
-        + 'including {{evaluableBlockCount}} interactive questions. Current block: {{currentBlockLabel}}.',
+        + 'including {{evaluableBlockCount}} interactive questions. Sections: {{blockLabels}}. Narrative arc: {{narrativeArc}}.',
       contextKeys: ['title', 'topic', 'blockCount', 'evaluableBlockCount', 'narrativeArc', 'blockLabels'],
       scaffoldingLevels: {
         level1:
           '"Look at the information presented in this section. What stands out to you?"',
         level2:
-          '"Re-read the {{currentBlockLabel}} section carefully. The answer connects to what you learned there."',
+          '"Which section talks about this? Re-read it carefully — the answer connects to what you learned there."',
         level3:
-          '"Let me walk you through this. The {{currentBlockLabel}} section shows us that... Now look at the question again with that in mind."',
+          '"Here\'s what that section tells us: [restate the key idea in one simple sentence]. So — [re-ask the question in your own words] — what do you think?"',
       },
       commonStruggles: [
         { pattern: 'Student skips display blocks and jumps straight to questions', response: 'Encourage the student to read through each section before answering questions — the answers are embedded in the content above.' },
         { pattern: 'Student answers MC without reading the explanation', response: 'Ask the student to read the explanation after answering — it reinforces the concept and connects back to the content.' },
+        { pattern: 'Student taps the same content card several times', response: 'Give a fresh angle each time — a new example, comparison, or story detail — never repeat the previous response.' },
+        { pattern: 'Student places sort/sequence items rapidly without reading (guess-and-check)', response: 'Slow them down: pick ONE statement or event and ask what it means in their own words before placing it.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'TAP-TO-EXPLORE RESPONSES',
+          instruction:
+            'Messages tagged [FACT_EXPLORE], [COMPARE_EXPLORE], [TIMELINE_EXPLORE], [QUOTE_EXPLORE], [TABLE_EXPLORE], or [PROSE_EXPLORE] '
+            + 'mean the student tapped a content card to hear more. Respond with 2-3 short, conversational, grade-appropriate sentences '
+            + 'that expand on that exact content, then end with one inviting question. Never turn it into a quiz, never say "you tapped" '
+            + 'or refer to cards/buttons, and never reveal answers to the interactive questions elsewhere in this DeepDive.',
+        },
+        {
+          title: 'ANSWER MOMENTS',
+          instruction:
+            'On [ANSWER_CORRECT], celebrate in one sentence and point the student forward. On [ANSWER_INCORRECT], the correct answer was '
+            + 'already revealed on screen — encourage gently and restate the key idea in fresh words. On [ALL_COMPLETE], give brief, '
+            + 'phase-specific praise.',
+        },
       ],
     },
     supportsEvaluation: true,

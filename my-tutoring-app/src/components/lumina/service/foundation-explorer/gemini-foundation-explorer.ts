@@ -148,8 +148,17 @@ export const generateFoundationExplorer = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FoundationExplorerConfig;
-  const objectiveVerb = config?.objectiveVerb || 'identify';
+  const objectiveVerb = ctx.objective.verb || 'identify';
   const conceptCount = config?.conceptCount || 3;
+
+  // The SPECIFIC objective the manifest assigned to THIS instance. In production
+  // this is the authored objective text (ctx.objective.text); fall back through the
+  // canonical intent chain (config.intent → item.intent → item.title, resolved as
+  // ctx.intent) so the per-component focus is never silently dropped, and finally to
+  // the broad topic. Reading these typed axes — not ctx.raw — is what makes the
+  // generator context-native (see resolveGenerationContext / topic-fidelity).
+  const specificFocus = ctx.objective.text || ctx.intent || topic;
+  const objectiveId = ctx.objective.id || 'obj1';
 
   // Verb-specific prompting guidance
   const verbGuidance: Record<string, string> = {
@@ -190,12 +199,21 @@ COMPARE VERB - Focus on SIMILARITIES AND DIFFERENCES:
   };
 
   const prompt = `
-Create a Foundation Explorer for teaching "${topic}" to ${gradeLevel} students.
+Create a Foundation Explorer for ${gradeLevel} students.
 
 LEARNING OBJECTIVE CONTEXT:
-${config?.objectiveText ? `- Objective: ${config.objectiveText}` : `- Teaching foundational concepts about ${topic}`}
-- Objective ID: ${config?.objectiveId || 'obj1'}
+- Broad lesson topic: ${topic}
+- THIS activity must specifically teach: ${specificFocus}
+- Objective ID: ${objectiveId}
 - Action Verb: ${objectiveVerb.toUpperCase()}
+
+SCOPE BINDING (critical — do not ignore):
+The concepts you generate MUST BE the specific parts, components, or terms named in
+the focus above ("${specificFocus}"). Do NOT substitute a different or more general
+topic, even when the broad lesson topic is wider than the focus. If the focus names
+specific parts (e.g. "fulcrum, load, effort"), those parts ARE your concepts. Stay
+within the scope and theme the focus implies; the grade level is the ceiling, never a
+reason to broaden past the focus.
 
 ${verbGuidance[objectiveVerb] || verbGuidance.identify}
 
@@ -315,10 +333,11 @@ Return a complete Foundation Explorer configuration.
     };
   });
 
-  // Apply config overrides
-  if (config?.objectiveId) data.objectiveId = config.objectiveId;
-  if (config?.objectiveText) data.objectiveText = config.objectiveText;
-  if (config?.objectiveVerb) data.objectiveVerb = config.objectiveVerb;
+  // Apply objective overrides from the resolved context so the shipped data echoes
+  // the manifest's assigned objective (not the LLM's invented one).
+  if (ctx.objective.id) data.objectiveId = ctx.objective.id;
+  if (ctx.objective.text) data.objectiveText = ctx.objective.text;
+  if (ctx.objective.verb) data.objectiveVerb = ctx.objective.verb;
 
   // Set defaults if missing
   if (!data.themeColor) data.themeColor = '#6366f1';

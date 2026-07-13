@@ -60,6 +60,8 @@ export interface KeyFactsBlockData extends BaseBlockData {
   facts: Array<{
     icon: string;
     text: string;
+    /** Punchy 2-4 word teaser. When present the fact renders as a flip card: front = icon + headline, back = full text. */
+    headline?: string;
   }>;
 }
 
@@ -68,6 +70,17 @@ export interface DataTableBlockData extends BaseBlockData {
   headers: string[];
   rows: string[][];
   caption?: string;
+  /**
+   * Find-the-pattern comprehension question grounded in the generated table
+   * (answering requires comparing rows). Attached by generator CODE at
+   * apply/analyze tiers; when present the block becomes evaluable.
+   */
+  patternCheck?: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
 }
 
 export interface PullQuoteBlockData extends BaseBlockData {
@@ -121,11 +134,18 @@ export interface MultipleChoiceBlockData extends BaseBlockData {
 
 export interface TimelineBlockData extends BaseBlockData {
   blockType: 'timeline';
+  /** Events in TRUE chronological order — this ordering is the answer key for 'order' mode. */
   events: Array<{
     date: string;
     title: string;
     description: string;
   }>;
+  /**
+   * 'static' (default) = display timeline; 'order' = events are shuffled and the
+   * student reconstructs the sequence (evaluable). Set by generator CODE from the
+   * eval mode (apply/analyze), never by the LLM.
+   */
+  interactionMode?: 'static' | 'order';
 }
 
 export interface FillInBlankBlockData extends BaseBlockData {
@@ -138,8 +158,15 @@ export interface FillInBlankBlockData extends BaseBlockData {
 
 export interface CompareContrastBlockData extends BaseBlockData {
   blockType: 'compare-contrast';
+  /** Point→item assignment is the answer key for 'sort' mode. */
   itemA: { title: string; points: string[] };
   itemB: { title: string; points: string[] };
+  /**
+   * 'static' (default) = side-by-side display; 'sort' = points arrive pooled and
+   * shuffled, the student assigns each to the right item (evaluable). Set by
+   * generator CODE from the eval mode (recall+), never by the LLM.
+   */
+  interactionMode?: 'static' | 'sort';
 }
 
 export interface DiagramBlockData extends BaseBlockData {

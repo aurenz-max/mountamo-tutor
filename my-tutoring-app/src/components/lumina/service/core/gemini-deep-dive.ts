@@ -154,19 +154,22 @@ Use diagram blocks (explore mode — clickable labels) when the topic has spatia
 Mix of display and MC blocks. Include 2-3 MC questions testing direct recall.
 6-7 blocks total.
 Use prose blocks between display blocks for narrative flow. Use pull-quote blocks to highlight key takeaways.
-Use diagram blocks (explore mode) when spatial relationships help explain the concept.`;
+Use diagram blocks (explore mode) when spatial relationships help explain the concept.
+NOTE: at this tier, any compare-contrast block automatically becomes a sort-the-statements challenge (evaluable) — count it toward assessment when planning, and use one whenever two concepts can be juxtaposed.`;
     case 'apply':
       return `## Eval Mode: APPLY (medium-hard)
 Include a data-table and MC questions that require cross-referencing data.
 7-8 blocks total. MC questions should require multi-step reasoning.
 Use prose blocks to explain context before data tables. Use pull-quote blocks to highlight important relationships.
-Use diagram blocks (label mode — student places labels) when spatial understanding is a key learning objective.`;
+Use diagram blocks (label mode — student places labels) when spatial understanding is a key learning objective.
+NOTE: at this tier several blocks automatically become challenges (evaluable) — count them toward assessment when planning: compare-contrast becomes sort-the-statements, timeline becomes put-events-in-order, and data-table gains a find-the-pattern question.`;
     case 'analyze':
       return `## Eval Mode: ANALYZE (hard)
 Include 3-4 challenging MC questions requiring synthesis across blocks.
 7-9 blocks total. Questions should test analysis, not just recall.
 Use prose blocks to build narrative depth. Use pull-quote blocks to highlight key insights for synthesis.
-Use diagram blocks (label mode) to test spatial reasoning — students must demonstrate they know where things are and why.`;
+Use diagram blocks (label mode) to test spatial reasoning — students must demonstrate they know where things are and why.
+NOTE: at this tier several blocks automatically become challenges (evaluable) — count them toward assessment when planning: compare-contrast becomes sort-the-statements, timeline becomes put-events-in-order, and data-table gains a find-the-pattern question.`;
     default:
       return `## Default Mode
 Include a good mix of ALL block types: hero-image, key-facts, prose, pull-quote, data-table, and 2-3 MC questions.
@@ -272,16 +275,21 @@ const KEY_FACTS_SCHEMA: Schema = {
   properties: {
     fact0Icon: { type: Type.STRING, description: 'Emoji icon for fact 1' },
     fact0Text: { type: Type.STRING, description: 'Fact 1 text' },
+    fact0Headline: { type: Type.STRING, description: 'Fact 1 headline: 2-4 word teaser that sparks curiosity WITHOUT giving the fact away' },
     fact1Icon: { type: Type.STRING, description: 'Emoji icon for fact 2' },
     fact1Text: { type: Type.STRING, description: 'Fact 2 text' },
+    fact1Headline: { type: Type.STRING, description: 'Fact 2 headline teaser' },
     fact2Icon: { type: Type.STRING, description: 'Emoji icon for fact 3' },
     fact2Text: { type: Type.STRING, description: 'Fact 3 text' },
+    fact2Headline: { type: Type.STRING, description: 'Fact 3 headline teaser' },
     fact3Icon: { type: Type.STRING, description: 'Emoji icon for fact 4 (optional)', nullable: true },
     fact3Text: { type: Type.STRING, description: 'Fact 4 text (optional)', nullable: true },
+    fact3Headline: { type: Type.STRING, description: 'Fact 4 headline teaser (optional)', nullable: true },
     fact4Icon: { type: Type.STRING, description: 'Emoji icon for fact 5 (optional)', nullable: true },
     fact4Text: { type: Type.STRING, description: 'Fact 5 text (optional)', nullable: true },
+    fact4Headline: { type: Type.STRING, description: 'Fact 5 headline teaser (optional)', nullable: true },
   },
-  required: ['fact0Icon', 'fact0Text', 'fact1Icon', 'fact1Text', 'fact2Icon', 'fact2Text'],
+  required: ['fact0Icon', 'fact0Text', 'fact0Headline', 'fact1Icon', 'fact1Text', 'fact1Headline', 'fact2Icon', 'fact2Text', 'fact2Headline'],
 };
 
 async function generateKeyFacts(brief: string, topic: string, gradeLevel: string): Promise<KeyFactsBlockData['facts']> {
@@ -292,7 +300,8 @@ async function generateKeyFacts(brief: string, topic: string, gradeLevel: string
 Brief: ${brief}
 
 Generate 3-5 facts. Each fact should be a clear, memorable statement with an appropriate emoji icon.
-Keep facts concise (1-2 sentences max). Use age-appropriate vocabulary for ${gradeLevel}.`,
+Keep facts concise (1-2 sentences max). Use age-appropriate vocabulary for ${gradeLevel}.
+For each fact also write a HEADLINE: a punchy 2-4 word teaser shown on the front of a flip card. It should spark curiosity but NOT contain the fact's answer or key detail \u2014 the student flips the card to discover the fact. Example: fact "A blue whale's heart is the size of a small car" \u2192 headline "A Giant Heart".`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: KEY_FACTS_SCHEMA,
@@ -309,7 +318,7 @@ Keep facts concise (1-2 sentences max). Use age-appropriate vocabulary for ${gra
     const icon = data[`fact${i}Icon`];
     const factText = data[`fact${i}Text`];
     if (icon && factText) {
-      facts.push({ icon, text: factText });
+      facts.push({ icon, text: factText, headline: data[`fact${i}Headline`] || undefined });
     }
   }
 
@@ -398,6 +407,63 @@ Use age-appropriate language for ${gradeLevel}.`,
     headers,
     rows: rows.length > 0 ? rows : [['(data)', '(unavailable)']],
     caption: data.caption || `Table about ${topic}`,
+  };
+}
+
+// ── Pattern Check generator (data-table companion, apply/analyze) ───
+// Runs AFTER the table so the question is grounded in the actual generated
+// rows — answering must require comparing at least two of them.
+
+const PATTERN_CHECK_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    question: { type: Type.STRING, description: 'A question about the table that can ONLY be answered by comparing two or more rows' },
+    option0: { type: Type.STRING, description: 'Option A' },
+    option1: { type: Type.STRING, description: 'Option B' },
+    option2: { type: Type.STRING, description: 'Option C' },
+    option3: { type: Type.STRING, description: 'Option D' },
+    correctIndex: { type: Type.NUMBER, description: 'Index of the correct option (0-3)' },
+    explanation: { type: Type.STRING, description: 'Explanation naming WHICH rows to compare and what the comparison shows (2-3 sentences)' },
+  },
+  required: ['question', 'option0', 'option1', 'option2', 'option3', 'correctIndex', 'explanation'],
+};
+
+async function generatePatternCheck(
+  headers: string[],
+  rows: string[][],
+  caption: string,
+  topic: string,
+  gradeLevel: string,
+): Promise<NonNullable<DataTableBlockData['patternCheck']>> {
+  const tableText = [headers.join(' | '), ...rows.map((r) => r.join(' | '))].join('\n');
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-lite-latest',
+    contents: `Here is a data table from a ${gradeLevel} lesson on "${topic}" (caption: "${caption}"):
+
+${tableText}
+
+Write ONE find-the-pattern comprehension question about this exact table.
+Rules:
+- Answering must REQUIRE comparing at least two rows (a trend, a biggest/smallest, a relationship) — never a fact readable from a single cell.
+- Exactly 4 options; distractors plausible but wrong. Do NOT make the correct answer obvious from position or length.
+- The explanation must name which rows to compare and what the comparison shows.
+- Use age-appropriate language for ${gradeLevel}.`,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: PATTERN_CHECK_SCHEMA,
+    },
+  });
+
+  const text = response.text;
+  if (!text) throw new Error('Pattern check generation returned empty');
+
+  const data = JSON.parse(text);
+  return {
+    question: data.question,
+    options: [data.option0, data.option1, data.option2, data.option3],
+    correctIndex: Math.max(0, Math.min(3, Math.round(data.correctIndex))),
+    explanation: data.explanation,
   };
 }
 
@@ -626,7 +692,17 @@ async function generateTimeline(
   brief: string,
   topic: string,
   gradeLevel: string,
+  orderMode: boolean,
 ): Promise<TimelineBlockData['events']> {
+  // In order mode the events are shuffled and the student reconstructs the
+  // sequence — descriptions that reference other events' order would leak it.
+  const orderRules = orderMode
+    ? `
+IMPORTANT — these events will be SHUFFLED and the student must reconstruct the chronological order:
+- Each description must stand completely alone. Do NOT use sequence words ("then", "next", "after this", "finally") and do NOT reference other events.
+- The order should be reasoned from cause and effect or the content itself, not from wording clues.`
+    : '';
+
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
     contents: `Generate a chronological timeline for a ${gradeLevel} lesson on "${topic}".
@@ -634,7 +710,7 @@ async function generateTimeline(
 Brief: ${brief}
 
 Generate 3-6 events in chronological order. Each event needs a date/time period, a short title, and a 1-2 sentence description.
-Use age-appropriate language for ${gradeLevel}. Dates can be exact years, decades, or relative periods.`,
+Use age-appropriate language for ${gradeLevel}. Dates can be exact years, decades, or relative periods.${orderRules}`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: TIMELINE_SCHEMA,
@@ -782,7 +858,18 @@ async function generateCompareContrast(
   brief: string,
   topic: string,
   gradeLevel: string,
+  sortMode: boolean,
 ): Promise<{ itemA: { title: string; points: string[] }; itemB: { title: string; points: string[] } }> {
+  // In sort mode the points become a sorting challenge — a point that names its
+  // own item would be solvable by keyword matching instead of meaning.
+  const sortRules = sortMode
+    ? `
+IMPORTANT — these points will be SHUFFLED and the student must sort each statement to the correct item:
+- Do NOT include either item's name (or an obvious synonym of it) inside any point text.
+- Each point must be assignable by understanding its MEANING, not by spotting a keyword.
+- Write points as standalone statements (e.g. "Homes here are tall buildings with many floors", not "City homes are tall").`
+    : '';
+
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
     contents: `Generate a compare/contrast analysis for a ${gradeLevel} lesson on "${topic}".
@@ -791,7 +878,7 @@ Brief: ${brief}
 
 Compare two related items, concepts, or perspectives. Each item gets a title and 3-4 distinct points.
 Points should highlight differences and unique characteristics.
-Use age-appropriate language for ${gradeLevel}.`,
+Use age-appropriate language for ${gradeLevel}.${sortRules}`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: COMPARE_CONTRAST_SCHEMA,
@@ -1439,6 +1526,18 @@ async function generateBlock(
 
       case 'data-table': {
         const tableData = await generateDataTable(plan.brief, topic, gradeLevel);
+        // Tier gate (code-owned, like diagram's interactionMode): apply/analyze
+        // tables carry a find-the-pattern question grounded in the actual rows.
+        let patternCheck: DataTableBlockData['patternCheck'];
+        if ((evalMode === 'apply' || evalMode === 'analyze') && tableData.rows.length >= 2) {
+          try {
+            patternCheck = await generatePatternCheck(
+              tableData.headers, tableData.rows, tableData.caption, topic, gradeLevel,
+            );
+          } catch (error) {
+            console.warn('[DeepDive] Pattern check generation failed — table ships as display-only:', error);
+          }
+        }
         return {
           id: baseId,
           blockType: 'data-table',
@@ -1448,6 +1547,7 @@ async function generateBlock(
           headers: tableData.headers,
           rows: tableData.rows,
           caption: tableData.caption,
+          patternCheck,
         } as DataTableBlockData;
       }
 
@@ -1496,7 +1596,10 @@ async function generateBlock(
       }
 
       case 'timeline': {
-        const events = await generateTimeline(plan.brief, topic, gradeLevel);
+        // Tier gate (code-owned): apply/analyze timelines become a sequencing
+        // challenge — events shuffle client-side and the student reconstructs.
+        const orderMode = evalMode === 'apply' || evalMode === 'analyze';
+        const events = await generateTimeline(plan.brief, topic, gradeLevel, orderMode);
         return {
           id: baseId,
           blockType: 'timeline',
@@ -1504,6 +1607,7 @@ async function generateBlock(
           tutoringBrief: plan.tutoringBrief,
           transitionCue: plan.transitionCue,
           events,
+          interactionMode: orderMode && events.length >= 3 ? 'order' : 'static',
         } as TimelineBlockData;
       }
 
@@ -1523,7 +1627,11 @@ async function generateBlock(
       }
 
       case 'compare-contrast': {
-        const ccData = await generateCompareContrast(plan.brief, topic, gradeLevel);
+        // Tier gate (code-owned): recall and above turns the comparison into a
+        // sort-the-statements challenge — points pool up and the student assigns
+        // each to the right item.
+        const sortMode = evalMode === 'recall' || evalMode === 'apply' || evalMode === 'analyze';
+        const ccData = await generateCompareContrast(plan.brief, topic, gradeLevel, sortMode);
         return {
           id: baseId,
           blockType: 'compare-contrast',
@@ -1532,6 +1640,7 @@ async function generateBlock(
           transitionCue: plan.transitionCue,
           itemA: ccData.itemA,
           itemB: ccData.itemB,
+          interactionMode: sortMode ? 'sort' : 'static',
         } as CompareContrastBlockData;
       }
 

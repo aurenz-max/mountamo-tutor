@@ -17,6 +17,7 @@ import {
   type MasonryCard,
 } from '../../../../../utils/editorial-layout';
 import type { ProseBlockData } from '../types';
+import BlockTutorHelp from './BlockTutorHelp';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -29,6 +30,8 @@ const FONT_STYLE = { fontFamily: 'Inter, Helvetica, Arial, sans-serif' };
 interface ProseBlockProps {
   data: ProseBlockData;
   index?: number;
+  /** Bridge to the DeepDive live tutor for a spoken walkthrough of the passage. */
+  onAskTutor?: (message: string) => void;
 }
 
 // ── Reveal Animation Hook ────────────────────────────────────────────
@@ -463,7 +466,7 @@ const SimpleProse: React.FC<SimpleProseProps> = ({ paragraphs, showDropCap = tru
 
 // ── Main Component ───────────────────────────────────────────────────
 
-const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
+const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor }) => {
   const { paragraphs, figure, insetFacts, label, layout: layoutMode, reveal = false } = data;
   const hasFigure = !!figure?.imageBase64;
   const hasInsetFacts = !!insetFacts?.facts?.length;
@@ -525,6 +528,18 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index }) => {
           <FigureRenderer paragraphs={paragraphs} figure={figure!} reveal={false} />
         ) : (
           <SimpleProse paragraphs={paragraphs} reveal={reveal} />
+        )}
+
+        {/* Tutor affordance rides below the content — the positioned-line
+            renderers lay out asynchronously, so per-paragraph tap targets
+            aren't safe here the way they are in card-based blocks. */}
+        {onAskTutor && (
+          <BlockTutorHelp
+            onAskTutor={onAskTutor}
+            label="Talk about this with your tutor"
+            className="mt-4"
+            message={`[PROSE_EXPLORE] The student wants to talk about this passage${label ? ` ("${label}")` : ''}: "${paragraphs.join(' ').slice(0, 700)}". Give the big idea in one friendly sentence, share the most interesting detail, then ask what stood out to them. Keep it short and conversational.`}
+          />
         )}
       </LuminaCardContent>
     </LuminaCard>

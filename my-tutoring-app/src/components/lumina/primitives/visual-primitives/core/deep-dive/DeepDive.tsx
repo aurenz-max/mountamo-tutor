@@ -17,11 +17,12 @@ import type {
   DeepDiveData,
   DeepDiveBlock,
   WrapperLayout,
-  MultipleChoiceBlockData,
-  FillInBlankBlockData,
   DiagramBlockData,
   MiniSimBlockData,
   PerspectivesBlockData,
+  CompareContrastBlockData,
+  TimelineBlockData,
+  DataTableBlockData,
 } from './types';
 
 // Block components
@@ -35,6 +36,9 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'mini-sim': { label: 'Prediction', icon: '\uD83E\uDDEA', accentColor: 'cyan' },
   'perspectives': { label: 'Perspective Analysis', icon: '👁️', accentColor: 'pink' },
   'hypothesis-lab': { label: 'Experimental Design', icon: '🧪', accentColor: 'emerald' },
+  'compare-contrast': { label: 'Sorting', icon: '⚖️', accentColor: 'blue' },
+  'timeline': { label: 'Sequencing', icon: '📜', accentColor: 'pink' },
+  'data-table': { label: 'Data Analysis', icon: '📊', accentColor: 'emerald' },
 };
 
 // ── Helper: extract evaluable blocks ────────────────────────────────
@@ -46,14 +50,7 @@ interface EvaluableChallenge {
 
 function getEvaluableChallenges(blocks: DeepDiveBlock[]): EvaluableChallenge[] {
   return blocks
-    .filter((b) => {
-      if (b.blockType === 'multiple-choice' || b.blockType === 'fill-in-blank') return true;
-      if (b.blockType === 'diagram') return (b as DiagramBlockData).interactionMode === 'label';
-      if (b.blockType === 'mini-sim') return !!(b as MiniSimBlockData).prediction;
-      if (b.blockType === 'perspectives') return !!(b as PerspectivesBlockData).comprehension;
-      if (b.blockType === 'hypothesis-lab') return true;
-      return false;
-    })
+    .filter((b) => isEvaluableBlockType(b.blockType, b))
     .map((b) => ({ id: b.id, type: b.blockType, block: b }));
 }
 
@@ -63,6 +60,12 @@ function isEvaluableBlockType(blockType: string, block?: DeepDiveBlock): boolean
   if (blockType === 'mini-sim' && block) return !!(block as MiniSimBlockData).prediction;
   if (blockType === 'perspectives' && block) return !!(block as PerspectivesBlockData).comprehension;
   if (blockType === 'hypothesis-lab') return true;
+  if (blockType === 'compare-contrast' && block) return (block as CompareContrastBlockData).interactionMode === 'sort';
+  if (blockType === 'timeline' && block) {
+    const tl = block as TimelineBlockData;
+    return tl.interactionMode === 'order' && tl.events.length >= 3;
+  }
+  if (blockType === 'data-table' && block) return !!(block as DataTableBlockData).patternCheck;
   return false;
 }
 
@@ -318,7 +321,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
         attempts,
       });
 
-      const block = blocks.find((b) => b.id === blockId) as (MultipleChoiceBlockData | FillInBlankBlockData) | undefined;
+      const block = blocks.find((b) => b.id === blockId);
       if (block) {
         const blockLabel = block.label || block.blockType;
         if (correct) {
@@ -375,7 +378,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
     if (!sentIntroRef.current && blocks.length > 0) {
       sentIntroRef.current = true;
       sendText(
-        `[DEEP_DIVE_START] Topic: "${title}". ${blocks.length} blocks to explore (${evaluableChallenges.length} interactive). Introduce the topic briefly and invite exploration.`,
+        `[DEEP_DIVE_START] Topic: "${title}". ${blocks.length} blocks to explore (${evaluableChallenges.length} interactive). Introduce the topic briefly and invite exploration — mention they can tap any fact or card to hear more from you.`,
         { silent: true },
       );
     }
@@ -408,13 +411,21 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       case 'hero-image':
         return <HeroImageBlock data={block} index={idx} />;
       case 'key-facts':
-        return <KeyFactsBlock data={block} index={idx} />;
+        return <KeyFactsBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
       case 'data-table':
-        return <DataTableBlock data={block} index={idx} />;
+        return (
+          <DataTableBlock
+            data={block}
+            index={idx}
+            onAnswer={block.patternCheck ? handleBlockAnswer : undefined}
+            answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
+          />
+        );
       case 'pull-quote':
-        return <PullQuoteBlock data={block} index={idx} />;
+        return <PullQuoteBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
       case 'prose':
-        return <ProseBlock data={block} index={idx} />;
+        return <ProseBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
       case 'multiple-choice':
         return (
           <MultipleChoiceBlock
@@ -426,7 +437,15 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           />
         );
       case 'timeline':
-        return <TimelineBlock data={block} index={idx} />;
+        return (
+          <TimelineBlock
+            data={block}
+            index={idx}
+            onAnswer={block.interactionMode === 'order' ? handleBlockAnswer : undefined}
+            answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
+          />
+        );
       case 'fill-in-blank':
         return (
           <FillInBlankBlock
@@ -438,7 +457,15 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           />
         );
       case 'compare-contrast':
-        return <CompareContrastBlock data={block} index={idx} />;
+        return (
+          <CompareContrastBlock
+            data={block}
+            index={idx}
+            onAnswer={block.interactionMode === 'sort' ? handleBlockAnswer : undefined}
+            answered={answeredBlockIds.has(block.id)}
+            onAskTutor={(msg) => sendText(msg)}
+          />
+        );
       case 'diagram': {
         const diagramBlock = block as DiagramBlockData;
         if (diagramBlock.interactionMode === 'label') {
