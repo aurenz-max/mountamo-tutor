@@ -1,6 +1,6 @@
 # Misconception Loop: Phoneme Explorer — 2026-07-12
 
-**Implementation gate: PASS. Runtime probe gate: OPEN.**
+**Gate: PASS.**
 
 Phoneme Explorer now participates in the declared-scope loop as a
 primitive-scoped phonological-awareness manipulative.
@@ -27,11 +27,35 @@ resolve the misconception.
 
 ## Verification
 
-- Focused remediation tests: 11/11 passed.
-- Full Vitest suite: 670/670 passed across 43 files.
+- Full Vitest suite: 711/711 passed across 43 files.
+- Backend Probe R: 7/7 passed. The Phoneme Explorer case proves a strong
+  sibling-primitive result cannot resolve its entry, while a strong tagged
+  Phoneme Explorer result does.
+- Real Firestore exposure: PASS; primitive-scoped key was `phoneme-explorer`.
 - Repository-wide TypeScript remains red on the pre-existing baseline; filtering
   its output found no errors in the touched Phoneme Explorer, Letter Sound Link,
   or literacy catalog files.
 
-Still required for a full `/misconception-test` closure: real-Gemini Probe D/G
-and one browser-owned wrong-session capture through Firestore.
+## Probe verdicts
+
+| Probe | Case | Verdict | Evidence |
+|---|---|---|---|
+| D | final-sound omission | **GENERATIVE** | High-confidence diagnosis predicts omission of the final consonant; no target word leaked. |
+| D | onset-only blending | **GENERATIVE** | High-confidence diagnosis predicts selection by first phoneme while ignoring the remainder. |
+| D | single sound-match slip, 3 draws | **ABSTAINED** | All three draws treated the corrected one-off miss as insufficient evidence. |
+| G | segment null | **clean** | Five items, no remediation moves. |
+| G | segment focused, 2 draws | **TARGETED** | `segment_boundary` on every item; every item included a final-phoneme-omission distractor. |
+| G | blend null | **clean** | Five items, no remediation moves. |
+| G | blend focused, 2 draws | **TARGETED** | `blend_through` on every item; distractors consistently shared only the onset with the answer. |
+| G | leakage and drift | **clean** | No diagnosis/correct-rule text in `fullData`; mode, grade, and five-item shape held. |
+| R | journey + sibling-primitive negative | **CLOSED** | Backend pytest 7/7. |
+| R | real Firestore exposure | **CLOSED** | Store-to-context returned the correct primitive-scoped key. |
+
+**Distiller handoff:** Probe G used Probe D's actual outputs, including: “The
+student believes that segmenting a three-phoneme word only requires identifying
+the first two phonemes, omitting the final consonant sound.”
+
+**Not verified here:** S1 live capture in a browser (component evidence → POST →
+Firestore on a real wrong session). The `misconception-test` skill explicitly
+classifies this station as browser-owned and does not include it in the automated
+PASS gate.

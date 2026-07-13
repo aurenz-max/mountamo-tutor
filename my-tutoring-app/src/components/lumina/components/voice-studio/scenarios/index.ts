@@ -1,6 +1,7 @@
 import type { StudioScenario } from '../types';
 import SayWordScenario from './SayWordScenario';
 import ChoiceQueueScenario from './ChoiceQueueScenario';
+import LetterNameScenario from './LetterNameScenario';
 
 /**
  * Scenario registry — the plug-and-play seam.

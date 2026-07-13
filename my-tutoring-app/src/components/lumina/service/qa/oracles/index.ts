@@ -11,14 +11,18 @@ import { circleExplorerOracle } from './circle-explorer';
 import { coinCounterOracle } from './coin-counter';
 import { comparisonBuilderOracle } from './comparison-builder';
 import { coordinateGraphOracle } from './coordinate-graph';
+import { distributionExplorerOracle } from './distribution-explorer';
 import { countingBoardOracle } from './counting-board';
 import { dnaExplorerOracle } from './dna-explorer';
+import { dotPlotOracle } from './dot-plot';
 import { doubleNumberLineOracle } from './double-number-line';
 import { equationBuilderOracle } from './equation-builder';
 import { equationWorkspaceOracle } from './equation-workspace';
 import { factorTreeOracle } from './factor-tree';
 import { functionMachineOracle } from './function-machine';
+import { functionSketchOracle } from './function-sketch';
 import { fractionBarOracle } from './fraction-bar';
+import { histogramOracle } from './histogram';
 import { fractionCirclesOracle } from './fraction-circles';
 import { hundredsChartOracle } from './hundreds-chart';
 import { knowledgeCheckOracle } from './knowledge-check';
@@ -61,14 +65,18 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   comparisonBuilderOracle,
   coordinateGraphOracle,
   countingBoardOracle,
+  distributionExplorerOracle,
   dnaExplorerOracle,
+  dotPlotOracle,
   doubleNumberLineOracle,
   equationBuilderOracle,
   equationWorkspaceOracle,
   factorTreeOracle,
   functionMachineOracle,
+  functionSketchOracle,
   fractionBarOracle,
   fractionCirclesOracle,
+  histogramOracle,
   hundredsChartOracle,
   knowledgeCheckOracle,
   mathFactFluencyOracle,

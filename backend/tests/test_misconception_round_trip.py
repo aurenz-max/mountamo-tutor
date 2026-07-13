@@ -200,3 +200,64 @@ def test_rhyme_studio_primitive_scoped_round_trip_resolves_only_itself():
     result, active = asyncio.run(scenario())
     assert not active
     assert result.review["metadata"]["remediation_successful"] is True
+
+
+def test_phoneme_explorer_primitive_scoped_round_trip_resolves_only_itself():
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990037, "phoneme-explorer", "primitive",
+            "The student omits the final phoneme when segmenting words.",
+            "attempt-phoneme-explorer", subskill_id="ELA-GK-PHON-SEGMENT",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+
+        # A strong item from a sibling primitive must not resolve this entry.
+        sibling_result = await service.handle_submission(
+            _submission(95.0, "letter-sound-link", primitive_type="letter-sound-link"),
+            {"firebase_uid": "synthetic-user", "student_id": 990037, "email": "x@test"},
+        )
+        active_after_sibling = await store.get_active_misconceptions(990037)
+
+        result = await service.handle_submission(
+            _submission(90.0, "phoneme-explorer", primitive_type="phoneme-explorer"),
+            {"firebase_uid": "synthetic-user", "student_id": 990037, "email": "x@test"},
+        )
+        return sibling_result, active_after_sibling, result, await store.get_active_misconceptions(990037)
+
+    sibling_result, active_after_sibling, result, active = asyncio.run(scenario())
+    assert "phoneme-explorer" in active_after_sibling
+    assert not sibling_result.review["metadata"].get("remediation_successful")
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True
+
+
+def test_picture_vocabulary_skill_scoped_round_trip_resolves_only_matching_skill_and_primitive():
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990038, "picture-vocabulary", "skill",
+            "The student overgeneralizes one familiar animal label.",
+            "attempt-picture-vocabulary", subskill_id="ELA-GK-VOCAB-NAMING", skill_id="SKILL-1",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+
+        sibling_result = await service.handle_submission(
+            _submission(95.0, "letter-sound-link", "SKILL-1", primitive_type="letter-sound-link"),
+            {"firebase_uid": "synthetic-user", "student_id": 990038, "email": "x@test"},
+        )
+        active_after_sibling = await store.get_active_misconceptions(990038)
+
+        result = await service.handle_submission(
+            _submission(90.0, "picture-vocabulary", "SKILL-1", primitive_type="picture-vocabulary"),
+            {"firebase_uid": "synthetic-user", "student_id": 990038, "email": "x@test"},
+        )
+        return sibling_result, active_after_sibling, result, await store.get_active_misconceptions(990038)
+
+    sibling_result, active_after_sibling, result, active = asyncio.run(scenario())
+    assert "picture-vocabulary::SKILL-1" in active_after_sibling
+    assert not sibling_result.review["metadata"].get("remediation_successful")
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True

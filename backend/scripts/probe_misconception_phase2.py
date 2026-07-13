@@ -25,13 +25,15 @@ class _UnusedMapping:
     retrieval_matcher = None
 
 
-async def run(student_id: int, primitive_type: str = "tape-diagram") -> None:
+async def run(student_id: int, primitive_type: str = "tape-diagram", scope: str = "primitive") -> None:
     firestore = FirestoreService()
     subskill_id = "MISCONCEPTION_PHASE2_PROBE"
     attempt_id = "misconception-phase2-probe"
     student_ref = firestore._student_doc(student_id)
     student_existed = student_ref.get().exists
-    doc_ref = firestore._misconceptions_subcollection(student_id).document(primitive_type)
+    skill_id = "MISCONCEPTION_PHASE2_SKILL" if scope == "skill" else None
+    misconception_key = f"{primitive_type}::{skill_id}" if skill_id else primitive_type
+    doc_ref = firestore._misconceptions_subcollection(student_id).document(misconception_key)
 
     original_factory = student_profile.get_firestore_service
     student_profile.get_firestore_service = lambda: firestore
@@ -39,7 +41,7 @@ async def run(student_id: int, primitive_type: str = "tape-diagram") -> None:
         await firestore.add_or_update_misconception(
             student_id=student_id,
             primitive_type=primitive_type,
-            scope="primitive",
+            scope=scope,
             subskill_id=subskill_id,
             misconception_text=(
                 "The student treats the smaller quantity as the difference."
@@ -47,6 +49,7 @@ async def run(student_id: int, primitive_type: str = "tape-diagram") -> None:
             source_attempt_id=attempt_id,
             confidence="high",
             evidence_tier="structured",
+            skill_id=skill_id,
         )
 
         result = await student_profile.get_generation_context(
@@ -76,10 +79,10 @@ async def run(student_id: int, primitive_type: str = "tape-diagram") -> None:
             "detectedAt": active["detectedAt"],
             "sourceAttemptId": attempt_id,
             "primitiveType": primitive_type,
-            "scope": "primitive",
-            "skillId": None,
+            "scope": scope,
+            "skillId": skill_id,
             "subskillId": subskill_id,
-            "misconceptionKey": primitive_type,
+            "misconceptionKey": misconception_key,
         }
         print(json.dumps({
             "status": "pass",
@@ -99,5 +102,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--student", type=int, default=999904)
     parser.add_argument("--primitive", default="tape-diagram")
+    parser.add_argument("--scope", choices=("primitive", "skill"), default="primitive")
     args = parser.parse_args()
-    asyncio.run(run(args.student, args.primitive))
+    asyncio.run(run(args.student, args.primitive, args.scope))

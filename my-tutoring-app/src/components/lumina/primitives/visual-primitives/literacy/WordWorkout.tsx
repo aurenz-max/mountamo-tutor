@@ -11,6 +11,7 @@ import {
   LuminaActionButton,
   LuminaProgress,
   LuminaFeedbackCard,
+  LuminaMicListener,
   answerStateClasses,
 } from '../../../ui';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../../evaluation';
 import type { WordWorkoutMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useVoiceAnswer, type SpokenJudgeResult } from '../../../hooks/useVoiceAnswer';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -186,6 +188,19 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   // Word Chains state
   const [chainPosition, setChainPosition] = useState(0);
   const [chainStartTime, setChainStartTime] = useState<number | null>(null);
+
+  // ── Spoken word-chains reading (voice ANSWER shape) ───────────────
+  // Word Chains is oral-reading production: the student says each displayed
+  // CVC word to advance. Voice is additive — the tap "Next Word" button stays
+  // as the fallback. gradeLevel matches the tutor config below.
+  const gradeLevel = 'K-2';
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [spokenChainWords, setSpokenChainWords] = useState<Set<string>>(new Set());
+  // Read fresh inside handleChainAdvance (shared with the tap path) to suppress
+  // the per-word tutor cue only in voice mode — the student must decode the
+  // shown word independently, and a tutor voicing it collides with the open mic.
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
 
   // Sentence Reading state
   const [tappedWords, setTappedWords] = useState<Set<string>>(new Set());
@@ -372,6 +387,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     submitEvaluation(accuracy >= 60, accuracy, metrics, {
       challengeResults,
+      spokenWords: Array.from(spokenChainWords),
     });
 
     // Build phase score string for AI
@@ -396,6 +412,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     chainWPMs,
     wordsReadIndependent,
     wordsReadTotal,
+    spokenChainWords,
     submitEvaluation,
     sendText,
   ]);
@@ -516,10 +533,15 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     if (chainStartTime === null) {
       setChainStartTime(Date.now());
-      sendText(
-        `[CHAIN_WORD] "${chain[0]}". Say the word.`,
-        { silent: true }
-      );
+      // Voice mode: stay SILENT so the student decodes the shown word without
+      // the tutor reading it for them (and without tutor audio colliding with
+      // the open mic). Tap mode keeps its spoken cue.
+      if (!voiceOnRef.current) {
+        sendText(
+          `[CHAIN_WORD] "${chain[0]}". Say the word.`,
+          { silent: true }
+        );
+      }
       return;
     }
 
@@ -531,10 +553,12 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       const changedIdx = currentChallenge.changedPositions?.[chainPosition];
       const posLabel =
         changedIdx === 0 ? 'first' : changedIdx === 2 ? 'last' : 'middle';
-      sendText(
-        `[CHAIN_WORD] "${nextWord}" — changed the ${posLabel} letter from "${prevWord}". Say it.`,
-        { silent: true }
-      );
+      if (!voiceOnRef.current) {
+        sendText(
+          `[CHAIN_WORD] "${nextWord}" — changed the ${posLabel} letter from "${prevWord}". Say it.`,
+          { silent: true }
+        );
+      }
     } else {
       const elapsed = Math.max((Date.now() - chainStartTime) / 1000, 0.5);
       const wpm = Math.round((chain.length / elapsed) * 60);
@@ -556,6 +580,47 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       );
     }
   }, [currentChallenge, chainPosition, chainStartTime, recordResult, sendText]);
+
+  // The word currently lit in the chain — the target for a spoken answer.
+  // Empty (mic dormant) until the student taps "Start Reading" and until the
+  // chain resolves, so the `active` gate below starts false (avoids the
+  // "mic never opens on the first item" footgun).
+  const currentChainWord =
+    currentMode === 'word-chains' &&
+    currentChallenge?.chain &&
+    chainStartTime !== null &&
+    !showNext
+      ? currentChallenge.chain[chainPosition] ?? ''
+      : '';
+
+  const spokenChainActive = voiceOn && currentChainWord.length > 0;
+
+  // Asymmetric law: a spoken MATCH advances the chain (and credits the word);
+  // a miss/unclear scores nothing and the open mic just keeps listening. No
+  // tutor chatter on a miss — the shown word is the support net.
+  const handleSpokenChainResult = useCallback(
+    (result: SpokenJudgeResult) => {
+      if (result.outcome !== 'match') return;
+      const chain = currentChallenge?.chain;
+      if (!chain || chainStartTime === null || showNext) return;
+      const word = chain[chainPosition];
+      setSpokenChainWords((prev) => new Set(prev).add(word));
+      // Light per-word acknowledgement; the final word completes the chain,
+      // which carries its own celebration in handleChainAdvance.
+      if (chainPosition >= chain.length - 1) SoundManager.playCorrect();
+      else SoundManager.select();
+      handleChainAdvance();
+    },
+    [currentChallenge, chainPosition, chainStartTime, showNext, handleChainAdvance]
+  );
+
+  const spokenChain = useVoiceAnswer({
+    targetWord: currentChainWord,
+    gradeLevel,
+    active: spokenChainActive,
+    onResult: handleSpokenChainResult,
+    onNoSpeech: () => {},
+  });
 
   // ── Sentence Reading ──────────────────────────────────────────────
   const handleWordTap = useCallback(
@@ -922,11 +987,27 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           })}
         </div>
         {!isChainComplete && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
+            {/* Voice is the primary path once reading has started; the mic
+                stays open and re-arms on each word. The button below is the
+                unchanged tap fallback. */}
+            {isStarted && voiceOn && spokenChain.isSupported && (
+              <LuminaMicListener
+                state={spokenChain.state}
+                level={spokenChain.level}
+                isSupported={spokenChain.isSupported}
+                dormant={spokenChain.dormant}
+                onStart={spokenChain.startManual}
+                onCancel={spokenChain.cancel}
+                accent="blue"
+                idleLabel="Read it!"
+                listeningLabel="Say the word!"
+              />
+            )}
             <LuminaButton
               tone={!isStarted ? 'primary' : 'ghost'}
               onClick={handleChainAdvance}
-              className="px-8 py-3 text-lg"
+              className={isStarted ? 'px-6 py-2 text-sm' : 'px-8 py-3 text-lg'}
             >
               {!isStarted
                 ? 'Start Reading'
@@ -1084,9 +1165,29 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
               )}
             </div>
           </div>
-          <LuminaBadge accent="blue" className="text-xs">
-            {currentIndex + 1} / {challenges.length}
-          </LuminaBadge>
+          <div className="flex items-center gap-2">
+            {!allChallengesComplete &&
+              currentMode === 'word-chains' &&
+              spokenChain.isSupported && (
+                <button
+                  onClick={() => {
+                    if (voiceOn) spokenChain.cancel();
+                    setVoiceOn((v) => !v);
+                  }}
+                  className={`text-xs rounded-full px-2.5 py-1 border ${
+                    voiceOn
+                      ? 'text-slate-300 border-white/20'
+                      : 'text-slate-500 border-white/10'
+                  }`}
+                  title={voiceOn ? 'Turn off voice reading' : 'Read aloud with voice'}
+                >
+                  {'🎙️'} {voiceOn ? 'on' : 'off'}
+                </button>
+              )}
+            <LuminaBadge accent="blue" className="text-xs">
+              {currentIndex + 1} / {challenges.length}
+            </LuminaBadge>
+          </div>
         </div>
       </LuminaCardHeader>
 

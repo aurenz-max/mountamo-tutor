@@ -726,6 +726,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'picture-vocabulary',
+    misconceptionScope: 'skill',
     description:
       'Spoken picture-vocabulary activity — the student SAYS their answers out loud and a speech judge confirms them (conversational voice mode; tap fallback always available). '
       + 'Six progressive modes: Listen & Find (hear a word, tap the matching picture), Say It (see a picture, name it aloud — "What is this?"), '

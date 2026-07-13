@@ -21,6 +21,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useVoiceAnswer, type SpokenJudgeResult } from '../../../hooks/useVoiceAnswer';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -69,6 +70,8 @@ export interface PictureVocabChallenge {
   scaleWords?: string[];
   /** Index into scaleWords of the blanked target rung (scaleWords[scaleTargetIndex] === word). */
   scaleTargetIndex?: number;
+  /** Private generation trace; never rendered to the student. */
+  remediationMove?: 'semantic_contrast' | 'relation_contrast' | 'reverse_relation' | 'context_contrast' | 'adjacent_scale';
 }
 
 export interface PictureVocabularyData {
@@ -117,6 +120,18 @@ const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string
 };
 
 const MAX_WRONG_TAPS = 3;
+
+function describeVocabularyChallenge(ch: PictureVocabChallenge): string {
+  if (ch.type === 'opposite') return `Produce the opposite of "${ch.baseWord}".`;
+  if (ch.type === 'association') return `Produce a word that naturally goes with "${ch.baseWord}".`;
+  if (ch.type === 'sentence_frame') return `Complete the sentence frame: ${ch.frameDisplay}`;
+  if (ch.type === 'gradable_scale') {
+    const visible = (ch.scaleWords ?? []).map((word, index) => index === ch.scaleTargetIndex ? '____' : word);
+    return `Name the missing word in the ordered scale: ${visible.join(' → ')}.`;
+  }
+  if (ch.type === 'naming') return `Name the pictured vocabulary item ${ch.emoji}.`;
+  return `Choose the picture matching the spoken vocabulary word.`;
+}
 const AUTO_ADVANCE_MS = 1600;
 
 const isSpokenMode = (t: PictureVocabChallengeType | undefined) =>
@@ -164,6 +179,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
 
   const startTimeRef = useRef(Date.now());
   const recordedRef = useRef(false);
+  const diagnosisObservationsRef = useRef<Array<DiagnosisEvidence & { challengeId: string }>>([]);
 
   const stableInstanceIdRef = useRef(instanceId || `picture-vocabulary-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -373,6 +389,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       // screen as a support net, and the mic keeps listening for another try.
       setSpokenMisses(m => m + 1);
       setTotalSpokenMisses(t => t + 1);
+      diagnosisObservationsRef.current.push({
+        challengeId: currentChallenge.id,
+        challengeSummary: describeVocabularyChallenge(currentChallenge),
+        expected: `Produce the vocabulary word "${currentChallenge.word}".`,
+        observed: `Said "${result.verdict.heard}".`,
+        judgeFeedback: result.verdict.misconception ?? result.verdict.reasoning,
+      });
+      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
     } else {
       // Mic didn't catch a clear word (silence/noise). Stay silent and keep
       // listening; a spoken "say it again" here just talks over the student.
@@ -420,6 +444,13 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       // Quiet-by-default: SFX + on-screen feedback carry a routine correct tap.
       // No tutor chatter — the session celebration ([ALL_COMPLETE]) covers the win.
     } else {
+      diagnosisObservationsRef.current.push({
+        challengeId: currentChallenge.id,
+        challengeSummary: describeVocabularyChallenge(currentChallenge),
+        expected: `Choose the vocabulary word "${currentChallenge.word}".`,
+        observed: `Chose "${option.word}".`,
+      });
+      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
       SoundManager.playIncorrect();
       incrementAttempts();
       setIsShaking(true);
@@ -469,6 +500,17 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       overallAccuracy: overallPct,
       averageAttemptsPerChallenge: totalCount > 0 ? totalAttempts / totalCount : 0,
     };
+    const latest = diagnosisObservationsRef.current.at(-1);
+    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && latest ? {
+      challengeSummary: latest.challengeSummary,
+      expected: latest.expected,
+      observed: latest.observed,
+      judgeFeedback: latest.judgeFeedback,
+      priorAttempts: diagnosisObservationsRef.current.slice(0, -1).map((item) => ({
+        challenge: item.challengeSummary,
+        observed: item.observed,
+      })),
+    } : undefined;
 
     setSubmittedScore(overallPct);
     submitEvaluation(overallPct >= 60, overallPct, metrics, {
@@ -477,7 +519,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       spokenWords: Array.from(spokenWords),
       spokenMisses: totalSpokenMisses,
       voiceMode,
-    });
+    }, undefined, diagnosisEvidence);
 
     const spokenCount = spokenWords.size;
     const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}%`).join(', ');

@@ -596,15 +596,22 @@ untagged (affordance-abstained) item must leave the misconception active.
   and in explore mode, and that resolving one entry leaves others active.
 
 ### Phase 4 — Scale-out
-- **Foundational-literacy cohort — implementation complete / runtime gate open
-  2026-07-12:** PhonicsBlender,
+- **Foundational-literacy cohort — implementation complete 2026-07-12:** PhonicsBlender,
   RhymeStudio, SoundSwap, LetterSoundLink, CvcSpeller, and PhonemeExplorer now
   declare primitive scope, capture structured/judge evidence, consume
   `remediationFocus`, and stamp mode-specific private remediation moves.
   PhonemeExplorer covers isolate, blend, segment, and manipulate. LetterSoundLink
   `hear-see` now abstains from stamping when a diagnosed letter contrast falls
-  outside the cumulative letter group. Pure suite: 670/670. Browser capture and
-  real-Gemini D/G probes remain runtime verification, not implementation gaps.
+  outside the cumulative letter group. PhonemeExplorer's full
+  `/misconception-test` gate passed: real-Gemini D/G, Probe R 7/7, real
+  Firestore exposure, and pure suite 711/711. Its S1 live browser capture remains
+  explicitly browser-owned and outside the automated gate.
+- **Picture Vocabulary ✅ PASS 2026-07-12:** declared skill scope; Tier-A spoken
+  and Tier-B tap capture; all six modes consume remediation with code-owned
+  private moves. `/misconception-test` passed real-Gemini D/G, Probe R 8/8,
+  real-Firestore composite-key exposure, and pure suite 742/742. Probe G caught
+  and closed a prompt-only dead field in association mode by preserving the
+  diagnosed prompt-object repetition as a code-enforced distractor.
 - Judge-schema misconception field across remaining judge-driven primitives
   (spoken judges: the transcript is the highest-fidelity evidence in the
   product — every `/add-spoken-judge` primitive becomes a tier-A source).

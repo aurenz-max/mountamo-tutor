@@ -12,6 +12,26 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
+
+export type PictureVocabularyRemediationMove =
+  | 'semantic_contrast'
+  | 'relation_contrast'
+  | 'reverse_relation'
+  | 'context_contrast'
+  | 'adjacent_scale';
+
+export function pictureVocabularyRemediationMoveFor(
+  mode: PictureVocabChallengeType,
+  remediationFocus?: string,
+): PictureVocabularyRemediationMove | undefined {
+  if (!remediationFocus?.trim()) return undefined;
+  if (mode === 'receptive_match' || mode === 'naming') return 'semantic_contrast';
+  if (mode === 'association') return 'relation_contrast';
+  if (mode === 'opposite') return 'reverse_relation';
+  if (mode === 'sentence_frame') return 'context_contrast';
+  return 'adjacent_scale';
+}
 
 // ---------------------------------------------------------------------------
 // ORCHESTRATOR REFACTOR (SP-14 nested-optional variant + cross-contamination)
@@ -770,16 +790,17 @@ const callGemini = async <T,>(schema: Schema, prompt: string, corrective?: strin
   return JSON.parse(text) as T;
 };
 
-const preamble = (topic: string, intent: string | undefined, grade: string): string =>
+const preamble = (topic: string, intent: string | undefined, grade: string, remediationFocus?: string): string =>
   `Topic: "${topic}".`
   + `${intent ? `\nSPECIFIC FOCUS: lean word choices toward "${intent}" when possible — but ALWAYS prioritize concreteness and picturability over this focus.` : ''}`
-  + `\nTARGET GRADE LEVEL: ${grade}`;
+  + `\nTARGET GRADE LEVEL: ${grade}`
+  + `${remediationFocus ? `\n${buildRemediationPrompt(remediationFocus)}\nChoose close semantic contrasts so at least one wrong option represents the diagnosed confusion. Never state the diagnosis or correct rule in student-visible text.` : ''}`;
 
 const generateNounPool = async (
-  topic: string, intent: string | undefined, grade: string, corrective?: string,
+  topic: string, intent: string | undefined, grade: string, remediationFocus?: string, corrective?: string,
 ): Promise<SubPool> => {
   const prompt = `Create a themed word pool for a K-1 spoken picture-vocabulary session.
-${preamble(topic, intent, grade)}
+${preamble(topic, intent, grade, remediationFocus)}
 
 Produce 10-12 CONCRETE NOUNS a young child can name from a picture alone.
 
@@ -799,10 +820,10 @@ Also provide:
 };
 
 const generateOppositePairs = async (
-  topic: string, intent: string | undefined, grade: string, corrective?: string,
+  topic: string, intent: string | undefined, grade: string, remediationFocus?: string, corrective?: string,
 ): Promise<SubPool> => {
   const prompt = `Create pairs of OPPOSITE words for a K-1 "say the opposite" vocabulary game.
-${preamble(topic, intent, grade)}
+${preamble(topic, intent, grade, remediationFocus)}
 
 Produce 6-8 opposite PAIRS. For EACH pair give ALL FOUR fields (word, emoji, oppositeWord, oppositeEmoji).
 
@@ -821,10 +842,10 @@ Also provide:
 };
 
 const generateAssociationPairs = async (
-  topic: string, intent: string | undefined, grade: string, corrective?: string,
+  topic: string, intent: string | undefined, grade: string, remediationFocus?: string, corrective?: string,
 ): Promise<SubPool> => {
   const prompt = `Create pairs of things that GO TOGETHER for a K-1 "what goes with it?" vocabulary game.
-${preamble(topic, intent, grade)}
+${preamble(topic, intent, grade, remediationFocus)}
 
 Produce 6-8 "goes-with" PAIRS. For EACH pair give ALL FOUR fields (word, emoji, relatedWord, relatedEmoji).
 
@@ -843,10 +864,10 @@ Also provide:
 };
 
 const generateGradableScales = async (
-  topic: string, intent: string | undefined, grade: string, corrective?: string,
+  topic: string, intent: string | undefined, grade: string, remediationFocus?: string, corrective?: string,
 ): Promise<{ scales: GradableScale[]; title: string; description: string }> => {
   const prompt = `Create ordered WORD SCALES for a K-1 "which word is missing?" gradient game.
-${preamble(topic, intent, grade)}
+${preamble(topic, intent, grade, remediationFocus)}
 
 Produce 4-6 gradable scales. Each scale is 3-5 words ordered STRICTLY low → high along ONE concept.
 
@@ -864,10 +885,10 @@ Also provide:
 };
 
 const generateFramePool = async (
-  topic: string, intent: string | undefined, grade: string, corrective?: string,
+  topic: string, intent: string | undefined, grade: string, remediationFocus?: string, corrective?: string,
 ): Promise<SubPool> => {
   const prompt = `Create a themed word pool for a K-1 "finish the sentence" vocabulary game.
-${preamble(topic, intent, grade)}
+${preamble(topic, intent, grade, remediationFocus)}
 
 Produce 6-8 words. For EACH word give ALL FOUR fields (word, emoji, frameDisplay, frameSpoken).
 
@@ -914,11 +935,11 @@ export const generatePictureVocabulary = async (
 
     if (mode === 'opposite') {
       // One corrective retry to the pair floor, then throw (never fabricate).
-      let pool = await generateOppositePairs(topic, intent, grade);
+      let pool = await generateOppositePairs(topic, intent, grade, ctx.remediationFocus);
       let expanded = expandOpposites(pool.words);
       if (expanded.length < 5) {
         console.warn(`[PictureVocabulary] opposite: only ${expanded.length}/5 usable pairs — retrying once`);
-        pool = await generateOppositePairs(topic, intent, grade,
+        pool = await generateOppositePairs(topic, intent, grade, ctx.remediationFocus,
           `PREVIOUS ATTEMPT REJECTED: too few complete pairs. Regenerate 8 opposite pairs. `
           + `EVERY pair MUST fill all four fields (word, emoji, oppositeWord, oppositeEmoji) — no blanks.`);
         expanded = expandOpposites(pool.words);
@@ -931,11 +952,11 @@ export const generatePictureVocabulary = async (
 
     } else if (mode === 'association') {
       // One corrective retry to the pair floor, then throw (never fabricate).
-      let pool = await generateAssociationPairs(topic, intent, grade);
+      let pool = await generateAssociationPairs(topic, intent, grade, ctx.remediationFocus);
       let expanded = expandAssociations(pool.words);
       if (expanded.length < 5) {
         console.warn(`[PictureVocabulary] association: only ${expanded.length}/5 usable pairs — retrying once`);
-        pool = await generateAssociationPairs(topic, intent, grade,
+        pool = await generateAssociationPairs(topic, intent, grade, ctx.remediationFocus,
           `PREVIOUS ATTEMPT REJECTED: too few complete pairs. Regenerate 8 "goes-with" pairs. `
           + `EVERY pair MUST fill all four fields (word, emoji, relatedWord, relatedEmoji) — no blanks, no opposites.`);
         expanded = expandAssociations(pool.words);
@@ -947,11 +968,11 @@ export const generatePictureVocabulary = async (
       ({ title, description } = pool);
 
     } else if (mode === 'gradable_scale') {
-      let pool = await generateGradableScales(topic, intent, grade);
+      let pool = await generateGradableScales(topic, intent, grade, ctx.remediationFocus);
       let assembledScales = assembleGradable(pool.scales);
       if (assembledScales.length < 5) {
         console.warn(`[PictureVocabulary] gradable_scale: only ${assembledScales.length}/5 usable — retrying once`);
-        pool = await generateGradableScales(topic, intent, grade,
+        pool = await generateGradableScales(topic, intent, grade, ctx.remediationFocus,
           `PREVIOUS ATTEMPT REJECTED: too few usable scales. Regenerate 6 gradable scales, each an ordered `
           + `low→high sequence of 3-5 single-word rungs (no duplicates within a scale).`);
         assembledScales = assembleGradable(pool.scales);
@@ -964,10 +985,10 @@ export const generatePictureVocabulary = async (
       description = pool.description;
 
     } else if (mode === 'sentence_frame') {
-      let pool = await generateFramePool(topic, intent, grade);
+      let pool = await generateFramePool(topic, intent, grade, ctx.remediationFocus);
       if (pool.words.length < 5) {
         console.warn(`[PictureVocabulary] sentence_frame: only ${pool.words.length}/5 usable frames — retrying once`);
-        pool = await generateFramePool(topic, intent, grade,
+        pool = await generateFramePool(topic, intent, grade, ctx.remediationFocus,
           `PREVIOUS ATTEMPT REJECTED: too few complete frames. Regenerate 8 words, each with a full `
           + `frameDisplay ("____" in place of the word) + frameSpoken, and NEITHER may contain the target word.`);
       }
@@ -978,10 +999,10 @@ export const generatePictureVocabulary = async (
       ({ title, description } = pool);
 
     } else if (mode === 'receptive_match' || mode === 'naming') {
-      let pool = await generateNounPool(topic, intent, grade);
+      let pool = await generateNounPool(topic, intent, grade, ctx.remediationFocus);
       if (pool.words.length < 5) {
         console.warn(`[PictureVocabulary] ${mode}: only ${pool.words.length}/5 usable nouns — retrying once`);
-        pool = await generateNounPool(topic, intent, grade,
+        pool = await generateNounPool(topic, intent, grade, ctx.remediationFocus,
           `PREVIOUS ATTEMPT REJECTED: too few usable nouns. Regenerate 12 concrete nouns, each a lowercase `
           + `single token (2-12 letters) with a distinct emoji that IS the noun itself (no adjectives, no example-emojis).`);
       }
@@ -995,12 +1016,12 @@ export const generatePictureVocabulary = async (
       // ── Mixed / Auto: all three in parallel. Nouns are required; opposite
       //    and frame pools are best-effort (mixed pads with nouns if thin).
       const [nounRes, oppRes, frameRes] = await Promise.all([
-        generateNounPool(topic, intent, grade),
-        generateOppositePairs(topic, intent, grade).catch((e): SubPool => {
+        generateNounPool(topic, intent, grade, ctx.remediationFocus),
+        generateOppositePairs(topic, intent, grade, ctx.remediationFocus).catch((e): SubPool => {
           console.warn('[PictureVocabulary] mixed: opposite pool failed, continuing without it', e);
           return { words: [], title: '', description: '' };
         }),
-        generateFramePool(topic, intent, grade).catch((e): SubPool => {
+        generateFramePool(topic, intent, grade, ctx.remediationFocus).catch((e): SubPool => {
           console.warn('[PictureVocabulary] mixed: frame pool failed, continuing without it', e);
           return { words: [], title: '', description: '' };
         }),
@@ -1021,7 +1042,24 @@ export const generatePictureVocabulary = async (
     }
 
     // Index-derived ids — stable and deterministic (never Date.now()).
-    const challenges = assembled.map((ch, i) => ({ ...ch, id: `pv-${i + 1}` }));
+    const challenges = assembled.map((ch, i) => {
+      const remediationMove = pictureVocabularyRemediationMoveFor(ch.type, ctx.remediationFocus);
+      let options = ch.options;
+      if (remediationMove === 'relation_contrast' && ch.baseWord && ch.baseEmoji
+          && !options.some((option) => option.word === ch.baseWord)) {
+        const targetIndex = options.findIndex((option) => option.word === ch.word);
+        const replaceIndex = options.findIndex((_, index) => index !== targetIndex);
+        options = options.map((option, index) => index === replaceIndex
+          ? { word: ch.baseWord!, emoji: ch.baseEmoji! }
+          : option);
+      }
+      return {
+        ...ch,
+        options,
+        id: `pv-${i + 1}`,
+        ...(remediationMove ? { remediationMove } : {}),
+      };
+    });
 
     const data: PictureVocabularyData = {
       title,

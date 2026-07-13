@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { angleWorkshopOracle } from '../angle-workshop';
 import { balanceScaleOracle } from '../balance-scale';
 import { circleExplorerOracle } from '../circle-explorer';
 import { coordinateGraphOracle } from '../coordinate-graph';
+import { distributionExplorerOracle } from '../distribution-explorer';
+import { dotPlotOracle } from '../dot-plot';
 import { equationBuilderOracle } from '../equation-builder';
 import { equationWorkspaceOracle } from '../equation-workspace';
 import { matrixDisplayOracle } from '../matrix-display';
 import { systemsEquationsVisualizerOracle } from '../systems-equations-visualizer';
 import { knowledgeCheckOracle } from '../knowledge-check';
 import { functionMachineOracle } from '../function-machine';
+import { functionSketchOracle } from '../function-sketch';
+import { histogramOracle } from '../histogram';
 import { mathFactFluencyOracle } from '../math-fact-fluency';
 import { polygonAreaBuilderOracle } from '../polygon-area-builder';
 import { tenFrameOracle } from '../ten-frame';
@@ -1361,6 +1366,615 @@ describe('equation-workspace oracle', () => {
   it('flags a demo-sized set (mastery-over-demo)', () => {
     const data = { ...ewSolveClean, challenges: [ewSolveClean.challenges[0]] };
     const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// angle-workshop
+// ---------------------------------------------------------------------------
+
+const awSolveCtx = { componentId: 'angle-workshop', evalMode: 'solve_unknown', topic: 'Angle relationships', gradeLevel: 'grade 7' };
+const awClassCtx = { componentId: 'angle-workshop', evalMode: 'classify_pairs', topic: 'Angle pairs', gradeLevel: 'grade 7' };
+const awTransCtx = { componentId: 'angle-workshop', evalMode: 'transversal', topic: 'Parallel lines', gradeLevel: 'grade 8' };
+const awAlgCtx = { componentId: 'angle-workshop', evalMode: 'solve_algebraic', topic: 'Angle equations', gradeLevel: 'grade 8' };
+
+const awSolveClean = {
+  title: 'Find the Angle', description: 'Solve for the unknown angle.', challengeType: 'solve_unknown',
+  challenges: [
+    { id: 'u1', type: 'solve_unknown', narration: 'Two angles meet.', instruction: 'Find x.', hint: 'Use the relationship.', answerKind: 'degrees', solveConfig: 'complementary', knownAngle: 30, expectedAnswer: 60, tolerance: 1 },
+    { id: 'u2', type: 'solve_unknown', narration: 'A straight line.', instruction: 'Find x.', hint: 'Use the relationship.', answerKind: 'degrees', solveConfig: 'supplementary', knownAngle: 50, expectedAnswer: 130, tolerance: 1 },
+    { id: 'u3', type: 'solve_unknown', narration: 'Lines cross.', instruction: 'Find x.', hint: 'Use the relationship.', answerKind: 'degrees', solveConfig: 'around_point', knownAngle: 120, knownAngle2: 140, expectedAnswer: 100, tolerance: 1 },
+  ],
+};
+
+const awClassClean = {
+  title: 'Name the Pair', description: 'Classify the angle pair.', challengeType: 'classify_pairs',
+  challenges: [
+    { id: 'c1', type: 'classify_pairs', narration: 'Two angles.', instruction: 'What is the relationship?', hint: 'Look at the sum.', answerKind: 'relationship', relationship: 'complementary', splitAngle: 40, expectedRelationship: 'complementary', expectedAnswer: 0, tolerance: 0.5 },
+    { id: 'c2', type: 'classify_pairs', narration: 'Two angles.', instruction: 'What is the relationship?', hint: 'Look at the sum.', answerKind: 'relationship', relationship: 'supplementary', splitAngle: 110, expectedRelationship: 'supplementary', expectedAnswer: 0, tolerance: 0.5 },
+    { id: 'c3', type: 'classify_pairs', narration: 'Lines cross.', instruction: 'What is the relationship?', hint: 'Opposite angles.', answerKind: 'relationship', relationship: 'vertical', crossAngle: 65, expectedRelationship: 'vertical', expectedAnswer: 0, tolerance: 0.5 },
+  ],
+};
+
+const awTransClean = {
+  title: 'Transversal', description: 'Find the angle.', challengeType: 'transversal',
+  challenges: [
+    { id: 't1', type: 'transversal', narration: 'Parallel lines.', instruction: 'Find x.', hint: 'Corresponding angles are equal.', answerKind: 'degrees', transversalShape: 'parallel_transversal', transRelation: 'corresponding', givenAngle: 70, expectedAnswer: 70, tolerance: 1 },
+    { id: 't2', type: 'transversal', narration: 'Parallel lines.', instruction: 'Find x.', hint: 'Same-side interior.', answerKind: 'degrees', transversalShape: 'parallel_transversal', transRelation: 'co_interior', givenAngle: 100, expectedAnswer: 80, tolerance: 1 },
+    { id: 't3', type: 'transversal', narration: 'A triangle.', instruction: 'Find x.', hint: 'Angles sum to 180.', answerKind: 'degrees', transversalShape: 'triangle_sum', givenAngle: 55, givenAngle2: 65, expectedAnswer: 60, tolerance: 1 },
+  ],
+};
+
+const awAlgClean = {
+  title: 'Angle Equations', description: 'Solve for x.', challengeType: 'solve_algebraic',
+  challenges: [
+    { id: 'g1', type: 'solve_algebraic', narration: 'Two angles.', instruction: 'Find x.', hint: 'Set up the equation.', answerKind: 'x_value', algConfig: 'complementary', a1: 1, b1: 20, a2: 1, b2: 10, expectedAnswer: 30, tolerance: 0.01 },
+    { id: 'g2', type: 'solve_algebraic', narration: 'A straight line.', instruction: 'Find x.', hint: 'Set up the equation.', answerKind: 'x_value', algConfig: 'supplementary', a1: 2, b1: 10, a2: 1, b2: 20, expectedAnswer: 50, tolerance: 0.01 },
+    { id: 'g3', type: 'solve_algebraic', narration: 'Lines cross.', instruction: 'Find x.', hint: 'Vertical angles are equal.', answerKind: 'x_value', algConfig: 'vertical', a1: 3, b1: 5, a2: 1, b2: 25, expectedAnswer: 10, tolerance: 0.01 },
+  ],
+};
+
+describe('angle-workshop oracle', () => {
+  it('passes clean solve_unknown data', () => {
+    expect(angleWorkshopOracle.verify(awSolveClean, awSolveCtx).violations).toEqual([]);
+  });
+  it('passes clean classify_pairs data', () => {
+    expect(angleWorkshopOracle.verify(awClassClean, awClassCtx).violations).toEqual([]);
+  });
+  it('passes clean transversal data', () => {
+    expect(angleWorkshopOracle.verify(awTransClean, awTransCtx).violations).toEqual([]);
+  });
+  it('passes clean solve_algebraic data', () => {
+    expect(angleWorkshopOracle.verify(awAlgClean, awAlgCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — solve_unknown key ≠ the geometry (supplementary keyed as complementary)', () => {
+    const data = JSON.parse(JSON.stringify(awSolveClean));
+    data.challenges[1].expectedAnswer = 40; // 180 - 50 = 130, not 40
+    const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'u2')).toBe(true);
+  });
+
+  it('flags answer-key-desync — classify figure drawn as one relationship, judged as another', () => {
+    const data = JSON.parse(JSON.stringify(awClassClean));
+    data.challenges[0].expectedRelationship = 'supplementary'; // figure is complementary
+    const v = angleWorkshopOracle.verify(data, awClassCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1' && /naming what they see/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — transversal triangle sum keyed wrong', () => {
+    const data = JSON.parse(JSON.stringify(awTransClean));
+    data.challenges[2].expectedAnswer = 70; // 180 - 55 - 65 = 60
+    const v = angleWorkshopOracle.verify(data, awTransCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 't3')).toBe(true);
+  });
+
+  it('flags answer-key-desync — solve_algebraic x solved wrong', () => {
+    const data = JSON.parse(JSON.stringify(awAlgClean));
+    data.challenges[0].expectedAnswer = 25; // (90 - 20 - 10)/(1+1) = 30
+    const v = angleWorkshopOracle.verify(data, awAlgCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'g1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — solve_algebraic vertical with a1 = a2 (no unique x)', () => {
+    const data = JSON.parse(JSON.stringify(awAlgClean));
+    data.challenges[2].a1 = 1; // a2 is also 1 → a1 - a2 = 0
+    const v = angleWorkshopOracle.verify(data, awAlgCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'g3' && /no unique x/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — wrong answerKind grades the wrong path', () => {
+    const data = JSON.parse(JSON.stringify(awSolveClean));
+    data.challenges[0].answerKind = 'relationship'; // a degrees answer graded as relationship
+    const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'u1' && /wrong path/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = angleWorkshopOracle.verify(awSolveClean, awClassCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — the hint states the computed answer', () => {
+    const data = JSON.parse(JSON.stringify(awSolveClean));
+    data.challenges[0].hint = 'The answer is 60 degrees.'; // answer 60 not a given (given is 30)
+    const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'u1')).toBe(true);
+  });
+
+  it('does NOT leak-flag vertical/corresponding where the answer equals the shown given', () => {
+    // transversal t1: corresponding, given 70, answer 70 — a hint stating 70 shows the given, not the answer.
+    const data = JSON.parse(JSON.stringify(awTransClean));
+    data.challenges[0].hint = 'The marked angle is 70 degrees.';
+    const v = angleWorkshopOracle.verify(data, awTransCtx).violations;
+    expect(v.filter((x) => x.check === 'answer-leak')).toEqual([]);
+  });
+
+  it('flags clustering — every answer is the same', () => {
+    const data = {
+      title: 'x', description: 'y', challengeType: 'solve_unknown',
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `u${i}`, type: 'solve_unknown', narration: 'n', instruction: 'Find x.', hint: 'h', answerKind: 'degrees', solveConfig: 'complementary', knownAngle: 30, expectedAnswer: 60, tolerance: 1 })),
+    };
+    const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...awSolveClean, challenges: [awSolveClean.challenges[0]] };
+    const v = angleWorkshopOracle.verify(data, awSolveCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// histogram
+// ---------------------------------------------------------------------------
+
+const hgModalCtx = { componentId: 'histogram', evalMode: 'find_modal_bin', topic: 'Data distributions', gradeLevel: 'grade 7' };
+const hgFreqCtx = { componentId: 'histogram', evalMode: 'read_frequency', topic: 'Reading histograms', gradeLevel: 'grade 6' };
+const hgCenterCtx = { componentId: 'histogram', evalMode: 'estimate_center', topic: 'Mean and median', gradeLevel: 'grade 6' };
+const hgShapeCtx = { componentId: 'histogram', evalMode: 'identify_shape', topic: 'Distribution shape', gradeLevel: 'grade 7' };
+
+// find_modal_bin: expectedBinStart = the unique tallest bar's start.
+const hgModalClean = {
+  title: 'Modal Bin', description: 'Find the tallest bar.', challengeType: 'find_modal_bin',
+  challenges: [
+    { id: 'm1', challengeType: 'find_modal_bin', data: [1, 2, 2, 3, 3, 3, 4, 5], binWidth: 1, binStart: 0, contextTitle: 'Scores', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Which bin has the most values?', expectedBinStart: 3, expectedBinEnd: 4 },
+    { id: 'm2', challengeType: 'find_modal_bin', data: [10, 10, 11, 12, 13, 14, 15], binWidth: 2, binStart: 10, contextTitle: 'Heights', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Which bin has the most values?', expectedBinStart: 10, expectedBinEnd: 12 },
+    { id: 'm3', challengeType: 'find_modal_bin', data: [20, 21, 22, 22, 22, 24, 24], binWidth: 5, binStart: 20, contextTitle: 'Temps', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Which bin has the most values?', expectedBinStart: 20, expectedBinEnd: 25 },
+  ],
+};
+
+// read_frequency: targetFrequency = count of data in [targetBinStart, targetBinEnd).
+const hgFreqClean = {
+  title: 'Read Frequency', description: 'Count the bar.', challengeType: 'read_frequency',
+  challenges: [
+    { id: 'f1', challengeType: 'read_frequency', data: [1, 2, 3, 3, 4, 5, 6, 7], binWidth: 2, binStart: 0, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'How many values are in the marked bin?', targetBinStart: 2, targetBinEnd: 4, targetFrequency: 3 },
+    { id: 'f2', challengeType: 'read_frequency', data: [10, 11, 12, 13, 14, 15, 16], binWidth: 5, binStart: 10, contextTitle: 'B', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'How many values are in the marked bin?', targetBinStart: 15, targetBinEnd: 20, targetFrequency: 2 },
+    { id: 'f3', challengeType: 'read_frequency', data: [20, 21, 22, 23, 24, 25], binWidth: 10, binStart: 20, contextTitle: 'C', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'How many values are in the marked bin?', targetBinStart: 20, targetBinEnd: 30, targetFrequency: 6 },
+  ],
+};
+
+// estimate_center: targetAnswer = mean/median of the data.
+const hgCenterClean = {
+  title: 'Estimate Center', description: 'Estimate the center.', challengeType: 'estimate_center',
+  challenges: [
+    { id: 'e1', challengeType: 'estimate_center', data: [2, 4, 6, 8, 10], binWidth: 2, binStart: 0, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Estimate the mean.', targetStatistic: 'mean', targetAnswer: 6, tolerance: 1 },
+    { id: 'e2', challengeType: 'estimate_center', data: [1, 2, 3, 4, 5, 6, 7], binWidth: 2, binStart: 0, contextTitle: 'B', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Estimate the median.', targetStatistic: 'median', targetAnswer: 4, tolerance: 1 },
+    { id: 'e3', challengeType: 'estimate_center', data: [10, 20, 30], binWidth: 10, binStart: 0, contextTitle: 'C', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Estimate the mean.', targetStatistic: 'mean', targetAnswer: 20, tolerance: 2 },
+  ],
+};
+
+// identify_shape: expectedShape present in shapeOptions.
+const hgShapeClean = {
+  title: 'Shape', description: 'Name the shape.', challengeType: 'identify_shape',
+  challenges: [
+    { id: 's1', challengeType: 'identify_shape', data: [3, 4, 5, 5, 5, 6, 7], binWidth: 1, binStart: 3, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'symmetric', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
+    { id: 's2', challengeType: 'identify_shape', data: [1, 1, 1, 2, 2, 3, 6], binWidth: 1, binStart: 1, contextTitle: 'B', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'right-skewed', shapeOptions: ['symmetric', 'right-skewed', 'left-skewed', 'uniform'] },
+    { id: 's3', challengeType: 'identify_shape', data: [1, 1, 2, 5, 6, 6], binWidth: 1, binStart: 1, contextTitle: 'C', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'What shape?', expectedShape: 'bimodal', shapeOptions: ['bimodal', 'symmetric', 'uniform', 'left-skewed'] },
+  ],
+};
+
+describe('histogram oracle', () => {
+  it('passes clean find_modal_bin data', () => {
+    expect(histogramOracle.verify(hgModalClean, hgModalCtx).violations).toEqual([]);
+  });
+  it('passes clean read_frequency data', () => {
+    expect(histogramOracle.verify(hgFreqClean, hgFreqCtx).violations).toEqual([]);
+  });
+  it('passes clean estimate_center data', () => {
+    expect(histogramOracle.verify(hgCenterClean, hgCenterCtx).violations).toEqual([]);
+  });
+  it('passes clean identify_shape data', () => {
+    expect(histogramOracle.verify(hgShapeClean, hgShapeCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — expectedBinStart is not the tallest bar', () => {
+    const data = JSON.parse(JSON.stringify(hgModalClean));
+    data.challenges[0].expectedBinStart = 2; // tallest bar starts at 3
+    const v = histogramOracle.verify(data, hgModalCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'm1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — a modal-bin tie (ambiguous key)', () => {
+    const data = JSON.parse(JSON.stringify(hgModalClean));
+    data.challenges[0].data = [1, 1, 2, 2, 4]; // bins [1,2) and [2,3) both count 2
+    const v = histogramOracle.verify(data, hgModalCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'm1' && /ambiguous/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — targetFrequency miscounts the bar (independence)', () => {
+    const data = JSON.parse(JSON.stringify(hgFreqClean));
+    data.challenges[0].targetFrequency = 5; // [2,4) actually holds 3
+    const v = histogramOracle.verify(data, hgFreqCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'f1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — targetAnswer outside the true center window', () => {
+    const data = JSON.parse(JSON.stringify(hgCenterClean));
+    data.challenges[0].targetAnswer = 8; // mean is 6, tolerance 1
+    const v = histogramOracle.verify(data, hgCenterCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'e1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — expectedShape not among the options (unselectable)', () => {
+    const data = JSON.parse(JSON.stringify(hgShapeClean));
+    data.challenges[0].expectedShape = 'bimodal'; // options don't include bimodal
+    const v = histogramOracle.verify(data, hgShapeCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /unselectable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = histogramOracle.verify(hgModalClean, hgCenterCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — the prompt states the center value', () => {
+    const data = JSON.parse(JSON.stringify(hgCenterClean));
+    data.challenges[0].prompt = 'The mean is about 6 — confirm it.';
+    const v = histogramOracle.verify(data, hgCenterCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'e1')).toBe(true);
+  });
+
+  it('flags clustering — every challenge is the same dataset', () => {
+    const data = {
+      title: 'x', description: 'y', challengeType: 'find_modal_bin',
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `m${i}`, challengeType: 'find_modal_bin', data: [1, 2, 2, 3, 3, 3, 4, 5], binWidth: 1, binStart: 0, contextTitle: 'A', xAxisLabel: 'x', yAxisLabel: 'freq', prompt: 'Which bin?', expectedBinStart: 3, expectedBinEnd: 4 })),
+    };
+    const v = histogramOracle.verify(data, hgModalCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — binWidth of 0', () => {
+    const data = JSON.parse(JSON.stringify(hgModalClean));
+    data.challenges[0].binWidth = 0;
+    const v = histogramOracle.verify(data, hgModalCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'm1')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...hgModalClean, challenges: [hgModalClean.challenges[0]] };
+    const v = histogramOracle.verify(data, hgModalCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dot-plot (self-report component; the shipped answer keys drive the tutor/stats)
+// ---------------------------------------------------------------------------
+
+const dpStatsCtx = { componentId: 'dot-plot', evalMode: 'compute_stats', topic: 'Median mode range', gradeLevel: 'grade 6' };
+const dpFreqCtx = { componentId: 'dot-plot', evalMode: 'read_frequency', topic: 'Reading dot plots', gradeLevel: 'grade 3' };
+const dpCmpCtx = { componentId: 'dot-plot', evalMode: 'compare_datasets', topic: 'Comparing datasets', gradeLevel: 'grade 6' };
+
+// A dot-plot session ships ONE challenge over a shared top-level dataset.
+const dpStatsClean = {
+  title: 'Median', description: 'Find the median.', range: [0, 10], dataPoints: [2, 3, 3, 4, 5, 5, 5, 6], showStatistics: true, editable: false, stackStyle: 'dots',
+  challenges: [{ id: 'c1', evalMode: 'compute_stats', instruction: 'What is the median of this data set?', targetStat: 'median', targetAnswer: 4.5 }],
+};
+
+const dpFreqClean = {
+  title: 'Most Frequent', description: 'Read the plot.', range: [0, 10], dataPoints: [1, 2, 2, 3, 3, 3, 4], showStatistics: false, editable: false, stackStyle: 'dots',
+  challenges: [{ id: 'c1', evalMode: 'read_frequency', instruction: 'Which value appears most often?', targetAnswer: 3 }],
+};
+
+const dpCmpClean = {
+  title: 'Compare', description: 'Compare two plots.', range: [0, 10], dataPoints: [1, 2, 3], secondaryDataPoints: [4, 5, 6], primaryLabel: 'A', secondaryLabel: 'B', parallel: true, showStatistics: true, editable: false, stackStyle: 'dots',
+  challenges: [{ id: 'c1', evalMode: 'compare_datasets', instruction: 'Which set has the higher center?', comparisonAnswer: 'Set B has the higher center.' }],
+};
+
+describe('dot-plot oracle', () => {
+  it('passes clean compute_stats data', () => {
+    expect(dotPlotOracle.verify(dpStatsClean, dpStatsCtx).violations).toEqual([]);
+  });
+  it('passes clean read_frequency data', () => {
+    expect(dotPlotOracle.verify(dpFreqClean, dpFreqCtx).violations).toEqual([]);
+  });
+  it('passes clean compare_datasets data', () => {
+    expect(dotPlotOracle.verify(dpCmpClean, dpCmpCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — median key ≠ the dataset median (independence)', () => {
+    const data = JSON.parse(JSON.stringify(dpStatsClean));
+    data.challenges[0].targetAnswer = 5; // true median is 4.5
+    const v = dotPlotOracle.verify(data, dpStatsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — a multi-modal dataset makes a single "mode" ambiguous', () => {
+    const data = {
+      title: 'Mode', description: 'Find the mode.', range: [0, 10], dataPoints: [2, 2, 3, 3, 4], showStatistics: true, editable: false, stackStyle: 'dots',
+      challenges: [{ id: 'c1', evalMode: 'compute_stats', instruction: 'What is the mode?', targetStat: 'mode', targetAnswer: 2 }],
+    };
+    const v = dotPlotOracle.verify(data, dpStatsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && /multi-modal/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — read_frequency answer is not the most frequent value', () => {
+    const data = JSON.parse(JSON.stringify(dpFreqClean));
+    data.challenges[0].targetAnswer = 2; // freq 2, but 3 (freq 3) is the most frequent
+    const v = dotPlotOracle.verify(data, dpFreqCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1' && /most frequent/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — read_frequency most-frequent tie (ambiguous)', () => {
+    const data = {
+      title: 'F', description: 'Read.', range: [0, 10], dataPoints: [1, 1, 2, 2, 3], showStatistics: false, editable: false, stackStyle: 'dots',
+      challenges: [{ id: 'c1', evalMode: 'read_frequency', instruction: 'Which value appears most often?', targetAnswer: 1 }],
+    };
+    const v = dotPlotOracle.verify(data, dpFreqCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && /tie for most frequent/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = dotPlotOracle.verify(dpStatsClean, dpFreqCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — a data point off the plotted axis', () => {
+    const data = JSON.parse(JSON.stringify(dpStatsClean));
+    data.dataPoints = [2, 3, 3, 4, 5, 5, 5, 15]; // 15 is outside [0, 10]
+    const v = dotPlotOracle.verify(data, dpStatsCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'dataPoints')).toBe(true);
+  });
+
+  it('flags answer-leak — the instruction states the median answer', () => {
+    const data = JSON.parse(JSON.stringify(dpStatsClean));
+    data.challenges[0].instruction = 'The median is 4.5 — confirm it.';
+    const v = dotPlotOracle.verify(data, dpStatsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags schema — compare_datasets with no second dataset', () => {
+    const data = JSON.parse(JSON.stringify(dpCmpClean));
+    delete data.secondaryDataPoints;
+    const v = dotPlotOracle.verify(data, dpCmpCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags clustering — a session with duplicated challenges', () => {
+    const data = {
+      title: 'x', description: 'y', range: [0, 10], dataPoints: [2, 3, 3, 4, 5, 5, 5, 6], showStatistics: true, editable: false, stackStyle: 'dots',
+      challenges: [1, 2, 3].map((i) => ({ id: `c${i}`, evalMode: 'compute_stats', instruction: 'Median?', targetStat: 'median', targetAnswer: 4.5 })),
+    };
+    const v = dotPlotOracle.verify(data, dpStatsCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// distribution-explorer (MCQ-contract oracle; semantic probability = honest gap)
+// ---------------------------------------------------------------------------
+
+const deIdCtx = { componentId: 'distribution-explorer', evalMode: 'identify', topic: 'Distribution families', gradeLevel: 'college' };
+const deCompCtx = { componentId: 'distribution-explorer', evalMode: 'compute_basic', topic: 'Probability', gradeLevel: 'college' };
+const deShapeCtx = { componentId: 'distribution-explorer', evalMode: 'compute_advanced', topic: 'Distribution shape', gradeLevel: 'college' };
+
+const deBase = { title: 'Distributions', subject: 'Probability', initial: { family: 'poisson', parameters: {} }, lessonContext: 'Explore distributions.' };
+
+const deIdClean = {
+  ...deBase, evalMode: 'identify',
+  challenges: [
+    { id: 'i1', type: 'identify', prompt: 'Counts of rare events per day. Which family fits?', rationale: 'Counts of rare events follow a Poisson.', correctFamily: 'poisson', distractors: ['binomial', 'exponential'] },
+    { id: 'i2', type: 'identify', prompt: 'Successes in a fixed number of trials. Which family?', rationale: 'Fixed trials with successes is Binomial.', correctFamily: 'binomial', distractors: ['poisson', 'exponential'] },
+  ],
+};
+
+const deCompClean = {
+  ...deBase, evalMode: 'compute_basic',
+  challenges: [
+    { id: 'c1', type: 'compute', prompt: 'Find P(no claims tomorrow).', scenario: 'Claims arrive at rate lambda per day.', rationale: 'Use the Poisson PMF at 0.', correctValue: 0.0498, distractors: [0.1494, 0.0025, 0.9502], unit: '', decimals: 4 },
+    { id: 'c2', type: 'compute', prompt: 'Find the expected value.', scenario: 'A binomial experiment with several trials.', rationale: 'E[X] = np.', correctValue: 3, distractors: [7, 2.1, 0.35], unit: '', decimals: 2 },
+  ],
+};
+
+const deShapeClean = {
+  ...deBase, evalMode: 'compute_advanced',
+  challenges: [
+    { id: 's1', type: 'predict_shape', prompt: 'What shape does this waiting-time distribution have?', rationale: 'Exponential is right-skewed.', acceptableAnswers: ['right-skewed', 'skewed right'], distractors: ['symmetric', 'left-skewed', 'uniform'] },
+    { id: 's2', type: 'predict_shape', prompt: 'What shape does a fair coin-count distribution take?', rationale: 'A fair binomial is symmetric.', acceptableAnswers: ['symmetric', 'bell-shaped'], distractors: ['right-skewed', 'left-skewed', 'uniform'] },
+  ],
+};
+
+describe('distribution-explorer oracle', () => {
+  it('passes clean identify data', () => {
+    expect(distributionExplorerOracle.verify(deIdClean, deIdCtx).violations).toEqual([]);
+  });
+  it('passes clean compute data', () => {
+    expect(distributionExplorerOracle.verify(deCompClean, deCompCtx).violations).toEqual([]);
+  });
+  it('passes clean predict_shape data', () => {
+    expect(distributionExplorerOracle.verify(deShapeClean, deShapeCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — a compute distractor equals the correct value (ambiguous MCQ)', () => {
+    const data = JSON.parse(JSON.stringify(deCompClean));
+    data.challenges[0].distractors[0] = 0.0498; // equals correctValue
+    const v = distributionExplorerOracle.verify(data, deCompCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1' && /two correct options/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — identify correctFamily is also a distractor', () => {
+    const data = JSON.parse(JSON.stringify(deIdClean));
+    data.challenges[0].distractors = ['poisson', 'exponential']; // correctFamily is poisson
+    const v = distributionExplorerOracle.verify(data, deIdCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'i1' && /appears twice/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — a predict_shape distractor matches an acceptable answer', () => {
+    const data = JSON.parse(JSON.stringify(deShapeClean));
+    data.challenges[0].distractors[0] = 'skewed right'; // matches acceptableAnswers
+    const v = distributionExplorerOracle.verify(data, deShapeCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /actually correct/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — content authored for a different evalMode', () => {
+    const v = distributionExplorerOracle.verify(deIdClean, deCompCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'evalMode')).toBe(true);
+  });
+
+  it('flags answer-leak — the prompt states the compute answer value', () => {
+    const data = JSON.parse(JSON.stringify(deCompClean));
+    data.challenges[0].prompt = 'Find P(no claims) — it works out to 0.0498.';
+    const v = distributionExplorerOracle.verify(data, deCompCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags answer-leak — the identify prompt names the correct family', () => {
+    const data = JSON.parse(JSON.stringify(deIdClean));
+    data.challenges[0].prompt = 'This is a poisson process. Which family fits?';
+    const v = distributionExplorerOracle.verify(data, deIdCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'i1')).toBe(true);
+  });
+
+  it('flags clustering — duplicated challenges', () => {
+    const data = {
+      ...deBase, evalMode: 'identify',
+      challenges: [
+        { id: 'i1', type: 'identify', prompt: 'Counts of rare events. Which family?', rationale: 'r', correctFamily: 'poisson', distractors: ['binomial', 'exponential'] },
+        { id: 'i2', type: 'identify', prompt: 'Counts of rare events. Which family?', rationale: 'r', correctFamily: 'poisson', distractors: ['binomial', 'exponential'] },
+      ],
+    };
+    const v = distributionExplorerOracle.verify(data, deIdCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — a single-challenge (demo) session', () => {
+    const data = { ...deIdClean, challenges: [deIdClean.challenges[0]] };
+    const v = distributionExplorerOracle.verify(data, deIdCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+
+  it('reports guided_exploration as answer-key-free but counted (no graded answer)', () => {
+    const data = {
+      ...deBase, evalMode: 'explore',
+      challenges: [
+        { id: 'g1', type: 'guided_exploration', prompt: 'Slide n up — what happens to the peak?', rationale: 'Bigger n shifts the peak right.' },
+        { id: 'g2', type: 'guided_exploration', prompt: 'Slide p down — what happens to the spread?', rationale: 'Smaller p skews it right.' },
+      ],
+    };
+    const r = distributionExplorerOracle.verify(data, { ...deIdCtx, evalMode: 'explore' });
+    expect(r.violations).toEqual([]);
+    expect(r.checkedChallenges).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// function-sketch
+// ---------------------------------------------------------------------------
+
+const fsClassCtx = { componentId: 'function-sketch', evalMode: 'classify-shape', topic: 'Function families', gradeLevel: 'algebra 2' };
+const fsFeatCtx = { componentId: 'function-sketch', evalMode: 'identify-features', topic: 'Key features', gradeLevel: 'algebra 2' };
+const fsCmpCtx = { componentId: 'function-sketch', evalMode: 'compare-functions', topic: 'Comparing functions', gradeLevel: 'algebra 2' };
+
+const PARABOLA = [{ x: -3, y: 9 }, { x: -2, y: 4 }, { x: -1, y: 1 }, { x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 4 }, { x: 3, y: 9 }];
+const LINE = [{ x: -3, y: -3 }, { x: -2, y: -2 }, { x: -1, y: -1 }, { x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }];
+const AXES = { xMin: -5, xMax: 5, yMin: -5, yMax: 25 };
+
+const fsClassClean = {
+  title: 'Classify', context: 'Name each function family.',
+  challenges: [
+    { id: 'c1', type: 'classify-shape', instruction: 'What family is this curve?', ...AXES, xLabel: 'x', yLabel: 'y', classifyCurve: PARABOLA, correctType: 'quadratic', options: ['linear', 'quadratic', 'exponential', 'periodic'] },
+    { id: 'c2', type: 'classify-shape', instruction: 'What family is this curve?', ...AXES, xLabel: 'x', yLabel: 'y', classifyCurve: LINE, correctType: 'linear', options: ['linear', 'quadratic', 'exponential', 'periodic'] },
+    { id: 'c3', type: 'classify-shape', instruction: 'Name this function family.', ...AXES, xLabel: 'x', yLabel: 'y', classifyCurve: PARABOLA, correctType: 'exponential', options: ['linear', 'quadratic', 'exponential', 'periodic'] },
+  ],
+};
+
+const fsFeatClean = {
+  title: 'Features', context: 'Find the key features.',
+  challenges: [
+    { id: 'f1', type: 'identify-features', instruction: 'Mark the vertex and y-intercept.', ...AXES, xLabel: 'x', yLabel: 'y', referenceCurve: PARABOLA, features: [{ type: 'minimum', x: 0, y: 0, label: 'Vertex', tolerance: 0.5 }, { type: 'y-intercept', x: 0, y: 0, label: 'Y-int', tolerance: 0.5 }] },
+    { id: 'f2', type: 'identify-features', instruction: 'Mark the root of the line.', ...AXES, xLabel: 'x', yLabel: 'y', referenceCurve: LINE, features: [{ type: 'root', x: 0, y: 0, label: 'Root', tolerance: 0.5 }] },
+    { id: 'f3', type: 'identify-features', instruction: 'Mark the maximum on the parabola arm.', ...AXES, xLabel: 'x', yLabel: 'y', referenceCurve: PARABOLA, features: [{ type: 'maximum', x: 3, y: 9, label: 'Max', tolerance: 0.5 }] },
+  ],
+};
+
+const fsCmpClean = {
+  title: 'Compare', context: 'Which curve fits?',
+  challenges: [
+    { id: 'p1', type: 'compare-functions', instruction: 'Which curve grows faster?', ...AXES, xLabel: 'x', yLabel: 'y', curveA: LINE, curveB: PARABOLA, labelA: 'A', labelB: 'B', question: 'Which grows faster?', correctCurve: 'B' },
+    { id: 'p2', type: 'compare-functions', instruction: 'Which curve is linear?', ...AXES, xLabel: 'x', yLabel: 'y', curveA: LINE, curveB: PARABOLA, labelA: 'A', labelB: 'B', question: 'Which is linear?', correctCurve: 'A' },
+    { id: 'p3', type: 'compare-functions', instruction: 'Which curve has a minimum?', ...AXES, xLabel: 'x', yLabel: 'y', curveA: LINE, curveB: PARABOLA, labelA: 'A', labelB: 'B', question: 'Which has a minimum?', correctCurve: 'B' },
+  ],
+};
+
+describe('function-sketch oracle', () => {
+  it('passes clean classify-shape data', () => {
+    expect(functionSketchOracle.verify(fsClassClean, fsClassCtx).violations).toEqual([]);
+  });
+  it('passes clean identify-features data', () => {
+    expect(functionSketchOracle.verify(fsFeatClean, fsFeatCtx).violations).toEqual([]);
+  });
+  it('passes clean compare-functions data', () => {
+    expect(functionSketchOracle.verify(fsCmpClean, fsCmpCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — a feature that does not lie on the reference curve (unreachable)', () => {
+    const data = JSON.parse(JSON.stringify(fsFeatClean));
+    data.challenges[0].features[0] = { type: 'minimum', x: 4, y: 20, label: 'Vertex', tolerance: 0.5 }; // (4,20) is off the parabola
+    const v = functionSketchOracle.verify(data, fsFeatCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'f1' && /does not lie on the reference curve/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — a feature outside the plotted axes (off-canvas)', () => {
+    const data = JSON.parse(JSON.stringify(fsFeatClean));
+    data.challenges[0].features[0] = { type: 'minimum', x: 99, y: 0, label: 'Vertex', tolerance: 0.5 };
+    const v = functionSketchOracle.verify(data, fsFeatCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'f1' && /off-canvas/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — classify correctType not among the options', () => {
+    const data = JSON.parse(JSON.stringify(fsClassClean));
+    data.challenges[0].correctType = 'logarithmic'; // not in options
+    const v = functionSketchOracle.verify(data, fsClassCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1' && /unselectable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — compare correctCurve is neither A nor B', () => {
+    const data = JSON.parse(JSON.stringify(fsCmpClean));
+    data.challenges[0].correctCurve = 'C';
+    const v = functionSketchOracle.verify(data, fsCmpCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'p1')).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = functionSketchOracle.verify(fsClassClean, fsFeatCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — the classify instruction names the correct shape', () => {
+    const data = JSON.parse(JSON.stringify(fsClassClean));
+    data.challenges[0].instruction = 'This is a quadratic — pick its family.';
+    const v = functionSketchOracle.verify(data, fsClassCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags clustering — every classify answer is the same family', () => {
+    const data = {
+      title: 'x', context: 'y',
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `c${i}`, type: 'classify-shape', instruction: `Classify curve ${i}.`, ...AXES, xLabel: 'x', yLabel: 'y', classifyCurve: PARABOLA, correctType: 'quadratic', options: ['linear', 'quadratic', 'exponential', 'periodic'] })),
+    };
+    const v = functionSketchOracle.verify(data, fsClassCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — sketch-match keyFeature with non-positive weight', () => {
+    const data = {
+      title: 'x', context: 'y',
+      challenges: [
+        { id: 's1', type: 'sketch-match', instruction: 'Sketch it.', ...AXES, xLabel: 'x', yLabel: 'y', revealCurve: PARABOLA, keyFeatures: [{ type: 'zero', x: 0, y: 0, tolerance: 0.5, weight: 0, description: 'root' }] },
+        { id: 's2', type: 'sketch-match', instruction: 'Sketch another.', ...AXES, xLabel: 'x', yLabel: 'y', revealCurve: LINE, keyFeatures: [{ type: 'zero', x: 0, y: 0, tolerance: 0.5, weight: 1, description: 'root' }] },
+        { id: 's3', type: 'sketch-match', instruction: 'Sketch a third.', ...AXES, xLabel: 'x', yLabel: 'y', revealCurve: PARABOLA, keyFeatures: [{ type: 'peak', x: 3, y: 9, tolerance: 0.5, weight: 1, description: 'arm' }] },
+      ],
+    };
+    const v = functionSketchOracle.verify(data, { ...fsFeatCtx, evalMode: 'sketch-match' }).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 's1' && /weight/.test(x.detail))).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...fsClassClean, challenges: [fsClassClean.challenges[0]] };
+    const v = functionSketchOracle.verify(data, fsClassCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
   });
 });
