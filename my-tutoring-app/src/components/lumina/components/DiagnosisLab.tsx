@@ -24,6 +24,7 @@ import {
   classifyEvidenceTier,
   type MisconceptionResult,
 } from '../evaluation/diagnosis/types';
+import { CATALOGS_BY_DOMAIN } from '../service/manifest/catalog';
 
 interface RunState {
   loading: boolean;
@@ -157,7 +158,12 @@ const VerdictBlock: React.FC<{ scenario: DiagnosisScenario; state?: RunState }> 
   );
 };
 
-const DiagnosisLab: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+interface DiagnosisLabProps {
+  onBack: () => void;
+  studentId?: string | number | null;
+}
+
+const DiagnosisLab: React.FC<DiagnosisLabProps> = ({ onBack, studentId }) => {
   const [runs, setRuns] = useState<Record<string, RunState>>({});
   const [busy, setBusy] = useState(false);
 
@@ -218,6 +224,22 @@ const DiagnosisLab: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return { done, matched, total: DIAGNOSIS_SCENARIOS.length };
   }, [runs]);
 
+  const enabledPrimitives = useMemo(
+    () => Object.entries(CATALOGS_BY_DOMAIN).flatMap(([domain, catalog]) =>
+      catalog
+        .filter((entry) => entry.misconceptionScope)
+        .map((entry) => ({
+          id: entry.id,
+          domain,
+          scope: entry.misconceptionScope!,
+          evalModes: entry.evalModes?.map((mode) => mode.evalMode) ?? [],
+        })),
+    ),
+    [],
+  );
+
+  const firestoreRoot = `students/${studentId ?? '{authenticated-student-id}'}/misconceptions`;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
@@ -251,6 +273,54 @@ const DiagnosisLab: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </p>
           )}
         </div>
+      </div>
+
+      {/* Live wiring inventory. This deliberately describes shipped behavior,
+          including drift from the amended PRD, so the bench is operational. */}
+      <div className="grid lg:grid-cols-[1.1fr_1.9fr] gap-4 mb-6">
+        <section className="bg-slate-900/50 border border-cyan-400/20 rounded-xl p-4">
+          <div className="text-[11px] uppercase tracking-widest text-cyan-300 mb-2">
+            Live Firestore destination
+          </div>
+          <code className="block text-sm text-slate-100 break-all bg-black/20 rounded-lg p-3 border border-white/5">
+            {firestoreRoot}/{'{primitiveType | primitiveType::skillId}'}
+          </code>
+          <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+            Student identity comes from the authenticated session. Primitive-scoped entries use the component ID;
+            skill-scoped entries append the canonical skill ID.
+          </p>
+          <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-500/5 p-3 text-xs text-emerald-200/90">
+            Declared-scope identity is active. Subskill remains provenance only and cannot authorize delivery or resolution.
+          </div>
+        </section>
+
+        <section className="bg-slate-900/50 border border-white/10 rounded-xl p-4">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-slate-400">
+                Capture-enabled primitives
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Derived live from catalog declarations.</p>
+            </div>
+            <LuminaBadge accent="emerald">{enabledPrimitives.length} enabled</LuminaBadge>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {enabledPrimitives.map((primitive) => (
+              <div key={primitive.id} className="rounded-lg border border-white/5 bg-white/[0.025] p-3 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-sm text-slate-100 truncate">{primitive.id}</code>
+                  <LuminaBadge accent={primitive.scope === 'primitive' ? 'cyan' : 'indigo'}>
+                    {primitive.scope}
+                  </LuminaBadge>
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">{primitive.domain}</div>
+                <div className="text-xs text-slate-400 mt-2 truncate" title={primitive.evalModes.join(', ')}>
+                  {primitive.evalModes.length > 0 ? primitive.evalModes.join(' · ') : 'No catalog eval modes declared'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Scenario cards */}

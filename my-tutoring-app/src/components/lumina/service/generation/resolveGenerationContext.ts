@@ -92,6 +92,11 @@ export function resolveGenerationContext(
     targetEvalMode: config.targetEvalMode as string | undefined,
     // Axis 3 — normalized once, here.
     supportTier: normalizeSupportTier(config.difficulty),
+    // Private student-model signal stamped per objective by the manifest flatten.
+    remediationFocus:
+      typeof config.remediationFocus === 'string' && config.remediationFocus.trim()
+        ? config.remediationFocus.trim()
+        : undefined,
     raw: config,
   };
 }

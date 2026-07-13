@@ -146,6 +146,9 @@ class InMemoryFirestoreService:
         # students/{sid}/profile/summary — L2 lifetime totals
         self._profile_summary: Dict[int, Dict[str, Any]] = {}
 
+        # students/{sid}/misconceptions/{subskill_id}: one slot per subskill.
+        self._misconceptions: Dict[int, Dict[str, Dict[str, Any]]] = defaultdict(dict)
+
         # students/{sid}/dailySessionPlans/{YYYY-MM-DD}
         self._session_plans: Dict[int, Dict[str, Dict[str, Any]]] = defaultdict(dict)
 
@@ -360,6 +363,69 @@ class InMemoryFirestoreService:
     # ==================================================================
     # STUDENT ABILITY (θ/σ per skill)
     # ==================================================================
+
+    async def add_or_update_misconception(
+        self,
+        student_id: int,
+        primitive_type: str,
+        scope: str,
+        misconception_text: str,
+        source_attempt_id: str,
+        subskill_id: Optional[str] = None,
+        skill_id: Optional[str] = None,
+        confidence: Optional[str] = None,
+        evidence_tier: Optional[str] = None,
+        firebase_uid: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """In-memory mirror of the Firestore one-slot misconception store."""
+        self._write_count += 1
+        self._ensure_student(student_id)
+        timestamp = (self.virtual_now or datetime.now(timezone.utc)).isoformat()
+        key = primitive_type if scope == "primitive" else f"{primitive_type}::{skill_id}"
+        existing = self._misconceptions[student_id].get(key, {})
+        doc = {
+            "student_id": student_id,
+            "primitive_type": primitive_type,
+            "scope": scope,
+            "skill_id": skill_id if scope == "skill" else None,
+            "subskill_id": subskill_id,
+            "misconception_key": key,
+            "misconception_text": misconception_text,
+            "source_attempt_id": source_attempt_id,
+            "confidence": confidence,
+            "evidence_tier": evidence_tier,
+            "last_detected_at": timestamp,
+            "created_at": existing.get("created_at", timestamp),
+            "status": "active",
+            "resolved_at": None,
+            "firebase_uid": firebase_uid,
+        }
+        self._misconceptions[student_id][key] = doc
+        return copy.deepcopy(doc)
+
+    async def resolve_misconception(
+        self, student_id: int, primitive_type: str, skill_id: Optional[str] = None
+    ) -> bool:
+        self._write_count += 1
+        key = primitive_type if not skill_id else f"{primitive_type}::{skill_id}"
+        doc = self._misconceptions.get(student_id, {}).get(key)
+        if not doc or doc.get("status") != "active":
+            return False
+        doc["status"] = "resolved"
+        doc["resolved_at"] = (
+            self.virtual_now or datetime.now(timezone.utc)
+        ).isoformat()
+        return True
+
+    async def get_active_misconceptions(
+        self, student_id: int, subskill_ids: Optional[List[str]] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        self._read_count += 1
+        return {
+            sid: copy.deepcopy(doc)
+            for sid, doc in self._misconceptions.get(student_id, {}).items()
+            if doc.get("status") == "active"
+        }
 
     async def get_student_ability(
         self, student_id: int, skill_id: str
@@ -1049,6 +1115,7 @@ class InMemoryFirestoreService:
         self._attempts.pop(student_id, None)
         self._daily_rollups.pop(student_id, None)
         self._profile_summary.pop(student_id, None)
+        self._misconceptions.pop(student_id, None)
         self._session_plans.pop(student_id, None)
         # Remove learning paths for this student
         to_remove_lp = [k for k in self._learning_paths if k.startswith(f"{student_id}:")]
@@ -1075,6 +1142,7 @@ class InMemoryFirestoreService:
         self._attempts.clear()
         self._daily_rollups.clear()
         self._profile_summary.clear()
+        self._misconceptions.clear()
         self._session_plans.clear()
         # Keep curriculum graphs — they're test fixtures, not student data
         self.reset_stats()

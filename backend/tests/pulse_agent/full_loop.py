@@ -37,7 +37,7 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.services.calibration_engine import CalibrationEngine
 from app.services.mastery_lifecycle_engine import MasteryLifecycleEngine
@@ -188,6 +188,64 @@ class LoopTimeline:
     @property
     def total_leapfrogs(self) -> int:
         return sum(len(d.leapfrogs) for d in self.days)
+
+
+async def run_misconception_round_trip(
+    fs: InMemoryFirestoreService,
+    submit_remediation: Callable[[float, str], Awaitable[Dict[str, Any]]],
+    *,
+    student_id: int,
+    subskill_id: str,
+) -> Dict[str, Any]:
+    """Permanent headless regression for the misconception state loop.
+
+    Generator fidelity remains `/eval-test`'s job. This Pulse-side journey owns
+    the student-data state machine: repeated scripted wrong work is distilled
+    once, remediation below threshold stays active, a matched score >=80 resolves,
+    and the next generation-context read returns baseline (no active signal).
+    """
+    wrong_scores = [20.0, 30.0, 25.0]
+    await fs.add_or_update_misconception(
+        student_id=student_id,
+        primitive_type="tape-diagram",
+        scope="primitive",
+        subskill_id=subskill_id,
+        misconception_text=(
+            "The student treats the smaller quantity as the difference."
+        ),
+        source_attempt_id="wrong-attempt-3",
+        confidence="high",
+        evidence_tier="structured",
+    )
+    active_after_capture = await fs.get_active_misconceptions(
+        student_id, [subskill_id]
+    )
+
+    distractor_result = await submit_remediation(50.0, subskill_id)
+    active_after_distractor = await fs.get_active_misconceptions(
+        student_id, [subskill_id]
+    )
+
+    strong_result = await submit_remediation(85.0, subskill_id)
+    active_after_strong = await fs.get_active_misconceptions(
+        student_id, [subskill_id]
+    )
+
+    closed = bool(
+        active_after_capture
+        and active_after_distractor
+        and not active_after_strong
+        and strong_result.get("remediation_successful")
+    )
+    return {
+        "status": "CLOSED" if closed else "STUCK_ACTIVE",
+        "wrong_scores": wrong_scores,
+        "active_after_capture": bool(active_after_capture),
+        "active_after_distractor": bool(active_after_distractor),
+        "active_after_strong": bool(active_after_strong),
+        "distractor_result": distractor_result,
+        "strong_result": strong_result,
+    }
 
 
 # ── Runner ───────────────────────────────────────────────────────────────────

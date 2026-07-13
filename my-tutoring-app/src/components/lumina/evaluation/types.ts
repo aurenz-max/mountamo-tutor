@@ -32,6 +32,9 @@ export interface LessonContext {
    *  "curriculum" / "planner" / "diagnostic" = authoritative IDs from the curriculum graph.
    *  "free-form" = no curriculum IDs available — backend should use CurriculumMappingService. */
   idSource?: IdSource;
+  /** Scope-matched remediation identity. Diagnosis text never enters submissions. */
+  remediationForPrimitiveType?: string;
+  remediationForSkillId?: string;
 }
 
 // =============================================================================

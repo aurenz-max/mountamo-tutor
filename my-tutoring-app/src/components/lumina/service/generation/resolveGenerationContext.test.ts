@@ -170,3 +170,17 @@ describe('resolveGenerationContext — scope (axis 1) and raw passthrough', () =
     expect(ctx.raw).toEqual({});
   });
 });
+
+describe('resolveGenerationContext targeted remediation', () => {
+  it('trims and forwards a private remediation focus', () => {
+    expect(resolve(makeItem({ config: { remediationFocus: '  The student confuses the smaller quantity with the difference.  ' } })).remediationFocus)
+      .toBe('The student confuses the smaller quantity with the difference.');
+  });
+
+  it.each([undefined, '', '   ', 42, null])(
+    'leaves remediationFocus undefined for %s',
+    (remediationFocus) => {
+      expect(resolve(makeItem({ config: { remediationFocus } })).remediationFocus).toBeUndefined();
+    },
+  );
+});

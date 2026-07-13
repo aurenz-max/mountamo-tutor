@@ -10,6 +10,7 @@ import type {
 import type { DiagnosisEvidence } from '../diagnosis/types';
 import { useEvaluationContext } from '../contexts/EvaluationContext';
 import { useExhibitContext } from '../../contexts/ExhibitContext';
+import { resolveRemediationIdentity } from '../remediation/remediationTransport';
 
 /**
  * Configuration options for the usePrimitiveEvaluation hook.
@@ -258,8 +259,20 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
         : undefined;
 
     // Use curriculum IDs from context as fallbacks when the component doesn't provide them
-    const resolvedSkillId = skillId || objectiveOwn?.skillId || evaluationContext?.curriculumSkillId;
-    const resolvedSubskillId = subskillId || objectiveOwn?.subskillId || evaluationContext?.curriculumSubskillId;
+    // The structurally joined objective wins for a single-objective component.
+    // Renderer-level props may carry the lesson's first objective on grouped
+    // lessons; letting those win would tag and grade remediation against the
+    // wrong subskill. Cross-objective components have no objectiveOwn and keep
+    // their explicit/problem-level ids or lesson fallback.
+    const resolvedSkillId = objectiveOwn?.skillId || skillId || evaluationContext?.curriculumSkillId;
+    const resolvedSubskillId = objectiveOwn?.subskillId || subskillId || evaluationContext?.curriculumSubskillId;
+    const remediationIdentity = resolveRemediationIdentity(
+      exhibitContext.manifestItems,
+      instanceId,
+      primitiveType,
+      resolvedSkillId,
+      metrics.evalMode ?? ('challengeType' in metrics ? String(metrics.challengeType) : undefined),
+    );
 
     // Determine provenance of the IDs so the backend knows whether to trust them
     // or route to CurriculumMappingService.
@@ -292,6 +305,8 @@ export function usePrimitiveEvaluation<TMetrics extends PrimitiveMetrics>(
       objectiveText,
       curriculumSubject: effectiveSubject,
       idSource,
+      remediationForPrimitiveType: remediationIdentity?.primitiveType,
+      remediationForSkillId: remediationIdentity?.skillId,
     };
 
     const result: PrimitiveEvaluationResult<TMetrics> = {

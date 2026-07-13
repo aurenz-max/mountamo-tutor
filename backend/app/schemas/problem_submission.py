@@ -30,6 +30,10 @@ class LessonContext(BaseModel):
     # "curriculum" / "planner" / "diagnostic" = authoritative IDs from the curriculum graph.
     # "free-form" = no curriculum IDs available — backend should use CurriculumMappingService.
     id_source: Optional[Literal["curriculum", "planner", "diagnostic", "free-form"]] = None
+    # Misconception Loop S6 trace. The authoritative resolution tag also rides
+    # problem.metadata for legacy-shape compatibility; this echo is observability.
+    remediation_for_primitive_type: Optional[str] = None
+    remediation_for_skill_id: Optional[str] = None
 
 
 class ProblemSubmission(BaseModel):

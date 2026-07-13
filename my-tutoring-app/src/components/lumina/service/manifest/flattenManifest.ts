@@ -8,6 +8,19 @@
  */
 
 import { ExhibitManifest, ManifestItem } from "../../types";
+import type { StudentGenerationContext } from "../studentContext/types";
+import { getComponentById } from './catalog';
+
+export function misconceptionMatchesComponent(
+  misconception: NonNullable<StudentGenerationContext['activeMisconceptions']>[number],
+  componentId: string,
+  declaredScope: 'primitive' | 'skill' | undefined,
+  skillId?: string,
+): boolean {
+  return misconception.primitiveType === componentId
+    && misconception.scope === declaredScope
+    && (misconception.scope === 'primitive' || (!!skillId && misconception.skillId === skillId));
+}
 
 /**
  * Convert objective-centric manifest to flat layout array for backward compatibility.
@@ -25,6 +38,7 @@ import { ExhibitManifest, ManifestItem } from "../../types";
 export const flattenManifestToLayout = (
   manifest: ExhibitManifest,
   objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
+  studentContext?: StudentGenerationContext | null,
 ): ManifestItem[] => {
   const layout: ManifestItem[] = [];
 
@@ -36,6 +50,7 @@ export const flattenManifestToLayout = (
   // match (or no objectives passed, e.g. the legacy topic-only path) → keep the
   // curator's values.
   const objectiveById = new Map((objectives ?? []).map(o => [o.id, o]));
+  const activeMisconceptions = studentContext?.activeMisconceptions ?? [];
   const resolveObjective = (block: { objectiveId: string; objectiveText: string; objectiveVerb: string }) => {
     const auth = objectiveById.get(block.objectiveId);
     return {
@@ -69,6 +84,10 @@ export const flattenManifestToLayout = (
     for (const block of manifest.objectiveBlocks) {
       const { objectiveText, objectiveVerb, subskillId, skillId, grade } = resolveObjective(block);
       for (const component of block.components) {
+        const declaredScope = getComponentById(component.componentId)?.misconceptionScope;
+        const matchingMisconception = activeMisconceptions.find(m =>
+          misconceptionMatchesComponent(m, component.componentId, declaredScope, skillId),
+        );
         layout.push({
           componentId: component.componentId,
           instanceId: component.instanceId,
@@ -88,6 +107,18 @@ export const flattenManifestToLayout = (
             skillId,
             // Canonical grade for this objective → ctx.grade at the generator boundary.
             objectiveGrade: grade,
+            // Private per-objective generation signal. Components must never
+            // render this raw diagnosis.
+            ...(matchingMisconception
+              ? {
+                  remediationFocus: matchingMisconception.text,
+                  remediationLabel: matchingMisconception.subskillId || objectiveText,
+                  remediationForPrimitiveType: matchingMisconception.primitiveType,
+                  ...(matchingMisconception.scope === 'skill'
+                    ? { remediationForSkillId: matchingMisconception.skillId }
+                    : {}),
+                }
+              : {}),
             // Belt-and-suspenders: also surface the component's intent INSIDE config
             // (it already rides at top-level item.intent). resolveGenerationContext
             // reads config.intent first, so this makes the documented scopeContext
@@ -133,9 +164,10 @@ export const flattenManifestToLayout = (
 export const enrichManifestWithLayout = (
   manifest: ExhibitManifest,
   objectives?: Array<{ id: string; text: string; verb: string; subskillId?: string; skillId?: string; grade?: string }>,
+  studentContext?: StudentGenerationContext | null,
 ): ExhibitManifest => {
   return {
     ...manifest,
-    layout: flattenManifestToLayout(manifest, objectives)
+    layout: flattenManifestToLayout(manifest, objectives, studentContext)
   };
 };

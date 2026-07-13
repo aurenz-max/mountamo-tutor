@@ -20,6 +20,7 @@
  */
 
 import { authApi } from '@/lib/authApiClient';
+import { getComponentById } from '../../service/manifest/catalog';
 import type { PrimitiveEvaluationResult } from '../types';
 import { classifyEvidenceTier, type MisconceptionResult } from './types';
 
@@ -58,13 +59,22 @@ export async function captureMisconception(
     const evidence = result.diagnosisEvidence;
     if (classifyEvidenceTier(evidence) === 'none') return null;
 
-    // Gate 3: the write needs a real curriculum home.
+    const primitiveType = result.primitiveType as string;
+    const scope = getComponentById(primitiveType)?.misconceptionScope;
+    if (!scope) return null;
+
+    // Skill-scoped diagnoses need a curriculum anchor. Primitive-scoped
+    // diagnoses retain subskill only as nullable provenance.
     const subskillId = opts.subskillId;
-    if (!subskillId || subskillId === 'free-form' || subskillId === 'unknown') return null;
+    const hasAnchor = !!subskillId && subskillId !== 'free-form' && subskillId !== 'unknown';
+    if (scope === 'skill' && !hasAnchor) return null;
 
     // Gate 4: at most one diagnosis per (subskill, session). Latch BEFORE the
     // async work so a double-fired submit can't race two distiller calls.
-    const key = `${opts.sessionId}:${subskillId}`;
+    const identity = scope === 'primitive'
+      ? primitiveType
+      : `${primitiveType}:${result.skillId || subskillId}`;
+    const key = `${opts.sessionId}:${identity}`;
     if (diagnosedKeys.has(key)) return null;
     diagnosedKeys.add(key);
 
@@ -94,13 +104,16 @@ export async function captureMisconception(
 
     await authApi.post('/api/student-profile/misconceptions', {
       subskill_id: subskillId,
+      skill_id: result.skillId,
+      primitive_type: primitiveType,
+      scope,
       misconception_text: diagnosis.misconceptionText,
       confidence: diagnosis.confidence,
       evidence_tier: diagnosis.evidenceTier,
       source_attempt_id: result.attemptId,
     });
     console.log(
-      `[captureMisconception] stored for ${subskillId}:`,
+      `[captureMisconception] stored for ${identity}:`,
       diagnosis.misconceptionText,
     );
     return diagnosis;

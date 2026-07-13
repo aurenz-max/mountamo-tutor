@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ComparisonBuilderData, ComparisonBuilderChallenge } from "../../primitives/visual-primitives/math/ComparisonBuilder";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -466,7 +467,8 @@ export const generateComparisonBuilder = async (
   // prompt tone (a curated blend has no single mode to describe to the LLM).
   const supportTier = normalizeSupportTier(config?.difficulty);
   const tierSection =
-    pinnedType && supportTier ? buildTierPromptSection(pinnedType, supportTier) : '';
+    (pinnedType && supportTier ? buildTierPromptSection(pinnedType, supportTier) : '')
+    + buildRemediationPrompt(ctx.remediationFocus);
 
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);

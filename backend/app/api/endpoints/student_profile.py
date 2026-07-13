@@ -24,7 +24,7 @@ Design rules (CLAUDE.md / project feedback):
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -421,9 +421,21 @@ async def get_generation_context(
         #    resolved node concurrently.
         resolved_subskills = list({m.subskill_id for m in mappings if m})
         lifecycles: Dict[str, Optional[Dict[str, Any]]] = {}
+        active_misconceptions: Dict[str, Dict[str, Any]] = {}
         if resolved_subskills:
-            lifecycles = await firestore.get_mastery_lifecycles_batch(
-                request.student_id, resolved_subskills
+            lifecycles, active_misconceptions = await asyncio.gather(
+                firestore.get_mastery_lifecycles_batch(
+                    request.student_id, resolved_subskills
+                ),
+                firestore.get_active_misconceptions(
+                    request.student_id, resolved_subskills
+                ),
+            )
+        else:
+            # Primitive-scoped diagnoses also apply in explore mode, where no
+            # curriculum objective may resolve. Keep this as one session read.
+            active_misconceptions = await firestore.get_active_misconceptions(
+                request.student_id
             )
 
         async def _state_for(mapping):
@@ -451,10 +463,25 @@ async def get_generation_context(
         states = await asyncio.gather(*[_state_for(m) for m in mappings])
 
         objectives_out = []
-        for obj, state in zip(request.objectives, states):
+        for obj, mapping, state in zip(request.objectives, mappings, states):
             entry = {"objectiveId": obj.id, "objectiveText": obj.text}
             entry.update(state)
             objectives_out.append(entry)
+
+        misconceptions_out = [
+            {
+                "text": item.get("misconception_text"),
+                "detectedAt": item.get("last_detected_at"),
+                "sourceAttemptId": item.get("source_attempt_id"),
+                "primitiveType": item.get("primitive_type"),
+                "scope": item.get("scope"),
+                "skillId": item.get("skill_id"),
+                "subskillId": item.get("subskill_id"),
+                "misconceptionKey": item.get("misconception_key") or key,
+            }
+            for key, item in active_misconceptions.items()
+            if item.get("primitive_type") and item.get("scope")
+        ]
 
         # 3. Factual overall summary — posture guidance lives in the manifest
         #    prompt template, not here.
@@ -487,6 +514,7 @@ async def get_generation_context(
             "overallSummary": " ".join(parts),
             "studentProfile": persona,
             "objectives": objectives_out,
+            "activeMisconceptions": misconceptions_out,
         }
 
     except Exception as e:
@@ -509,7 +537,10 @@ async def get_generation_context(
 
 
 class MisconceptionIn(BaseModel):
-    subskill_id: str
+    primitive_type: str = Field(..., min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$")
+    scope: Literal["primitive", "skill"]
+    subskill_id: Optional[str] = None
+    skill_id: Optional[str] = None
     misconception_text: str = Field(..., min_length=1, max_length=600)
     confidence: Optional[str] = None      # 'high' | 'medium' (distiller echo)
     evidence_tier: Optional[str] = None   # 'judge' | 'structured' (distiller echo)
@@ -532,6 +563,13 @@ async def record_misconception(
     try:
         stored = await firestore.add_or_update_misconception(
             student_id=int(student_id),
+            primitive_type=request.primitive_type,
+            scope=request.scope,
+            skill_id=(
+                request.skill_id or _derive_skill_id(request.subskill_id)
+                if request.scope == "skill" and request.subskill_id
+                else None
+            ),
             subskill_id=request.subskill_id,
             misconception_text=request.misconception_text,
             source_attempt_id=request.source_attempt_id,
@@ -541,7 +579,7 @@ async def record_misconception(
         )
         return {
             "stored": True,
-            "subskillId": stored.get("subskill_id"),
+            "misconceptionKey": stored.get("misconception_key"),
             "status": stored.get("status"),
         }
     except Exception as e:

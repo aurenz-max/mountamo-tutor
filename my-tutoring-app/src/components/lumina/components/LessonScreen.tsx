@@ -18,6 +18,7 @@ import ExhibitCompleteFooter from './ExhibitCompleteFooter';
 import { LessonSummary } from './LessonSummary';
 import { LessonExitConfirmModal } from './LessonExitConfirmModal';
 import { useLessonExitGuard } from '../hooks/useLessonExitGuard';
+import { getRemediationLabels } from '../service/manifest/remediationTrace';
 
 // Bootstraps the lesson-mode AI session when the exhibit mounts.
 // Must be rendered inside LuminaAIProvider + ExhibitProvider.
@@ -95,6 +96,10 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
   // EvaluationProvider's sessionId doesn't churn on every render — downstream
   // attribution/memoization keyed on it would otherwise fragment.
   const sessionId = React.useMemo(() => `exhibit-${Date.now()}`, [exhibit]);
+  const remediationLabels = React.useMemo(
+    () => getRemediationLabels(exhibit),
+    [exhibit],
+  );
 
   return (
     <EvaluationProvider
@@ -117,6 +122,14 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
           <div className="w-full animate-fade-in-up">
             <div className="mb-8 text-center">
               <h2 className="text-5xl font-bold text-white tracking-tight">{exhibit.topic}</h2>
+              {remediationLabels.length > 0 && (
+                <div className="mt-4 inline-flex max-w-3xl items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 backdrop-blur-xl">
+                  <span aria-hidden="true">🎯</span>
+                  <span>
+                    Working on: {remediationLabels.join(' · ')}
+                  </span>
+                </div>
+              )}
             </div>
 
             <ManifestOrderRenderer

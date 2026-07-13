@@ -1560,6 +1560,12 @@ export interface ComponentDefinition {
   supportsEvaluation?: boolean;
   /** IRT eval modes with β priors. When present, enables mode-specific generation. */
   evalModes?: EvalModeDefinition[];
+  /**
+   * Declares that this primitive emits misconception diagnosis evidence and
+   * defines the identity boundary used by the Misconception Loop.
+   * Absence means the primitive is not enabled for misconception capture.
+   */
+  misconceptionScope?: 'primitive' | 'skill';
 }
 
 /**

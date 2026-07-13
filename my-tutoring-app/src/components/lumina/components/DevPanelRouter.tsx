@@ -116,6 +116,10 @@ export const DevPanelRouter: React.FC<DevPanelRouterProps> = ({
     return <AtomRegistry onBack={onBack} onOpenTester={onNavigate} />;
   }
 
+  if (activePanel === 'diagnosis-lab') {
+    return <DiagnosisLab onBack={onBack} studentId={ready ? studentId : null} />;
+  }
+
   if (activePanel === 'practice-mode') {
     return (
       <div className="flex-1 animate-fade-in">

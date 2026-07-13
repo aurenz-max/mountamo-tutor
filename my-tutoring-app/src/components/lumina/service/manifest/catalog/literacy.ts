@@ -113,8 +113,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
 
   // ===== READING: FOUNDATIONAL SKILLS (RF) =====
-  {
-    id: 'phonics-blender',
+    {
+      id: 'phonics-blender',
+      misconceptionScope: 'primitive',
     description: 'Sound-by-sound word building with phoneme tiles. Students tap to hear individual sounds, then blend into words. Supports CVC, CVCE, blends, digraphs, diphthongs, and r-controlled vowels. Audio playback via TTS. AI-generated word images on success. ESSENTIAL for K-2 phonics instruction.',
     constraints: 'Grades K-2 only. Requires phonics/decoding content.',
     evalModes: [

@@ -701,8 +701,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
-  {
-    id: 'tape-diagram',
+    {
+      id: 'tape-diagram',
+      misconceptionScope: 'primitive',
     description: 'Multi-challenge tape-diagram session: students walk through 3-6 distinct word problems of the same eval mode, each with its own bars and (where applicable) word problem. Rectangular bars divided into labeled segments representing part-part-whole and comparison relationships. The single most versatile visual for word problems from elementary through algebra. Perfect for addition/subtraction word problems, comparison problems (more than, less than), multi-step word problems, ratio and proportion, and algebraic equation setup. Supports unknown segments marked with "?" for algebra. ESSENTIAL for word problem solving (grades 1-algebra).',
     constraints: 'Session-level configuration. The generator fans out N parallel sub-generator calls per the selected eval mode, so do NOT supply specific values, bar segments, or word problems from the manifest — they are generated per challenge.',
     evalModes: [
@@ -2105,8 +2106,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     },
     supportsEvaluation: true,
   },
-  {
-    id: 'comparison-builder',
+    {
+      id: 'comparison-builder',
+      misconceptionScope: 'primitive',
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
     constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',
     tutoring: {
@@ -3932,8 +3934,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
     ],
   },
-  {
-    id: 'compare-objects',
+    {
+      id: 'compare-objects',
+      misconceptionScope: 'primitive',
     description: 'Interactive measurement comparison activity where students describe and compare measurable attributes (length, height, weight, capacity) of real-world objects. Supports identifying attributes, direct comparison of two objects, ordering three objects, and measuring with non-standard units (paperclips, blocks). Builds foundational measurement vocabulary and comparative reasoning. ESSENTIAL for K-1 measurement and data (K.MD.1-2).',
     constraints: 'Best for grades K-1. Requires objects with measurable attributes. K: compare 2 objects directly. Grade 1: order 3 objects and use non-standard units.',
     evalModes: [

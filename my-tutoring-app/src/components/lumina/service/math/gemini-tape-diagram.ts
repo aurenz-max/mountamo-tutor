@@ -24,6 +24,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { buildRemediationPrompt } from "../generation/remediationPrompt";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -330,6 +331,27 @@ type TapeDiagramChallengeType =
   | 'solve_comparison'
   | 'multi_step';
 
+type TapeDiagramRemediationMove =
+  | 'force_gap_segment'
+  | 'require_gap_identification'
+  | 'diagnostic_distractor'
+  | 'reversed_ask'
+  | 'explicit_intermediate';
+
+function buildTapeRemediationSection(
+  mode: TapeDiagramChallengeType,
+  remediationFocus?: string,
+): string {
+  if (!remediationFocus?.trim() || mode === 'solve_part_whole') return '';
+  const moves: Record<Exclude<TapeDiagramChallengeType, 'solve_part_whole'>, string> = {
+    represent: 'force_gap_segment',
+    solve_comparison: 'require_gap_identification, diagnostic_distractor, or reversed_ask',
+    multi_step: 'explicit_intermediate',
+  };
+  return buildRemediationPrompt(remediationFocus)
+    + `\n- Set remediationMove to exactly one supported move for this mode: ${moves[mode]}.`;
+}
+
 const DEFAULT_INSTANCE_COUNT = 4; // T3 fallback for any future mode not listed
 const MAX_INSTANCE_COUNT = 5;     // T3 hard max; T4 modes are clamped via COUNT_BY_MODE
 
@@ -355,6 +377,11 @@ function buildRepresentSchema(partCount: number): Schema {
     description: {
       type: Type.STRING,
       description: "Brief educational description of the task"
+    },
+    remediationMove: {
+      type: Type.STRING,
+      enum: ['force_gap_segment'],
+      description: 'Private structural remediation move; omit when no remediation focus is provided.',
     },
   };
   const required = ["title", "wordProblem", "description"];
@@ -419,6 +446,11 @@ const comparisonSchema: Schema = {
       description: "Which value the student must find: 'difference', 'quantity1', or 'quantity2'",
       enum: ["difference", "quantity1", "quantity2"],
     },
+    remediationMove: {
+      type: Type.STRING,
+      enum: ['require_gap_identification', 'diagnostic_distractor', 'reversed_ask'],
+      description: 'Private structural remediation move; omit when no remediation focus is provided.',
+    },
   },
   required: [
     "title", "description", "wordProblem",
@@ -452,6 +484,11 @@ function buildMultiStepSchema(stepCount: number): Schema {
     finalLabel: { type: Type.STRING, description: "Label for the final answer" },
     step1Hint: { type: Type.STRING, description: "Brief hint for finding the first intermediate value (e.g. 'Add the first two parts')" },
     step2Hint: { type: Type.STRING, description: "Brief hint for the next step using the intermediate (e.g. 'Subtract from the total')" },
+    remediationMove: {
+      type: Type.STRING,
+      enum: ['explicit_intermediate'],
+      description: 'Private structural remediation move; omit when no remediation focus is provided.',
+    },
   };
   const required = [
     "title", "description", "wordProblem",
@@ -483,9 +520,11 @@ async function generateRepresentMode(
   gradeLevel: string,
   tier: SupportTier | null = null,
   scopeSection = '',
+  remediationFocus?: string,
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('represent', tier) : null;
-  const tierSection = scopeSection + (tier ? buildTierPromptSection('represent', tier) : '');
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('represent', tier) : '')
+    + buildTapeRemediationSection('represent', remediationFocus);
   // Structural lever: part count 2→3→4 (default 3 when no tier). Clamp to 2-4.
   const partCount = Math.max(2, Math.min(4, shape?.partCount ?? 3));
   const prompt = `
@@ -538,6 +577,7 @@ RULES:
       }],
       comparisonMode: false,
       showBrackets: false,
+      remediationMove: remediationFocus ? 'force_gap_segment' : undefined,
     },
   };
 }
@@ -547,6 +587,7 @@ async function generatePartWholeMode(
   gradeLevel: string,
   tier: SupportTier | null = null,
   scopeSection = '',
+  _remediationFocus?: string,
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('solve_part_whole', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_part_whole', tier) : '');
@@ -638,9 +679,11 @@ async function generateComparisonMode(
   gradeLevel: string,
   tier: SupportTier | null = null,
   scopeSection = '',
+  remediationFocus?: string,
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('solve_comparison', tier) : null;
-  const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_comparison', tier) : '');
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_comparison', tier) : '')
+    + buildTapeRemediationSection('solve_comparison', remediationFocus);
   const prompt = `
 Create a comparison word problem for teaching "${topic}" to ${gradeLevel} students.
 
@@ -679,7 +722,22 @@ RULES:
   // Structural lever: FORCE which value is unknown by tier (don't trust the LLM's
   // pick). difference (easy) → quantity2/find-smaller (med) → quantity1/find-larger
   // (hard). Code-enforced; the diagram assembly below branches on this value.
-  const unknownPart: string = shape?.forcedUnknownPart ?? data.unknownPart;
+  let remediationMove = remediationFocus
+    && ['require_gap_identification', 'diagnostic_distractor', 'reversed_ask'].includes(data.remediationMove)
+      ? data.remediationMove as TapeDiagramRemediationMove
+      : remediationFocus
+        ? 'require_gap_identification'
+        : undefined;
+  if (remediationMove === 'diagnostic_distractor' && q2 === diff) {
+    remediationMove = 'require_gap_identification';
+  }
+  const remediationUnknown = remediationMove === 'require_gap_identification'
+    || remediationMove === 'diagnostic_distractor'
+      ? 'difference'
+      : remediationMove === 'reversed_ask'
+        ? (data.unknownPart === 'quantity1' ? 'quantity1' : 'quantity2')
+        : undefined;
+  const unknownPart: string = remediationUnknown ?? shape?.forcedUnknownPart ?? data.unknownPart;
 
   let bar1Segments: BarSegment[];
   let bar2Segments: BarSegment[];
@@ -721,6 +779,7 @@ RULES:
       ],
       comparisonMode: true,
       showBrackets: true,
+      remediationMove,
       comparisonData: {
         quantity1: q1,
         quantity2: q2,
@@ -737,9 +796,11 @@ async function generateMultiStepMode(
   gradeLevel: string,
   tier: SupportTier | null = null,
   scopeSection = '',
+  remediationFocus?: string,
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('multi_step', tier) : null;
-  const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '');
+  const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '')
+    + buildTapeRemediationSection('multi_step', remediationFocus);
   // Structural lever: solve-step count (2 default, 3 at hard). Drives both the
   // schema (a 3-step chain adds part3 + a second intermediate) and the segment
   // assembly + solveOrder so the render and the array stay in agreement.
@@ -819,6 +880,7 @@ ${stepCount >= 3
       id: 'td-pending',
       challengeType: 'multi_step',
       wordProblem: data.wordProblem,
+      remediationMove: remediationFocus ? 'explicit_intermediate' : undefined,
       bars: [{
         segments,
         totalLabel: `Total = ${total}`,
@@ -841,7 +903,7 @@ ${stepCount >= 3
 
 function subGeneratorFor(
   challengeType: string,
-): (topic: string, gradeLevel: string, tier?: SupportTier | null, scopeSection?: string) => Promise<SubGenResult> {
+): (topic: string, gradeLevel: string, tier?: SupportTier | null, scopeSection?: string, remediationFocus?: string) => Promise<SubGenResult> {
   switch (challengeType) {
     case 'represent':         return generateRepresentMode;
     case 'solve_comparison':  return generateComparisonMode;
@@ -899,7 +961,13 @@ export const generateTapeDiagram = async (
   // converges per-call, not across independent calls).
   const runOne = subGeneratorFor(challengeType);
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, () => runOne(topic, gradeLevel, supportTier, scopeSection)),
+    Array.from({ length: instanceCount }, () => runOne(
+      topic,
+      gradeLevel,
+      supportTier,
+      scopeSection,
+      ctx.remediationFocus,
+    )),
   );
 
   const head = subResults[0];

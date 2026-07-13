@@ -55,6 +55,13 @@ export interface TapeDiagramChallenge {
   wordProblem?: string;
   comparisonMode?: boolean;
   showBrackets?: boolean;
+  /** Private generator trace for structural remediation; never rendered as copy. */
+  remediationMove?:
+    | 'force_gap_segment'
+    | 'require_gap_identification'
+    | 'diagnostic_distractor'
+    | 'reversed_ask'
+    | 'explicit_intermediate';
   comparisonData?: {
     quantity1: number;
     quantity2: number;

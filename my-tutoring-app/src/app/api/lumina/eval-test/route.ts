@@ -46,6 +46,10 @@ export async function GET(request: NextRequest) {
     // resolveGenerationContext normalizes it to ctx.grade; threaded here so
     // grade fidelity is testable in isolation (see /grade-fidelity).
     const grade = searchParams.get('grade') || undefined;
+    // Optional ?remediationFocus= - private Misconception Loop signal normally
+    // stamped per objective by flattenManifestToLayout. This tap lets Phase 2
+    // Probe G exercise the real registry/generator path without a live student.
+    const remediationFocus = searchParams.get('remediationFocus') || undefined;
 
     const component = UNIVERSAL_CATALOG.find((c) => c.id === componentId);
     const modeDefinition = component?.evalModes?.find((m) => m.evalMode === evalMode);
@@ -60,6 +64,7 @@ export async function GET(request: NextRequest) {
         ...(difficulty ? { difficulty } : {}),
         ...(intent ? { intent } : {}),
         ...(grade ? { objectiveGrade: grade } : {}),
+        ...(remediationFocus ? { remediationFocus } : {}),
       },
     };
 

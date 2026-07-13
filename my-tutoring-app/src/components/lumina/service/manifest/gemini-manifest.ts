@@ -494,7 +494,7 @@ Return ONLY valid JSON matching the schema.`;
 
     // Enrich with flattened layout for backward compatibility. Per-objective
     // id/text/Bloom-verb are stamped into each component's config (code-side).
-    const manifest = enrichManifestWithLayout(rawManifest, objectives);
+    const manifest = enrichManifestWithLayout(rawManifest, objectives, studentContext);
 
     const totalComponents = manifest.objectiveBlocks?.reduce(
       (sum, block) => sum + (block.components?.length || 0), 0

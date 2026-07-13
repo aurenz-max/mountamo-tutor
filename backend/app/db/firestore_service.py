@@ -935,9 +935,12 @@ class FirestoreService:
     async def add_or_update_misconception(
         self,
         student_id: int,
-        subskill_id: str,
+        primitive_type: str,
+        scope: str,
         misconception_text: str,
         source_attempt_id: str,
+        subskill_id: Optional[str] = None,
+        skill_id: Optional[str] = None,
         confidence: Optional[str] = None,
         evidence_tier: Optional[str] = None,
         firebase_uid: Optional[str] = None
@@ -950,12 +953,22 @@ class FirestoreService:
         """
         try:
             # Resolve through lineage — always write to canonical ID
-            subskill_id = await self._resolver.resolve(subskill_id)
+            if scope not in ("primitive", "skill"):
+                raise ValueError(f"Invalid misconception scope: {scope}")
+            if subskill_id:
+                subskill_id = await self._resolver.resolve(subskill_id)
+            if scope == "skill" and not skill_id:
+                raise ValueError("skill_id is required for skill-scoped misconceptions")
+            misconception_key = primitive_type if scope == "primitive" else f"{primitive_type}::{skill_id}"
             timestamp = datetime.now(timezone.utc).isoformat()
 
             misconception_data = {
                 "student_id": student_id,
+                "primitive_type": primitive_type,
+                "scope": scope,
+                "skill_id": skill_id if scope == "skill" else None,
                 "subskill_id": subskill_id,
+                "misconception_key": misconception_key,
                 "misconception_text": misconception_text,
                 "source_attempt_id": source_attempt_id,
                 "confidence": confidence,
@@ -968,7 +981,7 @@ class FirestoreService:
 
             await self._ensure_student_document(student_id, firebase_uid)
 
-            doc_ref = self._misconceptions_subcollection(student_id).document(subskill_id)
+            doc_ref = self._misconceptions_subcollection(student_id).document(misconception_key)
             existing_doc = doc_ref.get()
             if existing_doc.exists:
                 existing_data = existing_doc.to_dict()
@@ -980,7 +993,7 @@ class FirestoreService:
             firestore_data = self._prepare_firestore_data(misconception_data)
             doc_ref.set(firestore_data)
 
-            logger.info(f"Stored misconception for student {student_id}, subskill {subskill_id}")
+            logger.info(f"Stored misconception for student {student_id}, key {misconception_key}")
             return firestore_data
 
         except Exception as e:
@@ -990,12 +1003,13 @@ class FirestoreService:
     async def resolve_misconception(
         self,
         student_id: int,
-        subskill_id: str
+        primitive_type: str,
+        skill_id: Optional[str] = None,
     ) -> bool:
         """Flip an active misconception to resolved. Returns False when none active."""
         try:
-            subskill_id = await self._resolver.resolve(subskill_id)
-            doc_ref = self._misconceptions_subcollection(student_id).document(subskill_id)
+            misconception_key = primitive_type if not skill_id else f"{primitive_type}::{skill_id}"
+            doc_ref = self._misconceptions_subcollection(student_id).document(misconception_key)
             doc = doc_ref.get()
 
             if not doc.exists or doc.to_dict().get("status") != "active":
@@ -1005,7 +1019,7 @@ class FirestoreService:
                 "status": "resolved",
                 "resolved_at": datetime.now(timezone.utc).isoformat()
             })
-            logger.info(f"Resolved misconception for student {student_id}, subskill {subskill_id}")
+            logger.info(f"Resolved misconception for student {student_id}, key {misconception_key}")
             return True
 
         except Exception as e:
@@ -1027,12 +1041,7 @@ class FirestoreService:
             query = self._misconceptions_subcollection(student_id).where('status', '==', 'active')
             active = {doc.id: doc.to_dict() for doc in query.stream()}
 
-            if subskill_ids is None:
-                return active
-
-            resolved = await self._resolver.resolve_batch(subskill_ids)
-            wanted = set(resolved.values()) | set(subskill_ids)
-            return {sid: data for sid, data in active.items() if sid in wanted}
+            return active
 
         except Exception as e:
             logger.error(f"Error reading misconceptions from Firestore: {str(e)}")

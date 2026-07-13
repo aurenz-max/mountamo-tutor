@@ -14,6 +14,7 @@ import type {
   CompetencyUpdateSuggestion,
   DemonstratedSkill,
 } from '../types';
+import { buildRemediationProblemMetadata } from '../remediation/remediationTransport';
 
 // =============================================================================
 // Response Types
@@ -169,6 +170,8 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
     primitive_domain?: string;
     primitive_description?: string;
     id_source?: string;
+    remediation_for_primitive_type?: string;
+    remediation_for_skill_id?: string;
   };
   source?: 'lesson' | 'practice';
 } {
@@ -215,6 +218,14 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       primitive_type: result.primitiveType,
       skill_id: resolvedSkillId,
       subskill_id: resolvedSubskillId,
+      ...buildRemediationProblemMetadata(
+        result.lessonContext?.remediationForPrimitiveType
+          ? {
+              primitiveType: result.lessonContext.remediationForPrimitiveType,
+              skillId: result.lessonContext.remediationForSkillId,
+            }
+          : undefined,
+      ),
     },
     skill_id: resolvedSkillId,
     subskill_id: resolvedSubskillId,
@@ -244,6 +255,8 @@ function convertToProblemSubmission(result: PrimitiveEvaluationResult): {
       primitive_domain: primitiveDomain,
       primitive_description: primitiveDescription,
       id_source: idSource || (hasRealIds ? 'curriculum' : 'free-form'),
+      remediation_for_primitive_type: result.lessonContext?.remediationForPrimitiveType,
+      remediation_for_skill_id: result.lessonContext?.remediationForSkillId,
     },
     // Eval source tagging (PRD 6.1): explicit from result, or derived from lessonContext
     source: result.source ?? (result.lessonContext ? 'lesson' : 'practice'),

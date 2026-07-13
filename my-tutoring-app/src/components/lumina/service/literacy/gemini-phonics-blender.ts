@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
 import {
   resolveEvalModeConstraint,
@@ -224,10 +225,15 @@ GRADE 2 GUIDELINES:
   const defaultPatternType = gradeLevelKey === 'K' ? 'cvc' : gradeLevelKey === '1' ? 'blend' : 'r-controlled';
 
   // ── Build prompt ────────────────────────────────────────────────────
+  const phonicsRemediationSection = ctx.remediationFocus
+    ? buildRemediationPrompt(ctx.remediationFocus) + `
+- Use only real, familiar, decodable words - never invented pseudo-words.
+- When contrasting confused sounds or patterns, place each one in separate real words; do not create a fake minimal pair.`
+    : '';
   const challengeTypeSection = buildChallengeTypePromptSection(
     evalConstraint,
     CHALLENGE_TYPE_DOCS,
-  );
+  ) + phonicsRemediationSection;
 
   const generationPrompt = `Create a phonics blending activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
@@ -298,9 +304,20 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
 
     const result = JSON.parse(text) as PhonicsBlenderData;
 
-    // Merge with any config overrides (exclude targetEvalMode from spread)
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
-    void _unused;
+    // Merge only primitive data overrides. Cross-cutting registry signals are
+    // private prompt inputs and must never ride into student-visible data.
+    const {
+      targetEvalMode: _targetEvalMode,
+      remediationFocus: _remediationFocus,
+      objectiveId: _objectiveId,
+      objectiveText: _objectiveText,
+      objectiveVerb: _objectiveVerb,
+      objectiveGrade: _objectiveGrade,
+      intent: _intent,
+      difficulty: _difficulty,
+      ...configRest
+    } = config as PhonicsBlenderConfig & Record<string, unknown>;
+    void [_targetEvalMode, _remediationFocus, _objectiveId, _objectiveText, _objectiveVerb, _objectiveGrade, _intent, _difficulty];
     const finalData: PhonicsBlenderData = {
       ...result,
       ...configRest,

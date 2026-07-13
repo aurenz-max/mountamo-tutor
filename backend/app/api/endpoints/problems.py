@@ -458,7 +458,11 @@ async def submit_problem(
     logger.info(f"🖼️ [SUBMIT_ENDPOINT] Solution image: {'Yes' if submission.solution_image else 'No'} ({len(submission.solution_image) if submission.solution_image else 0} chars)")
 
     # Check if this is a remedial problem
-    remediation_tag = submission.problem.get('metadata', {}).get('remediation_for_subskill_id')
+    remediation_metadata = submission.problem.get('metadata', {})
+    remediation_tag = (
+        remediation_metadata.get('remediation_for_primitive_type')
+        or remediation_metadata.get('remediation_for_subskill_id')
+    )
     if remediation_tag:
         logger.info(f"🎯 [MISCONCEPTION_ENGINE] 🚨 This is a REMEDIAL problem for subskill: {remediation_tag}")
     else:

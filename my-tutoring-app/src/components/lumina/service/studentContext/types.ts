@@ -7,6 +7,18 @@
 
 export type ObjectiveResolutionTier = 'exact' | 'none';
 
+export interface ActiveMisconception {
+  /** Private student-model diagnosis. Prompt input only; never render verbatim. */
+  text: string;
+  detectedAt?: string | null;
+  sourceAttemptId?: string | null;
+  primitiveType: string;
+  scope: 'primitive' | 'skill';
+  skillId?: string | null;
+  subskillId?: string | null;
+  misconceptionKey?: string;
+}
+
 export interface ObjectiveStudentState {
   objectiveId: string;
   objectiveText: string;
@@ -30,6 +42,8 @@ export interface ObjectiveStudentState {
   pCorrect?: number | null;
   /** One prompt-embeddable sentence describing this objective's state */
   summary: string;
+  /** Active remediation signal for generation. Never student-visible copy. */
+  activeMisconception?: ActiveMisconception;
 }
 
 /** Most recent calendar day of activity, from the durable attempt log. */
@@ -71,4 +85,6 @@ export interface StudentGenerationContext {
   /** Voice persona; null/absent when nothing personally useful exists. */
   studentProfile?: StudentPersona | null;
   objectives: ObjectiveStudentState[];
+  /** Session-level inventory; flattening applies exact component/scope joins. */
+  activeMisconceptions?: ActiveMisconception[];
 }

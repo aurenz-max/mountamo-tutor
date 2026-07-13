@@ -388,6 +388,9 @@ class SubmissionService:
 
         primitive_type = problem.get('primitive_type', 'unknown')
         metrics = primitive_response.get('metrics', {})
+        remediation_metadata = problem.get('metadata') or {}
+        remediation_primitive_type = remediation_metadata.get('remediation_for_primitive_type')
+        remediation_skill_id = remediation_metadata.get('remediation_for_skill_id')
 
         # eval_mode drives both IRT calibration and the curriculum-retrieval query below.
         eval_mode = primitive_response.get('eval_mode') or metrics.get('evalMode') or 'default'
@@ -640,6 +643,50 @@ class SubmissionService:
             eval_mode=eval_mode,
             attempt_id=attempt_id,
         )
+
+        # Misconception Loop S6: resolution happens only AFTER the canonical
+        # attempt/competency/IRT/lifecycle fan-out above succeeds. The client tag
+        # must match this submission's resolved subskill, preventing one strong
+        # answer from resolving an unrelated diagnosis. Firestore owns the live
+        # misconception store; the legacy Cosmos path remains standard-only.
+        remediation_successful = False
+        if remediation_primitive_type and frontend_score >= 80:
+            if remediation_primitive_type != primitive_type:
+                logger.warning(
+                    f"[MISCONCEPTION_LOOP] Ignoring mismatched remediation tag "
+                    f"{remediation_primitive_type!r}; submission primitive is {primitive_type!r}"
+                )
+            elif remediation_skill_id and remediation_skill_id != skill_id:
+                logger.warning(
+                    f"[MISCONCEPTION_LOOP] Ignoring out-of-scope remediation skill "
+                    f"{remediation_skill_id!r}; submission resolved to {skill_id!r}"
+                )
+            elif self.firestore_service:
+                try:
+                    remediation_successful = await self.firestore_service.resolve_misconception(
+                        student_id=student_id,
+                        primitive_type=primitive_type,
+                        skill_id=remediation_skill_id,
+                    )
+                    logger.info(
+                        f"[MISCONCEPTION_LOOP] remediation resolution "
+                        f"student={student_id} primitive={primitive_type} skill={remediation_skill_id} "
+                        f"resolved={remediation_successful} score={frontend_score}"
+                    )
+                except Exception as e:
+                    # Resolution is best-effort and must never roll back the
+                    # already-persisted attempt or fail the submission response.
+                    logger.warning(
+                        f"[MISCONCEPTION_LOOP] Resolution failed after submission "
+                        f"for {primitive_type}: {e}"
+                    )
+
+        if remediation_primitive_type:
+            review["metadata"]["remediation_for_primitive_type"] = remediation_primitive_type
+        if remediation_skill_id:
+            review["metadata"]["remediation_for_skill_id"] = remediation_skill_id
+        if remediation_successful:
+            review["metadata"]["remediation_successful"] = True
 
         # Save the review (the attempt was persisted by the competency update above)
         if self.cosmos_db:

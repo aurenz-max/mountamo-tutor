@@ -6,6 +6,7 @@ import type {
 } from "../../primitives/visual-primitives/math/CompareObjects";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -999,7 +1000,9 @@ export const generateCompareObjects = async (
     ? evalConstraint.allowedTypes[0] as ChallengeType
     : undefined;
   const sectionFor = (mode: ChallengeType): string =>
-    scopeSection + (supportTier ? buildTierPromptSection(mode, supportTier) : '');
+    scopeSection
+    + (supportTier ? buildTierPromptSection(mode, supportTier) : '')
+    + buildRemediationPrompt(ctx.remediationFocus);
 
   // ── Run sub-generators for allowed types in parallel ──
   const generators: Promise<CompareObjectsChallenge[]>[] = [];

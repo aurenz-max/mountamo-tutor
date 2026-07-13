@@ -2,8 +2,23 @@
 
 **Point-of-primitive diagnosis → targeted regeneration → verified resolution**
 
-Status: SPEC — approved direction, not yet implemented
+Status: AMENDED 2026-07-12 rev 2 — declared-scope identity approved; the shipped
+subskill-only Phase 1–3 implementation requires alignment (§3 ruling 5, §5)
 Date: 2026-07-05
+
+> **2026-07-12 identity amendment (rev 2 — declared scope):** A misconception is
+> an interaction-specific failure model owned by the primitive that observed it;
+> `primitive_type` is always the hard authorization boundary. But which dimension
+> carries the *concept* varies by primitive. For narrow manipulatives
+> (TapeDiagram, ComparisonBuilder) the interaction model itself is the concept —
+> the misconception applies wherever that primitive is selected, across
+> subskills and in explore mode. For content-generic primitives (KnowledgeCheck,
+> MultipleChoice) the primitive carries zero concept identity and a curriculum
+> anchor is required. Each primitive therefore **declares a misconception scope**
+> in its catalog entry: `'primitive'` (identity = `primitive_type` alone) or
+> `'skill'` (identity = `primitive_type` + canonical `skill_id`). The rev-1
+> composite (subskill_id, primitive_type) is superseded: subskill is provenance,
+> never identity. No cross-primitive transfer occurs in v1 under either scope.
 
 ---
 
@@ -19,7 +34,10 @@ stresses the specific distinction they're confusing.
 > "fewer" means "the smaller number" instead of "the difference." The next lesson
 > on that subskill generates problems that deliberately stress the
 > smaller-number-vs-difference distinction, with a distractor that exposes the
-> misconception. When the student clears one of those problems strongly, the
+> misconception. Whenever the same comparison primitive is selected again —
+> the next lesson on that subskill, an adjacent subskill, or an explore-mode
+> session — it receives the targeted focus. When the student clears one of those
+> primitive-specific remediation problems strongly, the
 > misconception is marked resolved and content returns to normal.
 
 Personalization today is real at *selection* (pure-IRT: θ, Fisher information,
@@ -82,15 +100,31 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
 4. **Misconceptions stay out of the IRT lane.** They change content *emphasis*
    (which distinction is stressed, which distractor appears, what context frames
    the problem) — never β, θ updates, or selection urgency. Pure-IRT ruling holds.
-5. **v1 store is a new Firestore-native store — one free-text slot per subskill,
-   overwritten on re-detection.** *(Amended 2026-07-09.)* The original spec said
-   "reuse the existing store unchanged," but that store
+5. **v1 store is Firestore-native — one free-text slot per misconception
+   identity, overwritten on re-detection. Identity = `primitive_type` + the
+   primitive's declared misconception scope.**
+   *(Amended 2026-07-09 for Firestore; 2026-07-12 rev 2 for declared scope.)*
+   Each primitive declares `misconceptionScope` in its catalog entry:
+   - **`'primitive'`** — the interaction model is itself the concept (narrow
+     manipulatives: the misconception is about how the student reads the
+     manipulative, true across subskills). Identity = `primitive_type` alone;
+     fires wherever that primitive is selected, including explore mode.
+   - **`'skill'`** — the primitive is a content-generic delivery vehicle
+     (KnowledgeCheck, MultipleChoice). Identity =
+     `(primitive_type, canonical skill_id)`; requires a curriculum anchor at
+     delivery. Skill, not subskill: subskills ("compare within 10" vs
+     "within 20") are finer-grained than any real misconception. The source
+     `subskill_id` is stored as provenance (lineage, ribbon label), never as
+     identity.
+   The store ruling itself is unchanged: the legacy store
    (`user_profiles.add_or_update_misconception` / `resolve_misconception`) is
    **Cosmos-only**, and Cosmos is deprecated (ruling 2026-07-08: Firestore is the
    exclusive store; NullCosmos exists only to pass gates). Firestore holds NO
    misconception data today. Phase 1 therefore ports the store's field contract
-   onto Firestore (see S3). No error taxonomy until the loop proves out. Honest
-   abstain: weak evidence writes nothing.
+   onto Firestore (see S3). Primitive type remains the hard boundary under
+   either scope: a TapeDiagram diagnosis cannot target or be resolved by
+   ComparisonBuilder, even when both serve the same subskill. No error taxonomy
+   until the loop proves out. Honest abstain: weak evidence writes nothing.
 6. **Consume at the registry boundary, not the manifest.** The manifest-prompt
    route is how personalization got laundered into a 3-level tier last time.
    `remediationFocus` becomes a typed `GenerationContext` field resolved at the
@@ -103,6 +137,38 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
    with an active misconception gets hard problems WITH the targeted move.
    Rule: `remediationFocus` may pin individual scaffolding levers the tier
    would have withdrawn; it never changes tier, β, or eval mode.
+8. **Primitive ownership is exact; no cross-primitive transfer in v1.** A
+   misconception captured by primitive `P` is offered only to `P`, within `P`'s
+   declared scope: anywhere `P` is selected (primitive-scoped), or when `P` is
+   selected for an objective on the same skill (skill-scoped). Selecting a
+   different primitive for the same objective generates normally. This avoids
+   assuming that an error evidenced through one interaction model is valid or
+   expressible in another. Cross-primitive generalization would require an
+   explicit, future taxonomy and compatibility mapping; free-text similarity is
+   not sufficient authority.
+
+### 3.1 One-to-many semantics
+
+Curriculum remains one-to-many: one subskill may be taught by many primitives,
+and one primitive serves many subskills. Misconception state never collapses
+across the primitive fan-out, and it widens across the content fan-out exactly
+as far as the declared scope allows:
+
+| Active store entry | Manifest selection | Result |
+|---|---|---|
+| `TapeDiagram` (primitive-scoped) | TapeDiagram, any subskill on any skill | Deliver — if the selected eval mode has an affordance (see S5) |
+| `TapeDiagram` (primitive-scoped) | TapeDiagram in explore mode (no subskill) | Deliver — primitive scope needs no curriculum anchor |
+| `TapeDiagram` (primitive-scoped) | ComparisonBuilder, same subskill | Baseline; no signal |
+| `(KnowledgeCheck, skill S)` | KnowledgeCheck, another subskill under skill S | Deliver |
+| `(KnowledgeCheck, skill S)` | KnowledgeCheck, subskill under a different skill | Baseline |
+| `(KnowledgeCheck, skill S)` | KnowledgeCheck in explore mode (no anchor) | Baseline — no anchor, no signal (correct) |
+| `TapeDiagram` + `(KnowledgeCheck, S)` both active | ComparisonBuilder anywhere | Baseline; neither applies |
+| `TapeDiagram` resolved | `(KnowledgeCheck, S)` still active | KnowledgeCheck entry remains active |
+
+The primitive answers **which interaction model produced—and can validly
+retest—the misconception**. The declared scope answers **how far the concept
+travels**: for narrow manipulatives the interaction model *is* the concept; for
+content-generic vehicles the skill is.
 
 ## 4. Architecture — six stations
 
@@ -114,10 +180,10 @@ The payload already carries `metrics` (incl. `evalMode`), `studentWork`,
   S2 shared distiller ──────┐                          │    (registry boundary)
   (frontend, Gemini flash,  │                          │
    schema-constrained,      │ S3 POST misconception    │ S4 generation-context
-   abstains on weak         ├────────► Firestore store ┘    objectives[].
-   evidence)                │          (Phase 1, new)       activeMisconception
+   abstains on weak         ├────────► Firestore store ┘    session block +
+   evidence)                │          (Phase 1, new)       per-objective map
                             │
-  S6 resolution: remediation-tagged submit scores ≥80 → status: resolved
+  S6 resolution: scope-matched same-primitive remediation scores ≥80 → resolved
 ```
 
 ### S1 — Evidence contract (per primitive, data only)
@@ -175,8 +241,10 @@ export interface MisconceptionDiagnosis {
 **Gating (all must hold before the call fires):**
 - `success === false` or `score < 60` (0–100 scale)
 - Evidence tier A or B (tier C never calls)
-- At most one diagnosis per (subskill, session) — the store is one slot per
-  subskill anyway; re-diagnosing every failure is cost without information
+- At most one diagnosis per (misconception identity, session) — i.e. per
+  primitive for primitive-scoped, per (primitive, skill) for skill-scoped; the
+  store is one slot per identity anyway; re-diagnosing every failure is cost
+  without information
 - Fires **after** `submitEvaluation` resolves (fire-and-forget, never blocks
   the XP/engagement round-trip or the challenge-advance flow)
 
@@ -199,6 +267,8 @@ New endpoint: `POST /api/student-profile/misconceptions`
 
 ```json
 {
+  "primitive_type": "tape-diagram",
+  "scope": "primitive",
   "subskill_id": "...",
   "misconception_text": "The student thinks 'fewer' means the smaller number...",
   "confidence": "high",
@@ -206,6 +276,14 @@ New endpoint: `POST /api/student-profile/misconceptions`
   "source_attempt_id": "<attemptId>"
 }
 ```
+
+`scope` comes from the primitive's catalog declaration — the frontend owns the
+catalog, so the backend never grows per-primitive logic (ruling 1); it only
+validates the value. `subskill_id` is provenance and may be null (explore mode).
+For `scope: "skill"` the backend lineage-resolves the subskill and derives the
+canonical `skill_id` from curriculum; a skill-scoped capture with no subskill
+has no anchor and is dropped (fail-soft — matches delivery semantics, where
+skill-scoped entries never fire in explore mode anyway).
 
 Handler is ~15 lines: auth-resolve student → a NEW Firestore-native store method
 (see below). No schema change to the frozen `/api/problems/submit` request. Sent
@@ -215,7 +293,7 @@ Why a separate endpoint instead of riding `/api/problems/submit`: diagnosis is
 async (fires after submit returns) and must not add LLM latency to the XP path;
 and the submit schema stays untouched.
 
-**Store: Firestore-native, new** *(amended 2026-07-09 — see ruling 5).* The legacy
+**Store: Firestore-native, new** *(amended 2026-07-09 and 2026-07-12 — see ruling 5).* The legacy
 `user_profiles.add_or_update_misconception` / `resolve_misconception` /
 `get_active_misconception_for_subskill` are Cosmos-only (`user_profiles.py:399/538/477`);
 Firestore has no misconception data. Phase 1 adds three methods to
@@ -223,17 +301,26 @@ Firestore has no misconception data. Phase 1 adds three methods to
 lineage-resolve the subskill, `datetime.now(timezone.utc).isoformat()` timestamps,
 `_add_migration_metadata`:
 
-- **Collection:** `students/{student_id}/misconceptions/{subskill_id}` — one doc
-  per subskill (doc-id = the resolved subskill_id) gives the required
-  one-slot-per-subskill overwrite semantics for free (a `.set()` overwrites; no
-  array scan like the Cosmos version's `replace_item`). Idempotent by construction.
+- **Collection:** `students/{student_id}/misconceptions/{misconception_key}` — one
+  flat doc per misconception identity. The deterministic key is
+  `${primitiveType}` for primitive-scoped entries and
+  `${primitiveType}::${canonicalSkillId}` for skill-scoped entries;
+  `primitive_type` must be a registered Lumina `ComponentId` (no arbitrary path
+  strings). A `.set()` gives one-slot overwrite semantics for that identity. The
+  flat collection keeps one active read cheap while allowing several primitives
+  to hold distinct misconceptions, and one generic primitive to hold distinct
+  misconceptions across skills. Idempotent by construction.
 - **Field contract** (preserve the legacy `StudentMisconception` shape so a later
-  Cosmos→Firestore backfill is trivial): `subskill_id`, `misconception_text`,
+  Cosmos→Firestore backfill is trivial): `primitive_type`, `scope`, `skill_id`
+  (null for primitive-scoped), `subskill_id` (provenance; nullable),
+  `misconception_key`, `misconception_text`,
   `source_attempt_id`, `last_detected_at`, `status` (`'active'` | `'resolved'`),
   `resolved_at`, plus the new `confidence` and `evidence_tier` echoes.
-- **Methods:** `add_or_update_misconception(student_id, subskill_id, text, source_attempt_id, confidence, evidence_tier)` → `.set()` with `status='active'`;
-  `resolve_misconception(student_id, subskill_id)` → `.update({status:'resolved', resolved_at})`;
-  `get_active_misconceptions(student_id, subskill_ids)` → batch read for S4
+- **Methods:** `add_or_update_misconception(student_id, primitive_type, scope, text, source_attempt_id, confidence, evidence_tier, subskill_id=None)` → derives `skill_id` when skill-scoped, `.set()` with `status='active'`;
+  `resolve_misconception(student_id, primitive_type, skill_id=None)` → `.update({status:'resolved', resolved_at})`;
+  `get_active_misconceptions(student_id)` → ONE read of all active docs for the
+  student (misconception counts per student are small), filtered in code into
+  `{'primitive': {primitive_type: m}, 'skill': {skill_id: {primitive_type: m}}}`
   (single call inside the existing generation-context request — no per-objective
   fan-out; the retrieval matcher's non-concurrency-safety guardrail in §6 holds).
 
@@ -244,29 +331,57 @@ stay untouched for the deprecated standard-problem path (see §6 deferred item).
 
 ### S4 — Exposure (generation-context)
 
-`student_profile.py` per-objective payload gains one optional field, read from
-the existing store during objective-state assembly:
+`student_profile.py` exposes the store at two levels, both fed by the single
+`get_active_misconceptions` read. Generation context runs before the manifest
+chooses components, so it exposes candidates; it does not choose or broadcast
+one misconception:
+
+- **Session-level `activeMisconceptionsByPrimitive`** — all primitive-scoped
+  entries, keyed by `primitive_type`. Lives beside (not inside) the objectives
+  array, so flows with no curriculum anchor — explore mode — receive it too.
+- **Per-objective `activeSkillMisconceptionsByPrimitive`** — skill-scoped
+  entries whose `skill_id` matches the objective's resolved skill.
 
 ```json
 {
-  "objectiveId": "...",
-  "theta": 0.4, "pCorrect": 0.62, "masteryGate": 2,
-  "activeMisconception": {
-    "text": "The student thinks 'fewer' means the smaller number, not the difference",
-    "detectedAt": "2026-07-05T...",
-    "sourceAttemptId": "..."
-  }
+  "activeMisconceptionsByPrimitive": {
+    "tape-diagram": {
+      "text": "The student thinks 'fewer' means the smaller number, not the difference",
+      "scope": "primitive",
+      "detectedAt": "2026-07-05T...",
+      "sourceAttemptId": "..."
+    }
+  },
+  "objectives": [{
+    "objectiveId": "...",
+    "theta": 0.4, "pCorrect": 0.62, "masteryGate": 2,
+    "activeSkillMisconceptionsByPrimitive": {
+      "knowledge-check": { "text": "...", "scope": "skill", "skillId": "..." }
+    }
+  }]
 }
 ```
 
-Null when none active. The `overallSummary` and persona blocks are untouched —
-persona still feeds framing only.
+Empty/absent when none active. The `overallSummary` and persona blocks are
+untouched — persona still feeds framing only. Raw misconception text remains
+out of the manifest prompt.
 
 ### S5 — Consumption (registry boundary, opt-in per generator)
 
-1. `useExhibitSession` already holds the generation-context response per
-   objective. Build `objectiveId → activeMisconception` and pass it into the
-   registry dispatch alongside the existing grade/topic threading.
+1. `useExhibitSession` already holds the generation-context response. After the
+   curator chooses a component, manifest flatten performs the scope-matched
+   join:
+   - **Primitive-scoped:** `component.componentId` equals the entry's
+     `primitive_type` — no objective required, so the join works identically in
+     explore mode.
+   - **Skill-scoped:** `componentId` matches AND the component's objective
+     resolves to the entry's `skill_id`.
+   Where the primitive declares an affordance inventory (point 4), stamping is
+   additionally gated on it: an eval mode marked not-expressible (e.g.
+   tape-diagram `solve_part_whole`) gets NO `remediationFocus` and NO
+   remediation tag — structural abstention, so an irrelevant strong answer can
+   never resolve the misconception. Non-matching components receive no signal
+   and generate byte-identically to baseline.
 2. `resolveGenerationContext` gains an optional `studentSignals` input; it sets
    a new typed field:
 
@@ -324,14 +439,20 @@ remediationFocus?: string;
 
 ### S6 — Resolution (close the loop)
 
-1. When `remediationFocus` is set for a component, the manifest item is tagged;
-   the tag rides `PrimitiveEvaluationResult.lessonContext` and lands in the
-   submit payload as `remediation_for_subskill_id` (the legacy resolve path's
-   exact key).
+1. When the scope-matched join sets `remediationFocus`, the manifest item is
+   tagged; the tag rides `PrimitiveEvaluationResult.lessonContext` and lands in
+   the submit payload as `remediation_for_primitive_type` plus, for skill-scoped
+   entries, `remediation_for_skill_id`. Tags are never inferred merely from
+   sharing the objective — and never set when the affordance gate abstained.
 2. `_handle_lumina_primitive` gains one small branch (the only live-path backend
    change on submit): tag present + score ≥ 80 (0–100 → legacy's ≥8 on 0–10) →
-   `resolve_misconception(subskill_id)`. Resolved misconceptions vanish from S4
-   on the next generation-context fetch; content returns to normal.
+   require the tag to match the submission's actual `primitive_type` (and, for
+   skill-scoped, the submission's resolved skill), then call
+   `resolve_misconception(primitive_type, skill_id?)`. Primitive-scoped
+   resolution clears the entry globally for that primitive — coherent, because
+   demonstrating the distinction in the manipulative anywhere resolves a
+   misconception about the manipulative. Skill-scoped resolution clears only
+   that `(primitive_type, skill_id)` pair; all other entries remain active.
 
 ### Surface (backend-ships-with-surface)
 
@@ -362,7 +483,7 @@ producer without its consumer.
   Tier-C never called the model. `tsc` clean vs baseline. Run summary:
   `my-tutoring-app/qa/diagnosis-lab-phase0-2026-07-09.md`.
 
-### Phase 1 — Capture on the live path ✅ DONE 2026-07-10
+### Phase 1 — Capture on the live path ✅ HISTORICAL 2026-07-10 / ⚠ PRIMITIVE-SCOPE ALIGNMENT OPEN
 - Capture engine: `submitResult` gained an optional 6th arg `diagnosisEvidence`
   (rides `PrimitiveEvaluationResult`); `EvaluationContext.submitEvaluation` calls
   `evaluation/diagnosis/captureMisconception.ts` fire-and-forget AFTER the submit
@@ -380,6 +501,7 @@ producer without its consumer.
   fail-soft) → three Firestore-native `FirestoreService` methods at
   `students/{id}/misconceptions/{subskill_id}` (lineage-resolved doc id,
   one-slot overwrite preserving created_at, resolve flip, batch active read).
+  **Historical subskill-only shape; superseded by the 2026-07-12 amendment.**
 - **Verified 2026-07-10** (`my-tutoring-app/qa/misconception-phase1-2026-07-10.md`):
   store + endpoint exercised against real Firestore (add/overwrite/resolve/
   re-detect/batch-read + 422 validation); real distiller call with the exact
@@ -388,24 +510,90 @@ producer without its consumer.
   the in-browser glue (primitive submit → capture fetch) needs one wrong-session
   check on a pilot primitive.
 
-### Phase 2 — Exposure + consumption
-- S4 field in generation-context; S5 threading (`studentSignals` →
-  `remediationFocus`); prompt-inject in the pilot generators (same 3–4 math gens).
-- Tape-diagram additionally pilots the structural form: `remediationMove` enum
-  in its response schema (affordance table in S5), code-enforced.
-- **Verify:** topic-fidelity-style probe — seed a misconception on student 1004,
-  run `/eval-test`-pattern generation for the pilot generators, assert the output
-  (a) stresses the seeded distinction, (b) includes the diagnostic distractor,
-  (c) leaks nothing in student-visible text, (d) is byte-identical to baseline
-  when no misconception is active.
+**2026-07-12 rev-2 alignment required:** include `primitive_type` and the
+declared `scope` in capture transport; change the latch key to (misconception
+identity, session); migrate the Firestore identity from `subskill_id` to the
+declared-scope key (`primitiveType` or `primitiveType::skillId`). Existing
+subskill-only docs must not be silently broadcast; migration may re-key a doc
+when the source primitive is recoverable from `source_attempt_id` (deriving
+skill from the stored subskill where the primitive is skill-scoped), or
+quarantine/delete ambiguous docs via a dry-run-first script.
 
-### Phase 3 — Resolution + ribbon trace
-- Remediation tag through manifest → lessonContext → submit;
-  `_handle_lumina_primitive` resolve branch; ribbon "Working on:" line.
-- **Verify:** full-loop pulse-agent journey — synthetic student makes the same
-  error 3×, next session generates remediation content, strong performance
-  resolves it, following session generates normal content. This journey is the
-  loop's permanent regression test.
+### Phase 2 — Exposure + consumption ✅ HISTORICAL 2026-07-10 / ⚠ PRIMITIVE-SCOPE ALIGNMENT OPEN
+- S4 historically batch-read the Firestore store beside lifecycle state
+  and exposed optional `activeMisconception` per objective (including lineage
+  alias reads). S5: manifest flatten joins the signal by objective id, the registry
+  boundary resolves typed `remediationFocus`, and the shared prompt block is
+  consumed by TapeDiagram, ComparisonBuilder, CompareObjects, and PhonicsBlender.
+- TapeDiagram pilots schema-constrained `remediationMove`; comparison moves are
+  code-enforced (gap/distractor moves force `unknownPart='difference'`, reversed
+  asks force a missing quantity, and an accidentally-correct smaller-value
+  distractor degrades to gap identification). Part-whole deliberately abstains.
+- **Verified 2026-07-10** (`my-tutoring-app/qa/misconception-phase2-2026-07-10.md`):
+  disposable real-Firestore store→generation-context probe passed and cleaned up;
+  real Gemini `/eval-test` probes passed for all four pilots with zero diagnosis
+  leakage. The flagship tape run produced 4/4 targeted `diagnostic_distractor`
+  comparisons, each asking for the difference with a distinct smaller quantity.
+  Pure contracts: 32/32; backend assembly: 2/2; tsc: 0 touched-file errors.
+
+**2026-07-12 rev-2 alignment required:** replace objective-level
+`activeMisconception` with the session-level primitive-scoped block plus the
+per-objective skill-scoped map; flatten joins per declared scope, gated on the
+affordance inventory. Controls: (negative) a different primitive serving the
+same subskill receives no `remediationFocus`; (negative) the same skill-scoped
+primitive under a different skill receives none; (positive) a primitive-scoped
+entry fires in explore mode with no subskill attached.
+
+### Phase 3 — Resolution + ribbon trace ✅ HISTORICAL 2026-07-10 / ⚠ PRIMITIVE-SCOPE ALIGNMENT OPEN
+- The historical evaluation funnel detects a remediating manifest component
+  centrally and carries only `remediation_for_subskill_id` through lesson context into problem
+  metadata. The private diagnosis never enters the submission payload.
+- `_handle_lumina_primitive` resolves through the Firestore store only after the
+  canonical submission fan-out succeeds, only at score ≥80, and only when the
+  tag matches the submission's resolved subskill. Resolution is fail-soft.
+- LessonScreen shows `Working on: <curriculum subskill description>` from the
+  separately stamped safe label; the trace helper refuses to fall back to raw
+  misconception text.
+- **Verified 2026-07-10** (`my-tutoring-app/qa/misconception-phase3-2026-07-10.md`):
+  permanent in-memory journey verdict `CLOSED` (wrong ×3 → active; distractor
+  answer → still active; matched 85 → resolved; next read → baseline), including
+  fan-out-before-resolve ordering and mismatch protection. The broader 10-day
+  Steady Pulse loop also passed all 8 assertions: 306 items, L2 replay parity
+  MATCH, 10/10 planned days. Ribbon rendering should work but still needs a
+  browser check in an authenticated remediation lesson.
+
+**2026-07-12 rev-2 alignment required:** replace the subskill tag with
+`remediation_for_primitive_type` (+ `remediation_for_skill_id` for skill-scoped
+entries). Resolution requires the tags to match the actual submission; a strong
+result from any other primitive, from outside the declared scope, or from an
+untagged (affordance-abstained) item must leave the misconception active.
+
+### Phase 3A — Declared-scope alignment (next mandatory slice)
+- Catalog: `misconceptionScope: 'primitive' | 'skill'` on primitive catalog
+  entries (beside `tutoring.commonStruggles`). Default for future opt-ins is
+  `'skill'` — the safe scope; loosening to `'primitive'` later is a one-line
+  change, while tightening after primitive-scoped state exists requires a
+  migration.
+- S1/S3: scope + primitive type in capture payload; declared-scope store keys;
+  skill derivation from the canonical subskill; migration script for existing
+  subskill-only docs (dry-run default; ambiguous docs never auto-assigned).
+- S4/S5: session-level + per-objective exposure; scope-matched flatten join;
+  structural affordance gate (no stamp → no tag → no resolve).
+- S6: scope-matched resolution guard.
+- **Open decision (decide at slice start):** do the pilot four (TapeDiagram,
+  ComparisonBuilder, CompareObjects, PhonicsBlender — all narrow manipulatives)
+  declare `'primitive'` immediately (bold; matches the original demo), or
+  `'skill'` first, loosening after the first CLOSED Probe R (the reversible
+  order)? The scope field makes either a one-line change per primitive.
+- **Verify the scope matrix (§3.1):** seed a primitive-scoped TapeDiagram
+  misconception; TapeDiagram is TARGETED on its source subskill AND on an
+  adjacent subskill AND in explore mode; ComparisonBuilder is baseline
+  everywhere; a strong ComparisonBuilder answer stays active; a strong
+  affordance-abstained TapeDiagram answer (part-whole) stays active; a strong
+  targeted TapeDiagram answer resolves; all surfaces return baseline afterward.
+  Seed a skill-scoped entry on a generic primitive and prove it fires on a
+  sibling subskill under the same skill, stays baseline under a different skill
+  and in explore mode, and that resolving one entry leaves others active.
 
 ### Phase 4 — Scale-out
 - Judge-schema misconception field across remaining judge-driven primitives
@@ -430,6 +618,8 @@ because a context field can be delivered and still dropped from the prompt
 family to the personalization layer. Creative pass (main agent): author the
 per-eval-mode affordance inventory from the family's scaffolding levers +
 `tutoring.commonStruggles`; map component state → evidence-packet fields.
+The creative pass also rules on the family's `misconceptionScope` declaration
+(`'skill'` unless the interaction model demonstrably IS the concept).
 Mechanical pass (parallel subagents): `remediationMove` enum in the response
 schema, conditional prompt block, evidence wiring at submit, `misconception`
 field on judge schemas where a judge exists. Ends by invoking the test skill —
@@ -441,8 +631,8 @@ mocks (`/eval-test` + `/topic-fidelity` DNA). Three probes:
 | Probe | Input | Checks | Verdicts | Ship gate |
 |---|---|---|---|---|
 | **D — Distiller honesty** | Golden evidence set: 8–12 scripted packets/family — clear signatures, must-abstain slips, noise, tier-A judge cases | Real flash distill; code checks (one sentence, banned phrases, no answer text) + LLM judge on the four criteria | GENERATIVE / VAGUE / OVERREACH / LEAK | 0 OVERREACH, 0 LEAK; ≥80% GENERATIVE on clear signatures |
-| **G — Generation fidelity** | Canned misconception seeded per eval mode → real generator call with `remediationFocus` | Diagnostic distractor equals the misconception-consistent answer (code-computable for math, e.g. `min(a,b)`); leakage scan of student-visible strings; null run byte-identical to baseline; structural drift guard (IRT lane untouched) | TARGETED / DEAD-FIELD / LEAKY / DRIFTED | All TARGETED per generator × eval mode |
-| **R — Round-trip** | Pulse-agent synthetic student playing a scripted mental model, headless, real pipeline | wrong ×3 → store write; next gen TARGETED; answers distractor → stays active; answers ≥80 → resolved; next gen baseline | CLOSED / NO-CAPTURE / STUCK-ACTIVE / PREMATURE-RESOLVE | CLOSED; runs on every family rollout (permanent regression) |
+| **G — Generation fidelity** | Canned misconception seeded per identity (primitive-scoped or `(primitive, skill)`) + eval mode → real generator call with `remediationFocus` | Scope-matched runs are TARGETED (incl. adjacent-subskill and explore-mode runs for primitive-scoped); sibling primitive on the same subskill is byte-identical baseline; skill-scoped entry under a different skill is baseline; affordance-abstained eval modes are baseline and untagged; diagnostic distractor equals the misconception-consistent answer; leakage scan; structural drift guard (IRT lane untouched) | TARGETED / DEAD-FIELD / CROSS_PRIMITIVE_BLEED / OUT_OF_SCOPE_BLEED / LEAKY / DRIFTED | All matching runs TARGETED; 0 CROSS_PRIMITIVE_BLEED; 0 OUT_OF_SCOPE_BLEED |
+| **R — Round-trip** | Pulse-agent synthetic student playing a scripted mental model, headless, real pipeline | primitive P wrong ×3 → scope-keyed store write; P next gen TARGETED (incl. across subskills for primitive-scoped); primitive Q on same subskill baseline and cannot resolve; out-of-scope or affordance-abstained P items cannot resolve; P distractor stays active; targeted P ≥80 resolves; P next gen baseline | CLOSED / NO-CAPTURE / STUCK-ACTIVE / PREMATURE-RESOLVE / WRONG_PRIMITIVE_RESOLVE / OUT_OF_SCOPE_RESOLVE | CLOSED; runs on every family rollout (permanent regression) |
 
 Phase gates: Phase 0 closes on bench review of the golden set; Phase 1 on
 Probe D; Phase 2 on Probe G; Phase 3 on the first CLOSED Probe R; Phase 4
@@ -454,7 +644,13 @@ of it (diagnosis quality gets a regression baseline like tsc).
 ### Explicitly deferred (do not build yet)
 - Misconception taxonomy / structured error codes — free text until the loop
   proves out.
-- Misconception history (multiple per subskill, trend) — one slot, overwrite.
+- Misconception history (multiple over time for one identity, trend) — one slot
+  per identity, overwrite.
+- Staleness TTL on primitive-scoped entries (`last_detected_at` cutoff) — only
+  if Probe R shows drift.
+- Revisiting the skill-level anchor granularity (subject-level? unit-level?) —
+  skill is the v1 call; change only with evidence from the generic-primitive
+  cohorts.
 - Curator/manifest awareness of remediation state.
 - Deterministic `pCorrect → supportTier` mapping (the "Bloom-tier entry point"
   named in `flattenManifest.ts:20`) — same theme (ability data deciding
@@ -479,8 +675,22 @@ of it (diagnosis quality gets a regression baseline like tsc).
 - **Fire-and-forget means idempotent.** The misconception POST may retry or
   double-fire (unmount auto-submit paths); `add_or_update_misconception` is an
   overwrite, so double-writes are safe — keep it that way.
-- **Session dedup lives frontend-side.** The once-per-(subskill, session) gate
-  is in S2 state; the store's overwrite semantics are the backstop, not the gate.
+- **Session dedup lives frontend-side.** The once-per-(misconception identity,
+  session) gate lives in S2 state; the
+  store's per-identity overwrite semantics are the backstop, not the gate.
+- **Primitive isolation is an authorization boundary; scope is a delivery
+  boundary.** Sharing a subskill or objective never authorizes delivery or
+  resolution across primitive types. Skill-scoped entries additionally never
+  fire outside their skill; affordance-abstained items never carry a
+  remediation tag and so can never resolve. Flatten joins on the actual
+  selected `componentId`; submit resolution checks the actual `primitive_type`
+  (and skill, where scoped). Never infer compatibility from free-text
+  misconception similarity.
+- **Primitive-scope drift.** A primitive-scoped misconception can fire far from
+  where it was captured (different grade, different skill, weeks later). v1
+  mitigations: the structural eval-mode affordance gate and one-slot overwrite
+  (latest diagnosis wins). If Probe R shows stale or off-topic firing, add a
+  `last_detected_at` TTL — deferred, not built now.
 - **Judge schema additions are optional fields.** Gemini schema complexity
   ruling applies (malformed JSON past 6+ types) — `misconception` is one
   optional string on existing judge schemas, not a nested object.

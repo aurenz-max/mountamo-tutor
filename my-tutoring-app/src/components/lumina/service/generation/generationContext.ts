@@ -93,6 +93,14 @@ export interface GenerationContext {
   /** Normalized support tier; undefined when the manifest sends none/unknown. */
   supportTier?: SupportTier;
 
+  // -- Axis 4: targeted remediation (content emphasis only) --
+  /**
+   * Active misconception for this component's objective, if any. Generators may
+   * stress the confused distinction or add a diagnostic distractor, but this
+   * field must never change difficulty, eval mode, scope, or item counts.
+   */
+  remediationFocus?: string;
+
   // ── Escape hatch: still-bespoke per-primitive config ───────
   /**
    * The raw manifest config, for genuinely primitive-specific fields during
