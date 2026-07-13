@@ -21,6 +21,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LetterSoundLinkMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -41,6 +42,8 @@ export interface LetterSoundLinkChallenge {
   keywordImage: string;
   options?: Array<{ letter?: string; sound?: string; isCorrect: boolean }>;
   sharedSoundLetters?: string[];
+  /** Private generator trace; never rendered as student-visible copy. */
+  remediationMove?: 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
 }
 
 export interface LetterSoundLinkData {
@@ -212,6 +215,12 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const [showKeywordHint, setShowKeywordHint] = useState(false);
   // Keywords the student said ALOUD (judge-confirmed) — the culminating production beat
   const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
+  const diagnosisObservationsRef = useRef<Array<{
+    challenge: string;
+    expected: string;
+    observed: string;
+    judgeFeedback?: string;
+  }>>([]);
 
   // Per-mode tracking for evaluation metrics
   const [seeHearResults, setSeeHearResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
@@ -437,6 +446,15 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       const wrongDisplay = currentChallenge.mode === 'hear-see'
         ? `letter "${option.letter || '?'}"`
         : `sound "${option.sound || '?'}"`;
+      diagnosisObservationsRef.current.push({
+        challenge: currentChallenge.mode === 'hear-see'
+          ? `Hear ${currentChallenge.targetSound} and choose its letter.`
+          : `Link letter ${currentChallenge.targetLetter.toUpperCase()} to its ${currentChallenge.mode === 'keyword-match' ? 'keyword' : 'sound'}.`,
+        expected: currentChallenge.mode === 'keyword-match'
+          ? `Choose the keyword ${currentChallenge.keywordWord}.`
+          : `Choose ${currentChallenge.mode === 'hear-see' ? currentChallenge.targetLetter : currentChallenge.targetSound}.`,
+        observed: `Chose ${option.letter || option.sound || '(empty)'}.`,
+      });
       setFeedback('Not quite! Listen again and try the other one.');
       setFeedbackType('error');
 
@@ -531,11 +549,29 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     setSubmittedResult({ score: overallScore });
 
+    const observations = diagnosisObservationsRef.current;
+    const judgeBacked = [...observations].reverse().find(item => item.judgeFeedback);
+    const evidenceSource = judgeBacked || observations[observations.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = overallScore < 60 && evidenceSource
+      ? {
+          challengeSummary: evidenceSource.challenge,
+          expected: evidenceSource.expected,
+          observed: evidenceSource.observed,
+          judgeFeedback: judgeBacked?.judgeFeedback,
+          priorAttempts: observations
+            .filter(item => item !== evidenceSource)
+            .slice(-4)
+            .map(item => ({ challenge: item.challenge, observed: item.observed })),
+        }
+      : undefined;
+
     submitEvaluation(
       overallScore >= 60,
       overallScore,
       metrics,
       { challengeResults, durationMs: elapsedMs, spokenWords: Array.from(spokenWords) },
+      undefined,
+      diagnosisEvidence,
     );
 
     // AI celebration
@@ -594,6 +630,13 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         { silent: true },
       );
     } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      diagnosisObservationsRef.current.push({
+        challenge: `Say the keyword that anchors ${currentChallenge.targetLetter.toUpperCase()} to ${currentChallenge.targetSound}.`,
+        expected: `Say the whole keyword ${target}.`,
+        observed: `Judge heard "${result.verdict.heard}".`,
+        judgeFeedback: result.verdict.misconception
+          || `The spoken-word judge heard "${result.verdict.heard}" instead of the keyword and rated the mismatch high confidence.`,
+      });
       sendText(
         `[SPOKEN_MISS] The student tried to say the keyword "${target}" aloud but it sounded like "${result.verdict.heard}". Gently model it — start with the ${currentChallenge.targetSound} sound, then say the whole word "${target}" — and invite one more try. Warm, never scolding. Two short sentences max.`,
         { silent: true },

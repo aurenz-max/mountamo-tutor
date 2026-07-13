@@ -21,6 +21,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { RhymeStudioMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -49,6 +50,7 @@ interface RhymeChallenge {
   doesRhyme?: boolean;
   options?: RhymeOption[];
   acceptableAnswers?: string[];
+  remediationMove?: 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
 }
 
 export interface RhymeStudioData {
@@ -166,6 +168,9 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   // Rhyming words the student said ALOUD (judge-confirmed) — the culminating
   // production beat in production mode. Tracked by challenge id, cumulative.
   const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
+  const diagnosisObservationsRef = useRef<Array<{
+    challenge: string; expected: string; observed: string; judgeFeedback?: string;
+  }>>([]);
 
   // ── Timing ────────────────────────────────────────────────────────
   const startTimeRef = useRef(Date.now());
@@ -404,11 +409,24 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     };
 
     setSubmittedScore(overallPct);
+    const observations = diagnosisObservationsRef.current;
+    const judgeBacked = [...observations].reverse().find(item => item.judgeFeedback);
+    const source = judgeBacked || observations[observations.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && source ? {
+      challengeSummary: source.challenge,
+      expected: source.expected,
+      observed: source.observed,
+      judgeFeedback: judgeBacked?.judgeFeedback,
+      priorAttempts: observations.filter(item => item !== source).slice(-4)
+        .map(item => ({ challenge: item.challenge, observed: item.observed })),
+    } : undefined;
     submitEvaluation(
       overallPct >= 60,
       overallPct,
       metrics,
       { durationMs: elapsed, challengeResults, spokenWords: Array.from(spokenWords) },
+      undefined,
+      diagnosisEvidence,
     );
 
     // AI celebration
@@ -457,6 +475,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      diagnosisObservationsRef.current.push({
+        challenge: `Decide whether "${currentChallenge.targetWord}" and "${currentChallenge.comparisonWord}" rhyme.`,
+        expected: `Answer ${currentChallenge.doesRhyme ? 'yes' : 'no'} based on the ending sound.`,
+        observed: `Answered ${answer ? 'yes' : 'no'}.`,
+      });
       SoundManager.playIncorrect();
       setFeedback('Not quite — listen to the ending sounds...');
       setFeedbackType('error');
@@ -522,6 +545,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      diagnosisObservationsRef.current.push({
+        challenge: `Choose a word that rhymes with "${currentChallenge.targetWord}".`,
+        expected: `Choose the option ending in ${currentChallenge.rhymeFamily}.`,
+        observed: `Chose "${option.word}".`,
+      });
       SoundManager.playIncorrect();
       setFeedback(`"${option.word}" doesn't end with ${currentChallenge.rhymeFamily}. Try again!`);
       setFeedbackType('error');
@@ -584,6 +612,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      diagnosisObservationsRef.current.push({
+        challenge: `Produce a word that rhymes with "${currentChallenge.targetWord}".`,
+        expected: `Choose or say a word ending in ${currentChallenge.rhymeFamily}.`,
+        observed: `Chose "${word}".`,
+      });
       SoundManager.playIncorrect();
       setFeedback(
         `"${word}" doesn't end with ${currentChallenge.rhymeFamily}. `
@@ -651,6 +684,13 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         { silent: true },
       );
     } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      diagnosisObservationsRef.current.push({
+        challenge: `Say the selected rhyming word aloud.`,
+        expected: `Say the whole word "${spokenTargetWord}".`,
+        observed: `Judge heard "${result.verdict.heard}".`,
+        judgeFeedback: result.verdict.misconception
+          || `The spoken-word judge heard "${result.verdict.heard}" instead of the selected rhyme and rated the mismatch high confidence.`,
+      });
       sendText(
         `[SPOKEN_MISS] The student tried to say "${spokenTargetWord}" aloud but it sounded like "${result.verdict.heard}". `
         + `Gently model it — say "${spokenTargetWord}" and stretch the ${currentChallenge.rhymeFamily} ending — then invite one more try. `

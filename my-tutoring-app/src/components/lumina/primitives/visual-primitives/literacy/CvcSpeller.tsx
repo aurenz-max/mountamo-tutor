@@ -18,6 +18,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CvcSpellerMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -33,6 +34,8 @@ export interface CvcSpellerChallenge {
   id: string;
   taskType: 'fill-vowel' | 'spell-word' | 'word-sort';
   targetWord: string;
+  /** Private generator trace; never rendered as student-visible copy. */
+  remediationMove?: 'contrast_vowel' | 'phoneme_slots' | 'minimal_pair_sort';
   targetLetters: string[];     // e.g. ['c', 'a', 't']
   targetPhonemes: string[];    // e.g. ['/k/', '/æ/', '/t/']
   emoji: string;
@@ -204,6 +207,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const [consonantCorrect, setConsonantCorrect] = useState(0);
   const [stretchUsedCount, setStretchUsedCount] = useState(0);
   const [errorPatterns, setErrorPatterns] = useState<string[]>([]);
+  const diagnosisObservationsRef = useRef<Array<{
+    challenge: string;
+    expected: string;
+    observed: string;
+    judgeFeedback?: string;
+  }>>([]);
   // Words the student said ALOUD (judge-confirmed) — the culminating production beat
   const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
@@ -437,6 +446,11 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       setSelectedVowel(null);
       const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
       const wrongKeyword = VOWEL_KEYWORDS[vowel] || '';
+      diagnosisObservationsRef.current.push({
+        challenge: `Hear "${currentChallenge.targetWord}" and choose its middle vowel.`,
+        expected: `Choose ${correctVowel}, matching the middle phoneme ${currentChallenge.targetPhonemes[1]}.`,
+        observed: `Chose ${vowel} instead of ${correctVowel}.`,
+      });
 
       setFeedback('Listen again — which vowel sound is in the middle?');
       setFeedbackType('error');
@@ -575,6 +589,11 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
       const isVowelConfusion = placed[1] !== target[1] && VOWELS.has(target[1]) && VOWELS.has(placed[1]);
       const placedStr = placed.join('');
+      diagnosisObservationsRef.current.push({
+        challenge: `Hear "${currentChallenge.targetWord}" and spell all three phonemes in order.`,
+        expected: `Spell ${target.join('')} from ${currentChallenge.targetPhonemes.join(' ')}.`,
+        observed: `Spelled ${placedStr || '(blank)'}.`,
+      });
       const matchedError = currentChallenge.commonErrors?.find(e => e.errorSpelling.toLowerCase() === placedStr);
 
       if (matchedError) {
@@ -667,6 +686,11 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       const wrongVowel = bucketLabel.replace('short-', '');
       const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
       const wrongKeyword = VOWEL_KEYWORDS[wrongVowel] || '';
+      diagnosisObservationsRef.current.push({
+        challenge: `Sort "${currentChallenge.targetWord}" by its middle vowel sound.`,
+        expected: `Sort into ${correctBucket}.`,
+        observed: `Sorted into ${bucketLabel}.`,
+      });
 
       if (attempt === 1) {
         // Level 1: say word naturally, contrast
@@ -723,6 +747,13 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         { silent: true }
       );
     } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      diagnosisObservationsRef.current.push({
+        challenge: `Say the whole CVC word after decoding it.`,
+        expected: `Produce all phonemes in "${currentChallenge.targetWord}" in order.`,
+        observed: `Judge heard "${result.verdict.heard}".`,
+        judgeFeedback: result.verdict.misconception
+          || `The spoken-word judge heard "${result.verdict.heard}" instead of the decoded target and rated the mismatch high confidence.`,
+      });
       sendText(
         `[SPOKEN_MISS] The student tried to say "${currentChallenge.targetWord}" aloud but it sounded like "${result.verdict.heard}". Gently model it — stretch the sounds "${currentChallenge.targetPhonemes.join('... ')}", then say the whole word — and invite one more try. Warm, never scolding. Two short sentences max.`,
         { silent: true }
@@ -779,10 +810,27 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           attemptsCount: totalAttempts,
         };
 
+        const observations = diagnosisObservationsRef.current;
+        const latest = observations[observations.length - 1];
+        const judgeBacked = [...observations].reverse().find(item => item.judgeFeedback);
+        const evidenceSource = judgeBacked || latest;
+        const diagnosisEvidence: DiagnosisEvidence | undefined = overallAcc < 60 && evidenceSource
+          ? {
+              challengeSummary: evidenceSource.challenge,
+              expected: evidenceSource.expected,
+              observed: evidenceSource.observed,
+              judgeFeedback: judgeBacked?.judgeFeedback,
+              priorAttempts: observations
+                .filter(item => item !== evidenceSource)
+                .slice(-4)
+                .map(item => ({ challenge: item.challenge, observed: item.observed })),
+            }
+          : undefined;
+
         submitEvaluation(overallAcc >= 60, overallAcc, metrics, {
           challengeResults,
           spokenWords: Array.from(spokenWords),
-        });
+        }, undefined, diagnosisEvidence);
 
         const phaseStr = phaseResults.length > 0
           ? phaseResults.map(p => `${p.label} ${p.score}%`).join(', ')

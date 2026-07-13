@@ -13,6 +13,7 @@ import {
   LuminaProgress,
   LuminaPanel,
   LuminaFeedbackCard,
+  LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
@@ -21,7 +22,9 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PhonemeExplorerMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useVoiceChoice } from '../../../hooks/useVoiceChoice';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -60,11 +63,17 @@ interface PhonemeChallenge {
   operationDescription?: string;
   // -- shared choices (isolate, blend, manipulate) --
   choices?: PhonemeChoice[];
+  remediationMove?: 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
 }
 
 export interface PhonemeExplorerData {
   title: string;
   challenges: PhonemeChallenge[];
+
+  // Voice control (spoken CHOICE shape) — say an option to pick it.
+  gradeLevel?: string;
+  /** Single-mic arbitration: manifest sets false to yield the mic elsewhere. */
+  voiceEligible?: boolean;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -124,6 +133,21 @@ const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: st
 
 const MAX_ATTEMPTS = 3;
 
+// A voice CHOICE unit is only safe when its options are short, single, and
+// SAYABLE, and are distinct after lowercasing (a homophone/dup set would
+// misroute a spoken verdict). Gate fails → the mic never renders and the tap
+// path is exactly what it was before voice existed.
+const SAYABLE_WORD = /^[a-z][a-z' -]*$/;
+function phonemeVoiceReady(choices: PhonemeChoice[], answer: string): boolean {
+  if (!choices || choices.length === 0) return false;
+  const words = choices.map((c) => c.word.trim().toLowerCase());
+  if (new Set(words).size !== words.length) return false; // ambiguous when spoken
+  if (!words.includes(answer.trim().toLowerCase())) return false;
+  return words.every(
+    (w) => w.length > 0 && w.length <= 24 && w.split(/\s+/).length <= 2 && SAYABLE_WORD.test(w),
+  );
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -140,6 +164,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
+  const gradeLevel = data.gradeLevel ?? 'K';
+
   // ── Activity gate ──────────────────────────────────────────────
   const [hasStarted, setHasStarted] = useState(false);
 
@@ -154,6 +180,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   // ── Timing ─────────────────────────────────────────────────────
   const startTimeRef = useRef(Date.now());
+
+  // Count first-time correct answers landed by voice (metrics extra).
+  const voiceCorrectCountRef = useRef(0);
+  const diagnosisObservationsRef = useRef<Array<{ challenge: string; expected: string; observed: string }>>([]);
 
   // ── Instance ID ────────────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `phoneme-explorer-${Date.now()}`);
@@ -211,11 +241,11 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     mode: currentChallenge?.mode,
   }), [currentIndex, challenges.length, currentAttempts, currentChallenge?.mode]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAIResponding, isAudioPlaying } = useLuminaAI({
     primitiveType: 'phoneme-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
+    gradeLevel,
   });
 
   // ── Activity introduction ──────────────────────────────────────
@@ -315,7 +345,18 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       challengesTotal: totalCount,
       accuracy: overallPct,
       attemptsCount: totalAttempts,
+      voiceAnswerCount: voiceCorrectCountRef.current,
     };
+    const latest = diagnosisObservationsRef.current.at(-1);
+    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && latest ? {
+      challengeSummary: latest.challenge,
+      expected: latest.expected,
+      observed: latest.observed,
+      priorAttempts: diagnosisObservationsRef.current.slice(0, -1).map((item) => ({
+        challenge: item.challenge,
+        observed: item.observed,
+      })),
+    } : undefined;
 
     setSubmittedScore(overallPct);
     submitEvaluation(
@@ -323,6 +364,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       overallPct,
       metrics,
       { durationMs: elapsed, challengeResults },
+      undefined,
+      diagnosisEvidence,
     );
 
     const phaseScoreStr = phaseResults.map(
@@ -339,7 +382,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   ]);
 
   // ── Handle choice selection (isolate, blend, manipulate) ───────
-  const handleChoiceSelect = useCallback((choiceIndex: number) => {
+  // Tap AND voice both land here. `viaVoice` submissions skip the outcome
+  // SoundManager calls — the voice controller already played them
+  // (useVoiceChoice owns actuation sounds).
+  const handleChoiceSelect = useCallback((choiceIndex: number, viaVoice = false) => {
     if (showResult || !currentChallenge) return;
 
     const choice = shuffledChoices[choiceIndex];
@@ -348,7 +394,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     incrementAttempts();
 
     if (choice.correct) {
-      SoundManager.playCorrect();
+      if (viaVoice) voiceCorrectCountRef.current += 1;
+      else SoundManager.playCorrect();
       setFeedback(`Yes! ${choice.emoji} "${choice.word}" is correct!`);
       setFeedbackType('success');
       setShowResult(true);
@@ -362,7 +409,19 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
-      SoundManager.playIncorrect();
+      const correctChoice = shuffledChoices.find(c => c.correct);
+      const challengeSummary = currentChallenge.mode === 'isolate'
+        ? `Identify a word sharing the ${currentChallenge.phonemeSound ?? currentChallenge.phoneme ?? 'target'} sound with ${currentChallenge.exampleWord ?? 'the example word'}.`
+        : currentChallenge.mode === 'blend'
+          ? `Blend ${currentChallenge.phonemeDisplay ?? currentChallenge.phonemeSequence?.join(' ')} into a whole word.`
+          : `${currentChallenge.operationDescription ?? `Apply the ${currentChallenge.operation ?? 'phoneme'} operation to ${currentChallenge.originalWord ?? 'the word'}`}.`;
+      diagnosisObservationsRef.current.push({
+        challenge: challengeSummary,
+        expected: `Choose ${correctChoice?.word ?? 'the phonologically correct word'}.`,
+        observed: `Chose ${choice.word}.`,
+      });
+      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
+      if (!viaVoice) SoundManager.playIncorrect();
       setFeedback(`Hmm, that's not quite right. Try again!`);
       setFeedbackType('error');
       setIsShaking(true);
@@ -414,6 +473,14 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         { silent: true },
       );
     } else {
+      const selectedOption = currentChallenge.segmentOptions?.[optionIndex] ?? '';
+      const correctOption = currentChallenge.segmentOptions?.[currentChallenge.correctSegmentation ?? 0] ?? '';
+      diagnosisObservationsRef.current.push({
+        challenge: `Segment ${currentChallenge.targetWord ?? 'the target word'} into its phonemes.`,
+        expected: correctOption,
+        observed: `Chose ${selectedOption}.`,
+      });
+      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
       SoundManager.playIncorrect();
       setFeedback(`Not quite — listen carefully to each sound. Try again!`);
       setFeedbackType('error');
@@ -439,6 +506,54 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       }
     }
   }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
+
+  // ── Voice: say an on-screen option to pick it ───────────────────
+  // (/add-voice-control, spoken CHOICE shape.) Only the choice-based modes
+  // (isolate/blend/manipulate) are voice-eligible; `segment` uses non-sayable
+  // "c-a-t" options and is excluded. A single-unit useVoiceChoice listens for
+  // one of the four option words and routes the verdict into the SAME grading
+  // path a tap uses — voice is purely additive, tap unchanged.
+  const correctWord = useMemo(
+    () => shuffledChoices.find((c) => c.correct)?.word ?? '',
+    [shuffledChoices],
+  );
+
+  const voiceReady = useMemo(
+    () =>
+      (data.voiceEligible ?? true) &&
+      currentChallenge?.mode !== 'segment' &&
+      phonemeVoiceReady(shuffledChoices, correctWord),
+    [data.voiceEligible, currentChallenge?.mode, shuffledChoices, correctWord],
+  );
+
+  const voiceItems = useMemo(() => {
+    if (!voiceReady) return [];
+    return [{
+      answer: correctWord.trim().toLowerCase(),
+      options: shuffledChoices.map((c) => c.word.trim().toLowerCase()),
+    }];
+  }, [voiceReady, correctWord, shuffledChoices]);
+
+  // ANSWER-LEAK GATE (the StoryTalk narrow exception to "never gate the mic on
+  // tutor-busy signals"): the tutor is prompted to read all four options aloud,
+  // the correct one included. An open mic during that audio could hear the tutor
+  // voice the answer and credit it. So the mic runs only while the tutor is fully
+  // quiet — this is framing-then-open-mic, not a turn-taking window.
+  const tutorQuiet = !isAIResponding && !isAudioPlaying;
+  const voiceActive =
+    hasStarted && !showSummary && !showResult && tutorQuiet && voiceItems.length > 0;
+
+  const voiceChoice = useVoiceChoice({
+    items: voiceItems,
+    gradeLevel,
+    active: voiceActive,
+    onSubmit: (_unit, word) => {
+      const idx = shuffledChoices.findIndex(
+        (c) => c.word.trim().toLowerCase() === word,
+      );
+      if (idx !== -1) handleChoiceSelect(idx, true);
+    },
+  });
 
   // ── Advance to next challenge ──────────────────────────────────
   const handleNext = useCallback(() => {
@@ -710,6 +825,29 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             {currentChallenge.mode === 'blend' && renderBlendChallenge(currentChallenge)}
             {currentChallenge.mode === 'segment' && renderSegmentChallenge(currentChallenge)}
             {currentChallenge.mode === 'manipulate' && renderManipulateChallenge(currentChallenge)}
+
+            {/* Voice: say an option to pick it. The orb is HIDDEN while the tutor
+                reads the options aloud (answer-leak gate) — it appears once the
+                tutor is quiet, then stays hot (open mic) until the answer lands. */}
+            {voiceReady && !showResult && tutorQuiet && (
+              <div className="flex flex-col items-center pt-1">
+                <LuminaMicListener
+                  state={voiceChoice.voice.state}
+                  level={voiceChoice.voice.level}
+                  isSupported={voiceChoice.voice.isSupported}
+                  dormant={voiceChoice.voice.dormant}
+                  onStart={voiceChoice.voice.start}
+                  onCancel={voiceChoice.voice.stop}
+                  accent={modeInfo.accent}
+                  size="sm"
+                  idleLabel="Say your answer"
+                  listeningLabel="Say the word!"
+                />
+                {voiceChoice.note && (
+                  <p className="text-amber-300 text-sm mt-2 text-center">{voiceChoice.note}</p>
+                )}
+              </div>
+            )}
           </>
         )}
 

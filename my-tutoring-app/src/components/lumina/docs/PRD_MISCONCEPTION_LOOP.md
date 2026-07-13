@@ -568,7 +568,7 @@ entries). Resolution requires the tags to match the actual submission; a strong
 result from any other primitive, from outside the declared scope, or from an
 untagged (affordance-abstained) item must leave the misconception active.
 
-### Phase 3A — Declared-scope alignment (next mandatory slice)
+### Phase 3A — Declared-scope alignment ✅ DONE 2026-07-12
 - Catalog: `misconceptionScope: 'primitive' | 'skill'` on primitive catalog
   entries (beside `tutoring.commonStruggles`). Default for future opt-ins is
   `'skill'` — the safe scope; loosening to `'primitive'` later is a one-line
@@ -596,6 +596,15 @@ untagged (affordance-abstained) item must leave the misconception active.
   and in explore mode, and that resolving one entry leaves others active.
 
 ### Phase 4 — Scale-out
+- **Foundational-literacy cohort — implementation complete / runtime gate open
+  2026-07-12:** PhonicsBlender,
+  RhymeStudio, SoundSwap, LetterSoundLink, CvcSpeller, and PhonemeExplorer now
+  declare primitive scope, capture structured/judge evidence, consume
+  `remediationFocus`, and stamp mode-specific private remediation moves.
+  PhonemeExplorer covers isolate, blend, segment, and manipulate. LetterSoundLink
+  `hear-see` now abstains from stamping when a diagnosed letter contrast falls
+  outside the cumulative letter group. Pure suite: 670/670. Browser capture and
+  real-Gemini D/G probes remain runtime verification, not implementation gaps.
 - Judge-schema misconception field across remaining judge-driven primitives
   (spoken judges: the transcript is the highest-fidelity evidence in the
   product — every `/add-spoken-judge` primitive becomes a tier-A source).

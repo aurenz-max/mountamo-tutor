@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import type { SoundSwapData, SoundSwapChallenge } from "../../primitives/visual-primitives/literacy/SoundSwap";
 import {
   resolveEvalModeConstraint,
@@ -495,6 +496,16 @@ function actualManipPosition(ch: SoundSwapChallenge): ManipPosition | null {
  * This eliminates inconsistencies where Gemini returns fields that don't
  * match the actual phoneme transformation.
  */
+type SoundSwapRemediationMove = 'isolate_added_sound' | 'isolate_deleted_sound' | 'contrast_replacement';
+export function soundSwapRemediationMoveFor(
+  operation: SoundSwapChallenge['operation'], focus?: string,
+): SoundSwapRemediationMove | undefined {
+  if (!focus?.trim()) return undefined;
+  if (operation === 'addition') return 'isolate_added_sound';
+  if (operation === 'deletion') return 'isolate_deleted_sound';
+  return 'contrast_replacement';
+}
+
 const soundSwapSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -773,6 +784,7 @@ GRADE 2 GUIDELINES:
     evalConstraint,
     CHALLENGE_TYPE_DOCS,
   );
+  const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create a phoneme manipulation (Sound Swap) activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
@@ -784,6 +796,7 @@ Generate exactly ${challengeCount} challenges.
 
 ${challengeTypeSection}
 ${tierSection}
+${remediationSection}
 PHONEME NOTATION RULES:
 - Use IPA-style phoneme notation wrapped in forward slashes: /k/, /æ/, /t/, /s/, /b/, /ɪ/, /ʌ/, /ɛ/, /ɑ/, /ʊ/
 - Use /r/ for the R sound, NOT /ɹ/ or /ɾ/
@@ -804,6 +817,7 @@ Deletion examples: ${VALID_DELETION_PAIRS.slice(0, 20).join(', ')}
 You may create NEW pairs beyond this list, but BOTH originalWord and resultWord MUST be real English words that a K-2 student would recognize. "un", "ig", "ap", "og" are NOT real words — never use them.
 
 CRITICAL RULES:
+${ctx.remediationFocus ? '- Remediation must choose word pairs whose changed phoneme isolates the diagnosed confusion; do not alter the requested operation.' : ''}
 - EVERY result word must be a REAL English word (no nonsense words like "un", "ig", "ap", "og"!)
 - EVERY original word must be a REAL English word (no nonsense words!)
 - Image descriptions should be brief (3-6 words) and kid-friendly
@@ -877,7 +891,10 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
           resultImage: (ch.resultImage as string) || (ch.resultWord as string) || "",
         };
 
-        return deriveOperationFields(raw);
+        const derived = deriveOperationFields(raw);
+        const remediationMove = soundSwapRemediationMoveFor(derived.operation, ctx.remediationFocus);
+        if (remediationMove) derived.remediationMove = remediationMove;
+        return derived;
       })
       .filter((ch: SoundSwapChallenge | null): ch is SoundSwapChallenge => ch !== null);
 

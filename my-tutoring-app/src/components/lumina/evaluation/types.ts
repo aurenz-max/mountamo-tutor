@@ -2212,6 +2212,8 @@ export interface PhonemeExplorerMetrics extends BasePrimitiveMetrics {
   challengesTotal: number;
   accuracy: number;
   attemptsCount: number;
+  /** Correct answers landed by voice (spoken CHOICE). */
+  voiceAnswerCount?: number;
 }
 
 export interface PhonicsBlenderMetrics extends BasePrimitiveMetrics {

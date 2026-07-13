@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { balanceScaleOracle } from '../balance-scale';
+import { circleExplorerOracle } from '../circle-explorer';
+import { coordinateGraphOracle } from '../coordinate-graph';
+import { equationBuilderOracle } from '../equation-builder';
+import { equationWorkspaceOracle } from '../equation-workspace';
+import { matrixDisplayOracle } from '../matrix-display';
+import { systemsEquationsVisualizerOracle } from '../systems-equations-visualizer';
 import { knowledgeCheckOracle } from '../knowledge-check';
 import { functionMachineOracle } from '../function-machine';
 import { mathFactFluencyOracle } from '../math-fact-fluency';
+import { polygonAreaBuilderOracle } from '../polygon-area-builder';
 import { tenFrameOracle } from '../ten-frame';
 import { vocabularyExplorerOracle } from '../vocabulary-explorer';
 
@@ -595,6 +602,765 @@ describe('balance-scale oracle', () => {
   it('flags a demo-sized set (mastery-over-demo)', () => {
     const data = { ...bsClean, challenges: [bsClean.challenges[0]] };
     const v = balanceScaleOracle.verify(data, bsCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// coordinate-graph
+// ---------------------------------------------------------------------------
+
+const cgReadCtx = { componentId: 'coordinate-graph', evalMode: 'read_point', topic: 'Plot points on a coordinate grid', gradeLevel: 'grade 5' };
+const cgSlopeCtx = { componentId: 'coordinate-graph', evalMode: 'find_slope', topic: 'Slope of a line', gradeLevel: 'grade 8' };
+
+// read_point: the option at correctOptionIndex must parse to the drawn (x1,y1).
+const cgReadClean = {
+  gridMin: -10,
+  gridMax: 10,
+  challenges: [
+    { id: 'c1', type: 'read_point', x1: 2, y1: 3, instruction: 'What are the coordinates of the plotted point?', hint: 'Read across, then up.', option0: '(2, 3)', option1: '(3, 2)', option2: '(2, -3)', option3: '(-2, 3)', correctOptionIndex: 0 },
+    { id: 'c2', type: 'read_point', x1: -4, y1: 1, instruction: 'Name the point on the grid.', hint: 'Left is negative x.', option0: '(-4, 1)', option1: '(4, 1)', option2: '(-4, -1)', option3: '(1, -4)', correctOptionIndex: 0 },
+    { id: 'c3', type: 'read_point', x1: 5, y1: -2, instruction: 'Which pair matches the dot?', hint: 'Down is negative y.', option0: '(5, -2)', option1: '(-5, 2)', option2: '(5, 2)', option3: '(-5, -2)', correctOptionIndex: 0 },
+  ],
+};
+
+// find_slope: the keyed option must parse (integer or fraction) to (y2-y1)/(x2-x1).
+const cgSlopeClean = {
+  gridMin: -10,
+  gridMax: 10,
+  challenges: [
+    { id: 's1', type: 'find_slope', x1: 0, y1: 0, x2: 2, y2: 4, instruction: 'What is the slope of the line?', hint: 'Compare the rise to the run.', option0: '2', option1: '1', option2: '4', option3: '-2', correctOptionIndex: 0 },
+    { id: 's2', type: 'find_slope', x1: 0, y1: 0, x2: 1, y2: 3, instruction: 'Find the slope.', hint: 'Rise over run.', option0: '3', option1: '2', option2: '1', option3: '6', correctOptionIndex: 0 },
+    { id: 's3', type: 'find_slope', x1: 0, y1: 0, x2: 2, y2: -2, instruction: 'Read the slope off the graph.', hint: 'A falling line is negative.', option0: '-1', option1: '1', option2: '2', option3: '-2', correctOptionIndex: 0 },
+  ],
+};
+
+describe('coordinate-graph oracle', () => {
+  it('passes clean read_point data', () => {
+    expect(coordinateGraphOracle.verify(cgReadClean, cgReadCtx).violations).toEqual([]);
+  });
+
+  it('passes clean find_slope data', () => {
+    expect(coordinateGraphOracle.verify(cgSlopeClean, cgSlopeCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — the keyed option is not the drawn point (correct read marked wrong)', () => {
+    const data = JSON.parse(JSON.stringify(cgReadClean));
+    data.challenges[0].correctOptionIndex = 1; // option1 is (3, 2), drawn point is (2, 3)
+    const v = coordinateGraphOracle.verify(data, cgReadCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — two options name the true slope (unsimplified twin)', () => {
+    const data = JSON.parse(JSON.stringify(cgSlopeClean));
+    data.challenges[0].option1 = '4/2'; // 4/2 === 2 === the true slope, but only index 0 is judged
+    const v = coordinateGraphOracle.verify(data, cgSlopeCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1')).toBe(true);
+  });
+
+  it('flags scope — a coordinate magnitude above the objective ceiling', () => {
+    const v = coordinateGraphOracle.verify(cgReadClean, { ...cgReadCtx, scopeMax: 4 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'c3')).toBe(true); // (5, -2) exceeds ±4
+  });
+
+  it('flags answer-leak — the instruction states the asked point', () => {
+    const data = JSON.parse(JSON.stringify(cgReadClean));
+    data.challenges[0].instruction = 'The point is at (2, 3) — pick it.';
+    const v = coordinateGraphOracle.verify(data, cgReadCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags clustering — every card is the same point', () => {
+    const data = {
+      gridMin: -10,
+      gridMax: 10,
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `c${i}`, type: 'read_point', x1: 2, y1: 3, instruction: 'Name the point.', hint: 'Read it.', option0: '(2, 3)', option1: '(3, 2)', option2: '(2, -3)', option3: '(-2, 3)', correctOptionIndex: 0 })),
+    };
+    const v = coordinateGraphOracle.verify(data, cgReadCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — correctOptionIndex out of range (unwinnable card)', () => {
+    const data = JSON.parse(JSON.stringify(cgReadClean));
+    data.challenges[0].correctOptionIndex = 9;
+    const v = coordinateGraphOracle.verify(data, cgReadCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'c1')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { gridMin: -10, gridMax: 10, challenges: [cgReadClean.challenges[0]] };
+    const v = coordinateGraphOracle.verify(data, cgReadCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// polygon-area-builder
+// ---------------------------------------------------------------------------
+
+const pabTriCtx = { componentId: 'polygon-area-builder', evalMode: 'find_area_triangle_parallelogram', topic: 'Area of triangles and parallelograms', gradeLevel: 'grade 6' };
+const pabCompCtx = { componentId: 'polygon-area-builder', evalMode: 'composite_area', topic: 'Area of composite figures', gradeLevel: 'grade 6' };
+
+// find_area: expectedArea must equal the shoelace area of the DRAWN figure.
+const pabTriClean = {
+  challenges: [
+    { id: 't1', type: 'find_area_triangle_parallelogram', figureType: 'triangle', base: 6, height: 4, apexX: 3, expectedArea: 12, unitLabel: 'cm', instruction: 'Find the area of the triangle.', hint: 'Use the base and the height.' },
+    { id: 't2', type: 'find_area_triangle_parallelogram', figureType: 'parallelogram', base: 5, height: 4, skew: 1, expectedArea: 20, unitLabel: 'cm', instruction: 'Find the area of the parallelogram.', hint: 'Base times height.' },
+    { id: 't3', type: 'find_area_triangle_parallelogram', figureType: 'triangle', base: 10, height: 3, apexX: 5, expectedArea: 15, unitLabel: 'cm', instruction: 'Find the area of the figure.', hint: 'Half of base times height.' },
+  ],
+};
+
+// composite: union area = Σ w·h over DISJOINT rectangle parts.
+const pabCompClean = {
+  challenges: [
+    { id: 'p1', type: 'composite_area', figureType: 'composite', parts: [{ x: 0, y: 0, w: 4, h: 3 }, { x: 0, y: 3, w: 2, h: 2 }], expectedArea: 16, unitLabel: 'cm', instruction: 'Find the total area.', hint: 'Split into rectangles.' },
+    { id: 'p2', type: 'composite_area', figureType: 'composite', parts: [{ x: 0, y: 0, w: 5, h: 3 }, { x: 0, y: 3, w: 2, h: 2 }], expectedArea: 19, unitLabel: 'cm', instruction: 'Find the total area.', hint: 'Add the pieces.' },
+    { id: 'p3', type: 'composite_area', figureType: 'composite', parts: [{ x: 0, y: 0, w: 4, h: 2 }, { x: 0, y: 2, w: 3, h: 3 }], expectedArea: 17, unitLabel: 'cm', instruction: 'Find the total area.', hint: 'Sum the sub-rectangles.' },
+  ],
+};
+
+describe('polygon-area-builder oracle', () => {
+  it('passes clean triangle/parallelogram data', () => {
+    expect(polygonAreaBuilderOracle.verify(pabTriClean, pabTriCtx).violations).toEqual([]);
+  });
+
+  it('passes clean composite data', () => {
+    expect(polygonAreaBuilderOracle.verify(pabCompClean, pabCompCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — expectedArea disagrees with the drawn figure (correct count marked wrong)', () => {
+    const data = JSON.parse(JSON.stringify(pabTriClean));
+    data.challenges[0].expectedArea = 14; // drawn triangle measures 12
+    const v = polygonAreaBuilderOracle.verify(data, pabTriCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 't1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — overlapping composite parts double-count area', () => {
+    const data = JSON.parse(JSON.stringify(pabCompClean));
+    data.challenges[0].parts = [{ x: 0, y: 0, w: 4, h: 3 }, { x: 2, y: 1, w: 3, h: 3 }]; // overlap 2×2
+    const v = polygonAreaBuilderOracle.verify(data, pabCompCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'p1' && /overlap/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an area above the objective ceiling', () => {
+    const v = polygonAreaBuilderOracle.verify(pabTriClean, { ...pabTriCtx, scopeMax: 13 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 't2')).toBe(true); // area 20 exceeds 13
+  });
+
+  it('flags answer-leak — the instruction states the asked area', () => {
+    const data = JSON.parse(JSON.stringify(pabTriClean));
+    data.challenges[0].instruction = 'The area is 12 square cm; confirm it.';
+    const v = polygonAreaBuilderOracle.verify(data, pabTriCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 't1')).toBe(true);
+  });
+
+  it('flags clustering — every figure has the same area', () => {
+    const data = {
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `t${i}`, type: 'find_area_triangle_parallelogram', figureType: 'triangle', base: 6, height: 4, apexX: 3, expectedArea: 12, unitLabel: 'cm', instruction: 'Find the area.', hint: 'Base times height over two.' })),
+    };
+    const v = polygonAreaBuilderOracle.verify(data, pabTriCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { challenges: [pabTriClean.challenges[0]] };
+    const v = polygonAreaBuilderOracle.verify(data, pabTriCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// circle-explorer
+// ---------------------------------------------------------------------------
+
+const ceAreaCtx = { componentId: 'circle-explorer', evalMode: 'area', topic: 'Area of a circle', gradeLevel: 'grade 7' };
+const ceReverseCtx = { componentId: 'circle-explorer', evalMode: 'reverse', topic: 'Circle measurements', gradeLevel: 'grade 7' };
+
+// area: a student using π ≈ 3.14 computes 3.14·r², which must land in the window.
+const ceAreaClean = {
+  challenges: [
+    { id: 'a1', type: 'area', given: 'radius', radius: 5, expectedAnswer: 78.5, tolerance: 2, unitLabel: 'cm', answerKind: 'area', instruction: 'Find the area of the circle.', hint: 'Use π ≈ 3.14 and the radius.' },
+    { id: 'a2', type: 'area', given: 'radius', radius: 3, expectedAnswer: 28.26, tolerance: 2, unitLabel: 'cm', answerKind: 'area', instruction: 'Find the area.', hint: 'Area is π times radius squared.' },
+    { id: 'a3', type: 'area', given: 'radius', radius: 7, expectedAnswer: 153.86, tolerance: 3.1, unitLabel: 'cm', answerKind: 'area', instruction: 'Compute the area of the circle.', hint: 'Square the radius first.' },
+  ],
+};
+
+// reverse: work backward from the printed givenValue; radius and expectedAnswer must agree.
+const ceReverseClean = {
+  challenges: [
+    { id: 'r1', type: 'reverse', given: 'radius', radius: 7, reverseGiven: 'circumference', givenValue: 44.0, expectedAnswer: 7, tolerance: 0.2, unitLabel: 'cm', answerKind: 'length', instruction: 'Find the radius of the circle.', hint: 'Work backward from the circumference using π ≈ 3.14.' },
+    { id: 'r2', type: 'reverse', given: 'radius', radius: 5, reverseGiven: 'circumference', givenValue: 31.4, expectedAnswer: 5, tolerance: 0.2, unitLabel: 'cm', answerKind: 'length', instruction: 'Find the radius.', hint: 'Divide by 2π.' },
+    { id: 'r3', type: 'reverse', given: 'radius', radius: 9, reverseGiven: 'circumference', givenValue: 56.5, expectedAnswer: 9, tolerance: 0.2, unitLabel: 'cm', answerKind: 'length', instruction: 'What is the radius?', hint: 'Undo the circumference formula.' },
+  ],
+};
+
+describe('circle-explorer oracle', () => {
+  it('passes clean area data', () => {
+    expect(circleExplorerOracle.verify(ceAreaClean, ceAreaCtx).violations).toEqual([]);
+  });
+
+  it('passes clean reverse data', () => {
+    expect(circleExplorerOracle.verify(ceReverseClean, ceReverseCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — the 3.14 answer falls outside the shipped window (correct work marked wrong)', () => {
+    const data = JSON.parse(JSON.stringify(ceAreaClean));
+    data.challenges[0].expectedAnswer = 90; // student computes 78.5, window is 90 ± 2
+    const v = circleExplorerOracle.verify(data, ceAreaCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'a1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — reverse stores a radius the key does not accept', () => {
+    const data = JSON.parse(JSON.stringify(ceReverseClean));
+    data.challenges[0].expectedAnswer = 8; // radius is 7; the tutor coaches toward a different value
+    const v = circleExplorerOracle.verify(data, ceReverseCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'r1')).toBe(true);
+  });
+
+  it('flags scope — a radius above the objective ceiling', () => {
+    const v = circleExplorerOracle.verify(ceAreaClean, { ...ceAreaCtx, scopeMax: 4 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'a1')).toBe(true); // radius 5 exceeds 4
+  });
+
+  it('flags answer-leak — the instruction states the asked area value', () => {
+    const data = JSON.parse(JSON.stringify(ceAreaClean));
+    data.challenges[0].instruction = 'The area is 78.5 square cm — verify it.';
+    const v = circleExplorerOracle.verify(data, ceAreaCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'a1')).toBe(true);
+  });
+
+  it('flags clustering — every circle has the same answer', () => {
+    const data = {
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `a${i}`, type: 'area', given: 'radius', radius: 5, expectedAnswer: 78.5, tolerance: 2, unitLabel: 'cm', answerKind: 'area', instruction: 'Find the area.', hint: 'π times radius squared.' })),
+    };
+    const v = circleExplorerOracle.verify(data, ceAreaCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { challenges: [ceAreaClean.challenges[0]] };
+    const v = circleExplorerOracle.verify(data, ceAreaCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// systems-equations-visualizer
+// ---------------------------------------------------------------------------
+
+const seGraphCtx = { componentId: 'systems-equations-visualizer', evalMode: 'graph', topic: 'Solve systems by graphing', gradeLevel: 'grade 8' };
+const seElimCtx = { componentId: 'systems-equations-visualizer', evalMode: 'elimination', topic: 'Solve systems by elimination', gradeLevel: 'algebra 2' };
+
+const eq = (display: string, slope: number, yIntercept: number, extra: Record<string, number> = {}) => ({ display, slope, yIntercept, ...extra });
+
+// graph / slope-intercept: the two drawn lines cross at (expectedX, expectedY).
+const seGraphClean = {
+  title: 'Solving Systems by Graphing',
+  description: 'Read the intersection of two lines off the grid.',
+  xRange: [-10, 10],
+  yRange: [-10, 10],
+  challenges: [
+    { id: 'g1', type: 'graph', systemForm: 'slope-intercept', equationA: eq('y = 2x + 1', 2, 1), equationB: eq('y = -x + 4', -1, 4), expectedX: 1, expectedY: 3, instruction: 'Find where the two lines cross and enter (x, y).', hint: 'Trace both lines.' },
+    { id: 'g2', type: 'graph', systemForm: 'slope-intercept', equationA: eq('y = x - 2', 1, -2), equationB: eq('y = -2x + 4', -2, 4), expectedX: 2, expectedY: 0, instruction: 'Read the crossing point.', hint: 'Where do they meet?' },
+    { id: 'g3', type: 'graph', systemForm: 'slope-intercept', equationA: eq('y = 3x', 3, 0), equationB: eq('y = x - 4', 1, -4), expectedX: -2, expectedY: -6, instruction: 'Enter the intersection coordinates.', hint: 'Follow each line.' },
+  ],
+};
+
+// elimination / standard: (expectedX, expectedY) satisfies each a·x + b·y = c.
+const seElimClean = {
+  title: 'Solving Systems by Elimination',
+  description: 'Scale and add the equations to cancel a variable.',
+  xRange: [-10, 10],
+  yRange: [-10, 10],
+  challenges: [
+    { id: 'e1', type: 'elimination', systemForm: 'standard', equationA: eq('2x + y = 5', -2, 5, { a: 2, b: 1, c: 5 }), equationB: eq('x - y = 1', 1, -1, { a: 1, b: -1, c: 1 }), expectedX: 2, expectedY: 1, instruction: 'Eliminate a variable, then enter (x, y).', hint: 'Add the equations.' },
+    { id: 'e2', type: 'elimination', systemForm: 'standard', equationA: eq('x + 2y = 1', -0.5, 0.5, { a: 1, b: 2, c: 1 }), equationB: eq('2x - y = 7', 2, -7, { a: 2, b: -1, c: 7 }), expectedX: 3, expectedY: -1, instruction: 'Solve by elimination.', hint: 'Scale then add.' },
+    { id: 'e3', type: 'elimination', systemForm: 'standard', equationA: eq('3x + y = -1', -3, -1, { a: 3, b: 1, c: -1 }), equationB: eq('x - 2y = -5', 0.5, 2.5, { a: 1, b: -2, c: -5 }), expectedX: -1, expectedY: 2, instruction: 'Cancel a variable and enter (x, y).', hint: 'Line them up.' },
+  ],
+};
+
+describe('systems-equations-visualizer oracle', () => {
+  it('passes clean graph data', () => {
+    expect(systemsEquationsVisualizerOracle.verify(seGraphClean, seGraphCtx).violations).toEqual([]);
+  });
+
+  it('passes clean elimination data', () => {
+    expect(systemsEquationsVisualizerOracle.verify(seElimClean, seElimCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — the drawn lines cross somewhere other than the key', () => {
+    const data = JSON.parse(JSON.stringify(seGraphClean));
+    data.challenges[0].expectedY = 5; // lines cross at (1, 3)
+    const v = systemsEquationsVisualizerOracle.verify(data, seGraphCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'g1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — the printed standard equation lies (display-string independence)', () => {
+    const data = JSON.parse(JSON.stringify(seElimClean));
+    data.challenges[0].equationA.display = '2x + y = 9'; // a/b/c fields stay 2,1,5; only the banner drifts
+    const v = systemsEquationsVisualizerOracle.verify(data, seElimCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'e1' && /not satisfied by the key/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — a drawn line contradicts its own standard form (slope ≠ −a/b)', () => {
+    const data = JSON.parse(JSON.stringify(seElimClean));
+    data.challenges[0].equationA.slope = 5; // should be −2 for 2x + y = 5
+    const v = systemsEquationsVisualizerOracle.verify(data, seElimCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'e1' && /contradicts its own standard form/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — parallel lines have no unique crossing', () => {
+    const data = JSON.parse(JSON.stringify(seGraphClean));
+    data.challenges[0].equationB.slope = 2; // equationA slope is also 2
+    const v = systemsEquationsVisualizerOracle.verify(data, seGraphCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'g1' && /parallel/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — a solution magnitude above the objective ceiling', () => {
+    const v = systemsEquationsVisualizerOracle.verify(seGraphClean, { ...seGraphCtx, scopeMax: 1 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'g3')).toBe(true); // (-2, -6) exceeds ±1
+  });
+
+  it('flags scope — an eval-mode identity mismatch (graph challenge in an elimination session)', () => {
+    const v = systemsEquationsVisualizerOracle.verify(seGraphClean, seElimCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — the description prints the solution pair', () => {
+    const data = JSON.parse(JSON.stringify(seElimClean));
+    data.description = 'For example, the solution is (2, 1).';
+    const v = systemsEquationsVisualizerOracle.verify(data, seElimCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'e1')).toBe(true);
+  });
+
+  it('flags clustering — every system has the same solution', () => {
+    const data = {
+      title: 'x', description: 'y', xRange: [-10, 10], yRange: [-10, 10],
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `g${i}`, type: 'graph', systemForm: 'slope-intercept', equationA: eq('y = 2x + 1', 2, 1), equationB: eq('y = -x + 4', -1, 4), expectedX: 1, expectedY: 3, instruction: 'Find the crossing.', hint: 'Trace.' })),
+    };
+    const v = systemsEquationsVisualizerOracle.verify(data, seGraphCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...seGraphClean, challenges: [seGraphClean.challenges[0]] };
+    const v = systemsEquationsVisualizerOracle.verify(data, seGraphCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// matrix-display
+// ---------------------------------------------------------------------------
+
+const mdDetCtx = { componentId: 'matrix-display', evalMode: 'determinant', topic: 'Determinants', gradeLevel: 'algebra 2' };
+const mdMulCtx = { componentId: 'matrix-display', evalMode: 'multiply', topic: 'Matrix multiplication', gradeLevel: 'algebra 2' };
+const mdTransCtx = { componentId: 'matrix-display', evalMode: 'transpose', topic: 'Matrix transpose', gradeLevel: 'algebra 2' };
+
+// determinant → scalar path (expectedScalar = ad − bc).
+const mdDetClean = {
+  title: 'Determinant Practice', description: 'Compute the determinant of each 2×2 matrix.',
+  challengeType: 'determinant',
+  challenges: [
+    { id: 'd1', challengeType: 'determinant', rows: 2, columns: 2, values: [[2, 1], [3, 2]], expectedScalar: 1, instruction: 'Calculate the determinant.', hint: 'det = ad − bc.' },
+    { id: 'd2', challengeType: 'determinant', rows: 2, columns: 2, values: [[3, 1], [2, 4]], expectedScalar: 10, instruction: 'Calculate the determinant.', hint: 'det = ad − bc.' },
+    { id: 'd3', challengeType: 'determinant', rows: 2, columns: 2, values: [[5, 2], [1, 3]], expectedScalar: 13, instruction: 'Calculate the determinant.', hint: 'det = ad − bc.' },
+  ],
+};
+
+// multiply → matrix path (result = row·column dot products).
+const mdMulClean = {
+  title: 'Matrix Multiplication', description: 'Multiply the matrices.',
+  challengeType: 'multiply',
+  challenges: [
+    { id: 'm1', challengeType: 'multiply', rows: 2, columns: 2, values: [[1, 2], [3, 4]], secondMatrix: { rows: 2, columns: 2, values: [[5, 6], [7, 8]], label: 'Matrix B' }, expectedMatrix: [[19, 22], [43, 50]], instruction: 'Multiply A by B.', hint: 'Row · column.' },
+    { id: 'm2', challengeType: 'multiply', rows: 2, columns: 2, values: [[2, 0], [1, 3]], secondMatrix: { rows: 2, columns: 2, values: [[1, 4], [2, 5]], label: 'Matrix B' }, expectedMatrix: [[2, 8], [7, 19]], instruction: 'Multiply A by B.', hint: 'Row · column.' },
+    { id: 'm3', challengeType: 'multiply', rows: 2, columns: 2, values: [[1, 1], [0, 2]], secondMatrix: { rows: 2, columns: 2, values: [[3, 2], [1, 4]], label: 'Matrix B' }, expectedMatrix: [[4, 6], [2, 8]], instruction: 'Multiply A by B.', hint: 'Row · column.' },
+  ],
+};
+
+// transpose → matrix path (result[j][i] = A[i][j]).
+const mdTransClean = {
+  title: 'Transpose', description: 'Swap rows and columns.',
+  challengeType: 'transpose',
+  challenges: [
+    { id: 't1', challengeType: 'transpose', rows: 2, columns: 3, values: [[1, 2, 3], [4, 5, 6]], expectedMatrix: [[1, 4], [2, 5], [3, 6]], instruction: 'Transpose the matrix.', hint: 'Rows become columns.' },
+    { id: 't2', challengeType: 'transpose', rows: 3, columns: 2, values: [[7, 8], [9, 1], [2, 3]], expectedMatrix: [[7, 9, 2], [8, 1, 3]], instruction: 'Transpose the matrix.', hint: 'Rows become columns.' },
+    { id: 't3', challengeType: 'transpose', rows: 2, columns: 3, values: [[2, 0, 1], [3, 5, 4]], expectedMatrix: [[2, 3], [0, 5], [1, 4]], instruction: 'Transpose the matrix.', hint: 'Rows become columns.' },
+  ],
+};
+
+describe('matrix-display oracle', () => {
+  it('passes clean determinant data', () => {
+    expect(matrixDisplayOracle.verify(mdDetClean, mdDetCtx).violations).toEqual([]);
+  });
+
+  it('passes clean multiply data', () => {
+    expect(matrixDisplayOracle.verify(mdMulClean, mdMulCtx).violations).toEqual([]);
+  });
+
+  it('passes clean transpose data', () => {
+    expect(matrixDisplayOracle.verify(mdTransClean, mdTransCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — expectedScalar ≠ the true determinant', () => {
+    const data = JSON.parse(JSON.stringify(mdDetClean));
+    data.challenges[0].expectedScalar = 5; // det [[2,1],[3,2]] = 1
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'd1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — expectedMatrix ≠ the re-derived product (independence)', () => {
+    const data = JSON.parse(JSON.stringify(mdMulClean));
+    data.challenges[0].expectedMatrix[0][0] = 99; // true product [0][0] is 19
+    const v = matrixDisplayOracle.verify(data, mdMulCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'm1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — transpose that keeps the original shape', () => {
+    const data = JSON.parse(JSON.stringify(mdTransClean));
+    data.challenges[0].expectedMatrix = [[1, 2, 3], [4, 5, 6]]; // not transposed
+    const v = matrixDisplayOracle.verify(data, mdTransCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 't1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — a matrix op shipping an expectedScalar (wrong grading path)', () => {
+    const data = JSON.parse(JSON.stringify(mdMulClean));
+    data.challenges[0].expectedScalar = 10; // component grades scalar, ignores the result matrix
+    const v = matrixDisplayOracle.verify(data, mdMulCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'm1' && /expectedScalar/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — a determinant with no expectedScalar (unwinnable)', () => {
+    const data = JSON.parse(JSON.stringify(mdDetClean));
+    delete data.challenges[0].expectedScalar;
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'd1' && /no expectedScalar/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — multiply with incompatible dimensions', () => {
+    const data = JSON.parse(JSON.stringify(mdMulClean));
+    data.challenges[0].secondMatrix = { rows: 3, columns: 2, values: [[1, 2], [3, 4], [5, 6]], label: 'Matrix B' }; // A has 2 cols, B has 3 rows
+    const v = matrixDisplayOracle.verify(data, mdMulCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'm1' && /undefined/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = matrixDisplayOracle.verify(mdDetClean, mdMulCtx).violations; // determinant cards in a multiply session
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an entry magnitude above the objective ceiling', () => {
+    const v = matrixDisplayOracle.verify(mdDetClean, { ...mdDetCtx, scopeMax: 2 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 'd2')).toBe(true); // entry 4 exceeds ±2
+  });
+
+  it('flags answer-leak — the description states the determinant value', () => {
+    const data = JSON.parse(JSON.stringify(mdDetClean));
+    data.description = 'Nice — the determinant is 13.';
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'd3')).toBe(true);
+  });
+
+  it('flags clustering — every matrix is identical', () => {
+    const data = {
+      title: 'x', description: 'y', challengeType: 'determinant',
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `d${i}`, challengeType: 'determinant', rows: 2, columns: 2, values: [[2, 1], [3, 2]], expectedScalar: 1, instruction: 'Determinant.', hint: 'ad − bc.' })),
+    };
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — rows/columns disagree with the values grid', () => {
+    const data = JSON.parse(JSON.stringify(mdDetClean));
+    data.challenges[0].rows = 3; // values is 2×2
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'd1')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...mdDetClean, challenges: [mdDetClean.challenges[0]] };
+    const v = matrixDisplayOracle.verify(data, mdDetCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// equation-builder
+// ---------------------------------------------------------------------------
+
+const ebTfCtx = { componentId: 'equation-builder', evalMode: 'true-false', topic: 'Equations', gradeLevel: 'grade 1' };
+const ebMvCtx = { componentId: 'equation-builder', evalMode: 'missing-result', topic: 'Missing numbers', gradeLevel: 'grade 1' };
+const ebBuildCtx = { componentId: 'equation-builder', evalMode: 'build-simple', topic: 'Build equations', gradeLevel: 'grade 1' };
+const ebBalCtx = { componentId: 'equation-builder', evalMode: 'balance-both-sides', topic: 'Balance equations', gradeLevel: 'grade 1' };
+const ebRwCtx = { componentId: 'equation-builder', evalMode: 'rewrite', topic: 'Rewrite equations', gradeLevel: 'grade 1' };
+
+const ebTfClean = {
+  title: 'True or False', maxNumber: 10, gradeBand: '1',
+  challenges: [
+    { id: 't1', type: 'true-false', instruction: 'Is this true or false?', displayEquation: '3 + 2 = 5', isTrue: true },
+    { id: 't2', type: 'true-false', instruction: 'Is this true or false?', displayEquation: '4 + 1 = 6', isTrue: false },
+    { id: 't3', type: 'true-false', instruction: 'Is this true or false?', displayEquation: '7 - 2 = 5', isTrue: true },
+    { id: 't4', type: 'true-false', instruction: 'Is this true or false?', displayEquation: '2 + 2 = 5', isTrue: false },
+  ],
+};
+
+const ebMvClean = {
+  title: 'Missing Number', maxNumber: 10, gradeBand: '1',
+  challenges: [
+    { id: 'v1', type: 'missing-value', instruction: 'What is missing?', equation: '3 + ? = 5', missingPosition: 2, correctValue: 2, options: [2, 3, 4, 1] },
+    { id: 'v2', type: 'missing-value', instruction: 'What is missing?', equation: '4 + 2 = ?', missingPosition: 4, correctValue: 6, options: [6, 5, 7, 4] },
+    { id: 'v3', type: 'missing-value', instruction: 'What is missing?', equation: '? + 1 = 4', missingPosition: 0, correctValue: 3, options: [3, 2, 4, 5] },
+  ],
+};
+
+const ebBuildClean = {
+  title: 'Build It', maxNumber: 10, gradeBand: '1',
+  challenges: [
+    { id: 'b1', type: 'build', instruction: 'Build an equation that equals 5.', targetEquation: '3 + 2 = 5', availableTiles: ['3', '+', '2', '=', '5', '4', '-'] },
+    { id: 'b2', type: 'build', instruction: 'Build an equation that equals 7.', targetEquation: '4 + 3 = 7', availableTiles: ['4', '+', '3', '=', '7', '2', '-'] },
+    { id: 'b3', type: 'build', instruction: 'Build an equation that equals 8.', targetEquation: '6 + 1 = 7', availableTiles: ['6', '+', '1', '=', '7', '5', '-'] },
+  ],
+};
+
+const ebBalClean = {
+  title: 'Balance', maxNumber: 10, gradeBand: '1',
+  challenges: [
+    { id: 'a1', type: 'balance', instruction: 'Balance both sides.', leftSide: '3 + 4', rightSide: '? + 2', correctAnswer: 5 },
+    { id: 'a2', type: 'balance', instruction: 'Balance both sides.', leftSide: '2 + 2', rightSide: '? + 1', correctAnswer: 3 },
+    { id: 'a3', type: 'balance', instruction: 'Balance both sides.', leftSide: '5 + 4', rightSide: '? + 3', correctAnswer: 6 },
+  ],
+};
+
+const ebRwClean = {
+  title: 'Rewrite', maxNumber: 10, gradeBand: '1',
+  challenges: [
+    { id: 'r1', type: 'rewrite', instruction: 'Write it another way.', originalEquation: '3 + 2 = 5', acceptedForms: ['2 + 3 = 5', '5 = 3 + 2', '5 - 3 = 2', '5 - 2 = 3'], availableTiles: ['3', '+', '2', '=', '5', '-'] },
+    { id: 'r2', type: 'rewrite', instruction: 'Write it another way.', originalEquation: '4 + 1 = 5', acceptedForms: ['1 + 4 = 5', '5 = 4 + 1', '5 - 4 = 1', '5 - 1 = 4'], availableTiles: ['4', '+', '1', '=', '5', '-'] },
+    { id: 'r3', type: 'rewrite', instruction: 'Write it another way.', originalEquation: '6 + 2 = 8', acceptedForms: ['2 + 6 = 8', '8 = 6 + 2', '8 - 6 = 2', '8 - 2 = 6'], availableTiles: ['6', '+', '2', '=', '8', '-'] },
+  ],
+};
+
+describe('equation-builder oracle', () => {
+  it('passes clean true-false data', () => {
+    expect(equationBuilderOracle.verify(ebTfClean, ebTfCtx).violations).toEqual([]);
+  });
+  it('passes clean missing-value data', () => {
+    expect(equationBuilderOracle.verify(ebMvClean, ebMvCtx).violations).toEqual([]);
+  });
+  it('passes clean build data', () => {
+    expect(equationBuilderOracle.verify(ebBuildClean, ebBuildCtx).violations).toEqual([]);
+  });
+  it('passes clean balance data', () => {
+    expect(equationBuilderOracle.verify(ebBalClean, ebBalCtx).violations).toEqual([]);
+  });
+  it('passes clean rewrite data', () => {
+    expect(equationBuilderOracle.verify(ebRwClean, ebRwCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — true-false isTrue contradicts the actual equation', () => {
+    const data = JSON.parse(JSON.stringify(ebTfClean));
+    data.challenges[0].isTrue = false; // 3 + 2 = 5 is true
+    const v = equationBuilderOracle.verify(data, ebTfCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 't1')).toBe(true);
+  });
+
+  it('flags answer-key-desync — correctValue does not satisfy the equation (substitute-back)', () => {
+    const data = JSON.parse(JSON.stringify(ebMvClean));
+    data.challenges[0].correctValue = 3; // 3 + 3 = 5 is false
+    const v = equationBuilderOracle.verify(data, ebMvCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'v1' && /does not satisfy/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — correctValue missing from the options (unselectable)', () => {
+    const data = JSON.parse(JSON.stringify(ebMvClean));
+    data.challenges[0].options = [3, 4, 1, 5]; // 2 is gone
+    const v = equationBuilderOracle.verify(data, ebMvCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'v1' && /unselectable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — build target that is not a true equation', () => {
+    const data = JSON.parse(JSON.stringify(ebBuildClean));
+    data.challenges[0].targetEquation = '3 + 2 = 6'; // false
+    data.challenges[0].availableTiles = ['3', '+', '2', '=', '6', '4', '-'];
+    const v = equationBuilderOracle.verify(data, ebBuildCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'b1' && /not a true equation/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — build target not buildable from the tiles (unreachable)', () => {
+    const data = JSON.parse(JSON.stringify(ebBuildClean));
+    data.challenges[0].availableTiles = ['3', '+', '2', '=', '4', '-']; // no '5'
+    const v = equationBuilderOracle.verify(data, ebBuildCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'b1' && /unreachable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — balance answer that does not make the sides equal', () => {
+    const data = JSON.parse(JSON.stringify(ebBalClean));
+    data.challenges[0].correctAnswer = 9; // 9 + 2 = 11 ≠ 3 + 4 = 7
+    const v = equationBuilderOracle.verify(data, ebBalCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'a1' && /do not balance/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — a rewrite accepted form that is false', () => {
+    const data = JSON.parse(JSON.stringify(ebRwClean));
+    data.challenges[0].acceptedForms[0] = '2 + 3 = 6'; // false
+    const v = equationBuilderOracle.verify(data, ebRwCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'r1' && /not a true equation/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — a number above the objective ceiling', () => {
+    const v = equationBuilderOracle.verify(ebTfClean, { ...ebTfCtx, scopeMax: 4 }).violations;
+    expect(v.some((x) => x.check === 'scope' && x.where === 't3')).toBe(true); // 7 exceeds 4
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = equationBuilderOracle.verify(ebTfClean, ebBuildCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — build instruction spells out the target', () => {
+    const data = JSON.parse(JSON.stringify(ebBuildClean));
+    data.challenges[0].instruction = 'Build 3 + 2 = 5 with the tiles.';
+    const v = equationBuilderOracle.verify(data, ebBuildCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'b1')).toBe(true);
+  });
+
+  it('flags clustering — every true-false answer is true (the "all true" pattern)', () => {
+    const data = {
+      title: 'x', maxNumber: 10, gradeBand: '1',
+      challenges: [
+        { id: 't1', type: 'true-false', instruction: 'q', displayEquation: '3 + 2 = 5', isTrue: true },
+        { id: 't2', type: 'true-false', instruction: 'q', displayEquation: '4 + 1 = 5', isTrue: true },
+        { id: 't3', type: 'true-false', instruction: 'q', displayEquation: '7 - 2 = 5', isTrue: true },
+        { id: 't4', type: 'true-false', instruction: 'q', displayEquation: '6 + 2 = 8', isTrue: true },
+      ],
+    };
+    const v = equationBuilderOracle.verify(data, ebTfCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — isTrue is not a boolean', () => {
+    const data = JSON.parse(JSON.stringify(ebTfClean));
+    data.challenges[0].isTrue = 'true';
+    const v = equationBuilderOracle.verify(data, ebTfCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 't1')).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...ebTfClean, challenges: [ebTfClean.challenges[0]] };
+    const v = equationBuilderOracle.verify(data, ebTfCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// equation-workspace
+// ---------------------------------------------------------------------------
+
+const ewSolveCtx = { componentId: 'equation-workspace', evalMode: 'solve', topic: 'Solving linear equations', gradeLevel: 'algebra 1' };
+const ewIdCtx = { componentId: 'equation-workspace', evalMode: 'identify-operation', topic: 'Solving linear equations', gradeLevel: 'algebra 1' };
+
+const OPS = [
+  { id: 'sub3', label: 'Subtract 3', category: 'arithmetic' },
+  { id: 'div2', label: 'Divide by 2', category: 'arithmetic' },
+  { id: 'add6', label: 'Add 6', category: 'arithmetic' },
+  { id: 'div3', label: 'Divide by 3', category: 'arithmetic' },
+  { id: 'mul4', label: 'Multiply by 4', category: 'arithmetic' },
+];
+
+const ewSolveClean = {
+  title: 'Solve for x',
+  challenges: [
+    { id: 's1', type: 'solve', instruction: 'Solve for x.', equation: '2x + 3 = 7', targetVariable: 'x', solutionSteps: [{ operation: 'Subtract 3', operationId: 'sub3', resultLatex: '2x = 4' }, { operation: 'Divide by 2', operationId: 'div2', resultLatex: 'x = 2' }], availableOperations: OPS },
+    { id: 's2', type: 'solve', instruction: 'Solve for x.', equation: '3x - 6 = 9', targetVariable: 'x', solutionSteps: [{ operation: 'Add 6', operationId: 'add6', resultLatex: '3x = 15' }, { operation: 'Divide by 3', operationId: 'div3', resultLatex: 'x = 5' }], availableOperations: OPS },
+    { id: 's3', type: 'solve', instruction: 'Solve for x.', equation: 'x / 4 = 2', targetVariable: 'x', solutionSteps: [{ operation: 'Multiply by 4', operationId: 'mul4', resultLatex: 'x = 8' }], availableOperations: OPS },
+  ],
+};
+
+const ewIdClean = {
+  title: 'Identify the next step',
+  challenges: [
+    { id: 'i1', type: 'identify-operation', instruction: 'What is the first step?', equation: '2x + 3 = 7', targetVariable: 'x', solutionSteps: [{ operation: 'Subtract 3', operationId: 'sub3', resultLatex: '2x = 4' }], availableOperations: OPS, correctOperationId: 'sub3' },
+    { id: 'i2', type: 'identify-operation', instruction: 'What is the first step?', equation: '3x - 6 = 9', targetVariable: 'x', solutionSteps: [{ operation: 'Add 6', operationId: 'add6', resultLatex: '3x = 15' }], availableOperations: OPS, correctOperationId: 'add6' },
+    { id: 'i3', type: 'identify-operation', instruction: 'What is the first step?', equation: 'x / 4 = 2', targetVariable: 'x', solutionSteps: [{ operation: 'Multiply by 4', operationId: 'mul4', resultLatex: 'x = 8' }], availableOperations: OPS, correctOperationId: 'mul4' },
+  ],
+};
+
+describe('equation-workspace oracle', () => {
+  it('passes clean solve data', () => {
+    expect(equationWorkspaceOracle.verify(ewSolveClean, ewSolveCtx).violations).toEqual([]);
+  });
+
+  it('passes clean identify-operation data', () => {
+    expect(equationWorkspaceOracle.verify(ewIdClean, ewIdCtx).violations).toEqual([]);
+  });
+
+  it('flags answer-key-desync — a step operation is not in the menu (unreachable)', () => {
+    const data = JSON.parse(JSON.stringify(ewSolveClean));
+    data.challenges[0].solutionSteps[1].operationId = 'div7'; // not in availableOperations
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /unreachable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — identify correctOperationId ≠ the first solve step', () => {
+    const data = JSON.parse(JSON.stringify(ewIdClean));
+    data.challenges[0].correctOperationId = 'div2'; // first step is sub3
+    const v = equationWorkspaceOracle.verify(data, ewIdCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'i1' && /contradicts the solve path/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — identify correctOperationId not selectable', () => {
+    const data = JSON.parse(JSON.stringify(ewIdClean));
+    data.challenges[0].correctOperationId = 'ghost';
+    const v = equationWorkspaceOracle.verify(data, ewIdCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'i1' && /unselectable/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — the final step never isolates the variable', () => {
+    const data = JSON.parse(JSON.stringify(ewSolveClean));
+    data.challenges[0].solutionSteps = [{ operation: 'Subtract 3', operationId: 'sub3', resultLatex: '2x = 4' }]; // ends at 2x = 4
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /never actually solves/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-key-desync — empty solutionSteps', () => {
+    const data = JSON.parse(JSON.stringify(ewSolveClean));
+    data.challenges[0].solutionSteps = [];
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 's1' && /no work to grade/.test(x.detail))).toBe(true);
+  });
+
+  it('flags scope — an eval-mode identity mismatch', () => {
+    const v = equationWorkspaceOracle.verify(ewSolveClean, ewIdCtx).violations;
+    expect(v.some((x) => x.check === 'scope' && /task identity/.test(x.detail))).toBe(true);
+  });
+
+  it('flags answer-leak — the instruction states the solved form', () => {
+    const data = JSON.parse(JSON.stringify(ewSolveClean));
+    data.challenges[0].instruction = 'Solve it — the answer is x = 2.';
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 's1')).toBe(true);
+  });
+
+  it('flags clustering — every challenge is the same equation', () => {
+    const data = {
+      title: 'x',
+      challenges: [1, 2, 3, 4].map((i) => ({ id: `s${i}`, type: 'solve', instruction: 'Solve for x.', equation: '2x + 3 = 7', targetVariable: 'x', solutionSteps: [{ operation: 'Subtract 3', operationId: 'sub3', resultLatex: '2x = 4' }, { operation: 'Divide by 2', operationId: 'div2', resultLatex: 'x = 2' }], availableOperations: OPS })),
+    };
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'clustering')).toBe(true);
+  });
+
+  it('flags schema — duplicate operation ids in the menu', () => {
+    const data = JSON.parse(JSON.stringify(ewSolveClean));
+    data.challenges[0].availableOperations = [{ id: 'sub3', label: 'Subtract 3', category: 'arithmetic' }, { id: 'sub3', label: 'Subtract three', category: 'arithmetic' }, { id: 'div2', label: 'Divide by 2', category: 'arithmetic' }];
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 's1' && /duplicate ids/.test(x.detail))).toBe(true);
+  });
+
+  it('flags a demo-sized set (mastery-over-demo)', () => {
+    const data = { ...ewSolveClean, challenges: [ewSolveClean.challenges[0]] };
+    const v = equationWorkspaceOracle.verify(data, ewSolveCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'challenges')).toBe(true);
   });
 });

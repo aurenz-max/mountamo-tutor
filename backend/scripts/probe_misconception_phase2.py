@@ -25,20 +25,20 @@ class _UnusedMapping:
     retrieval_matcher = None
 
 
-async def run(student_id: int) -> None:
+async def run(student_id: int, primitive_type: str = "tape-diagram") -> None:
     firestore = FirestoreService()
     subskill_id = "MISCONCEPTION_PHASE2_PROBE"
     attempt_id = "misconception-phase2-probe"
     student_ref = firestore._student_doc(student_id)
     student_existed = student_ref.get().exists
-    doc_ref = firestore._misconceptions_subcollection(student_id).document("tape-diagram")
+    doc_ref = firestore._misconceptions_subcollection(student_id).document(primitive_type)
 
     original_factory = student_profile.get_firestore_service
     student_profile.get_firestore_service = lambda: firestore
     try:
         await firestore.add_or_update_misconception(
             student_id=student_id,
-            primitive_type="tape-diagram",
+            primitive_type=primitive_type,
             scope="primitive",
             subskill_id=subskill_id,
             misconception_text=(
@@ -75,11 +75,11 @@ async def run(student_id: int) -> None:
             "text": "The student treats the smaller quantity as the difference.",
             "detectedAt": active["detectedAt"],
             "sourceAttemptId": attempt_id,
-            "primitiveType": "tape-diagram",
+            "primitiveType": primitive_type,
             "scope": "primitive",
             "skillId": None,
             "subskillId": subskill_id,
-            "misconceptionKey": "tape-diagram",
+            "misconceptionKey": primitive_type,
         }
         print(json.dumps({
             "status": "pass",
@@ -98,5 +98,6 @@ async def run(student_id: int) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--student", type=int, default=999904)
+    parser.add_argument("--primitive", default="tape-diagram")
     args = parser.parse_args()
-    asyncio.run(run(args.student))
+    asyncio.run(run(args.student, args.primitive))

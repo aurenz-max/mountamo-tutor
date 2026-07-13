@@ -281,6 +281,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
 
   {
     id: 'rhyme-studio',
+    misconceptionScope: 'primitive',
     description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
     constraints: 'Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array.',
     evalModes: [
@@ -415,6 +416,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'phoneme-explorer',
+    misconceptionScope: 'primitive',
     description:
       'Multi-mode phoneme awareness activity with four progressive modes: '
       + 'Isolate (match initial/final sound), Blend (combine phoneme tiles into word), '
@@ -492,6 +494,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'sound-swap',
+    misconceptionScope: 'primitive',
     description:
       'Interactive phoneme manipulation activity where students add, delete, or substitute individual sounds in words to create new words. '
       + 'Three operation modes: Addition (add a phoneme to make a new word), Deletion (remove a phoneme to reveal a new word), '
@@ -645,6 +648,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'letter-sound-link',
+    misconceptionScope: 'primitive',
     description:
       'Audio-first letter-sound correspondence activity. Three modes: see a letter and hear two sounds via speaker bubbles (pick the right one), '
       + 'hear a sound auto-played and pick the correct letter, or match a letter to a keyword image. Binary discrimination (2 options) with '
@@ -834,6 +838,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'cvc-speller',
+    misconceptionScope: 'primitive',
     description:
       'Audio-first CVC word encoding with three progressive task modes. Fill-the-Vowel: hear a word, see consonant frame (c_t), '
       + 'pick the correct vowel from 2 confusable options. Spell-It: hear a word, place all 3 letters in Elkonin boxes. '

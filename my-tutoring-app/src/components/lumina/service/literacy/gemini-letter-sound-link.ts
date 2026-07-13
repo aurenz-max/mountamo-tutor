@@ -12,6 +12,30 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
+
+type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
+type LetterSoundRemediationMove = 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
+
+export function letterSoundRemediationMoveFor(
+  mode: LetterSoundMode,
+  remediationFocus?: string,
+  contrastAvailable = true,
+): LetterSoundRemediationMove | undefined {
+  if (!remediationFocus?.trim()) return undefined;
+  if (!contrastAvailable) return undefined;
+  if (mode === 'see-hear') return 'contrast_sound';
+  if (mode === 'hear-see') return 'contrast_letter';
+  return 'contrast_keyword';
+}
+
+/** Hear-see may only claim remediation when the diagnosed contrast is teachable in this letter group. */
+export function hearSeeContrastAvailable(remediationFocus: string | undefined, cumulativeLetters: string[]): boolean {
+  if (!remediationFocus?.trim()) return false;
+  const namedLetters = Array.from(remediationFocus.matchAll(/\bletter\s+['"]?([a-z])['"]?/gi))
+    .map((match) => match[1].toLowerCase());
+  return namedLetters.length >= 2 && namedLetters.every((letter) => cumulativeLetters.includes(letter));
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -80,6 +104,11 @@ const letterSoundLinkSchema: Schema = {
             type: Type.STRING,
             enum: ["see-hear", "hear-see", "keyword-match"],
             description: "Challenge mode",
+          },
+          remediationMove: {
+            type: Type.STRING,
+            enum: ["contrast_sound", "contrast_letter", "contrast_keyword"],
+            description: "Private remediation trace; set only when remediation is active."
           },
           targetLetter: {
             type: Type.STRING,
@@ -298,6 +327,7 @@ export const generateLetterSoundLink = async (
     evalConstraint,
     CHALLENGE_TYPE_DOCS,
   );
+  const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create an interactive letter-sound correspondence activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
@@ -311,6 +341,7 @@ ${letterSoundRef}
 Generate 6-8 challenges. Each challenge links a letter to its sound and keyword.
 
 ${challengeTypeSection}
+${remediationSection}
 
 BINARY DISCRIMINATION FORMAT:
 Every challenge has EXACTLY 2 options — one correct, one distractor.
@@ -331,6 +362,7 @@ MODE-SPECIFIC OPTION FORMATS (2 options each):
 - keyword-match: options are {sound: "keyword_word", isCorrect: boolean} — exactly 2 options
 
 RULES:
+${ctx.remediationFocus ? '- REMEDIATION TRACE: see-hear uses remediationMove="contrast_sound"; hear-see uses "contrast_letter"; keyword-match uses "contrast_keyword". Make the wrong option encode the diagnosed confusion.' : ''}
 - Use IDs: ch1, ch2, ch3, etc.
 - Use ONLY letters from the cumulative group: [${cumulativeLetters.join(', ')}]
 - Use clean slash notation for sounds: /s/, /t/, /k/, etc. Short vowels use the plain letter.
@@ -397,6 +429,11 @@ LETTER GROUP DATA:
 
         // Validate options: must have exactly 2 with exactly 1 correct
         ch.options = validateOptions(ch, cumulativeLetters);
+        const contrastAvailable = ch.mode !== 'hear-see'
+          || hearSeeContrastAvailable(ctx.remediationFocus, cumulativeLetters);
+        const remediationMove = letterSoundRemediationMoveFor(ch.mode, ctx.remediationFocus, contrastAvailable);
+        if (remediationMove) ch.remediationMove = remediationMove;
+        else delete ch.remediationMove;
 
         return ch;
       });

@@ -20,6 +20,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SoundSwapMetrics } from '../../../evaluation/types';
+import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
@@ -59,6 +60,7 @@ export interface SoundSwapChallenge {
   nameTargetSound?: boolean;
   /** #5 answer-form (addition/substitution) — number of phoneme choice buttons. Default: 3. */
   optionCount?: number;
+  remediationMove?: 'isolate_added_sound' | 'isolate_deleted_sound' | 'contrast_replacement';
 }
 
 export interface SoundSwapData {
@@ -262,6 +264,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   // New words the student said ALOUD (judge-confirmed) — the culminating
   // production beat. Tracked by challenge id, cumulative across the session.
   const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
+  const diagnosisObservationsRef = useRef<Array<{challenge:string;expected:string;observed:string;judgeFeedback?:string}>>([]);
 
   // ── Timing ────────────────────────────────────────────────────────
   const startTimeRef = useRef(Date.now());
@@ -460,11 +463,19 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     };
 
     setSubmittedScore(overallPct);
+    const observations = diagnosisObservationsRef.current;
+    const judgeBacked = [...observations].reverse().find(o => o.judgeFeedback);
+    const source = judgeBacked || observations[observations.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && source ? {
+      challengeSummary: source.challenge, expected: source.expected, observed: source.observed,
+      judgeFeedback: judgeBacked?.judgeFeedback,
+      priorAttempts: observations.filter(o => o !== source).slice(-4).map(o => ({challenge:o.challenge, observed:o.observed})),
+    } : undefined;
     submitEvaluation(
       overallPct >= 60,
       overallPct,
       metrics,
-      { durationMs: elapsed, challengeResults, spokenWords: Array.from(spokenWords) },
+      { durationMs: elapsed, challengeResults, spokenWords: Array.from(spokenWords) }, undefined, diagnosisEvidence,
     );
 
     // AI celebration
@@ -520,6 +531,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     } else {
       SoundManager.playIncorrect();
       const tappedPhoneme = currentChallenge.originalPhonemes[tappedIndex];
+      diagnosisObservationsRef.current.push({challenge:`Delete one sound from ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Delete ${currentChallenge.deletePhoneme} at the ${currentChallenge.deletePosition}.`,observed:`Deleted ${tappedPhoneme}.`});
       setFeedback(`That's ${tappedPhoneme} — look for the ${currentChallenge.deletePhoneme} sound.`);
       setFeedbackType('error');
       setIsShaking(true);
@@ -581,6 +593,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      diagnosisObservationsRef.current.push({challenge:`Add one sound to ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Add ${currentChallenge.addPhoneme} at the ${currentChallenge.addPosition}.`,observed:`Added ${phoneme}.`});
       SoundManager.playIncorrect();
       setFeedback(`${phoneme} doesn't make the right word here. Listen to the instruction again...`);
       setFeedbackType('error');
@@ -643,6 +656,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else {
+      diagnosisObservationsRef.current.push({challenge:`Change one sound in ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Replace ${currentChallenge.oldPhoneme} with ${currentChallenge.newPhoneme}.`,observed:`Selected ${phoneme} as the replacement.`});
       SoundManager.playIncorrect();
       setFeedback(`${phoneme} doesn't make the right word. Which sound replaces ${currentChallenge.oldPhoneme}?`);
       setFeedbackType('error');
@@ -699,6 +713,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         { silent: true },
       );
     } else if (result.outcome === 'no-match' && result.verdict?.heard) {
+      diagnosisObservationsRef.current.push({challenge:'Say the new word after manipulating its phonemes.',expected:`Say ${spokenTargetWord}.`,observed:`Judge heard "${result.verdict.heard}".`,judgeFeedback:result.verdict.misconception || `The judge heard "${result.verdict.heard}" instead of the transformed word with high confidence.`});
       sendText(
         `[SPOKEN_MISS] The student tried to say the new word "${spokenTargetWord}" aloud but it sounded like "${result.verdict.heard}". `
         + `Gently model it — stretch the sounds "${currentChallenge.resultPhonemes.join('... ')}", then say "${spokenTargetWord}" — and invite one more try. `

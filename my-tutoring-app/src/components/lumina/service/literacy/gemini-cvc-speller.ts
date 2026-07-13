@@ -9,6 +9,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -70,6 +71,17 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // ---------------------------------------------------------------------------
 
 type CvcTaskType = 'fill-vowel' | 'spell-word' | 'word-sort';
+type CvcRemediationMove = 'contrast_vowel' | 'phoneme_slots' | 'minimal_pair_sort';
+
+export function cvcRemediationMoveFor(
+  taskType: CvcTaskType,
+  remediationFocus?: string,
+): CvcRemediationMove | undefined {
+  if (!remediationFocus?.trim()) return undefined;
+  if (taskType === 'fill-vowel') return 'contrast_vowel';
+  if (taskType === 'spell-word') return 'phoneme_slots';
+  return 'minimal_pair_sort';
+}
 
 interface CvcSupportScaffold {
   /** spell-word / word-sort: show the emoji + image that identifies the word (self-check aid). */
@@ -331,6 +343,11 @@ const cvcSpellerSchema: Schema = {
             enum: ["fill-vowel", "spell-word", "word-sort"],
             description: "The task type for this challenge"
           },
+          remediationMove: {
+            type: Type.STRING,
+            enum: ["contrast_vowel", "phoneme_slots", "minimal_pair_sort"],
+            description: "Private remediation trace; set only when remediation is active."
+          },
           targetWord: {
             type: Type.STRING,
             description: "The 3-letter CVC word (e.g., 'cat', 'hen', 'pig')"
@@ -409,6 +426,16 @@ const VOWEL_MAP: Record<string, string> = {
   'short-a': 'a', 'short-e': 'e', 'short-i': 'i', 'short-o': 'o', 'short-u': 'u',
 };
 
+export function resolveCvcVowelFocus(
+  topic: string,
+  configured?: string,
+): keyof typeof VOWEL_MAP {
+  const explicit = configured?.toLowerCase().trim();
+  if (explicit && explicit in VOWEL_MAP) return explicit as keyof typeof VOWEL_MAP;
+  const match = topic.toLowerCase().match(/short[\s-]*([aeiou])\b/);
+  return (match ? `short-${match[1]}` : 'short-a') as keyof typeof VOWEL_MAP;
+}
+
 /**
  * Generate CVC Speller data using Gemini AI
  *
@@ -454,7 +481,7 @@ export const generateCvcSpeller = async (
   // -------------------------------------------------------------------------
   // Setup
   // -------------------------------------------------------------------------
-  const vowelFocus = config?.vowelFocus || 'short-a';
+  const vowelFocus = resolveCvcVowelFocus(topic, config?.vowelFocus);
   const letterGroup = config?.letterGroup || 1;
   const targetVowel = VOWEL_MAP[vowelFocus] || 'a';
   const confusableVowel = CONFUSABLE_VOWELS[targetVowel] || (targetVowel === 'a' ? 'e' : 'a');
@@ -495,6 +522,7 @@ export const generateCvcSpeller = async (
   const tierSection = tierPromptLines.length
     ? `\n## WITHIN-MODE DIFFICULTY (config.difficulty — scaffolding + discrimination shape, NOT word size)\n${tierPromptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
+  const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
@@ -509,12 +537,14 @@ The AI provides progressive scaffolding: natural word → stretched sounds → i
 
 ${challengeTypeSection}
 ${tierSection}
+${remediationSection}
 TASK-SPECIFIC FORMATS:
 
 For "fill-vowel" challenges:
 - Student hears the word, sees consonant frame (e.g., "c_t"), picks from 2 vowels
 - vowelOptions: exactly 2 vowels — the correct one ("${targetVowel}") and confusable ("${structuralContrast}")
 - distractorLetters: not needed (omit or empty)
+${ctx.remediationFocus ? '- Set remediationMove to "contrast_vowel" and make the wrong vowel encode the diagnosed confusion.' : ''}
 - Words must use vowel "${targetVowel}" — the confusable "${structuralContrast}" is ONLY for the wrong option
 
 For "spell-word" challenges:
@@ -522,6 +552,7 @@ For "spell-word" challenges:
 - distractorLetters: 3-5 letters NOT in the target word
 - vowelOptions: not needed
 - commonErrors: 1-2 common misspellings with feedback
+${ctx.remediationFocus ? '- Set remediationMove to "phoneme_slots" and include a distractor spelling that predicts the diagnosed confusion.' : ''}
 
 For "word-sort" challenges:
 - Student hears words and sorts into 2 buckets by vowel sound
@@ -529,6 +560,7 @@ For "word-sort" challenges:
 - Include a MIX of both vowels — some words use "${targetVowel}", some use "${structuralContrast}"
 - vowelOptions: not needed, distractorLetters: not needed
 - IMPORTANT: word-sort challenges MUST include words with BOTH vowels (not just "${targetVowel}")
+${ctx.remediationFocus ? '- Set remediationMove to "minimal_pair_sort" and choose contrast words that isolate the diagnosed sound distinction.' : ''}
 
 REQUIREMENTS:
 - 4-6 challenges total
@@ -577,6 +609,12 @@ PHONEME NOTATION:
         ch.imageDescription = ch.imageDescription || '';
         ch.distractorLetters = ch.distractorLetters || [];
         ch.commonErrors = ch.commonErrors || [];
+        const remediationMove = cvcRemediationMoveFor(ch.taskType as CvcTaskType, ctx.remediationFocus);
+        if (remediationMove) {
+          ch.remediationMove = remediationMove;
+        } else {
+          delete ch.remediationMove;
+        }
 
         // Ensure fill-vowel has exactly 2 vowel options
         if (ch.taskType === 'fill-vowel') {

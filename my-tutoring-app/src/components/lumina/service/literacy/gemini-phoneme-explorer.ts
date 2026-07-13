@@ -4,14 +4,31 @@ import type { GenerationContext } from "../generation/generationContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
 import {
   resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
 
 // ---------------------------------------------------------------------------
-// Challenge type documentation registry
+// Architecture
+// ---------------------------------------------------------------------------
+//
+// PhonemeExplorer has four structurally-distinct challenge modes (isolate,
+// blend, segment, manipulate), each with its own field set. A SINGLE Gemini
+// call juggling all four in one mode-multiplexed schema (~15 conditional
+// fields, only id+mode required) is unreliable: flash-lite degenerates to
+// emitting empty {id, mode} shells that the validator backfills with "word"
+// and "???" placeholders.
+//
+// Instead this generator is an ORCHESTRATOR. It builds a per-challenge mode
+// plan, then fans out ONE call per distinct mode IN PARALLEL. Each call uses a
+// simple single-mode schema where every content field is REQUIRED — so the
+// model must produce real, fully-populated challenges. Results are recomposed
+// in plan order (easy→hard) and re-id'd. Complexity per call drops from ~15
+// optional fields to ~4-5 required ones (the CLAUDE.md schema-simplicity law).
+
+// ---------------------------------------------------------------------------
+// Challenge type documentation registry (per-mode prompt specs)
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
@@ -55,196 +72,37 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+const ALL_MODES = ['isolate', 'blend', 'segment', 'manipulate'] as const;
+type PhonemeMode = typeof ALL_MODES[number];
+export type PhonemeRemediationMove = 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
+
+export function phonemeRemediationMoveFor(
+  mode: PhonemeMode,
+  remediationFocus?: string,
+): PhonemeRemediationMove | undefined {
+  if (!remediationFocus?.trim()) return undefined;
+  if (mode === 'isolate') return 'contrast_phoneme';
+  if (mode === 'blend') return 'blend_through';
+  if (mode === 'segment') return 'segment_boundary';
+  return 'isolate_operation';
+}
+
+const TOTAL_CHALLENGES = 5;
+
+const SYSTEM_INSTRUCTION =
+  "You are an expert K-2 reading specialist designing phoneme awareness activities. " +
+  "You choose concrete, picturable words that young learners know and enjoy. " +
+  "You ALWAYS pair emojis that visually match the words they represent. " +
+  "You ensure phonological accuracy in all challenges. " +
+  "You never reveal answers through visual layout or ordering. " +
+  "You NEVER emit placeholder text — every field is fully, concretely populated.";
+
 // ---------------------------------------------------------------------------
-// Schema
+// Grade guidelines
 // ---------------------------------------------------------------------------
 
-/**
- * Schema definition for Phoneme Explorer Data
- *
- * Generates multi-mode phoneme awareness challenges for K-2 students.
- * Four modes: isolate (match initial/final sound), blend (combine phonemes),
- * segment (break word into phonemes), manipulate (change a phoneme).
- */
-const phonemeExplorerSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    title: {
-      type: Type.STRING,
-      description:
-        "Engaging title for the activity (e.g., 'Sound Safari: Animals!')",
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique identifier (e.g., 'c1', 'c2')",
-          },
-          mode: {
-            type: Type.STRING,
-            enum: ["isolate", "blend", "segment", "manipulate"],
-            description: "Challenge mode: 'isolate' (match initial/final sound), 'blend' (combine phonemes into word), 'segment' (break word into phonemes), 'manipulate' (change a phoneme)",
-          },
-          // -- isolate mode fields --
-          phoneme: {
-            type: Type.STRING,
-            description:
-              "For isolate: The uppercase letter for this sound (e.g., 'B', 'S', 'M')",
-          },
-          phonemeSound: {
-            type: Type.STRING,
-            description:
-              "For isolate: How the phoneme sounds spoken aloud (e.g., 'buh', 'sss', 'mmm')",
-          },
-          exampleWord: {
-            type: Type.STRING,
-            description:
-              "For isolate: A concrete word that starts with this phoneme (e.g., 'Bear'). Must match the exampleEmoji.",
-          },
-          exampleEmoji: {
-            type: Type.STRING,
-            description:
-              "For isolate: A single emoji depicting the exampleWord (e.g., '🐻' for Bear). MUST visually match the word.",
-          },
-          // -- blend mode fields --
-          phonemeSequence: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description:
-              "For blend: Array of individual phoneme sounds (e.g., ['k','a','t'] for 'cat')",
-          },
-          phonemeDisplay: {
-            type: Type.STRING,
-            description:
-              "For blend: Display string for phoneme tiles (e.g., '/k/ /a/ /t/')",
-          },
-          // -- segment mode fields --
-          targetWord: {
-            type: Type.STRING,
-            description:
-              "For segment: The word to segment into phonemes (e.g., 'cat')",
-          },
-          targetEmoji: {
-            type: Type.STRING,
-            description:
-              "For segment: Emoji depicting the target word (e.g., '🐱')",
-          },
-          segmentOptions: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description:
-              "For segment: 4 phoneme breakdown options (e.g., ['/k/ /a/ /t/', '/k/ /t/', '/s/ /a/ /t/', '/k/ /a/ /t/ /s/'])",
-          },
-          correctSegmentation: {
-            type: Type.NUMBER,
-            description:
-              "For segment: 0-based index of the correct option in segmentOptions",
-          },
-          // -- manipulate mode fields --
-          originalWord: {
-            type: Type.STRING,
-            description:
-              "For manipulate: The starting word (e.g., 'cat')",
-          },
-          originalEmoji: {
-            type: Type.STRING,
-            description:
-              "For manipulate: Emoji for the starting word (e.g., '🐱')",
-          },
-          operation: {
-            type: Type.STRING,
-            enum: ["substitute", "delete", "add"],
-            description:
-              "For manipulate: Type of phoneme operation",
-          },
-          operationDescription: {
-            type: Type.STRING,
-            description:
-              "For manipulate: Human-readable instruction (e.g., \"Change the /k/ in 'cat' to /b/\")",
-          },
-          // -- shared: 4 choices (used by isolate, blend, manipulate) --
-          choices: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                word: {
-                  type: Type.STRING,
-                  description: "A concrete, picturable word",
-                },
-                emoji: {
-                  type: Type.STRING,
-                  description:
-                    "A single emoji depicting this word. MUST visually match the word.",
-                },
-                correct: {
-                  type: Type.BOOLEAN,
-                  description:
-                    "true if this is the correct answer, false otherwise",
-                },
-              },
-              required: ["word", "emoji", "correct"],
-            },
-            description:
-              "For isolate/blend/manipulate: Exactly 4 choices (1 correct, 3 distractors)",
-          },
-        },
-        required: ["id", "mode"],
-      },
-      description: "Array of 5-6 phoneme awareness challenges",
-    },
-  },
-  required: ["title", "challenges"],
-};
-
-/**
- * Generate Phoneme Explorer data using Gemini AI
- *
- * Creates multi-mode phoneme awareness challenges appropriate for K-2 students.
- * Four modes: isolate, blend, segment, manipulate — ordered by difficulty.
- *
- * @param topic - Theme for the word set (e.g., "Animals", "Food", "At the Park")
- * @param gradeLevel - Grade level ('K', '1', or '2')
- * @param config - Optional configuration overrides
- * @returns PhonemeExplorerData with phoneme awareness challenges
- */
-type PhonemeExplorerConfig = Partial<{
-    mode: string;
-    /** Target eval mode from the IRT calibration system. */
-    targetEvalMode: string;
-  }>;
-
-export const generatePhonemeExplorer = async (
-  ctx: GenerationContext,
-): Promise<PhonemeExplorerData> => {
-  const { topic } = ctx;
-  const intent = ctx.intent;
-  const gradeLevel = ctx.gradeContext;
-  const config = ctx.raw as PhonemeExplorerConfig;
-  // ── Eval mode resolution ────────────────────────────────────────────
-  const evalConstraint = resolveEvalModeConstraint(
-    'phoneme-explorer',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
-  logEvalModeResolution('PhonemeExplorer', config?.targetEvalMode, evalConstraint);
-
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(phonemeExplorerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
-        fieldName: 'mode',
-      })
-    : phonemeExplorerSchema;
-
-  // ── Grade setup ─────────────────────────────────────────────────────
-  const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
-    ? gradeLevel.toUpperCase()
-    : "K";
-
-  const gradeGuidelines: Record<string, string> = {
-    K: `KINDERGARTEN GUIDELINES:
+const gradeGuidelines: Record<string, string> = {
+  K: `KINDERGARTEN GUIDELINES:
 - Use simple CVC words that 5-year-olds know (cat, dog, sun, bus, pen)
 - Focus on single consonant sounds: B, C, D, F, G, H, J, K, L, M, N, P, R, S, T, W
 - Use different phonemes across challenges (don't repeat the same letter)
@@ -253,7 +111,7 @@ export const generatePhonemeExplorer = async (
 - For blend: 3-phoneme CVC words ONLY
 - For segment: 3-phoneme CVC words ONLY
 - For manipulate: initial consonant substitution ONLY`,
-    "1": `GRADE 1 GUIDELINES:
+  "1": `GRADE 1 GUIDELINES:
 - Can include blends and digraphs (SH, CH, TH) as target phonemes
 - Use a wider vocabulary but keep words concrete and picturable
 - Words can be up to 5 letters
@@ -262,7 +120,7 @@ export const generatePhonemeExplorer = async (
 - For blend: 3-4 phoneme words
 - For segment: 3-4 phoneme words
 - For manipulate: initial and final substitution, simple deletion`,
-    "2": `GRADE 2 GUIDELINES:
+  "2": `GRADE 2 GUIDELINES:
 - Include a wider range of phonemes including vowel sounds
 - Can include less common consonant sounds and digraphs
 - Words can be up to 6 letters but must still be concrete and picturable
@@ -271,159 +129,283 @@ export const generatePhonemeExplorer = async (
 - For blend: 4-5 phoneme words
 - For segment: 4-5 phoneme words
 - For manipulate: all operations (substitute, delete, add)`,
+};
+
+// ---------------------------------------------------------------------------
+// Per-mode schemas (simple, all fields required → no placeholder shells)
+// ---------------------------------------------------------------------------
+
+const choicesSchema: Schema = {
+  type: Type.ARRAY,
+  minItems: "4",
+  maxItems: "4",
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      word: { type: Type.STRING, description: "A concrete, picturable word" },
+      emoji: {
+        type: Type.STRING,
+        description: "A single emoji depicting this word. MUST visually match the word.",
+      },
+      correct: {
+        type: Type.BOOLEAN,
+        description: "true if this is the correct answer, false otherwise",
+      },
+    },
+    required: ["word", "emoji", "correct"],
+  },
+  description: "Exactly 4 choices (1 correct, 3 distractors)",
+};
+
+/** Item schema for one mode. Every content field required. `mode` is set by code. */
+function modeItemSchema(mode: PhonemeMode): Schema {
+  const remediationMove = {
+    type: Type.STRING,
+    enum: [phonemeRemediationMoveFor(mode, 'active')!],
+    description: 'Private remediation trace; set only when remediation is active.',
   };
+  switch (mode) {
+    case 'isolate':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          phoneme: { type: Type.STRING, description: "Uppercase letter for this sound (e.g., 'B', 'S', 'M')" },
+          phonemeSound: { type: Type.STRING, description: "How the phoneme sounds spoken aloud (e.g., 'buh', 'sss', 'mmm')" },
+          exampleWord: { type: Type.STRING, description: "A concrete word that starts with this phoneme (e.g., 'Bear'). Must match exampleEmoji." },
+          exampleEmoji: { type: Type.STRING, description: "A single emoji depicting exampleWord. MUST visually match." },
+          choices: choicesSchema,
+        },
+        required: ["phoneme", "phonemeSound", "exampleWord", "exampleEmoji", "choices"],
+      };
+    case 'blend':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          phonemeSequence: {
+            type: Type.ARRAY,
+            minItems: "2",
+            maxItems: "5",
+            items: { type: Type.STRING },
+            description: "Array of individual phoneme sounds (e.g., ['k','a','t'] for 'cat')",
+          },
+          phonemeDisplay: { type: Type.STRING, description: "Display string for phoneme tiles (e.g., '/k/ /a/ /t/')" },
+          choices: choicesSchema,
+        },
+        required: ["phonemeSequence", "phonemeDisplay", "choices"],
+      };
+    case 'segment':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          targetWord: { type: Type.STRING, description: "The word to segment into phonemes (e.g., 'cat')" },
+          targetEmoji: { type: Type.STRING, description: "Emoji depicting the target word (e.g., '🐱')" },
+          segmentOptions: {
+            type: Type.ARRAY,
+            minItems: "4",
+            maxItems: "4",
+            items: { type: Type.STRING },
+            description: "4 phoneme breakdown options (e.g., ['/k/ /a/ /t/', '/k/ /t/', '/s/ /a/ /t/', '/k/ /a/ /t/ /s/'])",
+          },
+          correctSegmentation: { type: Type.NUMBER, description: "0-based index of the correct option in segmentOptions" },
+        },
+        required: ["targetWord", "targetEmoji", "segmentOptions", "correctSegmentation"],
+      };
+    case 'manipulate':
+      return {
+        type: Type.OBJECT,
+        properties: {
+          remediationMove,
+          originalWord: { type: Type.STRING, description: "The starting word (e.g., 'cat')" },
+          originalEmoji: { type: Type.STRING, description: "Emoji for the starting word (e.g., '🐱')" },
+          operation: { type: Type.STRING, enum: ["substitute", "delete", "add"], description: "Type of phoneme operation" },
+          operationDescription: { type: Type.STRING, description: "Human-readable instruction (e.g., \"Change the /k/ in 'cat' to /b/\")" },
+          choices: choicesSchema,
+        },
+        required: ["originalWord", "originalEmoji", "operation", "operationDescription", "choices"],
+      };
+  }
+}
 
-  // ── Build prompt ────────────────────────────────────────────────────
-  const challengeTypeSection = buildChallengeTypePromptSection(
-    evalConstraint,
-    CHALLENGE_TYPE_DOCS,
-  );
+function modeSchema(mode: PhonemeMode, count: number): Schema {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      challenges: {
+        type: Type.ARRAY,
+        minItems: "1",
+        maxItems: String(count),
+        items: modeItemSchema(mode),
+        description: `Exactly ${count} "${mode}" challenge(s)`,
+      },
+    },
+    required: ["challenges"],
+  };
+}
 
-  const generationPrompt = `Create a phoneme awareness activity for the topic: "${topic}".
-${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
-TARGET GRADE LEVEL: ${gradeLevelKey}
+// ---------------------------------------------------------------------------
+// Mode plan
+// ---------------------------------------------------------------------------
 
-${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
+/** Distribute `total` challenges across the allowed modes, easy→hard, round-robin. */
+function buildModePlan(allowed: string[], total: number): PhonemeMode[] {
+  const order = ALL_MODES.filter((m) => allowed.includes(m));
+  const modes: PhonemeMode[] = order.length ? order : ['isolate'];
+  const plan: PhonemeMode[] = [];
+  for (let i = 0; i < total; i++) plan.push(modes[i % modes.length]);
+  return plan;
+}
 
-${challengeTypeSection}
+// ---------------------------------------------------------------------------
+// Per-mode generation (one parallel call per distinct mode)
+// ---------------------------------------------------------------------------
 
-MODE-SPECIFIC FIELD RULES:
-- isolate: set phoneme, phonemeSound, exampleWord, exampleEmoji, and choices (4 items). Do NOT set phonemeSequence, phonemeDisplay, targetWord, targetEmoji, segmentOptions, correctSegmentation, originalWord, originalEmoji, operation, operationDescription.
-- blend: set phonemeSequence, phonemeDisplay, and choices (4 items). Do NOT set phoneme, phonemeSound, exampleWord, exampleEmoji, targetWord, targetEmoji, segmentOptions, correctSegmentation, originalWord, originalEmoji, operation, operationDescription.
-- segment: set targetWord, targetEmoji, segmentOptions (4 strings), and correctSegmentation (0-based index). Do NOT set phoneme, phonemeSound, exampleWord, exampleEmoji, phonemeSequence, phonemeDisplay, choices, originalWord, originalEmoji, operation, operationDescription.
-- manipulate: set originalWord, originalEmoji, operation, operationDescription, and choices (4 items). Do NOT set phoneme, phonemeSound, exampleWord, exampleEmoji, phonemeSequence, phonemeDisplay, targetWord, targetEmoji, segmentOptions, correctSegmentation.
+type RawChallenge = Record<string, unknown>;
 
-CRITICAL EMOJI RULES:
-- Every emoji MUST visually depict the word it's paired with
-- Only use standard, widely-recognized emojis
-- Examples of GOOD pairings: 🐱 Cat, 🌞 Sun, 🚌 Bus, 🐶 Dog, ⚽ Ball, 🍎 Apple
+async function generateModeChallenges(
+  mode: PhonemeMode,
+  count: number,
+  gradeKey: string,
+  topic: string,
+  intent: string | undefined,
+  remediationFocus: string | undefined,
+): Promise<RawChallenge[]> {
+  const doc = CHALLENGE_TYPE_DOCS[mode]?.promptDoc ?? '';
+  const remediationSection = buildRemediationPrompt(remediationFocus);
+  const remediationMove = phonemeRemediationMoveFor(mode, remediationFocus);
+  const prompt = `Create exactly ${count} "${mode}" phoneme awareness challenge(s) for the topic: "${topic}".
+${intent ? `\nSPECIFIC FOCUS: Lean word choices toward "${intent}" when natural — but ALWAYS prioritize phonological/phoneme accuracy over this focus.\n` : ''}
+TARGET GRADE LEVEL: ${gradeKey}
 
-CRITICAL SOUND RULES:
-- For isolate: correct choice MUST start with the exact same sound as the phoneme; distractors start with DIFFERENT sounds
-- For blend: phonemeSequence must be accurate phonemes; distractors must be similar-sounding but wrong words
-- For segment: correct segmentation must have the right phoneme count and sounds; distractors have wrong count or swapped sounds
-- For manipulate: operationDescription must be clear; correct choice is the actual result; distractors are plausible but wrong
+${gradeGuidelines[gradeKey] || gradeGuidelines.K}
 
-Generate exactly 5 challenges with IDs: "c1", "c2", "c3", "c4", "c5".
-${!evalConstraint ? 'Mix modes across challenges — use at least 2 different modes. Order: easier modes (isolate, blend) first, harder modes (segment, manipulate) later.' : ''}
+${remediationSection ? `${remediationSection}\n- Set remediationMove to "${remediationMove}". Make one wrong option encode the diagnosed confusion while preserving the requested mode and grade scope.` : ''}
+
+MODE SPEC — ${doc}
+
+CRITICAL RULES:
+- Every emoji MUST visually depict the word it's paired with. Only standard, widely-recognized emojis.
+- Every field must be fully, concretely populated — NEVER use placeholder text like "word" or "???".
+${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes; distractors must be similar-sounding but wrong words.\n' : ''}${mode === 'segment' ? '- The correct segmentation must have the right phoneme count and sounds; distractors have wrong count or swapped sounds.\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear; the correct choice is the actual result; distractors are plausible but wrong.\n' : ''}
 Relate words to the topic "${topic}" when possible, but prioritize phonological accuracy and emoji availability.`;
 
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: modeSchema(mode, count),
+      maxOutputTokens: 4096,
+      systemInstruction: SYSTEM_INSTRUCTION,
+    },
+  });
+
+  const text = response.text;
+  if (!text) return [];
+
+  let parsed: unknown;
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
-      contents: generationPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: activeSchema,
-        systemInstruction:
-          "You are an expert K-2 reading specialist designing phoneme awareness activities. " +
-          "You choose concrete, picturable words that young learners know and enjoy. " +
-          "You ALWAYS pair emojis that visually match the words they represent. " +
-          "You ensure phonological accuracy in all challenges. " +
-          "You never reveal answers through visual layout or ordering.",
-      },
+    parsed = JSON.parse(text);
+  } catch (err) {
+    console.warn(`[PhonemeExplorer] ${mode} JSON parse failed:`, err);
+    return [];
+  }
+
+  const arr = (parsed as { challenges?: unknown })?.challenges;
+  if (!Array.isArray(arr)) return [];
+  for (const challenge of arr as RawChallenge[]) {
+    if (remediationMove) challenge.remediationMove = remediationMove;
+    else delete challenge.remediationMove;
+  }
+
+  return arr
+    .slice(0, count)
+    .map((ch: RawChallenge) => {
+      ch.mode = mode;
+      validateModeChallenge(ch, mode);
+      return ch;
     });
+}
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("No data returned from Gemini API");
-    }
+// ---------------------------------------------------------------------------
+// Orchestrator
+// ---------------------------------------------------------------------------
 
-    const result = JSON.parse(text);
+type PhonemeExplorerConfig = Partial<{
+  mode: string;
+  /** Target eval mode from the IRT calibration system. */
+  targetEvalMode: string;
+}>;
 
-    // ── Validation and defaults ───────────────────────────────────────
+/**
+ * Generate Phoneme Explorer data by orchestrating parallel per-mode calls.
+ *
+ * @param ctx - Generation context (topic, intent, grade, raw config)
+ * @returns PhonemeExplorerData with fully-populated phoneme awareness challenges
+ */
+export const generatePhonemeExplorer = async (
+  ctx: GenerationContext,
+): Promise<PhonemeExplorerData> => {
+  const { topic } = ctx;
+  const intent = ctx.intent;
+  const gradeLevel = ctx.gradeContext;
+  const config = ctx.raw as PhonemeExplorerConfig;
 
-    if (!result.title || typeof result.title !== "string") {
-      result.title = `Sound Explorer: ${topic}`;
-    }
+  // ── Eval mode resolution → which modes are allowed ─────────────────
+  const evalConstraint = resolveEvalModeConstraint(
+    'phoneme-explorer',
+    config?.targetEvalMode,
+    CHALLENGE_TYPE_DOCS,
+  );
+  logEvalModeResolution('PhonemeExplorer', config?.targetEvalMode, evalConstraint);
 
-    if (!Array.isArray(result.challenges)) {
-      result.challenges = [];
-    }
+  const gradeKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
+    ? gradeLevel.toUpperCase()
+    : "K";
 
-    // Validate each challenge
-    result.challenges = result.challenges.map(
-      (ch: Record<string, unknown>, idx: number) => {
-        if (!ch.id) ch.id = `c${idx + 1}`;
-        if (!ch.mode) ch.mode = evalConstraint?.allowedTypes[0] ?? 'isolate';
+  const allowed = evalConstraint?.allowedTypes ?? [...ALL_MODES];
+  const plan = buildModePlan(allowed, TOTAL_CHALLENGES);
+  const distinctModes = Array.from(new Set(plan));
 
-        // Mode-specific validation
-        switch (ch.mode) {
-          case 'isolate': {
-            if (!ch.phoneme || typeof ch.phoneme !== "string") ch.phoneme = "?";
-            if (!ch.phonemeSound || typeof ch.phonemeSound !== "string")
-              ch.phonemeSound = (ch.phoneme as string).toLowerCase();
-            if (!ch.exampleWord || typeof ch.exampleWord !== "string")
-              ch.exampleWord = "word";
-            if (!ch.exampleEmoji || typeof ch.exampleEmoji !== "string")
-              ch.exampleEmoji = "🔤";
-            validateChoices(ch);
-            break;
-          }
-          case 'blend': {
-            if (!Array.isArray(ch.phonemeSequence) || (ch.phonemeSequence as string[]).length === 0)
-              ch.phonemeSequence = ["?", "?", "?"];
-            if (!ch.phonemeDisplay || typeof ch.phonemeDisplay !== "string")
-              ch.phonemeDisplay = (ch.phonemeSequence as string[]).map(p => `/${p}/`).join(" ");
-            validateChoices(ch);
-            break;
-          }
-          case 'segment': {
-            if (!ch.targetWord || typeof ch.targetWord !== "string")
-              ch.targetWord = "word";
-            if (!ch.targetEmoji || typeof ch.targetEmoji !== "string")
-              ch.targetEmoji = "🔤";
-            if (!Array.isArray(ch.segmentOptions) || (ch.segmentOptions as string[]).length < 4) {
-              ch.segmentOptions = ["/w/ /er/ /d/", "/w/ /d/", "/w/ /o/ /r/ /d/", "/w/ /u/ /r/ /d/"];
-              ch.correctSegmentation = 0;
-            }
-            if (typeof ch.correctSegmentation !== "number" ||
-              (ch.correctSegmentation as number) < 0 ||
-              (ch.correctSegmentation as number) >= (ch.segmentOptions as string[]).length) {
-              ch.correctSegmentation = 0;
-            }
-            break;
-          }
-          case 'manipulate': {
-            if (!ch.originalWord || typeof ch.originalWord !== "string")
-              ch.originalWord = "word";
-            if (!ch.originalEmoji || typeof ch.originalEmoji !== "string")
-              ch.originalEmoji = "🔤";
-            if (!ch.operation || typeof ch.operation !== "string")
-              ch.operation = "substitute";
-            if (!ch.operationDescription || typeof ch.operationDescription !== "string")
-              ch.operationDescription = "Change a sound in the word";
-            validateChoices(ch);
-            break;
-          }
-        }
-
-        return ch;
-      }
+  try {
+    // ── Fan out: one call per distinct mode, in parallel ─────────────
+    const pools = await Promise.all(
+      distinctModes.map((mode) =>
+        generateModeChallenges(
+          mode,
+          plan.filter((m) => m === mode).length,
+          gradeKey,
+          topic,
+          intent,
+          ctx.remediationFocus,
+        ).catch((err) => {
+          console.error(`[PhonemeExplorer] ${mode} generation failed:`, err);
+          return [] as RawChallenge[];
+        }),
+      ),
     );
 
-    // Fallback: ensure at least one challenge exists
-    if (result.challenges.length === 0) {
-      const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'isolate';
-      result.challenges = [{
-        id: 'c1',
-        mode: fallbackMode,
-        phoneme: 'B',
-        phonemeSound: 'buh',
-        exampleWord: 'Bear',
-        exampleEmoji: '🐻',
-        choices: [
-          { word: 'Ball', emoji: '⚽', correct: true },
-          { word: 'Cat', emoji: '🐱', correct: false },
-          { word: 'Dog', emoji: '🐶', correct: false },
-          { word: 'Sun', emoji: '☀️', correct: false },
-        ],
-      }];
+    // ── Recompose in plan order (easy→hard), popping from each pool ───
+    const poolByMode = new Map<PhonemeMode, RawChallenge[]>();
+    distinctModes.forEach((mode, i) => poolByMode.set(mode, pools[i]));
+
+    let challenges = plan
+      .map((mode) => poolByMode.get(mode)?.shift())
+      .filter((ch): ch is RawChallenge => Boolean(ch));
+
+    // ── Fallback: never ship an empty activity ───────────────────────
+    if (challenges.length === 0) {
+      challenges = [buildFallbackChallenge(allowed)];
     }
 
+    // ── Sequential IDs ───────────────────────────────────────────────
+    challenges.forEach((ch, i) => { ch.id = `c${i + 1}`; });
+
     const finalData: PhonemeExplorerData = {
-      title: result.title,
-      challenges: result.challenges,
+      title: `Sound Safari: ${topic}`,
+      challenges: challenges as unknown as PhonemeExplorerData['challenges'],
     };
 
     console.log("Phoneme Explorer Generated:", {
@@ -440,10 +422,51 @@ Relate words to the topic "${topic}" when possible, but prioritize phonological 
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Validation helpers (safety net — required-field schemas should prevent shells)
 // ---------------------------------------------------------------------------
 
-function validateChoices(ch: Record<string, unknown>): void {
+function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): void {
+  switch (mode) {
+    case 'isolate':
+      if (!ch.phoneme || typeof ch.phoneme !== "string") ch.phoneme = "?";
+      if (!ch.phonemeSound || typeof ch.phonemeSound !== "string")
+        ch.phonemeSound = (ch.phoneme as string).toLowerCase();
+      if (!ch.exampleWord || typeof ch.exampleWord !== "string") ch.exampleWord = "word";
+      if (!ch.exampleEmoji || typeof ch.exampleEmoji !== "string") ch.exampleEmoji = "🔤";
+      validateChoices(ch);
+      break;
+    case 'blend':
+      if (!Array.isArray(ch.phonemeSequence) || (ch.phonemeSequence as string[]).length === 0)
+        ch.phonemeSequence = ["?", "?", "?"];
+      if (!ch.phonemeDisplay || typeof ch.phonemeDisplay !== "string")
+        ch.phonemeDisplay = (ch.phonemeSequence as string[]).map((p) => `/${p}/`).join(" ");
+      validateChoices(ch);
+      break;
+    case 'segment':
+      if (!ch.targetWord || typeof ch.targetWord !== "string") ch.targetWord = "word";
+      if (!ch.targetEmoji || typeof ch.targetEmoji !== "string") ch.targetEmoji = "🔤";
+      if (!Array.isArray(ch.segmentOptions) || (ch.segmentOptions as string[]).length < 4) {
+        ch.segmentOptions = ["/w/ /er/ /d/", "/w/ /d/", "/w/ /o/ /r/ /d/", "/w/ /u/ /r/ /d/"];
+        ch.correctSegmentation = 0;
+      }
+      if (typeof ch.correctSegmentation !== "number" ||
+        (ch.correctSegmentation as number) < 0 ||
+        (ch.correctSegmentation as number) >= (ch.segmentOptions as string[]).length) {
+        ch.correctSegmentation = 0;
+      }
+      break;
+    case 'manipulate':
+      if (!ch.originalWord || typeof ch.originalWord !== "string") ch.originalWord = "word";
+      if (!ch.originalEmoji || typeof ch.originalEmoji !== "string") ch.originalEmoji = "🔤";
+      if (!ch.operation || typeof ch.operation !== "string") ch.operation = "substitute";
+      if (!ch.operationDescription || typeof ch.operationDescription !== "string")
+        ch.operationDescription = "Change a sound in the word";
+      validateChoices(ch);
+      break;
+  }
+}
+
+function validateChoices(ch: RawChallenge): void {
   if (!Array.isArray(ch.choices) || (ch.choices as unknown[]).length === 0) {
     ch.choices = [
       { word: "???", emoji: "❓", correct: true },
@@ -465,4 +488,23 @@ function validateChoices(ch: Record<string, unknown>): void {
       if (c.correct) foundFirst = true;
     }
   }
+}
+
+function buildFallbackChallenge(allowed: string[]): RawChallenge {
+  // Only used if every parallel call failed — a minimal valid isolate item.
+  void allowed;
+  return {
+    id: 'c1',
+    mode: 'isolate',
+    phoneme: 'B',
+    phonemeSound: 'buh',
+    exampleWord: 'Bear',
+    exampleEmoji: '🐻',
+    choices: [
+      { word: 'Ball', emoji: '⚽', correct: true },
+      { word: 'Cat', emoji: '🐱', correct: false },
+      { word: 'Dog', emoji: '🐶', correct: false },
+      { word: 'Sun', emoji: '☀️', correct: false },
+    ],
+  };
 }

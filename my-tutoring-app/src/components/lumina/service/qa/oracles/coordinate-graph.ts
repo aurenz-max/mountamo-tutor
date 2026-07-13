@@ -195,16 +195,17 @@ export const coordinateGraphOracle: ContentOracle = {
 
     // The component builds the grid and every screen position from
     // gridMin/gridMax with no default — malformed ranges are a schema break.
-    let gridMin = data.gridMin;
-    let gridMax = data.gridMax;
-    if (!isNum(gridMin) || !isNum(gridMax) || gridMin >= gridMax) {
+    let gridMin = -10;
+    let gridMax = 10;
+    if (!isNum(data.gridMin) || !isNum(data.gridMax) || data.gridMin >= data.gridMax) {
       violations.push({
         check: 'schema',
         where: 'gridMin/gridMax',
         detail: `missing or malformed grid range: gridMin=${JSON.stringify(data.gridMin)} gridMax=${JSON.stringify(data.gridMax)}`,
       });
-      gridMin = -10;
-      gridMax = 10;
+    } else {
+      gridMin = data.gridMin;
+      gridMax = data.gridMax;
     }
 
     if (challenges.length < 3) {

@@ -9,6 +9,16 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildRemediationPrompt } from '../generation/remediationPrompt';
+
+type RhymeMode = 'recognition' | 'identification' | 'production';
+type RhymeRemediationMove = 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
+export function rhymeRemediationMoveFor(mode: RhymeMode, focus?: string): RhymeRemediationMove | undefined {
+  if (!focus?.trim()) return undefined;
+  if (mode === 'recognition') return 'contrast_rime';
+  if (mode === 'identification') return 'diagnostic_option';
+  return 'constrained_production';
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -84,6 +94,11 @@ const rhymeStudioSchema: Schema = {
             type: Type.STRING,
             enum: ["recognition", "identification", "production"],
             description: "Challenge mode",
+          },
+          remediationMove: {
+            type: Type.STRING,
+            enum: ["contrast_rime", "diagnostic_option", "constrained_production"],
+            description: "Private remediation trace; set only when remediation is active."
           },
           targetWord: {
             type: Type.STRING,
@@ -224,6 +239,7 @@ GRADE 2 GUIDELINES:
     evalConstraint,
     CHALLENGE_TYPE_DOCS,
   );
+  const remediationSection = buildRemediationPrompt(ctx.remediationFocus);
 
   const generationPrompt = `Create a rhyming practice activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the phonological/syllable/phoneme accuracy rules below over this focus.\n` : ''}
@@ -234,6 +250,7 @@ ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
 Generate exactly ${challengeCount} challenges.
 
 ${challengeTypeSection}
+${remediationSection}
 
 MODE-SPECIFIC FIELD RULES:
 - recognition: set comparisonWord, comparisonWordImage, doesRhyme. Do NOT set options or acceptableAnswers.
@@ -241,6 +258,7 @@ MODE-SPECIFIC FIELD RULES:
 - production: set acceptableAnswers (array of strings). Do NOT set comparisonWord, doesRhyme, or options.
 
 CRITICAL RULES:
+${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime", identification uses "diagnostic_option", production uses "constrained_production". Make a non-rhyme or distractor encode the diagnosed confusion.' : ''}
 - Every challenge must have: id, mode, targetWord, targetWordImage, rhymeFamily
 - rhymeFamily MUST start with a hyphen (e.g., "-at", "-un", "-ig")
 - PHONETIC ACCURACY IS PARAMOUNT — words rhyme ONLY if they share the same ending SOUND:
@@ -299,6 +317,9 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       (ch: Record<string, unknown>, idx: number) => {
         // Ensure id
         if (!ch.id) ch.id = `c${idx + 1}`;
+        const move = rhymeRemediationMoveFor(ch.mode as RhymeMode, ctx.remediationFocus);
+        if (move) ch.remediationMove = move;
+        else delete ch.remediationMove;
 
         // Ensure rhymeFamily starts with hyphen
         if (

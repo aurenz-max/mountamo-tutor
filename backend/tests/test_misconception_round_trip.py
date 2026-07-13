@@ -16,13 +16,13 @@ class _TracingStore(InMemoryFirestoreService):
         return await super().resolve_misconception(student_id, primitive_type, skill_id)
 
 
-def _submission(score: float, primitive_tag: str, skill_tag=None) -> ProblemSubmission:
+def _submission(score: float, primitive_tag: str, skill_tag=None, primitive_type="tape-diagram") -> ProblemSubmission:
     return ProblemSubmission(
         subject="Mathematics",
         problem={
             "problem_type": "lumina_primitive",
             "id": f"remediation-{score}",
-            "primitive_type": "tape-diagram",
+            "primitive_type": primitive_type,
             "skill_id": "SKILL-1",
             "subskill_id": "SUB-1",
             "metadata": {
@@ -38,7 +38,7 @@ def _submission(score: float, primitive_tag: str, skill_tag=None) -> ProblemSubm
             "pre_evaluated": True,
             "success": score >= 80,
             "score": score,
-            "metrics": {"type": "tape-diagram", "evalMode": "solve_comparison"},
+            "metrics": {"type": primitive_type, "evalMode": "spell_word" if primitive_type == "cvc-speller" else "solve_comparison"},
             "eval_mode": "solve_comparison",
         },
         source="lesson",
@@ -139,3 +139,64 @@ def test_skill_scoped_tag_cannot_resolve_outside_skill():
     result, active = asyncio.run(scenario())
     assert "tape-diagram::OTHER-SKILL" in active
     assert not result.review["metadata"].get("remediation_successful")
+
+
+def test_cvc_speller_primitive_scoped_round_trip_resolves_only_itself():
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990034, "cvc-speller", "primitive",
+            "The student substitutes short-e for short-i.", "attempt-cvc",
+            subskill_id="ELA-GK-PHON-CVC-ENCODE",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+        result = await service.handle_submission(
+            _submission(90.0, "cvc-speller", primitive_type="cvc-speller"),
+            {"firebase_uid": "synthetic-user", "student_id": 990034, "email": "x@test"},
+        )
+        return result, await store.get_active_misconceptions(990034)
+
+    result, active = asyncio.run(scenario())
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True
+
+
+def test_letter_sound_link_primitive_scoped_round_trip_resolves_only_itself():
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990035, "letter-sound-link", "primitive",
+            "The student maps /t/ to d.", "attempt-letter-sound",
+            subskill_id="ELA-GK-PHON-LETTER-SOUND",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+        result = await service.handle_submission(
+            _submission(90.0, "letter-sound-link", primitive_type="letter-sound-link"),
+            {"firebase_uid": "synthetic-user", "student_id": 990035, "email": "x@test"},
+        )
+        return result, await store.get_active_misconceptions(990035)
+
+    result, active = asyncio.run(scenario())
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True
+
+
+def test_rhyme_studio_primitive_scoped_round_trip_resolves_only_itself():
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990036, "rhyme-studio", "primitive", "The student matches onset instead of rime.",
+            "attempt-rhyme", subskill_id="ELA-GK-PHON-RHYME",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+        result = await service.handle_submission(
+            _submission(90.0, "rhyme-studio", primitive_type="rhyme-studio"),
+            {"firebase_uid": "synthetic-user", "student_id": 990036, "email": "x@test"},
+        )
+        return result, await store.get_active_misconceptions(990036)
+    result, active = asyncio.run(scenario())
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True
