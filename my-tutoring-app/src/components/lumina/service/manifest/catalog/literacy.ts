@@ -319,6 +319,78 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
 
   {
+    id: 'interactive-book',
+    description: 'Picture-rich, page-flippable nonfiction book for K-2 early literacy, print awareness, text-feature learning, and supported oral reading. Students either locate printed book parts or complete tutor-led sentence fragments by reading glowing underlined words aloud.',
+    constraints: 'Uses one generated nonfiction book. The manifest must not provide book text, feature answers, focus-word answers, page data, image prompts, or challenges; the generator derives all scored contracts from visible book content. Not a story or compare activity yet.',
+    evalModes: [
+      {
+        evalMode: 'find-feature',
+        label: 'Find Book Features',
+        beta: 1.5,
+        discrimination: 1.8,
+        scaffoldingMode: 1,
+        challengeTypes: ['find-feature'],
+        description: 'Locate title, author, heading, caption, and page number directly on a picture-rich book surface.',
+      },
+      {
+        evalMode: 'read-focus-word',
+        label: 'Read the Underlined Word',
+        beta: 2.5,
+        discrimination: 1.6,
+        scaffoldingMode: 2,
+        challengeTypes: ['read-focus-word'],
+        description: 'Continue a tutor-read sentence by producing one visible underlined focus word aloud.',
+      },
+    ],
+    tutoring: {
+      taskDescription:
+        'Coach a Grade {{gradeLevel}} reader through a picture-rich nonfiction book in {{mode}} mode. '
+        + 'The student is on challenge {{currentChallengeIndex}} of {{totalChallenges}} doing {{currentTask}} with the {{currentFeature}} on the {{currentPageLabel}}. '
+        + 'Word band: {{wordDifficulty}}. Attempts: {{attempts}}. They have visited {{pagesVisited}} pages and opened {{focusWordsExplored}} underlined words. '
+        + 'They have supplied {{spokenWords}} words aloud. The current explored word is {{selectedFocusWord}}. Never ask for or reveal the literal correct printed text.',
+      contextKeys: [
+        'mode', 'gradeLevel', 'wordDifficulty', 'currentChallengeIndex', 'totalChallenges',
+        'currentTask', 'currentFeature', 'currentPageLabel', 'attempts', 'pagesVisited',
+        'focusWordsExplored', 'selectedFocusWord', 'spokenWords', 'voiceMode',
+      ],
+      scaffoldingLevels: {
+        level1: 'For find-feature, invite a page scan. For read-focus-word, read the supplied lead-in once and leave a clean silence at the underlined word.',
+        level2: 'For find-feature, describe the {{currentFeature}} by job and location. For read-focus-word, repeat the lead-in more slowly and direct attention to the page picture without saying the word.',
+        level3: 'For find-feature, guide a top-to-picture-to-edge sweep. For read-focus-word, repeat the lead-in and the safe picture cue supplied in the event, then wait again.',
+      },
+      commonStruggles: [
+        { pattern: 'The student repeatedly taps a different printed feature', response: 'Compare the two features by their job and position. Do not quote the correct text.' },
+        { pattern: 'The student opens an underlined word while searching for a book feature', response: 'Affirm the word exploration, then explain that underlined words give meaning clues while book features organize the page.' },
+        { pattern: 'The student turns away from the target page', response: 'Prompt them to use the page dots and arrows to return to the page named in the on-screen clue.' },
+        { pattern: 'The student pauses in voice mode', response: 'Stay silent while the microphone is open; the visible tap path is the support net.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ANSWER SAFETY',
+          instruction: 'The correct literal printed text is intentionally absent from your runtime context. Never invent, quote, spell, or guess it. Scaffold only with feature purpose, typography, position, and picture relationships.',
+        },
+        {
+          title: 'QUIET VOICE MODE',
+          instruction: 'For find-feature open-mic work, remain silent after wrong, unclear, or missed speech because the microphone stays open. For read-focus-word, the mic is push-to-talk and closed while you speak: read the supplied lead-in once, then stop. Routine correct words stay silent; the component advances them.',
+        },
+        {
+          title: 'PICTURE WORDS',
+          instruction: 'When {{selectedFocusWord}} is set or the student asks about an underlined word, give a brief child-friendly meaning and direct attention to the matching object or action in the page picture. Do not turn word exploration into a quiz.',
+        },
+        {
+          title: 'TAG RESPONSES',
+          instruction: 'On [ACTIVITY_START], frame the whole activity once in two short sentences. On [CHALLENGE_INCORRECT], give one clue without the answer. On [HINT_REQUESTED], give one progressively stronger location or typography clue. On [FIRST_VOICE_SUCCESS] and [ALL_COMPLETE], celebrate in one sentence and stop.',
+        },
+        {
+          title: 'TUTOR-LED FOCUS WORD TURN',
+          instruction: 'On [FOCUS_WORD_READY], read ONLY the exact supplied lead-in, slowly and naturally, then stop completely for the child at the underlined word. Never continue into the missing word. On [FOCUS_WORD_RETRY], repeat only the supplied lead-in and pause again. On [FOCUS_WORD_CONFIRMED], obey the message: celebrate only a first/comeback word; otherwise stay silent while the component advances and sends the next lead-in.',
+        },
+      ],
+    },
+    supportsEvaluation: true,
+  },
+
+  {
     id: 'rhyme-studio',
     misconceptionScope: 'primitive',
     description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
@@ -1125,12 +1197,58 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'poetry-lab',
-    description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, mood, and figurative language. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). Silent-read text activity — no read-aloud. Perfect for grades 2-6 poetry.',
-    constraints: 'Analysis mode: grades 2-6 (silent reading of a poem plus mood vocabulary and rhyme-scheme notation). Composition mode: grades 3-6 (typed free-text writing). NOT suitable for K-1 / pre-readers: there is no audio path and no hear-and-identify-rhymes task.',
+    description: 'Audio-first and text-based poetry lab for grades K-6. At K-1, the tutor reads nursery-style poems aloud and students tap the two pictured ending words that rhyme, with no reading required. Analysis mode examines rhyme scheme, mood, and figurative language in grades 2-6. Composition mode supports structured poetry writing in grades 3-6.',
+    constraints: 'rhyme_hunt: grades K-1 (audio-first, no reading required; the tutor reads each poem aloud and the child taps two pictured ending words). Analysis: grades 2-6 (poem reading, mood vocabulary, figurative language, rhyme notation). Composition: grades 3-6 (typed free-text writing). The manifest must not supply poem text, candidate words, answers, or templates; the generator authors mode-specific content.',
     evalModes: [
+      { evalMode: 'rhyme_hunt', label: 'Rhyme Hunt (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['rhyme_hunt'], description: 'Hear a short poem read aloud, then tap the pair of words that rhyme.' },
       { evalMode: 'analysis', label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
       { evalMode: 'composition', label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
     ],
+    tutoring: {
+      taskDescription:
+        'You are the rhyme and poetry coach for "{{title}}" at Grade {{gradeLevel}}. '
+        + 'Mode: {{mode}}. In rhyme_hunt, this is round {{currentRound}} of {{roundsTotal}}. '
+        + 'The poem for this round is: {{roundPoem}}. The candidate ending words are {{candidateWords}}. '
+        + 'The rhyming pair is {{rhymeWordA}}/{{rhymeWordB}} — this is the answer the student must discover by EAR. '
+        + 'Never name the pair outright; stretch word endings so the student hears the relationship. '
+        + 'Attempts: {{attempts}}. First-try correct so far: {{firstTryCorrect}}.',
+      contextKeys: [
+        'title', 'gradeLevel', 'mode', 'currentRound', 'roundsTotal', 'roundPoem',
+        'candidateWords', 'rhymeWordA', 'rhymeWordB', 'attempts', 'firstTryCorrect',
+      ],
+      scaffoldingLevels: {
+        level1: 'Ask the student to listen again for the sounds at the very ends of the lines. Do not name either answer word.',
+        level2: 'Slowly stretch the endings of the two words the student tapped and ask whether those ending sounds match. Do not offer a replacement word.',
+        level3: 'Re-read the four line endings with equal emphasis, then invite the student to compare two choices at a time. Never say which pair is correct.',
+      },
+      commonStruggles: [
+        { pattern: 'The student taps words that share a beginning sound', response: 'Contrast beginning and ending sounds, then re-read the tapped words with their endings stretched.' },
+        { pattern: 'The student misses the same round more than once', response: 'Re-read the stanza slowly and isolate all four line endings without grouping or naming the answer pair.' },
+        { pattern: 'The student waits without choosing', response: 'Repeat the tap-two protocol in ear terms and encourage one exploratory pair without narrowing the choices.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'ORIENT',
+          instruction: 'On [ACTIVITY_START], greet once and frame the activity: "We\'re going to listen to a little poem and find the two words that rhyme."',
+        },
+        {
+          title: 'STIMULUS',
+          instruction: 'On [ACTIVITY_START] or [ROUND_START] in rhyme_hunt, read {{roundPoem}} aloud slowly with playful prosody, emphasizing every line-ending word equally. Do not group, repeat, or name {{rhymeWordA}} and {{rhymeWordB}} as a pair. In analysis mode, offer to read the poem aloud on request.',
+        },
+        {
+          title: 'DISAMBIGUATE',
+          instruction: 'For rhyme_hunt, explain once that rhyming words sound the same at the end, using an unrelated example such as cat/hat, then say: "Tap the two words that rhyme." For analysis, enact rhyme notation in sound terms before using letters such as AABB.',
+        },
+        {
+          title: 'RECOVER',
+          instruction: 'On [RHYME_MISS], stretch only the two words the student tapped and ask whether their endings match. Never name, contrast with, or hint {{rhymeWordA}}/{{rhymeWordB}}.',
+        },
+        {
+          title: 'QUIET CELEBRATION',
+          instruction: 'On [RHYME_CORRECT], celebrate only for the first round, a comeback, or the final round. On [ACTIVITY_COMPLETE], close in one short sentence. Never repeat the answer pair.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

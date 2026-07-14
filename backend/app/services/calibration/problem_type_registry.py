@@ -486,6 +486,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "heros_journey":  PriorConfig(6.5, "Hero's journey: complex structure (5-6)"),
     },
     "poetry-lab": {
+        "rhyme_hunt":  PriorConfig(1.5, "Rhyme hunt: hear poem and identify rhyming pair (K-1)"),
         "analysis":    PriorConfig(3.5, "Analysis: identify poetic elements"),
         "composition": PriorConfig(6.0, "Composition: compose poem from template"),
     },
@@ -573,6 +574,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "who_what_where": PriorConfig(2.0, "Literal recall — answer who/what/where from a read-aloud story"),
         "feeling_check":  PriorConfig(3.0, "Emotion inference — how a character felt from story events (not stated)"),
         "why_because":    PriorConfig(4.0, "Causal inference — why something happened in the story"),
+    },
+    "interactive-book": {
+        "find-feature":    PriorConfig(1.5, "Direct manipulation: locate a printed book feature on a picture-rich page"),
+        "read-focus-word": PriorConfig(2.5, "Constructed oral response: continue a tutor-led sentence with one underlined word"),
     },
     "character-web": {
         "trait_id":         PriorConfig(1.5, "Identify traits from a character's actions and words"),

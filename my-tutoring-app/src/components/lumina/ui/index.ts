@@ -98,6 +98,15 @@ export {
 // Brand — the Aurora Core mark, doubling as a progress ring.
 export { LuminaMark, type LuminaMarkProps } from './LuminaMark';
 
+// Spoken reception — the one "read this to me" affordance (tutor voice out,
+// cyan; counterpart to the emerald mic-in orb below).
+export {
+  LuminaReadAloud,
+  LuminaReadAloudGlyph,
+  type LuminaReadAloudProps,
+  type LuminaReadAloudGlyphProps,
+} from './LuminaReadAloud';
+
 // Spoken production — the shared "mic is live, speak now" capture surface.
 export {
   default as LuminaMicListener,

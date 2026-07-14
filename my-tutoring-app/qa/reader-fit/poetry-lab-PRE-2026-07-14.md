@@ -138,5 +138,44 @@ then F2, then F5.
   returns via a `rhyme_hunt` eval mode inside poetry-lab (Gemini Live reads the
   poem via a catalog `aiDirectives` STIMULUS beat; student taps the rhyming
   pair; feedback on the object + spoken twin) — built together with F5.
-- **F2 OPEN** — tracked as PL-4 in EVAL_TRACKER (poetry-lab ContentOracle).
-- **F5 OPEN** — next up with `rhyme_hunt` (`/add-tutoring-scaffold` + new mode).
+- **F2 RESOLVED** — PL-4 ContentOracle added and proven to fail on seeded regressions.
+- **F5 RESOLVED** — `rhyme_hunt` tutoring scaffold and live moments pass the gates below.
+
+## Recovery re-audit — `rhyme_hunt` (2026-07-14)
+
+The product-selected K recovery is now implemented. This re-audit applies only
+to `rhyme_hunt`; analysis remains grade 2+ and composition remains grade 3+.
+
+### Audit B — sufficiency contract
+
+| Mode | ORIENT | STIMULUS | DISAMBIGUATE | FEEDBACK | RECOVER |
+|---|---|---|---|---|---|
+| rhyme_hunt | PASS — framed once | PASS — every poem read aloud at start/advance | PASS — rhyme explained in ear terms | PASS — immediate object glow/shake + earcon | PASS — tapped endings stretched without naming the pair |
+
+Evidence: tutor-test Tier 1 + probe pass with zero findings; K lesson-mode live
+journey 2/2 read both poems, voiced recovery, and produced no answer leak. See
+`qa/tutor-reports/poetry-lab-live-lesson-2026-07-14.md`.
+
+### Audit C — band contract (PRE)
+
+| Rule | PASS/FAIL | Recovery evidence |
+|---|---|---|
+| 1 Audio instruction channel | PASS | Catalog STIMULUS + `[ACTIVITY_START]`/`[ROUND_START]` read the poem and protocol aloud |
+| 2 Tap = choose | PASS | Two candidate taps judge immediately; no Check/Next protocol |
+| 3 Pictures are the answer surface | PASS | Four word+emoji candidate chips; emoji is schema-required and post-validated as a pictograph |
+| 4 One thing / ≤5 elements | PASS | One poem and exactly four interactive candidates; progress dots are noninteractive |
+| 5 Feedback on the object, instant | PASS | Correct chips glow/connect; wrong chips shake and reset; no modal/banner |
+| 6 No typing | PASS | Tap-only v1; voice selection intentionally deferred |
+| 7 No adult chrome | PASS | No badges, counters, stepper, score ledger, Back/Next, or instruction paragraph during play |
+| 8 Assessment in mechanics | PASS | Listening for endings and selecting the pair is the interaction itself |
+
+### Recovery status
+
+- **F2 / PL-4 RESOLVED:** Poetry Lab ContentOracle covers all three modes,
+  includes seeded fail fixtures, and passed 3 live generations per mode.
+- **F4 RESOLVED for routing:** K claim restored only for `rhyme_hunt`; catalog
+  retains analysis 2-6 and composition 3-6 floors.
+- **F5 / RF-4 RESOLVED:** catalog scaffold, all runtime keys, and five component
+  moments are wired; tutor-test and the 2-run lesson journey pass.
+
+Overall PRE verdict for `rhyme_hunt`: **PASS (8/8)**.

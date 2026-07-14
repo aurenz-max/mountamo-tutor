@@ -181,6 +181,7 @@ import PoetryLab from '../primitives/visual-primitives/literacy/PoetryLab';
 import StoryPlanner from '../primitives/visual-primitives/literacy/StoryPlanner';
 import RevisionWorkshop from '../primitives/visual-primitives/literacy/RevisionWorkshop';
 import GenreExplorer from '../primitives/visual-primitives/literacy/GenreExplorer';
+import InteractiveBook from '../primitives/visual-primitives/literacy/InteractiveBook';
 import SpellingPatternExplorer from '../primitives/visual-primitives/literacy/SpellingPatternExplorer';
 import ReadAloudStudio from '../primitives/visual-primitives/literacy/ReadAloudStudio';
 import RhymeStudio from '../primitives/visual-primitives/literacy/RhymeStudio';
@@ -1882,6 +1883,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   },
 
   // Literacy Primitives — Wave 2-4 (placeholder entries for scaffolded ComponentIds)
+  'interactive-book': {
+    component: InteractiveBook,
+    sectionTitle: 'Interactive Book',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
   'character-web': {
     component: CharacterWeb,
     sectionTitle: 'Character Web',

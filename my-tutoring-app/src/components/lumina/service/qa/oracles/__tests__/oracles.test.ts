@@ -15,6 +15,7 @@ import { functionSketchOracle } from '../function-sketch';
 import { histogramOracle } from '../histogram';
 import { mathFactFluencyOracle } from '../math-fact-fluency';
 import { polygonAreaBuilderOracle } from '../polygon-area-builder';
+import { poetryLabOracle } from '../poetry-lab';
 import { tenFrameOracle } from '../ten-frame';
 import { vocabularyExplorerOracle } from '../vocabulary-explorer';
 
@@ -60,6 +61,65 @@ describe('ten-frame oracle', () => {
     const data = { mode: 'single', challenges: [{ id: 'c1', type: 'build', targetCount: 3 }] };
     const v = tenFrameOracle.verify(data, tfCtx).violations;
     expect(v.some((x) => x.check === 'schema')).toBe(true);
+  });
+});
+
+const poetryCtx = { componentId: 'poetry-lab', evalMode: 'rhyme_hunt', topic: 'Nursery rhymes', gradeLevel: 'kindergarten' };
+
+const cleanRhymeRounds = [
+  { poemLines: ['A duck sees the moon', 'A frog wears a hat', 'The sun hums a tune', 'It waves to a cat'], candidates: [{ word: 'moon', emoji: '🌙' }, { word: 'hat', emoji: '🎩' }, { word: 'tune', emoji: '🎵' }, { word: 'cat', emoji: '🐱' }], rhymeWordA: 'hat', rhymeWordB: 'cat' },
+  { poemLines: ['A fox finds a drum', 'A bee sits on a log', 'The rain starts to hum', 'Beside a happy frog'], candidates: [{ word: 'drum', emoji: '🥁' }, { word: 'log', emoji: '🪵' }, { word: 'hum', emoji: '🎶' }, { word: 'frog', emoji: '🐸' }], rhymeWordA: 'log', rhymeWordB: 'frog' },
+  { poemLines: ['A hen sees a star', 'A pup rides a bike', 'It twinkles from far', 'Past a mouse on a hike'], candidates: [{ word: 'star', emoji: '⭐' }, { word: 'bike', emoji: '🚲' }, { word: 'far', emoji: '🌌' }, { word: 'hike', emoji: '🥾' }], rhymeWordA: 'bike', rhymeWordB: 'hike' },
+];
+
+describe('poetry-lab oracle', () => {
+  it('passes clean fixtures in all three modes', () => {
+    const rhyme = { title: 'Rhyme Hunt', gradeLevel: 'K', mode: 'rhyme_hunt', rounds: cleanRhymeRounds };
+    const analysis = {
+      title: 'Rain Song', gradeLevel: '3', mode: 'analysis',
+      poemLines: ['Rain taps the roof', 'Clouds drift away'], poem: 'Rain taps the roof\nClouds drift away',
+      correctMood: 'peaceful', moodOptions: ['happy', 'peaceful', 'silly'],
+      figurativeInstances: [{ text: 'Rain taps', startIndex: 0, endIndex: 9, type: 'personification' }],
+      rhymeScheme: 'AB', rhymeSchemeOptions: ['AA', 'AB', 'BB'],
+    };
+    const composition = {
+      title: 'Tiny Poem', gradeLevel: '3', mode: 'composition', templateType: 'haiku',
+      compositionPrompt: 'Write about rain.',
+      templateConstraints: { lineCount: 3, syllablesPerLine: [5, 7, 5] },
+    };
+    expect(poetryLabOracle.verify(rhyme, poetryCtx).violations).toEqual([]);
+    expect(poetryLabOracle.verify(analysis, { ...poetryCtx, evalMode: 'analysis' }).violations).toEqual([]);
+    expect(poetryLabOracle.verify(composition, { ...poetryCtx, evalMode: 'composition' }).violations).toEqual([]);
+  });
+
+  it('flags rhyme_hunt schema violations: demo-sized rounds and a missing emoji', () => {
+    const rounds = JSON.parse(JSON.stringify(cleanRhymeRounds.slice(0, 2)));
+    rounds[0].candidates[0].emoji = '';
+    const v = poetryLabOracle.verify({ mode: 'rhyme_hunt', rounds }, poetryCtx).violations;
+    expect(v.some((x) => x.check === 'schema' && x.where === 'rhyme_hunt.rounds')).toBe(true);
+    expect(v.some((x) => x.check === 'schema' && x.where === 'rhyme_hunt.round#1' && /emoji/.test(x.detail))).toBe(true);
+  });
+
+  it('flags rhyme_hunt answer-key desync when candidates or the declared pair are not line endings', () => {
+    const rounds = JSON.parse(JSON.stringify(cleanRhymeRounds));
+    rounds[0].candidates[0].word = 'sun';
+    rounds[1].rhymeWordB = 'bee';
+    const v = poetryLabOracle.verify({ mode: 'rhyme_hunt', rounds }, poetryCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'rhyme_hunt.round#1')).toBe(true);
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'rhyme_hunt.round#2')).toBe(true);
+  });
+
+  it('flags analysis option desync and composition template desync', () => {
+    const analysis = poetryLabOracle.verify({
+      mode: 'analysis', poemLines: ['One line'], poem: 'One line', correctMood: 'calm',
+      moodOptions: ['happy', 'sad', 'silly'], figurativeInstances: [], rhymeScheme: 'A', rhymeSchemeOptions: ['B'],
+    }, { ...poetryCtx, evalMode: 'analysis' }).violations;
+    const composition = poetryLabOracle.verify({
+      mode: 'composition', templateType: 'limerick', compositionPrompt: 'Write.',
+      templateConstraints: { lineCount: 4, syllablesPerLine: [5, 5, 5, 5], rhymePattern: 'ABAB' },
+    }, { ...poetryCtx, evalMode: 'composition' }).violations;
+    expect(analysis.some((x) => x.check === 'answer-key-desync')).toBe(true);
+    expect(composition.some((x) => x.check === 'answer-key-desync' && x.where === 'composition.limerick')).toBe(true);
   });
 });
 

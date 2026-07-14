@@ -4,6 +4,7 @@ import type { GenerationContext } from "../generation/generationContext";
 import type {
   PoetryLabData,
   FigurativeInstance,
+  RhymeHuntRound,
   TemplateType,
 } from "../../primitives/visual-primitives/literacy/PoetryLab";
 import {
@@ -18,6 +19,12 @@ import {
 // ---------------------------------------------------------------------------
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  rhyme_hunt: {
+    promptDoc:
+      `"rhyme_hunt": Hear a four-line nursery-style poem, then tap the two line-ending words that rhyme (β 1.5). `
+      + `Grades K-1 only. Audio-first, concrete emoji candidates, exactly one valid rhyme pair per ABCB stanza.`,
+    schemaDescription: "'rhyme_hunt' (hear a poem and tap its one rhyming pair)",
+  },
   analysis: {
     promptDoc:
       `"analysis": Identify poetic elements in a given poem (β 3.5). `
@@ -32,6 +39,51 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `The GRADE note governs which template to use.`,
     schemaDescription: "'composition' (compose a poem using template structure)",
   },
+};
+
+const rhymeHuntSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Warm, short title for a K-1 rhyme listening activity" },
+    gradeLevel: { type: Type.STRING, enum: ["K", "1"] },
+    mode: { type: Type.STRING, enum: ["rhyme_hunt"], description: "Must match the challenge type" },
+    rounds: {
+      type: Type.ARRAY,
+      minItems: "3",
+      maxItems: "4",
+      description: "3-4 distinct audio-first rhyme rounds",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          poemLines: {
+            type: Type.ARRAY,
+            minItems: "4",
+            maxItems: "4",
+            items: { type: Type.STRING },
+            description: "Exactly four short lines in ABCB form, 3-6 simple words per line",
+          },
+          candidates: {
+            type: Type.ARRAY,
+            minItems: "4",
+            maxItems: "4",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                word: { type: Type.STRING, description: "One line-ending word" },
+                emoji: { type: Type.STRING, description: "Required concrete picture cue for this word" },
+              },
+              required: ["word", "emoji"],
+            },
+            description: "The four line-ending words, each with a required emoji",
+          },
+          rhymeWordA: { type: Type.STRING, description: "First word in the one true rhyming pair" },
+          rhymeWordB: { type: Type.STRING, description: "Second word in the one true rhyming pair" },
+        },
+        required: ["poemLines", "candidates", "rhymeWordA", "rhymeWordB"],
+      },
+    },
+  },
+  required: ["title", "gradeLevel", "mode", "rounds"],
 };
 
 // ---------------------------------------------------------------------------
@@ -231,6 +283,76 @@ const locateFigurativeInstances = (
   return placed.sort((a, b) => a.startIndex - b.startIndex);
 };
 
+const normalizeRhymeWord = (word: string): string =>
+  word.trim().toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g, '');
+
+const lineEnding = (line: string): string => {
+  const words = line.trim().split(/\s+/);
+  return normalizeRhymeWord(words[words.length - 1] ?? '');
+};
+
+const containsEmojiPicture = (value: string): boolean =>
+  /[\u2600-\u27BF\u2B00-\u2BFF]|[\uD83C-\uDBFF][\uDC00-\uDFFF]/.test(value);
+
+const finalizeRhymeHunt = (result: PoetryLabData): PoetryLabData => {
+  let rejected = 0;
+  const rounds: RhymeHuntRound[] = [];
+
+  const rawRounds = (result.rounds ?? []).slice(0, 4);
+  for (let index = 0; index < rawRounds.length; index++) {
+    const rawRound = rawRounds[index];
+    const poemLines = (rawRound.poemLines ?? []).map((line: string) => (line ?? '').trim()).filter(Boolean);
+    const endings = poemLines.map(lineEnding);
+    const uniqueEndings = new Set(endings);
+    const rawCandidates = rawRound.candidates ?? [];
+    const emojiByWord = new Map(
+      rawCandidates.map((candidate: RhymeHuntRound['candidates'][number]) => [
+        normalizeRhymeWord(candidate.word ?? ''),
+        (candidate.emoji ?? '').trim(),
+      ]),
+    );
+    const rhymeWordA = normalizeRhymeWord(rawRound.rhymeWordA ?? '');
+    const rhymeWordB = normalizeRhymeWord(rawRound.rhymeWordB ?? '');
+
+    const valid = poemLines.length === 4
+      && endings.every(Boolean)
+      && uniqueEndings.size === 4
+      && rawCandidates.length === 4
+      && endings.every((word: string) => containsEmojiPicture(emojiByWord.get(word) ?? ''))
+      && rhymeWordA !== rhymeWordB
+      && uniqueEndings.has(rhymeWordA)
+      && uniqueEndings.has(rhymeWordB);
+
+    if (!valid) {
+      rejected += 1;
+      continue;
+    }
+
+    rounds.push({
+      id: `rhyme-hunt-${index + 1}`,
+      type: 'rhyme_hunt',
+      poemLines: poemLines as RhymeHuntRound['poemLines'],
+      candidates: endings.map((word: string) => ({ word, emoji: emojiByWord.get(word)! })) as RhymeHuntRound['candidates'],
+      rhymeWordA,
+      rhymeWordB,
+    });
+  }
+
+  if (rejected > 0) {
+    console.warn(`[PoetryLab] Rejected ${rejected} invalid rhyme_hunt round(s)`);
+  }
+  if (rounds.length < 3) {
+    throw new Error(`PoetryLab rhyme_hunt needs at least 3 valid rounds; received ${rounds.length}`);
+  }
+
+  return {
+    title: result.title,
+    gradeLevel: result.gradeLevel,
+    mode: 'rhyme_hunt',
+    rounds,
+  };
+};
+
 const finalizeAnalysis = (result: PoetryLabData): PoetryLabData => {
   const poemLines = (result.poemLines || []).map(l => (l || '').trim()).filter(Boolean);
   if (poemLines.length === 0) throw new Error("PoetryLab analysis draw has no poem lines");
@@ -343,12 +465,19 @@ export const generatePoetryLab = async (
   );
   logEvalModeResolution('PoetryLab', config?.targetEvalMode, evalConstraint);
 
-  const requestedMode: 'analysis' | 'composition' =
-    evalConstraint?.allowedTypes[0] === 'composition' || (!evalConstraint && config?.mode === 'composition')
-      ? 'composition'
-      : 'analysis';
+  const requestedType = evalConstraint?.allowedTypes[0] ?? config?.mode;
+  const requestedMode: 'rhyme_hunt' | 'analysis' | 'composition' =
+    requestedType === 'rhyme_hunt'
+      ? 'rhyme_hunt'
+      : requestedType === 'composition'
+        ? 'composition'
+        : 'analysis';
 
-  const activeSchema = requestedMode === 'composition' ? compositionSchema : analysisSchema;
+  const activeSchema = requestedMode === 'rhyme_hunt'
+    ? rhymeHuntSchema
+    : requestedMode === 'composition'
+      ? compositionSchema
+      : analysisSchema;
 
   const challengeTypeSection = buildChallengeTypePromptSection(
     evalConstraint,
@@ -359,8 +488,22 @@ export const generatePoetryLab = async (
     ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (story context, characters, poem, examples, questions) to serve that focus. Never name or reveal the answer in this focus text.\n`
     : '';
 
-  const prompt = requestedMode === 'analysis'
-    ? `Create a poetry analysis activity about: "${topic}".
+  const prompt = requestedMode === 'rhyme_hunt'
+    ? `Create an AUDIO-FIRST rhyme hunt about: "${topic}".
+${intentSection}
+GRADE: ${gradeLevelKey === '1' ? '1' : 'K'}. MODE: rhyme_hunt.
+
+${challengeTypeSection}
+
+Generate exactly 4 DISTINCT rounds (post-validation may retain 3-4). For EVERY round:
+1. Write exactly 4 nursery-style poemLines, each only 3-6 simple words, in ABCB form.
+2. There must be EXACTLY ONE rhyming pair among the four line-ending words: lines 2 and 4. Lines 1 and 3 must not rhyme with each other or with that pair.
+3. Use loud, obvious, sayable, CVC-heavy rhymes such as cat/hat. Keep vocabulary concrete and familiar to K-1 children.
+4. candidates must contain exactly the four line-ending words, in line order. Each emoji field must be an ACTUAL single Unicode emoji picture (for example 🐱 or 🎩), never a translated word, letters, or descriptive text.
+5. rhymeWordA and rhymeWordB must be the answer words as TEXT, never positional indices.
+6. Do not reuse the same rhyme pair in another round.`
+    : requestedMode === 'analysis'
+      ? `Create a poetry analysis activity about: "${topic}".
 ${intentSection}
 GRADE: ${gradeLevelKey}. MODE: analysis.
 ${ANALYSIS_GRADE_NOTES[gradeLevelKey]}
@@ -372,7 +515,7 @@ Generate:
 2. correctMood and 3-4 moodOptions (correctMood must be one of the options)
 3. figurativeInstances per the GRADE note — each with the phrase copied EXACTLY, character-for-character, as it appears in a poem line, plus its type. Empty array if the grade note says none.
 4. rhymeScheme (e.g. "AABB") that genuinely matches the poem's end rhymes, and 3-4 rhymeSchemeOptions`
-    : `Create a poetry composition activity about: "${topic}".
+      : `Create a poetry composition activity about: "${topic}".
 ${intentSection}
 GRADE: ${gradeLevelKey}. MODE: composition.
 ${COMPOSITION_GRADE_NOTES[gradeLevelKey]}
@@ -384,28 +527,44 @@ Generate:
 2. templateType matching the grade level
 3. templateConstraints with lineCount (and acrosticWord if templateType is acrostic, rhymePattern if the poem should rhyme)`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: activeSchema,
-        maxOutputTokens: 8192,
-        systemInstruction: 'You are an expert K-6 poetry instructor who creates engaging, age-appropriate poems and poetry activities. For analysis mode, write poems with consistent rhyme schemes and copy figurative phrases exactly as they appear in the poem. For composition mode, create inspiring prompts with clear structural constraints.',
+  const maxAttempts = requestedMode === 'rhyme_hunt' ? 2 : 1;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-lite-latest',
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: activeSchema,
+          maxOutputTokens: 8192,
+          systemInstruction: 'You are an expert K-6 poetry instructor who creates engaging, age-appropriate poems and poetry activities. For rhyme_hunt, write audio-first K-1 stanzas with exactly one obvious rhyming pair and concrete emoji cues. For analysis mode, write poems with consistent rhyme schemes and copy figurative phrases exactly as they appear in the poem. For composition mode, create inspiring prompts with clear structural constraints.',
+        }
+      });
+      const text = response.text;
+      if (!text) throw new Error("No data returned from Gemini API");
+      const parsed = JSON.parse(text) as PoetryLabData;
+      const result = requestedMode === 'rhyme_hunt'
+        ? finalizeRhymeHunt(parsed)
+        : requestedMode === 'composition'
+          ? finalizeComposition(parsed)
+          : finalizeAnalysis(parsed);
+      // Exclude routing/content fields from config spread so the validated root
+      // mode and rounds remain load-bearing for eval-test and the component.
+      const {
+        targetEvalMode: _targetEvalMode,
+        mode: _requestedMode,
+        rounds: _configuredRounds,
+        ...restConfig
+      } = config || {};
+      return { ...result, ...restConfig };
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) {
+        console.warn(`[PoetryLab] rhyme_hunt generation attempt ${attempt} rejected; retrying`, error);
       }
-    });
-    const text = response.text;
-    if (!text) throw new Error("No data returned from Gemini API");
-    const parsed = JSON.parse(text) as PoetryLabData;
-    const result = requestedMode === 'composition'
-      ? finalizeComposition(parsed)
-      : finalizeAnalysis(parsed);
-    // Exclude targetEvalMode from config spread
-    const { targetEvalMode: _targetEvalMode, ...restConfig } = config || {};
-    return { ...result, ...restConfig };
-  } catch (error) {
-    console.error("Error generating poetry lab:", error);
-    throw error;
+    }
   }
+  console.error("Error generating poetry lab:", lastError);
+  throw lastError;
 };

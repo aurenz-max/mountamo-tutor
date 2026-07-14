@@ -126,6 +126,12 @@ export interface MultipleChoiceBlockData extends BaseBlockData {
   options: string[];
   correctIndex: number;
   explanation: string;
+  /**
+   * Picture stand-ins for the options, index-aligned with `options`. Generated
+   * for pre-reader (K) audiences so the child answers by picture, not by
+   * decoding the label (reader-fit rule 3). Optional / back-compatible.
+   */
+  optionEmojis?: string[];
   /** Which display block this question relates to (for cross-referencing) */
   relatedBlockId?: string;
 }

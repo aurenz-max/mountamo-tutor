@@ -83,6 +83,10 @@ DISCRIMINATION_REGISTRY: Dict[str, Dict[str, DiscriminationPrior]] = {
         "discover_rule": PATTERN_PATTERN_RECOGNITION,     # a=1.2
         "create_rule":   PATTERN_CREATIVE_OPEN_ENDED,     # a=1.0
     },
+    "interactive-book": {
+        "find-feature":    PATTERN_DIRECT_MANIPULATION,   # a=1.8
+        "read-focus-word": PATTERN_CONSTRUCTED_RESPONSE,  # a=1.6
+    },
     # --- Single-mode / multi-mode math primitives ---
     "balance-scale": {
         "equality":  PATTERN_DIRECT_MANIPULATION,

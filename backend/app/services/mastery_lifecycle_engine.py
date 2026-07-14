@@ -1,17 +1,24 @@
 """
-Mastery Lifecycle Engine — IRT-Derived Gate Model (PRD §16)
+Mastery Lifecycle Engine — LCB Gate + Earned Stability Model (PRD §16)
 
-Gates are derived from θ+σ via derive_gate_from_irt(). A single unified
-eval handler manages both activation (not_started → active) and gate
-advancement (G1→G2→G3→G4) in one pass. A gifted student can go from G0
-straight to G4 if θ+σ warrant it.
+Gates are derived from the LOWER CONFIDENCE BOUND of blended P(correct)
+via derive_gate_from_irt(): skill-level θ/σ (IRT) blended with the
+subskill's own evidence record (Jeffreys-smoothed pass rate over
+evidence_n effective observations). A 1-2 observation record cannot clear
+gate 4 regardless of the point estimate — evidence volume is required.
+
+Gate 4 = accuracy demonstrated at curriculum-required difficulty.
+MASTERED additionally requires stability ≥ 30 days, and stability only
+compounds on passed evals spaced ≥ 1 day apart (_update_stability) —
+so mastery = accuracy + evidence volume + retention over calendar time.
+Massed single-session volume can reach gate 4 but never mastered.
 
 Entry point:  process_eval_result()
 Called from:   CompetencyService.update_competency_from_problem() as a hook
 
 State model:
   not_started  → active   (IRT-derived gate >= 1)
-  active       → mastered (IRT-derived gate == 4, stability > 30 days)
+  active       → mastered (gate == 4 AND earned stability ≥ 30 days)
 """
 
 import logging
@@ -29,15 +36,21 @@ from ..models.mastery_lifecycle import (
     CREDIBILITY_STANDARD,
     DECAY_RATE,
     GATE_CREDIBILITY_K,
+    GATE_MIN_EVIDENCE,
     GATE_P_THRESHOLDS,
     GATE_REF_FRACTIONS,
     GATE_SIGMA_THRESHOLDS,
     GATE_TO_STABILITY,
     INITIAL_STABILITY,
+    JEFFREYS_ALPHA,
     MASTERY_STABILITY_THRESHOLD,
     MASTERY_THRESHOLD,
     RETEST_INTERVALS,
+    STABILITY_CAP,
+    STABILITY_GROWTH_PARTIAL,
     STABILITY_GROWTH_STRONG,
+    STABILITY_SHRINK_FAIL,
+    STABILITY_SPACING_MIN_DAYS,
     THETA_DECAY_FLOOR_FACTOR,
     GateHistoryEntry,
     MasteryGate,
@@ -109,34 +122,54 @@ def derive_gate_from_irt(
     item_beta: float,
     avg_a: float = 1.4,
     empirical_p: Optional[float] = None,
-    n_observations: int = 0,
+    n_observations: float = 0.0,
     gate_reference_beta: Optional[float] = None,
 ) -> tuple[int, str, float]:
     """
-    Pure function: derive mastery gate from P(correct), blended with
-    empirical pass rate when sufficient observations exist.
+    Pure function: derive mastery gate from blended P(correct), subject to a
+    per-gate MINIMUM EVIDENCE requirement on this subskill.
+
+    Gate pass condition:
+        P_blend ≥ GATE_P_THRESHOLDS[gate]
+        AND n ≥ GATE_MIN_EVIDENCE[gate]          (subskill effective obs)
+        AND sigma ≤ GATE_SIGMA_THRESHOLDS[gate]  (skill-level confidence)
+
+    P_blend = Z·p̃ + (1−Z)·P_irt with Z = n/(n+K) and Jeffreys-smoothed
+    p̃ = (successes + 0.5)/(n + 1) — a small perfect record cannot claim 1.0.
+
+    The minimum-evidence ladder is the actuarial full-credibility standard:
+    a 1-2 observation record cannot clear gate 4 no matter how high the
+    point estimate. σ pools per SKILL (siblings collapse it), so the
+    per-subskill n is what makes evidence volume matter; the σ ceiling
+    still guards fresh/leapfrog-seeded skills (σ starts at 1.5 there).
 
     Gate 4 uses `gate_reference_beta` (the hardest curriculum-assigned
-    mode's β) when available, so that mastery is judged against the
-    difficulty the curriculum actually requires — not whatever mode
-    Fisher-info selected for measurement.  Gates 1-3 continue using
-    `item_beta` (the tested mode).
+    mode's β) when available. Gates 1-3 use `item_beta` (the tested mode).
 
     Checks gates 4→3→2→1 (highest first) and returns the highest passed gate.
-    No side effects, no stored state.
-
-    Credibility blend (PRD §12.7):
-        Z = n / (n + GATE_CREDIBILITY_K)
-        P = Z × P_empirical + (1 - Z) × P_irt
-
-    When n is small, the IRT model dominates. As observations accumulate,
-    the student's demonstrated performance carries increasing weight. This
-    solves the "grinder problem" where θ updates are negligible (±0.01/score)
-    because σ has collapsed, leaving P_irt stuck just below a gate threshold
-    despite consistent high scores.
+    No side effects, no stored state. NOTE: retention_state returned is at
+    most "active" — the MASTERED flip is owned by the engine (gate 4 AND
+    earned stability ≥ MASTERY_STABILITY_THRESHOLD), never by this function.
 
     Returns (gate, retention_state, p_blended).
     """
+    n = max(0.0, float(n_observations or 0.0))
+    z_cred = n / (n + GATE_CREDIBILITY_K) if n > 0 else 0.0
+
+    # Jeffreys-smoothed empirical rate (None when no evidence)
+    p_emp_j: Optional[float] = None
+    if empirical_p is not None and n > 0:
+        p_emp_j = (empirical_p * n + JEFFREYS_ALPHA) / (n + 2 * JEFFREYS_ALPHA)
+        p_emp_j = min(1.0, max(0.0, p_emp_j))
+
+    def blended(beta: float) -> float:
+        p_irt = p_correct(theta, avg_a, beta)
+        if p_emp_j is not None:
+            return z_cred * p_emp_j + (1.0 - z_cred) * p_irt
+        return p_irt
+
+    sig = sigma if sigma is not None else 999.0
+
     for gate in (4, 3, 2, 1):
         # G4: check against hardest curriculum-assigned β (if available)
         # G1-3: check against the tested item's β
@@ -144,22 +177,12 @@ def derive_gate_from_irt(
             gate_reference_beta if gate == 4 and gate_reference_beta is not None
             else item_beta
         )
-        p_irt = p_correct(theta, avg_a, beta)
+        if (blended(beta) >= GATE_P_THRESHOLDS[gate]
+                and n >= GATE_MIN_EVIDENCE[gate]
+                and sig <= GATE_SIGMA_THRESHOLDS[gate]):
+            return gate, "active", blended(beta)
 
-        # Credibility-blend with empirical pass rate when available
-        if empirical_p is not None and n_observations > 0:
-            z = n_observations / (n_observations + GATE_CREDIBILITY_K)
-            p = z * empirical_p + (1.0 - z) * p_irt
-        else:
-            p = p_irt
-
-        if p >= GATE_P_THRESHOLDS[gate]:
-            if gate >= 4:
-                return gate, "mastered", p
-            else:
-                return gate, "active", p
-
-    return 0, "not_started", p_correct(theta, avg_a, item_beta)
+    return 0, "not_started", blended(item_beta)
 
 
 class MasteryLifecycleEngine:
@@ -195,6 +218,7 @@ class MasteryLifecycleEngine:
         primitive_type: Optional[str] = None,
         avg_a: Optional[float] = None,
         gate_reference_beta: Optional[float] = None,
+        evidence_n: float = 1.0,
     ) -> Dict[str, Any]:
         """
         Process a single evaluation event and update the mastery lifecycle.
@@ -220,6 +244,10 @@ class MasteryLifecycleEngine:
             gate_reference_beta: Hardest curriculum-assigned β for this subskill.
                 Used for Gate 4 checks instead of item_beta so mastery is judged
                 against the difficulty the curriculum requires.
+            evidence_n: Effective observation count for this eval (>= 1.0).
+                Multi-part primitives contribute more than a single problem
+                (CalibrationEngine.effective_evidence). Accumulates on the
+                lifecycle doc and drives the credibility blend + LCB gate.
 
         Returns:
             Updated mastery lifecycle dict.
@@ -295,6 +323,7 @@ class MasteryLifecycleEngine:
             theta=theta, sigma=sigma, item_beta=item_beta, avg_a=avg_a,
             skill_beta_median=skill_beta_median,
             gate_reference_beta=gate_reference_beta,
+            evidence_n=evidence_n,
         )
 
         # Track lesson completions here — the unified path above no longer
@@ -379,7 +408,7 @@ class MasteryLifecycleEngine:
         if (theta is not None and sigma is not None
                 and min_beta is not None and max_beta is not None):
             irt_gate, irt_rs, irt_p = derive_gate_from_irt(
-                theta, sigma, min_beta, max_beta, avg_a or 1.4,
+                theta, sigma, min_beta, avg_a or 1.4,
             )
 
             if irt_gate >= 1:
@@ -414,6 +443,7 @@ class MasteryLifecycleEngine:
         lifecycle.retention_state = "active"
         lifecycle.stability = INITIAL_STABILITY
         lifecycle.last_reviewed = timestamp
+        lifecycle.last_stability_growth = timestamp
         lifecycle.review_count = 0
 
         # Backward-compat gate fields
@@ -453,29 +483,36 @@ class MasteryLifecycleEngine:
         avg_a: Optional[float] = None,
         skill_beta_median: Optional[float] = None,
         gate_reference_beta: Optional[float] = None,
+        evidence_n: float = 1.0,
     ) -> MasteryLifecycle:
         """
         Unified eval handler — activation + gate advancement in one pass.
 
-        Gate and retention state are derived directly from IRT (θ+σ) via
-        derive_gate_from_irt(). Gates 1-3 check P(correct) at the item's
-        actual β. Gate 4 checks P at gate_reference_beta (the hardest
-        curriculum-assigned mode) when available.
+        Gate is derived from the LCB of blended P via derive_gate_from_irt().
+        Gates 1-3 check the item's actual β; Gate 4 checks gate_reference_beta
+        (the hardest curriculum-assigned mode) when available.
 
-        If the subskill is not_started and IRT qualifies for gate >= 1,
-        activates retention and then derives the full gate in one step
-        (a gifted student can go from G0 straight to G4 if θ+σ warrant it).
+        Gate 4 is an ACCURACY statement ("demonstrated at required difficulty,
+        with enough evidence"). The MASTERED flip additionally requires earned
+        stability ≥ MASTERY_STABILITY_THRESHOLD — stability only compounds on
+        passed evals spaced ≥ STABILITY_SPACING_MIN_DAYS apart, so mastery
+        means retention over calendar time, never massed single-session volume.
         """
         was_not_started = lifecycle.retention_state == "not_started"
+        ev_n = max(1.0, float(evidence_n or 1.0))
 
-        # Track pass/fail for actuarial completion factor (continuous weight)
-        # A score of 8.5 contributes 0.85 to passes and 0.15 to fails
+        # Track pass/fail for actuarial completion factor (continuous weight,
+        # scaled by effective evidence: a 7-part primitive moves the record
+        # more than one true/false). A score of 8.5 contributes 0.85·n to
+        # passes and 0.15·n to fails.
         weight = score / 10.0
-        lifecycle.passes += weight
-        lifecycle.fails += (1.0 - weight)
+        lifecycle.passes += weight * ev_n
+        lifecycle.fails += (1.0 - weight) * ev_n
 
+        prev_reviewed = lifecycle.last_reviewed
         lifecycle.last_reviewed = timestamp
         lifecycle.review_count += 1
+        lifecycle.evidence_n += ev_n
 
         # --- IRT-derived gate (primary path) ---
         if (theta is not None and sigma is not None
@@ -485,10 +522,13 @@ class MasteryLifecycleEngine:
             old_gate = lifecycle.current_gate
             old_rs = lifecycle.retention_state
 
-            # Compute empirical pass rate for credibility blend
+            # Empirical pass rate + effective evidence for the LCB blend.
+            # Legacy docs predate evidence_n — fall back to review_count.
             total_attempts = lifecycle.passes + lifecycle.fails
             emp_p = (lifecycle.passes / total_attempts) if total_attempts > 0 else None
-            n_obs = lifecycle.review_count
+            n_obs = lifecycle.evidence_n if lifecycle.evidence_n > 0 else float(
+                lifecycle.review_count
+            )
 
             irt_gate, irt_rs, irt_p = derive_gate_from_irt(
                 theta, sigma, item_beta, a,
@@ -520,14 +560,23 @@ class MasteryLifecycleEngine:
             # single eval. A bad score lowers θ (via CalibrationEngine), which
             # naturally lowers the derived gate on the NEXT eval. This prevents
             # jarring gate drops from momentary slips.
-            if irt_gate >= lifecycle.current_gate:
+            if irt_gate > lifecycle.current_gate:
                 lifecycle.current_gate = irt_gate
-                lifecycle.retention_state = irt_rs
 
-            # Derive stability from gate for backward-compat consumers
-            lifecycle.stability = GATE_TO_STABILITY.get(
-                lifecycle.current_gate, INITIAL_STABILITY
-            )
+            # Earned stability: multipliers compound only on evals spaced
+            # ≥ STABILITY_SPACING_MIN_DAYS since the last stability update
+            # (activation counts as the first update). Same-day repeats are
+            # recorded as evidence but never move stability.
+            self._update_stability(lifecycle, score, timestamp, prev_reviewed)
+
+            # Mastered = accuracy at required difficulty (gate 4, LCB-passed)
+            # AND retention verified over calendar time (earned stability).
+            # Once mastered, never demoted here — decay/σ-diffusion govern
+            # any future re-surfacing, not label regression.
+            if (lifecycle.retention_state != "mastered"
+                    and lifecycle.current_gate >= 4
+                    and lifecycle.stability >= MASTERY_STABILITY_THRESHOLD):
+                lifecycle.retention_state = "mastered"
 
             if lifecycle.retention_state == "mastered":
                 lifecycle.next_retest_eligible = None
@@ -544,7 +593,8 @@ class MasteryLifecycleEngine:
                 f"[MASTERY_ENGINE] IRT update for "
                 f"{lifecycle.subskill_id}: gate {old_gate}→{lifecycle.current_gate}, "
                 f"state {old_rs}→{lifecycle.retention_state}, "
-                f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}, score={score}"
+                f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}, score={score}, "
+                f"S={lifecycle.stability:.1f}, n={lifecycle.evidence_n:.1f}"
             )
 
         else:
@@ -565,6 +615,68 @@ class MasteryLifecycleEngine:
         lifecycle = self._recalculate_completion_factor(lifecycle, global_pass_rate)
 
         return lifecycle
+
+    # ------------------------------------------------------------------
+    # Earned stability (PRD §16 — spaced retention, replaces gate→stability)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _update_stability(
+        lifecycle: MasteryLifecycle,
+        score: float,
+        timestamp: str,
+        prev_reviewed: Optional[str],
+    ) -> None:
+        """
+        Spaced stability update. Growth multipliers (×2.5 strong / ×1.5
+        partial) compound scaled by how much of the current interval elapsed:
+
+            mult_eff = 1 + (mult − 1) × min(1, elapsed / stability)
+
+        so an on-schedule review earns the full multiplier, an early review
+        earns partial credit, and same-session repeats (elapsed <
+        STABILITY_SPACING_MIN_DAYS) earn nothing. Failed recall (< 7.0)
+        halves stability (floored at INITIAL_STABILITY), also at most once
+        per spacing window. This is the ONLY writer of stability growth —
+        gates no longer grant stability.
+        """
+        if lifecycle.retention_state == "mastered":
+            return
+        if lifecycle.stability <= 0:
+            return  # not activated yet
+
+        anchor = lifecycle.last_stability_growth or prev_reviewed
+        if not anchor:
+            # Legacy doc with no usable anchor: start the spacing clock now.
+            lifecycle.last_stability_growth = timestamp
+            return
+        try:
+            elapsed = (
+                datetime.fromisoformat(timestamp) - datetime.fromisoformat(anchor)
+            ).total_seconds() / 86400.0
+        except ValueError:
+            lifecycle.last_stability_growth = timestamp
+            return
+
+        if elapsed < STABILITY_SPACING_MIN_DAYS:
+            return
+
+        if score >= MASTERY_THRESHOLD:
+            mult = STABILITY_GROWTH_STRONG
+        elif score >= 7.0:
+            mult = STABILITY_GROWTH_PARTIAL
+        else:
+            mult = None  # failed recall
+
+        if mult is not None:
+            spacing_credit = min(1.0, elapsed / max(lifecycle.stability, 0.001))
+            mult_eff = 1.0 + (mult - 1.0) * spacing_credit
+            lifecycle.stability = min(STABILITY_CAP, lifecycle.stability * mult_eff)
+        else:
+            lifecycle.stability = max(
+                INITIAL_STABILITY, lifecycle.stability * STABILITY_SHRINK_FAIL
+            )
+        lifecycle.last_stability_growth = timestamp
 
     # ------------------------------------------------------------------
     # Probability-based gate check (2PL/3PL ADAPT model)

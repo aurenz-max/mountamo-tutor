@@ -135,6 +135,23 @@ class MasteryLifecycle(BaseModel):
         default=0, ge=0,
         description="Number of stability-updating reviews completed",
     )
+    evidence_n: float = Field(
+        default=0.0, ge=0.0,
+        description=(
+            "Accumulated EFFECTIVE observation count for this subskill "
+            "(multi-part primitives contribute >1 per submission via the "
+            "testlet discount). Drives the credibility blend + LCB gate; "
+            "falls back to review_count for legacy docs."
+        ),
+    )
+    last_stability_growth: Optional[str] = Field(
+        default=None,
+        description=(
+            "ISO-8601 timestamp of the last SPACED stability update. Growth "
+            "multipliers only compound when >= STABILITY_SPACING_MIN_DAYS "
+            "have elapsed since this — same-session repeats never compound."
+        ),
+    )
 
     # History
     gate_history: List[GateHistoryEntry] = Field(default_factory=list)
@@ -211,6 +228,32 @@ GATE_P_THRESHOLDS = {
 # Matches CREDIBILITY_STANDARD used in the actuarial completion factor.
 GATE_CREDIBILITY_K = 10
 
+# ---------------------------------------------------------------------------
+# Per-gate minimum evidence — the actuarial full-credibility standard
+#
+# Gates pass on the blended POINT estimate (LCB-vs-threshold was tried and
+# rejected 2026-07-14: strong students average ~0.90-0.92 score fraction,
+# right AT the gate-4 threshold, so a lower bound demands absurd n — required
+# n scales with 1/margin² and the margin is ~0.02). Instead, each gate
+# requires a minimum EFFECTIVE observation count on THIS subskill before it
+# can pass at all. σ pools per skill (siblings collapse it; 2026-07-14
+# baseline: 36-54% of subskills arrive at their first eval with σ already
+# ≤ 0.8), so this per-subskill n is the lever that makes evidence volume
+# matter. Multi-part primitives contribute >1 effective observation
+# (CalibrationEngine.effective_evidence): gate 4 ≈ two 7-part primitives
+# or eight single problems.
+# ---------------------------------------------------------------------------
+GATE_MIN_EVIDENCE = {
+    1: 1.0,   # activation: one real observation
+    2: 2.0,
+    3: 4.0,
+    4: 8.0,   # accuracy-at-required-difficulty needs a real evidence record
+}
+
+# Jeffreys prior pseudo-counts for the empirical pass-rate estimate:
+# p̃ = (passes + 0.5) / (n + 1). Keeps a 1-for-1 record from claiming p=1.0.
+JEFFREYS_ALPHA = 0.5
+
 # Reference difficulty fraction within the primitive's beta range
 GATE_REF_FRACTIONS = {
     1: 0.0,   # Easiest mode (min β)
@@ -247,6 +290,15 @@ TRIVIAL_THRESHOLD = 0.95
 STABILITY_GROWTH_STRONG = 2.5   # score >= 9.0 — strong recall
 STABILITY_GROWTH_PARTIAL = 1.5  # score >= 7.0 — partial recall
 STABILITY_SHRINK_FAIL = 0.5     # score < 7.0 — failed recall, review sooner
+
+# Spacing requirement for stability updates: growth (and shrink) multipliers
+# only apply when at least this many days have elapsed since the last
+# stability update. Same-session grinding CANNOT compound stability — this is
+# what makes "mastered" mean retention over calendar time, not massed volume.
+STABILITY_SPACING_MIN_DAYS = 1.0
+
+# Stability ceiling (days) — bounds retest intervals for mastered-track items
+STABILITY_CAP = 90.0
 
 # Ability-aware fast-track: if the model predicts P(correct) >= this threshold
 # on the hardest available mode, the student demonstrably knows the material.

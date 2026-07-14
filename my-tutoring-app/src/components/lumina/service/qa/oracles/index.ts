@@ -34,6 +34,7 @@ import { numberLineOracle } from './number-line';
 import { numberSequencerOracle } from './number-sequencer';
 import { percentBarOracle } from './percent-bar';
 import { placeValueChartOracle } from './place-value-chart';
+import { poetryLabOracle } from './poetry-lab';
 import { polygonAreaBuilderOracle } from './polygon-area-builder';
 import { ratioTableOracle } from './ratio-table';
 import { regroupingWorkbenchOracle } from './regrouping-workbench';
@@ -87,6 +88,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   numberSequencerOracle,
   percentBarOracle,
   placeValueChartOracle,
+  poetryLabOracle,
   polygonAreaBuilderOracle,
   ratioTableOracle,
   regroupingWorkbenchOracle,

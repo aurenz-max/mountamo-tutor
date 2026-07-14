@@ -1307,6 +1307,7 @@ export type ComponentId =
   | 'take-home-activity' // Hands-on activities using household materials
 
   // Language Arts Suite
+  | 'interactive-book'    // Image-rich interactive early literacy book
   | 'interactive-passage' // Reading comprehension with evidence highlighting
   | 'word-builder'        // Vocabulary & Morphology - construct words from roots, prefixes, suffixes
 
@@ -1952,6 +1953,7 @@ export type { AngleWorkshopData } from './primitives/visual-primitives/math/Angl
 export type { TransformationLabData } from './primitives/visual-primitives/math/TransformationLab';
 
 // Literacy
+export type { InteractiveBookData } from './primitives/visual-primitives/literacy/InteractiveBook';
 export type { RhymeStudioData } from './primitives/visual-primitives/literacy/RhymeStudio';
 export type { SyllableClapperData } from './primitives/visual-primitives/literacy/SyllableClapper';
 export type { PhonemeExplorerData } from './primitives/visual-primitives/literacy/PhonemeExplorer';

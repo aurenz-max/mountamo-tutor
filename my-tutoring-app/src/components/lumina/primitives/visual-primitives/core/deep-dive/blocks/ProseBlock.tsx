@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { LuminaCard, LuminaCardContent } from '../../../../../ui';
+import { LuminaCard, LuminaCardContent, LuminaReadAloud } from '../../../../../ui';
+import { SoundManager } from '../../../../../utils/SoundManager';
 import {
   layoutParagraphsAroundFigure,
   layoutBalancedColumns,
@@ -32,6 +33,12 @@ interface ProseBlockProps {
   index?: number;
   /** Bridge to the DeepDive live tutor for a spoken walkthrough of the passage. */
   onAskTutor?: (message: string) => void;
+  /**
+   * Pre-reader (K) presentation — the passage is unreadable to the child, so the
+   * read-aloud affordance becomes a single large speaker-first button and the
+   * text-labeled discussion button is dropped (reader-fit rules 1, 4, 7).
+   */
+  preReader?: boolean;
 }
 
 // ── Reveal Animation Hook ────────────────────────────────────────────
@@ -466,7 +473,7 @@ const SimpleProse: React.FC<SimpleProseProps> = ({ paragraphs, showDropCap = tru
 
 // ── Main Component ───────────────────────────────────────────────────
 
-const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor }) => {
+const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor, preReader = false }) => {
   const { paragraphs, figure, insetFacts, label, layout: layoutMode, reveal = false } = data;
   const hasFigure = !!figure?.imageBase64;
   const hasInsetFacts = !!insetFacts?.facts?.length;
@@ -533,12 +540,29 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor }) => {
         {/* Tutor affordances ride below the content — the positioned-line
             renderers lay out asynchronously, so per-paragraph tap targets
             aren't safe here the way they are in card-based blocks. */}
-        {onAskTutor && (
+        {onAskTutor && (preReader ? (
+          // Pre-reader: ONE large speaker-first affordance. [BLOCK_READ_ALOUD]
+          // is enacted by the catalog PRE-READER READ-ALOUD directive, so the
+          // word-for-word read survives the lesson-mode brevity cap.
+          <div className="mt-4">
+            <LuminaReadAloud
+              size="lg"
+              label="Read to me"
+              onClick={() => {
+                SoundManager.tap();
+                onAskTutor(`[BLOCK_READ_ALOUD] A pre-reader tapped the speaker on this section${label ? ` ("${label}")` : ''} — they cannot read it. Read the passage aloud to them word for word, warmly and clearly: "${paragraphs.join(' ')}". When you finish reading, stop — no commentary, no questions.`);
+              }}
+            />
+          </div>
+        ) : (
           <div className="mt-4 flex flex-wrap gap-2">
-            <BlockTutorHelp
-              onAskTutor={onAskTutor}
+            <LuminaReadAloud
+              size="sm"
               label="Read this section"
-              message={`[READ_SECTION] The student tapped "Read this section"${label ? ` on "${label}"` : ''}. Read this passage aloud to them word for word, in a warm, clear voice: "${paragraphs.join(' ')}". When you finish reading, stop — no commentary, no questions.`}
+              onClick={() => {
+                SoundManager.tap();
+                onAskTutor(`[READ_SECTION] The student tapped "Read this section"${label ? ` on "${label}"` : ''}. Read this passage aloud to them word for word, in a warm, clear voice: "${paragraphs.join(' ')}". When you finish reading, stop — no commentary, no questions.`);
+              }}
             />
             <BlockTutorHelp
               onAskTutor={onAskTutor}
@@ -546,7 +570,7 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor }) => {
               message={`[PROSE_EXPLORE] The student wants to talk about this passage${label ? ` ("${label}")` : ''}: "${paragraphs.join(' ').slice(0, 700)}". Give the big idea in one friendly sentence, share the most interesting detail, then ask what stood out to them. Keep it short and conversational.`}
             />
           </div>
-        )}
+        ))}
       </LuminaCardContent>
     </LuminaCard>
   );

@@ -87,6 +87,35 @@ const ORCHESTRATOR_SCHEMA: Schema = {
   required: ['title', 'subtitle', 'narrativeArc', 'layout', 'blocks'],
 };
 
+/**
+ * Pre-reader (K / kindergarten) audience check on the prose `gradeLevel`
+ * descriptor threaded through this generator ("grade K student" when ctx.grade
+ * is canonical, band prose like "kindergarten" on free-form lessons). Same
+ * signal class as the shared client-side isPreReaderGrade — duplicated here
+ * because kindergartenMode.ts is a 'use client' module.
+ */
+function isPreReaderAudience(gradeLevel: string): boolean {
+  return /(grade\s*k\b|kinder|preschool|pre-?k\b|prek)/i.test(gradeLevel);
+}
+
+/**
+ * Block palette + text-load rules for pre-readers (reader-fit PRE band
+ * contract): pictures and audio carry the lesson, text never gates progress.
+ * Text-gated block types (fill-in-blank word banks, data tables, timelines,
+ * perspectives narratives, hypothesis-lab chips, compare-contrast sorts) are
+ * excluded at the planning stage — the components have no pre-reader mode.
+ */
+function getPreReaderGuidance(): string {
+  return `## AUDIENCE: PRE-READER (Kindergarten)
+These students CANNOT READ YET. The AI tutor reads everything aloud; pictures carry the meaning.
+- ONLY use these block types: hero-image, key-facts, prose, pull-quote, multiple-choice, diagram (explore), mini-sim.
+- NEVER use: fill-in-blank, data-table, timeline, compare-contrast, perspectives, hypothesis-lab. These demand reading.
+- 4-6 blocks total. Layout: stack.
+- key-facts: each fact ONE short sentence; the emoji icon must visually depict the fact.
+- prose: at most 2 SHORT paragraphs (2-3 simple sentences each); never request columns/masonry layouts.
+- multiple-choice: question ONE short sentence (max 12 words); options 1-4 words each, each depictable by an emoji.`;
+}
+
 function buildOrchestratorPrompt(
   topic: string,
   gradeLevel: string,
@@ -96,9 +125,10 @@ function buildOrchestratorPrompt(
 ): string {
   const evalGuidance = getEvalModeGuidance(evalMode);
   const { promptHint } = matchTemplate(evalMode, templateId);
+  const preReaderSection = isPreReaderAudience(gradeLevel) ? `\n${getPreReaderGuidance()}\n` : '';
 
   return `You are an expert learning experience designer. Plan a DeepDive lesson on "${topic}" for ${gradeLevel} students.
-${scopeSection ?? ''}
+${scopeSection ?? ''}${preReaderSection}
 
 A DeepDive is a vertical scroll experience assembled from modular blocks. Your job is to plan which blocks to use, in what order, write a content brief for each, and choose a wrapper layout strategy.
 
@@ -300,7 +330,7 @@ async function generateKeyFacts(brief: string, topic: string, gradeLevel: string
 Brief: ${brief}
 
 Generate 3-5 facts. Each fact should be a clear, memorable statement with an appropriate emoji icon.
-Keep facts concise (1-2 sentences max). Use age-appropriate vocabulary for ${gradeLevel}.
+Keep facts concise (1-2 sentences max). Use age-appropriate vocabulary for ${gradeLevel}.${isPreReaderAudience(gradeLevel) ? '\nPRE-READER AUDIENCE: each fact is ONE short simple sentence (max 12 words) a tutor will read aloud to a 5-year-old; the emoji must visually depict the fact.' : ''}
 For each fact also write a HEADLINE: a punchy 2-4 word teaser shown on the front of a flip card. It should spark curiosity but NOT contain the fact's answer or key detail \u2014 the student flips the card to discover the fact. Example: fact "A blue whale's heart is the size of a small car" \u2192 headline "A Giant Heart".`,
     config: {
       responseMimeType: 'application/json',
@@ -479,6 +509,10 @@ const MC_SCHEMA: Schema = {
     option3: { type: Type.STRING, description: 'Option D' },
     correctIndex: { type: Type.NUMBER, description: 'Index of the correct option (0-3)' },
     explanation: { type: Type.STRING, description: 'Explanation of why the correct answer is right (2-3 sentences)' },
+    option0Emoji: { type: Type.STRING, description: 'Single emoji depicting option A (pre-reader lessons only)', nullable: true },
+    option1Emoji: { type: Type.STRING, description: 'Single emoji depicting option B (pre-reader lessons only)', nullable: true },
+    option2Emoji: { type: Type.STRING, description: 'Single emoji depicting option C (pre-reader lessons only)', nullable: true },
+    option3Emoji: { type: Type.STRING, description: 'Single emoji depicting option D (pre-reader lessons only)', nullable: true },
   },
   required: ['question', 'option0', 'option1', 'option2', 'option3', 'correctIndex', 'explanation'],
 };
@@ -487,7 +521,15 @@ async function generateMultipleChoice(
   brief: string,
   topic: string,
   gradeLevel: string,
-): Promise<{ question: string; options: string[]; correctIndex: number; explanation: string }> {
+): Promise<{ question: string; options: string[]; correctIndex: number; explanation: string; optionEmojis?: string[] }> {
+  const preReader = isPreReaderAudience(gradeLevel);
+  const preReaderRules = preReader
+    ? `
+AUDIENCE: PRE-READER (kindergarten) — the student cannot read; a tutor reads the quiz aloud and the child answers by PICTURE.
+- Question: ONE short spoken-style sentence, max 12 words.
+- Options: 1-4 words each, concrete nouns/actions a 5-year-old knows.
+- REQUIRED: option0Emoji-option3Emoji — one emoji that VISUALLY depicts each option (🐄 for "Cow", 🐔 for "Hen"). The child answers by the picture, so every emoji must be unambiguous and distinct.`
+    : '';
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
     contents: `Generate a multiple choice question for a ${gradeLevel} lesson on "${topic}".
@@ -497,7 +539,7 @@ Brief: ${brief}
 Generate exactly 4 options. Make distractors plausible but clearly wrong.
 The explanation should teach, not just state the correct answer.
 Use age-appropriate language for ${gradeLevel}.
-IMPORTANT: Do NOT make the correct answer obvious from its position or length.`,
+IMPORTANT: Do NOT make the correct answer obvious from its position or length.${preReaderRules}`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: MC_SCHEMA,
@@ -519,11 +561,20 @@ IMPORTANT: Do NOT make the correct answer obvious from its position or length.`,
   // Validate correctIndex
   const correctIndex = Math.max(0, Math.min(3, Math.round(data.correctIndex)));
 
+  // Picture stand-ins ship only when ALL four resolved — a partial set would
+  // leave some options picture-primary and others letter-only for a child who
+  // cannot fall back to reading the label.
+  const emojis = [data.option0Emoji, data.option1Emoji, data.option2Emoji, data.option3Emoji];
+  const optionEmojis = emojis.every((e: unknown) => typeof e === 'string' && e.trim().length > 0)
+    ? emojis.map((e: string) => e.trim())
+    : undefined;
+
   return {
     question: data.question,
     options: [data.option0, data.option1, data.option2, data.option3],
     correctIndex,
     explanation: data.explanation,
+    optionEmojis,
   };
 }
 
@@ -584,7 +635,7 @@ Brief: ${brief}
 
 Write 2-3 paragraphs of clear, engaging explanatory text. Use age-appropriate vocabulary for ${gradeLevel}.
 Write in an editorial, article-like tone — not bullet points, not a textbook. Explain *why* things matter, not just *what* they are.
-Each paragraph should be 2-4 sentences.${wantsFigure ? '\n\nThe brief requests a figure. Provide a figureCaption, figureAltText, figurePlacement (left or right), and a figurePrompt describing the image to generate.' : ''}${layoutHint}
+Each paragraph should be 2-4 sentences.${isPreReaderAudience(gradeLevel) ? '\nPRE-READER AUDIENCE: write EXACTLY 2 short paragraphs, each 2-3 simple sentences with everyday words — a tutor reads this aloud to a 5-year-old, so it must sound natural spoken. Do not include inset facts.' : ''}${wantsFigure ? '\n\nThe brief requests a figure. Provide a figureCaption, figureAltText, figurePlacement (left or right), and a figurePrompt describing the image to generate.' : ''}${layoutHint}
 
 ## Visual variety — Inset Key Facts
 To improve visual variety, consider adding an INSET KEY FACTS card that floats alongside the prose text. This works best when the prose has clear takeaways worth highlighting. If you choose to include them, provide exactly 3 inset facts: each with an emoji icon (insetFact0Icon, insetFact1Icon, insetFact2Icon) and a concise takeaway sentence (insetFact0Text, insetFact1Text, insetFact2Text). Set insetFactsPlacement to "right" (or "left"). When including inset facts, write 2-3 longer paragraphs so there is enough text for the card to float alongside.`,
@@ -1592,6 +1643,7 @@ async function generateBlock(
           options: mcData.options,
           correctIndex: mcData.correctIndex,
           explanation: mcData.explanation,
+          optionEmojis: mcData.optionEmojis,
         } as MultipleChoiceBlockData;
       }
 
@@ -1743,6 +1795,18 @@ export async function generateDeepDive(
   // block brief on THIS component's intent + the lesson's pedagogical range.
   const scopeSection = buildScopePromptSection(ctx.scope);
   const plan = await runOrchestrator(topic, gradeLevel, evalMode, templateId, scopeSection);
+
+  // Pre-reader palette gate (code-owned, backs up the prompt guidance): drop
+  // text-gated block types the components cannot render for a non-reader —
+  // whether the orchestrator slipped or a template slotted them in.
+  if (isPreReaderAudience(gradeLevel)) {
+    const PRE_READER_BLOCKED = new Set(['fill-in-blank', 'data-table', 'timeline', 'compare-contrast', 'perspectives', 'hypothesis-lab']);
+    const before = plan.blocks.length;
+    plan.blocks = plan.blocks.filter((b) => !PRE_READER_BLOCKED.has(b.blockType));
+    if (plan.blocks.length < before) {
+      console.warn(`[DeepDive] Pre-reader palette gate removed ${before - plan.blocks.length} text-gated block(s)`);
+    }
+  }
   // Resolve layout — explicit override > orchestrator choice > default stack
   const validLayouts = new Set(['stack', 'grid_2col', 'reveal_progressive', 'masonry']);
   const resolvedLayout: WrapperLayout = (layoutOverride && validLayouts.has(layoutOverride))

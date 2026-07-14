@@ -642,6 +642,7 @@ class SubmissionService:
             primitive_type=primitive_type,
             eval_mode=eval_mode,
             attempt_id=attempt_id,
+            evidence_parts=self._extract_evidence_parts(primitive_response),
         )
 
         # Misconception Loop S6: resolution happens only AFTER the canonical
@@ -794,6 +795,37 @@ class SubmissionService:
     
     # Legacy helper methods removed - standardized approach handles conversion
     
+    @staticmethod
+    def _extract_evidence_parts(primitive_response: dict) -> int:
+        """
+        Number of independently scored parts inside one primitive submission.
+
+        Multi-challenge primitives aggregate N internal parts into a single
+        submit (score = proportion correct); this recovers N so calibration
+        can weight the observation (a 7-part performance is more evidence
+        than one true/false). Reads the standard metrics fields emitted by
+        the shared hooks; unknown shapes conservatively count as 1.
+        """
+        metrics = (primitive_response or {}).get('metrics') or {}
+        student_work = (primitive_response or {}).get('student_work') or {}
+
+        candidates = [
+            metrics.get('totalChallenges'),
+            metrics.get('challengesCompleted'),
+            len(metrics.get('blockBreakdown') or []) or None,
+            len(metrics.get('phaseResults') or []) or None,
+            len(student_work.get('challengeResults') or []) or None,
+            len(student_work.get('itemCategories') or []) or None,
+        ]
+        for c in candidates:
+            try:
+                n = int(c)
+            except (TypeError, ValueError):
+                continue
+            if n >= 1:
+                return min(n, 25)  # sanity cap against malformed payloads
+        return 1
+
     def _extract_score(self, review: dict) -> float:
         """Extract numeric score from review"""
         if isinstance(review.get('evaluation'), dict):
@@ -812,6 +844,7 @@ class SubmissionService:
         primitive_type: Optional[str] = None,
         eval_mode: Optional[str] = None,
         attempt_id: Optional[str] = None,
+        evidence_parts: int = 1,
     ) -> dict:
         """Update student competency and return result"""
         try:
@@ -832,6 +865,7 @@ class SubmissionService:
                 primitive_type=primitive_type,
                 eval_mode=eval_mode,
                 attempt_id=attempt_id,
+                evidence_parts=evidence_parts,
             )
         except Exception as e:
             logger.error(f"Error updating competency: {str(e)}")

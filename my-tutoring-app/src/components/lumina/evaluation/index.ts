@@ -186,6 +186,7 @@ export type {
   PictureVocabularyMetrics,
   StoryTalkMetrics,
   WordFlipMetrics,
+  InteractiveBookMetrics,
   WordWorkoutMetrics,
   WordSorterMetrics,
   SentenceAnalyzerMetrics,

@@ -218,11 +218,15 @@ class CompetencyService:
         primitive_type: Optional[str] = None,
         eval_mode: Optional[str] = None,
         attempt_id: Optional[str] = None,
+        evidence_parts: int = 1,
     ) -> Dict[str, Any]:
         """Update competency based on problem evaluation.
 
         `attempt_id` is the shared submission id (also stamped on the review
         doc by submission_service) so attempt and review join directly.
+        `evidence_parts` is the number of independently scored parts inside
+        the submission (multi-challenge primitives) — threaded to calibration
+        (likelihood weight) and the mastery lifecycle (evidence volume).
         """
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
         logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
@@ -454,6 +458,7 @@ class CompetencyService:
             cal_sigma = None
             cal_disc_a = None
             cal_item_beta = None
+            cal_evidence_n = 1.0
             if self.calibration_engine and source != "diagnostic" and primitive_type:
                 try:
                     cal_result = await self.calibration_engine.process_submission(
@@ -464,11 +469,13 @@ class CompetencyService:
                         eval_mode=eval_mode or "default",
                         score=score,
                         source=source,
+                        evidence_parts=evidence_parts,
                     )
                     cal_theta = cal_result.get("student_theta")
                     cal_sigma = cal_result.get("sigma")
                     cal_disc_a = cal_result.get("discrimination_a")
                     cal_item_beta = cal_result.get("calibrated_beta")
+                    cal_evidence_n = cal_result.get("evidence_n") or 1.0
                     logger.info(f"✅ COMPETENCY_SERVICE: Calibration engine processed submission")
                 except Exception as cal_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Calibration engine error (non-fatal): {cal_err}")
@@ -490,6 +497,7 @@ class CompetencyService:
                         item_beta=cal_item_beta,
                         primitive_type=primitive_type,
                         avg_a=cal_disc_a,
+                        evidence_n=cal_evidence_n,
                     )
                     logger.info(f"✅ COMPETENCY_SERVICE: Mastery lifecycle engine processed eval")
 

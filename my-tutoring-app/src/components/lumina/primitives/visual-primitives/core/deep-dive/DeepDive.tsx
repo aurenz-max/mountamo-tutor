@@ -12,6 +12,7 @@ import { useChallengeProgress } from '../../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../../components/PhaseSummaryPanel';
 import { computeBlockSizeHints, type SizeHint } from '../../../../utils/editorial-layout';
+import { isPreReaderGrade } from '../../../../utils/kindergartenMode';
 
 import type {
   DeepDiveData,
@@ -214,6 +215,12 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
 
   const resolvedInstanceId = instanceId || 'deep-dive-preview';
 
+  // Pre-reader (K) band — audio is the instruction channel: quiz questions are
+  // read aloud + picture-primary, prose gets a speaker-first read button, and
+  // adult chrome (section/question counts, protocol hints) is hidden.
+  // data.gradeLevel is the generator's audience prose ("grade K student").
+  const preReader = isPreReaderGrade(data.gradeLevel);
+
   // ── Evaluation hooks ──────────────────────────────────────────
   const evaluableChallenges = useMemo(() => getEvaluableChallenges(blocks), [blocks]);
   const hasEval = evaluableChallenges.length > 0;
@@ -324,20 +331,25 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       const block = blocks.find((b) => b.id === blockId);
       if (block) {
         const blockLabel = block.label || block.blockType;
+        // Pre-reader FEEDBACK beat: the explanation card on screen is unreadable
+        // at K, so the tutor speaks it. Safe — the answer is already resolved.
+        const explanation = preReader && 'explanation' in block && typeof block.explanation === 'string'
+          ? ` The student is a pre-reader — speak the takeaway in child terms: "${block.explanation}"`
+          : '';
         if (correct) {
           sendText(
-            `[ANSWER_CORRECT] Student answered "${blockLabel}" correctly in ${attempts} attempt(s). Brief congratulation.`,
+            `[ANSWER_CORRECT] Student answered "${blockLabel}" correctly in ${attempts} attempt(s). Brief congratulation.${explanation}`,
             { silent: true },
           );
         } else {
           sendText(
-            `[ANSWER_INCORRECT] Student couldn't answer "${blockLabel}" after ${attempts} attempts. The answer was revealed. Encourage them gently.`,
+            `[ANSWER_INCORRECT] Student couldn't answer "${blockLabel}" after ${attempts} attempts. The answer was revealed. Encourage them gently.${explanation}`,
             { silent: true },
           );
         }
       }
     },
-    [blocks, recordResult, sendText],
+    [blocks, recordResult, sendText, preReader],
   );
 
   // ── Track which blocks have been answered ─────────────────────
@@ -378,11 +390,13 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
     if (!sentIntroRef.current && blocks.length > 0) {
       sentIntroRef.current = true;
       sendText(
-        `[DEEP_DIVE_START] Topic: "${title}". ${blocks.length} blocks to explore (${evaluableChallenges.length} interactive). Introduce the topic briefly and invite exploration — mention they can tap any fact or card to hear more from you.`,
+        preReader
+          ? `[DEEP_DIVE_START] Topic: "${title}". The student is a PRE-READER (kindergarten) — they cannot read any of the on-screen text. Say the title aloud, tell them you will read everything to them as they go, and that they can tap any picture or card to hear about it, and tap the speaker button 🔊 to hear something again. Two warm, simple sentences.`
+          : `[DEEP_DIVE_START] Topic: "${title}". ${blocks.length} blocks to explore (${evaluableChallenges.length} interactive). Introduce the topic briefly and invite exploration — mention they can tap any fact or card to hear more from you.`,
         { silent: true },
       );
     }
-  }, [blocks.length, evaluableChallenges.length, title, sendText]);
+  }, [blocks.length, evaluableChallenges.length, title, sendText, preReader]);
 
   // ── Send completion message ───────────────────────────────────
   // Fire-once guard: without it this re-fires on every re-render once complete
@@ -411,7 +425,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       case 'hero-image':
         return <HeroImageBlock data={block} index={idx} />;
       case 'key-facts':
-        return <KeyFactsBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
+        return <KeyFactsBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} preReader={preReader} />;
       case 'data-table':
         return (
           <DataTableBlock
@@ -419,13 +433,13 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={block.patternCheck ? handleBlockAnswer : undefined}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
           />
         );
       case 'pull-quote':
-        return <PullQuoteBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
+        return <PullQuoteBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} />;
       case 'prose':
-        return <ProseBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg)} />;
+        return <ProseBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} preReader={preReader} />;
       case 'multiple-choice':
         return (
           <MultipleChoiceBlock
@@ -433,7 +447,8 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
+            preReader={preReader}
           />
         );
       case 'timeline':
@@ -443,7 +458,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={block.interactionMode === 'order' ? handleBlockAnswer : undefined}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
           />
         );
       case 'fill-in-blank':
@@ -453,7 +468,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
           />
         );
       case 'compare-contrast':
@@ -463,7 +478,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={block.interactionMode === 'sort' ? handleBlockAnswer : undefined}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
           />
         );
       case 'diagram': {
@@ -475,7 +490,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
-              onAskTutor={(msg) => sendText(msg)}
+              onAskTutor={(msg) => sendText(msg, { silent: true })}
             />
           );
         }
@@ -490,7 +505,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
-              onAskTutor={(msg) => sendText(msg)}
+              onAskTutor={(msg) => sendText(msg, { silent: true })}
             />
           );
         }
@@ -505,7 +520,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               index={idx}
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
-              onAskTutor={(msg) => sendText(msg)}
+              onAskTutor={(msg) => sendText(msg, { silent: true })}
             />
           );
         }
@@ -518,7 +533,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
             index={idx}
             onAnswer={handleBlockAnswer}
             answered={answeredBlockIds.has(block.id)}
-            onAskTutor={(msg) => sendText(msg)}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
           />
         );
       default:
@@ -529,7 +544,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           </div>
         );
     }
-  }, [handleBlockAnswer, answeredBlockIds, sendText]);
+  }, [handleBlockAnswer, answeredBlockIds, sendText, preReader]);
 
   // ── Layout renderers ───────────────────────────────────────────
 
@@ -586,11 +601,14 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       })}
       {revealedCount < blocks.length && (
         <div className="text-center py-4">
-          <p className="text-xs text-slate-600 italic">
-            {isEvaluableBlockType(blocks[revealedCount - 1]?.blockType, blocks[revealedCount - 1])
-              ? 'Answer the question above to continue...'
-              : 'Reading...'}
-          </p>
+          {/* Protocol text is unreadable at PRE — the dots alone carry progress */}
+          {!preReader && (
+            <p className="text-xs text-slate-600 italic">
+              {isEvaluableBlockType(blocks[revealedCount - 1]?.blockType, blocks[revealedCount - 1])
+                ? 'Answer the question above to continue...'
+                : 'Reading...'}
+            </p>
+          )}
           <div className="mt-2 flex justify-center gap-1">
             {blocks.map((_, i) => (
               <div
@@ -671,22 +689,25 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
       {/* Header */}
       <LuminaCard className="overflow-hidden">
         <LuminaCardHeader className="pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <LuminaBadge accent="indigo" className="text-xs">
-              {LAYOUT_LABELS[wrapperLayout] || 'Deep Dive'}
-            </LuminaBadge>
-            <span className="text-slate-600 text-xs">
-              {blocks.length} sections
-            </span>
-            {hasEval && (
-              <>
-                <span className="text-slate-700">&middot;</span>
-                <span className="text-amber-400/70 text-xs">
-                  {evaluableChallenges.length} {evaluableChallenges.length === 1 ? 'question' : 'questions'}
-                </span>
-              </>
-            )}
-          </div>
+          {/* Section/question counts are adult chrome — hidden for pre-readers */}
+          {!preReader && (
+            <div className="flex items-center gap-2 mb-3">
+              <LuminaBadge accent="indigo" className="text-xs">
+                {LAYOUT_LABELS[wrapperLayout] || 'Deep Dive'}
+              </LuminaBadge>
+              <span className="text-slate-600 text-xs">
+                {blocks.length} sections
+              </span>
+              {hasEval && (
+                <>
+                  <span className="text-slate-700">&middot;</span>
+                  <span className="text-amber-400/70 text-xs">
+                    {evaluableChallenges.length} {evaluableChallenges.length === 1 ? 'question' : 'questions'}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
           <LuminaCardTitle className="text-2xl font-light text-white tracking-tight">{title}</LuminaCardTitle>
           {subtitle && (
             <p className="text-slate-400 text-sm mt-1 font-light">{subtitle}</p>

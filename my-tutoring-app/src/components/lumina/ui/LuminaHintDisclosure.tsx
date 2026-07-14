@@ -27,6 +27,7 @@ export interface LuminaHintDisclosureProps {
   label?: string;
   accent?: LuminaAccent;
   defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -35,14 +36,22 @@ export const LuminaHintDisclosure: React.FC<LuminaHintDisclosureProps> = ({
   label = 'Need a hint?',
   accent = 'amber',
   defaultOpen = false,
+  onOpenChange,
   className,
 }) => {
   const [open, setOpen] = React.useState(defaultOpen);
+  const handleToggle = () => {
+    setOpen((current) => {
+      const next = !current;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
   return (
     <div className={className}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         aria-expanded={open}
         className={cn(
           'inline-flex items-center gap-2 text-sm font-medium transition-colors',

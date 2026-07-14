@@ -68,6 +68,26 @@ Audit C is the main event.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **deep-dive @ PRE — audit + `--fix`, READY pending live** (2026-07-14, user-observed
+  K goats lesson: text-only Quick Quiz + unreadable "Read this section" button).
+  Report: `deep-dive-PRE-2026-07-14.md`. Was PRIMITIVE-GAP + SCAFFOLD-GAP.
+  - CATALOG: PRE-READER READ-ALOUD aiDirective ([QUIZ_READ_ALOUD]/[BLOCK_READ_ALOUD]
+    word-for-word, overrides lesson one-sentence cap; [FACT_EXPLORE] reads card text
+    first at PRE; [QUIZ_RETRY] answer-free hint). Probe: renders, 0 findings.
+  - COMPONENT: `isPreReaderGrade` band-gate — quiz auto-reads itself on first view
+    (IntersectionObserver once) + 🔊 replay, picture-primary options (optionEmojis),
+    tap=choose, spoken retry hint + spoken explanation, chrome hidden (counts,
+    attempts, protocol text). Prose → one big "🔊 Read to me". 7/7 jsdom tests
+    (`MultipleChoiceBlock.test.tsx`). **TU-5 closed en route** (12 onAskTutor
+    forwards made silent).
+  - GENERATOR: PRE palette (prompt + code-owned gate strips fill-in-blank/data-table/
+    timeline/compare-contrast/perspectives/hypothesis-lab at K); MC emoji options
+    required at K (all-or-nothing ship), ≤12w question / 1-4w options; key-facts one
+    short sentence; prose exactly 2 short spoken-style paragraphs. Verified across
+    3 K draws + 1 G4 regression draw (G4 unchanged, no emojis).
+  - Follow-ups: live `--lesson` 3-run confirmation (needs bespoke deep-dive journey),
+    browser glance, mini-sim prediction + diagram-label text at PRE if K draws start
+    including them.
 - **4b. word-sorter @ PRE — `--fix` complete, READY** (2026-07-14). Report (loop log):
   `word-sorter-PRE-2026-07-14.md`. All 4 slices shipped + verified:
   - CATALOG: aiDirectives ORIENT+STIMULUS beats; scaffold reworded eyes-free —

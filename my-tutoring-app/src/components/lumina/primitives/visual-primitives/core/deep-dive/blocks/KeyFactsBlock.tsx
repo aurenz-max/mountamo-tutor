@@ -11,6 +11,13 @@ interface KeyFactsBlockProps {
   index: number;
   /** Bridge to the DeepDive live tutor; revealing/tapping a fact asks it to expand. */
   onAskTutor?: (message: string) => void;
+  /**
+   * Pre-reader (K) presentation — the tap-hint protocol text is unreadable
+   * chrome at this band (the [DEEP_DIVE_START] beat tells the child to tap
+   * cards instead), and explore taps flag the reader so the tutor reads the
+   * fact word for word first (catalog PRE-READER READ-ALOUD directive).
+   */
+  preReader?: boolean;
 }
 
 /**
@@ -127,7 +134,7 @@ const FlipFactCard: React.FC<FactCardProps> = ({ fact, tint, hero, onReveal, act
   );
 };
 
-const KeyFactsBlock: React.FC<KeyFactsBlockProps> = ({ data, index, onAskTutor }) => {
+const KeyFactsBlock: React.FC<KeyFactsBlockProps> = ({ data, index, onAskTutor, preReader = false }) => {
   const [heroFact, ...restFacts] = data.facts;
   const { enabled, activeKey, ask } = useTapTutor(onAskTutor);
   const hasFlipCards = data.facts.some((f) => !!f.headline);
@@ -135,7 +142,7 @@ const KeyFactsBlock: React.FC<KeyFactsBlockProps> = ({ data, index, onAskTutor }
   const askAboutFact = (key: string, fact: Fact) =>
     ask(
       key,
-      `[FACT_EXPLORE] The student ${fact.headline ? `flipped open the "${fact.headline}" card and revealed` : 'tapped'} this fact in the "${data.label || 'Key Facts'}" section: "${fact.text}". Bring it to life in 2-3 short sentences — a vivid example or a connection to their everyday world — then end with one quick wonder question. Do not quiz them and do not mention cards or tapping.`,
+      `[FACT_EXPLORE] The student${preReader ? ' (a pre-reader — READ the fact aloud word for word first)' : ''} ${fact.headline ? `flipped open the "${fact.headline}" card and revealed` : 'tapped'} this fact in the "${data.label || 'Key Facts'}" section: "${fact.text}". Bring it to life in 2-3 short sentences — a vivid example or a connection to their everyday world — then end with one quick wonder question. Do not quiz them and do not mention cards or tapping.`,
     );
 
   const renderFact = (fact: Fact, key: string, tint: string, hero?: boolean) => {
@@ -168,7 +175,7 @@ const KeyFactsBlock: React.FC<KeyFactsBlockProps> = ({ data, index, onAskTutor }
           </div>
         )}
 
-        {(enabled || hasFlipCards) && (
+        {!preReader && (enabled || hasFlipCards) && (
           <TapHint
             text={
               hasFlipCards

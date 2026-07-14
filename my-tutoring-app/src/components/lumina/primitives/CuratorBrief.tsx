@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft, Volume2 } from 'lucide-react';
+import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
 import { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
 import { useLuminaAI } from '../hooks/useLuminaAI';
-import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, type LuminaAccent } from '../ui';
+import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, LuminaReadAloud, type LuminaAccent } from '../ui';
 
 interface CuratorBriefProps {
   data: IntroBriefingData | IntroData;
@@ -615,17 +615,10 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
                 section through the live tutor — essential for pre-readers, offered
                 to everyone. Emphasized for pre-reading grades. */}
             <div className="mt-4 flex flex-col items-center gap-2">
-              <button
+              <LuminaReadAloud
                 onClick={() => speakSection(expandedSection)}
-                className={`flex items-center gap-2 rounded-xl border transition-all ${
-                  isPreReader
-                    ? 'px-5 py-2.5 text-base font-semibold text-indigo-50 bg-indigo-500/20 border-indigo-400/50 hover:bg-indigo-500/30 shadow-lg shadow-indigo-500/20'
-                    : 'px-4 py-2 text-sm font-medium text-indigo-100 bg-indigo-500/10 border-indigo-400/30 hover:bg-indigo-500/20 hover:border-indigo-400/50'
-                }`}
-              >
-                <Volume2 size={isPreReader ? 18 : 16} />
-                Read this to me
-              </button>
+                size={isPreReader ? 'lg' : 'md'}
+              />
               <p className="text-xs text-slate-500 font-mono">
                 Use ← → arrow keys or buttons to navigate
               </p>

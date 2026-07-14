@@ -826,6 +826,92 @@ def build_word_sorter_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any
     }}
 
 
+def build_poetry_lab_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Audio-first rhyme_hunt journey. The poem itself legitimately contains
+    every candidate word, including the answer pair, so stimulus beats assert
+    that all four endings are spoken but do not run the answer-leak oracle.
+    Recovery and celebration beats DO forbid the answer pair: those turns must
+    stretch only the tapped words or celebrate without naming the solution.
+    """
+    data = live.get("generatedData") or {}
+    rounds = data.get("rounds") or []
+    r0 = rounds[0] if rounds else {}
+    r1 = rounds[1] if len(rounds) > 1 else r0
+    total = len(rounds)
+
+    def words(round_data: Dict[str, Any]) -> List[str]:
+        return [str(c.get("word", "")) for c in (round_data.get("candidates") or []) if c.get("word")]
+
+    def answer(round_data: Dict[str, Any]) -> List[str]:
+        return [str(round_data.get("rhymeWordA", "")), str(round_data.get("rhymeWordB", ""))]
+
+    def bag_for(round_data: Dict[str, Any], idx: int, attempts: int = 0) -> Dict[str, Any]:
+        return {
+            "title": data.get("title", "Rhyme Hunt"),
+            "gradeLevel": data.get("gradeLevel", "K"),
+            "mode": "rhyme_hunt",
+            "currentRound": idx + 1,
+            "roundsTotal": total,
+            "roundPoem": "\n".join(round_data.get("poemLines") or []),
+            "candidateWords": ", ".join(words(round_data)),
+            "rhymeWordA": round_data.get("rhymeWordA", ""),
+            "rhymeWordB": round_data.get("rhymeWordB", ""),
+            "attempts": attempts,
+            "firstTryCorrect": 0,
+        }
+
+    candidates0 = words(r0)
+    answer0 = set(answer(r0))
+    wrong = [word for word in candidates0 if word not in answer0]
+    if len(wrong) < 2:
+        wrong = candidates0[:2]
+
+    activity_start = text_msg(
+        f'[ACTIVITY_START] Round 1 of {total}. Frame this once: "We\'re going to listen to a little poem and find the two words that rhyme." '
+        f'Read this poem aloud slowly and with playful prosody, emphasizing every line-ending word equally: '
+        f'"{" / ".join(r0.get("poemLines") or [])}" Then say only: "Tap the two words that rhyme." '
+        f'Never name, repeat as a pair, or otherwise reveal the answer words.'
+    )
+    miss = text_msg(
+        f'[RHYME_MISS] The student tapped "{wrong[0] if wrong else ""}" and "{wrong[1] if len(wrong) > 1 else ""}" on attempt 1. '
+        f'Stretch those two endings slowly and ask whether they sound the same. Do not name or hint another candidate.'
+    )
+    round_start = text_msg(
+        f'[ROUND_START] Round 2 of {total}. Read this poem aloud slowly and with playful prosody, emphasizing every line-ending word equally: '
+        f'"{" / ".join(r1.get("poemLines") or [])}" Then say only: "Tap the two words that rhyme." '
+        f'Never name, repeat as a pair, or otherwise reveal the answer words.'
+    )
+    correct = text_msg(
+        '[RHYME_CORRECT] The student found the rhyming pair after a comeback. '
+        'Celebrate in one brief sentence without saying either answer word.'
+    )
+    complete = text_msg(
+        f'[ACTIVITY_COMPLETE] [RHYME_CORRECT] The final rhyme pair was found. 2 of {total} rounds were correct on the first try. '
+        f'Give one short, joyful closing celebration without naming any answer pair.'
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn"),
+        Beat("activity_start", sends=[activity_start], expect="turn",
+             must_include=[[word] for word in words(r0)],
+             note="ORIENT+STIMULUS: frame once and read every line ending aloud"),
+        Beat("rhyme_miss", sends=[ctx_msg(bag_for(r0, 0, 1)), miss], expect="turn",
+             must_include=[[word] for word in wrong[:2]], leak_answers=answer(r0),
+             note="RECOVER: stretch only the tapped words; do not disclose the pair"),
+        Beat("round_start", sends=[ctx_msg(bag_for(r1, 1)), round_start], expect="turn",
+             must_include=[[word] for word in words(r1)],
+             note="STIMULUS on advance: read the next poem, one tutor turn"),
+        Beat("rhyme_correct", sends=[correct], expect="turn", leak_answers=answer(r1),
+             note="quiet celebration without repeating the answer pair"),
+        Beat("activity_complete", sends=[complete], expect="turn", leak_answers=answer(r1),
+             note="one-sentence closing celebration"),
+    ]
+    return {"initial_bag": bag_for(r0, 0), "beats": beats, "answers": [], "meta": {
+        "mode": data.get("mode", ""), "rounds": total,
+        "round0": r0.get("poemLines") or [], "round1": r1.get("poemLines") or [],
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
     "addition-subtraction-scene": build_addition_subtraction_scene_journey,
@@ -833,6 +919,7 @@ JOURNEYS = {
     "decodable-reader": build_decodable_reader_journey,
     "cvc-speller": build_cvc_speller_journey,
     "word-sorter": build_word_sorter_journey,
+    "poetry-lab": build_poetry_lab_journey,
 }
 
 
@@ -969,7 +1056,11 @@ class LiveTutorClient:
 # ---------------------------------------------------------------------------
 
 def _norm(s: str) -> str:
-    return re.sub(r"[^a-z0-9 ]+", " ", s.lower()).strip()
+    # Gemini transcription occasionally inserts Markdown emphasis *inside* a
+    # stretched word (``do**g**``). Strip markup characters before replacing
+    # punctuation so the stimulus oracle still sees the spoken word as "dog".
+    without_markup = s.lower().replace("*", "").replace("_", "").replace("`", "")
+    return re.sub(r"[^a-z0-9 ]+", " ", without_markup).strip()
 
 
 # "look at the exhibit and answer the question" — narrating the UI instead of

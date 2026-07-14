@@ -2072,7 +2072,9 @@ export interface ReadAloudStudioMetrics extends BasePrimitiveMetrics {
 
 export interface PoetryLabMetrics extends BasePrimitiveMetrics {
   type: 'poetry-lab';
-  mode: 'analysis' | 'composition';
+  mode: 'rhyme_hunt' | 'analysis' | 'composition';
+  roundsTotal?: number;
+  roundsFirstTry?: number;
   figurativeLanguageIdentified: number;
   figurativeLanguageTotal: number;
   rhymeSchemeCorrect: boolean;
@@ -2080,6 +2082,24 @@ export interface PoetryLabMetrics extends BasePrimitiveMetrics {
   elementsExplored: number;
   poemCompleted: boolean;
   templateType: 'haiku' | 'limerick' | 'acrostic' | 'free-verse' | 'sonnet-intro';
+}
+
+export interface InteractiveBookMetrics extends BasePrimitiveMetrics {
+  type: 'interactive-book';
+  challengeType: 'find-feature' | 'read-focus-word' | 'mixed';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  pagesVisited: number;
+  focusWordsExplored: number;
+  voiceAnswers: number;
+  spokenWords: number;
+  /** Neutral judge misses/unclear clips; never counted against accuracy. */
+  spokenMisses: number;
 }
 
 export interface FigurativeLanguageFinderMetrics extends BasePrimitiveMetrics {
@@ -3419,6 +3439,7 @@ export type PrimitiveMetrics =
   | FigurativeLanguageFinderMetrics
   // Literacy (Wave 4)
   | PoetryLabMetrics
+  | InteractiveBookMetrics
   | ReadAloudStudioMetrics
   | StoryPlannerMetrics
   | RevisionWorkshopMetrics

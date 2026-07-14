@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // RF: Reading Foundational Skills
 import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
+import InteractiveBook from '../primitives/visual-primitives/literacy/InteractiveBook';
 // RL: Reading Literature
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
 import CharacterWeb from '../primitives/visual-primitives/literacy/CharacterWeb';
@@ -43,6 +44,7 @@ import WordFlip from '../primitives/visual-primitives/literacy/WordFlip';
 import {
   EvaluationProvider,
   useEvaluationContext,
+  type PrimitiveEvaluationResult,
 } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -56,7 +58,7 @@ interface LanguageArtsPrimitivesTesterProps {
 }
 
 type PrimitiveType =
-  | 'phonics-blender' | 'decodable-reader'
+  | 'phonics-blender' | 'decodable-reader' | 'interactive-book'
   | 'story-map' | 'character-web' | 'poetry-lab' | 'genre-explorer'
   | 'text-structure-analyzer' | 'evidence-finder'
   | 'paragraph-architect' | 'story-planner' | 'opinion-builder' | 'revision-workshop'
@@ -104,6 +106,7 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   // ===== RI: Reading Informational Text =====
   { value: 'text-structure-analyzer', label: 'Text Structure', icon: '🏗️', topic: 'Cause and effect in science text', strand: 'RI', wave: 3 },
   { value: 'evidence-finder', label: 'Evidence Finder', icon: '🔍', topic: 'Finding text evidence for claims', strand: 'RI', wave: 2 },
+  { value: 'interactive-book', label: 'Interactive Book', icon: '📖', topic: 'Animals and habitats', strand: 'RI', wave: 2 },
   // ===== W: Writing =====
   { value: 'paragraph-architect', label: 'Paragraph Architect', icon: '🍔', topic: 'Building an informational paragraph', strand: 'W', wave: 1 },
   { value: 'story-planner', label: 'Story Planner', icon: '✏️', topic: 'Planning a narrative story', strand: 'W', wave: 4 },
@@ -145,7 +148,8 @@ const STRAND_LABELS: Record<string, { label: string; color: string }> = {
 const PrimitiveRenderer: React.FC<{
   componentId: PrimitiveType;
   data: unknown;
-}> = ({ componentId, data }) => {
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult) => void;
+}> = ({ componentId, data, onEvaluationSubmit }) => {
   if (!data) return null;
 
   switch (componentId) {
@@ -153,6 +157,19 @@ const PrimitiveRenderer: React.FC<{
       return <PhonicsBlender data={data as Parameters<typeof PhonicsBlender>[0]['data']} />;
     case 'decodable-reader':
       return <DecodableReader data={data as Parameters<typeof DecodableReader>[0]['data']} />;
+    case 'interactive-book':
+      return (
+        <InteractiveBook
+          data={{
+            ...(data as Parameters<typeof InteractiveBook>[0]['data']),
+            instanceId: 'interactive-book-tester',
+            skillId: 'literacy-reading-comprehension',
+            subskillId: 'text-features',
+            objectiveId: 'identify-book-features',
+            onEvaluationSubmit,
+          }}
+        />
+      );
     case 'story-map':
       return <StoryMap data={data as Parameters<typeof StoryMap>[0]['data']} />;
     case 'character-web':
@@ -343,6 +360,23 @@ const EvaluationResultsPanel: React.FC = () => {
                     <span>First try: {result.metrics.firstTryCount}</span>
                     <span>Attempts: {result.metrics.attemptsCount}</span>
                     <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'interactive-book' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Type: {result.metrics.type}</span>
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Pages visited: {result.metrics.pagesVisited}</span>
+                    <span>Words explored: {result.metrics.focusWordsExplored}</span>
+                    <span>Voice answers: {result.metrics.voiceAnswers}</span>
+                    <span>Words spoken: {result.metrics.spokenWords}</span>
+                    <span>Neutral voice misses: {result.metrics.spokenMisses}</span>
                   </div>
                 )}
               </div>
@@ -684,6 +718,10 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
 
+  const handleEvaluationSubmit = (result: PrimitiveEvaluationResult) => {
+    console.log('Evaluation submitted:', result);
+  };
+
   // Look up eval modes from the catalog for the selected primitive
   const catalogEntry = LITERACY_CATALOG.find(c => c.id === selectedPrimitive);
   const evalModes: EvalModeDefinition[] = catalogEntry?.evalModes ?? [];
@@ -982,6 +1020,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}
                   data={generatedData}
+                  onEvaluationSubmit={handleEvaluationSubmit}
                 />
               </div>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -9,6 +9,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaButton,
+  LuminaAnswerChoice,
   LuminaActionButton,
   LuminaFeedbackCard,
   LuminaInput,
@@ -21,14 +22,32 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PoetryLabMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export type PoetryMode = 'analysis' | 'composition';
+export type PoetryMode = 'rhyme_hunt' | 'analysis' | 'composition';
 export type TemplateType = 'haiku' | 'limerick' | 'acrostic' | 'free-verse' | 'sonnet-intro';
+
+export interface RhymeHuntCandidate {
+  word: string;
+  emoji: string;
+}
+
+export interface RhymeHuntRound {
+  id: string;
+  type: 'rhyme_hunt';
+  poemLines: [string, string, string, string];
+  candidates: [RhymeHuntCandidate, RhymeHuntCandidate, RhymeHuntCandidate, RhymeHuntCandidate];
+  rhymeWordA: string;
+  rhymeWordB: string;
+}
 
 export interface FigurativeInstance {
   text: string;
@@ -41,6 +60,9 @@ export interface PoetryLabData {
   title: string;
   gradeLevel: string;
   mode: PoetryMode;
+
+  // Rhyme Hunt mode data (K-1, audio-first)
+  rounds?: RhymeHuntRound[];
 
   // Analysis mode data
   poem?: string;
@@ -119,11 +141,319 @@ const REVIEW_GRID_COLS: Record<number, string> = {
   3: 'grid-cols-3',
 };
 
+const RHYME_HUNT_PHASE_CONFIG: Record<string, PhaseConfig> = {
+  rhyme_hunt: { label: 'Rhyme Hunt', icon: '👂', accentColor: 'purple' },
+};
+
+const normalizeWord = (word: string) => word.trim().toLowerCase();
+
+const isRhymePair = (picked: string[], round: RhymeHuntRound): boolean => {
+  if (picked.length !== 2) return false;
+  const actual = picked.map(normalizeWord).sort().join('|');
+  const expected = [round.rhymeWordA, round.rhymeWordB].map(normalizeWord).sort().join('|');
+  return actual === expected;
+};
+
+interface RhymeHuntProps {
+  data: PoetryLabData;
+  className?: string;
+}
+
+const RhymeHunt: React.FC<RhymeHuntProps> = ({ data, className }) => {
+  const rounds = data.rounds ?? [];
+  const stableInstanceIdRef = useRef(data.instanceId || `poetry-lab-${Date.now()}`);
+  const resolvedInstanceId = data.instanceId || stableInstanceIdRef.current;
+  const recordedRef = useRef(false);
+  const introducedRef = useRef(false);
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [wrongWords, setWrongWords] = useState<string[]>([]);
+  const [correctWords, setCorrectWords] = useState<string[]>([]);
+  const [isLocked, setIsLocked] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
+  const startTimeRef = useRef(Date.now());
+
+  const {
+    currentIndex,
+    currentAttempts,
+    results: roundResults,
+    isComplete: allRoundsComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({ challenges: rounds, getChallengeId: (round) => round.id });
+
+  const currentRound = rounds[currentIndex];
+
+  const phaseResults = usePhaseResults({
+    challenges: rounds,
+    results: roundResults,
+    isComplete: allRoundsComplete,
+    getChallengeType: (round) => round.type,
+    phaseConfig: RHYME_HUNT_PHASE_CONFIG,
+    getScore: (results) => results.length > 0
+      ? Math.round(results.reduce((sum, result) => sum + (result.score ?? 0), 0) / results.length)
+      : 0,
+  });
+
+  const {
+    submitResult: submitEvaluation,
+    hasSubmitted: hasSubmittedEvaluation,
+  } = usePrimitiveEvaluation<PoetryLabMetrics>({
+    primitiveType: 'poetry-lab',
+    instanceId: resolvedInstanceId,
+    skillId: data.skillId,
+    subskillId: data.subskillId,
+    objectiveId: data.objectiveId,
+    exhibitId: data.exhibitId,
+    onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  const firstTryCorrect = roundResults.filter((result) => result.score === 100).length;
+  const roundPoem = currentRound?.poemLines.join('\n') ?? '';
+  const candidateWords = currentRound?.candidates.map((candidate) => candidate.word).join(', ') ?? '';
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    gradeLevel: data.gradeLevel,
+    mode: 'rhyme_hunt',
+    currentRound: currentIndex + 1,
+    roundsTotal: rounds.length,
+    roundPoem,
+    candidateWords,
+    rhymeWordA: currentRound?.rhymeWordA ?? '',
+    rhymeWordB: currentRound?.rhymeWordB ?? '',
+    attempts: currentAttempts,
+    firstTryCorrect,
+  }), [
+    data.title, data.gradeLevel, currentIndex, rounds.length, roundPoem,
+    candidateWords, currentRound?.rhymeWordA, currentRound?.rhymeWordB,
+    currentAttempts, firstTryCorrect,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'poetry-lab',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: data.gradeLevel,
+  });
+
+  const readRound = useCallback((round: RhymeHuntRound, first: boolean) => {
+    const stimulus = `Read this poem aloud slowly and with playful prosody, emphasizing every line-ending word equally: `
+      + `"${round.poemLines.join(' / ')}" `
+      + `Then say only: "Tap the two words that rhyme." Never name, repeat as a pair, or otherwise reveal the answer words.`;
+    if (first) {
+      sendText(
+        `[ACTIVITY_START] Round 1 of ${rounds.length}. Frame this once: `
+        + `"We're going to listen to a little poem and find the two words that rhyme." ${stimulus}`,
+        { silent: true },
+      );
+      return;
+    }
+    sendText(
+      `[ROUND_START] Round ${currentIndex + 1} of ${rounds.length}. ${stimulus}`,
+      { silent: true },
+    );
+  }, [currentIndex, rounds.length, sendText]);
+
+  useEffect(() => {
+    if (!isConnected || !currentRound || introducedRef.current) return;
+    introducedRef.current = true;
+    readRound(currentRound, true);
+  }, [isConnected, currentRound, readRound]);
+
+  useEffect(() => {
+    if (!isConnected || !currentRound || !introducedRef.current || currentIndex === 0) return;
+    readRound(currentRound, false);
+    // One full-data tutor turn per advance. readRound intentionally owns it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
+  useEffect(() => {
+    setSelectedWords([]);
+    setWrongWords([]);
+    setCorrectWords([]);
+    setIsLocked(false);
+    recordedRef.current = false;
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+  }, [currentRound?.id]);
+
+  useEffect(() => () => {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!allRoundsComplete || hasSubmittedEvaluation) return;
+    const roundsFirstTry = roundResults.filter((result) => result.score === 100).length;
+    const score = rounds.length > 0 ? Math.round((roundsFirstTry / rounds.length) * 100) : 0;
+    const metrics: PoetryLabMetrics = {
+      type: 'poetry-lab',
+      mode: 'rhyme_hunt',
+      roundsTotal: rounds.length,
+      roundsFirstTry,
+      figurativeLanguageIdentified: 0,
+      figurativeLanguageTotal: 0,
+      rhymeSchemeCorrect: false,
+      syllableCountAccurate: true,
+      elementsExplored: rounds.length,
+      poemCompleted: false,
+      templateType: 'free-verse',
+    };
+    setSubmittedScore(score);
+    submitEvaluation(score >= 50, score, metrics, {
+      durationMs: Date.now() - startTimeRef.current,
+      roundResults,
+    });
+    sendText(
+      `[ACTIVITY_COMPLETE] [RHYME_CORRECT] The final rhyme pair was found. `
+      + `${roundsFirstTry} of ${rounds.length} rounds were correct on the first try. `
+      + `Give one short, joyful closing celebration without naming any answer pair.`,
+      { silent: true },
+    );
+    setShowSummary(true);
+  }, [
+    allRoundsComplete, hasSubmittedEvaluation, roundResults, rounds.length,
+    sendText, submitEvaluation,
+  ]);
+
+  const handleCandidateTap = useCallback((word: string) => {
+    if (!currentRound || isLocked || selectedWords.includes(word)) return;
+    SoundManager.select();
+    const nextSelection = [...selectedWords, word];
+    setSelectedWords(nextSelection);
+    if (nextSelection.length < 2) return;
+
+    setIsLocked(true);
+    if (isRhymePair(nextSelection, currentRound)) {
+      const firstTry = currentAttempts === 0;
+      recordedRef.current = true;
+      setCorrectWords(nextSelection);
+      SoundManager.playCorrect();
+      recordResult({
+        challengeId: currentRound.id,
+        correct: firstTry,
+        attempts: currentAttempts + 1,
+        score: firstTry ? 100 : 0,
+      });
+
+      const isFinal = currentIndex === rounds.length - 1;
+      if (!isFinal && (currentIndex === 0 || currentAttempts > 0)) {
+        sendText(
+          `[RHYME_CORRECT] The student found the rhyming pair${currentAttempts > 0 ? ' after a comeback' : ' on the first round'}. `
+          + `Celebrate in one brief sentence without saying either answer word.`,
+          { silent: true },
+        );
+      }
+
+      if (!isFinal) {
+        transitionTimerRef.current = setTimeout(() => advanceProgress(), 900);
+      }
+      return;
+    }
+
+    incrementAttempts();
+    setWrongWords(nextSelection);
+    SoundManager.playIncorrect();
+    sendText(
+      `[RHYME_MISS] The student tapped "${nextSelection[0]}" and "${nextSelection[1]}" on attempt ${currentAttempts + 1}. `
+      + `Stretch those two endings slowly and ask whether they sound the same. Do not name or hint another candidate.`,
+      { silent: true },
+    );
+    transitionTimerRef.current = setTimeout(() => {
+      setSelectedWords([]);
+      setWrongWords([]);
+      setIsLocked(false);
+    }, 600);
+  }, [
+    advanceProgress, currentAttempts, currentIndex, currentRound, incrementAttempts,
+    isLocked, recordResult, rounds.length, selectedWords, sendText,
+  ]);
+
+  if (rounds.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6 text-center text-slate-400">
+          No rhyme rounds available.
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  if (showSummary) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-5">
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedScore ?? undefined}
+            durationMs={Date.now() - startTimeRef.current}
+            heading="Rhyme Hunt Complete"
+            celebrationMessage="You listened closely for matching word endings!"
+          />
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardContent className="p-5 space-y-5">
+        <div className="flex justify-center gap-2" aria-label={`Round ${currentIndex + 1} of ${rounds.length}`}>
+          {rounds.map((round, index) => (
+            <span
+              key={round.id}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${index <= currentIndex ? 'bg-violet-400' : 'bg-slate-700'}`}
+            />
+          ))}
+        </div>
+
+        <LuminaPanel className="space-y-1 text-center font-serif" aria-label="Poem">
+          {currentRound.poemLines.map((line, index) => (
+            <p key={`${currentRound.id}-line-${index}`} className="text-base leading-relaxed text-slate-200">
+              {line}
+            </p>
+          ))}
+        </LuminaPanel>
+
+        <div className="grid grid-cols-2 gap-3">
+          {currentRound.candidates.map((candidate) => {
+            const isSelected = selectedWords.includes(candidate.word);
+            const isWrong = wrongWords.includes(candidate.word);
+            const isCorrect = correctWords.includes(candidate.word);
+            const state = isCorrect ? 'correct' : isWrong ? 'incorrect' : isSelected ? 'selected' : 'idle';
+            return (
+              <LuminaAnswerChoice
+                key={`${currentRound.id}-${candidate.word}`}
+                state={state}
+                disabled={isLocked}
+                onClick={() => handleCandidateTap(candidate.word)}
+                className="min-h-28 p-3 text-center"
+              >
+                <span className="block text-4xl" aria-hidden>{candidate.emoji}</span>
+                <span className="mt-1 block text-lg font-semibold text-slate-100">{candidate.word}</span>
+              </LuminaAnswerChoice>
+            );
+          })}
+        </div>
+
+        {correctWords.length === 2 && (
+          <div className="flex items-center justify-center gap-3 text-emerald-300 animate-pulse" aria-live="polite">
+            <span className="font-semibold">{correctWords[0]}</span>
+            <span className="h-0.5 w-16 bg-emerald-400 rounded-full" />
+            <span className="font-semibold">{correctWords[1]}</span>
+          </div>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+};
+
 // ============================================================================
 // Component
 // ============================================================================
 
-const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
+const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   const {
     title, gradeLevel, mode, poem, poemLines, correctMood, moodOptions,
     figurativeInstances, rhymeScheme, rhymeSchemeOptions,
@@ -582,6 +912,13 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
       </LuminaCardContent>
     </LuminaCard>
   );
+};
+
+const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
+  if (data.mode === 'rhyme_hunt') {
+    return <RhymeHunt data={data} className={className} />;
+  }
+  return <LegacyPoetryLab data={data} className={className} />;
 };
 
 export default PoetryLab;

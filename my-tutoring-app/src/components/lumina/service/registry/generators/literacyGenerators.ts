@@ -56,6 +56,7 @@ import { generateCvcSpeller } from '../../literacy/gemini-cvc-speller';
 import { generateWordWorkout } from '../../literacy/gemini-word-workout';
 import { generateWordSorter } from '../../literacy/gemini-word-sorter';
 import { generatePictureVocabulary } from '../../literacy/gemini-picture-vocabulary';
+import { generateInteractiveBook } from '../../literacy/gemini-interactive-book';
 import { generateStoryTalk } from '../../literacy/gemini-story-talk';
 import { generateWordFlip } from '../../literacy/gemini-word-flip';
 
@@ -590,6 +591,16 @@ registerContextGenerator('picture-vocabulary', async (ctx) => ({
 }));
 
 // ============================================================================
+// Reading Informational Text — Interactive Book
+// ============================================================================
+
+registerContextGenerator('interactive-book', async (ctx) => ({
+  type: 'interactive-book',
+  instanceId: ctx.instanceId,
+  data: await generateInteractiveBook(ctx),
+}));
+
+// ============================================================================
 // Speaking & Listening — Story Talk
 // ============================================================================
 
@@ -636,4 +647,4 @@ registerContextGenerator('word-flip', async (ctx) => ({
   data: await generateWordFlip(ctx),
 }));
 
-console.log('📚 Literacy generators registered: 30 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Story Talk + Word Flip)');
+console.log('📚 Literacy generators registered: 31 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip)');

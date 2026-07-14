@@ -82,9 +82,23 @@ class CalibrationEngine:
     Firestore persistence at the end.
     """
 
+    # Evidence weighting for multi-part primitives (testlet model).
+    # Parts within one primitive share a stimulus/context, so they are not
+    # independent observations: effective n = 1 + RHO * (parts - 1), capped.
+    # A 7-part primitive counts as 4 effective observations, not 7 and not 1.
+    LOCAL_DEPENDENCE_RHO = 0.5
+    MAX_EFFECTIVE_EVIDENCE = 6.0
+
     def __init__(self, firestore_service: FirestoreService):
         self.firestore = firestore_service
         logger.info("CalibrationEngine initialized")
+
+    @classmethod
+    def effective_evidence(cls, evidence_parts: int) -> float:
+        """Effective observation count for a submission with N scored parts."""
+        n = max(1, int(evidence_parts or 1))
+        return min(cls.MAX_EFFECTIVE_EVIDENCE,
+                   1.0 + cls.LOCAL_DEPENDENCE_RHO * (n - 1))
 
     # ------------------------------------------------------------------
     # Main entry point
@@ -100,6 +114,7 @@ class CalibrationEngine:
         score: float,
         source: str = "practice",
         *,
+        evidence_parts: int = 1,
         prefetched_ability: Optional[Dict] = None,
         prefetched_item_calibration: Optional[Dict] = None,
     ) -> Dict[str, Any]:
@@ -114,6 +129,11 @@ class CalibrationEngine:
             eval_mode:      Evaluation mode (e.g., "subitize").
             score:          Score on 0–10 scale.
             source:         "lesson" | "practice".
+            evidence_parts: Number of independently scored parts inside this
+                submission (multi-challenge primitives). Converted to an
+                effective observation count via `effective_evidence()` and
+                used as a likelihood weight in the θ update — a 7-part
+                performance shrinks σ more than a single true/false.
             prefetched_ability: Pre-loaded ability doc to skip a Firestore read.
             prefetched_item_calibration: Pre-loaded item calibration doc to skip
                 a Firestore read. Useful when multiple items share the same
@@ -152,11 +172,13 @@ class CalibrationEngine:
         item_cal = self._update_item_beta(item_cal, ability.theta, response_weight)
 
         # 4. Update student θ (uses item's calibrated β with 2PL/3PL likelihood)
+        evidence_n = self.effective_evidence(evidence_parts)
         ability = self._update_student_theta(
             ability, item_cal.calibrated_beta, response_weight,
             now, primitive_type, eval_mode, score,
             item_a=item_cal.discrimination_a,
             item_c=item_cal.guessing_c,
+            evidence_n=evidence_n,
         )
 
         # 5. Persist both documents (parallel — independent writes)
@@ -202,6 +224,7 @@ class CalibrationEngine:
             "earned_level": ability.earned_level,
             "p_correct": round(p_corr, 4),
             "item_information": round(info, 4),
+            "evidence_n": round(evidence_n, 2),
             "gate_progress": gate_progress.model_dump(),
             "ability_doc": ability.model_dump(),
             "item_calibration_doc": item_cal.model_dump(),
@@ -421,13 +444,17 @@ class CalibrationEngine:
         score: float,
         item_a: float = 1.0,
         item_c: float = 0.0,
+        evidence_n: float = 1.0,
     ) -> StudentAbility:
         """Update student ability using Bayesian grid-approximation EAP with
         continuous Beta response model.
 
         Instead of binary correct/incorrect, uses:
-            L(x|θ) = P(θ)^x × (1 - P(θ))^(1-x)
-        where x = response_weight ∈ [0, 1].
+            L(x|θ) = [P(θ)^x × (1 - P(θ))^(1-x)]^n
+        where x = response_weight ∈ [0, 1] and n = evidence_n, the effective
+        observation count for this submission (n=1 for a single problem;
+        >1 for multi-part primitives — equivalent to n weighted Bernoulli
+        trials with success fraction x, so σ shrinks with evidence volume).
 
         This naturally interpolates: x=1.0 is fully correct, x=0.0 is fully
         wrong, x=0.85 (score 8.5) is mostly correct with partial pull.
@@ -462,11 +489,12 @@ class CalibrationEngine:
         # L(x|θ) = P(θ)^x × (1-P(θ))^(1-x)
         # Clamp x away from exact 0/1 for numerical stability
         x = max(1e-6, min(1.0 - 1e-6, response_weight))
+        n_eff = max(1.0, evidence_n)
         likelihood = []
         for theta in grid_points:
             p = p_correct(theta, item_a, item_beta, item_c)
             p = max(1e-10, min(1.0 - 1e-10, p))
-            likelihood.append(p ** x * (1.0 - p) ** (1.0 - x))
+            likelihood.append((p ** x * (1.0 - p) ** (1.0 - x)) ** n_eff)
 
         # Posterior ∝ prior × likelihood
         posterior = [pr * lk for pr, lk in zip(prior, likelihood)]

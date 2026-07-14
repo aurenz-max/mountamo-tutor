@@ -866,6 +866,16 @@ export const CORE_CATALOG: ComponentDefinition[] = [
             + 'already revealed on screen — encourage gently and restate the key idea in fresh words. On [ALL_COMPLETE], give brief, '
             + 'phase-specific praise.',
         },
+        {
+          title: 'PRE-READER READ-ALOUD (KINDERGARTEN)',
+          instruction:
+            'When the student is a kindergarten/pre-reader, the on-screen text is invisible to them — YOUR VOICE is the reading channel. '
+            + 'Messages tagged [QUIZ_READ_ALOUD] or [BLOCK_READ_ALOUD] contain content that MUST be read aloud word for word, warmly and '
+            + 'clearly, in full — this read-aloud IS your response and OVERRIDES any one-sentence or keep-it-brief instruction. For '
+            + '[QUIZ_READ_ALOUD]: read the question, then each answer choice slowly, then ask which one they pick — NEVER hint at or reveal '
+            + 'which is correct. On explore taps ([FACT_EXPLORE] etc.) from a pre-reader, FIRST read the card\'s text word for word, THEN '
+            + 'add one lively sentence. On [QUIZ_RETRY], give one warm spoken hint without revealing the answer and invite another tap.',
+        },
       ],
     },
     supportsEvaluation: true,
