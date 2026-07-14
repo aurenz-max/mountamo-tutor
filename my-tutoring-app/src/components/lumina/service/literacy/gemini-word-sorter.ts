@@ -56,13 +56,20 @@ const SYSTEM_INSTRUCTION =
 // Per-mode schemas — focused, minimal fields
 // ---------------------------------------------------------------------------
 
-function buildBinarySortSchema(): Schema {
+function buildBinarySortSchema(gradeKey: string): Schema {
   const wordProps: Record<string, Schema> = {};
   for (let i = 0; i < 8; i++) {
     wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
-    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning` };
     wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0 or bucket1` };
   }
+
+  // K students are pre-readers: emoji are the answer surface, so they are
+  // REQUIRED at K (a text-only draw strands a non-reader — reader-fit RF-4).
+  const emojiRequired = gradeKey === 'K'
+    ? ['bucket0Emoji', 'bucket1Emoji',
+      'word0Emoji', 'word1Emoji', 'word2Emoji', 'word3Emoji', 'word4Emoji', 'word5Emoji']
+    : [];
 
   return {
     type: Type.OBJECT,
@@ -77,14 +84,17 @@ function buildBinarySortSchema(): Schema {
             id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
             instruction: { type: Type.STRING, description: "Clear instruction for the student" },
             bucket0: { type: Type.STRING, description: "First bucket label (e.g., 'Nouns')" },
+            bucket0Emoji: { type: Type.STRING, description: "Single emoji that SHOWS what bucket0 means (pre-reader answer surface)" },
             bucket1: { type: Type.STRING, description: "Second bucket label (e.g., 'Verbs')" },
+            bucket1Emoji: { type: Type.STRING, description: "Single emoji that SHOWS what bucket1 means" },
             wordCount: { type: Type.INTEGER, description: "Number of words (6-8)" },
             ...wordProps,
           },
           required: ["id", "instruction", "bucket0", "bucket1", "wordCount",
             "word0Text", "word0Bucket", "word1Text", "word1Bucket",
             "word2Text", "word2Bucket", "word3Text", "word3Bucket",
-            "word4Text", "word4Bucket", "word5Text", "word5Bucket"],
+            "word4Text", "word4Bucket", "word5Text", "word5Bucket",
+            ...emojiRequired],
         },
         description: "3-4 binary sort challenges",
       },
@@ -93,13 +103,20 @@ function buildBinarySortSchema(): Schema {
   };
 }
 
-function buildTernarySortSchema(): Schema {
+function buildTernarySortSchema(gradeKey: string): Schema {
   const wordProps: Record<string, Schema> = {};
   for (let i = 0; i < 10; i++) {
     wordProps[`word${i}Text`] = { type: Type.STRING, description: `Word ${i} display text` };
-    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji` };
+    wordProps[`word${i}Emoji`] = { type: Type.STRING, description: `Word ${i} emoji — a single emoji that SHOWS the word's meaning` };
     wordProps[`word${i}Bucket`] = { type: Type.STRING, description: `Word ${i} correct bucket — must exactly match bucket0, bucket1, or bucket2` };
   }
+
+  // Required at K — pre-readers sort by picture, not print (reader-fit RF-4).
+  const emojiRequired = gradeKey === 'K'
+    ? ['bucket0Emoji', 'bucket1Emoji', 'bucket2Emoji',
+      'word0Emoji', 'word1Emoji', 'word2Emoji', 'word3Emoji',
+      'word4Emoji', 'word5Emoji', 'word6Emoji', 'word7Emoji']
+    : [];
 
   return {
     type: Type.OBJECT,
@@ -114,8 +131,11 @@ function buildTernarySortSchema(): Schema {
             id: { type: Type.STRING, description: "Unique ID (ch1, ch2, ...)" },
             instruction: { type: Type.STRING, description: "Clear instruction for the student" },
             bucket0: { type: Type.STRING, description: "First bucket label" },
+            bucket0Emoji: { type: Type.STRING, description: "Single emoji that SHOWS what bucket0 means" },
             bucket1: { type: Type.STRING, description: "Second bucket label" },
+            bucket1Emoji: { type: Type.STRING, description: "Single emoji that SHOWS what bucket1 means" },
             bucket2: { type: Type.STRING, description: "Third bucket label" },
+            bucket2Emoji: { type: Type.STRING, description: "Single emoji that SHOWS what bucket2 means" },
             wordCount: { type: Type.INTEGER, description: "Number of words (8-10)" },
             ...wordProps,
           },
@@ -123,7 +143,8 @@ function buildTernarySortSchema(): Schema {
             "word0Text", "word0Bucket", "word1Text", "word1Bucket",
             "word2Text", "word2Bucket", "word3Text", "word3Bucket",
             "word4Text", "word4Bucket", "word5Text", "word5Bucket",
-            "word6Text", "word6Bucket", "word7Text", "word7Bucket"],
+            "word6Text", "word6Bucket", "word7Text", "word7Bucket",
+            ...emojiRequired],
         },
         description: "3-4 ternary sort challenges",
       },
@@ -132,14 +153,22 @@ function buildTernarySortSchema(): Schema {
   };
 }
 
-function buildMatchPairsSchema(): Schema {
+function buildMatchPairsSchema(gradeKey: string): Schema {
   const pairProps: Record<string, Schema> = {};
   for (let i = 0; i < 6; i++) {
     pairProps[`pair${i}Term`] = { type: Type.STRING, description: `Pair ${i} term word` };
-    pairProps[`pair${i}TermEmoji`] = { type: Type.STRING, description: `Pair ${i} term emoji` };
+    pairProps[`pair${i}TermEmoji`] = { type: Type.STRING, description: `Pair ${i} term emoji — a single emoji that SHOWS the term's meaning` };
     pairProps[`pair${i}Match`] = { type: Type.STRING, description: `Pair ${i} matching word` };
-    pairProps[`pair${i}MatchEmoji`] = { type: Type.STRING, description: `Pair ${i} match emoji` };
+    pairProps[`pair${i}MatchEmoji`] = { type: Type.STRING, description: `Pair ${i} match emoji — a single emoji that SHOWS the match's meaning` };
   }
+
+  // Required at K-1 — every observed K/1 draw shipped the match column with
+  // zero emojis, leaving pure print for children who cannot read it (RF-4).
+  const emojiRequired = (gradeKey === 'K' || gradeKey === '1')
+    ? ['pair0TermEmoji', 'pair0MatchEmoji', 'pair1TermEmoji', 'pair1MatchEmoji',
+      'pair2TermEmoji', 'pair2MatchEmoji', 'pair3TermEmoji', 'pair3MatchEmoji',
+      'pair4TermEmoji', 'pair4MatchEmoji']
+    : [];
 
   return {
     type: Type.OBJECT,
@@ -159,7 +188,8 @@ function buildMatchPairsSchema(): Schema {
           required: ["id", "instruction", "pairCount",
             "pair0Term", "pair0Match", "pair1Term", "pair1Match",
             "pair2Term", "pair2Match", "pair3Term", "pair3Match",
-            "pair4Term", "pair4Match"],
+            "pair4Term", "pair4Match",
+            ...emojiRequired],
         },
         description: "3-4 match pairs challenges",
       },
@@ -204,6 +234,10 @@ function reconstructSortChallenge(
     return null;
   }
 
+  // Bucket emojis (pre-reader answer surface) — index-aligned with bucketLabels
+  const bucketEmojis = bucketLabels.map((_, i) => (flat[`bucket${i}Emoji`] as string) || '');
+  const hasBucketEmojis = bucketEmojis.some(e => e);
+
   const maxWords = type === 'binary_sort' ? 8 : 10;
   const wordCount = typeof flat.wordCount === 'number' ? Math.min(flat.wordCount, maxWords) : maxWords;
   const words = [];
@@ -241,6 +275,7 @@ function reconstructSortChallenge(
     type,
     instruction: flat.instruction as string,
     bucketLabels,
+    ...(hasBucketEmojis ? { bucketEmojis } : {}),
     words: shuffleArray(words),
   };
 }
@@ -292,9 +327,10 @@ ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 For each challenge:
 - instruction: Clear sorting instruction (e.g., "Sort these words into nouns and verbs")
 - bucket0, bucket1: Two category labels
+- bucket0Emoji, bucket1Emoji: ONE emoji that visually SHOWS each category (pre-readers sort by picture)
 - wordCount: 6-8 words
 - word0Text..word7Text: The words to sort
-- word0Emoji..word7Emoji: Emoji for each word (required for K, recommended for grade 1-2)
+- word0Emoji..word7Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning; recommended for grade 1-2)
 - word0Bucket..word7Bucket: Must EXACTLY match bucket0 or bucket1
 
 RULES:
@@ -310,7 +346,7 @@ Generate 3-4 challenges with different sorting criteria.`;
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildBinarySortSchema(),
+      responseSchema: buildBinarySortSchema(gradeKey),
       systemInstruction: SYSTEM_INSTRUCTION,
     },
   });
@@ -346,9 +382,10 @@ ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
 For each challenge:
 - instruction: Clear sorting instruction (e.g., "Sort these words by tense")
 - bucket0, bucket1, bucket2: Three category labels
+- bucket0Emoji..bucket2Emoji: ONE emoji that visually SHOWS each category (pre-readers sort by picture)
 - wordCount: 8-10 words
 - word0Text..word9Text: The words to sort
-- word0Emoji..word9Emoji: Emoji for each word
+- word0Emoji..word9Emoji: Emoji for each word (REQUIRED for K — the emoji must show the word's meaning)
 - word0Bucket..word9Bucket: Must EXACTLY match bucket0, bucket1, or bucket2
 
 RULES:
@@ -364,7 +401,7 @@ Generate 3-4 challenges with different sorting criteria.`;
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildTernarySortSchema(),
+      responseSchema: buildTernarySortSchema(gradeKey),
       systemInstruction: SYSTEM_INSTRUCTION,
     },
   });
@@ -401,9 +438,9 @@ For each challenge:
 - instruction: Clear matching instruction (e.g., "Match each word with its opposite")
 - pairCount: 5-6 pairs
 - pair0Term..pair5Term: The term words (left column)
-- pair0TermEmoji..pair5TermEmoji: Emoji for each term
+- pair0TermEmoji..pair5TermEmoji: Emoji for each term (REQUIRED for K-1 — must show the word's meaning)
 - pair0Match..pair5Match: The matching words (right column)
-- pair0MatchEmoji..pair5MatchEmoji: Emoji for each match
+- pair0MatchEmoji..pair5MatchEmoji: Emoji for each match (REQUIRED for K-1 — young students match by picture, not print)
 
 RULES:
 - Each pair should have a clear, unambiguous relationship (opposites, synonyms, singular/plural, etc.)
@@ -419,7 +456,7 @@ Generate 3-4 challenges with different matching criteria.`;
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildMatchPairsSchema(),
+      responseSchema: buildMatchPairsSchema(gradeKey),
       systemInstruction: SYSTEM_INSTRUCTION,
     },
   });

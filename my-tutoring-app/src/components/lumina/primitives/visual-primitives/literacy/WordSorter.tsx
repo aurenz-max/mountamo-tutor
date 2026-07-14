@@ -20,6 +20,8 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
+  LuminaDropZone,
+  type DropZoneState,
 } from '../../../ui';
 
 // ============================================================================
@@ -46,6 +48,8 @@ export interface WordSorterChallenge {
   type: 'binary_sort' | 'ternary_sort' | 'match_pairs';
   instruction: string;
   bucketLabels?: string[];
+  /** Optional emoji per bucket, index-aligned with bucketLabels (pre-reader answer surface). */
+  bucketEmojis?: string[];
   words?: WordCard[];
   pairs?: MatchPair[];
 }
@@ -77,9 +81,9 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 const BUCKET_COLORS = [
-  { bg: 'bg-violet-500/10', border: 'border-violet-400/30', text: 'text-violet-300', active: 'ring-violet-400' },
-  { bg: 'bg-sky-500/10', border: 'border-sky-400/30', text: 'text-sky-300', active: 'ring-sky-400' },
-  { bg: 'bg-emerald-500/10', border: 'border-emerald-400/30', text: 'text-emerald-300', active: 'ring-emerald-400' },
+  { text: 'text-violet-300' },
+  { text: 'text-sky-300' },
+  { text: 'text-emerald-300' },
 ];
 
 /** Partial credit: 1st try = 100%, 2nd = 75%, 3rd = 50%, 4th+ = 25%. */
@@ -114,6 +118,10 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  // Pre-reader presentation (reader-fit PRE band): one word staged at a time,
+  // tap-a-bucket = choose, tutor voices every card, adult chrome hidden.
+  const isPreReader = gradeLevel === 'K';
+
   // ─── Shared hooks ──────────────────────────────────────────────
   const {
     currentIndex: currentChallengeIndex,
@@ -141,10 +149,19 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   const [matchedPairs, setMatchedPairs] = useState<Map<string, string>>(new Map()); // termId → matchId
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
+  const [bucketFlash, setBucketFlash] = useState<{ label: string; ok: boolean } | null>(null);
 
   // ─── Refs ──────────────────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `word-sorter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const bucketFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (bucketFlashTimer.current) clearTimeout(bucketFlashTimer.current);
+    },
+    []
+  );
 
   // ─── Current challenge ─────────────────────────────────────────
   const currentChallenge = useMemo(
@@ -157,6 +174,9 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     if (!currentChallenge?.words) return [];
     return currentChallenge.words.filter(w => !bucketAssignments.has(w.id));
   }, [currentChallenge, bucketAssignments]);
+
+  // Pre-reader: the single word currently on stage (always the next unsorted).
+  const stagedWord = isPreReader ? (unsortedWords[0] ?? null) : null;
 
   // ─── Words per bucket ──────────────────────────────────────────
   const wordsInBuckets = useMemo(() => {
@@ -224,13 +244,21 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     wordsSorted: bucketAssignments.size + matchedPairs.size,
     totalWords: (currentChallenge?.words?.length ?? 0) + (currentChallenge?.pairs?.length ?? 0),
     attemptNumber: currentAttempts + 1,
-    currentChallengeIndex,
+    challengeNumber: currentChallengeIndex + 1,
     totalChallenges: challenges.length,
     gradeLevel,
     sortingTopic,
+    // The stimulus word the student is holding (never the answer key) — the
+    // scaffold's spoken lines reference it so the tutor can say it aloud.
+    selectedWord:
+      stagedWord?.word
+      ?? currentChallenge?.words?.find(w => w.id === selectedWordId)?.word
+      ?? currentChallenge?.pairs?.find(p => p.id === selectedTermId)?.term
+      ?? '',
   }), [
-    currentChallenge, bucketAssignments.size, matchedPairs.size,
-    currentAttempts, currentChallengeIndex, challenges.length, gradeLevel, sortingTopic,
+    currentChallenge, bucketAssignments.size, matchedPairs.size, currentAttempts,
+    currentChallengeIndex, challenges.length, gradeLevel, sortingTopic,
+    stagedWord, selectedWordId, selectedTermId,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -248,26 +276,64 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     sendText(
       `[ACTIVITY_START] Word Sorter activity for grade ${gradeLevel}. Topic: ${sortingTopic}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
-      + `Introduce warmly: "Let's sort some words together!"`,
+      + `Follow your SAY THE SORT OUT LOUD FIRST directive now: say the challenge in child terms, `
+      + `name each bucket aloud, and ask the sorting question.`,
       { silent: true },
     );
   }, [isConnected, challenges.length, currentChallenge, gradeLevel, sortingTopic, sendText]);
+
+  // ─── Pre-reader: tutor voices each word as it comes on stage ───
+  // The child cannot read the card; the tutor's voice IS the card (reader-fit
+  // STIMULUS). One utterance per staged word — this is the instruction channel,
+  // not celebration chatter, so it does not violate quiet-by-default.
+  const lastStagedAnnouncedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isPreReader || !isConnected || !stagedWord || !currentChallenge) return;
+    const stageKey = `${currentChallenge.id}:${stagedWord.id}`;
+    if (lastStagedAnnouncedRef.current === stageKey) return;
+    lastStagedAnnouncedRef.current = stageKey;
+    sendText(
+      `[WORD_STAGED] The next word card is on stage: "${stagedWord.word}". `
+      + `Say just this word aloud clearly for the student. Do not say which bucket it belongs in.`,
+      { silent: true },
+    );
+  }, [isPreReader, isConnected, stagedWord, currentChallenge, sendText]);
 
   // ─── Handle word selection (sort modes) ────────────────────────
   const handleWordClick = useCallback((wordId: string) => {
     if (hasSubmittedEvaluation || !currentChallenge) return;
     SoundManager.tap();
+    if (isPreReader) {
+      // Tap-to-hear: the staged card replays its word; no selection protocol.
+      const word = currentChallenge.words?.find(w => w.id === wordId);
+      if (word) {
+        sendText(
+          `[WORD_TAP] The student tapped the word card "${word.word}" to hear it again. `
+          + `Say just this word aloud clearly. Do not say which bucket it belongs in.`,
+          { silent: true },
+        );
+      }
+      return;
+    }
     setSelectedWordId(prev => prev === wordId ? null : wordId);
-  }, [hasSubmittedEvaluation, currentChallenge]);
+  }, [hasSubmittedEvaluation, currentChallenge, isPreReader, sendText]);
 
   // ─── Handle bucket click (drop word into bucket) ───────────────
   const handleBucketClick = useCallback((bucketLabel: string) => {
-    if (hasSubmittedEvaluation || !currentChallenge || !selectedWordId) return;
+    if (hasSubmittedEvaluation || !currentChallenge) return;
 
-    const word = currentChallenge.words?.find(w => w.id === selectedWordId);
+    // Pre-reader: the staged word is the active word (tap bucket = choose).
+    const word = isPreReader
+      ? stagedWord
+      : currentChallenge.words?.find(w => w.id === selectedWordId);
     if (!word) return;
+    const isCorrect = word.correctBucket === bucketLabel;
 
-    if (word.correctBucket === bucketLabel) {
+    if (bucketFlashTimer.current) clearTimeout(bucketFlashTimer.current);
+    setBucketFlash({ label: bucketLabel, ok: isCorrect });
+    bucketFlashTimer.current = setTimeout(() => setBucketFlash(null), 900);
+
+    if (isCorrect) {
       SoundManager.playCorrect();
       setBucketAssignments(prev => new Map(prev).set(word.id, bucketLabel));
       setFeedback('Correct!');
@@ -289,7 +355,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
     // Clear feedback after 2s
     setTimeout(() => { setFeedback(''); setFeedbackType(''); }, 2000);
-  }, [hasSubmittedEvaluation, currentChallenge, selectedWordId, incrementAttempts, sendText]);
+  }, [hasSubmittedEvaluation, currentChallenge, isPreReader, stagedWord, selectedWordId, incrementAttempts, sendText]);
 
   // ─── Handle match pair selection ───────────────────────────────
   const handleTermClick = useCallback((termId: string) => {
@@ -395,12 +461,15 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     setBucketAssignments(new Map());
     setSelectedTermId(null);
     setMatchedPairs(new Map());
+    setBucketFlash(null);
+    if (bucketFlashTimer.current) clearTimeout(bucketFlashTimer.current);
     hasRecordedRef.current = null;
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (${nextChallenge.type}). Introduce it briefly.`,
+      + `"${nextChallenge.instruction}" (${nextChallenge.type}). `
+      + `Follow your SAY THE SORT OUT LOUD FIRST directive for this new challenge.`,
       { silent: true },
     );
   }, [
@@ -425,7 +494,97 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     );
   }, [allChallengesComplete, challenges, challengeResults]);
 
-  // ─── Render: Sort Challenge (binary/ternary) ───────────────────
+  // ─── Render: bucket grid (shared by both sort presentations) ───
+  const renderBuckets = (interactive: boolean) => {
+    if (!currentChallenge?.bucketLabels) return null;
+    return (
+      <div className={`grid gap-4 ${currentChallenge.bucketLabels.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {currentChallenge.bucketLabels.map((label, idx) => {
+          const color = BUCKET_COLORS[idx] || BUCKET_COLORS[0];
+          const bucketEmoji = currentChallenge.bucketEmojis?.[idx];
+          const wordsHere = wordsInBuckets.get(label) || [];
+          const zoneState: DropZoneState =
+            bucketFlash?.label === label
+              ? bucketFlash.ok
+                ? 'correct'
+                : 'incorrect'
+              : wordsHere.length > 0
+                ? 'filled'
+                : 'idle';
+
+          return (
+            <button
+              key={label}
+              onClick={() => handleBucketClick(label)}
+              disabled={!interactive}
+              className={`w-full ${interactive ? 'cursor-pointer' : 'cursor-default'}`}
+            >
+              {isPreReader ? (
+                <div className="mb-3 flex flex-col items-center gap-1">
+                  {bucketEmoji && <span className="text-4xl leading-none">{bucketEmoji}</span>}
+                  <h3 className={`text-lg font-bold ${color.text} text-center`}>{label}</h3>
+                </div>
+              ) : (
+                <h3 className={`text-sm font-bold ${color.text} mb-3 text-center`}>
+                  {label}
+                </h3>
+              )}
+              <LuminaDropZone
+                state={zoneState}
+                emptyPrompt={isPreReader ? undefined : 'Tap to place word here'}
+                className="min-h-[104px] pointer-events-none content-center justify-center"
+              >
+                {wordsHere.map(w => (
+                  <LuminaBadge
+                    key={w.id}
+                    className={`bg-white/10 border-white/10 text-slate-200 ${isPreReader ? 'text-base' : 'text-xs'}`}
+                  >
+                    {w.emoji && <span className="mr-1">{w.emoji}</span>}
+                    {w.word}
+                  </LuminaBadge>
+                ))}
+              </LuminaDropZone>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ─── Render: Sort Challenge, pre-reader (staged word, tap = choose) ─
+  const renderPreReaderSortChallenge = () => {
+    if (!currentChallenge?.words || !currentChallenge?.bucketLabels) return null;
+
+    return (
+      <div className="space-y-8">
+        {/* Staged word card — tap to hear it again */}
+        <div className="flex justify-center min-h-[150px] items-center">
+          {stagedWord && (
+            <button
+              onClick={() => handleWordClick(stagedWord.id)}
+              aria-label={`Hear the word ${stagedWord.word}`}
+              className="flex flex-col items-center gap-2 px-10 py-6 rounded-3xl border-2 border-white/15 bg-white/5 hover:bg-white/10 transition-all active:scale-95"
+            >
+              {stagedWord.emoji ? (
+                <>
+                  <span className="text-7xl leading-none">{stagedWord.emoji}</span>
+                  <span className="text-2xl font-bold text-slate-100">{stagedWord.word}</span>
+                </>
+              ) : (
+                <span className="text-4xl font-bold text-slate-100">{stagedWord.word}</span>
+              )}
+              <span className="text-xl" aria-hidden>🔊</span>
+            </button>
+          )}
+        </div>
+
+        {/* Buckets — tap one to choose */}
+        {renderBuckets(!!stagedWord)}
+      </div>
+    );
+  };
+
+  // ─── Render: Sort Challenge (binary/ternary, reader presentation) ──
   const renderSortChallenge = () => {
     if (!currentChallenge?.words || !currentChallenge?.bucketLabels) return null;
 
@@ -452,43 +611,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
         </div>
 
         {/* Buckets */}
-        <div className={`grid gap-4 ${currentChallenge.bucketLabels.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          {currentChallenge.bucketLabels.map((label, idx) => {
-            const color = BUCKET_COLORS[idx] || BUCKET_COLORS[0];
-            const wordsHere = wordsInBuckets.get(label) || [];
-
-            return (
-              <button
-                key={label}
-                onClick={() => handleBucketClick(label)}
-                disabled={!selectedWordId}
-                className={`
-                  rounded-xl border-2 border-dashed p-4 min-h-[140px] transition-all
-                  ${color.bg} ${color.border}
-                  ${selectedWordId
-                    ? `cursor-pointer hover:border-solid hover:ring-2 hover:${color.active}`
-                    : 'cursor-default'
-                  }
-                `}
-              >
-                <h3 className={`text-sm font-bold ${color.text} mb-3 text-center`}>
-                  {label}
-                </h3>
-                <div className="flex flex-wrap gap-1.5 justify-center">
-                  {wordsHere.map(w => (
-                    <LuminaBadge
-                      key={w.id}
-                      className="bg-white/10 border-white/10 text-slate-200 text-xs"
-                    >
-                      {w.emoji && <span className="mr-1">{w.emoji}</span>}
-                      {w.word}
-                    </LuminaBadge>
-                  ))}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {renderBuckets(!!selectedWordId)}
       </div>
     );
   };
@@ -587,11 +710,14 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg font-semibold">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">
-            {currentChallengeIndex + 1} / {challenges.length}
-          </LuminaBadge>
+          {/* Progress counter is adult chrome at PRE (reader-fit rule 7) */}
+          {!isPreReader && (
+            <LuminaBadge className="text-xs">
+              {currentChallengeIndex + 1} / {challenges.length}
+            </LuminaBadge>
+          )}
         </div>
-        {description && (
+        {description && !isPreReader && (
           <p className="text-sm text-slate-400 mt-1">{description}</p>
         )}
       </LuminaCardHeader>
@@ -612,28 +738,34 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
         {/* Active challenge */}
         {!allChallengesComplete && currentChallenge && (
           <>
-            {/* Challenge instruction */}
-            <LuminaPanel>
-              <p className="text-slate-200 text-sm font-medium">
-                {currentChallenge.instruction}
-              </p>
-            </LuminaPanel>
+            {/* Challenge instruction — at PRE the tutor voices it (aiDirectives);
+                the on-screen sentence is unreadable load and stays hidden. */}
+            {!isPreReader && (
+              <LuminaPanel>
+                <p className="text-slate-200 text-sm font-medium">
+                  {currentChallenge.instruction}
+                </p>
+              </LuminaPanel>
+            )}
 
-            {/* Challenge type badge */}
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </LuminaBadge>
-              {currentAttempts > 0 && (
-                <LuminaBadge accent="amber" className="text-xs">
-                  {currentAttempts} wrong
+            {/* Challenge type + attempt badges are adult chrome at PRE (rule 7) */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">
+                  {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
+                  {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
                 </LuminaBadge>
-              )}
-            </div>
+                {currentAttempts > 0 && (
+                  <LuminaBadge accent="amber" className="text-xs">
+                    {currentAttempts} wrong
+                  </LuminaBadge>
+                )}
+              </div>
+            )}
 
-            {/* Feedback */}
-            {feedback && (
+            {/* Feedback text — at PRE the SFX + bucket flash + spoken hint carry
+                it; a transient sentence card is unreadable (rule 5). */}
+            {feedback && !isPreReader && (
               <div className={`p-3 rounded-lg text-sm font-medium text-center transition-all ${
                 feedbackType === 'success'
                   ? 'bg-emerald-500/10 border border-emerald-400/20 text-emerald-300'
@@ -645,7 +777,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
 
             {/* Challenge content */}
             {(currentChallenge.type === 'binary_sort' || currentChallenge.type === 'ternary_sort')
-              ? renderSortChallenge()
+              ? (isPreReader ? renderPreReaderSortChallenge() : renderSortChallenge())
               : renderMatchPairsChallenge()
             }
 

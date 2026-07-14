@@ -66,7 +66,9 @@ async function recognize(
         Accept: 'application/json',
         ...(paHeader ? { 'Pronunciation-Assessment': paHeader } : {}),
       },
-      body: audio,
+      // Copy into a plain Uint8Array: under @types/node >= 20.19, Buffer's
+      // ArrayBufferLike backing no longer satisfies fetch's BodyInit.
+      body: new Uint8Array(audio),
     },
   );
   if (!res.ok) {

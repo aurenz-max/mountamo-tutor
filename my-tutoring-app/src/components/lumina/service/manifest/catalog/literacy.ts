@@ -1696,7 +1696,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'ESSENTIAL for K-2 grammar, vocabulary, and comprehension.',
     constraints:
       'Requires 2-3 bucket categories per challenge. Words must be age-appropriate and sortable by a single clear criterion. '
-      + 'Match pairs limited to 5-6 per challenge.',
+      + 'Match pairs limited to 5-6 per challenge. BAND FLOOR: at Kindergarten use binary_sort or ternary_sort only — '
+      + 'match_pairs is text-to-text matching (rhymes, antonyms) that requires decoding, so it is for Grade 1+.',
     evalModes: [
       {
         evalMode: 'binary_sort',
@@ -1720,30 +1721,58 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 4,
         challengeTypes: ['match_pairs'],
-        description: 'Match word pairs (singular→plural, word→antonym, word→synonym)',
+        description: 'Grade 1+ ONLY (never Kindergarten — text-to-text matching requires decoding). Match word pairs (singular→plural, word→antonym, word→synonym)',
       },
     ],
     tutoring: {
       taskDescription:
-        'Student is sorting words by {{sortingTopic}}. Challenge: {{instruction}}. Mode: {{challengeType}}. '
-        + 'Sorted {{wordsSorted}}/{{totalWords}} words. Attempt: {{attemptNumber}}. '
-        + 'Challenge {{currentChallengeIndex}}/{{totalChallenges}}.',
+        'Student is sorting words by {{sortingTopic}}. Challenge {{challengeNumber}}/{{totalChallenges}} ({{challengeType}}): {{instruction}}. '
+        + 'Buckets: {{bucketLabels}}. Sorted {{wordsSorted}}/{{totalWords}} words. Attempt: {{attemptNumber}}. '
+        + 'Word the student is holding right now (empty if none): {{selectedWord}}.',
       contextKeys: [
         'challengeType', 'instruction', 'bucketLabels', 'wordsSorted', 'totalWords',
-        'attemptNumber', 'currentChallengeIndex', 'totalChallenges', 'gradeLevel', 'sortingTopic',
+        'attemptNumber', 'challengeNumber', 'totalChallenges', 'gradeLevel', 'sortingTopic', 'selectedWord',
       ],
       scaffoldingLevels: {
         level1:
-          '"Look at this word carefully. Read it aloud. Now look at the bucket labels — which group does it belong to?"',
+          '"Listen — I\'ll say the word out loud for you. Say it with me. Which group does it SOUND like it belongs with? Tap the bucket you think!"',
         level2:
-          '"The word is {{currentWord}}. Think about what kind of word it is. Is it a {{bucketLabels}} word? Try saying it in a sentence to help you decide."',
+          '"Say the word {{selectedWord}} out loud with me. Now listen to our sorting question one more time — I\'ll ask it again. Think about what the word MEANS, then tap your best guess."',
         level3:
-          '"{{currentWord}} is a {{correctCategory}} word. See how it fits with the other {{correctCategory}} words in that bucket? They all share something in common!"',
+          '"Let\'s do this one together. The word is {{selectedWord}} — say it with me. I\'ll give you a clue about how the groups are different, and then YOU tap the bucket you think. Ready? Listen..."',
       },
       commonStruggles: [
-        { pattern: 'Student places word in wrong bucket repeatedly', response: '"Let\'s think about this word together. Say it aloud: [word]. Now, does it describe a thing (noun), an action (verb), or how something looks (adjective)? That tells us which bucket!"' },
-        { pattern: 'Student hesitates and does not tap any word', response: '"Pick any word to start — there is no wrong order! Tap one and read it aloud. Then we will figure out where it goes together."' },
-        { pattern: 'Student confuses similar categories (e.g., noun vs verb for words like "run")', response: '"Some words can be tricky! Think about how the word is used HERE. Is \'run\' a thing you do (verb) or a thing you go on (noun)? The sentence around it gives you the clue."' },
+        { pattern: 'Student places a word in the wrong bucket repeatedly', response: '"Let\'s slow down and do this one together. I\'ll say the word out loud — you say it after me. Now listen to our sorting question again, then tap the bucket that sounds right."' },
+        { pattern: 'Student hesitates and does not tap anything', response: '"Pick any card to start — there is no wrong order! Tap one and I\'ll say it out loud. Then we\'ll figure out where it goes together."' },
+        { pattern: 'Student confuses two similar categories', response: '"Some words are tricky! Say the word out loud with me and think about what it MEANS. I\'ll give you a clue about how the two groups are different — then you make the pick."' },
+        { pattern: 'Student taps matches at random in pair matching', response: '"Let\'s slow down. Tap one word on the left and I\'ll say it out loud. Then listen while we think about its partner — which one sounds right together?"' },
+      ],
+      // ORIENT + STIMULUS beat (reader-fit RF-1): word-sorter claims K — a
+      // pre-reader cannot decode the instruction, the word cards, or the bucket
+      // labels, and contextKeys are tutor-reference only. In lesson mode the
+      // [PRIMITIVE SWITCH]/greeting cap the tutor at one sentence, so without a
+      // directive the tutor greets and stops, stranding the non-reader. These
+      // directives make voicing the sort the mandatory first action and override
+      // the one-sentence cap (addition-subtraction-scene pattern).
+      aiDirectives: [
+        {
+          title: 'SAY THE SORT OUT LOUD FIRST — the student is a K-2 child who may not read',
+          instruction:
+            'The student may not be able to read the instruction, the word cards, or the bucket labels — you are their voice. '
+            + 'Whenever a new sorting challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is: '
+            + '(1) say what we are doing in child terms — the challenge is: "{{instruction}}"; '
+            + '(2) name each bucket out loud so the child knows the choices: {{bucketLabels}}; '
+            + '(3) ask the sorting question as a spoken question (for example, "Is it an animal, or something an animal DOES?"). '
+            + 'Saying the sort out loud IS your greeting for this activity — this overrides any instruction to keep the '
+            + 'transition to a single sentence. Never say which bucket a word belongs in.',
+        },
+        {
+          title: 'SAY WORD CARDS ALOUD — the child reads with your voice',
+          instruction:
+            'When you receive a [WORD_STAGED] or [WORD_TAP] message, say that word aloud clearly — just the word itself, '
+            + 'warmly and once. The child cannot read the card; your voice is how they know what it says. '
+            + 'Never hint at which bucket or match the word belongs to when saying it.',
+        },
       ],
     },
     supportsEvaluation: true,
