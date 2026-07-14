@@ -220,9 +220,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'decodable-reader',
-    description: 'Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes embedded comprehension question. Words color-coded by phonics pattern. ESSENTIAL for K-2 reading fluency.',
-    constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level.',
+    description: 'Controlled-vocabulary reading passages with per-word TTS support. Every word is tappable for pronunciation. Tracks which words students tap (decoding difficulty proxy). Includes an embedded picture-based comprehension question. Two reading modes: READ-ALONG (the tutor reads the passage aloud while a pre-reader follows, then answers by picture) for Kindergarten, and DECODE (the student decodes the passage themselves) for Grade 1-2. ESSENTIAL for K-2 reading.',
+    constraints: 'Grades K-2. Requires controlled phonics patterns matching student decoding level. BAND FLOOR: at Kindergarten use the read_along mode (pre-readers cannot yet decode connected text); the decoding comprehension modes (literal/sequence/inference/main_idea) are for Grade 1+.',
     evalModes: [
+      { evalMode: 'read_along', label: 'Read-Along (Tier 0)', beta: 0.5, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Kindergarten shared reading: the tutor reads the passage aloud while the child follows along, then the child answers a picture-based question. For pre-readers who cannot yet decode connected text.' },
       { evalMode: 'literal', label: 'Literal Recall (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['literal'], description: 'Recall a fact stated directly in the passage.' },
       { evalMode: 'sequence', label: 'Sequence/Cause-Effect (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['sequence'], description: 'Connect two text-explicit parts: order of events or stated cause/effect.' },
       { evalMode: 'inference', label: 'Inference (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['inference'], description: 'Deduce something the text implies but does not state.' },
@@ -239,9 +240,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Comprehension question: "{{comprehensionQuestion}}". '
         + 'Comprehension attempts: {{comprehensionAttempts}}.',
       contextKeys: [
-        'title', 'gradeLevel', 'currentPhase', 'totalWords',
+        'title', 'gradeLevel', 'readingMode', 'currentPhase', 'totalWords',
         'wordsTapped', 'wordsReadIndependently',
-        'phonicsPatternsInPassage', 'comprehensionQuestion',
+        'phonicsPatternsInPassage', 'passageText', 'comprehensionQuestion',
+        'comprehensionChoices',
         'comprehensionAttempts', 'comprehensionCorrect',
       ],
       scaffoldingLevels: {
@@ -266,14 +268,51 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'READER LEVEL — AUDIO IS THE INSTRUCTION CHANNEL',
+          instruction:
+            'This student is a beginning reader (Grade {{gradeLevel}}) and may NOT be able to read the '
+            + 'on-screen text — including the comprehension question and its answer choices. Your VOICE is how '
+            + 'they receive every instruction. Never tell them to "read the question" or "read the choices" '
+            + 'silently; you must SAY those words for them. Keep every spoken turn to one or two short, warm '
+            + 'sentences a five-year-old understands.',
+        },
+        {
+          title: 'ORIENT — WELCOME THE CHILD (fires on [READING_START], decode mode)',
+          instruction:
+            'When you receive a message starting with [READING_START], the activity has just opened in DECODE '
+            + 'mode (the child reads it themselves). Warmly greet the child and tell them what to do in ONE short '
+            + 'sentence, e.g. "Here is a little story — try to read it, and tap any word you want me to say for you." '
+            + 'This opening greeting IS your frame for the activity and overrides any "one sentence only / keep it '
+            + 'brief" cap from a lesson switch. Then stay quiet and let them read; do not narrate every tap.',
+        },
+        {
+          title: 'READ-ALONG — READ THE WHOLE STORY ALOUD (fires on [READ_ALONG_START], Kindergarten)',
+          instruction:
+            'When you receive a message starting with [READ_ALONG_START], this is a Kindergarten read-along: the '
+            + 'child is a pre-reader who cannot decode yet, so YOU read the story TO them. Read the entire passage '
+            + 'aloud, warmly and clearly, word for word (the exact text is given to you as {{passageText}}). This '
+            + 'read-aloud IS your greeting and your whole first turn — it OVERRIDES any "one sentence only / keep '
+            + 'it brief" cap from a lesson switch; never summarize or shorten the story. When you finish, invite '
+            + 'the child to tap any word to hear it again.',
+        },
+        {
+          title: 'READ THE QUESTION AND EVERY CHOICE ALOUD (fires on [READING_DONE])',
+          instruction:
+            'When you receive a message starting with [READING_DONE], the child has finished reading and is now '
+            + 'at the comprehension question. You MUST, in order: (1) read the question aloud — {{comprehensionQuestion}} '
+            + '(2) read EVERY answer choice aloud, each with its letter, exactly as given: {{comprehensionChoices}} '
+            + '(3) ask the child which one they think it is. The child cannot read the choices, so skipping any of '
+            + 'them strands them. Do NOT say or hint which choice is correct — just read them all fairly and ask.',
+        },
+        {
           title: 'PRONUNCIATION COMMANDS',
           instruction:
-            'When you receive a message starting with [PRONOUNCE], you MUST immediately and clearly say ONLY '
+            'When you receive a message starting with [PRONOUNCE_SOUND], you MUST immediately and clearly say ONLY '
             + 'the requested word. Do NOT add any commentary, questions, encouragement, or extra words. '
-            + 'Just say the word naturally and clearly. This is used for audio playback when students tap words.\n'
+            + 'Just say the word naturally and clearly. This is used for audio playback when students tap a word.\n'
             + 'Examples:\n'
-            + '- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"\n'
-            + '- "[PRONOUNCE] Say the word the clearly." → Just say "the"',
+            + '- "[PRONOUNCE_SOUND] The word is \\"cat\\". cat." → Just say "cat"\n'
+            + '- "[PRONOUNCE_SOUND] The word is \\"the\\". the." → Just say "the"',
         },
       ],
     },
@@ -886,16 +925,28 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       ],
       scaffoldingLevels: {
         level1: '"Say the word again naturally. Ask: what sounds do you hear?"',
-        level2: '"Stretch the word with emphasis on the vowel. Use keyword association: {{middlePhoneme}} like [keyword]."',
+        level2: '"Stretch the word with emphasis on the vowel. Use the keyword for {{middlePhoneme}}: apple (a), egg (e), itch (i), octopus (o), up (u)."',
         level3: '"Isolate just the vowel sound. Say it alone, then connect to the letter. {{targetWord}} has {{middlePhoneme}} in the middle."',
       },
       commonStruggles: [
         { pattern: 'Vowel confusion (e.g., picking "e" instead of "a")', response: 'Contrast the two sounds: "Is it /\u0103/ like apple or /\u0115/ like egg?" Stretch the word to emphasize the middle.' },
         { pattern: 'Reversing letter order in spell-word mode', response: 'What\'s the FIRST sound? That goes in the first box. Segment the word: first... middle... last.' },
-        { pattern: 'Cannot identify the medial vowel', response: 'Use the Stretch button. The AI will emphasize the vowel sound. It\'s the loud sound in the middle.' },
+        { pattern: 'Cannot identify the medial vowel', response: 'Stretch the word for them yourself, aloud — say each sound slowly and HOLD the middle sound ("/mmm/... /aaaa/... /t/"). It\'s the loud sound in the middle. Never tell them to read anything or find a button.' },
         { pattern: 'Sorting a word into the wrong bucket', response: 'Say both bucket vowel sounds, then the word. "Is cat more like apple... or egg?" Stretch the vowel to hear it.' },
       ],
       aiDirectives: [
+        {
+          title: 'PRE-READER ORIENT + SAY-THE-WORD BEAT (K contract)',
+          instruction:
+            'The student is a pre-reader: on-screen text is invisible to them — your voice carries everything. '
+            + 'Your FIRST utterance for this activity, and for EVERY new word, must SAY the target word "{{targetWord}}" aloud, clearly, twice. '
+            + 'In lesson mode this beat IS your greeting/switch line and OVERRIDES any one-sentence or keep-it-brief cap. '
+            + 'Right after saying the word, state the task in child terms, one short line by task type — '
+            + 'spell-word: "Tap the letter for each sound you hear, then tap the green check." '
+            + 'fill-vowel: "Which sound do you hear in the MIDDLE?" '
+            + 'word-sort: say BOTH bucket sounds with their keywords ("/ă/ like apple... /ĕ/ like egg") and ask which one the word has. '
+            + 'Say the WORD only — never spell it letter-by-letter and never name the vowel letter unprompted.',
+        },
         {
           title: 'PROGRESSIVE PHONEME SCAFFOLDING',
           instruction:
@@ -1074,8 +1125,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'poetry-lab',
-    description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, meter, figurative language, and structure. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). TTS read-aloud with expressive prosody. Perfect for grades K-6 poetry — at K this means nursery rhymes and identifying rhyming words.',
-    constraints: 'Best for grades K-6; content scales to the objective\'s grade (K = nursery rhymes). Analysis mode needs a poem; composition mode needs a template type.',
+    description: 'Dual-mode poetry primitive. Analysis mode: examine poems with interactive annotations for rhyme scheme, mood, and figurative language. Composition mode: write poetry within structured templates (haiku, limerick, acrostic, free verse). Silent-read text activity — no read-aloud. Perfect for grades 2-6 poetry.',
+    constraints: 'Analysis mode: grades 2-6 (silent reading of a poem plus mood vocabulary and rhyme-scheme notation). Composition mode: grades 3-6 (typed free-text writing). NOT suitable for K-1 / pre-readers: there is no audio path and no hear-and-identify-rhymes task.',
     evalModes: [
       { evalMode: 'analysis', label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
       { evalMode: 'composition', label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },

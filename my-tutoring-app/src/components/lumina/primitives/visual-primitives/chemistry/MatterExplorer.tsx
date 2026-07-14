@@ -11,6 +11,7 @@ import {
 import type { MatterExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -173,6 +174,16 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
   const [sortedObjects, setSortedObjects] = useState<Record<string, MatterState>>({});
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [draggedObjectId, setDraggedObjectId] = useState<string | null>(null);
+  const [hoveredBin, setHoveredBin] = useState<MatterState | null>(null);
+  const [dropFlash, setDropFlash] = useState<{ state: MatterState; ok: boolean } | null>(null);
+  const dropFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
+    },
+    []
+  );
 
   // Challenge tracking
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
@@ -291,12 +302,14 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     setDraggedObjectId(objectId);
   }, [hasSubmittedEvaluation]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, state: MatterState) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setHoveredBin(state);
   }, []);
 
   const handleDrop = useCallback((state: MatterState) => {
+    setHoveredBin(null);
     if (!draggedObjectId || hasSubmittedEvaluation) return;
 
     const obj = objects.find(o => o.id === draggedObjectId);
@@ -308,6 +321,10 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     setSortingTotal(prev => prev + 1);
 
     const isCorrect = obj.state === state;
+    if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
+    setDropFlash({ state, ok: isCorrect });
+    dropFlashTimer.current = setTimeout(() => setDropFlash(null), 900);
+
     if (isCorrect) {
       setSortingCorrect(prev => prev + 1);
       setFeedback(`Yes! ${obj.name} is a ${state}!`);
@@ -613,6 +630,9 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
     setCompareDifferent('');
     if (challenges[nextIndex]?.type === 'sort') {
       setSortedObjects({});
+      setHoveredBin(null);
+      setDropFlash(null);
+      if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
     }
 
     sendText(
@@ -751,18 +771,24 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
             {(['solid', 'liquid', 'gas'] as MatterState[]).map(state => {
               const conf = STATE_CONFIG[state];
               const objectsInBin = objects.filter(o => sortedObjects[o.id] === state);
-              const isDragOver = draggedObjectId !== null;
+              const zoneState: DropZoneState =
+                hoveredBin === state
+                  ? 'dragOver'
+                  : dropFlash?.state === state
+                    ? dropFlash.ok
+                      ? 'correct'
+                      : 'incorrect'
+                    : objectsInBin.length > 0
+                      ? 'filled'
+                      : 'idle';
 
               return (
                 <div
                   key={state}
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, state)}
+                  onDragLeave={() => setHoveredBin(null)}
                   onDrop={(e) => { e.preventDefault(); handleDrop(state); }}
-                  className={`
-                    rounded-xl border-2 border-dashed p-3 min-h-[100px]
-                    transition-all duration-300 text-center
-                    ${isDragOver ? conf.activeClass : conf.bgClass}
-                  `}
+                  className="text-center"
                 >
                   <div className="text-lg mb-1">{conf.emoji}</div>
                   <div className={`text-sm font-medium mb-1 ${conf.textClass}`}>
@@ -771,7 +797,12 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                   <div className="text-slate-500 text-[10px] mb-2">
                     {conf.description}
                   </div>
-                  {objectsInBin.length > 0 && (
+                  <LuminaDropZone
+                    state={zoneState}
+                    emptyPrompt="Drop objects here"
+                    className="min-h-[72px] content-center justify-center p-2"
+                  >
+                    {objectsInBin.length > 0 && (
                     <div className="flex flex-wrap gap-1 justify-center">
                       {objectsInBin.map(obj => (
                         <span
@@ -799,7 +830,8 @@ const MatterExplorer: React.FC<MatterExplorerProps> = ({ data, className }) => {
                         </span>
                       ))}
                     </div>
-                  )}
+                    )}
+                  </LuminaDropZone>
                 </div>
               );
             })}

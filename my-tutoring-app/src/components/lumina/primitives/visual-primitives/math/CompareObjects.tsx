@@ -263,6 +263,7 @@ function renderNonStandardMeasure(obj: CompareObject, unitName: string, unitCoun
         <span className="text-slate-400 text-sm w-20 text-right shrink-0">{unitName}s</span>
         <div className="flex gap-0.5">
           {Array.from({ length: unitCount }).map((_, i) => (
+            // dropzone-triage: decorative measurement unit, out of scope
             <div
               key={i}
               className="h-6 border border-dashed border-cyan-400/50 bg-cyan-500/10 rounded-sm flex items-center justify-center"

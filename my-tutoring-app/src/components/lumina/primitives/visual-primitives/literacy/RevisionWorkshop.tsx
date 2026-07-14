@@ -261,6 +261,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
 
       // Highlighted target
       elements.push(
+        // dropzone-triage: reading annotation, not a drop target.
         <span key={key++} className={`rounded px-0.5 border-b-2 border-dashed ${SKILL_HIGHLIGHT[revisionSkill]}`}>
           {target.originalText}
         </span>

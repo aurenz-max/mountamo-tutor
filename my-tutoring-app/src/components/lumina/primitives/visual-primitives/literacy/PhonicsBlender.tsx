@@ -11,7 +11,9 @@ import {
   LuminaButton,
   LuminaActionButton,
   LuminaFeedbackCard,
+  LuminaDropZone,
   LuminaMicListener,
+  type DropZoneState,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -117,10 +119,11 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   const [activeSoundId, setActiveSoundId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [isShaking, setIsShaking] = useState(false);
   const [isCelebrating, setIsCelebrating] = useState(false);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [isBlended, setIsBlended] = useState(false);
+  const [slotFlash, setSlotFlash] = useState<'correct' | 'incorrect' | null>(null);
+  const slotFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Words the student blended ALOUD (judge-confirmed) — the production beat
   const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
@@ -134,6 +137,13 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   // Stable fallback instance ID — must not change across renders
   const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  useEffect(
+    () => () => {
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    },
+    [],
+  );
 
   // ── Misconception Loop S1 — Tier-A (judge-backed) failed-verdict log ────────
   // Confident no-match verdicts from the spoken blend judge, bounded to the
@@ -338,6 +348,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
       setFeedback('Perfect! You built the word correctly!');
       setFeedbackType('success');
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+      setSlotFlash('correct');
+      slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), 1500);
 
@@ -361,9 +374,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         .join(' + ');
       setFeedback('Not quite! Try rearranging the sounds.');
       setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+      setSlotFlash('incorrect');
+      slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
       // Tell the AI the student got it wrong so it can help
       sendText(
         `[BUILD_INCORRECT] The student tried to build "${currentWord.targetWord}" but placed the sounds as: ${placedSounds}. The correct order is: ${currentWord.phonemes.map(p => p.sound).join(' + ')}. This is attempt ${(attemptsPerWord[wordId] || 0) + 1}. Give a brief hint without giving the answer.`,
@@ -451,8 +464,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       setFeedback('');
       setFeedbackType('');
       setIsBlended(false);
-      setIsShaking(false);
       setIsCelebrating(false);
+      setSlotFlash(null);
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
 
       // Tell the AI about the new word — triggers a spoken introduction
       if (nextWord) {
@@ -633,7 +647,6 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
               ? 'bg-blue-500/20 border-blue-500/40 text-blue-200 hover:opacity-70'
               : 'bg-slate-700/40 border-slate-500/30 text-slate-200 hover:scale-105 hover:bg-slate-600/40'
           }
-          ${isCelebrating && isInBuildArea ? 'animate-bounce' : ''}
         `}
       >
         <span className="text-xl">{phoneme.sound}</span>
@@ -703,6 +716,8 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     if (!currentWord) return null;
     const totalSlots = currentWord.phonemes.length;
     const emptySlots = Math.max(0, totalSlots - placedPhonemeIds.length);
+    const getSlotState = (filled: boolean): DropZoneState =>
+      slotFlash ?? (filled ? 'filled' : 'idle');
 
     return (
       <div className="space-y-4">
@@ -722,27 +737,35 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           <div
             className={`
               flex flex-wrap items-center gap-2 min-h-[64px] p-4 rounded-xl
-              border border-dashed border-white/20 bg-white/5
-              ${isShaking ? 'animate-shake' : ''}
+              border border-white/10 bg-white/[0.02]
             `}
           >
             {placedPhonemeIds.map(pId => {
               const phoneme = currentWord.phonemes.find(p => p.id === pId);
               if (!phoneme) return null;
-              return renderPhonemeTile(
-                phoneme,
-                () => handleRemovePhoneme(pId),
-                true,
-                false
+              return (
+                <LuminaDropZone
+                  key={pId}
+                  state={getSlotState(true)}
+                  emptyPrompt="Drop sound here"
+                  className="min-h-[48px] min-w-[56px] flex-none p-0"
+                >
+                  {renderPhonemeTile(
+                    phoneme,
+                    () => handleRemovePhoneme(pId),
+                    true,
+                    false
+                  )}
+                </LuminaDropZone>
               );
             })}
             {Array.from({ length: emptySlots }).map((_, i) => (
-              <div
+              <LuminaDropZone
                 key={`empty-${i}`}
-                className="px-4 py-3 rounded-xl border-2 border-dashed border-slate-600/40 bg-slate-800/20 min-w-[56px] min-h-[48px] flex items-center justify-center"
-              >
-                <span className="text-slate-600 text-sm">?</span>
-              </div>
+                state={getSlotState(false)}
+                emptyPrompt="?"
+                className="min-h-[48px] min-w-[56px] flex-none px-4 py-3"
+              />
             ))}
           </div>
         </div>

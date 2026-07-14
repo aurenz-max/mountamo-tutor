@@ -798,6 +798,7 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
 
     const tiles: React.ReactNode[] = [];
 
+    // dropzone-triage: transformation-result placeholder, not a drop target.
     // "+" slot or added phoneme at beginning
     if (addPosition === 'beginning') {
       tiles.push(

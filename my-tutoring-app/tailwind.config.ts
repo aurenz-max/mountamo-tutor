@@ -105,13 +105,34 @@ const config = {
   				'50%': {
   					transform: 'translateY(-5px)'
   				}
+  			},
+  			// Lumina motion tokens — consumed via `motion` in lumina/ui/tokens.ts
+  			'lumina-pop': {
+  				'0%': { transform: 'scale(1)' },
+  				'35%': { transform: 'scale(1.08)' },
+  				'65%': { transform: 'scale(0.985)' },
+  				'100%': { transform: 'scale(1)' }
+  			},
+  			'lumina-shake': {
+  				'0%, 100%': { transform: 'translateX(0)' },
+  				'20%': { transform: 'translateX(-6px)' },
+  				'40%': { transform: 'translateX(5px)' },
+  				'60%': { transform: 'translateX(-3px)' },
+  				'80%': { transform: 'translateX(2px)' }
+  			},
+  			'lumina-reveal': {
+  				from: { opacity: '0', transform: 'translateY(10px) scale(0.98)' },
+  				to: { opacity: '1', transform: 'translateY(0) scale(1)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'bounce-in': 'bounce-in 0.6s ease-out',
-  			'bounce-slow': 'bounce-slow 2s ease-in-out infinite'
+  			'bounce-slow': 'bounce-slow 2s ease-in-out infinite',
+  			'lumina-pop': 'lumina-pop 350ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+  			'lumina-shake': 'lumina-shake 350ms ease',
+  			'lumina-reveal': 'lumina-reveal 300ms cubic-bezier(0.22, 1, 0.36, 1) both'
   		}
   	}
   },

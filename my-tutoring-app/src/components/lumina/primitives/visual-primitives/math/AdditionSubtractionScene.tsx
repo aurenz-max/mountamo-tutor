@@ -122,6 +122,22 @@ function getEmoji(objectType: string): string {
   return OBJECT_EMOJI[objectType] || '⭐';
 }
 
+/**
+ * The spoken ORIENT / STIMULUS line for one challenge (reader-fit Audit B). Story
+ * challenges are read verbatim; the K "build the story" create-story task has NO
+ * story text — the EQUATION is the prompt — so the tutor reads the number sentence
+ * aloud and cues the build, rather than cold-starting on an empty string.
+ */
+function orientLineForChallenge(ch: AddSubChallenge): string {
+  if (ch.type === 'create-story') {
+    const build = ch.operation === 'addition'
+      ? `start with an empty ${ch.scene} and help them add ${ch.objectType} to show ${ch.startCount} and ${ch.changeCount} more (${ch.resultCount} in all)`
+      : `there are ${ch.startCount} ${ch.objectType} already; help them send ${ch.changeCount} away so ${ch.resultCount} are left`;
+    return `This is a BUILD-the-story challenge — the child MAKES the story for the number sentence ${ch.equation}. There is NO story text; the equation IS the prompt. Read the number sentence aloud warmly, then tell them what to build: ${build}.`;
+  }
+  return `read this story aloud, word for word: "${ch.storyText}". Do not skip it or replace it with a bare greeting. THEN, in one short warm sentence, tell them what to do: ${ch.instruction}`;
+}
+
 /** Deterministic scattered positions for scene objects */
 function scenePositions(count: number, seed: number = 7): Array<{ x: number; y: number }> {
   const positions: Array<{ x: number; y: number }> = [];
@@ -149,6 +165,32 @@ function scenePositions(count: number, seed: number = 7): Array<{ x: number; y: 
 // ============================================================================
 // Sub-components
 // ============================================================================
+
+/**
+ * Tap-to-choose number row (reader-fit PRE band-gate, rule 6 "no typing").
+ * At Kindergarten, act-out/solve-story answer via a numeral — a pre-reader must
+ * NOT type it on a keyboard. This renders 0…max as big tappable tiles; tapping one
+ * IS the atomic answer (tap = choose, no Check button). Grade 1 keeps the input.
+ */
+const NumberTileRow: React.FC<{ max: number; onPick: (n: number) => void; disabled?: boolean }> = ({ max, onPick, disabled }) => {
+  const tiles = Array.from({ length: Math.max(0, max) + 1 }, (_, n) => n);
+  return (
+    <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Choose the number">
+      {tiles.map((n) => (
+        <button
+          key={n}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(n)}
+          aria-label={`${n}`}
+          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-2xl font-bold text-amber-100 shadow-sm transition active:scale-95 hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 /** Ten-frame visual helper */
 const TenFrameHelper: React.FC<{ filled: number; max?: number }> = ({ filled, max = 10 }) => {
@@ -223,6 +265,12 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   const [equationTiles, setEquationTiles] = useState<string[]>([]);
   const [solveAnswer, setSolveAnswer] = useState('');
   const [createSelection, setCreateSelection] = useState<{ scene: string; object: string } | null>(null);
+  // Kindergarten "build the story" production task (create-story band-gate): the
+  // child MAKES the story for a given equation by placing/removing objects, judged
+  // by construction. builtCount = objects currently in the scene; buildPhase drives
+  // the addition two-step narration ("…now 2 more come!"). Grade 1 keeps the picker.
+  const [builtCount, setBuiltCount] = useState(0);
+  const [buildPhase, setBuildPhase] = useState<'start' | 'change'>('start');
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -246,13 +294,17 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   // Compute visible objects based on phase & operation
   const totalVisible = useMemo(() => {
     if (!currentChallenge) return 0;
-    const { type, operation, startCount, changeCount, resultCount } = currentChallenge;
+    const { type, operation, startCount, resultCount } = currentChallenge;
     if (type === 'act-out') {
       // Show all objects (start + change) for the student to count
       return operation === 'addition' ? resultCount : startCount;
     }
+    // create-story (K build task): the scene shows exactly what the child has built.
+    if (type === 'create-story') {
+      return builtCount;
+    }
     return resultCount;
-  }, [currentChallenge]);
+  }, [currentChallenge, builtCount]);
 
   const positions = useMemo(
     () => scenePositions(totalVisible, currentChallengeIndex * 31 + 7),
@@ -286,6 +338,10 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   // ── AI Tutoring ─────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     storyText: currentChallenge?.storyText ?? '',
+    // The task instruction is load-bearing for the scaffold's ORIENT beat
+    // ({{instruction}} in taskDescription + the read-aloud directive). Without it
+    // in the bag the tutor prompt interpolates the literal '(not set)'.
+    instruction: currentChallenge?.instruction ?? '',
     operation: currentChallenge?.operation ?? 'addition',
     storyType: currentChallenge?.storyType ?? 'join',
     startCount: currentChallenge?.startCount ?? 0,
@@ -318,9 +374,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     const ch = challenges[0];
     sendText(
       `[ACTIVITY_START] Addition & subtraction story scene for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges total. First story: "${ch.storyText}" (${ch.operation}, ${ch.storyType}). `
-      + `Scene: ${ch.scene}, objects: ${ch.objectType}. `
-      + `Introduce warmly: "Let's tell a story with ${ch.objectType}!" Then read the story aloud.`,
+      + `${challenges.length} challenges total. This student CANNOT read — you are their voice. `
+      + `FIRST, ${orientLineForChallenge(ch)}`,
       { silent: true },
     );
   }, [isConnected, challenges, gradeBand, sendText]);
@@ -334,12 +389,22 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     }
   }, [currentChallengeIndex, currentChallenge?.type]);
 
+  // Seed the "build the story" scene when a create-story challenge loads: addition
+  // starts EMPTY (the child adds up to the total); subtraction starts pre-filled
+  // with startCount (the child sends changeCount away). Reset the two-step phase.
+  useEffect(() => {
+    if (currentChallenge?.type === 'create-story') {
+      setBuiltCount(currentChallenge.operation === 'subtraction' ? currentChallenge.startCount : 0);
+      setBuildPhase('start');
+    }
+  }, [currentChallengeIndex, currentChallenge?.type, currentChallenge?.operation, currentChallenge?.startCount]);
+
   // ── Check Answers ───────────────────────────────────────────────
 
-  const handleCheckActOut = useCallback(() => {
+  const handleCheckActOut = useCallback((explicitValue?: number) => {
     if (!currentChallenge) return;
     incrementAttempts();
-    const answer = parseInt(countAnswer, 10);
+    const answer = explicitValue !== undefined ? explicitValue : parseInt(countAnswer, 10);
     const target = currentChallenge.resultCount;
     const correct = answer === target;
 
@@ -446,10 +511,10 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     }
   }, [currentChallenge, equationTiles, currentAttempts, sendText, incrementAttempts, recordResult]);
 
-  const handleCheckSolveStory = useCallback(() => {
+  const handleCheckSolveStory = useCallback((explicitValue?: number) => {
     if (!currentChallenge) return;
     incrementAttempts();
-    const answer = parseInt(solveAnswer, 10);
+    const answer = explicitValue !== undefined ? explicitValue : parseInt(solveAnswer, 10);
     const { unknownPosition = 'result', startCount, changeCount, resultCount } = currentChallenge;
     const target = unknownPosition === 'result' ? resultCount
       : unknownPosition === 'change' ? changeCount : startCount;
@@ -493,6 +558,43 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     );
     recordResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1 });
   }, [currentChallenge, createSelection, currentAttempts, sendText, incrementAttempts, recordResult]);
+
+  // ── K "build the story" production task (create-story band-gate) ──
+  // Construction-judged completion: fires automatically the instant the child has
+  // placed exactly resultCount objects (tap = choose — no Check button). The build
+  // ACTION is the answer, so a pre-reader produces the story instead of authoring text.
+  const completeBuildStory = useCallback(() => {
+    if (!currentChallenge) return;
+    incrementAttempts();
+    SoundManager.playCorrect();
+    setFeedback(`You built it! ${currentChallenge.equation}`);
+    setFeedbackType('success');
+    sendText(
+      `[ANSWER_CORRECT] The child BUILT the story for ${currentChallenge.equation} by placing ${currentChallenge.objectType} in the ${currentChallenge.scene}. `
+      + `Celebrate warmly and say the whole number story back to them: `
+      + `"${currentChallenge.startCount} and ${currentChallenge.changeCount} ${currentChallenge.operation === 'addition' ? 'more makes' : 'away leaves'} ${currentChallenge.resultCount}!"`,
+      { silent: true },
+    );
+    recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
+  }, [currentChallenge, currentAttempts, sendText, incrementAttempts, recordResult]);
+
+  // Advance the build after each add/remove: narrate the addition two-step at the
+  // start→change boundary, and complete when the scene holds exactly resultCount.
+  const handleBuildProgress = useCallback((count: number) => {
+    if (!currentChallenge) return;
+    const { startCount, changeCount, resultCount, operation, objectType } = currentChallenge;
+    if (operation === 'addition' && buildPhase === 'start' && count === startCount && startCount !== resultCount) {
+      setBuildPhase('change');
+      sendText(
+        `[BUILD_STEP] The child placed the first ${startCount} ${objectType}. Warmly cue the next part of the story: `
+        + `"Now ${changeCount} more come!"`,
+        { silent: true },
+      );
+    }
+    if (count === resultCount) {
+      completeBuildStory();
+    }
+  }, [currentChallenge, buildPhase, sendText, completeBuildStory]);
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
@@ -560,9 +662,8 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
     const nextCh = challenges[currentChallengeIndex + 1];
     sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextCh.storyText}" (${nextCh.type}, ${nextCh.operation}). `
-      + `Read the story to the student and introduce the new task.`,
+      `[NEXT_ITEM] Next story (${currentChallengeIndex + 2} of ${challenges.length}). The student cannot read. `
+      + `FIRST, ${orientLineForChallenge(nextCh)}`,
       { silent: true },
     );
   }, [
@@ -601,7 +702,18 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
   // ── Object tap handler (act-out counting) ───────────────────────
   const handleObjectTap = useCallback((index: number) => {
-    if (currentChallenge?.type !== 'act-out' || isCurrentChallengeComplete) return;
+    if (isCurrentChallengeComplete) return;
+    // create-story build task: tapping a placed object sends it away (remove one).
+    if (currentChallenge?.type === 'create-story') {
+      if (builtCount <= 0) return;
+      const next = builtCount - 1;
+      SoundManager.tap();
+      setBuiltCount(next);
+      handleBuildProgress(next);
+      return;
+    }
+    // act-out counting aid: tapping toggles a highlight (does not change the count).
+    if (currentChallenge?.type !== 'act-out') return;
     SoundManager.tap();
     setTappedObjects((prev) => {
       const next = new Set(prev);
@@ -612,7 +724,29 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       }
       return next;
     });
-  }, [currentChallenge?.type, isCurrentChallengeComplete]);
+  }, [currentChallenge?.type, isCurrentChallengeComplete, builtCount, handleBuildProgress]);
+
+  // Add one object to the "build the story" scene (K create-story). Capped at
+  // maxNumber so a stray tap can't run past the scene's range.
+  const addBuildObject = useCallback(() => {
+    if (currentChallenge?.type !== 'create-story' || isCurrentChallengeComplete) return;
+    const next = Math.min(builtCount + 1, maxNumber);
+    if (next === builtCount) return;
+    SoundManager.tap();
+    setBuiltCount(next);
+    handleBuildProgress(next);
+  }, [currentChallenge?.type, isCurrentChallengeComplete, builtCount, maxNumber, handleBuildProgress]);
+
+  // Reader-fit PRE band-gate: at Kindergarten, counting answers (act-out /
+  // solve-story) are entered by TAPPING a number tile, not typing a numeral
+  // (rule 6). Tapping is the atomic answer, so these modes drop the explicit
+  // Check button (rule 2 tap=choose). Grade 1 keeps keyboard input + Check.
+  // create-story at K is likewise Check-free — the build ACTION auto-judges.
+  const isKindergartenBand = gradeBand === 'K';
+  const isTapChooseCount =
+    isKindergartenBand &&
+    (currentChallenge?.type === 'act-out' || currentChallenge?.type === 'solve-story');
+  const isBuildStory = isKindergartenBand && currentChallenge?.type === 'create-story';
 
   // Determine if Check button should be enabled
   const canCheck = useMemo(() => {
@@ -806,19 +940,26 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
         {/* Act-Out: count input */}
         {currentChallenge?.type === 'act-out' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
-            <LuminaInput
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={maxNumber}
-              value={countAnswer}
-              onChange={(e) => setCountAnswer(e.target.value)}
-              className="w-16 text-center text-lg"
-              onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
-            />
-          </div>
+          isKindergartenBand ? (
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
+              <NumberTileRow max={maxNumber} onPick={(n) => handleCheckActOut(n)} disabled={hasSubmittedEvaluation} />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
+              <LuminaInput
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={maxNumber}
+                value={countAnswer}
+                onChange={(e) => setCountAnswer(e.target.value)}
+                className="w-16 text-center text-lg"
+                onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
+              />
+            </div>
+          )
         )}
 
         {/* Build-Equation: tile builder */}
@@ -858,64 +999,100 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
         {/* Solve-Story: answer input */}
         {currentChallenge?.type === 'solve-story' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">
-              What is the answer?
-              {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
-              {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
-            </span>
-            <LuminaInput
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={maxNumber}
-              value={solveAnswer}
-              onChange={(e) => setSolveAnswer(e.target.value)}
-              className="w-16 text-center text-lg"
-              onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
-            />
-          </div>
+          isKindergartenBand ? (
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-slate-300 text-sm">
+                What is the answer?
+                {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
+                {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
+              </span>
+              <NumberTileRow max={maxNumber} onPick={(n) => handleCheckSolveStory(n)} disabled={hasSubmittedEvaluation} />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-slate-300 text-sm">
+                What is the answer?
+                {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
+                {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
+              </span>
+              <LuminaInput
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={maxNumber}
+                value={solveAnswer}
+                onChange={(e) => setSolveAnswer(e.target.value)}
+                className="w-16 text-center text-lg"
+                onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
+              />
+            </div>
+          )
         )}
 
-        {/* Create-Story: scene & object picker */}
+        {/* Create-Story: at K a pre-reader BUILDS the story (place/remove objects,
+            judged by construction); Grade 1 keeps the scene+object picker. */}
         {currentChallenge?.type === 'create-story' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="space-y-3">
-            <div className="text-center">
-              <span className="text-slate-300 text-sm">
-                Show <span className="text-emerald-300 font-bold">{currentChallenge.equation}</span> — pick a scene and objects:
+          isBuildStory ? (
+            <div className="flex flex-col items-center gap-3">
+              {/* The equation IS the given prompt for create-story (tutor reads it
+                  aloud); numbers/symbols are taught at K, so it may show on screen. */}
+              <div className="text-2xl font-bold text-emerald-200 tracking-wide font-mono">
+                {currentChallenge.equation}
+              </div>
+              {/* Primary build action — add one object to the scene. */}
+              <button
+                type="button"
+                onClick={addBuildObject}
+                disabled={hasSubmittedEvaluation || builtCount >= maxNumber}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-emerald-400/25 to-teal-400/25 border-2 border-emerald-300/40 text-emerald-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-emerald-400/40 hover:to-teal-400/40 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span className="text-2xl" aria-hidden>{getEmoji(currentChallenge.objectType)}</span>
+                <span aria-hidden>＋</span>
+                <span className="sr-only">Add one {currentChallenge.objectType}</span>
+              </button>
+              <span className="text-slate-500 text-xs">
+                Tap a {getEmoji(currentChallenge.objectType)} to send it away
               </span>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {Object.entries(SCENE_BACKGROUNDS).map(([key, cfg]) => (
-                <LuminaButton
-                  key={key}
-                  className={`text-xs h-8 ${
-                    createSelection?.scene === key
-                      ? answerStateClass('selected')
-                      : ''
-                  }`}
-                  onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' })); }}
-                >
-                  {cfg.label}
-                </LuminaButton>
-              ))}
+          ) : (
+            <div className="space-y-3">
+              <div className="text-center">
+                <span className="text-slate-300 text-sm">
+                  Show <span className="text-emerald-300 font-bold">{currentChallenge.equation}</span> — pick a scene and objects:
+                </span>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {Object.entries(SCENE_BACKGROUNDS).map(([key, cfg]) => (
+                  <LuminaButton
+                    key={key}
+                    className={`text-xs h-8 ${
+                      createSelection?.scene === key
+                        ? answerStateClass('selected')
+                        : ''
+                    }`}
+                    onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' })); }}
+                  >
+                    {cfg.label}
+                  </LuminaButton>
+                ))}
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {Object.entries(OBJECT_EMOJI).map(([key, emoji]) => (
+                  <LuminaButton
+                    key={key}
+                    className={`text-xs h-8 ${
+                      createSelection?.object === key
+                        ? answerStateClass('selected')
+                        : ''
+                    }`}
+                    onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key })); }}
+                  >
+                    {emoji} {key}
+                  </LuminaButton>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {Object.entries(OBJECT_EMOJI).map(([key, emoji]) => (
-                <LuminaButton
-                  key={key}
-                  className={`text-xs h-8 ${
-                    createSelection?.object === key
-                      ? answerStateClass('selected')
-                      : ''
-                  }`}
-                  onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key })); }}
-                >
-                  {emoji} {key}
-                </LuminaButton>
-              ))}
-            </div>
-          </div>
+          )
         )}
 
         {/* Feedback */}
@@ -927,7 +1104,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
 
         {/* Action Buttons */}
         <div className="flex justify-center gap-3">
-          {!isCurrentChallengeComplete && !allChallengesComplete && (
+          {!isCurrentChallengeComplete && !allChallengesComplete && !isTapChooseCount && !isBuildStory && (
             <LuminaActionButton
               action="check"
               onClick={handleCheckAnswer}

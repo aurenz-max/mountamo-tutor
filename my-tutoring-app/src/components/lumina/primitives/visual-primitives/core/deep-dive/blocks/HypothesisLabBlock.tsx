@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type {
   HypothesisLabBlockData,
   HypothesisVariable,
   HypothesisVariableRole,
 } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaButton, LuminaBadge, LuminaFeedbackCard } from '../../../../../ui';
+import {
+  LuminaActionButton,
+  LuminaButton,
+  LuminaBadge,
+  LuminaDropZone,
+  LuminaFeedbackCard,
+  type DropZoneState,
+} from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 
 type Zone = 'pool' | 'iv' | 'dv' | 'control';
+type TargetZone = Exclude<Zone, 'pool'>;
 
 interface HypothesisLabBlockProps {
   data: HypothesisLabBlockData;
@@ -70,8 +78,17 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
   const [showExplanation, setShowExplanation] = useState(false);
   const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
   const [wasCorrect, setWasCorrect] = useState(false);
+  const [zoneFlash, setZoneFlash] = useState<Record<TargetZone, boolean> | null>(null);
+  const zoneFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Progressive hint scaffold — number of tiers revealed (0 = none shown yet).
   const [hintsShown, setHintsShown] = useState(0);
+
+  useEffect(
+    () => () => {
+      if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    },
+    []
+  );
 
   const ivOccupant = useMemo(
     () => Object.entries(positions).find(([, z]) => z === 'iv')?.[0] ?? null,
@@ -149,6 +166,8 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
     setPositions(Object.fromEntries(variables.map((v) => [v.id, 'pool' as Zone])));
     setSelectedId(null);
     setWrongIds(new Set());
+    setZoneFlash(null);
+    if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
   }, [answered, variables]);
 
   const handleHint = useCallback(() => {
@@ -173,6 +192,20 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
       const correctZone = correctZoneFor(v.role);
       if (placed !== correctZone) wrong.add(v.id);
     }
+
+    const flashResult = (['iv', 'dv', 'control'] as TargetZone[]).reduce(
+      (result, zone) => {
+        const expectedIds = variables.filter((v) => correctZoneFor(v.role) === zone).map((v) => v.id);
+        const placedIds = Object.entries(positions).filter(([, placed]) => placed === zone).map(([id]) => id);
+        result[zone] =
+          placedIds.length === expectedIds.length && placedIds.every((id) => expectedIds.includes(id));
+        return result;
+      },
+      {} as Record<TargetZone, boolean>,
+    );
+    if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    setZoneFlash(flashResult);
+    zoneFlashTimer.current = setTimeout(() => setZoneFlash(null), 900);
 
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
@@ -269,26 +302,25 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
     );
   };
 
-  const renderZone = (zone: Exclude<Zone, 'pool'>, occupantIds: string[]) => {
+  const renderZone = (zone: TargetZone, occupantIds: string[]) => {
     const isClickable = !answered && selectedId !== null;
     const isMultiSlot = zone === 'control';
     const isEmpty = occupantIds.length === 0;
-
-    let zoneClasses =
-      'rounded-xl border p-3 transition-all min-h-[88px] flex flex-col gap-2 ';
-    if (answered) {
-      zoneClasses += 'bg-slate-950/40 border-white/10 ';
-    } else if (isClickable) {
-      zoneClasses += 'bg-teal-500/5 border-teal-500/40 border-dashed cursor-pointer hover:bg-teal-500/10 ';
-    } else {
-      zoneClasses += 'bg-slate-950/40 border-white/10 ';
-    }
+    const zoneState: DropZoneState = zoneFlash
+      ? zoneFlash[zone]
+        ? 'correct'
+        : 'incorrect'
+      : isEmpty
+        ? 'idle'
+        : 'filled';
 
     // A plain <div> (not a <button>) so the interactive chips it contains are
     // not nested inside a button — nested buttons are invalid HTML and made
     // tapping a placed chip to return it unreliable.
     return (
-      <div
+      <LuminaDropZone
+        state={zoneState}
+        emptyPrompt="Tap to place factor here"
         role="button"
         tabIndex={isClickable ? 0 : -1}
         aria-disabled={!isClickable}
@@ -301,7 +333,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
             handleZoneClick(zone);
           }
         }}
-        className={`${zoneClasses} text-left ${isClickable ? '' : 'cursor-default'}`}
+        className={`min-h-[88px] flex-col items-stretch justify-start gap-2 p-3 text-left ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[10px] font-mono uppercase tracking-widest text-teal-300/70">
@@ -324,7 +356,7 @@ const HypothesisLabBlock: React.FC<HypothesisLabBlockProps> = ({
             <span className="text-[10px] text-teal-300/70 italic self-center">+ add</span>
           )}
         </div>
-      </div>
+      </LuminaDropZone>
     );
   };
 

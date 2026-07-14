@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CellBuilderMetrics, CellZone, QuantityLevel } from '../../../evaluation/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SoundManager } from '../../../utils/SoundManager';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
 import {
   CheckCircle2,
   XCircle,
@@ -268,6 +269,16 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   const [quantityAnswers, setQuantityAnswers] = useState<Record<string, QuantityLevel>>({});
   const [showLabels, setShowLabels] = useState(true);
   const cellAreaRef = useRef<HTMLDivElement>(null);
+  const [cellDragOver, setCellDragOver] = useState(false);
+  const [showPlaceFlash, setShowPlaceFlash] = useState(false);
+  const placeFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
+    },
+    []
+  );
 
   // ---- Phase 3: Match state ----
   const [selectedMatchOrganelle, setSelectedMatchOrganelle] = useState<string | null>(null);
@@ -360,6 +371,7 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+    setCellDragOver(false);
     const activeId = draggingId || selectedOrganelle;
     if (!activeId) return;
 
@@ -405,6 +417,9 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     });
     setPlaceFeedback(fb);
     setPlaceChecked(true);
+    if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
+    setShowPlaceFlash(true);
+    placeFlashTimer.current = setTimeout(() => setShowPlaceFlash(false), 900);
 
     const correctCount = Object.values(fb).filter(Boolean).length;
     const total = organellesToPlace.length;
@@ -416,6 +431,16 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
       setFeedback(`${correctCount} of ${total} in the correct zone. Drag incorrect ones to new positions.`);
     }
   }, [organellesToPlace, placedOrganelles]);
+
+  const cellZoneState: DropZoneState = cellDragOver
+    ? 'dragOver'
+    : showPlaceFlash
+      ? Object.values(placeFeedback).every(Boolean)
+        ? 'correct'
+        : 'incorrect'
+      : Object.keys(placedOrganelles).length > 0
+        ? 'filled'
+        : 'idle';
 
   const handleAdvanceToMatch = useCallback(() => {
     setCurrentPhase('match-functions');
@@ -613,6 +638,9 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     setFeedback(null);
     setDraggingId(null);
     setSelectedOrganelle(null);
+    setCellDragOver(false);
+    setShowPlaceFlash(false);
+    if (placeFlashTimer.current) clearTimeout(placeFlashTimer.current);
     resetAttempt();
   }, [resetAttempt]);
 
@@ -817,11 +845,16 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
             {/* Main Layout: Cell Diagram + Palette */}
             <div className="flex gap-4">
               {/* Cell Diagram Area */}
-              <div
+              <LuminaDropZone
                 ref={cellAreaRef}
-                className="flex-1 relative bg-black/20 rounded-xl border border-white/10 overflow-hidden cursor-crosshair"
-                style={{ minHeight: 400 }}
-                onDragOver={(e) => e.preventDefault()}
+                state={cellZoneState}
+                emptyPrompt="Drop organelles into the cell"
+                className="relative block min-h-[400px] flex-1 overflow-hidden p-0 cursor-crosshair"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setCellDragOver(true);
+                }}
+                onDragLeave={() => setCellDragOver(false)}
                 onDrop={handleDrop}
                 onClick={(e) => {
                   if (selectedOrganelle) handleDrop(e);
@@ -914,7 +947,7 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                     Drag organelles from the palette or click to select, then click to place
                   </div>
                 )}
-              </div>
+              </LuminaDropZone>
 
               {/* Organelle Palette + Quantity */}
               <div className="w-56 flex-shrink-0 space-y-3">

@@ -13,7 +13,9 @@ import {
   LuminaPrompt,
   LuminaCallout,
   LuminaChipBank,
+  LuminaDropZone,
   LuminaFeedbackCard,
+  type DropZoneState,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -96,6 +98,15 @@ const ROLE_STYLES: Record<TileRole, string> = {
   modifier: 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300',
   conjunction: 'bg-purple-500/20 border-purple-500/40 text-purple-300',
   punctuation: 'bg-slate-500/20 border-slate-500/40 text-slate-300',
+};
+
+const ROLE_TEXT_STYLES: Record<TileRole, string> = {
+  subject: 'text-blue-300',
+  predicate: 'text-red-300',
+  object: 'text-green-300',
+  modifier: 'text-yellow-300',
+  conjunction: 'text-purple-300',
+  punctuation: 'text-slate-300',
 };
 
 const ROLE_LABELS: Record<TileRole, string> = {
@@ -210,9 +221,16 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   const [placedTileIds, setPlacedTileIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [slotFlash, setSlotFlash] = useState<'correct' | 'incorrect' | null>(null);
+  const slotFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    },
+    []
+  );
 
   // Hints tracking (still per-challenge, keyed by unified ID)
   const [hintsUsedPerChallenge, setHintsUsedPerChallenge] = useState<Record<string, number>>({});
@@ -356,6 +374,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     }
     setFeedback('');
     setFeedbackType('');
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
   }, [currentPhase, hasSubmittedEvaluation]);
 
   const handleRemoveTile = useCallback((tileId: string) => {
@@ -363,12 +383,16 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     setPlacedTileIds(prev => prev.filter(id => id !== tileId));
     setFeedback('');
     setFeedbackType('');
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
   }, [hasSubmittedEvaluation]);
 
   const handleClearAll = useCallback(() => {
     setPlacedTileIds([]);
     setFeedback('');
     setFeedbackType('');
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
   }, []);
 
   const handleCheck = useCallback(() => {
@@ -389,13 +413,14 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       );
     }
 
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    setSlotFlash(isCorrect ? 'correct' : 'incorrect');
+    slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
+
     if (isCorrect) {
       SoundManager.playCorrect();
       setFeedback('Correct! Great job building that sentence!');
       setFeedbackType('success');
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
       const placedWords = placedTileIds.map(id => currentChallenge.tiles.find(t => t.id === id)?.text ?? '').join(' ');
       sendText(
         `[ANSWER_CORRECT] Student built the sentence correctly in the ${currentPhase} phase! `
@@ -415,9 +440,6 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       const placedWords = placedTileIds.map(id => currentChallenge.tiles.find(t => t.id === id)?.text ?? '').join(' ');
       setFeedback('Not quite right. Try rearranging the tiles!');
       setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
       sendText(
         `[ANSWER_INCORRECT] Student arranged: "${placedWords}" but it doesn't match a valid arrangement. `
         + `Phase: ${currentPhase}. Attempt ${currentAttempts + 1}. `
@@ -497,8 +519,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     setFeedback('');
     setFeedbackType('');
     setShowHint(false);
-    setIsShaking(false);
-    setIsCelebrating(false);
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
 
     if (!advanceProgress()) {
       // All challenges done — submit evaluation
@@ -549,17 +571,17 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
     onClick: () => void,
     isInFrame: boolean
   ) => {
-    const roleStyle = ROLE_STYLES[tile.role];
+    const roleStyle = isInFrame ? ROLE_TEXT_STYLES[tile.role] : ROLE_STYLES[tile.role];
     return (
       <button
         key={tile.id}
         onClick={onClick}
         className={`
-          px-3 py-2 rounded-lg border font-medium text-sm
+          px-3 py-2 rounded-lg font-medium text-sm
           transition-all duration-200 cursor-pointer select-none
           ${roleStyle}
+          ${isInFrame ? 'border-0 bg-transparent' : 'border'}
           ${isInFrame ? 'hover:opacity-70' : 'hover:scale-105 hover:brightness-125'}
-          ${isCelebrating && isInFrame ? 'animate-bounce' : ''}
         `}
       >
         {tile.text}
@@ -630,31 +652,42 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
   };
 
   const renderSentenceFrame = () => {
+    const getSlotState = (filled: boolean): DropZoneState =>
+      slotFlash ?? (filled ? 'filled' : 'idle');
+
     if (currentPhase === 'explore') {
       return (
         <div
           className={`
             flex flex-wrap items-center gap-2 min-h-[56px] p-4 rounded-xl
-            border border-dashed border-white/20 bg-white/5
-            ${isShaking ? 'animate-shake' : ''}
+            border border-white/10 bg-white/[0.02]
           `}
         >
           {exploreFrameSlots.map((slot, index) => {
             if (slot.isEmpty) {
               return (
-                <div
+                <LuminaDropZone
                   key={`slot-${index}`}
-                  className="px-3 py-2 rounded-lg border-2 border-dashed border-amber-500/40 bg-amber-500/10 min-w-[60px] min-h-[38px] flex items-center justify-center"
-                >
-                  <span className="text-amber-400/60 text-sm">?</span>
-                </div>
+                  state={getSlotState(false)}
+                  emptyPrompt="?"
+                  className="min-h-[38px] min-w-[60px] flex-none px-3 py-2"
+                />
               );
             }
             if (slot.isTarget && slot.tile) {
-              return renderTile(
-                slot.tile as { id: string; text: string; role: TileRole },
-                () => handleRemoveTile(slot.tile!.id),
-                true
+              return (
+                <LuminaDropZone
+                  key={`slot-${index}`}
+                  state={getSlotState(true)}
+                  emptyPrompt="Drop word here"
+                  className="min-h-[38px] min-w-[60px] flex-none p-0"
+                >
+                  {renderTile(
+                    slot.tile as { id: string; text: string; role: TileRole },
+                    () => handleRemoveTile(slot.tile!.id),
+                    true
+                  )}
+                </LuminaDropZone>
               );
             }
             if (slot.tile) {
@@ -682,26 +715,34 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({ data, className }) =>
       <div
         className={`
           flex flex-wrap items-center gap-2 min-h-[56px] p-4 rounded-xl
-          border border-dashed border-white/20 bg-white/5
-          ${isShaking ? 'animate-shake' : ''}
+          border border-white/10 bg-white/[0.02]
         `}
       >
         {placedTileIds.map(tileId => {
           const tile = currentChallenge?.tiles.find(t => t.id === tileId);
           if (!tile) return null;
-          return renderTile(
-            tile as { id: string; text: string; role: TileRole },
-            () => handleRemoveTile(tileId),
-            true
+          return (
+            <LuminaDropZone
+              key={tileId}
+              state={getSlotState(true)}
+              emptyPrompt="Drop word here"
+              className="min-h-[38px] min-w-[60px] flex-none p-0"
+            >
+              {renderTile(
+                tile as { id: string; text: string; role: TileRole },
+                () => handleRemoveTile(tileId),
+                true
+              )}
+            </LuminaDropZone>
           );
         })}
         {Array.from({ length: emptySlotCount }).map((_, i) => (
-          <div
+          <LuminaDropZone
             key={`empty-${i}`}
-            className="px-3 py-2 rounded-lg border-2 border-dashed border-slate-600/40 bg-slate-800/20 min-w-[60px] min-h-[38px] flex items-center justify-center"
-          >
-            <span className="text-slate-600 text-xs">...</span>
-          </div>
+            state={getSlotState(false)}
+            emptyPrompt="..."
+            className="min-h-[38px] min-w-[60px] flex-none px-3 py-2"
+          />
         ))}
       </div>
     );

@@ -3,7 +3,13 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LuminaBadge, LuminaButton, LuminaPanel } from '../ui';
+import {
+  LuminaBadge,
+  LuminaButton,
+  LuminaDropZone,
+  LuminaPanel,
+  type DropZoneState,
+} from '../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -126,7 +132,16 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
   const [showCorrect, setShowCorrect] = useState(false);
   const [showIncorrect, setShowIncorrect] = useState(false);
   const [revealedHint, setRevealedHint] = useState(false);
+  const [slotFlash, setSlotFlash] = useState<'correct' | 'incorrect' | null>(null);
   const startTimeRef = useRef(Date.now());
+  const slotFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    },
+    [],
+  );
 
   // Reset slots when challenge changes
   useEffect(() => {
@@ -138,6 +153,8 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
     setShowCorrect(false);
     setShowIncorrect(false);
     setRevealedHint(false);
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
     startTimeRef.current = Date.now();
   }, [currentIndex, requiredSlots]);
 
@@ -158,6 +175,8 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
 
       setSlots((prev) => ({ ...prev, [slotType]: part }));
       setShowIncorrect(false);
+      setSlotFlash(null);
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
     },
     [requiredSlots, showCorrect],
   );
@@ -167,6 +186,8 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
       if (showCorrect) return;
       setSlots((prev) => ({ ...prev, [slotType]: null }));
       setShowIncorrect(false);
+      setSlotFlash(null);
+      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
     },
     [showCorrect],
   );
@@ -180,6 +201,10 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
     const placedIds = requiredSlots.map((t) => slots[t]!.id);
     const isCorrect = currentTarget.parts.length === placedIds.length &&
       currentTarget.parts.every((id, i) => id === placedIds[i]);
+
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    setSlotFlash(isCorrect ? 'correct' : 'incorrect');
+    slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
 
     if (isCorrect) {
       setShowCorrect(true);
@@ -206,6 +231,8 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
     }
     setSlots(init);
     setShowIncorrect(false);
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
   }, [requiredSlots]);
 
   // Submit evaluation when complete
@@ -352,6 +379,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
           <div className="flex flex-wrap items-end justify-center gap-3 mb-6">
             {requiredSlots.map((slotType) => {
               const part = slots[slotType];
+              const slotState: DropZoneState = slotFlash ?? (part ? 'filled' : 'idle');
               return (
                 <div key={slotType} className="flex flex-col items-center gap-1">
                   <span
@@ -361,14 +389,10 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
                   >
                     {slotType}
                   </span>
-                  <div
-                    className={`relative w-28 h-20 sm:w-32 sm:h-24 rounded-lg border-2 transition-all flex items-center justify-center ${
-                      part
-                        ? `${PART_COLORS[part.type]} border-solid`
-                        : 'border-dashed border-slate-600 bg-slate-900/50'
-                    } ${showCorrect ? 'ring-2 ring-emerald-400/50' : ''} ${
-                      showIncorrect && part ? 'ring-2 ring-red-400/50' : ''
-                    }`}
+                  <LuminaDropZone
+                    state={slotState}
+                    emptyPrompt={<Sparkles className="w-5 h-5" />}
+                    className="relative h-20 w-28 flex-none p-0 sm:h-24 sm:w-32"
                   >
                     {part ? (
                       <motion.div
@@ -390,7 +414,7 @@ const WordBuilder: React.FC<WordBuilderProps> = ({ data, className }) => {
                     ) : (
                       <Sparkles className="w-5 h-5 text-slate-600" />
                     )}
-                  </div>
+                  </LuminaDropZone>
                 </div>
               );
             })}

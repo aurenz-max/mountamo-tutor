@@ -65,18 +65,25 @@ def get_id_token() -> str:
     raise RuntimeError("No Firebase credentials: set FIREBASE_API_KEY + TEST_USER_EMAIL/PASSWORD (or AUTH_TOKEN) in content-pipeline/.env")
 
 
-def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str) -> Dict[str, Any]:
+def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
+                       eval_mode: Optional[str] = None) -> Dict[str, Any]:
     """Tier-2 probe with &live=1: real generated content + the raw tutoring block.
 
     Retries: the Next dev server intermittently answers mid-recompile, and
     generation itself can flake — neither should kill a live run.
+
+    eval_mode pins the generated challenge type (default = catalog evalModes[0]);
+    pass it to keep a bespoke journey's DISAMBIGUATE/STIMULUS checks type-focused.
     """
     last_err: Optional[Exception] = None
     for attempt in range(1, 4):
         try:
+            params = {"componentId": component_id, "probe": "1", "live": "1", "topic": topic, "gradeLevel": grade}
+            if eval_mode:
+                params["evalMode"] = eval_mode
             r = requests.get(
                 f"{frontend}/api/lumina/tutor-test",
-                params={"componentId": component_id, "probe": "1", "live": "1", "topic": topic, "gradeLevel": grade},
+                params=params,
                 timeout=180,
             )
             body = r.json()
@@ -111,6 +118,11 @@ class Beat:
     leak_answers: List[str] = field(default_factory=list)  # answers that must NOT be spoken here
     state: Optional[str] = None   # the driven on-screen state during this beat (for stale-state checks)
     note: str = ""
+    # STIMULUS check: each entry is a group of acceptable spellings; the tutor's
+    # speech this beat must hit AT LEAST ONE spelling from EVERY group, else the
+    # load-bearing content (e.g. a story a non-reader needs read aloud) was
+    # dropped. Missing any group → "stimulus-not-read" HIGH.
+    must_include: List[List[str]] = field(default_factory=list)
 
 
 @dataclass
@@ -269,8 +281,558 @@ def build_generic_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
     return {"initial_bag": bag, "beats": beats, "answers": [], "meta": {}}
 
 
+_NUM_WORDS = {0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+              6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten"}
+
+
+def _num_variants(n: Any) -> List[str]:
+    """Digit + word spellings of a small count, so the STIMULUS check accepts
+    'two ducks' as well as '2 ducks'."""
+    try:
+        i = int(n)
+    except (TypeError, ValueError):
+        return [str(n)]
+    return [str(i)] + ([_NUM_WORDS[i]] if i in _NUM_WORDS else [])
+
+
+def build_addition_subtraction_scene_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit STIMULUS journey. Replays the EXACT [ACTIVITY_START] / [NEXT_ITEM]
+    messages AdditionSubtractionScene.tsx sends, then checks (must_include) whether
+    the tutor actually READ the story aloud — the K-lesson failure that seeded the
+    reader-fit backlog (tutor said "let's do some butterfly stories" and stopped).
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    grade_band = data.get("gradeBand") or ("K" if "k" in grade.lower() else "1")
+    ch0 = challenges[0] if challenges else {}
+    ch1 = challenges[1] if len(challenges) > 1 else ch0
+
+    def obj_variants(ch: Dict[str, Any]) -> List[str]:
+        o = str(ch.get("objectType", "")).strip()
+        # accept singular too ("duck" for "ducks")
+        return [o, o[:-1]] if o.endswith("s") and len(o) > 3 else [o]
+
+    def story_groups(ch: Dict[str, Any]) -> List[List[str]]:
+        # A genuine read-aloud names the objects AND both quantities from the
+        # story; a bare "let's do a duck story!" intro hits only the object group.
+        groups = [obj_variants(ch)]
+        if ch.get("startCount") is not None:
+            groups.append(_num_variants(ch.get("startCount")))
+        if ch.get("changeCount") is not None:
+            groups.append(_num_variants(ch.get("changeCount")))
+        return [g for g in groups if any(v for v in g)]
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        return {
+            "storyText": ch.get("storyText", ""),
+            "operation": ch.get("operation", "addition"),
+            "storyType": ch.get("storyType", "join"),
+            "startCount": ch.get("startCount", 0),
+            "changeCount": ch.get("changeCount", 0),
+            "resultCount": ch.get("resultCount", 0),
+            "unknownPosition": ch.get("unknownPosition", "result"),
+            "challengeType": ch.get("type", "act-out"),
+            "instruction": ch.get("instruction", ""),
+            "equation": ch.get("equation", ""),
+            "objectType": ch.get("objectType", ""),
+            "scene": ch.get("scene", "pond"),
+            "attemptNumber": 1,
+            "currentChallengeIndex": idx,
+            "totalChallenges": len(challenges),
+            "gradeBand": grade_band,
+            "maxNumber": data.get("maxNumber", 5),
+        }
+
+    initial_bag = bag_for(ch0, 0)
+    gb_label = "Kindergarten" if grade_band == "K" else "Grade 1"
+
+    # Verbatim replica of the component's [ACTIVITY_START] sendText (silent intro).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] Addition & subtraction story scene for {gb_label}. "
+        f"{len(challenges)} challenges total. First story: \"{ch0.get('storyText','')}\" "
+        f"({ch0.get('operation','addition')}, {ch0.get('storyType','join')}). "
+        f"Scene: {ch0.get('scene','pond')}, objects: {ch0.get('objectType','')}. "
+        f"Introduce warmly: \"Let's tell a story with {ch0.get('objectType','')}!\" "
+        f"Then read the story aloud."
+    )
+    next_item = text_msg(
+        f"[NEXT_ITEM] Moving to challenge 2 of {len(challenges)}: "
+        f"\"{ch1.get('storyText','')}\" ({ch1.get('type','act-out')}, {ch1.get('operation','addition')}). "
+        f"Read the story to the student and introduce the new task."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the standalone greeting on auth"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=story_groups(ch0),
+             note="STIMULUS: a non-reader needs the whole story READ ALOUD here, "
+                  "not just a 'let's do a story' intro"),
+        Beat("student_stuck", expect="turn", sends=[
+            text_msg("[CONTEXT UPDATE] Student has not acted for a while; no taps yet."),
+        ], note="ORIENT: does the tutor restate, in child terms, what to do?"),
+        Beat("next_story", expect="turn", sends=[next_item],
+             must_include=story_groups(ch1),
+             note="STIMULUS on advance: the second story must be read aloud too"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [], "meta": {
+        "gradeBand": grade_band, "challenges": len(challenges),
+        "story0": ch0.get("storyText", ""), "story1": ch1.get("storyText", ""),
+    }}
+
+
+def build_comparison_builder_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit DISAMBIGUATE journey. Replays the EXACT [ACTIVITY_START] /
+    [NEXT_ITEM] messages ComparisonBuilder.tsx sends, then checks (must_include)
+    whether the tutor actually ENACTED the specific comparison question — the live
+    K failure that seeded reader-fit backlog #2 (the tutor greeted warmly but never
+    asked "which side has more?", so the non-reader never learned what to decide).
+
+    tutorRevealClause is '' at K (no supportTier), so NOTHING in these sendText
+    messages disambiguates — only the catalog `aiDirectives` beat can. That is
+    exactly what this journey confirms behaviorally, in --lesson mode where the
+    one-sentence greeting cap would otherwise drop a soft component clause.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    grade_band = data.get("gradeBand") or ("K" if "k" in grade.lower() else "1")
+    use_alligator = bool(data.get("useAlligatorMnemonic", True))
+    gb_label = "Kindergarten" if grade_band == "K" else "Grade 1"
+
+    def first_of(t: str) -> Optional[Dict[str, Any]]:
+        return next((c for c in challenges if c.get("type") == t), None)
+
+    # Focus on compare-groups (the observed failure + the shipped tap-the-side fix).
+    ch0 = first_of("compare-groups") or (challenges[0] if challenges else {})
+    ch1 = next((c for c in challenges if c.get("id") != ch0.get("id")), ch0)
+
+    types: List[str] = []
+    for c in challenges:
+        t = c.get("type")
+        if t and t not in types:
+            types.append(t)
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        return {
+            "challengeType": ch.get("type", "compare-groups"),
+            "leftCount": (ch.get("leftGroup") or {}).get("count"),
+            "rightCount": (ch.get("rightGroup") or {}).get("count"),
+            "leftNumber": ch.get("leftNumber"),
+            "rightNumber": ch.get("rightNumber"),
+            "correctAnswer": ch.get("correctAnswer") or ch.get("correctSymbol"),
+            "targetNumber": ch.get("targetNumber"),
+            "askFor": ch.get("askFor"),
+            "gradeBand": grade_band,
+            "useAlligatorMnemonic": use_alligator,
+            "instruction": ch.get("instruction", ""),
+            "totalChallenges": len(challenges),
+            "currentChallengeIndex": idx,
+            "attemptNumber": 1,
+        }
+
+    initial_bag = bag_for(ch0, 0)
+
+    # Verbatim replica of the component's [ACTIVITY_START] (silent intro). Note the
+    # trailing tutorRevealClause is EMPTY at K — no disambiguation rides along here.
+    activity_start = text_msg(
+        f"[ACTIVITY_START] Comparison activity for {gb_label}. "
+        f"{len(challenges)} challenges covering: {', '.join(types)}. "
+        f"{'Using alligator mnemonic for inequality symbols. ' if use_alligator else ''}"
+        f"First challenge: \"{ch0.get('instruction','')}\". Introduce warmly."
+    )
+    next_item = text_msg(
+        f"[NEXT_ITEM] Moving to challenge 2 of {len(challenges)}: "
+        f"\"{ch1.get('instruction','')}\" (type: {ch1.get('type','compare-groups')}). "
+        f"Read the instruction and encourage the student."
+    )
+
+    # DISAMBIGUATE bar per challenge type: the tutor must voice the comparison
+    # RELATIONSHIP being asked AND direct the child to the choice. A bare
+    # "let's compare!" hits neither group → stimulus-not-read HIGH.
+    def disambiguate_groups(ch: Dict[str, Any]) -> List[List[str]]:
+        t = ch.get("type")
+        choice = ["tap", "pick", "point", "choose", "touch", "click", "press"]
+        if t == "compare-numbers":
+            return [["bigger", "more", "greater", "smaller", "less", "same", "equal"],
+                    ["number", "alligator"] + choice]
+        if t == "one-more-one-less":
+            return [["one more", "one less", "more", "less"], ["number", "count"] + choice]
+        if t == "order":
+            return [["order", "smallest", "biggest", "least", "greatest", "first"], choice]
+        # compare-groups (default)
+        return [["more", "fewer", "less", "same", "equal", "bigger", "most"],
+                ["side", "left", "right", "group"] + choice]
+
+    # Leak = the current challenge's answer word ASSERTED (not questioned). Skip
+    # the < > = symbols (not spoken words).
+    def answer_word(ch: Dict[str, Any]) -> List[str]:
+        a = ch.get("correctAnswer") or ch.get("correctSymbol")
+        return [str(a)] if a and str(a) not in ("<", ">", "=") else []
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the greeting on auth (lesson greeting + "
+                  "one-sentence cap in --lesson)"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=disambiguate_groups(ch0), leak_answers=answer_word(ch0),
+             note="DISAMBIGUATE: the tutor must ask the SPECIFIC comparison "
+                  "('which side has more? tap it'), not just greet — the live #2 failure"),
+        Beat("student_stuck", expect="turn", sends=[
+            text_msg("[CONTEXT UPDATE] Student has not tapped anything yet; no answer chosen."),
+        ], leak_answers=answer_word(ch0),
+             note="ORIENT: on a stall, does the tutor restate the choice in child terms? "
+                  "(observational — silence here is allowed by quiet-by-default)"),
+        Beat("next_item", expect="turn", sends=[next_item],
+             must_include=disambiguate_groups(ch1), leak_answers=answer_word(ch1),
+             note="DISAMBIGUATE on advance: the next challenge's question must be enacted too"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [], "meta": {
+        "gradeBand": grade_band, "challenges": len(challenges), "types": types,
+        "challenge0": ch0.get("instruction", ""), "challenge0Type": ch0.get("type"),
+        "challenge1": ch1.get("instruction", ""), "challenge1Type": ch1.get("type"),
+    }}
+
+
+_STOP_WORDS = {"the", "a", "an", "is", "are", "was", "can", "in", "at", "on", "to",
+               "and", "it", "i", "we", "my", "he", "she", "they", "of", "for",
+               "has", "have", "with", "this", "that", "his", "her", "did", "do"}
+
+
+def _content_tokens(text: str) -> List[str]:
+    """Lowercased, punctuation-stripped non-stopword tokens of a phrase."""
+    out: List[str] = []
+    for raw in str(text).split():
+        tok = "".join(c for c in raw.lower() if c.isalpha())
+        if tok and tok not in _STOP_WORDS:
+            out.append(tok)
+    return out
+
+
+def build_decodable_reader_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit STIMULUS/ORIENT journey for decodable-reader.
+
+    Two shapes, branched on the generated readingMode:
+      • read_along (Kindergarten): replays the [READ_ALONG_START] the component
+        sends on mount and checks (must_include) that the tutor READ THE WHOLE
+        PASSAGE aloud — the pre-reader can't decode it themselves.
+      • decode (Grade 1+): replays [READING_START] then [READING_DONE] and checks
+        that the tutor READ THE QUESTION AND EVERY ANSWER CHOICE aloud — the
+        comprehension probe is unreadable text for an emerging reader.
+    Both are the failure this reader-fit slice fixed; only the lesson-mode run
+    (--lesson) exercises the [PRIMITIVE SWITCH]/greeting one-sentence cap the
+    read-aloud beats must override.
+    """
+    data = live.get("generatedData") or {}
+    reading_mode = data.get("readingMode") or "decode"
+    title = data.get("title", "")
+    passage = data.get("passage") or {}
+    sentences = passage.get("sentences") or []
+
+    words = [w for s in sentences for w in (s.get("words") or [])]
+    total_words = len(words)
+    passage_text = " ".join(str(w.get("text", "")) for w in words).strip()
+    # content (non-sight) words a genuine word-for-word read must voice
+    content_word_groups = [[tok] for w in words
+                           if w.get("phonicsPattern") != "sight"
+                           for tok in _content_tokens(w.get("text", ""))]
+
+    cq = data.get("comprehensionQuestion") or {}
+    question = cq.get("question", "")
+    options = cq.get("options") or []
+    choices_str = "   ".join(f"{o.get('id')}: {o.get('text')}" for o in options)
+    # distinctive token per option — the tutor must voice every choice
+    choice_groups: List[List[str]] = []
+    for o in options:
+        toks = _content_tokens(o.get("text", ""))
+        if toks:
+            choice_groups.append([toks[-1]])
+
+    initial_bag = {
+        "title": title,
+        "gradeLevel": data.get("gradeLevel", "K"),
+        "readingMode": reading_mode,
+        "currentPhase": "reading",
+        "totalWords": total_words,
+        "wordsTapped": 0,
+        "wordsReadIndependently": total_words,
+        "phonicsPatternsInPassage": ", ".join(data.get("phonicsPatternsInPassage") or []),
+        "passageText": passage_text,
+        "comprehensionQuestion": question,
+        "comprehensionChoices": choices_str,
+        "comprehensionAttempts": 0,
+        "comprehensionCorrect": None,
+    }
+
+    reading_done = text_msg(
+        f'[READING_DONE] The student finished reading "{title}". '
+        f'They tapped 0 of {total_words} words for help and read {total_words} independently. '
+        f'Now READ the comprehension question aloud, then READ each answer choice aloud with its letter '
+        f'(the child cannot read them), then ask which one. '
+        f'Question: "{question}". Choices: {choices_str}'
+    )
+
+    if reading_mode == "read_along":
+        read_along_start = text_msg(
+            f'[READ_ALONG_START] The read-along story "{title}" just opened. Read the WHOLE story aloud to the '
+            f'student now, clearly and warmly, word for word: "{passage_text}". Then invite them to tap any word '
+            f'to hear it again.'
+        )
+        beats = [
+            Beat("greeting", sends=[], expect="turn",
+                 note="server auto-queues the standalone/lesson greeting on auth"),
+            Beat("read_along_start", expect="turn", sends=[read_along_start],
+                 must_include=content_word_groups,
+                 note="STIMULUS: a pre-reader needs the WHOLE passage read aloud, word for word"),
+            Beat("student_stuck", expect="turn", sends=[
+                text_msg("[CONTEXT UPDATE] Student has not tapped anything for a while."),
+            ], note="ORIENT: does the tutor gently restate what to do, in child terms?"),
+            Beat("comprehension", expect="turn", sends=[reading_done],
+                 must_include=choice_groups,
+                 note="STIMULUS: the question AND every picture choice must be voiced"),
+        ]
+    else:
+        reading_start = text_msg(
+            f'[READING_START] The reading activity "{title}" just opened for the student. '
+            f'Warmly welcome them and tell them what to do in ONE short, simple sentence.'
+        )
+        beats = [
+            Beat("greeting", sends=[], expect="turn",
+                 note="server auto-queues the greeting on auth"),
+            Beat("reading_start", expect="turn", sends=[reading_start],
+                 note="ORIENT: warm one-sentence 'here is a story, tap any word' frame"),
+            Beat("student_stuck", expect="turn", sends=[
+                text_msg("[CONTEXT UPDATE] Student has not tapped anything for a while."),
+            ], note="ORIENT: does the tutor restate the task without demanding reading?"),
+            Beat("comprehension", expect="turn", sends=[reading_done],
+                 must_include=choice_groups,
+                 note="STIMULUS: the question AND every answer choice must be read aloud"),
+        ]
+
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [], "meta": {
+        "readingMode": reading_mode, "totalWords": total_words,
+        "passageText": passage_text, "options": len(options),
+    }}
+
+
+def build_cvc_speller_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit STIMULUS/ORIENT journey (cvc-speller RF-1). Replays the EXACT
+    sendText messages CvcSpeller.tsx emits — [ACTIVITY_START], [SAY_WORD], the
+    wrong-attempt hint, and the success message with the spoken-production
+    invite — and checks (must_include) that the tutor actually SAYS each target
+    word aloud plus an ORIENT line in child terms. The word IS the stimulus for
+    a pre-reader: an intro that never says it strands the child exactly like an
+    unread story.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    ch0 = challenges[0] if challenges else {}
+    ch1 = challenges[1] if len(challenges) > 1 else ch0
+    total = len(challenges)
+    vowel_focus = data.get("vowelFocus", "short-a")
+    task_type = ch0.get("taskType", "spell-word")
+
+    vowel_label = {"short-a": "Short A", "short-e": "Short E", "short-i": "Short I",
+                   "short-o": "Short O", "short-u": "Short U"}.get(vowel_focus, vowel_focus)
+    task_label = {"fill-vowel": "Fill the Vowel", "spell-word": "Spell It",
+                  "word-sort": "Sort by Sound"}.get(task_type, task_type)
+
+    # ORIENT oracle: at least one task-shaped word for the mode, spoken.
+    orient_group = {
+        "spell-word": ["tap", "letter", "box", "check", "spell"],
+        "fill-vowel": ["middle", "sound", "hear", "vowel"],
+        "word-sort": ["bucket", "sound", "apple", "egg", "itch", "octopus", "up"],
+    }.get(task_type, ["sound"])
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        phonemes = ch.get("targetPhonemes") or []
+        letters = ch.get("targetLetters") or []
+        return {
+            "vowelFocus": vowel_focus,
+            "letterGroup": data.get("letterGroup", 1),
+            "taskType": ch.get("taskType", task_type),
+            "targetWord": ch.get("targetWord", ""),
+            "targetPhonemes": " ".join(phonemes),
+            "targetLetters": ", ".join(letters),
+            "placedLetters": "_, _, _",
+            "currentChallenge": idx + 1,
+            "totalChallenges": total,
+            "attempts": 0,
+            "firstPhoneme": phonemes[0] if phonemes else "",
+            "middlePhoneme": phonemes[1] if len(phonemes) > 1 else "",
+            "supportTier": data.get("supportTier", ""),
+            "tutorRevealPolicy": "No support tier set — use the default progressive scaffolding.",
+        }
+
+    w0 = ch0.get("targetWord", "")
+    w1 = ch1.get("targetWord", "")
+
+    # Verbatim replica of the component's [ACTIVITY_START] (post reader-fit fix).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] This is a CVC spelling activity focusing on {vowel_label}. "
+        f"There are {total} challenges. First up: {task_label}. "
+        f'Introduce the activity warmly, then say the first word "{w0}" clearly. '
+        f"Keep it brief — 2-3 sentences."
+    )
+    say_word = text_msg(
+        f'[SAY_WORD] Say the word "{w1}" clearly. Just the word, said twice with a pause.'
+    )
+    if task_type == "fill-vowel":
+        opts = ch0.get("vowelOptions") or []
+        letters = [l.lower() for l in (ch0.get("targetLetters") or ["", "", ""])]
+        correct_vowel = letters[1] if len(letters) > 1 else "a"
+        wrong_vowel = next((o for o in opts if o.lower() != correct_vowel), "e")
+        keywords = {"a": "apple", "e": "egg", "i": "itch", "o": "octopus", "u": "up"}
+        wrong_attempt = text_msg(
+            f'[FILL_VOWEL_WRONG] Student chose "{wrong_vowel}" but correct is "{correct_vowel}" in "{w0}". '
+            f'Attempt 1. Say the word again clearly: "{w0}." '
+            f'Ask: "Listen to the middle sound... is it /{wrong_vowel}/ like {keywords.get(wrong_vowel, "")}, '
+            f'or /{correct_vowel}/ like {keywords.get(correct_vowel, "")}?"'
+        )
+        success = text_msg(
+            f'[ANSWER_CORRECT] Student correctly picked "{correct_vowel}" for "{w0}"! First try! '
+            f'Say the word and emphasize the vowel: "{w0}... yes!" Celebrate briefly. '
+            f"Then warmly invite the student to say the whole word out loud themselves."
+        )
+    else:
+        placed = "".join([l.lower() for l in (ch0.get("targetLetters") or [])][:2]) + "x"
+        wrong_attempt = text_msg(
+            f'[SPELLING_HINT_L1] Student tried "{placed}" for "{w0}". Wrong position: end. '
+            f'Attempt 1. Say the word again: "{w0}." Ask about the end sound.'
+        )
+        success = text_msg(
+            f'[SPELLING_CORRECT] Student correctly spelled "{w0}" on the first try! '
+            f'Say "You spelled {w0}! Great job!" and say the word. '
+            f"Then warmly invite the student to say the whole word out loud themselves."
+        )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="lesson mode: the server greeting/[PRIMITIVE SWITCH] — the aiDirective "
+                  "makes saying the word the greeting itself"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=[[w0], orient_group],
+             note=f'STIMULUS+ORIENT: must SAY "{w0}" and state the task in child terms'),
+        Beat("wrong_attempt", expect="turn", sends=[wrong_attempt],
+             must_include=[[w0]],
+             note="FEEDBACK: spoken hint must re-say the word (eyes-free recovery)"),
+        Beat("success_invite", expect="turn", sends=[success],
+             must_include=[[w0]],
+             note="production beat: celebrate and invite the student to say the word"),
+        Beat("next_word", expect="turn", sends=[say_word],
+             must_include=[[w1]],
+             note=f'STIMULUS on advance: "{w1}" must be said aloud'),
+    ]
+    return {"initial_bag": bag_for(ch0, 0), "beats": beats, "answers": [], "meta": {
+        "taskType": task_type, "vowelFocus": vowel_focus, "challenges": total,
+        "word0": w0, "word1": w1,
+    }}
+
+
+def build_word_sorter_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT + STIMULUS journey. Replays the EXACT [ACTIVITY_START] /
+    [WORD_STAGED] / [ANSWER_INCORRECT] / [NEXT_ITEM] messages WordSorter.tsx sends
+    in the K pre-reader presentation, then checks (must_include) that the tutor
+    (a) names the buckets and asks the sorting question at challenge start —
+    the catalog aiDirectives beat, which must survive the lesson one-sentence
+    cap — and (b) says each staged word aloud (the child reads with the tutor's
+    voice). Leak bar: the correct bucket for the staged word must never be
+    ASSERTED (naming all buckets as a question is legitimate scaffolding).
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    # K routes to sort modes only (match_pairs has a Grade 1+ band floor)
+    sorts = [c for c in challenges if c.get("type") in ("binary_sort", "ternary_sort")] or challenges
+    ch0 = sorts[0] if sorts else {}
+    ch1 = next(iter(sorts[1:]), ch0)
+    total = len(challenges)
+    grade_key = data.get("gradeLevel", "K")
+    topic = data.get("sortingTopic", "")
+
+    buckets0 = ch0.get("bucketLabels") or []
+    words0 = ch0.get("words") or []
+    w0 = words0[0] if words0 else {}
+    w0_word = str(w0.get("word", ""))
+    w0_correct = str(w0.get("correctBucket", ""))
+    wrong_bucket = next((b for b in buckets0 if b != w0_correct), w0_correct)
+
+    # ORIENT bar: every bucket named + the sort enacted as a spoken question/task.
+    def orient_groups(ch: Dict[str, Any]) -> List[List[str]]:
+        groups = [[b] for b in (ch.get("bucketLabels") or [])]
+        groups.append(["which", "where", "belong", "goes", "sort", "tap", "pick", "put"])
+        return groups
+
+    def bag_for(ch: Dict[str, Any], idx: int, selected: str) -> Dict[str, Any]:
+        return {
+            "challengeType": ch.get("type", ""),
+            "instruction": ch.get("instruction", ""),
+            "bucketLabels": ch.get("bucketLabels") or [],
+            "wordsSorted": 0,
+            "totalWords": len(ch.get("words") or ch.get("pairs") or []),
+            "attemptNumber": 1,
+            "challengeNumber": idx + 1,
+            "totalChallenges": total,
+            "gradeLevel": grade_key,
+            "sortingTopic": topic,
+            "selectedWord": selected,
+        }
+
+    initial_bag = bag_for(ch0, 0, w0_word)
+
+    # Verbatim replicas of WordSorter.tsx sendText messages (all silent sends).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] Word Sorter activity for grade {grade_key}. Topic: {topic}. "
+        f"{total} challenges. First: \"{ch0.get('instruction','')}\" ({ch0.get('type','')}). "
+        f"Follow your SAY THE SORT OUT LOUD FIRST directive now: say the challenge in child terms, "
+        f"name each bucket aloud, and ask the sorting question."
+    )
+    word_staged = text_msg(
+        f"[WORD_STAGED] The next word card is on stage: \"{w0_word}\". "
+        f"Say just this word aloud clearly for the student. Do not say which bucket it belongs in."
+    )
+    answer_incorrect = text_msg(
+        f"[ANSWER_INCORRECT] Student tried to put \"{w0_word}\" in \"{wrong_bucket}\" but it belongs "
+        f"in \"{w0_correct}\". Give a hint without revealing the answer."
+    )
+    next_item = text_msg(
+        f"[NEXT_ITEM] Moving to challenge 2 of {total}: "
+        f"\"{ch1.get('instruction','')}\" ({ch1.get('type','')}). "
+        f"Follow your SAY THE SORT OUT LOUD FIRST directive for this new challenge."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the greeting on auth (lesson greeting + "
+                  "one-sentence cap in --lesson)"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=orient_groups(ch0),
+             note="ORIENT/DISAMBIGUATE: the tutor must name every bucket and ask the "
+                  "sorting question — a bare 'let's sort words!' greeting strands a non-reader"),
+        Beat("word_staged", expect="turn", sends=[word_staged],
+             must_include=[[w0_word]] if w0_word else [],
+             leak_answers=[w0_correct],
+             note="STIMULUS: the staged word must be SAID (the child cannot read the card); "
+                  "its correct bucket must not be asserted"),
+        Beat("wrong_bucket", expect="turn", sends=[answer_incorrect],
+             leak_answers=[w0_correct],
+             note="RECOVER: eyes-free hint without asserting the correct bucket"),
+        Beat("next_item", expect="turn", sends=[next_item],
+             must_include=orient_groups(ch1),
+             note="ORIENT on advance: the next challenge's buckets + question must be enacted too"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [w0_correct], "meta": {
+        "gradeLevel": grade_key, "challenges": total,
+        "challenge0": ch0.get("instruction", ""), "buckets0": buckets0,
+        "stagedWord": w0_word, "challenge1": ch1.get("instruction", ""),
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
+    "addition-subtraction-scene": build_addition_subtraction_scene_journey,
+    "comparison-builder": build_comparison_builder_journey,
+    "decodable-reader": build_decodable_reader_journey,
+    "cvc-speller": build_cvc_speller_journey,
+    "word-sorter": build_word_sorter_journey,
 }
 
 
@@ -432,7 +994,9 @@ STATE_ASSERT_RE = re.compile(
     r"\b(?:right now|currently|now)\b[^.?!]{0,40}?\bit(?:'s| is)\s+(?:a |an )?(solid|liquid|gas)\b", re.I,
 )
 
-TAG_SYNTAX_RE = re.compile(r"\[(?:[A-Z][A-Z0-9_]{2,})\]|\bcontext update\b|\bstudent action\b", re.I)
+# Allow spaces inside the tag: the lesson path's "[PRIMITIVE SWITCH]" was spoken
+# aloud in a cvc-speller lesson run and the space kept this regex from firing.
+TAG_SYNTAX_RE = re.compile(r"\[(?:[A-Z][A-Z0-9_ ]{2,})\]|\bcontext update\b|\bstudent action\b|\bprimitive switch\b", re.I)
 
 
 def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, str]]:
@@ -459,6 +1023,14 @@ def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, 
                 f"tutor spoke on pure context updates (no trigger): \"{spoken[:120]}\"")
         if r.beat.expect == "turn" and not spoken:
             add("WARN", "silent-turn", b, "tutor produced no speech for this beat")
+        if r.beat.must_include and spoken:
+            ns = _norm(spoken)
+            missing = [grp for grp in r.beat.must_include
+                       if not any(_norm(v) in ns for v in grp)]
+            if missing:
+                add("HIGH", "stimulus-not-read", b,
+                    f"tutor did not voice load-bearing content — missing "
+                    f"{['/'.join(g) for g in missing]}: \"{spoken[:180]}\"")
         for ans in r.beat.leak_answers:
             na = _norm(ans)
             if len(na) < 3:
@@ -637,15 +1209,21 @@ async def amain() -> int:
                     help="sessions to run over the SAME content; findings rate-scored, confirmed at >=2/3")
     ap.add_argument("--topic", default="states of matter and phase changes")
     ap.add_argument("--grade", default="Grade 3")
+    ap.add_argument("--eval-mode", default=None,
+                    help="pin the generated challenge type (default = catalog evalModes[0])")
     ap.add_argument("--frontend", default="http://localhost:3000")
     ap.add_argument("--backend-ws", default="ws://localhost:8000/api/lumina-tutor")
+    ap.add_argument("--lesson", action="store_true",
+                    help="drive LESSON mode (session_mode=lesson) — reproduces the "
+                         "lesson greeting / [PRIMITIVE SWITCH] path where the tutor is "
+                         "told to keep transitions to one sentence")
     args = ap.parse_args()
 
     print(f"[1/4] Firebase sign-in…")
     token = get_id_token()
 
     print(f"[2/4] Generating real content + fetching tutoring block (probe&live)…")
-    live = fetch_live_context(args.frontend, args.component, args.topic, args.grade)
+    live = fetch_live_context(args.frontend, args.component, args.topic, args.grade, args.eval_mode)
     print(f"      tier-1 status: {live.get('status')}; scaffold keys: {list((live.get('tutoring') or {}).keys())}")
 
     build = JOURNEYS.get(args.component, build_generic_journey)
@@ -661,18 +1239,29 @@ async def amain() -> int:
     all_events: List[str] = []
 
     for i in range(1, runs + 1):
+        primitive_ctx = {
+            "primitive_type": args.component,
+            "instance_id": f"tutor-live-{args.component}-{int(time.time())}",
+            "primitive_data": journey["initial_bag"],
+            "tutoring": live.get("tutoring"),
+        }
+        # Lesson mode reproduces the observed K-lesson failure path: the server
+        # auto-greets with the scaffold but tells the tutor to keep it brief/one
+        # sentence, so a scaffold without a read-aloud directive strands a non-reader.
+        lesson_ctx = {
+            "topic": args.topic,
+            "grade_level": args.grade,
+            "objectives": [{"verb": "practice", "text": args.topic}],
+            "ordered_components": [{"title": args.component, "primitive_type": args.component,
+                                    "instance_id": primitive_ctx["instance_id"]}],
+        } if args.lesson else {}
         auth_msg = {
             "type": "authenticate",
-            "session_mode": "standalone",
+            "session_mode": "lesson" if args.lesson else "standalone",
             "token": token,
             "resumption_handle": None,
-            "primitive_context": {
-                "primitive_type": args.component,
-                "instance_id": f"tutor-live-{args.component}-{int(time.time())}",
-                "primitive_data": journey["initial_bag"],
-                "tutoring": live.get("tutoring"),
-            },
-            "lesson_context": {},
+            "primitive_context": primitive_ctx,
+            "lesson_context": lesson_ctx,
             "student_progress": {"attempts": 0, "hints_used": 0, "success_rate": 0},
         }
         print(f"[3/4] Run {i}/{runs}: connecting {args.backend_ws}, driving {len(beats)} beats…")
@@ -686,7 +1275,7 @@ async def amain() -> int:
     style = average_style_metrics(per_run_findings)
     report_path = os.path.join(
         REPO_ROOT, "my-tutoring-app", "qa", "tutor-reports",
-        f"{args.component}-live-{date.today().isoformat()}.md",
+        f"{args.component}-live{'-lesson' if args.lesson else ''}-{date.today().isoformat()}.md",
     )
     write_report(report_path, args.component, journey, run_results, aggregated, style, all_events)
 

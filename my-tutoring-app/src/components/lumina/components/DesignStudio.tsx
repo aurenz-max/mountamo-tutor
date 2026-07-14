@@ -10,7 +10,7 @@
  * This component dogfoods the kit: it is built FROM `Lumina*` components and
  * tokens, so it doubles as a smoke test that the kit renders correctly.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Check, Lightbulb, AlertTriangle, Gauge, Wrench, Clock } from 'lucide-react';
 import {
   LuminaCard,
@@ -45,8 +45,12 @@ import {
   LuminaChipBank,
   LuminaInput,
   LuminaMark,
+  LuminaDropZone,
+  type DropZoneState,
   type AnswerChoiceState,
   LUMINA_ACCENTS,
+  answerStateClasses,
+  motion,
   accentText,
   accentBorder,
   accentGlow,
@@ -92,6 +96,17 @@ const Section: React.FC<{ title: string; blurb: string; children: React.ReactNod
   </section>
 );
 
+// Drop-zone demo content — inputs (true) vs outputs (false) of photosynthesis.
+const DROP_WORDS: { word: string; ok: boolean }[] = [
+  { word: 'sunlight', ok: true },
+  { word: 'water', ok: true },
+  { word: 'glucose', ok: false },
+  { word: 'carbon dioxide', ok: true },
+  { word: 'oxygen', ok: false },
+];
+
+const DROP_ZONE_STATES: DropZoneState[] = ['idle', 'dragOver', 'filled', 'correct', 'incorrect'];
+
 const SURFACES: { key: keyof typeof surface; blurb: string }[] = [
   { key: 'glass', blurb: 'Default Lumina card' },
   { key: 'nested', blurb: 'Section inside a card' },
@@ -104,8 +119,43 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
   const [force, setForce] = useState(50);
   const [selectedChip, setSelectedChip] = useState('tracks');
   const [count, setCount] = useState(3);
+  // Motion demos replay by remounting the animated node (key bump).
+  const [popKey, setPopKey] = useState(0);
+  const [shakeKey, setShakeKey] = useState(0);
+  const [revealKey, setRevealKey] = useState(0);
   const [answer, setAnswer] = useState<boolean | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  // Drop-zone demo — mechanics live here (the "primitive"); colors/motion from the kit.
+  const [zoneState, setZoneState] = useState<DropZoneState>('idle');
+  const [placedWords, setPlacedWords] = useState<string[]>([]);
+  const [heldWord, setHeldWord] = useState<string | null>(null); // tap-to-place selection
+  const dragWord = useRef<string | null>(null);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    },
+    []
+  );
+  const gradeDrop = (word: string | null) => {
+    if (!word) return;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    const ok = DROP_WORDS.some((w) => w.word === word && w.ok);
+    const nextPlaced = ok ? [...placedWords, word] : placedWords;
+    if (ok) setPlacedWords(nextPlaced);
+    setHeldWord(null);
+    setZoneState(ok ? 'correct' : 'incorrect');
+    settleTimer.current = setTimeout(
+      () => setZoneState(nextPlaced.length > 0 ? 'filled' : 'idle'),
+      900
+    );
+  };
+  const resetDropDemo = () => {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    setPlacedWords([]);
+    setHeldWord(null);
+    setZoneState('idle');
+  };
   const correctAnswer = true;
   const isCorrect = answer === correctAnswer;
   const choiceState = (v: boolean): AnswerChoiceState =>
@@ -326,6 +376,78 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
             </LuminaCard>
           </Section>
 
+          {/* Motion */}
+          <Section title="Motion" blurb="motion tokens — the feedback grammar: pop · shake · reveal · press">
+            <LuminaCard>
+              <LuminaCardContent className="pt-6 space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Spec label="Pop — correct lands" code="motion.pop">
+                    <button
+                      key={`pop-${popKey}`}
+                      type="button"
+                      onClick={() => setPopKey((k) => k + 1)}
+                      className={`w-full rounded-xl border p-4 text-center text-lg font-bold ${answerStateClasses.correct} ${motion.pop}`}
+                    >
+                      7 × 8 = 56
+                    </button>
+                    <p className="text-[11px] text-slate-500">Click to replay — 350ms spring overshoot.</p>
+                  </Spec>
+                  <Spec label="Shake — incorrect" code="motion.shake">
+                    <button
+                      key={`shake-${shakeKey}`}
+                      type="button"
+                      onClick={() => setShakeKey((k) => k + 1)}
+                      className={`w-full rounded-xl border p-4 text-center text-lg font-bold ${answerStateClasses.incorrect} ${motion.shake}`}
+                    >
+                      7 × 8 = 54
+                    </button>
+                    <p className="text-[11px] text-slate-500">
+                      Click to replay — decaying shake reads as &ldquo;try again&rdquo;, not punishment.
+                    </p>
+                  </Spec>
+                </div>
+
+                <Spec label="Reveal — feedback enters" code="motion.reveal — baked into LuminaFeedbackCard">
+                  <div className="space-y-3">
+                    <LuminaButton tone="subtle" size="sm" onClick={() => setRevealKey((k) => k + 1)}>
+                      Replay reveal
+                    </LuminaButton>
+                    <LuminaFeedbackCard
+                      key={revealKey}
+                      status="correct"
+                      teachingNote="One entrance for every feedback card, hint, and results panel."
+                    >
+                      Spreading weight over a larger area lowers the pressure on the ground.
+                    </LuminaFeedbackCard>
+                  </div>
+                </Spec>
+
+                <Spec label="Press + duration ramp" code="motion.press · motion.transition · motion.transitionSlow">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <LuminaButton tone="primary" className={motion.press}>
+                      Press me
+                    </LuminaButton>
+                    <span
+                      className={`cursor-pointer rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:-translate-y-0.5 hover:bg-white/10 ${motion.transition}`}
+                    >
+                      standard · 200ms
+                    </span>
+                    <span
+                      className={`cursor-pointer rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:-translate-y-0.5 hover:bg-white/10 ${motion.transitionSlow}`}
+                    >
+                      gentle · 300ms
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Hover to compare the two blessed durations; press compresses via active:scale-95. All
+                    motions are motion-safe: they vanish under prefers-reduced-motion. The evaluation loop
+                    below now pops/shakes automatically — LuminaAnswerChoice wires grading motion in.
+                  </p>
+                </Spec>
+              </LuminaCardContent>
+            </LuminaCard>
+          </Section>
+
           {/* Section labels */}
           <Section title="Section labels" blurb="LuminaSectionLabel — accent eyebrow headers">
             <LuminaCard>
@@ -485,6 +607,103 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
               <LuminaChip state="correct">starch</LuminaChip>
               <LuminaChip state="incorrect">oxygen</LuminaChip>
             </LuminaChipBank>
+          </Section>
+
+          {/* Drop zones */}
+          <Section
+            title="Drop zones"
+            blurb="LuminaDropZone + dropZoneStateClasses — shared target language; drag mechanics stay bespoke"
+          >
+            <LuminaCard>
+              <LuminaCardContent className="pt-6 space-y-5">
+                <Spec label="States" code="state='idle | dragOver | filled | correct | incorrect'">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {DROP_ZONE_STATES.map((s) => (
+                      <div key={s} className="space-y-1.5">
+                        <span className="text-[10px] font-mono text-slate-500">{s}</span>
+                        <LuminaDropZone
+                          state={s}
+                          className="pointer-events-none min-h-[72px] p-2 text-xs"
+                          emptyPrompt={
+                            s === 'dragOver'
+                              ? 'Release to place'
+                              : s === 'incorrect'
+                                ? 'Not quite'
+                                : 'Drop here'
+                          }
+                        >
+                          {(s === 'filled' || s === 'correct') && (
+                            <LuminaChip state={s === 'correct' ? 'correct' : 'idle'} className="text-xs px-2.5 py-1">
+                              sunlight
+                            </LuminaChip>
+                          )}
+                        </LuminaDropZone>
+                      </div>
+                    ))}
+                  </div>
+                </Spec>
+
+                <Spec label="Live — drag or tap-to-place" code="mechanics in the primitive; colors + motion from the kit">
+                  <p className="text-sm text-slate-300">
+                    Which of these are <strong className="text-slate-100">inputs</strong> of
+                    photosynthesis? Drag into the zone — or tap a chip, then tap the zone.
+                  </p>
+                  <LuminaChipBank label="Word Bank">
+                    {DROP_WORDS.filter(({ word }) => !placedWords.includes(word)).map(({ word }) => (
+                      <LuminaChip
+                        key={word}
+                        state={heldWord === word ? 'selected' : 'idle'}
+                        draggable
+                        onDragStart={(e) => {
+                          dragWord.current = word;
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragEnd={() => {
+                          dragWord.current = null;
+                        }}
+                        onClick={() => setHeldWord((h) => (h === word ? null : word))}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        {word}
+                      </LuminaChip>
+                    ))}
+                  </LuminaChipBank>
+                  <LuminaDropZone
+                    state={zoneState}
+                    emptyPrompt="Inputs of photosynthesis — drop here"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (zoneState !== 'dragOver') setZoneState('dragOver');
+                    }}
+                    onDragLeave={() =>
+                      setZoneState(placedWords.length > 0 ? 'filled' : 'idle')
+                    }
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      gradeDrop(dragWord.current);
+                      dragWord.current = null;
+                    }}
+                    onClick={() => gradeDrop(heldWord)}
+                    className={heldWord ? 'cursor-pointer' : undefined}
+                  >
+                    {placedWords.map((word) => (
+                      <LuminaChip key={word} state="correct" disabled>
+                        {word}
+                      </LuminaChip>
+                    ))}
+                  </LuminaDropZone>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] text-slate-500">
+                      Wrong drops shake (motion.shake); right drops keep the chip and pop
+                      (motion.pop). The zone narrates state — no toast needed.
+                    </p>
+                    <LuminaButton tone="subtle" size="sm" onClick={resetDropDemo}>
+                      Reset
+                    </LuminaButton>
+                  </div>
+                </Spec>
+              </LuminaCardContent>
+            </LuminaCard>
           </Section>
 
           {/* Fill-in-the-blank slot */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SequencingActivityProblemData } from '../../types';
 import { InsetRenderer } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
@@ -9,15 +9,19 @@ import {
   type SequencingActivityMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
-// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
-import { LuminaFeedbackCard, LuminaActionButton, answerStateClasses } from '../../ui';
+// Shared visual state comes from the Lumina UI kit; drag mechanics stay bespoke.
+import {
+  LuminaActionButton,
+  LuminaDropZone,
+  LuminaFeedbackCard,
+  type DropZoneState,
+} from '../../ui';
 
 /**
  * Sequencing Activity Problem Component
  *
- * UI: the drag-and-drop ordering surface is the bespoke "painting" and stays
- * custom. Only the eval-loop chrome (feedback banner, action buttons) comes
- * from the Lumina UI kit (LuminaFeedbackCard / LuminaActionButton).
+ * UI: ordering mechanics stay bespoke while drop-zone and eval-loop chrome
+ * come from the Lumina UI kit.
  */
 
 interface SequencingActivityProblemProps {
@@ -30,7 +34,17 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
     return [...data.items].sort(() => Math.random() - 0.5);
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showGradingFlash, setShowGradingFlash] = useState(false);
+  const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    },
+    []
+  );
 
   // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
   const {
@@ -65,10 +79,12 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
+    setHoveredIndex(index);
   };
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
+    setHoveredIndex(null);
     if (isSubmitted || draggedIndex === null) return;
 
     SoundManager.snap();
@@ -89,6 +105,10 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
     const totalItems = data.items.length;
     const sequenceAccuracy = totalItems > 0 ? Math.round((correctlyPlaced / totalItems) * 100) : 0;
     const isCorrectOrder = correctlyPlaced === totalItems;
+
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    setShowGradingFlash(true);
+    gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
 
     const metrics: SequencingActivityMetrics = {
       type: 'sequencing-activity',
@@ -115,7 +135,10 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
   const handleReset = () => {
     setOrderedItems([...data.items].sort(() => Math.random() - 0.5));
     setDraggedIndex(null);
+    setHoveredIndex(null);
     setIsSubmitted(false);
+    setShowGradingFlash(false);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
     resetEvaluationAttempt();
   };
 
@@ -139,27 +162,28 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
       <div className="space-y-3 mb-8">
         {orderedItems.map((item, index) => {
           const isCorrectPosition = isSubmitted && data.items[index] === item;
-          const isWrongPosition = isSubmitted && data.items[index] !== item;
-
-          // Graded position colors are tokenized; the drag-in-progress state is bespoke.
-          let statusClass = answerStateClasses.idle;
-          if (draggedIndex === index) {
-            statusClass = "border-blue-500 bg-blue-500/20 opacity-50"; // bespoke: dragging
-          }
-          if (isSubmitted) {
-            statusClass = isCorrectPosition ? answerStateClasses.correct : answerStateClasses.incorrect;
-          }
+          const zoneState: DropZoneState =
+            hoveredIndex === index
+              ? 'dragOver'
+              : showGradingFlash
+                ? isCorrectPosition
+                  ? 'correct'
+                  : 'incorrect'
+                : 'filled';
 
           return (
-            <div
+            <LuminaDropZone
               key={`${item}-${index}`}
+              state={zoneState}
+              emptyPrompt="Drop item here"
               draggable={!isSubmitted}
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={() => setHoveredIndex(null)}
               onDrop={(e) => handleDrop(e, index)}
-              className={`p-4 rounded-xl border transition-all duration-300 cursor-move ${statusClass} ${!isSubmitted && 'hover:border-white/20 hover:bg-white/10'}`}
+              className={`min-h-0 flex-nowrap items-stretch justify-stretch gap-0 p-0 ${!isSubmitted ? 'cursor-move' : 'cursor-default'} ${draggedIndex === index ? 'opacity-50' : ''}`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex w-full items-center gap-4 p-4">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black/20 text-slate-400 font-mono text-sm">
                   {index + 1}
                 </div>
@@ -177,7 +201,7 @@ export const SequencingActivityProblem: React.FC<SequencingActivityProblemProps>
                   </span>
                 )}
               </div>
-            </div>
+            </LuminaDropZone>
           );
         })}
       </div>

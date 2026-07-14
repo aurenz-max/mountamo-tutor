@@ -15,6 +15,7 @@
 import * as React from 'react';
 import { CheckCircle2, XCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from './tokens';
 
 export type FeedbackStatus = 'correct' | 'incorrect' | 'insight';
 
@@ -41,7 +42,7 @@ export const LuminaFeedbackCard = React.forwardRef<HTMLDivElement, LuminaFeedbac
     return (
       <div
         ref={ref}
-        className={cn('animate-fade-in rounded-2xl border border-white/5 bg-black/20 p-6', className)}
+        className={cn(motion.reveal, 'rounded-2xl border border-white/5 bg-black/20 p-6', className)}
         {...props}
       >
         <div className={cn('mb-2 flex items-center gap-3 font-bold uppercase tracking-wider', color)}>

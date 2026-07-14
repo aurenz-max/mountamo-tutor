@@ -2112,18 +2112,48 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Multi-phase comparison activity with four challenge types: compare groups of objects visually, compare written numerals with inequality symbols, order numbers least-to-greatest or greatest-to-least, and identify one more / one less. Features animated correspondence lines and alligator mouth mnemonic for < and >. Perfect for teaching quantity comparison and number ordering. ESSENTIAL for K-1 math.',
     constraints: 'Supports numbers 1-20. Groups contain up to 10 objects. Order challenges use 3-5 numbers. Object types: bears, apples, stars, blocks, fish, butterflies, hearts, flowers, cookies, balls.',
     tutoring: {
-      taskDescription: 'Student is comparing quantities and numbers. Challenge type: {{challengeType}}. {{#if leftCount}}Left group: {{leftCount}}, Right group: {{rightCount}}.{{/if}} {{#if leftNumber}}Left number: {{leftNumber}}, Right number: {{rightNumber}}.{{/if}} {{#if targetNumber}}Target number: {{targetNumber}}, finding {{askFor}}.{{/if}} Attempt: {{attemptNumber}}.',
+      // taskDescription is flat — no {{#if}} handlebars. interpolate_template does
+      // key substitution only, so conditional blocks render as literal junk in the
+      // prompt. The specific counts/numbers/target already appear in RUNTIME STATE.
+      taskDescription: 'Student is comparing quantities and numbers. Challenge type: {{challengeType}}. Instruction on screen: {{instruction}}. Attempt: {{attemptNumber}}. See RUNTIME STATE for the exact counts, numbers, or target for this challenge.',
       contextKeys: ['challengeType', 'leftCount', 'rightCount', 'leftNumber', 'rightNumber', 'correctAnswer', 'targetNumber', 'askFor', 'gradeBand', 'useAlligatorMnemonic', 'instruction', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"Which group looks like it has more? Can you tell just by looking?"',
-        level2: '"Count each group carefully. Which number is bigger? {{#if useAlligatorMnemonic}}Remember, the alligator eats the bigger number!{{/if}}"',
-        level3: '"Left has {{leftCount}}, right has {{rightCount}}. {{leftCount}} is {{correctAnswer}} {{rightCount}}, so we use the {{correctAnswer}} symbol."',
+        // No {{#if}} handlebars (they render literally). The mnemonic line is
+        // always safe to offer; it only bites for compare-numbers.
+        level2: '"Count each group carefully, then tell me which side has more. Remember: the alligator always opens its mouth toward the bigger number."',
+        // ANSWER-FREE: never interpolate {{correctAnswer}} into a spoken line —
+        // this is a script the tutor reads to the child. Coach the counting
+        // strategy instead of naming which side wins.
+        level3: '"Let\'s count together. Point to each one on the left and count out loud: 1, 2, 3... now do the same on the right. Whichever side you said a bigger number for is the side with more."',
       },
       commonStruggles: [
         { pattern: 'Student confuses < and > symbols', response: 'Use the alligator mnemonic: the alligator mouth always opens toward the bigger number because it wants to eat more!' },
         { pattern: 'Student cannot compare groups without counting', response: 'Encourage one-to-one matching: "Try pointing to one on the left and one on the right. Match them up. Which side has leftovers?"' },
         { pattern: 'Student reverses ascending/descending order', response: 'Clarify the direction: "Least to greatest means we start with the smallest number. Which is the smallest here?"' },
         { pattern: 'Student confuses one-more with one-less', response: 'Use the number line: "If we go forward one step from the target, what do we land on? That is one more."' },
+      ],
+      // ORIENT + DISAMBIGUATE beat. The live K failure (2026-07-13) was the tutor
+      // greeting warmly but never READING the on-screen question or NAMING the
+      // specific comparison — the child (a non-reader) never learned what to decide.
+      // aiDirectives render into the standalone system prompt AND the lesson
+      // [PRIMITIVE SWITCH]/greeting injection, so this survives the "one sentence"
+      // transition cap that drops a soft component sendText clause.
+      aiDirectives: [
+        {
+          title: 'READ THE QUESTION ALOUD AND ASK THE SPECIFIC COMPARISON — the student is a K–1 child who cannot read',
+          instruction:
+            'The student CANNOT read the instruction on screen — you are their voice. '
+            + 'Whenever a new challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is to '
+            + 'say, in one warm child-friendly sentence, exactly what to do — and NAME the specific choice so the child knows what they are deciding. '
+            + 'Match the wording to the challenge type ({{challengeType}}): '
+            + 'compare-groups → "Which side has MORE — the left side or the right side? Tap that side. If they are the same, tap the equals in the middle."; '
+            + 'compare-numbers → "Which number is bigger, {{leftNumber}} or {{rightNumber}}? Pick the alligator mouth that eats the bigger one."; '
+            + 'one-more-one-less → "We start at {{targetNumber}}. Find the number that is one more, one less, or both — whichever the screen asks (askFor: {{askFor}}) — and tap it."; '
+            + 'order → "Let\'s put these numbers in order. Which one is the smallest? Tap it first." '
+            + 'Reading and asking the question IS your greeting for this activity — this overrides any instruction to keep the transition to a single sentence. '
+            + 'Never just say "let\'s compare!" and stop, and NEVER say which side or which answer is correct — only ask the question. Then wait for the child to act.',
+        },
       ],
     },
     evalModes: [
@@ -2821,8 +2851,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by counting objects, build matching equations from tiles, solve word problems, and create their own stories for given equations. Supports join, separate, compare, and part-part-whole story types. Perfect for K-1 students bridging from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
     constraints: 'Numbers limited to maxNumber (5 for K, 10 for Grade 1). Requires 4 challenge types: act-out, build-equation, solve-story, create-story. Story contexts must match scene theme.',
     tutoring: {
-      taskDescription: 'The student is working through addition and subtraction story challenges. Current story: "{{storyText}}" ({{operation}}, {{storyType}} type). The equation is {{equation}}. They are in a {{challengeType}} phase where they must {{instruction}}.',
-      contextKeys: ['storyText', 'operation', 'storyType', 'startCount', 'changeCount', 'resultCount', 'unknownPosition', 'equation', 'objectType', 'scene', 'challengeType', 'attemptNumber'],
+      taskDescription: 'The student is working through addition and subtraction story challenges. Current story: "{{storyText}}" ({{operation}}, {{storyType}} type). The equation is {{equation}}. They are in a {{challengeType}} phase where they must: {{instruction}}',
+      contextKeys: ['storyText', 'operation', 'storyType', 'startCount', 'changeCount', 'resultCount', 'unknownPosition', 'equation', 'objectType', 'scene', 'challengeType', 'instruction', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"What happened in the story? Did the {{objectType}} come or go away?"',
         level2: '"You started with {{startCount}} {{objectType}}. Then {{changeCount}} more came/went away. Can you count them all?"',
@@ -2833,6 +2863,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student confuses addition and subtraction operations', response: 'Connect to the story action: "In our story, the ducks flew AWAY. When things leave, we subtract!"' },
         { pattern: 'Student builds equation with wrong operator', response: 'Ask about the story direction: "Did more objects come, or did some leave? That tells us which symbol to use!"' },
         { pattern: 'Student struggles with unknown position other than result', response: 'Reframe the problem: "We know the answer is {{resultCount}}. We know {{changeCount}} left. So how many were there before?"' },
+      ],
+      // STIMULUS beat (reader-fit): this is a K–1 pre/emerging reader — the story
+      // text on screen is load-bearing English they cannot decode. Nothing else in
+      // this scaffold READS it aloud (taskDescription/contextKeys are tutor-
+      // reference only), and in lesson mode the [PRIMITIVE SWITCH] / greeting both
+      // tell the tutor to keep it to one sentence — so without this the tutor
+      // greets ("let's do a story!") and stops, stranding the non-reader. This
+      // directive makes reading the story aloud the mandatory first action and
+      // explicitly overrides the one-sentence transition cap.
+      aiDirectives: [
+        {
+          title: 'READ THE STORY ALOUD FIRST — the student is a K–1 child who cannot read',
+          instruction:
+            'The student CANNOT read the story on screen — you are their voice. '
+            + 'Whenever a new story challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), '
+            + 'your FIRST action is to read the story aloud, word for word: "{{storyText}}". '
+            + 'Say the WHOLE story out loud — never replace it with "let\'s do a story" or a bare greeting and stop. '
+            + 'Then, in ONE short warm sentence, tell them what to do: {{instruction}} '
+            + 'Reading the story IS your greeting for this activity — this overrides any instruction to keep the '
+            + 'transition to a single sentence. Only after the story has been read do you wait for the child to act.',
+        },
       ],
     },
     evalModes: [
@@ -2866,7 +2917,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create-story'],
-        description: 'Write story for given equation',
+        description: 'Represent a given equation as a story by BUILDING the scene — a production task, not writing. Kindergarten places/removes objects to construct the story (judged by count); Grade 1 chooses scene + objects. Pre-reader capable.',
       },
     ],
     supportsEvaluation: true,

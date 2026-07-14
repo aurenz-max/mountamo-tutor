@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CategorizationActivityProblemData } from '../../types';
 import { InsetRenderer } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
@@ -9,9 +9,14 @@ import {
   type CategorizationActivityMetrics,
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
-// Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
-// The drag-and-drop categorization surface is the bespoke "painting" and stays custom.
-import { LuminaFeedbackCard, LuminaActionButton, answerStateClasses } from '../../ui';
+// Shared visual state comes from the Lumina UI kit; drag mechanics stay bespoke.
+import {
+  LuminaActionButton,
+  LuminaDropZone,
+  LuminaFeedbackCard,
+  answerStateClasses,
+  type DropZoneState,
+} from '../../ui';
 
 interface CategorizationActivityProblemProps {
   data: CategorizationActivityProblemData;
@@ -30,7 +35,17 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
 
   const [itemCategories, setItemCategories] = useState<{ [itemText: string]: string }>({});
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showGradingFlash, setShowGradingFlash] = useState(false);
+  const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    },
+    []
+  );
 
   // Destructure evaluation props (injected by KnowledgeCheck/ProblemRenderer)
   const {
@@ -64,6 +79,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
   };
 
   const handleDrop = (category: string) => {
+    setHoveredCategory(null);
     if (isSubmitted || !draggedItem) return;
     SoundManager.snap();
     setItemCategories(prev => ({ ...prev, [draggedItem]: category }));
@@ -112,6 +128,10 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
     const accuracy = totalItems > 0 ? Math.round((correctlyCategorized / totalItems) * 100) : 0;
     const allCorrect = correctlyCategorized === totalItems;
 
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    setShowGradingFlash(true);
+    gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
+
     const metrics: CategorizationActivityMetrics = {
       type: 'categorization-activity',
       totalItems,
@@ -137,7 +157,10 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
   const handleReset = () => {
     setItemCategories({});
     setDraggedItem(null);
+    setHoveredCategory(null);
     setIsSubmitted(false);
+    setShowGradingFlash(false);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
     resetEvaluationAttempt();
   };
 
@@ -167,7 +190,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
 
       {/* Uncategorized Items — bespoke drag source (the painting), stays custom */}
       {getUncategorizedItems().length > 0 && (
-        <div className="mb-6 p-4 rounded-xl border border-dashed border-white/20 bg-black/10">
+        <div className="mb-6 p-4 rounded-xl border border-white/20 bg-black/10">
           <div className="text-sm text-slate-400 mb-3 font-mono uppercase tracking-wider">Items to Categorize</div>
           <div className="flex flex-wrap gap-2">
             {getUncategorizedItems().map((item) => (
@@ -188,16 +211,40 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {data.categories.map((category) => {
           const itemsInCategory = getItemsInCategory(category);
+          const expectedItemCount = data.categorizationItems.filter(
+            item => item.correctCategory === category
+          ).length;
+          const categoryIsCorrect =
+            itemsInCategory.length === expectedItemCount &&
+            itemsInCategory.every(item => item.correctCategory === category);
+          const zoneState: DropZoneState =
+            hoveredCategory === category
+              ? 'dragOver'
+              : showGradingFlash
+                ? categoryIsCorrect
+                  ? 'correct'
+                  : 'incorrect'
+                : itemsInCategory.length > 0
+                  ? 'filled'
+                  : 'idle';
 
           return (
             <div
               key={category}
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setHoveredCategory(category);
+              }}
+              onDragLeave={() => setHoveredCategory(null)}
               onDrop={() => handleDrop(category)}
-              className="p-4 rounded-xl border border-white/10 bg-white/5 min-h-[200px]"
+              className="min-h-[200px]"
             >
               <h4 className="text-lg font-bold text-blue-400 mb-4">{category}</h4>
-              <div className="space-y-2">
+              <LuminaDropZone
+                state={zoneState}
+                emptyPrompt="Drop items here"
+                className="min-h-[152px] flex-col items-stretch justify-start"
+              >
                 {itemsInCategory.map((item) => {
                   const isCorrect = checkItemCategory(item.itemText);
                   // Placed-chip default is bespoke; graded colors are tokenized.
@@ -224,7 +271,7 @@ export const CategorizationActivityProblem: React.FC<CategorizationActivityProbl
                     </div>
                   );
                 })}
-              </div>
+              </LuminaDropZone>
             </div>
           );
         })}

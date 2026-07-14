@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LifeCycleSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
 import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, RefreshCw, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
 
 /**
@@ -113,6 +114,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
   const [attemptsCount, setAttemptsCount] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
+  const [showGradingFlash, setShowGradingFlash] = useState(false);
+  const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const colors = GRADE_BAND_COLORS[data.gradeBand] || GRADE_BAND_COLORS['3-5'];
 
@@ -145,6 +148,13 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     const timer = setTimeout(() => setShowTutorial(false), 5000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    },
+    []
+  );
 
   // ============================================================================
   // Interaction Handlers
@@ -290,6 +300,9 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     setStageResults(results);
     setIsChecked(true);
     setAttemptsCount(prev => prev + 1);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    setShowGradingFlash(true);
+    gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
 
     const allPlaced = timelineStages.every(s => s !== null);
     const allCorrect = correctCount === data.stages.length && allPlaced;
@@ -337,6 +350,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     setShowMisconception(false);
     setAttemptsCount(0);
     setShowHint(false);
+    setShowGradingFlash(false);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
     resetAttempt();
   };
 
@@ -453,59 +468,38 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     const isCorrect = stage ? stageResults.get(stage.id) : undefined;
     const showStatus = isChecked && isCorrect !== undefined;
     const isEmpty = !stage;
+    const zoneState: DropZoneState =
+      isDropTarget
+        ? 'dragOver'
+        : showGradingFlash && showStatus
+          ? isCorrect
+            ? 'correct'
+            : 'incorrect'
+          : stage
+            ? 'filled'
+            : 'idle';
 
     return (
-      <div
+      <LuminaDropZone
         key={`drop-zone-${index}`}
+        state={zoneState}
+        emptyPrompt={(
+          <div className="flex flex-col items-center justify-center p-4">
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-400/10">
+              <span className="text-lg font-bold text-slate-500">{index + 1}</span>
+            </div>
+            <p className="text-center text-xs text-slate-500">
+              {selectedStage ? 'Tap or drop to place' : 'Drop stage here'}
+            </p>
+          </div>
+        )}
         onClick={() => handleDropZoneClick(index)}
         onDragOver={(e) => handleDragOver(e, index)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, index)}
-        className={`
-          relative group
-          transition-all duration-300
-          ${isEmpty
-            ? `border-2 border-dashed rounded-xl ${
-                isDropTarget
-                  ? `border-[${colors.primary}] bg-[${colors.primary}]/10 scale-105`
-                  : 'border-slate-700/50 hover:border-slate-600'
-              }`
-            : ''
-          }
-          ${selectedStage && isEmpty ? 'cursor-pointer hover:bg-slate-800/30' : ''}
-          ${isDropTarget ? 'ring-2 ring-offset-2 ring-offset-slate-950' : ''}
-        `}
-        style={{
-          minHeight: isEmpty ? '120px' : 'auto',
-          borderColor: isDropTarget ? colors.primary : undefined,
-          // Drive Tailwind's ring color (see the `ring-2` class above) via its CSS variable
-          ...(isDropTarget ? ({ '--tw-ring-color': colors.primary } as React.CSSProperties) : {}),
-        }}
+        className={`group min-h-[120px] p-0 ${selectedStage && isEmpty ? 'cursor-pointer' : ''}`}
       >
-        {isEmpty ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all"
-              style={{
-                backgroundColor: isDropTarget ? `rgba(${colors.rgb}, 0.2)` : 'rgba(148, 163, 184, 0.1)',
-              }}
-            >
-              <span className="text-lg font-bold" style={{ color: isDropTarget ? colors.primary : '#64748b' }}>
-                {index + 1}
-              </span>
-            </div>
-            {isDropTarget && (
-              <p className="text-xs text-center" style={{ color: colors.primary }}>
-                Drop here
-              </p>
-            )}
-            {!isDropTarget && selectedStage && (
-              <p className="text-xs text-slate-500 text-center">
-                Tap to place
-              </p>
-            )}
-          </div>
-        ) : (
+        {!isEmpty && (
           <div
             onClick={(e) => {
               e.stopPropagation();
@@ -513,15 +507,9 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             }}
             className={`
               relative overflow-hidden
-              bg-slate-800/40 backdrop-blur-sm border-2 rounded-xl p-4
+              bg-slate-800/40 backdrop-blur-sm rounded-[10px] p-4
               transition-all duration-300
-              ${showStatus
-                ? isCorrect
-                  ? 'border-green-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                  : 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-shake'
-                : 'border-slate-700/50'
-              }
-              ${!hasSubmitted ? 'cursor-pointer hover:border-slate-600' : 'cursor-default'}
+              ${!hasSubmitted ? 'cursor-pointer hover:bg-slate-800/60' : 'cursor-default'}
             `}
           >
             {/* Status Badge */}
@@ -570,7 +558,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             )}
           </div>
         )}
-      </div>
+      </LuminaDropZone>
     );
   };
 

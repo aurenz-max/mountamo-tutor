@@ -11,7 +11,65 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   {
     id: 'curator-brief',
     description: 'Introduction, learning objectives, and hook. REQUIRED: Always include this first.',
-    constraints: 'Must be first component'
+    constraints: 'Must be first component',
+    tutoring: {
+      taskDescription:
+        'The student is on the opening briefing for "{{topic}}" — a tabbed overview (the hook, the big idea, '
+        + 'what they will learn, what to know first, the journey, and connections). They are currently on the '
+        + '"{{currentSectionLabel}}" section. This is orientation, NOT a graded task: your job is to warm them up '
+        + 'and make the section make sense — especially for young or pre-reading students who cannot read the text '
+        + 'on screen themselves.',
+      contextKeys: ['topic', 'gradeLevel', 'currentSection', 'currentSectionLabel', 'isPreReader'],
+      scaffoldingLevels: {
+        level1:
+          '"Point to the picture or the big word on this part and ask what they think it is about."',
+        level2:
+          '"Say the big idea of this section in one short, everyday sentence, then ask a quick wondering question."',
+        level3:
+          '"Read the section aloud slowly in simple words, connect it to something the student already knows, '
+          + 'and tell them what the next part is."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'The student is silent and not moving between sections',
+          response: 'Offer to read it out loud and invite them to tap the arrow to see the next part.',
+        },
+        {
+          pattern: 'The student cannot read the tabs or text (pre-reader)',
+          response:
+            'Never ask them to read. Say each part aloud warmly and guide them by what they can see — '
+            + 'the picture, the colors, the number of steps.',
+        },
+        {
+          pattern: 'The student rushes past the hook and big idea',
+          response: 'Slow them down on the big idea with one short question about it before they move on.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'READ THE BRIEFING ALOUD',
+          instruction:
+            'When you receive [READ_SECTION], read the provided section text aloud for the student in a warm, '
+            + 'natural voice, rephrased into short, simple, age-appropriate sentences — do NOT read it word-for-word '
+            + 'like a robot. Keep it brief (1-3 sentences for young students). End by naming what the next section '
+            + 'is, if one is given. Say nothing about "sections", "tabs", or the interface itself.',
+        },
+        {
+          title: 'PRE-READER MODE',
+          instruction:
+            'When isPreReader is true, assume the student CANNOT read the text on screen. Never tell them to '
+            + '"read" anything or ask them to find a written word. Voice every part for them, keep sentences very '
+            + 'short, and guide by what they can see and hear (pictures, colors, counting, sounds).',
+        },
+        {
+          title: 'NEVER REVEAL THE QUICK-CHECK ANSWER',
+          instruction:
+            'The "Before We Start" section has a quick-check question with a hidden answer. If you read that '
+            + 'section, read ONLY the question and what the student should already know. NEVER say or hint at the '
+            + 'answer — let the student think of it themselves.',
+        },
+      ],
+    },
   },
   {
     id: 'concept-card-grid',

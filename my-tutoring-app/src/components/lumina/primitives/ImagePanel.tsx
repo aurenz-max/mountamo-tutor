@@ -4,7 +4,7 @@ import { generateConceptImage } from '../service/geminiClient-api';
 import { usePrimitiveEvaluation, type ImagePanelMetrics } from '../evaluation';
 import { SoundManager } from '../utils/SoundManager';
 import html2canvas from 'html2canvas';
-import { LuminaBadge, LuminaButton } from '../ui';
+import { LuminaBadge, LuminaButton, LuminaDropZone, type DropZoneState } from '../ui';
 
 // Annotation data structure
 export interface ImageAnnotation {
@@ -106,6 +106,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
   // Interactive annotation state
   const [studentPlacements, setStudentPlacements] = useState<StudentPlacement[]>([]);
   const [draggedAnnotation, setDraggedAnnotation] = useState<ImageAnnotation | null>(null);
+  const [imageDragOver, setImageDragOver] = useState(false);
   const [hoveredPlacement, setHoveredPlacement] = useState<string | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -165,6 +166,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
   // Handle drop on image
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setImageDragOver(false);
     if (!draggedAnnotation || !imageContainerRef.current) return;
 
     SoundManager.snap();
@@ -200,7 +202,14 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setImageDragOver(true);
   };
+
+  const imageZoneState: DropZoneState = imageDragOver
+    ? 'dragOver'
+    : studentPlacements.length > 0
+      ? 'filled'
+      : 'idle';
 
   // Remove a placement
   const handleRemovePlacement = (annotationId: string) => {
@@ -478,6 +487,10 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
                               key={annotation.id}
                               draggable
                               onDragStart={() => handleDragStart(annotation)}
+                              onDragEnd={() => {
+                                setDraggedAnnotation(null);
+                                setImageDragOver(false);
+                              }}
                               className={`p-3 rounded-lg border-2 cursor-move transition-all ${
                                 placed
                                   ? 'bg-green-900/20 border-green-700 opacity-60'
@@ -574,13 +587,14 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
 
                     {/* Image with Drop Zone */}
                     <div className="flex-1 relative">
-                      <div
+                      <LuminaDropZone
                         ref={imageContainerRef}
+                        state={imageZoneState}
+                        emptyPrompt="Drop annotations onto the image"
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
-                        className={`relative rounded-lg overflow-hidden border-4 ${
-                          draggedAnnotation ? 'border-cyan-500 border-dashed' : 'border-slate-700'
-                        } transition-colors`}
+                        onDragLeave={() => setImageDragOver(false)}
+                        className="relative block min-h-0 overflow-hidden rounded-lg p-0"
                       >
                         <img
                           src={displayImageUrl}
@@ -637,7 +651,7 @@ const ImagePanel: React.FC<ImagePanelProps> = ({ data, className = '', onPlaceme
                             </div>
                           </div>
                         )}
-                      </div>
+                      </LuminaDropZone>
                     </div>
                   </div>
                 ) : (

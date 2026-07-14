@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ClassificationSorterMetrics } from '../../../evaluation/types';
 import { Lightbulb, CheckCircle2, XCircle, RotateCcw, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -103,6 +104,15 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [showHint, setShowHint] = useState<string | null>(null); // Item ID showing hint
   const [attemptCounts, setAttemptCounts] = useState<Map<string, number>>(new Map());
+  // Transient grading flash on the zone that just received a drop (pop/shake).
+  const [dropFlash, setDropFlash] = useState<{ categoryId: string; ok: boolean } | null>(null);
+  const dropFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
+    },
+    []
+  );
 
   // Destructure evaluation props
   const {
@@ -187,6 +197,11 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
       SoundManager.playCorrect();
       setShowHint(null);
     }
+
+    // Flash the receiving zone (correct pops, incorrect shakes), then settle.
+    if (dropFlashTimer.current) clearTimeout(dropFlashTimer.current);
+    setDropFlash({ categoryId, ok: isCorrect });
+    dropFlashTimer.current = setTimeout(() => setDropFlash(null), 900);
 
     setDraggedItem(null);
     setHoveredCategory(null);
@@ -343,7 +358,19 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
 
   const renderCategory = (category: ClassificationCategory) => {
     const itemsInCategory = getItemsInCategory(category.id);
-    const isHovered = hoveredCategory === category.id;
+
+    // Drop handlers stay on the whole Card (large hit-area for young students);
+    // the LuminaDropZone inside is the visual state surface, driven from here.
+    const zoneState: DropZoneState =
+      hoveredCategory === category.id
+        ? 'dragOver'
+        : dropFlash?.categoryId === category.id
+          ? dropFlash.ok
+            ? 'correct'
+            : 'incorrect'
+          : itemsInCategory.length > 0
+            ? 'filled'
+            : 'idle';
 
     return (
       <Card
@@ -351,27 +378,20 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         onDragOver={(e) => handleDragOver(e, category.id)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, category.id)}
-        className={`
-          min-h-[200px] backdrop-blur-xl bg-slate-900/40 border-white/10 transition-all
-          ${isHovered ? 'border-white/30 bg-white/5' : ''}
-        `}
+        className="min-h-[200px] backdrop-blur-xl bg-slate-900/40 border-white/10"
       >
         <CardHeader className="pb-3">
           <CardTitle className="text-slate-200">{category.label}</CardTitle>
           <CardDescription className="text-slate-400">{category.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Items in Category */}
-          <div className="space-y-2">
+          <LuminaDropZone
+            state={zoneState}
+            emptyPrompt="Drop items here"
+            className="min-h-[128px] flex-col items-stretch"
+          >
             {itemsInCategory.map(item => renderItem(item, true))}
-          </div>
-
-          {/* Empty State */}
-          {itemsInCategory.length === 0 && (
-            <div className="h-32 flex items-center justify-center text-slate-600 text-sm border-2 border-dashed border-slate-700/50 rounded-lg">
-              Drop items here
-            </div>
-          )}
+          </LuminaDropZone>
         </CardContent>
       </Card>
     );

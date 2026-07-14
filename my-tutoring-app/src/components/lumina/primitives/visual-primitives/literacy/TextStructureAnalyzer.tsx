@@ -12,8 +12,11 @@ import {
   LuminaActionButton,
   LuminaAnswerChoice,
   LuminaFeedbackCard,
+  accentText,
+  dropZoneStateClass,
   type LuminaAccent,
   type AnswerChoiceState,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -108,18 +111,7 @@ interface TextStructureAnalyzerProps {
 
 type AnalysisPhase = 'signal-words' | 'identify' | 'map' | 'review';
 
-// Pedagogical color identity per structure type — reused on the template
-// regions (the interaction surface) in Phase 3. Kept bespoke (this is the
-// painting's color language, not chrome).
-const STRUCTURE_COLORS: Record<StructureType, string> = {
-  'cause-effect': 'bg-orange-500/20 border-orange-500/40 text-orange-200',
-  'compare-contrast': 'bg-blue-500/20 border-blue-500/40 text-blue-200',
-  'problem-solution': 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200',
-  'chronological': 'bg-amber-500/20 border-amber-500/40 text-amber-200',
-  'description': 'bg-violet-500/20 border-violet-500/40 text-violet-200',
-};
-
-// Structure type -> kit accent (for the category badge in the header).
+// Structure identity stays on labels/badges; region bodies use drop-zone state.
 const STRUCTURE_ACCENTS: Record<StructureType, LuminaAccent> = {
   'cause-effect': 'orange',
   'compare-contrast': 'blue',
@@ -439,13 +431,10 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
     </div>
   );
 
-  // Render template for Phase 3 (Map) — THE PAINTING. The structure-template
-  // diagram with drag-to-sort key-idea chips. Color identity per structure
-  // type and the in-progress drag tokens stay bespoke.
+  // Render template for Phase 3 (Map). The idea-assignment mechanics stay
+  // bespoke while region bodies use the shared drop-zone state language.
   const renderTemplate = () => {
     const unmappedIdeas = keyIdeas.filter(idea => !ideaMapping[idea.ideaId]);
-    const structureColor = STRUCTURE_COLORS[structureType] || STRUCTURE_COLORS['description'];
-
     return (
       <div className="space-y-3">
         {/* Unmapped ideas (drag source) */}
@@ -470,9 +459,15 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
         }`}>
           {templateRegions.map(region => {
             const mappedIdeas = keyIdeas.filter(idea => ideaMapping[idea.ideaId] === region.regionId);
+            const zoneState: DropZoneState = mappedIdeas.length > 0 ? 'filled' : 'idle';
             return (
-              <div key={region.regionId} className={`rounded-lg border p-3 min-h-[80px] ${structureColor}`}>
-                <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-2">{region.label}</p>
+              <div
+                key={region.regionId}
+                className={`min-h-[80px] rounded-xl p-3 transition-all ${dropZoneStateClass(zoneState)}`}
+              >
+                <p className={`mb-2 text-xs font-bold uppercase tracking-wide ${accentText[STRUCTURE_ACCENTS[structureType]]}`}>
+                  {region.label}
+                </p>
                 <div className="space-y-1">
                   {mappedIdeas.map(idea => {
                     const isAnchor = idea.ideaId === anchorIdeaId;
@@ -498,6 +493,9 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                       </div>
                     );
                   })}
+                  {mappedIdeas.length === 0 && (
+                    <p className="py-1 text-center text-xs text-slate-500">Place ideas here</p>
+                  )}
                 </div>
                 {/* Drop area — click to assign */}
                 {unmappedIdeas.length > 0 && (
@@ -506,7 +504,7 @@ const TextStructureAnalyzer: React.FC<TextStructureAnalyzerProps> = ({ data, cla
                       <button
                         key={idea.ideaId}
                         onClick={() => mapIdeaToRegion(idea.ideaId, region.regionId)}
-                        className="w-full text-left text-xs px-2 py-1 rounded bg-white/5 border border-dashed border-white/10 text-slate-500 hover:bg-white/10 hover:text-slate-300 transition-colors"
+                        className="w-full rounded border border-white/10 bg-white/5 px-2 py-1 text-left text-xs text-slate-500 transition-colors hover:bg-white/10 hover:text-slate-300"
                       >
                         + {idea.text}
                       </button>

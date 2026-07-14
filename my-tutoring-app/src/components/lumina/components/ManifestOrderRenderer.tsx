@@ -23,6 +23,157 @@ interface ManifestOrderRendererProps {
   onTermClick?: (term: string) => void;
 }
 
+interface OrderedSectionProps {
+  item: OrderedComponent;
+  index: number;
+  onDetailItemClick?: (item: string) => void;
+  onTermClick?: (term: string) => void;
+  /**
+   * Kindergarten stage mode: suppress the adult chrome around the primitive
+   * (objective badges, section headers, scroll margins). The primitive itself
+   * renders unchanged.
+   */
+  hideChrome?: boolean;
+}
+
+/**
+ * OrderedSection — renders ONE manifest section (primitive + its lesson chrome).
+ *
+ * Shared by ManifestOrderRenderer (scroll layout) and KindergartenStage
+ * (on-rails layout) so evaluation-prop injection and special-case handling
+ * stay identical between the two presentation modes.
+ */
+export const OrderedSection: React.FC<OrderedSectionProps> = ({
+  item,
+  index,
+  onDetailItemClick,
+  onTermClick,
+  hideChrome = false,
+}) => {
+  const { getObjectivesForComponent, manifestItems } = useExhibitContext();
+  const evaluationContext = useEvaluationContext();
+
+  const { componentId, instanceId, data } = item;
+
+  // Get objectives for this component
+  const objectives = getObjectivesForComponent(instanceId);
+
+  // Get the primitive configuration from registry
+  const config = getPrimitive(componentId);
+
+  if (!config) {
+    console.warn(`[ManifestOrderRenderer] No configuration found for component: ${componentId}`);
+    return null;
+  }
+
+  const Component = config.component;
+
+  // Skip if component is null (e.g., detail-drawer which is managed as a modal)
+  if (Component === null || Component === undefined) {
+    return null;
+  }
+
+  // Build additional props based on component type
+  const additionalProps: Record<string, any> = {};
+  if (componentId === 'generative-table' && onDetailItemClick) {
+    additionalProps.onRowClick = onDetailItemClick;
+  }
+  if (componentId === 'feature-exhibit' && onTermClick) {
+    additionalProps.onTermClick = onTermClick;
+  }
+
+  // Auto-inject evaluation props for evaluable primitives
+  if (config.supportsEvaluation) {
+    // Find manifest item to extract metadata
+    const manifestItem = manifestItems.find(m => m.instanceId === instanceId);
+
+    // Inject evaluation props into the data object
+    additionalProps.instanceId = instanceId;
+    additionalProps.exhibitId = evaluationContext?.exhibitId;
+
+    // Curriculum ID resolution: prefer authoritative EvaluationContext IDs
+    // (set from CurriculumBrowser or daily session planner) over manifest
+    // config IDs (which are Gemini-generated and may be hallucinated).
+    additionalProps.skillId =
+      evaluationContext?.curriculumSkillId || manifestItem?.config?.skillId;
+    additionalProps.subskillId =
+      evaluationContext?.curriculumSubskillId || manifestItem?.config?.subskillId;
+
+    // Use first objective ID and text if available
+    if (objectives.length > 0) {
+      additionalProps.objectiveId = objectives[0].id;
+      additionalProps.objectiveText = objectives[0].text;
+    }
+
+    // Pass component intent for curriculum mapping
+    if (manifestItem?.intent) {
+      additionalProps.componentIntent = manifestItem.intent;
+    }
+  }
+
+  // Determine header component
+  const HeaderComponent =
+    config.dividerStyle === 'center' ? CenteredSectionHeader : SectionHeader;
+
+  // Special handling for concept-card-grid: data.cards is an array, render in grid
+  if (componentId === 'concept-card-grid') {
+    // Data structure: { cards: ConceptCardData[], __instanceId?: string }
+    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    if (cards.length === 0) {
+      console.warn(`[ManifestOrderRenderer] concept-card-grid has no cards:`, data);
+      return null;
+    }
+    return (
+      <div
+        className={hideChrome ? 'relative' : 'relative mb-20'}
+        data-primitive-instance-id={instanceId}
+        data-primitive-component-id={componentId}
+      >
+        {!hideChrome && objectives.length > 0 && (
+          <div className="mb-4">
+            <ObjectiveBadge objectives={objectives} compact={true} />
+          </div>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto">
+          {cards.map((card: any, cardIndex: number) => (
+            <div
+              key={`${instanceId}-card-${cardIndex}`}
+              className="w-full flex justify-center"
+              style={{ animationDelay: `${cardIndex * 150}ms` }}
+            >
+              <Component data={card} index={cardIndex} instanceId={`${instanceId}-card-${cardIndex}`} totalCards={cards.length} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Standard component rendering
+  return (
+    <div
+      className={hideChrome ? undefined : config.containerClassName || 'mb-20'}
+      data-primitive-instance-id={instanceId}
+      data-primitive-component-id={componentId}
+    >
+      {/* Objective badges above component */}
+      {!hideChrome && objectives.length > 0 && (
+        <div className="mb-4">
+          <ObjectiveBadge objectives={objectives} compact={true} />
+        </div>
+      )}
+
+      {/* Section header if configured */}
+      {!hideChrome && config.showDivider && config.sectionTitle && (
+        <HeaderComponent title={config.sectionTitle} />
+      )}
+
+      {/* Render the component */}
+      <Component data={{ ...data, ...additionalProps }} index={index} />
+    </div>
+  );
+};
+
 /**
  * ManifestOrderRenderer - Renders components in the exact order specified by the manifest
  *
@@ -37,14 +188,15 @@ interface ManifestOrderRendererProps {
  * The only special handling is for:
  * - curator-brief: Skipped here (rendered in title section of App.tsx)
  * - concept-card-grid: Data is an array, needs grid layout wrapper
+ *
+ * Kindergarten lessons render through KindergartenStage instead (one section
+ * at a time, no scroll); the per-section body is shared via OrderedSection.
  */
 export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
   orderedComponents,
   onDetailItemClick,
   onTermClick,
 }) => {
-  const { getObjectivesForComponent, manifestItems } = useExhibitContext();
-  const evaluationContext = useEvaluationContext();
   const aiContext = useLuminaAIContext();
 
   // Refs for viewport tracking
@@ -151,129 +303,15 @@ export const ManifestOrderRenderer: React.FC<ManifestOrderRendererProps> = ({
 
   return (
     <div className="w-full" ref={containerRef}>
-      {orderedComponents.map((item, index) => {
-        const { componentId, instanceId, data } = item;
-
-        // Get objectives for this component
-        const objectives = getObjectivesForComponent(instanceId);
-
-        // Get the primitive configuration from registry
-        const config = getPrimitive(componentId);
-
-        if (!config) {
-          console.warn(`[ManifestOrderRenderer] No configuration found for component: ${componentId}`);
-          return null;
-        }
-
-        const Component = config.component;
-
-        // Skip if component is null (e.g., detail-drawer which is managed as a modal)
-        if (Component === null || Component === undefined) {
-          return null;
-        }
-
-        // Build additional props based on component type
-        const additionalProps: Record<string, any> = {};
-        if (componentId === 'generative-table' && onDetailItemClick) {
-          additionalProps.onRowClick = onDetailItemClick;
-        }
-        if (componentId === 'feature-exhibit' && onTermClick) {
-          additionalProps.onTermClick = onTermClick;
-        }
-
-        // Auto-inject evaluation props for evaluable primitives
-        if (config.supportsEvaluation) {
-          // Find manifest item to extract metadata
-          const manifestItem = manifestItems.find(m => m.instanceId === instanceId);
-
-          // Inject evaluation props into the data object
-          additionalProps.instanceId = instanceId;
-          additionalProps.exhibitId = evaluationContext?.exhibitId;
-
-          // Curriculum ID resolution: prefer authoritative EvaluationContext IDs
-          // (set from CurriculumBrowser or daily session planner) over manifest
-          // config IDs (which are Gemini-generated and may be hallucinated).
-          additionalProps.skillId =
-            evaluationContext?.curriculumSkillId || manifestItem?.config?.skillId;
-          additionalProps.subskillId =
-            evaluationContext?.curriculumSubskillId || manifestItem?.config?.subskillId;
-
-          // Use first objective ID and text if available
-          if (objectives.length > 0) {
-            additionalProps.objectiveId = objectives[0].id;
-            additionalProps.objectiveText = objectives[0].text;
-          }
-
-          // Pass component intent for curriculum mapping
-          if (manifestItem?.intent) {
-            additionalProps.componentIntent = manifestItem.intent;
-          }
-        }
-
-        // Determine header component
-        const HeaderComponent =
-          config.dividerStyle === 'center' ? CenteredSectionHeader : SectionHeader;
-
-        // Special handling for concept-card-grid: data.cards is an array, render in grid
-        if (componentId === 'concept-card-grid') {
-          // Data structure: { cards: ConceptCardData[], __instanceId?: string }
-          const cards = Array.isArray(data?.cards) ? data.cards : [];
-          if (cards.length === 0) {
-            console.warn(`[ManifestOrderRenderer] concept-card-grid has no cards:`, data);
-            return null;
-          }
-          return (
-            <div
-              key={instanceId}
-              className="relative mb-20"
-              data-primitive-instance-id={instanceId}
-              data-primitive-component-id={componentId}
-            >
-              {objectives.length > 0 && (
-                <div className="mb-4">
-                  <ObjectiveBadge objectives={objectives} compact={true} />
-                </div>
-              )}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 justify-items-center max-w-7xl mx-auto">
-                {cards.map((card: any, cardIndex: number) => (
-                  <div
-                    key={`${instanceId}-card-${cardIndex}`}
-                    className="w-full flex justify-center"
-                    style={{ animationDelay: `${cardIndex * 150}ms` }}
-                  >
-                    <Component data={card} index={cardIndex} instanceId={`${instanceId}-card-${cardIndex}`} totalCards={cards.length} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        }
-
-        // Standard component rendering
-        return (
-          <div
-            key={instanceId}
-            className={config.containerClassName || 'mb-20'}
-            data-primitive-instance-id={instanceId}
-            data-primitive-component-id={componentId}
-          >
-            {/* Objective badges above component */}
-            {objectives.length > 0 && (
-              <div className="mb-4">
-                <ObjectiveBadge objectives={objectives} compact={true} />
-              </div>
-            )}
-
-            {/* Section header if configured */}
-            {config.showDivider && config.sectionTitle && (
-              <HeaderComponent title={config.sectionTitle} />
-            )}
-
-            {/* Render the component */}
-            <Component data={{ ...data, ...additionalProps }} index={index} />
-          </div>
-        );
-      })}
+      {orderedComponents.map((item, index) => (
+        <OrderedSection
+          key={item.instanceId}
+          item={item}
+          index={index}
+          onDetailItemClick={onDetailItemClick}
+          onTermClick={onTermClick}
+        />
+      ))}
     </div>
   );
 };

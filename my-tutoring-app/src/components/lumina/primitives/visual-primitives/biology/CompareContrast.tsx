@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle, XCircle, Info, ArrowLeftRight, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CompareContrastMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { LuminaDropZone, type DropZoneState } from '../../../ui';
 
 /**
  * Compare & Contrast Viewer - Biology primitive for comparing entities
@@ -128,6 +129,7 @@ const EntityImage: React.FC<{
 
   // Placeholder with generate button
   return (
+    // dropzone-triage: decorative image placeholder, out of scope
     <div
       className={`mt-4 rounded-xl flex flex-col items-center justify-center min-h-[200px] border-2 border-dashed ${borderDashed} p-6`}
       style={{ backgroundColor: bgColor }}
@@ -314,6 +316,7 @@ const VennInteractiveView: React.FC<{
   data: CompareContrastData;
   onEvaluate: (placements: Array<{ attributeValue: string; placedRegion: string; correctRegion: string; isCorrect: boolean }>) => void;
 }> = ({ data, onEvaluate }) => {
+  type VennRegion = 'A-only' | 'shared' | 'B-only';
   const { entityA, entityB, sharedAttributes } = data;
 
   // Prepare all attributes for dragging
@@ -326,14 +329,25 @@ const VennInteractiveView: React.FC<{
   // Student placements: { attributeValue: string, region: 'A-only' | 'B-only' | 'shared' }
   const [placements, setPlacements] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [hoveredRegion, setHoveredRegion] = useState<VennRegion | null>(null);
+  const [showGradingFlash, setShowGradingFlash] = useState(false);
+  const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    },
+    []
+  );
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, attrValue: string) => {
     e.dataTransfer.setData('attributeValue', attrValue);
   };
 
-  const handleDrop = (e: React.DragEvent, region: string) => {
+  const handleDrop = (e: React.DragEvent, region: VennRegion) => {
     e.preventDefault();
+    setHoveredRegion(null);
     const attrValue = e.dataTransfer.getData('attributeValue');
     SoundManager.snap();
     setPlacements(prev => ({ ...prev, [attrValue]: region }));
@@ -358,11 +372,17 @@ const VennInteractiveView: React.FC<{
 
     onEvaluate(results);
     setSubmitted(true);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    setShowGradingFlash(true);
+    gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
   };
 
   const handleReset = () => {
     setPlacements({});
     setSubmitted(false);
+    setHoveredRegion(null);
+    setShowGradingFlash(false);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
   };
 
   // Get attributes by placement
@@ -377,6 +397,23 @@ const VennInteractiveView: React.FC<{
     const key = `${attr.category}: ${attr.value}`;
     return !placements[key];
   });
+
+  const getRegionState = (region: VennRegion): DropZoneState => {
+    const attributes = getAttributesForRegion(region);
+    const expectedCount = allAttributes.filter(attr => attr.correctRegion === region).length;
+    const regionIsCorrect =
+      attributes.length === expectedCount && attributes.every(attr => attr.correctRegion === region);
+
+    return hoveredRegion === region
+      ? 'dragOver'
+      : showGradingFlash
+        ? regionIsCorrect
+          ? 'correct'
+          : 'incorrect'
+        : attributes.length > 0
+          ? 'filled'
+          : 'idle';
+  };
 
   return (
     <div className="space-y-6">
@@ -396,10 +433,13 @@ const VennInteractiveView: React.FC<{
       {/* Venn Diagram */}
       <div className="grid grid-cols-3 gap-4">
         {/* Left Circle (A-only) */}
-        <div
+        <LuminaDropZone
+          state={getRegionState('A-only')}
+          emptyPrompt="Drop attributes here"
           onDrop={(e) => handleDrop(e, 'A-only')}
-          onDragOver={handleDragOver}
-          className="bg-blue-500/10 backdrop-blur-sm rounded-2xl border-2 border-dashed border-blue-400/40 p-6 min-h-[300px]"
+          onDragOver={(e) => { handleDragOver(e); setHoveredRegion('A-only'); }}
+          onDragLeave={() => setHoveredRegion(null)}
+          className="min-h-[300px] flex-col items-stretch justify-start p-6"
         >
           <h4 className="text-lg font-semibold text-blue-300 mb-4 text-center">{entityA.name} Only</h4>
           <div className="space-y-2">
@@ -428,13 +468,16 @@ const VennInteractiveView: React.FC<{
               );
             })}
           </div>
-        </div>
+        </LuminaDropZone>
 
         {/* Center Overlap (shared) */}
-        <div
+        <LuminaDropZone
+          state={getRegionState('shared')}
+          emptyPrompt="Drop attributes here"
           onDrop={(e) => handleDrop(e, 'shared')}
-          onDragOver={handleDragOver}
-          className="bg-emerald-500/10 backdrop-blur-sm rounded-2xl border-2 border-dashed border-emerald-400/40 p-6 min-h-[300px]"
+          onDragOver={(e) => { handleDragOver(e); setHoveredRegion('shared'); }}
+          onDragLeave={() => setHoveredRegion(null)}
+          className="min-h-[300px] flex-col items-stretch justify-start p-6"
         >
           <h4 className="text-lg font-semibold text-emerald-300 mb-4 text-center">Both</h4>
           <div className="space-y-2">
@@ -463,13 +506,16 @@ const VennInteractiveView: React.FC<{
               );
             })}
           </div>
-        </div>
+        </LuminaDropZone>
 
         {/* Right Circle (B-only) */}
-        <div
+        <LuminaDropZone
+          state={getRegionState('B-only')}
+          emptyPrompt="Drop attributes here"
           onDrop={(e) => handleDrop(e, 'B-only')}
-          onDragOver={handleDragOver}
-          className="bg-purple-500/10 backdrop-blur-sm rounded-2xl border-2 border-dashed border-purple-400/40 p-6 min-h-[300px]"
+          onDragOver={(e) => { handleDragOver(e); setHoveredRegion('B-only'); }}
+          onDragLeave={() => setHoveredRegion(null)}
+          className="min-h-[300px] flex-col items-stretch justify-start p-6"
         >
           <h4 className="text-lg font-semibold text-purple-300 mb-4 text-center">{entityB.name} Only</h4>
           <div className="space-y-2">
@@ -498,7 +544,7 @@ const VennInteractiveView: React.FC<{
               );
             })}
           </div>
-        </div>
+        </LuminaDropZone>
       </div>
 
       {/* Unplaced Attributes */}

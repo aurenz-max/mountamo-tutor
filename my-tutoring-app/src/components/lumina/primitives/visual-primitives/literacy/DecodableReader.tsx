@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -33,6 +33,16 @@ export interface DecodableReaderData {
   title: string;
   gradeLevel: string;
 
+  // Reading mode. 'decode' (default) = the student decodes the passage themselves
+  // (the classic K-2 decoding task; legitimate at EMERGING+). 'read_along' = the
+  // TUTOR reads the passage aloud while the child follows, then answers a
+  // picture-based question — a shared-reading task for true pre-readers (K/PRE),
+  // where decoding connected text is not yet a skill. The generator sets this
+  // from the resolved eval mode; the component branches the reading phase on it.
+  // NB: named readingMode, NOT `mode` — `mode` is the eval-test/challenge-type
+  // field-name convention for literacy generators and collides with the validator.
+  readingMode?: 'decode' | 'read_along';
+
   // The passage
   passage: {
     sentences: Array<{
@@ -59,7 +69,10 @@ export interface DecodableReaderData {
   comprehensionQuestion: {
     question: string;
     type: 'multiple-choice' | 'short-answer';
-    options?: Array<{ id: string; text: string }>;  // MC options with stable IDs
+    // MC options with stable IDs. `emoji` is a picture stand-in for the option so a
+    // pre/emerging reader answers by picture, not by decoding the label (reader-fit
+    // rule 3). Optional / back-compatible: absent for older content.
+    options?: Array<{ id: string; text: string; emoji?: string }>;
     correctOptionId?: string;                        // MC: matches one option.id
     correctAnswer?: string;                          // Short-answer: the correct text
     acceptableAnswers?: string[];                    // Short-answer: alternatives
@@ -144,6 +157,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   const {
     title,
     gradeLevel,
+    readingMode = 'decode',
     passage,
     phonicsPatternsInPassage = [],
     comprehensionQuestion,
@@ -154,6 +168,14 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // Reading band. K/PRE and Grade-1/EMERGING readers cannot decode the adult
+  // chrome (stepper, legend, counters, score ledger) and cannot read text-only
+  // answer choices — so at this band the child's field is stripped to pictures +
+  // audio and answering is single-tap = choose (reader-fit contract rules 2-7).
+  // Grade 2+ keeps the richer decoding-fluency UI.
+  const isEarlyBand = gradeLevel === 'K' || gradeLevel === '1';
+  const isReadAlong = readingMode === 'read_along';
 
   // Phase state
   const [currentPhase, setCurrentPhase] = useState<ReadingPhase>('reading');
@@ -239,22 +261,46 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     };
   }, [totalWords, tappedWordIds.size, comprehensionCorrect]);
 
+  // The answer choices spelled out for the tutor to READ ALOUD to a non-reader.
+  // Letter + text only — NEVER the correctOptionId (that would be an answer leak
+  // into a spoken line). Forwarded into the bag so the STIMULUS aiDirective's
+  // {{comprehensionChoices}} resolves from the component (generator-only keys
+  // render as "(not set)").
+  const comprehensionChoices = useMemo(() => {
+    if (comprehensionQuestion.type === 'multiple-choice' && comprehensionQuestion.options) {
+      return comprehensionQuestion.options.map(o => `${o.id}: ${o.text}`).join('   ');
+    }
+    return '';
+  }, [comprehensionQuestion]);
+
+  // The full passage text, sentence by sentence — read aloud by the tutor in
+  // read_along mode (the shared-reading STIMULUS). Reading the passage aloud is
+  // correct ONLY in read_along; in decode mode it would trivialize the assessed
+  // decoding skill, so it is never sent there.
+  const passageText = useMemo(
+    () => passage.sentences.map(s => s.words.map(w => w.text).join(' ')).join(' '),
+    [passage]
+  );
+
   // AI tutoring context
   const aiPrimitiveData = useMemo(() => ({
     title,
     gradeLevel,
+    readingMode,
     currentPhase,
     totalWords,
     wordsTapped: tappedWordIds.size,
     wordsReadIndependently: totalWords - tappedWordIds.size,
     phonicsPatternsInPassage: phonicsPatternsInPassage.join(', '),
+    passageText,
     comprehensionQuestion: comprehensionQuestion.question,
+    comprehensionChoices,
     comprehensionAttempts,
     comprehensionCorrect,
   }), [
-    title, gradeLevel, currentPhase, totalWords,
-    tappedWordIds.size, phonicsPatternsInPassage,
-    comprehensionQuestion.question, comprehensionAttempts,
+    title, gradeLevel, readingMode, currentPhase, totalWords,
+    tappedWordIds.size, phonicsPatternsInPassage, passageText,
+    comprehensionQuestion.question, comprehensionChoices, comprehensionAttempts,
     comprehensionCorrect,
   ]);
 
@@ -264,6 +310,32 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // ORIENT beat — a non-reader sees only a passage and on-screen instruction text
+  // they cannot read. Fire one spoken frame when the activity opens so the tutor
+  // states the task in child terms. In read_along mode this same beat carries the
+  // STIMULUS: the tutor reads the whole passage aloud. Once-only (ref-guarded
+  // against strict-mode double-invoke); quiet-tutor doctrine allows the
+  // frame-at-start beat.
+  const orientedRef = useRef(false);
+  useEffect(() => {
+    if (orientedRef.current) return;
+    orientedRef.current = true;
+    if (isReadAlong) {
+      sendText(
+        `[READ_ALONG_START] The read-along story "${title}" just opened. Read the WHOLE story aloud to the `
+        + `student now, clearly and warmly, word for word: "${passageText}". Then invite them to tap any word `
+        + `to hear it again.`,
+        { silent: true }
+      );
+    } else {
+      sendText(
+        `[READING_START] The reading activity "${title}" just opened for the student. `
+        + `Warmly welcome them and tell them what to do in ONE short, simple sentence.`,
+        { silent: true }
+      );
+    }
+  }, [sendText, title, isReadAlong, passageText]);
 
   // Handle tapping a word
   const handleTapWord = useCallback((wordId: string, wordText: string) => {
@@ -290,28 +362,19 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     sendText(
       `[READING_DONE] The student finished reading "${title}". `
       + `They tapped ${tappedWordIds.size} of ${totalWords} words for help and read ${totalWords - tappedWordIds.size} independently. `
-      + `Now ask the comprehension question: "${comprehensionQuestion.question}"`,
+      + `Now READ the comprehension question aloud, then READ each answer choice aloud with its letter `
+      + `(the child cannot read them), then ask which one. `
+      + `Question: "${comprehensionQuestion.question}". Choices: ${comprehensionChoices}`,
       { silent: true }
     );
-  }, [sendText, title, tappedWordIds.size, totalWords, comprehensionQuestion.question]);
+  }, [sendText, title, tappedWordIds.size, totalWords, comprehensionQuestion.question, comprehensionChoices]);
 
-  // Check comprehension answer
-  const handleCheckComprehension = useCallback(() => {
+  // Shared comprehension judge — used by both the deliberate Check flow
+  // (grade 2+) and the single-tap = choose flow (early band).
+  const judgeComprehension = useCallback((answerId: string, answerText: string) => {
     setComprehensionAttempts(prev => prev + 1);
-
-    let isCorrect: boolean;
-
-    if (comprehensionQuestion.type === 'multiple-choice') {
-      // Compare stable option IDs — no case sensitivity issues
-      isCorrect = selectedAnswer === comprehensionQuestion.correctOptionId;
-    } else {
-      const answer = shortAnswer.trim().toLowerCase();
-      const correct = (comprehensionQuestion.correctAnswer ?? '').toLowerCase();
-      const acceptable = comprehensionQuestion.acceptableAnswers?.map(a => a.toLowerCase()) || [];
-      isCorrect = answer === correct || acceptable.includes(answer);
-    }
+    const isCorrect = answerId === comprehensionQuestion.correctOptionId;
     setComprehensionCorrect(isCorrect);
-
     if (isCorrect) {
       SoundManager.playCorrect();
       sendText(
@@ -320,21 +383,53 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         + `Celebrate briefly and let them know we're moving to the review.`,
         { silent: true }
       );
-      // Move to review after short delay
       setTimeout(() => setCurrentPhase('review'), 1200);
     } else {
       SoundManager.playIncorrect();
-      const studentAnswer = comprehensionQuestion.type === 'multiple-choice'
-        ? comprehensionQuestion.options?.find(o => o.id === selectedAnswer)?.text ?? selectedAnswer
-        : shortAnswer.trim();
       sendText(
-        `[COMPREHENSION_INCORRECT] The student answered "${studentAnswer}" but that's not correct. `
+        `[COMPREHENSION_INCORRECT] The student chose "${answerText}" but that's not correct. `
         + `The question was: "${comprehensionQuestion.question}". `
-        + `This is attempt ${comprehensionAttempts + 1}. Give a brief hint without revealing the answer.`,
+        + `This is attempt ${comprehensionAttempts + 1}. Give a brief spoken hint without revealing the answer, `
+        + `and invite them to try another picture.`,
         { silent: true }
       );
     }
-  }, [comprehensionQuestion, selectedAnswer, shortAnswer, comprehensionAttempts, sendText]);
+  }, [comprehensionQuestion, comprehensionAttempts, sendText]);
+
+  // Check comprehension answer (deliberate Check button — grade 2+)
+  const handleCheckComprehension = useCallback(() => {
+    if (comprehensionQuestion.type === 'multiple-choice') {
+      const text = comprehensionQuestion.options?.find(o => o.id === selectedAnswer)?.text ?? selectedAnswer;
+      judgeComprehension(selectedAnswer, text);
+    } else {
+      setComprehensionAttempts(prev => prev + 1);
+      const answer = shortAnswer.trim().toLowerCase();
+      const correct = (comprehensionQuestion.correctAnswer ?? '').toLowerCase();
+      const acceptable = comprehensionQuestion.acceptableAnswers?.map(a => a.toLowerCase()) || [];
+      const isCorrect = answer === correct || acceptable.includes(answer);
+      setComprehensionCorrect(isCorrect);
+      if (isCorrect) {
+        SoundManager.playCorrect();
+        sendText(`[COMPREHENSION_CORRECT] The student answered correctly! Celebrate briefly.`, { silent: true });
+        setTimeout(() => setCurrentPhase('review'), 1200);
+      } else {
+        SoundManager.playIncorrect();
+        sendText(
+          `[COMPREHENSION_INCORRECT] The student answered "${shortAnswer.trim()}" but that's not correct. `
+          + `The question was: "${comprehensionQuestion.question}". Give a brief hint without revealing the answer.`,
+          { silent: true }
+        );
+      }
+    }
+  }, [comprehensionQuestion, selectedAnswer, shortAnswer, judgeComprehension, sendText]);
+
+  // Single tap = choose (early band) — one tap on a picture answers immediately;
+  // feedback lands on the tapped choice. No Check button, no two-tap protocol.
+  const handleChooseOption = useCallback((optionId: string, optionText: string) => {
+    if (comprehensionCorrect === true) return; // already solved — ignore further taps
+    setSelectedAnswer(optionId);
+    judgeComprehension(optionId, optionText);
+  }, [comprehensionCorrect, judgeComprehension]);
 
   // Skip to review (if they want to move on after wrong answer)
   const handleContinueToReview = useCallback(() => {
@@ -411,6 +506,14 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     submitFinalEvaluation();
   }, [submitFinalEvaluation]);
 
+  // Early band has no "Finish" button to read — auto-submit on entering review
+  // so the child just sees the celebration.
+  useEffect(() => {
+    if (isEarlyBand && currentPhase === 'review' && !hasSubmittedEvaluation) {
+      submitFinalEvaluation();
+    }
+  }, [isEarlyBand, currentPhase, hasSubmittedEvaluation, submitFinalEvaluation]);
+
   // ============================================================================
   // Render Helpers
   // ============================================================================
@@ -484,6 +587,8 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   };
 
   // Render a single word — part of the decodable-text interaction surface.
+  // At early band the words are larger and warmer (bigger tap targets, no
+  // pattern tinting) so the child sees a story, not a color-coded worksheet.
   const renderWord = (
     word: { id: string; text: string; phonicsPattern: string; phonemes?: string[] },
     isInteractive: boolean
@@ -491,8 +596,10 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     const isTapped = tappedWordIds.has(word.id);
     const isActive = activeWordId === word.id;
     const isShowingPhonemes = showPhonemes === word.id;
-    const colorClass = showPatternColors ? PATTERN_COLORS[word.phonicsPattern] || 'text-slate-200' : 'text-slate-200';
-    const bgClass = showPatternColors ? PATTERN_BG[word.phonicsPattern] || '' : '';
+    const useColors = showPatternColors && !isEarlyBand;
+    const colorClass = useColors ? PATTERN_COLORS[word.phonicsPattern] || 'text-slate-200' : 'text-slate-100';
+    const bgClass = useColors ? PATTERN_BG[word.phonicsPattern] || '' : '';
+    const sizeClass = isEarlyBand ? 'text-3xl px-1.5 py-1 leading-relaxed' : 'text-lg px-1 py-0.5 leading-relaxed';
 
     return (
       <span key={word.id} className="inline-block relative">
@@ -500,14 +607,16 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
           onClick={() => {
             if (isInteractive) {
               handleTapWord(word.id, word.text);
-              if (word.phonemes && word.phonemes.length > 0) {
+              // Phoneme popup is phonics chrome — suppress at early band (rule 6).
+              if (!isEarlyBand && word.phonemes && word.phonemes.length > 0) {
                 handleTogglePhonemes(word.id);
               }
             }
           }}
           disabled={!isInteractive}
           className={`
-            inline-block px-1 py-0.5 rounded transition-all text-lg leading-relaxed
+            inline-block rounded transition-all
+            ${sizeClass}
             ${isInteractive ? 'cursor-pointer hover:bg-white/10' : 'cursor-default'}
             ${isActive ? 'bg-amber-500/20 scale-105' : ''}
             ${isTapped && !isActive ? 'underline decoration-dotted decoration-slate-500 underline-offset-4' : ''}
@@ -517,7 +626,7 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
         >
           {word.text}
         </button>
-        {/* Phoneme popup */}
+        {/* Phoneme popup (grade 2+ only) */}
         {isShowingPhonemes && word.phonemes && word.phonemes.length > 0 && (
           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10">
             <div className="bg-slate-800 border border-white/20 rounded-lg px-2 py-1 flex gap-1 shadow-xl whitespace-nowrap">
@@ -531,244 +640,314 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
     );
   };
 
+  // The passage body — shared by both bands, sized up at early band.
+  const renderPassageBody = (interactive: boolean) => (
+    <div className={`rounded-xl bg-slate-800/40 border border-white/5 ${isEarlyBand ? 'p-6 space-y-4' : 'p-5 space-y-3'}`}>
+      {passage.sentences.map(sentence => (
+        <p key={sentence.id} className={isEarlyBand ? 'leading-loose text-center' : 'leading-loose'}>
+          {sentence.words.map((word, i) => (
+            <React.Fragment key={word.id}>
+              {renderWord(word, interactive)}
+              {i < sentence.words.length - 1 && <span className="text-slate-200"> </span>}
+            </React.Fragment>
+          ))}
+        </p>
+      ))}
+    </div>
+  );
+
   // Reading phase
   const renderReadingPhase = () => (
     <div className="space-y-4">
-      {/* Instructions */}
-      <LuminaPanel>
-        <p className="text-slate-400 text-sm">
-          Read the passage below. <span className="text-amber-300">Tap any word</span> to hear it pronounced.
-        </p>
-      </LuminaPanel>
+      {/* Instruction — spoken via the ORIENT beat at early band, so the text
+          panel (which a non-reader can't read) is suppressed there. */}
+      {!isEarlyBand && (
+        <LuminaPanel>
+          <p className="text-slate-400 text-sm">
+            {isReadAlong
+              ? <>Listen as I read. <span className="text-amber-300">Tap any word</span> to hear it again.</>
+              : <>Read the passage below. <span className="text-amber-300">Tap any word</span> to hear it pronounced.</>}
+          </p>
+        </LuminaPanel>
+      )}
 
-      {/* Pattern legend */}
-      {showPatternColors && renderPatternLegend()}
+      {/* Pattern legend — phonics chrome, grade 2+ only */}
+      {!isEarlyBand && showPatternColors && renderPatternLegend()}
 
       {/* Passage — the decodable-text interaction surface (bespoke) */}
-      <div className="rounded-xl bg-slate-800/40 border border-white/5 p-5 space-y-3">
-        {passage.sentences.map(sentence => (
-          <p key={sentence.id} className="leading-loose">
-            {sentence.words.map((word, i) => (
-              <React.Fragment key={word.id}>
-                {renderWord(word, true)}
-                {i < sentence.words.length - 1 && <span className="text-slate-200"> </span>}
-              </React.Fragment>
-            ))}
-          </p>
-        ))}
-      </div>
+      {renderPassageBody(true)}
 
-      {/* Reading stats */}
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          Words tapped: {tappedWordIds.size} / {totalWords}
-        </span>
-        <LuminaButton
-          size="sm"
-          onClick={() => setShowPatternColors(prev => !prev)}
-          className="text-slate-400 text-xs h-7 px-2"
-        >
-          {showPatternColors ? 'Hide Colors' : 'Show Colors'}
-        </LuminaButton>
-      </div>
+      {/* Reading stats + colors toggle — chrome, grade 2+ only */}
+      {!isEarlyBand && (
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <span>
+            Words tapped: {tappedWordIds.size} / {totalWords}
+          </span>
+          <LuminaButton
+            size="sm"
+            onClick={() => setShowPatternColors(prev => !prev)}
+            className="text-slate-400 text-xs h-7 px-2"
+          >
+            {showPatternColors ? 'Hide Colors' : 'Show Colors'}
+          </LuminaButton>
+        </div>
+      )}
 
       {/* Done reading button */}
       <div className="flex justify-center pt-2">
         <LuminaActionButton action="next" onClick={handleDoneReading}>
-          Done Reading
+          {isEarlyBand ? 'I read it!' : 'Done Reading'}
         </LuminaActionButton>
       </div>
     </div>
   );
 
-  // Comprehension phase
-  const renderComprehensionPhase = () => (
-    <div className="space-y-4">
-      <LuminaPanel accent="blue" className="space-y-4">
-        <p className="text-slate-200 font-medium">{comprehensionQuestion.question}</p>
-
-        {comprehensionQuestion.type === 'multiple-choice' && comprehensionQuestion.options ? (
-          <div className="space-y-2">
-            {comprehensionQuestion.options.map((option) => {
-              const isSelected = selectedAnswer === option.id;
-              let state: AnswerChoiceState = 'idle';
-              if (isSelected) {
-                if (comprehensionCorrect === true) state = 'correct';
-                else if (comprehensionCorrect === false && comprehensionAttempts > 0) state = 'incorrect';
-                else state = 'selected';
-              }
-              return (
-                <LuminaAnswerChoice
-                  key={option.id}
-                  state={state}
-                  onClick={() => setSelectedAnswer(option.id)}
-                  disabled={comprehensionCorrect === true}
-                  className="p-4"
-                >
-                  <span className="text-sm">{option.id}. {option.text}</span>
-                </LuminaAnswerChoice>
-              );
-            })}
-          </div>
-        ) : (
-          <LuminaInput
-            type="text"
-            value={shortAnswer}
-            onChange={(e) => setShortAnswer(e.target.value)}
-            disabled={comprehensionCorrect === true}
-            placeholder="Type your answer..."
-            className="w-full py-3 text-sm"
-          />
-        )}
-
-        {/* Feedback */}
+  // Early-band comprehension — picture-first, single tap = choose, no Check
+  // button, no typing. The tutor has already read the question and every choice
+  // aloud (READ-ALOUD directive), so a tap is a confident pick, and feedback
+  // lands on the tapped picture (color + sound + a spoken tutor response).
+  const renderComprehensionEarly = () => {
+    const options = comprehensionQuestion.options ?? [];
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {options.map((option) => {
+            const isSelected = selectedAnswer === option.id;
+            let state: AnswerChoiceState = 'idle';
+            if (isSelected) {
+              if (comprehensionCorrect === true) state = 'correct';
+              else if (comprehensionCorrect === false) state = 'incorrect';
+              else state = 'selected';
+            }
+            return (
+              <LuminaAnswerChoice
+                key={option.id}
+                state={state}
+                onClick={() => handleChooseOption(option.id, option.text)}
+                disabled={comprehensionCorrect === true}
+                className="p-5 flex flex-col items-center justify-center gap-2 text-center min-h-[7rem]"
+              >
+                <span className="text-5xl leading-none" aria-hidden>
+                  {option.emoji || '🔊'}
+                </span>
+                <span className="text-base text-slate-100">{option.text}</span>
+              </LuminaAnswerChoice>
+            );
+          })}
+        </div>
         {comprehensionCorrect === true && (
-          <LuminaFeedbackCard status="correct" label="Correct! Great comprehension!">
-            You answered the question correctly.
-          </LuminaFeedbackCard>
-        )}
-        {comprehensionCorrect === false && (
-          <LuminaFeedbackCard status="incorrect">
-            Not quite. Try again or continue to review.
-          </LuminaFeedbackCard>
-        )}
-      </LuminaPanel>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2">
-        {comprehensionCorrect !== true && (
-          <>
-            <LuminaActionButton
-              action="check"
-              onClick={handleCheckComprehension}
-              disabled={
-                (comprehensionQuestion.type === 'multiple-choice' && !selectedAnswer) ||
-                (comprehensionQuestion.type === 'short-answer' && !shortAnswer.trim())
-              }
-              className="ml-auto"
-            >
-              Check
-            </LuminaActionButton>
-            {comprehensionAttempts > 0 && (
-              <LuminaButton onClick={handleContinueToReview} className="text-slate-400">
-                Skip to Review
-              </LuminaButton>
-            )}
-          </>
+          <LuminaPanel accent="emerald" className="text-center">
+            <span className="text-3xl" aria-hidden>🎉</span>
+          </LuminaPanel>
         )}
       </div>
+    );
+  };
+
+  // Comprehension phase
+  const renderComprehensionPhase = () => {
+    if (isEarlyBand) return renderComprehensionEarly();
+    return (
+      <div className="space-y-4">
+        <LuminaPanel accent="blue" className="space-y-4">
+          <p className="text-slate-200 font-medium">{comprehensionQuestion.question}</p>
+
+          {comprehensionQuestion.type === 'multiple-choice' && comprehensionQuestion.options ? (
+            <div className="space-y-2">
+              {comprehensionQuestion.options.map((option) => {
+                const isSelected = selectedAnswer === option.id;
+                let state: AnswerChoiceState = 'idle';
+                if (isSelected) {
+                  if (comprehensionCorrect === true) state = 'correct';
+                  else if (comprehensionCorrect === false && comprehensionAttempts > 0) state = 'incorrect';
+                  else state = 'selected';
+                }
+                return (
+                  <LuminaAnswerChoice
+                    key={option.id}
+                    state={state}
+                    onClick={() => setSelectedAnswer(option.id)}
+                    disabled={comprehensionCorrect === true}
+                    className="p-4"
+                  >
+                    <span className="text-sm">{option.id}. {option.text}</span>
+                  </LuminaAnswerChoice>
+                );
+              })}
+            </div>
+          ) : (
+            <LuminaInput
+              type="text"
+              value={shortAnswer}
+              onChange={(e) => setShortAnswer(e.target.value)}
+              disabled={comprehensionCorrect === true}
+              placeholder="Type your answer..."
+              className="w-full py-3 text-sm"
+            />
+          )}
+
+          {/* Feedback */}
+          {comprehensionCorrect === true && (
+            <LuminaFeedbackCard status="correct" label="Correct! Great comprehension!">
+              You answered the question correctly.
+            </LuminaFeedbackCard>
+          )}
+          {comprehensionCorrect === false && (
+            <LuminaFeedbackCard status="incorrect">
+              Not quite. Try again or continue to review.
+            </LuminaFeedbackCard>
+          )}
+        </LuminaPanel>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {comprehensionCorrect !== true && (
+            <>
+              <LuminaActionButton
+                action="check"
+                onClick={handleCheckComprehension}
+                disabled={
+                  (comprehensionQuestion.type === 'multiple-choice' && !selectedAnswer) ||
+                  (comprehensionQuestion.type === 'short-answer' && !shortAnswer.trim())
+                }
+                className="ml-auto"
+              >
+                Check
+              </LuminaActionButton>
+              {comprehensionAttempts > 0 && (
+                <LuminaButton onClick={handleContinueToReview} className="text-slate-400">
+                  Skip to Review
+                </LuminaButton>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Early-band review — a warm celebration, no ledger/stat chrome (rule 7).
+  const renderReviewEarly = () => (
+    <div className="space-y-4">
+      <LuminaPanel accent="emerald" className="text-center space-y-2 py-6">
+        <div className="text-5xl" aria-hidden>🌟</div>
+        <p className="text-emerald-300 font-semibold text-xl">Great reading!</p>
+      </LuminaPanel>
     </div>
   );
 
   // Review phase
-  const renderReviewPhase = () => (
-    <div className="space-y-4">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <LuminaStat label="Words Tapped" value={tappedWordIds.size} />
-        <LuminaStat label="Read Independently" value={totalWords - tappedWordIds.size} />
-      </div>
+  const renderReviewPhase = () => {
+    if (isEarlyBand) return renderReviewEarly();
+    return (
+      <div className="space-y-4">
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <LuminaStat label="Words Tapped" value={tappedWordIds.size} />
+          <LuminaStat label="Read Independently" value={totalWords - tappedWordIds.size} />
+        </div>
 
-      {/* Score breakdown — the number shown by name, no hidden math */}
-      <LuminaPanel accent={scoreBreakdown.passed ? 'emerald' : 'amber'} className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-300">Comprehension</span>
-          <span className={`text-sm font-medium ${comprehensionCorrect ? 'text-emerald-300' : 'text-slate-400'}`}>
-            {comprehensionCorrect ? 'Answered correctly' : 'Not answered'} · +{scoreBreakdown.comprehensionPoints}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-300">Reading</span>
-          <span className="text-sm font-medium text-slate-200">
-            Read {scoreBreakdown.independentWords} of {totalWords} on your own · +{scoreBreakdown.readingBonus}
-          </span>
-        </div>
-        <div className="h-px bg-white/10 my-1" />
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-100">Score</span>
-          <span className="text-lg font-bold text-slate-100">{scoreBreakdown.total}%</span>
-        </div>
-        <p className="text-xs text-slate-500 pt-1">
-          Tapping a word for help is free — it never lowers your score below your comprehension result.
-        </p>
-      </LuminaPanel>
-
-      {/* Tapped words indicator */}
-      <LuminaPanel>
-        <p className="text-xs text-slate-500 mb-2">
-          Words you tapped for help (these are your practice words):
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {tappedWordIds.size > 0 ? (
-            passage.sentences.flatMap(s =>
-              s.words.filter(w => tappedWordIds.has(w.id))
-            ).map(word => (
-              <LuminaBadge
-                key={word.id}
-                accent={PATTERN_ACCENTS[word.phonicsPattern]}
-                className="text-xs"
-              >
-                {word.text}
-              </LuminaBadge>
-            ))
-          ) : (
-            <span className="text-emerald-400 text-sm">
-              Amazing! You read every word independently!
+        {/* Score breakdown — the number shown by name, no hidden math */}
+        <LuminaPanel accent={scoreBreakdown.passed ? 'emerald' : 'amber'} className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Comprehension</span>
+            <span className={`text-sm font-medium ${comprehensionCorrect ? 'text-emerald-300' : 'text-slate-400'}`}>
+              {comprehensionCorrect ? 'Answered correctly' : 'Not answered'} · +{scoreBreakdown.comprehensionPoints}
             </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-300">Reading</span>
+            <span className="text-sm font-medium text-slate-200">
+              Read {scoreBreakdown.independentWords} of {totalWords} on your own · +{scoreBreakdown.readingBonus}
+            </span>
+          </div>
+          <div className="h-px bg-white/10 my-1" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-100">Score</span>
+            <span className="text-lg font-bold text-slate-100">{scoreBreakdown.total}%</span>
+          </div>
+          <p className="text-xs text-slate-500 pt-1">
+            Tapping a word for help is free — it never lowers your score below your comprehension result.
+          </p>
+        </LuminaPanel>
+
+        {/* Tapped words indicator */}
+        <LuminaPanel>
+          <p className="text-xs text-slate-500 mb-2">
+            Words you tapped for help (these are your practice words):
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {tappedWordIds.size > 0 ? (
+              passage.sentences.flatMap(s =>
+                s.words.filter(w => tappedWordIds.has(w.id))
+              ).map(word => (
+                <LuminaBadge
+                  key={word.id}
+                  accent={PATTERN_ACCENTS[word.phonicsPattern]}
+                  className="text-xs"
+                >
+                  {word.text}
+                </LuminaBadge>
+              ))
+            ) : (
+              <span className="text-emerald-400 text-sm">
+                Amazing! You read every word independently!
+              </span>
+            )}
+          </div>
+        </LuminaPanel>
+
+        {/* Show passage in review if desired — the decodable text (bespoke) */}
+        {showTextInReview && (
+          <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
+            <p className="text-xs text-slate-500 mb-2">Passage text:</p>
+            {passage.sentences.map(sentence => (
+              <p key={sentence.id} className="leading-relaxed text-sm text-slate-300">
+                {sentence.words.map((word, i) => (
+                  <React.Fragment key={word.id}>
+                    <span className={tappedWordIds.has(word.id) ? 'text-amber-300 underline underline-offset-2' : ''}>
+                      {word.text}
+                    </span>
+                    {i < sentence.words.length - 1 && ' '}
+                  </React.Fragment>
+                ))}
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* Comprehension result */}
+        <LuminaPanel accent={comprehensionCorrect ? 'emerald' : 'amber'}>
+          <p className="text-xs text-slate-500 mb-1">Comprehension:</p>
+          <p className={`text-sm ${comprehensionCorrect ? 'text-emerald-300' : 'text-amber-300'}`}>
+            {comprehensionCorrect ? 'Answered correctly' : `Answer: ${
+              comprehensionQuestion.type === 'multiple-choice'
+                ? comprehensionQuestion.options?.find(o => o.id === comprehensionQuestion.correctOptionId)?.text ?? comprehensionQuestion.correctAnswer
+                : comprehensionQuestion.correctAnswer
+            }`}
+            {comprehensionAttempts > 1 && ` (${comprehensionAttempts} attempts)`}
+          </p>
+        </LuminaPanel>
+
+        {/* Finish button */}
+        <div className="flex justify-center">
+          {!hasSubmittedEvaluation ? (
+            <LuminaActionButton action="next" onClick={handleFinish}>
+              Finish
+            </LuminaActionButton>
+          ) : (
+            <LuminaPanel accent="emerald" className="text-center space-y-2 w-full">
+              <p className="text-emerald-300 font-semibold text-lg">Session Complete! — {scoreBreakdown.total}%</p>
+              <p className="text-slate-400 text-sm">
+                You read {scoreBreakdown.independentWords} of {totalWords} words on your own
+                {comprehensionCorrect ? ' and understood the story.' : '.'}
+              </p>
+            </LuminaPanel>
           )}
         </div>
-      </LuminaPanel>
-
-      {/* Show passage in review if desired — the decodable text (bespoke) */}
-      {showTextInReview && (
-        <div className="rounded-xl bg-slate-800/40 border border-white/5 p-4">
-          <p className="text-xs text-slate-500 mb-2">Passage text:</p>
-          {passage.sentences.map(sentence => (
-            <p key={sentence.id} className="leading-relaxed text-sm text-slate-300">
-              {sentence.words.map((word, i) => (
-                <React.Fragment key={word.id}>
-                  <span className={tappedWordIds.has(word.id) ? 'text-amber-300 underline underline-offset-2' : ''}>
-                    {word.text}
-                  </span>
-                  {i < sentence.words.length - 1 && ' '}
-                </React.Fragment>
-              ))}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {/* Comprehension result */}
-      <LuminaPanel accent={comprehensionCorrect ? 'emerald' : 'amber'}>
-        <p className="text-xs text-slate-500 mb-1">Comprehension:</p>
-        <p className={`text-sm ${comprehensionCorrect ? 'text-emerald-300' : 'text-amber-300'}`}>
-          {comprehensionCorrect ? 'Answered correctly' : `Answer: ${
-            comprehensionQuestion.type === 'multiple-choice'
-              ? comprehensionQuestion.options?.find(o => o.id === comprehensionQuestion.correctOptionId)?.text ?? comprehensionQuestion.correctAnswer
-              : comprehensionQuestion.correctAnswer
-          }`}
-          {comprehensionAttempts > 1 && ` (${comprehensionAttempts} attempts)`}
-        </p>
-      </LuminaPanel>
-
-      {/* Finish button */}
-      <div className="flex justify-center">
-        {!hasSubmittedEvaluation ? (
-          <LuminaActionButton action="next" onClick={handleFinish}>
-            Finish
-          </LuminaActionButton>
-        ) : (
-          <LuminaPanel accent="emerald" className="text-center space-y-2 w-full">
-            <p className="text-emerald-300 font-semibold text-lg">Session Complete! — {scoreBreakdown.total}%</p>
-            <p className="text-slate-400 text-sm">
-              You read {scoreBreakdown.independentWords} of {totalWords} words on your own
-              {comprehensionCorrect ? ' and understood the story.' : '.'}
-            </p>
-          </LuminaPanel>
-        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // ============================================================================
   // Main Render
@@ -787,31 +966,36 @@ const DecodableReader: React.FC<DecodableReaderProps> = ({ data, className }) =>
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-              <LuminaBadge className="text-xs">{totalWords} words</LuminaBadge>
+        {isEarlyBand ? (
+          // Early band: just the warm title, no grade/word-count/phase chrome.
+          <LuminaCardTitle className="text-xl text-center">{title}</LuminaCardTitle>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+                <LuminaBadge className="text-xs">{totalWords} words</LuminaBadge>
+              </div>
             </div>
+            <LuminaBadge
+              accent={
+                currentPhase === 'reading'
+                  ? 'blue'
+                  : currentPhase === 'comprehension'
+                    ? 'purple'
+                    : 'emerald'
+              }
+              className="text-xs"
+            >
+              {currentPhase === 'reading' ? 'Reading' : currentPhase === 'comprehension' ? 'Comprehension' : 'Review'}
+            </LuminaBadge>
           </div>
-          <LuminaBadge
-            accent={
-              currentPhase === 'reading'
-                ? 'blue'
-                : currentPhase === 'comprehension'
-                  ? 'purple'
-                  : 'emerald'
-            }
-            className="text-xs"
-          >
-            {currentPhase === 'reading' ? 'Reading' : currentPhase === 'comprehension' ? 'Comprehension' : 'Review'}
-          </LuminaBadge>
-        </div>
+        )}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {renderPhaseIndicator()}
+        {!isEarlyBand && renderPhaseIndicator()}
 
         {currentPhase === 'reading' && renderReadingPhase()}
         {currentPhase === 'comprehension' && renderComprehensionPhase()}

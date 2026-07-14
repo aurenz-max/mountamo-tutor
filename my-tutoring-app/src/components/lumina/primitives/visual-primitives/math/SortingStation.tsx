@@ -11,6 +11,8 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
+  LuminaDropZone,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -196,6 +198,15 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   const [tallyRecordPhase, setTallyRecordPhase] = useState<'sort' | 'tally'>('sort');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
+  const [binFlash, setBinFlash] = useState<Map<number, boolean> | null>(null);
+  const binFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (binFlashTimer.current) clearTimeout(binFlashTimer.current);
+    },
+    []
+  );
 
   // ─── Refs ──────────────────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `sorting-station-${Date.now()}`);
@@ -422,6 +433,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     setSelectedAttribute(attr);
     setBinAssignments(new Map());
     setSelectedObjectId(null);
+    setBinFlash(null);
+    if (binFlashTimer.current) clearTimeout(binFlashTimer.current);
     if (isConnected) {
       sendText(
         `[ATTRIBUTE_CHOSEN] Student chose to sort by "${attr}". Encourage: "Great choice! Let's sort by ${attr}."`,
@@ -456,6 +469,25 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       const gradeableTotal = currentChallenge.objects.length - (modelItemId ? 1 : 0);
       const allPlaced = totalPlaced === gradeableTotal;
       const allCorrect = allPlaced && correctCount === totalPlaced;
+
+      if (allPlaced) {
+        const nextFlash = new Map<number, boolean>();
+        cats.forEach((cat, idx) => {
+          const placedIds = Array.from(binAssignments.entries())
+            .filter(([objId, binIdx]) => objId !== modelItemId && binIdx === idx)
+            .map(([objId]) => objId);
+          const expectedIds = currentChallenge.objects
+            .filter((obj) => obj.id !== modelItemId && objectMatchesRule(obj, cat.rule))
+            .map((obj) => obj.id);
+          nextFlash.set(
+            idx,
+            placedIds.length === expectedIds.length && placedIds.every((id) => expectedIds.includes(id)),
+          );
+        });
+        if (binFlashTimer.current) clearTimeout(binFlashTimer.current);
+        setBinFlash(nextFlash);
+        binFlashTimer.current = setTimeout(() => setBinFlash(null), 900);
+      }
 
       if (allCorrect) {
         SoundManager.playCorrect();
@@ -798,6 +830,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     setCountComparePhase('count');
     setEnteredBinCounts({});
     setTallyRecordPhase('sort');
+    setBinFlash(null);
+    if (binFlashTimer.current) clearTimeout(binFlashTimer.current);
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -923,13 +957,19 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               {categories.map((cat, idx) => {
                 const color = BIN_COLORS[idx % BIN_COLORS.length];
                 const itemsInBin = objectsInBins.get(idx) || [];
+                const flashedResult = binFlash?.get(idx);
+                const zoneState: DropZoneState = flashedResult !== undefined
+                  ? flashedResult
+                    ? 'correct'
+                    : 'incorrect'
+                  : itemsInBin.length > 0
+                    ? 'filled'
+                    : 'idle';
                 return (
                   <div
                     key={cat.label}
                     onClick={() => selectedObjectId && handleBinClick(idx)}
-                    className={`rounded-xl p-3 border-2 border-dashed transition-all duration-150 min-h-[100px] text-left ${color.bg} ${color.border} ${
-                      selectedObjectId ? `${color.hover} cursor-pointer` : 'cursor-default'
-                    }`}
+                    className={`min-h-[100px] text-left ${selectedObjectId ? 'cursor-pointer' : 'cursor-default'}`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
@@ -939,7 +979,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-1.5 justify-center min-h-[32px]">
+                    <LuminaDropZone
+                      state={zoneState}
+                      emptyPrompt="Tap to place object here"
+                      className="min-h-[64px] content-center justify-center p-2"
+                    >
                       {itemsInBin.map(obj => {
                         const isModel = obj.id === modelItemId;
                         return (
@@ -959,7 +1003,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                           </button>
                         );
                       })}
-                    </div>
+                    </LuminaDropZone>
                   </div>
                 );
               })}

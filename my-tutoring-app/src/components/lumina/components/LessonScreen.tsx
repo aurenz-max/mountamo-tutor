@@ -7,6 +7,8 @@ import type { CurriculumContext } from './CurriculumBrowser';
 import type { LessonBlock } from '@/lib/sessionPlanAPI';
 import type { GenerateOptions } from '../hooks/useExhibitSession';
 import { ManifestOrderRenderer } from './ManifestOrderRenderer';
+import { KindergartenStage } from './KindergartenStage';
+import { resolveKindergartenStage, useKindergartenOverride } from '../utils/kindergartenMode';
 import { CuratorCompanion } from './CuratorCompanion';
 import { EvaluationProvider } from '../evaluation';
 import type { CompetencyUpdateSuggestion } from '../evaluation';
@@ -101,6 +103,25 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
     [exhibit],
   );
 
+  // Kindergarten stage mode: pre-reader lessons render on-rails (one section
+  // at a time) instead of the scroll layout. The canonical objectiveGrade on
+  // the manifest is authoritative over the band selector (which defaults to
+  // 'elementary' on the home screen).
+  const kOverride = useKindergartenOverride();
+  const stageActive = React.useMemo(() => {
+    const objectiveGrades = [
+      ...(exhibit.manifest?.layout ?? []).map(
+        (m) => (m.config as Record<string, unknown> | undefined)?.objectiveGrade as string | undefined,
+      ),
+      ...(exhibit.introBriefing?.objectives ?? []).map((o) => (o as { grade?: string }).grade),
+    ];
+    return resolveKindergartenStage(kOverride, gradeLevel, objectiveGrades);
+  }, [kOverride, gradeLevel, exhibit]);
+  // End-of-lesson chrome (summary / footer / related topics) stays hidden in
+  // stage mode until the student rides the rails past the final section.
+  const [stageFinished, setStageFinished] = React.useState(false);
+  const lessonTailVisible = !stageActive || stageFinished;
+
   return (
     <EvaluationProvider
       sessionId={sessionId}
@@ -120,32 +141,45 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
         <LuminaAIProvider>
           <LessonAIBootstrap exhibit={exhibit} gradeLevel={gradeLevel} />
           <div className="w-full animate-fade-in-up">
-            <div className="mb-8 text-center">
-              <h2 className="text-5xl font-bold text-white tracking-tight">{exhibit.topic}</h2>
-              {remediationLabels.length > 0 && (
-                <div className="mt-4 inline-flex max-w-3xl items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 backdrop-blur-xl">
-                  <span aria-hidden="true">🎯</span>
-                  <span>
-                    Working on: {remediationLabels.join(' · ')}
-                  </span>
-                </div>
-              )}
-            </div>
+            {/* Stage mode drops the title block: it's adult chrome a pre-reader
+                can't decode — the tutor greeting carries the orientation. */}
+            {!stageActive && (
+              <div className="mb-8 text-center">
+                <h2 className="text-5xl font-bold text-white tracking-tight">{exhibit.topic}</h2>
+                {remediationLabels.length > 0 && (
+                  <div className="mt-4 inline-flex max-w-3xl items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 backdrop-blur-xl">
+                    <span aria-hidden="true">🎯</span>
+                    <span>
+                      Working on: {remediationLabels.join(' · ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
-            <ManifestOrderRenderer
-              orderedComponents={exhibit.orderedComponents || []}
-              onDetailItemClick={onDetailItemClick}
-              onTermClick={onDetailItemClick}
-            />
+            {stageActive ? (
+              <KindergartenStage
+                orderedComponents={exhibit.orderedComponents || []}
+                onDetailItemClick={onDetailItemClick}
+                onTermClick={onDetailItemClick}
+                onFinished={() => setStageFinished(true)}
+              />
+            ) : (
+              <ManifestOrderRenderer
+                orderedComponents={exhibit.orderedComponents || []}
+                onDetailItemClick={onDetailItemClick}
+                onTermClick={onDetailItemClick}
+              />
+            )}
 
-            <EvaluationResultsIndicator />
+            {!stageActive && <EvaluationResultsIndicator />}
 
             {/* Standalone Learn lessons: end-of-lesson "skills you demonstrated"
                 summary, built from the backend's resolved curriculum mapping.
                 Session blocks get the ExhibitCompleteFooter flow instead. */}
-            {!sessionReturn && <LessonSummary />}
+            {!sessionReturn && lessonTailVisible && <LessonSummary />}
 
-            {sessionReturn === 'daily-session' && sessionCurrentBlock && (
+            {lessonTailVisible && sessionReturn === 'daily-session' && sessionCurrentBlock && (
               <ExhibitCompleteFooter
                 block={sessionCurrentBlock}
                 evalCount={sessionEvalCount}
@@ -153,7 +187,7 @@ export const LessonScreen: React.FC<LessonScreenProps> = ({
               />
             )}
 
-            {!sessionReturn && exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
+            {!sessionReturn && lessonTailVisible && exhibit.relatedTopics && exhibit.relatedTopics.length > 0 && (
               <div className="mt-24 mb-12 max-w-5xl mx-auto">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent to-slate-700"></div>

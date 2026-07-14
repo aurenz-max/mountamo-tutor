@@ -159,11 +159,15 @@ const decodableReaderSchema: Schema = {
               text: {
                 type: Type.STRING,
                 description: "Option text content"
+              },
+              emoji: {
+                type: Type.STRING,
+                description: "A single emoji that PICTURES this answer choice (e.g. '🐕' for 'The dog can run', '🐈' for 'The cat can nap'). K-1 readers answer by picture, not by reading the text, so the emoji must be a fair, distinct visual for THIS option — never the same emoji on two options, and never a hint that only the correct option gets a real picture."
               }
             },
-            required: ["id", "text"]
+            required: ["id", "text", "emoji"]
           },
-          description: "Answer options for multiple-choice (3-4 options with stable IDs)"
+          description: "Answer options for multiple-choice (3-4 options with stable IDs, each with a distinct picture emoji)"
         },
         correctOptionId: {
           type: Type.STRING,
@@ -205,6 +209,13 @@ export const generateDecodableReader = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as DecodableReaderConfig;
+
+  // Read-along is a READING mode, not a comprehension type. It routes through the
+  // catalog eval mode `read_along` (challengeTypes: ['literal']), so the standard
+  // resolver below still pins comprehensionType → 'literal'; we only additionally
+  // force the Kindergarten rung and stamp mode='read_along' on the output so the
+  // component reads the passage aloud instead of asking the child to decode it.
+  const isReadAlong = config?.targetEvalMode === 'read_along';
 
   // ── Eval mode resolution (LEGACY pattern: explicit pin → schema enum) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -276,7 +287,10 @@ GRADE 2 GUIDELINES:
   // ['K','1','2'], which could never hit, so every passage was pinned to 'K'.
   const LADDER = ['K', '1', '2'] as const;
   let gradeLevelKey: string;
-  if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
+  if (isReadAlong) {
+    // Read-along is the Kindergarten pre-reader mode — always the K rung.
+    gradeLevelKey = 'K';
+  } else if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
     gradeLevelKey = ctx.grade;
   } else if (ctx.grade && parseInt(ctx.grade, 10) > 2) {
     gradeLevelKey = '2';
@@ -284,10 +298,20 @@ GRADE 2 GUIDELINES:
     gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '1';
   }
 
+  // In read-along the tutor reads the story, so the passage can stay minimal and
+  // the comprehension must be answerable purely from a PICTURE (a pre-reader
+  // can't read option text). Keep it a single, concrete, literal question.
+  const readAlongSection = isReadAlong
+    ? `\nREAD-ALONG MODE (Kindergarten pre-reader): The TUTOR will read this passage aloud to the child — the child `
+      + `does NOT decode it. Keep the passage VERY short (2-3 tiny sentences, 3-4 words each). The comprehension `
+      + `question MUST be a simple, concrete "who/what" question whose every answer choice is easy to PICTURE with `
+      + `one emoji (e.g. which animal, what object, where). Avoid answers that can't be drawn as a single clear picture.\n`
+    : '';
+
   const generationPrompt = `Create a decodable reading passage about: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
-
+${readAlongSection}
 ${gradeContext[gradeLevelKey] || gradeContext['K']}
 ${challengeTypeSection}
 REQUIRED INFORMATION:
@@ -325,6 +349,7 @@ REQUIRED INFORMATION:
    - options: Array of 3-4 option objects, each with:
      - id: Letter identifier ("A", "B", "C", "D")
      - text: The option text
+     - emoji: ONE emoji that pictures this option, so a K-1 reader can answer by picture (see the emoji rules in the schema). Every option gets a distinct, fair picture — never reuse an emoji and never give only the correct option a "real" picture.
    - correctOptionId: The letter ID of the correct option (e.g., "B")
    - Mix up the position of the correct answer across generations
    - Distractors must be plausible but wrong; NEVER let the correct answer be the only complete or only on-topic option
@@ -365,9 +390,9 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
     "question": "What can the dog do?",
     "type": "multiple-choice",
     "options": [
-      { "id": "A", "text": "The dog can run." },
-      { "id": "B", "text": "The dog can fly." },
-      { "id": "C", "text": "The dog can swim." }
+      { "id": "A", "text": "The dog can run.", "emoji": "🏃" },
+      { "id": "B", "text": "The dog can fly.", "emoji": "🦅" },
+      { "id": "C", "text": "The dog can swim.", "emoji": "🏊" }
     ],
     "correctOptionId": "A"
   }
@@ -375,62 +400,83 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
 
 Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, and the comprehension question genuinely demands the required comprehension skill.`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
-      contents: generationPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: activeSchema,
-        systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words. You carefully tag every word with its correct phonics pattern and provide accurate phoneme breakdowns. You craft comprehension questions that assess genuine understanding of the passage content.`,
-      }
-    });
-
-    const text = response.text;
-    if (!text) {
-      throw new Error("No data returned from Gemini API");
+  // Single call over a complex-but-essential schema (per-word tagging IS the
+  // interaction surface, so it can't be flattened). Guard against flash-lite
+  // truncation with maxOutputTokens + a short retry, and keep passages short via
+  // the grade prompt — rather than splitting into an orchestrator, which would
+  // add a passage↔question-consistency merge and 2× the failure surface for a
+  // call the probes show is already valid. (Schema-level array bounds via
+  // `maxItems` were tried and REJECTED by this @google/genai version with a 400
+  // INVALID_ARGUMENT, so the array caps live in the prompt, not the schema.) If
+  // grade-2 passages ever truncate despite these guards, THAT is when a
+  // passage/question split earns its keep.
+  let result: DecodableReaderData | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-lite-latest',
+        contents: generationPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: activeSchema,
+          maxOutputTokens: 8192,
+          systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words. You carefully tag every word with its correct phonics pattern and provide accurate phoneme breakdowns. You craft comprehension questions that assess genuine understanding of the passage content.`,
+        }
+      });
+      const text = response.text;
+      if (!text) throw new Error("No data returned from Gemini API");
+      result = JSON.parse(text) as DecodableReaderData;
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[DecodableReader] generation attempt ${attempt}/2 failed:`, e);
     }
-
-    const result = JSON.parse(text) as DecodableReaderData;
-
-    // Post-process: validate correctOptionId references a real option
-    const cq = result.comprehensionQuestion;
-    if (cq.type === 'multiple-choice' && cq.options && cq.options.length > 0) {
-      const optionIds = cq.options.map(o => o.id);
-      if (!cq.correctOptionId || !optionIds.includes(cq.correctOptionId)) {
-        console.warn(`[DecodableReader] correctOptionId "${cq.correctOptionId}" not in options [${optionIds}], defaulting to first option`);
-        cq.correctOptionId = cq.options[0].id;
-      }
-    }
-
-    // Force the pinned comprehension skill when a mode was explicitly pinned,
-    // so a single-mode session never drifts off-skill if Gemini mislabels it.
-    if (evalConstraint && evalConstraint.allowedTypes.length === 1) {
-      result.comprehensionType =
-        evalConstraint.allowedTypes[0] as DecodableReaderData['comprehensionType'];
-    }
-
-    // Exclude targetEvalMode from the merged output (it is a routing signal, not data).
-    const { targetEvalMode: _unusedEvalMode, ...configRest } = config ?? {};
-    void _unusedEvalMode;
-    const finalData: DecodableReaderData = {
-      ...result,
-      ...configRest,
-    };
-
-    console.log('Decodable Reader Generated:', {
-      title: finalData.title,
-      comprehensionType: finalData.comprehensionType,
-      gradeLevel: finalData.gradeLevel,
-      sentenceCount: finalData.passage?.sentences?.length || 0,
-      totalWords: finalData.passage?.sentences?.reduce((s, sent) => s + sent.words.length, 0) || 0,
-      patterns: finalData.phonicsPatternsInPassage,
-    });
-
-    return finalData;
-
-  } catch (error) {
-    console.error("Error generating decodable reader:", error);
-    throw error;
   }
+  if (!result) {
+    console.error("Error generating decodable reader:", lastErr);
+    throw lastErr instanceof Error ? lastErr : new Error("decodable-reader generation failed");
+  }
+
+  // Post-process: validate correctOptionId references a real option
+  const cq = result.comprehensionQuestion;
+  if (cq.type === 'multiple-choice' && cq.options && cq.options.length > 0) {
+    const optionIds = cq.options.map(o => o.id);
+    if (!cq.correctOptionId || !optionIds.includes(cq.correctOptionId)) {
+      console.warn(`[DecodableReader] correctOptionId "${cq.correctOptionId}" not in options [${optionIds}], defaulting to first option`);
+      cq.correctOptionId = cq.options[0].id;
+    }
+  }
+
+  // Force the pinned comprehension skill when a mode was explicitly pinned,
+  // so a single-mode session never drifts off-skill if Gemini mislabels it.
+  if (evalConstraint && evalConstraint.allowedTypes.length === 1) {
+    result.comprehensionType =
+      evalConstraint.allowedTypes[0] as DecodableReaderData['comprehensionType'];
+  }
+
+  // Exclude targetEvalMode from the merged output (it is a routing signal, not data).
+  const { targetEvalMode: _unusedEvalMode, ...configRest } = config ?? {};
+  void _unusedEvalMode;
+  const finalData: DecodableReaderData = {
+    ...result,
+    ...configRest,
+    // Reading mode is authoritative from the routed eval mode, never the merged
+    // config, so a stale readingMode can't flip a read-along into a decode task.
+    // Named readingMode (not `mode`) to avoid the eval-test challenge-type field
+    // collision — `mode` is auto-detected as the challenge type for literacy gens.
+    readingMode: isReadAlong ? 'read_along' : 'decode',
+  };
+
+  console.log('Decodable Reader Generated:', {
+    title: finalData.title,
+    readingMode: finalData.readingMode,
+    comprehensionType: finalData.comprehensionType,
+    gradeLevel: finalData.gradeLevel,
+    sentenceCount: finalData.passage?.sentences?.length || 0,
+    totalWords: finalData.passage?.sentences?.reduce((s, sent) => s + sent.words.length, 0) || 0,
+    patterns: finalData.phonicsPatternsInPassage,
+  });
+
+  return finalData;
 };

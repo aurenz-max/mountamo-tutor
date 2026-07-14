@@ -93,6 +93,32 @@ const RHYME_COLORS: Record<string, string> = {
   D: 'text-amber-300 bg-amber-500/20',
 };
 
+const PHASE_NEXT_LABELS: Record<AnalysisPhase, string> = {
+  mood: 'Next: Mood',
+  figurative: 'Next: Find Figurative Language',
+  rhyme: 'Next: Rhyme Scheme',
+  review: 'Review',
+};
+
+// Phases whose data is absent are skipped entirely (RF-2): a K draw
+// legitimately has zero figurative instances, and a partial generation must
+// degrade to the phases the content actually supports instead of dead-ending
+// on an unsatisfiable Next gate.
+const computeAnalysisPhases = (d: PoetryLabData): AnalysisPhase[] => {
+  const phases: AnalysisPhase[] = [];
+  if ((d.moodOptions?.length ?? 0) > 0) phases.push('mood');
+  if ((d.figurativeInstances?.length ?? 0) > 0) phases.push('figurative');
+  if ((d.rhymeSchemeOptions?.length ?? 0) > 0 && !!d.rhymeScheme) phases.push('rhyme');
+  phases.push('review');
+  return phases;
+};
+
+const REVIEW_GRID_COLS: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -106,7 +132,8 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   } = data;
 
   // Analysis state
-  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('mood');
+  const analysisPhases = useMemo(() => computeAnalysisPhases(data), [data]);
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>(() => computeAnalysisPhases(data)[0]);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [foundFigurative, setFoundFigurative] = useState<Set<number>>(new Set());
   const [selectedRhymeScheme, setSelectedRhymeScheme] = useState<string | null>(null);
@@ -129,22 +156,23 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   });
 
   // Analysis phase navigation
-  const analysisPhases: AnalysisPhase[] = ['mood', 'figurative', 'rhyme', 'review'];
+  const phaseIndex = analysisPhases.indexOf(analysisPhase);
   const nextAnalysis = () => {
-    const idx = analysisPhases.indexOf(analysisPhase);
-    if (idx < analysisPhases.length - 1) {
+    if (phaseIndex < analysisPhases.length - 1) {
       SoundManager.navigate();
-      setAnalysisPhase(analysisPhases[idx + 1]);
+      setAnalysisPhase(analysisPhases[phaseIndex + 1]);
       setElementsExplored(prev => prev + 1);
     }
   };
   const prevAnalysis = () => {
-    const idx = analysisPhases.indexOf(analysisPhase);
-    if (idx > 0) {
+    if (phaseIndex > 0) {
       SoundManager.navigate();
-      setAnalysisPhase(analysisPhases[idx - 1]);
+      setAnalysisPhase(analysisPhases[phaseIndex - 1]);
     }
   };
+
+  const nextPhaseLabel = PHASE_NEXT_LABELS[analysisPhases[phaseIndex + 1] ?? 'review'];
+  const hasPrevPhase = phaseIndex > 0;
 
   // Toggle figurative instance
   const toggleFigurative = useCallback((index: number) => {
@@ -225,19 +253,31 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     return total;
   };
 
-  // Submit analysis evaluation
+  // Submit analysis evaluation — score only over the phases actually present,
+  // so a draw without (say) figurative language isn't penalized for a phase
+  // the student never saw.
   const submitAnalysis = useCallback(() => {
     if (hasSubmittedEvaluation) return;
+    const hasMood = analysisPhases.includes('mood');
+    const hasFig = analysisPhases.includes('figurative');
+    const hasRhyme = analysisPhases.includes('rhyme');
+
     const figTotal = figurativeInstances?.length || 0;
     const figFound = foundFigurative.size;
     const rhymeCorrect = selectedRhymeScheme === rhymeScheme;
     const moodCorrect = selectedMood === correctMood;
 
-    // Score: mood (25%) + figurative (40%) + rhyme (35%)
-    const moodScore = moodCorrect ? 25 : 0;
-    const figScore = figTotal > 0 ? Math.round((figFound / figTotal) * 40) : 40;
-    const rhymeScore = rhymeCorrect ? 35 : 0;
-    const score = moodScore + figScore + rhymeScore;
+    // Base weights: mood 25, figurative 40, rhyme 35 — normalized over present phases
+    const moodWeight = hasMood ? 25 : 0;
+    const figWeight = hasFig ? 40 : 0;
+    const rhymeWeight = hasRhyme ? 35 : 0;
+    const totalWeight = moodWeight + figWeight + rhymeWeight;
+
+    const earned =
+      (moodCorrect ? moodWeight : 0)
+      + (figTotal > 0 ? (figFound / figTotal) * figWeight : 0)
+      + (rhymeCorrect ? rhymeWeight : 0);
+    const score = totalWeight > 0 ? Math.round((earned / totalWeight) * 100) : 100;
 
     const metrics: PoetryLabMetrics = {
       type: 'poetry-lab',
@@ -252,7 +292,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     };
 
     submitEvaluation(score >= 50, score, metrics, { selectedMood, foundFigurative: Array.from(foundFigurative), selectedRhymeScheme });
-  }, [hasSubmittedEvaluation, figurativeInstances, foundFigurative, selectedRhymeScheme, rhymeScheme, selectedMood, correctMood, elementsExplored, templateType, submitEvaluation]);
+  }, [hasSubmittedEvaluation, analysisPhases, figurativeInstances, foundFigurative, selectedRhymeScheme, rhymeScheme, selectedMood, correctMood, elementsExplored, templateType, submitEvaluation]);
 
   // Submit composition evaluation
   const submitComposition = useCallback(() => {
@@ -312,9 +352,13 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
   // ANALYSIS MODE
   // ============================================================================
 
+  const reviewPanelCount = (analysisPhases.includes('mood') ? 1 : 0)
+    + (analysisPhases.includes('figurative') ? 1 : 0)
+    + (analysisPhases.includes('rhyme') ? 1 : 0);
+
   const renderAnalysis = () => (
     <div className="space-y-4">
-      {renderProgress(['mood', 'figurative', 'rhyme', 'review'], analysisPhase)}
+      {renderProgress(analysisPhases, analysisPhase)}
 
       {/* Poem display — the readable poem surface; clickable spans stay bespoke */}
       <LuminaPanel className="font-serif">
@@ -323,7 +367,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
         )}
       </LuminaPanel>
 
-      {/* Phase 1: Mood */}
+      {/* Phase: Mood */}
       {analysisPhase === 'mood' && (
         <div className="space-y-3">
           <p className="text-xs text-slate-500">What mood or feeling does this poem create?</p>
@@ -341,27 +385,27 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
           </div>
           <div className="flex justify-end">
             <LuminaButton tone="primary" onClick={nextAnalysis} disabled={!selectedMood}>
-              Next: Find Figurative Language
+              {nextPhaseLabel}
             </LuminaButton>
           </div>
         </div>
       )}
 
-      {/* Phase 2: Figurative Language */}
+      {/* Phase: Figurative Language */}
       {analysisPhase === 'figurative' && (
         <div className="space-y-3">
           <p className="text-xs text-slate-500">Tap the figurative language in the poem ({figurativeInstances?.length || 0} to find):</p>
           <p className="text-xs text-slate-400">Found: {foundFigurative.size} / {figurativeInstances?.length || 0}</p>
-          <div className="flex justify-between">
-            <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>
+          <div className={`flex ${hasPrevPhase ? 'justify-between' : 'justify-end'}`}>
+            {hasPrevPhase && <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>}
             <LuminaButton tone="primary" onClick={nextAnalysis} disabled={foundFigurative.size === 0}>
-              Next: Rhyme Scheme
+              {nextPhaseLabel}
             </LuminaButton>
           </div>
         </div>
       )}
 
-      {/* Phase 3: Rhyme Scheme */}
+      {/* Phase: Rhyme Scheme */}
       {analysisPhase === 'rhyme' && (
         <div className="space-y-3">
           <p className="text-xs text-slate-500">What is the rhyme scheme of this poem?</p>
@@ -382,40 +426,48 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
               </button>
             ))}
           </div>
-          <div className="flex justify-between">
-            <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>
+          <div className={`flex ${hasPrevPhase ? 'justify-between' : 'justify-end'}`}>
+            {hasPrevPhase && <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>}
             <LuminaButton tone="primary" onClick={nextAnalysis} disabled={!selectedRhymeScheme}>
-              Review
+              {nextPhaseLabel}
             </LuminaButton>
           </div>
         </div>
       )}
 
-      {/* Phase 4: Review */}
+      {/* Phase: Review */}
       {analysisPhase === 'review' && (
         <div className="space-y-3">
-          <div className="grid gap-2 grid-cols-3">
-            <LuminaPanel className="p-2 text-center">
-              <p className="text-xs text-slate-500">Mood</p>
-              <p className={`text-sm font-medium ${selectedMood === correctMood ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedMood}</p>
-            </LuminaPanel>
-            <LuminaPanel className="p-2 text-center">
-              <p className="text-xs text-slate-500">Figurative</p>
-              <p className="text-sm font-medium text-slate-300">{foundFigurative.size}/{figurativeInstances?.length || 0}</p>
-            </LuminaPanel>
-            <LuminaPanel className="p-2 text-center">
-              <p className="text-xs text-slate-500">Rhyme</p>
-              <p className={`text-sm font-mono font-medium ${selectedRhymeScheme === rhymeScheme ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedRhymeScheme}</p>
-            </LuminaPanel>
-          </div>
+          {reviewPanelCount > 0 && (
+            <div className={`grid gap-2 ${REVIEW_GRID_COLS[reviewPanelCount] || 'grid-cols-3'}`}>
+              {analysisPhases.includes('mood') && (
+                <LuminaPanel className="p-2 text-center">
+                  <p className="text-xs text-slate-500">Mood</p>
+                  <p className={`text-sm font-medium ${selectedMood === correctMood ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedMood}</p>
+                </LuminaPanel>
+              )}
+              {analysisPhases.includes('figurative') && (
+                <LuminaPanel className="p-2 text-center">
+                  <p className="text-xs text-slate-500">Figurative</p>
+                  <p className="text-sm font-medium text-slate-300">{foundFigurative.size}/{figurativeInstances?.length || 0}</p>
+                </LuminaPanel>
+              )}
+              {analysisPhases.includes('rhyme') && (
+                <LuminaPanel className="p-2 text-center">
+                  <p className="text-xs text-slate-500">Rhyme</p>
+                  <p className={`text-sm font-mono font-medium ${selectedRhymeScheme === rhymeScheme ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedRhymeScheme}</p>
+                </LuminaPanel>
+              )}
+            </div>
+          )}
           {!hasSubmittedEvaluation ? (
-            <div className="flex justify-between">
-              <LuminaButton onClick={prevAnalysis}>Edit</LuminaButton>
+            <div className={`flex ${hasPrevPhase ? 'justify-between' : 'justify-end'}`}>
+              {hasPrevPhase && <LuminaButton onClick={prevAnalysis}>Edit</LuminaButton>}
               <LuminaActionButton action="check" onClick={submitAnalysis}>Submit</LuminaActionButton>
             </div>
           ) : (
             <LuminaFeedbackCard status="correct" label="Poetry Analysis Complete!">
-              Great work breaking down the mood, figurative language, and rhyme of this poem.
+              Great work breaking down the elements of this poem.
             </LuminaFeedbackCard>
           )}
         </div>
@@ -517,7 +569,7 @@ const PoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
             <div className="flex items-center gap-2">
               <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
               <LuminaBadge accent="purple" className="text-xs capitalize">{mode}</LuminaBadge>
-              {templateType && (
+              {mode === 'composition' && templateType && (
                 <LuminaBadge accent="pink" className="text-xs capitalize">{templateType}</LuminaBadge>
               )}
             </div>

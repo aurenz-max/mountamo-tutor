@@ -313,7 +313,7 @@ const cvcSpellerSchema: Schema = {
   properties: {
     title: {
       type: Type.STRING,
-      description: "Engaging title for the CVC spelling activity (e.g., 'Spell Short-A Words!')"
+      description: "Engaging child-facing title for the CVC spelling activity (e.g., 'Spell Short-A Words!'). Plain playful words a teacher would SAY only — never phoneme slash-notation like /æ/ and never dev codes like 'short-a'."
     },
     vowelFocus: {
       type: Type.STRING,
@@ -599,6 +599,14 @@ PHONEME NOTATION:
 
     result.vowelFocus = vowelFocus as CvcSpellerData['vowelFocus'];
     result.letterGroup = letterGroup as CvcSpellerData['letterGroup'];
+
+    // Child-facing title: strip phoneme slash-notation (/æ/) and dev slugs
+    // ('short-a') the model sometimes emits despite the schema description
+    // (reader-fit RF-4 — a K draw shipped "Sort the Short Sounds: /æ/ or /ɛ/?").
+    if (result.title && (/\/[^/\s]{1,4}\//.test(result.title) || /short-[aeiou]/i.test(result.title))) {
+      const vowelLetter = vowelFocus.replace('short-', '').toUpperCase();
+      result.title = `Short ${vowelLetter} Word Fun!`;
+    }
 
     if (result.challenges) {
       result.challenges = result.challenges.map((ch, idx) => {

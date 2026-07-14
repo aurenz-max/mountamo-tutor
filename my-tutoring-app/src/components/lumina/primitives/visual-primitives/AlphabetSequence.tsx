@@ -62,6 +62,7 @@ export const AlphabetSequence: React.FC<AlphabetSequenceProps> = ({ data }) => {
                 className="flex flex-col items-center gap-2 animate-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
+                {/* dropzone-triage: static missing-letter display, not an interaction target. */}
                 {/* Letter Box */}
                 <div
                   className={`w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center transition-all duration-300 ${

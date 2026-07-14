@@ -10,6 +10,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaFeedbackCard,
+  LuminaDropZone,
   type FeedbackStatus,
 } from '../../../ui';
 import {
@@ -453,6 +454,7 @@ const GanttTimeline: React.FC<GanttProps> = ({
         ))}
       </div>
       {/* Target deadline line */}
+      {/* dropzone-triage: decorative deadline marker, out of scope */}
       <div className="relative h-0 ml-[140px]">
         <div
           className="absolute top-0 bottom-0 h-[999px] border-r-2 border-dashed border-amber-500/40 -mt-2"
@@ -504,6 +506,7 @@ const GanttTimeline: React.FC<GanttProps> = ({
           <span className="text-[10px] text-slate-400">Critical Path</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* dropzone-triage: decorative legend sample, out of scope */}
           <div className="w-6 h-0.5 border-t-2 border-dashed border-amber-500/40" />
           <span className="text-[10px] text-slate-400">Deadline (W{targetWeeks})</span>
         </div>
@@ -1015,16 +1018,18 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                   });
 
                   return (
-                    <div
+                    <LuminaDropZone
                       key={id}
+                      state={isDropTarget ? 'dragOver' : 'filled'}
+                      emptyPrompt="Drop task here"
                       draggable
                       onDragStart={() => handleDragStart(idx)}
                       onDragOver={(e) => handleDragOver(e, idx)}
+                      onDragLeave={() => setDropTargetIdx(null)}
                       onDrop={() => handleDrop(idx)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-move transition-all duration-200
+                      className={`min-h-0 flex-nowrap justify-start gap-3 px-3 py-2.5 cursor-move
                         ${isDragged ? 'opacity-30' : ''}
-                        ${isDropTarget ? 'border-blue-400/50 bg-blue-500/10 scale-[1.02]' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/20'}
                         ${unmetDeps.length > 0 ? 'border-l-2' : ''}
                       `}
                       style={unmetDeps.length > 0 ? { borderLeftColor: '#ef4444' } : undefined}
@@ -1048,7 +1053,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                         {task.duration}w
                       </div>
                       <div className="text-slate-600 flex-shrink-0">⠿</div>
-                    </div>
+                    </LuminaDropZone>
                   );
                 })}
               </div>

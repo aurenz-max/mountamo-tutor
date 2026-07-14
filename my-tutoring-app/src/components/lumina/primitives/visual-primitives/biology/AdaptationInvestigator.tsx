@@ -405,6 +405,7 @@ const AdaptationInvestigator: React.FC<AdaptationInvestigatorProps> = ({ data, c
           </div>
         </div>
       ) : (
+        // dropzone-triage: decorative image placeholder, out of scope
         <div className="relative h-48 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-emerald-500/20 bg-emerald-500/5 mb-4">
           {imageLoading ? (
             <>

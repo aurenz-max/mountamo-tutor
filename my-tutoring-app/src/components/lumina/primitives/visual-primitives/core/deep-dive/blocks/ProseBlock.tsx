@@ -530,16 +530,22 @@ const ProseBlock: React.FC<ProseBlockProps> = ({ data, index, onAskTutor }) => {
           <SimpleProse paragraphs={paragraphs} reveal={reveal} />
         )}
 
-        {/* Tutor affordance rides below the content — the positioned-line
+        {/* Tutor affordances ride below the content — the positioned-line
             renderers lay out asynchronously, so per-paragraph tap targets
             aren't safe here the way they are in card-based blocks. */}
         {onAskTutor && (
-          <BlockTutorHelp
-            onAskTutor={onAskTutor}
-            label="Talk about this with your tutor"
-            className="mt-4"
-            message={`[PROSE_EXPLORE] The student wants to talk about this passage${label ? ` ("${label}")` : ''}: "${paragraphs.join(' ').slice(0, 700)}". Give the big idea in one friendly sentence, share the most interesting detail, then ask what stood out to them. Keep it short and conversational.`}
-          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <BlockTutorHelp
+              onAskTutor={onAskTutor}
+              label="Read this section"
+              message={`[READ_SECTION] The student tapped "Read this section"${label ? ` on "${label}"` : ''}. Read this passage aloud to them word for word, in a warm, clear voice: "${paragraphs.join(' ')}". When you finish reading, stop — no commentary, no questions.`}
+            />
+            <BlockTutorHelp
+              onAskTutor={onAskTutor}
+              label="Talk about this with your tutor"
+              message={`[PROSE_EXPLORE] The student wants to talk about this passage${label ? ` ("${label}")` : ''}: "${paragraphs.join(' ').slice(0, 700)}". Give the big idea in one friendly sentence, share the most interesting detail, then ask what stood out to them. Keep it short and conversational.`}
+            />
+          </div>
         )}
       </LuminaCardContent>
     </LuminaCard>

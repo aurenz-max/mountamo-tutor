@@ -89,6 +89,11 @@ export {
   type ChipState,
 } from './LuminaChip';
 export { LuminaInput, type LuminaInputProps } from './LuminaInput';
+export {
+  LuminaDropZone,
+  type LuminaDropZoneProps,
+  type DropZoneState,
+} from './LuminaDropZone';
 
 // Brand — the Aurora Core mark, doubling as a progress ring.
 export { LuminaMark, type LuminaMarkProps } from './LuminaMark';
@@ -117,6 +122,7 @@ export {
   surface,
   text,
   interactive,
+  motion,
   accentText,
   accentBorder,
   accentGlow,
@@ -127,11 +133,14 @@ export {
   accentStrongText,
   answerStateClasses,
   answerStateClass,
+  dropZoneStateClasses,
+  dropZoneStateClass,
   getPerformanceTier,
   TIERS,
   LUMINA_ACCENTS,
   type LuminaSurface,
   type LuminaAccent,
+  type LuminaMotion,
   type PerformanceTier,
   type TierStyle,
 } from './tokens';

@@ -3,7 +3,13 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { DiagramBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaButton, LuminaBadge } from '../../../../../ui';
+import {
+  LuminaActionButton,
+  LuminaButton,
+  LuminaBadge,
+  LuminaDropZone,
+  type DropZoneState,
+} from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 
@@ -274,7 +280,17 @@ const LabelMode: React.FC<{
     score: number;
   } | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [imageDragOver, setImageDragOver] = useState(false);
+  const [gradingFlash, setGradingFlash] = useState<{ ok: boolean } | null>(null);
+  const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(
+    () => () => {
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+    },
+    []
+  );
 
   const isPlaced = (labelId: string) => placements.some((p) => p.labelId === labelId);
 
@@ -286,6 +302,7 @@ const LabelMode: React.FC<{
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
+      setImageDragOver(false);
       if (!draggedLabel || !imageContainerRef.current || submitted) return;
 
       const rect = imageContainerRef.current.getBoundingClientRect();
@@ -313,6 +330,7 @@ const LabelMode: React.FC<{
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setImageDragOver(true);
   };
 
   const handleRemove = (labelId: string) => {
@@ -327,6 +345,9 @@ const LabelMode: React.FC<{
     SoundManager.tap();
     setPlacements([]);
     setDraggedLabel(null);
+    setImageDragOver(false);
+    setGradingFlash(null);
+    if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
   }, [submitted]);
 
   const handleSubmit = useCallback(async () => {
@@ -359,6 +380,9 @@ const LabelMode: React.FC<{
       else SoundManager.playIncorrect();
       setFeedback({ perLabel, overall: result.overallFeedback || '', score });
       setSubmitted(true);
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+      setGradingFlash({ ok: score >= 70 });
+      gradingFlashTimer.current = setTimeout(() => setGradingFlash(null), 900);
       onAnswer(data.id, score >= 70, 1);
     } catch (error) {
       console.error('[DiagramBlock] Evaluation failed:', error);
@@ -369,6 +393,9 @@ const LabelMode: React.FC<{
         overall: 'Could not evaluate placements. Try again later.',
         score: 0,
       });
+      if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
+      setGradingFlash({ ok: false });
+      gradingFlashTimer.current = setTimeout(() => setGradingFlash(null), 900);
       onAnswer(data.id, false, 1);
     } finally {
       setIsEvaluating(false);
@@ -376,19 +403,29 @@ const LabelMode: React.FC<{
   }, [submitted, placements, data, onAnswer]);
 
   const allPlaced = placements.length === data.labels.length;
+  const imageZoneState: DropZoneState = imageDragOver
+    ? 'dragOver'
+    : gradingFlash
+      ? gradingFlash.ok
+        ? 'correct'
+        : 'incorrect'
+      : placements.length > 0
+        ? 'filled'
+        : 'idle';
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Image drop zone */}
         <div className="flex-1 relative">
-          <div
+          <LuminaDropZone
             ref={imageContainerRef}
+            state={imageZoneState}
+            emptyPrompt="Drop labels onto the diagram"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            className={`relative rounded-xl overflow-hidden border-2 transition-colors ${
-              draggedLabel ? 'border-teal-500 border-dashed' : 'border-white/10'
-            }`}
+            onDragLeave={() => setImageDragOver(false)}
+            className="relative block min-h-0 overflow-hidden p-0"
           >
             <img
               src={data.imageBase64}
@@ -447,7 +484,7 @@ const LabelMode: React.FC<{
                 </div>
               </div>
             )}
-          </div>
+          </LuminaDropZone>
 
           {data.caption && (
             <p className="text-[11px] text-slate-500 italic text-center mt-2">{data.caption}</p>

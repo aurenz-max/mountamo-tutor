@@ -13,6 +13,7 @@ import {
   LuminaInput,
   LuminaSectionLabel,
   LuminaChallengeCounter,
+  dropZoneStateClass,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -538,6 +539,7 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
   const handleDragLeave = () => setDropTarget(null);
   const handleDrop = useCallback((e: React.DragEvent, side: 'left' | 'right') => {
     e.preventDefault();
+    setDropTarget(null);
     if (!draggedBlock || hasSubmittedEvaluation) return;
     SoundManager.snap();
     const block = { ...draggedBlock };
@@ -545,7 +547,6 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
     else setCurrentRight(prev => [...prev, block]);
     addStep(`Added ${formatObj(block)} to ${side} side`, 'Add block');
     setDraggedBlock(null);
-    setDropTarget(null);
   }, [draggedBlock, hasSubmittedEvaluation, addStep]);
 
   // Verify
@@ -772,10 +773,10 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             onDrop={e => handleDrop(e, 'left')}
           >
             <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
-            <div className={`w-36 min-h-[80px] bg-slate-700/30 rounded-b-xl border ${
-              dropTarget === 'left' ? 'border-green-400/60' : 'border-slate-600/40'
-            } backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
-              {currentLeft.length === 0 && <span className="text-slate-600 text-xs italic">Empty</span>}
+            <div className={`w-36 min-h-[80px] rounded-b-xl ${dropZoneStateClass(
+              dropTarget === 'left' ? 'dragOver' : currentLeft.length > 0 ? 'filled' : 'idle'
+            )} backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
+              {currentLeft.length === 0 && <span className="text-xs italic">Drop blocks here</span>}
               {currentLeft.map((obj, i) => (
                 <button
                   key={`l-${i}`}
@@ -798,10 +799,10 @@ const BalanceScale: React.FC<BalanceScaleProps> = ({ data, className }) => {
             onDrop={e => handleDrop(e, 'right')}
           >
             <div className="w-36 h-3 bg-gradient-to-b from-slate-500 to-slate-600 rounded-t" />
-            <div className={`w-36 min-h-[80px] bg-slate-700/30 rounded-b-xl border ${
-              dropTarget === 'right' ? 'border-green-400/60' : 'border-slate-600/40'
-            } backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
-              {currentRight.length === 0 && <span className="text-slate-600 text-xs italic">Empty</span>}
+            <div className={`w-36 min-h-[80px] rounded-b-xl ${dropZoneStateClass(
+              dropTarget === 'right' ? 'dragOver' : currentRight.length > 0 ? 'filled' : 'idle'
+            )} backdrop-blur-sm p-2 flex flex-wrap gap-1.5 items-center justify-center`}>
+              {currentRight.length === 0 && <span className="text-xs italic">Drop blocks here</span>}
               {currentRight.map((obj, i) => (
                 <button
                   key={`r-${i}`}

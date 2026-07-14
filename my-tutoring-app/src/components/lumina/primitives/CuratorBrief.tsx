@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft, Volume2 } from 'lucide-react';
 import { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
+import { useLuminaAI } from '../hooks/useLuminaAI';
 import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, type LuminaAccent } from '../ui';
 
 interface CuratorBriefProps {
@@ -86,6 +87,41 @@ const isIntroBriefingData = (data: IntroBriefingData | IntroData): data is Intro
   return 'mindset' in data;
 };
 
+// Grade strings that indicate a pre-reading student. The brief's tabbed prose
+// assumes a reading fluency a Kindergarten/pre-literacy student doesn't have yet,
+// so for these grades the tutor voices every section instead of leaving it to text.
+const isPreReaderGrade = (grade?: string): boolean => {
+  if (!grade) return false;
+  return /(kinder|preschool|pre-?k\b|prek|toddler|pre-?reader|^\s*gk\s*$|grade\s*k\b)/i.test(grade);
+};
+
+// Build the spoken text for one briefing section. Content is assembled HERE (not
+// pulled through the tutoring scaffold's contextKeys) so we can GUARANTEE the
+// quick-check answer is never voiced — "Before We Start" reads only the question
+// and prior-knowledge, never the hidden answer or hint.
+const buildSectionSpeech = (sectionId: string, b: IntroBriefingData): string => {
+  switch (sectionId) {
+    case 'hook':
+      return b.hook?.content ?? '';
+    case 'bigIdea':
+      return `The big idea: ${b.bigIdea?.statement ?? ''} Why it matters: ${b.bigIdea?.whyItMatters ?? ''}`;
+    case 'objectives':
+      return `Today you will learn to: ${(b.objectives ?? []).map(o => o.text).join('; ')}.`;
+    case 'prerequisites':
+      return `Before we start. You already know: ${(b.prerequisites?.shouldKnow ?? []).join('; ')}. `
+        + `Here is a quick thinking question: ${b.prerequisites?.quickCheck?.question ?? ''}`;
+    case 'roadmap':
+      return `Here is our plan. `
+        + (b.roadmap ?? []).map((p, i) => `Step ${i + 1}, ${p.phase}: ${p.description}`).join(' ');
+    case 'connections':
+      return `This builds on ${(b.connections?.buildingFrom ?? []).join(', ')}. `
+        + `It leads to ${(b.connections?.leadingTo ?? []).join(', ')}. `
+        + `In real life you see it when ${(b.connections?.realWorld ?? []).join(', ')}.`;
+    default:
+      return '';
+  }
+};
+
 export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) => {
   // Debug logging
   console.log('[CuratorBrief] Received data:', data);
@@ -108,6 +144,79 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
     { id: 'roadmap', label: 'The Journey', icon: Map },
     { id: 'connections', label: 'Connections', icon: Compass },
   ];
+
+  // --- AI read-aloud (pre-reader support) ---
+  // The brief is the first thing a student meets and, unlike every other primitive,
+  // it assumes reading fluency. For pre-readers the live tutor voices each section.
+  const gradeLevel = briefingData.gradeLevel;
+  const isPreReader = isPreReaderGrade(gradeLevel);
+  // curator-brief isn't an evaluable primitive, so the renderer injects no
+  // instanceId/exhibitId — derive stable ones (singleton per exhibit).
+  const instanceId = (data as any).instanceId || (data as any).__instanceId || 'curator-brief';
+  const exhibitId = (data as any).exhibitId || briefingData.topic;
+  const currentSectionLabel = sections.find(s => s.id === expandedSection)?.label ?? expandedSection;
+
+  const aiPrimitiveData = {
+    topic: briefingData.topic,
+    gradeLevel,
+    currentSection: expandedSection,
+    currentSectionLabel,
+    isPreReader,
+  };
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'curator-brief',
+    instanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId,
+    gradeLevel,
+  });
+
+  // Voice one section through the live tutor. The section content travels in the
+  // sendText payload (not contextKeys) so the quick-check answer can never leak.
+  const speakSection = useCallback((sectionId: string, opts?: { auto?: boolean }) => {
+    const idx = sections.findIndex(s => s.id === sectionId);
+    if (idx < 0) return;
+    const label = sections[idx].label;
+    const nextLabel = idx < sections.length - 1 ? sections[idx + 1].label : null;
+    const body = buildSectionSpeech(sectionId, briefingData);
+    if (!body) return;
+    if (!opts?.auto) SoundManager.pop();
+    sendText(
+      `[READ_SECTION] Section: "${label}". ${body} `
+      + (nextLabel ? `After this comes "${nextLabel}". ` : `This is the last part. `)
+      + `Read it aloud for the student in a warm voice using short, simple sentences`
+      + (isPreReader
+        ? ` — they are a young pre-reader who cannot read the screen, so say everything for them.`
+        : `.`),
+      { silent: true },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sendText, briefingData, isPreReader]);
+
+  // Auto-narrate on section CHANGE for pre-readers. The opening section (the hook)
+  // is deliberately left to the lesson's greeting: auto-firing on mount races that
+  // greeting and makes Gemini hallucinate (ADDING_TUTORING_SCAFFOLD → "Avoiding
+  // Gemini Turn Races"). Navigating a tab is a deliberate student action, so
+  // narrating on change is race-safe. Readers get the manual "Read this to me" button.
+  const hasNavigatedRef = useRef(false);
+  const initialSectionRef = useRef(expandedSection);
+  const lastNarratedSectionRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hasNavigatedRef.current) {
+      if (expandedSection === initialSectionRef.current) return; // still on the opening section
+      hasNavigatedRef.current = true;
+    }
+    if (!isConnected || !isPreReader) return;
+    // Narrate a section at most once per entry. speakSection's identity churns
+    // every render (briefingData is a fresh object via the renderer's data spread),
+    // so it is intentionally NOT a dependency — listing it re-runs this effect on
+    // every AI transcription chunk and re-fires [READ_SECTION] in an infinite loop.
+    if (lastNarratedSectionRef.current === expandedSection) return;
+    lastNarratedSectionRef.current = expandedSection;
+    speakSection(expandedSection, { auto: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedSection, isConnected, isPreReader]);
 
   const toggleObjective = (id: string) => {
     SoundManager.toggle(!objectivesChecked[id]);
@@ -502,8 +611,21 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
               {sectionContent[expandedSection]()}
             </div>
 
-            {/* Keyboard hint */}
-            <div className="mt-4 text-center">
+            {/* Read-aloud + keyboard hint. "Read this to me" voices the current
+                section through the live tutor — essential for pre-readers, offered
+                to everyone. Emphasized for pre-reading grades. */}
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <button
+                onClick={() => speakSection(expandedSection)}
+                className={`flex items-center gap-2 rounded-xl border transition-all ${
+                  isPreReader
+                    ? 'px-5 py-2.5 text-base font-semibold text-indigo-50 bg-indigo-500/20 border-indigo-400/50 hover:bg-indigo-500/30 shadow-lg shadow-indigo-500/20'
+                    : 'px-4 py-2 text-sm font-medium text-indigo-100 bg-indigo-500/10 border-indigo-400/30 hover:bg-indigo-500/20 hover:border-indigo-400/50'
+                }`}
+              >
+                <Volume2 size={isPreReader ? 18 : 16} />
+                Read this to me
+              </button>
               <p className="text-xs text-slate-500 font-mono">
                 Use ← → arrow keys or buttons to navigate
               </p>

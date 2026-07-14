@@ -7,11 +7,13 @@ import {
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
   LuminaPanel,
   LuminaActionButton,
   LuminaFeedbackCard,
   LuminaMicListener,
+  dropZoneStateClass,
+  motion,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -79,12 +81,14 @@ export interface CvcSpellerData {
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
+// Child-facing labels: no phoneme slash-notation in the child's field (reader-fit
+// PRE contract); the tutor SPEAKS the sounds instead.
 const VOWEL_LABELS: Record<string, string> = {
-  'short-a': 'Short A (/ă/)',
-  'short-e': 'Short E (/ĕ/)',
-  'short-i': 'Short I (/ĭ/)',
-  'short-o': 'Short O (/ŏ/)',
-  'short-u': 'Short U (/ŭ/)',
+  'short-a': 'Short A',
+  'short-e': 'Short E',
+  'short-i': 'Short I',
+  'short-o': 'Short O',
+  'short-u': 'Short U',
 };
 
 const VOWEL_KEYWORDS: Record<string, string> = {
@@ -198,6 +202,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebrating, setIsCelebrating] = useState(false);
+  const [spellFlash, setSpellFlash] = useState<'correct' | 'incorrect' | null>(null);
+  const spellFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wordComplete, setWordComplete] = useState(false);
 
   // Tracking
@@ -220,6 +226,18 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `cvc-speller-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
+  useEffect(
+    () => () => {
+      if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
+    },
+    [],
+  );
+
+  // Mic availability, read inside sendText callbacks defined before spokenCapture
+  const micSupportedRef = useRef(false);
+  // Single audio control: tap 1 = hear the word, taps 2+ = progressive stretch
+  const audioTapsRef = useRef(0);
+
   // -------------------------------------------------------------------------
   // Evaluation hook
   // -------------------------------------------------------------------------
@@ -241,10 +259,17 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   // Build letter bank for spell-word mode
   const letterBank = useMemo(() => {
     if (!currentChallenge || currentChallenge.taskType !== 'spell-word') return [];
+    // Bank = targets + generator-tiered distractors only; availableLetters just
+    // tops up to a floor of 5 so the support-tier distractor cap (clean/some/full)
+    // actually controls how cluttered the bank is — unioning ALL availableLetters
+    // defeated the tier lever and inflated the PRE screen to 13-16 elements.
     const allLetters = new Set<string>();
     currentChallenge.targetLetters.forEach(l => allLetters.add(l.toLowerCase()));
     currentChallenge.distractorLetters.forEach(l => allLetters.add(l.toLowerCase()));
-    availableLetters.forEach(l => allLetters.add(l.toLowerCase()));
+    for (const l of availableLetters) {
+      if (allLetters.size >= 5) break;
+      allLetters.add(l.toLowerCase());
+    }
 
     const letters = Array.from(allLetters);
     for (let i = letters.length - 1; i > 0; i--) {
@@ -347,6 +372,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   // Reset domain state for next challenge
   // -------------------------------------------------------------------------
   const resetDomainState = useCallback(() => {
+    audioTapsRef.current = 0;
     setSlots([null, null, null]);
     setActiveSlotIndex(0);
     setSelectedVowel(null);
@@ -356,6 +382,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     setWordComplete(false);
     setIsShaking(false);
     setIsCelebrating(false);
+    setSpellFlash(null);
+    if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
   }, []);
 
   // -------------------------------------------------------------------------
@@ -405,6 +433,18 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     }
   }, [currentChallenge, currentAttempts, sendText]);
 
+  // One audio affordance for a pre-reader: first tap replays the word, further
+  // taps walk the existing progressive stretch ladder (which self-limits by
+  // attempts, so a zero-attempt tapper only ever gets the level-1 stretch).
+  const handleAudioTap = useCallback(() => {
+    audioTapsRef.current += 1;
+    if (audioTapsRef.current === 1) {
+      handleHearAgain();
+    } else {
+      handleStretch();
+    }
+  }, [handleHearAgain, handleStretch]);
+
   // =========================================================================
   // FILL-VOWEL MODE HANDLER
   // =========================================================================
@@ -437,7 +477,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_CORRECT] Student correctly picked "${vowel}" for "${currentChallenge.targetWord}"! `
         + `${attempt === 1 ? 'First try!' : `After ${attempt} attempts.`} `
-        + `Say the word and emphasize the vowel: "${currentChallenge.targetWord}... yes, ${currentChallenge.targetPhonemes[1]}!" Celebrate briefly.`,
+        + `Say the word and emphasize the vowel: "${currentChallenge.targetWord}... yes, ${currentChallenge.targetPhonemes[1]}!" Celebrate briefly.`
+        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
         { silent: true }
       );
     } else {
@@ -550,6 +591,10 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     const placed = slots.map(s => (s || '').toLowerCase());
     const isCorrect = placed.length === target.length && placed.every((l, i) => l === target[i]);
 
+    if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
+    setSpellFlash(isCorrect ? 'correct' : 'incorrect');
+    spellFlashTimer.current = setTimeout(() => setSpellFlash(null), 900);
+
     if (isCorrect) {
       SoundManager.playCorrect();
       target.forEach((letter) => {
@@ -573,7 +618,8 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
       sendText(
         `[SPELLING_CORRECT] Student correctly spelled "${currentChallenge.targetWord}"${attempt === 1 ? ' on the first try!' : ` after ${attempt} attempts.`} `
-        + `Say "You spelled ${currentChallenge.targetWord}! Great job!" and say the word.`,
+        + `Say "You spelled ${currentChallenge.targetWord}! Great job!" and say the word.`
+        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
         { silent: true }
       );
     } else {
@@ -649,11 +695,15 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
     const correctBucket = currentChallenge.sortBucketLabel || vowelFocus;
     const isCorrect = bucketLabel === correctBucket;
+    // Child-facing + spoken strings use the vowel and its keyword, never the
+    // `short-a` dev slug (reader-fit RF-4 — the tutor was reading the slug aloud).
+    const correctVowel = correctBucket.replace('short-', '');
+    const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
 
     if (isCorrect) {
       SoundManager.playCorrect();
       setVowelCorrect(prev => prev + 1);
-      setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${correctBucket.replace('short-', '')} sound!`);
+      setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${correctVowel} sound!`);
       setFeedbackType('success');
       setWordComplete(true);
       setIsCelebrating(true);
@@ -667,9 +717,10 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       });
 
       sendText(
-        `[SORT_CORRECT] Student correctly sorted "${currentChallenge.targetWord}" into the ${correctBucket} bucket! `
+        `[SORT_CORRECT] Student correctly sorted "${currentChallenge.targetWord}" into the /${correctVowel}/ bucket (like ${correctKeyword})! `
         + `${attempt === 1 ? 'First try!' : `After ${attempt} attempts.`} `
-        + `Say the word and confirm the vowel sound. Brief celebration.`,
+        + `Say the word and confirm the vowel sound. Brief celebration.`
+        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
         { silent: true }
       );
     } else {
@@ -682,9 +733,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
 
-      const correctVowel = correctBucket.replace('short-', '');
       const wrongVowel = bucketLabel.replace('short-', '');
-      const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
       const wrongKeyword = VOWEL_KEYWORDS[wrongVowel] || '';
       diagnosisObservationsRef.current.push({
         challenge: `Sort "${currentChallenge.targetWord}" by its middle vowel sound.`,
@@ -695,7 +744,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       if (attempt === 1) {
         // Level 1: say word naturally, contrast
         sendText(
-          `[SORT_WRONG_L1] Student sorted "${currentChallenge.targetWord}" into ${bucketLabel} but it belongs in ${correctBucket}. `
+          `[SORT_WRONG_L1] Student sorted "${currentChallenge.targetWord}" into the /${wrongVowel}/ bucket but it belongs in /${correctVowel}/. `
           + `Say the word again: "${currentChallenge.targetWord}." Then contrast: `
           + `"Is the middle sound /${wrongVowel}/ like ${wrongKeyword}... or /${correctVowel}/ like ${correctKeyword}?"`,
           { silent: true }
@@ -710,7 +759,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       }
 
       if (attempt >= MAX_ATTEMPTS) {
-        setFeedback(`"${currentChallenge.targetWord}" has the /${correctVowel}/ sound — it goes in the ${correctBucket} bucket!`);
+        setFeedback(`"${currentChallenge.targetWord}" has the /${correctVowel}/ sound — like ${correctKeyword}!`);
         setFeedbackType('error');
         setWordComplete(true);
         recordResult({
@@ -720,7 +769,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           taskType: currentChallenge.taskType,
         });
         sendText(
-          `[SORT_REVEAL] Reveal: "${currentChallenge.targetWord}" has /${correctVowel}/ like ${correctKeyword}. It goes in ${correctBucket}. Keep encouraging.`,
+          `[SORT_REVEAL] Reveal: "${currentChallenge.targetWord}" has /${correctVowel}/ like ${correctKeyword}. It goes in the /${correctVowel}/ bucket. Keep encouraging.`,
           { silent: true }
         );
       }
@@ -778,6 +827,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
       );
     },
   });
+  micSupportedRef.current = spokenCapture.isSupported;
 
   // -------------------------------------------------------------------------
   // Move to next word or submit evaluation
@@ -866,12 +916,15 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     return () => clearTimeout(t);
   }, [spokenWords, currentChallenge]);
 
-  const handleClearAll = useCallback(() => {
-    setSlots([null, null, null]);
-    setActiveSlotIndex(0);
-    setFeedback('');
-    setFeedbackType('');
-  }, []);
+  // -------------------------------------------------------------------------
+  // Session end. NOT allChallengesComplete: that flips the moment the LAST
+  // result is recorded, which used to hide the feedback card, the spoken-
+  // production beat, and the Finish button on the final word — making
+  // handleNextWord (the only submitEvaluation call site) unreachable, so the
+  // evaluation never submitted. The session ends when the student taps
+  // Finish/skip (or says the word) and the submission has gone out.
+  // -------------------------------------------------------------------------
+  const sessionDone = hasSubmittedEvaluation;
 
   // -------------------------------------------------------------------------
   // Overall score
@@ -897,6 +950,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           <div className="w-20 h-20 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 flex items-center justify-center text-3xl font-bold uppercase text-blue-300">
             {letters[0]}
           </div>
+          {/* dropzone-triage: answer display, not a selection-to-place target. */}
           {/* Vowel slot — blank or selected */}
           <div className={`
             w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center text-3xl font-bold uppercase transition-all
@@ -964,13 +1018,17 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     if (!currentChallenge) return null;
     return (
       <div className="space-y-5">
-        {/* Word hint: emoji + image (picture self-check cue — withdrawn at hard tier) */}
-        {currentChallenge.showPictureCue !== false && (currentChallenge.emoji || currentChallenge.imageDescription) && (
-          <LuminaPanel className="flex items-center justify-center gap-3 px-5 py-3">
-            {currentChallenge.emoji && <span className="text-4xl">{currentChallenge.emoji}</span>}
-            {currentChallenge.imageDescription && (
-              <p className="text-slate-400 text-sm italic">{currentChallenge.imageDescription}</p>
-            )}
+        {/* Picture self-check cue — emoji only (withdrawn at hard tier). The
+            imageDescription sentence is unreadable at PRE; keep it for a11y only. */}
+        {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
+          <LuminaPanel className="flex items-center justify-center px-5 py-3">
+            <span
+              className="text-4xl"
+              role="img"
+              aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}
+            >
+              {currentChallenge.emoji}
+            </span>
           </LuminaPanel>
         )}
 
@@ -979,29 +1037,22 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           {slots.map((letter, index) => {
             const isActive = activeSlotIndex === index;
             const isFilled = letter !== null;
-            const isCorrectLetter = wordComplete && letter === currentChallenge.targetLetters[index]?.toLowerCase();
             const isVowelSlot = index === 1;
+            const slotState: DropZoneState = spellFlash
+              ?? (isFilled ? 'filled' : isActive ? 'dragOver' : 'idle');
 
             return (
               <button
                 key={index}
                 onClick={() => handleSlotTap(index)}
-                disabled={allChallengesComplete}
+                disabled={sessionDone}
                 className={`
                   relative w-20 h-20 rounded-xl border-2 flex items-center justify-center
                   text-3xl font-bold uppercase transition-all duration-200 cursor-pointer select-none
-                  ${isCorrectLetter
-                    ? 'bg-emerald-500/30 border-emerald-400/60 text-emerald-200 shadow-lg shadow-emerald-500/20'
-                    : isActive
-                      ? 'bg-blue-500/20 border-blue-400/60 text-blue-200 shadow-md shadow-blue-500/10'
-                      : isFilled
-                        ? isVowelSlot
-                          ? 'bg-red-500/15 border-red-500/30 text-red-300 hover:border-red-400/50'
-                          : 'bg-slate-700/50 border-slate-500/40 text-slate-200 hover:border-slate-400/60'
-                        : 'bg-slate-800/40 border-dashed border-slate-600/40 text-slate-600 hover:border-slate-500/50'
-                  }
-                  ${isShaking && isFilled && !isCorrectLetter ? 'animate-shake' : ''}
-                  ${isCelebrating && isCorrectLetter ? 'animate-bounce' : ''}
+                  ${dropZoneStateClass(slotState)}
+                  ${slotState === 'correct' ? motion.pop : ''}
+                  ${slotState === 'incorrect' ? motion.shake : ''}
+                  ${isVowelSlot && isFilled && !spellFlash ? 'text-red-300' : ''}
                 `}
               >
                 {letter ? <span>{letter}</span> : <span className="text-lg">?</span>}
@@ -1043,21 +1094,14 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           </LuminaPanel>
         )}
 
-        {/* Check / Clear buttons */}
+        {/* Check — explicit confirm stays: a 3-slot construction is not an atomic
+            selection. (Clear removed at PRE — tapping a filled box clears it.) */}
         {!wordComplete && (
-          <div className="flex items-center gap-2">
-            <LuminaButton
-              tone="subtle"
-              onClick={handleClearAll}
-              disabled={slots.every(s => s === null)}
-            >
-              Clear
-            </LuminaButton>
+          <div className="flex items-center justify-center">
             <LuminaActionButton
               action="check"
               onClick={handleCheckSpelling}
               disabled={slots.some(s => s === null)}
-              className="ml-auto"
             >
               Check Spelling
             </LuminaActionButton>
@@ -1084,23 +1128,13 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-6">
-        {/* Word to sort — emoji (picture cue, withdrawn at hard tier) + speaker button */}
-        <div className="flex flex-col items-center gap-3">
-          {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
+        {/* Word to sort — emoji picture cue (withdrawn at hard tier); the shared
+            Hear It control above is the single audio affordance */}
+        {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
+          <div className="flex justify-center">
             <span className="text-5xl">{currentChallenge.emoji}</span>
-          )}
-          <button
-            onClick={handleHearAgain}
-            className="
-              flex items-center justify-center gap-2 px-6 py-3
-              rounded-full bg-amber-500/15 border-2 border-amber-500/30
-              hover:bg-amber-500/25 hover:scale-105 transition-all cursor-pointer
-            "
-          >
-            <SpeakerIcon className="text-amber-300" />
-            <span className="text-amber-300 text-sm font-medium">Hear the word</span>
-          </button>
-        </div>
+          </div>
+        )}
 
         <p className="text-center text-slate-400 text-sm">
           Which vowel sound do you hear? Sort into the right bucket!
@@ -1135,8 +1169,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
                 `}
               >
                 <span className="text-3xl font-bold text-purple-300 uppercase">{bucketVowel}</span>
-                <span className="text-xs text-slate-400">/{bucketVowel}/ like {keyword}</span>
-                <span className="text-[10px] text-slate-600">{bucket}</span>
+                <span className="text-xs text-slate-400">like {keyword}</span>
               </button>
             );
           })}
@@ -1185,7 +1218,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
               )}
             </div>
           </div>
-          {!allChallengesComplete && (
+          {!sessionDone && (
             <LuminaBadge accent="blue" className="text-xs">
               {currentChallengeIndex + 1} / {challenges.length}
             </LuminaBadge>
@@ -1195,7 +1228,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
       <LuminaCardContent className="space-y-5">
         {/* Progress dots */}
-        {!allChallengesComplete && (
+        {!sessionDone && (
           <div className="flex items-center justify-center gap-1.5">
             {challenges.map((ch, i) => (
               <div
@@ -1212,26 +1245,21 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Audio controls — phonics sound buttons, shared across all modes */}
-        {!allChallengesComplete && (
-          <div className="flex items-center justify-center gap-3">
+        {/* One audio affordance (all modes): tap to hear the word; keep tapping
+            and it stretches — Hear It + Stretch It collapsed for the PRE band */}
+        {!sessionDone && (
+          <div className="flex items-center justify-center">
             <button
-              onClick={handleHearAgain}
-              className="flex items-center rounded-md px-4 py-2 text-sm font-medium bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 text-amber-300 transition-colors cursor-pointer"
+              onClick={handleAudioTap}
+              className="flex items-center rounded-full px-5 py-2.5 text-sm font-medium bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 text-amber-300 transition-all cursor-pointer"
             >
-              <SpeakerIcon className="text-amber-300 mr-1.5" size="w-4 h-4" /> Hear It
-            </button>
-            <button
-              onClick={handleStretch}
-              className="flex items-center rounded-md px-4 py-2 text-sm font-medium bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 text-purple-300 transition-colors cursor-pointer"
-            >
-              <span className="mr-1.5">{'🐌'}</span> Stretch It
+              <SpeakerIcon className="text-amber-300 mr-1.5" size="w-5 h-5" /> Hear It
             </button>
           </div>
         )}
 
         {/* Task-specific content */}
-        {!allChallengesComplete && currentChallenge && (
+        {!sessionDone && currentChallenge && (
           <>
             {currentChallenge.taskType === 'fill-vowel' && renderFillVowel()}
             {currentChallenge.taskType === 'spell-word' && renderSpellWord()}
@@ -1240,7 +1268,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         )}
 
         {/* Feedback */}
-        {feedback && !allChallengesComplete && (
+        {feedback && !sessionDone && (
           <LuminaFeedbackCard
             status={
               feedbackType === 'success'
@@ -1258,7 +1286,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         {/* Culminating production beat — say the whole word aloud. Once solved,
             this IS the next step: a single prominent mic CTA, and a successful
             spoken word auto-advances (no click). Next Word is a quiet skip. */}
-        {wordComplete && !allChallengesComplete && currentChallenge && (
+        {wordComplete && !sessionDone && currentChallenge && (
           <div className="flex flex-col items-center gap-3">
             {spokenWords.has(currentChallenge.id) ? (
               // Said it → celebrate, then auto-glide to the next challenge (effect above)
@@ -1307,7 +1335,7 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
         )}
 
         {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {sessionDone && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}

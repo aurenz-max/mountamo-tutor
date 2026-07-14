@@ -133,6 +133,11 @@ const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: st
 
 const MAX_ATTEMPTS = 3;
 
+// Once a challenge resolves (correct, or answer revealed after max attempts), we
+// wait this long — long enough for the celebration/feedback to read — then move
+// to the next challenge on our own. The manual Next button stays as an override.
+const AUTO_ADVANCE_MS = 1800;
+
 // A voice CHOICE unit is only safe when its options are short, single, and
 // SAYABLE, and are distinct after lowercasing (a homophone/dup set would
 // misroute a spoken verdict). Gate fails → the mic never renders and the tap
@@ -183,6 +188,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   // Count first-time correct answers landed by voice (metrics extra).
   const voiceCorrectCountRef = useRef(0);
+  // Per-challenge latch guarding the auto-advance timer (see effect below).
+  const autoAdvancedForRef = useRef<number | null>(null);
   const diagnosisObservationsRef = useRef<Array<{ challenge: string; expected: string; observed: string }>>([]);
 
   // ── Instance ID ────────────────────────────────────────────────
@@ -327,6 +334,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     setShowResult(false);
     setIsCelebrating(false);
     setIsShaking(false);
+    // Clear the auto-advance latch so this fresh challenge can schedule its own
+    // advance (this effect runs before the auto-advance effect on index change,
+    // and showResult is now false, so no stale timer is scheduled).
+    autoAdvancedForRef.current = null;
   }, [currentIndex]);
 
   // ── Submit final evaluation ────────────────────────────────────
@@ -563,6 +574,23 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       return;
     }
   }, [advanceProgress, submitFinalEvaluation]);
+
+  // ── Auto-advance once the challenge resolves ───────────────────
+  // Fires on any resolved result (correct via tap/voice, or answer revealed
+  // after max attempts) so the student never has to hunt for the Next button.
+  // Ref-guarded per challenge so a pending timer and a manual click can't both
+  // advance: keyed on currentIndex, the timer is cleared on the index change a
+  // click causes, and the latch is wiped in the per-challenge reset effect.
+  const advanceRef = useRef(handleNext);
+  advanceRef.current = handleNext;
+  useEffect(() => {
+    if (!showResult || showSummary) return;
+    if (autoAdvancedForRef.current === currentIndex) return;
+    autoAdvancedForRef.current = currentIndex;
+    const t = setTimeout(() => advanceRef.current(), AUTO_ADVANCE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResult, currentIndex, showSummary]);
 
   // ============================================================================
   // Render helpers per mode

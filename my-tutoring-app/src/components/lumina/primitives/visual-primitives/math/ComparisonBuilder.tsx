@@ -479,9 +479,12 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
   // -------------------------------------------------------------------------
   // Check Answer — compare-groups
   // -------------------------------------------------------------------------
-  const checkCompareGroups = useCallback(() => {
-    if (!currentChallenge || !selectedAnswer) return false;
-    const correct = selectedAnswer === currentChallenge.correctAnswer;
+  const checkCompareGroups = useCallback((answerArg?: 'more' | 'less' | 'equal') => {
+    // answerArg lets the K tap=choose path evaluate the just-tapped side without
+    // waiting for setSelectedAnswer to flush; the Grade-1 Check path passes nothing.
+    const answer = answerArg ?? selectedAnswer;
+    if (!currentChallenge || !answer) return false;
+    const correct = answer === currentChallenge.correctAnswer;
     const leftCount = currentChallenge.leftGroup?.count ?? 0;
     const rightCount = currentChallenge.rightGroup?.count ?? 0;
     incrementAttempts();
@@ -503,11 +506,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('error');
       noteWrongAnswer(
         `compare the groups (left: ${leftCount} ${currentChallenge.leftGroup?.objectType ?? 'objects'}, right: ${rightCount} ${currentChallenge.rightGroup?.objectType ?? 'objects'})`,
-        `picked "${selectedAnswer}" for the left group`,
+        `picked "${answer}" for the left group`,
         `the left group has "${currentChallenge.correctAnswer}" (left ${leftCount} vs right ${rightCount})`,
       );
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". `
+        `[ANSWER_INCORRECT] Student chose "${answer}" but correct is "${currentChallenge.correctAnswer}". `
         + `Left has ${leftCount}, right has ${rightCount}. Attempt ${currentAttempts + 1}. `
         + `${useAlligatorMnemonic
           ? 'Hint: "Count the objects on each side. Which side has more?"'
@@ -522,6 +525,42 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer,
     showCorrespondenceLines, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause,
   ]);
+
+  // -------------------------------------------------------------------------
+  // K tap=choose — the pre-reader taps the SIDE with more (or the equals in the
+  // middle for "same"). The pictures are the answer surface; there is no text
+  // "More/Fewer/The Same" to read and no separate Check button. Tapping a side
+  // both selects and evaluates in one action (band contract rules 2, 3, 8).
+  //   tap LEFT  → asserting the left group has more  → 'more'
+  //   tap RIGHT → asserting the right group has more → left has 'less'
+  //   tap SAME  → 'equal'
+  // -------------------------------------------------------------------------
+  const handleTapSide = useCallback(
+    (answer: 'more' | 'less' | 'equal') => {
+      // Inline the completion check (isCurrentChallengeComplete is declared later
+      // in the body — referencing it in the dep array would hit the TDZ).
+      const alreadySolved = challengeResults.some(
+        (r) => r.challengeId === currentChallenge?.id && r.correct,
+      );
+      if (!currentChallenge || alreadySolved || allChallengesComplete) return;
+      setSelectedAnswer(answer);
+      const correct = checkCompareGroups(answer);
+      if (correct) {
+        SoundManager.playCorrect();
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
+      } else {
+        SoundManager.playIncorrect();
+      }
+    },
+    [
+      currentChallenge, challengeResults, allChallengesComplete,
+      checkCompareGroups, recordResult, currentAttempts,
+    ],
+  );
 
   // -------------------------------------------------------------------------
   // Check Answer — compare-numbers
@@ -864,6 +903,13 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     const leftEmoji = OBJECT_EMOJI[left.objectType] || '⭐';
     const rightEmoji = OBJECT_EMOJI[right.objectType] || '⭐';
 
+    // K (pre-reader) uses tap=choose directly on the group pictures — the two
+    // groups and a middle "=" ARE the answer surface, no text buttons, no Check.
+    const kTapMode = gradeBand === 'K';
+    const tappable = kTapMode && !isCurrentChallengeComplete && !allChallengesComplete;
+    const sameCx = GROUP_WIDTH + GAP / 2;
+    const sameCy = (GROUP_HEIGHT + 12) / 2 + 4;
+
     // HARD tier (correspondenceMode 'off') scatters the objects so the student
     // can't read the quantity off the grid arrangement.
     const scattered = correspondenceMode === 'off';
@@ -893,41 +939,71 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
             className="max-w-full h-auto"
           >
-            {/* Left group bg */}
+            {/* Left group bg — tappable "left has more" target at K */}
             <rect
               x={4} y={4}
               width={GROUP_WIDTH - 8} height={GROUP_HEIGHT + 12}
               rx={12}
-              fill="rgba(249,115,22,0.06)"
-              stroke="rgba(249,115,22,0.2)"
-              strokeWidth={1.5}
+              fill={selectedAnswer === 'more' ? 'rgba(249,115,22,0.16)' : 'rgba(249,115,22,0.06)'}
+              stroke={selectedAnswer === 'more' ? 'rgba(249,115,22,0.9)' : 'rgba(249,115,22,0.2)'}
+              strokeWidth={selectedAnswer === 'more' ? 3 : 1.5}
+              style={{ cursor: tappable ? 'pointer' : 'default' }}
+              onClick={tappable ? () => handleTapSide('more') : undefined}
             />
             <text
               x={GROUP_WIDTH / 2} y={GROUP_HEIGHT + 32}
               textAnchor="middle" fontSize={13}
               fill="rgba(249,115,22,0.7)"
-              className="select-none"
+              className="select-none pointer-events-none"
             >
               Left
             </text>
 
-            {/* Right group bg */}
+            {/* Right group bg — tappable "right has more" (left has less) target at K */}
             <rect
               x={GROUP_WIDTH + GAP + 4} y={4}
               width={GROUP_WIDTH - 8} height={GROUP_HEIGHT + 12}
               rx={12}
-              fill="rgba(59,130,246,0.06)"
-              stroke="rgba(59,130,246,0.2)"
-              strokeWidth={1.5}
+              fill={selectedAnswer === 'less' ? 'rgba(59,130,246,0.16)' : 'rgba(59,130,246,0.06)'}
+              stroke={selectedAnswer === 'less' ? 'rgba(59,130,246,0.9)' : 'rgba(59,130,246,0.2)'}
+              strokeWidth={selectedAnswer === 'less' ? 3 : 1.5}
+              style={{ cursor: tappable ? 'pointer' : 'default' }}
+              onClick={tappable ? () => handleTapSide('less') : undefined}
             />
             <text
               x={GROUP_WIDTH + GAP + GROUP_WIDTH / 2} y={GROUP_HEIGHT + 32}
               textAnchor="middle" fontSize={13}
               fill="rgba(59,130,246,0.7)"
-              className="select-none"
+              className="select-none pointer-events-none"
             >
               Right
             </text>
+
+            {/* Middle "=" — tappable "the same" target at K only. The two groups
+                already carry the more/less choice; this gives the equal case a
+                picture-primary affordance instead of a text button. */}
+            {kTapMode && (
+              <g
+                style={{ cursor: tappable ? 'pointer' : 'default' }}
+                onClick={tappable ? () => handleTapSide('equal') : undefined}
+              >
+                <circle
+                  cx={sameCx} cy={sameCy} r={26}
+                  fill={selectedAnswer === 'equal' ? 'rgba(168,85,247,0.22)' : 'rgba(168,85,247,0.08)'}
+                  stroke={selectedAnswer === 'equal' ? 'rgba(168,85,247,0.9)' : 'rgba(168,85,247,0.35)'}
+                  strokeWidth={selectedAnswer === 'equal' ? 3 : 2}
+                />
+                <text
+                  x={sameCx} y={sameCy}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={26} fontWeight={700}
+                  fill="rgba(216,180,254,0.95)"
+                  className="select-none pointer-events-none"
+                >
+                  =
+                </text>
+              </g>
+            )}
 
             {/* Correspondence lines */}
             {linesVisible && (
@@ -1014,8 +1090,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </div>
         )}
 
-        {/* Answer buttons */}
-        {!isCurrentChallengeComplete && (
+        {/* Answer buttons — Grade 1+. At K the tappable groups + middle "=" ARE
+            the answer surface (tap=choose, picture-primary), so no text options. */}
+        {!isCurrentChallengeComplete && !kTapMode && (
           <div className="space-y-2">
             <p className="text-center text-sm text-slate-400">
               The <span className="text-orange-300 font-semibold">left</span> group has…
@@ -1393,7 +1470,9 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {/* Action buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
+            {/* No Check at K compare-groups — tapping a group is the atomic answer. */}
+            {!isCurrentChallengeComplete && !allChallengesComplete
+              && !(gradeBand === 'K' && currentChallenge?.type === 'compare-groups') && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
