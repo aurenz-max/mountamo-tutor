@@ -529,11 +529,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     id: 'phoneme-explorer',
     misconceptionScope: 'primitive',
     description:
-      'Multi-mode phoneme awareness activity with four progressive modes: '
-      + 'Isolate (match initial/final sound), Blend (combine phoneme tiles into word), '
-      + 'Segment (break word into phonemes), Manipulate (add/delete/substitute phoneme). '
-      + 'Emoji+word 4-choice format. Audio-first with AI tutor. ESSENTIAL for K-2 literacy.',
-    constraints: 'Use concrete, picturable words with clear emoji matches. K: CVC words, initial sounds only.',
+      'Beginning/INITIAL-sound phoneme awareness — NOT for rhyme or ending-sound objectives. '
+      + 'Four progressive modes: Isolate (match the INITIAL sound), Blend (combine phoneme '
+      + 'tiles into a word), Segment (break a word into phonemes), Manipulate (add/delete/'
+      + 'substitute a phoneme). Emoji+word 4-choice format. Audio-first with AI tutor. '
+      + 'ESSENTIAL for K-2 literacy.',
+    constraints: 'Use concrete, picturable words with clear emoji matches. Isolate matches the '
+      + 'INITIAL/beginning phoneme only (the component renders "starts with" — it cannot present '
+      + 'ending-sound or rhyme tasks; route those to rhyme-studio / poetry-lab). K: CVC words.',
     evalModes: [
       {
         evalMode: 'isolate',
@@ -541,7 +544,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['isolate'],
-        description: 'Identify initial/final phoneme — hear a sound, pick the word that starts with it.',
+        description: 'Identify the INITIAL/beginning phoneme — hear a sound, pick the word that starts with it.',
       },
       {
         evalMode: 'blend',

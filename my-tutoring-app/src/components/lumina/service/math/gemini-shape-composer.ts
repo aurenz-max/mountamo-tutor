@@ -7,6 +7,7 @@ import {
 } from "../../primitives/visual-primitives/math/ShapeComposer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -1095,6 +1096,7 @@ const freeCreateSchema: Schema = {
 
 async function generateComposeMatchChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   gradeBand: string,
   tierSection = "",
@@ -1103,6 +1105,7 @@ async function generateComposeMatchChallenges(
     gradeBand === "1" ? COMPOSE_MATCH_TARGETS_G1 : COMPOSE_MATCH_TARGETS_K;
   const prompt = `
 Create an educational SHAPE COMPOSITION activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Students drag smaller shapes to fill a target silhouette.
@@ -1152,6 +1155,7 @@ Generate 5-6 challenges progressing in difficulty.
 
 async function generateComposePictureChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   gradeBand: string,
   tierSection = "",
@@ -1160,6 +1164,7 @@ async function generateComposePictureChallenges(
     gradeBand === "1" ? PICTURE_NAMES_G1 : PICTURE_NAMES_K;
   const prompt = `
 Create an educational SHAPE PICTURE-BUILDING activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Students build a recognizable picture by placing basic shapes into slots.
@@ -1210,6 +1215,7 @@ Generate 5-6 challenges progressing in difficulty.
 
 async function generateDecomposeChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   gradeBand: string,
   tierSection = "",
@@ -1220,6 +1226,7 @@ async function generateDecomposeChallenges(
       : DECOMPOSE_DESCRIPTIONS_K;
   const prompt = `
 Create an educational SHAPE DECOMPOSITION activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Students look at a composite shape and identify which basic shapes make it up.
@@ -1278,6 +1285,7 @@ Generate 5-6 challenges progressing in difficulty.
 
 async function generateHowManyWaysChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   gradeBand: string,
   tierSection = "",
@@ -1285,6 +1293,7 @@ async function generateHowManyWaysChallenges(
   const shapes = gradeShapes(gradeBand);
   const prompt = `
 Create an educational "HOW MANY PIECES" activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Students answer how many of a given small shape are needed to build a larger shape.
@@ -1360,12 +1369,14 @@ Generate 5-6 challenges progressing in difficulty. Use ONLY the known targets an
 
 async function generateFreeCreateChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   _gradeBand: string,
   _tierSection = "",
 ): Promise<ShapeComposerChallenge[]> {
   const prompt = `
 Create an educational FREE-CREATE shape activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Students freely place shapes to create anything they imagine.
@@ -1475,6 +1486,7 @@ export const generateShapeComposer = async (
   ctx: GenerationContext,
 ): Promise<ShapeComposerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ShapeComposerConfig;
   // ── Resolve eval mode ──
@@ -1517,27 +1529,27 @@ export const generateShapeComposer = async (
     switch (type) {
       case "compose-match":
         generators.push(
-          generateComposeMatchChallenges(topic, gradeLevel, gradeBand, section),
+          generateComposeMatchChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
         );
         break;
       case "compose-picture":
         generators.push(
-          generateComposePictureChallenges(topic, gradeLevel, gradeBand, section),
+          generateComposePictureChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
         );
         break;
       case "decompose":
         generators.push(
-          generateDecomposeChallenges(topic, gradeLevel, gradeBand, section),
+          generateDecomposeChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
         );
         break;
       case "how-many-ways":
         generators.push(
-          generateHowManyWaysChallenges(topic, gradeLevel, gradeBand, section),
+          generateHowManyWaysChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
         );
         break;
       case "free-create":
         generators.push(
-          generateFreeCreateChallenges(topic, gradeLevel, gradeBand, section),
+          generateFreeCreateChallenges(topic, scopeSection, gradeLevel, gradeBand, section),
         );
         break;
     }

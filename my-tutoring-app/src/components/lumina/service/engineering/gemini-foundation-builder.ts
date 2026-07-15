@@ -100,8 +100,8 @@ export const generateFoundationBuilder = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<FoundationBuilderData>;
   const prompt = `
-Create an educational Foundation Builder simulator for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Foundation Builder simulator for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - FOUNDATION BUILDER:
 This primitive teaches foundation engineering through realistic design challenges:

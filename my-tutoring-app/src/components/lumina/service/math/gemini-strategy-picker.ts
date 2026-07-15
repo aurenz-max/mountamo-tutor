@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { StrategyPickerData, StrategyPickerChallenge, StrategyId } from "../../primitives/visual-primitives/math/StrategyPicker";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -240,6 +241,7 @@ const setupSchema: Schema = {
 
 async function generateSetup(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   config?: Partial<{
     maxNumber: number;
@@ -259,6 +261,7 @@ async function generateSetup(
 
   const prompt = `
 Create a setup for a strategy-picker math activity teaching "${topic}" to ${gradeLevel} students.
+${scopeSection}
 Grade band: ${gradeBand}. Strategies in play: ${strategies.join(', ')}.
 ${tierSection}
 Return only:
@@ -1131,6 +1134,7 @@ export const generateStrategyPicker = async (
   ctx: GenerationContext,
 ): Promise<StrategyPickerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as StrategyPickerConfig;
   const evalConstraint = resolveEvalModeConstraint(
@@ -1162,7 +1166,7 @@ export const generateStrategyPicker = async (
   // front from the student's tier. Hard → 'tight' near-neighbor foils.
   const distractorTightness: DistractorTightness = supportTier === 'hard' ? 'tight' : 'wide';
 
-  const setup = await generateSetup(topic, gradeLevel, config, tierSection);
+  const setup = await generateSetup(topic, scopeSection, gradeLevel, config, tierSection);
 
   let challenges: StrategyPickerChallenge[];
   if (allowedTypes.size === 1) {

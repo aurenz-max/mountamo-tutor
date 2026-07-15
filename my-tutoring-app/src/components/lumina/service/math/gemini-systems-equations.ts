@@ -1026,8 +1026,8 @@ export const generateSystemsEquations = async (
     : '';
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge systems-of-equations session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge systems-of-equations session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A session contains 3-6 separate systems, each with two linear equations and one integer (x, y) solution.

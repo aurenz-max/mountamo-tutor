@@ -745,8 +745,8 @@ export const generateTransformationLab = async (
     : '';
 
   const prompt = `
-Create the wrapper metadata for a multi-problem geometry transformation session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-problem geometry transformation session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A transformation session contains 3-6 separate problems, all of the same challenge type.

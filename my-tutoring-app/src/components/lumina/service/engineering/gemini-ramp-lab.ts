@@ -148,8 +148,8 @@ export const generateRampLab = async (
   const randomScenario = randomScenarios[Math.floor(Math.random() * randomScenarios.length)];
 
   const prompt = `
-Create an educational Ramp Lab (Inclined Plane) visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Ramp Lab (Inclined Plane) visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 RANDOMIZATION: Use these values for variety: angle ${randomScenario.angle}°, weight ${randomScenario.weight}, friction ${randomScenario.friction}, load type ${randomScenario.load}.
 

@@ -172,8 +172,8 @@ export const generateFlightForcesExplorer = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create educational content for a Flight Forces Explorer that teaches "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create educational content for a Flight Forces Explorer that teaches "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 IMPORTANT: You are providing ONLY educational text content — descriptions, analogies, facts, and challenge questions.
 The component hardcodes all physics simulation, aircraft profiles (cessna, jumbo_jet, glider, fighter), forces (lift, weight, thrust, drag), and flight states (climbing, descending, cruising, stalling).

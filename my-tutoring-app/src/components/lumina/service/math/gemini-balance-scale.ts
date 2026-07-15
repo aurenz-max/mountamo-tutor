@@ -532,8 +532,8 @@ export const generateBalanceScale = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-equation balance scale session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-equation balance scale session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A balance scale session contains 3-6 separate equations of the same difficulty tier.

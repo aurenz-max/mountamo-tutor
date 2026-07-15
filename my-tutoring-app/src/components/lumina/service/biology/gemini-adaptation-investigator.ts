@@ -200,8 +200,8 @@ GRADE 7-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an educational adaptation investigator for: "${topic}
-${scopeSection}".
+  const generationPrompt = `Create an educational adaptation investigator for: "${topic}"
+${scopeSection}.
 
 TARGET GRADE BAND: ${gradeBand}
 

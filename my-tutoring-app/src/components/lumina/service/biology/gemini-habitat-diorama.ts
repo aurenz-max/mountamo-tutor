@@ -260,8 +260,8 @@ GRADE 6-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an interactive habitat diorama for: "${topic}
-${scopeSection}".
+  const generationPrompt = `Create an interactive habitat diorama for: "${topic}"
+${scopeSection}.
 
 TARGET GRADE BAND: ${gradeBand}
 

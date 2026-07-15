@@ -159,8 +159,8 @@ export const generateHydraulicsLab = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create educational content for a Hydraulics Lab that teaches "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create educational content for a Hydraulics Lab that teaches "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 IMPORTANT: You are providing ONLY educational text content — descriptions, analogies, zone explanations, challenges, and Pascal's Law explanation.
 The component hardcodes all physics simulation, canvas rendering, fluid particles, piston geometry, and pressure calculations.

@@ -156,8 +156,8 @@ export const generateMachineProfile = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MachineProfileData>;
   const prompt = `
-Create a comprehensive Machine Profile for "${topic}
-${scopeSection}" appropriate for ${gradeLevel} students.
+Create a comprehensive Machine Profile for "${topic}"
+${scopeSection} appropriate for ${gradeLevel} students.
 
 CONTEXT - MACHINE PROFILE:
 Machine Profile is a display-only component that presents a rich, educational profile of a vehicle or machine.

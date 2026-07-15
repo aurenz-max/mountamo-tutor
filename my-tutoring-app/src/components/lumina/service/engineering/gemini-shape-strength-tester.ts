@@ -100,8 +100,8 @@ export const generateShapeStrengthTester = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<ShapeStrengthTesterData>;
   const prompt = `
-Create an educational Free-Form Structural Building Simulator for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Free-Form Structural Building Simulator for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - FREE-FORM LEGO-STYLE BUILDING:
 This primitive teaches structural engineering through hands-on building with beams:

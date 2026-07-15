@@ -537,8 +537,8 @@ export const generateFunctionMachine = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge function machine session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge function machine session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A function machine session contains 3-6 separate function rules of the SAME challenge type.

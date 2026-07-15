@@ -1028,8 +1028,8 @@ export const generateAngleWorkshop = async (
     : '';
 
   const prompt = `
-Create the wrapper metadata for a multi-problem angle geometry session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-problem angle geometry session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - An angle session contains 3-6 separate angle problems, all of the same challenge type.

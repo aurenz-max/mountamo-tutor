@@ -821,8 +821,8 @@ export const generatePercentBar = async (
     : '';
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge percent-bar session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge percent-bar session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A percent-bar session contains 3-6 separate percent problems of the same difficulty tier.

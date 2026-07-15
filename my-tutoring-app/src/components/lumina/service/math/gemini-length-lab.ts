@@ -448,8 +448,8 @@ export const generateLengthLab = async (
   const randomUnit = validUnitTypes[Math.floor(Math.random() * validUnitTypes.length)];
 
   const prompt = `
-Create an educational length measurement activity for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational length measurement activity for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT:
 - A length lab is a workspace where students compare and measure objects visually

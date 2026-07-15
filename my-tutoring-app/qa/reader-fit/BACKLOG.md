@@ -27,13 +27,6 @@ name↔side-count mapping, the exact objective concept. Fix: derive tracePath
 from targetShape in code (LLM window / code builds structure), not from the
 LLM. ContentOracle candidate: path vertex count ↔ named shape. `/eval-fix`.
 
-### 1g. phoneme-explorer — ending-sound fidelity (GENERATOR)
-Census rhyme trace: objective/intent say ENDING sounds (rime, for rhyme
-comparison); generated isolate-mode data matches by INITIAL phoneme (Cat→Cup
-share /k/). Silent task substitution. Fix in `gemini-phoneme-explorer`
-(ending-position support, or constrain manifest routing away from rime
-objectives). Then PRE audit (emoji choices already present).
-
 ### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-14 fix)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped; see Done.
 Next priorities:
@@ -95,6 +88,17 @@ non-decodable words ("cloud") — INTENT + GENERATOR. Also both unaudited at PRE
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **1g. phoneme-explorer — ending-sound fidelity, FIXED + VERIFIED (routing)** (2026-07-14,
+  Handoff Task 2). Report: `qa/topic-fidelity/phoneme-explorer-2026-07-14.md`. Was a
+  three-layer over-claim: catalog advertised "match initial/final sound", generator teased
+  "or ends with" + grade-1/2 "final/medial", but the component hardcodes "starts with" and
+  cannot render ending/medial tasks. Verdict WRONG PRIMITIVE for rhyme (rhyme-studio /
+  poetry-lab already serve it) → routing fix: catalog + generator now say INITIAL/beginning
+  sounds ONLY. **Verified:** regression 15/15 isolate draws honor the beginning sound;
+  manifest 3/3 runs no longer select phoneme-explorer for the rhyme objective (routes to
+  rhyme-studio + poetry-lab). typecheck:lumina 0 errors. Follow-up filed: a real
+  final-phoneme isolation capability (position field + component copy + oracle) is a
+  primitive-expansion slice, not done here. PRE audit still open (emoji choices present).
 - **1d. knowledge-check @ PRE — K CENSUS TOP FINDING, all 5 slices RESOLVED, READY**
   (2026-07-14, `--fix`). Report: `knowledge-check-PRE-2026-07-14.md`. Was
   PRIMITIVE-GAP + SCAFFOLD-GAP: every K census draw was a text-primary MCQ

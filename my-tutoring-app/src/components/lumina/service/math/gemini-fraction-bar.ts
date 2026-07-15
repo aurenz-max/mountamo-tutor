@@ -513,8 +513,8 @@ export const generateFractionBar = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}
-${scopeSection}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}"
+${scopeSection} (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT fractions of the SAME challenge type. Each fraction runs through a three-phase flow: identify the numerator (MC) → identify the denominator (MC) → shade the fraction on a bar.
 

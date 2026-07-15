@@ -35,11 +35,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   isolate: {
     promptDoc:
       `"isolate": Student hears/sees a target phoneme (letter sound) and an example word, `
-      + `then picks which of 4 emoji+word choices starts with (or ends with) the same sound. `
+      + `then picks which of 4 emoji+word choices starts with the same INITIAL/beginning sound. `
       + `Set phoneme (uppercase letter), phonemeSound (pronunciation), exampleWord + exampleEmoji. `
       + `Provide exactly 4 choices (1 correct starting with same sound, 3 distractors starting with different sounds). `
-      + `K: initial sounds only, single consonants. Grade 1: initial/final, blends/digraphs. Grade 2: medial vowels.`,
-    schemaDescription: "'isolate' (identify initial/final phoneme)",
+      + `This mode is BEGINNING-sound only — the component renders "starts with" and cannot present `
+      + `ending-sound, rhyme, or medial-sound matching. K: single consonants. Grade 1: blends/digraphs as onsets.`,
+    schemaDescription: "'isolate' (identify the INITIAL/beginning phoneme)",
   },
   blend: {
     promptDoc:
@@ -116,7 +117,7 @@ const gradeGuidelines: Record<string, string> = {
 - Use a wider vocabulary but keep words concrete and picturable
 - Words can be up to 5 letters
 - Include a mix of consonant and vowel sounds
-- For isolate: initial AND final sounds
+- For isolate: initial/beginning sounds ONLY (the component cannot present final or medial sounds)
 - For blend: 3-4 phoneme words
 - For segment: 3-4 phoneme words
 - For manipulate: initial and final substitution, simple deletion`,
@@ -125,7 +126,7 @@ const gradeGuidelines: Record<string, string> = {
 - Can include less common consonant sounds and digraphs
 - Words can be up to 6 letters but must still be concrete and picturable
 - Use grade-appropriate vocabulary
-- For isolate: initial, final, AND medial sounds
+- For isolate: initial/beginning sounds ONLY (the component cannot present final or medial sounds)
 - For blend: 4-5 phoneme words
 - For segment: 4-5 phoneme words
 - For manipulate: all operations (substitute, delete, add)`,

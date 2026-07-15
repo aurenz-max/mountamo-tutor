@@ -94,8 +94,8 @@ export const generateBlueprintCanvas = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<BlueprintCanvasData>;
   const prompt = `
-Create an educational Blueprint Canvas activity for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Blueprint Canvas activity for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - BLUEPRINT CANVAS:
 Blueprint Canvas is a general-purpose grid-based drawing surface for technical drawings.

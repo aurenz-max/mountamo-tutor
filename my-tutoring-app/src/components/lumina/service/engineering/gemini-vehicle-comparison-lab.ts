@@ -120,8 +120,8 @@ export const generateVehicleComparisonLab = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<VehicleComparisonLabData>;
   const prompt = `
-Create a Vehicle Comparison Lab for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create a Vehicle Comparison Lab for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT — VEHICLE COMPARISON:
 A Vehicle Comparison Lab lets students compare real vehicles across multiple dimensions:

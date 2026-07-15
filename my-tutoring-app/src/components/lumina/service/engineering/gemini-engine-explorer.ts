@@ -145,8 +145,8 @@ export const generateEngineExplorer = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EngineExplorerData>;
   const prompt = `
-Create educational content for a Living Engine simulation that teaches "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create educational content for a Living Engine simulation that teaches "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 IMPORTANT: You are providing ONLY the educational text content — analogies, explanations, challenges, and narration.
 The engine simulation (particles, physics, animation) is handled by the component. You write the words.

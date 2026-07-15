@@ -218,8 +218,8 @@ GRADE 7-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an interactive energy cycle engine for: "${topic}
-${scopeSection}".
+  const generationPrompt = `Create an interactive energy cycle engine for: "${topic}"
+${scopeSection}.
 
 TARGET GRADE BAND: ${gradeBand}
 

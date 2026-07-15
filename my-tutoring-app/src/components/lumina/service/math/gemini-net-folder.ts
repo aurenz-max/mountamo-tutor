@@ -8,6 +8,7 @@ import {
 } from '../../primitives/visual-primitives/math/NetFolder';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -474,6 +475,7 @@ const countFEVSchema: Schema = {
 
 async function generateIdentifyChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   gradeBand: string,
   chosenSolid: string,
@@ -483,6 +485,7 @@ async function generateIdentifyChallenges(
   const pool = gradeSolidPool(gradeBand);
   const prompt = `
 Create an educational 3D solid IDENTIFICATION activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
@@ -548,6 +551,7 @@ Generate exactly ${challengeCount} challenges progressing in difficulty.
 
 async function generateMatchFacesChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   _gradeBand: string,
   chosenSolid: string,
@@ -558,6 +562,7 @@ async function generateMatchFacesChallenges(
 
   const prompt = `
 Create an educational FACE MATCHING activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
@@ -621,6 +626,7 @@ Generate exactly ${challengeCount} challenges.
 
 async function generateValidNetChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   _gradeBand: string,
   chosenSolid: string,
@@ -630,6 +636,7 @@ async function generateValidNetChallenges(
 
   const prompt = `
 Create an educational VALID NET CHECK activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
@@ -686,6 +693,7 @@ Generate exactly ${challengeCount} challenges.
 
 async function generateSurfaceAreaChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   _gradeBand: string,
   chosenSolid: string,
@@ -695,6 +703,7 @@ async function generateSurfaceAreaChallenges(
 
   const prompt = `
 Create an educational SURFACE AREA activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
@@ -753,6 +762,7 @@ Generate exactly ${challengeCount} challenges progressing in difficulty (larger 
 
 async function generateCountFEVChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   _gradeBand: string,
   chosenSolid: string,
@@ -762,6 +772,7 @@ async function generateCountFEVChallenges(
 
   const prompt = `
 Create an educational COUNTING FACES, EDGES, AND VERTICES activity for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 ${tierSection}
 
@@ -885,6 +896,7 @@ export const generateNetFolder = async (
   ctx: GenerationContext,
 ): Promise<NetFolderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as NetFolderConfig;
   // ── Resolve eval mode ──
@@ -930,19 +942,19 @@ export const generateNetFolder = async (
     // scaffold is still applied per-challenge from each challenge's OWN type below.
     switch (type) {
       case 'identify_solid':
-        generators.push(generateIdentifyChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateIdentifyChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'count_faces_edges_vertices':
-        generators.push(generateCountFEVChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateCountFEVChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'match_faces':
-        generators.push(generateMatchFacesChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateMatchFacesChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'valid_net':
-        generators.push(generateValidNetChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateValidNetChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
       case 'surface_area':
-        generators.push(generateSurfaceAreaChallenges(topic, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
+        generators.push(generateSurfaceAreaChallenges(topic, scopeSection, gradeLevel, gradeBand, chosenSolidType, perTypeCount, tierSection));
         break;
     }
   }

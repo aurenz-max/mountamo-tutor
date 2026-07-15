@@ -129,8 +129,8 @@ export const generatePropulsionTimeline = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PropulsionTimelineData>;
   const prompt = `
-Create a Propulsion Timeline for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create a Propulsion Timeline for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT — HISTORY OF TRANSPORTATION:
 This timeline shows how humans have moved throughout history, from walking to spacecraft.

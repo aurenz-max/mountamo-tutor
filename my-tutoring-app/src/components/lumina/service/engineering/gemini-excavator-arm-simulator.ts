@@ -244,8 +244,8 @@ export const generateExcavatorArmSimulator = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<ExcavatorArmSimulatorData>;
   const prompt = `
-Create an educational Excavator Arm Simulator visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Excavator Arm Simulator visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - EXCAVATOR ARM ENGINEERING:
 The excavator arm is a multi-jointed mechanical system with three main components:

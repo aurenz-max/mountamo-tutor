@@ -183,8 +183,8 @@ export const generateLeverLab = async (
   const randomScenario = randomScenarios[Math.floor(Math.random() * randomScenarios.length)];
 
   const prompt = `
-Create an educational Lever Lab visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Lever Lab visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CRITICAL REQUIREMENT - UNBALANCED START:
 The lever MUST start in an UNBALANCED state! This is a problem-solving activity where students need to figure out how to balance it.

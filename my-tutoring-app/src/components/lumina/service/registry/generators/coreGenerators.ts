@@ -12,7 +12,7 @@
  * Usage: import './registry/generators/coreGenerators';
  */
 
-import { registerGenerator, registerContextGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // ============================================================================
 // Core Narrative Component Imports (from dedicated service files)
@@ -74,13 +74,6 @@ import { generatePassageStudio } from '../../core/gemini-passage-studio';
 type AnyConfig = Record<string, any>;
 
 /**
- * Helper to safely extract config values with proper typing
- */
-const getConfig = (item: { config?: unknown }): AnyConfig => {
-  return (item.config as AnyConfig) || {};
-};
-
-/**
  * Extract subject from topic keywords
  */
 const inferSubject = (topic: string): string => {
@@ -125,13 +118,20 @@ const inferGradeLevel = (gradeContext: string): string => {
 // ============================================================================
 
 // Curator Brief (intro/hook)
-registerGenerator('curator-brief', async (item, topic, gradeContext) => {
-  const subject = inferSubject(topic);
-  const gradeLevel = inferGradeLevel(gradeContext);
-  const data = await generateIntroBriefing(topic, subject, gradeLevel, undefined, undefined, item.intent);
+registerContextGenerator('curator-brief', async (ctx) => {
+  const subject = inferSubject(ctx.topic);
+  const gradeLevel = inferGradeLevel(ctx.gradeContext);
+  const data = await generateIntroBriefing(
+    ctx.topic,
+    subject,
+    gradeLevel,
+    undefined,
+    undefined,
+    ctx.intent,
+  );
   return {
     type: 'curator-brief',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -225,15 +225,15 @@ registerContextGenerator('scale-spectrum', async (ctx) => {
 // Annotated Example (worked examples with annotations). Watch-only —
 // practice on a sibling problem is handled by the standalone
 // `practice-problem` primitive.
-registerGenerator('annotated-example', async (item, topic, gradeContext) => {
+registerContextGenerator('annotated-example', async (ctx) => {
   const data = await generateAnnotatedExample({
-    topic,
-    gradeContext,
-    intent: item.intent,
+    topic: ctx.topic,
+    gradeContext: ctx.gradeContext,
+    intent: ctx.intent,
   });
   return {
     type: 'annotated-example',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data
   };
 });
@@ -374,16 +374,16 @@ registerContextGenerator('sentence-analyzer', async (ctx) => {
 // Knowledge Check (multiple problem types: MC, T/F, Fill-in, Matching, Sequencing, Categorization)
 // Always uses the KC orchestrator — it plans optimal problem type mix, insets,
 // and difficulty progression autonomously.
-registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLevel) => {
-  const config = getConfig(item);
+registerContextGenerator('knowledge-check', async (ctx) => {
+  const config = ctx.raw as AnyConfig;
 
-  const problems = await generateKnowledgeCheck(topic, gradeLevel, {
+  const problems = await generateKnowledgeCheck(ctx.topic, ctx.gradeLevel, {
     useOrchestrator: true,
     count: config.count || config.problemCount || 1,
     context: config.context,
     // Fall back to this instance's manifest intent so the per-component
     // objective reaches the orchestrator + every problem prompt (ADDITIONAL CONTEXT).
-    objectiveText: config.objectiveText || (item.intent as string | undefined),
+    objectiveText: config.objectiveText || ctx.intent,
     bloomsTier: config.targetEvalMode as BloomsTier | undefined,
     // Lesson objectives with curriculum IDs (stamped by flattenManifestToLayout
     // on the final assessment) — the orchestrator tags each problem with the
@@ -394,12 +394,12 @@ registerGenerator('knowledge-check', async (item, topic, gradeContext, gradeLeve
   });
   return {
     type: 'knowledge-check',
-    instanceId: item.instanceId,
+    instanceId: ctx.instanceId,
     data: {
       problems,
       problemType: 'orchestrated',
-      topic,
-      gradeContext
+      topic: ctx.topic,
+      gradeContext: ctx.gradeContext
     }
   };
 });

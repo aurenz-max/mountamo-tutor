@@ -230,8 +230,8 @@ export const generateAirfoilLab = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<AirfoilLabData>;
   const prompt = `
-Create an educational Airfoil Lab visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Airfoil Lab visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - AIRFOIL AERODYNAMICS:
 An Airfoil Lab teaches how wing shapes create lift and drag through hands-on experimentation:

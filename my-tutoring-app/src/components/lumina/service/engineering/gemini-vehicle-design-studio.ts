@@ -292,8 +292,8 @@ export const generateVehicleDesignStudio = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<VehicleDesignStudioData>;
   const prompt = `
-Create an educational Vehicle Design Studio configuration for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Vehicle Design Studio configuration for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - VEHICLE DESIGN STUDIO:
 Vehicle Design Studio teaches the engineering design process through drag-and-drop vehicle building:

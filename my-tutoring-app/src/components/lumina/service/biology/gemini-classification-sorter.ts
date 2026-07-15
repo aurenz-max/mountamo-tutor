@@ -200,8 +200,8 @@ GRADE 6-8 GUIDELINES:
     '6-8': '3-6 categories (can be hierarchical)'
   };
 
-  const generationPrompt = `Create an interactive classification sorting activity for: "${topic}
-${scopeSection}".
+  const generationPrompt = `Create an interactive classification sorting activity for: "${topic}"
+${scopeSection}.
 
 TARGET GRADE BAND: ${gradeBand}
 

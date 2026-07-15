@@ -119,8 +119,8 @@ export const generateWheelAxleExplorer = async (
   const randomScenario = randomScenarios[Math.floor(Math.random() * randomScenarios.length)];
 
   const prompt = `
-Create an educational Wheel & Axle Explorer visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Wheel & Axle Explorer visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - WHEEL & AXLE BASICS:
 A wheel and axle is a simple machine consisting of:

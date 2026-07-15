@@ -917,8 +917,8 @@ export const generateTwoWayTable = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge two-way table practice session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge two-way table practice session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A two-way table session contains 3-6 separate contingency-table problems of the same probability concept, surfaced sequentially.

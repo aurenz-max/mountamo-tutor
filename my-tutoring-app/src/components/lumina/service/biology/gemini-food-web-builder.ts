@@ -193,8 +193,8 @@ GRADE 6-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an interactive food web builder for: "${topic}
-${scopeSection}".
+  const generationPrompt = `Create an interactive food web builder for: "${topic}"
+${scopeSection}.
 
 TARGET GRADE BAND: ${gradeBand}
 

@@ -145,8 +145,8 @@ export const generateBridgeBuilder = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<BridgeBuilderData>;
   const prompt = `
-Create an educational Bridge Builder visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Bridge Builder visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - BRIDGE ENGINEERING:
 Bridges use structural elements to span gaps and support loads:

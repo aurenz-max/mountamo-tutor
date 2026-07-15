@@ -796,8 +796,8 @@ export const generatePlaceValueChart = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}
-${scopeSection}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}"
+${scopeSection} (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT numbers. Each number runs through a 3-phase flow:
   Phase 1: "Identify the Place" — pick the place name of a highlighted digit

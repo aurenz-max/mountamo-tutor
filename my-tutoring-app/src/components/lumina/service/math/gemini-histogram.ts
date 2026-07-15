@@ -771,8 +771,8 @@ export const generateHistogram = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create a histogram analysis SESSION for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create a histogram analysis SESSION for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 THE STUDENT EXPERIENCE:
 - The student walks through ${instanceCount} distinct histograms, one at a time.

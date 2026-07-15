@@ -7,7 +7,7 @@
  * Usage: import './registry/generators/mathGenerators';
  */
 
-import { registerGenerator, registerContextGenerator } from '../contentRegistry';
+import { registerContextGenerator } from '../contentRegistry';
 
 // Math Generator Imports
 import { generatePlaceValueChart } from '../../math/gemini-place-value';
@@ -466,14 +466,14 @@ registerContextGenerator('function-sketch', async (ctx) => ({
 // Distribution Explorer (probability distributions: explore → identify → compute)
 // `targetEvalMode` from item.config drives both the catalog eval mode resolution
 // (schema enum constraint + logging) and the orchestrator's per-mode prompt.
-registerGenerator('distribution-explorer', async (item, topic, gradeContext) => ({
+registerContextGenerator('distribution-explorer', async (ctx) => ({
   type: 'distribution-explorer',
-  instanceId: item.instanceId,
+  instanceId: ctx.instanceId,
   data: await generateDistributionExplorer({
-    topic,
-    gradeContext,
-    ...item.config,
-    intent: item.intent || item.title,
+    topic: ctx.topic,
+    gradeContext: ctx.gradeContext,
+    ...ctx.raw,
+    intent: ctx.intent,
   }),
 }));
 
@@ -481,17 +481,20 @@ registerGenerator('distribution-explorer', async (item, topic, gradeContext) => 
 // Reuses the annotated-example pipeline under the hood; `targetEvalMode` from
 // item.config (derive_easy | derive_medium | derive_hard) drives the per-difficulty
 // intent string passed to the orchestrator.
-registerGenerator('practice-problem', async (item, topic, gradeContext) => ({
-  type: 'practice-problem',
-  instanceId: item.instanceId,
-  data: await generatePracticeProblem(topic, gradeContext, {
-    ...item.config,
-    // No item.title fallback: when the manifest assigns no explicit intent, leave
-    // config.intent undefined so the generator keeps its tuned DIFFICULTY_INTENT
-    // default (a generic title would be worse than the per-difficulty default).
-    intent: (item.config?.intent as string | undefined) || item.intent,
-  }),
-}));
+registerContextGenerator('practice-problem', async (ctx) => {
+  // Preserve the tuned per-difficulty default when the resolver's only fallback is
+  // a generic manifest title; explicit config/item intent still wins.
+  const explicitIntent = ctx.intent !== ctx.title ? ctx.intent : undefined;
+
+  return {
+    type: 'practice-problem',
+    instanceId: ctx.instanceId,
+    data: await generatePracticeProblem(ctx.topic, ctx.gradeContext, {
+      ...ctx.raw,
+      intent: explicitIntent,
+    }),
+  };
+});
 
 // ============================================================================
 // Legacy Math Primitives (now have dedicated service files)

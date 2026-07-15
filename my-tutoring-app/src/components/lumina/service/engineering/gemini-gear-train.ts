@@ -166,8 +166,8 @@ export const generateGearTrainBuilder = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<GearTrainBuilderData>;
   const prompt = `
-Create an educational Gear Train Builder visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Gear Train Builder visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - GEAR BASICS:
 Gears are toothed wheels that mesh together to transfer motion and force.

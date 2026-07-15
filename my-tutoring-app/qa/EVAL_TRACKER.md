@@ -19,7 +19,7 @@
 | phonics-blender | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phonics-blender-2026-03-15.md) |
 | rhyme-studio | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/rhyme-studio-2026-03-15.md) |
 | syllable-clapper | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/syllable-clapper-2026-03-15.md) |
-| phoneme-explorer | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/phoneme-explorer-2026-03-15.md) |
+| phoneme-explorer | 4 | 4 | 0 | 2026-07-14 | [topic-fidelity: routing fix](topic-fidelity/phoneme-explorer-2026-07-14.md) |
 | sound-swap | 3 | 0 | 3 | 2026-06-21 | [structural sweep](eval-reports/sound-swap-2026-06-21.md) |
 | letter-spotter | 3 | 0 | 1 | 2026-06-21 | [structural sweep](eval-reports/letter-spotter-2026-06-21.md) |
 | letter-sound-link | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-sound-link-2026-03-15.md) |
@@ -103,7 +103,7 @@
 | vocabulary-explorer | 3 | 3 | 0 | 2026-07-07 | [report](eval-reports/vocabulary-explorer-2026-07-06.md) — VE-5 RESOLVED 2026-07-07 (SP-6 truncation bounded) |
 | foundation-explorer | 4 | 3 | 1 | 2026-07-04 | [report](eval-reports/foundation-explorer-2026-07-04.md) |
 
-**Totals:** 351/369 modes passing (95.1%) | 26 open issues (6 CRITICAL, 19 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 351/369 modes passing (95.1%) | 28 open issues (6 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -413,10 +413,34 @@ ceiling).
 **Fix pattern:** Add the missing derived keys to `aiPrimitiveData` (preferred — scaffold copy is the reviewed artifact) or rename the scaffold reference. Template: dot-plot (`dataCount: dataPoints.length`, `parallel` added to the bag).
 **Detection:** `/tutor-test` (`/api/lumina/tutor-test`, `service/qa/tutoring/scaffoldAudit.ts`) — deterministic, CI-able; sweep mode covers all scaffolds in one call. `/add-tutoring-scaffold` Phase 5 now gates on it.
 
+---
+
+### SP-28: Resolved intent reaches the generator but is never consumed — different objectives collapse to the lesson topic
+
+**Affected:** 52 context-native generator files across astronomy, biology, calendar,
+engineering, and math; five remaining legacy registry adapters exposed the same
+defect class at dispatch.
+**Risk:** The manifest can assign two primitives different subskills while both
+generate from the same broad topic. Eval-test still reports `pass` because schema and
+challenge type are valid, masking curriculum drift.
+**Root cause:** Context delivery and context consumption were tested separately and
+only for a hand-maintained subset. There was no invariant requiring a generator to
+use `ctx.intent`, `ctx.scope`, or `ctx.objective`.
+**Fix pattern:** Use the shared authoritative `buildScopePromptSection(ctx.scope)` in
+the existing prompt; keep every registry adapter on `registerContextGenerator`; probe
+with one fixed broad topic and varied intent. CI now runs
+`audit-intent-consumption.mjs` and asserts all registered generators are
+context-native. Structural coverage is 171/171 generator files and 193/193 registry
+entries. Code-picked value pools remain PARTIAL until an intent-aware selector is
+added; prompt/title movement alone is not a full-fidelity verdict. See
+[`qa/topic-fidelity/intent-contract-sweep-2026-07-14.md`](topic-fidelity/intent-contract-sweep-2026-07-14.md).
+
 ## Open Issues — CRITICAL / HIGH
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
+| HIST-1 | histogram | all modes | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe with intent "daily temperatures" vs. "daily reading minutes" changed the session title, but each session still mixed temperature/height/score/time/minutes datasets. The deterministic context pool ignores intent, so student-facing values do not consistently serve the assigned objective. Add an intent-aware context selector; do not count prompt/title movement as FULL fidelity. | GENERATOR |
+| NF-1 | net-folder | identify_solid (likely all modes) | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe requested cubes vs. triangular prisms; both sessions generated rectangular-prism challenges. The code-picked solid selector ignores intent even though prompt framing now receives scope. Add an intent-aware deterministic solid selector and re-probe every mode. | GENERATOR |
 | TU-1 | fast-fact | tutoring | HIGH | Answer leak | `{{correctAnswer}}` interpolated into a scaffolding level — a script the tutor reads aloud (fine in contextKeys, not in spoken text). `/tutor-test` sweep 2026-07-08. | CATALOG |
 | TU-2 | comparison-builder | tutoring | HIGH | Answer leak | `{{correctAnswer}}` interpolated into a scaffolding level (same class as TU-1). | CATALOG |
 | ~~TU-3~~ | ~~word-sorter~~ | ~~tutoring~~ | ~~HIGH~~ | ~~Answer leak~~ | ~~`{{correctCategory}}` in a scaffolding level — doubly broken (also unresolvable).~~ RESOLVED 2026-07-14 via `/reader-fit --fix` (RF-2): level 3 reworded — no answer key referenced, spoken lines reference only `{{selectedWord}}` (the stimulus). tutor-test pass, 0 findings; live 3/3 no `answer-leak-live`. | CATALOG |
@@ -535,6 +559,7 @@ ceiling).
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| SP-28 | cross-board intent contract | 2026-07-14 | SYSTEM + GENERATORS. Migrated the final 5 registry adapters to `registerContextGenerator`; wired authoritative scope into 52 dead-intent generators; replaced the 34-item ledger with all-registry coverage; added `npm run audit:intent-contract` + CI test. Structural coverage 193/193 registry entries and 171/171 generator files. Fixed-topic/varying-intent probes: classification-sorter, machine-profile, timeline-builder, constellation-builder FULL; histogram and net-folder PARTIAL because code-picked values still need Tier-2 selectors. Full suite 726/726; Lumina typecheck clean. |
 | RF-1 / PL-1 / PL-2 / PL-3 | poetry-lab | 2026-07-14 | GENERATOR (per-mode dispatcher, SP-14/SP-8 class). [gemini-poetry-lab.ts](../src/components/lumina/service/literacy/gemini-poetry-lab.ts) rewritten: the single multi-purpose schema (`required: [title, gradeLevel, mode]`, per-mode fields in prompt prose flash-lite ignored 4/4 draws) split into `analysisSchema` / `compositionSchema` dispatched by `requestedMode` — NOT a parallel orchestrator (one invocation = exactly one mode; nothing to fan out). Analysis schema REQUIRES poemLines/correctMood/moodOptions/figurativeInstances/rhymeScheme/rhymeSchemeOptions and has no composition fields (templateType badge leak impossible by construction → **RF-1**); offsets no longer requested from the LLM — `figurativeInstances` carries text+type only and post-process recomputes offsets via `indexOf` with non-overlapping occurrence claiming (→ **PL-1**, SP-8); `ensureAnswerInOptions` guarantees correctMood/rhymeScheme membership (random slot, no positional tell); composition schema REQUIRES templateType/compositionPrompt/templateConstraints(lineCount) (→ **PL-2**) and structured-template constraints are DERIVED from templateType (haiku [5,7,5], limerick AABBA [8,8,5,5,8], sonnet-intro ABAB, acrostic lineCount = word length; wordless acrostic degrades to free-verse) (→ **PL-3**); arrays bounded + maxOutputTokens 8192 (flash-lite-truncation template). Verified: analysis ×3 grade-3 + ×1 K, composition ×1 — all PASS, offsets slice-verified, answers ∈ options, no cross-mode leaks, K draw = 4-line AABB nursery rhyme with figurativeInstances=[] . typecheck:lumina 0 errors. |
 | RF-2 | poetry-lab | 2026-07-14 | COMPONENT (skip absent phases). [PoetryLab.tsx](../src/components/lumina/primitives/visual-primitives/literacy/PoetryLab.tsx): `computeAnalysisPhases(data)` builds the phase list from the data — mood only if moodOptions non-empty, figurative only if instances non-empty, rhyme only if scheme+options present, review always — so a K draw (zero figurative REQUIRED by the grade note) flows mood→rhyme→review instead of deadlocking on `disabled={foundFigurative.size === 0}`. Next-button labels + stepper + review stat grid derive from the same list; scoring normalizes base weights (25/40/35) over present phases only. Data path verified via K eval-test draw (figN=0); component flow tsc-clean, **needs a browser drive of a K analysis lesson**. The QA-harness half of the old RF-2 (eval-test false-pass) is now tracked as PL-4. |
 | RF-3 | poetry-lab | 2026-07-14 | CATALOG (routing truth, interim). Phantom "TTS read-aloud with expressive prosody" sentence and K claims ("nursery rhymes… identifying rhyming words") stripped from [literacy.ts](../src/components/lumina/service/manifest/catalog/literacy.ts) — no audio code exists; those claims were what sold it into K manifests. Re-banded: analysis grades 2-6, composition grades 3-6, explicit "NOT suitable for K-1 / pre-readers". INTERIM state: K rhyme coverage returns as a planned `rhyme_hunt` eval mode (hear the poem via Gemini Live aiDirectives STIMULUS beat, tap the rhyming pair — β ~1.5) + tutoring scaffold (RF-4), at which point the K claim goes back honestly. |

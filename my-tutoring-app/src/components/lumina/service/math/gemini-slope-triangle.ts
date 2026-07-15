@@ -771,8 +771,8 @@ export const generateSlopeTriangle = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge slope triangle session on "${topic}
-${scopeSection}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge slope triangle session on "${topic}"
+${scopeSection} for ${gradeLevel} students.
 
 CONTEXT:
 - A slope triangle session contains 3-6 separate lines, each with one right triangle showing rise and run.

@@ -135,8 +135,8 @@ export const generateTowerStacker = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<TowerStackerData>;
   const prompt = `
-Create an educational Tower Stacker visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Tower Stacker visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - TOWER STACKING ENGINEERING:
 Tower Stacker teaches structural stability through hands-on building:

@@ -497,8 +497,8 @@ export const generateConstructionSequencePlanner = async (
     : (!isNaN(gradeNum) ? gradeNum >= 3 : false);
 
   const prompt = `
-Create an educational Construction Sequence Planner for teaching "${topic}
-${scopeSection}" to grade ${gradeLevel} students.
+Create an educational Construction Sequence Planner for teaching "${topic}"
+${scopeSection} to grade ${gradeLevel} students.
 
 WHAT TO GENERATE:
 A set of ${taskCount.min}-${taskCount.max} construction tasks for a building project. Each task has an ID, name, duration, icon, description, dependencies, and category.

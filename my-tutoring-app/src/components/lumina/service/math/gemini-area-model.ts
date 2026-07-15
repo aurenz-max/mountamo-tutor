@@ -453,8 +453,8 @@ export const generateAreaModel = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topic}
-${scopeSection}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topic}"
+${scopeSection} (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT factor pairs of the SAME challenge type.
 

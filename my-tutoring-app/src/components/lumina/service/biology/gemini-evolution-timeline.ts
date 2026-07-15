@@ -155,8 +155,8 @@ export const generateEvolutionTimeline = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '4-5';
 
-  const prompt = `Create an interactive deep-time evolution timeline for the topic: "${topic}
-${scopeSection}"
+  const prompt = `Create an interactive deep-time evolution timeline for the topic: "${topic}"
+${scopeSection}
 
 TARGET GRADE BAND: ${gradeBand}
 ${gradeContext[gradeBand]}

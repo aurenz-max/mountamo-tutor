@@ -238,8 +238,8 @@ export const generatePaperAirplaneDesigner = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PaperAirplaneDesignerData>;
   const prompt = `
-Create an educational Paper Airplane Designer visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Paper Airplane Designer visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT — PAPER AIRPLANE ENGINEERING DESIGN PROCESS:
 Paper Airplane Designer teaches the engineering design process through iterative airplane creation:

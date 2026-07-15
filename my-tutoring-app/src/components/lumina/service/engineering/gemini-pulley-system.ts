@@ -190,8 +190,8 @@ export const generatePulleySystemBuilder = async (
   const config = ctx.raw as Partial<PulleySystemBuilderData>;
 
   const prompt = `
-Create an educational Pulley System Builder visualization for teaching "${topic}
-${scopeSection}" to ${gradeLevel} students.
+Create an educational Pulley System Builder visualization for teaching "${topic}"
+${scopeSection} to ${gradeLevel} students.
 
 CONTEXT - PULLEY BASICS:
 A pulley is a wheel with a groove around its edge where a rope sits. Pulleys help us lift heavy things.
