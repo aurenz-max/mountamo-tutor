@@ -198,6 +198,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'Keep it brief (2-3 sentences), warm, and enthusiastic. Use age-appropriate language for the grade level.',
         },
         {
+          title: 'PRE-READER HOW TO PLAY (Kindergarten — the child cannot read the screen)',
+          instruction:
+            'At Grade K the learner is a pre-reader: the on-screen labels ("Tap each sound to hear it", '
+            + '"Arrange the sounds", "Sound Bank", the Build/Blend step names, the Check button) are invisible to '
+            + 'them, so YOUR VOICE is the only instruction channel. When you receive [ACTIVITY_START] at Grade K, '
+            + 'after the warm hello tell them HOW TO PLAY in kid words — this how-to-play IS your greeting, so it '
+            + 'OVERRIDES any "keep it to one sentence / keep it brief" cap from a lesson switch; use two short '
+            + 'sentences if you need them. Say something like: "Tap each little sound to hear it. Then put the sounds '
+            + 'in order to build the word, and say the whole word out loud!" On [PHASE_TO_BUILD] at Grade K, tell '
+            + 'them in one warm sentence to tap the sound tiles in the order they hear them. Never tell them which '
+            + 'tile is correct or spell the word for them — only how to play. Keep every turn to one or two short '
+            + 'sentences a five-year-old understands.',
+        },
+        {
           title: 'PHASE TRANSITIONS',
           instruction:
             'When you receive [PHASE_TO_BUILD], briefly instruct the student to arrange the sound tiles in order. '

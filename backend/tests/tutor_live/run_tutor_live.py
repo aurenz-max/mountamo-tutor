@@ -1185,9 +1185,111 @@ def build_sorting_station_journey(live: Dict[str, Any], grade: str) -> Dict[str,
     }}
 
 
+def build_phonics_blender_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT + STIMULUS journey for phonics-blender @ K (cvc).
+
+    Replays the EXACT sendText messages PhonicsBlender.tsx emits — [ACTIVITY_START],
+    [PHASE_TO_BUILD], [NEXT_WORD] — and checks (must_include) that the catalog
+    PRE-READER HOW-TO-PLAY aiDirective actually makes the tutor voice, in child terms,
+    an ACTION the pre-reader can take (tap the sounds / put them in order / say the
+    word). The on-screen labels ("Tap each sound to hear it", "Arrange the sounds",
+    the Check button) are invisible to a non-reader, so the how-to-play must be SPOKEN
+    and must survive the lesson one-sentence cap — the whole point of the durable
+    aiDirective carrier (a bare "let's blend sounds!" greeting strands the child).
+    The individual sounds are the STIMULUS; they are voiced on tap via
+    [PRONOUNCE_SOUND] (not modeled here — that path is per-tap, not greeting-capped).
+    Leak stance: saying the target word ("cat") IS the blend goal being taught, not a
+    leak; tile ORDER is randomized in the bank and never in the scaffold, so there is
+    nothing positional to leak.
+    """
+    data = live.get("generatedData") or {}
+    words = data.get("words") or []
+    w0 = words[0] if words else {}
+    w1 = words[1] if len(words) > 1 else w0
+    total = len(words) or 1
+    grade_level = data.get("gradeLevel", "K")
+    pattern = data.get("patternType", "cvc")
+    pattern_label = {
+        "cvc": "CVC Words", "cvce": "Silent-E Words", "blend": "Consonant Blends",
+        "digraph": "Digraphs", "r-controlled": "R-Controlled Vowels", "diphthong": "Diphthongs",
+    }.get(pattern, pattern)
+
+    def phonemes_of(w: Dict[str, Any]) -> List[str]:
+        return [str(p.get("sound", "")) for p in (w.get("phonemes") or [])]
+
+    def word_of(w: Dict[str, Any]) -> str:
+        return str(w.get("targetWord", "")).strip()
+
+    # ORIENT bar: the tutor must voice a play ACTION a non-reader can perform —
+    # tapping the sounds, putting them in order, or saying the word.
+    action_group = ["tap", "touch", "press", "listen", "hear", "say",
+                    "sound", "blend", "put", "order", "build", "together"]
+    build_group = ["order", "arrange", "put", "first", "next", "line", "build", "tap", "sound"]
+
+    def bag_for(w: Dict[str, Any], completed: int, phase: str = "listen") -> Dict[str, Any]:
+        return {
+            "patternType": pattern,
+            "gradeLevel": grade_level,
+            "totalWords": total,
+            "currentWord": word_of(w),
+            "currentPhase": phase,
+            "targetPhonemes": " + ".join(phonemes_of(w)),
+            "placedPhonemes": "",
+            "completedWords": completed,
+            "attempts": 0,
+        }
+
+    word0 = word_of(w0)
+    word1 = word_of(w1)
+    plist0_comma = ", ".join(phonemes_of(w0))
+    plist0_plus = " + ".join(phonemes_of(w0))
+    plist1_plus = " + ".join(phonemes_of(w1))
+
+    # Verbatim replicas of PhonicsBlender.tsx sendText messages (all silent sends).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] This is a phonics blending activity for Grade {grade_level} ({pattern_label}). "
+        f"There are {total} words to blend. "
+        f"Introduce the activity warmly: mention we're practicing phonics and blending sounds into words. "
+        f'Then introduce the first word: "{word0}" which has {len(phonemes_of(w0))} sounds ({plist0_comma}). '
+        f"Encourage the student to tap each sound tile to hear it. Keep it brief and enthusiastic — 2-3 sentences max."
+    )
+    phase_to_build = text_msg(
+        f'[PHASE_TO_BUILD] The student finished listening and is now in the Build phase for "{word0}". '
+        f"The sounds are: {plist0_comma}. "
+        f"Briefly tell them to arrange the sound tiles in the right order to build the word. One sentence."
+    )
+    next_word = text_msg(
+        f'[NEXT_WORD] The student is moving to word 2 of {total}: "{word1}" ({plist1_plus}). '
+        f"Briefly introduce the new word and encourage them to tap each sound."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="lesson mode: server greeting / [PRIMITIVE SWITCH] — one-sentence cap applies"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=[[word0], action_group] if word0 else [action_group],
+             note="ORIENT+STIMULUS: the PRE-READER HOW-TO-PLAY directive must voice a play action "
+                  "(tap/listen/say — the protocol a non-reader can't read) and name the first word; "
+                  "must survive the lesson one-sentence cap"),
+        Beat("phase_to_build", expect="turn", sends=[ctx_msg(bag_for(w0, 0, "build")), phase_to_build],
+             must_include=[build_group],
+             note="ORIENT on the build step: the tutor must tell the child to put the sounds in "
+                  "order — the Build/Check chrome is hidden at K, so the instruction must be spoken"),
+        Beat("next_word", expect="turn", sends=[ctx_msg(bag_for(w1, 1)), next_word],
+             must_include=[[word1], action_group] if word1 else [action_group],
+             note="ORIENT on advance: the next word + a tap/listen action must be enacted too"),
+    ]
+    return {"initial_bag": bag_for(w0, 0), "beats": beats, "answers": [], "meta": {
+        "gradeLevel": grade_level, "patternType": pattern, "words": total,
+        "word0": word0, "phonemes0": plist0_plus,
+        "word1": word1, "phonemes1": plist1_plus,
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
     "sorting-station": build_sorting_station_journey,
+    "phonics-blender": build_phonics_blender_journey,
     "addition-subtraction-scene": build_addition_subtraction_scene_journey,
     "comparison-builder": build_comparison_builder_journey,
     "decodable-reader": build_decodable_reader_journey,

@@ -21,10 +21,6 @@ Next priorities:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 7. phonics-blender @ PRE — audit rank 5 (census: demand CONFIRMED, routed 2/6 K lessons)
-3-phase stepper, 4+ labeled-button taps/word; strong tutor speech already —
-Audit C is the main event.
-
 ### 8. rhyme-studio @ PRE — audit (census: routed 2× in the K rhyme lesson, never audited)
 Core K literacy surface (recognition + identification modes drawn in one lesson).
 Data looks band-plausible (image descriptions per word) — audit ORIENT/STIMULUS
@@ -68,6 +64,33 @@ PRE (reader-fit band judgment) — that stays in this queue.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **7. phonics-blender @ PRE — audit + `--fix`, READY (2026-07-15).** Overall
+  PRIMITIVE-GAP + minor SCAFFOLD-GAP → **READY @ PRE for `cvc`** (the only K-band
+  eval mode; cvce_blend/digraph/advanced are Grade 1-2 by the catalog + the
+  `clampGradeToK2` pin, not re-touched). Two findings, one loop:
+  - **CATALOG (RF-1, scaffold gap):** PRE-READER HOW TO PLAY `aiDirective` — voices
+    a play action (tap the sounds → put them in order → say the word) at
+    `[ACTIVITY_START]`/`[PHASE_TO_BUILD]` at Grade K, answer-free, overriding the
+    lesson one-sentence cap. STIMULUS was already spoken on tap via
+    `[PRONOUNCE_SOUND]` (per-tap, un-capped) → only ORIENT needed the durable carrier.
+  - **COMPONENT (RF-2, primitive gap):** K band-gate (`isPreReaderGrade`) — tiles
+    **letter-primary** (was `/k/` slash notation, rule 6), phase stepper + word
+    counter + Grade/pattern/phase badges hidden (rule 7), instruction labels hidden
+    (tutor voices them), text feedback card hidden (slot flash + SFX + spoken hint
+    carry it, rule 5), Clear dropped (tap a placed tile to remove). Arranging the
+    sounds stays a multi-part construction → **Check kept** (rule 2). Reader grades
+    unchanged.
+  - Verified: tsc 808/808 (0 new) + `typecheck:lumina` 0; **jsdom 7/7**
+    (`PhonicsBlender.reader-fit.test.tsx`); eval-test `cvc` @ K pass (emoji present);
+    tutor-test `--probe` 0 findings; **live `--lesson` 3/3 PASS** (bespoke
+    `build_phonics_blender_journey`) — tap/listen action + word voiced at
+    activity-start, "put the sounds in order" at build, next word named on advance,
+    all surviving the one-sentence cap. Report:
+    `qa/reader-fit/phonics-blender-PRE-2026-07-15.md`; live:
+    `qa/tutor-reports/phonics-blender-live-lesson-2026-07-15.md`.
+  - Residuals → K-stage systemic: PhaseSummaryPanel ledger + "Ready to Build!"/
+    "Blend!"/"Say it!" button labels. Pixel look → HUMAN-CHECKS. Grade-fidelity
+    `clampGradeToK2` pin (`7cb5e5f`) left intact.
 - **1e. sorting-station @ PRE — presentation audit + fix loop, READY (2026-07-15).**
   Overall was PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for `sort_one` (THE K census route)
   and `odd_one_out`**; `sort_attribute`/`count_compare`/`two_attributes`/`tally_record` =

@@ -19,11 +19,14 @@ queue AND this file's "last touched" in the same slice.
 ## ACTIVE
 
 ### 1. Reader-fit K queue — last touched 2026-07-15
-- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next)
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next). Tree is CLEAN — clean base to start.
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
-- **Now:** #8 rhyme-studio audit, then #9 explainer tail (foundation-explorer
-  first, extract shared PRE pattern). (#1e sorting-station PRE — **DONE 2026-07-15**,
-  READY @ PRE for sort_one/odd_one_out; four modes floored to Grade 1+; live 3/3.)
+- **Now:** **#8 rhyme-studio audit** (top of BACKLOG), then **#9 explainer tail** (foundation-explorer
+  first, extract the shared PRE pattern). #8 had its generator touched by the grade-fidelity
+  `clampGradeToK2` fix (`7cb5e5f`) — context is warm; don't undo the grade pin. #2b comparison-builder
+  remaining is DEFERRED to K-stage coordination, not next. (#7 phonics-blender PRE **DONE 2026-07-15**,
+  committed; READY @ PRE for `cvc`, live 3/3. #1e sorting-station PRE **DONE 2026-07-15**, committed;
+  live 3/3.)
 - **Milestone:** K queue drained → re-run topic-trace census at grade 1 (EMERGING).
 
 ### 2. SP-27 Tutoring Context Integrity — last touched 2026-07-14
@@ -40,42 +43,13 @@ queue AND this file's "last touched" in the same slice.
 
 ## DELEGATED
 
-### 3. Grade-fidelity sweep close-out — CLOSED 2026-07-15 — `qa/topic-fidelity/grade-fidelity-closeout-2026-07-15.md`
-- All 4 tasks closed via runtime probe. (1) Daily-session grade threading = **verified
-  HONORED** end-to-end (backend `plan.grade_level` + `App.tsx` thread it through the same
-  `objectiveGrade` boundary; memory note (c) was stale — no code change). (2) Probe-sweep =
-  **11/11 HONORED** (core text + literacy, g2-vs-g5 monotonic). (3) `gradeToBand`+`buildGradeLine`
-  extracted into `scopeContext.ts`, 5 call sites, behavior-preserving. (4) Phonics spot-check
-  **found + fixed a real 6-gen dead lever** (phonics-blender/syllable-clapper/sound-swap/
-  rhyme-studio/phoneme-explorer/word-sorter read `ctx.gradeContext` prose → pinned to 'K'; grades
-  1-2 got kindergarten content) via new `clampGradeToK2`. Class-audited the dead-source shape
-  across all gens — those 6 are the whole population. tsc 0-new, `typecheck:lumina` clean.
-  **Uncommitted** (12 files) — commit on user request. Residual: none.
+*(none live — all three prior lanes committed 2026-07-15 in `8aa0fd0` + `7cb5e5f`; residuals
+folded to their owning queues. See CLOSED below.)*
 
-### 4. reader-fit 1e sorting-station @ PRE — CLOSED 2026-07-15 — `qa/reader-fit/sorting-station-PRE-2026-07-15.md`
-- Was PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for `sort_one` + `odd_one_out`**;
-  `sort_attribute`/`count_compare`/`two_attributes`/`tally_record` **floored to Grade 1+**.
-  Fixes: CATALOG `aiDirectives` ORIENT/STIMULUS/DISAMBIGUATE beat + band floors + dead-key
-  removal; COMPONENT K band-gate (picture-primary `bucketEmoji` bins, chrome hidden,
-  odd_one_out tap=choose) + `instruction` forwarded; GENERATOR `categoryEmojis`→`bucketEmoji`.
-  Verified: tsc 0-new + `typecheck:lumina` 0-err; jsdom 6/6 (`SortingStation.reader-fit.test.tsx`);
-  eval/tutor re-probe; **live `--lesson` 3/3 CONFIRMED** (`build_sorting_station_journey`).
-  Close-out done: report saved, RF-1..4 in EVAL_TRACKER, BACKLOG 1e → Done, pixel look →
-  HUMAN-CHECKS #12. **Uncommitted** — commit on user request.
-
-### 5. DropZone Batch-3 tail — `qa/HANDOFF-dropzone-batch3-2026-07-15.md`
-- Handed off 2026-07-15. 13 un-migrated math+misc slot/sequence builders onto LuminaDropZone;
-  pilot (SentenceBuilder) already shipped, so it's a sweep. Visual-layer only, no collision.
-- **DONE (code) 2026-07-15:** 10 migrated (math: NumberSequencer, PatternBuilder, EquationBuilder,
-  ComparisonBuilder, OrdinalLine, TapeDiagram, LengthLab; misc: TimelineBuilder, PropulsionTimeline,
-  TimelineBlock) + 3 triaged decorative (TransformationLab, ProcessAnimator, PlanetaryExplorer).
-  `typecheck:lumina` clean; batch-gate grep confirms the 10 dropped out of `border-dashed`; PRD §3
-  status boxes updated. **Uncommitted** (commit per sub-batch on user request). **Remaining:** browser
-  spot-check per sub-batch → HUMAN-CHECKS #13/#14. Then next = Batch-4 triage or LuminaCompletionScreen.
-
-> **WIP note (`/pm`):** the portfolio is running 2 ACTIVE + **2 delegated lanes** (item 3
-> Grade-fidelity CLOSED 2026-07-15). Still at/over the 2+1 limit — reconcile the remaining
-> delegated lanes (fold residuals to owning queues) as they land before opening more.
+> **WIP note (`/pm` 2026-07-15):** working tree is **clean** — the "Uncommitted" caveats on the
+> three former delegated lanes are resolved (committed in `8aa0fd0` + `7cb5e5f`). Portfolio is a
+> clean **2 ACTIVE + 0 DELEGATED**, under the 2+1 limit. Only residuals are browser spot-checks
+> already queued as HUMAN-CHECKS #12/#13/#14. Room to open one delegated lane if needed.
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
@@ -94,6 +68,18 @@ queue AND this file's "last touched" in the same slice.
 configs (distribution-explorer, dot-plot) → SP-27 Phase 2/3.
 
 ## CLOSED (verified 2026-07-14; reopen deliberately, not by accident)
+- **Grade-fidelity sweep close-out** (2026-07-15) — **committed** (`7cb5e5f`). 4/4 tasks closed
+  via runtime probe: daily-session grade threading verified HONORED; 11/11 probe-sweep HONORED;
+  `gradeToBand`+`buildGradeLine` extracted to `scopeContext.ts`; and a real 6-gen phonics dead
+  lever fixed via `clampGradeToK2`. Report: `qa/topic-fidelity/grade-fidelity-closeout-2026-07-15.md`.
+  Residual: none.
+- **reader-fit 1e sorting-station @ PRE** (2026-07-15) — **committed** (`7cb5e5f`). READY @ PRE for
+  `sort_one` + `odd_one_out`; other four modes floored to Grade 1+. jsdom 6/6 + live `--lesson` 3/3.
+  Residual = pixel look (HUMAN-CHECKS #12). Report: `qa/reader-fit/sorting-station-PRE-2026-07-15.md`.
+- **DropZone Batch-3 tail** (2026-07-15) — code **committed** (`7cb5e5f`). 10 migrated onto
+  LuminaDropZone + 3 triaged decorative; `typecheck:lumina` clean. Residual = browser spot-checks
+  (HUMAN-CHECKS #13/#14). Next kit move (Batch-4 triage / LuminaCompletionScreen) tracked under the
+  PARKED Lumina-kit-roadmap row. Handoff: `qa/HANDOFF-dropzone-batch3-2026-07-15.md`.
 - **DeepDive block scaffolding + curator-brief PRE scaffold** (2026-07-15) —
   **user-confirmed live**. BlockTutorHelp + tap-to-explore + the full K-eligible
   PRE read-aloud palette (prose/key-facts/MC/mini-sim/pull-quote/diagram) and

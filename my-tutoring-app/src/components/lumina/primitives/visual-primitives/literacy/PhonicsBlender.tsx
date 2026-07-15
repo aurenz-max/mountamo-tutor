@@ -25,6 +25,7 @@ import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
@@ -168,6 +169,13 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   });
 
   const currentWord = words[currentWordIndex];
+
+  // Pre-reader (Kindergarten) band-gate. At PRE the tutor's VOICE is the only
+  // instruction channel: on-screen chrome (phase stepper, word counter, badges,
+  // text labels, the Clear button) is hidden, phoneme tiles show the LETTER as
+  // the primary mark (not slash-notation the child cannot read), and the tap →
+  // hear stimulus is spoken via [PRONOUNCE_SOUND]. Reader grades keep the full UI.
+  const isPreReader = isPreReaderGrade(gradeLevel);
 
   // Per-word rows for the shared PhaseSummaryPanel (manual PhaseResult[] —
   // words are the natural breakdown, same pattern as DoubleNumberLine).
@@ -634,10 +642,14 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     showLetters: boolean
   ) => {
     const isActive = activeSoundId === phoneme.id;
+    // Pre-readers cannot read slash-notation (/k/). At PRE the tile's primary
+    // mark is the LETTER(s) the child can see in the built word; the sound is
+    // still spoken on tap via [PRONOUNCE_SOUND]. Reader grades keep /k/ notation.
     return (
       <button
         key={phoneme.id}
         onClick={onClick}
+        aria-label={`sound ${phoneme.sound}`}
         className={`
           relative px-4 py-3 rounded-xl border-2 font-bold text-lg
           transition-all duration-200 cursor-pointer select-none
@@ -649,9 +661,15 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           }
         `}
       >
-        <span className="text-xl">{phoneme.sound}</span>
-        {showLetters && (
-          <span className="block text-xs text-slate-400 mt-0.5">{phoneme.letters}</span>
+        {isPreReader ? (
+          <span className="text-2xl uppercase">{phoneme.letters}</span>
+        ) : (
+          <>
+            <span className="text-xl">{phoneme.sound}</span>
+            {showLetters && (
+              <span className="block text-xs text-slate-400 mt-0.5">{phoneme.letters}</span>
+            )}
+          </>
         )}
       </button>
     );
@@ -672,7 +690,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         )}
 
         <LuminaPanel className="text-center">
-          <p className="text-slate-400 text-sm mb-3">Tap each sound to hear it:</p>
+          {!isPreReader && (
+            <p className="text-slate-400 text-sm mb-3">Tap each sound to hear it:</p>
+          )}
           <div className="flex flex-wrap gap-3 justify-center">
             {currentWord.phonemes.map(phoneme =>
               renderPhonemeTile(
@@ -687,7 +707,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
         {/* Slow blend display */}
         <LuminaPanel className="text-center">
-          <p className="text-slate-500 text-xs mb-2">Blended together:</p>
+          {!isPreReader && (
+            <p className="text-slate-500 text-xs mb-2">Blended together:</p>
+          )}
           <div className="flex items-center justify-center gap-1">
             {currentWord.phonemes.map((phoneme, i) => (
               <React.Fragment key={phoneme.id}>
@@ -724,16 +746,20 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         {/* Word visual hint */}
         {currentWord.emoji && (
           <LuminaPanel className="flex items-center justify-center gap-3 px-4 py-2">
-            <span className="text-3xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
+            <span className={isPreReader ? 'text-5xl' : 'text-3xl'} role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
               {currentWord.emoji}
             </span>
-            <span className="text-slate-400 text-xs italic">Build this word</span>
+            {!isPreReader && (
+              <span className="text-slate-400 text-xs italic">Build this word</span>
+            )}
           </LuminaPanel>
         )}
 
         {/* Build area */}
         <div>
-          <p className="text-xs text-slate-500 mb-2">Arrange the sounds to build the word:</p>
+          {!isPreReader && (
+            <p className="text-xs text-slate-500 mb-2">Arrange the sounds to build the word:</p>
+          )}
           <div
             className={`
               flex flex-wrap items-center gap-2 min-h-[64px] p-4 rounded-xl
@@ -770,8 +796,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           </div>
         </div>
 
-        {/* Feedback */}
-        {feedback && (
+        {/* Feedback — at PRE the drop-zone flash + tutor voice carry it (rule 5);
+            the text card is a reader affordance only. */}
+        {feedback && !isPreReader && (
           <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}>
             {feedback}
           </LuminaFeedbackCard>
@@ -779,7 +806,9 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
         {/* Sound bank */}
         <div>
-          <p className="text-xs text-slate-500 mb-2">Sound Bank:</p>
+          {!isPreReader && (
+            <p className="text-xs text-slate-500 mb-2">Sound Bank:</p>
+          )}
           <LuminaPanel>
             {availablePhonemes.length > 0 ? (
               <div className="flex flex-wrap gap-3 justify-center">
@@ -793,21 +822,28 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                 )}
               </div>
             ) : (
-              <p className="text-center text-slate-500 text-sm">
-                All sounds placed! Check your answer.
-              </p>
+              !isPreReader && (
+                <p className="text-center text-slate-500 text-sm">
+                  All sounds placed! Check your answer.
+                </p>
+              )
             )}
           </LuminaPanel>
         </div>
 
-        {/* Actions */}
+        {/* Actions — arranging the sounds is a multi-part construction, so the
+            explicit Check confirm stays even at PRE (band contract rule 2). The
+            Clear button is a reader affordance; at PRE the child taps a placed
+            tile to remove it, so Clear is dropped to cut chrome. */}
         <div className="flex items-center gap-2">
-          <LuminaButton
-            onClick={handleClearAll}
-            disabled={placedPhonemeIds.length === 0}
-          >
-            Clear
-          </LuminaButton>
+          {!isPreReader && (
+            <LuminaButton
+              onClick={handleClearAll}
+              disabled={placedPhonemeIds.length === 0}
+            >
+              Clear
+            </LuminaButton>
+          )}
           <LuminaActionButton
             action="check"
             onClick={handleCheckBuild}
@@ -880,7 +916,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                   {currentWord.emoji}
                 </span>
               )}
-              {currentWord.imageDescription && (
+              {currentWord.imageDescription && !isPreReader && (
                 <p className="text-slate-400 text-sm italic">{currentWord.imageDescription}</p>
               )}
             </div>
@@ -941,36 +977,44 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">
-                Grade {gradeLevel}
-              </LuminaBadge>
-              <LuminaBadge className="text-xs">
-                {PATTERN_LABELS[patternType] || patternType}
-              </LuminaBadge>
-            </div>
+            {/* Grade/pattern badges are adult chrome — hidden for pre-readers (rule 7). */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">
+                  Grade {gradeLevel}
+                </LuminaBadge>
+                <LuminaBadge className="text-xs">
+                  {PATTERN_LABELS[patternType] || patternType}
+                </LuminaBadge>
+              </div>
+            )}
           </div>
-          <LuminaBadge accent={PHASE_ACCENT[currentPhase]} className="text-xs">
-            {PHASE_CONFIG[currentPhase].description}
-          </LuminaBadge>
+          {!isPreReader && (
+            <LuminaBadge accent={PHASE_ACCENT[currentPhase]} className="text-xs">
+              {PHASE_CONFIG[currentPhase].description}
+            </LuminaBadge>
+          )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
         {!hasSubmittedEvaluation && (
           <>
-            {/* Phase Progress */}
-            {renderPhaseProgress()}
-
-            {/* Word Counter */}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">
-                Word {currentWordIndex + 1} of {words.length}
-              </span>
-              <span className="text-slate-500 text-xs">
-                {completedWords.size} completed
-              </span>
-            </div>
+            {/* Phase Progress + Word Counter are adult chrome — hidden for
+                pre-readers (rule 7); the tutor voices progress instead. */}
+            {!isPreReader && (
+              <>
+                {renderPhaseProgress()}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">
+                    Word {currentWordIndex + 1} of {words.length}
+                  </span>
+                  <span className="text-slate-500 text-xs">
+                    {completedWords.size} completed
+                  </span>
+                </div>
+              </>
+            )}
 
             {/* Phase Content */}
             {currentPhase === 'listen' && renderListenPhase()}
