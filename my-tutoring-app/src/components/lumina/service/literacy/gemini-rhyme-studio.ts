@@ -36,6 +36,45 @@ const IRREGULAR_RHYME_WORDS = [
   'though', 'through', 'tough', 'cough', 'dough',
 ];
 
+// ---------------------------------------------------------------------------
+// Pre-reader (K) picture vocabulary
+// ---------------------------------------------------------------------------
+// flash-lite will NOT reliably emit emojis inside the nested `options` array in
+// the same call that produces the options themselves (it silently drops the
+// array). So at K we DON'T ask the model for emojis at all — we (a) constrain the
+// word choice to this curated, picturable CVC set (injected into the prompt) and
+// (b) attach the emoji deterministically in post-process. Every family carries
+// ≥3 members so the model can always build a rhyming pair AND a cross-family
+// distractor. Entropy stays in the prompt; the code owns the picture surface.
+const K_RHYME_FAMILIES: { family: string; words: Array<[string, string]> }[] = [
+  { family: '-at', words: [['cat', '🐱'], ['hat', '🎩'], ['bat', '🦇'], ['rat', '🐀'], ['mat', '🧘']] },
+  { family: '-an', words: [['pan', '🍳'], ['man', '👨'], ['fan', '🪭'], ['van', '🚐'], ['can', '🥫']] },
+  { family: '-ig', words: [['pig', '🐷'], ['wig', '💇'], ['dig', '⛏️'], ['zig', '⚡']] },
+  { family: '-og', words: [['dog', '🐶'], ['log', '🪵'], ['frog', '🐸'], ['hog', '🐗']] },
+  { family: '-ot', words: [['pot', '🍲'], ['hot', '🔥'], ['dot', '⚫'], ['cot', '🛏️']] },
+  { family: '-un', words: [['sun', '☀️'], ['bun', '🍞'], ['run', '🏃'], ['fun', '🎉']] },
+  { family: '-en', words: [['hen', '🐔'], ['pen', '🖊️'], ['ten', '🔟'], ['den', '🕳️']] },
+  { family: '-op', words: [['top', '🔝'], ['mop', '🧹'], ['pop', '🍿'], ['hop', '🐰']] },
+  { family: '-ug', words: [['bug', '🐛'], ['rug', '🧶'], ['mug', '☕'], ['hug', '🤗']] },
+  { family: '-ip', words: [['lip', '👄'], ['zip', '🤐'], ['ship', '🚢'], ['drip', '💧']] },
+  { family: '-ox', words: [['box', '📦'], ['fox', '🦊'], ['ox', '🐂']] },
+  { family: '-ed', words: [['bed', '🛌'], ['red', '🟥'], ['sled', '🛷']] },
+];
+
+// Flat lowercase word → emoji lookup derived from the families above.
+const K_WORD_EMOJI: Record<string, string> = Object.fromEntries(
+  K_RHYME_FAMILIES.flatMap((f) => f.words.map(([w, e]) => [w.toLowerCase(), e])),
+);
+
+/** Emoji for a K word, or a neutral ⭐ picture if it wasn't drawn from the set. */
+const kEmojiFor = (word: unknown): string =>
+  K_WORD_EMOJI[String(word ?? '').toLowerCase().trim()] ?? '⭐';
+
+/** The picturable-word menu, grouped by rhyme family, injected into the K prompt. */
+const K_WORD_MENU = K_RHYME_FAMILIES
+  .map((f) => `  ${f.family}: ${f.words.map(([w]) => w).join(', ')}`)
+  .join('\n');
+
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   recognition: {
     promptDoc:
@@ -210,13 +249,16 @@ export const generateRhymeStudio = async (
 
   const gradeGuidelines: Record<string, string> = {
     K: `
-KINDERGARTEN GUIDELINES:
-- Use simple, concrete CVC words kids know (cat, hat, sun, run, pig, big)
-- Rhyme families with short vowels: -at, -an, -ig, -ot, -un, -en, -op, -ug
-- Recognition: use very clear rhyming pairs AND obvious non-rhyming pairs
-- Identification: 2 options only (one correct, one clearly different family)
-- Production: provide 3-4 common acceptable answers per target word
-- Keep all words to 3-4 letters maximum
+KINDERGARTEN GUIDELINES (PRE-READER — pictures + audio only, the child cannot read):
+- Every targetWord, comparisonWord, and option word MUST be chosen from THIS picturable menu ONLY
+  (each line is one rhyme family; words on the same line rhyme, words on different lines do NOT):
+${K_WORD_MENU}
+- Set rhymeFamily to the target word's family from the menu (e.g. cat → "-at").
+- Recognition: pick two menu words. For a rhyming pair, pick both from the SAME line (doesRhyme: true);
+  for a non-rhyming pair, pick them from DIFFERENT lines (doesRhyme: false). Set comparisonWord, comparisonWordImage, doesRhyme.
+- Identification: EXACTLY 2 options — the correct one is a menu word from the SAME line as the target;
+  the distractor is a menu word from a DIFFERENT line. Give each option a word + a short image description + isCorrect.
+- Do NOT invent words outside the menu. Do NOT create production challenges at K (production is Grade 1+).
 `,
     "1": `
 GRADE 1 GUIDELINES:
@@ -367,6 +409,37 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         return ch;
       }
     );
+
+    // Band floor (K = pre-reader): production's word-bank distractors cannot be
+    // pictured, so it is a Grade 1+ mode — drop production challenges at K unless
+    // the eval mode is EXPLICITLY constrained to production (an advanced-student
+    // curator/IRT choice we honor rather than emptying the activity).
+    const forcesProductionOnly =
+      evalConstraint?.allowedTypes?.length === 1 &&
+      evalConstraint.allowedTypes[0] === 'production';
+    if (gradeLevelKey === 'K' && !forcesProductionOnly) {
+      result.challenges = result.challenges.filter(
+        (ch: Record<string, unknown>) => ch.mode !== 'production',
+      );
+    }
+
+    // Picture-primary attach (K): the model produced only WORDS (no emojis — that
+    // is unreliable on flash-lite inside nested arrays). Attach the depicting emoji
+    // deterministically from the curated menu the words were drawn from, so every
+    // word — target, comparison, and each identification option — carries a distinct
+    // picture a non-reader can use. A ⭐ only appears if a word slipped the menu.
+    if (gradeLevelKey === 'K') {
+      result.challenges = result.challenges.map((ch: Record<string, unknown>) => {
+        ch.targetWordEmoji = kEmojiFor(ch.targetWord);
+        if (ch.mode === 'recognition') ch.comparisonWordEmoji = kEmojiFor(ch.comparisonWord);
+        if (ch.mode === 'identification' && Array.isArray(ch.options)) {
+          (ch.options as Array<Record<string, unknown>>).forEach((o) => {
+            o.image = kEmojiFor(o.word);
+          });
+        }
+        return ch;
+      });
+    }
 
     // Post-process: remove recognition challenges that use irregular-spelling words (SP-7 safety net)
     const irregularSet = new Set(IRREGULAR_RHYME_WORDS);

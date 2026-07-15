@@ -21,11 +21,6 @@ Next priorities:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 8. rhyme-studio @ PRE — audit (census: routed 2× in the K rhyme lesson, never audited)
-Core K literacy surface (recognition + identification modes drawn in one lesson).
-Data looks band-plausible (image descriptions per word) — audit ORIENT/STIMULUS
-(are targetWord/comparison words SPOKEN?), option modality, chrome.
-
 ### 9. Explainer tail @ PRE — text-primary "reading" surfaces routed at K (census)
 Batch-audit candidates, ranked by census routing frequency: **foundation-explorer**
 (4/6 lessons — selfCheck prompts + 3 full-sentence text options at K),
@@ -64,6 +59,40 @@ PRE (reader-fit band judgment) — that stays in this queue.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **8. rhyme-studio @ PRE — audit + `--fix`, READY (2026-07-15).** Overall
+  PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for recognition + identification**
+  (the two K census routes); production floored to Grade 1+ (WRONG-BAND at PRE — Tier 4,
+  word-bank distractors can't be pictured). Three layers, one loop:
+  - **CATALOG (RF-1, scaffold gap):** PRE-READER READ-ALOUD `aiDirective` — on
+    `[ACTIVITY_START]`/`[PHASE_TRANSITION]`/switch at Grade K, SAY both words (recognition)
+    or target + every option (identification) and ASK the rhyme question, answer-free,
+    overriding the one-sentence cap; `comparisonWord`+`optionWords` added to `contextKeys`
+    and forwarded from the component bag (were absent — no durable directive could name them).
+  - **COMPONENT (RF-2, primitive gap):** `isPreReaderGrade` band-gate — emoji-primary word
+    cards (word → caption), recognition answers become a big 👍/👎 icon, identification tiles
+    emoji-primary, question sentences hidden (tutor voices them), text feedback card hidden
+    (ring + SFX + spoken carry it), chrome hidden (title/Grade/mode badges, counter, "N correct"
+    ledger, progress bar, start paragraph), Next/Finish → wordless ▶/🎉. tap=choose already held.
+  - **GENERATOR (RF-3, primitive gap + reliability):** flash-lite **silently drops the nested
+    `options` array when also asked for emojis** (confirmed: grade-1 no-emoji → options present;
+    K emoji-ask → 9/9 empty-option fallbacks). Fix: constrain K word choice to a curated
+    picturable menu (`K_RHYME_FAMILIES`, ≥3/family, injected into the prompt) and attach the
+    depicting emoji **deterministically in post-process** (`kEmojiFor`; ⭐ only on a menu miss);
+    production floored out of the K mix. eval-test @ K: 9/9 identification real distinct emojis,
+    0 fallback, 0 rhyme-logic errors.
+  - Verified: tsc 808/808 (0 new) + `typecheck:lumina` 0; **jsdom 6/6**
+    (`RhymeStudio.reader-fit.test.tsx`); tutor-test `--probe` — `comparisonWord`/`optionWords`
+    resolve `by component`, no new findings; **live `--lesson --runs 3` PASS both K routes**
+    (bespoke `build_rhyme_studio_journey`): recognition 3/3 ("cat … hat. Do these words rhyme?"),
+    identification 3/3 ("Listen to 'cat'. The options are 'hat' or 'pig'. Which one rhymes?") —
+    words + question voiced every run, surviving the one-sentence cap. Reports:
+    `qa/reader-fit/rhyme-studio-PRE-2026-07-15.md`; live
+    `qa/tutor-reports/rhyme-studio-live-lesson-2026-07-15.md` (recognition) +
+    `…-identification-2026-07-15.md`.
+  - Cross-check: does NOT duplicate poetry-lab `rhyme_hunt` @ K (different primitive/route;
+    `project_poetry-lab-rf-fix-rhyme-hunt`). Grade-fidelity `clampGradeToK2` pin (`7cb5e5f`) intact.
+  - Residuals → K-stage systemic: PhaseSummaryPanel % ledger. Pixel look → HUMAN-CHECKS.
+    Scaffold `scaffoldingLevels` stacked-questions WARN (pre-existing, non-blocking).
 - **7. phonics-blender @ PRE — audit + `--fix`, READY (2026-07-15).** Overall
   PRIMITIVE-GAP + minor SCAFFOLD-GAP → **READY @ PRE for `cvc`** (the only K-band
   eval mode; cvce_blend/digraph/advanced are Grade 1-2 by the catalog + the
@@ -91,6 +120,16 @@ PRE (reader-fit band judgment) — that stays in this queue.
   - Residuals → K-stage systemic: PhaseSummaryPanel ledger + "Ready to Build!"/
     "Blend!"/"Say it!" button labels. Pixel look → HUMAN-CHECKS. Grade-fidelity
     `clampGradeToK2` pin (`7cb5e5f`) left intact.
+  - **Follow-up (queued by contract derivation 2026-07-15, executor `/tutor-test`):**
+    the component emits `[PRONOUNCE_SOUND]` on tap but the catalog `PRONUNCIATION
+    COMMANDS` directive (`literacy.ts:221`) triggers on `[PRONOUNCE]` — a tag-prefix
+    mismatch. STIMULUS-on-tap is jsdom-verified (the emit) but **unverified at
+    runtime** (Gemini's spoken response), because the live-lesson runs never tapped a
+    tile. Add a tap-pronounce beat to the bespoke journey / probe to confirm the
+    tutor actually speaks the sound on tap. Low risk (the message body is
+    self-executing) but a real latent smell. Do NOT rename the tag in place without a
+    `/primitive-contract phonics-blender --check` run — it touches every reader
+    grade's audio path (contract R2).
 - **1e. sorting-station @ PRE — presentation audit + fix loop, READY (2026-07-15).**
   Overall was PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for `sort_one` (THE K census route)
   and `odd_one_out`**; `sort_attribute`/`count_compare`/`two_attributes`/`tally_record` =

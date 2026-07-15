@@ -1286,9 +1286,111 @@ def build_phonics_blender_journey(live: Dict[str, Any], grade: str) -> Dict[str,
     }}
 
 
+def build_rhyme_studio_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT/STIMULUS journey for rhyme-studio @ K (recognition / identification).
+
+    Replays the EXACT [ACTIVITY_START] / [PRONOUNCE_WORDS] messages RhymeStudio.tsx
+    sends, then checks (must_include) that at each challenge start the tutor SAYS the
+    load-bearing words aloud and asks the rhyme question — the catalog PRE-READER
+    READ-ALOUD aiDirective which must survive the lesson one-sentence cap. Every word
+    on screen (targetWord, comparisonWord, each option) is unreadable to a non-reader,
+    so it must be voiced; the question ("do these rhyme?" / "which one rhymes?") is the
+    task and must be spoken too. A bare "let's find rhymes!" greeting strands the child.
+    Leak stance: saying the words IS the stimulus being taught; which words rhyme is
+    NEVER stated by the scaffold (the directive forbids it), and option order is
+    shuffled in the component, so there is nothing positional to leak.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    ch0 = challenges[0] if challenges else {}
+    ch1 = next(iter(challenges[1:]), ch0)
+    total = len(challenges) or 1
+    grade_level = data.get("gradeLevel", "K")
+
+    def opt_words(ch: Dict[str, Any]) -> List[str]:
+        return [str(o.get("word", "")).strip() for o in (ch.get("options") or []) if o.get("word")]
+
+    def first_challenge_words(ch: Dict[str, Any]) -> str:
+        mode = ch.get("mode")
+        tw = str(ch.get("targetWord", "")).strip()
+        if mode == "recognition":
+            cw = str(ch.get("comparisonWord", "")).strip()
+            return (f'Say both words clearly: "{tw}" and "{cw}". '
+                    f'Then ask "Do these words rhyme?" Do NOT reveal the answer.')
+        opts = ", ".join(opt_words(ch))
+        return (f'Say the target word "{tw}" and the options: {opts}. '
+                f'Ask "Which word rhymes with {tw}?"')
+
+    # ORIENT/STIMULUS bar: the target + every other word on screen must be VOICED,
+    # and a rhyme-question cue must be spoken (the task itself).
+    def orient_groups(ch: Dict[str, Any]) -> List[List[str]]:
+        tw = str(ch.get("targetWord", "")).strip()
+        groups: List[List[str]] = [[tw]] if tw else []
+        if ch.get("mode") == "recognition":
+            cw = str(ch.get("comparisonWord", "")).strip()
+            if cw:
+                groups.append([cw])
+        else:
+            for w in opt_words(ch):
+                groups.append([w])
+        groups.append(["rhyme", "rhymes", "rhyming"])
+        return groups
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        return {
+            "challengeMode": ch.get("mode", ""),
+            "targetWord": str(ch.get("targetWord", "")).strip(),
+            "rhymeFamily": ch.get("rhymeFamily", ""),
+            "comparisonWord": str(ch.get("comparisonWord", "")).strip(),
+            "optionWords": ", ".join(opt_words(ch)),
+            "currentChallenge": idx + 1,
+            "totalChallenges": total,
+            "currentPhase": ch.get("mode", ""),
+            "attempts": 0,
+        }
+
+    activity_start = text_msg(
+        f"[ACTIVITY_START] This is a rhyming activity for Grade {grade_level}. "
+        f"There are {total} challenges. "
+        f"Warmly introduce the activity (1-2 sentences), then: {first_challenge_words(ch0)}"
+    )
+    # Mirrors the [PRONOUNCE_WORDS] send on challenge advance (index > 0).
+    tw1 = str(ch1.get("targetWord", "")).strip()
+    if ch1.get("mode") == "recognition":
+        pronounce = text_msg(
+            f'[PRONOUNCE_WORDS] Say "{tw1}" and "{str(ch1.get("comparisonWord","")).strip()}". '
+            f'Then ask "Do these words rhyme?"'
+        )
+    else:
+        pronounce = text_msg(
+            f'[PRONOUNCE_WORDS] Say "{tw1}" and ask "Which word rhymes with {tw1}?" '
+            f'Then say each option: {", ".join(opt_words(ch1))}.'
+        )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="lesson mode: server greeting / [PRIMITIVE SWITCH] — one-sentence cap applies"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=orient_groups(ch0),
+             note="ORIENT/STIMULUS: the PRE-READER READ-ALOUD directive must SAY both words "
+                  "(recognition) / target + every option (identification) and ask the rhyme "
+                  "question — a non-reader cannot read any of it; must survive the one-sentence cap"),
+        Beat("pronounce_words", expect="turn", sends=[ctx_msg(bag_for(ch1, 1)), pronounce],
+             must_include=orient_groups(ch1),
+             note="ORIENT/STIMULUS on advance: the next challenge's words + rhyme question "
+                  "must be voiced too"),
+    ]
+    return {"initial_bag": bag_for(ch0, 0), "beats": beats, "answers": [], "meta": {
+        "gradeLevel": grade_level, "challenges": total,
+        "mode0": ch0.get("mode"), "target0": str(ch0.get("targetWord", "")).strip(),
+        "mode1": ch1.get("mode"), "target1": tw1,
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
     "sorting-station": build_sorting_station_journey,
+    "rhyme-studio": build_rhyme_studio_journey,
     "phonics-blender": build_phonics_blender_journey,
     "addition-subtraction-scene": build_addition_subtraction_scene_journey,
     "comparison-builder": build_comparison_builder_journey,

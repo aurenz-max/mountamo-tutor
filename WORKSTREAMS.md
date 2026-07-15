@@ -21,12 +21,13 @@ queue AND this file's "last touched" in the same slice.
 ### 1. Reader-fit K queue — last touched 2026-07-15
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next). Tree is CLEAN — clean base to start.
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
-- **Now:** **#8 rhyme-studio audit** (top of BACKLOG), then **#9 explainer tail** (foundation-explorer
-  first, extract the shared PRE pattern). #8 had its generator touched by the grade-fidelity
-  `clampGradeToK2` fix (`7cb5e5f`) — context is warm; don't undo the grade pin. #2b comparison-builder
-  remaining is DEFERRED to K-stage coordination, not next. (#7 phonics-blender PRE **DONE 2026-07-15**,
-  committed; READY @ PRE for `cvc`, live 3/3. #1e sorting-station PRE **DONE 2026-07-15**, committed;
-  live 3/3.)
+- **Now:** **#9 explainer tail** — audit **foundation-explorer** first (text-primary "reading"
+  surface, 4/6 census lessons), extract the shared PRE pattern (auto-read + 🔊 + picture-primary
+  checks), then sweep concept-card-grid / comparison-panel / fact-file / flashcard-deck / media-player.
+  #2b comparison-builder remaining is DEFERRED to K-stage coordination, not next. (#8 rhyme-studio PRE
+  **DONE 2026-07-15**, committed; READY @ PRE for recognition + identification, live 3/3 both routes;
+  production floored Grade 1+. #7 phonics-blender PRE **DONE 2026-07-15**, live 3/3 `cvc`. #1e
+  sorting-station PRE **DONE 2026-07-15**, live 3/3.)
 - **Milestone:** K queue drained → re-run topic-trace census at grade 1 (EMERGING).
 
 ### 2. SP-27 Tutoring Context Integrity — last touched 2026-07-14

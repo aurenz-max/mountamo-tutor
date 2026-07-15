@@ -28,6 +28,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -35,6 +36,8 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 interface RhymeOption {
   word: string;
+  /** Grade 1-2: a short prose image description. At K (pre-reader): a single
+   *  depicting emoji — the option's picture surface. */
   image: string;
   isCorrect: boolean;
 }
@@ -44,9 +47,13 @@ interface RhymeChallenge {
   mode: 'recognition' | 'identification' | 'production';
   targetWord: string;
   targetWordImage: string;
+  /** Pre-reader picture surface: a single emoji depicting the target word. */
+  targetWordEmoji?: string;
   rhymeFamily: string;
   comparisonWord?: string;
   comparisonWordImage?: string;
+  /** Pre-reader picture surface: a single emoji depicting the comparison word. */
+  comparisonWordEmoji?: string;
   doesRhyme?: boolean;
   options?: RhymeOption[];
   acceptableAnswers?: string[];
@@ -153,6 +160,11 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  // ── Reading band ─────────────────────────────────────────────────
+  // At PRE (Kindergarten) the child cannot read any word on screen: pictures +
+  // audio carry the task, chrome is hidden, and feedback lands on the object.
+  const isPreReader = isPreReaderGrade(gradeLevel);
+
   // ── Activity gate — student must click Start ─────────────────────
   const [hasStarted, setHasStarted] = useState(false);
 
@@ -254,16 +266,33 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
+  // Spoken option words for the current challenge — forwarded into the tutor bag
+  // so the CATALOG read-aloud directive can name every choice on primitive switch
+  // (durable, survives the lesson one-sentence cap). Component sendText moments
+  // still inject the same words as reinforcement.
+  const currentOptionWords = useMemo(() => {
+    if (!currentChallenge) return '';
+    if (currentChallenge.mode === 'identification') {
+      return shuffledIdentificationOptions.map(o => o.word).join(', ');
+    }
+    if (currentChallenge.mode === 'production') {
+      return productionWordBank.map(o => o.word).join(', ');
+    }
+    return '';
+  }, [currentChallenge, shuffledIdentificationOptions, productionWordBank]);
+
   // ── AI Tutoring integration ───────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     challengeMode: currentChallenge?.mode ?? '',
     targetWord: currentChallenge?.targetWord ?? '',
     rhymeFamily: currentChallenge?.rhymeFamily ?? '',
+    comparisonWord: currentChallenge?.comparisonWord ?? '',
+    optionWords: currentOptionWords,
     currentChallenge: currentIndex + 1,
     totalChallenges: challenges.length,
     currentPhase: currentChallenge?.mode ?? '',
     attempts: currentAttempts,
-  }), [currentChallenge, currentIndex, challenges.length, currentAttempts]);
+  }), [currentChallenge, currentOptionWords, currentIndex, challenges.length, currentAttempts]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'rhyme-studio',
@@ -756,7 +785,26 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     rhymeFamily: string,
     imageDesc: string,
     extraClasses?: string,
+    emoji?: string,
   ) => {
+    // PRE (pre-reader): the PICTURE is the primary mark — a big depicting emoji —
+    // with the word only a small caption (spoken by the tutor). No amber
+    // rhyme-family text emphasis (a non-reader can't use it) and no prose
+    // "image description" (unreadable text). Reader grades keep the word-primary
+    // card with the highlighted rhyme suffix.
+    if (isPreReader) {
+      return (
+        <div
+          className={`rounded-2xl bg-white/5 border border-white/10 p-6 text-center space-y-1 transition-all duration-300 ${extraClasses || ''}`}
+        >
+          <div className="text-6xl leading-none" role="img" aria-label={imageDesc || word}>
+            {emoji || '⭐'}
+          </div>
+          <div className="text-lg font-semibold text-slate-300">{word}</div>
+        </div>
+      );
+    }
+
     const [prefix, suffix] = splitByRhymeFamily(word, rhymeFamily);
     return (
       <div
@@ -790,34 +838,53 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
             currentChallenge.rhymeFamily,
             currentChallenge.targetWordImage,
             isCelebrating ? 'ring-2 ring-emerald-500/50' : '',
+            currentChallenge.targetWordEmoji,
           )}
           {currentChallenge.comparisonWord && renderWordCard(
             currentChallenge.comparisonWord,
             currentChallenge.doesRhyme ? currentChallenge.rhymeFamily : '',
             currentChallenge.comparisonWordImage ?? '',
             isCelebrating ? 'ring-2 ring-emerald-500/50' : '',
+            currentChallenge.comparisonWordEmoji,
           )}
         </div>
 
-        <p className="text-center text-lg text-slate-300 font-medium">
-          Do these words rhyme?
-        </p>
+        {/* The question is spoken by the tutor at PRE (audio is the instruction
+            channel); a non-reader cannot use the on-screen sentence. */}
+        {!isPreReader && (
+          <p className="text-center text-lg text-slate-300 font-medium">
+            Do these words rhyme?
+          </p>
+        )}
 
         {/* Recognition answer buttons — the binary YES/NO interaction surface.
-            Semantic green=rhyme / rose=no-rhyme affordance, bespoke by design. */}
+            At PRE the mark is a big 👍 / 👎 icon (word a small caption) so a
+            non-reader can answer by picture. Semantic green=rhyme / rose=no. */}
         {!showResult && (
           <div className={`flex justify-center gap-4 ${isShaking ? 'animate-shake' : ''}`}>
             <button
               onClick={() => handleRecognition(true)}
+              aria-label="Yes, they rhyme"
               className="rounded-xl bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 px-8 py-3 text-lg font-medium transition-colors"
             >
-              Yes!
+              {isPreReader ? (
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="text-3xl leading-none" role="img" aria-hidden="true">👍</span>
+                  <span className="text-xs">Yes</span>
+                </span>
+              ) : 'Yes!'}
             </button>
             <button
               onClick={() => handleRecognition(false)}
+              aria-label="No, they do not rhyme"
               className="rounded-xl bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 text-rose-300 px-8 py-3 text-lg font-medium transition-colors"
             >
-              No
+              {isPreReader ? (
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="text-3xl leading-none" role="img" aria-hidden="true">👎</span>
+                  <span className="text-xs">No</span>
+                </span>
+              ) : 'No'}
             </button>
           </div>
         )}
@@ -837,15 +904,21 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           currentChallenge.targetWord,
           currentChallenge.rhymeFamily,
           currentChallenge.targetWordImage,
+          undefined,
+          currentChallenge.targetWordEmoji,
         )}
 
-        <p className="text-center text-lg text-slate-300 font-medium">
-          Which word rhymes with{' '}
-          <span className="text-amber-300">{currentChallenge.targetWord}</span>?
-        </p>
+        {/* Question spoken by the tutor at PRE (audio is the instruction channel). */}
+        {!isPreReader && (
+          <p className="text-center text-lg text-slate-300 font-medium">
+            Which word rhymes with{' '}
+            <span className="text-amber-300">{currentChallenge.targetWord}</span>?
+          </p>
+        )}
 
         {/* Rhyme word tiles — bespoke interaction surface; grading colors
-            come from the shared answerStateClasses token. */}
+            come from the shared answerStateClasses token. At PRE the option's
+            PICTURE (emoji) is primary and the word is a small caption. */}
         <div className={`grid ${gridClass} gap-3 ${isShaking ? 'animate-shake' : ''}`}>
           {shuffledIdentificationOptions.map((option, idx) => {
             const isCorrectOption = showResult && option.isCorrect;
@@ -859,15 +932,27 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                 key={idx}
                 onClick={() => !showResult && handleIdentification(idx)}
                 disabled={showResult}
+                aria-label={isPreReader ? option.word : (option.image || option.word)}
                 className={`
                   rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
                   ${answerStateClasses[state]}
                   ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
                 `}
               >
-                <span className="text-2xl font-bold block">{option.word}</span>
-                {option.image && (
-                  <span className="text-xs text-slate-500 mt-1 block">{option.image}</span>
+                {isPreReader ? (
+                  <>
+                    <span className="text-5xl leading-none block" role="img" aria-hidden="true">
+                      {option.image || '⭐'}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-300 mt-1 block">{option.word}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl font-bold block">{option.word}</span>
+                    {option.image && (
+                      <span className="text-xs text-slate-500 mt-1 block">{option.image}</span>
+                    )}
+                  </>
                 )}
               </button>
             );
@@ -947,14 +1032,20 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-4xl">🎵</div>
-          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-          <p className="text-slate-400 text-sm max-w-sm">
-            {challenges.length} challenges across{' '}
-            {modes.map(m => MODE_LABELS[m]).join(', ')} modes.
-            Listen carefully and find the rhyming words!
-          </p>
+          <div className={isPreReader ? 'text-7xl' : 'text-4xl'}>🎵</div>
+          {/* Title, grade badge, and the start-gate paragraph are adult chrome —
+              hidden at PRE (band contract rule 7); the tutor greets by voice. */}
+          {!isPreReader && (
+            <>
+              <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              <p className="text-slate-400 text-sm max-w-sm">
+                {challenges.length} challenges across{' '}
+                {modes.map(m => MODE_LABELS[m]).join(', ')} modes.
+                Listen carefully and find the rhyming words!
+              </p>
+            </>
+          )}
           <LuminaActionButton
             action="next"
             onClick={() => {
@@ -963,7 +1054,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
               setHasStarted(true);
             }}
           >
-            Start Activity
+            {isPreReader ? '▶' : 'Start Activity'}
           </LuminaActionButton>
         </LuminaCardContent>
       </LuminaCard>
@@ -972,25 +1063,30 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
   return (
     <LuminaCard className={className}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+      {/* Adult chrome (title, grade badge, mode badge) hidden at PRE — band
+          contract rule 7; the tutor names the activity by voice. */}
+      {!isPreReader && (
+        <LuminaCardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+              </div>
             </div>
+            {currentChallenge && !showSummary && (
+              <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
+                {MODE_ICONS[currentChallenge.mode]} {MODE_LABELS[currentChallenge.mode]}
+              </LuminaBadge>
+            )}
           </div>
-          {currentChallenge && !showSummary && (
-            <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
-              {MODE_ICONS[currentChallenge.mode]} {MODE_LABELS[currentChallenge.mode]}
-            </LuminaBadge>
-          )}
-        </div>
-      </LuminaCardHeader>
+        </LuminaCardHeader>
+      )}
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress indicator */}
-        {!showSummary && (
+        {/* Progress indicator — counter + score ledger + bar are adult chrome,
+            hidden at PRE (band contract rule 7). */}
+        {!showSummary && !isPreReader && (
           <>
             <div className="flex items-center justify-between text-sm">
               <LuminaChallengeCounter
@@ -1018,8 +1114,10 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           </>
         )}
 
-        {/* Feedback banner */}
-        {feedback && !showSummary && (
+        {/* Feedback banner. Hidden at PRE — a non-reader can't read it; the
+            card ring/shake, SoundManager tones, and the spoken tutor carry
+            right/wrong on the object instead (band contract rule 5). */}
+        {feedback && !showSummary && !isPreReader && (
           <LuminaFeedbackCard status={feedbackType === 'error' ? 'incorrect' : 'correct'}>
             {feedback}
           </LuminaFeedbackCard>
@@ -1074,7 +1172,9 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
           ) : (
             <div className="flex justify-center">
               <LuminaActionButton action="next" onClick={handleNext}>
-                {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
+                {isPreReader
+                  ? (currentIndex < challenges.length - 1 ? '▶' : '🎉')
+                  : (currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish')}
               </LuminaActionButton>
             </div>
           )

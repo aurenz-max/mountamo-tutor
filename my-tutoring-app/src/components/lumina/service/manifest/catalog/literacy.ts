@@ -407,8 +407,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'rhyme-studio',
     misconceptionScope: 'primitive',
-    description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (type a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
-    constraints: 'Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array.',
+    description: 'Interactive rhyme awareness activity with three progressive modes: Recognition (do these words rhyme?), Identification (which word rhymes?), and Production (pick/say a rhyming word). Covers the full rhyme awareness progression. Perfect for kindergarten phonological awareness. ESSENTIAL for K-2 literacy.',
+    constraints: 'Requires 8-10 challenges mixing all three modes. Recognition challenges need doesRhyme boolean. Identification needs 2-3 options. Production needs acceptableAnswers array. '
+      + 'PRE-READER (K): the K routes are recognition + identification (picture-primary, tap=choose); each word (target, comparison, every option) carries a single depicting emoji so a non-reader can tell the words apart. Production is Grade 1+ (its word-bank distractors cannot be pictured) — do not route production at K.',
     evalModes: [
       {
         evalMode: 'recognition',
@@ -442,7 +443,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Target word: "{{targetWord}}" (rhyme family: {{rhymeFamily}}). '
         + 'Phase: {{currentPhase}}. Attempts: {{attempts}}.',
       contextKeys: [
-        'challengeMode', 'targetWord', 'rhymeFamily',
+        'challengeMode', 'targetWord', 'rhymeFamily', 'comparisonWord', 'optionWords',
         'currentChallenge', 'totalChallenges', 'currentPhase', 'attempts',
       ],
       scaffoldingLevels: {
@@ -465,6 +466,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Random guessing in identification', response: 'Say each word out loud slowly. Listen to the ending of each one.' },
       ],
       aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (Grade K)',
+          instruction:
+            'PRE-READERS (Grade K) CANNOT read a single word on screen — you are their only voice for the words AND the question. '
+            + 'On [ACTIVITY_START], [PHASE_TRANSITION], or your FIRST turn after switching to this rhyme activity, this read-aloud IS your greeting and OVERRIDES any "one sentence / keep it brief" cap. '
+            + 'Do it EVERY time the challenge changes, answer-free, and NEVER reveal which words rhyme:\n'
+            + '- If {{challengeMode}} is "recognition": clearly say the two words — "{{targetWord}}" … "{{comparisonWord}}" — stretching each ending sound, then ask "Do these two words rhyme?" and wait for a tap.\n'
+            + '- If {{challengeMode}} is "identification": say the target word "{{targetWord}}", then say each choice out loud: {{optionWords}}. Then ask "Which one rhymes with {{targetWord}}?" and wait for a tap.\n'
+            + 'Say ONLY the words and the question — no hints, no spelling, no naming the rhyming family.',
+        },
         {
           title: 'PRONUNCIATION COMMANDS',
           instruction:
