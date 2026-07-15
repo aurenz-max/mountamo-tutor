@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { clampGradeToK2 } from "../scopeContext";
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import type { SoundSwapData, SoundSwapChallenge } from "../../primitives/visual-primitives/literacy/SoundSwap";
 import {
@@ -740,9 +741,12 @@ export const generateSoundSwap = async (
       })
     : soundSwapSchema;
 
-  const gradeLevelKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
-    ? gradeLevel.toUpperCase()
-    : "K";
+  // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
+  // gradeLevel band never matched ["K","1","2"] and pinned every objective to "K".
+  const gradeLevelKey = clampGradeToK2(
+    ctx.grade,
+    (["K", "1", "2"].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : "K") as "K" | "1" | "2",
+  );
 
   const challengeCount = config?.challengeCount ?? 9;
 

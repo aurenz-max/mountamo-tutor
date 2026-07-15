@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TimelineBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaFeedbackCard } from '../../../../../ui';
+import { LuminaActionButton, LuminaFeedbackCard, dropZoneStateClass } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 import { useTapTutor, TapHint } from './TapTutor';
@@ -223,7 +223,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button
                   type="button"
                   onClick={() => removeFromSequence(eventIdx)}
-                  className="flex-1 text-left rounded-lg px-3 py-2 bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+                  className={`flex-1 text-left rounded-lg px-3 py-2 cursor-pointer transition-colors ${dropZoneStateClass('filled')}`}
                 >
                   <span className="text-sm font-medium text-slate-100 block">
                     {events[eventIdx].title}
@@ -231,7 +231,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   <span className="text-xs text-slate-500">Tap to remove</span>
                 </button>
               ) : (
-                <div className="flex-1 rounded-lg px-3 py-3 border border-dashed border-white/15 text-xs text-slate-600 italic">
+                <div className={`flex-1 rounded-lg px-3 py-3 text-xs italic ${dropZoneStateClass('idle')}`}>
                   {slot === sequence.length ? 'Tap an event below to place it here' : ''}
                 </div>
               )}

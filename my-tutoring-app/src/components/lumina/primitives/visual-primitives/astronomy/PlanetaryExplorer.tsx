@@ -547,6 +547,9 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
           return (
             <React.Fragment key={id}>
               {/* Orbit line */}
+              {/* dropzone-triage: decorative, out of scope — a vertical dashed
+                  guide marking each planet's orbit position on the solar-system
+                  diagram, not a drop target. */}
               {showOrbits && (
                 <div
                   className="absolute top-0 bottom-0 border-l border-dashed"

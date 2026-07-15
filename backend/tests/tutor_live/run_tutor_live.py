@@ -1101,8 +1101,93 @@ def build_knowledge_check_journey(live: Dict[str, Any], grade: str) -> Dict[str,
     }}
 
 
+def build_sorting_station_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT/DISAMBIGUATE journey for sorting-station @ K (sort_one).
+    Replays the EXACT [ACTIVITY_START] / [NEXT_ITEM] messages SortingStation.tsx
+    sends, then checks (must_include) that at each challenge start the tutor NAMES
+    every bin aloud and asks the sorting question — the catalog aiDirectives beat
+    ("SAY THE SORT OUT LOUD AND NAME EVERY BIN FIRST") which must survive the lesson
+    one-sentence cap. Objects are emoji-primary (not text), so unlike word-sorter
+    there is no per-object read-aloud STIMULUS beat; the load-bearing text a
+    pre-reader cannot decode is the RULE + the bin labels, both carried here.
+    Leak stance: naming every bin as a spoken choice is legitimate scaffolding, so
+    the ORIENT beats do not run the answer-leak oracle (there is no single staged
+    object whose correct bin could be asserted).
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    # K routes to sort_one / odd_one_out; this journey pins the sort_one census route.
+    sorts = [c for c in challenges if c.get("type") == "sort-by-one"] or challenges
+    ch0 = sorts[0] if sorts else {}
+    ch1 = next(iter(sorts[1:]), ch0)
+    total = len(challenges)
+    grade_band = data.get("gradeBand", "K")
+
+    def bins(ch: Dict[str, Any]) -> List[str]:
+        return [str(c.get("label", "")) for c in (ch.get("categories") or []) if c.get("label")]
+
+    def objects_str(ch: Dict[str, Any]) -> str:
+        return ", ".join(f"{o.get('emoji','')} {o.get('label','')}" for o in (ch.get("objects") or []))
+
+    # ORIENT bar: every bin named + the sort enacted as a spoken question/action.
+    def orient_groups(ch: Dict[str, Any]) -> List[List[str]]:
+        groups = [[b] for b in bins(ch)]
+        groups.append(["which", "where", "belong", "goes", "go", "sort", "tap", "pick", "put"])
+        return groups
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        return {
+            "challengeType": ch.get("type", ""),
+            "instruction": ch.get("instruction", ""),
+            "sortingAttribute": ch.get("sortingAttribute", "category"),
+            "categories": bins(ch),
+            "objectsSorted": 0,
+            "totalObjects": len(ch.get("objects") or []),
+            "attemptNumber": 1,
+            "currentChallengeIndex": idx,
+            "totalChallenges": total,
+            "gradeBand": grade_band,
+        }
+
+    initial_bag = bag_for(ch0, 0)
+    band_word = "Kindergarten" if grade_band == "K" else "Grade 1"
+
+    # Verbatim replicas of SortingStation.tsx sendText messages (all silent sends).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] This is a Sorting Station activity for {band_word}. "
+        f"{total} challenges total. First challenge: \"{ch0.get('instruction','')}\" ({ch0.get('type','')}). "
+        f"Objects: {objects_str(ch0)}. "
+        f"Introduce warmly: \"Look at all these things! Let's sort them together.\" "
+        f"Follow your SAY THE SORT OUT LOUD AND NAME EVERY BIN directive now."
+    )
+    next_item = text_msg(
+        f"[NEXT_ITEM] Moving to challenge 2 of {total}: "
+        f"\"{ch1.get('instruction','')}\" (type: {ch1.get('type','')}). Introduce it briefly. "
+        f"Follow your SAY THE SORT OUT LOUD AND NAME EVERY BIN directive for this new challenge."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the lesson greeting on auth (one-sentence cap in --lesson)"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=orient_groups(ch0),
+             note="ORIENT/DISAMBIGUATE: the tutor must name every bin and ask the sorting "
+                  "question — a bare 'let's sort!' greeting strands a non-reader who cannot "
+                  "read the rule or the bin labels"),
+        Beat("next_item", expect="turn", sends=[next_item],
+             must_include=orient_groups(ch1),
+             note="ORIENT on advance: the next challenge's bins + question must be enacted too"),
+    ]
+    return {"initial_bag": initial_bag, "beats": beats, "answers": [], "meta": {
+        "gradeBand": grade_band, "challenges": total,
+        "challenge0": ch0.get("instruction", ""), "bins0": bins(ch0),
+        "challenge1": ch1.get("instruction", ""), "bins1": bins(ch1),
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
+    "sorting-station": build_sorting_station_journey,
     "addition-subtraction-scene": build_addition_subtraction_scene_journey,
     "comparison-builder": build_comparison_builder_journey,
     "decodable-reader": build_decodable_reader_journey,

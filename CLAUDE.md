@@ -23,6 +23,8 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 
 **Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify, agent-judged), `/oracle-test` (verify, code-judged content contracts — CI-able), `/eval-fix` (fix issues).
 
+**Contract-first edits:** one primitive serves many skills; an edit for skill N must not ablate what skills 1..N−1 depend on. Before modifying an existing primitive's component or generator, read `my-tutoring-app/src/components/lumina/docs/contracts/<primitive-id>.md` if it exists (`/primitive-contract` derives/refreshes it; `--check` runs the edit guard). If the new demand contradicts an existing requirement, fork (eval-mode split → band gate → config axis → variant) — never edit in place over a conflict.
+
 **Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`, `PRIMITIVE_LIFECYCLE.md`
 
 ## Project Management

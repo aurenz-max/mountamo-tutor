@@ -11,6 +11,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { dropZoneStateClass, motion, type DropZoneState } from '../../../ui';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -70,11 +71,8 @@ const SCALE_COLORS: Record<string, string> = {
   historical: 'from-purple-500/20 to-pink-500/20',
 };
 
-const SLOT_ACCENT: Record<string, string> = {
-  daily:      'border-amber-500/40 bg-amber-500/10',
-  yearly:     'border-blue-500/40 bg-blue-500/10',
-  historical: 'border-purple-500/40 bg-purple-500/10',
-};
+// Challenge-type identity is carried by the badge (PHASE_TYPE_CONFIG) and the
+// scale bar (SCALE_COLORS); the drop slots themselves speak only zone state.
 
 // ============================================================================
 // Component
@@ -447,23 +445,28 @@ const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
                     correctEventLabel = correctEvt?.label;
                   }
 
+                  // Slot speaks the shared drop-zone language: graded slots pop
+                  // correct / shake incorrect, placed slots hold (filled), empty
+                  // slots invite (idle). The held selection lives on the event
+                  // chip below — we don't light every eligible slot.
+                  const slotState: DropZoneState = isCorrectSlot
+                    ? 'correct'
+                    : isIncorrectSlot
+                      ? 'incorrect'
+                      : placedEvent
+                        ? 'filled'
+                        : 'idle';
+                  const slotMotion = isCorrectSlot ? motion.pop : isIncorrectSlot ? motion.shake : '';
+
                   return (
                     <button
                       key={slotIdx}
                       onClick={() => handleSlotClick(slotIdx)}
                       className={`
-                        min-h-[4rem] rounded-lg border-2 border-dashed p-2 text-center text-sm
+                        min-h-[4rem] rounded-lg p-2 text-center text-sm
                         transition-all duration-150 flex flex-col items-center justify-center
-                        ${isCorrectSlot
-                          ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300'
-                          : isIncorrectSlot
-                            ? 'border-rose-500/60 bg-rose-500/15 text-rose-300'
-                            : placedEvent
-                              ? `${SLOT_ACCENT[currentChallenge.type] || SLOT_ACCENT.daily} text-slate-200`
-                              : selectedEventId
-                                ? 'border-white/30 bg-white/5 text-slate-500 hover:bg-white/10 cursor-pointer ring-1 ring-white/20'
-                                : 'border-white/15 bg-white/3 text-slate-600'
-                        }
+                        ${selectedEventId && !placedEvent ? 'cursor-pointer' : ''}
+                        ${dropZoneStateClass(slotState)} ${slotMotion}
                       `}
                       disabled={!!feedback?.checked && !canRetry}
                     >

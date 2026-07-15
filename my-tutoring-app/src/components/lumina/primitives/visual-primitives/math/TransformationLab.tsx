@@ -878,6 +878,9 @@ const TransformationLab: React.FC<TransformationLabProps> = ({ data, className }
             )}
             {isSequenceMode && (
               <span className="flex items-center gap-1.5">
+                {/* dropzone-triage: decorative, out of scope — legend swatch mirroring the
+                    on-canvas ghost "target" outline; the interaction is a continuous-drag
+                    transformation grid (PRD non-goal), not a drop target. */}
                 <span className="inline-block w-3 h-3 rounded-sm border border-dashed" style={{ borderColor: COL_GHOST }} /> Target
               </span>
             )}

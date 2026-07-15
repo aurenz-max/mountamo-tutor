@@ -14,6 +14,9 @@ import {
   LuminaButton,
   LuminaFeedbackCard,
   answerStateClass,
+  dropZoneStateClass,
+  motion,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -319,6 +322,15 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
   // Shuffled numbers for order challenges
   const [shuffledNumbers, setShuffledNumbers] = useState<number[]>([]);
 
+  // Transient grading flash for the order slots — drives the shared drop-zone
+  // motion (pop/shake) off the same checkOrder result, then settles to filled.
+  const [orderFlash, setOrderFlash] = useState<'correct' | 'incorrect' | null>(null);
+  const orderFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => { if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current); },
+    [],
+  );
+
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `comparison-builder-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -616,6 +628,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       orderedNumbers.every((n, i) => n === expected[i]);
     incrementAttempts();
 
+    // Zone-state flash off the same grading result (visual only). Settles at 900 ms.
+    if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+    setOrderFlash(correct ? 'correct' : 'incorrect');
+    orderFlashTimer.current = setTimeout(() => setOrderFlash(null), 900);
+
     if (correct) {
       setFeedback(`Perfect order! ${orderedNumbers.join(', ')}`);
       setFeedbackType('success');
@@ -838,6 +855,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     setShowLines(false);
     setFeedback('');
     setFeedbackType('');
+    setOrderFlash(null);
+    if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -1240,18 +1259,27 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </LuminaBadge>
         </div>
 
-        {/* Ordered slots (bespoke drop targets — grading color tokenized) */}
+        {/* Ordered slots — bespoke drop targets speaking the shared zone
+            language: filled once placed, the single next slot is the active
+            (dragOver) target, and grading flashes correct/incorrect. */}
         <div className="flex justify-center gap-2 min-h-[64px]">
-          {Array.from({ length: totalSlots }, (_, i) => (
+          {Array.from({ length: totalSlots }, (_, i) => {
+            const isPlaced = i < orderedNumbers.length;
+            const isNext = i === orderedNumbers.length;
+            const slotState: DropZoneState = isPlaced
+              ? (orderFlash ?? 'filled')
+              : isNext
+                ? 'dragOver'
+                : 'idle';
+            const slotMotion = isPlaced && orderFlash === 'correct'
+              ? motion.pop
+              : isPlaced && orderFlash === 'incorrect'
+                ? motion.shake
+                : '';
+            return (
             <div
               key={`slot-${i}`}
-              className={`w-14 h-14 rounded-xl flex items-center justify-center border-2 border-dashed transition-all ${
-                i < orderedNumbers.length
-                  ? 'bg-emerald-500/15 border-emerald-400/40 cursor-pointer'
-                  : i === orderedNumbers.length
-                    ? 'bg-white/5 border-white/30'
-                    : 'bg-slate-800/30 border-slate-600/30'
-              }`}
+              className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${isPlaced ? 'cursor-pointer' : ''} ${dropZoneStateClass(slotState)} ${slotMotion}`}
               onClick={() => {
                 if (
                   i === orderedNumbers.length - 1 &&
@@ -1262,7 +1290,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
               }}
             >
               {i < orderedNumbers.length ? (
-                <span className="text-xl font-bold text-emerald-300">
+                <span className="text-xl font-bold text-slate-100">
                   {orderedNumbers[i]}
                 </span>
               ) : (
@@ -1271,7 +1299,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                 showSlotHints ? <span className="text-slate-600 text-sm">{i + 1}</span> : null
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Available number cards (bespoke draggable tiles) */}
@@ -1299,7 +1328,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             <LuminaButton
               tone="subtle"
               className="text-xs"
-              onClick={() => setOrderedNumbers([])}
+              onClick={() => { setOrderedNumbers([]); setOrderFlash(null); }}
             >
               Start Over
             </LuminaButton>

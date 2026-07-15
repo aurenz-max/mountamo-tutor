@@ -9,6 +9,9 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaActionButton,
+  dropZoneStateClass,
+  motion,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -393,14 +396,19 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: Ord
           Shortest → Longest
         </span>
         <div className="flex items-end gap-3">
-          {slots.map((slot, i) => (
+          {slots.map((slot, i) => {
+            // Ordering slot speaks the shared drop-zone language: graded on
+            // submit (whole-row correct/incorrect), else filled/idle.
+            const slotState: DropZoneState = submitted
+              ? (isCorrect ? 'correct' : 'incorrect')
+              : slot
+                ? 'filled'
+                : 'idle';
+            const slotMotion = submitted && isCorrect ? motion.pop : submitted && !isCorrect ? motion.shake : '';
+            return (
             <div key={i} className="flex flex-col items-center gap-1">
               <div
-                className={`min-w-[80px] min-h-[44px] rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer transition-colors ${
-                  slot
-                    ? 'border-white/30 bg-white/5'
-                    : 'border-white/10 bg-white/[0.02]'
-                } ${submitted && isCorrect ? 'border-emerald-400/50' : ''} ${submitted && !isCorrect ? 'border-red-400/50' : ''}`}
+                className={`min-w-[80px] min-h-[44px] rounded-lg flex items-center justify-center cursor-pointer transition-colors ${dropZoneStateClass(slotState)} ${slotMotion}`}
                 onClick={() => removeFromSlot(i)}
               >
                 {slot ? (
@@ -413,7 +421,8 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled }: Ord
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

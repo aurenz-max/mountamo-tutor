@@ -10,6 +10,9 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
+  dropZoneStateClass,
+  motion,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -226,6 +229,17 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [correctSlots, setCorrectSlots] = useState<Set<number>>(new Set());
 
+  // Transient grading flash for the answer slots — drives the shared drop-zone
+  // state language (pop on correct, shake on incorrect) then settles to
+  // filled/correct. Challenge-wide: every target slot is graded together.
+  const [slotFlash, setSlotFlash] = useState<'correct' | 'incorrect' | null>(null);
+  const slotFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => { if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current); },
+    []
+  );
+  const flashMotion = slotFlash === 'correct' ? motion.pop : slotFlash === 'incorrect' ? motion.shake : '';
+
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `number-sequencer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -361,6 +375,12 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
       }
     }
 
+    // Fire the zone-state flash off the same grading result (visual only —
+    // grading logic below is untouched). Settles after 900 ms.
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
+    setSlotFlash(correct ? 'correct' : 'incorrect');
+    slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
+
     if (correct) {
       SoundManager.playCorrect();
       setFeedback('Correct! Great job!');
@@ -459,6 +479,8 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
     setFeedback('');
     setFeedbackType('');
     setCorrectSlots(new Set());
+    setSlotFlash(null);
+    if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -598,17 +620,17 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
                 const isBlank = num === null;
                 const blankOrderIndex = isBlank ? blankIndices.indexOf(idx) : -1;
                 const isCorrectlyFilled = correctSlots.has(idx);
+                // Blank cars speak the shared drop-zone state language; number
+                // cars keep their identity tint (not a target).
+                const blankState: DropZoneState = isBlank
+                  ? (slotFlash ?? (isCorrectlyFilled ? 'correct' : fillAnswers[idx]?.trim() ? 'filled' : 'idle'))
+                  : 'idle';
 
                 return (
                   <TrainCar
                     key={idx}
-                    colorClass={
-                      isBlank
-                        ? isCorrectlyFilled
-                          ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                          : 'bg-slate-800/50 border-dashed border-white/20'
-                        : TRAIN_CAR_COLORS[idx % TRAIN_CAR_COLORS.length]
-                    }
+                    colorClass={isBlank ? dropZoneStateClass(blankState) : TRAIN_CAR_COLORS[idx % TRAIN_CAR_COLORS.length]}
+                    className={isBlank ? flashMotion : ''}
                   >
                     {isBlank ? (
                       <input
@@ -677,17 +699,14 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
                   {currentChallenge.correctAnswers.map((_, idx) => {
                     const placedNum = orderedCards[idx];
                     const isCorrect = correctSlots.has(idx);
+                    const slotState: DropZoneState =
+                      slotFlash ?? (isCorrect ? 'correct' : placedNum !== undefined ? 'filled' : 'idle');
 
                     return (
                       <TrainCar
                         key={idx}
-                        colorClass={
-                          placedNum !== undefined
-                            ? isCorrect
-                              ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                              : 'bg-amber-500/15 border-amber-400/30'
-                            : 'bg-slate-800/30 border-dashed border-slate-600/30'
-                        }
+                        colorClass={dropZoneStateClass(slotState)}
+                        className={flashMotion}
                       >
                         {placedNum !== undefined ? (
                           <>
@@ -756,14 +775,13 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
 
           const inputSlots = countInputs.map((val, idx) => {
             const isCorrect = correctSlots.has(idx);
+            const slotState: DropZoneState =
+              slotFlash ?? (isCorrect ? 'correct' : val?.trim() ? 'filled' : 'idle');
             return (
               <TrainCar
                 key={idx}
-                colorClass={
-                  isCorrect
-                    ? 'bg-emerald-500/20 border-emerald-400/50 scale-105'
-                    : 'bg-slate-800/50 border-dashed border-white/20'
-                }
+                colorClass={dropZoneStateClass(slotState)}
+                className={flashMotion}
               >
                 <input
                   type="number"
@@ -813,20 +831,20 @@ const NumberSequencer: React.FC<NumberSequencerProps> = ({ data, className }) =>
                 // Key by answerIdx directly — decade-fill doesn't use blankIndices
                 const isCorrectlyFilled = isBlank && correctSlots.has(answerIdx);
                 const isDecade = num % 10 === 0;
+                const blankState: DropZoneState = slotFlash
+                  ?? (isCorrectlyFilled ? 'correct' : fillAnswers[answerIdx]?.trim() ? 'filled' : 'idle');
 
                 return (
                   <div
                     key={num}
                     className={`
                       w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold
-                      transition-all duration-300 border
+                      transition-all duration-300
                       ${isBlank
-                        ? isCorrectlyFilled
-                          ? 'bg-emerald-500/20 border-emerald-400/50'
-                          : 'bg-slate-800/50 border-dashed border-white/20'
+                        ? `${dropZoneStateClass(blankState)} ${flashMotion}`
                         : isDecade
-                          ? 'bg-cyan-500/15 border-cyan-400/30 text-cyan-300'
-                          : 'bg-slate-800/20 border-slate-700/20 text-slate-400'
+                          ? 'border bg-cyan-500/15 border-cyan-400/30 text-cyan-300'
+                          : 'border bg-slate-800/20 border-slate-700/20 text-slate-400'
                       }
                     `}
                   >

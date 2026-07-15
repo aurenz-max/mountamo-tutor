@@ -39,6 +39,10 @@ export interface SortingObject {
 export interface SortingCategory {
   label: string;
   rule: Record<string, string>;
+  /** Picture-primary bin icon for the pre-reader (K) render — a single emoji that stands for
+   *  the whole group (e.g. Need → 🏠, Want → 🎁). Non-load-bearing: sort correctness is by
+   *  `rule`, never by the icon. Missing → the K render falls back to a color-coded circle. */
+  bucketEmoji?: string;
 }
 
 export interface SortingStationChallenge {
@@ -103,6 +107,11 @@ const BIN_COLORS = [
   { bg: 'bg-amber-500/10', border: 'border-amber-400/30', text: 'text-amber-300', hover: 'hover:bg-amber-500/20' },
 ];
 
+/** Guaranteed picture-primary bin icon for the pre-reader (K) render when the generator did
+ *  not supply a `bucketEmoji` — a color-coded circle aligned to BIN_COLORS order
+ *  (red / blue / emerald→green / amber→yellow). Ensures K bins are NEVER text-only. */
+const FALLBACK_BIN_EMOJI = ['🔴', '🔵', '🟢', '🟡'];
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -165,6 +174,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // Pre-reader (Kindergarten) presentation gate: at K the student cannot read bin labels,
+  // instructions, counters, or quantitative feedback prose — the render goes picture-primary
+  // and adult chrome is hidden (reader-fit band contract). Grade 1 keeps the full chrome.
+  const isK = gradeBand === 'K';
 
   // ─── Shared hooks ──────────────────────────────────────────────
   const {
@@ -235,7 +249,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   }, [currentChallenge?.id, currentChallenge?.modelItemId, currentChallenge?.modelItemBin]);
 
   // ─── Derived categories for sort-by-attribute ──────────────────
-  const derivedCategories = useMemo(() => {
+  const derivedCategories = useMemo((): SortingCategory[] => {
     if (!currentChallenge) return [];
     if (currentChallenge.type === 'sort-by-attribute' && selectedAttribute) {
       const values = new Set(
@@ -347,6 +361,10 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   // ─── AI Tutoring ───────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     challengeType: currentChallenge?.type ?? '',
+    // Forwarded so the catalog aiDirectives beat's {{instruction}} resolves at runtime — a
+    // generator-only key would render "(not set)". This IS the load-bearing task text the
+    // tutor reads aloud to the pre-reader (STIMULUS).
+    instruction: currentChallenge?.instruction ?? '',
     sortingAttribute: currentChallenge?.sortingAttribute ?? selectedAttribute ?? '',
     categories: derivedCategories.map(c => c.label),
     objectsSorted: binAssignments.size,
@@ -886,6 +904,25 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     }
   }, [currentChallenge, isCurrentChallengeComplete, binAssignments.size, selectedAttribute, comparisonAnswer, selectedObjects.size, selectedOddOne, tallyCounts, countComparePhase, enteredBinCounts, tallyRecordPhase]);
 
+  // ─── PRE (K) odd-one-out: tap = choose ─────────────────────────
+  // Selecting the odd object is an ATOMIC choice, so at K it auto-submits — no separate
+  // Check button (band contract rule 2). The ref latches per selected id so an unrelated
+  // re-render (handleCheckAnswer identity churn) can't double-submit; a wrong tap clears
+  // selectedOddOne, resetting the latch so the next tap re-checks. Sort-family modes are
+  // multi-part constructions and keep their explicit Check.
+  const autoCheckedOddRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isK || currentChallenge?.type !== 'odd-one-out') return;
+    if (!selectedOddOne) {
+      autoCheckedOddRef.current = null;
+      return;
+    }
+    if (!isCurrentChallengeComplete && autoCheckedOddRef.current !== selectedOddOne) {
+      autoCheckedOddRef.current = selectedOddOne;
+      handleCheckAnswer();
+    }
+  }, [isK, currentChallenge?.type, selectedOddOne, isCurrentChallengeComplete, handleCheckAnswer]);
+
   // ─── Render helpers ────────────────────────────────────────────
 
   const renderSortingUI = () => {
@@ -920,7 +957,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           <>
             {/* Unsorted objects */}
             <div className="bg-slate-800/20 rounded-xl p-4 border border-white/5">
-              <p className="text-slate-500 text-xs mb-2 uppercase tracking-wider">Unsorted Objects</p>
+              {!isK && <p className="text-slate-500 text-xs mb-2 uppercase tracking-wider">Unsorted Objects</p>}
               {unsortedObjects.length > 0 ? (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {unsortedObjects.map(obj => (
@@ -941,7 +978,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
               ) : (
                 <p className="text-slate-500 text-sm text-center italic">All objects sorted!</p>
               )}
-              {selectedObjectId && (
+              {selectedObjectId && !isK && (
                 <p className="text-orange-300 text-xs text-center mt-2 animate-pulse">
                   Click a bin below to place it
                 </p>
@@ -971,17 +1008,28 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                     onClick={() => selectedObjectId && handleBinClick(idx)}
                     className={`min-h-[100px] text-left ${selectedObjectId ? 'cursor-pointer' : 'cursor-default'}`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
-                      {showCounts && (
-                        <Badge className={`${color.bg} ${color.border} ${color.text} text-xs`}>
-                          {itemsInBin.length}
-                        </Badge>
-                      )}
-                    </div>
+                    {isK ? (
+                      /* Pre-reader: the bin is a PICTURE (emoji or color-coded circle) with the
+                         word as a small caption — the word never gates, the tutor names each bin. */
+                      <div className="flex flex-col items-center gap-0.5 mb-2">
+                        <span className="text-3xl leading-none" aria-hidden>
+                          {cat.bucketEmoji || FALLBACK_BIN_EMOJI[idx % FALLBACK_BIN_EMOJI.length]}
+                        </span>
+                        <span className={`text-xs font-medium ${color.text}`}>{cat.label}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-sm font-medium ${color.text}`}>{cat.label}</span>
+                        {showCounts && (
+                          <Badge className={`${color.bg} ${color.border} ${color.text} text-xs`}>
+                            {itemsInBin.length}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     <LuminaDropZone
                       state={zoneState}
-                      emptyPrompt="Tap to place object here"
+                      emptyPrompt={isK ? '' : 'Tap to place object here'}
                       className="min-h-[64px] content-center justify-center p-2"
                     >
                       {itemsInBin.map(obj => {
@@ -1204,9 +1252,11 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     if (type === 'odd-one-out') {
       return (
         <div className="bg-slate-800/20 rounded-xl p-4 border border-white/5">
-          <p className="text-slate-400 text-xs mb-3 text-center">
-            Tap the one that doesn&apos;t belong
-          </p>
+          {!isK && (
+            <p className="text-slate-400 text-xs mb-3 text-center">
+              Tap the one that doesn&apos;t belong
+            </p>
+          )}
           <div className="flex flex-wrap gap-2 justify-center">
             {currentChallenge.objects.map(obj => (
               <button
@@ -1218,7 +1268,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                     : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105'
                 }`}
               >
-                <span className="text-2xl">{obj.emoji}</span>
+                <span className={isK ? 'text-4xl' : 'text-2xl'}>{obj.emoji}</span>
                 <span className="text-[11px] text-slate-400 leading-tight text-center break-words max-w-[80px]">{obj.label}</span>
               </button>
             ))}
@@ -1330,16 +1380,18 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <LuminaBadge accent="orange" className="text-xs">
-            {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-          </LuminaBadge>
+          {!isK && (
+            <LuminaBadge accent="orange" className="text-xs">
+              Grade 1
+            </LuminaBadge>
+          )}
         </div>
-        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
+        {!isK && description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Challenge progress badges */}
-        {challenges.length > 0 && (
+        {/* Challenge progress badges — adult chrome (rule 7), hidden for the pre-reader */}
+        {challenges.length > 0 && !isK && (
           <div className="flex items-center gap-2 flex-wrap">
             {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
               const hasType = challenges.some(c => c.type === type);
@@ -1367,8 +1419,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Instruction (phase-aware) */}
-        {currentChallenge && !allChallengesComplete && (
+        {/* Instruction (phase-aware) — on-screen text; hidden for the pre-reader (the tutor
+            voices the task + names the bins via the ORIENT/DISAMBIGUATE aiDirectives beat) */}
+        {currentChallenge && !allChallengesComplete && !isK && (
           <LuminaPanel>
             <p className="text-slate-200 text-sm font-medium">
               {currentChallenge.type === 'count-and-compare' && countComparePhase === 'count'
@@ -1406,8 +1459,9 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         {/* Challenge-specific UI */}
         {renderChallengeUI()}
 
-        {/* Feedback */}
-        {feedback && (
+        {/* Feedback — quantitative text prose ("N in the wrong bin") is hidden for the
+            pre-reader (rule 5); the bin flash, sound, and the tutor's spoken hint carry it */}
+        {feedback && !isK && (
           <div className={`text-center text-sm font-medium ${
             feedbackType === 'success' ? 'text-emerald-400'
             : feedbackType === 'error' ? 'text-red-400'
@@ -1420,7 +1474,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         {/* Action buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
+            {!isCurrentChallengeComplete && !allChallengesComplete && !(isK && currentChallenge?.type === 'odd-one-out') && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}

@@ -332,6 +332,18 @@ const sortSchema: Schema = {
             description: "Which attribute to sort by: 'category', 'color', 'shape', 'size', or 'type'",
           },
           objects: { type: Type.ARRAY, items: objectItemSchema },
+          categoryEmojis: {
+            type: Type.ARRAY,
+            description: "One picture per bin: for each distinct sortingAttribute value (each group the objects sort into), a single emoji that stands for the WHOLE group so a pre-reader can tell the bins apart. NEVER reuse an object's own emoji; pick a general symbol (e.g. category 'need' → 🏠, 'want' → 🎁).",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.STRING, description: "The sortingAttribute value this bin holds (e.g. 'need')" },
+                emoji: { type: Type.STRING, description: "Single representative emoji for that whole group" },
+              },
+              required: ["value", "emoji"],
+            },
+          },
         },
         required: ["instruction", "sortingAttribute", "objects"],
       },
@@ -359,6 +371,18 @@ const countCompareSchema: Schema = {
             description: "Attribute the objects are pre-sorted by: 'category', 'color', 'shape', 'size', or 'type'",
           },
           objects: { type: Type.ARRAY, items: objectItemSchema },
+          categoryEmojis: {
+            type: Type.ARRAY,
+            description: "One picture per group: for each distinct sortingAttribute value, a single emoji standing for the WHOLE group so a pre-reader can tell the groups apart. NEVER reuse an object's own emoji.",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.STRING, description: "The sortingAttribute value this group holds" },
+                emoji: { type: Type.STRING, description: "Single representative emoji for that whole group" },
+              },
+              required: ["value", "emoji"],
+            },
+          },
           comparisonQuestion: {
             type: Type.STRING,
             description: "The comparison question (e.g., 'Which group has more?')",
@@ -508,13 +532,36 @@ function toLuminaObjects(
   }));
 }
 
-/** Derive categories deterministically from actual object attribute values */
-function deriveCategories(objects: SortingObject[], sortAttr: string): SortingCategory[] {
+/** Derive categories deterministically from actual object attribute values.
+ *  `emojiByValue` (lowercased value → emoji) attaches a picture-primary bin icon for the K
+ *  render; it is optional and non-load-bearing (missing → the component falls back to a
+ *  color-coded circle). */
+function deriveCategories(
+  objects: SortingObject[],
+  sortAttr: string,
+  emojiByValue?: Map<string, string>,
+): SortingCategory[] {
   const values = Array.from(new Set(objects.map(o => o.attributes[sortAttr]).filter(Boolean)));
-  return values.map(v => ({
-    label: v.charAt(0).toUpperCase() + v.slice(1),
-    rule: { [sortAttr]: v },
-  }));
+  return values.map(v => {
+    const emoji = emojiByValue?.get(v.toLowerCase());
+    return {
+      label: v.charAt(0).toUpperCase() + v.slice(1),
+      rule: { [sortAttr]: v },
+      ...(emoji ? { bucketEmoji: emoji } : {}),
+    };
+  });
+}
+
+/** Build a lowercased value→emoji map from an LLM `categoryEmojis` array (best-effort). */
+function buildEmojiByValue(
+  categoryEmojis?: { value?: string; emoji?: string }[],
+): Map<string, string> | undefined {
+  if (!categoryEmojis?.length) return undefined;
+  const map = new Map<string, string>();
+  for (const ce of categoryEmojis) {
+    if (ce?.value && ce?.emoji) map.set(ce.value.toLowerCase(), ce.emoji);
+  }
+  return map.size ? map : undefined;
 }
 
 // ============================================================================
@@ -560,6 +607,7 @@ Generate exactly ${count} challenges. Each challenge needs:
 - A sortingAttribute (one of: category, color, shape, size, type)
 - 4-8 objects with a label, emoji, and only the objective-relevant attributes
 - Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
+- categoryEmojis: one entry per distinct sortingAttribute value (one per bin) giving a single emoji that stands for that WHOLE group, so a pre-reader can tell the bins apart. Pick a general symbol for the group, NEVER reuse an object's own emoji (e.g. 'need' → 🏠, 'want' → 🎁, 'living' → 🌱, 'non-living' → 🪨).
 - Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
 `;
 
@@ -573,10 +621,11 @@ Generate exactly ${count} challenges. Each challenge needs:
   if (!data?.challenges?.length) throw new Error(`No ${sortType} challenges returned`);
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[] }, i: number) => {
+    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; categoryEmojis?: { value?: string; emoji?: string }[] }, i: number) => {
       const sortAttr = ch.sortingAttribute || 'type';
       const objects = toLuminaObjects(ch.objects || [], i * 10);
-      const categories = deriveCategories(objects, sortAttr);
+      const emojiByValue = buildEmojiByValue(ch.categoryEmojis);
+      const categories = deriveCategories(objects, sortAttr, emojiByValue);
 
       return {
         id: `c${i + 1}`,
@@ -584,7 +633,7 @@ Generate exactly ${count} challenges. Each challenge needs:
         instruction: ch.instruction,
         sortingAttribute: sortAttr,
         objects,
-        categories: categories.length >= 2 ? categories : deriveCategories(objects, 'type'),
+        categories: categories.length >= 2 ? categories : deriveCategories(objects, 'type', emojiByValue),
       } as SortingStationChallenge;
     },
   );
@@ -610,6 +659,7 @@ Generate exactly ${count} challenges. Each challenge needs:
 - A warm instruction
 - A sortingAttribute (category, color, shape, size, or type)
 - 4-8 objects with attributes — groups MUST have DIFFERENT counts so there's a clear answer
+- categoryEmojis: one entry per distinct sortingAttribute value (one per group) giving a single emoji standing for the WHOLE group so a pre-reader can tell the groups apart; NEVER reuse an object's own emoji
 - A comparisonQuestion (e.g., "Are there more red things or blue things?")
 - correctComparison: 'more', 'fewer', or 'equal'
 
@@ -626,10 +676,10 @@ Make sure the groups have unequal sizes for 'more'/'fewer' answers.
   if (!data?.challenges?.length) throw new Error('No count-and-compare challenges returned');
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; comparisonQuestion: string; correctComparison: string }, i: number) => {
+    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; comparisonQuestion: string; correctComparison: string; categoryEmojis?: { value?: string; emoji?: string }[] }, i: number) => {
       const sortAttr = ch.sortingAttribute || 'type';
       const objects = toLuminaObjects(ch.objects || [], i * 10);
-      const categories = deriveCategories(objects, sortAttr);
+      const categories = deriveCategories(objects, sortAttr, buildEmojiByValue(ch.categoryEmojis));
       const validComparisons = ['more', 'fewer', 'equal'];
 
       return {

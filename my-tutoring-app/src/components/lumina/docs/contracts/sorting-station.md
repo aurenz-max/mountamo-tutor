@@ -1,0 +1,105 @@
+# Contract: sorting-station
+
+- **Derived:** 2026-07-15 · evidence window: K topic-trace census 2026-07-14 + QA reports through 2026-07-15 + git history to 2026-03
+- **Component:** `primitives/visual-primitives/math/SortingStation.tsx` · **Generator:** `service/math/gemini-sorting-station.ts` · **Catalog:** `service/manifest/catalog/math.ts:2988`
+- **Status:** ACTIVE (no open conflicts; 3 resolved on record)
+- **In-flight caveat:** the PRE presentation layer (R4, parts of R5–R7) is UNCOMMITTED,
+  owned by the delegated reader-fit 1e lane (`qa/reader-fit/HANDOFF-sorting-station-PRE-2026-07-15.md`).
+  Those requirements are OBSERVED in the working tree but not yet verified live — treat
+  the delegated lane's close-out report as the verification event.
+
+## Consumers (blast radius)
+
+| Consumer (skill/band/topic family) | Channel | Evidence | Last seen |
+|---|---|---|---|
+| K PRE band — picture-primary sorting | census 4/6 + reader-fit | `qa/reader-fit/BACKLOG.md` 1e; HANDOFF-PRE-2026-07-15 | 2026-07-15 |
+| Grade 1+ (reader) — full-chrome modes | catalog + component G1 branch | catalog mode descriptions (Grade 1+ ONLY ×4) | 2026-07-14 |
+| 2D-shapes / geometry topics | census trace | `qa/topic-traces/k-2d-shapes-2026-07-14.md` | 2026-07-14 |
+| Needs-vs-wants (semantic classification) | census ×2 draws | `qa/topic-traces/k-needs-vs-wants-2026-07-14.md` | 2026-07-14 |
+| Community-helpers / roles | census trace | `qa/topic-traces/k-community-helpers-2026-07-14.md` | 2026-07-14 |
+| Compare-groups-≤5 (count_compare) | census trace | `qa/topic-traces/k-compare-groups-to-5-2026-07-14.md` | 2026-07-14 |
+| Support-tier / structural-difficulty engine | git + generator | commit 1c3e774; `resolveProblemShape`/`resolveSupportStructure` | 2026-06-14 |
+| Eval-test / IRT calibration (6 modes) | EVAL_TRACKER | 6/6 pass row (2026-06-14); SS-1..SS-4 fix rows | 2026-06-14 |
+
+## Requirements
+
+### R1 — taught-rule stability · OBSERVED
+- **Property:** the objective's classification rule stays THE sort axis across all challenges in a session; variety comes from different on-objective objects, never from switching to color/size/shape (those are distractor features unless the objective teaches them).
+- **Demanded by:** shapes, needs-vs-wants, community-helpers families (all three were broken by the same drift).
+- **Evidence:** `qa/topic-fidelity/sorting-station-2026-07-14.md` (FIDELITY BUG → fixed); 3/4 census traces showed the drift (shapes→color/size, needs→color, helpers→color).
+- **Probe:** eval-test route, topic "Match 2D shapes" + intent "sort by shape category" ×3 → `sortingAttribute` = shape every challenge; topic "Needs vs Wants" → `category` every challenge; no cross-challenge axis switch.
+
+### R2 — intent binding · OBSERVED
+- **Property:** `ctx.intent` (fallback topic) is consumed as the specific objective via `buildSortingObjectiveSection`; changing intent under a fixed broad topic changes the sort rule.
+- **Demanded by:** every topic family; topic-fidelity contract (193/193 sweep).
+- **Evidence:** topic-fidelity report intent-discrimination rows ("gear by helper owner" → category ×4).
+- **Probe:** fixed broad topic, vary intent ×2 → sort rule tracks intent, not topic prose.
+
+### R3 — K band floor on modes · OBSERVED
+- **Property:** at Kindergarten only `sort_one` and `odd_one_out` route (picture-primary tap tasks); `sort_attribute`, `count_compare`, `two_attributes`, `tally_record` are Grade 1+ (reading / numeric entry / metacognitive choice). K quantity-comparison routes to comparison-builder.
+- **Demanded by:** PRE band; comparison-builder's own contract (routing boundary).
+- **Evidence:** catalog constraints (math.ts:2991) + per-mode "Grade 1+ ONLY (never Kindergarten…)" descriptions.
+- **Probe:** manifest + eval-mode resolver at a K objective never pins a Grade-1+ mode; generator with `gradeBand: 'K'` never emits those challenge types.
+
+### R4 — PRE picture-primary presentation · OBSERVED (in-flight, uncommitted)
+- **Property:** at K, bins render `bucketEmoji` (LLM `categoryEmojis`, never reusing an object's own emoji; fallback color-coded circle) with the word as small caption; objects emoji-primary and enlarged; adult chrome hidden (progress badges, count badges, instruction panel, quantitative feedback prose, grade badge, empty-bin prompts). Grade 1 keeps full chrome — the gate is `gradeBand === 'K'`, nothing leaks across.
+- **Demanded by:** PRE band. **Grade 1+ demands the inverse** (full chrome) — see C2.
+- **Evidence:** uncommitted diffs (generator `categoryEmojis`/`buildEmojiByValue`; component `isK` gate + `FALLBACK_BIN_EMOJI`); HANDOFF expected-findings 1/3/6.
+- **Probe:** reader-fit Audits A–C at PRE (jsdom render, `gradeBand:'K'` vs `'1'`); bucketEmoji present on every bin; no load-bearing text at K.
+
+### R5 — read-aloud STIMULUS beat · OBSERVED (in-flight)
+- **Property:** the tutor voices the sort and names EVERY bin before interaction (ORIENT+STIMULUS+DISAMBIGUATE), overriding the lesson one-sentence cap; answer-free (never says which bin an object belongs in). Component must forward `instruction` and `categories` so `{{instruction}}`/`{{categories}}` resolve — a broken key renders SILENT.
+- **Demanded by:** PRE band (a pre-reader cannot read the instruction panel R4 just hid).
+- **Evidence:** catalog aiDirectives (math.ts:3064–3079, "SAY THE SORT OUT LOUD AND NAME EVERY BIN FIRST"); component `aiPrimitiveData.instruction` forwarding; STIMULUS-drop failure class (comparison-builder/word-sorter precedent).
+- **Probe:** `/tutor-test sorting-station` — scaffold audit: all contextKeys resolve, no silent `{{…}}`.
+
+### R6 — odd-one-out selection integrity · OBSERVED
+- **Property:** a wrong odd-one-out answer clears the selection (no latched wrong state); at K, tap auto-submits exactly once per selection (ref-latched — re-renders cannot double-submit), and the latch resets with the challenge.
+- **Demanded by:** eval-test (SS-4 incident) + PRE tap-=-choose rule.
+- **Evidence:** EVAL_TRACKER SS-4 (2026-03-18, `setSelectedOddOne(null)`); uncommitted `autoCheckedOddRef` + reset effect ([[spoken-primitive-autoadvance-footguns]] pattern).
+- **Probe:** drive `odd_one_out` with a wrong tap → selection clears, second tap re-judges; one submission per selection at K.
+
+### R7 — Check retained for multi-item construction · OBSERVED
+- **Property:** auto-submit applies ONLY to atomic single-tap tasks (odd-one-out @ K). Sort-family challenges are multi-part construction and keep the explicit Check even at K — decluttering must not remove the commit-your-work step.
+- **Demanded by:** pedagogy (multi-part evaluation semantics); PRE declutter pressure is the counter-party — see C3 near-miss.
+- **Evidence:** HANDOFF rule 2 exemption; component condition `!(isK && type === 'odd-one-out')`.
+- **Probe:** K sort_one render still shows Check; K odd_one_out does not.
+
+### R8 — grade-capped structure, structural difficulty · OBSERVED
+- **Property:** object window K 4–6 / G1 5–8; bins K ≤3 / G1 ≤4 (hard clamps). Difficulty moves STRUCTURE — bin ramp 2→3→4, `compareGap` 3→1, `oddSharedAttrs` 0→2, near-miss ratio — never raw magnitude past the grade cap. Support tiers withdraw `showCounts` badges and the `showModelExample` worked item across easy→hard.
+- **Demanded by:** support-tier/structural-difficulty engine (commit 1c3e774); PRE ≤~5-interactive-elements ceiling.
+- **Evidence:** generator lines 112–118, 221–265, 1050; [[trust-intent-over-hardcoded-caps]] applies — these caps ARE band contracts, not arbitrary ceilings.
+- **Probe:** generate at K easy vs G1 hard ×2 — counts inside windows; structural levers (not magnitudes) differ.
+
+### R9 — mode purity under pinned targetEvalMode · OBSERVED
+- **Property:** a pinned `config.targetEvalMode` yields ONLY that challenge type — per-mode sub-generators, never one omnibus prompt describing all types (the SS-1/SS-2 cross-contamination class).
+- **Demanded by:** eval-test / IRT calibration (β anchors are per-mode).
+- **Evidence:** EVAL_TRACKER struck row "sorting-station (sort_one)" cross-contamination → Fixed via orchestrator; 6/6 modes pass 2026-06-14.
+- **Probe:** pin each mode ×2 → challenge types homogeneous.
+
+### R10 — count_compare numeric scope tracks the topic · OBSERVED
+- **Property:** quantity-comparison topics with an explicit bound keep group counts inside it (compare-groups-to-5 stayed ≤5).
+- **Demanded by:** compare-groups topic family.
+- **Evidence:** `k-compare-groups-to-5-2026-07-14.md` (the one clean census pass).
+- **Probe:** topic-fidelity numeric battery on `count_compare` (honored ≤5 / discrimination ≤10 / no-regression).
+
+## Conflicts
+
+### C1 — content variety vs R1 rule stability — RESOLVED 2026-07-14 (generator fix, no fork needed)
+The variety instinct ("keep challenges fresh") was satisfied by switching sort axes, which broke every semantic topic family. Ruling: variety through on-objective OBJECTS, never through the rule. This was the ablation that motivated this contract.
+
+### C2 — PRE declutter vs Grade-1 full chrome — RESOLVED 2026-07-15 via fork rung 2 (band gate)
+Both demands are right for their consumers. Resolved with the `isK` presentation gate — one component, two presentations, zero leakage. (In-flight, uncommitted.)
+
+### C3 — PRE tap-simplicity vs multi-item evaluation semantics — RESOLVED 2026-07-15 via scoping (near-miss)
+Blanket auto-submit at K would have ablated the sort family's commit-step pedagogy. Resolved by scoping auto-submit to atomic odd-one-out only (R7). Recorded because the tempting over-general edit is exactly what a future declutter pass would reach for.
+
+## Catalog projection
+
+- **description:** faithful as of the 2026-07-14 rewrite (objective-relevant semantic classification leads; perceptual axes only when taught). No change.
+- **constraints:** **DIVERGENT — "Max 10 objects per challenge" is looser than enforced reality** (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins) and overstates what PRE tolerates. Proposed: "Objects per challenge: 4–6 at K, 5–8 at Grade 1; bins ≤3 at K, ≤4 at Grade 1." **Do not apply until the delegated reader-fit 1e lane lands** — math.ts is uncommitted in that lane; apply in a follow-up slice.
+- **evalModes:** per-mode Grade-1+ band notes are accurate and load-bearing for the resolver. No change.
+
+## Changelog
+
+- 2026-07-15 — derived (initial, pilot for `/primitive-contract`). 10 requirements, 3 conflicts (all RESOLVED), 1 catalog divergence flagged (constraints object-count). Evidence: K census 2026-07-14, topic-fidelity + reader-fit reports, EVAL_TRACKER SS-1..4, git to 2026-03.

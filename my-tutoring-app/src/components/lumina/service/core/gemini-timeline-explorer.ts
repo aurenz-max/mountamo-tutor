@@ -12,7 +12,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
-import { buildScopePromptSection } from "../scopeContext";
+import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import { TimelineExplorerData } from '../../primitives/visual-primitives/core/TimelineExplorer';
 import {
   resolveEvalModeConstraint,
@@ -70,18 +70,6 @@ function inferGradeLevelFromContext(gradeContext: string): string {
   if (g.includes('middle') || g.includes('grades 6-8')) return 'Middle School';
   if (g.includes('high') || g.includes('grades 9-12')) return 'High School';
   return 'Elementary';
-}
-
-/**
- * Map the canonical numeric grade ('K'|'1'..'12') to a band label — the KEY that
- * getGradeLevelContext expects. This is the primary grade signal; the prose
- * fallback above only runs when ctx.grade is absent.
- */
-function gradeToBand(g: string): string {
-  if (g === 'K') return 'Kindergarten';
-  const n = parseInt(g, 10);
-  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
-  return '';
 }
 
 const getGradeLevelContext = (gradeLevel: string): string => {
@@ -404,9 +392,7 @@ export const generateTimelineExplorer = async (
   const gradeLevel = bandKey;
   const gradeLevelContext = getGradeLevelContext(bandKey);
   // Surface the exact numeric grade so grade-2 ≠ grade-4 within the same band.
-  const gradeLine = ctx.grade
-    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
-    : '';
+  const gradeLine = buildGradeLine(ctx.grade);
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(

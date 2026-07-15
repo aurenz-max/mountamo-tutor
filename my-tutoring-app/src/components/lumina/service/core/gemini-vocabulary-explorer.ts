@@ -10,7 +10,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
-import { buildScopePromptSection } from "../scopeContext";
+import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import { VocabularyExplorerData } from '../../primitives/visual-primitives/core/VocabularyExplorer';
 import {
   resolveEvalModeConstraint,
@@ -54,17 +54,6 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 // ---------------------------------------------------------------------------
 // Grade-Level Context Helper
 // ---------------------------------------------------------------------------
-
-/**
- * Map the canonical numeric grade (ctx.grade: 'K'|'1'..'12') to the audience BAND
- * KEY that getGradeLevelContext is keyed by. This is the primary resolver.
- */
-const gradeToBand = (g: string): string => {
-  if (g === 'K') return 'Kindergarten';
-  const n = parseInt(g, 10);
-  if (!isNaN(n)) return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
-  return '';
-};
 
 /**
  * Fallback band resolver: parse the PROSE gradeContext sentence to a band KEY.
@@ -468,9 +457,10 @@ export const generateVocabularyExplorer = async (
   const gradeLevel = bandKey;
   const gradeLevelContext = getGradeLevelContext(bandKey);
   // Surface the EXACT numeric grade so grade-2 ≠ grade-4 WITHIN a band.
-  const gradeLine = ctx.grade
-    ? `EXACT TARGET GRADE: ${ctx.grade}. Tune reading level, sentence length, definition length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above).`
-    : '';
+  const gradeLine = buildGradeLine(
+    ctx.grade,
+    'reading level, sentence length, definition length, and vocabulary',
+  );
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(

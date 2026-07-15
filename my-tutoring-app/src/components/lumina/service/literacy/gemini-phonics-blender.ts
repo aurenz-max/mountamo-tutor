@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
+import { clampGradeToK2 } from "../scopeContext";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
 import {
   resolveEvalModeConstraint,
@@ -221,7 +222,13 @@ GRADE 2 GUIDELINES:
 `
   };
 
-  const gradeLevelKey = ['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K';
+  // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
+  // gradeLevel band never matched ['K','1','2'] and pinned every objective to 'K',
+  // so grades 1-2 were served kindergarten cvc content.
+  const gradeLevelKey = clampGradeToK2(
+    ctx.grade,
+    (['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K') as 'K' | '1' | '2',
+  );
   const defaultPatternType = gradeLevelKey === 'K' ? 'cvc' : gradeLevelKey === '1' ? 'blend' : 'r-controlled';
 
   // ── Build prompt ────────────────────────────────────────────────────

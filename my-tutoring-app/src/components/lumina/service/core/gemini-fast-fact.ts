@@ -14,7 +14,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
-import { buildScopePromptSection } from "../scopeContext";
+import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
 import type { FastFactData, FastFactChallenge } from '../../primitives/visual-primitives/core/FastFact';
 
 /**
@@ -35,18 +35,6 @@ function inferGradeLevelFromContext(gradeContext: string): string {
   if (gradeContext.includes('graduate')) return 'Graduate';
   if (gradeContext.includes('phd')) return 'PhD';
   return 'Elementary';
-}
-
-/**
- * Map the canonical curriculum grade ('K' | '1'..'12') to the band label used as
- * the getGradeLevelContext KEY. This is the PRIMARY source of the audience band —
- * ctx.grade is authoritative when present; the prose-inferred band is the fallback.
- */
-function gradeToBand(grade: string): string {
-  if (grade === 'K') return 'Kindergarten';
-  const n = parseInt(grade, 10);
-  if (isNaN(n)) return '';
-  return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
 }
 
 // ============================================================================
@@ -383,9 +371,11 @@ export const generateFastFact = async (
   // Numeric-grade surfacing — discriminates grades WITHIN a band (grade 2 ≠ grade 5)
   // by tuning realization (reading level, vocab, sentence length) only. Does NOT
   // change the eval mode / challenge-type axis.
-  const gradeLine = ctx.grade
-    ? `EXACT TARGET GRADE: grade ${ctx.grade}. Tune reading level, sentence length, and vocabulary precisely to grade ${ctx.grade} (within the audience band above). Set gradeBand to the band containing grade ${ctx.grade}.`
-    : '';
+  const gradeLine = buildGradeLine(
+    ctx.grade,
+    undefined,
+    ctx.grade ? `Set gradeBand to the band containing grade ${ctx.grade}.` : '',
+  );
 
   const prompt = `You are a curriculum expert creating fluency drill challenges.
 

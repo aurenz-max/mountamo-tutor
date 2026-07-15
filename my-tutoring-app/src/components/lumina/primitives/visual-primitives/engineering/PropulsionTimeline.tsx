@@ -12,6 +12,7 @@ import {
   LuminaButton,
   LuminaBadge,
   answerStateClasses,
+  dropZoneStateClass,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -394,7 +395,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
           <div className="space-y-2">
             <p className="text-xs text-slate-400">Your order:</p>
             {seqUserOrder.length === 0 ? (
-              <p className="text-xs text-slate-600 italic p-3 border border-dashed border-white/10 rounded-lg text-center">
+              <p className={`text-xs italic p-3 rounded-lg text-center ${dropZoneStateClass('idle')}`}>
                 Tap milestones below to add them in order
               </p>
             ) : (

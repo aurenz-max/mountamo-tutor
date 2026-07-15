@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { clampGradeToK2 } from "../scopeContext";
 import {
   WordSorterData,
   WordSorterChallenge,
@@ -517,7 +518,10 @@ export const generateWordSorter = async (
   );
   logEvalModeResolution('WordSorter', config?.targetEvalMode, evalConstraint);
 
-  const gradeKey = resolveGradeKey(gradeLevel);
+  // Prefer the canonical curriculum grade (ctx.grade); resolveGradeKey read the
+  // prose gradeContext, which never matched ['K','1','2'] → pinned every objective
+  // to 'K' (grades 1-2 got kindergarten vocab). grade>2 clamps to '2' (K-2 primitive).
+  const gradeKey = clampGradeToK2(ctx.grade, resolveGradeKey(gradeLevel) as "K" | "1" | "2");
 
   // ── Determine which modes to generate ───────────────────────────────
   const allowedTypes = evalConstraint

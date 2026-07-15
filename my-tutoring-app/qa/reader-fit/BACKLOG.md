@@ -7,26 +7,6 @@ subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
 
 ## Queue
 
-### 1e. sorting-station @ PRE — presentation audit remaining (objective drift FIXED 2026-07-14)
-Routed in 4/6 census lessons (shapes, needs×2 draws, helpers, compare) — a K
-workhorse, never reader-fit audited. **GENERATOR FIXED:** `ctx.intent` now binds
-the sorting rule; semantic `category` is first-class; sort-one varies objects,
-not the taught axis; and two-attributes makes the objective category criterion
-one instead of making color/size the main modality. Live fixed-topic intent
-discrimination: shapes → `shape ×4`, needs/wants → `category ×4`, helpers →
-`category ×4`; two-criterion needs → `{category: need, type: food}`-style rules.
-Report: `qa/topic-fidelity/sorting-station-2026-07-14.md`.
-
-Remaining PRE audit: emoji-primary objects already present; instructions/labels
-are text. Check spoken STIMULUS/DISAMBIGUATE, tap flow, and internal chrome.
-
-### 1f. shape-tracer — CRITICAL generator bug (breaks ALL grades)
-Census shapes trace: "Trace the square" / "Trace the rectangle" challenges ship
-`targetShape: "triangle"` + 3-point triangle paths — teaches the wrong
-name↔side-count mapping, the exact objective concept. Fix: derive tracePath
-from targetShape in code (LLM window / code builds structure), not from the
-LLM. ContentOracle candidate: path vertex count ↔ named shape. `/eval-fix`.
-
 ### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-14 fix)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped; see Done.
 Next priorities:
@@ -78,7 +58,8 @@ PRE (reader-fit band judgment) — that stays in this queue.
   gated in `LessonScreen.tsx` via `kindergartenMode.ts`; auto-on for K lessons,
   Ctrl+Alt+K override). On-rails one-section-at-a-time with animated frame flow,
   wordless arrow advance gated on section completion, tutor `[SECTION_START]`
-  narration. NOT yet browser-verified. Still open: per-PRIMITIVE internal chrome
+  narration. **MVP browser-VERIFIED 2026-07-15 (user)** — the on-rails flow works.
+  Still open: per-PRIMITIVE internal chrome
   (counters/steppers inside components) is untouched — keep recording Audit-C
   chrome FAILs here; the stage removes lesson-level chrome only.
 - **Scaffold authoring rule** for ADDING_TUTORING_SCAFFOLD.md: every scaffold
@@ -87,6 +68,28 @@ PRE (reader-fit band judgment) — that stays in this queue.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **1e. sorting-station @ PRE — presentation audit + fix loop, READY (2026-07-15).**
+  Overall was PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for `sort_one` (THE K census route)
+  and `odd_one_out`**; `sort_attribute`/`count_compare`/`two_attributes`/`tally_record` =
+  **WRONG-BAND, floored to Grade 1+** (K still routes to the two picture-primary tap modes).
+  Fixes: CATALOG `aiDirectives` ORIENT/STIMULUS/DISAMBIGUATE beat (name every bin + ask the
+  sort, overrides the lesson one-sentence cap) + band-floor descriptions/constraints + dead
+  `studentAnswer` key removed; COMPONENT K band-gate (picture-primary `bucketEmoji` bins with
+  color-circle fallback, chrome hidden, odd_one_out tap=choose auto-submit) + `instruction`
+  forwarded into the bag; GENERATOR `categoryEmojis`→`bucketEmoji`. Verified: tsc 0-new +
+  `typecheck:lumina` 0-err; **jsdom 6/6** (`SortingStation.reader-fit.test.tsx`); eval-test
+  re-probe (bins carry a picture) + tutor-test re-probe (directive resolves); **live `--lesson`
+  3/3 CONFIRMED** (bespoke `build_sorting_station_journey` in `run_tutor_live.py`). Report:
+  `qa/reader-fit/sorting-station-PRE-2026-07-15.md`; live: `qa/tutor-reports/sorting-station-live-lesson-2026-07-15.md`.
+  Residuals → K-stage systemic: PhaseSummaryPanel ledger, "Next Challenge" text button. Pixel
+  look → HUMAN-CHECKS. Generator objective-drift was already FIXED 2026-07-14 (not re-opened).
+- **1f. shape-tracer — CRITICAL generator bug (wrong shape↔path), RESOLVED + RUNTIME-VERIFIED**
+  (2026-07-14, Handoff Task 1; reconciled into Done by `/pm` 2026-07-15 — was a stale-open here
+  while already struck in EVAL_TRACKER). SHT-1 fix: a deterministic `placeShape()` affine-transforms
+  canonical `SHAPE_VERTICES` under LLM-chosen cosmetic knobs, so `targetShape`/instruction/`tracePath`
+  agree by construction and a wrong vertex count is structurally impossible across trace/connect_dots/
+  complete. Code lives in `service/math/gemini-shape-tracer.ts`; EVAL_TRACKER row = 4/4 modes
+  runtime-verified. Report: `qa/eval-reports/shape-tracer-2026-07-14.md`.
 - **10 (scope/routing). word-workout + word-flip — CVC scope binding + routing, FIXED + VERIFIED**
   (2026-07-14, Handoff Task 3). Report: `qa/topic-fidelity/word-workout-word-flip-2026-07-14.md`.
   word-workout was FIDELITY BUG (masteredVowels defaulted to all five → chains left the

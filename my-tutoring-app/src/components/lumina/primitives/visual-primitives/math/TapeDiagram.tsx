@@ -23,6 +23,9 @@ import {
   LuminaFeedbackCard,
   LuminaSectionLabel,
   interactive,
+  dropZoneStateClass,
+  motion,
+  type DropZoneState,
 } from '../../../ui';
 
 // ---------------------------------------------------------------------------
@@ -781,14 +784,20 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
               >
                 <div
                   className={`
-                    w-full h-20 rounded-lg border-2 transition-all duration-200 flex items-center justify-center shadow-lg
+                    w-full h-20 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg
                     ${isUnknown
-                      ? locked
-                        ? 'bg-slate-800/50 border-slate-600 opacity-50'
-                        : segFeedback === 'correct'
-                          ? 'bg-green-900/30 border-green-500'
-                          : 'bg-slate-700/50 border-yellow-500 border-dashed'
-                      : `bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
+                      ? `${dropZoneStateClass(
+                          (locked
+                            ? 'filled'
+                            : segFeedback === 'correct'
+                              ? 'correct'
+                              : segFeedback === 'incorrect'
+                                ? 'incorrect'
+                                : 'idle') as DropZoneState,
+                        )} ${locked ? 'opacity-50' : ''} ${
+                          segFeedback === 'correct' ? motion.pop : segFeedback === 'incorrect' ? motion.shake : ''
+                        }`
+                      : `border-2 bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
                     }
                   `}
                 >

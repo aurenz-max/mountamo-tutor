@@ -15,6 +15,7 @@ import {
   LuminaChallengeCounter,
   LuminaFeedbackCard,
   answerStateClass,
+  dropZoneStateClass,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -98,7 +99,9 @@ const TILE_COLORS: Record<string, { bg: string; border: string; text: string }> 
   number: { bg: 'bg-indigo-500/20', border: 'border-indigo-400/40', text: 'text-indigo-200' },
   operator: { bg: 'bg-amber-500/20', border: 'border-amber-400/40', text: 'text-amber-200' },
   equals: { bg: 'bg-emerald-500/20', border: 'border-emerald-400/40', text: 'text-emerald-200' },
-  blank: { bg: 'bg-slate-500/10', border: 'border-slate-400/30 border-dashed', text: 'text-slate-500' },
+  // Blank tiles render through the shared idle drop-zone language (see Tile);
+  // these placeholder values are unused for blanks.
+  blank: { bg: 'bg-transparent', border: 'border-transparent', text: 'text-slate-500' },
 };
 
 function getTileType(tile: string): keyof typeof TILE_COLORS {
@@ -129,12 +132,19 @@ function Tile({
   className?: string;
 }) {
   const tileType = getTileType(value);
+  const isBlank = tileType === 'blank';
   const colors = TILE_COLORS[tileType];
   const sizeClasses = {
     sm: 'w-10 h-10 text-lg',
     md: 'w-14 h-14 text-2xl',
     lg: 'w-16 h-16 text-3xl',
   };
+
+  // A blank tile IS an (idle) drop target — speak the shared zone language;
+  // number/operator/equals tiles keep their bespoke identity tint.
+  const colorClasses = isBlank
+    ? dropZoneStateClass('idle')
+    : `${colors.bg} ${colors.text} border ${colors.border}`;
 
   const highlightClasses = highlight === 'correct'
     ? 'ring-2 ring-emerald-400/60 bg-emerald-500/20'
@@ -147,8 +157,7 @@ function Tile({
       onClick={onClick}
       disabled={disabled}
       className={`
-        ${sizeClasses[size]} ${colors.bg} ${colors.text}
-        border ${colors.border} rounded-xl
+        ${sizeClasses[size]} ${colorClasses} rounded-xl
         font-bold select-none
         flex items-center justify-center
         transition-all duration-150
@@ -213,8 +222,7 @@ function BuildWorkspace({
       {Array.from({ length: emptySlots }).map((_, i) => (
         <div
           key={`empty-${i}`}
-          className="w-14 h-14 border border-dashed border-slate-600/40 rounded-xl
-                     flex items-center justify-center text-slate-600 text-2xl"
+          className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl ${dropZoneStateClass('idle')}`}
         >
           _
         </div>

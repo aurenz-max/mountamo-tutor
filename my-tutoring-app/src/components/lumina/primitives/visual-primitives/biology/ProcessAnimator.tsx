@@ -559,7 +559,11 @@ const ProcessAnimator: React.FC<ProcessAnimatorProps> = ({ data, className = '' 
       );
     }
 
-    // Placeholder with generate button
+    // Placeholder with generate button.
+    // dropzone-triage: decorative, out of scope — this dashed card is an
+    // AI-image-generation placeholder for the current stage visual, not a
+    // drop target. ProcessAnimator steps through process stages; it has no
+    // sort/sequence/drop interaction.
     return (
       <div
         className="relative h-64 rounded-xl flex flex-col items-center justify-center border-2 border-dashed mb-6"

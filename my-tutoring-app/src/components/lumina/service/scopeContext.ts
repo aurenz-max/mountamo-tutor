@@ -110,3 +110,69 @@ SCOPE RULES:
 - Prefer the simplest representation that satisfies the scope. Do not introduce larger structures, wider ranges, or more advanced operations than the scope requires.
 `;
 };
+
+// ---------------------------------------------------------------------------
+// Grade → audience band (shared by the core text generators)
+// ---------------------------------------------------------------------------
+
+/**
+ * Map the canonical curriculum grade (`ctx.grade`: 'K'|'1'..'12') to the audience
+ * BAND KEY a generator's `getGradeLevelContext` map is keyed by
+ * ('Kindergarten'|'Elementary'|'Middle School'|'High School'). Returns '' when the
+ * grade is absent or unrecognized, so the caller falls back to its prose-derived
+ * band (`inferGradeLevelFromContext(ctx.gradeContext)`).
+ *
+ * This is the ONE home for the numeric-grade→band mapping that the core text
+ * generators (fact-file, fast-fact, how-it-works, timeline-explorer,
+ * vocabulary-explorer) previously copy-pasted. `ctx.grade` is authoritative when
+ * present; the prose band is the fallback only.
+ */
+export const gradeToBand = (grade?: string): string => {
+  if (!grade) return '';
+  if (grade === 'K') return 'Kindergarten';
+  const n = parseInt(grade, 10);
+  if (isNaN(n)) return '';
+  return n <= 5 ? 'Elementary' : n <= 8 ? 'Middle School' : 'High School';
+};
+
+/**
+ * Build the EXACT-grade prompt line that makes grade-2 ≠ grade-4 WITHIN a band
+ * (the band alone collapses grades 1–5, so a numeric grade is otherwise
+ * unrecoverable). Returns '' when there is no numeric grade, so the band default
+ * stands untouched — that is the no-regression control the grade probes rely on.
+ *
+ * @param grade     Canonical grade ('K'|'1'..'12'), or undefined for free-form lessons.
+ * @param tuneItems What to tune to the grade (default reading level / sentence length / vocabulary).
+ * @param extra     Optional generator-specific instruction appended verbatim (e.g. "Set gradeBand …").
+ */
+export const buildGradeLine = (
+  grade?: string,
+  tuneItems = 'reading level, sentence length, and vocabulary',
+  extra = '',
+): string =>
+  grade
+    ? `EXACT TARGET GRADE: ${grade}. Tune ${tuneItems} precisely to grade ${grade} `
+      + `(within the audience band above).${extra ? ' ' + extra : ''}`
+    : '';
+
+/**
+ * Clamp the canonical curriculum grade (`ctx.grade`) to a K–2 primitive's rung
+ * ('K'|'1'|'2'). The K-2 phonics primitives ladder WITHIN K/1/2 (e.g. cvc → blend
+ * → r-controlled); a grade above 2 clamps to '2' (the primitive tops out by
+ * design — grade-above is WRONG-PRIMITIVE, not a taller rung). Returns `fallback`
+ * when there is no canonical grade, so the caller's band default stands.
+ *
+ * Reads `ctx.grade`, NOT `ctx.gradeContext`: the prose band ("kindergarten
+ * students …") never matched ['K','1','2'], so a `ctx.gradeContext` read pinned
+ * every objective to the floor and silently served grades 1-2 kindergarten content.
+ */
+export const clampGradeToK2 = (
+  grade?: string,
+  fallback: 'K' | '1' | '2' = 'K',
+): 'K' | '1' | '2' => {
+  const g = (grade ?? '').toString().toUpperCase();
+  if (g === 'K' || g === '1' || g === '2') return g as 'K' | '1' | '2';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 0 ? 'K' : n >= 2 ? '2' : '1';
+  return fallback;
+};

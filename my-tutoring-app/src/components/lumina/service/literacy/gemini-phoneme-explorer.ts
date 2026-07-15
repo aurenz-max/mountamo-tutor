@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { clampGradeToK2 } from "../scopeContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
 import {
   resolveEvalModeConstraint,
@@ -362,9 +363,12 @@ export const generatePhonemeExplorer = async (
   );
   logEvalModeResolution('PhonemeExplorer', config?.targetEvalMode, evalConstraint);
 
-  const gradeKey = ["K", "1", "2"].includes(gradeLevel.toUpperCase())
-    ? gradeLevel.toUpperCase()
-    : "K";
+  // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
+  // gradeLevel band never matched ["K","1","2"] and pinned every objective to "K".
+  const gradeKey = clampGradeToK2(
+    ctx.grade,
+    (["K", "1", "2"].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : "K") as "K" | "1" | "2",
+  );
 
   const allowed = evalConstraint?.allowedTypes ?? [...ALL_MODES];
   const plan = buildModePlan(allowed, TOTAL_CHALLENGES);

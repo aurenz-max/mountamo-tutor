@@ -2988,7 +2988,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'sorting-station',
     description: 'Interactive sorting station where students categorize objects by the lesson\'s objective-relevant rule, including semantic categories (needs/wants, roles, kinds) and visible attributes when those attributes are the taught concept. Supports single-criterion sorting, multi-criterion classification, count-and-compare, odd-one-out, and tally recording. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
-    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Max 4 sorting categories. Max 10 objects per challenge.',
+    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Max 4 sorting categories. Max 10 objects per challenge. BAND FLOOR: at Kindergarten (pre-reader) route only sort_one and odd_one_out — both are picture-primary tap tasks. sort_attribute (choosing HOW to sort from named axes), count_compare (entering counts via steppers + reading a comparison question), two_attributes (two-criteria simultaneous classification), and tally_record (sort-then-tally numeric recording) all demand reading or numeric entry above a pre-reader and are for Grade 1+.',
     evalModes: [
       {
         evalMode: 'sort_one',
@@ -3004,7 +3004,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['sort-by-attribute'],
-        description: 'Objects have multiple attributes; student chooses how to sort.',
+        description: 'Grade 1+ ONLY (never Kindergarten — choosing HOW to sort from named text attribute buttons is a metacognitive task above a pre-reader). Objects have multiple attributes; student chooses how to sort.',
       },
       {
         evalMode: 'count_compare',
@@ -3012,7 +3012,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['count-and-compare'],
-        description: 'Count sorted groups and answer a comparison question.',
+        description: 'Grade 1+ ONLY (never Kindergarten — entering each group count via number steppers and reading a comparison question exceeds a pre-reader; K comparison routes to comparison-builder). Count sorted groups and answer a comparison question.',
       },
       {
         evalMode: 'odd_one_out',
@@ -3028,7 +3028,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['two-attributes'],
-        description: 'Find objects matching two criteria simultaneously; the primary criterion expresses the lesson objective.',
+        description: 'Grade 1+ ONLY (never Kindergarten — matching two criteria at once from a compound written instruction exceeds a pre-reader). Find objects matching two criteria simultaneously; the primary criterion expresses the lesson objective.',
       },
       {
         evalMode: 'tally_record',
@@ -3036,22 +3036,47 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['tally-record'],
-        description: 'Sort objects and record group counts using tally marks.',
+        description: 'Grade 1+ ONLY (never Kindergarten — sorting then recording each group count via number steppers exceeds a pre-reader). Sort objects and record group counts using tally marks.',
       },
     ],
     tutoring: {
       taskDescription: 'Student is sorting {{totalObjects}} objects into categories based on {{sortingAttribute}}. Challenge type: {{challengeType}}. Categories: {{categories}}.',
-      contextKeys: ['challengeType', 'sortingAttribute', 'categories', 'objectsSorted', 'totalObjects', 'studentAnswer', 'attemptNumber'],
+      contextKeys: ['challengeType', 'instruction', 'sortingAttribute', 'categories', 'objectsSorted', 'totalObjects', 'attemptNumber'],
       scaffoldingLevels: {
         level1: '"Look at the objects. What do you notice about them? Do any look alike?"',
-        level2: '"Look at the {{sortingAttribute}} of each object. Can you put all the ones that are the same together? Try the {{categories}} bins."',
-        level3: '"Let\'s sort step by step. Pick up this object — what {{sortingAttribute}} is it? Now find the bin that matches. Great! Now do the next one."',
+        level2: '"Look at each object. Can you put all the ones that go together in the same bin? Say each bin name out loud with the child."',
+        level3: '"Let\'s sort one at a time. Pick up this object — say what it is. Now which bin does it go with? Point to that bin together. Great! Now the next one."',
       },
       commonStruggles: [
-        { pattern: 'Student places objects in random bins without considering the objective category', response: 'Name the objective-relevant feature without giving the answer: "What kind of group does this belong to?" Point to the bin pictures or labels.' },
+        { pattern: 'Student places objects in random bins without considering the objective category', response: 'Name the objective-relevant feature without giving the answer: "What kind of group does this belong to?" Point to the bin pictures — say each bin name aloud.' },
         { pattern: 'Student confuses "more" and "fewer" in comparisons', response: 'Have the student count each group aloud, then ask "Which number is bigger?"' },
         { pattern: 'Student struggles with two-attribute sorting', response: 'Start with the lesson category, then add the second criterion: "First find the NEEDS. Now, which of those are FOOD?" Never replace the lesson category with an unrelated color/size task.' },
-        { pattern: 'Student cannot identify the odd one out', response: 'Ask "What do most of these have in common?" then "Which one is different from the rest?"' },
+        { pattern: 'Student cannot identify the odd one out', response: 'Ask "What do most of these have in common?" then "Which one is different from the rest?" Never name the odd object or say why.' },
+      ],
+      // ORIENT + STIMULUS + DISAMBIGUATE beat (reader-fit RF, 2026-07-15). At Kindergarten
+      // (sort_one, odd_one_out) the student is a pre-reader: they cannot decode the on-screen
+      // instruction OR the bin labels (Need/Want…), and everything in contextKeys is
+      // tutor-reference only. In lesson mode the [PRIMITIVE SWITCH]/greeting cap the tutor at
+      // "one sentence", so without a directive the tutor greets warmly and stops — stranding
+      // the non-reader (the comparison-builder / word-sorter failure class). These directives
+      // make voicing the sort + naming every bin the mandatory first action and override the
+      // one-sentence cap. Answer-free: never say which bin an object belongs in.
+      aiDirectives: [
+        {
+          title: 'SAY THE SORT OUT LOUD AND NAME EVERY BIN FIRST — the student is a K-1 child who may not read',
+          instruction:
+            'The student may not be able to read the instruction on screen or the bin labels — you are their voice. '
+            + 'Whenever a new sorting challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is: '
+            + '(1) say what we are doing in one warm child-friendly sentence — the challenge is: "{{instruction}}"; '
+            + '(2) NAME each bin out loud so the child knows the choices: {{categories}} '
+            + '(these are the group names shown as pictures with a word under them — say each one); '
+            + '(3) ask the sorting question as a spoken question so the child knows what to decide '
+            + '(for example, for a needs/wants sort: "Is this something we NEED, or something we WANT? Tap the bin it goes in."). '
+            + 'For an odd-one-out challenge there are no bins — instead ask "Which one is different from the others? Tap it." '
+            + 'Saying the sort out loud and naming the bins IS your greeting for this activity — this overrides any instruction '
+            + 'to keep the transition to a single sentence. Never say which bin an object goes in, and for odd-one-out never '
+            + 'say which object is different or why — only ask the question, then wait for the child to act.',
+        },
       ],
     },
     supportsEvaluation: true,

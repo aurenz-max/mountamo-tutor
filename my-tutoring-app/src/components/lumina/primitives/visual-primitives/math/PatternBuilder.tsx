@@ -10,6 +10,7 @@ import {
   LuminaButton,
   LuminaPanel,
   LuminaActionButton,
+  dropZoneStateClass,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -848,18 +849,23 @@ const PatternBuilder: React.FC<PatternBuilderProps> = ({ data, className }) => {
           inline-flex items-center justify-center rounded-lg font-bold text-lg
           transition-all duration-200 select-none
           ${isClickable ? 'cursor-pointer hover:scale-110 active:scale-95' : ''}
-          ${isHidden ? 'opacity-30 border-dashed' : ''}
+          ${isHidden ? `${dropZoneStateClass('idle')} opacity-70` : ''}
           ${isSelected ? 'ring-2 ring-orange-400 ring-offset-2 ring-offset-slate-900' : ''}
           ${isCoreHighlight ? 'ring-2 ring-emerald-400/60' : ''}
         `}
         style={{
           width: size,
           height: size,
-          backgroundColor: isHidden ? 'rgba(255,255,255,0.03)' : display.bg,
-          borderColor: isHidden ? 'rgba(255,255,255,0.2)' : display.border,
-          borderWidth: 2,
-          borderStyle: isHidden ? 'dashed' : 'solid',
-          color: isHidden ? 'rgba(255,255,255,0.3)' : display.text,
+          // Filled tokens keep their identity color (the answer the student
+          // places); the empty "?" slot speaks the shared idle drop-zone
+          // language via dropZoneStateClass above.
+          ...(isHidden ? {} : {
+            backgroundColor: display.bg,
+            borderColor: display.border,
+            borderWidth: 2,
+            borderStyle: 'solid' as const,
+            color: display.text,
+          }),
           fontSize: size > 40 ? '1.25rem' : '0.875rem',
         }}
       >

@@ -10,6 +10,8 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
+  dropZoneStateClass,
+  type DropZoneState,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -844,13 +846,11 @@ const OrdinalLine: React.FC<OrdinalLineProps> = ({ data, className }) => {
                     ? '·'
                     : getOrdinalLabel(pos, labelFormat)}
                 </span>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl border-2 border-dashed transition-all ${
-                  placed
-                    ? 'bg-amber-500/10 border-amber-400/40'
-                    : selectedBuildCharacter
-                      ? 'border-amber-400/40 bg-amber-500/5 animate-pulse'
-                      : 'border-white/20 bg-white/5'
-                }`}>
+                {/* Slot speaks the shared drop-zone language: filled once a
+                    character is placed, idle otherwise. The held selection is
+                    shown on the character chip (below) — we don't light every
+                    eligible slot. */}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${dropZoneStateClass((placed ? 'filled' : 'idle') as DropZoneState)}`}>
                   {placed?.emoji || ''}
                 </div>
               </div>
