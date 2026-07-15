@@ -43,8 +43,13 @@ queue AND this file's "last touched" in the same slice.
 
 ## DELEGATED
 
-*(none live — all three prior lanes committed 2026-07-15 in `8aa0fd0` + `7cb5e5f`; residuals
-folded to their owning queues. See CLOSED below.)*
+### 3. phonics-blender contract derivation — `qa/primitive-contracts/HANDOFF-phonics-blender-contract-2026-07-15.md`
+- Handed off 2026-07-15. Second contract (after the sorting-station pilot): derive-only
+  (R-series from the fresh RF-1/RF-2 + clampGradeToK2 + PB2 evidence; G-series via
+  curriculum_fit_probe), plus optional bounded rider (sorting-station catalog
+  constraints projection, unblocked by `7cb5e5f`).
+- **Close-out:** `docs/contracts/phonics-blender.md`, contracts BACKLOG #6 → Done,
+  this row folds to the PARKED contracts stream.
 
 > **WIP note (`/pm` 2026-07-15):** working tree is **clean** — the "Uncommitted" caveats on the
 > three former delegated lanes are resolved (committed in `8aa0fd0` + `7cb5e5f`). Portfolio is a
@@ -55,7 +60,7 @@ folded to their owning queues. See CLOSED below.)*
 
 | Stream | Queue / doc | Next action | As of |
 |---|---|---|---|
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | pilot (sorting-station) derived 07-15 in-session; next = #2 knowledge-check derivation, then wire `--check` into the reader-fit/SP-27 fix loops as contracts land | 07-15 |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | pilot (sorting-station) derived 07-15 incl. G-series close-match gaps; phonics-blender derivation DELEGATED 07-15 (see lane 3); next after it = #2 knowledge-check derivation (before `true_false @ PRE` lands), then wire `--check` into the fix loops | 07-15 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
 | Flash-lite truncation hardening | memory `project_flash-lite-truncation-template` | ~50-gen sweep | 07-06 |

@@ -2,11 +2,11 @@
 
 - **Derived:** 2026-07-15 · evidence window: K topic-trace census 2026-07-14 + QA reports through 2026-07-15 + git history to 2026-03
 - **Component:** `primitives/visual-primitives/math/SortingStation.tsx` · **Generator:** `service/math/gemini-sorting-station.ts` · **Catalog:** `service/manifest/catalog/math.ts:2988`
-- **Status:** ACTIVE (no open conflicts; 3 resolved on record)
-- **In-flight caveat:** the PRE presentation layer (R4, parts of R5–R7) is UNCOMMITTED,
-  owned by the delegated reader-fit 1e lane (`qa/reader-fit/HANDOFF-sorting-station-PRE-2026-07-15.md`).
-  Those requirements are OBSERVED in the working tree but not yet verified live — treat
-  the delegated lane's close-out report as the verification event.
+- **Status:** ACTIVE (no open conflicts; 3 resolved on record; 5 gap requirements OPEN)
+- 2026-07-15 (later same day): the PRE presentation layer (R4–R7) LANDED — reader-fit 1e
+  committed in `7cb5e5f`, jsdom 6/6 + live `--lesson` 3/3
+  (`qa/reader-fit/sorting-station-PRE-2026-07-15.md`). The former in-flight caveat is
+  resolved; residual is pixel-look only (HUMAN-CHECKS #12).
 
 ## Consumers (blast radius)
 
@@ -41,13 +41,13 @@
 - **Evidence:** catalog constraints (math.ts:2991) + per-mode "Grade 1+ ONLY (never Kindergarten…)" descriptions.
 - **Probe:** manifest + eval-mode resolver at a K objective never pins a Grade-1+ mode; generator with `gradeBand: 'K'` never emits those challenge types.
 
-### R4 — PRE picture-primary presentation · OBSERVED (in-flight, uncommitted)
+### R4 — PRE picture-primary presentation · OBSERVED (live 3/3, committed 7cb5e5f)
 - **Property:** at K, bins render `bucketEmoji` (LLM `categoryEmojis`, never reusing an object's own emoji; fallback color-coded circle) with the word as small caption; objects emoji-primary and enlarged; adult chrome hidden (progress badges, count badges, instruction panel, quantitative feedback prose, grade badge, empty-bin prompts). Grade 1 keeps full chrome — the gate is `gradeBand === 'K'`, nothing leaks across.
 - **Demanded by:** PRE band. **Grade 1+ demands the inverse** (full chrome) — see C2.
 - **Evidence:** uncommitted diffs (generator `categoryEmojis`/`buildEmojiByValue`; component `isK` gate + `FALLBACK_BIN_EMOJI`); HANDOFF expected-findings 1/3/6.
 - **Probe:** reader-fit Audits A–C at PRE (jsdom render, `gradeBand:'K'` vs `'1'`); bucketEmoji present on every bin; no load-bearing text at K.
 
-### R5 — read-aloud STIMULUS beat · OBSERVED (in-flight)
+### R5 — read-aloud STIMULUS beat · OBSERVED (live, committed 7cb5e5f)
 - **Property:** the tutor voices the sort and names EVERY bin before interaction (ORIENT+STIMULUS+DISAMBIGUATE), overriding the lesson one-sentence cap; answer-free (never says which bin an object belongs in). Component must forward `instruction` and `categories` so `{{instruction}}`/`{{categories}}` resolve — a broken key renders SILENT.
 - **Demanded by:** PRE band (a pre-reader cannot read the instruction panel R4 just hid).
 - **Evidence:** catalog aiDirectives (math.ts:3064–3079, "SAY THE SORT OUT LOUD AND NAME EVERY BIN FIRST"); component `aiPrimitiveData.instruction` forwarding; STIMULUS-drop failure class (comparison-builder/word-sorter precedent).
@@ -94,12 +94,51 @@ Both demands are right for their consumers. Resolved with the `isK` presentation
 ### C3 — PRE tap-simplicity vs multi-item evaluation semantics — RESOLVED 2026-07-15 via scoping (near-miss)
 Blanket auto-submit at K would have ablated the sort family's commit-step pedagogy. Resolved by scoping auto-submit to atomic odd-one-out only (R7). Recorded because the tempting over-general edit is exactly what a future declutter pass would reach for.
 
+## Gap requirements (close matches — the improvement queue)
+
+Source: `curriculum_fit_probe.py --primitive sorting-station --domain math --grades K,1`
+run 2026-07-15 — verdict MATCH at both grades. K cluster `PTRN001-02 Sorting by
+Attributes` (5/5 coherent, best 0.683); G1 cluster `MEAS001-05/06 Organizing/
+Interpreting Data` (4/5 coherent, best 0.673). Only the top match (single-attribute
+sort, 0.683) is fully served today — the other close matches are gaps:
+
+### G1 — explain the sort ("because…") · OPEN
+- **Near-consumer:** K `PTRN001-02` "Explain complex sorting rules using 'because'" (probe 0.668).
+- **Shortfall:** no production/justification mode — the student places objects but never articulates the rule. At K this must be SPOKEN (a pre-reader can't type a reason).
+- **Path:** eval-mode split (`explain_sort`) → `/add-eval-modes` + `/add-spoken-judge` (clip-judge ladder; [[production-modality-roadmap]] — this is exactly the judge-driven student-production direction).
+- **Relation to R-series:** none — additive.
+
+### G2 — two-attribute sorting reachable at K · OPEN
+- **Near-consumer:** K `PTRN001-02` "Sort objects by two attributes simultaneously" (probe 0.662).
+- **Shortfall:** `two_attributes` exists but is floored to Grade 1+ **because the compound instruction is written**. The K curriculum demands the task; what exceeds a pre-reader is the medium, not the cognition.
+- **Path:** band gate on the instruction channel — voiced compound instruction (aiDirectives STIMULUS beat, per R5) + pictorial criterion cues (bucketEmoji pairs), THEN a reader-fit re-audit of the mode at PRE. **Not** a simple unflooring — the floor stays until the audit passes.
+- **Relation to R-series:** touches R3 (band floor). The floor is the protection; this gap is the sanctioned way to move it — re-audit, never delete.
+
+### G3 — re-sort the same set by a different rule · OPEN (pre-detected conflict with R1)
+- **Near-consumer:** K `PTRN001-02` "Sort the same set of objects using a different rule" (probe 0.653).
+- **Shortfall:** flexible re-sorting is a taught K concept, but R1 (taught-rule stability) deliberately forbids axis-switching across challenges — because switching was the 2026-07-14 drift bug.
+- **Path:** eval-mode split (`resort_flex`) where rule-switching IS the declared objective → `/add-eval-modes`. **Ruling recorded now:** R1 stands for every other mode; the new mode declares the switch in its task identity so intent-fidelity probes can tell taught-flexibility from drift. Implementer must extend the R1 probe with a resort_flex exemption, not weaken R1.
+- **Relation to R-series:** pre-detected CONFLICT with R1 — resolved by ruling above (fork rung 1). Do not edit R1's generator guard in place.
+
+### G4 — student-created categories · OPEN
+- **Near-consumer:** K `PTRN001-02` "Create and label sorting categories before given objects" (probe 0.636).
+- **Shortfall:** categories are always generator-given; there is no "you decide the bins" mode.
+- **Path:** eval-mode split (production modality); at K, category "labeling" would be spoken or emoji-picked. Larger lift — sequence after G1/G3 which build the mode plumbing it needs.
+- **Relation to R-series:** none — additive.
+
+### G5 — post-sort data interpretation · OPEN (needs a routing ruling first)
+- **Near-consumer:** G1 `MEAS001-06` "After sorting objects into up to three categories, interpret data" (probe 0.673 — the TOP G1 match); sibling `MEAS001-05` organizing-data subskills (0.617–0.625).
+- **Shortfall:** `tally_record` records counts and `count_compare` compares two groups, but nothing asks interpretation questions across ≥3 sorted groups (most/least/how-many-more).
+- **Path:** FIRST a `/topic-fidelity`-style fit ruling: is this sorting-station's job (extend `tally_record` with an interpret phase) or a graphing primitive's (WRONG-PRIMITIVE, route there)? Only build here if the ruling says so.
+- **Relation to R-series:** touches R8 (structure caps) if built — interpret questions must not push K element counts.
+
 ## Catalog projection
 
 - **description:** faithful as of the 2026-07-14 rewrite (objective-relevant semantic classification leads; perceptual axes only when taught). No change.
-- **constraints:** **DIVERGENT — "Max 10 objects per challenge" is looser than enforced reality** (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins) and overstates what PRE tolerates. Proposed: "Objects per challenge: 4–6 at K, 5–8 at Grade 1; bins ≤3 at K, ≤4 at Grade 1." **Do not apply until the delegated reader-fit 1e lane lands** — math.ts is uncommitted in that lane; apply in a follow-up slice.
+- **constraints:** **DIVERGENT — "Max 10 objects per challenge" is looser than enforced reality** (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins) and overstates what PRE tolerates. Proposed: "Objects per challenge: 4–6 at K, 5–8 at Grade 1; bins ≤3 at K, ≤4 at Grade 1." ~~Held for the 1e lane~~ — 1e landed (`7cb5e5f`, tree clean): **unblocked, apply in the next sorting-station slice.**
 - **evalModes:** per-mode Grade-1+ band notes are accurate and load-bearing for the resolver. No change.
 
 ## Changelog
 
 - 2026-07-15 — derived (initial, pilot for `/primitive-contract`). 10 requirements, 3 conflicts (all RESOLVED), 1 catalog divergence flagged (constraints object-count). Evidence: K census 2026-07-14, topic-fidelity + reader-fit reports, EVAL_TRACKER SS-1..4, git to 2026-03.
+- 2026-07-15 (later) — reader-fit 1e landed (`7cb5e5f`, live 3/3): R4/R5 caveat cleared; constraints projection unblocked. Added G-series from `curriculum_fit_probe` (MATCH @ K + G1): 5 gap requirements, incl. one pre-detected R1 conflict (G3, ruling recorded) and one band-floor pathway (G2, re-audit not unfloor).

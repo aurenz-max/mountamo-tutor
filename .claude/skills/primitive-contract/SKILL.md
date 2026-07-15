@@ -144,6 +144,34 @@ usually an eval-test route call (the same battery `/topic-fidelity` uses:
 honored + discrimination + no-regression) or a saved topic-trace `replay` body.
 A requirement without a probe is an opinion.
 
+### Phase 2b — Derive GAP requirements (close matches)
+
+The R-series protects existing consumers; the **G-series** is the improvement half:
+what would this primitive need so its NEAR-consumers could route to it well? Sources,
+all evidence-bearing (a gap without a named near-consumer is a wish — those go to
+`/lumina-portfolio`, not here):
+
+```bash
+# THE close-match detector — subskills whose demand embedding almost matches this
+# primitive's catalog identity:
+cd backend && PYTHONPATH=$(pwd) ./venv/Scripts/python.exe \
+  scripts/curriculum_fit_probe.py --primitive <id> --domain <domain> --grades K,1
+```
+
+plus: WRONG-PRIMITIVE verdicts in `qa/topic-fidelity/` naming this primitive as the
+near-fit; band-audit open findings (a mode floored out of a band is a gap if the
+curriculum demands the task IN that band); census lessons where it was routed but
+only partially served the objective.
+
+Each gap records: the near-consumer + evidence (probe score / verdict / trace), the
+**shortfall** (what's missing, as a property), the **fork rung + executor skill** that
+would implement it, and its **relation to the R-series** — a gap that contradicts an
+existing requirement is a pre-detected CONFLICT: the resolution ruling gets written
+NOW (usually "new eval mode where X is the objective"), so the future implementer
+forks instead of relaxing the requirement. Gaps are the contract's queue-feeding
+surface: pulling one into an ACTIVE stream's queue (with its executor skill) is how
+contracts turn into build work.
+
 ### Phase 3 — Write the contract + catalog projection
 
 Write/update `docs/contracts/<primitive-id>.md` (template below). Then diff the
@@ -210,6 +238,14 @@ side effect of an edit.
 ### C1 — R<i> vs R<j> — <status: OPEN | RESOLVED via <fork rung> on <date>>
 <one paragraph: which consumers, why both are right, the ruling>
 
+## Gap requirements (close matches — the improvement queue)
+
+### G1 — <short handle> · <status: OPEN | QUEUED in <stream> | BUILT <date>>
+- **Near-consumer:** <subskill/band/topic + evidence: probe score, verdict, trace>
+- **Shortfall:** <the property the primitive lacks, stated testably>
+- **Path:** <fork rung + executor skill, e.g. "eval-mode split → /add-eval-modes">
+- **Relation to R-series:** <none | pre-detected conflict with R<i>: ruling here>
+
 ## Catalog projection
 
 - **description:** <current → proposed, or "faithful as of <date>">
@@ -229,9 +265,11 @@ side effect of an edit.
 - **Dormant consumers are the silent casualty.** A skill with no trace in the window
   still resolves here via the authored map (channel [3]) — the census alone under-counts.
   Keep channel [3] rows even at zero recent runs.
-- **Contracts are derived, not authored wishes.** Never write a requirement no consumer
-  demands ("would be nice") — that's a roadmap item for `/lumina-portfolio`, and it
-  rots the doc's authority. Every line traces to evidence.
+- **Contracts are derived, not authored wishes.** Never write an R-requirement no
+  consumer demands, and never write a G-gap no NEAR-consumer demands (a gap needs a
+  probe score, a WRONG-PRIMITIVE verdict, or a band-audit finding behind it). Pure
+  "would be nice" is `/lumina-portfolio` material; letting it in rots the doc's
+  authority. Every line traces to evidence.
 - **Never feed contracts forward into curriculum data.** The reverse index is edit-time
   tooling. Writing primitive hints into subskills recreates the maintenance treadmill
   the manifest exists to avoid.

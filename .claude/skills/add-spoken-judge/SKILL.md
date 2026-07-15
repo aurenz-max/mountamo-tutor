@@ -1,5 +1,7 @@
 # Add Spoken Judge to a Literacy Primitive
 
+> **⚠️ DEPRECATED as the wiring skill (2026-07-15).** New spoken work is wired with **`/add-voice-control`** — it consumes the `useVoiceAnswer` / `useVoiceChoice` controllers over the open-mic engine and is a ~15-40 line swap. **This skill remains the DOCTRINE HOME** and is still required reading: the **Design Themes**, the **asymmetric grading law**, the **quiet-tutor law**, and the **capture-architecture table** below are cited by `/add-voice-control`, `/primitive`, and the engine hooks (`useVoiceAnswer`/`useVoiceChoice`/`useSpokenWordCapture`). It is also the ONLY documented wiring for the **push-to-talk** shape (`useSpokenWordCapture`, a single culminating word after solve-work) — `/add-voice-control` defaults to open mic and only mentions PTT in passing. **Read this for the doctrine and for PTT; wire open-mic answer/choice with `/add-voice-control`.**
+
 This skill adds a **spoken production beat** to an existing literacy primitive: the student says a target word aloud, a judge ladder confirms it in ~0.65s (fast path), and the primitive awards credit — with the existing tap/click interaction as the always-available fallback. It turns recognition tasks ("click the word") into production tasks ("say the word"), the highest-value modality on the production roadmap.
 
 **Outcome:** a push-to-talk "🎙️ Say it!" beat wired into one primitive, judged by the Azure → Gemini ladder, graded asymmetrically (spoken success adds credit; spoken failure never subtracts), with the tutor coaching misses by voice.

@@ -17,7 +17,7 @@ This skill builds **L0 of the primitive lifecycle** (ladder: [PRIMITIVE_LIFECYCL
 **Deliberately NOT built at birth** (deferred to layers):
 - **Eval-mode ladder** — catalog `evalModes[]`, β priors, backend `problem_type_registry.py`, mixed-path (SP-21) handling → `/add-eval-modes`
 - **Catalog `tutoring:` block** — scaffoldingLevels, commonStruggles, aiDirectives → `/add-tutoring-scaffold`. The component's `useLuminaAI` + `sendText` hooks ARE wired at birth (cheap in-flow, painful to retrofit); until scaffolded the primitive gets the generic tutor — acceptable degradation.
-- **Support tiers, structural difficulty, sound, spoken judge** → their skills, in the ladder order the birth certificate prints (Phase 8).
+- **Support tiers, structural difficulty, sound, voice control** → their skills, in the ladder order the birth certificate prints (Phase 8). Spoken-production primitives wire voice with `/add-voice-control` (open-mic answer/choice); its doctrine — asymmetric grading + quiet-tutor laws — lives in `/add-spoken-judge`, which also remains the reference for the push-to-talk shape.
 
 **Never deferred** (expensive or impossible to retrofit — the reason this skill front-loads them):
 multi-instance schema (`challenges[]` required), a challenge-type field in the schema (even with one value — it's what makes densification cheap later), the Fork A/B generator decision, the answer-leak gating audit, Lumina-kit chrome, and `onEvaluationSubmit` wiring. A primitive that leaks answers or emits one binary signal is not "a lower rung" — it's debt (the Bucket A lesson).
@@ -857,7 +857,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 | 3 | `/add-support-tiers` | L3 tiered | Scaffolding intrinsic to the interaction that could withdraw: <...> |
 | 4 | `/add-structural-difficulty` | L4 shaped | (requires L3) Candidate structural lever by archetype: <...> |
 | 5 | `/add-sound` | L5 polished | 2-4 candidate sound points: <manipulation handlers, check-answer moments> |
-| 6 | `/add-spoken-judge` | L5 polished | <only if a spoken-production primitive; else omit this row> |
+| 6 | `/add-voice-control` | L5 polished | <only if a spoken-production primitive; else omit this row. Doctrine + push-to-talk reference: `/add-spoken-judge`> |
 | ✓ | `/eval-test <id>` | QA loop | Run after EVERY layer lands (`/eval-fix` for findings) — a layer only counts when eval-test passes at that layer |
 ```
 
