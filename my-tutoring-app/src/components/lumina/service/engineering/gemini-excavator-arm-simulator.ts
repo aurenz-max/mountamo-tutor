@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -239,10 +240,12 @@ export const generateExcavatorArmSimulator = async (
   ctx: GenerationContext,
 ): Promise<ExcavatorArmSimulatorData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<ExcavatorArmSimulatorData>;
   const prompt = `
-Create an educational Excavator Arm Simulator visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Excavator Arm Simulator visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - EXCAVATOR ARM ENGINEERING:
 The excavator arm is a multi-jointed mechanical system with three main components:

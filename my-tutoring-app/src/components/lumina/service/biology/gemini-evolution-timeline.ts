@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
 import { EvolutionTimelineData } from "../../primitives/visual-primitives/biology/EvolutionTimeline";
@@ -138,6 +139,7 @@ export const generateEvolutionTimeline = async (
   ctx: GenerationContext
 ): Promise<EvolutionTimelineData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<EvolutionTimelineData>;
 
   // Map grade context to grade band
@@ -153,7 +155,8 @@ export const generateEvolutionTimeline = async (
 
   const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '4-5';
 
-  const prompt = `Create an interactive deep-time evolution timeline for the topic: "${topic}"
+  const prompt = `Create an interactive deep-time evolution timeline for the topic: "${topic}
+${scopeSection}"
 
 TARGET GRADE BAND: ${gradeBand}
 ${gradeContext[gradeBand]}

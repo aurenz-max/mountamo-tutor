@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -151,10 +152,12 @@ export const generateMachineProfile = async (
   ctx: GenerationContext,
 ): Promise<MachineProfileData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MachineProfileData>;
   const prompt = `
-Create a comprehensive Machine Profile for "${topic}" appropriate for ${gradeLevel} students.
+Create a comprehensive Machine Profile for "${topic}
+${scopeSection}" appropriate for ${gradeLevel} students.
 
 CONTEXT - MACHINE PROFILE:
 Machine Profile is a display-only component that presents a rich, educational profile of a vehicle or machine.

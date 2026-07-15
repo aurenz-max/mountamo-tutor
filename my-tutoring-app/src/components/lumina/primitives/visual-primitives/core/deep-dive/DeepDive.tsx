@@ -437,7 +437,7 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
           />
         );
       case 'pull-quote':
-        return <PullQuoteBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} />;
+        return <PullQuoteBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} preReader={preReader} />;
       case 'prose':
         return <ProseBlock data={block} index={idx} onAskTutor={(msg) => sendText(msg, { silent: true })} preReader={preReader} />;
       case 'multiple-choice':
@@ -491,10 +491,18 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
               onAskTutor={(msg) => sendText(msg, { silent: true })}
+              preReader={preReader}
             />
           );
         }
-        return <DiagramBlock data={diagramBlock} index={idx} />;
+        return (
+          <DiagramBlock
+            data={diagramBlock}
+            index={idx}
+            onAskTutor={(msg) => sendText(msg, { silent: true })}
+            preReader={preReader}
+          />
+        );
       }
       case 'mini-sim': {
         const simBlock = block as MiniSimBlockData;
@@ -506,10 +514,11 @@ const DeepDive: React.FC<DeepDiveProps> = ({ data, className }) => {
               onAnswer={handleBlockAnswer}
               answered={answeredBlockIds.has(block.id)}
               onAskTutor={(msg) => sendText(msg, { silent: true })}
+              preReader={preReader}
             />
           );
         }
-        return <MiniSimBlock data={simBlock} index={idx} />;
+        return <MiniSimBlock data={simBlock} index={idx} preReader={preReader} />;
       }
       case 'perspectives': {
         const perspectivesBlock = block as PerspectivesBlockData;

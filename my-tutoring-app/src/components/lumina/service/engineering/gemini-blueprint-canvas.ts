@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -89,10 +90,12 @@ export const generateBlueprintCanvas = async (
   ctx: GenerationContext,
 ): Promise<BlueprintCanvasData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<BlueprintCanvasData>;
   const prompt = `
-Create an educational Blueprint Canvas activity for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Blueprint Canvas activity for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - BLUEPRINT CANVAS:
 Blueprint Canvas is a general-purpose grid-based drawing surface for technical drawings.

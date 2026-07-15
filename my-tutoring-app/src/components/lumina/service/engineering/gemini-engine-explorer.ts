@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -140,10 +141,12 @@ export const generateEngineExplorer = async (
   ctx: GenerationContext,
 ): Promise<EngineExplorerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EngineExplorerData>;
   const prompt = `
-Create educational content for a Living Engine simulation that teaches "${topic}" to ${gradeLevel} students.
+Create educational content for a Living Engine simulation that teaches "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 IMPORTANT: You are providing ONLY the educational text content — analogies, explanations, challenges, and narration.
 The engine simulation (particles, physics, animation) is handled by the component. You write the words.

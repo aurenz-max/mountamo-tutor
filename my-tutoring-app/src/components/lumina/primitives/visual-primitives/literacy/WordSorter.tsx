@@ -21,6 +21,7 @@ import {
   LuminaPanel,
   LuminaActionButton,
   LuminaDropZone,
+  LuminaReadAloudGlyph,
   type DropZoneState,
 } from '../../../ui';
 
@@ -573,7 +574,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
               ) : (
                 <span className="text-4xl font-bold text-slate-100">{stagedWord.word}</span>
               )}
-              <span className="text-xl" aria-hidden>🔊</span>
+              <LuminaReadAloudGlyph size={22} />
             </button>
           )}
         </div>

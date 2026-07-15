@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Switch } from '@/components/ui/switch';
 import type { MiniSimBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
@@ -10,6 +10,7 @@ import {
   LuminaActionButton,
   LuminaFeedbackCard,
   LuminaBadge,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
@@ -22,6 +23,14 @@ interface MiniSimBlockProps {
   answered?: boolean;
   /** Bridge to the DeepDive live tutor for a contextual, answer-free hint */
   onAskTutor?: (message: string) => void;
+  /**
+   * Pre-reader (K) presentation — reader-fit PRE band contract: the tutor reads
+   * the scenario + prediction aloud (auto on first view + 🔊 replay), the
+   * prediction renders picture-primary with a single tap to choose (no Check),
+   * the outcome is read aloud when the child flips the control, and adult mono
+   * chrome (PREDICT FIRST / EXPERIMENT / KEY OBSERVATION / letter labels) hides.
+   */
+  preReader?: boolean;
 }
 
 const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
@@ -30,6 +39,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   onAnswer,
   answered: answeredProp,
   onAskTutor,
+  preReader = false,
 }) => {
   const {
     scenario,
@@ -55,6 +65,9 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
   const [predictionAttempts, setPredictionAttempts] = useState(0);
   const [simUnlocked, setSimUnlocked] = useState(!prediction);
   const [answered, setAnswered] = useState(answeredProp ?? false);
+  // Pre-reader retry state — the wrongly-tapped picture stays marked until the
+  // next tap so feedback lands on the touched object (reader-fit rule 5).
+  const [retryIndex, setRetryIndex] = useState<number | null>(null);
 
   // ── Resolve current state from control value ───────────────────────
   const activeState = useMemo(() => {
@@ -71,6 +84,59 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     }
     return states[states.length - 1] ?? null;
   }, [controlType, toggleValue, sliderValue, states]);
+
+  // The spoken STIMULUS beat — scenario + prediction question + every option,
+  // read by the tutor. Enacted by the catalog PRE-READER READ-ALOUD directive
+  // (survives the lesson-mode brevity cap). Correct prediction never spoken.
+  const readAloudMessage = prediction
+    ? `[SIM_READ_ALOUD] A pre-reader is doing a little experiment and cannot read it. `
+      + `First read the setup aloud word for word: "${scenario}". `
+      + `Then read the question: "${prediction.question}". `
+      + `Then read each choice slowly with its letter: ${prediction.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('; ')}. `
+      + `Then ask which one they think will happen. Do not say which one is right.`
+    : '';
+
+  // ORIENT/STIMULUS auto-beat at PRE — fires once when the block first scrolls
+  // into view (all blocks mount together in stack layout, so mount-time firing
+  // would read every block at once). Ref-guarded against re-fire.
+  const blockRef = useRef<HTMLDivElement | null>(null);
+  const readAloudFiredRef = useRef(false);
+  useEffect(() => {
+    if (!preReader || !onAskTutor || !prediction || answered || readAloudFiredRef.current) return;
+    const el = blockRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !readAloudFiredRef.current) {
+          readAloudFiredRef.current = true;
+          onAskTutor(readAloudMessage);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [preReader, onAskTutor, prediction, answered, readAloudMessage]);
+
+  // STIMULUS for the experiment: read the observable outcome aloud when the
+  // pre-reader flips the control (the outcome text is load-bearing and they
+  // can't read it). Baseline recorded silently so it fires only on real change,
+  // keeping the tutor quiet-by-default until the child acts.
+  const lastObservedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!preReader || !onAskTutor || !simUnlocked || !activeState) return;
+    if (lastObservedRef.current === null) {
+      lastObservedRef.current = activeState.condition;
+      return;
+    }
+    if (lastObservedRef.current === activeState.condition) return;
+    lastObservedRef.current = activeState.condition;
+    onAskTutor(
+      `[SIM_OBSERVE] The pre-reader changed the control and now sees "${activeState.title}". `
+      + `Read what happens aloud, warmly and clearly: "${activeState.description}". One or two sentences, then stop.`,
+    );
+  }, [preReader, onAskTutor, simUnlocked, activeState]);
 
   // ── Prediction handlers ────────────────────────────────────────────
   const handlePredictionSelect = useCallback(
@@ -107,11 +173,102 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     }
   }, [predictionAnswer, prediction, predictionSubmitted, predictionAttempts, data.id, onAnswer]);
 
-  // ── Render: Prediction Phase ───────────────────────────────────────
+  // Pre-reader flow: single tap = choose (the selection is atomic, so no Check
+  // button — reader-fit rule 2). Same two-attempt policy as the deliberate flow.
+  const handlePredictionChoose = useCallback(
+    (idx: number) => {
+      if (predictionSubmitted || !prediction) return;
+      const newAttempts = predictionAttempts + 1;
+      setPredictionAttempts(newAttempts);
+      setPredictionAnswer(idx);
+
+      if (idx === prediction.correctIndex) {
+        SoundManager.playCorrect();
+        setRetryIndex(null);
+        setPredictionSubmitted(true);
+        setSimUnlocked(true);
+        setAnswered(true);
+        onAnswer?.(data.id, true, newAttempts);
+      } else if (newAttempts >= 2) {
+        SoundManager.playIncorrect();
+        setRetryIndex(null);
+        setPredictionSubmitted(true);
+        setSimUnlocked(true);
+        setAnswered(true);
+        onAnswer?.(data.id, false, newAttempts);
+      } else {
+        // First miss — feedback lands on the tapped picture and the tutor gives
+        // an eyes-free spoken hint (RECOVER beat), never revealing the answer.
+        SoundManager.playIncorrect();
+        setRetryIndex(idx);
+        onAskTutor?.(
+          `[SIM_PREDICT_RETRY] The pre-reader guessed "${prediction.options[idx]}" for what will happen — not right. `
+          + `Give ONE warm spoken hint without revealing the answer, and invite them to tap another picture.`,
+        );
+      }
+    },
+    [predictionSubmitted, prediction, predictionAttempts, data.id, onAnswer, onAskTutor],
+  );
+
+  const wasCorrect = prediction ? predictionAnswer === prediction.correctIndex : false;
+
+  // ── Shared control input (toggle / slider) ─────────────────────────
+  const controlInput =
+    controlType === 'toggle' ? (
+      <div className="flex items-center gap-3">
+        <span
+          className={`text-sm transition-colors ${
+            !toggleValue ? 'text-slate-100 font-medium' : 'text-slate-500'
+          }`}
+        >
+          {toggleOffLabel || 'Off'}
+        </span>
+        <Switch
+          checked={toggleValue}
+          onCheckedChange={(v) => {
+            SoundManager.toggle(v);
+            setToggleValue(v);
+          }}
+          className="data-[state=checked]:bg-cyan-500"
+        />
+        <span
+          className={`text-sm transition-colors ${
+            toggleValue ? 'text-slate-100 font-medium' : 'text-slate-500'
+          }`}
+        >
+          {toggleOnLabel || 'On'}
+        </span>
+      </div>
+    ) : (
+      <div className="space-y-2">
+        <LuminaSlider
+          accent="cyan"
+          value={[sliderValue]}
+          onValueChange={([v]) => setSliderValue(v)}
+          min={sliderMin}
+          max={sliderMax}
+          step={sliderStep}
+        />
+        <div className="flex justify-between text-xs text-slate-500">
+          <span>
+            {sliderMin}
+            {sliderUnit}
+          </span>
+          <span className="text-cyan-300 font-medium">
+            {sliderValue}
+            {sliderUnit}
+          </span>
+          <span>
+            {sliderMax}
+            {sliderUnit}
+          </span>
+        </div>
+      </div>
+    );
+
+  // ── Render: Prediction Phase (deliberate select-then-Check) ────────
   const renderPrediction = () => {
     if (!prediction) return null;
-
-    const wasCorrect = predictionAnswer === prediction.correctIndex;
 
     return (
       <div className="space-y-3">
@@ -191,7 +348,70 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     );
   };
 
-  // ── Render: Simulation Controls ────────────────────────────────────
+  // ── Render: Prediction Phase (pre-reader, picture-primary tap=choose) ──
+  const renderPreReaderPrediction = () => {
+    if (!prediction) return null;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <p className="text-slate-100 font-medium text-lg leading-relaxed flex-1">
+            {prediction.question}
+          </p>
+          {onAskTutor && (
+            <LuminaReadAloud
+              iconOnly
+              size="md"
+              aria-label="Hear the question again"
+              className="flex-shrink-0"
+              onClick={() => {
+                SoundManager.tap();
+                onAskTutor(readAloudMessage);
+              }}
+            />
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {prediction.options.map((opt, i) => {
+            let state: AnswerChoiceState = 'idle';
+            if (predictionSubmitted) {
+              if (i === prediction.correctIndex) state = 'correct';
+              else if (i === predictionAnswer) state = 'incorrect';
+              else state = 'dimmed';
+            } else if (i === retryIndex) {
+              state = 'incorrect';
+            }
+            return (
+              <LuminaAnswerChoice
+                key={i}
+                state={state}
+                disabled={predictionSubmitted}
+                onClick={() => handlePredictionChoose(i)}
+                className="p-5 flex flex-col items-center justify-center gap-2 text-center min-h-[7rem]"
+              >
+                <span className="text-5xl leading-none" aria-hidden>
+                  {prediction.optionEmojis?.[i] || '⭐'}
+                </span>
+                <span className="text-base text-slate-100">{opt}</span>
+              </LuminaAnswerChoice>
+            );
+          })}
+        </div>
+
+        {predictionSubmitted && (
+          <LuminaFeedbackCard
+            status={wasCorrect ? 'correct' : 'incorrect'}
+            label={wasCorrect ? '🎉 You did it!' : '💛 Good try!'}
+          >
+            {prediction.explanation}
+          </LuminaFeedbackCard>
+        )}
+      </div>
+    );
+  };
+
+  // ── Render: Simulation Controls (deliberate) ───────────────────────
   const renderControls = () => {
     if (!simUnlocked) return null;
 
@@ -207,58 +427,7 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
         {/* Control */}
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <p className="text-sm text-slate-400 mb-3">{controlLabel}</p>
-
-          {controlType === 'toggle' ? (
-            <div className="flex items-center gap-3">
-              <span
-                className={`text-sm transition-colors ${
-                  !toggleValue ? 'text-slate-100 font-medium' : 'text-slate-500'
-                }`}
-              >
-                {toggleOffLabel || 'Off'}
-              </span>
-              <Switch
-                checked={toggleValue}
-                onCheckedChange={(v) => {
-                  SoundManager.toggle(v);
-                  setToggleValue(v);
-                }}
-                className="data-[state=checked]:bg-cyan-500"
-              />
-              <span
-                className={`text-sm transition-colors ${
-                  toggleValue ? 'text-slate-100 font-medium' : 'text-slate-500'
-                }`}
-              >
-                {toggleOnLabel || 'On'}
-              </span>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <LuminaSlider
-                accent="cyan"
-                value={[sliderValue]}
-                onValueChange={([v]) => setSliderValue(v)}
-                min={sliderMin}
-                max={sliderMax}
-                step={sliderStep}
-              />
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>
-                  {sliderMin}
-                  {sliderUnit}
-                </span>
-                <span className="text-cyan-300 font-medium">
-                  {sliderValue}
-                  {sliderUnit}
-                </span>
-                <span>
-                  {sliderMax}
-                  {sliderUnit}
-                </span>
-              </div>
-            </div>
-          )}
+          {controlInput}
         </div>
 
         {/* Outcome card */}
@@ -283,7 +452,54 @@ const MiniSimBlock: React.FC<MiniSimBlockProps> = ({
     );
   };
 
-  // ── Main Render ────────────────────────────────────────────────────
+  // ── Render: Simulation Controls (pre-reader — no mono chrome) ───────
+  const renderPreReaderControls = () => {
+    if (!simUnlocked) return null;
+
+    return (
+      <div className="space-y-4">
+        {/* Control */}
+        <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <p className="text-base text-slate-200 mb-3">{controlLabel}</p>
+          {controlInput}
+        </div>
+
+        {/* Outcome card — title + what happens (read aloud on change); the
+            adult "Key Observation" insight is dropped at PRE. */}
+        {activeState && (
+          <div
+            key={activeState.condition}
+            className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-2 animate-in fade-in duration-300"
+          >
+            <p className="text-base font-semibold text-cyan-200">{activeState.title}</p>
+            <p className="text-base text-slate-100 leading-relaxed">
+              {activeState.description}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Pre-reader main render ─────────────────────────────────────────
+  if (preReader) {
+    return (
+      <BlockWrapper label={label} index={index} accent="cyan" variant="default">
+        <div ref={blockRef} className="space-y-5">
+          {/* Scenario — read aloud in the STIMULUS beat */}
+          <p className="text-[17px] text-slate-100 leading-relaxed">{scenario}</p>
+
+          {/* Prediction (if present) */}
+          {prediction && !answered && renderPreReaderPrediction()}
+
+          {/* Simulation controls + outcome */}
+          {renderPreReaderControls()}
+        </div>
+      </BlockWrapper>
+    );
+  }
+
+  // ── Standard main render ───────────────────────────────────────────
   return (
     <BlockWrapper label={label} index={index} accent="cyan" variant="default">
       <div className="space-y-5">

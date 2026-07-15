@@ -21,7 +21,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { answerStateClasses, type AnswerChoiceState } from './tokens';
+import { answerStateClasses, motion, type AnswerChoiceState } from './tokens';
 
 // A chip's state is the same grading language as answers: idle (available),
 // selected (held/placed), correct, incorrect, dimmed (spent/taken).
@@ -37,9 +37,13 @@ export const LuminaChip = React.forwardRef<HTMLButtonElement, LuminaChipProps>(
       ref={ref}
       type="button"
       className={cn(
-        'inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition-all disabled:pointer-events-none',
+        'inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium disabled:pointer-events-none',
+        motion.press,
+        motion.transitionSlow,
         answerStateClasses[state],
         state === 'selected' && 'scale-105', // a "held/picked-up" lift, chip-specific
+        state === 'correct' && motion.pop,
+        state === 'incorrect' && motion.shake,
         className
       )}
       {...props}

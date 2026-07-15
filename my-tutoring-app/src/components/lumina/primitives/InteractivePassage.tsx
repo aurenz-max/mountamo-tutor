@@ -3,7 +3,12 @@ import { InteractivePassageData, PassageSection, VocabularyTerm } from '../types
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, CheckCircle, HelpCircle, Highlighter, X } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
-import { LuminaBadge, LuminaPanel } from '../ui';
+import {
+  LuminaAnswerChoice,
+  LuminaBadge,
+  LuminaPanel,
+  type AnswerChoiceState,
+} from '../ui';
 
 interface InteractivePassageProps {
   data: InteractivePassageData;
@@ -214,26 +219,27 @@ const InteractivePassage: React.FC<InteractivePassageProps> = ({ data, className
                     const isSelected = inlineAnswers[section.id] === optIdx;
                     const isCorrect = optIdx === section.inlineQuestion!.correctIndex;
                     const showResult = inlineAnswers[section.id] !== undefined;
+                    const answerState: AnswerChoiceState = !showResult
+                      ? 'idle'
+                      : isCorrect
+                        ? 'correct'
+                        : isSelected
+                          ? 'incorrect'
+                          : 'dimmed';
 
                     return (
-                      <button
+                      <LuminaAnswerChoice
                         key={optIdx}
+                        state={answerState}
                         onClick={() => handleInlineAnswer(section.id, optIdx, section.inlineQuestion!.correctIndex)}
                         disabled={showResult && isCorrect}
-                        className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between ${
-                          showResult
-                            ? isCorrect
-                              ? 'bg-emerald-900/30 border border-emerald-500/50 text-emerald-200'
-                              : isSelected
-                                ? 'bg-red-900/30 border border-red-500/50 text-red-200'
-                                : 'bg-slate-800/50 border border-transparent text-slate-400'
-                            : 'bg-slate-700/30 hover:bg-slate-700/50 border border-transparent hover:border-slate-600 text-slate-200'
-                        }`}
+                        className="px-4 py-3 font-sans text-base"
                       >
-                        <span>{option}</span>
-                        {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-emerald-400" />}
-                        {showResult && isSelected && !isCorrect && <X className="w-5 h-5 text-red-400" />}
-                      </button>
+                        <span className="flex items-center justify-between gap-3 pr-6">
+                          <span>{option}</span>
+                          {answerState === 'incorrect' && <X className="w-5 h-5 shrink-0 text-rose-400" />}
+                        </span>
+                      </LuminaAnswerChoice>
                     );
                   })}
                 </div>

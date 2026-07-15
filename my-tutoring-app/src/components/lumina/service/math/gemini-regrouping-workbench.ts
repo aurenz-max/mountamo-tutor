@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { RegroupingWorkbenchData } from "../../primitives/visual-primitives/math/RegroupingWorkbench";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -583,6 +584,7 @@ export const generateRegroupingWorkbench = async (
   ctx: GenerationContext,
 ): Promise<RegroupingWorkbenchData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RegroupingWorkbenchConfig;
   // Resolve eval mode from catalog (single source of truth)
@@ -629,7 +631,8 @@ export const generateRegroupingWorkbench = async (
   const effectiveOperation = evalOperation ?? config?.operation;
 
   const prompt = `
-Create an educational regrouping (carry/borrow) activity for teaching "${topic}" to ${gradeLevel} students.
+Create an educational regrouping (carry/borrow) activity for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT:
 - Regrouping is when 10 ones become 1 ten (carrying in addition) or 1 ten becomes 10 ones (borrowing in subtraction)

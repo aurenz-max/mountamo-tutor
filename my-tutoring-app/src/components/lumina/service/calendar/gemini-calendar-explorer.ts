@@ -5,6 +5,7 @@ import {
 } from "../../primitives/visual-primitives/calendar/CalendarExplorer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -240,11 +241,13 @@ const patternSchema: Schema = {
 
 async function generateIdentifyChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<CalendarExplorerChallenge[]> {
   const prompt = `
 Create ${count} calendar IDENTIFY challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Question types (mix these):
 - "What date is the third Wednesday of [Month] [Year]?"
@@ -372,11 +375,13 @@ EXAMPLE:
 
 async function generateCountChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<CalendarExplorerChallenge[]> {
   const prompt = `
 Create ${count} calendar COUNTING challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Question types (mix these — ONLY count a specific day-of-week, never total days):
 - "How many Tuesdays are in March 2025?"
@@ -481,11 +486,13 @@ EXAMPLE:
 
 async function generatePatternChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<CalendarExplorerChallenge[]> {
   const prompt = `
 Create ${count} calendar PATTERN challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Question types (mix these):
 - "If ${MONTH_NAMES[randomMonth() - 1]} 1 is a ${DAYS_OF_WEEK[Math.floor(Math.random() * 7)]}, what day is ${MONTH_NAMES[randomMonth() - 1]} 8?"
@@ -646,6 +653,7 @@ export const generateCalendarExplorer = async (
   ctx: GenerationContext,
 ): Promise<CalendarExplorerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as CalendarExplorerConfig;
   // ── Resolve eval mode ──
@@ -671,13 +679,13 @@ export const generateCalendarExplorer = async (
     typeOrder.push(type);
     switch (type) {
       case "identify":
-        generators.push(generateIdentifyChallenges(topic, gradeLevel, countPerType));
+        generators.push(generateIdentifyChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
       case "count":
-        generators.push(generateCountChallenges(topic, gradeLevel, countPerType));
+        generators.push(generateCountChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
       case "pattern":
-        generators.push(generatePatternChallenges(topic, gradeLevel, countPerType));
+        generators.push(generatePatternChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
     }
   }

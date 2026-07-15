@@ -11,7 +11,14 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { accentSolidBg, accentSoftBg, accentSoftBorder, accentText, type LuminaAccent } from './tokens';
+import {
+  accentSolidBg,
+  accentSoftBg,
+  accentSoftBorder,
+  accentText,
+  motion,
+  type LuminaAccent,
+} from './tokens';
 
 // Dot ring color when unselected (full literal names for JIT).
 const dotRing: Record<LuminaAccent, string> = {
@@ -41,7 +48,9 @@ export const LuminaChoiceChip = React.forwardRef<HTMLButtonElement, LuminaChoice
       type="button"
       aria-pressed={selected}
       className={cn(
-        'inline-flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-semibold transition-all',
+        'inline-flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-semibold',
+        motion.press,
+        motion.transition,
         selected
           ? cn(accentSoftBg[accent], accentSoftBorder[accent], 'text-slate-100')
           : 'bg-white/5 border-white/15 text-slate-300 hover:bg-white/10',

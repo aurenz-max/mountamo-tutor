@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -129,6 +130,7 @@ export const generatePropulsionLab = async (
   ctx: GenerationContext,
 ): Promise<PropulsionLabData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PropulsionLabConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -164,7 +166,8 @@ export const generatePropulsionLab = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create educational content for a Propulsion Lab that teaches "${topic}" to ${gradeLevel} students.
+Create educational content for a Propulsion Lab that teaches "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 IMPORTANT: You are providing ONLY educational text content — descriptions, analogies, facts, and challenge questions.
 The component hardcodes all physics simulation, propulsion types (jet, rocket, propeller, sail), and mediums (air, water, vacuum).

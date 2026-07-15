@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -95,10 +96,12 @@ export const generateShapeStrengthTester = async (
   ctx: GenerationContext,
 ): Promise<ShapeStrengthTesterData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<ShapeStrengthTesterData>;
   const prompt = `
-Create an educational Free-Form Structural Building Simulator for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Free-Form Structural Building Simulator for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - FREE-FORM LEGO-STYLE BUILDING:
 This primitive teaches structural engineering through hands-on building with beams:

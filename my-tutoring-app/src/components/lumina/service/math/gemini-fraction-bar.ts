@@ -19,6 +19,7 @@ import {
 } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -464,6 +465,7 @@ export const generateFractionBar = async (
   ctx: GenerationContext,
 ): Promise<FractionBarData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FractionBarConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -511,7 +513,8 @@ export const generateFractionBar = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}
+${scopeSection}" (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT fractions of the SAME challenge type. Each fraction runs through a three-phase flow: identify the numerator (MC) → identify the denominator (MC) → shade the fraction on a bar.
 

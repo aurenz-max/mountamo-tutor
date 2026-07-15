@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
 import { AdaptationInvestigatorData } from "../../primitives/visual-primitives/biology/AdaptationInvestigator";
@@ -145,6 +146,7 @@ export const generateAdaptationInvestigator = async (
   ctx: GenerationContext
 ): Promise<AdaptationInvestigatorData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<AdaptationInvestigatorData>;
 
   // Map grade context to grade band
@@ -198,7 +200,8 @@ GRADE 7-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an educational adaptation investigator for: "${topic}".
+  const generationPrompt = `Create an educational adaptation investigator for: "${topic}
+${scopeSection}".
 
 TARGET GRADE BAND: ${gradeBand}
 

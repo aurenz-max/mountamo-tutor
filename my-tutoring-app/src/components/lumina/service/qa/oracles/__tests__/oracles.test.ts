@@ -468,6 +468,46 @@ describe('knowledge-check oracle', () => {
     const v = knowledgeCheckOracle.verify(data, kcCtx).violations;
     expect(v.some((x) => x.check === 'clustering' && x.where.startsWith('problem#4'))).toBe(true);
   });
+
+  // ── reader-fit PRE band (kindergarten) ───────────────────────────────────────
+  const kcPreCtx = { ...kcCtx, gradeLevel: 'kindergarten' };
+  const kcPreMc = {
+    problems: [
+      {
+        type: 'multiple_choice',
+        id: 'mc_1',
+        question: 'Which word rhymes with cat?',
+        options: [
+          { id: 'A', text: 'dog', emoji: '🐶' },
+          { id: 'B', text: 'bat', emoji: '🦇' },
+          { id: 'C', text: 'cup', emoji: '🥤' },
+        ],
+        correctOptionId: 'B',
+      },
+    ],
+  };
+
+  it('PRE: passes a picture-primary MCQ (every option carries an emoji)', () => {
+    expect(knowledgeCheckOracle.verify(kcPreMc, kcPreCtx).violations).toEqual([]);
+  });
+
+  it('PRE: flags option-modality — an MCQ option has no emoji at kindergarten', () => {
+    const data = JSON.parse(JSON.stringify(kcPreMc));
+    delete data.problems[0].options[1].emoji;
+    const v = knowledgeCheckOracle.verify(data, kcPreCtx).violations;
+    expect(v.some((x) => x.check === 'option-modality')).toBe(true);
+  });
+
+  it('PRE: does NOT require emoji at higher grades (elementary MCQ stays clean)', () => {
+    const data = JSON.parse(JSON.stringify(kcPreMc));
+    delete data.problems[0].options[1].emoji;
+    expect(knowledgeCheckOracle.verify(data, kcCtx).violations).toEqual([]);
+  });
+
+  it('PRE: flags reader-fit WRONG-BAND — a matching_activity reaches kindergarten', () => {
+    const v = knowledgeCheckOracle.verify(kcClean, kcPreCtx).violations;
+    expect(v.some((x) => x.check === 'reader-fit' && /WRONG-BAND/.test(x.detail))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

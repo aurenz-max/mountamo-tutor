@@ -42,6 +42,7 @@ export const LuminaAnswerChoice = React.forwardRef<HTMLButtonElement, LuminaAnsw
       type="button"
       className={cn(
         'relative w-full rounded-xl border p-6 text-left',
+        motion.press,
         motion.transitionSlow,
         answerStateClasses[state],
         // Grading motion plays once when the state class lands on reveal.

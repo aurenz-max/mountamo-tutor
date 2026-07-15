@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 /**
  * Gear - represents a single gear in the train
@@ -161,10 +162,12 @@ export const generateGearTrainBuilder = async (
   ctx: GenerationContext,
 ): Promise<GearTrainBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<GearTrainBuilderData>;
   const prompt = `
-Create an educational Gear Train Builder visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Gear Train Builder visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - GEAR BASICS:
 Gears are toothed wheels that mesh together to transfer motion and force.

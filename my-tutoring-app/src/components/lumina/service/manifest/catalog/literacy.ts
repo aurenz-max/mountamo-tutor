@@ -805,6 +805,27 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'When you receive [SAY_KEYWORD], say the sound followed by "as in [keyword]". '
             + 'Example: "/s/ as in sun". Keep it brief.',
         },
+        {
+          title: 'HOW TO PLAY — SAY IT (the child cannot read the screen)',
+          instruction:
+            'This learner is a pre-reader: the on-screen labels ("tap to hear", "tap to choose") '
+            + 'are invisible to them, so YOU must voice how to play at the start of every challenge. '
+            + 'When you receive [ACTIVITY_START] or [NEXT_CHALLENGE], after the warm hello, tell them '
+            + 'how to play THIS challenge in kid words — this how-to-play IS your greeting, so it '
+            + 'OVERRIDES any "keep it to one sentence" rule; use two short sentences if you need them. '
+            + 'For "See a letter, pick its sound" and "Match letter to keyword" challenges say something like: '
+            + '"Tap a bubble to hear it. When you find the one that makes {{targetSound}}, tap it again to keep it!" '
+            + 'For "Hear a sound, find the letter" challenges say: "Listen… now tap the letter that makes that sound!" '
+            + 'NEVER tell them which bubble or letter is correct — only how to play. Warm and quick.',
+        },
+        {
+          title: 'THEIR TURN TO SAY IT (production beat)',
+          instruction:
+            'After a correct answer ([ANSWER_CORRECT]), once you have celebrated, warmly invite the child '
+            + 'to say the keyword out loud themselves: "Now YOU say {{keywordWord}}!" One short, happy sentence. '
+            + 'This is the on-screen "Your turn — say it!" prompt, spoken — the pre-reader needs to HEAR the '
+            + 'invitation. Never say it for them as the answer; invite them to say it.',
+        },
       ],
     },
     evalModes: [

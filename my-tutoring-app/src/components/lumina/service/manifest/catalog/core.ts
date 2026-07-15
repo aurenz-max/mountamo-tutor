@@ -854,8 +854,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         {
           title: 'TAP-TO-EXPLORE RESPONSES',
           instruction:
-            'Messages tagged [FACT_EXPLORE], [COMPARE_EXPLORE], [TIMELINE_EXPLORE], [QUOTE_EXPLORE], [TABLE_EXPLORE], or [PROSE_EXPLORE] '
-            + 'mean the student tapped a content card to hear more. Respond with 2-3 short, conversational, grade-appropriate sentences '
+            'Messages tagged [FACT_EXPLORE], [COMPARE_EXPLORE], [TIMELINE_EXPLORE], [QUOTE_EXPLORE], [TABLE_EXPLORE], [DIAGRAM_EXPLORE], or [PROSE_EXPLORE] '
+            + 'mean the student tapped a content card (or diagram hotspot) to hear more. Respond with 2-3 short, conversational, grade-appropriate sentences '
             + 'that expand on that exact content, then end with one inviting question. Never turn it into a quiz, never say "you tapped" '
             + 'or refer to cards/buttons, and never reveal answers to the interactive questions elsewhere in this DeepDive.',
         },
@@ -870,11 +870,14 @@ export const CORE_CATALOG: ComponentDefinition[] = [
           title: 'PRE-READER READ-ALOUD (KINDERGARTEN)',
           instruction:
             'When the student is a kindergarten/pre-reader, the on-screen text is invisible to them — YOUR VOICE is the reading channel. '
-            + 'Messages tagged [QUIZ_READ_ALOUD] or [BLOCK_READ_ALOUD] contain content that MUST be read aloud word for word, warmly and '
-            + 'clearly, in full — this read-aloud IS your response and OVERRIDES any one-sentence or keep-it-brief instruction. For '
-            + '[QUIZ_READ_ALOUD]: read the question, then each answer choice slowly, then ask which one they pick — NEVER hint at or reveal '
-            + 'which is correct. On explore taps ([FACT_EXPLORE] etc.) from a pre-reader, FIRST read the card\'s text word for word, THEN '
-            + 'add one lively sentence. On [QUIZ_RETRY], give one warm spoken hint without revealing the answer and invite another tap.',
+            + 'Messages tagged [QUIZ_READ_ALOUD], [BLOCK_READ_ALOUD], [SIM_READ_ALOUD], or [SIM_OBSERVE] contain content that MUST be read '
+            + 'aloud word for word, warmly and clearly, in full — this read-aloud IS your response and OVERRIDES any one-sentence or '
+            + 'keep-it-brief instruction. For [QUIZ_READ_ALOUD]: read the question, then each answer choice slowly, then ask which one they '
+            + 'pick — NEVER hint at or reveal which is correct. For [SIM_READ_ALOUD]: read the little experiment setup, then the question, '
+            + 'then each choice slowly, then ask which they think will happen — NEVER reveal which is right. For [SIM_OBSERVE]: read what the '
+            + 'child now sees after they changed the control, word for word. On explore taps ([FACT_EXPLORE] etc.) from a pre-reader, FIRST '
+            + 'read the card\'s text word for word, THEN add one lively sentence. On [QUIZ_RETRY] or [SIM_PREDICT_RETRY], give one warm '
+            + 'spoken hint without revealing the answer and invite another tap.',
         },
       ],
     },

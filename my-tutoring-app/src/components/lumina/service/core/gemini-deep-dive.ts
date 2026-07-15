@@ -1182,6 +1182,10 @@ const MINI_SIM_SCHEMA: Schema = {
     predictionOption3: { type: Type.STRING, description: 'Prediction option D' },
     predictionCorrectIndex: { type: Type.NUMBER, description: 'Index (0-3) of the correct prediction option' },
     predictionExplanation: { type: Type.STRING, description: 'Explanation of why the correct prediction is right — revealed after the student answers' },
+    predictionOption0Emoji: { type: Type.STRING, description: 'Single emoji depicting prediction option A (pre-reader lessons only)', nullable: true },
+    predictionOption1Emoji: { type: Type.STRING, description: 'Single emoji depicting prediction option B (pre-reader lessons only)', nullable: true },
+    predictionOption2Emoji: { type: Type.STRING, description: 'Single emoji depicting prediction option C (pre-reader lessons only)', nullable: true },
+    predictionOption3Emoji: { type: Type.STRING, description: 'Single emoji depicting prediction option D (pre-reader lessons only)', nullable: true },
   },
   required: [
     'scenario', 'controlType', 'controlLabel',
@@ -1210,6 +1214,17 @@ async function generateMiniSim(
   states: MiniSimBlockData['states'];
   prediction: NonNullable<MiniSimBlockData['prediction']>;
 } : never> {
+  const preReader = isPreReaderAudience(gradeLevel);
+  const preReaderRules = preReader
+    ? `
+
+AUDIENCE: PRE-READER (kindergarten) — the student cannot read; a tutor reads the scenario and prediction aloud and the child answers by PICTURE.
+- Scenario: 1-2 short spoken-style sentences that name a concrete thing to try.
+- Prediction question: ONE short spoken-style sentence, max 12 words.
+- Prediction options: 1-4 words each, concrete outcomes a 5-year-old can picture (e.g. "It floats", "It sinks").
+- REQUIRED: predictionOption0Emoji-predictionOption3Emoji — one emoji that VISUALLY depicts each option. The child answers by the picture, so every emoji must be unambiguous and distinct.
+- State titles/descriptions: short and concrete — the tutor reads them aloud when the child flips the control.`
+    : '';
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
     contents: `Generate an interactive mini-simulation for a ${gradeLevel} lesson on "${topic}".
@@ -1230,7 +1245,7 @@ For sliders: states should have conditions as "min-max" range strings (e.g., "0-
 The prediction question should test the student's mental model — the kind of question where many students would guess wrong because the answer is counterintuitive.
 
 IMPORTANT: The prediction must have exactly 4 options, one correct. The correctIndex is 0-based.
-Use age-appropriate language for ${gradeLevel}.`,
+Use age-appropriate language for ${gradeLevel}.${preReaderRules}`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: MINI_SIM_SCHEMA,
@@ -1262,11 +1277,22 @@ Use age-appropriate language for ${gradeLevel}.`,
     throw new Error('MiniSim generated fewer than 2 states');
   }
 
+  // Picture stand-ins ship only when ALL four resolved — a partial set would
+  // leave some options picture-primary and others blank for a non-reader.
+  const predEmojis = [
+    data.predictionOption0Emoji, data.predictionOption1Emoji,
+    data.predictionOption2Emoji, data.predictionOption3Emoji,
+  ];
+  const optionEmojis = predEmojis.every((e: unknown) => typeof e === 'string' && e.trim().length > 0)
+    ? predEmojis.map((e: string) => e.trim())
+    : undefined;
+
   const prediction = {
     question: data.predictionQuestion,
     options: [data.predictionOption0, data.predictionOption1, data.predictionOption2, data.predictionOption3].filter(Boolean),
     correctIndex: Math.max(0, Math.min(3, Math.round(data.predictionCorrectIndex))),
     explanation: data.predictionExplanation,
+    ...(optionEmojis && { optionEmojis }),
   };
 
   return {

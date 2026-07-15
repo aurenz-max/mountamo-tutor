@@ -23,6 +23,8 @@ const LABEL_STRATEGY_HINT =
 interface DiagramExploreProps {
   data: DiagramBlockData & { interactionMode: 'explore' };
   index: number;
+  onAskTutor?: (message: string) => void;
+  preReader?: boolean;
 }
 
 interface DiagramLabelProps {
@@ -31,12 +33,13 @@ interface DiagramLabelProps {
   onAnswer: (blockId: string, correct: boolean, attempts: number) => void;
   answered?: boolean;
   onAskTutor?: (message: string) => void;
+  preReader?: boolean;
 }
 
 type DiagramBlockProps =
   | DiagramExploreProps
   | DiagramLabelProps
-  | { data: DiagramBlockData; index: number; onAnswer?: (blockId: string, correct: boolean, attempts: number) => void; answered?: boolean; onAskTutor?: (message: string) => void };
+  | { data: DiagramBlockData; index: number; onAnswer?: (blockId: string, correct: boolean, attempts: number) => void; answered?: boolean; onAskTutor?: (message: string) => void; preReader?: boolean };
 
 interface LabelPlacement {
   labelId: string;
@@ -74,10 +77,17 @@ function getFlyoutPosition(pos: { x: number; y: number }): {
 // EXPLORE MODE — Redesigned with flyout cards, spotlight, stagger
 // ═══════════════════════════════════════════════════════════════════
 
-const ExploreMode: React.FC<{ data: DiagramBlockData }> = ({ data }) => {
+const ExploreMode: React.FC<{
+  data: DiagramBlockData;
+  onAskTutor?: (message: string) => void;
+  preReader?: boolean;
+}> = ({ data, onAskTutor, preReader = false }) => {
   const [activeLabelId, setActiveLabelId] = useState<string | null>(null);
   const [revealedCount, setRevealedCount] = useState(0);
   const [hasInitialized, setHasInitialized] = useState(false);
+  // Debounce spoken reads — each hotspot tap triggers a tutor turn; a rapid
+  // double-tap would talk over itself.
+  const lastSpokeAtRef = useRef(0);
 
   // Staggered marker entrance — reveal one every 120ms
   useEffect(() => {
@@ -98,8 +108,28 @@ const ExploreMode: React.FC<{ data: DiagramBlockData }> = ({ data }) => {
     return () => clearInterval(interval);
   }, [data.labels, hasInitialized]);
 
+  // Pre-reader: the flyout text is invisible to the child, so tapping a hotspot
+  // (or its chip) has the tutor read that part's name + description aloud. Reader
+  // explore is unchanged — the visible flyout carries it, no tutor turn fires.
+  const speakLabel = (label: DiagramBlockData['labels'][number]) => {
+    if (!preReader || !onAskTutor) return;
+    const now = Date.now();
+    if (now - lastSpokeAtRef.current < 1200) return;
+    lastSpokeAtRef.current = now;
+    onAskTutor(
+      `[DIAGRAM_EXPLORE] A pre-reader tapped the "${label.text}" part of the picture and cannot read about it. `
+      + `Read it aloud to them word for word, warmly: "${label.text}. ${label.description}". `
+      + `Then add one short lively sentence. Keep it brief.`,
+    );
+  };
+
   const handleLabelClick = (labelId: string) => {
-    setActiveLabelId((prev) => (prev === labelId ? null : labelId));
+    const willOpen = activeLabelId !== labelId;
+    setActiveLabelId(willOpen ? labelId : null);
+    if (willOpen) {
+      const label = data.labels.find((l) => l.id === labelId);
+      if (label) speakLabel(label);
+    }
   };
 
   const activeLabel = data.labels.find((l) => l.id === activeLabelId);
@@ -621,7 +651,11 @@ const DiagramBlock: React.FC<DiagramBlockProps> = (props) => {
           onAskTutor={'onAskTutor' in props ? props.onAskTutor : undefined}
         />
       ) : (
-        <ExploreMode data={data} />
+        <ExploreMode
+          data={data}
+          onAskTutor={'onAskTutor' in props ? props.onAskTutor : undefined}
+          preReader={'preReader' in props ? props.preReader : false}
+        />
       )}
     </BlockWrapper>
   );

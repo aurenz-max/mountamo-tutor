@@ -2987,8 +2987,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'sorting-station',
-    description: 'Interactive sorting station where students categorize objects by attributes (color, shape, size). Supports single-attribute sorting, multi-attribute classification, count-and-compare, odd-one-out, and tally recording. Perfect for teaching data organization and logical reasoning. ESSENTIAL for Kindergarten and Grade 1 math.',
-    constraints: 'Best for K-1. Objects should be familiar (animals, shapes, food, toys). Max 4 sorting categories. Max 10 objects per challenge.',
+    description: 'Interactive sorting station where students categorize objects by the lesson\'s objective-relevant rule, including semantic categories (needs/wants, roles, kinds) and visible attributes when those attributes are the taught concept. Supports single-criterion sorting, multi-criterion classification, count-and-compare, odd-one-out, and tally recording. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
+    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Max 4 sorting categories. Max 10 objects per challenge.',
     evalModes: [
       {
         evalMode: 'sort_one',
@@ -2996,7 +2996,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['sort-by-one'],
-        description: 'Sort objects by a single visible attribute (color, shape, or size).',
+        description: 'Sort objects by one objective-relevant semantic category or visible attribute.',
       },
       {
         evalMode: 'sort_attribute',
@@ -3028,7 +3028,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['two-attributes'],
-        description: 'Find objects matching two attributes simultaneously.',
+        description: 'Find objects matching two criteria simultaneously; the primary criterion expresses the lesson objective.',
       },
       {
         evalMode: 'tally_record',
@@ -3048,9 +3048,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         level3: '"Let\'s sort step by step. Pick up this object — what {{sortingAttribute}} is it? Now find the bin that matches. Great! Now do the next one."',
       },
       commonStruggles: [
-        { pattern: 'Student places objects in random bins without considering attributes', response: 'Ask "What color/shape/size is this one?" before placing. Point to the bin labels.' },
+        { pattern: 'Student places objects in random bins without considering the objective category', response: 'Name the objective-relevant feature without giving the answer: "What kind of group does this belong to?" Point to the bin pictures or labels.' },
         { pattern: 'Student confuses "more" and "fewer" in comparisons', response: 'Have the student count each group aloud, then ask "Which number is bigger?"' },
-        { pattern: 'Student struggles with two-attribute sorting', response: 'Break into steps: "First, find all the BLUE ones. Now, which of those are also CIRCLES?"' },
+        { pattern: 'Student struggles with two-attribute sorting', response: 'Start with the lesson category, then add the second criterion: "First find the NEEDS. Now, which of those are FOOD?" Never replace the lesson category with an unrelated color/size task.' },
         { pattern: 'Student cannot identify the odd one out', response: 'Ask "What do most of these have in common?" then "Which one is different from the rest?"' },
       ],
     },

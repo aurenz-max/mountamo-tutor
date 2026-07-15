@@ -2,31 +2,37 @@
 
 Working queue for `/reader-fit`. Top = next. Seeded 2026-07-13 from two live
 user-observed K-lesson failures + the 2026-07-12 cognitive-load audit.
+Re-seeded 2026-07-14 demand-side from the K topic-trace census (6 real K
+subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
 
 ## Queue
 
-### 1c. poetry-lab — user-observed 2026-07-14, AUDITED (report: `poetry-lab-PRE-2026-07-14.md`)
-Live K lesson ("Little Cat's Big Adventure") shipped with no mood options, dead Next
-button, no read-aloud. Audit: **WRONG-BAND at PRE** + band-independent CRITICAL
-generator bug. Tracker rows RF-1..RF-4 (poetry-lab). Fix slices, in order:
-- **GENERATOR (RF-1, breaks ALL grades):** per-mode required fields in the
-  eval-mode-forked schema (analysis requires poem/poemLines/correctMood/moodOptions/
-  rhymeScheme/rhymeSchemeOptions, omits templateType/composition fields; vice-versa
-  for composition). 4/4 draws currently missing the mood cluster → phase-1 deadlock.
-- **COMPONENT (RF-2):** skip phases whose data is absent (mood without options,
-  figurative without instances — K mandates zero instances, so the phase-2 gate
-  `foundFigurative.size === 0` is unsatisfiable by design).
-- **QA (RF-2):** eval-test false-passed the broken draw — add mode-required content
-  contract (moodOptions non-empty, correctMood ∈ moodOptions, offsets slice-verified);
-  `/oracle-test` candidate.
-- **ROUTING (RF-3):** strip phantom "TTS read-aloud" sentence + K claims from catalog
-  description/constraints; band-floor analysis grade 2+, composition grade 3+.
-- **SCAFFOLD (RF-4):** /add-tutoring-scaffold (no tutoring block, no useLuminaAI) —
-  needed at its TRUE band too (grade 2-3 poem is load-bearing text, no spoken twin).
-- **REBUILD (optional, K coverage):** nursery-rhyme rhyme-pair tapper instrument —
-  tutor says two words (or plays the rhyme), child taps the picture that rhymes /
-  taps whether they rhyme. Assessment hides in the tapping; zero text. Only build if
-  K "identify rhyming words" demand isn't already served (word-flip/phoneme family).
+### 1e. sorting-station @ PRE — presentation audit remaining (objective drift FIXED 2026-07-14)
+Routed in 4/6 census lessons (shapes, needs×2 draws, helpers, compare) — a K
+workhorse, never reader-fit audited. **GENERATOR FIXED:** `ctx.intent` now binds
+the sorting rule; semantic `category` is first-class; sort-one varies objects,
+not the taught axis; and two-attributes makes the objective category criterion
+one instead of making color/size the main modality. Live fixed-topic intent
+discrimination: shapes → `shape ×4`, needs/wants → `category ×4`, helpers →
+`category ×4`; two-criterion needs → `{category: need, type: food}`-style rules.
+Report: `qa/topic-fidelity/sorting-station-2026-07-14.md`.
+
+Remaining PRE audit: emoji-primary objects already present; instructions/labels
+are text. Check spoken STIMULUS/DISAMBIGUATE, tap flow, and internal chrome.
+
+### 1f. shape-tracer — CRITICAL generator bug (breaks ALL grades)
+Census shapes trace: "Trace the square" / "Trace the rectangle" challenges ship
+`targetShape: "triangle"` + 3-point triangle paths — teaches the wrong
+name↔side-count mapping, the exact objective concept. Fix: derive tracePath
+from targetShape in code (LLM window / code builds structure), not from the
+LLM. ContentOracle candidate: path vertex count ↔ named shape. `/eval-fix`.
+
+### 1g. phoneme-explorer — ending-sound fidelity (GENERATOR)
+Census rhyme trace: objective/intent say ENDING sounds (rime, for rhyme
+comparison); generated isolate-mode data matches by INITIAL phoneme (Cat→Cup
+share /k/). Silent task substitution. Fix in `gemini-phoneme-explorer`
+(ending-position support, or constrain manifest routing away from rime
+objectives). Then PRE audit (emoji choices already present).
 
 ### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-14 fix)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped; see Done.
@@ -42,17 +48,38 @@ Next priorities:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 6. letter-sound-link @ PRE — audit rank 4
-Two-tap select protocol explained in 10px text.
-
-### 7. phonics-blender @ PRE — audit rank 5
+### 7. phonics-blender @ PRE — audit rank 5 (census: demand CONFIRMED, routed 2/6 K lessons)
 3-phase stepper, 4+ labeled-button taps/word; strong tutor speech already —
 Audit C is the main event.
+
+### 8. rhyme-studio @ PRE — audit (census: routed 2× in the K rhyme lesson, never audited)
+Core K literacy surface (recognition + identification modes drawn in one lesson).
+Data looks band-plausible (image descriptions per word) — audit ORIENT/STIMULUS
+(are targetWord/comparison words SPOKEN?), option modality, chrome.
+
+### 9. Explainer tail @ PRE — text-primary "reading" surfaces routed at K (census)
+Batch-audit candidates, ranked by census routing frequency: **foundation-explorer**
+(4/6 lessons — selfCheck prompts + 3 full-sentence text options at K),
+**concept-card-grid** (3/6 — originStory/curiosityNote prose walls),
+**comparison-panel** (2/6 — points/synthesis paragraphs), **fact-file**,
+**flashcard-deck** (term/definition text cards), **media-player** (text
+knowledgeCheck options; script is narrated ✓). Common shape → probably one
+shared pattern: deep-dive's PRE treatment (auto-read + 🔊 + picture-primary
+checks). Audit foundation-explorer first, extract the pattern, sweep the rest.
+(take-home-activity also routed 2/6 but is parent-facing by design — band-exempt.)
+
+### 10. word-workout + word-flip — K routing + scope binding (census, CVC lesson)
+word-workout chains leave the topic vowel (scopeContext rollout target);
+word-flip got routed into plural_s grammar for a decoding topic with
+non-decodable words ("cloud") — INTENT + GENERATOR. Also both unaudited at PRE.
 
 ### Lesson-mode sweeps (after pilots 1–2 prove the loop)
 - `/reader-fit --lesson "Count to tell the number of objects — up to 5" kindergarten`
   (the observed lesson)
 - One K addition/subtraction lesson end-to-end.
+- DONE demand-side via topic-trace census 2026-07-14 (6 K subskills, LA/Math/SS):
+  reports `qa/topic-traces/k-*-2026-07-14.md`. Re-run the census at grade 1
+  (EMERGING) once the K queue drains.
 
 ## Systemic items (accumulate evidence, don't fix per-primitive)
 - **K-stage presentation mode — MVP BUILT 2026-07-13** (`KindergartenStage.tsx`,
@@ -68,6 +95,74 @@ Audit C is the main event.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **1d. knowledge-check @ PRE — K CENSUS TOP FINDING, all 5 slices RESOLVED, READY**
+  (2026-07-14, `--fix`). Report: `knowledge-check-PRE-2026-07-14.md`. Was
+  PRIMITIVE-GAP + SCAFFOLD-GAP: every K census draw was a text-primary MCQ
+  (rhyme/shapes text options — wrong modality + answer-leak; questions referencing
+  visuals the generator never produced; options never read aloud), two-tap Verify,
+  adult "terminal" chrome. knowledge-check is a CONTAINER over per-type problem
+  primitives; every K draw resolved to multiple_choice/true_false (the real K
+  route). Fix, one loop, 5 layers:
+  - **CATALOG:** PRE-READER READ-ALOUD `aiDirective` (`[QUIZ_READ_ALOUD]` reads the
+    question + EVERY choice aloud, overrides one-sentence cap, answer-free;
+    `[QUIZ_RETRY]` eyes-free hint); scaffoldingLevels enact the question (say it)
+    not narrate; struggles eyes-free. tutor-test `--probe` warn→**pass, 0 findings**.
+  - **GENERATOR:** emoji-required **picture-primary** MCQ at K (`emoji` on each
+    option, required), `PRE_READER_MC_PALETTE` (≤12w question, NO phantom-visual
+    reference, no answer-leak, picturable options), **K type-floor** to
+    multiple_choice/true_false (matching/categorization/sequencing/fill_in_blanks =
+    WRONG-BAND at PRE, coerced out; orchestrated + direct paths). `MultipleChoiceOption.emoji?`.
+  - **COMPONENT:** `MultipleChoiceProblem` PRE render — emoji grid, **tap=choose**
+    (no Verify), auto-read on first view (IntersectionObserver) + **🔊 replay**,
+    feedback on the tapped object; `KnowledgeCheck` threads `preReader`+`onAskTutor`
+    (non-silent sendText) and hides terminal header/counter/badges/AI-Helper/
+    Scratch-Pad at K. jsdom `MultipleChoiceProblem.reader-fit.test.tsx` **6/6**;
+    suite **787/787**; tsc + typecheck:lumina clean.
+  - **QA ORACLE:** `option-modality` (emoji on every MCQ option at PRE) +
+    `reader-fit` WRONG-BAND (non-MCQ/TF type at PRE) checks; oracle tests **211/211**.
+  - **LIVE `--lesson` 3/3 PASS** (0 findings): bespoke `build_knowledge_check_journey`
+    added to the harness; the tutor read "Which one is a circle? A… Square. B…
+    Circle. C… Triangle." in the lesson greeting/`[PRIMITIVE SWITCH]` path all 3
+    runs — the read-aloud survives the one-sentence cap. Report:
+    `qa/tutor-reports/knowledge-check-live-lesson-2026-07-14.md`.
+  - **Residuals (queued):** true_false @ PRE needs the same PRE read-aloud/chrome
+    treatment (container already forwards the props; component has no PRE branch);
+    MCQ retry glyph + suppress the text rationale card at K (polish, tutor speaks
+    it); spot-check more count-type MCQ draws; pixel browser glance; EMERGING
+    (grade 1) complex-type routing re-audit once the K queue drains.
+- **1c. poetry-lab — ALL slices RESOLVED** (2026-07-14, via /eval-fix + follow-on
+  sessions; EVAL_TRACKER rows RF-1..RF-4 + PL-1..PL-4 all struck). Generator =
+  per-mode dispatcher (RF-1); component phase-skipping (RF-2); catalog phantom-TTS
+  + K claims stripped (RF-3); **rhyme_hunt K mode + tutoring scaffold SHIPPED**
+  (RF-4: catalog ORIENT/STIMULUS/DISAMBIGUATE/RECOVER directives, component reads
+  every round via Gemini Live, tutor-test + probe 0 findings, K lesson journey 2/2
+  clean); three-mode ContentOracle registered (PL-4, 0/9 flaky). **Census
+  confirmation 2026-07-14:** the K rhyme topic-trace routed poetry-lab in
+  rhyme_hunt mode and the draw met the spec (4 rounds, one rhyme pair, emoji
+  candidates) — K demand is being served in the wild. Residual: candidate emoji
+  quality (mat→🧘) is content-polish, oracle guards structure.
+- **6. letter-sound-link @ PRE — audit + `--fix`, READY (live-confirmed 3/3)** (2026-07-14). Report:
+  `letter-sound-link-PRE-2026-07-14.md`. Was PRIMITIVE-GAP + SCAFFOLD-GAP — a strong
+  audio-discrimination core whose two-tap **audition-then-commit** protocol (a legitimate rule-2
+  multi-part confirm) and production invite were gated behind **10px text, never spoken**. Fixed
+  by band-gating the COMMUNICATION, not deleting the mechanic. All 4 layers, one loop:
+  - **GENERATOR:** `resolvePreReaderGradeKey(ctx)` stamps `gradeLevel` into the data (K→'K',
+    grade1→'1', no over-gating). New `LetterSoundLinkData.gradeLevel?` field.
+  - **SCAFFOLD (catalog):** two `aiDirectives` — **HOW TO PLAY** (voice the protocol per mode,
+    answer-free, overrides the lesson one-sentence cap = durable ORIENT carrier) + **THEIR TURN
+    TO SAY IT** (spoken production invite). tutor-test `--probe` pass, 0 findings, keys resolved.
+  - **COMPONENT (K band-gate):** 10px "tap to hear/choose" → wordless **ear→check** glyphs;
+    footer/task/shared-sound sentences hidden; keyword hint = emoji only; chrome hidden
+    (Group/mode badges, counter); real grade → `useLuminaAI` (was hardcoded 'K'). Two-tap KEPT.
+    `LetterSoundLink.reader-fit.test.tsx` 4/4; full suite **781/781**; tsc/typecheck:lumina clean.
+  - **Live `--lesson` 3/3 PASS** (0 findings; report `qa/tutor-reports/letter-sound-link-live-lesson-2026-07-14.md`):
+    the HOW-TO-PLAY protocol is voiced in the greeting AND `[ACTIVITY_START]` ("Tap a bubble to hear
+    it… tap it again to keep it!"), keyword said, "Now YOU say sun!" fires on correct, protocol
+    re-enacted on advance — durable carrier survives the one-sentence cap. Bespoke
+    `build_letter_sound_link_journey` added to `run_tutor_live.py` `JOURNEYS`. Enabled by launching
+    the backend `--reload-dir app` (writes under `tests/` no longer restart it).
+  - Follow-up: human browser glance at the ear→check glyphs (pixel-only). Audit-C chrome for
+    K-stage: **PhaseSummaryPanel % ledger + progress bar**.
 - **deep-dive @ PRE — audit + `--fix`, READY pending live** (2026-07-14, user-observed
   K goats lesson: text-only Quick Quiz + unreadable "Read this section" button).
   Report: `deep-dive-PRE-2026-07-14.md`. Was PRIMITIVE-GAP + SCAFFOLD-GAP.
@@ -129,8 +224,11 @@ Audit C is the main event.
     gained `build_decodable_reader_journey` (registered). Report:
     `qa/tutor-reports/decodable-reader-live-lesson-2026-07-14.md`.
   - Follow-ups: tap=choose click behavior wants a human browser glance (render+data
-    verified, click not exercised headlessly); manifest routing K→read_along relies on
-    the catalog `constraints` band-floor note — verify the resolver prefers it at K.
+    verified, click not exercised headlessly); ~~manifest routing K→read_along relies on
+    the catalog `constraints` band-floor note — verify the resolver prefers it at K~~
+    **VERIFIED 2026-07-14** via the K CVC topic-trace census: the manifest intent
+    explicitly instructed read_along for K and the draw generated a K read-along
+    passage with emoji comprehension options (`qa/topic-traces/k-cvc-short-a-2026-07-14.md`).
 - **5. cvc-speller @ PRE — audit + `--fix`, READY** (2026-07-14). Report:
   `cvc-speller-PRE-2026-07-14.md`. All slices shipped same day: catalog
   SAY-THE-WORD `aiDirectives` beat (live `--lesson` 3/3: word said at the

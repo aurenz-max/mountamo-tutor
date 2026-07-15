@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
 import { HabitatDioramaData } from "../../primitives/visual-primitives/biology/HabitatDiorama";
@@ -197,6 +198,7 @@ export const generateHabitatDiorama = async (
   ctx: GenerationContext
 ): Promise<HabitatDioramaData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<HabitatDioramaData>;
 
   // Map grade context to grade band
@@ -258,7 +260,8 @@ GRADE 6-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an interactive habitat diorama for: "${topic}".
+  const generationPrompt = `Create an interactive habitat diorama for: "${topic}
+${scopeSection}".
 
 TARGET GRADE BAND: ${gradeBand}
 

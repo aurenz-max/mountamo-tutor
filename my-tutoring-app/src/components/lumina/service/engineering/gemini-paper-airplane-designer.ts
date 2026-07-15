@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -233,10 +234,12 @@ export const generatePaperAirplaneDesigner = async (
   ctx: GenerationContext,
 ): Promise<PaperAirplaneDesignerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PaperAirplaneDesignerData>;
   const prompt = `
-Create an educational Paper Airplane Designer visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Paper Airplane Designer visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT — PAPER AIRPLANE ENGINEERING DESIGN PROCESS:
 Paper Airplane Designer teaches the engineering design process through iterative airplane creation:

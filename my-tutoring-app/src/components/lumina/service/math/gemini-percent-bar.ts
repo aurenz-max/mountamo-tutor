@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   PercentBarData,
   PercentBarChallenge,
@@ -782,6 +783,7 @@ export const generatePercentBar = async (
   ctx: GenerationContext,
 ): Promise<PercentBarData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PercentBarConfig;
   // Resolve eval mode from catalog (single source of truth)
@@ -819,7 +821,8 @@ export const generatePercentBar = async (
     : '';
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge percent-bar session on "${topic}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge percent-bar session on "${topic}
+${scopeSection}" for ${gradeLevel} students.
 
 CONTEXT:
 - A percent-bar session contains 3-6 separate percent problems of the same difficulty tier.

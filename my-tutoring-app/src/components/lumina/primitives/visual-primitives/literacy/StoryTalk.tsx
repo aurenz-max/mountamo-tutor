@@ -13,6 +13,7 @@ import {
   LuminaProgress,
   LuminaFeedbackCard,
   LuminaMicListener,
+  LuminaReadAloudGlyph,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
@@ -531,7 +532,9 @@ const StoryTalk: React.FC<StoryTalkProps> = ({ data, className }) => {
                     {currentChallenge.story}
                   </p>
                 ) : (
-                  <div className="text-5xl mt-1" aria-hidden>{'🔊'}</div>
+                  <div className="mt-1 flex justify-center" aria-hidden>
+                    <LuminaReadAloudGlyph size={48} speaking />
+                  </div>
                 )}
               </div>
               {isConnected && !showResult && (

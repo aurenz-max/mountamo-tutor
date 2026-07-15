@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
 import { ClassificationSorterData } from "../../primitives/visual-primitives/biology/ClassificationSorter";
@@ -129,6 +130,7 @@ export const generateClassificationSorter = async (
   ctx: GenerationContext
 ): Promise<ClassificationSorterData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<ClassificationSorterData>;
 
   // Map grade context to grade band
@@ -198,7 +200,8 @@ GRADE 6-8 GUIDELINES:
     '6-8': '3-6 categories (can be hierarchical)'
   };
 
-  const generationPrompt = `Create an interactive classification sorting activity for: "${topic}".
+  const generationPrompt = `Create an interactive classification sorting activity for: "${topic}
+${scopeSection}".
 
 TARGET GRADE BAND: ${gradeBand}
 

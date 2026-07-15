@@ -604,6 +604,9 @@ export interface BaseProblemData {
 export interface MultipleChoiceOption {
   id: string;
   text: string;
+  /** Picture-primary emoji for the option (required at K by the generator so a
+   *  pre-reader answers by picture, not by decoding the label). reader-fit PRE. */
+  emoji?: string;
 }
 
 export interface MultipleChoiceProblemData extends BaseProblemData {
@@ -628,6 +631,12 @@ export interface MultipleChoiceProblemData extends BaseProblemData {
    *  (standalone single-problem use). Voice also self-gates on option sayability
    *  (no katex/number/symbol options). See /add-voice-control. */
   voiceEligible?: boolean;
+  /** reader-fit PRE (injected by KnowledgeCheck): render picture-primary,
+   *  tap=choose, auto-read + 🔊 replay, chrome-free. */
+  preReader?: boolean;
+  /** Bridge to the live tutor for the spoken read-aloud / retry beats at PRE
+   *  (injected by KnowledgeCheck — a non-silent sendText so the tutor speaks). */
+  onAskTutor?: (message: string) => void;
 }
 
 // True/False Problem

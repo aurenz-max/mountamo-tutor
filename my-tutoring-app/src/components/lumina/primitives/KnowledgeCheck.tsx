@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
-import { LuminaPanel, LuminaButton } from '../ui';
+import { LuminaPanel, LuminaButton, motion } from '../ui';
 import { multipleChoiceVoiceReady } from './problem-primitives/MultipleChoiceProblem';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
 
 /**
  * KnowledgeCheck Component
@@ -156,7 +157,7 @@ const AIHelperCard: React.FC<AIHelperCardProps> = ({
           {/* Existing hints */}
           {hintMessages.map((hint, i) => (
             hint && (
-              <div key={i} className="flex gap-3">
+              <div key={i} className={`flex gap-3 ${motion.reveal}`}>
                 <div className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center mt-0.5">
                   <Sparkles className="w-3 h-3 text-amber-400" />
                 </div>
@@ -284,6 +285,23 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     primitiveData: aiPrimitiveData,
     exhibitId,
   });
+
+  // ── Pre-reader (K) mode — reader-fit PRE band ──────────────────────────────
+  // At kindergarten the problems render picture-primary, tap=choose, chrome-free,
+  // and the tutor reads each question + choices aloud. Derived from the problem's
+  // grade (the generator floors K to picture-primary MCQ / true-false).
+  const preReader = useMemo(
+    () => problems.some((p) => isPreReaderGrade((p as any).gradeLevel)),
+    [problems],
+  );
+
+  // A NON-silent sendText: the tutor actually SPEAKS the read-aloud / retry beat
+  // (the context-injection sendText calls stay silent). Enacts [QUIZ_READ_ALOUD]
+  // / [QUIZ_RETRY] from the catalog PRE-READER READ-ALOUD directive.
+  const askTutor = useCallback(
+    (message: string) => sendText(message, { silent: false }),
+    [sendText],
+  );
 
   // ── Pedagogical trigger: Problem shown ─────────────────────────────────────
   useEffect(() => {
@@ -415,38 +433,40 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
   return (
     <div className="w-full max-w-4xl mx-auto my-12 animate-fade-in-up">
       <div className="glass-panel rounded-3xl overflow-hidden border border-blue-500/20 relative">
-        {/* Header */}
-        <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
-              <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+        {/* Header — adult "terminal" chrome, hidden for pre-readers (reader-fit rule 7) */}
+        {!preReader && (
+          <div className="bg-slate-900/80 p-4 flex items-center justify-between border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+              </div>
+              <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
+                {isLegacy ? 'Concept Verification Terminal' : 'Knowledge Assessment Terminal'}
+              </span>
             </div>
-            <span className="text-xs font-mono uppercase tracking-widest text-blue-400">
-              {isLegacy ? 'Concept Verification Terminal' : 'Knowledge Assessment Terminal'}
-            </span>
+            {problemCount > 1 && (
+              <div className="text-xs text-slate-500 font-mono">
+                {problemCount} {problemCount === 1 ? 'PROBLEM' : 'PROBLEMS'}
+              </div>
+            )}
           </div>
-          {problemCount > 1 && (
-            <div className="text-xs text-slate-500 font-mono">
-              {problemCount} {problemCount === 1 ? 'PROBLEM' : 'PROBLEMS'}
-            </div>
-          )}
-        </div>
+        )}
 
         <div className="p-8 md:p-12">
           {/* Problem Collection */}
           <div className="space-y-16">
             {problems.map((problem, index) => (
               <div key={problem.id} className="relative">
-                {/* Problem Number Badge */}
-                {problemCount > 1 && (
+                {/* Problem Number Badge — hidden for pre-readers (reader-fit rule 7) */}
+                {problemCount > 1 && !preReader && (
                   <div className="absolute -left-6 md:-left-8 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 font-mono text-sm">
                     {index + 1}
                   </div>
                 )}
 
                 {/* Problem Content */}
-                <div className={problemCount > 1 ? 'ml-4 md:ml-6' : ''}>
+                <div className={problemCount > 1 && !preReader ? 'ml-4 md:ml-6' : ''}>
                   <ProblemRenderer
                     problemData={{
                       ...problem,
@@ -455,10 +475,15 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                       voiceEligible:
                         (problem.type === 'true_false' || problem.type === 'multiple_choice') &&
                         index === firstVoiceIndex,
+                      // reader-fit PRE: picture-primary render + tutor read-aloud.
+                      preReader,
+                      onAskTutor: askTutor,
                     }}
                   />
 
-                  {/* AI Helper + Scratch Pad — appears below each problem */}
+                  {/* AI Helper + Scratch Pad — adult chrome, hidden for pre-readers
+                      (reader-fit rule 7). At K the live tutor + 🔊 replay carry help. */}
+                  {!preReader && (
                   <div className="mt-6 flex items-start gap-2">
                     <div className="flex-1">
                       <AIHelperCard
@@ -485,6 +510,7 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
                       <span className="text-xs font-medium text-purple-300">Scratch Pad</span>
                     </LuminaButton>
                   </div>
+                  )}
                 </div>
 
                 {/* Divider between problems */}

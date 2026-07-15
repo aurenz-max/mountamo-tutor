@@ -227,6 +227,9 @@ export interface MiniSimBlockData extends BaseBlockData {
     options: string[];
     correctIndex: number;
     explanation: string;
+    /** Picture stand-ins for the prediction options, index-aligned with `options`.
+     *  Generated for pre-reader lessons so a non-reader answers by picture. */
+    optionEmojis?: string[];
   };
 }
 

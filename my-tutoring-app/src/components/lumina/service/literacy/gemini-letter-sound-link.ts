@@ -274,12 +274,29 @@ type LetterSoundLinkConfig = Partial<{
   targetEvalMode: string;
 }>;
 
+/**
+ * Resolve the canonical grade key for the pre-reader band-gate.
+ * Prefer `ctx.grade` (canonical 'K'|'1'…); fall back to gradeContext prose.
+ * Returns 'K' ONLY when confidently kindergarten — never over-gates non-K lessons.
+ */
+function resolvePreReaderGradeKey(ctx: GenerationContext): string {
+  const canonical = (ctx.grade ?? '').toString().trim().toLowerCase();
+  if (canonical === 'k' || canonical === '0' || canonical === 'kindergarten') return 'K';
+  if (/^\d+$/.test(canonical)) return canonical;
+  const prose = (ctx.gradeContext ?? '').toString().toLowerCase();
+  if (prose.includes('kindergarten') || /\bgrade\s*k\b/.test(prose) || /^\s*k\b/.test(prose)) return 'K';
+  const proseNum = prose.match(/\b(?:grade\s*)?(\d{1,2})\b/);
+  if (proseNum) return proseNum[1];
+  return canonical || '1';
+}
+
 export const generateLetterSoundLink = async (
   ctx: GenerationContext,
 ): Promise<LetterSoundLinkData> => {
   const { topic } = ctx;
   const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
+  const gradeKey = resolvePreReaderGradeKey(ctx);
   const config = ctx.raw as LetterSoundLinkConfig;
 
   // -------------------------------------------------------------------------
@@ -402,6 +419,9 @@ LETTER GROUP DATA:
 
     // Enforce correct cumulative letter set
     result.cumulativeLetters = cumulativeLetters;
+
+    // Stamp the canonical grade key so the component can band-gate (pre-reader UI).
+    result.gradeLevel = gradeKey;
 
     // Validate challenges
     if (result.challenges) {

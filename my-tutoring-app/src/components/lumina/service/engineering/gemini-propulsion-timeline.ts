@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -124,10 +125,12 @@ export const generatePropulsionTimeline = async (
   ctx: GenerationContext,
 ): Promise<PropulsionTimelineData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PropulsionTimelineData>;
   const prompt = `
-Create a Propulsion Timeline for teaching "${topic}" to ${gradeLevel} students.
+Create a Propulsion Timeline for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT — HISTORY OF TRANSPORTATION:
 This timeline shows how humans have moved throughout history, from walking to spacecraft.

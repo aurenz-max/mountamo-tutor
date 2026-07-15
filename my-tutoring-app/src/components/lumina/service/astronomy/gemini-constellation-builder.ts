@@ -1,6 +1,7 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import data types from component (single source of truth)
 import type {
@@ -306,6 +307,7 @@ export const generateConstellationBuilder = async (
   ctx: GenerationContext,
 ): Promise<ConstellationBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ConstellationBuilderConfig;
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as
@@ -335,6 +337,7 @@ export const generateConstellationBuilder = async (
 Create an interactive Constellation Builder activity for ${gradeLevel} students.
 
 **Topic:** ${topic}
+${scopeSection}
 
 **Grade Level:** ${resolvedGrade}
 **Grade Guidance:** ${gradeConfig.guidance}

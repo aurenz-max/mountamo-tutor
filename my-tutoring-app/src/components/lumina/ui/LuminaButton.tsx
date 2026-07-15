@@ -16,8 +16,9 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { motion } from './tokens';
 
-const luminaButtonVariants = cva('transition-colors', {
+const luminaButtonVariants = cva(cn(motion.press, motion.transition), {
   variants: {
     tone: {
       ghost: 'bg-white/5 border border-white/20 text-slate-100 hover:bg-white/10',

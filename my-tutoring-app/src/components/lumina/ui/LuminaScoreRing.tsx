@@ -49,12 +49,14 @@ export const LuminaScoreRing: React.FC<LuminaScoreRingProps> = ({
           cx="60"
           cy="60"
           r={r}
-          className={cn('fill-none', tier.ringStroke)}
+          className={cn(
+            'fill-none motion-safe:transition-[stroke-dashoffset] motion-safe:duration-700 motion-safe:ease-out',
+            tier.ringStroke
+          )}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 800ms ease-out' }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

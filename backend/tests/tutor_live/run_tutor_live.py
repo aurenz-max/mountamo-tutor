@@ -912,6 +912,195 @@ def build_poetry_lab_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]
     }}
 
 
+def build_letter_sound_link_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT + STIMULUS + production journey (letter-sound-link RF-1/RF-2).
+
+    Replays the EXACT sendText messages LetterSoundLink.tsx emits — [ACTIVITY_START],
+    [ANSWER_CORRECT], [NEXT_CHALLENGE] — and checks (must_include) that the catalog
+    HOW-TO-PLAY aiDirective actually makes the tutor:
+      (a) voice the audition-then-commit PROTOCOL in child terms at challenge start —
+          the pre-reader who can't read "tap to hear/choose" needs it SPOKEN, and the
+          beat must survive the lesson one-sentence cap (the whole point of the
+          durable aiDirective carrier);
+      (b) say the anchor KEYWORD aloud (the stimulus for a non-reader — /s/ is
+          hard to transcribe, "sun" is not);
+      (c) invite the child to SAY the keyword after a correct answer (THEIR TURN beat).
+    No leak bar: this primitive's "answer" IS the letter→sound correspondence, which
+    the tutor legitimately teaches; bubble/letter POSITION is randomized and never in
+    the scaffold, so there is nothing positional to leak.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    ch0 = challenges[0] if challenges else {}
+    ch1 = challenges[1] if len(challenges) > 1 else ch0
+    total = len(challenges) or 1
+    letter_group = data.get("letterGroup", 1)
+    cumulative = data.get("cumulativeLetters") or []
+
+    mode_label = {
+        "see-hear": "See a letter, pick its sound",
+        "hear-see": "Hear a sound, find the letter",
+        "keyword-match": "Match letter to keyword",
+    }
+
+    # ORIENT bar: the tutor must voice an ACTION the child can take (the how-to-play),
+    # not just a warm "let's learn sounds!" A tap/listen verb is the protocol enacted.
+    action_group = ["tap", "touch", "press", "find", "pick", "choose", "listen", "hear"]
+
+    def kw(ch: Dict[str, Any]) -> str:
+        return str(ch.get("keywordWord", "")).strip()
+
+    def bag_for(ch: Dict[str, Any], idx: int) -> Dict[str, Any]:
+        shared = ch.get("sharedSoundLetters") or []
+        return {
+            "letterGroup": letter_group,
+            "challengeMode": ch.get("mode", ""),
+            "targetLetter": ch.get("targetLetter", ""),
+            "targetSound": ch.get("targetSound", ""),
+            "keywordWord": ch.get("keywordWord", ""),
+            "sharedSoundLetters": ", ".join(shared),
+            "currentChallenge": idx + 1,
+            "totalChallenges": total,
+            "attempts": 0,
+        }
+
+    x0 = str(ch0.get("targetLetter", "")).upper()
+    s0 = str(ch0.get("targetSound", ""))
+    kw0 = kw(ch0)
+    x1 = str(ch1.get("targetLetter", "")).upper()
+    s1 = str(ch1.get("targetSound", ""))
+    kw1 = kw(ch1)
+
+    # Verbatim replicas of LetterSoundLink.tsx sendText messages (all silent sends).
+    activity_start = text_msg(
+        f"[ACTIVITY_START] Letter-sound correspondence activity for Group {letter_group} "
+        f"(letters: {', '.join(cumulative)}). "
+        f"There are {total} challenges. "
+        f"Introduce the activity warmly — we're learning the SOUNDS that letters make! "
+        f'First challenge: "{x0}" makes the sound {s0}. '
+        f"[SAY_KEYWORD] {s0} as in {kw0}. "
+        f"Keep it brief — 2-3 sentences."
+    )
+    answer_correct = text_msg(
+        f"[ANSWER_CORRECT] The student correctly identified the letter-sound link! "
+        f'Letter "{x0}" → sound {s0}. First try! '
+        f"[PRONOUNCE_SOUND] {s0}. "
+        f'Say "Yes! The letter {x0} makes the sound {s0}!"'
+    )
+    next_challenge = text_msg(
+        f"[NEXT_CHALLENGE] Challenge 2 of {total}: {mode_label.get(ch1.get('mode', ''), ch1.get('mode', ''))}. "
+        f'Target: letter "{x1}" → sound {s1}. '
+        f"[SAY_KEYWORD] {s1} as in {kw1}. "
+        f"Briefly introduce the new challenge."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="lesson mode: server greeting / [PRIMITIVE SWITCH] — one-sentence cap applies"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=[[kw0], action_group] if kw0 else [action_group],
+             note="ORIENT+STIMULUS: the HOW-TO-PLAY directive must voice a tap/listen action "
+                  "(the protocol a non-reader can't read) AND say the keyword aloud"),
+        Beat("answer_correct", expect="turn", sends=[answer_correct],
+             must_include=[[kw0]] if kw0 else [],
+             note="production beat: after celebrating, invite the child to say the keyword "
+                  '(THEIR TURN directive — "Now YOU say {keyword}")'),
+        Beat("next_challenge", expect="turn", sends=[ctx_msg(bag_for(ch1, 1)), next_challenge],
+             must_include=[[kw1], action_group] if kw1 else [action_group],
+             note="ORIENT on advance: the how-to-play protocol + keyword must be enacted for the "
+                  "next challenge too (survives the one-sentence cap)"),
+    ]
+    return {"initial_bag": bag_for(ch0, 0), "beats": beats, "answers": [], "meta": {
+        "letterGroup": letter_group, "challenges": total,
+        "mode0": ch0.get("mode", ""), "letter0": x0, "sound0": s0, "keyword0": kw0,
+        "mode1": ch1.get("mode", ""), "letter1": x1, "keyword1": kw1,
+    }}
+
+
+def build_knowledge_check_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit STIMULUS journey for knowledge-check @ PRE.
+
+    knowledge-check is a container that renders per-type problem primitives; at K
+    the generator floors it to a picture-primary MCQ and MultipleChoiceProblem
+    (preReader) auto-fires a NON-silent [QUIZ_READ_ALOUD] on first view. This
+    journey replays that exact message and checks (must_include) that the tutor
+    actually READ THE QUESTION AND EVERY CHOICE ALOUD — the census failure was
+    text-word options a non-reader can neither read nor hear. Runs in --lesson
+    mode so the [PRIMITIVE SWITCH]/greeting one-sentence cap is exercised (the
+    catalog PRE-READER READ-ALOUD directive must override it).
+
+    Reading every option — including the correct one — is REQUIRED here, so there
+    is no leak check on the read-aloud beat (a leak is asserting "the answer is X",
+    which the answer-free directive forbids; naming all choices is the task).
+    """
+    data = live.get("generatedData") or {}
+    problems = data.get("problems") or []
+
+    def first_mcq() -> Dict[str, Any]:
+        return next((p for p in problems if p.get("type") == "multiple_choice"),
+                    problems[0] if problems else {})
+
+    p0 = first_mcq()
+    question = str(p0.get("question", ""))
+    options = p0.get("options") or []
+
+    def opt_label(i: int) -> str:
+        return chr(65 + i)
+
+    # The verbatim [QUIZ_READ_ALOUD] MultipleChoiceProblem.tsx sends at PRE.
+    choices_str = "; ".join(
+        f"{str(o.get('id') or opt_label(i))}) {str(o.get('text',''))}"
+        for i, o in enumerate(options)
+    )
+    read_aloud = text_msg(
+        "[QUIZ_READ_ALOUD] A pre-reader is on this question and cannot read it. "
+        "Read the question aloud word for word, then each choice slowly with its "
+        "letter, then ask which one they pick. "
+        f'Question: "{question}". Choices: {choices_str}.'
+    )
+
+    # STIMULUS groups: every option's spoken form must appear (the core gap), plus
+    # at least one content word from the question. Option groups accept the label
+    # text and, for numeric options, the number word ("two" for "2 cars").
+    def opt_group(o: Dict[str, Any]) -> List[str]:
+        txt = str(o.get("text", "")).strip()
+        toks = _content_tokens(txt)
+        variants = [txt.lower()] + toks
+        for t in txt.split():
+            variants.extend(_num_variants(t))
+        return [v for v in dict.fromkeys(variants) if v]
+
+    opt_groups = [g for g in (opt_group(o) for o in options) if g]
+    q_tokens = _content_tokens(question)
+    q_group = [q_tokens] if q_tokens else []
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the lesson greeting on auth (one-sentence cap in --lesson)"),
+        Beat("problem_read_aloud", expect="turn", sends=[read_aloud],
+             must_include=opt_groups + q_group,
+             note="STIMULUS: a non-reader needs the QUESTION and EVERY choice read "
+                  "aloud here — text-word options are the census failure this fixes"),
+        Beat("student_stuck", expect="turn", sends=[
+            text_msg("[CONTEXT UPDATE] Student has not tapped a picture yet; no answer chosen."),
+        ], note="ORIENT: on a stall, does the tutor restate the choices in child terms? "
+                "(observational — silence allowed by quiet-by-default)"),
+    ]
+    return {"initial_bag": {
+        "problemCount": len(problems),
+        "currentProblemIndex": 0,
+        "currentProblemType": p0.get("type", "multiple_choice"),
+        "currentQuestion": question,
+        "attemptNumber": 1,
+        "completedCount": 0,
+        "correctCount": 0,
+    }, "beats": beats, "answers": [], "meta": {
+        "problems": len(problems),
+        "question0": question,
+        "options0": [str(o.get("text", "")) for o in options],
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
     "addition-subtraction-scene": build_addition_subtraction_scene_journey,
@@ -920,6 +1109,8 @@ JOURNEYS = {
     "cvc-speller": build_cvc_speller_journey,
     "word-sorter": build_word_sorter_journey,
     "poetry-lab": build_poetry_lab_journey,
+    "letter-sound-link": build_letter_sound_link_journey,
+    "knowledge-check": build_knowledge_check_journey,
 }
 
 

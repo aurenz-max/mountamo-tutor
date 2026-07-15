@@ -19,6 +19,7 @@ import {
   accentSoftBg,
   accentSoftBorder,
   accentStrongText,
+  motion,
   type LuminaAccent,
 } from './tokens';
 
@@ -54,7 +55,9 @@ export const LuminaHintDisclosure: React.FC<LuminaHintDisclosureProps> = ({
         onClick={handleToggle}
         aria-expanded={open}
         className={cn(
-          'inline-flex items-center gap-2 text-sm font-medium transition-colors',
+          'inline-flex items-center gap-2 text-sm font-medium',
+          motion.press,
+          motion.transition,
           accentStrongText[accent]
         )}
       >

@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -95,10 +96,12 @@ export const generateFoundationBuilder = async (
   ctx: GenerationContext,
 ): Promise<FoundationBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<FoundationBuilderData>;
   const prompt = `
-Create an educational Foundation Builder simulator for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Foundation Builder simulator for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - FOUNDATION BUILDER:
 This primitive teaches foundation engineering through realistic design challenges:

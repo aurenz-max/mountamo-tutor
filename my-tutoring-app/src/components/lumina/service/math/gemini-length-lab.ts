@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { LengthLabData } from "../../primitives/visual-primitives/math/LengthLab";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -406,6 +407,7 @@ export const generateLengthLab = async (
   ctx: GenerationContext,
 ): Promise<LengthLabData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as LengthLabConfig;
   // ── Resolve eval mode ──
@@ -446,7 +448,8 @@ export const generateLengthLab = async (
   const randomUnit = validUnitTypes[Math.floor(Math.random() * validUnitTypes.length)];
 
   const prompt = `
-Create an educational length measurement activity for teaching "${topic}" to ${gradeLevel} students.
+Create an educational length measurement activity for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT:
 - A length lab is a workspace where students compare and measure objects visually

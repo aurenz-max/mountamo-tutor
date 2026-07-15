@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -876,6 +877,7 @@ export const generateTwoWayTable = async (
   ctx: GenerationContext,
 ): Promise<TwoWayTableData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TwoWayTableConfig;
   console.log('[TwoWayTable Gen] Starting generation:', { topic, gradeLevel, config });
@@ -915,7 +917,8 @@ export const generateTwoWayTable = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge two-way table practice session on "${topic}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge two-way table practice session on "${topic}
+${scopeSection}" for ${gradeLevel} students.
 
 CONTEXT:
 - A two-way table session contains 3-6 separate contingency-table problems of the same probability concept, surfaced sequentially.

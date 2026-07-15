@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   buildChallengeTypePromptSection,
@@ -471,6 +472,7 @@ export const generateConstructionSequencePlanner = async (
   ctx: GenerationContext,
 ): Promise<ConstructionSequencePlannerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ConstructionSequencePlannerConfig;
   const targetEvalMode = config?.targetEvalMode;
@@ -495,7 +497,8 @@ export const generateConstructionSequencePlanner = async (
     : (!isNaN(gradeNum) ? gradeNum >= 3 : false);
 
   const prompt = `
-Create an educational Construction Sequence Planner for teaching "${topic}" to grade ${gradeLevel} students.
+Create an educational Construction Sequence Planner for teaching "${topic}
+${scopeSection}" to grade ${gradeLevel} students.
 
 WHAT TO GENERATE:
 A set of ${taskCount.min}-${taskCount.max} construction tasks for a building project. Each task has an ID, name, duration, icon, description, dependencies, and category.

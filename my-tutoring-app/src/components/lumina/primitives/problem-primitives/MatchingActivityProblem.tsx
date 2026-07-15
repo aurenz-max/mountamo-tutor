@@ -10,7 +10,12 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../evaluation';
 // Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
-import { LuminaFeedbackCard, LuminaActionButton, answerStateClasses } from '../../ui';
+import {
+  LuminaFeedbackCard,
+  LuminaActionButton,
+  answerStateClasses,
+  motion,
+} from '../../ui';
 
 /** Fisher-Yates shuffle (returns new array) */
 function shuffle<T>(arr: T[]): T[] {
@@ -192,13 +197,18 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
             if (isSubmitted && isCorrect !== null) {
               statusClass = isCorrect ? answerStateClasses.correct : answerStateClasses.incorrect;
             }
+            const gradingMotion = isSubmitted && isCorrect !== null
+              ? isCorrect
+                ? motion.pop
+                : motion.shake
+              : '';
 
             return (
               <button
                 key={item.id}
                 onClick={() => handleLeftClick(item.id)}
                 disabled={isSubmitted}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${statusClass}`}
+                className={`w-full text-left p-4 rounded-xl border ${motion.press} ${motion.transitionSlow} ${statusClass} ${gradingMotion}`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-slate-200 font-medium">{item.text}</span>
@@ -240,7 +250,7 @@ export const MatchingActivityProblem: React.FC<MatchingActivityProblemProps> = (
                 key={item.id}
                 onClick={() => handleRightClick(item.id)}
                 disabled={isSubmitted || !selectedLeft}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${statusClass}`}
+                className={`w-full text-left p-4 rounded-xl border ${motion.press} ${motion.transitionSlow} ${statusClass}`}
               >
                 <span className="text-slate-200 font-medium">{item.text}</span>
               </button>

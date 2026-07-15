@@ -28,7 +28,10 @@ export const LuminaProgress = React.forwardRef<
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className={cn('h-full w-full flex-1 transition-all', accentSolidBg[accent])}
+      className={cn(
+        'h-full w-full flex-1 motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out',
+        accentSolidBg[accent]
+      )}
       style={{ transform: `translateX(-${100 - value}%)` }}
     />
   </ProgressPrimitive.Root>

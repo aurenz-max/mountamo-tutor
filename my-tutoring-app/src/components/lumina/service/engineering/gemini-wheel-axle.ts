@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 /**
  * Wheel & Axle Explorer Data - complete configuration for wheel/axle visualization
@@ -104,6 +105,7 @@ export const generateWheelAxleExplorer = async (
   ctx: GenerationContext,
 ): Promise<WheelAxleExplorerData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<WheelAxleExplorerData>;
   // Generate random scenarios for variety
@@ -117,7 +119,8 @@ export const generateWheelAxleExplorer = async (
   const randomScenario = randomScenarios[Math.floor(Math.random() * randomScenarios.length)];
 
   const prompt = `
-Create an educational Wheel & Axle Explorer visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Wheel & Axle Explorer visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - WHEEL & AXLE BASICS:
 A wheel and axle is a simple machine consisting of:

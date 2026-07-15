@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
 import { EnergyCycleEngineData } from "../../primitives/visual-primitives/biology/EnergyCycleEngine";
@@ -177,6 +178,7 @@ export const generateEnergyCycleEngine = async (
   ctx: GenerationContext
 ): Promise<EnergyCycleEngineData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<EnergyCycleEngineData>;
 
   // Map grade context to grade band
@@ -216,7 +218,8 @@ GRADE 7-8 GUIDELINES:
 `
   };
 
-  const generationPrompt = `Create an interactive energy cycle engine for: "${topic}".
+  const generationPrompt = `Create an interactive energy cycle engine for: "${topic}
+${scopeSection}".
 
 TARGET GRADE BAND: ${gradeBand}
 

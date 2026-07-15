@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -115,10 +116,12 @@ export const generateVehicleComparisonLab = async (
   ctx: GenerationContext,
 ): Promise<VehicleComparisonLabData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<VehicleComparisonLabData>;
   const prompt = `
-Create a Vehicle Comparison Lab for teaching "${topic}" to ${gradeLevel} students.
+Create a Vehicle Comparison Lab for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT — VEHICLE COMPARISON:
 A Vehicle Comparison Lab lets students compare real vehicles across multiple dimensions:

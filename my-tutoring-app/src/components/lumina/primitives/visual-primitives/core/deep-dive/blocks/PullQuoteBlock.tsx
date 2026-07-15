@@ -3,12 +3,21 @@
 import React from 'react';
 import type { PullQuoteBlockData } from '../types';
 import { useTapTutor } from './TapTutor';
+import { LuminaReadAloud } from '../../../../../ui';
+import { SoundManager } from '../../../../../utils/SoundManager';
 
 interface PullQuoteBlockProps {
   data: PullQuoteBlockData;
   index?: number;
   /** Bridge to the DeepDive live tutor; tapping the quote asks it to unpack the idea. */
   onAskTutor?: (message: string) => void;
+  /**
+   * Pre-reader (K) presentation — the quote is unreadable to the child, so the
+   * tap-to-unpack affordance becomes a single "Read to me" button that voices the
+   * saying word for word first ([BLOCK_READ_ALOUD]); the text tap-hint is dropped
+   * (reader-fit rules 1, 7).
+   */
+  preReader?: boolean;
 }
 
 /**
@@ -16,7 +25,7 @@ interface PullQuoteBlockProps {
  * Breaks visual monotony and highlights a key insight between content blocks.
  * When a tutor bridge is wired, tapping the quote asks the tutor to unpack it.
  */
-const PullQuoteBlock: React.FC<PullQuoteBlockProps> = ({ data, index, onAskTutor }) => {
+const PullQuoteBlock: React.FC<PullQuoteBlockProps> = ({ data, index, onAskTutor, preReader = false }) => {
   const { enabled, activeKey, ask } = useTapTutor(onAskTutor);
 
   const quote = (
@@ -31,6 +40,33 @@ const PullQuoteBlock: React.FC<PullQuoteBlockProps> = ({ data, index, onAskTutor
       )}
     </blockquote>
   );
+
+  // Pre-reader: a spoken read of the saying, word for word. No tap-to-unpack
+  // (the hint text is invisible to a non-reader), just the "Read to me" button.
+  if (preReader) {
+    return (
+      <div data-block-index={index} className="py-4 px-2">
+        {quote}
+        {onAskTutor && (
+          <div className="mt-4 flex justify-center">
+            <LuminaReadAloud
+              size="lg"
+              label="Read to me"
+              onClick={() => {
+                SoundManager.tap();
+                onAskTutor(
+                  `[BLOCK_READ_ALOUD] A pre-reader tapped the speaker on a special saying they cannot read. `
+                  + `Read it aloud to them word for word, warmly and clearly: "${data.text}"${
+                    data.attribution ? ` — ${data.attribution}` : ''
+                  }. When you finish reading, stop — no commentary, no questions.`,
+                );
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div data-block-index={index} className="py-4 px-2">

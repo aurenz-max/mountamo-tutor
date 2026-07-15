@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -287,10 +288,12 @@ export const generateVehicleDesignStudio = async (
   ctx: GenerationContext,
 ): Promise<VehicleDesignStudioData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<VehicleDesignStudioData>;
   const prompt = `
-Create an educational Vehicle Design Studio configuration for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Vehicle Design Studio configuration for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - VEHICLE DESIGN STUDIO:
 Vehicle Design Studio teaches the engineering design process through drag-and-drop vehicle building:

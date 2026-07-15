@@ -23,23 +23,35 @@ export const ASSESSMENT_CATALOG: ComponentDefinition[] = [
         'completedCount', 'correctCount',
       ],
       scaffoldingLevels: {
+        // Enact the question (say it), never point the student at on-screen text —
+        // a pre-reader cannot "re-read" anything. (reader-fit Audit B / indirect-script)
         level1:
-          '"Read the question carefully. What do you already know about this topic?"',
+          '"{{currentQuestion}} — what do you think? Take your time and look at each choice."',
         level2:
-          '"Let\'s break this down. Think about {{currentQuestion}} — '
-          + 'what key words or concepts stand out? Can you eliminate any options that don\'t fit?"',
+          '"Let\'s figure it out together. {{currentQuestion}} '
+          + 'Say each choice out loud with me — which one feels right to you?"',
         level3:
-          '"Let me walk you through this step by step. First, re-read the question. '
-          + 'Now think about what we learned earlier in the lesson. '
-          + 'Focus on the most important detail in the question and match it to what you know."',
+          '"Here\'s a clue: think about what we just learned. {{currentQuestion}} '
+          + 'Which choice matches that? You pick the one you think is right — you can always try again."',
       },
       commonStruggles: [
-        { pattern: 'Student selects an answer very quickly without reading all options', response: 'Slow down and read every option before choosing. Sometimes the best answer isn\'t the first one you see.' },
-        { pattern: 'Student makes the same mistake repeatedly after reset', response: 'Let\'s try a different approach. Instead of jumping to an answer, tell me what the question is asking in your own words.' },
+        { pattern: 'Student selects an answer very quickly without reading all options', response: 'No rush! Let\'s hear every choice first, then pick the one you like best.' },
+        { pattern: 'Student makes the same mistake repeatedly after reset', response: 'Let\'s try it a new way. Listen again: {{currentQuestion}} Which one do you want to try this time?' },
         { pattern: 'Student requests hints without attempting an answer first', response: 'Give it your best try first! Even a guess helps you learn. You can always try again.' },
-        { pattern: 'Student is stuck between two plausible options', response: 'Good narrowing! Now compare those two options side by side. Which one more precisely answers what the question is asking?' },
+        { pattern: 'Student is stuck between two plausible options', response: 'Good thinking! Let\'s hear those two choices again — which one sounds right to you?' },
       ],
       aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (K / early grade-1)',
+          instruction:
+            'When you receive [QUIZ_READ_ALOUD], a pre-reader is on this problem and CANNOT read it. '
+            + 'Read the question aloud word for word, then read EACH choice slowly with its letter '
+            + '(e.g. "A… cat. B… dog."), then ask which one they pick. Reading it all aloud IS your '
+            + 'greeting for this problem — this OVERRIDES any instruction to keep it to one sentence. '
+            + 'Never say or hint at which choice is correct. '
+            + 'When you receive [QUIZ_RETRY], the child tapped a wrong choice: give ONE warm spoken hint '
+            + 'without revealing the answer and invite them to tap another picture.',
+        },
         {
           title: 'ANSWER FEEDBACK',
           instruction:

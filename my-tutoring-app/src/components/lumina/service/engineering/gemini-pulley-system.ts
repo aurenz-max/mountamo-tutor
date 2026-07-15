@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 /**
  * Pulley Position - represents a pulley in the system
@@ -184,11 +185,13 @@ export const generatePulleySystemBuilder = async (
   ctx: GenerationContext,
 ): Promise<PulleySystemBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PulleySystemBuilderData>;
 
   const prompt = `
-Create an educational Pulley System Builder visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Pulley System Builder visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - PULLEY BASICS:
 A pulley is a wheel with a groove around its edge where a rope sits. Pulleys help us lift heavy things.

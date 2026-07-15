@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -140,10 +141,12 @@ export const generateBridgeBuilder = async (
   ctx: GenerationContext,
 ): Promise<BridgeBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<BridgeBuilderData>;
   const prompt = `
-Create an educational Bridge Builder visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Bridge Builder visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - BRIDGE ENGINEERING:
 Bridges use structural elements to span gaps and support loads:

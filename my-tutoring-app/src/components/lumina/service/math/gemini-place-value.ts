@@ -24,6 +24,7 @@ import {
 } from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -747,6 +748,7 @@ export const generatePlaceValueChart = async (
   ctx: GenerationContext,
 ): Promise<PlaceValueChartData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PlaceValueChartConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -794,7 +796,8 @@ export const generatePlaceValueChart = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE place value chart session for "${topic}
+${scopeSection}" (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT numbers. Each number runs through a 3-phase flow:
   Phase 1: "Identify the Place" — pick the place name of a highlighted digit

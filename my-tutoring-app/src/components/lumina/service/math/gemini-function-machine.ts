@@ -20,6 +20,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -498,6 +499,7 @@ export const generateFunctionMachine = async (
   ctx: GenerationContext,
 ): Promise<FunctionMachineData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as FunctionMachineConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -535,7 +537,8 @@ export const generateFunctionMachine = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-challenge function machine session on "${topic}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-challenge function machine session on "${topic}
+${scopeSection}" for ${gradeLevel} students.
 
 CONTEXT:
 - A function machine session contains 3-6 separate function rules of the SAME challenge type.

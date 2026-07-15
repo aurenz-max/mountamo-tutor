@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -621,10 +622,12 @@ const FALLBACKS: Record<string, TransportScenario> = {
 
 async function generateSingleConstraintScenarios(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
 ): Promise<TransportScenario[]> {
   const prompt = `
 Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Each scenario has ONE constraint and 3-4 vehicles. ONE vehicle must clearly be the best choice.
@@ -664,10 +667,12 @@ Generate 3 scenarios with increasing difficulty.
 
 async function generateMultiConstraintScenarios(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
 ): Promise<TransportScenario[]> {
   const prompt = `
 Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Each scenario has 2-3 constraints and 4 vehicles. At least 2 vehicles should meet all constraints.
@@ -706,10 +711,12 @@ Generate 3 scenarios with realistic trade-offs.
 
 async function generateFullOptimizationScenarios(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
 ): Promise<TransportScenario[]> {
   const prompt = `
 Create 3 educational TRANSPORT CHALLENGE scenarios for "${topic}" (${gradeLevel} students).
+${scopeSection}
 Theme: ${randomTheme()}.
 
 Each scenario has 3-4 constraints and 4-5 vehicles. NO vehicle should perfectly satisfy all constraints.
@@ -753,6 +760,7 @@ export const generateTransportChallenge = async (
   ctx: GenerationContext,
 ): Promise<TransportChallengeData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TransportChallengeConfig;
   // ── Resolve eval mode ──
@@ -773,13 +781,13 @@ export const generateTransportChallenge = async (
     typeOrder.push(type);
     switch (type) {
       case "single_constraint":
-        generators.push(generateSingleConstraintScenarios(topic, gradeLevel));
+        generators.push(generateSingleConstraintScenarios(topic, scopeSection, gradeLevel));
         break;
       case "multi_constraint":
-        generators.push(generateMultiConstraintScenarios(topic, gradeLevel));
+        generators.push(generateMultiConstraintScenarios(topic, scopeSection, gradeLevel));
         break;
       case "full_optimization":
-        generators.push(generateFullOptimizationScenarios(topic, gradeLevel));
+        generators.push(generateFullOptimizationScenarios(topic, scopeSection, gradeLevel));
         break;
     }
   }

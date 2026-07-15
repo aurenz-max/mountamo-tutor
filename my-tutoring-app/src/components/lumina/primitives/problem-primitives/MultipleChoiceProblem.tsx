@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MultipleChoiceProblemData, VisualObjectCollection, VisualComparisonData, LetterTracingData, LetterPictureData, AlphabetSequenceData, RhymingPairsData, SightWordCardData, SoundSortData } from '../../types';
 import { ObjectCollection, ComparisonPanel, LetterPicture, AlphabetSequence, RhymingPairs, SightWordCard, SoundSort } from '../visual-primitives';
 import { LetterTracing } from '../LetterTracing';
@@ -18,6 +18,7 @@ import {
   LuminaFeedbackCard,
   LuminaActionButton,
   LuminaMicListener,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../ui';
 
@@ -204,6 +205,49 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
 
   const isCorrect = selectedId === data.correctOptionId;
 
+  // ── Pre-reader (K) presentation — reader-fit PRE band contract ───────────────
+  // The tutor reads the question + every choice aloud (auto on first view + 🔊
+  // replay), options render picture-primary (emoji), a single tap chooses (no
+  // Verify), and adult chrome is hidden. Injected by KnowledgeCheck at K.
+  const preReader = data.preReader === true;
+  const onAskTutor = data.onAskTutor;
+  const readAloudMessage =
+    `[QUIZ_READ_ALOUD] A pre-reader is on this question and cannot read it. `
+    + `Read the question aloud word for word, then each choice slowly with its letter, then ask which one they pick. `
+    + `Question: "${data.question}". Choices: ${data.options.map((o) => `${o.id}) ${o.text}`).join('; ')}.`;
+
+  // Auto ORIENT/STIMULUS beat at PRE — fires once when the question scrolls into
+  // view (stacked problems mount together, so mount-time firing would read every
+  // problem at once). Ref-guarded against re-fire.
+  const blockRef = useRef<HTMLDivElement | null>(null);
+  const readAloudFiredRef = useRef(false);
+  useEffect(() => {
+    if (!preReader || !onAskTutor || isSubmitted || readAloudFiredRef.current) return;
+    const el = blockRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !readAloudFiredRef.current) {
+          readAloudFiredRef.current = true;
+          onAskTutor(readAloudMessage);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [preReader, onAskTutor, isSubmitted, readAloudMessage]);
+
+  // Tap = choose = submit (atomic at PRE — no Verify button, reader-fit rule 2).
+  // Feedback lands on the tapped choice via choiceState; the container speaks the
+  // correct/incorrect beat and plays the outcome chime.
+  const handleChoose = useCallback((optionId: string) => {
+    if (isSubmitted) return;
+    setSelectedId(optionId);
+    submitWith(optionId, false);
+  }, [isSubmitted, submitWith]);
+
   // Option-answer state machine: which visual state each option is in. A voice
   // verdict that degraded to a tap-confirm highlights its button pre-submit.
   const choiceState = (option: { id: string; text: string }): AnswerChoiceState => {
@@ -220,6 +264,66 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
   };
 
   const showMic = voiceItems.length > 0 && !isSubmitted && (data.voiceEligible ?? true);
+
+  // ── Pre-reader render: picture-primary grid, tap = choose, read-aloud ────────
+  if (preReader) {
+    return (
+      <div ref={blockRef} className="w-full">
+        <div className="flex items-start gap-3 mb-6">
+          <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight flex-1">
+            {data.question}
+          </h3>
+          {onAskTutor && (
+            <LuminaReadAloud
+              iconOnly
+              size="md"
+              aria-label="Hear the question again"
+              className="flex-shrink-0"
+              onClick={() => {
+                SoundManager.tap();
+                onAskTutor(readAloudMessage);
+              }}
+            />
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {data.options.map((option) => (
+            <LuminaAnswerChoice
+              key={option.id}
+              state={choiceState(option)}
+              disabled={isSubmitted}
+              onClick={() => handleChoose(option.id)}
+              className="p-5 flex flex-col items-center justify-center gap-2 text-center min-h-[8rem]"
+            >
+              <span className="text-6xl leading-none" aria-hidden>
+                {option.emoji || '⭐'}
+              </span>
+              <span className="text-lg text-slate-100">{option.text}</span>
+            </LuminaAnswerChoice>
+          ))}
+        </div>
+
+        {isSubmitted && (
+          <div className="w-full flex flex-col items-center gap-4">
+            <LuminaFeedbackCard
+              status={isCorrect ? 'correct' : 'insight'}
+              label={isCorrect ? '🎉 You did it!' : '💛 Good try!'}
+            >
+              {data.rationale}
+            </LuminaFeedbackCard>
+            <LuminaActionButton
+              action="retry"
+              onClick={() => {
+                readAloudFiredRef.current = false;
+                handleReset();
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">

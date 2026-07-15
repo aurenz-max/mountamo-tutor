@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import { BalanceScaleData, BalanceScaleObject, BalanceScaleChallenge } from '../../primitives/visual-primitives/math/BalanceScale';
 import {
   resolveEvalModeConstraint,
@@ -493,6 +494,7 @@ export const generateBalanceScale = async (
   ctx: GenerationContext,
 ): Promise<BalanceScaleData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as BalanceScaleConfig;
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -530,7 +532,8 @@ export const generateBalanceScale = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create the wrapper metadata for a multi-equation balance scale session on "${topic}" for ${gradeLevel} students.
+Create the wrapper metadata for a multi-equation balance scale session on "${topic}
+${scopeSection}" for ${gradeLevel} students.
 
 CONTEXT:
 - A balance scale session contains 3-6 separate equations of the same difficulty tier.

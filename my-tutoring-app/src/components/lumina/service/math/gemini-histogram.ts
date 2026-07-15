@@ -7,6 +7,7 @@ import {
 } from "../../primitives/visual-primitives/math/Histogram";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -731,6 +732,7 @@ export const generateHistogram = async (
   ctx: GenerationContext,
 ): Promise<HistogramData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as HistogramConfig;
   // ── Resolve eval mode ──
@@ -769,7 +771,8 @@ export const generateHistogram = async (
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 
   const prompt = `
-Create a histogram analysis SESSION for teaching "${topic}" to ${gradeLevel} students.
+Create a histogram analysis SESSION for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 THE STUDENT EXPERIENCE:
 - The student walks through ${instanceCount} distinct histograms, one at a time.

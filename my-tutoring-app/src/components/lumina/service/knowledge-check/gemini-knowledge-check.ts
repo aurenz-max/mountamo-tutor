@@ -187,6 +187,45 @@ function getMcOptionLabels(tier?: BloomsTier, gradeLevel?: string): string[] {
   return ['A', 'B', 'C', 'D', 'E'].slice(0, count);
 }
 
+/**
+ * Pre-reader grade keys (reader-fit PRE band). At these grades a student cannot
+ * decode option labels, so MCQ options must be PICTURE-PRIMARY (each carries an
+ * emoji) and the question must be short and self-contained (no reference to a
+ * visual the generator does not produce). See reader-fit knowledge-check @ PRE.
+ */
+const PRE_READER_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten']);
+function isPreReaderGradeKey(gradeLevel?: string): boolean {
+  return PRE_READER_GRADE_KEYS.has(gradeLevel ?? '');
+}
+
+/**
+ * Problem types a pre-reader can actually complete. matching/categorization/
+ * sequencing/fill_in_blanks/short_answer/scenario are text-column, drag, or
+ * typing shapes = WRONG-BAND at PRE, so at K we floor the type to a
+ * picture-primary MCQ (or an already-spoken true/false). reader-fit routing fix.
+ */
+const PRE_READER_PROBLEM_TYPES = new Set<ProblemType>(['multiple_choice', 'true_false']);
+
+/**
+ * PRE-band palette injected into the MCQ prompt at pre-reader grades. Forces
+ * picture-primary options and forbids the phantom-visual references the census
+ * caught ("the box", "the picture below", "the math sentence below").
+ */
+const PRE_READER_MC_PALETTE = `
+## PRE-READER (KINDERGARTEN) PALETTE — MANDATORY
+This question is READ ALOUD to a 5-year-old who CANNOT read. Obey ALL rules:
+- The QUESTION is at most 12 words, one short spoken sentence.
+- Do NOT reference any picture, diagram, chart, box, or "below/above/here" — NO
+  visual is shown on screen. The ONLY picture is the emoji on each option.
+- Each option is a single concrete, picturable thing (1-3 words) that a
+  kindergartner knows.
+- Provide an "emoji" for EVERY option — one obvious emoji that depicts that
+  option (e.g. cat → 🐱, hat → 🎩, dog → 🐶, three → 3️⃣). Emoji is REQUIRED.
+- Never state, spell, or describe the answer inside the question (no "the shape
+  with 3 sides" when the answer is triangle).
+- For sound/rhyme/phonics topics, options must be picturable OBJECTS with emoji,
+  never letters or slash-notation.`;
+
 // ============================================================================
 // INSET SCHEMAS (Rich inline content generated atomically with problems)
 // ============================================================================
@@ -461,6 +500,16 @@ export const generateMultipleChoiceProblems = async (
   const gradeLevelContext = getGradeLevelContext(gradeLevel);
   const optionLabels = getMcOptionLabels(bloomsTier, gradeLevel);
   const optionCount = optionLabels.length;
+  const isPreReader = isPreReaderGradeKey(gradeLevel);
+
+  const optionProps: Record<string, Schema> = {
+    id: { type: Type.STRING, description: `Option letter (${optionLabels.join(', ')})` },
+    text: { type: Type.STRING, description: "Option text" },
+  };
+  if (isPreReader) {
+    // Picture-primary at K: every option carries an emoji the pre-reader taps.
+    optionProps.emoji = { type: Type.STRING, description: 'ONE emoji that depicts this option (e.g. cat → 🐱). Required.' };
+  }
 
   const multipleChoiceSchema: Schema = {
     type: Type.OBJECT,
@@ -489,11 +538,8 @@ export const generateMultipleChoiceProblems = async (
               description: `Array of ${optionCount} answer options`,
               items: {
                 type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING, description: `Option letter (${optionLabels.join(', ')})` },
-                  text: { type: Type.STRING, description: "Option text" }
-                },
-                required: ["id", "text"]
+                properties: optionProps,
+                required: isPreReader ? ["id", "text", "emoji"] : ["id", "text"]
               }
             },
             correctOptionId: {
@@ -543,7 +589,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${insetPrompt}${isPreReader ? PRE_READER_MC_PALETTE : ''}
 ## Your Mission:
 Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
 
@@ -1610,6 +1656,18 @@ export const generateKnowledgeCheck = async (
       topic, gradeLevel, count, bloomsTier, context, config?.objectives
     );
 
+    // PRE-band routing floor: a pre-reader cannot do text-column / drag / typing
+    // problem shapes, so coerce any non-MCQ/TF planned type to a picture-primary
+    // MCQ before generation. reader-fit knowledge-check @ PRE (WRONG-BAND fix).
+    if (isPreReaderGradeKey(gradeLevel)) {
+      for (const p of plan.problems) {
+        if (!PRE_READER_PROBLEM_TYPES.has(p.problemType as ProblemType)) {
+          p.problemType = 'multiple_choice';
+          p.insetType = null; // insets (tables/charts/passages) are also non-band at K
+        }
+      }
+    }
+
     // Stage 2: parallel generation from the plan
     const results = await Promise.all(
       plan.problems.map(p => generateFromPlan(p, topic, gradeLevel, bloomsTier))
@@ -1653,8 +1711,13 @@ export const generateKnowledgeCheck = async (
   }
 
   // Direct path: caller specified exact problemType (backward compat)
-  const problemType = config!.problemType!;
-  const insetType = config?.insetType;
+  let problemType = config!.problemType!;
+  let insetType = config?.insetType;
+  // PRE-band floor also applies to direct calls (tester / legacy sites).
+  if (isPreReaderGradeKey(gradeLevel) && !PRE_READER_PROBLEM_TYPES.has(problemType)) {
+    problemType = 'multiple_choice';
+    insetType = undefined;
+  }
 
   console.log('[Knowledge Check] Direct mode:', { topic, gradeLevel, problemType, count, bloomsTier, insetType });
 

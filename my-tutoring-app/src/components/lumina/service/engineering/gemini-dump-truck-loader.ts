@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 // Import types from the component - single source of truth
 import type {
@@ -103,10 +104,12 @@ export const generateDumpTruckLoader = async (
   ctx: GenerationContext,
 ): Promise<DumpTruckLoaderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<DumpTruckLoaderData>;
   const prompt = `
-Create an educational Dump Truck Loader visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Dump Truck Loader visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CONTEXT - DUMP TRUCK LOADING ENGINEERING:
 A dump truck is a vehicle with a tilting bed used to transport and dump loose materials:

@@ -13,7 +13,7 @@
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { answerStateClasses } from './tokens';
+import { answerStateClasses, motion } from './tokens';
 
 export type FillBlankState = 'empty' | 'filled' | 'correct' | 'incorrect';
 
@@ -37,8 +37,12 @@ export const LuminaFillBlankSlot = React.forwardRef<HTMLSpanElement, LuminaFillB
       <span
         ref={ref}
         className={cn(
-          'inline-flex min-w-[140px] cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2 transition-all',
+          'inline-flex min-w-[140px] cursor-pointer items-center justify-center rounded-lg border-2 px-4 py-2',
+          motion.press,
+          motion.transitionSlow,
           SLOT_STATE[state],
+          state === 'correct' && motion.pop,
+          state === 'incorrect' && motion.shake,
           className
         )}
         {...props}

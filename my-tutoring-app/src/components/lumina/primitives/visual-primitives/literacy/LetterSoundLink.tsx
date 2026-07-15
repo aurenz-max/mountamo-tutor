@@ -51,6 +51,8 @@ export interface LetterSoundLinkData {
   letterGroup: 1 | 2 | 3 | 4;
   cumulativeLetters: string[];
   challenges: LetterSoundLinkChallenge[];
+  /** Canonical grade key ('K' | '1' | '2'…). Drives the pre-reader band-gate. */
+  gradeLevel?: string;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -146,6 +148,24 @@ const SpeakerIcon: React.FC<{ className?: string; playing?: boolean }> = ({ clas
   </svg>
 );
 
+/** Wordless "tap to hear" cue for pre-readers — a small ear. */
+const EarGlyph: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+    strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M6 8.5a6 6 0 0 1 12 0c0 3-2 4-3.5 5.5S13 17 13 18.5a2.5 2.5 0 0 1-5 0" />
+    <path d="M9 8.5a3 3 0 0 1 5.5-1.5" />
+  </svg>
+);
+
+/** Wordless "tap again to keep it" cue for pre-readers — a pulsing check. */
+const KeepGlyph: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}
+    strokeLinecap="round" strokeLinejoin="round"
+    className={`${className} animate-pulse`} aria-hidden>
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -165,6 +185,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     letterGroup,
     cumulativeLetters = [],
     challenges = [],
+    gradeLevel = 'K',
     instanceId,
     skillId,
     subskillId,
@@ -172,6 +193,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  /** Pre-reader band: the two-tap protocol + chrome are voiced/hidden, never read. */
+  const isPreReader = gradeLevel === 'K';
 
   // ---------------------------------------------------------------------------
   // Refs & IDs
@@ -268,7 +292,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     primitiveType: 'letter-sound-link',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
+    gradeLevel,
   });
 
   // Activity introduction — once on AI connect
@@ -745,15 +769,17 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           }`}
           playing={isPlaying}
         />
+        {/* Pre-reader: wordless ear (tap to hear) → pulsing check (tap to keep).
+            Reader: the original 10px text cues. */}
         {isListened && !isLocked && (
-          <span className="text-[10px] text-slate-400 animate-pulse">
-            tap to choose
-          </span>
+          isPreReader
+            ? <KeepGlyph className="w-6 h-6 text-emerald-300" />
+            : <span className="text-[10px] text-slate-400 animate-pulse">tap to choose</span>
         )}
         {!isListened && !isLocked && (
-          <span className="text-[10px] text-slate-500">
-            tap to hear
-          </span>
+          isPreReader
+            ? <EarGlyph className="w-6 h-6 text-slate-400" />
+            : <span className="text-[10px] text-slate-500">tap to hear</span>
         )}
       </button>
     );
@@ -777,14 +803,16 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          <p className="text-slate-400 text-sm">Which sound does this letter make?</p>
+          {!isPreReader && (
+            <p className="text-slate-400 text-sm">Which sound does this letter make?</p>
+          )}
         </div>
 
-        {/* Keyword hint — only after wrong attempt */}
+        {/* Keyword hint — only after wrong attempt. Pre-reader: picture only. */}
         {showKeywordHint && (
           <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
-            <span className="text-lg">{getKeywordEmoji(currentChallenge.keywordWord)}</span>
-            <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>
+            <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
+            {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
           </div>
         )}
 
@@ -795,9 +823,11 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           )}
         </div>
 
-        <p className="text-center text-xs text-slate-600">
-          Tap each speaker to hear the sound, then tap your answer again to choose it
-        </p>
+        {!isPreReader && (
+          <p className="text-center text-xs text-slate-600">
+            Tap each speaker to hear the sound, then tap your answer again to choose it
+          </p>
+        )}
       </div>
     );
   };
@@ -831,19 +861,21 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           >
             <SpeakerIcon className="w-14 h-14 text-amber-300" playing={false} />
           </button>
-          <p className="text-slate-400 text-sm">Tap to hear the sound, then find the letter!</p>
+          {!isPreReader && (
+            <p className="text-slate-400 text-sm">Tap to hear the sound, then find the letter!</p>
+          )}
         </div>
 
-        {/* Keyword hint — only after wrong attempt */}
+        {/* Keyword hint — only after wrong attempt. Pre-reader: picture only. */}
         {showKeywordHint && (
           <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
-            <span className="text-lg">{getKeywordEmoji(currentChallenge.keywordWord)}</span>
-            <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>
+            <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
+            {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
           </div>
         )}
 
         {/* Shared sound note */}
-        {currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
+        {!isPreReader && currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
           <p className="text-center text-xs text-slate-600">
             Hint: More than one letter might make this sound!
           </p>
@@ -959,7 +991,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          <p className="text-slate-400 text-sm">Which word starts with this letter&apos;s sound?</p>
+          {!isPreReader && (
+            <p className="text-slate-400 text-sm">Which word starts with this letter&apos;s sound?</p>
+          )}
         </div>
 
         {/* Two keyword options as speaker bubbles with emoji */}
@@ -995,24 +1029,27 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 `}
               >
                 <span className="text-3xl">{emoji}</span>
+                {/* Pre-reader: wordless ear → pulsing check. Reader: 10px text. */}
                 {isListened && !isLocked && (
-                  <span className="text-[10px] text-slate-400 animate-pulse">
-                    tap to choose
-                  </span>
+                  isPreReader
+                    ? <KeepGlyph className="w-5 h-5 text-emerald-300" />
+                    : <span className="text-[10px] text-slate-400 animate-pulse">tap to choose</span>
                 )}
                 {!isListened && !isLocked && (
-                  <span className="text-[10px] text-slate-500">
-                    tap to hear
-                  </span>
+                  isPreReader
+                    ? <EarGlyph className="w-5 h-5 text-slate-400" />
+                    : <span className="text-[10px] text-slate-500">tap to hear</span>
                 )}
               </button>
             );
           })}
         </div>
 
-        <p className="text-center text-xs text-slate-600">
-          Tap each picture to hear the word, then choose which one starts with this letter&apos;s sound
-        </p>
+        {!isPreReader && (
+          <p className="text-center text-xs text-slate-600">
+            Tap each picture to hear the word, then choose which one starts with this letter&apos;s sound
+          </p>
+        )}
       </div>
     );
   };
@@ -1039,18 +1076,23 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">
-                Group {letterGroup}
-              </LuminaBadge>
-              {currentChallenge && (
-                <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
-                  {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
+            {/* Pre-reader: hide adult chrome (group/mode badges) — rule 7. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">
+                  Group {letterGroup}
                 </LuminaBadge>
-              )}
-            </div>
+                {currentChallenge && (
+                  <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
+                    {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
+                  </LuminaBadge>
+                )}
+              </div>
+            )}
           </div>
-          <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
+          {!isPreReader && (
+            <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
+          )}
         </div>
       </LuminaCardHeader>
 

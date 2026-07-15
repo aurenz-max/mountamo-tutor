@@ -19,7 +19,7 @@ import {
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'sort-by-one': {
-    promptDoc: `"sort-by-one": Sort objects by ONE visible attribute (color, shape, or size).`,
+    promptDoc: `"sort-by-one": Sort objects by ONE objective-relevant category or visible attribute.`,
     schemaDescription: "'sort-by-one' (single-attribute sort)",
   },
   'sort-by-attribute': {
@@ -35,7 +35,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'odd-one-out' (identify the exception)",
   },
   'two-attributes': {
-    promptDoc: `"two-attributes": Find objects matching TWO attributes simultaneously.`,
+    promptDoc: `"two-attributes": Find objects matching TWO criteria simultaneously; the primary criterion must express the lesson objective.`,
     schemaDescription: "'two-attributes' (multi-criterion classification)",
   },
   'tally-record': {
@@ -183,10 +183,10 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
     case 'two-attributes':
       promptLines.push(
         tier === 'easy'
-          ? 'Use mostly single-attribute distractors (match only color OR only type) so the matching objects stand out; keep the target group clearly labeled.'
+          ? 'Use mostly single-criterion distractors (match only the objective category OR only the secondary criterion) so the matching objects stand out; keep the target group clearly labeled.'
           : tier === 'hard'
-            ? 'Use mostly near-miss distractors (match one of the two target attributes) so the student must check BOTH attributes on every object.'
-            : 'Use a balanced mix of single-attribute and neither-attribute distractors.',
+            ? 'Use mostly near-miss distractors (match one of the two target criteria) so the student must check BOTH criteria on every object.'
+            : 'Use a balanced mix of single-criterion and neither-criterion distractors.',
       );
       break;
     case 'tally-record':
@@ -294,8 +294,18 @@ const objectItemSchema: Schema = {
     shape: { type: Type.STRING, description: "Shape attribute (e.g., 'round')" },
     size: { type: Type.STRING, description: "Size attribute (e.g., 'big')" },
     type: { type: Type.STRING, description: "Type attribute (e.g., 'fruit')" },
+    category: {
+      type: Type.STRING,
+      description: "Objective-relevant semantic category (e.g., 'need', 'want', 'firefighter', or 'triangle')",
+    },
   },
   required: ["label", "emoji"],
+};
+
+/** Two-criterion mode always carries the objective category on every object. */
+const twoAttributeObjectItemSchema: Schema = {
+  ...objectItemSchema,
+  required: ["label", "emoji", "category"],
 };
 
 // ============================================================================
@@ -319,7 +329,7 @@ const sortSchema: Schema = {
           },
           sortingAttribute: {
             type: Type.STRING,
-            description: "Which attribute to sort by: 'color', 'shape', 'size', or 'type'",
+            description: "Which attribute to sort by: 'category', 'color', 'shape', 'size', or 'type'",
           },
           objects: { type: Type.ARRAY, items: objectItemSchema },
         },
@@ -346,7 +356,7 @@ const countCompareSchema: Schema = {
           },
           sortingAttribute: {
             type: Type.STRING,
-            description: "Attribute the objects are pre-sorted by: 'color', 'shape', 'size', or 'type'",
+            description: "Attribute the objects are pre-sorted by: 'category', 'color', 'shape', 'size', or 'type'",
           },
           objects: { type: Type.ARRAY, items: objectItemSchema },
           comparisonQuestion: {
@@ -410,21 +420,25 @@ const twoAttributesSchema: Schema = {
             type: Type.STRING,
             description: "Instruction asking students to find objects matching two attributes",
           },
-          objects: { type: Type.ARRAY, items: objectItemSchema },
-          targetColor: {
+          objects: { type: Type.ARRAY, items: twoAttributeObjectItemSchema },
+          targetCategory: {
             type: Type.STRING,
-            description: "First attribute value to match (a color, e.g., 'red')",
+            description: "Primary objective-relevant category to match (e.g., 'need', 'firefighter', or 'triangle')",
           },
-          targetType: {
+          secondaryAttribute: {
             type: Type.STRING,
-            description: "Second attribute value to match (a type, e.g., 'fruit')",
+            description: "Secondary attribute name: 'color', 'shape', 'size', or 'type'",
+          },
+          secondaryValue: {
+            type: Type.STRING,
+            description: "Value to match for the secondary attribute",
           },
           categoryLabel: {
             type: Type.STRING,
             description: "Human label for the target group (e.g., 'Red Fruits')",
           },
         },
-        required: ["instruction", "objects", "targetColor", "targetType", "categoryLabel"],
+        required: ["instruction", "objects", "targetCategory", "secondaryAttribute", "secondaryValue", "categoryLabel"],
       },
     },
   },
@@ -446,9 +460,38 @@ function resolveGradeBand(gradeLevel: string): 'K' | '1' {
   return /[kK]|kinder/i.test(gradeLevel) ? 'K' : '1';
 }
 
+/**
+ * Bind the interaction's classification rule to the per-component objective.
+ * The broad topic provides context; ctx.intent is the actual task contract. A
+ * semantic `category` axis lets needs/wants, community roles, and similar lessons
+ * remain concept sorts instead of being silently replaced by color/size practice.
+ */
+export function buildSortingObjectiveSection(topic: string, intent?: string): string {
+  const specificObjective = intent?.trim() || topic;
+  return `
+## OBJECTIVE BINDING (highest priority)
+- Broad lesson topic: "${topic}"
+- Specific objective for THIS activity: "${specificObjective}"
+- Every challenge must assess that specific objective. Keep the SAME taught classification rule across challenges; create variety through different on-objective objects and examples, NEVER by switching to an unrelated color/size/shape sort.
+- Use sortingAttribute "category" for conceptual rules such as need/want, community-helper role, tool owner, living/nonliving, or any other meaning-based grouping. Put that objective-relevant value in every object's category field.
+- Use color, size, or shape as the sortingAttribute only when the specific objective explicitly teaches that perceptual attribute. For a shape-naming objective, shape is objective-relevant; color and size are distractor features, not replacement tasks.
+- Do not turn a conceptual classification objective into a perceptual warm-up. The child's successful action must demonstrate the lesson objective.
+`;
+}
+
+interface RawSortingObject {
+  label: string;
+  emoji: string;
+  color?: string;
+  shape?: string;
+  size?: string;
+  type?: string;
+  category?: string;
+}
+
 /** Convert flat LLM object fields into the component's SortingObject shape */
 function toLuminaObjects(
-  raw: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>,
+  raw: RawSortingObject[],
   idOffset: number,
 ): SortingObject[] {
   return raw.map((obj, j) => ({
@@ -460,6 +503,7 @@ function toLuminaObjects(
       ...(obj.shape && { shape: obj.shape }),
       ...(obj.size && { size: obj.size }),
       ...(obj.type && { type: obj.type }),
+      ...(obj.category && { category: obj.category }),
     },
   }));
 }
@@ -479,6 +523,7 @@ function deriveCategories(objects: SortingObject[], sortAttr: string): SortingCa
 
 async function generateSortChallenges(
   topic: string,
+  intent: string | undefined,
   gradeLevel: string,
   sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record',
   count: number,
@@ -486,14 +531,15 @@ async function generateSortChallenges(
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const typeGuide = {
     'sort-by-one':
-      'Each challenge sorts by ONE attribute (color, shape, size, or type). ' +
-      'Use a DIFFERENT sorting attribute for each challenge to create variety. ' +
+      'Each challenge sorts by ONE objective-relevant attribute (category, color, shape, size, or type). ' +
+      'Use the SAME objective-relevant sorting axis in every challenge. Vary the objects, not the taught rule. ' +
       'Instruction MUST ask students to sort/group — NEVER ask "which has more" or "which doesn\'t belong".',
     'sort-by-attribute':
       'The student picks HOW to sort, so give every object EXACTLY TWO clean sortable attributes ' +
-      '(e.g. color AND type) — no more. EVERY object must have BOTH attributes filled in, and each ' +
+      '(prefer the objective category plus one other objective-relevant axis) — no more. EVERY object must have BOTH attributes filled in, and each ' +
       'attribute must have ≥2 distinct values across the set, so BOTH axes form valid groups and ' +
-      'the student has a real choice. Do NOT add a third or fourth attribute (size/shape) — extra ' +
+      'the student has a real choice. Both choices must stay inside the objective; do not offer an unrelated perceptual axis merely for variety. ' +
+      'Do NOT add a third or fourth attribute — extra ' +
       'axes are wasted authoring and get hidden from the chooser anyway.',
     'tally-record':
       'Sort objects and tally the count of each group. ' +
@@ -504,16 +550,17 @@ async function generateSortChallenges(
   const prompt = `
 Create a sorting activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeLevel)}
+${buildSortingObjectiveSection(topic, intent)}
 
 TASK TYPE: ${sortType}
 ${typeGuide}
 ${tierSection}
 Generate exactly ${count} challenges. Each challenge needs:
 - A warm, encouraging instruction for young children
-- A sortingAttribute (one of: color, shape, size, type)
-- 4-8 objects with a label, emoji, and attributes (color, shape, size, type as relevant)
+- A sortingAttribute (one of: category, color, shape, size, type)
+- 4-8 objects with a label, emoji, and only the objective-relevant attributes
 - Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
-- Use fun kid-friendly emojis and themes kids love (animals, food, toys, nature)
+- Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
 `;
 
   const result = await ai.models.generateContent({
@@ -526,7 +573,7 @@ Generate exactly ${count} challenges. Each challenge needs:
   if (!data?.challenges?.length) throw new Error(`No ${sortType} challenges returned`);
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; sortingAttribute: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }> }, i: number) => {
+    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[] }, i: number) => {
       const sortAttr = ch.sortingAttribute || 'type';
       const objects = toLuminaObjects(ch.objects || [], i * 10);
       const categories = deriveCategories(objects, sortAttr);
@@ -547,6 +594,7 @@ Generate exactly ${count} challenges. Each challenge needs:
 
 async function generateCountCompareChallenges(
   topic: string,
+  intent: string | undefined,
   gradeLevel: string,
   count: number,
   tierSection: string,
@@ -554,12 +602,13 @@ async function generateCountCompareChallenges(
   const prompt = `
 Create a count-and-compare activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeLevel)}
+${buildSortingObjectiveSection(topic, intent)}
 
 TASK: Objects are pre-sorted into groups. Student counts each group and answers a comparison question.
 ${tierSection}
 Generate exactly ${count} challenges. Each challenge needs:
 - A warm instruction
-- A sortingAttribute (color, shape, size, or type)
+- A sortingAttribute (category, color, shape, size, or type)
 - 4-8 objects with attributes — groups MUST have DIFFERENT counts so there's a clear answer
 - A comparisonQuestion (e.g., "Are there more red things or blue things?")
 - correctComparison: 'more', 'fewer', or 'equal'
@@ -577,7 +626,7 @@ Make sure the groups have unequal sizes for 'more'/'fewer' answers.
   if (!data?.challenges?.length) throw new Error('No count-and-compare challenges returned');
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; sortingAttribute: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; comparisonQuestion: string; correctComparison: string }, i: number) => {
+    (ch: { instruction: string; sortingAttribute: string; objects: RawSortingObject[]; comparisonQuestion: string; correctComparison: string }, i: number) => {
       const sortAttr = ch.sortingAttribute || 'type';
       const objects = toLuminaObjects(ch.objects || [], i * 10);
       const categories = deriveCategories(objects, sortAttr);
@@ -603,6 +652,7 @@ Make sure the groups have unequal sizes for 'more'/'fewer' answers.
 
 async function generateOddOneOutChallenges(
   topic: string,
+  intent: string | undefined,
   gradeLevel: string,
   count: number,
   tierSection: string,
@@ -610,6 +660,7 @@ async function generateOddOneOutChallenges(
   const prompt = `
 Create an odd-one-out activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeLevel)}
+${buildSortingObjectiveSection(topic, intent)}
 
 TASK: Show a group of objects where ONE doesn't belong. Student finds it.
 ${tierSection}
@@ -632,7 +683,7 @@ The odd object must be CLEARLY different from the majority group.
   if (!data?.challenges?.length) throw new Error('No odd-one-out challenges returned');
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; oddOneOutIndex: number; oddOneOutReason: string }, i: number) => {
+    (ch: { instruction: string; objects: RawSortingObject[]; oddOneOutIndex: number; oddOneOutReason: string }, i: number) => {
       const objects = toLuminaObjects(ch.objects || [], i * 10);
       const idx = Math.max(0, Math.min(ch.oddOneOutIndex ?? 0, objects.length - 1));
 
@@ -652,6 +703,7 @@ The odd object must be CLEARLY different from the majority group.
 
 async function generateTwoAttributesChallenges(
   topic: string,
+  intent: string | undefined,
   gradeLevel: string,
   count: number,
   tierSection: string,
@@ -659,23 +711,25 @@ async function generateTwoAttributesChallenges(
   const prompt = `
 Create a two-attribute classification activity for teaching "${topic}" to ${gradeLevel} students.
 ${gradeGuidance(gradeLevel)}
+${buildSortingObjectiveSection(topic, intent)}
 
-TASK: Student finds objects matching TWO attributes at once (e.g., "Find red fruits").
+TASK: Student finds objects matching TWO criteria at once. The PRIMARY criterion is always the objective-relevant category; the secondary criterion adds the two-attribute reasoning demand without replacing the lesson modality.
 ${tierSection}
 Generate exactly ${count} challenges. Each challenge needs:
-- A warm instruction (e.g., "Can you find all the red fruits?")
-- 6-8 objects with BOTH a color AND a type attribute — use visually distinct emojis
-- targetColor: the color to match (e.g., 'red')
-- targetType: the type to match (e.g., 'fruit')
-- categoryLabel: human label (e.g., 'Red Fruits')
+- A warm instruction that names the objective category first (e.g., "Which NEEDS are food?" or "Find the FIREFIGHTER tools")
+- 6-8 objects. EVERY object must have an objective-relevant category plus the named secondary attribute.
+- targetCategory: the objective category to match (e.g., 'need', 'firefighter', or 'triangle')
+- secondaryAttribute: one of color, shape, size, or type
+- secondaryValue: the value to match on that secondary attribute
+- categoryLabel: a short human label that foregrounds the objective category
 
 Objects must include:
-- Some matching BOTH attributes (correct answers)
-- Some matching only color (distractors)
-- Some matching only type (distractors)
+- Some matching BOTH category and secondary attribute (correct answers)
+- Some matching only the objective category (near-miss distractors)
+- Some matching only the secondary attribute (near-miss distractors)
 - Some matching neither (distractors)
 
-Do NOT use "size" — it's not visually distinguishable via emoji.
+The objective category is the MAIN modality. Never make color/size the knowledge being assessed unless the objective explicitly names it. Prefer a semantically relevant secondary type (food, tool, clothing) over color when the lesson supports one.
 `;
 
   const result = await ai.models.generateContent({
@@ -688,14 +742,16 @@ Do NOT use "size" — it's not visually distinguishable via emoji.
   if (!data?.challenges?.length) throw new Error('No two-attributes challenges returned');
 
   const challenges: SortingStationChallenge[] = data.challenges.slice(0, count).map(
-    (ch: { instruction: string; objects: Array<{ label: string; emoji: string; color?: string; shape?: string; size?: string; type?: string }>; targetColor: string; targetType: string; categoryLabel: string }, i: number) => {
+    (ch: { instruction: string; objects: RawSortingObject[]; targetCategory: string; secondaryAttribute: string; secondaryValue: string; categoryLabel: string }, i: number) => {
       const objects = toLuminaObjects(ch.objects || [], i * 10);
-      // Strip "size" from objects
-      for (const obj of objects) delete obj.attributes.size;
+      const allowedSecondaryAttributes = new Set(['color', 'shape', 'size', 'type']);
+      const secondaryAttribute = allowedSecondaryAttributes.has(ch.secondaryAttribute)
+        ? ch.secondaryAttribute
+        : 'type';
 
       const targetRule: Record<string, string> = {
-        color: ch.targetColor || 'red',
-        type: ch.targetType || 'fruit',
+        category: ch.targetCategory,
+        [secondaryAttribute]: ch.secondaryValue,
       };
 
       // Verify at least 1 object matches both and at least 1 doesn't
@@ -703,14 +759,15 @@ Do NOT use "size" — it's not visually distinguishable via emoji.
         Object.entries(targetRule).every(([k, v]) => o.attributes[k] === v),
       ).length;
 
-      // If the split is trivial, fall back to sort-by-one
+      // If the split is trivial, preserve the objective modality by falling back
+      // to an objective-category sort (never to color/size/type).
       if (matchCount === 0 || matchCount === objects.length) {
-        const categories = deriveCategories(objects, 'type');
+        const categories = deriveCategories(objects, 'category');
         return {
           id: `c${i + 1}`,
           type: 'sort-by-one' as const,
-          instruction: ch.instruction,
-          sortingAttribute: 'type',
+          instruction: 'Sort these into their lesson groups.',
+          sortingAttribute: 'category',
           objects,
           categories,
         } satisfies SortingStationChallenge;
@@ -720,9 +777,10 @@ Do NOT use "size" — it's not visually distinguishable via emoji.
         id: `c${i + 1}`,
         type: 'two-attributes' as const,
         instruction: ch.instruction,
+        sortingAttribute: `category + ${secondaryAttribute}`,
         objects,
         categories: [
-          { label: ch.categoryLabel || `${ch.targetColor} ${ch.targetType}`, rule: targetRule },
+          { label: ch.categoryLabel || `${ch.targetCategory} ${ch.secondaryValue}`, rule: targetRule },
           { label: 'Others', rule: {} }, // component uses "doesn't match first rule" logic
         ],
       } satisfies SortingStationChallenge;
@@ -738,15 +796,16 @@ Do NOT use "size" — it's not visually distinguishable via emoji.
 
 type SubGenerator = (
   topic: string,
+  intent: string | undefined,
   gradeLevel: string,
   count: number,
   tierSection: string,
 ) => Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }>;
 
 const GENERATOR_MAP: Record<string, SubGenerator> = {
-  'sort-by-one': (t, g, n, ts) => generateSortChallenges(t, g, 'sort-by-one', n, ts),
-  'sort-by-attribute': (t, g, n, ts) => generateSortChallenges(t, g, 'sort-by-attribute', n, ts),
-  'tally-record': (t, g, n, ts) => generateSortChallenges(t, g, 'tally-record', n, ts),
+  'sort-by-one': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'sort-by-one', n, ts),
+  'sort-by-attribute': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'sort-by-attribute', n, ts),
+  'tally-record': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'tally-record', n, ts),
   'count-and-compare': generateCountCompareChallenges,
   'odd-one-out': generateOddOneOutChallenges,
   'two-attributes': generateTwoAttributesChallenges,
@@ -772,7 +831,7 @@ interface SortingStationConfig {
 export const generateSortingStation = async (
   ctx: GenerationContext,
 ): Promise<SortingStationData> => {
-  const { topic } = ctx;
+  const { topic, intent } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SortingStationConfig;
   const evalConstraint = resolveEvalModeConstraint(
@@ -805,7 +864,7 @@ export const generateSortingStation = async (
   const results = await Promise.all(
     allowedTypes
       .filter(t => GENERATOR_MAP[t])
-      .map(t => GENERATOR_MAP[t](topic, gradeLevel, challengesPerType, tierSection)),
+      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, challengesPerType, tierSection)),
   );
 
   // Combine: flatten challenges, re-number IDs, pick first title

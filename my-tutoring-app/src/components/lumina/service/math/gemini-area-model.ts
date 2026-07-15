@@ -19,6 +19,7 @@ import {
 } from "../../primitives/visual-primitives/math/AreaModel";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -406,6 +407,7 @@ export const generateAreaModel = async (
   ctx: GenerationContext,
 ): Promise<AreaModelData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as AreaModelConfig;
   // ── Eval-mode constraint resolution ──────────────────────────────
@@ -451,7 +453,8 @@ export const generateAreaModel = async (
 
   // ── Gemini wrapper call (metadata only) ──────────────────────────
   const prompt = `
-Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topic}" (${gradeLevel}).
+Create the wrapper metadata for a MULTI-CHALLENGE area model session for "${topic}
+${scopeSection}" (${gradeLevel}).
 
 This session walks the student through ${instanceCount} DIFFERENT factor pairs of the SAME challenge type.
 

@@ -6,6 +6,7 @@ import {
 } from "../../primitives/visual-primitives/calendar/TimelineBuilder";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
@@ -215,11 +216,13 @@ const historicalSchema = buildTimelineSchema("e.g., '1800' / '2000'", 5);
 
 async function generateDailyChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<TimelineBuilderChallenge[]> {
   const prompt = `
 Create ${count} DAILY timeline challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Students must place events in chronological order on a timeline from Morning to Night.
 
@@ -273,11 +276,13 @@ EXAMPLE:
 
 async function generateYearlyChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<TimelineBuilderChallenge[]> {
   const prompt = `
 Create ${count} YEARLY timeline challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Students must place events in chronological order on a timeline spanning a year.
 
@@ -331,11 +336,13 @@ EXAMPLE:
 
 async function generateHistoricalChallenges(
   topic: string,
+  scopeSection: string,
   gradeLevel: string,
   count: number,
 ): Promise<TimelineBuilderChallenge[]> {
   const prompt = `
 Create ${count} HISTORICAL timeline challenges for "${topic}" (${gradeLevel} students).
+${scopeSection}
 
 Students must place historical events in chronological order on a timeline spanning decades or centuries.
 
@@ -452,6 +459,7 @@ export const generateTimelineBuilder = async (
   ctx: GenerationContext,
 ): Promise<TimelineBuilderData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as TimelineBuilderConfig;
   // ── Resolve eval mode ──
@@ -477,13 +485,13 @@ export const generateTimelineBuilder = async (
     typeOrder.push(type);
     switch (type) {
       case "daily":
-        generators.push(generateDailyChallenges(topic, gradeLevel, countPerType));
+        generators.push(generateDailyChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
       case "yearly":
-        generators.push(generateYearlyChallenges(topic, gradeLevel, countPerType));
+        generators.push(generateYearlyChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
       case "historical":
-        generators.push(generateHistoricalChallenges(topic, gradeLevel, countPerType));
+        generators.push(generateHistoricalChallenges(topic, scopeSection, gradeLevel, countPerType));
         break;
     }
   }

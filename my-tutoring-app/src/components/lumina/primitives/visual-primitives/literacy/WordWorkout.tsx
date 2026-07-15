@@ -12,6 +12,7 @@ import {
   LuminaProgress,
   LuminaFeedbackCard,
   LuminaMicListener,
+  LuminaReadAloud,
   answerStateClasses,
 } from '../../../ui';
 import {
@@ -816,16 +817,16 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 <span className="text-3xl font-bold text-slate-100 tracking-wide">
                   {word}
                 </span>
-                <button
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  aria-label={`Hear ${word}`}
+                  className="absolute top-2 right-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     handlePronounce(word);
                   }}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 text-sm"
-                  aria-label={`Hear ${word}`}
-                >
-                  {'🔊'}
-                </button>
+                />
               </div>
             );
           })}
@@ -846,15 +847,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
             <span className="text-3xl font-bold text-slate-100">
               {currentChallenge.targetWord}
             </span>
-            <button
+            <LuminaReadAloud
+              iconOnly
+              size="sm"
+              aria-label="Hear the word"
               onClick={() =>
                 handlePronounce(currentChallenge.targetWord || '')
               }
-              className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400"
-              aria-label="Hear the word"
-            >
-              {'🔊'}
-            </button>
+            />
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -1063,9 +1063,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
           </p>
         </div>
         <div className="flex justify-center gap-3">
-          <LuminaButton onClick={handleModelRead}>
-            {'🔊'} Hear the Sentence
-          </LuminaButton>
+          <LuminaReadAloud label="Hear the Sentence" onClick={handleModelRead} />
           {!showComprehension && !showNext && (
             <LuminaButton tone="primary" onClick={handleSentenceDone}>
               I Read It!

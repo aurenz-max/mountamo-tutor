@@ -38,13 +38,27 @@ import { asRecordArray, checkAnswerVariety, containsWord } from './helpers';
  * NOTE: unlike single-mode practice primitives, a knowledge-check legitimately
  * ships a single problem (config.count || 1), so there is deliberately NO
  * demo-size (mastery-over-demo) check here.
+ *
+ * READER-FIT (PRE band): at pre-reader grades a non-reader answers by PICTURE,
+ * so the generator must ship an emoji on every MCQ option (the component renders
+ * option.emoji picture-primary and only falls back to a generic ⭐). At K the
+ * type is also floored to multiple_choice/true_false — a text-column/drag/typing
+ * shape reaching K is a routing regression. Both are CI-able structural
+ * contracts (see qa/reader-fit/knowledge-check-PRE-2026-07-14.md).
  */
+
+// Local pre-reader grade test (kept self-contained so the oracle stays a pure
+// function with no component-util coupling). Mirrors utils/isPreReaderGrade.
+const PRE_READER_GRADE_RE = /(kinder|preschool|pre-?k\b|prek|toddler|pre-?reader|^\s*gk\s*$|grade\s*k\b|^\s*k\s*$)/i;
+const PRE_READER_KC_TYPES = new Set(['multiple_choice', 'true_false']);
+
 export const knowledgeCheckOracle: ContentOracle = {
   componentId: 'knowledge-check',
-  verify(data, _ctx): OracleResult {
+  verify(data, ctx): OracleResult {
     const violations: OracleViolation[] = [];
     const uncheckedTypes = new Set<string>();
     const problems = asRecordArray(data.problems);
+    const preReader = PRE_READER_GRADE_RE.test(ctx?.gradeLevel ?? '');
     let checked = 0;
 
     // Cross-problem clustering accumulators (only bite with ≥3 of a type).
@@ -56,10 +70,21 @@ export const knowledgeCheckOracle: ContentOracle = {
       const type = String(p.type ?? '');
       const where = `problem#${i + 1}(${type || String(p.id ?? 'untyped')})`;
 
+      // Reader-fit routing floor: at PRE only picture-primary MCQ / true-false
+      // may reach a non-reader. A text-column/drag/typing type here is a manifest
+      // routing regression (the generator floors it — this guards the floor).
+      if (preReader && type && !PRE_READER_KC_TYPES.has(type)) {
+        violations.push({
+          check: 'reader-fit',
+          where,
+          detail: `problem type "${type}" is WRONG-BAND at pre-reader grade "${ctx.gradeLevel}" — only multiple_choice/true_false are completable by a non-reader`,
+        });
+      }
+
       switch (type) {
         case 'multiple_choice':
           checked++;
-          checkMultipleChoice(p, where, violations, mcqCorrectLetters);
+          checkMultipleChoice(p, where, violations, mcqCorrectLetters, preReader);
           break;
         case 'true_false':
           checked++;
@@ -92,6 +117,7 @@ function checkMultipleChoice(
   where: string,
   violations: OracleViolation[],
   correctLetters: Array<string | number>,
+  preReader: boolean,
 ): void {
   const options = asRecordArray(p.options);
   if (options.length < 2) {
@@ -100,6 +126,21 @@ function checkMultipleChoice(
   }
   const ids = options.map((o) => String(o.id));
   const texts = options.map((o) => String(o.text));
+
+  // reader-fit PRE: every option must be picture-primary (carry an emoji) so a
+  // non-reader answers by picture, not by decoding the label.
+  if (preReader) {
+    const noEmoji = options
+      .map((o, i) => ({ i, emoji: String(o.emoji ?? '').trim() }))
+      .filter((o) => !o.emoji);
+    if (noEmoji.length > 0) {
+      violations.push({
+        check: 'option-modality',
+        where,
+        detail: `${noEmoji.length}/${options.length} option(s) have no emoji at pre-reader grade — options must be picture-primary (a non-reader cannot decode text labels)`,
+      });
+    }
+  }
 
   if (new Set(ids).size !== ids.length) {
     violations.push({ check: 'schema', where, detail: `duplicate option ids: [${ids.join(', ')}]` });

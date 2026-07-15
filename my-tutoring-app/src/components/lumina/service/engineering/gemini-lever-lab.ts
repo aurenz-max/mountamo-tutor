@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { buildScopePromptSection } from '../scopeContext';
 
 /**
  * Lever Load - represents objects placed on the lever
@@ -166,6 +167,7 @@ export const generateLeverLab = async (
   ctx: GenerationContext,
 ): Promise<LeverLabData> => {
   const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<LeverLabData>;
   // Generate random UNBALANCED scenarios for problem-solving
@@ -181,7 +183,8 @@ export const generateLeverLab = async (
   const randomScenario = randomScenarios[Math.floor(Math.random() * randomScenarios.length)];
 
   const prompt = `
-Create an educational Lever Lab visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Lever Lab visualization for teaching "${topic}
+${scopeSection}" to ${gradeLevel} students.
 
 CRITICAL REQUIREMENT - UNBALANCED START:
 The lever MUST start in an UNBALANCED state! This is a problem-solving activity where students need to figure out how to balance it.
