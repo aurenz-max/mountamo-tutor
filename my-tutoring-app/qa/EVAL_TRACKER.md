@@ -25,7 +25,7 @@
 | letter-sound-link | 3 | 3 | 0 | 2026-03-15 | [report](eval-reports/letter-sound-link-2026-03-15.md) |
 | cvc-speller | 3 | 3 | 0 | 2026-06-25 | [structural sweep](eval-reports/cvc-speller-2026-06-25.md) |
 | picture-vocabulary | 4 | 4 | 0 | 2026-07-04 | [orchestrator refactor](eval-reports/picture-vocabulary-2026-07-04.md) |
-| word-workout | 4 | 4 | 0 | 2026-04-04 | [report](eval-reports/word-workout-2026-04-04.md) |
+| word-workout | 4 | 4 | 0 | 2026-07-14 | [topic-fidelity: vowel-scope binding](topic-fidelity/word-workout-word-flip-2026-07-14.md) |
 | story-map | 4 | 4 | 0 | 2026-03-15 | [report](eval-reports/story-map-2026-03-15.md) |
 | poetry-lab | 3 | 3 | 0 | 2026-07-14 | [K recovery + oracle](eval-reports/poetry-lab-2026-07-14.md) |
 | interactive-book | 2 | 2 | 0 | 2026-07-14 | [find-feature + read-focus-word runtime pass](eval-reports/interactive-book-evalmodes-2026-07-14.md) |
@@ -51,7 +51,7 @@
 | multiplication-explorer | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/multiplication-explorer-2026-06-14.md) |
 | skip-counting-runner | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/skip-counting-runner-2026-06-14.md) |
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
-| shape-tracer | 4 | 3 | 1 | 2026-07-14 | [trace deadlock (SHT-1)](eval-reports/shape-tracer-2026-07-14.md) — trace regressed; other 3 modes last verified [2026-06-20](eval-reports/shape-tracer-2026-06-20.md) |
+| shape-tracer | 4 | 4 | 0 | 2026-07-14 | [SHT-1 RESOLVED — code-placed geometry](eval-reports/shape-tracer-2026-07-14.md) — all 4 modes runtime-verified (trace/connect_dots/complete/draw_from_description) |
 | 3d-shape-explorer | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/3d-shape-explorer-2026-03-17.md) |
 | strategy-picker | 5 | 5 | 0 | 2026-05-23 | [report](eval-reports/strategy-picker-2026-05-23.md) |
 | ratio-table | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/ratio-table-2026-06-14.md) |
@@ -103,7 +103,7 @@
 | vocabulary-explorer | 3 | 3 | 0 | 2026-07-07 | [report](eval-reports/vocabulary-explorer-2026-07-06.md) — VE-5 RESOLVED 2026-07-07 (SP-6 truncation bounded) |
 | foundation-explorer | 4 | 3 | 1 | 2026-07-04 | [report](eval-reports/foundation-explorer-2026-07-04.md) |
 
-**Totals:** 351/369 modes passing (95.1%) | 28 open issues (6 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 352/369 modes passing (95.4%) | 27 open issues (5 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -180,8 +180,8 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 ### SP-8: LLM cannot reliably compute character offsets in generated text
 
 **Affected:** ~~poetry-lab (analysis — figurativeInstances)~~, ~~figurative-language-finder (all modes — instances)~~, ~~text-structure-analyzer (all modes — signalWords)~~
-**Status:** Fixed — all affected primitives resolved. poetry-lab (2026-07-14): schema no longer asks for offsets at all; text+type only, offsets recomputed via `indexOf` with non-overlapping occurrence claiming.
-**Risk:** Any literacy primitive that asks Gemini for startIndex/endIndex character positions within generated passages. **Generalizes beyond offsets:** any primitive that asks the LLM for *answer-bearing geometry/positions* it should derive from a canonical source — see shape-tracer (SHT-1): `trace` mode ships the LLM's raw `tracePath` vertices instead of deriving from the generator's own `getVertices(shape)`, so Gemini's loop-closing duplicate vertex (N→N+1 points) deadlocks the tap sequence. Same lesson: the shape/word DETERMINES the geometry — derive it in code, don't trust the LLM's coordinates.
+**Status:** Fixed — all affected primitives resolved. poetry-lab (2026-07-14): schema no longer asks for offsets at all; text+type only, offsets recomputed via `indexOf` with non-overlapping occurrence claiming. shape-tracer (SHT-1, 2026-07-14): strongest form of the fix — the LLM emits NO coordinates at all. A deterministic `placeShape()` affine-transforms canonical `SHAPE_VERTICES` under LLM-chosen cosmetic knobs (size/rotation/position), so a wrong vertex count / closing-dup is structurally impossible across trace, connect_dots, and complete.
+**Risk:** Any literacy primitive that asks Gemini for startIndex/endIndex character positions within generated passages. **Generalizes beyond offsets:** any primitive that asks the LLM for *answer-bearing geometry/positions* it should derive from a canonical source. shape-tracer (SHT-1) was the geometry instance: `trace`/`connect-dots`/`complete` shipped the LLM's raw coordinates, and Gemini's loop-closing duplicate vertex (N→N+1 points) deadlocked the tap sequence — now fixed by removing coordinates from the LLM's job entirely (code places the shape). Same lesson: the shape/word DETERMINES the geometry — derive it in code, don't trust (or even ask for) the LLM's coordinates.
 **Root cause:** LLMs hallucinate plausible-looking character offset numbers. They cannot reliably count characters, especially in multi-line text. (shape-tracer variant: LLM appends a redundant closing vertex; the base generator's only guard is `length < 3`, which a coincident-close passes.)
 **Fix pattern:** Post-process: use `passage.indexOf(word)` to recompute indices from the `word`/`text` field. Never trust LLM-generated character offsets. **Geometry variant (shape-tracer):** when the target shape/word fully determines the answer-bearing geometry, DERIVE it from the canonical table (`getVertices`) on any count mismatch instead of trusting the LLM's points — and beware honor-don't-churn skips that leave the trusted path in place when the LLM's shape name matches the target.
 
@@ -407,11 +407,11 @@ ceiling).
 
 ### SP-27: Tutoring scaffold references keys the component's primitiveData never emits — tutor silently context-blind
 
-**Affected:** 44 primitives (see `qa/tutor-reports/sweep-2026-07-08.md` for the full list; worst: sound-wave-explorer, push-pull-arena, length-lab, gravity-drop-tower, sentence-analyzer — ALL scaffold keys broken). ~~dot-plot~~ fixed 2026-07-08.
-**Risk:** Every `/add-tutoring-scaffold` pass authored against an intended data model rather than the component's actual `aiPrimitiveData`; any component refactor can re-introduce it.
-**Root cause:** The backend's `interpolate_template` (lumina_tutor.py) renders unresolvable `{{key}}`s and contextKeys as the literal `(not set)` with no error or log — the join between catalog scaffold and component bag was never checked anywhere.
-**Fix pattern:** Add the missing derived keys to `aiPrimitiveData` (preferred — scaffold copy is the reviewed artifact) or rename the scaffold reference. Template: dot-plot (`dataCount: dataPoints.length`, `parallel` added to the bag).
-**Detection:** `/tutor-test` (`/api/lumina/tutor-test`, `service/qa/tutoring/scaffoldAudit.ts`) — deterministic, CI-able; sweep mode covers all scaffolds in one call. `/add-tutoring-scaffold` Phase 5 now gates on it.
+**Affected (re-audited 2026-07-14):** 42 Tier-1 FAIL out of 133 scaffolds: 40 primitives have 155 unresolved flat-key references, `fast-fact` has a spoken answer leak, and `machine-profile` is orphaned. A newly identified audit blind spot found 48 unsupported template expressions/nested paths across 16 primitives; 8 currently false-PASS. The known broken or malformed population is therefore at least 50. See [`qa/tutor-reports/sweep-2026-07-14.md`](tutor-reports/sweep-2026-07-14.md).
+**Risk:** Scaffolds can be authored against an intended data model rather than the component's actual `aiPrimitiveData`; the tutor then receives missing state, literal unsupported template syntax, or answer-bearing spoken copy while the UI appears healthy.
+**Root cause:** `TutoringScaffold.contextKeys` is untyped, `useLuminaAI` accepts `primitiveData: any`, backend interpolation silently emits `(not set)`, and `/tutor-test` is not yet a CI invariant. The audit recognizes flat keys but does not reject non-flat `{{...}}` grammar.
+**Fix strategy:** First harden the auditor (invalid-syntax detection + monotonic CI baseline) and add runtime safe-fallback validation. Then runtime-validate one `how-it-works` pilot before family fan-out. Per primitive, forward truthful derived state when it exists; rewrite stale scaffold assumptions when it does not. Never add an expression evaluator or send the full generated payload. Full proposal: [`PRD_TUTORING_CONTEXT_INTEGRITY.md`](../src/components/lumina/docs/PRD_TUTORING_CONTEXT_INTEGRITY.md).
+**Detection:** `/tutor-test` (`/api/lumina/tutor-test`, `service/qa/tutoring/scaffoldAudit.ts`) — deterministic and CI-able once the proposed contract test lands. Tier 2 is required for the 8 dynamic/unparsed data bags; Tier 3 validates material scaffold/trigger changes.
 
 ---
 
@@ -495,7 +495,7 @@ added; prompt/title movement alone is not a full-fidelity verdict. See
 | MP-2 | media-player | walkthrough | HIGH | Hidden CTA | "Begin Lesson" button pushed below fold by massive title — intro overlay has no scroll, students can't start lesson | COMPONENT |
 | MP-3 | media-player | — | HIGH | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — can't participate in eval-test or pulse agent | CATALOG |
 | NL-1 | number-line | plot | HIGH | UI overflow | `createSubRangePool` produces spans of 200-400 for large manifest ranges (observed: 459-774). 30+ tick labels overlap, student can't locate exact integers. Need `maxSpan` cap (~25) for number-line integers. | GENERATOR |
-| SHT-1 | shape-tracer | trace | CRITICAL | Unsolvable | LLM-emitted `tracePath` appends a coincident closing vertex (N-vertex shape → N+1 points, `path[N]===path[0]`). Component sets `totalSides = tracePath.length` and gates taps in order; the duplicate dot paints on top of dot 0 at the same pixel, intercepts the tap → ordered sequence never completes (deadlock). Also mislabels side count (square = "5 sides") + misinforms tutor. Base path trusts `data.vertices` (only `length<3` guard); canonical `getVertices` already exists and is used by the axis-2 reconstruct path but not the base path. Honor-don't-churn skip leaves tier path exposed too. Runtime-reproduced (~60-80% of trace challenges). Fix: DERIVE trace path from `getVertices(shape)` on vertex-count mismatch. | GENERATOR |
+| ~~SHT-1~~ | ~~shape-tracer~~ | ~~trace~~ | ~~CRITICAL~~ | ~~Unsolvable~~ | ~~LLM-emitted `tracePath` appended a coincident closing vertex (N→N+1 points) that deadlocked the order-gated tap sequence.~~ RESOLVED 2026-07-14: root-cause fix per the "code builds structure" doctrine — the LLM no longer emits ANY coordinates. New deterministic `placeShape()` affine-transforms the canonical `SHAPE_VERTICES` under Gemini-chosen cosmetic knobs (size/rotation/position, code-clamped), always returning exactly N distinct in-bounds ordered vertices; a closing-dup or wrong count is now structurally impossible. Applied to ALL geometry-bearing modes (trace, connect_dots, complete) — draw_from_description has no coordinates. Removed `vertices`/`dots`/`segments` from the three schemas. Defaults reproduce canonical positions (no tier regression). All 4 modes runtime-verified via eval-test + deterministic geometry probe. | GENERATOR |
 | SS-1 | shape-strength-tester | — | CRITICAL | Broken interaction | Canvas click offset — `convertScreenToSVGCoords` manual scaling ignores SVG `preserveAspectRatio` padding, beams placed away from cursor | COMPONENT |
 | SS-2 | shape-strength-tester | — | CRITICAL | Wrong result | Collapsed structure passes — `survived` only checks beam breakage, not structural collapse. Tower falls flat, still PASSED | COMPONENT |
 | GT-1 | gear-train-builder | — | CRITICAL | Missing catalog | No `evalModes` in catalog despite `supportsEvaluation: true` — adaptive session selects primitive but can't generate content | CATALOG |

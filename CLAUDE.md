@@ -25,6 +25,20 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 
 **Key docs:** `my-tutoring-app/src/components/lumina/docs/ADDING_PRIMITIVES.md`, `PRIMITIVE_LIFECYCLE.md`
 
+## Project Management
+
+Work is managed as **tasks in queues, executed by skills** — not ad-hoc orchestration.
+`WORKSTREAMS.md` (repo root) is the portfolio index: ACTIVE/DELEGATED/PARKED streams,
+WIP limit 2+1, each stream pointing at its queue file. Sessions answering "what's next"
+read `WORKSTREAMS.md` and pull the TOP item of an ACTIVE stream's queue; new findings
+get QUEUED in the owning register (reader-fit BACKLOG, EVAL_TRACKER, SP-27 PRD phases,
+HUMAN-CHECKS) with an executor skill named — not fixed inline unless they are the active
+task. Whoever closes work updates the owning queue AND `WORKSTREAMS.md` in the same
+slice. `/pm` runs the reconciliation function (staleness sweep, human-check refresh,
+WIP enforcement, next-3-moves plan); queues are authority over memory and over stale
+reports. Human-only browser/pixel verification debt lives in
+`my-tutoring-app/qa/HUMAN-CHECKS.md`, never buried in per-stream Done entries.
+
 ## Development Workflow
 
 ### Verification Doctrine

@@ -11,6 +11,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -42,6 +43,140 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'sentence-reading' (read decodable sentence)",
   },
 };
+
+// ============================================================================
+// Vowel-scope binding (topic/intent → target short vowel[s])
+// ----------------------------------------------------------------------------
+// A "short a" decoding objective must keep EVERY generated word on that vowel
+// (onset/coda change, vowel fixed). The manifest rarely pins masteredVowels, so
+// the default was all five and chains wandered off-scope (cat→bed→tip→top). We
+// bind the scope from the objective text, mirror it into the prompt
+// (buildScopePromptSection + a hard vowel rule), and code-enforce it with a
+// post-parse sanitizer. Reference: gemini-cvc-speller's resolveCvcVowelFocus +
+// deterministic sanitizer. See memory: llm-window-code-builds-structure.
+// ============================================================================
+
+const ALL_VOWELS = ['a', 'e', 'i', 'o', 'u'];
+
+/**
+ * Short vowel(s) the objective names, or null if it is vowel-generic (mixed
+ * practice). Reads topic + objective + intent so a "short a" lesson binds every
+ * word to /a/. Multiple named vowels (rare) all pass through as the scoped set.
+ */
+function resolveScopedVowels(scope: PedagogicalScope, intent?: string): string[] | null {
+  const hay = [scope.topic, scope.objectiveText, scope.intent, intent]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const found = new Set<string>();
+  const re = /short[\s-]*['’]?\s*([aeiou])\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(hay)) !== null) found.add(m[1]!);
+  return found.size > 0 ? Array.from(found) : null;
+}
+
+/** Vowel letters present in a word (a–u only). */
+function vowelsIn(word: string): string[] {
+  return word.toLowerCase().match(/[aeiou]/g) ?? [];
+}
+
+/** True if the word has vowels and every one is inside the scoped set. */
+function inVowelScope(word: string, scoped: string[]): boolean {
+  const vs = vowelsIn(word);
+  return vs.length > 0 && vs.every((v) => scoped.includes(v));
+}
+
+/**
+ * Deterministic post-parse sanitizer: drop any challenge whose GRADED words
+ * leave the vowel scope. Sight words in sentence-reading are exempt (only the
+ * decodable cvcWords are bound — sight words like "the"/"on" carry other
+ * vowels by nature). Filtering, never fabricating — an emptied mode falls back
+ * to a scoped default.
+ */
+function sanitizeVowelScope(
+  mode: WordWorkoutMode,
+  challenges: WordWorkoutChallenge[],
+  scoped: string[],
+): WordWorkoutChallenge[] {
+  switch (mode) {
+    case 'word-chains':
+      return challenges.filter((ch) => (ch.chain ?? []).every((w) => inVowelScope(w, scoped)));
+    case 'real-vs-nonsense':
+      return challenges.filter(
+        (ch) => inVowelScope(ch.realWord ?? '', scoped) && inVowelScope(ch.nonsenseWord ?? '', scoped),
+      );
+    case 'picture-match':
+      return challenges
+        .filter((ch) => inVowelScope(ch.targetWord ?? '', scoped))
+        .map((ch) => ({
+          ...ch,
+          distractorImages: (ch.distractorImages ?? []).filter((d) => inVowelScope(d.word, scoped)),
+        }))
+        .filter((ch) => (ch.distractorImages?.length ?? 0) >= 1);
+    case 'sentence-reading':
+      return challenges.filter(
+        (ch) => (ch.cvcWords ?? []).length >= 3 && (ch.cvcWords ?? []).every((w) => inVowelScope(w, scoped)),
+      );
+  }
+}
+
+// ── Per-vowel scoped fallbacks (only fire on total generation failure; every
+//    word sits on the target vowel so a scoped lesson never ships off-vowel). ──
+
+const SCOPED_CHAINS: Record<string, { chain: string[]; changedPositions: number[] }> = {
+  a: { chain: ['cat', 'hat', 'had', 'bad'], changedPositions: [0, 2, 0] },
+  e: { chain: ['net', 'bet', 'bed', 'led'], changedPositions: [0, 2, 0] },
+  i: { chain: ['pin', 'pit', 'sit', 'sip'], changedPositions: [2, 0, 2] },
+  o: { chain: ['dog', 'dot', 'cot', 'cop'], changedPositions: [2, 0, 2] },
+  u: { chain: ['hut', 'hug', 'bug', 'bun'], changedPositions: [2, 0, 2] },
+};
+const SCOPED_REAL_NONSENSE: Record<string, Array<{ realWord: string; nonsenseWord: string }>> = {
+  a: [{ realWord: 'cat', nonsenseWord: 'zat' }, { realWord: 'map', nonsenseWord: 'vap' }, { realWord: 'bag', nonsenseWord: 'gaf' }],
+  e: [{ realWord: 'bed', nonsenseWord: 'zeb' }, { realWord: 'net', nonsenseWord: 'ven' }, { realWord: 'pen', nonsenseWord: 'tep' }],
+  i: [{ realWord: 'pig', nonsenseWord: 'zib' }, { realWord: 'pin', nonsenseWord: 'nin' }, { realWord: 'sit', nonsenseWord: 'rit' }],
+  o: [{ realWord: 'dog', nonsenseWord: 'zot' }, { realWord: 'pot', nonsenseWord: 'vop' }, { realWord: 'mop', nonsenseWord: 'nop' }],
+  u: [{ realWord: 'bus', nonsenseWord: 'zub' }, { realWord: 'cup', nonsenseWord: 'vup' }, { realWord: 'mug', nonsenseWord: 'nug' }],
+};
+const SCOPED_PICTURE: Record<string, { targetWord: string; targetImage: string; distractorImages: Array<{ word: string; image: string }> }> = {
+  a: { targetWord: 'cat', targetImage: '🐱', distractorImages: [{ word: 'bat', image: '🦇' }, { word: 'rat', image: '🐀' }] },
+  e: { targetWord: 'hen', targetImage: '🐔', distractorImages: [{ word: 'bed', image: '🛏️' }, { word: 'net', image: '🥅' }] },
+  i: { targetWord: 'pig', targetImage: '🐷', distractorImages: [{ word: 'pin', image: '📌' }, { word: 'bin', image: '🗑️' }] },
+  o: { targetWord: 'dog', targetImage: '🐶', distractorImages: [{ word: 'fox', image: '🦊' }, { word: 'box', image: '📦' }] },
+  u: { targetWord: 'bus', targetImage: '🚌', distractorImages: [{ word: 'cup', image: '🥤' }, { word: 'sun', image: '☀️' }] },
+};
+const SCOPED_SENTENCE: Record<string, { sentence: string; cvcWords: string[]; sightWords: string[]; comprehensionQuestion: string; comprehensionAnswer: string }> = {
+  a: { sentence: 'The cat sat on the mat.', cvcWords: ['cat', 'sat', 'mat'], sightWords: ['the', 'on'], comprehensionQuestion: 'Where did the cat sit?', comprehensionAnswer: 'mat' },
+  e: { sentence: 'Ted fed the red hen.', cvcWords: ['ted', 'fed', 'red', 'hen'], sightWords: ['the'], comprehensionQuestion: 'What did Ted feed?', comprehensionAnswer: 'hen' },
+  i: { sentence: 'The pig can dig in the pit.', cvcWords: ['pig', 'dig', 'pit'], sightWords: ['the', 'can', 'in'], comprehensionQuestion: 'What did the pig dig?', comprehensionAnswer: 'pit' },
+  o: { sentence: 'Tom got a hot pot.', cvcWords: ['tom', 'got', 'hot', 'pot'], sightWords: ['a'], comprehensionQuestion: 'What did Tom get?', comprehensionAnswer: 'pot' },
+  u: { sentence: 'The pup dug in the mud.', cvcWords: ['pup', 'dug', 'mud'], sightWords: ['the', 'in'], comprehensionQuestion: 'Where did the pup dig?', comprehensionAnswer: 'mud' },
+};
+
+/** Scoped fallback for one mode — same shape as getFallbackChallenges but every
+ *  word sits on the (first) target vowel. */
+function getScopedFallback(mode: WordWorkoutMode, count: number, vowel: string): WordWorkoutChallenge[] {
+  const v = SCOPED_CHAINS[vowel] ? vowel : 'a';
+  switch (mode) {
+    case 'word-chains':
+      return [{ id: 'fb1', mode, chain: SCOPED_CHAINS[v]!.chain, changedPositions: SCOPED_CHAINS[v]!.changedPositions }].slice(0, count);
+    case 'real-vs-nonsense':
+      return SCOPED_REAL_NONSENSE[v]!.slice(0, count).map((p, i) => ({ id: `fb${i + 1}`, mode, ...p }));
+    case 'picture-match': {
+      const p = SCOPED_PICTURE[v]!;
+      return [{ id: 'fb1', mode, targetWord: p.targetWord, targetImage: p.targetImage, distractorImages: p.distractorImages }].slice(0, count);
+    }
+    case 'sentence-reading': {
+      const s = SCOPED_SENTENCE[v]!;
+      return [{ id: 'fb1', mode, ...s }].slice(0, count);
+    }
+  }
+}
+
+/** Fallback dispatcher — scoped when the objective named a vowel, else the
+ *  original mixed-vowel default. */
+function fallbackFor(mode: WordWorkoutMode, count: number, scoped: string[] | null): WordWorkoutChallenge[] {
+  return scoped && scoped.length > 0 ? getScopedFallback(mode, count, scoped[0]!) : getFallbackChallenges(mode, count);
+}
 
 // ============================================================================
 // Mode-specific schemas — simple, all fields required per mode.
@@ -187,13 +322,18 @@ function getModePrompt(
   gradeLevel: string,
   masteredVowels: string[],
   count: number,
-  intent?: string
+  intent?: string,
+  scopeSection = '',
+  scopedVowels: string[] | null = null
 ): string {
   const vowelStr = masteredVowels.join(", ");
   const focusLine = intent
     ? `SPECIFIC FOCUS: Beyond the topic "${topic}", lean word choices toward "${intent}" when possible — but ALWAYS prioritize the CVC/phonics accuracy rules below over this focus.\n`
     : "";
-  const base = `Topic: "${topic}". Grade: ${gradeLevel}. Mastered vowels: ${vowelStr}.\n${focusLine}Generate exactly ${count} challenges with IDs "c1", "c2", etc.\n`;
+  const vowelScopeLine = scopedVowels && scopedVowels.length > 0
+    ? `HARD VOWEL SCOPE: every REAL word MUST use ONLY the short vowel(s) "${scopedVowels.join(', ')}". Change the first or last consonant to make new words, but NEVER change the vowel — a word with any other vowel is out of scope and will be rejected.\n`
+    : "";
+  const base = `${scopeSection}\nTopic: "${topic}". Grade: ${gradeLevel}. Mastered vowels: ${vowelStr}.\n${focusLine}${vowelScopeLine}Generate exactly ${count} challenges with IDs "c1", "c2", etc.\n`;
 
   switch (mode) {
     case "real-vs-nonsense":
@@ -363,10 +503,12 @@ async function generateModeChallenges(
   gradeLevel: string,
   masteredVowels: string[],
   count: number,
-  intent?: string
+  intent?: string,
+  scopeSection = '',
+  scopedVowels: string[] | null = null
 ): Promise<WordWorkoutChallenge[]> {
   try {
-    const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count, intent);
+    const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count, intent, scopeSection, scopedVowels);
 
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -416,11 +558,21 @@ async function generateModeChallenges(
       }
     }
 
-    if (challenges.length === 0) throw new Error("No challenges returned");
+    // Post-process: deterministic vowel-scope sanitizer. Drop any challenge that
+    // wandered off the objective's target vowel (chains are the usual offender).
+    if (scopedVowels && scopedVowels.length > 0) {
+      const before = challenges.length;
+      challenges = sanitizeVowelScope(mode, challenges, scopedVowels);
+      if (challenges.length < before) {
+        console.warn(`[word-workout] ${mode}: dropped ${before - challenges.length}/${before} off-vowel challenge(s) (scope: ${scopedVowels.join('')})`);
+      }
+    }
+
+    if (challenges.length === 0) return fallbackFor(mode, count, scopedVowels);
     return challenges;
   } catch (error) {
     console.warn(`[word-workout] ${mode} generation failed, using fallback:`, error);
-    return getFallbackChallenges(mode, count);
+    return fallbackFor(mode, count, scopedVowels);
   }
 }
 
@@ -455,7 +607,14 @@ export const generateWordWorkout = async (
   );
   logEvalModeResolution('WordWorkout', config?.targetEvalMode, evalConstraint);
 
-  const masteredVowels = config?.masteredVowels || ["a", "e", "i", "o", "u"];
+  // ── Vowel-scope binding ─────────────────────────────────────────────
+  // When the objective names a short vowel ("short a"), bind EVERY word to it;
+  // otherwise stay vowel-generic. Topic/objective scope beats the manifest hint
+  // beats the all-five default. masteredVowels then reflects the scope, so both
+  // the prompt and the returned data honor it (the census bug was all-five here).
+  const scopeSection = buildScopePromptSection(ctx.scope);
+  const scopedVowels = resolveScopedVowels(ctx.scope, intent);
+  const masteredVowels = scopedVowels ?? config?.masteredVowels ?? ALL_VOWELS;
 
   // Determine which modes to generate
   const explicitMode = config?.mode;
@@ -471,7 +630,9 @@ export const generateWordWorkout = async (
       gradeLevel,
       masteredVowels,
       count,
-      intent
+      intent,
+      scopeSection,
+      scopedVowels
     );
 
     // Re-assign sequential IDs
@@ -504,7 +665,9 @@ export const generateWordWorkout = async (
   const results = await Promise.all(
     modesToGenerate.map(mode => generateModeChallenges(mode, topic, gradeLevel, masteredVowels,
       mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode,
-      intent
+      intent,
+      scopeSection,
+      scopedVowels
     ))
   );
 

@@ -61,10 +61,9 @@ shared pattern: deep-dive's PRE treatment (auto-read + 🔊 + picture-primary
 checks). Audit foundation-explorer first, extract the pattern, sweep the rest.
 (take-home-activity also routed 2/6 but is parent-facing by design — band-exempt.)
 
-### 10. word-workout + word-flip — K routing + scope binding (census, CVC lesson)
-word-workout chains leave the topic vowel (scopeContext rollout target);
-word-flip got routed into plural_s grammar for a decoding topic with
-non-decodable words ("cloud") — INTENT + GENERATOR. Also both unaudited at PRE.
+### 10. word-workout + word-flip — PRE audit remaining (scope/routing FIXED 2026-07-14)
+Scope-binding + routing slices DONE (see Done). **Remaining:** neither audited at
+PRE (reader-fit band judgment) — that stays in this queue.
 
 ### Lesson-mode sweeps (after pilots 1–2 prove the loop)
 - `/reader-fit --lesson "Count to tell the number of objects — up to 5" kindergarten`
@@ -88,6 +87,16 @@ non-decodable words ("cloud") — INTENT + GENERATOR. Also both unaudited at PRE
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **10 (scope/routing). word-workout + word-flip — CVC scope binding + routing, FIXED + VERIFIED**
+  (2026-07-14, Handoff Task 3). Report: `qa/topic-fidelity/word-workout-word-flip-2026-07-14.md`.
+  word-workout was FIDELITY BUG (masteredVowels defaulted to all five → chains left the
+  topic vowel): added `resolveScopedVowels` (topic/objective → target short vowel),
+  `buildScopePromptSection` + hard vowel rule, and a deterministic `sanitizeVowelScope`
+  post-parse filter with per-vowel scoped fallbacks. Verified: short-a 3/3 draws = 15/15
+  on-vowel chains, masteredVowels=['a']; non-scoped grade-1 topic stays multi-vowel.
+  word-flip was WRONG PRIMITIVE (grammar mis-routed to decoding) → catalog routing lead
+  ("GRAMMAR … NOT phonics/decoding"); verified 3/3 CVC-decode manifest runs no longer
+  select it. typecheck:lumina 0; vitest 726/726. **PRE audit for both still open** (item 10).
 - **1g. phoneme-explorer — ending-sound fidelity, FIXED + VERIFIED (routing)** (2026-07-14,
   Handoff Task 2). Report: `qa/topic-fidelity/phoneme-explorer-2026-07-14.md`. Was a
   three-layer over-claim: catalog advertised "match initial/final sound", generator teased

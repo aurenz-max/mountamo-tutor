@@ -1202,9 +1202,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'word-flip',
     description:
-      'Spoken grammar transformation game for Kindergarten and Grade 1 Language Arts: a counted-picture frame shows one object then several ("One dog 🐕 → three ___?") and the child SAYS the plural form aloud ("dogs") into an open mic, with tap chips as the fallback. Teaches regular -s plural formation (singular/plural nouns, "more than one"). Perfect for K grammar basics, plurals, and oral language production. ESSENTIAL for Kindergarten Language Arts grammar.',
+      'GRAMMAR / oral-language game for K-1 (regular -s plurals) — NOT a phonics or decoding primitive (never select for CVC-decoding, letter-sound, blending, or spelling objectives; route those to cvc-speller / word-workout / phonics-blender). A counted-picture frame shows one object then several ("One dog 🐕 → three ___?") and the child SAYS the plural form aloud ("dogs") into an open mic, with tap chips as the fallback. Teaches regular -s plural formation (singular/plural nouns, "more than one"). ESSENTIAL for Kindergarten Language Arts grammar.',
     constraints:
-      'Covers ONLY regular -s plurals at birth (no -es, no irregular plurals — those modes come later). Nouns must be concrete, picturable words with a clear emoji so pre-readers can play. The manifest must NOT supply specific per-challenge words — the generator authors the noun pool and code assembles the plural_s challenges deterministically.',
+      'GRAMMAR objectives only (plural / "more than one" / singular-vs-plural). Do NOT route decoding/CVC/phonics/spelling objectives here — the noun pool is chosen for clean -s plural formation, not for a target vowel or decodability, so it cannot honor a decoding scope. Covers ONLY regular -s plurals at birth (no -es, no irregular plurals — those modes come later). Nouns must be concrete, picturable words with a clear emoji so pre-readers can play. The manifest must NOT supply specific per-challenge words — the generator authors the noun pool and code assembles the plural_s challenges deterministically.',
     supportsEvaluation: true,
   },
   {

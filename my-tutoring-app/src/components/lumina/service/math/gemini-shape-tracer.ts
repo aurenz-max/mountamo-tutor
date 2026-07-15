@@ -19,17 +19,17 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'trace': {
     promptDoc:
-      `"trace": Student follows a dotted outline by tapping vertices in order. Provide vertices forming the target shape within canvas bounds. K: tolerance 30-40px; Grade 1: 20-25px.`,
+      `"trace": Student follows a dotted outline by tapping the shape's corners in order. The app draws the shape's vertices; the LLM only sets tone + placement. K: tolerance 30-40px; Grade 1: 20-25px.`,
     schemaDescription: "'trace' (follow dotted outline)",
   },
   'connect-dots': {
     promptDoc:
-      `"connect-dots": Numbered dots on canvas; student connects them in order to reveal the shape. Provide labeled dots and the correctOrder index array.`,
+      `"connect-dots": Numbered dots on canvas; student connects them in order to reveal the shape. The app places the dots forming the shape and sets the order; the LLM only sets tone + placement.`,
     schemaDescription: "'connect-dots' (guided vertex construction)",
   },
   'complete': {
     promptDoc:
-      `"complete": Some sides are pre-drawn; student draws the remaining sides to finish the shape. Provide pre-drawn segments and remainingVertices to connect.`,
+      `"complete": Some sides are pre-drawn; student draws the remaining sides to finish the shape. The app pre-draws ~half the sides; the LLM only sets tone + placement.`,
     schemaDescription: "'complete' (finish partial shape)",
   },
   'draw-from-description': {
@@ -376,6 +376,163 @@ const setupSchema: Schema = {
 };
 
 // ============================================================================
+// Deterministic shape PLACER — code owns the answer-bearing geometry
+// ----------------------------------------------------------------------------
+// SHT-1 / SP-8 (geometry variant): the target shape DETERMINES its vertices, so
+// the LLM must never emit the coordinates. Gemini picks only cosmetic knobs
+// (size / rotation / position) from a bounded window; placeShape lays down the
+// exact ordered vertices by affine-transforming the canonical unit shape. A
+// wrong vertex count or a loop-closing duplicate vertex (which deadlocked the
+// order-gated tap sequence) is now structurally impossible: placeShape ALWAYS
+// returns exactly N distinct, ordered points. Defaults (medium / 0deg / center)
+// reproduce the canonical SHAPE_VERTICES positions exactly.
+// ============================================================================
+
+const CANVAS_BOUNDS = { minX: 40, maxX: 460, minY: 40, maxY: 360 };
+
+type ShapeSize = 'small' | 'medium' | 'large';
+type ShapePosition = 'center' | 'top' | 'bottom' | 'left' | 'right';
+
+const SIZE_SCALE: Record<ShapeSize, number> = { small: 0.8, medium: 1.0, large: 1.2 };
+const POSITION_OFFSET: Record<ShapePosition, { dx: number; dy: number }> = {
+  center: { dx: 0, dy: 0 },
+  top: { dx: 0, dy: -55 },
+  bottom: { dx: 0, dy: 55 },
+  left: { dx: -85, dy: 0 },
+  right: { dx: 85, dy: 0 },
+};
+
+/** Rotation cap so a square never reads as a diamond at K/G1 — the shape must
+ *  stay recognizable in its canonical orientation. */
+const MAX_ROTATION_DEG = 20;
+
+interface PlacementKnobs {
+  size?: ShapeSize;
+  rotationDeg?: number;
+  position?: ShapePosition;
+}
+
+/** Cosmetic-placement schema fields shared by every geometry-bearing mode. The
+ *  LLM fills these (or omits them → code defaults); it NEVER emits coordinates. */
+const placementSchemaProps: Record<string, Schema> = {
+  size: { type: Type.STRING, description: "How big the shape is drawn: 'small', 'medium', or 'large'" },
+  rotationDeg: { type: Type.NUMBER, description: "Rotation in degrees, -20 to 20 (0 = upright). Keep it small so the shape stays recognizable." },
+  position: { type: Type.STRING, description: "Where the shape sits: 'center', 'top', 'bottom', 'left', or 'right'" },
+};
+
+/** Sanitize the LLM's placement knobs; anything missing/invalid falls back to a
+ *  canonical, recognizable default (medium / upright / centered). */
+function resolveKnobs(data: { size?: unknown; rotationDeg?: unknown; position?: unknown } | null): PlacementKnobs {
+  const sizes: readonly ShapeSize[] = ['small', 'medium', 'large'];
+  const positions: readonly ShapePosition[] = ['center', 'top', 'bottom', 'left', 'right'];
+  return {
+    size: sizes.includes(data?.size as ShapeSize) ? (data!.size as ShapeSize) : 'medium',
+    position: positions.includes(data?.position as ShapePosition) ? (data!.position as ShapePosition) : 'center',
+    rotationDeg: typeof data?.rotationDeg === 'number' && Number.isFinite(data.rotationDeg) ? (data.rotationDeg as number) : 0,
+  };
+}
+
+/** Canonical unit vertices for a shape. Polygons come from the artist-tuned
+ *  SHAPE_VERTICES table; circle is sampled as 8 points (it has no polygon entry
+ *  — its "vertices" are just trace anchors around the rim). */
+function baseVertices(shape: string): Array<{ x: number; y: number }> {
+  if (shape === 'circle') {
+    const cx = 250, cy = 200, r = 120, n = 8;
+    const pts: Array<{ x: number; y: number }> = [];
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI * 2 * i) / n - Math.PI / 2;
+      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+    return pts;
+  }
+  return (SHAPE_VERTICES[shape] ?? SHAPE_VERTICES.triangle!).map(v => ({ ...v }));
+}
+
+const centroidOf = (pts: Array<{ x: number; y: number }>) => ({
+  x: pts.reduce((s, p) => s + p.x, 0) / pts.length,
+  y: pts.reduce((s, p) => s + p.y, 0) / pts.length,
+});
+
+/** Shrink a point set about its centroid so its bounding box fits the canvas.
+ *  A no-op when it already fits — a rotated/large shape that would overflow (a
+ *  translation can't rescue a shape bigger than the canvas) is scaled down
+ *  uniformly, preserving the shape AND the vertex count. */
+function shrinkToFit(pts: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const w = Math.max(...xs) - Math.min(...xs);
+  const h = Math.max(...ys) - Math.min(...ys);
+  const cw = CANVAS_BOUNDS.maxX - CANVAS_BOUNDS.minX;
+  const ch = CANVAS_BOUNDS.maxY - CANVAS_BOUNDS.minY;
+  const f = Math.min(1, w > 0 ? cw / w : 1, h > 0 ? ch / h : 1);
+  if (f >= 1) return pts;
+  const c = centroidOf(pts);
+  return pts.map(p => ({ x: c.x + (p.x - c.x) * f, y: c.y + (p.y - c.y) * f }));
+}
+
+/** Translate a point set (never distorting) so its bounding box sits fully
+ *  inside the canvas — preserves the shape AND the vertex count. Assumes the
+ *  bbox already fits (see shrinkToFit); rounds to integer pixels. */
+function fitWithinCanvas(pts: Array<{ x: number; y: number }>): Array<{ x: number; y: number }> {
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  let dx = 0, dy = 0;
+  if (minX < CANVAS_BOUNDS.minX) dx = CANVAS_BOUNDS.minX - minX;
+  else if (maxX > CANVAS_BOUNDS.maxX) dx = CANVAS_BOUNDS.maxX - maxX;
+  if (minY < CANVAS_BOUNDS.minY) dy = CANVAS_BOUNDS.minY - minY;
+  else if (maxY > CANVAS_BOUNDS.maxY) dy = CANVAS_BOUNDS.maxY - maxY;
+  return pts.map(p => ({ x: Math.round(p.x + dx), y: Math.round(p.y + dy) }));
+}
+
+/**
+ * Place a shape's canonical vertices under cosmetic knobs. Returns EXACTLY the
+ * shape's vertex count, ordered, with no closing duplicate, always in-bounds.
+ * This is the single source of truth for every mode's answer-bearing geometry.
+ * Defaults (medium / 0deg / center) reproduce the canonical SHAPE_VERTICES.
+ */
+function placeShape(shape: string, knobs: PlacementKnobs = {}): Array<{ x: number; y: number }> {
+  const base = baseVertices(shape);
+  const c = centroidOf(base);
+  const scale = SIZE_SCALE[knobs.size ?? 'medium'] ?? 1;
+  const rawRot = knobs.rotationDeg ?? 0;
+  const clampedRot = Math.max(-MAX_ROTATION_DEG, Math.min(MAX_ROTATION_DEG, Number.isFinite(rawRot) ? rawRot : 0));
+  const rot = (clampedRot * Math.PI) / 180;
+  const off = POSITION_OFFSET[knobs.position ?? 'center'] ?? POSITION_OFFSET.center;
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  // 1) scale + rotate about the centroid (in place)
+  let placed = base.map(v => {
+    const rx = (v.x - c.x) * scale, ry = (v.y - c.y) * scale;
+    return { x: c.x + (rx * cos - ry * sin), y: c.y + (rx * sin + ry * cos) };
+  });
+  // 2) shrink if the rotated/scaled bbox is bigger than the canvas
+  placed = shrinkToFit(placed);
+  // 3) apply the position nudge, then translate any overflow back in-bounds
+  placed = placed.map(p => ({ x: p.x + off.dx, y: p.y + off.dy }));
+  return fitWithinCanvas(placed);
+}
+
+/** Split a vertex ring into ~half pre-drawn sides + the remaining vertices the
+ *  student closes. Shared by generateComplete and the axis-2 reconstruct path so
+ *  the pre-drawn fraction stays ~half (keeps it 'complete', not 'trace'/'draw'). */
+function buildCompleteFromVertices(
+  verts: Array<{ x: number; y: number }>,
+): {
+  drawnSides: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
+  remainingVertices: Array<{ x: number; y: number }>;
+} {
+  const half = Math.ceil(verts.length / 2);
+  const drawnSides: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }> = [];
+  for (let i = 0; i < half; i++) {
+    drawnSides.push({ from: { ...verts[i]! }, to: { ...verts[(i + 1) % verts.length]! } });
+  }
+  const remaining = verts.slice(half);
+  return {
+    drawnSides,
+    remainingVertices: remaining.length > 0 ? remaining.map(v => ({ ...v })) : [{ ...verts[verts.length - 1]! }],
+  };
+}
+
+// ============================================================================
 // Per-Challenge-Type Schemas (small, focused)
 // ============================================================================
 
@@ -386,24 +543,13 @@ const traceSchema: Schema = {
       type: Type.STRING,
       description: "Warm instruction like 'Trace the triangle by following the dots!'"
     },
-    vertices: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          x: { type: Type.NUMBER, description: "X coordinate (40-460)" },
-          y: { type: Type.NUMBER, description: "Y coordinate (40-360)" }
-        },
-        required: ["x", "y"]
-      },
-      description: "Ordered vertices of the shape to trace, within 500x400 canvas"
-    },
+    ...placementSchemaProps,
     tolerance: {
       type: Type.NUMBER,
       description: "Pixel tolerance: 30-40 for K, 20-25 for Grade 1"
     }
   },
-  required: ["instruction", "vertices", "tolerance"]
+  required: ["instruction", "tolerance"]
 };
 
 const completeSchema: Schema = {
@@ -413,34 +559,9 @@ const completeSchema: Schema = {
       type: Type.STRING,
       description: "Instruction like 'Finish the square by connecting the missing sides!'"
     },
-    segments: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          x1: { type: Type.NUMBER, description: "Start X (40-460)" },
-          y1: { type: Type.NUMBER, description: "Start Y (40-360)" },
-          x2: { type: Type.NUMBER, description: "End X (40-460)" },
-          y2: { type: Type.NUMBER, description: "End Y (40-360)" }
-        },
-        required: ["x1", "y1", "x2", "y2"]
-      },
-      description: "Pre-drawn line segments (the sides already visible)"
-    },
-    remainingVertices: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          x: { type: Type.NUMBER, description: "X coordinate (40-460)" },
-          y: { type: Type.NUMBER, description: "Y coordinate (40-360)" }
-        },
-        required: ["x", "y"]
-      },
-      description: "Vertices the student must connect to finish the shape"
-    }
+    ...placementSchemaProps
   },
-  required: ["instruction", "segments", "remainingVertices"]
+  required: ["instruction"]
 };
 
 const drawFromDescriptionSchema: Schema = {
@@ -481,30 +602,9 @@ const connectDotsSchema: Schema = {
       type: Type.STRING,
       description: "Instruction like 'Connect the dots in order to reveal the shape!'"
     },
-    dots: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          x: { type: Type.NUMBER, description: "X coordinate (40-460)" },
-          y: { type: Type.NUMBER, description: "Y coordinate (40-360)" },
-          label: { type: Type.STRING, description: "Dot label (e.g., '1', '2', 'A')" }
-        },
-        required: ["x", "y", "label"]
-      },
-      description: "Positioned dots on the canvas"
-    },
-    correctOrder: {
-      type: Type.ARRAY,
-      items: { type: Type.NUMBER },
-      description: "Zero-based indices into dots array defining correct connection order"
-    },
-    revealShape: {
-      type: Type.STRING,
-      description: "Name of shape revealed when dots are connected"
-    }
+    ...placementSchemaProps
   },
-  required: ["instruction", "dots", "correctOrder", "revealShape"]
+  required: ["instruction"]
 };
 
 // ============================================================================
@@ -596,55 +696,37 @@ Title should be fun and engaging for young children.
 // Per-Type Challenge Generators
 // ============================================================================
 
-function coordinateExamples(shape: string): string {
-  const examples: Record<string, string> = {
-    triangle: 'Triangle: [{x:250,y:80},{x:150,y:280},{x:350,y:280}]',
-    square: 'Square: [{x:150,y:100},{x:350,y:100},{x:350,y:300},{x:150,y:300}]',
-    rectangle: 'Rectangle: [{x:100,y:120},{x:400,y:120},{x:400,y:280},{x:100,y:280}]',
-    pentagon: 'Pentagon: [{x:250,y:60},{x:390,y:160},{x:340,y:330},{x:160,y:330},{x:110,y:160}]',
-    hexagon: 'Hexagon: [{x:250,y:60},{x:370,y:110},{x:370,y:250},{x:250,y:310},{x:130,y:250},{x:130,y:110}]',
-    circle: 'Circle: use 8+ points along radius 120 centered at (250,200)',
-    rhombus: 'Rhombus: [{x:250,y:60},{x:400,y:200},{x:250,y:340},{x:100,y:200}]',
-  };
-  return examples[shape] || examples.triangle!;
-}
-
-const clampPoint = (pt: { x: number; y: number }) => ({
-  x: Math.max(40, Math.min(460, pt.x ?? 250)),
-  y: Math.max(40, Math.min(360, pt.y ?? 200)),
-});
-
 async function generateTrace(shape: string, setup: SetupResult, tierSection = ''): Promise<ShapeTracerChallenge> {
   const prompt = `
 Create a TRACE challenge for a "${shape}" shape tracing activity for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
-Canvas is 500x400. All coordinates must be x: 40-460, y: 40-360.
-Coordinate reference: ${coordinateExamples(shape)}
-
-The student follows a dotted outline by tapping vertices in order.
+The student follows a dotted outline by tapping the shape's corners in order. YOU DO NOT PLACE THE CORNERS — the app draws the ${shape}'s vertices for you. You only choose:
 - instruction: warm, encouraging (e.g., "Trace the ${shape} by following the dots!")
-- vertices: ordered points that form the ${shape}. Must be within canvas bounds.
+- size / position / rotationDeg: how the ${shape} sits on the 500x400 canvas (keep rotation small, -20 to 20, so it stays recognizable)
 - tolerance: ${setup.gradeBand === 'K' ? '30-40' : '20-25'} pixels
 ${tierSection}`;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: traceSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data || !Array.isArray(data.vertices) || data.vertices.length < 3) {
+  let data: { instruction?: string; tolerance?: number; size?: unknown; rotationDeg?: unknown; position?: unknown } | null = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: traceSchema },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch {
     return fallbackTrace(shape, setup);
   }
 
   return {
     id: '',
     type: 'trace',
-    instruction: data.instruction || `Trace the ${shape} by following the dots!`,
+    instruction: data?.instruction || `Trace the ${shape} by following the dots!`,
     targetShape: shape,
-    tracePath: data.vertices.map(clampPoint),
-    tolerance: (data.tolerance && data.tolerance > 0) ? data.tolerance : (setup.gradeBand === 'K' ? 35 : 22),
+    // Answer-bearing geometry is CODE-derived from the target shape (never the
+    // LLM's coordinates) — placeShape returns exactly N ordered vertices.
+    tracePath: placeShape(shape, resolveKnobs(data)),
+    tolerance: (typeof data?.tolerance === 'number' && data.tolerance > 0) ? data.tolerance : (setup.gradeBand === 'K' ? 35 : 22),
   };
 }
 
@@ -652,42 +734,34 @@ async function generateComplete(shape: string, setup: SetupResult, tierSection =
   const prompt = `
 Create a COMPLETE challenge for a "${shape}" shape for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
-Canvas is 500x400. All coordinates: x: 40-460, y: 40-360.
-Coordinate reference: ${coordinateExamples(shape)}
-
-Some sides are pre-drawn. The student draws the remaining sides to finish the shape.
+Some sides are pre-drawn; the student draws the remaining sides to finish the shape. YOU DO NOT PLACE ANY LINES OR CORNERS — the app draws about half the ${shape}'s sides and leaves the rest for the student. You only choose:
 - instruction: encouraging (e.g., "Finish the ${shape}!")
-- segments: pre-drawn line segments as [{x1, y1, x2, y2}]. Draw about half the sides.
-- remainingVertices: vertices the student connects to complete the shape.
-
-The segments + remaining vertices should form a complete ${shape} when connected.
+- size / position / rotationDeg: how the ${shape} sits on the 500x400 canvas (keep rotation small, -20 to 20)
 ${tierSection}`;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: completeSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data || !Array.isArray(data.segments) || data.segments.length === 0 ||
-      !Array.isArray(data.remainingVertices) || data.remainingVertices.length === 0) {
+  let data: { instruction?: string; size?: unknown; rotationDeg?: unknown; position?: unknown } | null = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: completeSchema },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch {
     return fallbackComplete(shape, setup);
   }
 
-  // Convert flat segments to drawnSides format
-  const drawnSides = data.segments.map((s: { x1: number; y1: number; x2: number; y2: number }) => ({
-    from: clampPoint({ x: s.x1, y: s.y1 }),
-    to: clampPoint({ x: s.x2, y: s.y2 }),
-  }));
+  // Answer-bearing geometry is CODE-derived: place the shape, then split it into
+  // ~half pre-drawn sides + the remaining vertices to close (never LLM points).
+  const { drawnSides, remainingVertices } = buildCompleteFromVertices(placeShape(shape, resolveKnobs(data)));
 
   return {
     id: '',
     type: 'complete',
-    instruction: data.instruction || `Finish the ${shape}!`,
+    instruction: data?.instruction || `Finish the ${shape}!`,
     targetShape: shape,
     drawnSides,
-    remainingVertices: data.remainingVertices.map(clampPoint),
+    remainingVertices,
   };
 }
 
@@ -732,49 +806,35 @@ async function generateConnectDots(shape: string, setup: SetupResult, tierSectio
   const prompt = `
 Create a CONNECT-THE-DOTS challenge for a "${shape}" for ${setup.gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}.
 
-Canvas is 500x400. All coordinates: x: 40-460, y: 40-360.
-Coordinate reference: ${coordinateExamples(shape)}
-
-Numbered dots on canvas. Student connects them in order to reveal the shape.
+Numbered dots on canvas. Student connects them in order to reveal the shape. YOU DO NOT PLACE THE DOTS — the app places the numbered dots forming the ${shape} and sets the 1→2→3 order for you. You only choose:
 - instruction: fun (e.g., "Connect the dots to discover the hidden shape!")
-- dots: positioned dots with labels "1", "2", "3", etc. Place them to form a ${shape}.
-- correctOrder: zero-based indices [0, 1, 2, ...] matching the label order
-- revealShape: "${shape}"
+- size / position / rotationDeg: how the ${shape} sits on the 500x400 canvas (keep rotation small, -20 to 20)
 ${tierSection}`;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: { responseMimeType: "application/json", responseSchema: connectDotsSchema },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data || !Array.isArray(data.dots) || data.dots.length < 3) {
+  let data: { instruction?: string; size?: unknown; rotationDeg?: unknown; position?: unknown } | null = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: connectDotsSchema },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch {
     return fallbackConnectDots(shape, setup);
   }
 
-  const clampedDots = data.dots.map((d: { x: number; y: number; label?: string }, i: number) => ({
-    ...clampPoint(d),
-    label: d.label || String(i + 1),
-  }));
-
-  // Validate correctOrder indices
-  let correctOrder = Array.isArray(data.correctOrder) ? data.correctOrder : [];
-  correctOrder = correctOrder.filter(
-    (i: number) => typeof i === 'number' && i >= 0 && i < clampedDots.length
-  );
-  if (correctOrder.length === 0) {
-    correctOrder = clampedDots.map((_: unknown, i: number) => i);
-  }
+  // Answer-bearing geometry is CODE-derived: the dots ARE the shape's vertices
+  // (labeled 1..n) and the canonical order is 0..n-1 — never LLM coordinates.
+  const verts = placeShape(shape, resolveKnobs(data));
 
   return {
     id: '',
     type: 'connect-dots',
-    instruction: data.instruction || `Connect the dots to reveal the ${shape}!`,
+    instruction: data?.instruction || `Connect the dots to reveal the ${shape}!`,
     targetShape: shape,
-    dots: clampedDots,
-    correctOrder,
-    revealShape: data.revealShape || shape,
+    dots: verts.map((v, i) => ({ ...v, label: String(i + 1) })),
+    correctOrder: verts.map((_, i) => i),
+    revealShape: shape,
   };
 }
 
@@ -837,15 +897,9 @@ function reconstructConnectDots(ch: ShapeTracerChallenge, shape: string): void {
  *  the student to close. Mirrors fallbackComplete so the pre-drawn fraction
  *  stays ~half (the floor/cap that keeps it 'complete', not 'trace'/'draw'). */
 function reconstructComplete(ch: ShapeTracerChallenge, shape: string): void {
-  const verts = getVertices(shape);
-  const half = Math.ceil(verts.length / 2);
-  const drawnSides: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }> = [];
-  for (let i = 0; i < half; i++) {
-    drawnSides.push({ from: { ...verts[i]! }, to: { ...verts[(i + 1) % verts.length]! } });
-  }
-  const remaining = verts.slice(half);
+  const { drawnSides, remainingVertices } = buildCompleteFromVertices(getVertices(shape));
   ch.drawnSides = drawnSides;
-  ch.remainingVertices = remaining.length > 0 ? remaining.map(v => ({ ...v })) : [{ ...verts[verts.length - 1]! }];
+  ch.remainingVertices = remainingVertices;
   ch.targetShape = shape;
 }
 

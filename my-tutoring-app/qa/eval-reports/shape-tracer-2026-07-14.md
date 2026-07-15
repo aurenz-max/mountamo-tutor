@@ -1,34 +1,36 @@
 # Eval Report: shape-tracer — 2026-07-14
 
-Targeted re-test of the `trace` mode against a reported defect: *"'Trace the square' challenges ship with the wrong path — the tracePath should be code-derived, not LLM-emitted."* **Confirmed, and more severe than reported: the LLM-emitted path routinely deadlocks the challenge.**
+Targeted re-test of the `trace` mode against a reported defect: *"'Trace the square' challenges ship with the wrong path — the tracePath should be code-derived, not LLM-emitted."* **Confirmed (deadlock, more severe than reported) — and now RESOLVED at the root: the LLM no longer emits any coordinates.**
 
 ## Results
 
 | Eval Mode | Status | Issues |
 |-----------|--------|--------|
-| trace | **FAIL** | 1 (SHT-1, CRITICAL) |
-| connect-dots | not re-run | at-risk (shares the LLM-emitted-geometry channel) |
-| complete | not re-run | — |
-| draw-from-description | not re-run | — |
+| trace | **PASS** | SHT-1 RESOLVED |
+| connect_dots | **PASS** | — (was at-risk; same channel, now code-placed) |
+| complete | **PASS** | — (same latent bug closed proactively) |
+| draw_from_description | **PASS** | — (no rendered geometry) |
 
-> Only `trace` was exercised this run. The 2026-06-20 structural sweep marked all 4 modes PASS, but it asserted **shape identity + scaffold flags + structural levers** on the *tiered reconstruction* path — it never asserted `tracePath.length === (canonical vertex count for targetShape)`, so this slipped through.
+All four modes runtime-verified via the live eval-test API (real generator → real challenge data) plus a deterministic geometry probe. Every trace path / dot set / complete-split now carries **exactly the shape's canonical vertex count**, distinct and in-bounds, with no closing duplicate.
 
-## Issues
+## Resolution (SHT-1)
 
-### trace — LLM-emitted tracePath appends a duplicate closing vertex → unsolvable
-- **Severity:** CRITICAL
-- **What's broken:** `generateTrace` ([gemini-shape-tracer.ts:636-648](../../src/components/lumina/service/math/gemini-shape-tracer.ts#L636-L648)) trusts `data.vertices` from Gemini with the only guard being `vertices.length < 3 → fallback`. Gemini routinely "closes the loop" by repeating the first vertex, so an N-vertex shape ships **N+1** points with `path[N] === path[0]` (coincident). `targetShape`/`instruction` still say "square" (4), but the path has 5 points.
-- **Why it's not just cosmetic (the deadlock):**
-  - The component sets `totalSides = tracePath.length` ([ShapeTracer.tsx:259](../../src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx#L259)) → a square is treated as a **5-sided** shape, and the tutor is told the student "traced a square with 5 sides" ([ShapeTracer.tsx:405-406](../../src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx#L405-L406)).
-  - Vertex dots render in array order ([ShapeTracer.tsx:736-787](../../src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx#L736)), so the duplicate dot (idx N) paints **on top of** dot 0 at the identical pixel. Taps are order-gated: `if (vertexIndex !== tappedIndices.length) reject` ([ShapeTracer.tsx:370](../../src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx#L370)). Every click on the start vertex hits the top-painted duplicate (idx N) → `N !== 0` → rejected. The student **cannot register the ordered taps**, and completion requires `newTapped.length === path.length` ([ShapeTracer.tsx:382](../../src/components/lumina/primitives/visual-primitives/math/ShapeTracer.tsx#L382)). The trace can never complete.
-- **Frequency (runtime, live API):** stochastic but majority. Observed across topics/shapes:
-  - `triangle` → pathLen **4** (exp 3), last dot = first dot
-  - `square` → pathLen **5** (exp 4), last dot = first dot
-  - `rectangle` → pathLen **5** (exp 4) — and **4** (clean) on other draws
-  - `hexagon` → pathLen **7** (exp 6) — and **6** (clean) on another draw
-  - `pentagon` → **5** (clean) in samples
-  - Roughly 60–80% of sampled trace challenges carried the extra vertex.
-- **Data:** `targetShape="square"`, `tracePath=[{150,100},{350,100},{350,300},{150,300},{150,100}]` (5 pts; pt[4]===pt[0]).
-- **Root cause = the reported feedback, confirmed:** the answer-bearing geometry (`tracePath`) is LLM-emitted and unvalidated against the named shape. The generator already owns the canonical vertices (`SHAPE_VERTICES` / `getVertices`, [gemini-shape-tracer.ts:785-796](../../src/components/lumina/service/math/gemini-shape-tracer.ts#L785-L796)) and already **code-derives** them in the axis-2 `reconstructTrace` path — the base (untiered) path just doesn't use them. The `length < 3` guard cannot catch a closing-duplicate (length ≥ 3) or a wrong vertex count.
-- **Tier path is also exposed:** `applyStructuralShape` reconstructs from `getVertices` **only when `ch.targetShape !== target`** (honor-don't-churn, [gemini-shape-tracer.ts:880](../../src/components/lumina/service/math/gemini-shape-tracer.ts#L880)). When the LLM's shape already equals the tier's ladder target (e.g. easy G1 → triangle, and the plan picked triangle), reconstruction is skipped and the duplicate survives even at that tier.
-- **Fix in:** GENERATOR — validate/derive the trace path against the target shape's canonical vertex count (DERIVE, not validate): if `data.vertices` doesn't match the expected vertex count for `shape` (accounting for a coincident closing dup), rebuild from `getVertices(shape)`. Same treatment should extend to `connect-dots` dots and the honor-don't-churn skip. (Verification note: the data defect is runtime-reproduced via the live eval-test API; the deadlock is established by code inspection of the coincident-dot z-order + order-gated tap logic — a browser click-through would make it 100%, but the failure is structural.)
+**Root cause (confirmed):** the answer-bearing geometry (`tracePath`, `dots`, `segments`) was LLM-emitted and unvalidated. Gemini routinely "closed the loop" by repeating the first vertex, shipping an N-vertex shape as **N+1** coincident-dot points (`path[N]===path[0]`). Because vertex dots render in array order and taps are order-gated (`if (vertexIndex !== tappedIndices.length) reject`), the duplicate dot painted on top of dot 0 and intercepted every start tap → the ordered sequence could never complete (deadlock). The base generator's only guard was `length < 3`, which a coincident-close (length ≥ 3) passes. Runtime-reproduced across ~60–80% of trace challenges.
+
+**Fix — code builds the structure; the LLM only picks a window.** Rather than catching bad vertices (validate), we removed coordinates from the LLM's job entirely (derive):
+
+- New deterministic `placeShape(shape, knobs)` in [gemini-shape-tracer.ts](../../src/components/lumina/service/math/gemini-shape-tracer.ts) affine-transforms the artist-tuned canonical `SHAPE_VERTICES` (scale + rotate + translate) and **always returns exactly N distinct, ordered, in-bounds vertices** — a wrong count or a closing duplicate is now structurally impossible.
+- Gemini now emits only cosmetic knobs — `size` (`small`/`medium`/`large`), `rotationDeg` (**code-clamped to ±20°** so a square never reads as a diamond at K/G1), and `position` — all sanitized by `resolveKnobs()`; garbage/missing knobs fall back to canonical defaults. It never emits coordinates.
+- `shrinkToFit()` scales a rotated/large shape down about its centroid when its bbox would exceed the 500×400 canvas (a translation can't rescue a shape bigger than the canvas), then `fitWithinCanvas()` nudges it in-bounds. Both preserve the vertex count.
+- Applied to **all three geometry-bearing modes**: `trace` (path), `connect_dots` (dots = vertices labeled 1..n, order = 0…n-1), `complete` (`buildCompleteFromVertices` splits the ring into ~half pre-drawn sides + remaining vertices). `draw_from_description` is untouched (properties only, no coordinates).
+- Removed the `vertices` / `dots` + `correctOrder` / `segments` + `remainingVertices` fields from the three per-type schemas — the output is now tiny, which also reduces flash-lite truncation risk (SP-6 adjacent).
+- **Defaults (medium / 0° / center) reproduce the canonical positions exactly**, so the axis-2 structural-tier work (`reconstructTrace`/`reconstructComplete`/`applyStructuralShape`, refactored to share `buildCompleteFromVertices`) does not regress. The honor-don't-churn skip is now safe by construction: the base challenge arrives with clean, code-placed geometry, so there is no dirty path left for the skip to preserve.
+
+**Verification:**
+- Deterministic geometry probe (all shapes × 9 knob combos incl. large/rotated/positioned/garbage): defaults reproduce canonical exactly; every result has the exact vertex count, no coincident vertices, all in-bounds. (Caught two real issues pre-commit — `large` overflow on pentagon/rhombus, and a NaN-rotation guard — both fixed via `shrinkToFit` + `Number.isFinite`.)
+- Live eval-test, all 4 modes `pass`: trace path counts = canonical (3/4/4/5/6…); connect_dots dots = N with order 0…n-1; complete drawn+remaining half-split consistent; draw properties correct.
+- `npm run typecheck:lumina` — 0 errors on the active surface.
+
+## Note on the original 2026-06-20 sweep
+
+The prior structural sweep marked all 4 modes PASS but asserted shape identity + scaffold flags + structural levers on the *tiered reconstruction* path — it never asserted `tracePath.length === (canonical vertex count)` on the *base* path, so the closing-duplicate slipped through. The geometry probe added here closes that assertion gap for future runs.
