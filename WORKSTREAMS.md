@@ -51,13 +51,17 @@ queue AND this file's "last touched" in the same slice.
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (2026-07-15):** the phonics-blender contract lane is now **committed** (`612d0b5`);
-> that WIP note is retired. Working tree currently carries the **reader-fit #9 explainer-tail slice**
-> (foundation-explorer + fact-file PRE band-gates, shared `PreReaderSelfCheck` helper, generator
-> emoji + catalog directives, 2 jsdom suites, `run_tutor_live.py` foundation-explorer journey, report
-> + queue updates) — being shipped now. Portfolio stays **2 ACTIVE + 0 DELEGATED**. Residuals: browser
-> spot-checks HUMAN-CHECKS #12–#20; fact-file live `--lesson` queued; phonics tap-pronounce verification
-> (reader-fit BACKLOG, `/tutor-test`).
+> **WIP note (`/pm` reconcile 2026-07-15):** the reader-fit #9 explainer-tail slice is **committed**
+> (`ff03688`) — the prior "being shipped now" note was stale. #10 word-workout+word-flip is also
+> committed (`942d2c4`). The working tree now carries **two unrelated streams' worth** of uncommitted
+> work — SHIP AS TWO SLICES before opening reader-fit #9a:
+> 1. **Contracts stream:** `primitive-contracts/BACKLOG.md` + `docs/contracts/{phonics-blender,sorting-station}.md`
+>    + 2 new `--check` reports (`phonics-blender-check`, `sorting-station-check`) — the baseline `--check ×2 PASSED` exercise.
+> 2. **Lumina kit roadmap (DropZone Batch-4):** `DROPZONE_MIGRATION_PRD.md` + `StoryMap.tsx` +
+>    `CompareContrastBlock.tsx` (LuminaDropZone migration + zone-flash feedback). NOTE: this means the
+>    kit roadmap is being actively worked while PARKED — if it continues, promote it to ACTIVE and enforce WIP.
+> Portfolio is **2 ACTIVE + 0 DELEGATED**. Residuals: browser spot-checks HUMAN-CHECKS #12–#20;
+> fact-file live `--lesson` queued; phonics tap-pronounce verification (reader-fit BACKLOG, `/tutor-test`).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 

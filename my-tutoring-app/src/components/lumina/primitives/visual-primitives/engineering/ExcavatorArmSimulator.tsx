@@ -6,6 +6,7 @@ import {
   type ExcavatorArmSimulatorMetrics,
 } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import {
   LuminaPanel,
   LuminaBadge,
@@ -509,6 +510,60 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     toastRef.current = { text, frames: 120 };
   }, []);
 
+  // ── AI tutoring ─────────────────────────────────────────────────────────────
+  const resolvedAiInstanceId = useMemo(
+    () => instanceId || `excavator-arm-${Date.now()}`,
+    [instanceId],
+  );
+
+  const aiPrimitiveData = useMemo(() => ({
+    jobTitle: currentMission.title,
+    jobBadge: currentMission.badge,
+    jobNumber: currentMissionIdx + 1,
+    jobsTotal: missions.length,
+    goalKind: currentMission.goalKind,
+    goalUnits: layout.goalUnits,
+    progressUnits: missionProgress,
+    jobsSolved: solvedIds.size,
+    bucketLoad: bucketLoad.length,
+    bucketSize,
+    digsUsed,
+    maxDigs: layout.maxDigs ?? 'unlimited',
+    bodyLocked: layout.bodyLocked,
+    stickJammed: layout.stickLockAngle !== null,
+    hasPipe: !!layout.pipe,
+    pipeStrikes,
+    spilledUnits,
+  }), [
+    currentMission.title, currentMission.badge, currentMission.goalKind,
+    currentMissionIdx, missions.length, layout.goalUnits, layout.maxDigs,
+    layout.bodyLocked, layout.stickLockAngle, layout.pipe,
+    missionProgress, solvedIds.size, bucketLoad.length, bucketSize,
+    digsUsed, pipeStrikes, spilledUnits,
+  ]);
+
+  const { sendText, isConnected } = useLuminaAI({
+    primitiveType: 'excavator-arm-simulator',
+    instanceId: resolvedAiInstanceId,
+    primitiveData: aiPrimitiveData,
+    exhibitId,
+  });
+
+  // AI: welcome the operator once the tutor connects
+  const hasIntroducedRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || hasIntroducedRef.current) return;
+    hasIntroducedRef.current = true;
+    sendText(
+      `[ACTIVITY_START] Student is starting the Dig Site job board — they drive a real 3-joint `
+      + `excavator arm (boom, stick, bucket) to solve construction jobs, not a worksheet. `
+      + `First job "${currentMission.title}" (${currentMission.badge}): ${currentMission.brief} `
+      + `Welcome them warmly as the site foreman, and nudge them to drag a glowing joint to start.`,
+      { silent: true },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
+
   // ── Joint math ─────────────────────────────────────────────────────────────
   const getJointPositions = useCallback(() => {
     const exX = excavatorXRef.current;
@@ -698,8 +753,44 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
       });
       setShowSolveCard(true);
       SoundManager.playPerfect();
+      if (isConnected) {
+        sendText(
+          `[JOB_SOLVED] Student finished job "${currentMission.title}" (${currentMission.badge})! `
+          + `Why it worked: ${currentMission.explainOnSolve} `
+          + `Celebrate their engineering, then explain WHY it worked in kid-friendly terms. Keep it short and excited.`,
+          { silent: true },
+        );
+      }
     }
-  }, [missionProgress, layout.goalUnits, currentSolved, strikeActive, currentMission.id]);
+  }, [missionProgress, layout.goalUnits, currentSolved, strikeActive, currentMission, isConnected, sendText]);
+
+  // AI: react when the site shuts down on a pipe strike
+  const struckRef = useRef(false);
+  useEffect(() => {
+    if (!strikeActive) { struckRef.current = false; return; }
+    if (struckRef.current || !isConnected) return;
+    struckRef.current = true;
+    sendText(
+      `[PIPE_STRIKE] Student hit the buried gas pipe on job "${currentMission.title}" and the site shut down. `
+      + `Reassure them — this happens to real crews — then coach the fix WITHOUT solving it: shallow scoops, `
+      + `slide the bucket sideways between digs, never dig deep twice in the same spot.`,
+      { silent: true },
+    );
+  }, [strikeActive, isConnected, currentMission.title, sendText]);
+
+  // AI: react when the fuel-limited job runs dry before the truck is full
+  const fuelOutRef = useRef(false);
+  useEffect(() => {
+    if (!outOfFuel) { fuelOutRef.current = false; return; }
+    if (fuelOutRef.current || !isConnected) return;
+    fuelOutRef.current = true;
+    sendText(
+      `[OUT_OF_FUEL] Student ran out of digs on job "${currentMission.title}" before filling the truck. `
+      + `Coach the efficiency idea WITHOUT giving numbers: every scoop has to be a FULL one — sink the bucket `
+      + `until the bite meter reads 100% before pressing Dig.`,
+      { silent: true },
+    );
+  }, [outOfFuel, isConnected, currentMission.title, sendText]);
 
   // ── Dig — position + depth are the skill ───────────────────────────────────
   const handleDig = useCallback(() => {
@@ -824,11 +915,30 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
   const handleNextMission = useCallback(() => {
     if (currentMissionIdx < missions.length - 1) {
       SoundManager.navigate();
-      setCurrentMissionIdx(idx => idx + 1); // layout change triggers resetSite
+      const nextIdx = currentMissionIdx + 1;
+      setCurrentMissionIdx(nextIdx); // layout change triggers resetSite
+      if (isConnected) {
+        const nm = missions[nextIdx];
+        sendText(
+          `[NEXT_JOB] New job ${nextIdx + 1} of ${missions.length}: "${nm.title}" (${nm.badge}). ${nm.brief} `
+          + `Introduce the new job and what makes it different, without giving away how to solve it.`,
+          { silent: true },
+        );
+      }
     }
-  }, [currentMissionIdx, missions.length]);
+  }, [currentMissionIdx, missions, isConnected, sendText]);
 
-  const handleRevealHint = useCallback(() => setShowHint(true), []);
+  const handleRevealHint = useCallback(() => {
+    setShowHint(true);
+    if (isConnected) {
+      sendText(
+        `[HINT_REQUESTED] Student asked for a hint on job "${currentMission.title}". `
+        + `Hint text: ${currentMission.successHint} `
+        + `Give a gentle nudge toward the right joint or action and why — do NOT hand them the full solution.`,
+        { silent: true },
+      );
+    }
+  }, [isConnected, sendText, currentMission.title, currentMission.successHint]);
 
   // ── Final evaluation (debrief) ─────────────────────────────────────────────
   const handleSubmitEvaluation = useCallback(() => {
@@ -879,7 +989,17 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         avgScoopFill: fillRate,
       },
     });
-  }, [hasSubmitted, solvedIds.size, digOperations, totalExcavated, bucketSize, missions, pipeStrikes, spilledUnits, dumpOperations, maxBoomAngle, minBoomAngle, maxStickAngle, minStickAngle, maxBucketAngle, minBucketAngle, boomAngle, stickAngle, bucketAngle, submitResult]);
+
+    if (isConnected) {
+      sendText(
+        `[ALL_COMPLETE] Student finished every job on the Dig Site board — ${solvedCount}/${missions.length} solved, `
+        + `${pipeStrikes} pipe strike(s), ${spilledUnits} unit(s) spilled. `
+        + `Celebrate the whole session and recap the big idea: three simple joints (a kinematic chain) combine into `
+        + `reach, precision, and power — just like their shoulder, elbow, and wrist.`,
+        { silent: true },
+      );
+    }
+  }, [hasSubmitted, solvedIds.size, digOperations, totalExcavated, bucketSize, missions, pipeStrikes, spilledUnits, dumpOperations, maxBoomAngle, minBoomAngle, maxStickAngle, minStickAngle, maxBucketAngle, minBucketAngle, boomAngle, stickAngle, bucketAngle, submitResult, isConnected, sendText]);
 
   const handleFullReset = useCallback(() => {
     setSolvedIds(new Set());

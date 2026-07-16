@@ -10,7 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Lightbulb, ChevronDown, ChevronUp, Sparkles, Loader2, PenLine } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
-import { LuminaPanel, LuminaButton, motion } from '../ui';
+import {
+  LuminaPanel,
+  LuminaButton,
+  LuminaActionButton,
+  LuminaChallengeCounter,
+  LuminaFeedbackCard,
+  motion,
+} from '../ui';
 import { multipleChoiceVoiceReady } from './problem-primitives/MultipleChoiceProblem';
 import { isPreReaderGrade } from '../utils/kindergartenMode';
 
@@ -21,10 +28,21 @@ import { isPreReaderGrade } from '../utils/kindergartenMode';
  * 1. Legacy mode: Single multiple-choice question (backwards compatible)
  * 2. Problem Registry mode: Single or multiple problems of various types
  *
+ * ONE PROBLEM AT A TIME:
+ * - Problems present sequentially, never stacked. A correct answer auto-advances
+ *   after the feedback beat (motion out → navigate whoosh → next reveals); an
+ *   incorrect answer stays put with Try Again (in the problem) + Next → (here).
+ * - Sequential presentation is also what keeps the pre-reader read-aloud beat
+ *   honest: only the active problem is mounted, so its in-view trigger can never
+ *   fire for a problem the student hasn't reached (the stacked layout let the
+ *   next problem's read-aloud fire as it peeked into the viewport).
+ *
  * AI TUTORING INTEGRATION:
  * - Sends pedagogical triggers at key moments (problem shown, correct/incorrect, completion)
+ * - [PROBLEM_SHOWN] fires per problem as it becomes active; primitiveData tracks
+ *   the ACTIVE problem (index, question, attempts) so the tutor always scaffolds
+ *   the question actually on screen.
  * - Optional AI Helper card provides progressive hints without revealing answers
- * - Tracks attempt counts and scores for context-aware AI scaffolding
  *
  * EVALUATION INTEGRATION:
  * - Delegates evaluation to individual problem primitives
@@ -56,6 +74,23 @@ function isLegacyKnowledgeCheck(data: any): data is KnowledgeCheckData {
 function isProblemRegistryFormat(data: any): data is { problems: ProblemData[] } {
   return 'problems' in data && Array.isArray(data.problems);
 }
+
+// Problem identity is POSITIONAL, never problem.id: ids are LLM-emitted and the
+// per-type generators routinely return duplicates across problems (two MCQs both
+// "mc_1"). A duplicate id as a React key keeps the previous problem's component
+// instance — its selected answer bleeds into the next problem — and as a results
+// key it overwrites the earlier entry so completion never fires.
+function stateKeyFor(index: number): string {
+  return `p${index}`;
+}
+
+// ── Advance pacing ───────────────────────────────────────────────────────────
+// A correct answer dwells long enough for the pop + chime + rationale to land
+// before the problem slides away. Pre-readers get longer: the tutor speaks the
+// celebration aloud before the next question's read-aloud beat begins.
+const ADVANCE_DWELL_MS = 2200;
+const ADVANCE_DWELL_PRE_MS = 3000;
+const LEAVE_MS = 300; // matches motion.transitionSlow
 
 // ─── AI Helper Hint Card ─────────────────────────────────────────────────────
 
@@ -242,37 +277,82 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     return [];
   }, [data]);
 
-  // Extract common props
-  const instanceId = ('instanceId' in data ? data.instanceId : undefined) || `knowledge-check-${Date.now()}`;
+  // Extract common props. Memoized: per-problem evaluation ids derive from
+  // this value, so the fallback must not mint a new id every render.
+  const instanceId = useMemo(
+    () => ('instanceId' in data ? data.instanceId : undefined) || `knowledge-check-${Date.now()}`,
+    [data],
+  );
   const exhibitId = 'exhibitId' in data ? data.exhibitId : undefined;
 
-  // ── Voice arbitration ──────────────────────────────────────────────────────
-  // Problems stack on one screen and the capture engine has no global single-mic
-  // lock, so only ONE voice-answerable problem may hold the mic at a time. Grant
-  // eligibility to the first unanswered voice-ready problem — every true/false,
-  // and any multiple-choice whose options are actually sayable — and as each is
-  // answered the next lights up (seamless hand-off). See /add-voice-control.
-  const firstVoiceIndex = useMemo(() => {
-    for (let i = 0; i < problems.length; i++) {
-      const p = problems[i];
-      if (evaluationResults.has(p.id)) continue;
-      if (p.type === 'true_false') return i;
-      if (p.type === 'multiple_choice' && multipleChoiceVoiceReady(p)) return i;
+  // ── Pre-reader (K) mode — reader-fit PRE band ──────────────────────────────
+  // At kindergarten the problems render picture-primary, tap=choose, chrome-free,
+  // and the tutor reads each question + choices aloud. Derived from the problem's
+  // grade (the generator floors K to picture-primary MCQ / true-false).
+  const preReader = useMemo(
+    () => problems.some((p) => isPreReaderGrade((p as any).gradeLevel)),
+    [problems],
+  );
+
+  // ── One-at-a-time progression ──────────────────────────────────────────────
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const leavingRef = useRef(false);
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+  }, []);
+
+  const goToNext = useCallback(() => {
+    if (leavingRef.current) return;
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
     }
-    return -1;
-  }, [problems, evaluationResults]);
+    leavingRef.current = true;
+    setLeaving(true);
+    leaveTimerRef.current = setTimeout(() => {
+      SoundManager.navigate();
+      setActiveIndex((i) => Math.min(i + 1, problems.length - 1));
+      leavingRef.current = false;
+      setLeaving(false);
+    }, LEAVE_MS);
+  }, [problems.length]);
+
+  const activeProblem: ProblemData | undefined =
+    problems[Math.min(activeIndex, Math.max(problems.length - 1, 0))];
+  const activeResult = activeProblem ? evaluationResults.get(stateKeyFor(activeIndex)) : undefined;
+  const isLastProblem = activeIndex >= problems.length - 1;
+  const allComplete = problems.length > 0 && evaluationResults.size >= problems.length;
+  const correctCount = Array.from(evaluationResults.values()).filter((r) => r.isCorrect).length;
+
+  // ── Voice arbitration ──────────────────────────────────────────────────────
+  // Only one problem is mounted at a time, so the single-mic invariant holds
+  // structurally: the active problem may open a mic iff it's voice-ready (every
+  // true/false, and any multiple-choice whose options are actually sayable) and
+  // not yet answered. See /add-voice-control.
+  const activeVoiceEligible =
+    !!activeProblem &&
+    !activeResult &&
+    (activeProblem.type === 'true_false' ||
+      (activeProblem.type === 'multiple_choice' && multipleChoiceVoiceReady(activeProblem)));
 
   // ── AI Tutoring Hook ───────────────────────────────────────────────────────
+  // Tracks the ACTIVE problem — synced to the tutor via updateContext so
+  // scaffolding always targets the question on screen, not problem 1.
   const aiPrimitiveData = useMemo(() => ({
     problemCount: problems.length,
-    currentProblemIndex: 0,
-    currentProblemType: problems[0]?.type || 'unknown',
-    currentQuestion: getQuestionText(problems[0]),
-    attemptNumber: 1,
-    lastAnswerCorrect: null,
+    currentProblemIndex: activeIndex,
+    currentProblemType: activeProblem?.type || 'unknown',
+    currentQuestion: getQuestionText(activeProblem),
+    attemptNumber: (activeResult?.attempts ?? 0) + 1,
+    lastAnswerCorrect: activeResult ? activeResult.isCorrect : null,
     completedCount: evaluationResults.size,
-    correctCount: Array.from(evaluationResults.values()).filter((r) => r.isCorrect).length,
-  }), [problems, evaluationResults]);
+    correctCount,
+  }), [problems, activeIndex, activeProblem, activeResult, evaluationResults, correctCount]);
 
   const {
     sendText,
@@ -286,15 +366,6 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     exhibitId,
   });
 
-  // ── Pre-reader (K) mode — reader-fit PRE band ──────────────────────────────
-  // At kindergarten the problems render picture-primary, tap=choose, chrome-free,
-  // and the tutor reads each question + choices aloud. Derived from the problem's
-  // grade (the generator floors K to picture-primary MCQ / true-false).
-  const preReader = useMemo(
-    () => problems.some((p) => isPreReaderGrade((p as any).gradeLevel)),
-    [problems],
-  );
-
   // A NON-silent sendText: the tutor actually SPEAKS the read-aloud / retry beat
   // (the context-injection sendText calls stay silent). Enacts [QUIZ_READ_ALOUD]
   // / [QUIZ_RETRY] from the catalog PRE-READER READ-ALOUD directive.
@@ -304,27 +375,23 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
   );
 
   // ── Pedagogical trigger: Problem shown ─────────────────────────────────────
+  // Fires once per problem as it becomes the active one.
   useEffect(() => {
-    if (problems.length === 0) return;
+    const problem = problems[activeIndex];
+    const shownKey = stateKeyFor(activeIndex);
+    if (!problem || hasTriggeredProblemShownRef.current.has(shownKey)) return;
+    hasTriggeredProblemShownRef.current.add(shownKey);
 
-    // Trigger for the first problem on mount
-    const firstProblem = problems[0];
-    const firstId = firstProblem.id;
-    if (!hasTriggeredProblemShownRef.current.has(firstId)) {
-      hasTriggeredProblemShownRef.current.add(firstId);
-
-      const questionText = getQuestionText(firstProblem);
-      sendText(
-        `[PROBLEM_SHOWN] A ${firstProblem.type.replace(/_/g, ' ')} problem has appeared. ` +
-        `Question: "${questionText}". ` +
-        (problems.length > 1
-          ? `This is problem 1 of ${problems.length}. `
-          : '') +
-        `Briefly introduce the question in an encouraging way. Do NOT hint at the answer.`,
-        { silent: true }
-      );
-    }
-  }, [problems, sendText]);
+    sendText(
+      `[PROBLEM_SHOWN] A ${problem.type.replace(/_/g, ' ')} problem has appeared. ` +
+      `Question: "${getQuestionText(problem)}". ` +
+      (problems.length > 1
+        ? `This is problem ${activeIndex + 1} of ${problems.length}. `
+        : '') +
+      `Briefly introduce the question in an encouraging way. Do NOT hint at the answer.`,
+      { silent: true }
+    );
+  }, [activeIndex, problems, sendText]);
 
   // ── Pedagogical trigger: All complete ──────────────────────────────────────
   useEffect(() => {
@@ -332,18 +399,18 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     if (evaluationResults.size < problems.length) return;
 
     hasTriggeredAllCompleteRef.current = true;
-    const correctCount = Array.from(evaluationResults.values()).filter((r) => r.isCorrect).length;
+    const finalCorrect = Array.from(evaluationResults.values()).filter((r) => r.isCorrect).length;
 
     sendText(
       `[ALL_COMPLETE] The student finished all ${problems.length} problems! ` +
-      `Score: ${correctCount} out of ${problems.length} correct. ` +
+      `Score: ${finalCorrect} out of ${problems.length} correct. ` +
       `Celebrate their effort and mention how many they got right.`,
       { silent: true }
     );
   }, [evaluationResults, problems, sendText]);
 
   // ── Evaluation callback (wired into each problem) ─────────────────────────
-  const handleEvaluationSubmit = useCallback((problemId: string, problemIndex: number, result: any) => {
+  const handleEvaluationSubmit = useCallback((problemStateKey: string, problemIndex: number, result: any) => {
     const isCorrect = result?.success ?? result?.isCorrect ?? false;
     const problem = problems[problemIndex];
     const questionText = getQuestionText(problem);
@@ -360,11 +427,23 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
       }
     }
 
+    // A correct answer auto-advances after the feedback beat. The last problem
+    // stays on screen so its rationale remains readable; the completion card
+    // reveals beneath it instead. Incorrect answers never auto-advance — the
+    // student chooses Try Again (in the problem) or Next → (below).
+    if (isCorrect && problemIndex < problems.length - 1) {
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = setTimeout(
+        goToNext,
+        preReader ? ADVANCE_DWELL_PRE_MS : ADVANCE_DWELL_MS,
+      );
+    }
+
     setEvaluationResults((prev) => {
       const next = new Map(prev);
-      const existing = next.get(problemId);
+      const existing = next.get(problemStateKey);
       const attemptNumber = (existing?.attempts || 0) + 1;
-      next.set(problemId, { isCorrect, attempts: attemptNumber });
+      next.set(problemStateKey, { isCorrect, attempts: attemptNumber });
 
       // Send AI trigger based on result
       if (isCorrect) {
@@ -396,7 +475,7 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
     if ('onEvaluationSubmit' in data && data.onEvaluationSubmit) {
       data.onEvaluationSubmit(result);
     }
-  }, [problems, sendText, data]);
+  }, [problems, sendText, data, goToNext, preReader]);
 
   // ── Scratch Pad analysis → AI tutor context ────────────────────────────────
   const handleScratchPadAnalysis = useCallback((result: AIAnalysisResult) => {
@@ -417,7 +496,7 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  if (problems.length === 0) {
+  if (problems.length === 0 || !activeProblem) {
     return (
       <div className="w-full max-w-4xl mx-auto my-12">
         <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-lg text-red-400">
@@ -429,6 +508,10 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
 
   const problemCount = problems.length;
   const isLegacy = isLegacyKnowledgeCheck(data);
+
+  // Manual advance appears only after a wrong answer (a correct one advances on
+  // its own); the last problem has nothing to advance to.
+  const showNext = !!activeResult && !activeResult.isCorrect && !isLastProblem && !leaving;
 
   return (
     <div className="w-full max-w-4xl mx-auto my-12 animate-fade-in-up">
@@ -446,80 +529,105 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
               </span>
             </div>
             {problemCount > 1 && (
-              <div className="text-xs text-slate-500 font-mono">
-                {problemCount} {problemCount === 1 ? 'PROBLEM' : 'PROBLEMS'}
-              </div>
+              <LuminaChallengeCounter
+                variant="dots"
+                current={Math.min(activeIndex + 1, problemCount)}
+                total={problemCount}
+              />
             )}
           </div>
         )}
 
         <div className="p-8 md:p-12">
-          {/* Problem Collection */}
-          <div className="space-y-16">
-            {problems.map((problem, index) => (
-              <div key={problem.id} className="relative">
-                {/* Problem Number Badge — hidden for pre-readers (reader-fit rule 7) */}
-                {problemCount > 1 && !preReader && (
-                  <div className="absolute -left-6 md:-left-8 top-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 font-mono text-sm">
-                    {index + 1}
-                  </div>
-                )}
+          {/* One problem at a time. The positional key forces a full remount on
+              every advance — problem state (selection, submission) must never
+              survive into the next problem — and plays the reveal on entry;
+              `leaving` slides the outgoing problem up and away first. */}
+          <div
+            key={stateKeyFor(activeIndex)}
+            className={`${motion.transitionSlow} ${
+              leaving ? 'opacity-0 -translate-y-4 scale-[0.98]' : motion.reveal
+            }`}
+          >
+            <ProblemRenderer
+              problemData={{
+                ...activeProblem,
+                // Per-problem evaluation identity derived from the section's
+                // instanceId. Without it problems submit under random fallback
+                // ids, and section-completion gates keyed on instanceId
+                // (KindergartenStage) can never see this check finish.
+                instanceId: `${instanceId}::p${activeIndex}`,
+                onEvaluationSubmit: (result: any) => handleEvaluationSubmit(stateKeyFor(activeIndex), activeIndex, result),
+                voiceEligible: activeVoiceEligible,
+                // reader-fit PRE: picture-primary render + tutor read-aloud.
+                preReader,
+                onAskTutor: askTutor,
+              }}
+            />
 
-                {/* Problem Content */}
-                <div className={problemCount > 1 && !preReader ? 'ml-4 md:ml-6' : ''}>
-                  <ProblemRenderer
-                    problemData={{
-                      ...problem,
-                      onEvaluationSubmit: (result: any) => handleEvaluationSubmit(problem.id, index, result),
-                      // Only the first unanswered voice-ready problem may open a mic.
-                      voiceEligible:
-                        (problem.type === 'true_false' || problem.type === 'multiple_choice') &&
-                        index === firstVoiceIndex,
-                      // reader-fit PRE: picture-primary render + tutor read-aloud.
-                      preReader,
-                      onAskTutor: askTutor,
-                    }}
+            {/* AI Helper + Scratch Pad — adult chrome, hidden for pre-readers
+                (reader-fit rule 7). At K the live tutor + 🔊 replay carry help. */}
+            {!preReader && (
+              <div className="mt-6 flex items-start gap-2">
+                <div className="flex-1">
+                  <AIHelperCard
+                    sendText={sendText}
+                    requestHint={requestHint}
+                    isAIResponding={isAIResponding}
+                    conversation={conversation as Array<{ role: string; content: string }>}
+                    currentQuestion={getQuestionText(activeProblem)}
+                    problemType={activeProblem.type.replace(/_/g, ' ')}
+                    problemIndex={activeIndex}
+                    totalProblems={problemCount}
                   />
-
-                  {/* AI Helper + Scratch Pad — adult chrome, hidden for pre-readers
-                      (reader-fit rule 7). At K the live tutor + 🔊 replay carry help. */}
-                  {!preReader && (
-                  <div className="mt-6 flex items-start gap-2">
-                    <div className="flex-1">
-                      <AIHelperCard
-                        sendText={sendText}
-                        requestHint={requestHint}
-                        isAIResponding={isAIResponding}
-                        conversation={conversation as Array<{ role: string; content: string }>}
-                        currentQuestion={getQuestionText(problem)}
-                        problemType={problem.type.replace(/_/g, ' ')}
-                        problemIndex={index}
-                        totalProblems={problemCount}
-                      />
-                    </div>
-                    <LuminaButton
-                      onClick={() => {
-                        SoundManager.tap();
-                        setScratchPadProblemTopic(getQuestionText(problem));
-                        setIsScratchPadOpen(o => !o);
-                      }}
-                      className="flex items-center gap-1.5 shrink-0"
-                      title="Open Scratch Pad"
-                    >
-                      <PenLine className="w-4 h-4 text-purple-400" />
-                      <span className="text-xs font-medium text-purple-300">Scratch Pad</span>
-                    </LuminaButton>
-                  </div>
-                  )}
                 </div>
-
-                {/* Divider between problems */}
-                {index < problemCount - 1 && (
-                  <div className="mt-16 mb-0 h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-                )}
+                <LuminaButton
+                  onClick={() => {
+                    SoundManager.tap();
+                    setScratchPadProblemTopic(getQuestionText(activeProblem));
+                    setIsScratchPadOpen(o => !o);
+                  }}
+                  className="flex items-center gap-1.5 shrink-0"
+                  title="Open Scratch Pad"
+                >
+                  <PenLine className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-medium text-purple-300">Scratch Pad</span>
+                </LuminaButton>
               </div>
-            ))}
+            )}
+
+            {showNext && (
+              <div className={`mt-6 flex justify-center ${motion.reveal}`}>
+                <LuminaActionButton
+                  action="next"
+                  onClick={() => {
+                    SoundManager.tap();
+                    goToNext();
+                  }}
+                  className={preReader ? 'text-xl px-10 py-6' : ''}
+                />
+              </div>
+            )}
           </div>
+
+          {/* Completion — reveals under the final answered problem so its
+              rationale stays readable. The tutor speaks [ALL_COMPLETE]. */}
+          {allComplete && !leaving && (
+            <div className={`mt-8 flex justify-center ${motion.reveal}`}>
+              <LuminaFeedbackCard
+                status="correct"
+                label={preReader ? '🎉 You did it!' : '🎉 Knowledge check complete'}
+              >
+                {preReader ? (
+                  <span className="text-3xl tracking-widest" aria-hidden>
+                    {problems.map((_, i) => (evaluationResults.get(stateKeyFor(i))?.isCorrect ? '⭐' : '💛')).join(' ')}
+                  </span>
+                ) : (
+                  `You got ${correctCount} of ${problemCount} correct.`
+                )}
+              </LuminaFeedbackCard>
+            </div>
+          )}
         </div>
 
       </div>
@@ -530,9 +638,9 @@ export const KnowledgeCheck: React.FC<KnowledgeCheckProps> = ({ data }) => {
         onToggle={() => setIsScratchPadOpen(o => !o)}
         onAnalysisComplete={handleScratchPadAnalysis}
         hideToggle
-        topic={scratchPadProblemTopic || getQuestionText(problems[0])}
+        topic={scratchPadProblemTopic || getQuestionText(activeProblem)}
         gradeLevel={
-          'gradeLevel' in problems[0] ? (problems[0] as any).gradeLevel : undefined
+          'gradeLevel' in activeProblem ? (activeProblem as any).gradeLevel : undefined
         }
       />
     </div>

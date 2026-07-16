@@ -956,22 +956,26 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         {(currentChallenge.type === 'sort-by-one' || currentChallenge.type === 'tally-record' || selectedAttribute) && (
           <>
             {/* Unsorted objects */}
-            <div className="bg-slate-800/20 rounded-xl p-4 border border-white/5">
+            <div className={`bg-slate-800/20 rounded-xl border border-white/5 ${isK ? 'p-6 max-w-[840px] mx-auto' : 'p-4'}`}>
               {!isK && <p className="text-slate-500 text-xs mb-2 uppercase tracking-wider">Unsorted Objects</p>}
               {unsortedObjects.length > 0 ? (
-                <div className="flex flex-wrap gap-2 justify-center">
+                <div className={`flex flex-wrap justify-center ${isK ? 'gap-4' : 'gap-2'}`}>
                   {unsortedObjects.map(obj => (
                     <button
                       key={obj.id}
                       onClick={() => handleObjectClick(obj.id)}
-                      className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150 ${
+                      className={`flex flex-col items-center gap-1 rounded-2xl transition-all duration-150 ${
+                        isK ? 'px-6 py-5 min-w-[128px]' : 'px-3 py-2'
+                      } ${
                         selectedObjectId === obj.id
                           ? 'bg-orange-500/20 border-2 border-orange-400 scale-110 shadow-lg shadow-orange-500/20'
                           : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105'
                       }`}
                     >
-                      <span className="text-2xl">{obj.emoji}</span>
-                      <span className="text-[11px] text-slate-400 leading-tight text-center break-words max-w-[80px]">{obj.label}</span>
+                      {/* Pre-reader: the emoji is the load-bearing content (word can't be read) —
+                          chunky at K so a few big pictures fill the space (R4 "objects … enlarged"). */}
+                      <span className={isK ? 'text-6xl' : 'text-2xl'}>{obj.emoji}</span>
+                      <span className={`leading-tight text-center break-words ${isK ? 'text-sm text-slate-300 max-w-[120px]' : 'text-[11px] text-slate-400 max-w-[80px]'}`}>{obj.label}</span>
                     </button>
                   ))}
                 </div>
@@ -986,7 +990,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
             </div>
 
             {/* Sorting bins */}
-            <div className={`grid gap-3 ${
+            <div className={`grid ${isK ? 'gap-5 max-w-[840px] mx-auto' : 'gap-3'} ${
               categories.length <= 2 ? 'grid-cols-2'
               : categories.length === 3 ? 'grid-cols-3'
               : 'grid-cols-4'
@@ -1006,16 +1010,16 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                   <div
                     key={cat.label}
                     onClick={() => selectedObjectId && handleBinClick(idx)}
-                    className={`min-h-[100px] text-left ${selectedObjectId ? 'cursor-pointer' : 'cursor-default'}`}
+                    className={`text-left ${isK ? 'min-h-[168px]' : 'min-h-[100px]'} ${selectedObjectId ? 'cursor-pointer' : 'cursor-default'}`}
                   >
                     {isK ? (
                       /* Pre-reader: the bin is a PICTURE (emoji or color-coded circle) with the
                          word as a small caption — the word never gates, the tutor names each bin. */
-                      <div className="flex flex-col items-center gap-0.5 mb-2">
-                        <span className="text-3xl leading-none" aria-hidden>
+                      <div className="flex flex-col items-center gap-1 mb-2">
+                        <span className="text-5xl leading-none" aria-hidden>
                           {cat.bucketEmoji || FALLBACK_BIN_EMOJI[idx % FALLBACK_BIN_EMOJI.length]}
                         </span>
-                        <span className={`text-xs font-medium ${color.text}`}>{cat.label}</span>
+                        <span className={`text-sm font-semibold ${color.text}`}>{cat.label}</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between mb-2">
@@ -1030,7 +1034,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                     <LuminaDropZone
                       state={zoneState}
                       emptyPrompt={isK ? '' : 'Tap to place object here'}
-                      className="min-h-[64px] content-center justify-center p-2"
+                      className={`content-center justify-center ${isK ? 'min-h-[128px] gap-3 p-3' : 'min-h-[64px] p-2'}`}
                     >
                       {itemsInBin.map(obj => {
                         const isModel = obj.id === modelItemId;
@@ -1039,15 +1043,17 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
                             key={obj.id}
                             onClick={(e) => { e.stopPropagation(); if (!isModel) handleRemoveFromBin(obj.id); }}
                             title={isModel ? 'Example — already placed for you' : undefined}
-                            className={`flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 border transition-all duration-150 ${
+                            className={`flex flex-col items-center gap-0.5 rounded-xl border transition-all duration-150 ${
+                              isK ? 'px-4 py-3 min-w-[112px]' : 'px-1.5 py-1'
+                            } ${
                               isModel
                                 ? 'bg-emerald-500/10 border-emerald-400/30 cursor-default'
                                 : 'bg-white/5 border-white/10 hover:bg-white/10 hover:scale-105 cursor-pointer'
                             }`}
                           >
-                            <span className="text-lg">{obj.emoji}</span>
-                            <span className="text-[9px] text-slate-400 leading-tight text-center break-words max-w-[72px]">{obj.label}</span>
-                            {isModel && <span className="text-[8px] text-emerald-300 leading-none">example</span>}
+                            <span className={isK ? 'text-5xl' : 'text-lg'}>{obj.emoji}</span>
+                            <span className={`leading-tight text-center break-words ${isK ? 'text-xs text-slate-300 max-w-[104px]' : 'text-[9px] text-slate-400 max-w-[72px]'}`}>{obj.label}</span>
+                            {isModel && <span className={`text-emerald-300 leading-none ${isK ? 'text-[10px]' : 'text-[8px]'}`}>example</span>}
                           </button>
                         );
                       })}

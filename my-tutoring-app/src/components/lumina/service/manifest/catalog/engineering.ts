@@ -65,6 +65,36 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'excavator-arm-simulator',
     description: 'Interactive multi-jointed excavator arm simulation with boom, stick, and bucket for teaching hydraulics, kinematics, and coordinated movement. Students control three joints (boom angle, stick angle, bucket angle) to position the bucket, dig material from different soil layers, lift loads, and dump at target zones. Features realistic Verlet physics for smooth arm movement. Material layers have different hardness values affecting excavation difficulty. Shows reach envelope to visualize workspace. Teaches cause and effect with joints, sequential operations (dig-lift-move-dump), joint coordination, reach and range concepts, efficiency optimization, and how excavators work. Shows real-world connections: construction excavators, backhoes, mining equipment, robotic arms. Features multiple control methods (sliders, buttons, drag) and themes (realistic, cartoon, blueprint) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching multi-jointed mechanisms, hydraulics, robotics, and construction equipment.',
     constraints: 'Best for grades K-5. Use for excavators, construction equipment, multi-joint systems, hydraulics, kinematics, robotics. K-1: cause and effect with joints, basic digging (buttons control, cartoon theme). 1-2: reach and range exploration (sliders, show reach envelope). 2-3: sequencing dig operations (dig-move-dump sequences, challenges). 3-4: joint angle coordination (all three joints working together, angles shown). 4-5: reach envelope and efficiency optimization (minimize operations, advanced challenges, blueprint theme). Supports free exploration and guided challenges with material excavation targets and dump zones.',
+    tutoring: {
+      taskDescription: 'Student is running a construction Dig Site job board, driving a 3-joint excavator arm (boom, stick, bucket) to solve real jobs — the geometry engine is the judge, not a submit button. Current job {{jobNumber}} of {{jobsTotal}}: "{{jobTitle}}" ({{jobBadge}}). Goal: move {{goalUnits}} units by {{goalKind}}; progress {{progressUnits}}/{{goalUnits}}, bucket holds {{bucketLoad}}/{{bucketSize}}. Jobs solved: {{jobsSolved}}/{{jobsTotal}}. Active constraints — tracks stuck in mud: {{bodyLocked}}, stick hydraulic jammed: {{stickJammed}}, buried gas pipe: {{hasPipe}}, digs used: {{digsUsed}}/{{maxDigs}}.',
+      contextKeys: ['jobTitle', 'jobBadge', 'jobNumber', 'jobsTotal', 'goalKind', 'goalUnits', 'progressUnits', 'jobsSolved', 'bucketLoad', 'bucketSize', 'digsUsed', 'maxDigs', 'bodyLocked', 'stickJammed', 'hasPipe', 'pipeStrikes', 'spilledUnits'],
+      scaffoldingLevels: {
+        level1: '"Which joint do you think moves the bucket closer to the dirt — the boom, the stick, or the bucket itself? Try dragging one glowing joint and watch what happens."',
+        level2: '"To dig, the bucket tip has to be BELOW the ground line before you press Dig — watch the bite meter climb. Then swing over the drop spot and press Dump. Right now the bucket is holding {{bucketLoad}} of {{bucketSize}}."',
+        level3: '"Work the joints in order: drop the boom to set your height, straighten or curl the stick to reach, then curl the bucket to bite. Push the tip deep until the bite meter reads 100% for a full scoop, press Dig, swing to the drop spot, and press Dump. Keep going until you reach {{goalUnits}} units."',
+      },
+      commonStruggles: [
+        { pattern: 'Student presses Dig with the bucket tip still above the ground', response: 'Point out the bite meter only appears once the tip is below the dirt line — have them drag the joints so the bucket sinks in first.' },
+        { pattern: 'Digs keep coming up half-empty (shallow bites)', response: 'A shallow bite only half-fills the bucket. Ask them to push the tip deeper until the bite meter reads 100% before digging — this matters most on the fuel-limited job.' },
+        { pattern: 'On the far-patch job the student keeps trying to drive the body closer', response: 'Remind them the tracks are stuck in the mud — the only way out is to STRETCH the arm into one long straight line to reach inside the dashed circle.' },
+        { pattern: 'On the pipe job the student digs deep in one spot', response: 'That is how pipes get struck. Tell them to take shallow scoops and slide the bucket sideways between digs so the trench spreads out.' },
+        { pattern: 'Loads spill next to the truck instead of into it', response: 'The dump only counts when the bucket tip is over the truck bed. Ask them to swing until the tip is above the bed before pressing Dump.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'JOB SOLVED',
+          instruction: 'When [JOB_SOLVED], celebrate the specific job and then explain WHY their joint work succeeded in kid-friendly terms (reach, full scoops, precision, or redundancy). Keep it short and excited.',
+        },
+        {
+          title: 'PIPE STRIKE',
+          instruction: 'When [PIPE_STRIKE], reassure the student first — real crews hit pipes too — then coach shallow, spread-out scoops WITHOUT solving the trench for them.',
+        },
+        {
+          title: 'HINT REQUESTED',
+          instruction: 'When [HINT_REQUESTED], give a gentle nudge toward the right joint or action and the reason. Never hand over the full solution or exact angles.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

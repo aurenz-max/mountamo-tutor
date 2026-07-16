@@ -72,11 +72,29 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
   const isEvaluable = Boolean(activeConfig?.supportsEvaluation);
 
   // A section is "done" when its primitive has submitted an evaluation result.
+  // A knowledge-check never submits under its own id: each inner problem
+  // reports under a derived `${instanceId}::pN` id (stamped by KnowledgeCheck),
+  // so the section completes only when EVERY inner problem has reported.
   const submittedIds = useMemo(
     () => new Set((evaluationContext?.submittedResults ?? []).map((r) => r.instanceId)),
     [evaluationContext?.submittedResults],
   );
-  const activeDone = active ? submittedIds.has(active.instanceId) : false;
+  const sectionDone = useCallback(
+    (section: OrderedComponent): boolean => {
+      if (submittedIds.has(section.instanceId)) return true;
+      if (section.componentId !== 'knowledge-check') return false;
+      const problems = (section.data as { problems?: unknown[] } | undefined)?.problems;
+      const expected = Array.isArray(problems) && problems.length > 0 ? problems.length : 1;
+      const prefix = `${section.instanceId}::`;
+      let reported = 0;
+      submittedIds.forEach((id) => {
+        if (id.startsWith(prefix)) reported += 1;
+      });
+      return reported >= expected;
+    },
+    [submittedIds],
+  );
+  const activeDone = active ? sectionDone(active) : false;
 
   // Arrow readiness: evaluable sections unlock on completion (after a beat for
   // the primitive's own feedback); display sections unlock after a short dwell.
@@ -161,7 +179,7 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
             className={
               i === activeIndex
                 ? 'w-3.5 h-3.5 rounded-full bg-amber-300 ring-4 ring-amber-300/25 transition-all duration-500'
-                : i < activeIndex || submittedIds.has(s.instanceId)
+                : i < activeIndex || sectionDone(s)
                   ? 'w-2.5 h-2.5 rounded-full bg-emerald-400/90 transition-all duration-500'
                   : 'w-2.5 h-2.5 rounded-full bg-slate-600/60 transition-all duration-500'
             }

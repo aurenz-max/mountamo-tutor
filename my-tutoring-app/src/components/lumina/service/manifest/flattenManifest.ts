@@ -51,6 +51,19 @@ export const flattenManifestToLayout = (
   // curator's values.
   const objectiveById = new Map((objectives ?? []).map(o => [o.id, o]));
   const activeMisconceptions = studentContext?.activeMisconceptions ?? [];
+  // Lesson-uniform grade fallback. The manifest LLM emits SYNTHETIC objectiveIds
+  // ('obj1', 'obj2' — see the gemini-manifest schema) and never sees the real
+  // objective ids, so on the curriculum-launched / daily-session path (where
+  // objectives are keyed by subskillId) the id JOIN below misses entirely and
+  // auth.grade would drop to undefined for every component. A lesson block is
+  // single-grade by construction (App stamps one planGrade on every objective),
+  // so recover the grade from the first objective that carries one. Without this,
+  // ctx.grade stays undefined downstream and grade-gated primitives (e.g.
+  // FoundationExplorer's pre-reader K render) silently fall back to the standard
+  // band even while the lesson runs on the Kindergarten stage. Subskill/skill IDs
+  // are deliberately NOT recovered this way — those are per-component and are
+  // rescued authoritatively at render (ManifestOrderRenderer / EvaluationContext).
+  const lessonGrade = (objectives ?? []).find(o => o.grade)?.grade;
   const resolveObjective = (block: { objectiveId: string; objectiveText: string; objectiveVerb: string }) => {
     const auth = objectiveById.get(block.objectiveId);
     return {
@@ -63,8 +76,9 @@ export const flattenManifestToLayout = (
       skillId: auth?.skillId,
       // Canonical curriculum grade ('K'|'1'..'12') — precise where the lesson's
       // gradeLevel is only a band. resolveGenerationContext normalizes it to
-      // ctx.grade so generators never parse grade out of prose.
-      grade: auth?.grade,
+      // ctx.grade so generators never parse grade out of prose. Falls back to the
+      // lesson-uniform grade when the synthetic-id JOIN misses (see above).
+      grade: auth?.grade ?? lessonGrade,
     };
   };
 
