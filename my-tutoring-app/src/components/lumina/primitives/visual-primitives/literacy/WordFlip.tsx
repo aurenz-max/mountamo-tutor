@@ -27,6 +27,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -118,6 +119,12 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
   } = data;
 
   const gradeLevel = data.gradeLevel ?? 'K';
+  // Pre-reader band-gate. The interaction core (counted-picture frame + open mic
+  // + tap chips) is already pre-reader-shaped — WordFlip is the reader-fit PRE
+  // reference model — so PRE only removes the adult chrome (counter, correct/
+  // spoken tallies, progress bar, mode badge, voice-toggle, and the start-screen
+  // consent essay) from the child's field, rule 7. Reader grades keep it all.
+  const isPreReader = isPreReaderGrade(gradeLevel);
 
   // ── Activity gate + session voice consent ─────────────────────
   const [hasStarted, setHasStarted] = useState(false);
@@ -440,10 +447,11 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
         <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
           <div className="text-5xl">{'🔁'}</div>
           <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">Word Flip</LuminaBadge>
+          {/* "Word Flip" badge is decorative chrome — hidden at PRE (rule 7). */}
+          {!isPreReader && <LuminaBadge className="text-xs">Word Flip</LuminaBadge>}
           <p className="text-slate-400 text-sm max-w-sm">
             {data.description || 'One dog… two DOGS! Flip words to say "more than one"!'}
-            {' '}{challenges.length} word flips.
+            {!isPreReader && <>{' '}{challenges.length} word flips.</>}
           </p>
           <div className="flex flex-col items-center gap-2.5">
             {micSupported && (
@@ -470,7 +478,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
             >
               Start tap-only
             </LuminaButton>
-            {micSupported && (
+            {/* Voice-consent essay is chrome (rule 7) — hidden at PRE; the two
+                start buttons ARE the consent gesture and remain. */}
+            {micSupported && !isPreReader && (
               <p className="text-slate-600 text-xs max-w-xs">
                 Voice mode keeps the microphone open so you can just say your answers — best with a headset.
               </p>
@@ -483,30 +493,36 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
 
   return (
     <LuminaCard className={className}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            {!showSummary && voiceMode === 'auto' && (
-              <button
-                onClick={() => { spokenTurn.cancel(); setVoiceMode('off'); }}
-                className="text-xs text-slate-500 hover:text-slate-300 border border-white/10 rounded-full px-2.5 py-1"
-                title="Turn off voice mode"
-              >
-                {'🎙️'} on
-              </button>
-            )}
-            {!showSummary && (
-              <LuminaBadge accent={modeMeta.accent} className="text-xs">
-                {modeMeta.icon} {modeMeta.badge}
-              </LuminaBadge>
-            )}
+      {/* Header — title + mode badge + voice-toggle are adult chrome; hidden at
+          PRE (rule 7). The title stays only for readers. */}
+      {!isPreReader && (
+        <LuminaCardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            <div className="flex items-center gap-2">
+              {!showSummary && voiceMode === 'auto' && (
+                <button
+                  onClick={() => { spokenTurn.cancel(); setVoiceMode('off'); }}
+                  className="text-xs text-slate-500 hover:text-slate-300 border border-white/10 rounded-full px-2.5 py-1"
+                  title="Turn off voice mode"
+                >
+                  {'🎙️'} on
+                </button>
+              )}
+              {!showSummary && (
+                <LuminaBadge accent={modeMeta.accent} className="text-xs">
+                  {modeMeta.icon} {modeMeta.badge}
+                </LuminaBadge>
+              )}
+            </div>
           </div>
-        </div>
-      </LuminaCardHeader>
+        </LuminaCardHeader>
+      )}
 
       <LuminaCardContent className="space-y-4">
-        {!showSummary && (
+        {/* Counter + correct/spoken tallies + progress bar — chrome, hidden at
+            PRE (rule 7). The counted-picture frame is the only thing in view. */}
+        {!showSummary && !isPreReader && (
           <>
             <div className="flex items-center justify-between text-sm">
               <LuminaChallengeCounter
@@ -608,7 +624,9 @@ const WordFlip: React.FC<WordFlipProps> = ({ data, className }) => {
           </div>
         )}
 
-        {feedback && !showSummary && (
+        {/* Text feedback card hidden at PRE — the SFX, the chip color/shake, and
+            the frame revealing the emerald answer word carry right vs wrong. */}
+        {feedback && !showSummary && !isPreReader && (
           <LuminaFeedbackCard
             status={feedbackType === 'success' ? 'correct' : 'incorrect'}
             className="text-center"

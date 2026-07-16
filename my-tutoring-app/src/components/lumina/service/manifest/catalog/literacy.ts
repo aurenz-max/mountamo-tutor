@@ -1103,7 +1103,11 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + 'and Sentence Reading (apply decoding in connected text). Capstone assessment for CVC mastery. ESSENTIAL for K-2 literacy.',
     constraints:
       'Requires mode selection. Real/Nonsense needs phonetically plausible nonsense words. '
-      + 'Word Chains must follow one-letter-change rule. Sentences use only mastered CVC words + approved sight words.',
+      + 'Word Chains must follow one-letter-change rule. Sentences use only mastered CVC words + approved sight words. '
+      + 'BAND FLOOR: sentence_reading (connected-text decoding + comprehension) is Grade 1+ — do NOT route it '
+      + 'at Kindergarten/pre-reader (reading a whole sentence is beyond a CVC-word decoder; route K to '
+      + 'real_vs_nonsense / picture_match / word_chains). The other three modes are pre-reader-capable: at Grade K '
+      + 'the component hides its chrome + on-screen instruction text and the tutor voices the play action.',
     evalModes: [
       {
         evalMode: 'real_vs_nonsense',
@@ -1179,6 +1183,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'When you receive [CHAIN_WORD], say the word and optionally add a brief note about what changed '
             + '(e.g., "mat \u2014 we changed the first letter!").',
         },
+        {
+          title: 'PRE-READER HOW TO PLAY (Kindergarten)',
+          instruction:
+            'For a KINDERGARTEN / pre-reader student the on-screen instruction text is HIDDEN \u2014 you are the '
+            + 'ONLY channel for what to do. On [ACTIVITY_START] (and whenever the mode switches), warmly voice '
+            + 'the play action for the current mode in ONE short child-friendly sentence, then stop: '
+            + 'REAL vs NONSENSE \u2014 "You\u2019ll hear two words. Tap the one that is a REAL word!"; '
+            + 'PICTURE MATCH \u2014 "Listen to the word, then tap the picture that matches it!"; '
+            + 'WORD CHAINS \u2014 "Read each word out loud. Watch one letter change to make a new word!"; '
+            + 'SENTENCE READING \u2014 "Read the little sentence. Tap any word to hear it!". '
+            + 'This voicing IS your greeting and OVERRIDES any one-sentence / keep-it-brief cap. '
+            + 'NEVER say which choice is correct and NEVER read a nonsense/target answer that gives it away \u2014 '
+            + 'name the task, not the answer.',
+        },
       ],
     },
     supportsEvaluation: true,
@@ -1230,6 +1248,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       'GRAMMAR / oral-language game for K-1 (regular -s plurals) — NOT a phonics or decoding primitive (never select for CVC-decoding, letter-sound, blending, or spelling objectives; route those to cvc-speller / word-workout / phonics-blender). A counted-picture frame shows one object then several ("One dog 🐕 → three ___?") and the child SAYS the plural form aloud ("dogs") into an open mic, with tap chips as the fallback. Teaches regular -s plural formation (singular/plural nouns, "more than one"). ESSENTIAL for Kindergarten Language Arts grammar.',
     constraints:
       'GRAMMAR objectives only (plural / "more than one" / singular-vs-plural). Do NOT route decoding/CVC/phonics/spelling objectives here — the noun pool is chosen for clean -s plural formation, not for a target vowel or decodability, so it cannot honor a decoding scope. Covers ONLY regular -s plurals at birth (no -es, no irregular plurals — those modes come later). Nouns must be concrete, picturable words with a clear emoji so pre-readers can play. The manifest must NOT supply specific per-challenge words — the generator authors the noun pool and code assembles the plural_s challenges deterministically.',
+    tutoring: {
+      taskDescription:
+        'Word Flip — a spoken "one → many" plural game. Challenge {{currentChallengeIndex}}/{{totalChallenges}}. '
+        + 'Voice mode: {{voiceMode}}. The counted-picture frame shows one thing then several; the child SAYS or '
+        + 'taps the regular -s plural. Never say the answer form aloud while the mic is open.',
+      contextKeys: ['challengeType', 'currentChallengeIndex', 'totalChallenges', 'attempts', 'voiceMode'],
+      scaffoldingLevels: {
+        level1: 'Point them back to the pictures: "How many do you see now? More than one!" Do NOT say the new word.',
+        level2: 'Cue the rule with a DIFFERENT example noun ("one hat… two HATS"), then invite them to try theirs. Never say the on-screen answer.',
+        level3: 'Slowly stretch the "sss" ending on an example word and ask what tiny sound we add for more than one. Still never say the current answer aloud.',
+      },
+      aiDirectives: [
+        {
+          title: 'PRE-READER ORIENT (Kindergarten)',
+          instruction:
+            'This is a Kindergarten pre-reader: the chrome and instruction text are HIDDEN and the tap chips '
+            + '("dog" / "dogs" / "dogses") cannot be read. You ORIENT by voice. On [ACTIVITY_START] give ONE short, '
+            + 'warm sentence that teaches the rule with an EXAMPLE noun that is NOT the on-screen word (e.g. '
+            + '"One cat… two CATS! When you see more than one, say the new word!"), then be SILENT — the counted '
+            + 'pictures ask each question and the mic is live. This is your greeting and OVERRIDES any one-sentence cap. '
+            + 'LAW: never say the answer form of the word currently on screen (the mic is open); saying the singular '
+            + '("dog") is safe, the plural ("dogs") is a leak.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

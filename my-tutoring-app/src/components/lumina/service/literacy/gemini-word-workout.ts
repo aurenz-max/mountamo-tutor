@@ -59,6 +59,24 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 const ALL_VOWELS = ['a', 'e', 'i', 'o', 'u'];
 
 /**
+ * Canonical pre-reader grade key stamped into the returned data so the component
+ * can band-gate the child's field (chrome/text) at Kindergarten. Mirrors
+ * gemini-letter-sound-link's resolvePreReaderGradeKey — canonical `grade` first,
+ * prose `gradeContext` as the fallback. Returns 'K' for Kindergarten, else the
+ * numeric grade (reader grades keep the full UI unchanged).
+ */
+function resolvePreReaderGradeKey(ctx: GenerationContext): string {
+  const canonical = (ctx.grade ?? '').toString().trim().toLowerCase();
+  if (canonical === 'k' || canonical === '0' || canonical === 'kindergarten') return 'K';
+  if (/^\d+$/.test(canonical)) return canonical;
+  const prose = (ctx.gradeContext ?? '').toString().toLowerCase();
+  if (prose.includes('kindergarten') || /\bgrade\s*k\b/.test(prose) || /^\s*k\b/.test(prose)) return 'K';
+  const proseNum = prose.match(/\b(?:grade\s*)?(\d{1,2})\b/);
+  if (proseNum) return proseNum[1];
+  return canonical || '1';
+}
+
+/**
  * Short vowel(s) the objective names, or null if it is vowel-generic (mixed
  * practice). Reads topic + objective + intent so a "short a" lesson binds every
  * word to /a/. Multiple named vowels (rare) all pass through as the scoped set.
@@ -616,6 +634,10 @@ export const generateWordWorkout = async (
   const scopedVowels = resolveScopedVowels(ctx.scope, intent);
   const masteredVowels = scopedVowels ?? config?.masteredVowels ?? ALL_VOWELS;
 
+  // Canonical grade key for the component's pre-reader band-gate (chrome/text
+  // hidden at K; reader grades unchanged). Stamped into every returned shape.
+  const gradeKey = resolvePreReaderGradeKey(ctx);
+
   // Determine which modes to generate
   const explicitMode = config?.mode;
   const evalModes = evalConstraint?.allowedTypes as WordWorkoutMode[] | undefined;
@@ -647,6 +669,7 @@ export const generateWordWorkout = async (
       title: `CVC Word Workout: ${topic}`,
       mode: targetMode,
       masteredVowels,
+      gradeLevel: gradeKey,
       challenges: finalChallenges,
     };
   }
@@ -686,6 +709,7 @@ export const generateWordWorkout = async (
     title: `CVC Word Workout: ${topic}`,
     mode: modesToGenerate[0],
     masteredVowels,
+    gradeLevel: gradeKey,
     challenges: allChallenges,
   };
 };

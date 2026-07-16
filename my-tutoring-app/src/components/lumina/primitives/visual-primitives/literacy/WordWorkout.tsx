@@ -26,6 +26,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -64,6 +65,13 @@ export interface WordWorkoutData {
   /** Default/primary mode. Per-challenge mode overrides this. */
   mode: WordWorkoutMode;
   masteredVowels: string[];
+  /**
+   * Canonical grade key stamped by the generator ('K' | '1' | '2'…). At 'K' the
+   * component band-gates its adult chrome and load-bearing text out of the
+   * pre-reader's field (the tutor voices instructions; SFX/ring carry feedback).
+   * Reader grades leave the full UI unchanged.
+   */
+  gradeLevel?: string;
   challenges: WordWorkoutChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -139,6 +147,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     title,
     mode: defaultMode,
     masteredVowels = [],
+    gradeLevel: dataGradeLevel,
     challenges = [],
     instanceId,
     skillId,
@@ -147,6 +156,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // ── Pre-reader band-gate ──────────────────────────────────────────
+  // At Kindergarten a non-reader can't decode chrome or on-screen instruction
+  // sentences. Hide the adult chrome (title/badges/vowel-label/counter/progress)
+  // and the text instruction/feedback from the child's field — the tutor voices
+  // the play action (catalog PRE-READER HOW TO PLAY directive) and SFX + the
+  // answer ring carry right/wrong. Reader grades render the full UI unchanged.
+  const isPreReader = isPreReaderGrade(dataGradeLevel);
 
   // ── Challenge progression ─────────────────────────────────────────
   const {
@@ -254,7 +271,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     primitiveType: 'word-workout',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
-    gradeLevel: 'K-2',
+    // Real grade so the tutor knows a Kindergartner is a pre-reader and fires the
+    // catalog PRE-READER HOW TO PLAY directive (voices the play action). Falls
+    // back to the K-2 band when the generator didn't stamp a grade.
+    gradeLevel: dataGradeLevel || 'K-2',
   });
 
   // Activity introduction
@@ -266,13 +286,28 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     const modeCount = new Set(challenges.map((ch) => ch.mode || defaultMode)).size;
     const isMultiMode = modeCount > 1;
 
+    // At PRE the on-screen instruction text is hidden — the tutor is the ONLY
+    // channel for what-to-do, so ORIENT by voicing the play action for THIS mode
+    // (answer-free). This mirrors the catalog PRE-READER HOW TO PLAY directive,
+    // which is the durable carrier that survives the lesson one-sentence cap.
+    const PLAY_ACTION: Record<WordWorkoutMode, string> = {
+      'real-vs-nonsense': 'they will hear two words and tap the one that is a REAL word',
+      'picture-match': 'they will hear a word and tap the PICTURE that matches it',
+      'word-chains': 'they will read a row of words out loud, one at a time, as each one changes by a letter',
+      'sentence-reading': 'they will read a little sentence and tap any word to hear it',
+    };
+
     sendText(
-      `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' — multi-mode session with ' + modeCount + ' activity types' : ' — ' + MODE_CONFIG[currentMode].label + ' mode'}. `
-      + `${challenges.length} challenges. Mastered vowels: ${masteredVowels.join(', ') || 'all'}. `
-      + `Introduce warmly for a young reader. 2-3 sentences.`,
+      isPreReader
+        ? `[ACTIVITY_START] Word game for a Kindergartner who CANNOT read yet — you are the only voice for the instructions. `
+          + `Warmly, in ONE short sentence, tell them ${PLAY_ACTION[currentMode]}. `
+          + `Do NOT read any answer aloud. This is your greeting — it overrides any one-sentence cap.`
+        : `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' — multi-mode session with ' + modeCount + ' activity types' : ' — ' + MODE_CONFIG[currentMode].label + ' mode'}. `
+          + `${challenges.length} challenges. Mastered vowels: ${masteredVowels.join(', ') || 'all'}. `
+          + `Introduce warmly for a young reader. 2-3 sentences.`,
       { silent: true }
     );
-  }, [isConnected, currentChallenge, currentMode, defaultMode, challenges, masteredVowels, sendText]);
+  }, [isConnected, currentChallenge, currentMode, defaultMode, challenges, masteredVowels, isPreReader, sendText]);
 
   // ── Derived values (stable per challenge) ─────────────────────────
   const shuffledPair = useMemo(() => {
@@ -777,9 +812,11 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     if (!currentChallenge) return null;
     return (
       <div className="space-y-4">
-        <p className="text-slate-300 text-center text-lg font-medium">
-          {MODE_CONFIG['real-vs-nonsense'].instruction}
-        </p>
+        {!isPreReader && (
+          <p className="text-slate-300 text-center text-lg font-medium">
+            {MODE_CONFIG['real-vs-nonsense'].instruction}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-4">
           {shuffledPair.map((word) => {
             const isSelected = selectedAnswer === word;
@@ -840,9 +877,11 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     return (
       <div className="space-y-4">
         <div className="text-center">
-          <p className="text-slate-400 text-sm mb-2">
-            {MODE_CONFIG['picture-match'].instruction}
-          </p>
+          {!isPreReader && (
+            <p className="text-slate-400 text-sm mb-2">
+              {MODE_CONFIG['picture-match'].instruction}
+            </p>
+          )}
           <div className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/20">
             <span className="text-3xl font-bold text-slate-100">
               {currentChallenge.targetWord}
@@ -909,9 +948,11 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        <p className="text-slate-300 text-center text-lg font-medium">
-          {MODE_CONFIG['word-chains'].instruction}
-        </p>
+        {!isPreReader && (
+          <p className="text-slate-300 text-center text-lg font-medium">
+            {MODE_CONFIG['word-chains'].instruction}
+          </p>
+        )}
         <div className="space-y-2">
           {chain.map((word, idx) => {
             const isActive =
@@ -1148,58 +1189,64 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
   return (
     <LuminaCard className={className}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">
-                {MODE_CONFIG[currentMode].icon} {MODE_CONFIG[currentMode].label}
-              </LuminaBadge>
-              {masteredVowels.length > 0 && (
+      {/* Header chrome — hidden entirely at PRE (title/mode badge/vowel label/
+          counter/voice-toggle are adult text in the child's field, rule 7; the
+          vowel label also leaks the scope). Reader grades keep the full header. */}
+      {!isPreReader && (
+        <LuminaCardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+              <div className="flex items-center gap-2">
                 <LuminaBadge className="text-xs">
-                  Vowels: {masteredVowels.join(', ')}
+                  {MODE_CONFIG[currentMode].icon} {MODE_CONFIG[currentMode].label}
                 </LuminaBadge>
-              )}
+                {masteredVowels.length > 0 && (
+                  <LuminaBadge className="text-xs">
+                    Vowels: {masteredVowels.join(', ')}
+                  </LuminaBadge>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {!allChallengesComplete &&
+                currentMode === 'word-chains' &&
+                spokenChain.isSupported && (
+                  <button
+                    onClick={() => {
+                      if (voiceOn) spokenChain.cancel();
+                      setVoiceOn((v) => !v);
+                    }}
+                    className={`text-xs rounded-full px-2.5 py-1 border ${
+                      voiceOn
+                        ? 'text-slate-300 border-white/20'
+                        : 'text-slate-500 border-white/10'
+                    }`}
+                    title={voiceOn ? 'Turn off voice reading' : 'Read aloud with voice'}
+                  >
+                    {'🎙️'} {voiceOn ? 'on' : 'off'}
+                  </button>
+                )}
+              <LuminaBadge accent="blue" className="text-xs">
+                {currentIndex + 1} / {challenges.length}
+              </LuminaBadge>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!allChallengesComplete &&
-              currentMode === 'word-chains' &&
-              spokenChain.isSupported && (
-                <button
-                  onClick={() => {
-                    if (voiceOn) spokenChain.cancel();
-                    setVoiceOn((v) => !v);
-                  }}
-                  className={`text-xs rounded-full px-2.5 py-1 border ${
-                    voiceOn
-                      ? 'text-slate-300 border-white/20'
-                      : 'text-slate-500 border-white/10'
-                  }`}
-                  title={voiceOn ? 'Turn off voice reading' : 'Read aloud with voice'}
-                >
-                  {'🎙️'} {voiceOn ? 'on' : 'off'}
-                </button>
-              )}
-            <LuminaBadge accent="blue" className="text-xs">
-              {currentIndex + 1} / {challenges.length}
-            </LuminaBadge>
-          </div>
-        </div>
-      </LuminaCardHeader>
+        </LuminaCardHeader>
+      )}
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress bar */}
-        {!allChallengesComplete && (
+        {/* Progress bar — chrome, hidden at PRE */}
+        {!allChallengesComplete && !isPreReader && (
           <LuminaProgress
             accent="emerald"
             value={(currentIndex / Math.max(challenges.length, 1)) * 100}
           />
         )}
 
-        {/* Feedback */}
-        {!allChallengesComplete && feedback && (
+        {/* Feedback — text card hidden at PRE (a non-reader can't read it; the
+            SFX + the answer-choice ring/shake carry right vs wrong, rule 5). */}
+        {!allChallengesComplete && feedback && !isPreReader && (
           <LuminaFeedbackCard
             status={feedbackType === 'success' ? 'correct' : 'incorrect'}
           >
