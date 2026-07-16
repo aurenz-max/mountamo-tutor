@@ -135,10 +135,11 @@ sort, 0.683) is fully served today — the other close matches are gaps:
 ## Catalog projection
 
 - **description:** faithful as of the 2026-07-14 rewrite (objective-relevant semantic classification leads; perceptual axes only when taught). No change.
-- **constraints:** **DIVERGENT — "Max 10 objects per challenge" is looser than enforced reality** (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins) and overstates what PRE tolerates. Proposed: "Objects per challenge: 4–6 at K, 5–8 at Grade 1; bins ≤3 at K, ≤4 at Grade 1." ~~Held for the 1e lane~~ — 1e landed (`7cb5e5f`, tree clean): **unblocked, apply in the next sorting-station slice.**
+- **constraints:** ~~**DIVERGENT — "Max 10 objects per challenge" is looser than enforced reality**~~ **APPLIED 2026-07-15** (`math.ts:2991`): the loose "Max 4 sorting categories. Max 10 objects per challenge." now reads the enforced band reality — "Objects per challenge: 4–6 at Kindergarten, 5–8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1." (Everything else in the constraints string — objective-rule-stability, perceptual-axis, BAND FLOOR — unchanged.)
 - **evalModes:** per-mode Grade-1+ band notes are accurate and load-bearing for the resolver. No change.
 
 ## Changelog
 
 - 2026-07-15 — derived (initial, pilot for `/primitive-contract`). 10 requirements, 3 conflicts (all RESOLVED), 1 catalog divergence flagged (constraints object-count). Evidence: K census 2026-07-14, topic-fidelity + reader-fit reports, EVAL_TRACKER SS-1..4, git to 2026-03.
 - 2026-07-15 (later) — reader-fit 1e landed (`7cb5e5f`, live 3/3): R4/R5 caveat cleared; constraints projection unblocked. Added G-series from `curriculum_fit_probe` (MATCH @ K + G1): 5 gap requirements, incl. one pre-detected R1 conflict (G3, ruling recorded) and one band-floor pathway (G2, re-audit not unfloor).
+- 2026-07-15 (rider, during phonics-blender derivation) — **constraints projection APPLIED** (`math.ts:2991`): "Max 4 sorting categories / Max 10 objects per challenge" → enforced band reality (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins). tsc 0-new + `typecheck:lumina` clean. Projection bullet flipped to APPLIED.

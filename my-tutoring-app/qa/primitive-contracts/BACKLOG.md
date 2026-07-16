@@ -26,11 +26,6 @@ Catalog calls it "ESSENTIAL for K-5 math"; 5 eval modes across K-5 = widest
 band spread of any math primitive; multiple historical fidelity fixes
 (resolveTopicNumberRange is the Tier-2 reference implementation).
 
-### 6. phonics-blender
-2/6 census routing + member of the clampGradeToK2 fix cohort (2026-07-15) — that
-fix is exactly a contract requirement ("grades 1-2 must NOT get pinned-K content")
-currently recorded nowhere a future editor will look.
-
 ## Systemic items
 
 - **BigQuery attempts ETL omits `primitive_type`** (`bigquery_etl.py` ~688) — blocks a
@@ -43,6 +38,22 @@ currently recorded nowhere a future editor will look.
 
 ## Done
 
+- **phonics-blender — derived 2026-07-15 (2nd contract)** → `docs/contracts/phonics-blender.md`.
+  **10 requirements** (all OBSERVED; R2 carries a queued live-tap caveat, R6 a prompt-vs-code
+  note), **2 conflicts** (both RESOLVED via the same band-gate + scoping forks as sorting-station
+  C2/C3 — the structural parallel is deliberate), **4 gap requirements** from the
+  `curriculum_fit_probe` run (subject `LANGUAGE_ARTS`; K/G1 **ABSTAIN-diffuse** best-cosine
+  0.813/0.809, G2 **MATCH** 0.830): G1 CVC-segmentation, G2 onset-rime, **G3 vowel-teams
+  (strongest — the G2 curriculum subskill names phonics-blender in its authored constraint;
+  no vowel_team eval mode exists → `/add-eval-modes`)**, G4 decode↔encode boundary ruling
+  (encoding = cvc-speller, don't build here). **2 catalog divergences flagged** (description says
+  "TTS" but audio is Gemini Live; "AI-generated word images" is really one emoji/word) —
+  projection **NOT applied** (derive-only). **1 queued follow-up:** `[PRONOUNCE_SOUND]` tag vs
+  the catalog `[PRONOUNCE]` directive trigger — jsdom-verified emit, runtime tap-pronunciation
+  unverified → queued to reader-fit BACKLOG (executor `/tutor-test`). Evidence: curriculum-fit
+  probe 2026-07-15, reader-fit PRE + live 3/3, grade-fidelity close-out (clampGradeToK2),
+  EVAL_TRACKER RF-1/RF-2 + PB2 + SP-7, git to 2026-03. Rider taken: sorting-station catalog
+  constraints projection **APPLIED** (`math.ts:2991`, tsc 0-new + typecheck:lumina clean).
 - **sorting-station — PILOT derived 2026-07-15** → `docs/contracts/sorting-station.md`.
   10 requirements (8 verified-live, 2 in-flight with the delegated reader-fit 1e lane),
   3 resolved conflicts recorded (variety-vs-fidelity, PRE-vs-G1 chrome via band gate,

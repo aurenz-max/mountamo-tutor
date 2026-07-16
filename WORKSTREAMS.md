@@ -19,7 +19,9 @@ queue AND this file's "last touched" in the same slice.
 ## ACTIVE
 
 ### 1. Reader-fit K queue — last touched 2026-07-15
-- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next). Tree is CLEAN — clean base to start.
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next). NOTE: tree carries the
+  uncommitted phonics-blender contract slice (see WIP note) — `/ship` it before starting #9 so the
+  reader-fit work lands on a clean base, not mixed with a different stream's slice.
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Now:** **#9 explainer tail** — audit **foundation-explorer** first (text-primary "reading"
   surface, 4/6 census lessons), extract the shared PRE pattern (auto-read + 🔊 + picture-primary
@@ -44,24 +46,21 @@ queue AND this file's "last touched" in the same slice.
 
 ## DELEGATED
 
-### 3. phonics-blender contract derivation — `qa/primitive-contracts/HANDOFF-phonics-blender-contract-2026-07-15.md`
-- Handed off 2026-07-15. Second contract (after the sorting-station pilot): derive-only
-  (R-series from the fresh RF-1/RF-2 + clampGradeToK2 + PB2 evidence; G-series via
-  curriculum_fit_probe), plus optional bounded rider (sorting-station catalog
-  constraints projection, unblocked by `7cb5e5f`).
-- **Close-out:** `docs/contracts/phonics-blender.md`, contracts BACKLOG #6 → Done,
-  this row folds to the PARKED contracts stream.
+*(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` 2026-07-15):** working tree is **clean** — the "Uncommitted" caveats on the
-> three former delegated lanes are resolved (committed in `8aa0fd0` + `7cb5e5f`). Portfolio is a
-> clean **2 ACTIVE + 0 DELEGATED**, under the 2+1 limit. Only residuals are browser spot-checks
-> already queued as HUMAN-CHECKS #12/#13/#14. Room to open one delegated lane if needed.
+> **WIP note (`/pm` 2026-07-15):** working tree carries the phonics-blender contract lane
+> (delegated lane 3 CLOSED — `docs/contracts/phonics-blender.md` derived, contracts BACKLOG
+> #6 → Done, sorting-station constraints rider APPLIED to `math.ts`; tsc 0-new + typecheck:lumina
+> clean). Uncommitted (per doctrine — commit on user request). Portfolio back to a clean
+> **2 ACTIVE + 0 DELEGATED**, under the 2+1 limit. Residuals: browser spot-checks queued as
+> HUMAN-CHECKS #12/#13/#14 + one queued phonics tap-pronounce verification (reader-fit BACKLOG,
+> executor `/tutor-test`). Room to open one delegated lane if needed.
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
 | Stream | Queue / doc | Next action | As of |
 |---|---|---|---|
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | pilot (sorting-station) derived 07-15 incl. G-series close-match gaps; phonics-blender derivation DELEGATED 07-15 (see lane 3); next after it = #2 knowledge-check derivation (before `true_false @ PRE` lands), then wire `--check` into the fix loops | 07-15 |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | 2 contracts derived (sorting-station pilot + **phonics-blender DONE 07-15**: 10 R, 2 conflicts, 4 gaps incl. G3 vowel-teams where the curriculum names the primitive but no eval mode exists → `/add-eval-modes`; sorting-station constraints rider APPLIED). Next = #2 **knowledge-check** derivation (largest blast radius; before `true_false @ PRE` lands), then wire `--check` into the fix loops | 07-15 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
 | Flash-lite truncation hardening | memory `project_flash-lite-truncation-template` | ~50-gen sweep | 07-06 |
