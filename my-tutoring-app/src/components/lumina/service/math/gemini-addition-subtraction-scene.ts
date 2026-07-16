@@ -37,11 +37,14 @@ const SCENE_DEFAULT_OBJECTS: Record<string, string> = {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'act-out': {
     promptDoc:
-      `"act-out": Student drags objects into the scene to act out the story. `
+      `"act-out": Student ACTS OUT the story by manipulating the scene objects — at `
+      + `Kindergarten they TAP to bring more objects in (addition) or tap objects to `
+      + `send them away (subtraction); the scene is judged by the resulting count. `
       + `Best for beginners — concrete manipulative interaction. `
       + `Story should clearly describe objects joining or leaving. `
-      + `Use warm language ("Drag the ducks into the pond!").`,
-    schemaDescription: "'act-out' (drag objects to act out story)",
+      + `Use warm language that matches TAPPING ("Tap to send the 2 frogs away!", `
+      + `"Tap to bring 2 more ducks in!") — never say "drag".`,
+    schemaDescription: "'act-out' (tap to add/remove objects and act out the story)",
   },
   'build-equation': {
     promptDoc:
@@ -767,6 +770,24 @@ Return the complete addition/subtraction scene configuration.
     }
     if (config.maxNumber !== undefined) {
       data.maxNumber = config.maxNumber;
+    }
+  }
+
+  // ── Reader-fit item 11: tap-accurate act-out instruction at K ──
+  // At Kindergarten, act-out is DIRECT MANIPULATION — the child taps to bring
+  // objects in (addition) or taps objects to send them away (subtraction). The
+  // instruction is load-bearing for the tutor's spoken DISAMBIGUATE beat
+  // ({{instruction}} in the catalog READ-THE-STORY aiDirective), so we OWN it in
+  // code rather than trust the LLM: it must describe the TAP action (never "drag")
+  // and match the operation. Names only changeCount (already public in the story),
+  // never resultCount — the result is what the child discovers by enacting.
+  // Grade-1 act-out (count-the-scene model) keeps the LLM instruction.
+  if (data.gradeBand === 'K') {
+    for (const challenge of data.challenges as AddSubChallenge[]) {
+      if (challenge.type !== 'act-out') continue;
+      challenge.instruction = challenge.operation === 'addition'
+        ? `Tap to bring ${challenge.changeCount} more ${challenge.objectType} in!`
+        : `Tap ${challenge.changeCount} ${challenge.objectType} to send them away!`;
     }
   }
 

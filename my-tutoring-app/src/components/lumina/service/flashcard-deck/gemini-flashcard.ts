@@ -32,6 +32,13 @@ const flashcardDeckSchema: Schema = {
           category: {
             type: Type.STRING,
             description: "A short sub-category label (e.g., 'Vocabulary', 'Key Concept', 'Formula')"
+          },
+          // Flat per-card emoji (NOT nested) — the pre-reader card face. Required at
+          // K, optional elsewhere. Sidesteps the flash-lite nested-array emoji footgun.
+          cardEmoji: {
+            type: Type.STRING,
+            nullable: true,
+            description: "PRE-READER (kindergarten) only: a single emoji depicting the term — the card face a non-reader sees"
           }
         },
         required: ["term", "definition", "category"]
@@ -40,6 +47,19 @@ const flashcardDeckSchema: Schema = {
   },
   required: ["cards"]
 };
+
+/**
+ * Resolve the pre-reader grade KEY from context. Prefers the canonical numeric
+ * grade (`ctx.grade`), falls back to the prose display context for the pre-reader
+ * signal only. Mirrors resolvePreReaderGradeKey in the other explainer generators.
+ */
+function resolvePreReaderGradeKey(ctx: GenerationContext): string | undefined {
+  const canonical = (ctx.grade ?? '').toString().trim().toLowerCase();
+  if (canonical === 'k' || canonical === '0' || canonical === 'kindergarten') return 'K';
+  if (/^\d+$/.test(canonical)) return canonical;
+  if (/(kinder|preschool|pre-?k\b|prek|pre-?reader)/i.test(ctx.gradeContext ?? '')) return 'K';
+  return canonical || undefined;
+}
 
 /**
  * Generate a flashcard deck using Gemini AI
@@ -53,14 +73,30 @@ export async function generateFlashcardDeck(
 ): Promise<FlashcardDeckData> {
   const topic = ctx.topic;
   const gradeContext = ctx.gradeContext;
+  const gradeKey = resolvePreReaderGradeKey(ctx);
+  const isPreReader = gradeKey === 'K';
   const rawConfig = ctx.raw as FlashcardDeckConfig;
+  // Pre-readers get a SHORT deck (a 15-card rote drill is far past the K attention
+  // span + violates the band's "one thing at a time" load rule).
+  const defaultCount = isPreReader ? 6 : 15;
   const config: FlashcardDeckConfig = {
-    cardCount: rawConfig.cardCount || 15,
+    cardCount: rawConfig.cardCount || defaultCount,
     focusArea: ctx.intent || rawConfig.focusArea,
     includeExamples: rawConfig.includeExamples,
   };
-  const cardCount = config?.cardCount || 15;
+  const cardCount = isPreReader
+    ? Math.min(config?.cardCount || defaultCount, 6)
+    : (config?.cardCount || defaultCount);
   const focusArea = config?.focusArea || '';
+
+  const preReaderRules = isPreReader ? `
+
+PRE-READER MODE (kindergarten — the child CANNOT read; the card FACE is a big emoji and a tutor reads each card aloud):
+- term: 1-3 words, a CONCRETE thing a 5-year-old can picture (an animal, an object, a color, a shape).
+- cardEmoji: REQUIRED — a SINGLE emoji that clearly depicts the term (the card face). One distinct emoji per card.
+- definition: ONE short spoken sentence, MAX 12 words, concrete and observable.
+- category: a single simple word.
+- Avoid abstract terms, formulas, dates, and technical vocabulary entirely.` : '';
 
   const generationPrompt = `Generate a set of ${cardCount} high-quality flashcards for studying: "${topic}"${focusArea ? ` (focus on: ${focusArea})` : ''}.
 
@@ -76,7 +112,8 @@ Create flashcards that:
 Ensure each card has:
 - term: The concept, word, or question (front of card)
 - definition: The concise answer or explanation (back of card)
-- category: A short sub-category label (e.g., "Vocabulary", "Key Concept", "Formula")`;
+- category: A short sub-category label (e.g., "Vocabulary", "Key Concept", "Formula")
+${preReaderRules}`;
 
   try {
     console.log('📞 Generator params:', { topic, gradeLevel: gradeContext, cardCount, focusArea });
@@ -104,11 +141,17 @@ Ensure each card has:
       id: `${Date.now()}-${index}`,
       term: card.term || '',
       definition: card.definition || '',
-      category: card.category || 'General'
+      category: card.category || 'General',
+      // Pre-reader card face: keep the emoji, ⭐ fallback so no card is faceless.
+      ...(isPreReader
+        ? { cardEmoji: (typeof card.cardEmoji === 'string' && card.cardEmoji.trim()) ? card.cardEmoji.trim() : '⭐' }
+        : (card.cardEmoji ? { cardEmoji: card.cardEmoji } : {})),
     }));
 
     console.log('🃏 Flashcard Deck Generated:', {
       topic,
+      gradeLevel: gradeKey,
+      isPreReader,
       cardCount: cards.length,
       categories: Array.from(new Set(cards.map(c => c.category)))
     });
@@ -116,7 +159,8 @@ Ensure each card has:
     return {
       title: `${topic} Flashcards`,
       description: `Master ${topic} with ${cards.length} interactive flashcards`,
-      cards
+      cards,
+      ...(gradeKey ? { gradeLevel: gradeKey } : {}),
     };
   } catch (error) {
     console.error('Error generating flashcard deck:', error);

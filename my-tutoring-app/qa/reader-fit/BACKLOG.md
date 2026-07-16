@@ -7,13 +7,25 @@ subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
 
 ## Queue
 
-### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-14 fix)
-Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped; see Done.
-Next priorities:
-- **Component P2 (chrome band-gate):** at `gradeBand==='K'` hide mode tabs, "1/N"
-  counter, "Kindergarten"/type badges, and the "Left: N / Right: N" count badges
-  (the count badges also partially leak the answer). Coordinate with K-stage.
-- **Audit-C rule 5 (feedback on the object):** wrong answer is still a text card +
+### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-16 fix) — **3 top priorities DONE 2026-07-16; tail (rule-5 + per-mode picture passes) still open**
+Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped 07-14; the three
+Pulse-walk priorities (chrome band-gate, one_less symmetry, 🔊 Read-me) shipped 07-16.
+Report: `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Contract:
+`docs/contracts/comparison-builder.md` (edit assessed COMPATIBLE, no fork).
+- ~~**Component P2 (chrome band-gate) — PEDAGOGY-CRITICAL.**~~ **DONE 2026-07-16.** At
+  `gradeBand==='K'` (`isK`) the "Left: N / Right: N" count badges (the rule-#1 leak), the
+  "Challenge 1 of N" counter, the mode tabs, and the "Kindergarten"/type badges are all hidden.
+  Group pictures + middle "=" (answer surface, contract R1) kept. jsdom band tests: chrome
+  absent@K, present@grade-1 control.
+- ~~**one_more_less scaffold asymmetry.**~~ **DONE 2026-07-16.** Symmetric on both layers:
+  component `voiceOtherOneMoreLess` fires a silent `[DISAMBIGUATE]` voicing the OTHER part after
+  the child answers one (latched, answer-free); catalog ORIENT rewritten to voice "one less"
+  identically to "one more". **Live `--lesson --runs 3` — decrement spoken 3/3.**
+- ~~**On-demand instruction replay (generalizes).**~~ **DONE 2026-07-16.** Shared
+  `primitives/shared/ReadMeButton.tsx` (thin `LuminaReadAloud` wrapper) rendered at K in the
+  prompt row, SAME position across all four modes; re-voices instruction + answer-free ask.
+  First instance of the systemic 🔊-Read-me item below.
+- **Audit-C rule 5 (feedback on the object) — STILL OPEN:** wrong answer is still a text card +
   generic beep — make the tapped group flash/shake instead of a text card at K.
 - **Other eval modes at PRE:** one_more_less (up to 21 number cells — rule 4 load),
   compare_numbers (< > = symbol reading), order (direction badge text) — each needs
@@ -21,48 +33,78 @@ Next priorities:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 9a. media-player @ PRE — picture-primary knowledgeCheck (helper fits)
-Deferred from #9 (2026-07-15). media-player HAS the MCQ shape the shared
-`PreReaderSelfCheck` helper serves: per-segment `segments[].knowledgeCheck.options: string[]`
-+ `correctOptionIndex`; the script AND the KC question+options are ALREADY auto-narrated
-(`[READ_ALOUD]`/`[READ_KNOWLEDGE_CHECK]`), catalog has a `KNOWLEDGE CHECK NARRATION`
-directive. **Remaining:** band-gate the RadioGroup→tap=choose, emoji-primary options
-(add `option*Emoji` to the per-segment KC schema), a PRE-READER READ-ALOUD directive tag,
-hide chrome (step counter, letter chips, transcript, "Submit Answer"). Generator is
-ctx-native but reads `inferGradeLevel(ctx.gradeContext)` — switch to `ctx.grade` + stamp
-`gradeLevel`. Catalog `constraints` say "grades 3+"; census routed it at K, so extend +
-drop the 3+ floor for the KC-read path. Executor: `/reader-fit --fix media-player PRE`.
+### 12. ten-frame `make_ten` @ K — direct-manipulation proxy (from the 2026-07-16 sibling audit)
+Promoted from the "Direct-manipulation-first" systemic note (the census is done — see that note
+for evidence). `make_ten` judges from a `counterCount + ___ = total` stepper (`TenFrame.tsx`
+~923–947, `checkMakeTenAnswer` ~:461), NOT from the frame — though the K frame is seeded and the
+empty cells are tappable (`handleCellClick` ~:308). **Fix (fork by mode+band, item-11 template):**
+at K `make_ten`, empty cells become the tap-to-fill answer surface, auto-judge on the filled count,
+stepper+Check removed at K; `subitize` (flash/hide → number legit) + `count_all` + Grade-1+ UI all
+unchanged. Contract-first (`docs/contracts/ten-frame.md`). Executor: `/reader-fit --fix ten-frame`.
+Full prompt: `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` (Task 1). Reference: item 11.
 
-### 9b. concept-card-grid @ PRE — bespoke (NO self-check; prose-wall flip artifact)
-Deferred from #9. `PreReaderSelfCheck` does NOT apply — there is no MCQ. It's a flip-to-read
-card (`definition`/`curiosityNote`/`timelineContext` prose; `originStory`/`subheading`
-generated-but-unrendered). **Treatment:** read-aloud-on-flip (voice `definition` + curiosity
-note), emoji/image-primary card face, chrome hidden ("Exhibit 0N", "Flip to Analyze",
-section headers, `el.type` badge). **Prerequisite plumbing:** generator is POSITIONAL
-`(topic, gradeContext, config)` — refactor to ctx-native (read `ctx.grade`), add a pre-reader
-signal to `contextKeys` + component props (currently NONE threaded), add a catalog
-PRE-READER READ-ALOUD directive (has `CARD EXPLORATION`/`CARD RETURNED` only). Executor:
-`/reader-fit --fix concept-card-grid PRE` (bespoke, not a helper swap).
+### 13. counting-board `subitize` @ K — subitize DISPLAY fix (from the 2026-07-16 sibling audit)
+Promoted from the systemic note. NOT a manipulation swap: the K `subitize` stepper
+(`CountingBoard.tsx` ~1120–1144, judged ~:547) sits over objects that stay VISIBLE + tap-countable,
+but genuine subitizing needs them to flash-then-hide. **Fix:** make K `subitize` flash/hide the
+objects (mirror ten-frame subitize) → the number answer becomes legit; do NOT convert to
+tap-counting (wrong skill). `count_all` unchanged; `count-on` is Grade-1 → EMERGING re-audit, not
+here. Contract-first (`docs/contracts/counting-board.md`). Executor: `/reader-fit --fix counting-board`.
+Full prompt: `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` (Task 2). Reference: item 11.
 
-### 9c. comparison-panel @ PRE — bespoke (true/false gate, not MCQ)
-Deferred from #9. The graded gate is **boolean** (`gates[].correctAnswer: boolean`, two
-hardcoded True/False text buttons + Submit) — not the MCQ helper's shape. Prose walls:
-`points[]`/`synthesis.*` paragraphs. **Treatment:** picture true/false gate (👍/👎 or two
-picture cards, tap=choose) + read-aloud of the gate question; hide chrome (Option A/B badges,
-"Comprehension Check N of M", VS badge, synthesis section labels). **Prerequisite:** generator
-POSITIONAL, no ctx, no grade to component — same ctx-native refactor + grade threading as 9b;
-catalog has 5 aiDirectives but no PRE read-aloud. Also flag: `{{#if}}` handlebars? (check the
-scaffold). Executor: `/reader-fit --fix comparison-panel PRE` (bespoke).
+### 9a. media-player — **PROMOTED to its own workstream 2026-07-16 (user-approved) — no longer worked from this queue**
+Step 1 (contract) closed here; Steps 2–3 live in
+`qa/media-player-reimagining/BACKLOG.md` (WORKSTREAMS ACTIVE stream 2). The historical item
+below is kept for the record; do NOT pull it from this queue.
 
-### 9d. flashcard-deck @ PRE — bespoke (flip + self-rate; no tutoring block)
-Deferred from #9. No self-check (flip term/definition + "Study Again"/"Got It" self-rate).
-`PreReaderSelfCheck` does NOT apply. **Treatment:** read-aloud-on-flip (voice `term` then
-`definition`), add a per-card emoji/image field (none exists) as the card face, hide chrome
-(card counter "3/8", progress dots, "Click to Reveal", button text sublabels). **Prerequisite
-(largest):** `FlashcardDeckData` has no `gradeLevel`; generator reads `ctx.gradeContext` not
-`ctx.grade`; **the catalog entry has NO `tutoring` block at all** — one must be authored
-(taskDescription + contextKeys + a PRE-READER READ-ALOUD directive) before a scaffold can
-reach the tutor. Executor: `/reader-fit --fix flashcard-deck PRE` (bespoke + new scaffold).
+### ~~9a (historical)~~ media-player — REIMAGINE as a multi-band reading primitive (inspired by deep-dive / interactive-passage) — **user pivot 2026-07-16**
+**This SUPERSEDES the prior "picture-primary knowledgeCheck band-gate (helper fits)" plan.** User
+call 2026-07-16: media-player was an early ambitious primitive; now that deep-dive and
+interactive-passage exist, its segment + per-segment-MCQ design comes up short as a *reading*
+surface. A narrow PRE band-gate would polish a primitive whose overall design is the real gap.
+The play is a reimagining, not a `--fix`.
+- **Step 1 — contract FIRST — ✅ DONE 2026-07-16** (`/primitive-contract media-player --census`).
+  Contract: `docs/contracts/media-player.md` (status **CONFLICTED** — C1 open by design, resolution
+  = this reimagining). Census: `qa/topic-traces/media-player-census-2026-07-16.md`. **Blast radius
+  is SMALL and clean:** live consumers = 2 authored G1 social_studies listening subskills
+  (SS001-05-c/SS004-05-c, route 2/2, constraints literally describe the current shape) + occasional
+  K explainer routing (1/6 fresh, 2/6 on 07-14) + tutor narration (sweep PASS) + 1 calibration doc
+  (2 obs, β 2.9, single `default` identity — cheap to migrate). **Zero G3 routing** — "grades 3+"
+  is fiction. **Step-2 fuel:** curriculum-fit probe found the LA listening-comprehension family at
+  every band (K scattered 0.731 main-idea-after-listening; **G1 0.767 `LA007-06-a`/`LA007-01-a` —
+  authored to the PHANTOM `listen-and-respond`, i.e. unserved real demand**; G2 **MATCH 0.774**
+  LA003 recount/evidence family). Keep-true list = contract R1–R7 (narrated segment walkthrough,
+  Gemini-Live narration beats + contextKeys, checks answerable from narration alone, no answer
+  leak, 3-attempt reveal+skip, single MediaPlayerMetrics submission, on-demand visuals); R8 grade
+  handling is the sanctioned rebuild zone. MP-1/MP-2/MP-3 (title echo / CTA fold / no evalModes)
+  must clear in the rebuild. Boundary (contract G5): don't absorb read-aloud-studio (production),
+  decodable-reader (decoding), interactive-passage (text reading).
+- **Step 2 — modality map across bands:** define the reading modalities media-player should serve at
+  **K (PRE)**, **EMERGING (grade 1)**, and **ESTABLISHED (grade 2+)** — e.g. PRE = read-aloud +
+  picture-primary comprehension check; EMERGING = read-along with light decoding + tap comprehension;
+  ESTABLISHED = richer interactive segments (annotate/predict/evidence) in the deep-dive spirit.
+  Borrow proven capabilities from deep-dive + interactive-passage rather than re-inventing (their
+  PRE read-aloud palette, picture-primary MCQ, block model). Cross-check `/curriculum-fit` so the
+  reimagined modes have real homes.
+- **Step 3 — build the new capabilities, band by band:** treat like the reimaginings family
+  (hydraulics/dump-truck/excavator template, but reading-focused). New/rebuilt eval modes via
+  `/primitive` layers + `/add-eval-modes`; **fork on any contract conflict** (eval-mode split → band
+  gate → config axis → variant) — never edit in place over a requirement Step 1 surfaced. Close each
+  band with `/eval-test` + `/reader-fit` (PRE first, the observed K demand). The old
+  `PreReaderSelfCheck` helper still applies to whatever ends up as a PRE picture-MCQ.
+- **Preserved from the old plan (still true, feed into Step 2):** per-segment `knowledgeCheck.options`
+  + `correctOptionIndex`; script + KC already auto-narrated (`[READ_ALOUD]`/`[READ_KNOWLEDGE_CHECK]`);
+  generator reads `inferGradeLevel(ctx.gradeContext)` and should move to `ctx.grade` + stamp
+  `gradeLevel`; catalog `constraints` say "grades 3+" but census routes it at K — the band floor is
+  wrong and must be reconciled in the reimagining. **Scope note:** this is a heavier slice than the
+  rest of the tail (#9b–#9d) — it may warrant promotion to its own short workstream once Step 1's
+  contract shows the blast radius. Executors: `/primitive-contract` → `/curriculum-fit` → `/primitive`
+  / `/add-eval-modes` → `/eval-test` + `/reader-fit`.
+
+### 9b / 9c / 9d — explainer-tail bespoke — **ALL THREE READY @ PRE 2026-07-16 (see Done).**
+concept-card-grid (9b), comparison-panel (9c), flashcard-deck (9d) all shipped their PRE
+band-gate + ctx-native generator refactor + catalog PRE-READER directive. Residual for each =
+Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K explainer tail drains.
 
 ### Lesson-mode sweeps (after pilots 1–2 prove the loop)
 - `/reader-fit --lesson "Count to tell the number of objects — up to 5" kindergarten`
@@ -73,6 +115,53 @@ reach the tutor. Executor: `/reader-fit --fix flashcard-deck PRE` (bespoke + new
   (EMERGING) once the K queue drains.
 
 ## Systemic items (accumulate evidence, don't fix per-primitive)
+- **Direct-manipulation-first for K "act out / build" scenes (seeded 2026-07-16).** Where a K
+  story text promises a physical action ("drag them away", "add more", "put them in"), the K
+  interaction MUST be that manipulation — the child enacts the scene and the answer is *derived
+  from what they built/removed*, never entered via a number/text proxy. Ref user ruling
+  `direct-manipulation-first`. First instance = addition-subtraction-scene `act_out` (item 11)
+  — **CLOSED 2026-07-16** (see Done; the seed→tap-add/remove→auto-judge template + the
+  deterministic tap-accurate instruction are the reusable pattern for the rest of this class).
+  - **Sibling audit 2026-07-16** (Explore sweep of all ~60 `visual-primitives/math/` primitives;
+    candidates for the SAME read-then-tap-a-number proxy over a manipulable scene, recorded NOT fixed):
+    - **STRONG — `ten-frame` make-ten phase.** `TenFrame.tsx:923–947` renders a make-ten stepper
+      (`counterCount + ___ = totalCells`, +/- over `makeTenInput`), judged in `checkMakeTenAnswer`
+      (`:461`) from the stepper — NOT from the frame. The K ten-frame is seeded with `counterCount`
+      counters and shows empty cells the child can physically tap to fill (`handleCellClick:308`
+      only blocks taps during the *subitize* answer phase), but those taps don't drive the judged
+      answer. Make-ten (K.OA.4) should be enacted by placing counters into the empty cells and
+      auto-judged on the filled count. (The *subitize* phase in the same file is NOT an instance —
+      counters are flashed then hidden, so a number answer is correct there.) Executor when picked:
+      `/reader-fit --fix ten-frame PRE` — reuse item-11's seed→tap-fill→auto-judge template.
+    - **POSSIBLE — `counting-board` subitize phase.** `CountingBoard.tsx:1120–1144` (stepper "How
+      many do you see?", judged `:547`) sits over a countable scene that is NEVER flashed/hidden
+      (objects stay visible) and IS tap-countable in the sibling `count_all` phase
+      (`handleObjectTap:476`, answer = `countedObjects.size` — the good pattern). Subitizing argues
+      for a number answer, but because the objects are fully visible + demonstrably tappable, decide
+      whether K subitize should flash/hide (like ten-frame) or accept enacted taps. Its `count-on`
+      phase (`:1146–1173`, judged `:609`) is the same defect but is a **Grade-1** challenge type
+      (catalog `:2032`) — just above the K band; note for the EMERGING re-audit.
+    - **NOT instances (checked + cleared):** number-bond (missing-part/fact-family are pure-symbol —
+      `BondDiagram` draws pips only when counters are passed, which those modes don't; decompose uses
+      tap-to-place = good), compare-objects (`type=number` is Grade-1 `non_standard` measurement; K is
+      object tapping), length-lab (`TilingWorkspace` derives from `placedUnits` = good), ordinal-line
+      (tap the character = manipulation), sorting-station (tap IS the manipulation). Pure
+      symbol/equation, place-value, geometry, and upper-grade primitives are out of scope.
+    - **PROMOTED to discrete fix items 2026-07-16** (user durability call): ten-frame make-ten →
+      **item 12**, counting-board subitize (display fix) → **item 13**. coin-counter `count-like` =
+      the one un-swept gap → confirm/clear as Task 3. Execution handoff (ten-frame first):
+      `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`. The sibling audit above IS the census
+      of record — do NOT re-sweep.
+- **On-demand instruction replay across K eval modes (seeded 2026-07-16).** Every K math primitive
+  should expose a persistent LuminaReadAloud "🔊 Read me" that repeats the current
+  instruction/question, in a CONSISTENT position across all of that primitive's eval modes (so a
+  struggling non-reader can always re-hear the ask). **First instance BUILT 2026-07-16 on
+  comparison-builder (item 2b)** — the shared carrier is `primitives/shared/ReadMeButton.tsx`
+  (`buildReadMeMessage` + `<ReadMeButton>`, a thin `LuminaReadAloud` wrapper; student-initiated →
+  non-silent). The pattern is now proven; **generalize** by dropping `<ReadMeButton>` into the
+  prompt row of the other K math primitives (gate on the primitive's `isPreReaderGrade`/K signal,
+  route `onAskTutor` to a non-silent `sendText`, supply an answer-free per-mode `ask`).
+
 - **K-stage presentation mode — MVP BUILT 2026-07-13** (`KindergartenStage.tsx`,
   gated in `LessonScreen.tsx` via `kindergartenMode.ts`; auto-on for K lessons,
   Ctrl+Alt+K override). On-rails one-section-at-a-time with animated frame flow,
@@ -87,6 +176,52 @@ reach the tutor. Executor: `/reader-fit --fix flashcard-deck PRE` (bespoke + new
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **9b / 9c / 9d. Explainer-tail bespoke @ PRE — ALL THREE READY (2026-07-16).** The three
+  explainer-tail surfaces that did NOT fit the fact-file MCQ helper (each bespoke). Shared pattern:
+  ctx-native generator refactor (read `ctx.grade`) + stamp `gradeLevel` + code-attached flat emoji
+  (dodges the flash-lite nested-array footgun) + a catalog PRE-READER READ-ALOUD `aiDirective`
+  (overrides the lesson one-sentence cap) + a component `isPreReaderGrade(data.gradeLevel)` band-gate.
+  Reports: `concept-card-grid-PRE-2026-07-16.md`, `comparison-panel-PRE-2026-07-16.md`,
+  `flashcard-deck-PRE-2026-07-16.md`.
+  - **9c comparison-panel** — the boolean gate renders as a **picture true/false** (👍/👎) via the
+    shared `PreReaderSelfCheck` (a boolean gate IS a 2-option self-check), tap=choose, statement
+    read aloud on view + 🔊; chrome hidden (Option A/B, VS, "Comprehension Check N of M", synthesis
+    prose → spoken). `{{#if}}` handlebars check = clean.
+  - **9b concept-card-grid** — emoji card FACE (`cardEmoji`) + **read-aloud-on-flip**
+    (`[CARD_READ_ALOUD]` reads name+definition+curiosity note); chrome hidden ("Exhibit 0N", "Flip
+    to Analyze", section labels, el.type badge, "Return to Artifact"). New PRE-READER directive.
+  - **9d flashcard-deck** (largest) — **authored a whole NEW catalog `tutoring` block** (there was
+    none) + wired `useLuminaAI` in the component (was none). Emoji face, auto-start, `[FLASHCARD_SHOWN]`
+    voices the term, `[FLASHCARD_READ_ALOUD]` reads the card on flip, 🔊 replay, deck capped to 6 at K,
+    chrome hidden (counter/dots/"Click to Reveal"/sublabels), wordless 🎉 summary.
+  - Verified (all three): `typecheck:lumina` **0**; **full vitest suite 799/799**; new jsdom suites
+    **15/15** (`ComparisonPanel`/`ConceptCard`/`FlashcardDeck.reader-fit.test.tsx`); eval-test @ K
+    (each stamps `gradeLevel:'K'` + distinct picturable emojis, ≤12w copy); tutor-test `--probe` @ K
+    **PASS 0 findings** (directives resolve, 0 `(not set)`, no `{{#if}}`).
+  - Residual (each): Tier-3 live `--lesson` behavioral confirmation (needs a bespoke journey in
+    `run_tutor_live.py` + backend) + pixel look → **HUMAN-CHECKS**. Mechanism = the proven
+    cap-overriding catalog directive carrier (foundation-explorer / fact-file / knowledge-check).
+- **11. addition-subtraction-scene @ K — `act_out` TRUE direct manipulation, READY + USER-CONFIRMED LIVE (2026-07-16).**
+  Report: `addition-subtraction-scene-item11-2026-07-16.md`. The 2026-07-16 Pulse finding: subtraction
+  `act_out` promised "drag them out of the scene" but the only interaction was a `NumberTileRow` (a
+  proxy number). Fixed as a **fork by band + mode** (contract-first: `docs/contracts/addition-subtraction-scene.md`
+  derived first).
+  - **COMPONENT:** at `gradeBand==='K'`, `act_out` seeds the scene with the story's `startCount`; the
+    child taps ＋ to bring `changeCount` more in (addition) or taps objects to send them away
+    (subtraction); auto-judges the instant the enacted count equals `resultCount` (reuses the
+    create-story build machinery). No `NumberTileRow`/Check at K `act_out`. **Grade 1 `act_out`
+    untouched** (count-the-scene); `solve_story` keeps tiles (1b); `create_story` keeps its build (1b).
+  - **GENERATOR:** de-"drag"-ed the promptDoc + a **deterministic code-owned** K `act_out` instruction
+    ("Tap to bring N more X in!" / "Tap N X to send them away!") so the spoken `{{instruction}}`
+    DISAMBIGUATE beat always matches the tap UI. Names `changeCount` only, never `resultCount`.
+  - **CATALOG:** description reconciled; `act_out` evalMode desc was ALREADY "Manipulate objects in
+    scene" — restored, not changed. **No schema change** — `start/change/result` already model the scene.
+  - Verified: touched files tsc 0; **vitest jsdom 5/5**; eval-test @ K (4 tap-accurate `act_out`
+    challenges, no leak); **live `--lesson --runs 3` 3/3 CONFIRMED** (story read aloud + tap
+    instruction voiced + ORIENT restates the tap action), report
+    `qa/tutor-reports/addition-subtraction-scene-live-lesson-2026-07-16.md`.
+  - Residual: pixel/feel of the ＋ control + tap-remove → HUMAN-CHECKS. Sibling K scene primitives
+    with the same proxy → recorded under the systemic "direct-manipulation-first" item.
 - **9. Explainer tail @ PRE — pilot foundation-explorer READY + shared helper + fact-file
   swept; tail reconciled (2026-07-15).** Report: `explainer-tail-PRE-2026-07-15.md`.
   - **Pilot `foundation-explorer` @ PRE — READY** (PRIMITIVE-GAP + SCAFFOLD-GAP → fixed).

@@ -2149,7 +2149,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Match the wording to the challenge type ({{challengeType}}): '
             + 'compare-groups → "Which side has MORE — the left side or the right side? Tap that side. If they are the same, tap the equals in the middle."; '
             + 'compare-numbers → "Which number is bigger, {{leftNumber}} or {{rightNumber}}? Pick the alligator mouth that eats the bigger one."; '
-            + 'one-more-one-less → "We start at {{targetNumber}}. Find the number that is one more, one less, or both — whichever the screen asks (askFor: {{askFor}}) — and tap it."; '
+            + 'one-more-one-less → we start at {{targetNumber}}, and you voice EVERY question the screen shows (askFor: {{askFor}}), giving "one less" exactly the same attention as "one more": '
+            + 'if it asks for one more, say "Find the number that is one MORE than {{targetNumber}} and tap it."; if it asks for one less, say "Find the number that is one LESS than {{targetNumber}} and tap it."; '
+            + 'if it asks for BOTH, voice both asks equally — "Find one MORE than {{targetNumber}}, and also find one LESS than {{targetNumber}} — tap a number for each." Never skip or shortchange the "one less" side; '
             + 'order → "Let\'s put these numbers in order. Which one is the smallest? Tap it first." '
             + 'Reading and asking the question IS your greeting for this activity — this overrides any instruction to keep the transition to a single sentence. '
             + 'Never just say "let\'s compare!" and stop, and NEVER say which side or which answer is correct — only ask the question. Then wait for the child to act.',
@@ -2848,7 +2850,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'addition-subtraction-scene',
-    description: 'An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by counting objects, build matching equations from tiles, solve word problems, and create their own stories for given equations. Supports join, separate, compare, and part-part-whole story types. Perfect for K-1 students bridging from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
+    description: 'An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by adding and taking away objects (tapping to bring more in or send some away), build matching equations from tiles, solve word problems, and create their own stories for given equations. Supports join, separate, compare, and part-part-whole story types. Perfect for K-1 students bridging from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
     constraints: 'Numbers limited to maxNumber (5 for K, 10 for Grade 1). Requires 4 challenge types: act-out, build-equation, solve-story, create-story. Story contexts must match scene theme.',
     tutoring: {
       taskDescription: 'The student is working through addition and subtraction story challenges. Current story: "{{storyText}}" ({{operation}}, {{storyType}} type). The equation is {{equation}}. They are in a {{challengeType}} phase where they must: {{instruction}}',

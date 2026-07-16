@@ -10,6 +10,8 @@ import {
 } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { SoundManager } from '../utils/SoundManager';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
+import { PreReaderSelfCheck } from './shared/PreReaderSelfCheck';
 import {
   LuminaButton,
   LuminaCallout,
@@ -54,6 +56,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   const hasTriggeredGateOpenRef = useRef(false);
   const hasTriggeredSynthesisRef = useRef(false);
   const hasTriggeredFinalCardsRef = useRef(false);
+  const hasTriggeredPreStartRef = useRef(false);
 
   // Evaluation integration
   const {
@@ -64,6 +67,12 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // Pre-reader (kindergarten / PRE band) treatment: the graded gate becomes a
+  // picture true/false (tap 👍/👎, no Submit) the tutor reads aloud, and adult
+  // chrome (Option A/B badges, VS badge, "Comprehension Check N of M", the prose
+  // synthesis labels) is hidden. Driven by the generator-stamped gradeLevel.
+  const preReader = isPreReaderGrade(data.gradeLevel);
 
   const resolvedInstanceId = instanceId || `comparison-panel-${Date.now()}`;
 
@@ -89,6 +98,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
   const bothItemsExplored = item1Clicked && item2Clicked;
   const canShowFirstGate = hasGates && bothItemsExplored && currentGateIndex === 0;
   const canShowSynthesis = !hasGates || (currentGateIndex > 0 || allGatesCompleted);
+  // PRE walks EVERY gate (the reader path only gates on the first); a new branch,
+  // so the reader-mode reveal logic above is untouched.
+  const canShowPreGate = hasGates && bothItemsExplored && !allGatesCompleted && !!currentGate;
 
   // --- AI Tutoring Integration ---
   const aiPrimitiveData = {
@@ -110,19 +122,47 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     exhibitId,
   });
 
+  // PRE ORIENT: on mount, tell the non-reader to tap each picture. Durable carrier
+  // is the catalog [COMPARE_START] directive (survives the lesson one-sentence cap).
+  useEffect(() => {
+    if (preReader && !hasTriggeredPreStartRef.current) {
+      hasTriggeredPreStartRef.current = true;
+      sendText(
+        `[COMPARE_START] The student is comparing "${data.item1.name}" and "${data.item2.name}". `
+        + `Warmly tell them to tap each of the two pictures to hear about it.`,
+        { silent: true },
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preReader]);
+
   // AI trigger: Item explored
   useEffect(() => {
     if (item1Clicked && !hasTriggeredItem1Ref.current) {
       hasTriggeredItem1Ref.current = true;
       const isSecond = item2Clicked;
-      sendText(
-        `[ITEM_EXPLORED] The student just explored "${data.item1.name}" (Option A). ` +
-        `Key features: ${data.item1.points.slice(0, 2).join('; ')}. ` +
-        (isSecond
-          ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
-          : `This is the first card explored. Walk them through the material and build curiosity about "${data.item2.name}".`),
-        { silent: true }
-      );
+      if (preReader) {
+        // Silent background trigger (like [ITEM_EXPLORED]/[ACTIVITY_START]): it must
+        // not claim mic focus, but the tutor still SPEAKS the read-aloud in response
+        // to the catalog PRE-READER READ-ALOUD directive (which survives the cap).
+        sendText(
+          `[ITEM_READ_ALOUD] Read this card aloud to the child, word for word, warmly and simply: `
+          + `"${data.item1.name}". Two things about it: ${data.item1.points.slice(0, 2).join('; ')}. `
+          + (isSecond
+            ? `They have now tapped both pictures — tell them they are ready for the question.`
+            : `Then invite them to tap the other picture.`),
+          { silent: true },
+        );
+      } else {
+        sendText(
+          `[ITEM_EXPLORED] The student just explored "${data.item1.name}" (Option A). ` +
+          `Key features: ${data.item1.points.slice(0, 2).join('; ')}. ` +
+          (isSecond
+            ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
+            : `This is the first card explored. Walk them through the material and build curiosity about "${data.item2.name}".`),
+          { silent: true }
+        );
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item1Clicked]);
@@ -131,21 +171,33 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     if (item2Clicked && !hasTriggeredItem2Ref.current) {
       hasTriggeredItem2Ref.current = true;
       const isSecond = item1Clicked;
-      sendText(
-        `[ITEM_EXPLORED] The student just explored "${data.item2.name}" (Option B). ` +
-        `Key features: ${data.item2.points.slice(0, 2).join('; ')}. ` +
-        (isSecond
-          ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
-          : `This is the first card explored. Walk them through the material and build curiosity about "${data.item1.name}".`),
-        { silent: true }
-      );
+      if (preReader) {
+        sendText(
+          `[ITEM_READ_ALOUD] Read this card aloud to the child, word for word, warmly and simply: `
+          + `"${data.item2.name}". Two things about it: ${data.item2.points.slice(0, 2).join('; ')}. `
+          + (isSecond
+            ? `They have now tapped both pictures — tell them they are ready for the question.`
+            : `Then invite them to tap the other picture.`),
+          { silent: true },
+        );
+      } else {
+        sendText(
+          `[ITEM_EXPLORED] The student just explored "${data.item2.name}" (Option B). ` +
+          `Key features: ${data.item2.points.slice(0, 2).join('; ')}. ` +
+          (isSecond
+            ? `Both items are now explored. Congratulate them and prepare them for the comprehension check.`
+            : `This is the first card explored. Walk them through the material and build curiosity about "${data.item1.name}".`),
+          { silent: true }
+        );
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item2Clicked]);
 
-  // AI trigger: Gate opened (both items explored, first gate visible)
+  // AI trigger: Gate opened (both items explored, first gate visible). Reader-mode
+  // only — at PRE the picture gate owns its own read-aloud on view (see renderPreGate).
   useEffect(() => {
-    if (bothItemsExplored && hasGates && currentGate && !hasTriggeredGateOpenRef.current) {
+    if (!preReader && bothItemsExplored && hasGates && currentGate && !hasTriggeredGateOpenRef.current) {
       hasTriggeredGateOpenRef.current = true;
       sendText(
         `[GATE_OPENED] A true/false comprehension check has appeared. ` +
@@ -269,6 +321,38 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
     }
   };
 
+  // PRE gate pass: PreReaderSelfCheck is eliminate-until-correct and owns the
+  // wrong-tap RECOVER beat, so onResult fires once (correct) per gate. Record the
+  // result, celebrate, advance, and submit on the final gate. Walks all gates.
+  const handlePreGatePass = (attempts: number) => {
+    if (!currentGate) return;
+    const timeToAnswer = gateAttemptStartTime ? Date.now() - gateAttemptStartTime : 0;
+    const newResult = {
+      gateIndex: currentGateIndex,
+      question: currentGate.question,
+      correctAnswer: currentGate.correctAnswer,
+      studentAnswer: currentGate.correctAnswer,
+      isCorrect: true,
+      attemptNumber: attempts,
+      timeToAnswer,
+    };
+    const updated = [...gateResults, newResult];
+    setGateResults(updated);
+
+    sendText(
+      `[GATE_CORRECT] The pre-reader answered the picture true/false correctly `
+      + `("${currentGate.question}"). Briefly celebrate in ONE warm sentence.`,
+      { silent: true },
+    );
+
+    const nextIndex = currentGateIndex + 1;
+    setCurrentGateIndex(nextIndex);
+    setGateAttemptStartTime(Date.now());
+    if (nextIndex >= gates.length) {
+      submitEvaluation(updated);
+    }
+  };
+
   // AI trigger: All gates completed → synthesis unlocked
   useEffect(() => {
     if (allGatesCompleted && hasGates && !hasTriggeredSynthesisRef.current) {
@@ -356,31 +440,34 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto my-20 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-10 justify-center">
-        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-        </div>
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-white tracking-tight">Comparative Analysis</h2>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
-            <p className="text-xs text-purple-400 font-mono uppercase tracking-wider">Side-by-Side Comparison</p>
+      {/* Header (adult chrome — hidden for pre-readers) */}
+      {!preReader && (
+        <div className="flex items-center gap-4 mb-10 justify-center">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white tracking-tight">Comparative Analysis</h2>
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+              <p className="text-xs text-purple-400 font-mono uppercase tracking-wider">Side-by-Side Comparison</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Introduction */}
-      {data.intro && (
+      {/* Introduction (text — hidden for pre-readers; the tutor voices framing) */}
+      {!preReader && data.intro && (
         <div className="mb-8 text-center max-w-3xl mx-auto">
           <p className="text-slate-300 font-light leading-relaxed">{data.intro}</p>
         </div>
       )}
 
-      {/* Exploration Prompt (if gates exist and not both explored) */}
-      {hasGates && !bothItemsExplored && (
+      {/* Exploration Prompt (text instructions — hidden for pre-readers; the tutor
+          voices "tap each picture" via [COMPARE_START]) */}
+      {!preReader && hasGates && !bothItemsExplored && (
         <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl max-w-2xl mx-auto">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -425,10 +512,12 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
             </div>
 
-            {/* Label Badge */}
-            <div className="absolute top-4 left-4 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-md">
-              <span className="text-xs font-mono uppercase tracking-wider text-blue-300">Option A</span>
-            </div>
+            {/* Label Badge (adult chrome — hidden for pre-readers) */}
+            {!preReader && (
+              <div className="absolute top-4 left-4 px-3 py-1 bg-blue-500/30 border border-blue-400/40 rounded-full backdrop-blur-md">
+                <span className="text-xs font-mono uppercase tracking-wider text-blue-300">Option A</span>
+              </div>
+            )}
 
             {/* Explored Indicator */}
             {item1Clicked && (
@@ -445,20 +534,24 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
 
           {/* Content Section */}
           <div className="p-8">
-            <h3 className="text-2xl font-bold text-blue-300 mb-3 flex items-center gap-2">
+            <h3 className={`font-bold text-blue-300 mb-3 flex items-center gap-2 ${preReader ? 'text-3xl' : 'text-2xl'}`}>
               {data.item1.name}
               {selectedItem === 1 && (
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
               )}
             </h3>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6">{data.item1.description}</p>
+            {!preReader && (
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">{data.item1.description}</p>
+            )}
 
             {/* Key Points */}
             <div className="space-y-2.5">
-              <div className="text-[10px] uppercase tracking-widest text-blue-500/70 font-bold mb-3 flex items-center gap-2">
-                <span className="w-3 h-px bg-blue-500/50"></span>
-                Key Features
-              </div>
+              {!preReader && (
+                <div className="text-[10px] uppercase tracking-widest text-blue-500/70 font-bold mb-3 flex items-center gap-2">
+                  <span className="w-3 h-px bg-blue-500/50"></span>
+                  Key Features
+                </div>
+              )}
               {data.item1.points.map((point, i) => (
                 <div
                   key={i}
@@ -466,7 +559,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 group-hover/point:scale-150 transition-transform"></div>
-                  <span className="text-sm text-slate-200 leading-relaxed flex-1">{point}</span>
+                  <span className={`text-slate-200 leading-relaxed flex-1 ${preReader ? 'text-lg' : 'text-sm'}`}>{point}</span>
                 </div>
               ))}
             </div>
@@ -495,10 +588,12 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
             </div>
 
-            {/* Label Badge */}
-            <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500/30 border border-orange-400/40 rounded-full backdrop-blur-md">
-              <span className="text-xs font-mono uppercase tracking-wider text-orange-300">Option B</span>
-            </div>
+            {/* Label Badge (adult chrome — hidden for pre-readers) */}
+            {!preReader && (
+              <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500/30 border border-orange-400/40 rounded-full backdrop-blur-md">
+                <span className="text-xs font-mono uppercase tracking-wider text-orange-300">Option B</span>
+              </div>
+            )}
 
             {/* Explored Indicator */}
             {item2Clicked && (
@@ -515,20 +610,24 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
 
           {/* Content Section */}
           <div className="p-8">
-            <h3 className="text-2xl font-bold text-orange-300 mb-3 flex items-center gap-2">
+            <h3 className={`font-bold text-orange-300 mb-3 flex items-center gap-2 ${preReader ? 'text-3xl' : 'text-2xl'}`}>
               {data.item2.name}
               {selectedItem === 2 && (
                 <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></div>
               )}
             </h3>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6">{data.item2.description}</p>
+            {!preReader && (
+              <p className="text-sm text-slate-400 leading-relaxed mb-6">{data.item2.description}</p>
+            )}
 
             {/* Key Points */}
             <div className="space-y-2.5">
-              <div className="text-[10px] uppercase tracking-widest text-orange-500/70 font-bold mb-3 flex items-center gap-2">
-                <span className="w-3 h-px bg-orange-500/50"></span>
-                Key Features
-              </div>
+              {!preReader && (
+                <div className="text-[10px] uppercase tracking-widest text-orange-500/70 font-bold mb-3 flex items-center gap-2">
+                  <span className="w-3 h-px bg-orange-500/50"></span>
+                  Key Features
+                </div>
+              )}
               {data.item2.points.map((point, i) => (
                 <div
                   key={i}
@@ -536,7 +635,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 group-hover/point:scale-150 transition-transform"></div>
-                  <span className="text-sm text-slate-200 leading-relaxed flex-1">{point}</span>
+                  <span className={`text-slate-200 leading-relaxed flex-1 ${preReader ? 'text-lg' : 'text-sm'}`}>{point}</span>
                 </div>
               ))}
             </div>
@@ -544,15 +643,43 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* VS Indicator */}
-      <div className="flex items-center justify-center -my-3 relative z-10">
-        <div className="w-14 h-14 rounded-full bg-slate-800/90 backdrop-blur-md border-2 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.3)] flex items-center justify-center">
-          <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">VS</span>
+      {/* VS Indicator (adult chrome — hidden for pre-readers) */}
+      {!preReader && (
+        <div className="flex items-center justify-center -my-3 relative z-10">
+          <div className="w-14 h-14 rounded-full bg-slate-800/90 backdrop-blur-md border-2 border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.3)] flex items-center justify-center">
+            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">VS</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Comprehension Gate */}
-      {hasGates && canShowFirstGate && !gateSubmitted && currentGate && (
+      {/* ── PRE (pre-reader) picture true/false gate ──────────────────────────
+          Tap 👍 / 👎 = choose (no Submit); the tutor reads the statement aloud on
+          first view and from the 🔊 button; a wrong tap gives an eyes-free spoken
+          hint. Reuses the shared PreReaderSelfCheck (a boolean gate is a 2-option
+          self-check). No "Comprehension Check N of M" chrome. */}
+      {preReader && canShowPreGate && (
+        <div className="mt-8 mb-8 max-w-2xl mx-auto animate-fade-in">
+          <PreReaderSelfCheck
+            key={currentGateIndex}
+            question={currentGate.question}
+            options={['Yes, that is right', 'No, that is wrong']}
+            optionEmojis={['👍', '👎']}
+            correctIndex={currentGate.correctAnswer ? 0 : 1}
+            accent="cyan"
+            readAloudMessage={
+              `[GATE_READ_ALOUD] A pre-reader cannot read this. Read the statement aloud, word for word: `
+              + `"${currentGate.question}". Then say: tap the thumbs up if it is right, or the thumbs down if it is wrong. `
+              + `Never say or hint whether it is true or false.`
+            }
+            retryTag="[GATE_RETRY]"
+            onAskTutor={(msg) => sendText(msg)}
+            onResult={(correct, attempts) => { if (correct) handlePreGatePass(attempts); }}
+          />
+        </div>
+      )}
+
+      {/* Comprehension Gate (reader mode) */}
+      {!preReader && hasGates && canShowFirstGate && !gateSubmitted && currentGate && (
         <div className="mt-8 mb-8 animate-fade-in">
           <div className="glass-panel rounded-3xl border border-yellow-500/30 p-8 bg-yellow-500/5 max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
@@ -604,8 +731,8 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Gate Feedback */}
-      {hasGates && gateSubmitted && currentGate && (
+      {/* Gate Feedback (reader mode — PRE feedback lands on the tapped tile) */}
+      {!preReader && hasGates && gateSubmitted && currentGate && (
         <div className="mt-8 mb-8 animate-fade-in">
           <div className={`glass-panel rounded-3xl border p-8 max-w-3xl mx-auto ${
             isGateCorrect
@@ -650,8 +777,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Synthesis Section (locked until gate passed) */}
-      {canShowSynthesis && (
+      {/* Synthesis Section (reader mode — prose wall; hidden for pre-readers, who
+          hear the [SYNTHESIS_UNLOCKED] walkthrough spoken instead) */}
+      {!preReader && canShowSynthesis && (
         <div className="mt-8 glass-panel rounded-3xl border border-purple-500/20 p-8 md:p-10 relative overflow-hidden animate-fade-in">
           {/* Background decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
@@ -766,7 +894,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
       )}
 
       {/* Interactive Hint (only if no gates) */}
-      {!hasGates && !selectedItem && (
+      {!preReader && !hasGates && !selectedItem && (
         <div className="mt-6 text-center">
           <p className="text-xs text-slate-500 font-mono">
             Click on either card to highlight and focus
@@ -774,19 +902,25 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Completion Message */}
+      {/* Completion Message — wordless celebration for pre-readers */}
       {allGatesCompleted && hasGates && (
-        <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl max-w-2xl mx-auto text-center animate-fade-in">
-          <div className="flex items-center justify-center gap-2 text-green-400 mb-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span className="font-bold text-sm">Comparison Complete!</span>
+        preReader ? (
+          <div className="mt-6 text-center animate-fade-in" role="status" aria-label="All done">
+            <div className="text-6xl">🎉</div>
           </div>
-          <p className="text-xs text-slate-400">
-            You&apos;ve successfully explored and understood this comparison
-          </p>
-        </div>
+        ) : (
+          <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl max-w-2xl mx-auto text-center animate-fade-in">
+            <div className="flex items-center justify-center gap-2 text-green-400 mb-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span className="font-bold text-sm">Comparison Complete!</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              You&apos;ve successfully explored and understood this comparison
+            </p>
+          </div>
+        )
       )}
     </div>
   );

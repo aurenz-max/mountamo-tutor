@@ -26,6 +26,7 @@ import CalibrationSimulator from './CalibrationSimulator';
 import AtomRegistry from './AtomRegistry';
 import SoundLab from './SoundLab';
 import BlendJudgeLab from './BlendJudgeLab';
+import DirectInstructionBench from './di-bench/DirectInstructionBench';
 import DesignStudio from './DesignStudio';
 import DiagnosisLab from './DiagnosisLab';
 import { PlannerDashboard } from './PlannerDashboard';
@@ -59,6 +60,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'calibration-simulator': CalibrationSimulator,
   'sound-lab': SoundLab,
   'blend-judge-lab': BlendJudgeLab,
+  'di-bench': DirectInstructionBench,
   'design-studio': DesignStudio,
   'diagnosis-lab': DiagnosisLab,
   'lumina-tutor-tester': LuminaTutorTester,

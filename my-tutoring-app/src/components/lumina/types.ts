@@ -28,6 +28,18 @@ export interface ConceptCardData {
   curiosityNote: string;
   visualPrompt: string;
   themeColor: string;
+  /**
+   * Canonical grade key stamped by the generator ('K' | '1'..'12' | undefined).
+   * At 'K' the card renders the pre-reader (PRE band) treatment: emoji-primary
+   * face, read-aloud-on-flip, chrome hidden. See reader-fit BACKLOG item 9b.
+   */
+  gradeLevel?: string;
+  /**
+   * Single emoji depicting the concept — the pre-reader card FACE (a non-reader
+   * cannot read the title). Flat field / code-attached to dodge the flash-lite
+   * nested-array emoji footgun. Falls back to ⭐ when absent.
+   */
+  cardEmoji?: string;
 }
 
 // --- FOUNDATION EXPLORER (Objective-Driven Concept Teaching) ---
@@ -772,6 +784,12 @@ export interface ComparisonGate {
 export interface ComparisonData {
   title: string;
   intro: string;
+  /**
+   * Canonical grade key stamped by the generator ('K' | '1'..'12' | undefined).
+   * At 'K' the component renders the pre-reader (PRE band) treatment: picture
+   * true/false gate, read-aloud, chrome hidden. See reader-fit BACKLOG item 9c.
+   */
+  gradeLevel?: string;
   item1: ComparisonItem;
   item2: ComparisonItem;
   synthesis: {
@@ -1088,6 +1106,10 @@ export interface SegmentKnowledgeCheck {
   options: string[];             // 2-4 answer choices
   correctOptionIndex: number;    // Index of correct answer (0-based)
   explanation?: string;          // Why this answer is correct
+  /** PRE (K) picture answer surface — one depicting emoji per option, same order.
+   *  Present only when complete + distinct (generator validates); component falls
+   *  back to text-free ⭐ tiles when absent. */
+  optionEmojis?: string[];
 }
 
 export interface LessonSegment {
@@ -1109,6 +1131,11 @@ export interface MediaPlayerData {
   description?: string;
   segments: FullLessonSegment[];
   imageResolution?: '1K' | '2K' | '4K';
+  /** Canonical grade stamped by the generator ('K' | '1'..'12' | band key) —
+   *  the component band-gates presentation on isPreReaderGrade(gradeLevel). */
+  gradeLevel?: string;
+  /** Resolved eval-mode task identity (listen_and_look | listen_for_details | story_analysis). */
+  evalMode?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -1125,12 +1152,24 @@ export interface FlashcardItem {
   term: string;
   definition: string;
   category: string;
+  /**
+   * Single emoji depicting the term — the pre-reader card FACE (a non-reader
+   * cannot read the term). Flat field / code-attached to dodge the flash-lite
+   * nested-array emoji footgun. Falls back to ⭐ when absent. Reader-fit item 9d.
+   */
+  cardEmoji?: string;
 }
 
 export interface FlashcardDeckData {
   title?: string;
   description?: string;
   cards: FlashcardItem[];
+  /**
+   * Canonical grade key stamped by the generator ('K' | '1'..'12' | undefined).
+   * At 'K' the deck renders the pre-reader (PRE band) treatment: emoji face,
+   * read-aloud-on-flip, chrome hidden, auto-start. See reader-fit BACKLOG item 9d.
+   */
+  gradeLevel?: string;
 }
 
 // Image Comparison Types (Before/After Slider)

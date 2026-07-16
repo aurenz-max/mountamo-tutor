@@ -102,6 +102,16 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'PRE-READER READ-ALOUD (kindergarten)',
+          instruction:
+            'For a pre-reader (kindergarten) the child CANNOT read the card — the face is just a picture (emoji) and the back is text they cannot decode. '
+            + 'When you receive [CARD_READ_ALOUD], READ ALOUD, word for word, exactly what the message gives you: '
+            + 'the concept name, then its definition, then the curiosity note — warmly and simply. '
+            + 'Reading this aloud IS your turn — this OVERRIDES any instruction to keep it to one sentence or to be brief; read all of it. '
+            + 'Then invite them to tap the card again to close it, or tap another picture card if there are more. '
+            + 'Do not ask them to read anything themselves.',
+        },
+        {
           title: 'CARD EXPLORATION',
           instruction:
             'When you receive [CARD_FLIPPED], introduce the concept on the card the student just flipped. '
@@ -152,6 +162,19 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student struggles with synthesis concepts', response: 'Think about what makes each option unique, and what they share. The differences and similarities are the key takeaways.' },
       ],
       aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten)',
+          instruction:
+            'For a pre-reader (kindergarten) the child CANNOT read the cards, the true/false statement, or any label. '
+            + 'When you receive [COMPARE_START], warmly tell the child to tap each of the two pictures to hear about it — keep it to one friendly sentence. '
+            + 'When you receive [ITEM_READ_ALOUD], READ ALOUD, word for word, exactly what the message gives you about the card the child just tapped: '
+            + 'its name and its two features, warmly and simply, then invite them to tap the other card. '
+            + 'When you receive [GATE_READ_ALOUD], READ ALOUD the true/false statement word for word, then say: '
+            + 'tap the thumbs up if it is right, or the thumbs down if it is wrong. '
+            + 'Reading this aloud IS your turn — this OVERRIDES any instruction to keep it to one sentence or to be brief; read all of it. '
+            + 'Never say or hint whether the statement is true or false. '
+            + 'When you receive [GATE_RETRY], give ONE warm spoken hint that points them back to what they can SEE on the two cards, without revealing the answer, and invite them to tap again.',
+        },
         {
           title: 'CARD EXPLORATION WALKTHROUGH',
           instruction:
@@ -350,8 +373,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
           '"Let\'s break it down. Look at the question again — what clue stands out? '
           + 'Can you narrow it to two options?"',
         level3:
-          '"Here\'s a strategy: {{correctAnswer}} relates to what we learned. '
-          + 'Think about the key connection and try again."',
+          '"Here\'s a strong strategy: connect this to something you already know well, '
+          + 'then rule out the choices that clearly do not fit. Which one feels right now?"',
       },
       commonStruggles: [
         { pattern: 'Student answers without reading carefully and gets it wrong', response: 'There is no rush — take a breath and read the whole question once more. What is it really asking?' },

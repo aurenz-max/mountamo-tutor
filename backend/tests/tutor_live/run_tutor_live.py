@@ -486,6 +486,29 @@ def build_comparison_builder_journey(live: Dict[str, Any], grade: str) -> Dict[s
              must_include=disambiguate_groups(ch1), leak_answers=answer_word(ch1),
              note="DISAMBIGUATE on advance: the next challenge's question must be enacted too"),
     ]
+
+    # one_more_less DECREMENT beat (reader-fit 2b, Pulse 2026-07-16): when a
+    # one-more-one-less challenge asks for BOTH, the component voices a [DISAMBIGUATE]
+    # after the child answers "one more" — "Now find one LESS than N". The live bug was
+    # the tutor voicing the increment but going SILENT on the decrement. Replay that
+    # exact silent trigger and confirm the tutor speaks the one-LESS ask.
+    oml = next((c for c in challenges
+                if c.get("type") == "one-more-one-less"
+                and (c.get("askFor") or "both") == "both"), None)
+    if oml is not None:
+        target = oml.get("targetNumber")
+        decrement_msg = text_msg(
+            f'[DISAMBIGUATE] The child just answered the "one more" part. Now warmly ask '
+            f'them for the OTHER part in one short sentence: "Now find one LESS than {target}. '
+            f'Tap the number that is one less." Do NOT say the number.'
+        )
+        beats.append(
+            Beat("one_less_disambiguate", expect="turn", sends=[decrement_msg],
+                 must_include=[["one less", "less", "lower", "smaller", "back", "before"]],
+                 note="DISAMBIGUATE decrement (2b): the tutor must voice the 'one less' "
+                      "ask identically to 'one more' — the Pulse 2026-07-16 silence bug")
+        )
+
     return {"initial_bag": initial_bag, "beats": beats, "answers": [], "meta": {
         "gradeBand": grade_band, "challenges": len(challenges), "types": types,
         "challenge0": ch0.get("instruction", ""), "challenge0Type": ch0.get("type"),

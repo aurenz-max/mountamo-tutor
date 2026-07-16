@@ -38,6 +38,24 @@ band spread of any math primitive; multiple historical fidelity fixes
 
 ## Done
 
+- **media-player — derived 2026-07-16 (3rd contract; first with an OPEN conflict)** →
+  `docs/contracts/media-player.md`. Pulled OUT of queue order as Step 1 of reader-fit BACKLOG
+  **#9a** (user-pivoted REIMAGINING — contract-first mandatory). **8 requirements** (7 OBSERVED;
+  R8 grade-banding INFERRED-fragile: `inferGradeLevel(ctx.gradeContext)` prose parsing, G1/G2
+  indistinguishable, no `gradeLevel` stamped), **3 standing defects carried live** (MP-1 title
+  echo CRITICAL / MP-2 CTA below fold / MP-3 no evalModes — all still in code), **1 OPEN conflict**
+  (C1: K/PRE + G1 EMERGING demand vs grades-3+ text-MCQ presentation — resolution pre-ruled by the
+  user 2026-07-16: band-by-band reimagining, fork not edit → contract status **CONFLICTED**),
+  **5 gaps**: G1 PRE band (census-routed K), **G2 EMERGING — LA007-01-a/LA007-06-a are authored to
+  the PHANTOM `listen-and-respond` (no such primitive exists) = unserved Grade-1 listening demand**,
+  G3 ESTABLISHED (curriculum-fit **MATCH 0.774**, LA003 recount family), G4 eval-mode existence
+  (SP-13), G5 boundary ruling (production→read-aloud-studio, decoding→decodable-reader,
+  text-reading→interactive-passage). Catalog projection flagged NOT applied (description's
+  "voiceover"/"play" fiction — audio is Gemini Live auto-narration; "grades 3+" contradicted by
+  every observed consumer). Fresh evidence: 9-lesson manifest census 2026-07-16
+  (`qa/topic-traces/media-player-census-2026-07-16.md`: K 1/6, authored-G1 2/2, G3 0/1),
+  curriculum-fit probe K/1/2, authored map inversion (SS001-05-c, SS004-05-c), Firestore
+  `item_calibration` (1 doc, 2 obs, β 2.9).
 - **BASELINE `--check` ×2 — 2026-07-15 (first guard exercise)** → both **COMPATIBLE**, 20/20
   requirements hold at runtime. sorting-station: 24 eval-test draws + jsdom 15/15 + scaffold probe
   + live K topic-trace (resolver pinned `sort_one` @ K); R8 amended for precision (object window =

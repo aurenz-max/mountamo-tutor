@@ -5,7 +5,7 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 import { useAudioPlayback } from '@/lib/hooks/useAudioPlayback';
 import { useExhibitContext } from '@/components/lumina/contexts/ExhibitContext';
 import { useEvaluationContext } from '@/components/lumina/evaluation';
-import type { ManifestItem, ObjectiveData } from '@/components/lumina/types';
+import type { ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 
 // Message type from AI
@@ -25,6 +25,10 @@ interface PrimitiveContext {
   exhibit_id?: string;
   topic?: string;
   grade_level?: string;
+  /** Override the catalog tutoring scaffold for this session. Dev benches use
+   *  this to install a custom persona (e.g. the DI script executor) without
+   *  registering a catalog entry; primitives should omit it. */
+  tutoring?: TutoringScaffold | null;
 }
 
 // Lesson context built from exhibit data
@@ -500,7 +504,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               primitive_type: primitiveContext.primitive_type,
               instance_id: primitiveContext.instance_id,
               primitive_data: primitiveContext.primitive_data,
-              tutoring: componentDef?.tutoring ?? null,
+              tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
             },
             lesson_context: lessonContext,
             student_progress: {
@@ -595,7 +599,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               primitive_type: info.firstPrimitive.primitive_type,
               instance_id: info.firstPrimitive.instance_id,
               primitive_data: info.firstPrimitive.primitive_data,
-              tutoring: componentDef?.tutoring ?? null,
+              tutoring: info.firstPrimitive.tutoring ?? componentDef?.tutoring ?? null,
             },
             lesson_context: lessonContext,
             student_progress: {

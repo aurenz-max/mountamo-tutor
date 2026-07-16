@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Image as ImageIcon, Play, RotateCcw, Sparkles, XCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, CheckCircle, ChevronLeft, ChevronRight, Headphones, Image as ImageIcon, Play, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import { MediaPlayerData } from '../types';
 import { usePrimitiveEvaluation, type MediaPlayerMetrics, type PrimitiveEvaluationResult } from '../evaluation';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
 import { SoundManager } from '../utils/SoundManager';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
+import { PreReaderSelfCheck, buildSelfCheckReadAloud } from './shared/PreReaderSelfCheck';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 
-import { LuminaButton, LuminaBadge, LuminaCallout } from '../ui';
+import { LuminaButton, LuminaBadge, LuminaCallout, LuminaReadAloud } from '../ui';
 
 interface MediaPlayerProps {
   data: MediaPlayerData;
@@ -25,16 +27,19 @@ interface MediaPlayerProps {
 }
 
 /**
- * MediaPlayer - Interactive visual lesson player with knowledge checks
+ * MediaPlayer - Narrated listening-comprehension walkthrough
  *
- * Features:
- * - Multi-segment lessons with AI narration and visual content
- * - Segment-by-segment knowledge check questions
- * - Progressive unlocking (must answer correctly to advance)
- * - Hybrid approach: 3 attempts, then show answer and allow skip
- * - Intro screen before lesson begins
- * - Evaluation tracking with PhaseSummaryPanel at completion
- * - Native Lumina AI narration (no legacy TTS)
+ * Band-gated presentation (contract: docs/contracts/media-player.md):
+ * - PRE (K, `isPreReaderGrade(data.gradeLevel)`): the tutor voices each segment's
+ *   script + question + options in ONE merged [MEDIA_CHECK_READ_ALOUD] beat; the
+ *   check is a PreReaderSelfCheck (emoji-primary, tap=choose, eliminate-until-
+ *   correct); first-try = mastery. Text chrome hidden.
+ * - Reader grades (1+): script text + "I'm Ready" gate + RadioGroup MCQ with
+ *   3 attempts then reveal + skip (the original shape — contract R1/R4/R5).
+ *
+ * All audio is the Gemini Live tutor via tagged sendText beats (contract R2).
+ * Evaluation: single submission with MediaPlayerMetrics at completion (R6).
+ * Visuals are generated on-demand only (R7).
  */
 
 const MAX_ATTEMPTS_PER_SEGMENT = 3;
@@ -49,13 +54,16 @@ function computeSegmentScore(attempts: number, correct: boolean): number {
 }
 
 const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
+  // PRE band gate — generator stamps gradeLevel; absent (legacy data) = reader path.
+  const isPre = isPreReaderGrade(data.gradeLevel);
+
   // Navigation state
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
   // Knowledge check state
   const [segmentPhases, setSegmentPhases] = useState<SegmentPhase[]>(
-    data.segments.map(() => 'reading')
+    data.segments.map(() => (isPre ? 'answering' : 'reading'))
   );
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [segmentAttempts, setSegmentAttempts] = useState<Record<number, number>>({});
@@ -154,9 +162,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     return results;
   }, [hasSubmittedEvaluation, data.segments, segmentAttempts, segmentCorrect]);
 
-  // ── AI: Read aloud on segment entry ────────────────────────────────────────
+  // ── AI: Read aloud on segment entry (reader grades only) ──────────────────
+  // At PRE the script is read as the INTRO of the merged [MEDIA_CHECK_READ_ALOUD]
+  // beat (PreReaderSelfCheck auto-read) — a separate [READ_ALOUD] would double-speak.
   useEffect(() => {
-    if (!hasStarted || !isConnected) return;
+    if (isPre || !hasStarted || !isConnected) return;
 
     if (!hasTriggeredReadAloudRef.current.has(currentIndex)) {
       hasTriggeredReadAloudRef.current.add(currentIndex);
@@ -167,7 +177,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         { silent: true }
       );
     }
-  }, [hasStarted, isConnected, currentIndex, data.segments.length, currentSegment.title, currentSegment.script, sendText]);
+  }, [isPre, hasStarted, isConnected, currentIndex, data.segments.length, currentSegment.title, currentSegment.script, sendText]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -215,7 +225,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       setCurrentIndex(nextIndex);
       setSegmentStartTimes(prev => ({ ...prev, [nextIndex]: Date.now() }));
 
-      if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
+      if (!isPre && !hasTriggeredNextSegmentRef.current.has(nextIndex)) {
         hasTriggeredNextSegmentRef.current.add(nextIndex);
         const nextSegment = data.segments[nextIndex];
         sendText(
@@ -301,6 +311,32 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     }
   };
 
+  // ── PRE: PreReaderSelfCheck resolution (eliminate-until-correct; onResult
+  //    fires once, correct, per check — first-try is the mastery signal,
+  //    mirroring fact-file's handlePreCheckPass semantics). ────────────────────
+  const handlePreCheckPass = (segmentIndex: number, attempts: number) => {
+    const segment = data.segments[segmentIndex];
+    const firstTry = attempts <= 1;
+    setSegmentAttempts(prev => ({ ...prev, [segmentIndex]: attempts }));
+    setSegmentAnswered(prev => ({ ...prev, [segmentIndex]: true }));
+    setSegmentCorrect(prev => ({ ...prev, [segmentIndex]: firstTry }));
+    setSegmentPhases(prev => {
+      const updated = [...prev];
+      updated[segmentIndex] = 'completed';
+      return updated;
+    });
+
+    sendText(
+      `[ANSWER_CORRECT] The pre-reader answered the picture check for segment "${segment.title}" ` +
+      `correctly${firstTry ? ' on the first try' : ''}. Celebrate warmly in ONE short sentence.`,
+      { silent: true }
+    );
+
+    setTimeout(() => {
+      advanceToNextSegment(segmentIndex);
+    }, 1800);
+  };
+
   const handleSkipAfterMaxAttempts = (segmentIndex: number) => {
     setSegmentAnswered(prev => ({ ...prev, [segmentIndex]: true }));
     setSegmentCorrect(prev => ({ ...prev, [segmentIndex]: false }));
@@ -326,11 +362,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       setSegmentStartTimes(prev => ({ ...prev, [nextIndex]: Date.now() }));
       setSegmentPhases(prev => {
         const updated = [...prev];
-        updated[nextIndex] = 'reading';
+        updated[nextIndex] = isPre ? 'answering' : 'reading';
         return updated;
       });
 
-      if (!hasTriggeredNextSegmentRef.current.has(nextIndex)) {
+      if (!isPre && !hasTriggeredNextSegmentRef.current.has(nextIndex)) {
         hasTriggeredNextSegmentRef.current.add(nextIndex);
         const nextSegment = data.segments[nextIndex];
         sendText(
@@ -348,7 +384,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       const studentAnswerIndex = selectedAnswers[index];
       const isCorrect = segmentCorrect[index] || false;
       const attempts = segmentAttempts[index] || 0;
-      const maxAttemptsReached = attempts >= MAX_ATTEMPTS_PER_SEGMENT && !isCorrect;
+      const maxAttemptsReached = !isPre && attempts >= MAX_ATTEMPTS_PER_SEGMENT && !isCorrect;
 
       return {
         segmentIndex: index,
@@ -413,7 +449,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
     setCurrentIndex(0);
     setHasStarted(false);
     setLessonComplete(false);
-    setSegmentPhases(data.segments.map(() => 'reading'));
+    setSegmentPhases(data.segments.map(() => (isPre ? 'answering' : 'reading')));
     setSelectedAnswers({});
     setSegmentAttempts({});
     setSegmentAnswered({});
@@ -465,6 +501,19 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
       setImageLoading(prev => ({ ...prev, [segmentIndex]: false }));
     }
   };
+
+  // ── PRE: merged read-aloud beat (script intro + question + options) ────────
+  const preReadAloudMessage = useMemo(() => {
+    const kc = currentSegment.knowledgeCheck;
+    if (!isPre || !kc) return '';
+    return buildSelfCheckReadAloud({
+      question: kc.question,
+      options: kc.options,
+      label: currentSegment.title,
+      tag: '[MEDIA_CHECK_READ_ALOUD]',
+      intro: currentSegment.script,
+    });
+  }, [isPre, currentSegment]);
 
   // ── Progress percentage ────────────────────────────────────────────────────
   const progressPercent = ((currentIndex + 1) / data.segments.length) * 100;
@@ -520,72 +569,92 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
         {!hasStarted && (
           <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center rounded-3xl">
             <div className="w-full max-w-2xl mx-auto px-6">
-              <Card className="backdrop-blur-xl bg-slate-900/40 border-indigo-500/20 rounded-3xl overflow-hidden animate-fade-in-up">
-                {/* Terminal-style Header */}
-                <CardHeader className="bg-slate-900/80 border-b border-white/5 flex-row items-center justify-between space-y-0 p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                      <span className="w-2 h-2 rounded-full bg-slate-600" />
-                      <span className="w-2 h-2 rounded-full bg-slate-600" />
-                    </div>
-                    <Badge variant="outline" className="bg-indigo-500/10 border-indigo-500/30 text-indigo-400 text-xs font-mono uppercase tracking-widest">
-                      Interactive Lesson
-                    </Badge>
-                  </div>
-                  <Badge variant="secondary" className="bg-slate-800/60 text-slate-400 text-xs font-mono">
-                    {data.segments.length} Segments
-                  </Badge>
-                </CardHeader>
-
-                {/* Content */}
-                <CardContent className="p-8 md:p-12 text-center space-y-6">
-                  <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
-                    <BookOpen className="h-10 w-10 text-indigo-400" />
-                  </div>
-
-                  <CardTitle className="text-3xl md:text-4xl font-bold text-white leading-tight">
-                    {data.title || 'Interactive Lesson'}
-                  </CardTitle>
-
-                  <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
-                    {data.description || `A ${data.segments.length}-segment lesson with AI narration, visual illustrations, and knowledge checks`}
-                  </p>
-
-                  {/* Features Grid */}
-                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-indigo-400">{data.segments.length}</div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Segments</div>
-                    </div>
-                    <div className="text-center border-l border-r border-slate-700">
-                      <div className="text-2xl font-bold text-indigo-400">
-                        {data.segments.filter(s => s.knowledgeCheck).length}
-                      </div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Checks</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Sparkles className="h-5 w-5 text-indigo-400" />
-                      </div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">AI Narrated</div>
-                    </div>
-                  </div>
-
-                  {/* CTA Button */}
-                  <div className="pt-4">
+              {isPre ? (
+                /* PRE intro: picture-first, one giant start action, no text chrome */
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-indigo-500/20 rounded-3xl overflow-hidden animate-fade-in-up max-h-[85vh] overflow-y-auto">
+                  <CardContent className="p-10 text-center space-y-8">
+                    <div className="text-7xl" aria-hidden>🎧</div>
+                    <CardTitle className="text-3xl font-bold text-white leading-tight line-clamp-2">
+                      {data.title || 'Story Time'}
+                    </CardTitle>
                     <Button
                       size="lg"
                       onClick={handleBeginLesson}
-                      className="group px-8 py-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden"
+                      aria-label="Start the story"
+                      className="h-24 w-24 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                      <Play className="h-5 w-5 fill-current relative z-10" />
-                      <span className="relative z-10">Begin Lesson</span>
+                      <Play className="h-10 w-10 fill-current" />
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="backdrop-blur-xl bg-slate-900/40 border-indigo-500/20 rounded-3xl overflow-hidden animate-fade-in-up max-h-[85vh] overflow-y-auto">
+                  {/* Terminal-style Header */}
+                  <CardHeader className="bg-slate-900/80 border-b border-white/5 flex-row items-center justify-between space-y-0 p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-slate-600" />
+                        <span className="w-2 h-2 rounded-full bg-slate-600" />
+                      </div>
+                      <Badge variant="outline" className="bg-indigo-500/10 border-indigo-500/30 text-indigo-400 text-xs font-mono uppercase tracking-widest">
+                        Interactive Lesson
+                      </Badge>
+                    </div>
+                    <Badge variant="secondary" className="bg-slate-800/60 text-slate-400 text-xs font-mono">
+                      {data.segments.length} Segments
+                    </Badge>
+                  </CardHeader>
+
+                  {/* Content */}
+                  <CardContent className="p-8 md:p-12 text-center space-y-6">
+                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 mb-2">
+                      <BookOpen className="h-10 w-10 text-indigo-400" />
+                    </div>
+
+                    <CardTitle className="text-3xl md:text-4xl font-bold text-white leading-tight line-clamp-2">
+                      {data.title || 'Interactive Lesson'}
+                    </CardTitle>
+
+                    <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
+                      {data.description || `A ${data.segments.length}-segment lesson with AI narration, visual illustrations, and knowledge checks`}
+                    </p>
+
+                    {/* Features Grid */}
+                    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto pt-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-indigo-400">{data.segments.length}</div>
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Segments</div>
+                      </div>
+                      <div className="text-center border-l border-r border-slate-700">
+                        <div className="text-2xl font-bold text-indigo-400">
+                          {data.segments.filter(s => s.knowledgeCheck).length}
+                        </div>
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Checks</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Sparkles className="h-5 w-5 text-indigo-400" />
+                        </div>
+                        <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">AI Narrated</div>
+                      </div>
+                    </div>
+
+                    {/* CTA Button */}
+                    <div className="pt-4">
+                      <Button
+                        size="lg"
+                        onClick={handleBeginLesson}
+                        className="group px-8 py-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all transform hover:scale-105 active:scale-95 relative overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                        <Play className="h-5 w-5 fill-current relative z-10" />
+                        <span className="relative z-10">Begin Lesson</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
@@ -627,6 +696,25 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                 );
               }
 
+              if (isPre) {
+                // PRE: no readable prompt text — one big picture button.
+                return (
+                  <div className="relative z-10 flex flex-col items-center justify-center gap-4">
+                    <Button
+                      onClick={() => handleGenerateImage(currentIndex)}
+                      aria-label="Make a picture for this part"
+                      className="h-28 w-28 rounded-3xl bg-indigo-500/15 border border-indigo-500/30 hover:bg-indigo-500/25 text-indigo-300 transition-all transform hover:scale-105 active:scale-95"
+                    >
+                      <span className="flex flex-col items-center gap-1" aria-hidden>
+                        <ImageIcon className="h-10 w-10" />
+                        <Sparkles className="h-5 w-5" />
+                      </span>
+                    </Button>
+                    {hasError && <span className="text-2xl" aria-hidden>🔁</span>}
+                  </div>
+                );
+              }
+
               // Default: prompt the student to generate the visual on-demand
               return (
                 <div className="relative z-10 w-full max-w-md flex flex-col items-center justify-center text-center space-y-4 p-6 rounded-xl border border-dashed border-white/15 bg-white/[0.02]">
@@ -651,8 +739,8 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
               );
             })()}
 
-            {/* Badge — only once a visual has been generated */}
-            {(currentSegment.imageUrl || generatedImages[currentIndex]) && (
+            {/* Badge — only once a visual has been generated (reader grades; text chrome) */}
+            {!isPre && (currentSegment.imageUrl || generatedImages[currentIndex]) && (
               <Badge
                 variant="outline"
                 className="absolute top-4 right-4 z-20 bg-slate-800/80 backdrop-blur-md border-white/10 text-white/70 shadow-lg"
@@ -668,23 +756,25 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
 
             {/* Progress Header */}
             <div className="p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-indigo-500/20 border-indigo-500/30 text-indigo-400 font-bold">
-                    {currentIndex + 1}
-                  </Badge>
-                  <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                    Step {currentIndex + 1} of {data.segments.length}
-                  </span>
+              {!isPre && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-indigo-500/20 border-indigo-500/30 text-indigo-400 font-bold">
+                      {currentIndex + 1}
+                    </Badge>
+                    <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                      Step {currentIndex + 1} of {data.segments.length}
+                    </span>
+                  </div>
+                  {data.title && (
+                    <span className="text-xs text-slate-500 hidden md:block truncate max-w-[120px]">
+                      {data.title}
+                    </span>
+                  )}
                 </div>
-                {data.title && (
-                  <span className="text-xs text-slate-500 hidden md:block truncate max-w-[120px]">
-                    {data.title}
-                  </span>
-                )}
-              </div>
+              )}
 
-              {/* Progress bar */}
+              {/* Progress bar (wordless — kept at PRE) */}
               <Progress
                 value={progressPercent}
                 className="h-2 bg-slate-800"
@@ -732,147 +822,195 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
             {/* Scrollable Content Area */}
             <ScrollArea className="flex-1">
               <div className="p-6 lg:p-8">
-                <h2 className="text-2xl lg:text-3xl font-bold text-slate-100 mb-4 leading-tight">
-                  {currentSegment.title}
-                </h2>
-
-                <div className="prose prose-invert prose-lg">
-                  <p className="text-slate-300 leading-relaxed">
-                    {currentSegment.script}
-                  </p>
-                </div>
-
-                {/* "Continue to Knowledge Check" Button */}
-                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'reading' && (
-                  <div className="mt-6">
-                    <Button
-                      size="lg"
-                      onClick={handleShowKnowledgeCheck}
-                      className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                      <CheckCircle className="h-5 w-5 relative z-10" />
-                      <span className="relative z-10">I&apos;m Ready — Show Knowledge Check</span>
-                    </Button>
-                  </div>
-                )}
-
-                {/* Knowledge Check UI — answering phase */}
-                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'answering' && (
-                  <Card className="mt-6 backdrop-blur-xl bg-slate-800/50 border-blue-500/30">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                          <span className="text-blue-400 font-bold text-sm">{currentIndex + 1}</span>
-                        </div>
-                        <CardTitle className="text-lg text-white">Knowledge Check</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-slate-200">{currentSegment.knowledgeCheck.question}</p>
-
-                      <RadioGroup
-                        value={selectedAnswers[currentIndex]?.toString()}
-                        onValueChange={(val) => {
-                          SoundManager.select();   // ← option chosen
-                          setSelectedAnswers(prev => ({ ...prev, [currentIndex]: parseInt(val) }));
-                        }}
-                        className="space-y-2"
-                      >
-                        {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (
-                          <Label
-                            key={optionIndex}
-                            htmlFor={`option-${currentIndex}-${optionIndex}`}
-                            className={`flex items-center gap-3 w-full p-4 rounded-xl cursor-pointer transition-all backdrop-blur-sm border ${
-                              selectedAnswers[currentIndex] === optionIndex
-                                ? 'bg-blue-500/20 border-blue-400/40 text-white'
-                                : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
-                            }`}
-                          >
-                            <RadioGroupItem
-                              value={optionIndex.toString()}
-                              id={`option-${currentIndex}-${optionIndex}`}
-                              className="border-slate-500 text-blue-400"
-                            />
-                            <span className="flex-shrink-0 h-6 w-6 rounded-full border border-current/30 bg-white/5 flex items-center justify-center text-xs font-bold">
-                              {String.fromCharCode(65 + optionIndex)}
-                            </span>
-                            <span className="text-sm">{option}</span>
-                          </Label>
-                        ))}
-                      </RadioGroup>
-
-                      <Button
-                        size="lg"
-                        onClick={() => handleAnswerSubmit(currentIndex)}
-                        disabled={selectedAnswers[currentIndex] === undefined}
-                        className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 relative overflow-hidden"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                        <span className="relative z-10">Submit Answer</span>
-                      </Button>
-
-                      {/* Error Feedback */}
-                      {feedback[currentIndex] && (
-                        <LuminaCallout
-                          accent="rose"
-                          label="Incorrect"
-                          icon={<XCircle className="h-4 w-4" />}
-                          className="p-4"
-                        >
-                          <p className="text-sm">{feedback[currentIndex]}</p>
-                          <LuminaBadge accent="rose" className="mt-2 text-xs">
-                            Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
-                          </LuminaBadge>
-                        </LuminaCallout>
+                {isPre ? (
+                  /* ── PRE: title + 🔊 replay + picture check (script is VOICED, not read) ── */
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl" aria-hidden>
+                        <Headphones className="h-8 w-8 text-cyan-300 inline" />
+                      </span>
+                      <h2 className="flex-1 text-2xl font-bold text-slate-100 leading-tight">
+                        {currentSegment.title}
+                      </h2>
+                      {currentSegment.knowledgeCheck && (
+                        <LuminaReadAloud
+                          iconOnly
+                          size="md"
+                          accent="cyan"
+                          aria-label="Hear this part again"
+                          onClick={() => {
+                            SoundManager.tap();
+                            sendText(preReadAloudMessage);
+                          }}
+                        />
                       )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Success Feedback — completed phase */}
-                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
-                  <LuminaCallout
-                    accent="emerald"
-                    label="Correct!"
-                    icon={<CheckCircle className="h-4 w-4" />}
-                    className="mt-6 p-4"
-                  >
-                    {currentSegment.knowledgeCheck.explanation && (
-                      <p className="text-sm">{currentSegment.knowledgeCheck.explanation}</p>
-                    )}
-                  </LuminaCallout>
-                )}
-
-                {/* Max Attempts Reached — show correct answer */}
-                {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
-                  <LuminaCallout
-                    accent="amber"
-                    label="Maximum Attempts Reached"
-                    icon={<AlertCircle className="h-4 w-4" />}
-                    className="mt-6 p-4"
-                  >
-                    <div className="space-y-3">
-                      <p className="text-sm">
-                        The correct answer is:{' '}
-                        <strong className="text-white">
-                          {currentSegment.knowledgeCheck.options[currentSegment.knowledgeCheck.correctOptionIndex]}
-                        </strong>
-                      </p>
-                      {currentSegment.knowledgeCheck.explanation && (
-                        <p className="text-slate-400 text-sm italic">
-                          {currentSegment.knowledgeCheck.explanation}
-                        </p>
-                      )}
-                      <LuminaButton
-                        size="lg"
-                        onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
-                        className="w-full py-3 rounded-xl font-semibold"
-                      >
-                        {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
-                      </LuminaButton>
                     </div>
-                  </LuminaCallout>
+
+                    {hasStarted && currentSegment.knowledgeCheck && (
+                      <PreReaderSelfCheck
+                        key={currentIndex}
+                        question={currentSegment.knowledgeCheck.question}
+                        options={currentSegment.knowledgeCheck.options}
+                        optionEmojis={currentSegment.knowledgeCheck.optionEmojis}
+                        correctIndex={currentSegment.knowledgeCheck.correctOptionIndex}
+                        explanation={currentSegment.knowledgeCheck.explanation}
+                        mastered={!!segmentAnswered[currentIndex]}
+                        accent="cyan"
+                        readAloudMessage={preReadAloudMessage}
+                        retryTag="[MEDIA_CHECK_RETRY]"
+                        onAskTutor={(msg) => sendText(msg)}
+                        onResult={(correct, attempts) => {
+                          if (correct) handlePreCheckPass(currentIndex, attempts);
+                        }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  /* ── Reader grades: original script + gated MCQ shape ── */
+                  <>
+                    <h2 className="text-2xl lg:text-3xl font-bold text-slate-100 mb-4 leading-tight">
+                      {currentSegment.title}
+                    </h2>
+
+                    <div className="prose prose-invert prose-lg">
+                      <p className="text-slate-300 leading-relaxed">
+                        {currentSegment.script}
+                      </p>
+                    </div>
+
+                    {/* "Continue to Knowledge Check" Button */}
+                    {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'reading' && (
+                      <div className="mt-6">
+                        <Button
+                          size="lg"
+                          onClick={handleShowKnowledgeCheck}
+                          className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                          <CheckCircle className="h-5 w-5 relative z-10" />
+                          <span className="relative z-10">I&apos;m Ready — Show Knowledge Check</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Knowledge Check UI — answering phase */}
+                    {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'answering' && (
+                      <Card className="mt-6 backdrop-blur-xl bg-slate-800/50 border-blue-500/30">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                              <span className="text-blue-400 font-bold text-sm">{currentIndex + 1}</span>
+                            </div>
+                            <CardTitle className="text-lg text-white">Knowledge Check</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-slate-200">{currentSegment.knowledgeCheck.question}</p>
+
+                          <RadioGroup
+                            value={selectedAnswers[currentIndex]?.toString()}
+                            onValueChange={(val) => {
+                              SoundManager.select();   // ← option chosen
+                              setSelectedAnswers(prev => ({ ...prev, [currentIndex]: parseInt(val) }));
+                            }}
+                            className="space-y-2"
+                          >
+                            {currentSegment.knowledgeCheck.options.map((option, optionIndex) => (
+                              <Label
+                                key={optionIndex}
+                                htmlFor={`option-${currentIndex}-${optionIndex}`}
+                                className={`flex items-center gap-3 w-full p-4 rounded-xl cursor-pointer transition-all backdrop-blur-sm border ${
+                                  selectedAnswers[currentIndex] === optionIndex
+                                    ? 'bg-blue-500/20 border-blue-400/40 text-white'
+                                    : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                <RadioGroupItem
+                                  value={optionIndex.toString()}
+                                  id={`option-${currentIndex}-${optionIndex}`}
+                                  className="border-slate-500 text-blue-400"
+                                />
+                                <span className="flex-shrink-0 h-6 w-6 rounded-full border border-current/30 bg-white/5 flex items-center justify-center text-xs font-bold">
+                                  {String.fromCharCode(65 + optionIndex)}
+                                </span>
+                                <span className="text-sm">{option}</span>
+                              </Label>
+                            ))}
+                          </RadioGroup>
+
+                          <Button
+                            size="lg"
+                            onClick={() => handleAnswerSubmit(currentIndex)}
+                            disabled={selectedAnswers[currentIndex] === undefined}
+                            className="group w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border border-blue-400/30 transition-all transform hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 relative overflow-hidden"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            <span className="relative z-10">Submit Answer</span>
+                          </Button>
+
+                          {/* Error Feedback */}
+                          {feedback[currentIndex] && (
+                            <LuminaCallout
+                              accent="rose"
+                              label="Incorrect"
+                              icon={<XCircle className="h-4 w-4" />}
+                              className="p-4"
+                            >
+                              <p className="text-sm">{feedback[currentIndex]}</p>
+                              <LuminaBadge accent="rose" className="mt-2 text-xs">
+                                Attempt {segmentAttempts[currentIndex] || 0} of {MAX_ATTEMPTS_PER_SEGMENT}
+                              </LuminaBadge>
+                            </LuminaCallout>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Success Feedback — completed phase */}
+                    {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'completed' && (
+                      <LuminaCallout
+                        accent="emerald"
+                        label="Correct!"
+                        icon={<CheckCircle className="h-4 w-4" />}
+                        className="mt-6 p-4"
+                      >
+                        {currentSegment.knowledgeCheck.explanation && (
+                          <p className="text-sm">{currentSegment.knowledgeCheck.explanation}</p>
+                        )}
+                      </LuminaCallout>
+                    )}
+
+                    {/* Max Attempts Reached — show correct answer */}
+                    {currentSegment.knowledgeCheck && segmentPhases[currentIndex] === 'max-attempts-reached' && (
+                      <LuminaCallout
+                        accent="amber"
+                        label="Maximum Attempts Reached"
+                        icon={<AlertCircle className="h-4 w-4" />}
+                        className="mt-6 p-4"
+                      >
+                        <div className="space-y-3">
+                          <p className="text-sm">
+                            The correct answer is:{' '}
+                            <strong className="text-white">
+                              {currentSegment.knowledgeCheck.options[currentSegment.knowledgeCheck.correctOptionIndex]}
+                            </strong>
+                          </p>
+                          {currentSegment.knowledgeCheck.explanation && (
+                            <p className="text-slate-400 text-sm italic">
+                              {currentSegment.knowledgeCheck.explanation}
+                            </p>
+                          )}
+                          <LuminaButton
+                            size="lg"
+                            onClick={() => handleSkipAfterMaxAttempts(currentIndex)}
+                            className="w-full py-3 rounded-xl font-semibold"
+                          >
+                            {currentIndex < data.segments.length - 1 ? 'Continue to Next Segment' : 'Complete Lesson'}
+                          </LuminaButton>
+                        </div>
+                      </LuminaCallout>
+                    )}
+                  </>
                 )}
               </div>
             </ScrollArea>
@@ -922,7 +1060,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ data, className = '' }) => {
                             : 'Next segment'
                         }
                       >
-                        Next <ChevronRight className="h-4 w-4" />
+                        {isPre ? <ChevronRight className="h-5 w-5" /> : (<>Next <ChevronRight className="h-4 w-4" /></>)}
                       </Button>
                     </span>
                   </TooltipTrigger>

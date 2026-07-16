@@ -136,15 +136,11 @@ registerContextGenerator('curator-brief', async (ctx) => {
   };
 });
 
-// Concept Card Grid (3-card layout)
+// Concept Card Grid (3-card layout) — context-native (reader-fit 9b: stamps
+// gradeLevel + a flat cardEmoji per card so the component band-gates to the
+// pre-reader emoji-face + read-aloud-on-flip at K)
 registerContextGenerator('concept-card-grid', async (ctx) => {
-  const config = ctx.raw as AnyConfig;
-  const data = await generateConceptCards(ctx.topic, ctx.gradeContext, {
-    itemCount: config.itemCount,
-    intent: ctx.intent,
-    objectiveText: ctx.objective.text,
-    objectiveVerb: ctx.objective.verb
-  });
+  const data = await generateConceptCards(ctx);
   return {
     type: 'concept-card-grid',
     instanceId: ctx.instanceId,
@@ -166,13 +162,10 @@ registerContextGenerator('feature-exhibit', async (ctx) => {
   };
 });
 
-// Comparison Panel (A vs B)
+// Comparison Panel (A vs B) — context-native (reader-fit 9c: stamps gradeLevel
+// so the component band-gates to the pre-reader picture true/false gate at K)
 registerContextGenerator('comparison-panel', async (ctx) => {
-  const data = await generateComparisonPanel(ctx.topic, ctx.gradeContext, {
-    intent: ctx.intent,
-    objectiveText: ctx.objective.text,
-    objectiveVerb: ctx.objective.verb
-  });
+  const data = await generateComparisonPanel(ctx);
   return {
     type: 'comparison-panel',
     instanceId: ctx.instanceId,

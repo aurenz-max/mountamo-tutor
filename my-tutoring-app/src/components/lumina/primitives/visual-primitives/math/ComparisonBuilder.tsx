@@ -28,6 +28,7 @@ import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -160,6 +161,35 @@ function generateScatterPositions(
     x: offsetX + pad + rand((i + 1) * 12.9898 + offsetX) * w,
     y: offsetY + pad + rand((i + 1) * 78.233 + offsetX) * h,
   }));
+}
+
+/**
+ * Answer-free "what to do" clause for the on-demand 🔊 Read-me replay, per
+ * challenge type. Names the ask (which mirrors the catalog ORIENT directive) but
+ * NEVER states or hints the answer (no "the bigger one", no sorted order).
+ */
+function readMeAskClause(challenge: ComparisonBuilderChallenge): string {
+  switch (challenge.type) {
+    case 'compare-groups':
+      return 'Tap the side that has more. If the two sides have the same, tap the equals sign in the middle.';
+    case 'compare-numbers':
+      return `Tap the symbol that goes between ${challenge.leftNumber ?? ''} and ${challenge.rightNumber ?? ''}.`;
+    case 'order': {
+      const dir = challenge.direction === 'descending' ? 'greatest to least' : 'least to greatest';
+      return `Tap the numbers one at a time to put them in order from ${dir}.`;
+    }
+    case 'one-more-one-less': {
+      const t = challenge.targetNumber ?? '';
+      const askFor = challenge.askFor ?? 'both';
+      return askFor === 'one-more'
+        ? `Find the number that is one more than ${t} and tap it.`
+        : askFor === 'one-less'
+          ? `Find the number that is one less than ${t} and tap it.`
+          : `Find the number that is one more than ${t}, and also the number that is one less than ${t}.`;
+    }
+    default:
+      return '';
+  }
 }
 
 // ============================================================================
@@ -330,6 +360,19 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     () => () => { if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current); },
     [],
   );
+
+  // K (pre-reader) is a hard band gate: at K the answer surface is picture-primary
+  // and the adult chrome (mode tabs, counter, grade/type badges, count badges) is
+  // hidden — it either strands or hands the answer to a non-reader.
+  const isK = gradeBand === 'K';
+
+  // one-more-one-less DISAMBIGUATE latches — voice each sub-question ONCE per
+  // challenge so "one less" is spoken identically to "one more" (Pulse 2026-07-16
+  // found the tutor voiced the increment beat but was silent on the decrement).
+  // Cleared in the per-challenge reset (advanceToNextChallenge) — see the
+  // spoken-primitive-autoadvance-footguns ruling: clear every per-challenge latch.
+  const disambiguatedMoreRef = useRef(false);
+  const disambiguatedLessRef = useRef(false);
 
   // Refs
   const stableInstanceIdRef = useRef(instanceId || `comparison-builder-${Date.now()}`);
@@ -719,6 +762,37 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
   }, [currentChallenge, oneMoreAnswer, oneLessAnswer, incrementAttempts, noteWrongAnswer, currentAttempts, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
+  // one-more-one-less DISAMBIGUATE — after the child answers ONE part of a
+  // "both" challenge, voice the OTHER part so "one less" is spoken identically to
+  // "one more" (symmetric by construction; each side fires at most once via its
+  // ref latch). K only — a reader sees the two labelled rows. NON-silent so the
+  // tutor actually speaks; answer-free (never states target±1).
+  // -------------------------------------------------------------------------
+  const voiceOtherOneMoreLess = useCallback(
+    (justAnswered: 'more' | 'less') => {
+      if (!isK || !currentChallenge || currentChallenge.type !== 'one-more-one-less') return;
+      if ((currentChallenge.askFor ?? 'both') !== 'both') return;
+      const target = currentChallenge.targetNumber ?? 0;
+      if (justAnswered === 'more' && oneLessAnswer === null && !disambiguatedLessRef.current) {
+        disambiguatedLessRef.current = true;
+        sendText(
+          `[DISAMBIGUATE] The child just answered the "one more" part. Now warmly ask them for the OTHER part in one short sentence: `
+          + `"Now find one LESS than ${target}. Tap the number that is one less." Do NOT say the number.`,
+          { silent: true },
+        );
+      } else if (justAnswered === 'less' && oneMoreAnswer === null && !disambiguatedMoreRef.current) {
+        disambiguatedMoreRef.current = true;
+        sendText(
+          `[DISAMBIGUATE] The child just answered the "one less" part. Now warmly ask them for the OTHER part in one short sentence: `
+          + `"Now find one MORE than ${target}. Tap the number that is one more." Do NOT say the number.`,
+          { silent: true },
+        );
+      }
+    },
+    [isK, currentChallenge, oneMoreAnswer, oneLessAnswer, sendText],
+  );
+
+  // -------------------------------------------------------------------------
   // Master check handler
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
@@ -857,6 +931,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     setFeedbackType('');
     setOrderFlash(null);
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+    // Clear the per-challenge DISAMBIGUATE latches so the next one-more-one-less
+    // voices both sub-questions fresh.
+    disambiguatedMoreRef.current = false;
+    disambiguatedLessRef.current = false;
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -1096,8 +1174,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
         {/* Count labels — withdrawn at the HARD tier (showCountBadges=false) so the
             student must count both groups; the post-answer feedback still names the
-            counts, which is fine (it's the reveal, not a pre-answer crutch). */}
-        {showCountBadges && (
+            counts, which is fine (it's the reveal, not a pre-answer crutch). ALSO
+            hard-gated OFF at K (band gate): a "Left: 3 / Right: 5" readout hands the
+            answer to a pre-reader who is meant to compare the pictures (pedagogy
+            rule #1; reader-fit Audit A flagged it as a count leak). */}
+        {showCountBadges && !isK && (
           <div className="flex items-center justify-center gap-8 text-sm">
             <span className="text-orange-300">
               Left: <span className="font-bold text-lg">{left.count}</span>
@@ -1404,14 +1485,14 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {(askFor === 'one-more' || askFor === 'both') &&
           numberRow(
             oneMoreAnswer,
-            setOneMoreAnswer,
+            (n) => { setOneMoreAnswer(n); voiceOtherOneMoreLess('more'); },
             `One more than ${target}?`,
             'text-emerald-400',
           )}
         {(askFor === 'one-less' || askFor === 'both') &&
           numberRow(
             oneLessAnswer,
-            setOneLessAnswer,
+            (n) => { setOneLessAnswer(n); voiceOtherOneMoreLess('less'); },
             `One less than ${target}?`,
             'text-blue-400',
           )}
@@ -1438,17 +1519,21 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="orange" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </LuminaBadge>
-            {currentChallenge && (
-              <LuminaBadge accent="purple" className="text-xs">
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
+          {/* Grade + challenge-type badges are adult chrome — hidden at K (band gate). */}
+          {!isK && (
+            <div className="flex items-center gap-2">
+              {/* Only reached when !isK, so the band badge is always Grade 1. */}
+              <LuminaBadge accent="orange" className="text-xs">
+                Grade 1
               </LuminaBadge>
-            )}
-          </div>
+              {currentChallenge && (
+                <LuminaBadge accent="purple" className="text-xs">
+                  {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
+                  {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
+                </LuminaBadge>
+              )}
+            </div>
+          )}
         </div>
         {description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
@@ -1456,8 +1541,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Phase tabs + progress */}
-        {challenges.length > 0 && (
+        {/* Phase tabs + progress — adult chrome (mode tabs + "Challenge 1 of N"
+            counter), hidden at K (band gate). The K child works one tap-surface at
+            a time; the tutor names the mode. */}
+        {challenges.length > 0 && !isK && (
           <div className="flex items-center gap-2 flex-wrap">
             <LuminaModeTabs
               tabs={activePhaseTabs}
@@ -1472,9 +1559,21 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </div>
         )}
 
-        {/* Instruction */}
+        {/* Instruction — with a persistent 🔊 Read-me replay at K so a non-reader can
+            re-hear the current question on demand, in the SAME position across every
+            eval mode. The button re-voices the instruction + an answer-free ask. */}
         {currentChallenge && !allChallengesComplete && (
-          <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
+          <div className="flex items-start gap-2">
+            <LuminaPrompt className="flex-1">{currentChallenge.instruction}</LuminaPrompt>
+            {isK && (
+              <ReadMeButton
+                instruction={currentChallenge.instruction}
+                ask={readMeAskClause(currentChallenge)}
+                onAskTutor={(m) => sendText(m)}
+                className="mt-1 flex-shrink-0"
+              />
+            )}
+          </div>
         )}
 
         {/* Challenge workspace */}

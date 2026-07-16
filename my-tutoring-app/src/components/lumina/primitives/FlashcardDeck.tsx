@@ -2,11 +2,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FlashcardDeckData, FlashcardItem } from '../types';
 import { Check, X, BookOpen, Shuffle, AlertCircle } from 'lucide-react';
 import { SoundManager } from '../utils/SoundManager';
-import { LuminaButton, LuminaPanel } from '../ui';
+import { useLuminaAI } from '../hooks/useLuminaAI';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
+import { LuminaButton, LuminaPanel, LuminaReadAloud } from '../ui';
 
 interface FlashcardDeckProps {
   data: FlashcardDeckData;
   className?: string;
+  instanceId?: string;
 }
 
 type GamePhase = 'ready' | 'playing' | 'summary';
@@ -18,14 +21,72 @@ interface GameStats {
   streak: number;
 }
 
-const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
-  const [phase, setPhase] = useState<GamePhase>('ready');
+const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className, instanceId }) => {
+  // Pre-reader (kindergarten / PRE band): the card FACE is a big emoji (the child
+  // cannot read the term), the tutor voices the term on show + reads the card on flip,
+  // adult chrome (category badge, "Click to Reveal", the N/M counter, progress dots,
+  // button sublabels, the stat ledger) is hidden, and the deck auto-starts (no text
+  // ready screen). Driven by the generator-stamped gradeLevel.
+  const preReader = isPreReaderGrade(data.gradeLevel);
+
+  const [phase, setPhase] = useState<GamePhase>(preReader ? 'playing' : 'ready');
   const [deck, setDeck] = useState<FlashcardItem[]>(data.cards);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
-  const [stats, setStats] = useState<GameStats>({ correct: 0, incorrect: 0, remaining: 0, streak: 0 });
-  const [results, setResults] = useState<(boolean | null)[]>([]);
+  const [stats, setStats] = useState<GameStats>(
+    preReader
+      ? { correct: 0, incorrect: 0, remaining: data.cards.length, streak: 0 }
+      : { correct: 0, incorrect: 0, remaining: 0, streak: 0 }
+  );
+  const [results, setResults] = useState<(boolean | null)[]>(
+    preReader ? new Array(data.cards.length).fill(null) : []
+  );
+
+  const currentCard = deck[currentCardIndex];
+  const resolvedInstanceId = instanceId || `flashcard-deck-${Date.now()}`;
+
+  // --- AI Tutoring Integration (new: the deck had no tutor block before item 9d) ---
+  const aiPrimitiveData = {
+    title: data.title || 'Flashcards',
+    term: currentCard?.term || '',
+    definition: currentCard?.definition || '',
+    category: currentCard?.category || '',
+    cardIndex: currentCardIndex + 1,
+    totalCards: deck.length,
+    isFlipped,
+  };
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'flashcard-deck',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+  });
+
+  // The read-aloud script for the flipped card (term → meaning). The durable carrier
+  // is the catalog PRE-READER READ-ALOUD directive, which overrides the one-sentence cap.
+  const cardReadAloudMsg = currentCard
+    ? `[FLASHCARD_READ_ALOUD] Read this card aloud to the child, word for word, warmly and simply. `
+      + `The word is "${currentCard.term}". It means: "${currentCard.definition}".`
+    : '';
+
+  // PRE: voice the term when a new card is shown (front = a picture the child can't read).
+  useEffect(() => {
+    if (!preReader || phase !== 'playing' || !currentCard) return;
+    sendText(
+      `[FLASHCARD_SHOWN] A pre-reader is looking at a picture card. Warmly say the word and invite `
+      + `them to tap the card to learn about it. The word is "${currentCard.term}".`,
+      { silent: true },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCardIndex, phase, preReader]);
+
+  // PRE: read the whole card aloud when it is flipped to the meaning side.
+  useEffect(() => {
+    if (!preReader || !isFlipped || !currentCard) return;
+    sendText(cardReadAloudMsg, { silent: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFlipped]);
 
   const handleStart = () => {
     setCurrentCardIndex(0);
@@ -87,10 +148,17 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
       if (nextIndex < deck.length) {
         setCurrentCardIndex(nextIndex);
       } else {
+        if (preReader) {
+          sendText(
+            `[DECK_COMPLETE] The pre-reader finished all ${deck.length} picture cards. `
+            + `Celebrate their effort in 1-2 warm sentences.`,
+            { silent: true },
+          );
+        }
         setPhase('summary');
       }
     }, 300);
-  }, [currentCardIndex, deck.length, phase]);
+  }, [currentCardIndex, deck.length, phase, preReader, sendText]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -116,9 +184,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, direction, isFlipped, handleNextCard]);
 
-  const currentCard = deck[currentCardIndex];
-
-  // Ready Screen
+  // Ready Screen (reader grades only — pre-readers auto-start)
   if (phase === 'ready') {
     return (
       <div className={`w-full max-w-2xl mx-auto px-6 py-12 ${className || ''}`}>
@@ -177,6 +243,8 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
     if (direction === 'left') animationClass = 'animate-slide-out-left';
     if (direction === 'right') animationClass = 'animate-slide-out-right';
 
+    const cardEmoji = currentCard.cardEmoji || '⭐';
+
     return (
       <div className={`w-full max-w-2xl mx-auto px-6 py-8 ${className || ''}`}>
         <div className="flex flex-col items-center gap-6">
@@ -198,17 +266,29 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
                 className="absolute w-full h-full rounded-2xl p-8 flex flex-col items-center justify-center bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] text-white group-hover:border-white/30 group-hover:shadow-[0_8px_32px_0_rgba(99,102,241,0.2)] transition-all"
                 style={{ backfaceVisibility: 'hidden' }}
               >
-                <span className="absolute top-4 right-4 text-xs font-bold tracking-wider text-indigo-200/70 uppercase border border-indigo-200/20 px-2 py-1 rounded-full">
-                  {currentCard.category}
-                </span>
+                {/* Category badge (adult chrome — hidden for pre-readers) */}
+                {!preReader && (
+                  <span className="absolute top-4 right-4 text-xs font-bold tracking-wider text-indigo-200/70 uppercase border border-indigo-200/20 px-2 py-1 rounded-full">
+                    {currentCard.category}
+                  </span>
+                )}
 
-                <h2 className="text-3xl font-bold text-center leading-tight select-none drop-shadow-md">
-                  {currentCard.term}
-                </h2>
-
-                <p className="absolute bottom-6 text-indigo-200/60 text-sm font-medium animate-pulse">
-                  Click to Reveal
-                </p>
+                {preReader ? (
+                  <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <span className="text-[6rem] leading-none" aria-hidden>{cardEmoji}</span>
+                    <h2 className="text-3xl font-bold select-none">{currentCard.term}</h2>
+                    <span className="text-2xl animate-bounce" aria-hidden title="Tap the card">👆</span>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-3xl font-bold text-center leading-tight select-none drop-shadow-md">
+                      {currentCard.term}
+                    </h2>
+                    <p className="absolute bottom-6 text-indigo-200/60 text-sm font-medium animate-pulse">
+                      Click to Reveal
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Back */}
@@ -219,13 +299,37 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
                   transform: 'rotateY(180deg)'
                 }}
               >
-                <h3 className="text-xl text-indigo-300 font-semibold mb-3 uppercase tracking-wide text-xs">
-                  Answer
-                </h3>
-
-                <p className="text-2xl font-medium text-center leading-snug select-none drop-shadow-sm">
-                  {currentCard.definition}
-                </p>
+                {preReader ? (
+                  <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl" aria-hidden>{cardEmoji}</span>
+                      <span className="text-2xl font-bold">{currentCard.term}</span>
+                      <LuminaReadAloud
+                        iconOnly
+                        size="md"
+                        accent="cyan"
+                        aria-label="Hear this card again"
+                        onClick={(e?: React.MouseEvent) => {
+                          e?.stopPropagation();
+                          SoundManager.tap();
+                          sendText(cardReadAloudMsg, { silent: true });
+                        }}
+                      />
+                    </div>
+                    <p className="text-2xl font-medium leading-snug select-none">
+                      {currentCard.definition}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-xl text-indigo-300 font-semibold mb-3 uppercase tracking-wide text-xs">
+                      Answer
+                    </h3>
+                    <p className="text-2xl font-medium text-center leading-snug select-none drop-shadow-sm">
+                      {currentCard.definition}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -233,7 +337,7 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
           {/* Controls */}
           {!isFlipped ? (
             <div className="h-24 flex items-center justify-center text-slate-400 text-sm">
-              Flip the card to reveal options
+              {!preReader && 'Flip the card to reveal options'}
             </div>
           ) : (
             <div className="flex gap-6 h-24 items-center justify-center animate-slide-in">
@@ -246,8 +350,9 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
                 <div className="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500 text-red-500 flex items-center justify-center transition-all duration-200 group-hover:bg-red-500 group-hover:text-white group-active:scale-95">
                   <X size={32} />
                 </div>
-                <span className="text-xs font-semibold text-red-400 uppercase tracking-wider group-hover:text-red-300">Study Again</span>
-                <span className="text-[10px] text-slate-500 hidden md:block">Left Arrow</span>
+                {/* Text sublabels — adult chrome, hidden for pre-readers */}
+                {!preReader && <span className="text-xs font-semibold text-red-400 uppercase tracking-wider group-hover:text-red-300">Study Again</span>}
+                {!preReader && <span className="text-[10px] text-slate-500 hidden md:block">Left Arrow</span>}
               </button>
 
               <div className="w-px h-12 bg-slate-700/50"></div>
@@ -261,46 +366,48 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500 text-emerald-500 flex items-center justify-center transition-all duration-200 group-hover:bg-emerald-500 group-hover:text-white group-active:scale-95">
                   <Check size={32} />
                 </div>
-                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider group-hover:text-emerald-300">Got It</span>
-                <span className="text-[10px] text-slate-500 hidden md:block">Right Arrow</span>
+                {!preReader && <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider group-hover:text-emerald-300">Got It</span>}
+                {!preReader && <span className="text-[10px] text-slate-500 hidden md:block">Right Arrow</span>}
               </button>
             </div>
           )}
 
-          {/* Progress */}
-          <div className="flex flex-col items-center gap-2 mt-4">
-            <div className="flex items-center gap-1.5 p-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/5">
-              {Array.from({ length: deck.length }).map((_, i) => {
-                const isPast = i < currentCardIndex;
-                const isCurrent = i === currentCardIndex;
-                const result = results[i];
+          {/* Progress (adult chrome — hidden for pre-readers) */}
+          {!preReader && (
+            <div className="flex flex-col items-center gap-2 mt-4">
+              <div className="flex items-center gap-1.5 p-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/5">
+                {Array.from({ length: deck.length }).map((_, i) => {
+                  const isPast = i < currentCardIndex;
+                  const isCurrent = i === currentCardIndex;
+                  const result = results[i];
 
-                let statusClasses = 'w-2 bg-slate-700/50';
+                  let statusClasses = 'w-2 bg-slate-700/50';
 
-                if (isCurrent) {
-                  statusClasses = 'w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]';
-                } else if (isPast) {
-                  if (result === true) {
-                    statusClasses = 'w-2 bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.4)]';
-                  } else if (result === false) {
-                    statusClasses = 'w-2 bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.4)]';
-                  } else {
-                    statusClasses = 'w-2 bg-slate-500';
+                  if (isCurrent) {
+                    statusClasses = 'w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]';
+                  } else if (isPast) {
+                    if (result === true) {
+                      statusClasses = 'w-2 bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.4)]';
+                    } else if (result === false) {
+                      statusClasses = 'w-2 bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.4)]';
+                    } else {
+                      statusClasses = 'w-2 bg-slate-500';
+                    }
                   }
-                }
 
-                return (
-                  <div
-                    key={i}
-                    className={`h-2 rounded-full transition-all duration-500 ease-out ${statusClasses}`}
-                  />
-                );
-              })}
+                  return (
+                    <div
+                      key={i}
+                      className={`h-2 rounded-full transition-all duration-500 ease-out ${statusClasses}`}
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
+                {currentCardIndex + 1} / {deck.length}
+              </span>
             </div>
-            <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
-              {currentCardIndex + 1} / {deck.length}
-            </span>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -308,6 +415,24 @@ const FlashcardDeck: React.FC<FlashcardDeckProps> = ({ data, className }) => {
 
   // Summary Screen
   if (phase === 'summary') {
+    if (preReader) {
+      // Wordless celebration + a big replay button (no percentage/accuracy ledger).
+      return (
+        <div className={`w-full max-w-lg mx-auto px-6 py-12 ${className || ''}`}>
+          <div className="flex flex-col items-center text-center gap-8">
+            <div className="text-7xl" role="status" aria-label="All done">🎉</div>
+            <button
+              onClick={handleShuffle}
+              aria-label="Play again"
+              className="w-20 h-20 rounded-full bg-indigo-500/15 border-2 border-indigo-400 text-indigo-300 flex items-center justify-center hover:bg-indigo-500/30 active:scale-95 transition-all"
+            >
+              <Shuffle size={36} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const total = stats.correct + stats.incorrect;
     const percentage = total > 0 ? Math.round((stats.correct / total) * 100) : 0;
 

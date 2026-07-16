@@ -3,7 +3,8 @@ import { ConceptCardData } from '../types';
 import { generateConceptImage } from '../service/geminiClient-api';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { SoundManager } from '../utils/SoundManager';
-import { LuminaPanel, LuminaBadge, LuminaCallout } from '../ui';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
+import { LuminaPanel, LuminaBadge, LuminaCallout, LuminaReadAloud } from '../ui';
 
 interface ConceptCardProps {
   data: ConceptCardData;
@@ -27,6 +28,13 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
 
   const resolvedInstanceId = instanceId || `concept-card-${index}-${Date.now()}`;
 
+  // Pre-reader (kindergarten / PRE band): the card FACE is a big emoji (the child
+  // cannot read the title), the tutor reads the back aloud on flip, and adult chrome
+  // ("Exhibit 0N", "Flip to Analyze", section-header labels, the el.type badge,
+  // "Return to Artifact") is hidden. Driven by the generator-stamped gradeLevel.
+  const preReader = isPreReaderGrade(data.gradeLevel);
+  const cardEmoji = data.cardEmoji || '⭐';
+
   // --- AI Tutoring Integration ---
   const aiPrimitiveData = {
     title: data.title,
@@ -45,25 +53,40 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
     primitiveData: aiPrimitiveData,
   });
 
+  // The read-aloud script for this card (name → definition → curiosity note).
+  // Answer-free (a concept card has no answer); the durable carrier is the catalog
+  // PRE-READER READ-ALOUD directive, which overrides the lesson one-sentence cap.
+  const cardReadAloudMsg =
+    `[CARD_READ_ALOUD] Read this picture card aloud to the child, word for word, warmly and simply. `
+    + `Name: "${data.title}". Definition: "${data.definition}". `
+    + `Something fun: "${data.curiosityNote}".`;
+
   // AI trigger: Card flipped to back (student starts exploring)
   useEffect(() => {
     if (isFlipped && !hasTriggeredFlipRef.current) {
       hasTriggeredFlipRef.current = true;
       hasTriggeredReturnRef.current = false; // Reset return guard for next flip
-      const elementsList = data.conceptElements?.map(el => el.label).join(', ') || 'the key details';
-      sendText(
-        `[CARD_FLIPPED] The student flipped concept card ${index + 1} of ${totalCards || '?'}: "${data.title}". ` +
-        `Definition: "${data.definition}". Components: ${elementsList}. ` +
-        `Briefly introduce this concept and highlight what to look for.`,
-        { silent: true }
-      );
+      if (preReader) {
+        // Silent background trigger — must not claim mic focus, but the tutor still
+        // SPEAKS the read-aloud in response to the catalog PRE-READER directive.
+        sendText(cardReadAloudMsg, { silent: true });
+      } else {
+        const elementsList = data.conceptElements?.map(el => el.label).join(', ') || 'the key details';
+        sendText(
+          `[CARD_FLIPPED] The student flipped concept card ${index + 1} of ${totalCards || '?'}: "${data.title}". ` +
+          `Definition: "${data.definition}". Components: ${elementsList}. ` +
+          `Briefly introduce this concept and highlight what to look for.`,
+          { silent: true }
+        );
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlipped]);
 
-  // AI trigger: Card flipped back to front (student finished reading)
+  // AI trigger: Card flipped back to front (student finished reading) — reader mode
+  // only (at PRE closing the card is silent; the tutor already read it on open).
   useEffect(() => {
-    if (!isFlipped && hasTriggeredFlipRef.current && !hasTriggeredReturnRef.current) {
+    if (!preReader && !isFlipped && hasTriggeredFlipRef.current && !hasTriggeredReturnRef.current) {
       hasTriggeredReturnRef.current = true;
       hasTriggeredFlipRef.current = false; // Reset flip guard for next flip
       sendText(
@@ -76,8 +99,9 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFlipped]);
 
-  // Image Generation Logic
+  // Image Generation Logic — skipped for pre-readers (the face is the emoji).
   useEffect(() => {
+    if (preReader) return;
     let mounted = true;
     const fetchImage = async () => {
       if (imageUrl || imageLoading) return;
@@ -95,7 +119,7 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
       fetchImage();
     }
     return () => { mounted = false; };
-  }, [data.visualPrompt, index, isFlipped, data.themeColor]);
+  }, [data.visualPrompt, index, isFlipped, data.themeColor, preReader]);
 
   // Tilt Effect Logic
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
@@ -148,15 +172,26 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
               style={{ backgroundColor: data.themeColor }}
             />
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-xs font-mono text-slate-400 uppercase tracking-widest border border-white/10 px-2 py-1 rounded">Exhibit 0{index + 1}</span>
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: data.themeColor }} />
+            {/* Exhibit badge (adult chrome — hidden for pre-readers) */}
+            {!preReader && (
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-xs font-mono text-slate-400 uppercase tracking-widest border border-white/10 px-2 py-1 rounded">Exhibit 0{index + 1}</span>
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: data.themeColor }} />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Generative Image Frame */}
-            <div className="relative flex-grow my-6 rounded-xl overflow-hidden bg-black/40 border border-white/5 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-500 shadow-inner">
+            {preReader ? (
+              /* Pre-reader FACE: a big emoji + the title (voiced by the tutor). */
+              <div className="relative z-10 flex-grow my-6 flex flex-col items-center justify-center gap-6 text-center">
+                <span className="text-[7rem] leading-none" aria-hidden>{cardEmoji}</span>
+                <h3 className="text-3xl font-bold text-white">{data.title}</h3>
+                <span className="text-3xl animate-bounce" aria-hidden title="Tap the card">👆</span>
+              </div>
+            ) : (
+              /* Generative Image Frame */
+              <div className="relative flex-grow my-6 rounded-xl overflow-hidden bg-black/40 border border-white/5 flex items-center justify-center group-hover:scale-[1.02] transition-transform duration-500 shadow-inner">
                 {imageUrl ? (
                     <>
                         <img src={imageUrl} alt={data.title} className="w-full h-full object-cover opacity-90" />
@@ -180,17 +215,21 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
                        )}
                     </div>
                 )}
-            </div>
-
-            <div className="relative z-10 flex justify-between items-end">
-              <div className="flex flex-col">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Context</span>
-                  <span className="text-sm text-slate-300 font-mono">{data.timelineContext}</span>
               </div>
-              <p className="text-xs text-slate-400 font-medium bg-white/5 py-2 px-4 rounded-full border border-white/5 hover:bg-white/10 transition-colors">
-                Flip to Analyze →
-              </p>
-            </div>
+            )}
+
+            {/* Context + "Flip to Analyze" (adult chrome — hidden for pre-readers) */}
+            {!preReader && (
+              <div className="relative z-10 flex justify-between items-end">
+                <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest">Context</span>
+                    <span className="text-sm text-slate-300 font-mono">{data.timelineContext}</span>
+                </div>
+                <p className="text-xs text-slate-400 font-medium bg-white/5 py-2 px-4 rounded-full border border-white/5 hover:bg-white/10 transition-colors">
+                  Flip to Analyze →
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -201,55 +240,86 @@ export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceI
             {/* Decorative Header Line */}
             <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: data.themeColor }} />
 
-            <div className="space-y-6 overflow-y-auto custom-scrollbar pr-2">
-
-              {/* Definition Block */}
-              <div>
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <span className="w-1 h-4 bg-slate-700 rounded-full"></span>
-                    Overview
-                </h3>
-                <p className="text-lg text-white leading-relaxed font-light">{data.definition}</p>
-              </div>
-
-              {/* Concept Elements Breakdown */}
-              {data.conceptElements && data.conceptElements.length > 0 && (
-                <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <span className="w-1 h-4 bg-slate-700 rounded-full"></span>
-                    Component Breakdown
-                  </h3>
-                  <div className="space-y-3">
-                    {data.conceptElements.map((el, i) => (
-                      <LuminaPanel key={i} className="p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-base font-bold text-white">{el.label}</span>
-                          <LuminaBadge
-                            accent={el.type === 'primary' ? 'blue' : el.type === 'highlight' ? 'purple' : undefined}
-                            className="text-[10px] uppercase tracking-wider"
-                          >
-                            {el.type}
-                          </LuminaBadge>
-                        </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">{el.detail}</p>
-                      </LuminaPanel>
-                    ))}
+            {preReader ? (
+              /* Pre-reader BACK: emoji + name + a 🔊 replay, then the definition and
+                 curiosity note big (the tutor voices them; no section-label chrome). */
+              <div className="flex-grow flex flex-col gap-5 overflow-y-auto custom-scrollbar pr-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl" aria-hidden>{cardEmoji}</span>
+                    <h3 className="text-2xl font-bold text-white">{data.title}</h3>
                   </div>
+                  <LuminaReadAloud
+                    iconOnly
+                    size="md"
+                    accent="cyan"
+                    aria-label="Hear this card again"
+                    className="flex-shrink-0"
+                    onClick={(e?: React.MouseEvent) => {
+                      e?.stopPropagation();
+                      SoundManager.tap();
+                      sendText(cardReadAloudMsg, { silent: true });
+                    }}
+                  />
                 </div>
-              )}
+                <p className="text-xl text-white leading-relaxed font-light">{data.definition}</p>
+                <LuminaCallout accent="emerald" label="✨">
+                  <span className="text-lg">{data.curiosityNote}</span>
+                </LuminaCallout>
+              </div>
+            ) : (
+              <div className="space-y-6 overflow-y-auto custom-scrollbar pr-2">
 
-              {/* Curiosity Note */}
-              <LuminaCallout accent="emerald" label="Curiosity Note">
-                {data.curiosityNote}
-              </LuminaCallout>
-            </div>
+                {/* Definition Block */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-slate-700 rounded-full"></span>
+                      Overview
+                  </h3>
+                  <p className="text-lg text-white leading-relaxed font-light">{data.definition}</p>
+                </div>
 
-            <div className="mt-auto pt-4 text-center border-t border-white/5">
-              <button className="text-xs text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-2 w-full">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Return to Artifact
-              </button>
-            </div>
+                {/* Concept Elements Breakdown */}
+                {data.conceptElements && data.conceptElements.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <span className="w-1 h-4 bg-slate-700 rounded-full"></span>
+                      Component Breakdown
+                    </h3>
+                    <div className="space-y-3">
+                      {data.conceptElements.map((el, i) => (
+                        <LuminaPanel key={i} className="p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-base font-bold text-white">{el.label}</span>
+                            <LuminaBadge
+                              accent={el.type === 'primary' ? 'blue' : el.type === 'highlight' ? 'purple' : undefined}
+                              className="text-[10px] uppercase tracking-wider"
+                            >
+                              {el.type}
+                            </LuminaBadge>
+                          </div>
+                          <p className="text-sm text-slate-300 leading-relaxed">{el.detail}</p>
+                        </LuminaPanel>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Curiosity Note */}
+                <LuminaCallout accent="emerald" label="Curiosity Note">
+                  {data.curiosityNote}
+                </LuminaCallout>
+              </div>
+            )}
+
+            {!preReader && (
+              <div className="mt-auto pt-4 text-center border-t border-white/5">
+                <button className="text-xs text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-2 w-full">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  Return to Artifact
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
