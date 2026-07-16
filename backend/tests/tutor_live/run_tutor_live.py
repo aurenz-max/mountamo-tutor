@@ -1387,8 +1387,145 @@ def build_rhyme_studio_journey(live: Dict[str, Any], grade: str) -> Dict[str, An
     }}
 
 
+def build_foundation_explorer_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit STIMULUS journey for foundation-explorer @ PRE.
+
+    Census failure: text-primary explainer whose per-concept self-check gated K
+    lessons behind a full-sentence question + 3 full-sentence text options a
+    non-reader cannot decode (and sometimes answer-leaking). At K the component
+    (PreReaderSelfCheck) auto-fires a NON-silent [SELFCHECK_READ_ALOUD] on first
+    view carrying the concept prose (definition + example) + the question + every
+    option. This journey replays that exact message and checks (must_include) the
+    tutor actually READ the definition, the question, AND every option aloud — the
+    catalog PRE-READER READ-ALOUD directive must survive the lesson one-sentence cap.
+
+    Reading every option (incl. the correct one) is the task, so no leak oracle on
+    the read-aloud beat (a leak is asserting "the answer is X", which the answer-free
+    directive forbids; naming all choices is required).
+    """
+    data = live.get("generatedData") or {}
+    concepts = data.get("concepts") or []
+    c0 = concepts[0] if concepts else {}
+    sc = c0.get("selfCheck") or {}
+    name = str(c0.get("name", ""))
+    definition = str(c0.get("briefDefinition", ""))
+    scenario = str(((c0.get("inContext") or {}).get("scenario")) or "")
+    question = str(sc.get("prompt", ""))
+    options = [str(o) for o in (sc.get("options") or [])]
+
+    # Mirror buildSelfCheckReadAloud (PreReaderSelfCheck.tsx) + preReadAloudFor
+    # (FoundationExplorer.tsx): intro = "<Name>. <definition> <scenario>".
+    intro = f"{name}. {definition} {scenario}".strip()
+    choices_str = "; ".join(f"{chr(65 + i)}) {opt}" for i, opt in enumerate(options))
+    read_aloud = text_msg(
+        f'[SELFCHECK_READ_ALOUD] A pre-reader is on the "{name}" self-check and cannot read it. '
+        f'First, read this to them slowly: "{intro}". Then question aloud word for word, then each '
+        f'choice slowly with its letter, then ask which one they pick. '
+        f'Question: "{question}". Choices: {choices_str}.'
+    )
+
+    # STIMULUS groups: every option's spoken form + question tokens + a definition
+    # group (the prose a non-reader needs read to them).
+    opt_groups = [g for g in ([_content_tokens(o) or [o.lower()] for o in options]) if g]
+    q_tokens = _content_tokens(question)
+    q_group = [q_tokens] if q_tokens else []
+    def_tokens = _content_tokens(definition)
+    def_group = [def_tokens] if def_tokens else []
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="server auto-queues the lesson greeting on auth (one-sentence cap in --lesson)"),
+        Beat("concept_read_aloud", expect="turn", sends=[read_aloud],
+             must_include=opt_groups + q_group + def_group,
+             note="STIMULUS: a non-reader needs the DEFINITION, the QUESTION, and EVERY "
+                  "option read aloud — the census failure was full-sentence text options + prose"),
+        Beat("student_stuck", expect="turn", sends=[
+            text_msg("[CONTEXT UPDATE] Student has not tapped a picture yet; no answer chosen."),
+        ], note="ORIENT: on a stall, does the tutor restate the choices in child terms? "
+                "(observational — silence allowed by quiet-by-default)"),
+    ]
+    return {"initial_bag": {
+        "objectiveText": str(data.get("objectiveText", "")),
+        "objectiveVerb": str(data.get("objectiveVerb", "identify")),
+        "selectedConceptName": name,
+        "completedCount": 0,
+        "totalConcepts": len(concepts),
+        "allCompleted": False,
+    }, "beats": beats, "answers": [], "meta": {
+        "concepts": len(concepts),
+        "concept0": name,
+        "question0": question,
+        "options0": options,
+    }}
+
+
+def build_word_workout_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Reader-fit ORIENT journey for word-workout @ K (word_chains — the K CVC census route).
+
+    Replays the EXACT PRE [ACTIVITY_START] message WordWorkout.tsx emits at
+    Kindergarten and checks (must_include) that the catalog PRE-READER HOW TO PLAY
+    aiDirective makes the tutor voice, in child terms, the play ACTION a non-reader
+    can take (read / say each word out loud). At K the on-screen instruction
+    sentence ("Read each word as it changes") is HIDDEN, so the how-to-play must be
+    SPOKEN and must survive the lesson one-sentence cap — the whole point of the
+    durable aiDirective carrier.
+
+    Leak stance: the chain words are SHOWN on screen (the child decodes them, they
+    are not hidden answers), and the mode is receptive-decode — there is no single
+    hidden answer to leak, so no leak_answers are set. The scope stays on the target
+    vowel by construction (the generator's vowel-scope sanitizer), asserted in the
+    eval-test probe, not here.
+    """
+    data = live.get("generatedData") or {}
+    challenges = data.get("challenges") or []
+    grade_level = data.get("gradeLevel", "K")
+    mastered = data.get("masteredVowels") or []
+    mastered_str = ", ".join(mastered) if mastered else "all"
+    total = len(challenges) or 1
+    ch0 = challenges[0] if challenges else {}
+    chain0 = ch0.get("chain") or []
+    first_word = str(chain0[0]).strip() if chain0 else ""
+
+    # The PRE directive tells the tutor, for WORD CHAINS: "Read each word out loud.
+    # Watch one letter change to make a new word!" — so the ORIENT must voice a
+    # read/say action, not the chrome (which is hidden at K).
+    action_group = ["read", "say", "sound", "out loud", "aloud", "word", "letter", "change"]
+
+    def bag(idx: int) -> Dict[str, Any]:
+        return {
+            "mode": "word-chains",
+            "masteredVowels": mastered_str,
+            "currentChallenge": idx + 1,
+            "totalChallenges": total,
+            "currentPhase": "word-chains",
+            "attempts": 0,
+        }
+
+    # Verbatim replica of WordWorkout.tsx's PRE [ACTIVITY_START] (word-chains mode).
+    activity_start = text_msg(
+        "[ACTIVITY_START] Word game for a Kindergartner who CANNOT read yet — you are the only "
+        "voice for the instructions. Warmly, in ONE short sentence, tell them they will read a row "
+        "of words out loud, one at a time, as each one changes by a letter. Do NOT read any answer "
+        "aloud. This is your greeting — it overrides any one-sentence cap."
+    )
+
+    beats = [
+        Beat("greeting", sends=[], expect="turn",
+             note="lesson mode: server greeting / [PRIMITIVE SWITCH] — one-sentence cap applies"),
+        Beat("activity_start", expect="turn", sends=[activity_start],
+             must_include=[action_group],
+             note="ORIENT: the PRE-READER HOW TO PLAY directive must voice a read/say play action "
+                  "(the instruction text is hidden at K); must survive the lesson one-sentence cap"),
+    ]
+    return {"initial_bag": bag(0), "beats": beats, "answers": [], "meta": {
+        "gradeLevel": grade_level, "mode": "word-chains", "masteredVowels": mastered_str,
+        "challenges": total, "firstWord": first_word,
+    }}
+
+
 JOURNEYS = {
     "states-of-matter": build_states_of_matter_journey,
+    "foundation-explorer": build_foundation_explorer_journey,
     "sorting-station": build_sorting_station_journey,
     "rhyme-studio": build_rhyme_studio_journey,
     "phonics-blender": build_phonics_blender_journey,
@@ -1400,6 +1537,7 @@ JOURNEYS = {
     "poetry-lab": build_poetry_lab_journey,
     "letter-sound-link": build_letter_sound_link_journey,
     "knowledge-check": build_knowledge_check_journey,
+    "word-workout": build_word_workout_journey,
 }
 
 

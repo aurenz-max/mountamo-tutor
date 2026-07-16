@@ -19,18 +19,21 @@ queue AND this file's "last touched" in the same slice.
 ## ACTIVE
 
 ### 1. Reader-fit K queue — last touched 2026-07-15
-- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next). NOTE: tree carries the
-  uncommitted phonics-blender contract slice (see WIP note) — `/ship` it before starting #9 so the
-  reader-fit work lands on a clean base, not mixed with a different stream's slice.
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
-- **Now:** **#9 explainer tail** — audit **foundation-explorer** first (text-primary "reading"
-  surface, 4/6 census lessons), extract the shared PRE pattern (auto-read + 🔊 + picture-primary
-  checks), then sweep concept-card-grid / comparison-panel / fact-file / flashcard-deck / media-player.
-  #2b comparison-builder remaining is DEFERRED to K-stage coordination, not next. (#8 rhyme-studio PRE
-  **DONE 2026-07-15**, committed; READY @ PRE for recognition + identification, live 3/3 both routes;
-  production floored Grade 1+. #7 phonics-blender PRE **DONE 2026-07-15**, live 3/3 `cvc`. #1e
-  sorting-station PRE **DONE 2026-07-15**, live 3/3.)
-- **Milestone:** K queue drained → re-run topic-trace census at grade 1 (EMERGING).
+- **Now:** **#9 explainer tail — pilot + fact-file DONE 2026-07-15**, tail reconciled. The
+  "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
+  READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
+  @ PRE READY** via the helper (jsdom 6/6, eval-test K 2/2, live queued). The other four are NOT
+  the same shape (no MCQ / true-false gate / no grade threading / no tutoring block) and are queued
+  as **BACKLOG #9a media-player** (helper fits; heavier — next pull), **#9b concept-card-grid** /
+  **#9c comparison-panel** / **#9d flashcard-deck** (bespoke: read-aloud-on-flip / picture-T-F +
+  ctx-native generator refactors + grade threading). #2b comparison-builder remaining still DEFERRED
+  to K-stage. (#10 word-workout+word-flip, #8 rhyme-studio, #7 phonics-blender, #1e sorting-station
+  all **DONE 2026-07-15**.)
+- **Milestone (after #9a–#9d + #2b close, the K queue drains):** re-run the topic-trace census at
+  grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
+  (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
 ### 2. SP-27 Tutoring Context Integrity — last touched 2026-07-14
 - **Docs:** `my-tutoring-app/src/components/lumina/docs/PRD_TUTORING_CONTEXT_INTEGRITY.md`,
@@ -48,19 +51,19 @@ queue AND this file's "last touched" in the same slice.
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` 2026-07-15):** working tree carries the phonics-blender contract lane
-> (delegated lane 3 CLOSED — `docs/contracts/phonics-blender.md` derived, contracts BACKLOG
-> #6 → Done, sorting-station constraints rider APPLIED to `math.ts`; tsc 0-new + typecheck:lumina
-> clean). Uncommitted (per doctrine — commit on user request). Portfolio back to a clean
-> **2 ACTIVE + 0 DELEGATED**, under the 2+1 limit. Residuals: browser spot-checks queued as
-> HUMAN-CHECKS #12/#13/#14 + one queued phonics tap-pronounce verification (reader-fit BACKLOG,
-> executor `/tutor-test`). Room to open one delegated lane if needed.
+> **WIP note (2026-07-15):** the phonics-blender contract lane is now **committed** (`612d0b5`);
+> that WIP note is retired. Working tree currently carries the **reader-fit #9 explainer-tail slice**
+> (foundation-explorer + fact-file PRE band-gates, shared `PreReaderSelfCheck` helper, generator
+> emoji + catalog directives, 2 jsdom suites, `run_tutor_live.py` foundation-explorer journey, report
+> + queue updates) — being shipped now. Portfolio stays **2 ACTIVE + 0 DELEGATED**. Residuals: browser
+> spot-checks HUMAN-CHECKS #12–#20; fact-file live `--lesson` queued; phonics tap-pronounce verification
+> (reader-fit BACKLOG, `/tutor-test`).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
 | Stream | Queue / doc | Next action | As of |
 |---|---|---|---|
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | 2 contracts derived (sorting-station pilot + **phonics-blender DONE 07-15**: 10 R, 2 conflicts, 4 gaps incl. G3 vowel-teams where the curriculum names the primitive but no eval mode exists → `/add-eval-modes`; sorting-station constraints rider APPLIED). Next = #2 **knowledge-check** derivation (largest blast radius; before `true_false @ PRE` lands), then wire `--check` into the fix loops | 07-15 |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | 2 contracts derived + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
 | Flash-lite truncation hardening | memory `project_flash-lite-truncation-template` | ~50-gen sweep | 07-06 |

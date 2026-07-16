@@ -108,6 +108,10 @@ const selfCheckSchema: Schema = {
       type: Type.STRING,
       description: "Fourth answer option",
     },
+    option0Emoji: { type: Type.STRING, nullable: true, description: "PRE-READER (kindergarten) only: single emoji depicting option0 (the answer surface a non-reader taps)" },
+    option1Emoji: { type: Type.STRING, nullable: true, description: "PRE-READER (kindergarten) only: single emoji depicting option1" },
+    option2Emoji: { type: Type.STRING, nullable: true, description: "PRE-READER (kindergarten) only: single emoji depicting option2" },
+    option3Emoji: { type: Type.STRING, nullable: true, description: "PRE-READER (kindergarten) only: single emoji depicting option3" },
     correctIndex: {
       type: Type.NUMBER,
       description: "Index of correct option (0-3)",
@@ -238,7 +242,11 @@ const factFileSchema: Schema = {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function validateFactFileData(raw: any): FactFileData {
+function validateFactFileData(
+  raw: any,
+  opts?: { isPreReader?: boolean; gradeLevel?: string },
+): FactFileData {
+  const isPreReader = opts?.isPreReader ?? false;
   // --- Basic fields ---
   const title = raw.title || 'Fact File';
   const category = raw.category || 'General';
@@ -337,6 +345,16 @@ function validateFactFileData(raw: any): FactFileData {
       const validSections = ['quickFacts', 'deepDive', 'records', 'didYouKnow'];
       const relatedSection = validSections.includes(c.relatedSection) ? c.relatedSection : 'quickFacts';
 
+      // Pre-reader picture answer surface: keep optionEmojis only when EVERY option
+      // has a non-empty DISTINCT emoji (a partial set strands a non-reader on the
+      // options that got no picture). Otherwise undefined → ⭐ fallback.
+      const rawEmojis = [c.option0Emoji, c.option1Emoji, c.option2Emoji, c.option3Emoji]
+        .map((e) => (typeof e === 'string' ? e.trim() : ''));
+      const emojisComplete =
+        isPreReader &&
+        rawEmojis.every((e) => e.length > 0) &&
+        new Set(rawEmojis).size === rawEmojis.length;
+
       return {
         question: String(c.question || 'Question'),
         options,
@@ -344,6 +362,7 @@ function validateFactFileData(raw: any): FactFileData {
         explanation: String(c.explanation || ''),
         difficulty: difficulty as 'easy' | 'medium' | 'hard',
         relatedSection: relatedSection as 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow',
+        ...(emojisComplete ? { optionEmojis: rawEmojis } : {}),
       };
     });
   }
@@ -370,6 +389,7 @@ function validateFactFileData(raw: any): FactFileData {
     records,
     didYouKnow,
     selfChecks,
+    ...(opts?.gradeLevel ? { gradeLevel: opts.gradeLevel } : {}),
   };
 }
 
@@ -398,6 +418,18 @@ export const generateFactFile = async (
   const gradeLevelContext = getGradeLevelContext(bandKey);
   // Surface the EXACT numeric grade so grade-2 ≠ grade-4 within the same band.
   const gradeLine = buildGradeLine(ctx.grade);
+  // Pre-reader (kindergarten) band: the self-check goes picture-primary + read-aloud
+  // (reader-fit PRE). Resolve 'K' only when confidently kindergarten.
+  const canonicalGrade = (ctx.grade ?? '').toString().trim().toLowerCase();
+  const isPreReader =
+    canonicalGrade === 'k' || canonicalGrade === 'kindergarten' ||
+    /(kinder|preschool|pre-?k\b|prek|pre-?reader)/i.test(ctx.gradeContext ?? '');
+  const preReaderKey = isPreReader ? 'K' : undefined;
+  const preReaderSelfCheckRules = isPreReader ? `
+PRE-READER SELF-CHECKS (kindergarten — the child CANNOT read; a tutor reads each question + every option aloud and the child answers by tapping a PICTURE):
+- question: ONE short spoken sentence, MAX 12 words. Do NOT reference text or a picture that isn't there.
+- option0-option3: each 1-4 words, a CONCRETE thing a 5-year-old can picture. No abstract phrases. Do NOT let the answer leak from the wording.
+- option0Emoji-option3Emoji: REQUIRED — one DISTINCT emoji per option, same order, that clearly depicts it. This is the answer surface; it must stand alone without the text.` : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -468,6 +500,7 @@ ${challengeTypeSection}
 - Each question should reference a specific section (quickFacts, deepDive, records, or didYouKnow)
 - Distractors should be plausible but clearly wrong
 - Explanation should reinforce the correct answer without just restating it
+${preReaderSelfCheckRules}
 
 ## Grade-Level Adaptation:
 - For K-2: Simple vocabulary, shorter facts, very concrete examples, relatable comparisons (e.g., "as tall as a school bus")
@@ -498,7 +531,7 @@ Now generate the Fact File.`;
     if (!response.text) throw new Error("No content generated for fact-file");
 
     const raw = JSON.parse(response.text);
-    const data = validateFactFileData(raw);
+    const data = validateFactFileData(raw, { isPreReader, gradeLevel: preReaderKey });
 
     console.log('[FactFile] Generated:', {
       topic,

@@ -52,6 +52,7 @@ export interface FoundationConcept {
     options: string[];          // 2-3 answer choices (one correct, rest plausible distractors)
     correctIndex: number;       // index into options of the correct choice
     hint: string;               // "Look for the triangle in the middle"
+    optionEmojis?: string[];    // pre-reader (K): one depicting emoji per option — the answer surface
   };
 
   // Visual identity
@@ -76,6 +77,10 @@ export interface FoundationExplorerData {
 
   // Theme
   themeColor: string;
+
+  // Canonical grade key ('K' | '1' | ...) stamped by the generator so the
+  // component can band-gate the pre-reader presentation. Absent = reader grade.
+  gradeLevel?: string;
 }
 
 // --- SPECIALIZED MODULES ---

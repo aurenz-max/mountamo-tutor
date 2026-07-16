@@ -30,6 +30,8 @@ import {
 import type { FactFileMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
+import { PreReaderSelfCheck, buildSelfCheckReadAloud } from '../../shared/PreReaderSelfCheck';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -80,7 +82,12 @@ export interface FactFileData {
     explanation: string;
     difficulty: 'easy' | 'medium' | 'hard';
     relatedSection: 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow';
+    /** Pre-reader (K): one depicting emoji per option — the answer surface. */
+    optionEmojis?: string[];
   }>;
+
+  /** Canonical grade key ('K'|'1'…) stamped by the generator for band-gating. */
+  gradeLevel?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -128,6 +135,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     records = [],
     didYouKnow = [],
     selfChecks = [],
+    gradeLevel: dataGradeLevel,
     instanceId,
     skillId,
     subskillId,
@@ -135,6 +143,10 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // Pre-reader (K) band-gate — the self-check goes picture-primary + read-aloud and
+  // the text-heavy tab exploration (unreadable to a non-reader) is bypassed.
+  const preReader = isPreReaderGrade(dataGradeLevel);
 
   // -------------------------------------------------------------------------
   // State
@@ -397,6 +409,59 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     tabVisitTimes, visitedTabs, isConnected, sendText, hasSubmittedEvaluation, submitEvaluation,
   ]);
 
+  // Pre-reader self-check completion. PreReaderSelfCheck is eliminate-until-correct
+  // (it owns the wrong-tap RECOVER beat), so onResult fires once, correct, per check;
+  // first-try is the mastery signal. Advances to the next check or finishes. Exploration
+  // is delivered by the tutor's read-aloud at K (no tab-visits), so it is credited full
+  // rather than penalizing the intentional bypass.
+  const handlePreCheckPass = useCallback((attempts: number) => {
+    const check = selfChecks[currentCheckIndex];
+    if (!check) return;
+    const firstTry = attempts <= 1;
+    const nextAnswers = [...checkAnswers, { selected: check.correctIndex, correct: firstTry }];
+    setCheckAnswers(nextAnswers);
+
+    if (isConnected) {
+      sendText(
+        `[CHECK_CORRECT] Pre-reader answered self-check ${currentCheckIndex + 1}/${selfChecks.length} `
+        + `("${check.question}") correctly. Celebrate warmly in ONE short sentence.`,
+        { silent: true },
+      );
+    }
+
+    if (currentCheckIndex + 1 < selfChecks.length) {
+      setCurrentCheckIndex(i => i + 1);
+      return;
+    }
+
+    setAllChecksComplete(true);
+    const correctCount = nextAnswers.filter(a => a.correct).length;
+    const accuracy = selfChecks.length > 0 ? Math.round((correctCount / selfChecks.length) * 100) : 0;
+    if (isConnected) {
+      sendText(
+        `[ALL_COMPLETE] Pre-reader finished all ${selfChecks.length} picture self-checks. `
+        + `Celebrate their effort in 2-3 warm sentences.`,
+        { silent: true },
+      );
+    }
+    if (!hasSubmittedEvaluation) {
+      const metrics: FactFileMetrics = {
+        type: 'fact-file',
+        sectionsExplored: totalSections,
+        totalSections,
+        explorationCompleteness: 100,
+        selfCheckAccuracy: accuracy,
+        selfCheckAttempts: selfChecks.length,
+        averageTimePerSection: 0,
+        tabsVisitedOrder: [],
+      };
+      submitEvaluation(accuracy >= 70, accuracy, metrics, { checkAnswers: nextAnswers });
+    }
+  }, [
+    selfChecks, currentCheckIndex, checkAnswers, isConnected, sendText,
+    totalSections, hasSubmittedEvaluation, submitEvaluation,
+  ]);
+
   // Auto-submit for display-only mode (no self-checks)
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
@@ -577,6 +642,44 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
       </div>
     );
   };
+
+  // -------------------------------------------------------------------------
+  // Pre-reader render: skip the text-heavy tab exploration + gating; the tutor
+  // reads each self-check aloud and the child answers by tapping a picture. Adult
+  // chrome (title/category/tabs/counters/stat labels) is hidden.
+  // -------------------------------------------------------------------------
+  if (preReader) {
+    return (
+      <LuminaCard className={className} topAccent="cyan">
+        <LuminaCardContent className="space-y-5 pt-5">
+          {allChecksComplete ? (
+            renderResults()
+          ) : currentCheck ? (
+            <PreReaderSelfCheck
+              key={currentCheckIndex}
+              question={currentCheck.question}
+              options={currentCheck.options}
+              optionEmojis={currentCheck.optionEmojis}
+              correctIndex={currentCheck.correctIndex}
+              explanation={currentCheck.explanation}
+              accent="cyan"
+              readAloudMessage={buildSelfCheckReadAloud({
+                question: currentCheck.question,
+                options: currentCheck.options,
+                label: title,
+                tag: '[FACTCHECK_READ_ALOUD]',
+              })}
+              retryTag="[FACTCHECK_RETRY]"
+              onAskTutor={(msg) => sendText(msg)}
+              onResult={(correct, attempts) => { if (correct) handlePreCheckPass(attempts); }}
+            />
+          ) : (
+            <p className="text-center text-slate-400 text-sm py-8">All done! 🎉</p>
+          )}
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Main Render

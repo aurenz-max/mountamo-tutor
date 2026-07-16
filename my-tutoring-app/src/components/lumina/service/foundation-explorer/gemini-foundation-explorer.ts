@@ -65,6 +65,12 @@ const foundationConceptSchema: Schema = {
         hint: {
           type: Type.STRING,
           description: "A helpful nudge toward the correct choice if they're stuck. Do NOT state the answer directly."
+        },
+        optionEmojis: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          nullable: true,
+          description: "PRE-READER (kindergarten) ONLY. One single emoji per option, SAME ORDER as options, that VISUALLY depicts that choice (🔺 for 'The triangle in the middle', 📦 for 'The heavy box'). The child answers by picture, so each emoji must be unambiguous and DISTINCT from the others. Omit entirely for grade 1 and up."
         }
       },
       required: ["prompt", "options", "correctIndex", "hint"]
@@ -142,11 +148,27 @@ const foundationExplorerSchema: Schema = {
  * @param config - Configuration from manifest (includes objectiveId, objectiveText, objectiveVerb)
  * @returns FoundationExplorerData
  */
+/**
+ * Canonical pre-reader grade key from the resolved context. Returns 'K' ONLY when
+ * confidently kindergarten (never over-gates a reader lesson into pre-reader UI).
+ * Mirrors resolvePreReaderGradeKey in the literacy generators.
+ */
+function resolvePreReaderGradeKey(ctx: GenerationContext): string | undefined {
+  const canonical = (ctx.grade ?? '').toString().trim().toLowerCase();
+  if (canonical === 'k' || canonical === '0' || canonical === 'kindergarten') return 'K';
+  if (/^\d+$/.test(canonical)) return canonical;
+  // Fall back to the display context for the pre-reader signal only.
+  if (/(kinder|preschool|pre-?k\b|prek|pre-?reader)/i.test(ctx.gradeContext ?? '')) return 'K';
+  return canonical || undefined;
+}
+
 export const generateFoundationExplorer = async (
   ctx: GenerationContext
 ): Promise<FoundationExplorerData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
+  const gradeKey = resolvePreReaderGradeKey(ctx);
+  const isPreReader = gradeKey === 'K';
   const config = ctx.raw as FoundationExplorerConfig;
   const objectiveVerb = ctx.objective.verb || 'identify';
   const conceptCount = config?.conceptCount || 3;
@@ -216,7 +238,14 @@ within the scope and theme the focus implies; the grade level is the ceiling, ne
 reason to broaden past the focus.
 
 ${verbGuidance[objectiveVerb] || verbGuidance.identify}
-
+${isPreReader ? `
+PRE-READER AUDIENCE (KINDERGARTEN) — the student CANNOT read; a tutor reads everything aloud and the child answers by tapping a PICTURE. These rules override any conflicting guidance above:
+- briefDefinition: ONE very short spoken-style sentence (max 12 words), everyday words a 5-year-old knows.
+- inContext.scenario / whereToFind: ONE short simple sentence each, natural when read aloud.
+- selfCheck.prompt: ONE short spoken question, MAX 12 WORDS. Do NOT reference anything the child must read or a picture that is not there ("the diagram below", "the word", "the picture above"). Do NOT let the answer leak from the wording (never "the shape with 3 sides" when the answer is Triangle).
+- selfCheck.options: EXACTLY 3, each 1-4 words, a CONCRETE thing a 5-year-old can picture. No abstract phrases.
+- selfCheck.optionEmojis: REQUIRED — one distinct emoji per option, SAME ORDER, that clearly depicts it. This is the answer surface; it must stand alone without the text.
+` : ''}
 TASK:
 Generate ${conceptCount} foundational concepts that students must master to achieve this objective.
 
@@ -325,11 +354,22 @@ Return a complete Foundation Explorer configuration.
       sc.correctIndex < safeOptions.length
         ? sc.correctIndex
         : 0;
+    // Pre-reader picture answer surface: keep optionEmojis only when EVERY option
+    // has a non-empty, DISTINCT emoji (a partial set would leave some options
+    // picture-primary and others picture-less for a child who can't read the label).
+    const rawEmojis = Array.isArray(sc.optionEmojis) ? sc.optionEmojis : [];
+    const trimmed = rawEmojis.map((e) => (typeof e === 'string' ? e.trim() : ''));
+    const emojisComplete =
+      isPreReader &&
+      trimmed.length === safeOptions.length &&
+      trimmed.every((e) => e.length > 0) &&
+      new Set(trimmed).size === trimmed.length;
+    const optionEmojis = emojisComplete ? trimmed : undefined;
     return {
       ...concept,
       id: concept.id || `concept-${index}`,
       color: concept.color || colors[index % colors.length],
-      selfCheck: { ...sc, options: safeOptions, correctIndex },
+      selfCheck: { ...sc, options: safeOptions, correctIndex, optionEmojis },
     };
   });
 
@@ -342,6 +382,9 @@ Return a complete Foundation Explorer configuration.
   // Set defaults if missing
   if (!data.themeColor) data.themeColor = '#6366f1';
   if (!data.diagram.style) data.diagram.style = 'schematic';
+
+  // Stamp the canonical grade key so the component can band-gate the pre-reader UI.
+  if (gradeKey) data.gradeLevel = gradeKey;
 
   return data;
 };

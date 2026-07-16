@@ -7,8 +7,13 @@ import { useLuminaAI } from '../hooks/useLuminaAI';
 import { useChallengeProgress } from '../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../hooks/usePhaseResults';
 import { SoundManager } from '../utils/SoundManager';
+import { isPreReaderGrade } from '../utils/kindergartenMode';
 import PhaseSummaryPanel from '../components/PhaseSummaryPanel';
 import { usePrimitiveEvaluation, type FoundationExplorerMetrics } from '../evaluation';
+import {
+  PreReaderSelfCheck,
+  buildSelfCheckReadAloud,
+} from './shared/PreReaderSelfCheck';
 import {
   Target,
   CheckCircle2,
@@ -22,6 +27,7 @@ import {
   LuminaBadge,
   LuminaCallout,
   LuminaMark,
+  LuminaReadAloud,
   answerStateClasses,
   type AnswerChoiceState,
   type LuminaAccent,
@@ -37,6 +43,13 @@ import {
  * 4. Rolls the per-concept checks up into a PhaseSummaryPanel + evaluation submission
  *
  * The Lumina tutor is woven in as an optional coach (Ask Lumina) during exploration.
+ *
+ * At the PRE (kindergarten) reading band the whole surface flips: the tutor reads the
+ * definition + example + self-check aloud (auto on view + 🔊 replay), the self-check
+ * options render picture-primary and a single tap chooses, and adult chrome (verb
+ * badge, progress ledger, concept tabs, position counter) is hidden. Concepts advance
+ * automatically on a correct answer, so no text tab-navigation is required of a
+ * non-reader. See ./shared/PreReaderSelfCheck.
  */
 
 interface FoundationExplorerProps {
@@ -77,6 +90,9 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
     concepts,
     themeColor = '#6366f1',
   } = data;
+
+  // Pre-reader (K) band-gate — flips the whole surface to picture-primary + read-aloud.
+  const preReader = isPreReaderGrade(data.gradeLevel);
 
   // Evaluation context props (injected into data by ManifestOrderRenderer).
   const skillId = (data as any).skillId as string | undefined;
@@ -297,6 +313,26 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
     return null;
   };
 
+  // Shared "concept passed" path: record, celebrate, auto-advance to the next.
+  const recordConceptPass = (concept: FoundationConcept, attemptCount: number) => {
+    recordResult({
+      challengeId: concept.id,
+      correct: true,
+      attempts: attemptCount,
+      score: scoreForAttempts(attemptCount),
+    });
+    sendText(
+      `[CONCEPT_COMPLETED] The student answered the self-check for "${concept.name}" correctly ` +
+      `(attempt ${attemptCount}). Progress: ${completedCount + 1} of ${concepts.length}. ` +
+      `Celebrate briefly in 1 sentence.`,
+      { silent: true }
+    );
+    const nextId = nextUnmasteredId(concept.id);
+    if (nextId) {
+      window.setTimeout(() => setSelectedConceptId(nextId), 1050);
+    }
+  };
+
   const handleAnswer = (concept: FoundationConcept, originalIndex: number) => {
     if (isMastered(concept.id)) return;
     if ((wrongPicks[concept.id] || []).includes(originalIndex)) return;
@@ -308,22 +344,7 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
 
     if (isCorrect) {
       SoundManager.playCorrect();
-      recordResult({
-        challengeId: concept.id,
-        correct: true,
-        attempts: nextAttempts,
-        score: scoreForAttempts(nextAttempts),
-      });
-      sendText(
-        `[CONCEPT_COMPLETED] The student answered the self-check for "${concept.name}" correctly ` +
-        `(attempt ${nextAttempts}). Progress: ${completedCount + 1} of ${concepts.length}. ` +
-        `Celebrate briefly in 1 sentence.`,
-        { silent: true }
-      );
-      const nextId = nextUnmasteredId(concept.id);
-      if (nextId) {
-        window.setTimeout(() => setSelectedConceptId(nextId), 1050);
-      }
+      recordConceptPass(concept, nextAttempts);
     } else {
       SoundManager.playIncorrect();
       setWrongPicks(prev => ({
@@ -341,6 +362,14 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
     }
   };
 
+  // Pre-reader self-check outcome — the shared component owns the wrong-tap RECOVER
+  // beat (spoken hint), so we only handle the pass here.
+  const handlePreConceptPass = (concept: FoundationConcept, attemptCount: number) => {
+    if (isMastered(concept.id)) return;
+    setAttempts(prev => ({ ...prev, [concept.id]: attemptCount }));
+    recordConceptPass(concept, attemptCount);
+  };
+
   const optionState = (concept: FoundationConcept, originalIndex: number): AnswerChoiceState => {
     const mastered = isMastered(concept.id);
     const isCorrectOption = originalIndex === concept.selfCheck.correctIndex;
@@ -350,6 +379,107 @@ const FoundationExplorer: React.FC<FoundationExplorerProps> = ({ data, className
   };
 
   const spotlightColor = selectedConcept?.color || themeColor;
+
+  // The full spoken STIMULUS for a concept at PRE: read the definition + example,
+  // then the self-check question + every option (in display order), answer-free.
+  const preReadAloudFor = (concept: FoundationConcept): string => {
+    const order = optionOrder[concept.id] || concept.selfCheck.options.map((_, i) => i);
+    const displayOptions = order.map(i => concept.selfCheck.options[i]);
+    const intro =
+      `${concept.name}. ${concept.briefDefinition} ${concept.inContext.scenario}`.trim();
+    return buildSelfCheckReadAloud({
+      question: concept.selfCheck.prompt,
+      options: displayOptions,
+      intro,
+      label: concept.name,
+      tag: '[SELFCHECK_READ_ALOUD]',
+    });
+  };
+
+  // ── Pre-reader render: picture-primary, one concept at a time, read aloud ──
+  if (preReader) {
+    return (
+      <div className={`w-full ${className || ''}`}>
+        <div className="max-w-4xl mx-auto glass-panel rounded-3xl border border-white/10 p-5 md:p-7 relative overflow-hidden shadow-2xl">
+          <div
+            className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full blur-[160px] opacity-20 transition-colors duration-700 pointer-events-none"
+            style={{ backgroundColor: spotlightColor }}
+          />
+          <div className="relative z-10 space-y-5">
+            {/* Central Diagram — the picture, no text spotlight caption at PRE */}
+            <div className="relative rounded-2xl border border-white/10 overflow-hidden bg-black/40">
+              <div className="relative w-full aspect-[16/10] min-h-[260px] flex items-center justify-center">
+                {diagramImageUrl ? (
+                  <img
+                    src={diagramImageUrl}
+                    alt={diagram.description}
+                    className="w-full h-full object-contain"
+                  />
+                ) : imageLoading ? (
+                  <Loader2 size={32} className="text-slate-500 animate-spin" />
+                ) : (
+                  <div className="text-6xl opacity-70">📐</div>
+                )}
+              </div>
+            </div>
+
+            {isComplete ? (
+              <PhaseSummaryPanel
+                phases={phaseResults}
+                durationMs={elapsedMs}
+                heading="Concepts Mastered"
+                celebrationMessage={`You did all ${concepts.length}! 🎉`}
+              />
+            ) : selectedConcept ? (
+              <div className="glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 w-full h-1"
+                  style={{ backgroundColor: selectedConcept.color }}
+                />
+                <div className="p-5 pt-6 space-y-5">
+                  {/* Concept name + a single "read it to me" for the prose */}
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-2xl font-light text-white">{selectedConcept.name}</h3>
+                    <LuminaReadAloud
+                      size="md"
+                      accent="cyan"
+                      label="Read to me"
+                      aria-label="Read this to me"
+                      onClick={() => {
+                        SoundManager.tap();
+                        sendText(
+                          `[SELFCHECK_READ_ALOUD] Read this aloud to the pre-reader slowly, word for word: ` +
+                          `"${selectedConcept.name}. ${selectedConcept.briefDefinition} ${selectedConcept.inContext.scenario}".`
+                        );
+                      }}
+                    />
+                  </div>
+
+                  {/* Self-check — the graded, picture-primary interaction */}
+                  <PreReaderSelfCheck
+                    key={selectedConcept.id}
+                    question={selectedConcept.selfCheck.prompt}
+                    options={selectedConcept.selfCheck.options}
+                    optionEmojis={selectedConcept.selfCheck.optionEmojis}
+                    correctIndex={selectedConcept.selfCheck.correctIndex}
+                    optionOrder={optionOrder[selectedConcept.id]}
+                    hint={selectedConcept.selfCheck.hint}
+                    mastered={isMastered(selectedConcept.id)}
+                    accent="amber"
+                    readAloudMessage={preReadAloudFor(selectedConcept)}
+                    onAskTutor={(msg) => sendText(msg)}
+                    onResult={(correct, attemptCount) => {
+                      if (correct) handlePreConceptPass(selectedConcept, attemptCount);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full ${className || ''}`}>

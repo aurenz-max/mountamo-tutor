@@ -21,20 +21,48 @@ Next priorities:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 9. Explainer tail @ PRE — text-primary "reading" surfaces routed at K (census)
-Batch-audit candidates, ranked by census routing frequency: **foundation-explorer**
-(4/6 lessons — selfCheck prompts + 3 full-sentence text options at K),
-**concept-card-grid** (3/6 — originStory/curiosityNote prose walls),
-**comparison-panel** (2/6 — points/synthesis paragraphs), **fact-file**,
-**flashcard-deck** (term/definition text cards), **media-player** (text
-knowledgeCheck options; script is narrated ✓). Common shape → probably one
-shared pattern: deep-dive's PRE treatment (auto-read + 🔊 + picture-primary
-checks). Audit foundation-explorer first, extract the pattern, sweep the rest.
-(take-home-activity also routed 2/6 but is parent-facing by design — band-exempt.)
+### 9a. media-player @ PRE — picture-primary knowledgeCheck (helper fits)
+Deferred from #9 (2026-07-15). media-player HAS the MCQ shape the shared
+`PreReaderSelfCheck` helper serves: per-segment `segments[].knowledgeCheck.options: string[]`
++ `correctOptionIndex`; the script AND the KC question+options are ALREADY auto-narrated
+(`[READ_ALOUD]`/`[READ_KNOWLEDGE_CHECK]`), catalog has a `KNOWLEDGE CHECK NARRATION`
+directive. **Remaining:** band-gate the RadioGroup→tap=choose, emoji-primary options
+(add `option*Emoji` to the per-segment KC schema), a PRE-READER READ-ALOUD directive tag,
+hide chrome (step counter, letter chips, transcript, "Submit Answer"). Generator is
+ctx-native but reads `inferGradeLevel(ctx.gradeContext)` — switch to `ctx.grade` + stamp
+`gradeLevel`. Catalog `constraints` say "grades 3+"; census routed it at K, so extend +
+drop the 3+ floor for the KC-read path. Executor: `/reader-fit --fix media-player PRE`.
 
-### 10. word-workout + word-flip — PRE audit remaining (scope/routing FIXED 2026-07-14)
-Scope-binding + routing slices DONE (see Done). **Remaining:** neither audited at
-PRE (reader-fit band judgment) — that stays in this queue.
+### 9b. concept-card-grid @ PRE — bespoke (NO self-check; prose-wall flip artifact)
+Deferred from #9. `PreReaderSelfCheck` does NOT apply — there is no MCQ. It's a flip-to-read
+card (`definition`/`curiosityNote`/`timelineContext` prose; `originStory`/`subheading`
+generated-but-unrendered). **Treatment:** read-aloud-on-flip (voice `definition` + curiosity
+note), emoji/image-primary card face, chrome hidden ("Exhibit 0N", "Flip to Analyze",
+section headers, `el.type` badge). **Prerequisite plumbing:** generator is POSITIONAL
+`(topic, gradeContext, config)` — refactor to ctx-native (read `ctx.grade`), add a pre-reader
+signal to `contextKeys` + component props (currently NONE threaded), add a catalog
+PRE-READER READ-ALOUD directive (has `CARD EXPLORATION`/`CARD RETURNED` only). Executor:
+`/reader-fit --fix concept-card-grid PRE` (bespoke, not a helper swap).
+
+### 9c. comparison-panel @ PRE — bespoke (true/false gate, not MCQ)
+Deferred from #9. The graded gate is **boolean** (`gates[].correctAnswer: boolean`, two
+hardcoded True/False text buttons + Submit) — not the MCQ helper's shape. Prose walls:
+`points[]`/`synthesis.*` paragraphs. **Treatment:** picture true/false gate (👍/👎 or two
+picture cards, tap=choose) + read-aloud of the gate question; hide chrome (Option A/B badges,
+"Comprehension Check N of M", VS badge, synthesis section labels). **Prerequisite:** generator
+POSITIONAL, no ctx, no grade to component — same ctx-native refactor + grade threading as 9b;
+catalog has 5 aiDirectives but no PRE read-aloud. Also flag: `{{#if}}` handlebars? (check the
+scaffold). Executor: `/reader-fit --fix comparison-panel PRE` (bespoke).
+
+### 9d. flashcard-deck @ PRE — bespoke (flip + self-rate; no tutoring block)
+Deferred from #9. No self-check (flip term/definition + "Study Again"/"Got It" self-rate).
+`PreReaderSelfCheck` does NOT apply. **Treatment:** read-aloud-on-flip (voice `term` then
+`definition`), add a per-card emoji/image field (none exists) as the card face, hide chrome
+(card counter "3/8", progress dots, "Click to Reveal", button text sublabels). **Prerequisite
+(largest):** `FlashcardDeckData` has no `gradeLevel`; generator reads `ctx.gradeContext` not
+`ctx.grade`; **the catalog entry has NO `tutoring` block at all** — one must be authored
+(taskDescription + contextKeys + a PRE-READER READ-ALOUD directive) before a scaffold can
+reach the tutor. Executor: `/reader-fit --fix flashcard-deck PRE` (bespoke + new scaffold).
 
 ### Lesson-mode sweeps (after pilots 1–2 prove the loop)
 - `/reader-fit --lesson "Count to tell the number of objects — up to 5" kindergarten`
@@ -59,6 +87,65 @@ PRE (reader-fit band judgment) — that stays in this queue.
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **9. Explainer tail @ PRE — pilot foundation-explorer READY + shared helper + fact-file
+  swept; tail reconciled (2026-07-15).** Report: `explainer-tail-PRE-2026-07-15.md`.
+  - **Pilot `foundation-explorer` @ PRE — READY** (PRIMITIVE-GAP + SCAFFOLD-GAP → fixed).
+    CATALOG PRE-READER READ-ALOUD `aiDirective` (definition + question + every option
+    verbatim, answer-free, overrides one-sentence cap); COMPONENT `isPreReaderGrade`
+    band-gate (one concept at a time, auto-advance, prose→"🔊 Read to me", self-check via
+    the new shared `PreReaderSelfCheck`, chrome hidden); GENERATOR K prompt (≤12w question,
+    picturable options, no phantom/leak) + required distinct `optionEmojis` + `gradeLevel`
+    stamp. Verified: tsc 0-new + `typecheck:lumina` 0; **jsdom 6/6**
+    (`FoundationExplorer.reader-fit.test.tsx`); eval-test @ K **3/3** draws (emojis
+    complete+distinct, q≤9w, correctIndex varies); **live `--lesson --runs 3` 3/3** (bespoke
+    `build_foundation_explorer_journey`) — definition + question + every option read aloud,
+    survives the cap (`qa/tutor-reports/foundation-explorer-live-lesson-2026-07-15.md`).
+  - **Shared helper `primitives/shared/PreReaderSelfCheck.tsx`** — the reusable PRE MCQ
+    self-check (`useAutoReadOnView` + `buildSelfCheckReadAloud` + `<PreReaderSelfCheck>`:
+    emoji-primary, tap=choose, auto-read + 🔊, eliminate-until-correct, eyes-free RECOVER).
+  - **Swept `fact-file` @ PRE — READY (pending live).** Helper swap: CATALOG
+    `[FACTCHECK_READ_ALOUD]`/`[FACTCHECK_RETRY]` directive; COMPONENT PRE render bypasses the
+    text tab-exploration gate + presents self-checks via `PreReaderSelfCheck`; GENERATOR flat
+    `option*Emoji` (sidesteps flash-lite nested-array drop) + `gradeLevel` stamp. Verified:
+    tsc 0-new + `typecheck:lumina` 0; **jsdom 6/6** (`FactFile.reader-fit.test.tsx`); full
+    suite **773/773**; eval-test @ K **2/2** (emojis complete+distinct, q≤8w). Live `--lesson`
+    queued (mechanism = the proven pilot directive).
+  - **Tail reconciled — NOT one shape** (5-agent structural map). Only fact-file fit the
+    MCQ helper. Deferred as distinct items with their (different) treatments: **#9a
+    media-player** (helper fits; heavier), **#9b concept-card-grid** / **#9c comparison-panel**
+    / **#9d flashcard-deck** (bespoke: no MCQ; need ctx-native generator refactors + grade
+    threading; flashcard-deck needs a whole catalog `tutoring` block). User scope call: fact-file
+    only this slice. take-home-activity band-exempt (parent-facing).
+  - Residuals → HUMAN-CHECKS (emoji-grid pixel look, both primitives) + K-stage systemic
+    (PhaseSummaryPanel / results % ledgers). foundation-explorer stall answer-leak (observational).
+- **10. word-workout + word-flip @ PRE — audit + `--fix`, both READY (2026-07-15).**
+  The PRE band audit that stayed open after the 07-14 scope/routing fixes (those NOT
+  re-touched). Report: `word-workout-word-flip-PRE-2026-07-15.md`.
+  - **word-workout: SCAFFOLD-GAP + PRIMITIVE-GAP → READY** for `real_vs_nonsense` /
+    `picture_match` / `word_chains` (the K CVC census route); **`sentence_reading` =
+    WRONG-BAND at PRE → floored to Grade 1+** (connected-text decoding, decodable-reader
+    precedent; catalog `constraints` band-floor). Fixes: GENERATOR stamps `gradeLevel`
+    (`resolvePreReaderGradeKey`); COMPONENT `isPreReaderGrade` band-gate (header chrome +
+    **"Vowels: a" scope-leak label** + counter + progress hidden; per-mode instruction
+    sentences hidden; text feedback card hidden; PRE `[ACTIVITY_START]` voices the per-mode
+    play action answer-free; real grade → `useLuminaAI`); CATALOG **PRE-READER HOW TO PLAY**
+    `aiDirective` (durable cap-overriding ORIENT). **live `--lesson --runs 3` 3/3 PASS**
+    (bespoke `build_word_workout_journey`): tutor voiced "Read each word out loud…" every
+    run, survived the one-sentence cap, never read the chain words for the child.
+  - **word-flip: band decision = NOT WRONG-BAND → HONORED core, chrome PRIMITIVE-GAP fixed
+    → READY.** The 07-14 "likely floor to G1+" hypothesis was WRONG: plural_s is a genuine
+    K oral-grammar skill (regular plurals ≈ L.K.1.c), the catalog claims K, and it is the
+    reader-fit skill's OWN PRE reference model (`SKILL.md:70`, voice-first counted-picture
+    frame). Flooring would delete a legitimate K primitive. Fix = COMPONENT `isPreReaderGrade`
+    band-gate (counter/tally/progress/mode badge/voice-toggle + start-screen badge + consent
+    essay hidden; frame + mic + chips + start buttons remain) + CATALOG new `tutoring` block
+    with a **PRE-READER ORIENT** `aiDirective` (was NO tutoring block). tutor-test --probe
+    pass, 0 findings.
+  - Verified: tsc 0-new + `typecheck:lumina` 0; **jsdom WordWorkout 9/9 + WordFlip 7/7**
+    (chrome hidden at K, present at Grade-1 control; ORIENT answer-free); literacy 38/38;
+    intent-contract 1/1. Live report: `qa/tutor-reports/word-workout-live-lesson-2026-07-15.md`.
+  - Residuals: pixel → HUMAN-CHECKS #17 (word-workout) / #18 (word-flip); PhaseSummaryPanel
+    ledgers → K-stage systemic; word-flip live run = optional belt-and-suspenders.
 - **8. rhyme-studio @ PRE — audit + `--fix`, READY (2026-07-15).** Overall
   PRIMITIVE-GAP + SCAFFOLD-GAP → **READY @ PRE for recognition + identification**
   (the two K census routes); production floored to Grade 1+ (WRONG-BAND at PRE — Tier 4,

@@ -261,6 +261,16 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'PRE-READER READ-ALOUD (kindergarten)',
+          instruction:
+            'For a pre-reader (kindergarten) the child CANNOT read any of the concept text or the self-check. '
+            + 'When you receive [CONCEPT_READ_ALOUD] or [SELFCHECK_READ_ALOUD], READ ALOUD, word for word, exactly what the message gives you: '
+            + 'the concept definition and the real-world example first, then the self-check question, then EVERY option slowly with its letter, then ask which picture they want to tap. '
+            + 'Reading this aloud IS your turn — this OVERRIDES any instruction to keep it to one sentence or to be brief; read all of it. '
+            + 'Never say or hint which option is correct. '
+            + 'When you receive [SELFCHECK_RETRY], give ONE warm spoken hint that narrows it down without revealing the answer, and invite them to tap another picture.',
+        },
+        {
           title: 'CONCEPT EXPLORATION WALKTHROUGH',
           instruction:
             'When you receive [CONCEPT_SELECTED], actively TEACH — do not tell them to read the panel. '
@@ -471,6 +481,16 @@ export const CORE_CATALOG: ComponentDefinition[] = [
             'When you receive [ALL_SECTIONS_EXPLORED], congratulate the student on reading everything. '
             + 'Ask them what their favorite fact was. If self-checks are coming, preview them. '
             + 'Keep to 2-3 sentences.',
+        },
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten)',
+          instruction:
+            'For a pre-reader (kindergarten) the child CANNOT read the self-check question or options. '
+            + 'When you receive [FACTCHECK_READ_ALOUD], READ ALOUD, word for word, exactly what the message gives you: '
+            + 'the question, then EVERY option slowly with its letter, then ask which picture they want to tap. '
+            + 'Reading this aloud IS your turn — this OVERRIDES any instruction to keep it to one sentence or to be brief; read all of it. '
+            + 'Never say or hint which option is correct. '
+            + 'When you receive [FACTCHECK_RETRY], give ONE warm spoken hint that narrows it down without revealing the answer, and invite them to tap another picture.',
         },
       ],
     },
