@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CompareContrastBlockData } from '../types';
 import BlockWrapper from './BlockWrapper';
-import { LuminaActionButton, LuminaFeedbackCard } from '../../../../../ui';
+import {
+  LuminaActionButton,
+  LuminaDropZone,
+  LuminaFeedbackCard,
+  answerStateClass,
+  type DropZoneState,
+} from '../../../../../ui';
 import { SoundManager } from '../../../../../utils/SoundManager';
 import BlockTutorHelp from './BlockTutorHelp';
 import { useTapTutor, TapHint } from './TapTutor';
@@ -60,6 +66,17 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
   const [answered, setAnswered] = useState(answeredProp ?? false);
   const [wasCorrect, setWasCorrect] = useState(false);
   const [lastCheckMsg, setLastCheckMsg] = useState<string | null>(null);
+  const [zoneFlash, setZoneFlash] = useState<
+    Partial<Record<Side, Extract<DropZoneState, 'correct' | 'incorrect'>>> | null
+  >(null);
+  const zoneFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    },
+    [],
+  );
 
   const unplaced = pool.map((_, i) => i).filter((i) => placements[i] === undefined);
   const allPlaced = unplaced.length === 0;
@@ -91,6 +108,18 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
     const wrongIdxs = pool
       .map((s, i) => (placements[i] !== s.side ? i : -1))
       .filter((i) => i >= 0);
+
+    const wrongSides = new Set(
+      wrongIdxs
+        .map((i) => placements[i])
+        .filter((side): side is Side => side !== undefined),
+    );
+    if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    setZoneFlash({
+      A: wrongSides.has('A') ? 'incorrect' : 'correct',
+      B: wrongSides.has('B') ? 'incorrect' : 'correct',
+    });
+    zoneFlashTimer.current = setTimeout(() => setZoneFlash(null), 900);
 
     if (wrongIdxs.length === 0) {
       SoundManager.playCorrect();
@@ -201,56 +230,58 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
   // ── Sort challenge UI ─────────────────────────────────────────────
   const renderSideDropZone = (side: Side) => {
     const item = side === 'A' ? itemA : itemB;
-    const tint = side === 'A'
-      ? 'bg-indigo-500/10 border-indigo-500/20'
-      : 'bg-purple-500/10 border-purple-500/20';
     const titleTint = side === 'A' ? 'text-indigo-200' : 'text-purple-200';
     const placedIdxs = pool.map((_, i) => i).filter((i) => placements[i] === side);
     const receptive = selectedIdx !== null && !answered;
+    const zoneState: DropZoneState =
+      zoneFlash?.[side] ?? (placedIdxs.length > 0 ? 'filled' : 'idle');
 
     // Zone is a div[role=button] with chip buttons inside — a real <button>
     // zone would nest interactive elements (invalid HTML, unreliable taps;
     // same bug HypothesisLab hit).
     return (
-      <div
-        role="button"
-        tabIndex={receptive ? 0 : -1}
-        aria-disabled={!receptive}
-        onClick={() => placeSelected(side)}
-        onKeyDown={(e) => {
-          if (receptive && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            placeSelected(side);
-          }
-        }}
-        className={`rounded-xl border p-4 text-left transition-all min-h-[120px] w-full ${tint} ${
-          receptive ? 'cursor-pointer ring-2 ring-amber-400/50 hover:ring-amber-300/70' : 'cursor-default'
-        }`}
-      >
-        <h4 className={`text-sm font-semibold mb-3 uppercase tracking-wide ${titleTint}`}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <h4 className={`text-center text-sm font-semibold uppercase tracking-wide ${titleTint}`}>
           {item.title}
         </h4>
-        <ul className="space-y-2">
-          {placedIdxs.map((i) => (
-            <li key={i}>
-              <button
-                type="button"
-                disabled={answered}
-                onClick={(e) => { e.stopPropagation(); unplace(i); }}
-                className={`block w-full text-left text-sm leading-relaxed rounded-lg px-2.5 py-1.5 bg-white/5 border border-white/10 text-slate-200 ${
-                  answered ? '' : 'cursor-pointer hover:bg-white/10'
-                }`}
-              >
-                {pool[i].text}
-              </button>
-            </li>
-          ))}
-          {placedIdxs.length === 0 && (
-            <li className="text-xs text-slate-500 italic">
-              {receptive ? 'Tap here to place the statement' : 'Nothing here yet'}
-            </li>
-          )}
-        </ul>
+        <LuminaDropZone
+          state={zoneState}
+          emptyPrompt={receptive ? 'Tap here to place the statement' : 'Nothing here yet'}
+          role="button"
+          tabIndex={receptive ? 0 : -1}
+          aria-disabled={!receptive}
+          aria-label={`${item.title} statement target`}
+          onClick={() => placeSelected(side)}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (receptive && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              placeSelected(side);
+            }
+          }}
+          className={`min-h-[120px] w-full flex-col items-stretch p-4 text-left font-normal ${
+            receptive ? 'cursor-pointer' : 'cursor-default'
+          }`}
+        >
+          {placedIdxs.length > 0 ? (
+            <ul className="space-y-2">
+              {placedIdxs.map((i) => (
+                <li key={i}>
+                  <button
+                    type="button"
+                    disabled={answered}
+                    onClick={(e) => { e.stopPropagation(); unplace(i); }}
+                    className={`block w-full rounded-lg border px-2.5 py-1.5 text-left text-sm leading-relaxed ${answerStateClass('idle')} ${
+                      answered ? '' : 'cursor-pointer'
+                    }`}
+                  >
+                    {pool[i].text}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </LuminaDropZone>
       </div>
     );
   };
@@ -276,8 +307,8 @@ const CompareContrastBlock: React.FC<CompareContrastBlockProps> = ({
               }}
               className={`text-sm text-left leading-relaxed rounded-lg px-3 py-2 border transition-all cursor-pointer ${
                 selectedIdx === i
-                  ? 'bg-amber-500/15 border-amber-400/50 text-amber-100 ring-1 ring-amber-400/50'
-                  : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
+                  ? answerStateClass('selected')
+                  : answerStateClass('idle')
               }`}
             >
               {pool[i].text}

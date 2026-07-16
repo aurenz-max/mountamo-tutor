@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryMapMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -15,6 +15,8 @@ import {
   LuminaSectionLabel,
   LuminaAnswerChoice,
   LuminaFeedbackCard,
+  LuminaDropZone,
+  type DropZoneState,
   answerStateClasses,
   accentChipBg,
   accentText,
@@ -497,6 +499,15 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   const [placedEvents, setPlacedEvents] = useState<PlacedEvent[]>([]);
   const [activeDropZone, setActiveDropZone] = useState<ArcPosition | null>(null);
   const [phase2Checked, setPhase2Checked] = useState(false);
+  const [showZoneFlash, setShowZoneFlash] = useState(false);
+  const zoneFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    },
+    [],
+  );
 
   // Phase 3: Analyze state
   const [selectedConflict, setSelectedConflict] = useState<string | null>(null);
@@ -694,6 +705,10 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     setPhase2Checked(true);
     setAttemptsCount((prev) => prev + 1);
 
+    if (zoneFlashTimer.current) clearTimeout(zoneFlashTimer.current);
+    setShowZoneFlash(true);
+    zoneFlashTimer.current = setTimeout(() => setShowZoneFlash(false), 900);
+
     // Compute correctness
     let allCorrect = true;
     placedEvents.forEach((pe) => {
@@ -854,6 +869,11 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     setPlacedEvents([]);
     setActiveDropZone(null);
     setPhase2Checked(false);
+    setShowZoneFlash(false);
+    if (zoneFlashTimer.current) {
+      clearTimeout(zoneFlashTimer.current);
+      zoneFlashTimer.current = null;
+    }
     setSelectedConflict(null);
     setPhase3Checked(false);
     setAttemptsCount(0);
@@ -1212,31 +1232,61 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                     (pe) => pe.arcPosition === zone.key
                   );
                   const isActive = activeDropZone === zone.key;
+                  const zoneIsCorrect =
+                    eventsInZone.length > 0 &&
+                    eventsInZone.every((pe) => {
+                      const eventData = data.events.find(
+                        (event) => event.id === pe.eventId,
+                      );
+                      return eventData?.arcPosition === zone.key;
+                    });
+                  const zoneState: DropZoneState =
+                    isActive && selectedEventId
+                      ? 'dragOver'
+                      : showZoneFlash && phase2Checked && eventsInZone.length > 0
+                      ? zoneIsCorrect
+                        ? 'correct'
+                        : 'incorrect'
+                      : eventsInZone.length > 0
+                      ? 'filled'
+                      : 'idle';
 
                   return (
-                    <div
-                      key={zone.key}
-                      onClick={() => handleArcZoneClick(zone.key)}
-                      onMouseEnter={() =>
-                        selectedEventId ? setActiveDropZone(zone.key) : null
-                      }
-                      onMouseLeave={() => setActiveDropZone(null)}
-                      className={`
-                        p-3 rounded-lg border-2 text-center transition-all duration-200 min-h-[80px] flex flex-col items-center justify-center
-                        ${
-                          isActive && selectedEventId
-                            ? 'border-violet-500 bg-violet-500/15 scale-105'
-                            : selectedEventId
-                            ? 'border-violet-500/30 bg-slate-800/40 hover:border-violet-500/60 hover:bg-violet-500/10 cursor-pointer'
-                            : 'border-slate-700/50 bg-slate-800/30'
-                        }
-                        ${phase2Checked ? 'cursor-default' : ''}
-                      `}
-                    >
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    <div key={zone.key} className="flex min-w-0 flex-col gap-1.5">
+                      <span className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                         {zone.label}
                       </span>
-                      {eventsInZone.length > 0 ? (
+                      <LuminaDropZone
+                        state={zoneState}
+                        emptyPrompt={
+                          <span className="text-xs font-normal">
+                            {selectedEventId ? 'Click to place' : 'Empty'}
+                          </span>
+                        }
+                        role="button"
+                        tabIndex={phase2Checked ? -1 : 0}
+                        aria-disabled={phase2Checked}
+                        aria-label={`${zone.label} story arc position`}
+                        onClick={() => handleArcZoneClick(zone.key)}
+                        onKeyDown={(event) => {
+                          if (event.target !== event.currentTarget) return;
+                          if (
+                            !phase2Checked &&
+                            (event.key === 'Enter' || event.key === ' ')
+                          ) {
+                            event.preventDefault();
+                            handleArcZoneClick(zone.key);
+                          }
+                        }}
+                        onMouseEnter={() =>
+                          selectedEventId ? setActiveDropZone(zone.key) : null
+                        }
+                        onMouseLeave={() => setActiveDropZone(null)}
+                        className={`min-h-[80px] flex-col items-stretch p-3 text-center ${
+                          phase2Checked ? 'cursor-default' : 'cursor-pointer'
+                        }`}
+                      >
+                        {eventsInZone.length > 0 ? (
                         <div className="space-y-1 w-full">
                           {eventsInZone.map((pe) => {
                             const eventData = data.events.find(
@@ -1256,7 +1306,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                               ? answerStateClasses.correct
                               : isWrong
                               ? answerStateClasses.incorrect
-                              : 'bg-blue-500/15 border-blue-500/30 text-blue-200';
+                              : answerStateClasses.idle;
 
                             return (
                               <div
@@ -1281,11 +1331,8 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                             );
                           })}
                         </div>
-                      ) : (
-                        <span className="text-slate-600 text-xs">
-                          {selectedEventId ? 'Click to place' : 'Empty'}
-                        </span>
-                      )}
+                        ) : null}
+                      </LuminaDropZone>
                     </div>
                   );
                 })}
@@ -1321,18 +1368,16 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {unplacedEvents.map((event) => {
                     const isSelected = selectedEventId === event.id;
+                    const eventStateClass = isSelected
+                      ? answerStateClasses.selected
+                      : answerStateClasses.idle;
 
                     return (
                       <div
                         key={event.id}
                         onClick={() => handleEventClick(event.id)}
                         className={`
-                          p-3 rounded-lg border-2 transition-all duration-200
-                          ${
-                            isSelected
-                              ? 'border-violet-500 bg-violet-500/15 shadow-lg shadow-violet-500/10 scale-[1.02]'
-                              : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600 hover:bg-slate-800/50'
-                          }
+                          p-3 rounded-lg border-2 transition-all duration-200 ${eventStateClass}
                           ${phase2Checked ? 'cursor-default' : 'cursor-pointer'}
                         `}
                       >
@@ -1402,6 +1447,11 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                           action="retry"
                           onClick={() => {
                             setPhase2Checked(false);
+                            setShowZoneFlash(false);
+                            if (zoneFlashTimer.current) {
+                              clearTimeout(zoneFlashTimer.current);
+                              zoneFlashTimer.current = null;
+                            }
                             setPlacedEvents([]);
                             setSelectedEventId(null);
                           }}

@@ -1,6 +1,6 @@
 # PRD — Drop-Zone State Language Migration (~50 primitives)
 
-**Status:** Batches 1–2 code-complete · Batch 3 pilot browser-verified; literacy sweep in progress
+**Status:** Batches 1–2 code-complete · Batch 3 code-complete (including audited `StoryMap` extension); browser spot-checks pending
 **Owner surface:** `lumina/ui` (tokens + `LuminaDropZone`) → all drop-target primitives
 **Prereq (shipped):** `dropZoneStateClasses` + `DropZoneState` in [`ui/tokens.ts`](../ui/tokens.ts), [`LuminaDropZone`](../ui/LuminaDropZone.tsx), motion tokens (`motion.pop/shake/reveal`), Design Studio "Drop zones" section.
 
@@ -53,6 +53,7 @@ const zoneState: DropZoneState =
 - Flash window is 900 ms, then settle to `filled`/`idle`. Clear the timer on unmount and on re-fire.
 - File-upload targets (e.g. ImagePanel) use `idle/dragOver/filled` only — no grading states on non-graded drops.
 - Tap-to-place primitives: the held-selection lives on the *chip* (`selected` state); zones stay `idle` until tapped/hovered. Don't light every eligible zone.
+- Auto-append lists are not automatically drop zones. Include them only when the UI presents a fixed, visible receiving slot/workspace (for example `EquationBuilder`); a plain "Your order" list assembled by item-local buttons remains answer-choice chrome, not a target.
 
 **Gotchas from the pilot:**
 - `React.Children.count` counts conditional-`false` children — `LuminaDropZone` uses `Children.toArray` internally; don't duplicate empty-checks per file.
@@ -64,7 +65,9 @@ const zoneState: DropZoneState =
 
 Pilot-then-sweep **per archetype**: the first file of each batch is a pilot, exercised at runtime (see §5) before the rest of the batch rolls.
 
-### Batch 1 — HTML5 drag-and-drop targets (10 files; template = ClassificationSorter ✅)
+**Discovery rule:** `border-dashed` is a cleanup heuristic, not the inventory. It misses solid-border and SVG-adjacent targets. Maintain the explicit tables below and supplement the dashed grep with semantic scans for `onDrop`, `activeDropZone`, click-to-place handlers, and selected-item + bin/slot assignment state.
+
+### Batch 1 — HTML5 drag-and-drop targets (11 files; template = ClassificationSorter ✅)
 
 True `onDrop` handlers. Closest to the pilot; mostly mechanical.
 
@@ -86,7 +89,7 @@ True `onDrop` handlers. Closest to the pilot; mostly mechanical.
 
 Buckets graded on tap; no HTML5 DnD. WordSorter pilot must settle the **category-accent ruling** (accent in label, state in zone) at runtime before the sweep.
 
-`visual-primitives/literacy/WordSorter.tsx` (pilot — ✅ migrated, typechecked, browser-verified 2026-07-14) · `math/SortingStation.tsx` (◐ migrated + typechecked; browser spot-check pending) · `core/deep-dive/blocks/HypothesisLabBlock.tsx` (◐ migrated + typechecked; browser spot-check pending)
+`visual-primitives/literacy/WordSorter.tsx` (pilot — ✅ migrated, typechecked, browser-verified 2026-07-14) · `math/SortingStation.tsx` (◐ migrated + typechecked; browser spot-check pending) · `core/deep-dive/blocks/HypothesisLabBlock.tsx` (◐ migrated + typechecked; browser spot-check pending) · `core/deep-dive/blocks/CompareContrastBlock.tsx` (◐ migrated 2026-07-15; focused typecheck clean, browser spot-check pending) · `math/ShapeSorter.tsx` (queued — select shape → tap bin; discovered by semantic audit)
 
 Triage corrections: `math/CompareObjects.tsx` is answer selection/ordering, not selection→place; `biology/AdaptationInvestigator.tsx` contains only a decorative image placeholder. Both are tagged `dropzone-triage` and are out of scope.
 
@@ -94,7 +97,7 @@ Triage corrections: `math/CompareObjects.tsx` is answer selection/ordering, not 
 
 Ordered or structured slots filled from a chip bank. Each slot is a small zone; compose with `LuminaChip`/`LuminaFillBlankSlot` where the slot is inline-text-shaped (if `LuminaFillBlankSlot` already fits, use it — don't double-wrap).
 
-`literacy/SentenceBuilder.tsx` (pilot — ✅ migrated, typechecked, browser-verified 2026-07-14; 60×40 compact slot, pop/shake + settle asserted) · `literacy/PhonicsBlender.tsx` (◐ migrated + typechecked) · `literacy/CvcSpeller.tsx` (◐ spell-word slots migrated + typechecked; other dashed surfaces triaged as answer displays) · `literacy/SoundSwap.tsx` (dropzone-triage: transformation-result placeholder, out of scope) · `literacy/TextStructureAnalyzer.tsx` (◐ tap-to-map regions migrated + typechecked) · `literacy/RevisionWorkshop.tsx` (dropzone-triage: arrow reorder + reading annotation, out of scope) · `WordBuilder.tsx` (◐ migrated + typechecked) · `visual-primitives/AlphabetSequence.tsx` (dropzone-triage: static display, out of scope) · `math/NumberSequencer.tsx` (◐ migrated + typechecked 2026-07-15 — 4 slot surfaces via `dropZoneStateClass` escape hatch + challenge-wide flash) · `math/PatternBuilder.tsx` (◐ migrated + typechecked — hidden "?" slot → idle; filled tokens keep identity color) · `math/EquationBuilder.tsx` (◐ migrated + typechecked — blank tiles + empty build slots → idle) · `math/ComparisonBuilder.tsx` (◐ migrated + typechecked — order slots: filled/active-dragOver/idle + checkOrder flash) · `math/OrdinalLine.tsx` (◐ migrated + typechecked — build slots filled/idle; removed light-every-slot pulse) · `math/TapeDiagram.tsx` (◐ migrated + typechecked — unknown segment box: idle/filled/correct/incorrect + motion) · `math/TransformationLab.tsx` (dropzone-triage: decorative legend swatch; interaction is continuous-drag grid, out of scope) · `math/LengthLab.tsx` (◐ migrated + typechecked — order slots graded on submit) · `calendar/TimelineBuilder.tsx` (◐ migrated + typechecked — per-slot correct/incorrect/filled/idle; type accent moved off zone body) · `engineering/PropulsionTimeline.tsx` (◐ migrated + typechecked — sequence empty-state → idle; items already on `answerStateClasses`) · `core/deep-dive/blocks/TimelineBlock.tsx` (◐ migrated + typechecked — order slots filled/idle) · `biology/ProcessAnimator.tsx` (dropzone-triage: AI-image-generation placeholder, no drop interaction, out of scope) · `astronomy/PlanetaryExplorer.tsx` (dropzone-triage: orbit guide line, out of scope)
+`literacy/SentenceBuilder.tsx` (pilot — ✅ migrated, typechecked, browser-verified 2026-07-14; 60×40 compact slot, pop/shake + settle asserted) · `literacy/PhonicsBlender.tsx` (◐ migrated + typechecked) · `literacy/CvcSpeller.tsx` (◐ spell-word slots migrated + typechecked; other dashed surfaces triaged as answer displays) · `literacy/SoundSwap.tsx` (dropzone-triage: transformation-result placeholder, out of scope) · `literacy/TextStructureAnalyzer.tsx` (◐ tap-to-map regions migrated + typechecked) · `literacy/RevisionWorkshop.tsx` (dropzone-triage: arrow reorder + reading annotation, out of scope) · `WordBuilder.tsx` (◐ migrated + typechecked) · `visual-primitives/AlphabetSequence.tsx` (dropzone-triage: static display, out of scope) · `literacy/StoryMap.tsx` (◐ audited extension migrated 2026-07-15 — clickable arc positions use `LuminaDropZone`; SVG arc remains bespoke; focused typecheck clean) · `math/NumberSequencer.tsx` (◐ migrated + typechecked 2026-07-15 — 4 slot surfaces via `dropZoneStateClass` escape hatch + challenge-wide flash) · `math/PatternBuilder.tsx` (◐ migrated + typechecked — hidden "?" slot → idle; filled tokens keep identity color) · `math/EquationBuilder.tsx` (◐ migrated + typechecked — blank tiles + empty build slots → idle) · `math/ComparisonBuilder.tsx` (◐ migrated + typechecked — order slots: filled/active-dragOver/idle + checkOrder flash) · `math/OrdinalLine.tsx` (◐ migrated + typechecked — build slots filled/idle; removed light-every-slot pulse) · `math/TapeDiagram.tsx` (◐ migrated + typechecked — unknown segment box: idle/filled/correct/incorrect + motion) · `math/TransformationLab.tsx` (dropzone-triage: decorative legend swatch; interaction is continuous-drag grid, out of scope) · `math/LengthLab.tsx` (◐ migrated + typechecked — order slots graded on submit) · `calendar/TimelineBuilder.tsx` (◐ migrated + typechecked — per-slot correct/incorrect/filled/idle; type accent moved off zone body) · `engineering/PropulsionTimeline.tsx` (◐ migrated + typechecked — sequence empty-state → idle; items already on `answerStateClasses`) · `core/deep-dive/blocks/TimelineBlock.tsx` (◐ migrated + typechecked — order slots filled/idle) · `biology/ProcessAnimator.tsx` (dropzone-triage: AI-image-generation placeholder, no drop interaction, out of scope) · `astronomy/PlanetaryExplorer.tsx` (dropzone-triage: orbit guide line, out of scope)
 
 **Batch-3 tail (2026-07-15):** 10 migrated (◐ typechecked; browser spot-check pending — see `qa/HUMAN-CHECKS.md`), 3 triaged decorative. `typecheck:lumina` clean; batch-gate grep confirmed the 10 dropped out of `border-dashed`.
 
@@ -102,15 +105,17 @@ Ordered or structured slots filled from a chip bank. Each slot is a small zone; 
 
 These matched the dashed-border grep but are probably **decorative placeholders**, not drop targets. Triage each: if it's a real selection→place target, assign to batch 2/3; if decorative, tag `// dropzone-triage: decorative, out of scope` and leave.
 
-`AnnotatedExample.tsx` · `FormulaCard.tsx` · `ImageComparison.tsx` · `InteractivePassage.tsx` · `MediaPlayer.tsx` · `biology-primitives/SpeciesProfile.tsx` · `biology/OrganismCard.tsx` · `calendar/…` leftovers · `core/DigitalSkillsSim.tsx` · `core/HowItWorks.tsx` · `core/passage-studio/PassageRenderer.tsx` · `engineering/MachineProfile.tsx` · `literacy/LetterSpotter.tsx` · `literacy/PictureVocabulary.tsx`
+`AnnotatedExample.tsx` · `FormulaCard.tsx` · `ImageComparison.tsx` · `InteractivePassage.tsx` · `MediaPlayer.tsx` · `biology-primitives/SpeciesProfile.tsx` · `biology/OrganismCard.tsx` · `calendar/…` leftovers · `core/HowItWorks.tsx` · `core/passage-studio/PassageRenderer.tsx` · `engineering/MachineProfile.tsx` · `literacy/LetterSpotter.tsx` · `literacy/PictureVocabulary.tsx`
+
+Audit correction: `core/DigitalSkillsSim.tsx` is **not decorative**. Its pointer-driven challenge performs rectangle-overlap grading against a real drop target; migrate it as a pointer-drop archetype. `math/ThreeDShapeExplorer.tsx` remains out of this contract because its 2D/3D bins are display-only and assignment occurs on item-local buttons.
 
 ## 4. Per-file acceptance criteria
 
 A file is migrated when ALL hold:
 
-1. Zone visuals come from `dropZoneStateClasses` (component or `dropZoneStateClass()`); `grep -n "border-dashed" <file>` returns only kit-sourced classes (i.e. nothing hand-typed).
+1. Zone visuals come from `dropZoneStateClasses` (component or `dropZoneStateClass()`); any remaining hand-typed `border-dashed` occurrence is explicitly tagged `dropzone-triage` and is not an interaction target.
 2. State is **derived** (hover / flash / contents), not a stored zone state machine.
-3. `emptyPrompt` present on every zone that can be empty.
+3. `emptyPrompt` is present on every empty-capable `LuminaDropZone`; bespoke `dropZoneStateClass()` escape-hatch elements contain an equivalent visible invitation.
 4. Grading motion via the kit only; any old per-file shake/pop/ring animation removed.
 5. Mechanics, grading logic, metrics, evaluation submission, and tutor hooks byte-equivalent (diff shows visual-layer changes only).
 6. `cd "<abs>/my-tutoring-app" && ./node_modules/.bin/tsc --noEmit` — zero new errors; `npm run typecheck:lumina` passes.
@@ -120,14 +125,14 @@ A file is migrated when ALL hold:
 
 - **Pilots (one per batch):** drive in the running app. Pattern from the shipped pilot: `npm run dev` (⚠ user often has servers on :3000/:3001 — a background dev server lands on **:3002**; drive that one), headless Chrome via `playwright-core` + `channel: 'chrome'`, open the relevant tester panel (`DevPanelRouter` panels: biology/math/language-arts/engineering testers), generate real content, then dispatch synthetic `DragEvent`s with a real `DataTransfer` (works with React HTML5 DnD) or `.click()` for tap-to-place. Assert `className` contains the expected state classes AND `getComputedStyle(zone).animationName` is `lumina-pop`/`lumina-shake` at the flash moment. Screenshot correct + incorrect moments and LOOK at them.
 - **Sweep files:** tsc + acceptance-criteria greps + tester-panel spot-check screenshot per subject batch.
-- **Batch gate:** after each batch, `grep -rl "border-dashed" src/components/lumina/primitives --include="*.tsx"` shrinks by exactly the batch's file count (minus tagged decoratives).
+- **Batch gate:** review every remaining `border-dashed` line, not file count—a migrated file may legitimately retain a tagged decorative dashed surface. The batch passes when all interaction targets are token-backed, all non-target matches are tagged, and the explicit inventory plus semantic scans yield no unexplained target.
 
 ## 6. Sequencing & rough size
 
-1. **Batch 1** (10 files) — smallest, closest to template, testers exist. ~1 session.
-2. **Batch 2** (5 files) — pilot resolves the category-accent ruling. ~1 session.
-3. **Batch 3** (21 files) — largest; sub-batch by subject (literacy → math → rest) with the SentenceBuilder pilot first. ~2–3 sessions.
-4. **Batch 4** (14 files) — triage first (cheap), migrate the true targets found. ~1 session.
+1. **Batch 1** (11 files) — smallest, closest to template, testers exist. ~1 session.
+2. **Batch 2** (5 active files + 2 triaged false positives) — pilot resolves the category-accent ruling; `ShapeSorter` is the remaining queued target. ~1 session.
+3. **Batch 3** (22 inventoried files: 16 migrated, 6 triaged) — code-complete; finish subject spot-checks. ~2–3 sessions total.
+4. **Batch 4** (13 decorative candidates + 1 rerouted pointer target) — finish triage and migrate `DigitalSkillsSim` under its own pointer-drop runtime check. ~1 session.
 
 Commit per batch (`/ship`), not per file. Update the status boxes in §3 as files land.
 

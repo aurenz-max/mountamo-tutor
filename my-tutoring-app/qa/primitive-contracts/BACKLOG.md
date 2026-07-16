@@ -38,6 +38,15 @@ band spread of any math primitive; multiple historical fidelity fixes
 
 ## Done
 
+- **BASELINE `--check` ×2 — 2026-07-15 (first guard exercise)** → both **COMPATIBLE**, 20/20
+  requirements hold at runtime. sorting-station: 24 eval-test draws + jsdom 15/15 + scaffold probe
+  + live K topic-trace (resolver pinned `sort_one` @ K); R8 amended for precision (object window =
+  tier-conditioned prompt guidance, bin cap = the hard clamp; one untiered G1 draw undershot — no
+  consumer-visible violation). phonics-blender: 13 draws (grade ladder exact, purity 8/8,
+  concat+emoji 63/63) + jsdom 7/7 + scaffold probe; R2 live-tap caveat stays QUEUED. Reports:
+  `sorting-station-check-2026-07-15.md`, `phonics-blender-check-2026-07-15.md`. Tree carried the
+  reader-fit #9 lane (foundation-explorer + shared PreReaderSelfCheck) — contracted files
+  untouched, baseline valid.
 - **phonics-blender — derived 2026-07-15 (2nd contract)** → `docs/contracts/phonics-blender.md`.
   **10 requirements** (all OBSERVED; R2 carries a queued live-tap caveat, R6 a prompt-vs-code
   note), **2 conflicts** (both RESOLVED via the same band-gate + scoping forks as sorting-station
