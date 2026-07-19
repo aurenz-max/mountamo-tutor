@@ -39,7 +39,6 @@ client = genai.Client(
 
 DEFAULT_VOICE = "Leda"
 MODEL = "gemini-3.1-flash-live-preview"
-
 # Audio constants
 FORMAT = "audio/pcm"
 SEND_SAMPLE_RATE = 16000
@@ -439,6 +438,10 @@ async def lumina_tutor_session(websocket: WebSocket):
         instance_id = primitive_context.get("instance_id", "unknown")
         primitive_data = primitive_context.get("primitive_data", {})
         tutoring_scaffold = primitive_context.get("tutoring")
+        # Optional client-requested tuning of Gemini's automatic voice-activity
+        # detection. Generic transport: any surface may send it; values are
+        # clamped here and unknown keys ignored.
+        audio_input = primitive_context.get("audio_input") or {}
 
         logger.info(f"Initializing Lumina AI session (mode={session_mode}) for primitive: {primitive_type} (instance: {instance_id})")
         logger.info(f"Lesson: {lesson_context.get('topic', 'Unknown')} - {len(lesson_context.get('ordered_components', []))} activities")
@@ -472,6 +475,47 @@ async def lumina_tutor_session(websocket: WebSocket):
             )
         )
 
+        def build_realtime_input_config() -> Optional[types.RealtimeInputConfig]:
+            """Map the client's optional audio_input request onto Gemini's
+            automatic-VAD knobs. Returns None when nothing was requested so
+            default sessions keep default detection."""
+            if not isinstance(audio_input, dict) or not audio_input:
+                return None
+            # Manual mode: the client's own voice-activity detector brackets
+            # every learner turn with activity_start/activity_end messages.
+            # Gemini's automatic VAD is fully disabled — no turn exists unless
+            # the client opened one, and turns close when the client says so.
+            if audio_input.get("manual_activity") is True:
+                logger.info("Client requested manual voice-activity signaling; automatic VAD disabled")
+                return types.RealtimeInputConfig(
+                    automatic_activity_detection=types.AutomaticActivityDetection(disabled=True)
+                )
+            detection_kwargs: Dict[str, Any] = {}
+            start = str(audio_input.get("start_sensitivity", "")).lower()
+            if start == "high":
+                detection_kwargs["start_of_speech_sensitivity"] = types.StartSensitivity.START_SENSITIVITY_HIGH
+            elif start == "low":
+                detection_kwargs["start_of_speech_sensitivity"] = types.StartSensitivity.START_SENSITIVITY_LOW
+            end = str(audio_input.get("end_sensitivity", "")).lower()
+            if end == "high":
+                detection_kwargs["end_of_speech_sensitivity"] = types.EndSensitivity.END_SENSITIVITY_HIGH
+            elif end == "low":
+                detection_kwargs["end_of_speech_sensitivity"] = types.EndSensitivity.END_SENSITIVITY_LOW
+            silence_ms = audio_input.get("silence_duration_ms")
+            if isinstance(silence_ms, (int, float)):
+                detection_kwargs["silence_duration_ms"] = int(max(100, min(5000, silence_ms)))
+            prefix_ms = audio_input.get("prefix_padding_ms")
+            if isinstance(prefix_ms, (int, float)):
+                detection_kwargs["prefix_padding_ms"] = int(max(0, min(1000, prefix_ms)))
+            if not detection_kwargs:
+                return None
+            logger.info(f"Applying client VAD tuning: {detection_kwargs}")
+            return types.RealtimeInputConfig(
+                automatic_activity_detection=types.AutomaticActivityDetection(**detection_kwargs)
+            )
+
+        realtime_input_config = build_realtime_input_config()
+
         def build_gemini_config(handle: Optional[str]) -> LiveConnectConfig:
             """Build the Live config. Two long-session features are always on:
 
@@ -486,6 +530,9 @@ async def lumina_tutor_session(websocket: WebSocket):
             return LiveConnectConfig(
                 response_modalities=["AUDIO"],
                 speech_config=speech_config,
+                realtime_input_config=realtime_input_config,
+                input_audio_transcription=types.AudioTranscriptionConfig(),
+                output_audio_transcription=types.AudioTranscriptionConfig(),
                 context_window_compression=types.ContextWindowCompressionConfig(
                     trigger_tokens=104857,
                     sliding_window=types.SlidingWindow(target_tokens=52428),
@@ -701,6 +748,13 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 await audio_queue.put(audio_data)
                                 logger.debug(f"Queued audio data ({len(audio_data)} bytes base64)")
 
+                        elif message_type in ("activity_start", "activity_end"):
+                            # Client-driven voice-activity brackets (manual VAD).
+                            # Routed through the audio queue so they stay ordered
+                            # with the audio frames they delimit.
+                            await audio_queue.put({"activity": message_type})
+                            logger.info(f"Queued client activity signal: {message_type}")
+
                 except WebSocketDisconnect:
                     logger.info("Client disconnected")
                     stop_event.set()
@@ -734,17 +788,24 @@ async def lumina_tutor_session(websocket: WebSocket):
                     logger.error(f"Full traceback: {traceback.format_exc()}")
 
             async def handle_audio_to_gemini(session):
-                """Send audio data to Gemini via realtime input."""
+                """Send audio frames and client activity brackets, in order."""
                 try:
                     while True:
-                        audio_data = await audio_queue.get()
+                        item = await audio_queue.get()
+                        if isinstance(item, dict) and "activity" in item:
+                            if item["activity"] == "activity_start":
+                                await session.send_realtime_input(activity_start=types.ActivityStart())
+                            else:
+                                await session.send_realtime_input(activity_end=types.ActivityEnd())
+                            logger.info(f"Sent {item['activity']} to Gemini")
+                            continue
                         await session.send_realtime_input(
                             audio=types.Blob(
-                                data=audio_data,
+                                data=item,
                                 mime_type=f"{FORMAT};rate={SEND_SAMPLE_RATE}"
                             )
                         )
-                        logger.debug(f"Sent audio chunk to Gemini ({len(audio_data)} bytes base64)")
+                        logger.debug(f"Sent audio chunk to Gemini ({len(item)} bytes base64)")
                 except Exception as e:
                     logger.error(f"Error sending audio to Gemini: {e}")
 
@@ -786,6 +847,15 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 go_away_pending = True
 
                             if hasattr(response, 'server_content') and response.server_content:
+                                # Barge-in: Gemini cancelled the rest of its generation
+                                # because the user started speaking (activity_start under
+                                # manual VAD, or automatic VAD detection). Forward it
+                                # immediately so the client flushes buffered tutor audio
+                                # instead of playing a tail the model already abandoned.
+                                if getattr(response.server_content, 'interrupted', False):
+                                    logger.info("Gemini generation interrupted by user activity (barge-in)")
+                                    await ws_send_queue.put({"type": "ai_interrupted"})
+
                                 # Handle model turn (AI speaking)
                                 if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
                                     model_turn = response.server_content.model_turn

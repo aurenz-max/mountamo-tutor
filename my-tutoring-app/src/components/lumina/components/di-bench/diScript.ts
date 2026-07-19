@@ -1,157 +1,158 @@
-/**
- * diScript — script data for the Direct Instruction Bench.
- *
- * The bench validates the DI delivery loop (I do → we do → you do) from the
- * TUTOR's perspective: a deterministic engine authors every beat, the Gemini
- * Live tutor is the voice, the Azure→Gemini spoken-word ladder is the truth
- * channel, and the verdict conditions the tutor's NEXT utterance.
- *
- * Two modes:
- *  - 'scripted': the engine authors the verify/correction lines; the tutor is
- *    a pure voice actor. Validates timing + verbatim compliance (fidelity %).
- *  - 'informed': the judge verdict is injected as a [JUDGE_VERDICT] message
- *    and the tutor authors the verify/correction line itself, per the DI
- *    procedure in its system directives. Validates tutor comprehension.
- */
+/** Direct Instruction data and the Live-judged per-item cues. */
 
 import type { TutoringScaffold } from '../../types';
+import type { DIItem } from './diBenchModel';
 
-export type DIItemKind = 'sound' | 'word';
-
-export interface DIItem {
-  id: string;
-  kind: DIItemKind;
-  /** What the item looks like on screen ("m", "sam"). */
-  display: string;
-  /** How the tutor voices it ("mmm", "sam"). Editable bench lever. */
-  spoken: string;
-  /** Reference text sent to the Azure/Gemini judge. Editable bench lever —
-   *  the right reference for an isolated phoneme is an open empirical
-   *  question this bench exists to answer. */
-  reference: string;
-  enabled: boolean;
-}
-
-/** Continuous sounds first (m, s, a, f) — the DISTAR opening set — plus two
- *  decodable words built from them. */
 export const DEFAULT_ITEMS: DIItem[] = [
-  { id: 'sound-m', kind: 'sound', display: 'm', spoken: 'mmm', reference: 'mmm', enabled: true },
-  { id: 'sound-s', kind: 'sound', display: 's', spoken: 'sss', reference: 'sss', enabled: true },
-  { id: 'sound-a', kind: 'sound', display: 'a', spoken: 'aaa', reference: 'aaa', enabled: true },
-  { id: 'sound-f', kind: 'sound', display: 'f', spoken: 'fff', reference: 'fff', enabled: false },
-  { id: 'word-sam', kind: 'word', display: 'sam', spoken: 'sam', reference: 'sam', enabled: true },
-  { id: 'word-mat', kind: 'word', display: 'mat', spoken: 'mat', reference: 'mat', enabled: false },
+  {
+    id: 'sound-m', kind: 'sound', display: 'm', spoken: 'mmm', keyword: 'moon', reference: 'mmm',
+    asrAliases: ['m', 'mm', 'mmm', 'hm', 'hmm', 'mhm', 'um'],
+  },
+  {
+    id: 'sound-s', kind: 'sound', display: 's', spoken: 'sss', keyword: 'sun', reference: 'sss',
+    // Cross-check-only tradeoff: Live ASR often lexicalizes a sustained /s/
+    // as "shh". The Live tutor judges from the audio it heard; these aliases
+    // only measure transcript agreement.
+    asrAliases: ['s', 'ss', 'sss', 'ess', 'sh', 'shh', 'hiss'],
+  },
+  {
+    id: 'sound-a',
+    kind: 'sound',
+    display: 'a',
+    spoken: 'aaa',
+    keyword: 'apple',
+    elicitation: 'keyword',
+    reference: 'aaa',
+    asrAliases: ['apple'],
+  },
+  { id: 'word-sam', kind: 'word', display: 'sam', spoken: 'sam', reference: 'sam', asrAliases: ['sam'] },
 ];
 
-// ---------------------------------------------------------------------------
-// Script lines (the engine's authored beats)
-// ---------------------------------------------------------------------------
+const sentenceCase = (value: string | undefined) =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 
 export const modelLine = (it: DIItem) =>
-  it.kind === 'sound'
-    ? `This sound is ${it.spoken}. Listen: ${it.spoken}. ${it.spoken}.`
-    : `This word is ${it.spoken}. Listen: ${it.spoken}.`;
+  it.elicitation === 'keyword'
+    ? `The first sound in ${it.keyword} is short ${it.display}. Listen: ${it.keyword}.`
+    : it.kind === 'sound'
+      // Single model repetition: run-2 timing showed tutor talk-time dominates
+      // the per-item cycle (~10s of ~13s); pacing is the product at this age.
+      ? `This sound is ${it.spoken}, as in ${it.keyword}. Listen: ${it.spoken}.`
+      : `This word is ${it.spoken}. Listen: ${it.spoken}.`;
 
-export const guideLine = (it: DIItem) => `Say it with me: ${it.spoken}.`;
+export const guideLine = (it: DIItem) =>
+  it.elicitation === 'keyword'
+    ? `Together, say ${it.keyword}: ${it.keyword}.`
+    : it.kind === 'sound'
+      ? `Together: ${it.spoken}, as in ${it.keyword}.`
+      : `Together: ${it.spoken}.`;
 
 export const testLine = (it: DIItem) =>
-  it.kind === 'sound' ? `Your turn. What sound?` : `Your turn. What word?`;
+  it.elicitation === 'keyword'
+    ? `Your turn. Say ${it.keyword}.`
+    : it.kind === 'sound'
+      ? 'Your turn. What sound?'
+      : 'Your turn. What word?';
 
-export const verifyLine = (it: DIItem) => `Yes, ${it.spoken}.`;
+/** Affirmation branch. MUST begin with "Yes" — the bench parses that sentinel. */
+export const verifyLine = (it: DIItem) =>
+  it.elicitation === 'keyword'
+    ? `Yes. ${sentenceCase(it.keyword)} starts with short ${it.display}.`
+    : `Yes, ${it.spoken}.`;
 
+/** Correction branch. MUST begin with "My turn" — the bench parses that sentinel. */
 export const correctionLine = (it: DIItem) =>
-  it.kind === 'sound'
-    ? `That sound is ${it.spoken}. What sound?`
-    : `That word is ${it.spoken}. What word?`;
+  it.elicitation === 'keyword'
+    ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
+    : it.kind === 'sound'
+      ? `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`
+      : `My turn: ${it.spoken}. Your turn. What word?`;
 
-export const unclearLine = (it: DIItem) =>
-  `Say it big and loud. ${testLine(it)}`;
+const targetDescription = (it: DIItem) =>
+  it.elicitation === 'keyword'
+    ? `the word "${it.keyword}"`
+    : it.kind === 'sound'
+      ? `the continuous sound ${it.spoken}`
+      : `the word "${it.spoken}"`;
 
-/** Wrap a scripted line in its cue tag. The persona directive tells the tutor
- *  to speak the quoted line verbatim and nothing else. */
-export const scriptedCue = (tag: string, line: string) =>
-  `[${tag}] Speak this line exactly, and nothing else: "${line}"`;
+/**
+ * The in-band judging contract for one item. The Live tutor hears the raw
+ * audio and judges each attempt itself; the bench reads which branch it took
+ * from the output transcript and alone decides progression.
+ */
+export const judgingContract = (it: DIItem) => `Then wait for the learner.
+Each time the learner responds, judge the audio you heard against ${targetDescription(it)}:
+- Correct or reasonably close for a kindergartener: say exactly "${verifyLine(it)}" and stop.
+- Wrong, missing, or a different sound: say exactly "${correctionLine(it)}" and stop, then wait again.
+Never begin any other sentence with the word "Yes" or the words "My turn".
+Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
 
-/** Informed-mode verdict injection — the tutor authors its own next line. */
-export const verdictCue = (
-  it: DIItem,
-  heard: string | null,
-  outcome: 'match' | 'no-match' | 'unclear' | 'no-speech',
-) => {
-  const heardPart =
-    outcome === 'no-speech'
-      ? 'The student said nothing.'
-      : `The speech judge heard the student say "${heard ?? '(unclear)'}".`;
-  return (
-    `[JUDGE_VERDICT] ${heardPart} Judge outcome: ${outcome}. ` +
-    `The target was "${it.spoken}". Respond out loud now, following the correction procedure.`
-  );
-};
+/** Present one item: model, guide, test, then judge in-band until told otherwise. */
+export const itemCue = (it: DIItem, opening = false) => `[DI_ITEM]${opening
+  ? ' You are running a short, brisk kindergarten practice. Never say, reproduce, or invent text inside square brackets; those labels are private application metadata.'
+  : ''}
+Speak exactly:
+"${modelLine(it)} ${guideLine(it)} ${testLine(it)}"
+${judgingContract(it)}`;
 
-// ---------------------------------------------------------------------------
-// Tutor persona — installed via the PrimitiveContext.tutoring override
-// ---------------------------------------------------------------------------
+/** Corrections cap reached: acknowledge neutrally and move the lesson forward. */
+export const moveOnCue = (it: DIItem, next?: DIItem) => next
+  ? `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
+"Good try. We will practice more later. ${modelLine(next)} ${guideLine(next)} ${testLine(next)}"
+${judgingContract(next)}`
+  : `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
+"Good try. We will practice more later. That's the end of our practice."`;
+
+/** Final item affirmed: close the session warmly. */
+export const completeCue = () =>
+  `[DI_COMPLETE] Speak exactly: "That's the end of our practice. Great work today!"`;
 
 export const DI_TUTORING: TutoringScaffold = {
   taskDescription:
-    'Direct Instruction drill (developer bench). A script engine runs a kindergarten ' +
-    'reading drill; you are the voice. You only ever speak what the tagged messages ' +
-    'instruct — you never freelance.',
+    'Live-judged Direct Instruction bench for a kindergarten learner. You speak the exact ' +
+    'scripted lines from each bracketed application message and judge each learner attempt ' +
+    'from the audio you heard, using only the two allowed reply branches.',
   scaffoldingLevels: {
-    level1: 'Not used — this session is fully scripted by the bench engine.',
-    level2: 'Not used — this session is fully scripted by the bench engine.',
-    level3: 'Not used — this session is fully scripted by the bench engine.',
+    level1: 'Repeat the prompt once, slowly.',
+    level2: 'Model the requested sound or word, then ask for one retry.',
+    level3: 'Accept the attempt warmly and continue as instructed.',
   },
   aiDirectives: [
     {
-      title: 'SCRIPT EXECUTOR',
+      title: 'LIVE-JUDGED DIRECT INSTRUCTION',
       instruction:
-        'Messages tagged [DI_MODEL], [DI_GUIDE], [DI_TEST], [DI_VERIFY], [DI_CORRECT], or ' +
-        '[DI_UNCLEAR] contain one line in double quotes. Speak that quoted line EXACTLY as ' +
-        'written — word for word. Say nothing before it and nothing after it. Do not greet, ' +
-        'encourage, explain, or improvise. Do not ask questions of your own.',
+        'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson ' +
+        'words you may speak. The square-bracket label is private metadata: never speak, ' +
+        'reproduce, or invent it. Each [DI_ITEM] message includes a two-branch judging rule: ' +
+        'affirmations must begin with "Yes" and corrections must begin with "My turn", using ' +
+        'the exact quoted lines. Never begin any other sentence with those words. Judge ' +
+        'honestly from the audio: affirm a reasonable kindergarten production of the target; ' +
+        'correct a wrong, missing, or different production. Do not praise to be kind. The ' +
+        'application decides which item comes next; never introduce one yourself.',
     },
     {
       title: 'SOUND PRONUNCIATION',
       instruction:
-        'A stretched letter sequence like "mmm", "sss", "aaa", or "fff" is a continuous ' +
-        'letter SOUND, held for about two seconds — the sound at the start of "man", "sun", ' +
-        '"apple", "fun". Never say a letter name, never spell it out.',
-    },
-    {
-      title: 'JUDGE VERDICTS',
-      instruction:
-        'Messages tagged [JUDGE_VERDICT] report what a speech engine heard the student say. ' +
-        'When asked to respond, follow the Direct Instruction correction procedure. Correct: ' +
-        'confirm in three words or fewer, for example "Yes, mmm." Incorrect: calmly re-model ' +
-        'and immediately re-test, for example "That sound is mmm. What sound?" Never say ' +
-        '"no" or "wrong", never explain the error, never repeat the incorrect attempt.',
+        'A stretched letter sequence like "mmm", "sss", or "aaa" is a continuous ' +
+        'letter sound held for about two seconds. Never say a letter name and never spell it out.',
     },
     {
       title: 'BREVITY',
       instruction:
-        'Every utterance in this session is one short line. Never exceed one sentence unless ' +
-        'the quoted script line itself is longer. A silent student is handled by the engine, ' +
-        'not by you — never fill silence.',
+        'Speak only the exact quoted lesson text. Never narrate judging, scoring, or ' +
+        'application state. Keep pacing brisk: no filler, no chit-chat.',
     },
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Fidelity — did the tutor speak the scripted line verbatim?
-// ---------------------------------------------------------------------------
-
-const tokenize = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean);
+const tokenize = (value: string) => value
+  .toLowerCase()
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .split(/\s+/)
+  .filter(Boolean);
 
 export interface Fidelity {
-  /** Fraction of scripted tokens present in the transcript (0..1). */
   coverage: number;
-  /** Transcript tokens beyond the scripted line (freelancing indicator). */
   extras: number;
 }
 
@@ -159,16 +160,19 @@ export function scoreFidelity(scripted: string, transcript: string): Fidelity {
   const want = tokenize(scripted);
   const got = tokenize(transcript);
   if (want.length === 0) return { coverage: 1, extras: got.length };
-  const pool = new Map<string, number>();
-  for (const t of got) pool.set(t, (pool.get(t) ?? 0) + 1);
-  let matched = 0;
-  for (const t of want) {
-    const n = pool.get(t) ?? 0;
-    if (n > 0) {
-      matched++;
-      pool.set(t, n - 1);
+
+  const dp = Array.from({ length: want.length + 1 }, () =>
+    new Array<number>(got.length + 1).fill(0));
+  for (let i = 1; i <= want.length; i++) {
+    for (let j = 1; j <= got.length; j++) {
+      dp[i][j] = want[i - 1] === got[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
-  const extras = got.length - matched;
-  return { coverage: matched / want.length, extras };
+  const orderedMatches = dp[want.length][got.length];
+  return {
+    coverage: orderedMatches / want.length,
+    extras: Math.max(0, got.length - orderedMatches),
+  };
 }

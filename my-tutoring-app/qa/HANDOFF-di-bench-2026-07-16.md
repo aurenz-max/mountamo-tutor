@@ -1,95 +1,122 @@
-# HANDOFF — Direct Instruction Bench (2026-07-16)
+# Direct Instruction Bench handoff — 2026-07-16
 
-Charter + run protocol for the **Direct Instruction (bench-first)** workstream
-(WORKSTREAMS.md stream 3). Code-complete this slice; the next action is a human
-browser run (HUMAN-CHECKS #30).
+This is a development-only proof of concept. It tests whether one Gemini Live
+audio session can be controlled turn by turn by a separate JSON state reducer.
+It is not a Lumina primitive and does not use the production spoken-word judge.
 
-## Why this exists
+## The framework
 
-User direction 2026-07-16: before going all-in on a DI primitive, validate
-"I do, we do, you do" **from the tutor's perspective** — the Azure detector
-layered ON TOP of the Gemini Live tutor, tightly enough that the judge verdict
-provably conditions the tutor's next utterance. Today's coupling is loose:
-verdicts reach the tutor as hand-built `[SPOKEN_BLEND_MISS]`-style strings fired
-as independent side-effects, and ReadAloudStudio detects "model finished" with a
-2s transcript-idleness timer.
+The POC has four ownership layers:
 
-## What was built
-
-**`di-bench` dev panel** (home card 🎯) — Voice Studio-style bench:
-
-- `src/components/lumina/components/di-bench/DirectInstructionBench.tsx` — beat
-  engine + instrumentation UI.
-- `src/components/lumina/components/di-bench/diScript.ts` — item pool
-  (m/s/a/f continuous sounds + sam/mat words), script lines, DI persona,
-  fidelity scorer.
-- `src/contexts/LuminaAIContext.tsx` — new optional
-  `PrimitiveContext.tutoring` override: a caller can install a custom tutoring
-  scaffold (here: the DI script-executor persona) without a catalog entry.
-  Primitives are unaffected (`?? componentDef?.tutoring` fallback).
-- Registered in `DevPanelRouter` (`'di-bench'`) + `IdleScreen` card.
-
-**The loop per item:**
-
-1. **I do** — `[DI_MODEL]` cue → tutor speaks "This sound is mmm. Listen: …".
-2. **We do** — `[DI_GUIDE]` "Say it with me: mmm." (+ optional unscored echo
-   capture window).
-3. **You do** — `[DI_TEST]` "Your turn. What sound?" → mic opens **only after
-   the tutor's audio graph drains** (`isAudioPlaying` true→false edge) →
-   `useVoiceAnswer` (Azure dual-signal → flash-latest ladder) judges.
-4. **Verify / correct** — `match` → verify line; `no-match` → correction line +
-   retest (max 2); `unclear`/silence → neutral re-ask, never a correction.
-   Failed items re-enter the queue 3 positions later (delayed retest).
-
-**Two modes** (the core experiment):
-- **Scripted** — engine authors every line; tutor is a voice actor. Measures
-  timing + verbatim compliance (fidelity % + extra-token count per beat).
-- **Informed** — the judge verdict is injected as `[JUDGE_VERDICT] …` and the
-  tutor authors its own verify/correction line per the DI directives. Measures
-  whether the tutor "gets it".
-
-**Instrumentation per beat:** cue→first-audio ms, audio duration, script
-fidelity (token coverage + extras), heard text, ladder outcome, judge engine +
-latency + escalation, student response ms. Copy-run-JSON exports everything.
-
-## How to run
-
-1. `cd backend && uvicorn app.main:app --reload` and
-   `cd my-tutoring-app && npm run dev`. `AZURE_SPEECH_KEY`/`AZURE_SPEECH_REGION`
-   must be in `my-tutoring-app/.env.local` (existing spoken-judge setup).
-2. Lumina home → **DI Bench** (🎯). Tap the mic orb once (permission gesture).
-3. **Start run** (defaults: scripted mode, open mic, m/s/a + sam enabled).
-4. Play the student: correct answers, deliberate wrong answers (say "sss" for
-   m), and silence — all three correction paths should fire.
-5. Repeat in **Informed** mode.
-6. **Copy run JSON** → save as `qa/di-bench/run-2026-07-16.md` (fenced block).
-
-## Decision gates (the go/no-go for the DI primitive)
-
-| Gate | Question | Signal in the run |
+| Layer | Owner | Responsibility |
 |---|---|---|
-| G1 Phoneme judgeability | Do isolated continuous sounds (mmm/sss/aaa) produce reliable `match`/`no-match`? | test-beat outcomes + judge engine column; try judge-ref variants in the item editor if Azure whiffs. This is the LetterSpotter-class question — sounds, not letter names. |
-| G2 Script fidelity | Does the Live tutor speak scripted lines verbatim? | fidelity ≥90% with ~0 extras across model/guide/test/verify beats; watch for greeting-freelancing. |
-| G3 Loop latency | Is cue→audio + judge fast enough for DI's 10–20s response rhythm? | mean cue→audio (aim <2s) + judge ms (Azure ~400ms, escalation ~2s). |
-| G4 Informed-mode compliance | Given a [JUDGE_VERDICT], does the tutor produce a DI-legal next line (confirm ≤3 words / re-model + re-test; never "no"/"wrong")? | informed-mode transcripts, human-judged. |
+| Transport | `LuminaAIContext` + `AudioCaptureService` | One Live audio/transcription session and a generic ordered `structured_state_update` channel. No DI semantics. |
+| Reduction | `backend/app/services/di_turn_reducer.py` | Convert recent input/output transcripts into a constrained DI report. All transcript aliases and Flash-Lite prompt assumptions live here. |
+| Protocol and authority | `diBenchModel.ts` | Parse the `di-bench` structured channel, reject stale/misaligned reports, and allow only an aligned `match` to advance. |
+| Pedagogy and view | `diScript.ts` + `DirectInstructionBench.tsx` | Define items and exact I-do/we-do/you-do lines, send controller cues, render state, and export diagnostics. |
 
-**GO (G1–G3 pass):** PRD the DI Lesson composite (block-sequencer skeleton per
-the Deep Dive pattern, deterministic due-item queue 80/20, item-grain
-latency + expanding-interval state feeding evidence up as normal attempts —
-NOT a parallel selection heuristic vs IRT) as a Lesson Builder fill mode.
-**G1 fails after reference-text iteration:** start the DI strand map at
-whole-word reading (already benched via PhonicsBlender) and park sound-symbol
-until a dedicated phoneme bench matures. **G4 fails, G1–G3 pass:** ship
-scripted mode only — the engine authors all lines; still a full DI loop.
+The websocket endpoint schedules the reducer beside the Live loop, but does not
+contain the DI schema or grading policy. Shared Lumina receives opaque structured
+events; a future bench can use another channel without adding another field to
+`LuminaAIContext`.
 
-## Known caveats
+## Turn contract
 
-- The backend still queues its standard greeting on connect; the bench waits
-  for audio to drain before beat 1. If the greeting rambles, that's persona
-  data too (log it, don't fight it).
-- `stopRun` flushes waiters; mid-run GoAway/resume is untested on the bench —
-  if a resume fires mid-beat, expect one distorted row, not a hang.
-- We-do echo capture opens AFTER the guide line (echo, not true choral) —
-  simultaneous choral capture vs AEC is a later bench question.
-- 3 pre-existing `LuminaAIContext` tsc errors (AudioCaptureService typings) are
-  baseline, not this slice.
+1. The bench sends one exact script cue to Live.
+2. Live speaks and supplies output transcription.
+3. The learner responds through the same open Live session; Live supplies input
+   transcription and says only “Thank you.”
+4. Flash-Lite reduces the completed transcript turn to a `di-bench` JSON report.
+5. The frontend accepts a report only when its sequence is fresh and
+   `attempted_item_id` equals the currently active item.
+6. `match` advances; `retry`, `unclear`, and malformed outcomes remain on the
+   same item. Tutor transcript mentions never advance state.
+
+## Authoritativeness
+
+The JSON report is authoritative for orchestration, not ground truth about the
+learner's acoustic production. Its evidence is Live transcription. For isolated
+sounds, ASR can lexicalize `/s/` as “shh”; the reducer therefore uses item-scoped
+aliases and marks ambiguous aliases low-confidence. This is an explicit POC
+limitation. A production phoneme assessment would require a separate audio-aware
+judge and should be evaluated as a distinct architecture.
+
+## Files intentionally in scope
+
+- `src/components/lumina/components/di-bench/DirectInstructionBench.tsx`
+- `src/components/lumina/components/di-bench/diScript.ts`
+- `src/components/lumina/components/di-bench/diBenchModel.ts`
+- `src/contexts/LuminaAIContext.tsx` — generic transport only
+- `src/lib/AudioCaptureService.ts` — Live audio frames and level only
+- `backend/app/api/endpoints/lumina_tutor.py` — scheduling/transport adapter only
+- `backend/app/services/di_turn_reducer.py` — DI-specific backend policy
+
+The Next `/api/lumina` route, Azure blend judge, Gemini clip judge,
+`spokenWordJudge`, `useVoiceAnswer`, and `useVoiceCapture` are outside this POC.
+They remain the existing production spoken-word path.
+
+## Run and decision gate
+
+Prepare Live audio, start a run, answer each prompt, and copy the run JSON. A
+useful result must show:
+
+- every learner attempt produces one fresh structured report;
+- only an aligned JSON `match` advances;
+- retries remain on the same item;
+- Live follows the exact controller script and does not self-advance;
+- reducer latency is acceptable for the lesson rhythm;
+- the exported transcript makes low-confidence alias matches visible.
+
+Do not promote this to a primitive until transcript-only sound grading is either
+accepted as a product limitation or replaced by a separately validated
+audio-aware authority.
+
+---
+
+## 2026-07-18 update — live-judged architecture + open-mic barge-in
+
+**The reducer sections above are historical.** The Flash-Lite reducer layer was
+deleted 2026-07-16 after run 1 of the live-judged rewrite PASSED
+(`qa/eval-reports/di-bench-live-judged-2026-07-16.md`). Current architecture:
+the Live tutor judges each attempt in-band from the audio it heard and reports
+through sentinel openers in its own speech — "Yes," affirms, "My turn."
+corrects. `diBenchModel.ts` classifies the sentinel and alone decides
+progression (advance / retry / move-on after 2 corrections / stay on
+off-script). Gemini's automatic VAD is disabled (`manual_activity`); a local
+amplitude detector is the turn authority via activityStart/activityEnd (runs
+3–4 tuned: threshold 0.025, hysteresis hold 0.6, 500ms silence close). The
+ASR alias match survives only as a passive judge-agreement meter.
+
+**This slice (2026-07-18): open mic, no force-mutes** (user ruling — memory
+`feedback_spoken-mic-decoupled-from-tutor`, extended to the turn authority):
+
+- **Echo gate removed.** The local VAD no longer refuses to open a turn while
+  tutor audio plays; speaking over the tutor is native barge-in.
+- **Barge-in wired end-to-end.** The backend now forwards Gemini's
+  `server_content.interrupted` as `ai_interrupted` (`lumina_tutor.py`);
+  `LuminaAIContext` flushes buffered playback on it, so the tutor audibly
+  stops when the learner talks over her.
+- **Cue pacing is re-entrant.** A queued cue fires only into silence — tutor
+  quiet, learner not mid-utterance, no attempt awaiting judgment — and blocked
+  cues re-fire on the audio-fall / voice-close / verdict edges. A cue
+  pre-empted by an early answer is overwritten by the verdict's own next cue;
+  after an off-script verdict the held cue re-elicits the current item.
+- **Echo telemetry.** Mic turns opened during tutor audio are flagged
+  (`duringTutorAudio`) and counted in the summary (`turnsOverTutorAudio`) —
+  the speaker-run readout for AEC echo leakage.
+- Verified: tsc 0 new errors, diBenchModel vitest 12/12, backend py_compile.
+  **Not yet exercised live** — that is HUMAN-CHECKS #30 (rewritten for this
+  architecture; run it on SPEAKERS, not a headset).
+
+**Decision gate after the speaker run:** if `turnsOverTutorAudio` beyond the
+deliberate interruptions is near zero and corrections aren't wasted on phantom
+turns, the open-mic contract holds and extraction begins, in this order:
+(1) capture hook (`useLiveVoiceTurns`: amplitude turn authority + a calibration
+beat that samples the ambient floor AND the echo residual while the tutor
+speaks), (2) judged-loop engine (generalize `diBenchModel` + cue pacing with
+parameterized sentinels — scripted call-response activities, not open tutoring),
+(3) DI primitive as first consumer (generator-backed items per
+ADDING_PRIMITIVES; bench retained as the modality's measurement harness).
+If leakage is high: calibration-above-echo-residual first, then the
+WebRTC-loopback AEC workaround (play tutor audio via an RTCPeerConnection
+remote stream so browser AEC is guaranteed to reference it).

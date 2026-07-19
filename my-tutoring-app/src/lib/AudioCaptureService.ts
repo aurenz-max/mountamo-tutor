@@ -3,6 +3,7 @@
 interface AudioCaptureCallbacks {
     onStateChange?: (state: { isCapturing: boolean }) => void;
     onError?: (error: AudioCaptureError) => void;
+    /** One processed 16 kHz frame, used for local microphone level display. */
     onAudioData?: (data: Float32Array) => void;
 }
 
@@ -18,6 +19,13 @@ interface AudioCaptureConfig {
     bufferSize?: number;
 }
 
+type AudioWindow = Window & typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+};
+
+const getAudioContextConstructor = () =>
+    window.AudioContext || (window as AudioWindow).webkitAudioContext;
+
 class AudioCaptureService {
     private audioContext: AudioContext | null = null;
     private mediaStream: MediaStream | null = null;
@@ -27,6 +35,7 @@ class AudioCaptureService {
     private isCapturing: boolean = false;
     private onStateChange: ((state: { isCapturing: boolean }) => void) | null = null;
     private onError: ((error: AudioCaptureError) => void) | null = null;
+    private onAudioData: ((data: Float32Array) => void) | null = null;
 
     // Audio configuration
     private readonly TARGET_SAMPLE_RATE: number = 16000; // Required 16kHz for speech processing
@@ -43,6 +52,7 @@ class AudioCaptureService {
     setCallbacks(callbacks: AudioCaptureCallbacks = {}): void {
         this.onStateChange = callbacks.onStateChange || null;
         this.onError = callbacks.onError || null;
+        this.onAudioData = callbacks.onAudioData || null;
     }
 
     setWebSocket(ws: WebSocket): void {
@@ -64,7 +74,9 @@ class AudioCaptureService {
             console.log('Media stream obtained successfully');
     
             // Create audio context
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContextConstructor = getAudioContextConstructor();
+            if (!AudioContextConstructor) throw new Error('Web Audio is not supported');
+            this.audioContext = new AudioContextConstructor();
             console.log(`Audio context created. Source sample rate: ${this.audioContext.sampleRate}Hz`);
     
             // Create source node
@@ -95,7 +107,7 @@ class AudioCaptureService {
     }
 
     private handleAudioProcess(event: AudioProcessingEvent): void {
-        if (!this.isCapturing || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        if (!this.isCapturing) {
             return;
         }
     
@@ -125,8 +137,12 @@ class AudioCaptureService {
                 data: base64Data
             };
     
-            // Send as JSON string, which is what the backend expects
-            this.ws.send(JSON.stringify(message));
+            // Send to the audible tutor and retain the processed frame locally
+            // for microphone-level feedback.
+            if (this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify(message));
+            }
+            this.onAudioData?.(downsampledData);
     
         } catch (error) {
             console.error('Error in handleAudioProcess:', error);
@@ -255,6 +271,7 @@ class AudioCaptureService {
         this.ws = null;
         this.onStateChange = null;
         this.onError = null;
+        this.onAudioData = null;
     }
 
     getStatus(): { isCapturing: boolean } {
@@ -263,7 +280,7 @@ class AudioCaptureService {
 
     static checkSupport(): boolean {
         return !!(
-            (window.AudioContext || window.webkitAudioContext) &&
+            getAudioContextConstructor() &&
             navigator.mediaDevices?.getUserMedia
         );
     }

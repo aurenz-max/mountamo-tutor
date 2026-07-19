@@ -29,6 +29,19 @@ interface PrimitiveContext {
    *  this to install a custom persona (e.g. the DI script executor) without
    *  registering a catalog entry; primitives should omit it. */
   tutoring?: TutoringScaffold | null;
+  /** Optional tuning of Gemini's automatic voice-activity detection for this
+   *  session. Generic transport — the backend clamps values. Surfaces whose
+   *  learner speech is atypical (e.g. kindergarten sustained phonemes) request
+   *  higher start sensitivity and a shorter end-of-speech close. */
+  audio_input?: {
+    start_sensitivity?: 'high' | 'low';
+    end_sensitivity?: 'high' | 'low';
+    silence_duration_ms?: number;
+    prefix_padding_ms?: number;
+    /** Disable Gemini's automatic VAD entirely; the surface brackets every
+     *  learner turn itself via sendActivityStart/sendActivityEnd. */
+    manual_activity?: boolean;
+  } | null;
 }
 
 // Lesson context built from exhibit data
@@ -125,6 +138,11 @@ interface LuminaAIContextType {
   startListening: () => void;
   stopListening: () => void;
   isListening: boolean;
+  micLevel: number;
+  /** Manual voice-activity brackets. Only meaningful for sessions connected
+   *  with audio_input.manual_activity; no-ops when the socket is closed. */
+  sendActivityStart: () => void;
+  sendActivityEnd: () => void;
 }
 
 const LuminaAIContext = createContext<LuminaAIContextType | null>(null);
@@ -192,6 +210,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
 
   // Unexpected-end tracking. sessionEnded flips true on a server/Gemini close or
   // network drop (NOT on a user-initiated disconnect), so the UI can offer a
@@ -332,6 +351,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } else if (messageType === 'ai_turn_end') {
           setIsAIResponding(false);
           resetForNextTurn();
+        } else if (messageType === 'ai_interrupted') {
+          // Gemini dropped the rest of its turn because the student spoke over
+          // it (barge-in). The buffered tail is speech the model already
+          // abandoned — flush it so isAudioPlaying falls with the model.
+          stopAudioPlayback();
+          setIsAIResponding(false);
         } else if (messageType === 'primitive_switched') {
           console.log(`Lumina AI: switched to ${message.primitive_type} (${message.instance_id})`);
           activePrimitiveIdRef.current = message.instance_id;
@@ -429,9 +454,15 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       audioServiceRef.current = new AudioCaptureService();
       audioServiceRef.current.setCallbacks({
         onStateChange: (state) => {
-          setIsListening(state === 'recording');
+          setIsListening(state.isCapturing);
+          if (!state.isCapturing) setMicLevel(0);
         },
-        onError: (error) => console.error('Audio capture error:', error)
+        onError: (error) => console.error('Audio capture error:', error),
+        onAudioData: (frame) => {
+          let sum = 0;
+          for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
+          setMicLevel(frame.length ? Math.sqrt(sum / frame.length) : 0);
+        },
       });
     }
   }, []);
@@ -505,6 +536,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               instance_id: primitiveContext.instance_id,
               primitive_data: primitiveContext.primitive_data,
               tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
+              audio_input: primitiveContext.audio_input ?? null,
             },
             lesson_context: lessonContext,
             student_progress: {
@@ -869,15 +901,27 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const startListening = useCallback(() => {
     if (audioServiceRef.current && socketRef.current) {
-      audioServiceRef.current.startRecording();
+      void audioServiceRef.current.startCapture().catch((error) => {
+        console.error('Unable to start Lumina microphone:', error);
+      });
     }
   }, []);
 
   const stopListening = useCallback(() => {
     if (audioServiceRef.current) {
-      audioServiceRef.current.stopRecording();
+      audioServiceRef.current.stopCapture();
     }
   }, []);
+
+  const sendActivitySignal = useCallback((kind: 'activity_start' | 'activity_end') => {
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: kind }));
+    }
+  }, []);
+
+  const sendActivityStart = useCallback(() => sendActivitySignal('activity_start'), [sendActivitySignal]);
+  const sendActivityEnd = useCallback(() => sendActivitySignal('activity_end'), [sendActivitySignal]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -918,6 +962,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     startListening,
     stopListening,
     isListening,
+    micLevel,
+    sendActivityStart,
+    sendActivityEnd,
   };
 
   return (

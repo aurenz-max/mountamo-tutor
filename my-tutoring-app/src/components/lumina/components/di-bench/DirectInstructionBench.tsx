@@ -1,746 +1,663 @@
 'use client';
 
 /**
- * DirectInstructionBench — Voice Studio-style bench that welds the Azure
- * spoken-word detector ON TOP of the Gemini Live tutor and validates the
- * Direct Instruction delivery loop (I do → we do → you do) from the tutor's
- * perspective, before any DI primitive is built.
+ * DirectInstructionBench — Live-judged Direct Instruction over one Gemini Live session.
  *
- * What it measures per beat:
- *  - cue→audio latency (sendText → first tutor audio frame)
- *  - audio duration (rise → drain of the playback graph)
- *  - script fidelity (did the tutor speak the scripted line verbatim?)
- *  - student capture: heard text, ladder outcome, judge engine + latency,
- *    response time (mic hot → verdict settled)
- *  - correction procedure: does the verdict actually condition the tutor's
- *    NEXT utterance (scripted mode = engine-authored; informed mode = the
- *    tutor authors its own verify/correction line from a [JUDGE_VERDICT])
- *
- * Mic timing doctrine: the mic NEVER opens while the tutor is speaking — every
- * student window is gated on the isAudioPlaying true→false edge (real audio
- * drain, not ai_turn_end).
+ * The Live tutor heard the raw audio, so it judges each attempt in-band and
+ * reports through a canonical branch pair in its own generated speech:
+ * "Yes," affirms, "My turn." corrects. The bench parses only those sentinels
+ * from output transcription — and only while an attempt is pending — and the
+ * bench alone decides progression. The whole-token alias match on the lossy
+ * input transcript runs as a passive cross-check to measure judge agreement.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import { useVoiceAnswer, type SpokenJudgeResult } from '../../hooks/useVoiceAnswer';
-import type { VoiceModality } from '../../hooks/useVoiceCapture';
+import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { EvaluationProvider } from '../../evaluation';
+import { ExhibitProvider } from '../../contexts/ExhibitContext';
 import { LuminaMicListener } from '../../ui';
+import { completeCue, DEFAULT_ITEMS, DI_TUTORING, itemCue, moveOnCue } from './diScript';
 import {
-  DEFAULT_ITEMS,
-  DI_TUTORING,
-  correctionLine,
-  guideLine,
-  modelLine,
-  scoreFidelity,
-  scriptedCue,
-  testLine,
-  unclearLine,
-  verdictCue,
-  verifyLine,
+  classifyTutorJudgment,
+  detectDIItemFromTutorText,
+  matchesAsrAliases,
+  MAX_CORRECTIONS_PER_ITEM,
+  resolveLiveJudgment,
+  summarizeEvents,
+  type BenchEvent,
   type DIItem,
-} from './diScript';
-
-type BenchMode = 'scripted' | 'informed';
-type Outcome = 'match' | 'no-match' | 'unclear' | 'no-speech';
-
-type BeatKind =
-  | 'model'
-  | 'guide'
-  | 'guide-echo'
-  | 'test'
-  | 'retest'
-  | 'verify'
-  | 'correct';
-
-interface BeatRow {
-  n: number;
-  itemId: string;
-  beat: BeatKind;
-  /** Engine-authored line (undefined for informed-mode tutor-authored beats). */
-  scriptedLine?: string;
-  /** What the tutor actually said (assistant transcription chunks). */
-  transcript?: string;
-  /** Verbatim compliance vs scriptedLine. */
-  coverage?: number;
-  extras?: number;
-  cueToAudioMs?: number | null;
-  audioMs?: number | null;
-  /** Student capture fields. */
-  heard?: string | null;
-  outcome?: Outcome;
-  judgeEngine?: string;
-  judgeMs?: number;
-  escalated?: boolean;
-  responseMs?: number;
-  note?: string;
-}
-
-const MAX_CORRECTIONS = 2;
-const RETEST_GAP = 3;
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-// ---------------------------------------------------------------------------
-// BenchMic — owns the useVoiceAnswer engine. Keyed by modality by the parent
-// (the capture engine's modality is fixed per mount).
-// ---------------------------------------------------------------------------
-
-interface BenchMicProps {
-  modality: VoiceModality;
-  targetWord: string;
-  active: boolean;
-  onResult: (r: SpokenJudgeResult) => void;
-  onNoSpeech: () => void;
-}
-
-const BenchMic: React.FC<BenchMicProps> = ({ modality, targetWord, active, onResult, onNoSpeech }) => {
-  const va = useVoiceAnswer({
-    targetWord,
-    gradeLevel: 'kindergarten',
-    active,
-    modality,
-    autoStart: true,
-    onResult,
-    onNoSpeech,
-  });
-
-  return (
-    <div className="flex items-center gap-4">
-      <LuminaMicListener
-        state={va.state}
-        level={va.level}
-        isSupported={va.isSupported}
-        onStart={va.startManual}
-        onCancel={va.cancel}
-        dormant={va.dormant}
-        size="md"
-        idleLabel="Tap to enable mic"
-        listeningLabel={active ? `Listening for "${targetWord}"` : 'Standing by'}
-      />
-      <div className="text-xs text-slate-400">
-        {active ? (
-          <>Student window open — target <span className="text-cyan-300 font-mono">{targetWord}</span></>
-        ) : (
-          'Mic closed (opens after the tutor finishes each line)'
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// The bench
-// ---------------------------------------------------------------------------
+  type LiveJudgment,
+} from './diBenchModel';
 
 interface DirectInstructionBenchProps {
   onBack: () => void;
 }
 
-const DirectInstructionBench: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+interface PendingAttempt {
+  itemId: string;
+  aliasMatch: boolean;
+}
+
+/** Manual voice-activity mode. Run 3 proved Gemini's automatic VAD gates on
+ *  speech-likeness, not energy: it ignored sustained hums louder than words it
+ *  committed, while promoting noise/echo into phantom turns. So the bench's
+ *  own amplitude detector now brackets every learner turn via
+ *  activityStart/activityEnd, and Gemini's VAD is disabled entirely. */
+const DI_AUDIO_INPUT = {
+  manual_activity: true,
+};
+
+/** Local amplitude-VAD defaults; threshold is editable in the UI. Now the
+ *  turn authority, not telemetry — a hum above threshold IS a turn.
+ *  0.025: run 4 showed a quiet /mmm/ flaps at 0.04, and run 3 (threshold
+ *  0.005) showed the ambient floor is far lower — 0.025 clears the floor
+ *  with margin while opening cleanly on soft hums (hysteresis holds 0.015).
+ *
+ *  The mic is NEVER gated on tutor audio (user ruling 2026-07-18: no
+ *  force-mutes from the primitive — a human tutor is always listening).
+ *  Opening a turn while the tutor speaks is native barge-in: activityStart
+ *  interrupts Gemini's generation and the client flushes the stale tail on
+ *  ai_interrupted. Echo defense is AEC on capture plus a threshold above the
+ *  echo residual — turns opened over tutor audio are flagged in telemetry so
+ *  speaker runs can measure how much leaks through. */
+const DEFAULT_VAD_THRESHOLD = 0.025;
+const LOCAL_SILENCE_CLOSE_MS = 500;
+const MIN_LOCAL_VOICE_MS = 120;
+
+/** Beat between the tutor's verify line finishing (audio fall) and the next
+ *  item cue. Sending the cue at sentinel time stepped on "Yes, mmm." —
+ *  the affirmation is the learner's payoff and must be heard whole. */
+const VERIFY_BEAT_MS = 400;
+/** Failsafe: send a queued cue even if the verify audio never registers. */
+const PENDING_CUE_MAX_WAIT_MS = 5000;
+
+interface LocalVoice {
+  active: boolean;
+  startedAt: number;
+  lastAboveAt: number;
+  peak: number;
+  /** Turn opened while tutor audio was playing — barge-in or echo leak. */
+  duringTutorAudio: boolean;
+}
+
+const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
   const ctx = useLuminaAIContext();
-
-  // ---- config levers ----
-  const [mode, setMode] = useState<BenchMode>('scripted');
-  const [modality, setModality] = useState<VoiceModality>('open');
-  const [guideEcho, setGuideEcho] = useState(true);
   const [items, setItems] = useState<DIItem[]>(DEFAULT_ITEMS);
-
-  // ---- run state ----
+  const [events, setEvents] = useState<BenchEvent[]>([]);
   const [running, setRunning] = useState(false);
-  const [phase, setPhase] = useState('idle');
-  const [rows, setRows] = useState<BeatRow[]>([]);
-  const [captureActive, setCaptureActive] = useState(false);
-  const [captureTarget, setCaptureTarget] = useState('');
+  const [preparing, setPreparing] = useState(false);
+  const [phase, setPhase] = useState('Prepare the Live tutor and microphone.');
+  const [activeItemId, setActiveItemId] = useState(DEFAULT_ITEMS[0]?.id ?? '');
+  const [vadThreshold, setVadThreshold] = useState(DEFAULT_VAD_THRESHOLD);
 
-  const runIdRef = useRef(0);
-  const rowNRef = useRef(0);
+  const runningRef = useRef(false);
+  const connectedRef = useRef(ctx.isConnected);
+  const listeningRef = useRef(ctx.isListening);
+  const previousAudioPlayingRef = useRef(ctx.isAudioPlaying);
+  const runStartRef = useRef(0);
+  const lastTutorQuietAtRef = useRef<number | null>(null);
+  const eventNRef = useRef(0);
+  const conversationIndexRef = useRef(ctx.conversation.length);
+  const tutorTranscriptRef = useRef('');
+  const activeItemIdRef = useRef(DEFAULT_ITEMS[0]?.id ?? '');
+  const matchedItemIdsRef = useRef(new Set<string>());
+  const correctionsRef = useRef(new Map<string, number>());
+  const pendingAttemptRef = useRef<PendingAttempt | null>(null);
+  const judgmentBufferRef = useRef('');
+  const localVoiceRef = useRef<LocalVoice>({ active: false, startedAt: 0, lastAboveAt: 0, peak: 0, duringTutorAudio: false });
+  const audioPlayingRef = useRef(ctx.isAudioPlaying);
+  const lastVoiceStartRef = useRef<number | null>(null);
+  const pendingCueRef = useRef<string | null>(null);
+  const cueTimerRef = useRef<number | null>(null);
+  const cueFallbackTimerRef = useRef<number | null>(null);
   const weConnectedRef = useRef(false);
 
-  // ---- live mirrors (the async engine reads these, never stale state) ----
-  const connectedRef = useRef(ctx.isConnected);
   connectedRef.current = ctx.isConnected;
-  const audioRef = useRef(ctx.isAudioPlaying);
-  const conversationRef = useRef(ctx.conversation);
-  conversationRef.current = ctx.conversation;
+  listeningRef.current = ctx.isListening;
+  runningRef.current = running;
+  audioPlayingRef.current = ctx.isAudioPlaying;
 
-  // ---- audio edge waiters ----
-  const audioWaitersRef = useRef<Array<{ edge: 'rise' | 'fall'; resolve: (ok: boolean) => void; timer: ReturnType<typeof setTimeout> }>>([]);
+  const pushEvent = useCallback((event: Omit<BenchEvent, 'n' | 'atMs'>) => {
+    // Capture n before the updater runs: React batches same-tick pushes, so
+    // reading the ref inside the closure would stamp duplicates.
+    const n = ++eventNRef.current;
+    const atMs = runStartRef.current
+      ? Math.max(0, Math.round(performance.now() - runStartRef.current))
+      : 0;
+    setEvents((previous) => [...previous, { n, atMs, ...event }]);
+  }, []);
+
+  /** Send the queued cue after a short beat — but only into silence. The cue
+   *  never fires while the tutor is audible, the learner is mid-utterance, or
+   *  an attempt awaits judgment; when blocked it stays queued and each of
+   *  those states re-triggers this on its falling edge (audio fall, voice
+   *  close, verdict processed). A cue held through a verdict is either
+   *  overwritten by the verdict's own next cue or — after an off-script
+   *  'stay' — fires as the re-elicitation of the current item. Idempotent
+   *  under the timer ref. */
+  const schedulePendingCue = useCallback(() => {
+    if (cueTimerRef.current != null || pendingCueRef.current == null) return;
+    cueTimerRef.current = window.setTimeout(() => {
+      cueTimerRef.current = null;
+      if (audioPlayingRef.current || localVoiceRef.current.active || pendingAttemptRef.current != null) return;
+      const cue = pendingCueRef.current;
+      pendingCueRef.current = null;
+      if (cue) ctx.sendText(cue, { silent: true });
+    }, VERIFY_BEAT_MS);
+  }, [ctx]);
+
+  /** Queue the next lesson cue until the tutor's current line (the verify or
+   *  correction the learner needs to HEAR) finishes playing. Sending at
+   *  sentinel-classification time interrupts the affirmation mid-word. */
+  const queueCueAfterSpeech = useCallback((cue: string) => {
+    pendingCueRef.current = cue;
+    if (!ctx.isAudioPlaying) schedulePendingCue();
+    if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
+    cueFallbackTimerRef.current = window.setTimeout(() => {
+      cueFallbackTimerRef.current = null;
+      schedulePendingCue();
+    }, PENDING_CUE_MAX_WAIT_MS);
+  }, [ctx.isAudioPlaying, schedulePendingCue]);
+
+  const clearPendingCue = useCallback(() => {
+    pendingCueRef.current = null;
+    if (cueTimerRef.current != null) { window.clearTimeout(cueTimerRef.current); cueTimerRef.current = null; }
+    if (cueFallbackTimerRef.current != null) { window.clearTimeout(cueFallbackTimerRef.current); cueFallbackTimerRef.current = null; }
+  }, []);
+
+  // This remains the exact frontend response clock: audible tutor tail to the
+  // first input-transcription event from the same Gemini Live session. The
+  // same falling edge releases any cue held back for the verify line.
+  useEffect(() => {
+    const wasPlaying = previousAudioPlayingRef.current;
+    previousAudioPlayingRef.current = ctx.isAudioPlaying;
+    if (wasPlaying && !ctx.isAudioPlaying) {
+      if (runningRef.current) lastTutorQuietAtRef.current = performance.now();
+      schedulePendingCue();
+    }
+  }, [ctx.isAudioPlaying, schedulePendingCue]);
+
+  // Local amplitude VAD — THE turn authority under manual_activity. Runs on
+  // the same RMS frames that drive the mic orb, and is NEVER gated on tutor
+  // audio: the mic stays hot while the tutor speaks, so crossing the
+  // threshold mid-tutor-line is native barge-in (activityStart interrupts
+  // Gemini; the client flushes the stale tail on ai_interrupted). Crossing
+  // the threshold sends activityStart; 500ms back under it sends
+  // activityEnd, which is what makes Gemini commit the turn. A hum above
+  // threshold IS a turn — including speaker echo that survives AEC, which is
+  // exactly what the duringTutorAudio flag exists to measure.
+  useEffect(() => {
+    if (!runningRef.current) return;
+    const now = performance.now();
+    const voice = localVoiceRef.current;
+    // Hysteresis: open at the threshold, hold the open turn down to 60% of it.
+    // Run 4 showed a hum sitting AT the threshold flaps micro-brackets.
+    const floor = voice.active ? vadThreshold * 0.6 : vadThreshold;
+    const speaking = ctx.micLevel >= floor;
+    if (speaking) {
+      if (!voice.active) {
+        voice.active = true;
+        voice.startedAt = now;
+        voice.peak = ctx.micLevel;
+        voice.duringTutorAudio = ctx.isAudioPlaying;
+        lastVoiceStartRef.current = now;
+        ctx.sendActivityStart();
+      } else if (ctx.micLevel > voice.peak) {
+        voice.peak = ctx.micLevel;
+      }
+      voice.lastAboveAt = now;
+      return;
+    }
+    if (voice.active && now - voice.lastAboveAt > LOCAL_SILENCE_CLOSE_MS) {
+      voice.active = false;
+      ctx.sendActivityEnd();
+      const durationMs = Math.round(voice.lastAboveAt - voice.startedAt);
+      if (durationMs >= MIN_LOCAL_VOICE_MS) {
+        pushEvent({
+          speaker: 'mic',
+          text: `local voice ${(durationMs / 1000).toFixed(1)}s, peak ${voice.peak.toFixed(3)}${voice.duringTutorAudio ? ', opened over tutor audio' : ''}`,
+          durationMs,
+          peakLevel: Number(voice.peak.toFixed(3)),
+          duringTutorAudio: voice.duringTutorAudio || undefined,
+        });
+      }
+      // Voice close is a cue trigger: a cue held while the learner spoke may
+      // now be clear to fire.
+      schedulePendingCue();
+    }
+  }, [ctx, ctx.micLevel, ctx.isAudioPlaying, vadThreshold, pushEvent, schedulePendingCue]);
 
   useEffect(() => {
-    audioRef.current = ctx.isAudioPlaying;
-    audioWaitersRef.current = audioWaitersRef.current.filter((w) => {
-      const satisfied = (w.edge === 'rise') === ctx.isAudioPlaying;
-      if (satisfied) {
-        clearTimeout(w.timer);
-        w.resolve(true);
+    const next = ctx.conversation.slice(conversationIndexRef.current);
+    conversationIndexRef.current = ctx.conversation.length;
+    if (!runningRef.current) return;
+
+    const applyVerdict = (judgment: Exclude<LiveJudgment, 'pending'>, pending: PendingAttempt) => {
+      const item = items.find((candidate) => candidate.id === pending.itemId);
+      if (!item) return;
+
+      let correctionsUsed = correctionsRef.current.get(item.id) ?? 0;
+      if (judgment === 'corrected') {
+        correctionsUsed += 1;
+        correctionsRef.current.set(item.id, correctionsUsed);
       }
-      return !satisfied;
-    });
-  }, [ctx.isAudioPlaying]);
+      const decision = resolveLiveJudgment(judgment, item.id, items, correctionsUsed);
+      pushEvent({
+        speaker: 'judge',
+        text: `Live ${judgment} ${item.display}`,
+        itemId: item.id,
+        judgment,
+        aliasMatch: pending.aliasMatch,
+        action: decision.kind,
+      });
 
-  const waitAudio = useCallback((edge: 'rise' | 'fall', timeoutMs: number) => {
-    return new Promise<boolean>((resolve) => {
-      if ((edge === 'rise') === audioRef.current) return resolve(true);
-      const waiter = { edge, resolve, timer: setTimeout(() => {
-        audioWaitersRef.current = audioWaitersRef.current.filter((w) => w !== waiter);
-        resolve(false);
-      }, timeoutMs) } as { edge: 'rise' | 'fall'; resolve: (ok: boolean) => void; timer: ReturnType<typeof setTimeout> };
-      audioWaitersRef.current.push(waiter);
-    });
-  }, []);
-
-  // ---- verdict waiter (BenchMic resolves it) ----
-  const verdictWaiterRef = useRef<((r: SpokenJudgeResult | null) => void) | null>(null);
-
-  const handleMicResult = useCallback((r: SpokenJudgeResult) => {
-    const w = verdictWaiterRef.current;
-    if (w) {
-      verdictWaiterRef.current = null;
-      w(r);
-    }
-  }, []);
-
-  const handleNoSpeech = useCallback(() => {
-    const w = verdictWaiterRef.current;
-    if (w) {
-      verdictWaiterRef.current = null;
-      w(null);
-    }
-  }, []);
-
-  // ---- helpers ----
-  const dead = (runId: number) => runIdRef.current !== runId;
-
-  const pushRow = (row: Omit<BeatRow, 'n'>) => {
-    rowNRef.current += 1;
-    setRows((prev) => [...prev, { n: rowNRef.current, ...row }]);
-  };
-
-  const collectAssistant = (fromIdx: number): string => {
-    return conversationRef.current
-      .slice(fromIdx)
-      .filter((m) => m.role === 'assistant')
-      .map((m) => m.content)
-      .join('')
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
-
-  /** Send one cue and wait for the tutor's audio to rise and fully drain.
-   *  Returns timing + everything the tutor said during the beat. */
-  const speakCue = async (runId: number, cue: string) => {
-    const fromIdx = conversationRef.current.length;
-    const t0 = performance.now();
-    ctx.sendText(cue, { silent: true });
-    const rose = await waitAudio('rise', 10000);
-    const cueToAudioMs = rose ? Math.round(performance.now() - t0) : null;
-    let audioMs: number | null = null;
-    if (rose && !dead(runId)) {
-      const t1 = performance.now();
-      await waitAudio('fall', 45000);
-      audioMs = Math.round(performance.now() - t1);
-      await sleep(350); // let trailing transcription chunks land
-    }
-    return { cueToAudioMs, audioMs, transcript: collectAssistant(fromIdx) };
-  };
-
-  /** Engine-authored beat: cue → audio → fidelity row. */
-  const speakScripted = async (runId: number, item: DIItem, beat: BeatKind, tag: string, line: string) => {
-    if (dead(runId)) return;
-    setPhase(`${item.display}: ${beat} — tutor speaking`);
-    const { cueToAudioMs, audioMs, transcript } = await speakCue(runId, scriptedCue(tag, line));
-    const fid = scoreFidelity(line, transcript);
-    pushRow({
-      itemId: item.display,
-      beat,
-      scriptedLine: line,
-      transcript,
-      coverage: fid.coverage,
-      extras: fid.extras,
-      cueToAudioMs,
-      audioMs,
-      note: cueToAudioMs === null ? 'no audio within 10s' : undefined,
-    });
-  };
-
-  /** Informed-mode beat: inject the judge verdict, let the tutor author the line. */
-  const speakInformed = async (
-    runId: number,
-    item: DIItem,
-    beat: BeatKind,
-    heard: string | null,
-    outcome: Outcome,
-  ) => {
-    if (dead(runId)) return;
-    setPhase(`${item.display}: ${beat} — verdict injected, tutor authoring`);
-    const { cueToAudioMs, audioMs, transcript } = await speakCue(runId, verdictCue(item, heard, outcome));
-    pushRow({
-      itemId: item.display,
-      beat,
-      transcript,
-      cueToAudioMs,
-      audioMs,
-      note: 'tutor-authored (informed mode)',
-    });
-  };
-
-  /** Open a student window (gated on tutor silence) and await one verdict. */
-  const awaitStudent = (item: DIItem, timeoutMs: number) => {
-    return new Promise<{ result: SpokenJudgeResult | null; responseMs: number; timedOut: boolean }>((resolve) => {
-      setCaptureTarget(item.reference);
-      setCaptureActive(true);
-      const t0 = performance.now();
-      let done = false;
-      const finish = (result: SpokenJudgeResult | null, timedOut: boolean) => {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
-        verdictWaiterRef.current = null;
-        setCaptureActive(false);
-        resolve({ result, responseMs: Math.round(performance.now() - t0), timedOut });
-      };
-      const timer = setTimeout(() => finish(null, true), timeoutMs);
-      verdictWaiterRef.current = (r) => finish(r, false);
-    });
-  };
-
-  const studentRow = (
-    item: DIItem,
-    beat: BeatKind,
-    result: SpokenJudgeResult | null,
-    responseMs: number,
-    timedOut: boolean,
-    note?: string,
-  ): Outcome => {
-    const outcome: Outcome = result ? (result.outcome as Outcome) : 'no-speech';
-    pushRow({
-      itemId: item.display,
-      beat,
-      heard: result?.verdict?.heard ?? null,
-      outcome,
-      judgeEngine: result?.verdict?.model,
-      judgeMs: result?.verdict?.judgeLatencyMs,
-      escalated: result?.escalated,
-      responseMs,
-      note: note ?? (timedOut ? `no verdict within window` : undefined),
-    });
-    return outcome;
-  };
-
-  /** You-do beat: test → capture → verify/correct, with the DI correction
-   *  procedure (max 2 corrections, then move on). Returns pass/fail. */
-  const runTestCycle = async (runId: number, item: DIItem, isRetest: boolean): Promise<boolean> => {
-    await speakScripted(runId, item, isRetest ? 'retest' : 'test', 'DI_TEST', testLine(item));
-    for (let attempt = 0; attempt <= MAX_CORRECTIONS; attempt++) {
-      if (dead(runId)) return false;
-      setPhase(`${item.display}: listening (attempt ${attempt + 1})`);
-      const { result, responseMs, timedOut } = await awaitStudent(item, 12000);
-      if (dead(runId)) return false;
-      const outcome = studentRow(item, attempt === 0 && !isRetest ? 'test' : 'retest', result, responseMs, timedOut);
-
-      if (outcome === 'match') {
-        if (mode === 'scripted') {
-          await speakScripted(runId, item, 'verify', 'DI_VERIFY', verifyLine(item));
-        } else {
-          await speakInformed(runId, item, 'verify', result?.verdict?.heard ?? null, outcome);
+      switch (decision.kind) {
+        case 'stay':
+          setPhase(`Tutor reply for ${item.display} matched neither branch; logged as off-script.`);
+          return;
+        case 'retry':
+          setPhase(`Live corrected ${item.display} (${decision.correctionsUsed}/${MAX_CORRECTIONS_PER_ITEM}); listening again.`);
+          return;
+        case 'advance': {
+          matchedItemIdsRef.current.add(item.id);
+          const nextItem = items.find((candidate) => candidate.id === decision.nextItemId);
+          if (!nextItem) return;
+          activeItemIdRef.current = nextItem.id;
+          setActiveItemId(nextItem.id);
+          setPhase(`Live affirmed ${item.display}; next item after the verify line plays out.`);
+          queueCueAfterSpeech(itemCue(nextItem));
+          return;
         }
-        return true;
-      }
-
-      if (attempt === MAX_CORRECTIONS) return false;
-
-      if (outcome === 'no-match') {
-        if (mode === 'scripted') {
-          await speakScripted(runId, item, 'correct', 'DI_CORRECT', correctionLine(item));
-        } else {
-          await speakInformed(runId, item, 'correct', result?.verdict?.heard ?? null, outcome);
+        case 'complete':
+          matchedItemIdsRef.current.add(item.id);
+          runningRef.current = false;
+          setRunning(false);
+          setPhase('Live affirmed the final item; run complete and Live remains warm.');
+          queueCueAfterSpeech(completeCue());
+          return;
+        case 'move-on': {
+          const nextItem = decision.nextItemId
+            ? items.find((candidate) => candidate.id === decision.nextItemId)
+            : undefined;
+          if (nextItem) {
+            activeItemIdRef.current = nextItem.id;
+            setActiveItemId(nextItem.id);
+            setPhase(`Corrections capped on ${item.display}; moving on to ${nextItem.display}.`);
+            queueCueAfterSpeech(moveOnCue(item, nextItem));
+          } else {
+            runningRef.current = false;
+            setRunning(false);
+            setPhase(`Corrections capped on the final item ${item.display}; run complete.`);
+            queueCueAfterSpeech(moveOnCue(item));
+          }
+          return;
         }
-      } else {
-        // unclear / no-speech → neutral re-ask, never a correction
-        await speakScripted(runId, item, 'correct', 'DI_UNCLEAR', unclearLine(item));
       }
-    }
-    return false;
-  };
+    };
 
-  const waitQuiet = async (runId: number) => {
-    for (let i = 0; i < 5; i++) {
-      if (dead(runId)) return;
-      if (audioRef.current) await waitAudio('fall', 60000);
-      await sleep(1200);
-      if (!audioRef.current) return;
-    }
-  };
+    for (const message of next) {
+      if (message.role === 'user') {
+        const quietAt = lastTutorQuietAtRef.current;
+        const responseMs = quietAt == null ? null : Math.max(0, Math.round(performance.now() - quietAt));
+        lastTutorQuietAtRef.current = null;
+        const item = items.find((candidate) => candidate.id === activeItemIdRef.current);
+        const aliasMatch = item ? matchesAsrAliases(message.content, item) : false;
+        const voiceStart = lastVoiceStartRef.current;
+        // Phantom-commit guard: a transcript no local voice backed (noise,
+        // echo, stale pre-run audio) is logged but never judged. Run 3's
+        // "hide"/"ठीक है।" both fail this test.
+        if (voiceStart == null && !localVoiceRef.current.active) {
+          pushEvent({
+            speaker: 'learner',
+            text: message.content,
+            responseMs,
+            commitLagMs: null,
+            itemId: activeItemIdRef.current,
+            aliasMatch,
+            ignored: 'no-local-voice',
+          });
+          continue;
+        }
+        lastVoiceStartRef.current = null;
+        const commitLagMs = voiceStart == null
+          ? null
+          : Math.max(0, Math.round(performance.now() - voiceStart));
+        pendingAttemptRef.current = { itemId: activeItemIdRef.current, aliasMatch };
+        judgmentBufferRef.current = '';
+        pushEvent({
+          speaker: 'learner',
+          text: message.content,
+          responseMs,
+          commitLagMs,
+          itemId: activeItemIdRef.current,
+          aliasMatch,
+        });
+        continue;
+      }
 
-  // ---- the run loop ----
-  const startRun = async () => {
-    const runId = ++runIdRef.current;
-    rowNRef.current = 0;
-    setRows([]);
-    setRunning(true);
+      tutorTranscriptRef.current += ` ${message.content}`;
+      const detected = detectDIItemFromTutorText(tutorTranscriptRef.current, items);
+      pushEvent({ speaker: 'tutor', text: message.content, detectedItemId: detected?.id });
+
+      const pending = pendingAttemptRef.current;
+      if (!pending) {
+        // DI-1 detector: a sentinel verdict with NO transcript-backed attempt
+        // pending means Live judged audio it heard but the input transcription
+        // was lost (probe run 2026-07-19: /sss/ over tutor audio → "Yes, sss."
+        // → screen stuck on s). Log it first-class — this is the exact moment
+        // bench and model diverge. Per-fragment classification: sentinels open
+        // a tutor sentence, so the fragment that starts one classifies alone;
+        // a mid-word split ("Ye"+"s, …") can slip past — log-only tradeoff.
+        const stray = classifyTutorJudgment(message.content);
+        if (stray === 'affirmed' || stray === 'corrected') {
+          pushEvent({
+            speaker: 'judge',
+            text: `Live ${stray} with NO pending attempt (transcript lost?)`,
+            itemId: activeItemIdRef.current,
+            judgment: stray,
+            unanchored: true,
+          });
+          setPhase(`Live said a ${stray === 'affirmed' ? '"Yes"' : '"My turn"'} verdict with no attempt pending — likely a lost learner transcript on ${activeItemIdRef.current}.`);
+        }
+        continue;
+      }
+      judgmentBufferRef.current += ` ${message.content}`;
+      const judgment = classifyTutorJudgment(judgmentBufferRef.current);
+      if (judgment === 'pending') continue;
+      pendingAttemptRef.current = null;
+      judgmentBufferRef.current = '';
+      applyVerdict(judgment, pending);
+      if (!runningRef.current) break;
+    }
+    // Verdict processing is a cue trigger: clearing the pending attempt (or an
+    // advance queueing its cue while the room is already quiet) can leave a
+    // fireable cue with no future audio-fall or voice-close edge to release it.
+    if (runningRef.current) schedulePendingCue();
+  }, [ctx, items, pushEvent, queueCueAfterSpeech, schedulePendingCue]);
+
+  const prepareLive = useCallback(async () => {
+    if (preparing) return;
+    setPreparing(true);
+    setPhase('Connecting the Live tutor…');
     try {
-      const active = items.filter((i) => i.enabled);
-      if (active.length === 0) {
-        setPhase('no items enabled');
-        return;
-      }
-
       if (!connectedRef.current) {
-        setPhase('connecting tutor session…');
+        weConnectedRef.current = true;
         await ctx.connect({
           primitive_type: 'di-bench',
           instance_id: `di-bench-${Date.now()}`,
           primitive_data: {
-            activity: 'direct instruction drill',
-            itemSet: active.map((i) => i.display).join(', '),
+            activity: 'live direct instruction drill',
+            items: items.map(({ id, kind, display, spoken, keyword, elicitation }) => ({
+              id, kind, display, spoken, keyword, elicitation,
+            })),
           },
           grade_level: 'kindergarten',
           tutoring: DI_TUTORING,
+          audio_input: DI_AUDIO_INPUT,
         });
-        weConnectedRef.current = true;
-        const t0 = performance.now();
-        while (!connectedRef.current && performance.now() - t0 < 12000) await sleep(150);
-        if (!connectedRef.current) {
-          setPhase('connection failed — is the backend running?');
-          return;
-        }
+        const connectionStarted = performance.now();
+        while (!connectedRef.current && performance.now() - connectionStarted < 12_000) await sleep(100);
+        if (!connectedRef.current) throw new Error('The Live tutor did not connect within 12 seconds.');
       }
 
-      setPhase('waiting for the greeting to finish…');
-      await waitQuiet(runId);
-
-      // Queue with delayed retest: a failed item re-enters RETEST_GAP later.
-      const queue: Array<{ item: DIItem; retest: boolean }> = active.map((item) => ({ item, retest: false }));
-      let qi = 0;
-      while (qi < queue.length) {
-        if (dead(runId)) return;
-        const { item, retest } = queue[qi];
-
-        if (!retest) {
-          await speakScripted(runId, item, 'model', 'DI_MODEL', modelLine(item)); // I do
-          await speakScripted(runId, item, 'guide', 'DI_GUIDE', guideLine(item)); // we do
-          if (guideEcho && !dead(runId)) {
-            setPhase(`${item.display}: guide echo (unscored)`);
-            const { result, responseMs, timedOut } = await awaitStudent(item, 6000);
-            if (dead(runId)) return;
-            studentRow(item, 'guide-echo', result, responseMs, timedOut, 'unscored we-do echo');
-          }
-        }
-
-        const passed = await runTestCycle(runId, item, retest); // you do
-        if (!passed && !retest && !dead(runId)) {
-          queue.splice(Math.min(qi + RETEST_GAP, queue.length), 0, { item, retest: true });
-        }
-        qi++;
-      }
-
-      if (!dead(runId)) setPhase('run complete');
+      setPhase('Opening the microphone…');
+      ctx.startListening();
+      const micStarted = performance.now();
+      while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
+      if (!listeningRef.current) throw new Error('The microphone did not become live.');
+      setPhase('Ready — Live input and output transcription are active.');
+    } catch (error) {
+      setPhase(error instanceof Error ? error.message : 'Unable to prepare the Live tutor.');
     } finally {
-      if (runIdRef.current === runId) {
-        setRunning(false);
-        setCaptureActive(false);
-      }
+      setPreparing(false);
     }
-  };
+  }, [ctx, items, preparing]);
 
-  const stopRun = () => {
-    runIdRef.current += 1;
-    // Flush pending waiters so the suspended run loop unwinds (dead-run checks
-    // discard whatever they resolve with).
-    const w = verdictWaiterRef.current;
-    verdictWaiterRef.current = null;
-    w?.(null);
-    for (const waiter of audioWaitersRef.current.splice(0)) {
-      clearTimeout(waiter.timer);
-      waiter.resolve(false);
-    }
-    setCaptureActive(false);
+  const startRun = useCallback(() => {
+    if (!ctx.isConnected || !ctx.isListening || ctx.isAudioPlaying) return;
+    const firstItem = items[0];
+    if (!firstItem) return;
+    eventNRef.current = 0;
+    runStartRef.current = performance.now();
+    lastTutorQuietAtRef.current = null;
+    tutorTranscriptRef.current = '';
+    conversationIndexRef.current = ctx.conversation.length;
+    setEvents([]);
+    matchedItemIdsRef.current.clear();
+    correctionsRef.current.clear();
+    pendingAttemptRef.current = null;
+    judgmentBufferRef.current = '';
+    localVoiceRef.current = { active: false, startedAt: 0, lastAboveAt: 0, peak: 0, duringTutorAudio: false };
+    lastVoiceStartRef.current = null;
+    clearPendingCue();
+    activeItemIdRef.current = firstItem.id;
+    setActiveItemId(firstItem.id);
+    runningRef.current = true;
+    setRunning(true);
+    setPhase('The Live tutor is conducting the lesson. Speak naturally when she asks.');
+    ctx.sendText(itemCue(firstItem, true), { silent: true });
+  }, [clearPendingCue, ctx, items]);
+
+  const stopRun = useCallback(() => {
+    runningRef.current = false;
     setRunning(false);
-    setPhase('stopped');
-  };
+    lastTutorQuietAtRef.current = null;
+    pendingAttemptRef.current = null;
+    judgmentBufferRef.current = '';
+    if (localVoiceRef.current.active) {
+      localVoiceRef.current.active = false;
+      ctx.sendActivityEnd();
+    }
+    clearPendingCue();
+    setPhase('Run stopped — the Live tutor remains warm.');
+  }, [clearPendingCue, ctx]);
 
-  // Disconnect a session we opened when leaving the bench.
-  useEffect(() => {
-    return () => {
-      runIdRef.current += 1;
-      if (weConnectedRef.current) ctx.disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => {
+    runningRef.current = false;
+    if (cueTimerRef.current != null) window.clearTimeout(cueTimerRef.current);
+    if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
+    if (localVoiceRef.current.active) {
+      localVoiceRef.current.active = false;
+      ctx.sendActivityEnd();
+    }
+    ctx.stopListening();
+    if (weConnectedRef.current) ctx.disconnect();
+  // Context methods are stable; this is unmount-only cleanup.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- summary + export ----
-  const summary = useMemo(() => {
-    const tests = rows.filter((r) => r.beat === 'test' || r.beat === 'retest');
-    const matches = tests.filter((r) => r.outcome === 'match').length;
-    const spoken = rows.filter((r) => r.cueToAudioMs != null);
-    const meanCue = spoken.length
-      ? Math.round(spoken.reduce((s, r) => s + (r.cueToAudioMs ?? 0), 0) / spoken.length)
-      : null;
-    const fid = rows.filter((r) => r.coverage != null);
-    const meanFid = fid.length ? fid.reduce((s, r) => s + (r.coverage ?? 0), 0) / fid.length : null;
-    return { tests: tests.length, matches, meanCue, meanFid };
-  }, [rows]);
+  const summary = useMemo(() => summarizeEvents(events), [events]);
+  const ready = ctx.isConnected && ctx.isListening;
+  const activeItem = items.find((item) => item.id === activeItemId) ?? items[0];
+  const awaitingJudgment = pendingAttemptRef.current != null;
 
-  const copyRun = async () => {
+  const copyRun = useCallback(async () => {
     const payload = {
       bench: 'direct-instruction',
       at: new Date().toISOString(),
-      config: { mode, modality, guideEcho },
-      items: items.filter((i) => i.enabled),
+      config: {
+        architecture: 'live-judged-two-branch-sentinel-with-frontend-progression-authority',
+        live: 'gemini-3.1-flash-live-preview-audio-with-input-output-transcription',
+        judge: 'gemini-live-in-band (affirm="Yes", correct="My turn")',
+        crossCheck: 'whole-token-asr-alias-match-on-input-transcript (passive)',
+        timing: 'frontend:tutor-audio-fall-to-live-input-transcription-arrival',
+        geminiVad: { ...DI_AUDIO_INPUT, note: 'automatic VAD disabled; client brackets turns' },
+        localVad: {
+          role: 'turn-authority (activityStart/activityEnd)',
+          thresholdRms: vadThreshold,
+          hysteresisHoldRatio: 0.6,
+          silenceCloseMs: LOCAL_SILENCE_CLOSE_MS,
+          minVoiceMs: MIN_LOCAL_VOICE_MS,
+          gatedWhileTutorAudioPlays: false,
+          bargeIn: 'activityStart over tutor audio interrupts generation; client flushes on ai_interrupted',
+          echoDefense: 'browser AEC on capture + threshold above echo residual; duringTutorAudio flags what leaks',
+          phantomCommitGuard: 'transcripts without local voice are logged, never judged',
+        },
+      },
+      items,
       summary,
-      rows,
+      events,
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-      setPhase('run JSON copied to clipboard');
+      setPhase('Run JSON copied to clipboard.');
     } catch {
-      setPhase('clipboard copy failed');
+      setPhase('Clipboard copy failed.');
     }
+  }, [events, items, summary]);
+
+  const setItem = (id: string, patch: Partial<DIItem>) => {
+    setItems((previous) => previous.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
-  const setItem = (id: string, patch: Partial<DIItem>) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
-
-  // ---- render ----
-  const lever = (label: string, activeLever: boolean, onClick: () => void) => (
-    <button
-      key={label}
-      onClick={onClick}
-      disabled={running}
-      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
-        activeLever
-          ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-200'
-          : 'bg-slate-800/60 border-white/10 text-slate-400 hover:text-slate-200'
-      } ${running ? 'opacity-50' : ''}`}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-16">
+    <div className="mx-auto max-w-5xl px-4 pb-16">
       <div className="mb-6 flex items-center gap-4">
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-full border border-slate-600 transition-all text-sm"
-        >
+        <button onClick={onBack} className="inline-flex items-center gap-2 rounded-full border border-slate-600 bg-slate-800/50 px-4 py-2 text-sm text-white transition-all hover:bg-slate-700/50">
           ← Back
         </button>
         <div>
           <h1 className="text-xl font-semibold text-slate-100">Direct Instruction Bench</h1>
-          <p className="text-xs text-slate-400">
-            I do → we do → you do, judged by the Azure→Gemini ladder, verdicts conditioning the live tutor.
-          </p>
+          <p className="text-xs text-slate-400">Live judges each attempt in-band from the audio it heard; the bench parses the branch and alone advances the lesson.</p>
         </div>
       </div>
 
-      {/* Config */}
-      <div className="rounded-2xl bg-slate-900/40 border border-white/10 backdrop-blur-xl p-4 mb-4">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 uppercase tracking-wide">Mode</span>
-            {lever('Scripted (engine-authored)', mode === 'scripted', () => setMode('scripted'))}
-            {lever('Informed (tutor-authored)', mode === 'informed', () => setMode('informed'))}
+      <div className="mb-4 rounded-2xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-200">Live lesson set</h2>
+            <p className="mt-1 max-w-2xl text-xs text-slate-500">
+              Manual VAD: the local mic detector brackets every turn (Gemini’s auto-VAD is off) — speak above the RMS threshold and the turn is yours, even over the tutor: talking while she speaks interrupts her mid-line. Affirmations begin “Yes”, corrections begin “My turn”; the alias match stays a passive disagreement meter.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 uppercase tracking-wide">Mic</span>
-            {lever('Open', modality === 'open', () => setModality('open'))}
-            {lever('Push-to-talk', modality === 'ptt', () => setModality('ptt'))}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 uppercase tracking-wide">We-do echo</span>
-            {lever(guideEcho ? 'Captured (unscored)' : 'Skipped', guideEcho, () => setGuideEcho(!guideEcho))}
-          </div>
+          <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-wide text-cyan-200">
+            Live-judged POC
+          </span>
         </div>
-
-        {/* Items */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {items.map((it) => (
-            <div
-              key={it.id}
-              className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
-                it.enabled ? 'bg-slate-800/50 border-white/10' : 'bg-slate-900/30 border-white/5 opacity-60'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={it.enabled}
-                disabled={running}
-                onChange={(e) => setItem(it.id, { enabled: e.target.checked })}
-              />
-              <span className="w-10 text-center text-lg font-bold text-slate-100">{it.display}</span>
-              <span className="text-[10px] text-slate-500 uppercase">{it.kind}</span>
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {items.map((item) => (
+            <div key={item.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${activeItemId === item.id ? 'border-cyan-400/50 bg-cyan-500/10' : 'border-white/10 bg-slate-800/50'}`}>
+              <span className="w-10 text-center text-lg font-bold text-slate-100">{item.display}</span>
+              <span className="text-[10px] uppercase text-slate-500">{matchedItemIdsRef.current.has(item.id) ? 'matched' : item.kind}</span>
               <label className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
                 spoken
-                <input
-                  value={it.spoken}
-                  disabled={running}
-                  onChange={(e) => setItem(it.id, { spoken: e.target.value })}
-                  className="w-16 bg-slate-900/60 border border-white/10 rounded px-1.5 py-0.5 text-xs text-slate-200 font-mono"
-                />
-              </label>
-              <label className="flex items-center gap-1 text-[10px] text-slate-500">
-                judge ref
-                <input
-                  value={it.reference}
-                  disabled={running}
-                  onChange={(e) => setItem(it.id, { reference: e.target.value })}
-                  className="w-16 bg-slate-900/60 border border-white/10 rounded px-1.5 py-0.5 text-xs text-cyan-200 font-mono"
-                />
+                <input value={item.spoken} disabled={running} onChange={(event) => setItem(item.id, { spoken: event.target.value })} className="w-20 rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200" />
               </label>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Live strip */}
-      <div className="rounded-2xl bg-slate-900/40 border border-white/10 backdrop-blur-xl p-4 mb-4 flex flex-wrap items-center gap-6">
-        <BenchMic
-          key={modality}
-          modality={modality}
-          targetWord={captureTarget}
-          active={captureActive}
-          onResult={handleMicResult}
-          onNoSpeech={handleNoSpeech}
-        />
-        <div className="flex items-center gap-2 text-xs">
-          <span className={`w-2 h-2 rounded-full ${ctx.isConnected ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-          <span className="text-slate-400">{ctx.isConnected ? 'Tutor connected' : 'Tutor not connected'}</span>
-          <span className={`ml-3 w-2 h-2 rounded-full ${ctx.isAudioPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-slate-600'}`} />
-          <span className="text-slate-400">{ctx.isAudioPlaying ? 'Tutor speaking' : 'Tutor silent'}</span>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-400 italic max-w-[16rem] truncate" title={phase}>{phase}</span>
-          {running ? (
-            <button onClick={stopRun} className="px-4 py-2 rounded-full text-sm bg-rose-500/20 border border-rose-400/40 text-rose-200">
-              Stop
-            </button>
-          ) : (
-            <button onClick={() => void startRun()} className="px-4 py-2 rounded-full text-sm bg-cyan-500/20 border border-cyan-400/40 text-cyan-200">
-              Start run
-            </button>
-          )}
-          <button
-            onClick={() => void copyRun()}
-            disabled={rows.length === 0}
-            className="px-4 py-2 rounded-full text-sm bg-slate-800/60 border border-white/10 text-slate-300 disabled:opacity-40"
-          >
-            Copy run JSON
-          </button>
-        </div>
-      </div>
-
-      {/* Summary */}
-      {rows.length > 0 && (
-        <div className="mb-3 text-xs text-slate-400">
-          you-do windows: <span className="text-slate-200">{summary.tests}</span> · matches:{' '}
-          <span className="text-emerald-300">{summary.matches}</span>
-          {summary.meanCue != null && (
-            <> · mean cue→audio: <span className="text-slate-200">{summary.meanCue}ms</span></>
-          )}
-          {summary.meanFid != null && (
-            <> · mean script fidelity: <span className="text-slate-200">{Math.round(summary.meanFid * 100)}%</span></>
-          )}
+      {running && activeItem && (
+        <div className="mb-4 flex min-h-40 items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-6 text-center">
+          <div>
+            <div className="text-7xl font-bold tracking-wide text-white">{activeItem.display}</div>
+            <div className="mt-3 text-xs uppercase tracking-[0.2em] text-cyan-300">
+              {awaitingJudgment ? 'judging' : 'listening'}
+            </div>
+            {(correctionsRef.current.get(activeItem.id) ?? 0) > 0 && (
+              <div className="mt-2 text-sm text-slate-300">
+                corrections {correctionsRef.current.get(activeItem.id)}/{MAX_CORRECTIONS_PER_ITEM}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Beat log */}
-      <div className="rounded-2xl bg-slate-900/40 border border-white/10 backdrop-blur-xl overflow-x-auto">
+      <div className="mb-4 flex flex-wrap items-center gap-6 rounded-2xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur-xl">
+        <LuminaMicListener
+          state={preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle'}
+          level={ctx.micLevel}
+          isSupported={typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia}
+          onStart={() => void prepareLive()}
+          onCancel={running ? undefined : ctx.stopListening}
+          size="md"
+          idleLabel="Prepare live audio"
+          openingLabel="Connecting tutor…"
+          listeningLabel="Live tutor hearing"
+        />
+
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+          <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isConnected ? 'bg-emerald-400' : 'bg-slate-600'}`} />Live tutor {ctx.isConnected ? 'connected' : 'offline'}</span>
+          <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isAudioPlaying ? 'animate-pulse bg-cyan-400' : 'bg-slate-600'}`} />{ctx.isAudioPlaying ? 'Tutor speaking' : 'Tutor silent'}</span>
+          <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isListening ? 'bg-emerald-400' : 'bg-slate-600'}`} />{ctx.isListening ? 'Mic live' : 'Mic off'}</span>
+          <span className="flex items-center gap-2 font-mono">
+            <span className={`h-2 w-2 rounded-full ${!ctx.isAudioPlaying && ctx.micLevel >= vadThreshold ? 'bg-amber-400' : 'bg-slate-600'}`} />
+            RMS {ctx.micLevel.toFixed(3)}
+          </span>
+          <label className="flex items-center gap-1">
+            local VAD ≥
+            <input
+              type="number"
+              step={0.01}
+              min={0.005}
+              max={0.5}
+              value={vadThreshold}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                if (Number.isFinite(value) && value > 0) setVadThreshold(value);
+              }}
+              className="w-16 rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200"
+            />
+          </label>
+        </div>
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="max-w-[17rem] truncate text-xs italic text-slate-400" title={phase}>{phase}</span>
+          {running ? (
+            <button onClick={stopRun} className="rounded-full border border-rose-400/40 bg-rose-500/20 px-4 py-2 text-sm text-rose-200">Stop</button>
+          ) : (
+            <button onClick={startRun} disabled={!ready || ctx.isAudioPlaying} title={!ready ? 'Prepare the Live tutor first' : ctx.isAudioPlaying ? 'Wait for the tutor to finish speaking' : undefined} className="rounded-full border border-cyan-400/40 bg-cyan-500/20 px-4 py-2 text-sm text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">Start run</button>
+          )}
+          <button onClick={() => void copyRun()} disabled={events.length === 0} className="rounded-full border border-white/10 bg-slate-800/60 px-4 py-2 text-sm text-slate-300 disabled:opacity-40">Copy run JSON</button>
+        </div>
+      </div>
+
+      {events.length > 0 && (
+        <div className="mb-3 text-xs text-slate-400">
+          tutor: <span className="text-slate-200">{summary.tutorEvents}</span>
+          {' · '}learner: <span className="text-emerald-300">{summary.learnerEvents}</span>
+          {' · '}local voice: <span className={summary.micEvents > summary.learnerEvents ? 'text-rose-300' : 'text-amber-200'}>{summary.micEvents}</span>
+          {summary.micEvents > summary.learnerEvents && <span className="text-rose-300"> ({summary.micEvents - summary.learnerEvents} unheard)</span>}
+          {summary.turnsOverTutorAudio > 0 && <>{' · '}over tutor audio: <span className="text-amber-300">{summary.turnsOverTutorAudio}</span></>}
+          {' · '}verdicts: <span className="text-violet-300">{summary.affirmed}✓ {summary.corrected}↻ {summary.offScript}?</span>
+          {summary.unanchoredVerdicts > 0 && <>{' · '}<span className="text-rose-300">unanchored: {summary.unanchoredVerdicts}</span></>}
+          {summary.aliasAgree + summary.aliasDisagree > 0 && (
+            <>{' · '}alias agreement: <span className="text-amber-200">{summary.aliasAgree}/{summary.aliasAgree + summary.aliasDisagree}</span></>
+          )}
+          {summary.meanFrontendResponseMs != null && <>{' · '}mean response: <span className="text-cyan-200">{summary.meanFrontendResponseMs}ms</span></>}
+          {summary.meanCommitLagMs != null && <>{' · '}mean voice→heard: <span className="text-amber-200">{summary.meanCommitLagMs}ms</span></>}
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur-xl">
         <table className="w-full text-xs">
-          <thead>
-            <tr className="text-slate-500 uppercase tracking-wide text-[10px] border-b border-white/10">
-              <th className="text-left px-3 py-2">#</th>
-              <th className="text-left px-3 py-2">Item</th>
-              <th className="text-left px-3 py-2">Beat</th>
-              <th className="text-left px-3 py-2">Cue→audio</th>
-              <th className="text-left px-3 py-2">Audio</th>
-              <th className="text-left px-3 py-2">Fidelity</th>
-              <th className="text-left px-3 py-2">Heard / said</th>
-              <th className="text-left px-3 py-2">Outcome</th>
-              <th className="text-left px-3 py-2">Judge</th>
-              <th className="text-left px-3 py-2">Resp</th>
-            </tr>
-          </thead>
+          <thead><tr className="border-b border-white/10 text-[10px] uppercase tracking-wide text-slate-500"><th className="px-3 py-2 text-left">#</th><th className="px-3 py-2 text-left">At</th><th className="px-3 py-2 text-left">Channel</th><th className="px-3 py-2 text-left">Text / verdict</th><th className="px-3 py-2 text-left">Response</th></tr></thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-3 py-6 text-center text-slate-500">
-                  No beats yet — enable the mic, then Start run.
-                </td>
-              </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.n} className="border-b border-white/5 align-top">
-                <td className="px-3 py-2 text-slate-500">{r.n}</td>
-                <td className="px-3 py-2 font-bold text-slate-200">{r.itemId}</td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] ${
-                      r.beat === 'model' || r.beat === 'guide'
-                        ? 'bg-indigo-500/20 text-indigo-200'
-                        : r.beat === 'test' || r.beat === 'retest' || r.beat === 'guide-echo'
-                          ? 'bg-cyan-500/20 text-cyan-200'
-                          : r.beat === 'verify'
-                            ? 'bg-emerald-500/20 text-emerald-200'
-                            : 'bg-amber-500/20 text-amber-200'
-                    }`}
-                  >
-                    {r.beat}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-slate-300">{r.cueToAudioMs != null ? `${r.cueToAudioMs}ms` : '—'}</td>
-                <td className="px-3 py-2 text-slate-300">{r.audioMs != null ? `${(r.audioMs / 1000).toFixed(1)}s` : '—'}</td>
-                <td className="px-3 py-2">
-                  {r.coverage != null ? (
-                    <span className={r.coverage >= 0.9 && (r.extras ?? 0) <= 2 ? 'text-emerald-300' : 'text-amber-300'}>
-                      {Math.round(r.coverage * 100)}%{(r.extras ?? 0) > 0 ? ` +${r.extras}` : ''}
-                    </span>
-                  ) : (
-                    '—'
+            {events.length === 0 && <tr><td colSpan={5} className="px-3 py-7 text-center text-slate-500">Prepare live audio, then Start run. Transcripts drive the log and UI automatically.</td></tr>}
+            {events.map((event) => (
+              <tr key={event.n} className="border-b border-white/5 align-top">
+                <td className="px-3 py-2 text-slate-500">{event.n}</td><td className="px-3 py-2 text-slate-400">{(event.atMs / 1000).toFixed(1)}s</td>
+                <td className="px-3 py-2"><span className={event.speaker === 'tutor' ? 'text-cyan-300' : event.speaker === 'learner' ? 'text-emerald-300' : event.speaker === 'mic' ? 'text-amber-300' : 'text-violet-300'}>{event.speaker === 'tutor' ? 'Live · output' : event.speaker === 'learner' ? 'Live · input' : event.speaker === 'mic' ? 'Mic · local' : 'Bench · judge'}</span></td>
+                <td className="max-w-xl px-3 py-2 text-slate-200">
+                  “{event.text}”
+                  {(event.itemId || event.detectedItemId || event.judgment || event.aliasMatch !== undefined || event.ignored) && (
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      {event.itemId ? `item ${event.itemId}` : ''}
+                      {event.detectedItemId ? ` · transcript mentions ${event.detectedItemId}` : ''}
+                      {event.judgment ? ` · ${event.judgment}` : ''}
+                      {event.aliasMatch !== undefined ? ` · alias ${event.aliasMatch ? 'match' : 'miss'}` : ''}
+                      {event.action ? ` · ${event.action}` : ''}
+                      {event.ignored ? <span className="text-rose-300"> · IGNORED ({event.ignored})</span> : ''}
+                    </div>
                   )}
                 </td>
-                <td className="px-3 py-2 text-slate-300 max-w-[18rem]">
-                  {r.transcript ? (
-                    <span className="text-slate-400 italic">“{r.transcript}”</span>
-                  ) : r.heard != null ? (
-                    <span className="font-mono">{r.heard}</span>
-                  ) : r.outcome ? (
-                    <span className="text-slate-600">(nothing heard)</span>
-                  ) : (
-                    '—'
-                  )}
-                  {r.note && <div className="text-[10px] text-slate-500">{r.note}</div>}
+                <td className="px-3 py-2 text-slate-300">
+                  {event.responseMs != null ? `${event.responseMs}ms` : '—'}
+                  {event.commitLagMs != null && <span className="text-amber-300/80"> · voice→heard {event.commitLagMs}ms</span>}
                 </td>
-                <td className="px-3 py-2">
-                  {r.outcome ? (
-                    <span
-                      className={
-                        r.outcome === 'match'
-                          ? 'text-emerald-300'
-                          : r.outcome === 'no-match'
-                            ? 'text-rose-300'
-                            : 'text-slate-400'
-                      }
-                    >
-                      {r.outcome}
-                    </span>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-3 py-2 text-slate-400">
-                  {r.judgeEngine ? (
-                    <>
-                      {r.judgeEngine.startsWith('azure') ? 'azure' : r.judgeEngine}
-                      {r.judgeMs != null ? ` · ${r.judgeMs}ms` : ''}
-                      {r.escalated ? ' · esc' : ''}
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className="px-3 py-2 text-slate-300">{r.responseMs != null ? `${(r.responseMs / 1000).toFixed(1)}s` : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -749,5 +666,9 @@ const DirectInstructionBench: React.FC<DirectInstructionBenchProps> = ({ onBack 
     </div>
   );
 };
+
+const DirectInstructionBench: React.FC<DirectInstructionBenchProps> = (props) => (
+  <EvaluationProvider><ExhibitProvider objectives={[]} manifestItems={[]}><LuminaAIProvider><DirectInstructionBenchContent {...props} /></LuminaAIProvider></ExhibitProvider></EvaluationProvider>
+);
 
 export default DirectInstructionBench;
