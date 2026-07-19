@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K queue — last touched 2026-07-16
+### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched 2026-07-16
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -46,9 +46,8 @@ queue AND this file's "last touched" in the same slice.
   `docs/contracts/comparison-builder.md` derived, edit COMPATIBLE (no fork). Verified tsc 0-new +
   typecheck:lumina 0 + jsdom 12/12 + full suite 790/790 + tutor-test Tier-1/2 pass. Report:
   `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. **2b TAIL still open** (Audit-C rule-5
-  feedback-on-object; per-mode picture passes for compare_numbers/order/one_more_less). Uncommitted
-  (shares catalog/math.ts + ComparisonBuilder with parallel edits — coordinated `/ship`). Pixel →
-  HUMAN-CHECKS #26.
+  feedback-on-object; per-mode picture passes for compare_numbers/order/one_more_less). **Committed
+  `39f2543`.** Pixel → HUMAN-CHECKS #26.
   **#11 addition-subtraction-scene `act_out` @ K DONE + USER-CONFIRMED LIVE 2026-07-16** — TRUE direct
   manipulation (seed startCount → tap-add/remove → auto-judge on the enacted count); fork by band+mode
   (solve_story tiles + create_story build + Grade-1 count model all preserved); deterministic
@@ -60,18 +59,22 @@ queue AND this file's "last touched" in the same slice.
   **7/7** + eval-test @ K + **live `--lesson` 3/3** + **user browser check (full session 100%, Act Out +
   Solve Story)** → HUMAN-CHECKS #25/#26 struck to Done. Contract + changelog:
   `docs/contracts/addition-subtraction-scene.md`. Report: `qa/reader-fit/addition-subtraction-scene-item11-2026-07-16.md`.
-  Working tree NOT committed (parallel #2b/#9a edits share catalog/math.ts + ComparisonBuilder in
-  flight) — a coordinated `/ship` folds the reader-fit slices.
-  **#9a Step 1 (contract) DONE 2026-07-16, then PROMOTED (user-approved) to its own ACTIVE
-  workstream** — see stream 2 below; #9a is no longer in this queue (reader-fit tail = #9b–#9d + 2b
-  tail + #11 residuals).
+  **Committed `39f2543`** (folded into the coordinated reader-fit slice).
+  **#9a Step 1 (contract) DONE 2026-07-16, then PROMOTED (user-approved) to its own workstream,
+  now PARKED 2026-07-16 (B1 shipped)** — see the PARKED media-player row; #9a is no longer in this
+  queue (reader-fit tail = #9b–#9d + 2b tail + #11 residuals).
   Multiple reader-fit sessions live — shared files (BACKLOG, WORKSTREAMS, catalog, `run_tutor_live.py`,
   EVAL_TRACKER) will collide; each session re-reads before editing and commits its primitive + its
   strike in a tight slice.
 - **Direct-manipulation census DONE 2026-07-16** (the item-11 session's sibling audit swept ~60 math
   primitives — that IS the census of record, do not re-sweep). Findings promoted to discrete fix
-  items: **#12 ten-frame make-ten** (STRONG proxy, do first), **#13 counting-board subitize** (display
-  fix), + coin-counter `count-like` gap to confirm. Execution handoff (ten-frame first):
+  items. **#12 ten-frame make-ten DONE 2026-07-16** — contract-first K band+mode fork: fixed seed →
+  tap empty cells → auto-judge the enacted complement; stepper/Check removed only at K. K build +
+  flash/hide subitize and Grade 1–2 make-ten preserved. Browser follow-on fixed: make-ten → add now
+  clears the completed frame before operate begins. Verified jsdom 5/5, full suite 810/810,
+  typecheck:lumina 0, eval-test 4/4 modes; report `qa/reader-fit/ten-frame-item12-2026-07-16.md`;
+  pixel/real-click → HUMAN-CHECKS #31. **Next = #13 counting-board subitize** (display fix), then
+  coin-counter `count-like` confirm/clear. Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
 - **Now:** **#9 explainer tail — pilot + fact-file DONE 2026-07-15**, tail reconciled. The
   "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
@@ -89,75 +92,89 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. media-player reimagining — last touched 2026-07-16
-- **Queue:** `my-tutoring-app/qa/media-player-reimagining/BACKLOG.md` (charter = the 3-band
-  modality map; top = next).
-- **Executor skills:** `/primitive-contract --check`, `/add-eval-modes`, `/eval-test`,
-  `/reader-fit`, `/curriculum-fit`, `/tutor-test`
-- **Promoted from reader-fit #9a 2026-07-16 (user-approved)** after the Step-1 contract showed a
-  small, clean blast radius. Contract: `docs/contracts/media-player.md` (CONFLICTED — C1's
-  resolution IS this stream; every edit reads it first). Thesis: rebuild band by band
-  (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`) and give
-  the catalog a deep-dive-grade identity so the manifest routes it on merit. Key demand: the two
-  authored G1 SS listening homes + the PHANTOM `listen-and-respond` LA subskills (unserved) +
-  LA003 G2 recount family (probe MATCH 0.774).
-- **Now:** **B1 DONE 2026-07-16, runtime-verified + USER BROWSER-CONFIRMED** — 3 eval modes live
-  (curator pins `listen_and_look` @ K + `listen_for_details` @ G1 on first post-rewrite traces,
-  both valid); PRE `PreReaderSelfCheck` band; MP-1/MP-2/MP-3 all cleared; eval-test 3/3 bands +
-  jsdom 4/4 + suite 804/804 + typecheck:lumina 0. **Tester refactored (full-width primitive +
-  canonical-grade/eval-mode controls) and the K PRE render user-verified in browser 2026-07-16.**
-  Uncommitted (rides the coordinated multi-session `/ship`). Next pull = B2 (EMERGING polish) or
-  B4 `/tutor-test` probe; live `--lesson` @ K still queued (B5 — live tutor beats, not covered by
-  the tester).
-
-### 3. Direct Instruction module (bench-first) — last touched 2026-07-16
+### 2. Direct Instruction module (bench-first) — last touched 2026-07-19
 - **Queue:** `my-tutoring-app/qa/HANDOFF-di-bench-2026-07-16.md` (charter + gates; graduate to a
   BACKLOG file if the bench passes).
-- **Executor skills:** (bench phase) human browser run → HUMAN-CHECKS #30; (if GO) `/primitive`,
-  `/add-spoken-judge`, `/add-voice-control`, `/eval-test`
-- **User-pulled 2026-07-16.** Thesis: Lumina has every DI instrument (model-first phase machines,
-  spoken-judge ladder, FSRS-style subskill scheduler) but no DI *conductor* — and the judge→tutor
-  link is too loose (free-text bracket tags, no ordering guarantee). Before building any DI
-  primitive, validate I-do/we-do/you-do FROM THE TUTOR'S PERSPECTIVE on a bench.
-- **DONE 2026-07-16 (this slice, code-complete, uncommitted):** **Direct Instruction Bench** —
-  dev panel (`di-bench`, home card 🎯) welding the Azure→Gemini spoken-word ladder on top of the
-  Gemini Live tutor. Deterministic beat engine (model→guide→test→verify/correct, max-2 corrections,
-  delayed retest at gap 3), mic gated on the `isAudioPlaying` true→false drain edge (never
-  transcript-idleness), script-executor persona installed via a new `PrimitiveContext.tutoring`
-  override seam in `LuminaAIContext` (no catalog pollution), per-beat instrumentation (cue→audio ms,
-  audio ms, verbatim fidelity %, judge engine/latency, response ms), scripted vs informed modes,
-  editable judge-reference per item (the isolated-phoneme bench question), Copy-run-JSON export.
-  `typecheck:lumina` 0 errors; full tsc 0 NEW vs baseline.
-- **Now:** human bench run (HUMAN-CHECKS #30 — needs mic + backend). Decision gates in the handoff:
-  phoneme judgeability, script fidelity, loop latency, informed-mode DI compliance. GO → PRD the DI
-  Lesson composite + item-grain scheduler; NO-GO on phonemes only → start DI with whole-word strands.
-- **WIP note:** this makes 3 ACTIVE — over the 2+1 limit. Deliberate user pull; the stream is thin
-  (next action is a single human sitting). Recommend: either park it right after the bench run
-  verdict, or park media-player B1 until the DI go/no-go lands.
+- **Executor skills:** human browser run → HUMAN-CHECKS #30. Keep this a dev bench; choose a
+  production primitive/spoken-judge path only after the architecture gate.
+- **User-pulled 2026-07-16.** Test one turn controller over one Gemini Live audio session: exact
+  I-do/we-do/you-do scripts, Live input/output transcription, and an asynchronous Flash-Lite JSON
+  report that alone authorizes advance/retry.
+- **DONE 2026-07-16 (POC slice):** **Direct Instruction Bench** (`di-bench`, home card 🎯).
+  Shared Lumina owns only Live transport plus a generic ordered `structured_state_update` channel.
+  `backend/app/services/di_turn_reducer.py` owns the DI schema, transcript aliases, and Flash-Lite
+  reduction. `diBenchModel.ts` owns report parsing and authority (fresh aligned `match` advances;
+  retry/unclear stays). `diScript.ts` owns exact pedagogy/cues; the panel owns orchestration and
+  Copy-run-JSON diagnostics. The abandoned Azure phoneme/warm clip-judge branch was removed from
+  shared production files. `typecheck:lumina` 0 errors; focused tests 11 frontend + 7 backend.
+- **SUPERSEDED same-day (2026-07-16, live-judged pivot):** the Flash-Lite reducer was DELETED after
+  run 1 of the live-judged rewrite PASSED (`qa/eval-reports/di-bench-live-judged-2026-07-16.md`).
+  Live now judges in-band via sentinel openers ("Yes," / "My turn."); `diBenchModel.ts` classifies
+  and alone advances; Gemini auto-VAD off, local amplitude VAD = turn authority (runs 3–4 tuned).
+- **DONE 2026-07-18 (open-mic slice, user ruling: no force-mutes from the primitive):** echo gate
+  removed from the bench VAD (speaking over the tutor = native barge-in); backend forwards Gemini
+  `server_content.interrupted` → `ai_interrupted`, `LuminaAIContext` flushes playback on it (tutor
+  audibly stops — generic transport, benefits all Live surfaces); cue pacing re-entrant (cues fire
+  only into silence, held cues re-fire on audio-fall/voice-close/verdict edges); echo telemetry
+  (`turnsOverTutorAudio`). tsc 0 new, vitest 12/12, py_compile OK. NOT live-exercised.
+- **RUN 2026-07-19 (first open-mic live run): PASS on the full scripted loop** — 4/4 items affirmed,
+  exact script fidelity, 4 clean VAD bracket pairs, **0 phantom turns**, cue cadence held; the Live
+  judge affirmed a sustained /s/ from AUDIO while ASR wrote "Shh." (the architecture's thesis,
+  demonstrated). Report: `qa/di-bench/run-2026-07-19-open-mic.md`. **Barge-in and speaker-echo were
+  NOT triggered in this run** (no `ai_interrupted` in the backend log) — HUMAN-CHECKS #30 narrowed
+  to that ~2-min probe.
+- **PROBE RUN 2026-07-19 (run 2, run JSON): barge-in + echo EXERCISED, #30 STRUCK.** Barge-in
+  verified end-to-end (deliberate talk-over interrupted + judged; /sss/ over tutor audio affirmed
+  from audio). Echo leakage = 1 blip (peak 0.033 vs threshold 0.025) that chopped a cue line.
+  **Three findings promoted to build inputs** (`qa/di-bench/run-2026-07-19-open-mic-probe.md`):
+  **DI-1 (BUG)** — a sentinel verdict with no transcript-backed attempt is silently dropped →
+  bench/model desync → model self-advanced (read bracketed cue aloud) → wrong-item credit; engine
+  must anchor attempts to LOCAL voice-turn close, bind unanchored verdicts to the last unmatched
+  voice turn, resync via re-cue after N off-script. **DI-2** — dual threshold: turn-open bar during
+  tutor audio ≈ 2× silence bar (echo 0.033 vs real speech ≥0.068); calibration beat measures both
+  floors. **DI-3** — ignore attempts until the first cue begins.
+- **Now = extraction ladder, findings folded in** (charter: HANDOFF §2026-07-18/19):
+  (1) capture hook `useLiveVoiceTurns` — amplitude turn authority + calibration beat + DI-2 dual
+  threshold; (2) judged-loop engine — generalized diBenchModel + re-entrant cue pacing,
+  parameterized sentinels, DI-1 voice-anchored attempts + resync, DI-3 arming; (3) DI primitive as
+  first consumer (generator-backed items). Bench stays as the modality's measurement harness.
+  `/ship` the verified open-mic slice + QA docs when convenient.
+- **WIP note:** RESOLVED 2026-07-16 (user) — media-player parked (B1 shipped), so ACTIVE =
+  reader-fit (top) + DI bench = **2 ACTIVE, within the 2+1 limit.** DI kept deliberately as a
+  proof-of-concept — the user's read is "something doable here but tricky to get right," so it stays
+  live at bench stage; its next action is a single human sitting (HUMAN-CHECKS #30), not a build.
 
-*(SP-27 Tutoring Context Integrity PARKED 2026-07-16 by user — see PARKED table. WIP = 3 ACTIVE
-after the user-pulled DI bench stream — over the limit, flagged in stream 3's WIP note.)*
+*(SP-27 Tutoring Context Integrity + media-player reimagining both PARKED — see PARKED table.
+WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as of 2026-07-16.)*
 
 ## DELEGATED
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` reconcile 2026-07-16):** working tree **CLEAN** — everything the prior note
-> flagged as uncommitted is now committed. `ddf5a5f` landed the **contracts baseline `--check ×2`**
-> slice; `e05c109` landed **knowledge-check one-at-a-time pacing + excavator-arm L2 scaffold**
-> (and the DropZone Batch-4 / kit-roadmap files). Portfolio is **1 ACTIVE + 0 DELEGATED** after SP-27
-was parked 2026-07-16 (below) — reader-fit runs solo, well under WIP.
-> The `e05c109` work was opportunistic (K-stage pacing polish + an engineering-sim scaffold), NOT
-> the top of either ACTIVE queue — the next *queued* pull is reader-fit **#9a media-player @ PRE**.
-> Residuals now human-only: browser spot-checks HUMAN-CHECKS #2–#24 (nine new since last sitting:
-> #12–#20, #22–#24); fact-file live `--lesson` still queued (mechanism proven); phonics
-> tap-pronounce runtime verification (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
+> **WIP note (`/pm` reconcile 2026-07-16, SECOND PASS — supersedes POST-SHIP):** the "tree CLEAN
+> @ `39f2543`" claim below is now **STALE**. A **fresh two-stream batch landed AFTER `39f2543` and is
+> UNCOMMITTED** (working tree dirty, both stacks code-complete + verified):
+> - **Reader-fit — ten-frame `make_ten` #12** (`TenFrame.tsx` +85, new `docs/contracts/ten-frame.md`,
+>   `TenFrame.reader-fit.test.tsx`, 2 reports). Browser gate = HUMAN-CHECKS **#31**.
+> - **DI bench — turn-controller POC:** one Live session + generic structured-update transport;
+>   isolated DI transcript reducer service; local protocol/authority model, script, panel, and tests.
+>   No Azure/clip-judge production-stack changes belong to this slice.
+> - **Ship pending:** slice by stream (`/ship`) — ten-frame slice; DI hardening slice; shared QA docs
+>   (WORKSTREAMS/BACKLOG/EVAL_TRACKER/HUMAN-CHECKS/HANDOFF) in their own slice.
+>
+> Portfolio = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP + DI bench) — **within the 2+1 limit**
+> (media-player PARKED 2026-07-16, B1 shipped). Prior commit `39f2543` folded the earlier day's batch
+> (fast-fact leak, #11 act_out, #2b Pulse trio + `ReadMeButton`, #9b/#9c/#9d tail, media-player B1 +
+> contract, the DI bench itself, 3 contracts, journeys, docs); `ddf5a5f`/`e05c109` before it.
+> Residuals now human-only: HUMAN-CHECKS browser spot-checks (grown to #3–#31); phonics tap-pronounce
+> runtime verification (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
 | Stream | Queue / doc | Next action | As of |
 |---|---|---|---|
-| SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED 2026-07-16 (UNCOMMITTED, slice on its own):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
+| media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
+| SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
 | Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **3 contracts** derived (media-player added 2026-07-16 via reader-fit #9a Step 1 — first CONFLICTED contract) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
