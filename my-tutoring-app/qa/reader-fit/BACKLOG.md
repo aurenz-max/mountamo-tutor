@@ -33,16 +33,6 @@ Report: `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Contract:
   supports all four types via `disambiguate_groups` — reuse it when fixing them.)
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
 
-### 12. ten-frame `make_ten` @ K — direct-manipulation proxy (from the 2026-07-16 sibling audit)
-Promoted from the "Direct-manipulation-first" systemic note (the census is done — see that note
-for evidence). `make_ten` judges from a `counterCount + ___ = total` stepper (`TenFrame.tsx`
-~923–947, `checkMakeTenAnswer` ~:461), NOT from the frame — though the K frame is seeded and the
-empty cells are tappable (`handleCellClick` ~:308). **Fix (fork by mode+band, item-11 template):**
-at K `make_ten`, empty cells become the tap-to-fill answer surface, auto-judge on the filled count,
-stepper+Check removed at K; `subitize` (flash/hide → number legit) + `count_all` + Grade-1+ UI all
-unchanged. Contract-first (`docs/contracts/ten-frame.md`). Executor: `/reader-fit --fix ten-frame`.
-Full prompt: `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` (Task 1). Reference: item 11.
-
 ### 13. counting-board `subitize` @ K — subitize DISPLAY fix (from the 2026-07-16 sibling audit)
 Promoted from the systemic note. NOT a manipulation swap: the K `subitize` stepper
 (`CountingBoard.tsx` ~1120–1144, judged ~:547) sits over objects that stay VISIBLE + tap-countable,
@@ -124,15 +114,12 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
   deterministic tap-accurate instruction are the reusable pattern for the rest of this class).
   - **Sibling audit 2026-07-16** (Explore sweep of all ~60 `visual-primitives/math/` primitives;
     candidates for the SAME read-then-tap-a-number proxy over a manipulable scene, recorded NOT fixed):
-    - **STRONG — `ten-frame` make-ten phase.** `TenFrame.tsx:923–947` renders a make-ten stepper
-      (`counterCount + ___ = totalCells`, +/- over `makeTenInput`), judged in `checkMakeTenAnswer`
-      (`:461`) from the stepper — NOT from the frame. The K ten-frame is seeded with `counterCount`
-      counters and shows empty cells the child can physically tap to fill (`handleCellClick:308`
-      only blocks taps during the *subitize* answer phase), but those taps don't drive the judged
-      answer. Make-ten (K.OA.4) should be enacted by placing counters into the empty cells and
-      auto-judged on the filled count. (The *subitize* phase in the same file is NOT an instance —
-      counters are flashed then hidden, so a number answer is correct there.) Executor when picked:
-      `/reader-fit --fix ten-frame PRE` — reuse item-11's seed→tap-fill→auto-judge template.
+    - **RESOLVED 2026-07-16 — `ten-frame` make-ten phase (item 12).** K now fixes the seeded
+      counters, accepts taps only on empty cells, and auto-judges the complement when the enacted
+      frame reaches 10; its stepper + Check are removed. The fork is band+mode scoped: subitize
+      remains flash→hide→number, build/count-all is unchanged, and Grade 1–2 make-ten retains the
+      stepper. Contract + report: `docs/contracts/ten-frame.md` and
+      `qa/reader-fit/ten-frame-item12-2026-07-16.md`. Browser/pixel check → HUMAN-CHECKS #31.
     - **POSSIBLE — `counting-board` subitize phase.** `CountingBoard.tsx:1120–1144` (stepper "How
       many do you see?", judged `:547`) sits over a countable scene that is NEVER flashed/hidden
       (objects stay visible) and IS tap-countable in the sibling `count_all` phase
@@ -148,7 +135,7 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
       (tap the character = manipulation), sorting-station (tap IS the manipulation). Pure
       symbol/equation, place-value, geometry, and upper-grade primitives are out of scope.
     - **PROMOTED to discrete fix items 2026-07-16** (user durability call): ten-frame make-ten →
-      **item 12**, counting-board subitize (display fix) → **item 13**. coin-counter `count-like` =
+      **item 12 (DONE 2026-07-16)**, counting-board subitize (display fix) → **item 13**. coin-counter `count-like` =
       the one un-swept gap → confirm/clear as Task 3. Execution handoff (ten-frame first):
       `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`. The sibling audit above IS the census
       of record — do NOT re-sweep.
@@ -176,6 +163,16 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **12. ten-frame `make_ten` @ K — direct manipulation, READY pending browser check (2026-07-16).**
+  Contract-first fork by band+mode (`docs/contracts/ten-frame.md`): K seed counters are fixed;
+  tapping empty cells places the complement; the final fill auto-judges from the enacted count;
+  stepper + Check are gone. K build/count-all and flash→hide subitize are unchanged; Grade 1–2
+  make-ten keeps its stepper + Check. Browser follow-on fixed: a full make-ten frame had carried into
+  the next `add`; transitions now clear first, then mode-specific seed effects run. No schema/catalog
+  change. Verified focused jsdom **5/5**, full suite **810/810**, `typecheck:lumina` 0, live eval-test
+  **4/4 modes PASS** (K make-ten 7/7).
+  No bespoke ten-frame tutor journey exists, so live `--lesson` was infeasible; real-browser tap/
+  pixel check → HUMAN-CHECKS #31. Report: `ten-frame-item12-2026-07-16.md`.
 - **9b / 9c / 9d. Explainer-tail bespoke @ PRE — ALL THREE READY (2026-07-16).** The three
   explainer-tail surfaces that did NOT fit the fact-file MCQ helper (each bespoke). Shared pattern:
   ctx-native generator refactor (read `ctx.grade`) + stamp `gradeLevel` + code-attached flat emoji

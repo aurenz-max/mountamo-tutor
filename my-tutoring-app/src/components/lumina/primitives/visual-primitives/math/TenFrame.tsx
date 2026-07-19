@@ -241,6 +241,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     r => r.challengeId === currentChallenge?.id && r.correct
   );
 
+  // Reader-fit item 12: at K, make-ten is enacted on the frame itself. Reader
+  // grades keep the existing numeric complement response.
+  const isKMakeTen = gradeBand === 'K' && currentChallenge?.type === 'make_ten';
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -304,9 +308,63 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Interaction Handlers
   // -------------------------------------------------------------------------
+  const completeKMakeTen = useCallback((completedCount: number) => {
+    if (!isKMakeTen || !currentChallenge || isCurrentChallengeComplete) return;
+
+    const seededCount = Math.min(currentChallenge.targetCount, totalCells);
+    const placedCount = Math.max(0, completedCount - seededCount);
+    incrementAttempts();
+    setFeedback(`You made ${totalCells}! ${seededCount} + ${placedCount} = ${totalCells}!`);
+    setFeedbackType('success');
+    SoundManager.playCorrect();
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts: currentAttempts + 1,
+    });
+    sendText(
+      `[MAKE_TEN_CORRECT] Student filled the frame by placing ${placedCount} counters. `
+      + `${seededCount} + ${placedCount} = ${totalCells}. `
+      + `Celebrate the enacted number bond briefly.`,
+      { silent: true }
+    );
+  }, [
+    isKMakeTen, currentChallenge, isCurrentChallengeComplete, totalCells,
+    incrementAttempts, recordResult, currentAttempts, sendText,
+  ]);
+
   const handleCellClick = useCallback((cellIndex: number) => {
     if (currentPhase === 'subitize' && !showCounters) return; // Can't click during subitize answer phase
     if (hasSubmittedEvaluation) return;
+
+    // K make-ten uses only the empty cells as its answer surface. The seeded
+    // counters are fixed; each empty-cell tap places one answer counter, and
+    // filling the frame auto-judges the enacted complement.
+    if (isKMakeTen) {
+      if (isCurrentChallengeComplete || filledCells.has(cellIndex)) return;
+
+      SoundManager.tap();
+      const next = new Set(filledCells);
+      next.add(cellIndex);
+      const color = twoColorMode?.enabled
+        ? (next.size <= (twoColorMode.color1Count || 5)
+          ? twoColorMode.color1 || 'red'
+          : twoColorMode.color2 || 'yellow')
+        : (initialCounters?.color || 'red');
+
+      setFilledCells(next);
+      setCellColors(colors => {
+        const newColors = new Map(colors);
+        newColors.set(cellIndex, color);
+        return newColors;
+      });
+      setPlacementChanges(p => p + 1);
+      setFeedback('');
+      setFeedbackType('');
+
+      if (next.size === totalCells) completeKMakeTen(next.size);
+      return;
+    }
 
     SoundManager.tap();
 
@@ -338,14 +396,18 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     setFeedback('');
     setFeedbackType('');
-  }, [currentPhase, showCounters, hasSubmittedEvaluation, twoColorMode, initialCounters?.color]);
+  }, [
+    currentPhase, showCounters, hasSubmittedEvaluation, isKMakeTen,
+    isCurrentChallengeComplete, filledCells, twoColorMode, initialCounters?.color,
+    totalCells, completeKMakeTen,
+  ]);
 
   // Check if first frame is full (exactly 10)
   useEffect(() => {
     const frame1Count = Array.from(filledCells).filter(c => c < 10).length;
     if (frame1Count === 10 && !fullFrameReached) {
       setFullFrameReached(true);
-      if (isConnected) {
+      if (isConnected && !isKMakeTen) {
         sendText(
           `[FULL_FRAME] The student just filled the ten frame completely with 10 counters! `
           + `Celebrate this moment: "You made 10! The frame is full!"`,
@@ -353,7 +415,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         );
       }
     }
-  }, [filledCells, fullFrameReached, isConnected, sendText]);
+  }, [filledCells, fullFrameReached, isConnected, isKMakeTen, sendText]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -609,14 +671,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
-    // Reset frame for next challenge unless it's an operate challenge building on previous.
-    // Subtract challenges with startCount get pre-filled by their own useEffect.
-    const keepFrame = (nextChallenge.type === 'add' || nextChallenge.type === 'subtract')
-      && nextChallenge.startCount == null;
-    if (!keepFrame) {
-      setFilledCells(new Set());
-      setCellColors(new Map());
-    }
+    // Every challenge owns its initial frame state. Addition starts empty;
+    // make-ten and subtraction are pre-filled by their mode-specific effects.
+    // Never carry a completed frame into the next challenge.
+    setFilledCells(new Set());
+    setCellColors(new Map());
 
     // Set phase
     if (nextChallenge.type === 'subitize') setCurrentPhase('subitize');
@@ -920,7 +979,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         )}
 
         {/* Make-ten Input — bespoke number-entry surface */}
-        {currentPhase === 'makeTen' && !isCurrentChallengeComplete && (
+        {currentPhase === 'makeTen' && !isCurrentChallengeComplete && !isKMakeTen && (
           <div className="flex flex-col items-center gap-3">
             <p className="text-slate-300 text-sm font-mono">{counterCount} + ___ = {totalCells}</p>
             <div className="flex items-center gap-2">
@@ -971,7 +1030,7 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         {/* Action Buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
+            {!isCurrentChallengeComplete && !allChallengesComplete && !isKMakeTen && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}

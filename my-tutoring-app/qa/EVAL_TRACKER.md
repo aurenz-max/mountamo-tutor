@@ -37,7 +37,7 @@
 | sentence-builder | 4 | 2 | 2 | 2026-06-25 | [structural sweep (simple, tiers PASS)](eval-reports/sentence-builder-2026-06-25.md) |
 | area-model | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
-| ten-frame | 4 | 4 | 0 | 2026-05-28 | [report](eval-reports/ten-frame-2026-05-28.md) |
+| ten-frame | 4 | 4 | 0 | 2026-07-16 | [reader-fit item 12 + all-mode eval](eval-reports/ten-frame-2026-07-16.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-06-20 | [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
 | number-line | 5 | 5 | 0 | 2026-06-27 | [topic-range resolver](eval-reports/number-line-2026-06-27.md) |
