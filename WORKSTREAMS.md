@@ -76,7 +76,13 @@ queue AND this file's "last touched" in the same slice.
   pixel/real-click → HUMAN-CHECKS #31. **Next = #13 counting-board subitize** (display fix), then
   coin-counter `count-like` confirm/clear. Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now:** **#9 explainer tail — pilot + fact-file DONE 2026-07-15**, tail reconciled. The
+- **Now (per `/pm` 2026-07-19):** pull **#13 counting-board `subitize` display fix** —
+  `/reader-fit --fix counting-board`, contract-first; full prompt =
+  `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 2. Then Task 3 (coin-counter
+  `count-like` confirm/clear), then the **2b tail** (rule-5 feedback-on-object + per-mode picture
+  passes). Stream untouched since 07-16 (3 days) but remains user-designated TOP PRIORITY — resume,
+  don't park.
+- **History (#9 explainer tail):** pilot + fact-file DONE 2026-07-15, tail reconciled. The
   "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
   READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
   @ PRE READY** via the helper (jsdom 6/6, eval-test K 2/2, live queued). The other four are NOT
@@ -133,12 +139,21 @@ queue AND this file's "last touched" in the same slice.
   voice turn, resync via re-cue after N off-script. **DI-2** — dual threshold: turn-open bar during
   tutor audio ≈ 2× silence bar (echo 0.033 vs real speech ≥0.068); calibration beat measures both
   floors. **DI-3** — ignore attempts until the first cue begins.
-- **Now = extraction ladder, findings folded in** (charter: HANDOFF §2026-07-18/19):
-  (1) capture hook `useLiveVoiceTurns` — amplitude turn authority + calibration beat + DI-2 dual
-  threshold; (2) judged-loop engine — generalized diBenchModel + re-entrant cue pacing,
-  parameterized sentinels, DI-1 voice-anchored attempts + resync, DI-3 arming; (3) DI primitive as
-  first consumer (generator-backed items). Bench stays as the modality's measurement harness.
-  `/ship` the verified open-mic slice + QA docs when convenient.
+- **SHIPPED 2026-07-19:** open-mic slice + run reports committed `6635877` (+ QA docs `10b17d9`);
+  main pushed & in sync.
+- **Extraction step 1 DONE + RUNTIME-VERIFIED 2026-07-20, committed `4af21b6` (#32 struck):**
+  `hooks/voiceTurnMachine.ts` (pure turn authority, DI-2 dual threshold, vitest 7/7 incl. the
+  probe-run echo regression) + `hooks/useLiveVoiceTurns.ts` (activity brackets, ambient/echo EMA
+  floors) + bench as pilot consumer. **User live run PASS**
+  (`qa/di-bench/run-2026-07-20-hook-parity.md`): 4/4 items, **0 unanchored verdicts, 0 echo-opened
+  turns** (floors 0.0008/0.0082 vs 0.05 barge-in bar — ~6× margin), barge-ins interrupted + judged,
+  response times improved (1706/1192ms vs probe 2986/1882ms). New engine input from the run:
+  a mid-cue attempt can consume a cue FRAGMENT as its verdict (benign off-script) — verdict
+  classification must only consume tutor output that begins a NEW turn after the attempt closed.
+- **Now = extraction step 2: judged-loop engine** — generalize diBenchModel + re-entrant cue
+  pacing; parameterized sentinels; DI-1 voice-anchored attempts + unanchored-verdict binding +
+  resync re-cue; DI-3 arming; mid-cue verdict scoping (above). Then (3) DI primitive as first
+  consumer (generator-backed items). Bench stays as the modality's measurement harness.
 - **WIP note:** RESOLVED 2026-07-16 (user) — media-player parked (B1 shipped), so ACTIVE =
   reader-fit (top) + DI bench = **2 ACTIVE, within the 2+1 limit.** DI kept deliberately as a
   proof-of-concept — the user's read is "something doable here but tricky to get right," so it stays
@@ -151,23 +166,18 @@ WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` reconcile 2026-07-16, SECOND PASS — supersedes POST-SHIP):** the "tree CLEAN
-> @ `39f2543`" claim below is now **STALE**. A **fresh two-stream batch landed AFTER `39f2543` and is
-> UNCOMMITTED** (working tree dirty, both stacks code-complete + verified):
-> - **Reader-fit — ten-frame `make_ten` #12** (`TenFrame.tsx` +85, new `docs/contracts/ten-frame.md`,
->   `TenFrame.reader-fit.test.tsx`, 2 reports). Browser gate = HUMAN-CHECKS **#31**.
-> - **DI bench — turn-controller POC:** one Live session + generic structured-update transport;
->   isolated DI transcript reducer service; local protocol/authority model, script, panel, and tests.
->   No Azure/clip-judge production-stack changes belong to this slice.
-> - **Ship pending:** slice by stream (`/ship`) — ten-frame slice; DI hardening slice; shared QA docs
->   (WORKSTREAMS/BACKLOG/EVAL_TRACKER/HUMAN-CHECKS/HANDOFF) in their own slice.
+> **WIP note (`/pm` reconcile 2026-07-19 — supersedes the 07-16 SECOND PASS):** the 07-16 two-stream
+> uncommitted batch has SHIPPED — ten-frame #12 in `9999880`, DI live-judged/open-mic in `6635877`,
+> QA-doc reconcile in `10b17d9`; main pushed & in sync. The only uncommitted surface today is
+> **single-stream (DI bench): extraction step 1** — `hooks/voiceTurnMachine.ts` +
+> `hooks/useLiveVoiceTurns.ts` + the bench refactor, **deliberately held** pending its runtime gate
+> (HUMAN-CHECKS **#32**, one browser/mic sitting), plus this WORKSTREAMS/HUMAN-CHECKS reconcile
+> (shared QA docs — commit in their own slice per standing hygiene).
 >
-> Portfolio = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP + DI bench) — **within the 2+1 limit**
-> (media-player PARKED 2026-07-16, B1 shipped). Prior commit `39f2543` folded the earlier day's batch
-> (fast-fact leak, #11 act_out, #2b Pulse trio + `ReadMeButton`, #9b/#9c/#9d tail, media-player B1 +
-> contract, the DI bench itself, 3 contracts, journeys, docs); `ddf5a5f`/`e05c109` before it.
-> Residuals now human-only: HUMAN-CHECKS browser spot-checks (grown to #3–#31); phonics tap-pronounce
-> runtime verification (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
+> Portfolio = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP + DI bench) — **within the 2+1 limit**.
+> Reader-fit is 3 days idle but user-designated TOP PRIORITY → resume at #13, don't park.
+> Residuals human-only: HUMAN-CHECKS #3–#32; phonics tap-pronounce runtime verification
+> (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
