@@ -16,6 +16,8 @@ import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext
 import { EvaluationProvider } from '../../evaluation';
 import { ExhibitProvider } from '../../contexts/ExhibitContext';
 import { LuminaMicListener } from '../../ui';
+import { useLiveVoiceTurns } from '../../hooks/useLiveVoiceTurns';
+import { DEFAULT_VOICE_TURN_CONFIG } from '../../hooks/voiceTurnMachine';
 import { completeCue, DEFAULT_ITEMS, DI_TUTORING, itemCue, moveOnCue } from './diScript';
 import {
   classifyTutorJudgment,
@@ -49,22 +51,13 @@ const DI_AUDIO_INPUT = {
   manual_activity: true,
 };
 
-/** Local amplitude-VAD defaults; threshold is editable in the UI. Now the
- *  turn authority, not telemetry — a hum above threshold IS a turn.
- *  0.025: run 4 showed a quiet /mmm/ flaps at 0.04, and run 3 (threshold
- *  0.005) showed the ambient floor is far lower — 0.025 clears the floor
- *  with margin while opening cleanly on soft hums (hysteresis holds 0.015).
- *
- *  The mic is NEVER gated on tutor audio (user ruling 2026-07-18: no
- *  force-mutes from the primitive — a human tutor is always listening).
- *  Opening a turn while the tutor speaks is native barge-in: activityStart
- *  interrupts Gemini's generation and the client flushes the stale tail on
- *  ai_interrupted. Echo defense is AEC on capture plus a threshold above the
- *  echo residual — turns opened over tutor audio are flagged in telemetry so
- *  speaker runs can measure how much leaks through. */
-const DEFAULT_VAD_THRESHOLD = 0.025;
-const LOCAL_SILENCE_CLOSE_MS = 500;
-const MIN_LOCAL_VOICE_MS = 120;
+/** The turn authority now lives in useLiveVoiceTurns / voiceTurnMachine
+ *  (extracted from this bench after the 2026-07-19 runs). The bench keeps
+ *  only the editable silence threshold; barge-in bar, hysteresis, close and
+ *  min-voice windows are the shared defaults. Run history that tuned them:
+ *  runs 3–4 (threshold 0.025, hysteresis), probe run 2026-07-19 (DI-2 dual
+ *  threshold: echo residual 0.033 vs real speech ≥0.068 over tutor audio). */
+const DEFAULT_VAD_THRESHOLD = DEFAULT_VOICE_TURN_CONFIG.silenceThreshold;
 
 /** Beat between the tutor's verify line finishing (audio fall) and the next
  *  item cue. Sending the cue at sentinel time stepped on "Yes, mmm." —
@@ -72,15 +65,6 @@ const MIN_LOCAL_VOICE_MS = 120;
 const VERIFY_BEAT_MS = 400;
 /** Failsafe: send a queued cue even if the verify audio never registers. */
 const PENDING_CUE_MAX_WAIT_MS = 5000;
-
-interface LocalVoice {
-  active: boolean;
-  startedAt: number;
-  lastAboveAt: number;
-  peak: number;
-  /** Turn opened while tutor audio was playing — barge-in or echo leak. */
-  duringTutorAudio: boolean;
-}
 
 const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
   const ctx = useLuminaAIContext();
@@ -106,9 +90,10 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
   const correctionsRef = useRef(new Map<string, number>());
   const pendingAttemptRef = useRef<PendingAttempt | null>(null);
   const judgmentBufferRef = useRef('');
-  const localVoiceRef = useRef<LocalVoice>({ active: false, startedAt: 0, lastAboveAt: 0, peak: 0, duringTutorAudio: false });
   const audioPlayingRef = useRef(ctx.isAudioPlaying);
-  const lastVoiceStartRef = useRef<number | null>(null);
+  /** Synchronous view of the hook's turn state, readable inside timers
+   *  declared before the hook call. */
+  const voiceActiveRef = useRef<() => boolean>(() => false);
   const pendingCueRef = useRef<string | null>(null);
   const cueTimerRef = useRef<number | null>(null);
   const cueFallbackTimerRef = useRef<number | null>(null);
@@ -141,7 +126,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     if (cueTimerRef.current != null || pendingCueRef.current == null) return;
     cueTimerRef.current = window.setTimeout(() => {
       cueTimerRef.current = null;
-      if (audioPlayingRef.current || localVoiceRef.current.active || pendingAttemptRef.current != null) return;
+      if (audioPlayingRef.current || voiceActiveRef.current() || pendingAttemptRef.current != null) return;
       const cue = pendingCueRef.current;
       pendingCueRef.current = null;
       if (cue) ctx.sendText(cue, { silent: true });
@@ -179,55 +164,29 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     }
   }, [ctx.isAudioPlaying, schedulePendingCue]);
 
-  // Local amplitude VAD — THE turn authority under manual_activity. Runs on
-  // the same RMS frames that drive the mic orb, and is NEVER gated on tutor
-  // audio: the mic stays hot while the tutor speaks, so crossing the
-  // threshold mid-tutor-line is native barge-in (activityStart interrupts
-  // Gemini; the client flushes the stale tail on ai_interrupted). Crossing
-  // the threshold sends activityStart; 500ms back under it sends
-  // activityEnd, which is what makes Gemini commit the turn. A hum above
-  // threshold IS a turn — including speaker echo that survives AEC, which is
-  // exactly what the duringTutorAudio flag exists to measure.
-  useEffect(() => {
-    if (!runningRef.current) return;
-    const now = performance.now();
-    const voice = localVoiceRef.current;
-    // Hysteresis: open at the threshold, hold the open turn down to 60% of it.
-    // Run 4 showed a hum sitting AT the threshold flaps micro-brackets.
-    const floor = voice.active ? vadThreshold * 0.6 : vadThreshold;
-    const speaking = ctx.micLevel >= floor;
-    if (speaking) {
-      if (!voice.active) {
-        voice.active = true;
-        voice.startedAt = now;
-        voice.peak = ctx.micLevel;
-        voice.duringTutorAudio = ctx.isAudioPlaying;
-        lastVoiceStartRef.current = now;
-        ctx.sendActivityStart();
-      } else if (ctx.micLevel > voice.peak) {
-        voice.peak = ctx.micLevel;
-      }
-      voice.lastAboveAt = now;
-      return;
-    }
-    if (voice.active && now - voice.lastAboveAt > LOCAL_SILENCE_CLOSE_MS) {
-      voice.active = false;
-      ctx.sendActivityEnd();
-      const durationMs = Math.round(voice.lastAboveAt - voice.startedAt);
-      if (durationMs >= MIN_LOCAL_VOICE_MS) {
+  // The shared open-mic turn authority (extracted from this bench). It sends
+  // activityStart/End itself; the bench only logs telemetry and re-triggers
+  // held cues on voice close.
+  const voiceTurns = useLiveVoiceTurns({
+    enabled: running,
+    config: { silenceThreshold: vadThreshold },
+    onTurnClose: (event) => {
+      if (!event.belowMinVoice) {
         pushEvent({
           speaker: 'mic',
-          text: `local voice ${(durationMs / 1000).toFixed(1)}s, peak ${voice.peak.toFixed(3)}${voice.duringTutorAudio ? ', opened over tutor audio' : ''}`,
-          durationMs,
-          peakLevel: Number(voice.peak.toFixed(3)),
-          duringTutorAudio: voice.duringTutorAudio || undefined,
+          text: `local voice ${(event.durationMs / 1000).toFixed(1)}s, peak ${event.peak.toFixed(3)}${event.duringTutorAudio ? ', opened over tutor audio' : ''}`,
+          durationMs: event.durationMs,
+          peakLevel: Number(event.peak.toFixed(3)),
+          duringTutorAudio: event.duringTutorAudio || undefined,
         });
       }
       // Voice close is a cue trigger: a cue held while the learner spoke may
       // now be clear to fire.
       schedulePendingCue();
-    }
-  }, [ctx, ctx.micLevel, ctx.isAudioPlaying, vadThreshold, pushEvent, schedulePendingCue]);
+    },
+  });
+  voiceActiveRef.current = voiceTurns.isVoiceActive;
+  const lastVoiceStartRef = voiceTurns.lastTurnOpenAtRef;
 
   useEffect(() => {
     const next = ctx.conversation.slice(conversationIndexRef.current);
@@ -308,7 +267,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
         // Phantom-commit guard: a transcript no local voice backed (noise,
         // echo, stale pre-run audio) is logged but never judged. Run 3's
         // "hide"/"ठीक है।" both fail this test.
-        if (voiceStart == null && !localVoiceRef.current.active) {
+        if (voiceStart == null && !voiceTurns.isVoiceActive()) {
           pushEvent({
             speaker: 'learner',
             text: message.content,
@@ -429,8 +388,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     correctionsRef.current.clear();
     pendingAttemptRef.current = null;
     judgmentBufferRef.current = '';
-    localVoiceRef.current = { active: false, startedAt: 0, lastAboveAt: 0, peak: 0, duringTutorAudio: false };
-    lastVoiceStartRef.current = null;
+    voiceTurns.reset();
     clearPendingCue();
     activeItemIdRef.current = firstItem.id;
     setActiveItemId(firstItem.id);
@@ -446,22 +404,17 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     lastTutorQuietAtRef.current = null;
     pendingAttemptRef.current = null;
     judgmentBufferRef.current = '';
-    if (localVoiceRef.current.active) {
-      localVoiceRef.current.active = false;
-      ctx.sendActivityEnd();
-    }
+    // Flipping `running` false disables useLiveVoiceTurns, which force-closes
+    // any open turn (activityEnd included).
     clearPendingCue();
     setPhase('Run stopped — the Live tutor remains warm.');
-  }, [clearPendingCue, ctx]);
+  }, [clearPendingCue]);
 
   useEffect(() => () => {
     runningRef.current = false;
     if (cueTimerRef.current != null) window.clearTimeout(cueTimerRef.current);
     if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
-    if (localVoiceRef.current.active) {
-      localVoiceRef.current.active = false;
-      ctx.sendActivityEnd();
-    }
+    // useLiveVoiceTurns closes any open turn on its own unmount.
     ctx.stopListening();
     if (weConnectedRef.current) ctx.disconnect();
   // Context methods are stable; this is unmount-only cleanup.
@@ -485,14 +438,15 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
         timing: 'frontend:tutor-audio-fall-to-live-input-transcription-arrival',
         geminiVad: { ...DI_AUDIO_INPUT, note: 'automatic VAD disabled; client brackets turns' },
         localVad: {
-          role: 'turn-authority (activityStart/activityEnd)',
-          thresholdRms: vadThreshold,
-          hysteresisHoldRatio: 0.6,
-          silenceCloseMs: LOCAL_SILENCE_CLOSE_MS,
-          minVoiceMs: MIN_LOCAL_VOICE_MS,
+          role: 'turn-authority (useLiveVoiceTurns / voiceTurnMachine)',
+          ...voiceTurns.config,
           gatedWhileTutorAudioPlays: false,
           bargeIn: 'activityStart over tutor audio interrupts generation; client flushes on ai_interrupted',
-          echoDefense: 'browser AEC on capture + threshold above echo residual; duringTutorAudio flags what leaks',
+          echoDefense: 'browser AEC on capture + DI-2 dual threshold (barge-in bar = silenceThreshold × bargeInMultiplier)',
+          measuredFloors: {
+            ambientRms: Number(voiceTurns.floorsRef.current.ambientRms.toFixed(4)),
+            echoRms: Number(voiceTurns.floorsRef.current.echoRms.toFixed(4)),
+          },
           phantomCommitGuard: 'transcripts without local voice are logged, never judged',
         },
       },
@@ -602,6 +556,9 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
               className="w-16 rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200"
             />
           </label>
+          <span className="font-mono text-[10px] text-slate-500" title="EMA noise floors: ambient (tutor silent) / echo residual (tutor speaking). Barge-in bar opens at threshold × {String(voiceTurns.config.bargeInMultiplier)}.">
+            floors {voiceTurns.floorsRef.current.ambientRms.toFixed(3)}/{voiceTurns.floorsRef.current.echoRms.toFixed(3)}
+          </span>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
