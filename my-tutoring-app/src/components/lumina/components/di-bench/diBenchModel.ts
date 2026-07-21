@@ -23,30 +23,12 @@ export const MAX_CORRECTIONS_PER_ITEM = 2;
 const normalized = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 /**
- * The Live tutor judges each attempt in-band and reports through a canonical
- * branch pair in its own generated speech: affirmations begin "Yes," and
- * corrections begin "My turn." (the classic DISTAR correction opener — chosen
- * because no other scripted line starts with it). Output transcription is
- * model-generated text, not lossy ASR, so a whole-token check on the opening
- * words is reliable.
+ * Sentinel classification lives in the judged-loop engine now
+ * (`hooks/judgedLoopModel.ts` — sentence-scoped scanning, DI_SENTINELS).
+ * This module keeps only the DI-specific pieces: items, the alias
+ * cross-check, progression policy, and run telemetry.
  */
-export type LiveJudgment = 'affirmed' | 'corrected' | 'off-script' | 'pending';
-
-export function classifyTutorJudgment(turnText: string): LiveJudgment {
-  const tokens = normalized(turnText).split(' ').filter(Boolean);
-  if (tokens.length === 0) return 'pending';
-  const [first, second] = tokens;
-  if (first === 'yes') return 'affirmed';
-  if (first === 'my') {
-    if (tokens.length === 1) return 'pending';
-    return second === 'turn' ? 'corrected' : 'off-script';
-  }
-  // A lone partial chunk ("Ye") may still be completing a sentinel.
-  if (tokens.length === 1 && ('yes'.startsWith(first) || 'my'.startsWith(first))) {
-    return 'pending';
-  }
-  return 'off-script';
-}
+export type BenchJudgment = 'affirmed' | 'corrected' | 'off-script' | 'no-verdict';
 
 /**
  * Passive cross-check only: whole-token alias match on the learner's lossy
@@ -77,7 +59,7 @@ export type DIProgressDecision =
  * when the run ends are decided here, deterministically.
  */
 export function resolveLiveJudgment(
-  judgment: Exclude<LiveJudgment, 'pending'>,
+  judgment: 'affirmed' | 'corrected' | 'off-script',
   activeItemId: string,
   items: DIItem[],
   correctionsUsed: number,
@@ -121,7 +103,7 @@ export interface BenchEvent {
   itemId?: string;
   /** Item mentioned by Live output transcription. Diagnostic only. */
   detectedItemId?: string;
-  judgment?: Exclude<LiveJudgment, 'pending'>;
+  judgment?: BenchJudgment;
   /** Sentinel verdict that arrived with NO transcript-backed attempt pending
    *  (judge events). The DI-1 failure shape: Live judged audio it heard, but
    *  the input transcription never arrived, so the bench had nothing to bind

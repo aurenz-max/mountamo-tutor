@@ -1,14 +1,15 @@
 'use client';
 
 /**
- * DirectInstructionBench — Live-judged Direct Instruction over one Gemini Live session.
+ * DirectInstructionBench — Live-judged Direct Instruction over one Gemini Live
+ * session; pilot consumer of the judged-loop engine.
  *
- * The Live tutor heard the raw audio, so it judges each attempt in-band and
- * reports through a canonical branch pair in its own generated speech:
- * "Yes," affirms, "My turn." corrects. The bench parses only those sentinels
- * from output transcription — and only while an attempt is pending — and the
- * bench alone decides progression. The whole-token alias match on the lossy
- * input transcript runs as a passive cross-check to measure judge agreement.
+ * The engine (useJudgedSpeechLoop → judgedLoopModel + useLiveVoiceTurns) owns
+ * the loop mechanics: open-mic turn authority, voice-anchored attempts (DI-1),
+ * sentence-scoped sentinel verdicts, cue pacing into silence, timeouts and
+ * resync. The bench owns DI pedagogy and diagnostics: the item script, the
+ * progression policy (advance / retry / move-on after capped corrections),
+ * the alias cross-check, and the run log + Copy-run-JSON export.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,11 +17,11 @@ import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext
 import { EvaluationProvider } from '../../evaluation';
 import { ExhibitProvider } from '../../contexts/ExhibitContext';
 import { LuminaMicListener } from '../../ui';
-import { useLiveVoiceTurns } from '../../hooks/useLiveVoiceTurns';
+import { useJudgedSpeechLoop } from '../../hooks/useJudgedSpeechLoop';
+import type { LoopEmission } from '../../hooks/judgedLoopModel';
 import { DEFAULT_VOICE_TURN_CONFIG } from '../../hooks/voiceTurnMachine';
 import { completeCue, DEFAULT_ITEMS, DI_TUTORING, itemCue, moveOnCue } from './diScript';
 import {
-  classifyTutorJudgment,
   detectDIItemFromTutorText,
   matchesAsrAliases,
   MAX_CORRECTIONS_PER_ITEM,
@@ -28,7 +29,6 @@ import {
   summarizeEvents,
   type BenchEvent,
   type DIItem,
-  type LiveJudgment,
 } from './diBenchModel';
 
 interface DirectInstructionBenchProps {
@@ -37,34 +37,19 @@ interface DirectInstructionBenchProps {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-interface PendingAttempt {
-  itemId: string;
-  aliasMatch: boolean;
-}
-
 /** Manual voice-activity mode. Run 3 proved Gemini's automatic VAD gates on
  *  speech-likeness, not energy: it ignored sustained hums louder than words it
- *  committed, while promoting noise/echo into phantom turns. So the bench's
- *  own amplitude detector now brackets every learner turn via
- *  activityStart/activityEnd, and Gemini's VAD is disabled entirely. */
+ *  committed, while promoting noise/echo into phantom turns. So the engine's
+ *  amplitude detector brackets every learner turn via activityStart/End, and
+ *  Gemini's VAD is disabled entirely. */
 const DI_AUDIO_INPUT = {
   manual_activity: true,
 };
 
-/** The turn authority now lives in useLiveVoiceTurns / voiceTurnMachine
- *  (extracted from this bench after the 2026-07-19 runs). The bench keeps
- *  only the editable silence threshold; barge-in bar, hysteresis, close and
- *  min-voice windows are the shared defaults. Run history that tuned them:
- *  runs 3–4 (threshold 0.025, hysteresis), probe run 2026-07-19 (DI-2 dual
- *  threshold: echo residual 0.033 vs real speech ≥0.068 over tutor audio). */
+/** The bench keeps only the editable silence threshold; barge-in bar,
+ *  hysteresis, close and min-voice windows are the shared engine defaults
+ *  (tuned by runs 3–4 and the 2026-07-19/20 open-mic runs). */
 const DEFAULT_VAD_THRESHOLD = DEFAULT_VOICE_TURN_CONFIG.silenceThreshold;
-
-/** Beat between the tutor's verify line finishing (audio fall) and the next
- *  item cue. Sending the cue at sentinel time stepped on "Yes, mmm." —
- *  the affirmation is the learner's payoff and must be heard whole. */
-const VERIFY_BEAT_MS = 400;
-/** Failsafe: send a queued cue even if the verify audio never registers. */
-const PENDING_CUE_MAX_WAIT_MS = 5000;
 
 const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
   const ctx = useLuminaAIContext();
@@ -79,30 +64,19 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
   const runningRef = useRef(false);
   const connectedRef = useRef(ctx.isConnected);
   const listeningRef = useRef(ctx.isListening);
-  const previousAudioPlayingRef = useRef(ctx.isAudioPlaying);
   const runStartRef = useRef(0);
-  const lastTutorQuietAtRef = useRef<number | null>(null);
   const eventNRef = useRef(0);
-  const conversationIndexRef = useRef(ctx.conversation.length);
   const tutorTranscriptRef = useRef('');
   const activeItemIdRef = useRef(DEFAULT_ITEMS[0]?.id ?? '');
   const matchedItemIdsRef = useRef(new Set<string>());
   const correctionsRef = useRef(new Map<string, number>());
-  const pendingAttemptRef = useRef<PendingAttempt | null>(null);
-  const judgmentBufferRef = useRef('');
-  const audioPlayingRef = useRef(ctx.isAudioPlaying);
-  /** Synchronous view of the hook's turn state, readable inside timers
-   *  declared before the hook call. */
-  const voiceActiveRef = useRef<() => boolean>(() => false);
-  const pendingCueRef = useRef<string | null>(null);
-  const cueTimerRef = useRef<number | null>(null);
-  const cueFallbackTimerRef = useRef<number | null>(null);
+  const itemsRef = useRef(items);
   const weConnectedRef = useRef(false);
 
   connectedRef.current = ctx.isConnected;
   listeningRef.current = ctx.isListening;
   runningRef.current = running;
-  audioPlayingRef.current = ctx.isAudioPlaying;
+  itemsRef.current = items;
 
   const pushEvent = useCallback((event: Omit<BenchEvent, 'n' | 'atMs'>) => {
     // Capture n before the updater runs: React batches same-tick pushes, so
@@ -114,227 +88,185 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     setEvents((previous) => [...previous, { n, atMs, ...event }]);
   }, []);
 
-  /** Send the queued cue after a short beat — but only into silence. The cue
-   *  never fires while the tutor is audible, the learner is mid-utterance, or
-   *  an attempt awaits judgment; when blocked it stays queued and each of
-   *  those states re-triggers this on its falling edge (audio fall, voice
-   *  close, verdict processed). A cue held through a verdict is either
-   *  overwritten by the verdict's own next cue or — after an off-script
-   *  'stay' — fires as the re-elicitation of the current item. Idempotent
-   *  under the timer ref. */
-  const schedulePendingCue = useCallback(() => {
-    if (cueTimerRef.current != null || pendingCueRef.current == null) return;
-    cueTimerRef.current = window.setTimeout(() => {
-      cueTimerRef.current = null;
-      if (audioPlayingRef.current || voiceActiveRef.current() || pendingAttemptRef.current != null) return;
-      const cue = pendingCueRef.current;
-      pendingCueRef.current = null;
-      if (cue) ctx.sendText(cue, { silent: true });
-    }, VERIFY_BEAT_MS);
-  }, [ctx]);
+  const activeItemOf = () =>
+    itemsRef.current.find((candidate) => candidate.id === activeItemIdRef.current);
 
-  /** Queue the next lesson cue until the tutor's current line (the verify or
-   *  correction the learner needs to HEAR) finishes playing. Sending at
-   *  sentinel-classification time interrupts the affirmation mid-word. */
-  const queueCueAfterSpeech = useCallback((cue: string) => {
-    pendingCueRef.current = cue;
-    if (!ctx.isAudioPlaying) schedulePendingCue();
-    if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
-    cueFallbackTimerRef.current = window.setTimeout(() => {
-      cueFallbackTimerRef.current = null;
-      schedulePendingCue();
-    }, PENDING_CUE_MAX_WAIT_MS);
-  }, [ctx.isAudioPlaying, schedulePendingCue]);
+  /** DI progression policy over an engine verdict. The engine already bound
+   *  the verdict to a voice-anchored attempt; this decides what it means. */
+  const applyVerdict = useCallback((
+    judgment: 'affirmed' | 'corrected' | 'off-script',
+    aliasMatch: boolean | undefined,
+    queueCue: (text: string) => void,
+  ) => {
+    const currentItems = itemsRef.current;
+    const item = activeItemOf();
+    if (!item) return;
 
-  const clearPendingCue = useCallback(() => {
-    pendingCueRef.current = null;
-    if (cueTimerRef.current != null) { window.clearTimeout(cueTimerRef.current); cueTimerRef.current = null; }
-    if (cueFallbackTimerRef.current != null) { window.clearTimeout(cueFallbackTimerRef.current); cueFallbackTimerRef.current = null; }
-  }, []);
-
-  // This remains the exact frontend response clock: audible tutor tail to the
-  // first input-transcription event from the same Gemini Live session. The
-  // same falling edge releases any cue held back for the verify line.
-  useEffect(() => {
-    const wasPlaying = previousAudioPlayingRef.current;
-    previousAudioPlayingRef.current = ctx.isAudioPlaying;
-    if (wasPlaying && !ctx.isAudioPlaying) {
-      if (runningRef.current) lastTutorQuietAtRef.current = performance.now();
-      schedulePendingCue();
+    let correctionsUsed = correctionsRef.current.get(item.id) ?? 0;
+    if (judgment === 'corrected') {
+      correctionsUsed += 1;
+      correctionsRef.current.set(item.id, correctionsUsed);
     }
-  }, [ctx.isAudioPlaying, schedulePendingCue]);
+    const decision = resolveLiveJudgment(judgment, item.id, currentItems, correctionsUsed);
+    pushEvent({
+      speaker: 'judge',
+      text: `Live ${judgment} ${item.display}`,
+      itemId: item.id,
+      judgment,
+      aliasMatch,
+      action: decision.kind,
+    });
 
-  // The shared open-mic turn authority (extracted from this bench). It sends
-  // activityStart/End itself; the bench only logs telemetry and re-triggers
-  // held cues on voice close.
-  const voiceTurns = useLiveVoiceTurns({
-    enabled: running,
-    config: { silenceThreshold: vadThreshold },
-    onTurnClose: (event) => {
-      if (!event.belowMinVoice) {
-        pushEvent({
-          speaker: 'mic',
-          text: `local voice ${(event.durationMs / 1000).toFixed(1)}s, peak ${event.peak.toFixed(3)}${event.duringTutorAudio ? ', opened over tutor audio' : ''}`,
-          durationMs: event.durationMs,
-          peakLevel: Number(event.peak.toFixed(3)),
-          duringTutorAudio: event.duringTutorAudio || undefined,
-        });
+    switch (decision.kind) {
+      case 'stay':
+        setPhase(`Tutor reply for ${item.display} matched neither branch; logged as off-script.`);
+        return;
+      case 'retry':
+        setPhase(`Live corrected ${item.display} (${decision.correctionsUsed}/${MAX_CORRECTIONS_PER_ITEM}); listening again.`);
+        return;
+      case 'advance': {
+        matchedItemIdsRef.current.add(item.id);
+        const nextItem = currentItems.find((candidate) => candidate.id === decision.nextItemId);
+        if (!nextItem) return;
+        activeItemIdRef.current = nextItem.id;
+        setActiveItemId(nextItem.id);
+        setPhase(`Live affirmed ${item.display}; next item after the verify line plays out.`);
+        queueCue(itemCue(nextItem));
+        return;
       }
-      // Voice close is a cue trigger: a cue held while the learner spoke may
-      // now be clear to fire.
-      schedulePendingCue();
-    },
-  });
-  voiceActiveRef.current = voiceTurns.isVoiceActive;
-  const lastVoiceStartRef = voiceTurns.lastTurnOpenAtRef;
-
-  useEffect(() => {
-    const next = ctx.conversation.slice(conversationIndexRef.current);
-    conversationIndexRef.current = ctx.conversation.length;
-    if (!runningRef.current) return;
-
-    const applyVerdict = (judgment: Exclude<LiveJudgment, 'pending'>, pending: PendingAttempt) => {
-      const item = items.find((candidate) => candidate.id === pending.itemId);
-      if (!item) return;
-
-      let correctionsUsed = correctionsRef.current.get(item.id) ?? 0;
-      if (judgment === 'corrected') {
-        correctionsUsed += 1;
-        correctionsRef.current.set(item.id, correctionsUsed);
-      }
-      const decision = resolveLiveJudgment(judgment, item.id, items, correctionsUsed);
-      pushEvent({
-        speaker: 'judge',
-        text: `Live ${judgment} ${item.display}`,
-        itemId: item.id,
-        judgment,
-        aliasMatch: pending.aliasMatch,
-        action: decision.kind,
-      });
-
-      switch (decision.kind) {
-        case 'stay':
-          setPhase(`Tutor reply for ${item.display} matched neither branch; logged as off-script.`);
-          return;
-        case 'retry':
-          setPhase(`Live corrected ${item.display} (${decision.correctionsUsed}/${MAX_CORRECTIONS_PER_ITEM}); listening again.`);
-          return;
-        case 'advance': {
-          matchedItemIdsRef.current.add(item.id);
-          const nextItem = items.find((candidate) => candidate.id === decision.nextItemId);
-          if (!nextItem) return;
+      case 'complete':
+        matchedItemIdsRef.current.add(item.id);
+        runningRef.current = false;
+        setRunning(false);
+        setPhase('Live affirmed the final item; run complete and Live remains warm.');
+        queueCue(completeCue());
+        return;
+      case 'move-on': {
+        const nextItem = decision.nextItemId
+          ? currentItems.find((candidate) => candidate.id === decision.nextItemId)
+          : undefined;
+        if (nextItem) {
           activeItemIdRef.current = nextItem.id;
           setActiveItemId(nextItem.id);
-          setPhase(`Live affirmed ${item.display}; next item after the verify line plays out.`);
-          queueCueAfterSpeech(itemCue(nextItem));
-          return;
-        }
-        case 'complete':
-          matchedItemIdsRef.current.add(item.id);
+          setPhase(`Corrections capped on ${item.display}; moving on to ${nextItem.display}.`);
+          queueCue(moveOnCue(item, nextItem));
+        } else {
           runningRef.current = false;
           setRunning(false);
-          setPhase('Live affirmed the final item; run complete and Live remains warm.');
-          queueCueAfterSpeech(completeCue());
-          return;
-        case 'move-on': {
-          const nextItem = decision.nextItemId
-            ? items.find((candidate) => candidate.id === decision.nextItemId)
-            : undefined;
-          if (nextItem) {
-            activeItemIdRef.current = nextItem.id;
-            setActiveItemId(nextItem.id);
-            setPhase(`Corrections capped on ${item.display}; moving on to ${nextItem.display}.`);
-            queueCueAfterSpeech(moveOnCue(item, nextItem));
-          } else {
-            runningRef.current = false;
-            setRunning(false);
-            setPhase(`Corrections capped on the final item ${item.display}; run complete.`);
-            queueCueAfterSpeech(moveOnCue(item));
-          }
-          return;
+          setPhase(`Corrections capped on the final item ${item.display}; run complete.`);
+          queueCue(moveOnCue(item));
         }
+        return;
       }
-    };
+    }
+  }, [pushEvent]);
 
-    for (const message of next) {
-      if (message.role === 'user') {
-        const quietAt = lastTutorQuietAtRef.current;
-        const responseMs = quietAt == null ? null : Math.max(0, Math.round(performance.now() - quietAt));
-        lastTutorQuietAtRef.current = null;
-        const item = items.find((candidate) => candidate.id === activeItemIdRef.current);
-        const aliasMatch = item ? matchesAsrAliases(message.content, item) : false;
-        const voiceStart = lastVoiceStartRef.current;
-        // Phantom-commit guard: a transcript no local voice backed (noise,
-        // echo, stale pre-run audio) is logged but never judged. Run 3's
-        // "hide"/"ठीक है।" both fail this test.
-        if (voiceStart == null && !voiceTurns.isVoiceActive()) {
-          pushEvent({
-            speaker: 'learner',
-            text: message.content,
-            responseMs,
-            commitLagMs: null,
-            itemId: activeItemIdRef.current,
-            aliasMatch,
-            ignored: 'no-local-voice',
-          });
-          continue;
-        }
-        lastVoiceStartRef.current = null;
-        const commitLagMs = voiceStart == null
-          ? null
-          : Math.max(0, Math.round(performance.now() - voiceStart));
-        pendingAttemptRef.current = { itemId: activeItemIdRef.current, aliasMatch };
-        judgmentBufferRef.current = '';
+  const handleEmission = useCallback((emission: LoopEmission) => {
+    switch (emission.kind) {
+      case 'attempt-open':
+        return;
+      case 'attempt-superseded':
+        pushEvent({
+          speaker: 'judge',
+          text: 'attempt superseded by a newer answer before the verdict',
+          itemId: activeItemIdRef.current,
+        });
+        return;
+      case 'attempt-transcript': {
+        const item = activeItemOf();
         pushEvent({
           speaker: 'learner',
-          text: message.content,
-          responseMs,
-          commitLagMs,
+          text: emission.text,
+          responseMs: emission.responseMs,
+          commitLagMs: emission.commitLagMs,
           itemId: activeItemIdRef.current,
-          aliasMatch,
+          aliasMatch: item ? matchesAsrAliases(emission.text, item) : false,
         });
-        continue;
+        return;
       }
-
-      tutorTranscriptRef.current += ` ${message.content}`;
-      const detected = detectDIItemFromTutorText(tutorTranscriptRef.current, items);
-      pushEvent({ speaker: 'tutor', text: message.content, detectedItemId: detected?.id });
-
-      const pending = pendingAttemptRef.current;
-      if (!pending) {
-        // DI-1 detector: a sentinel verdict with NO transcript-backed attempt
-        // pending means Live judged audio it heard but the input transcription
-        // was lost (probe run 2026-07-19: /sss/ over tutor audio → "Yes, sss."
-        // → screen stuck on s). Log it first-class — this is the exact moment
-        // bench and model diverge. Per-fragment classification: sentinels open
-        // a tutor sentence, so the fragment that starts one classifies alone;
-        // a mid-word split ("Ye"+"s, …") can slip past — log-only tradeoff.
-        const stray = classifyTutorJudgment(message.content);
-        if (stray === 'affirmed' || stray === 'corrected') {
+      case 'phantom-transcript': {
+        const item = activeItemOf();
+        pushEvent({
+          speaker: 'learner',
+          text: emission.text,
+          responseMs: null,
+          commitLagMs: null,
+          itemId: activeItemIdRef.current,
+          aliasMatch: item ? matchesAsrAliases(emission.text, item) : false,
+          ignored: 'no-local-voice',
+        });
+        return;
+      }
+      case 'verdict': {
+        if (emission.judgment === 'no-verdict') {
           pushEvent({
             speaker: 'judge',
-            text: `Live ${stray} with NO pending attempt (transcript lost?)`,
+            text: 'no verdict before timeout; attempt dropped',
             itemId: activeItemIdRef.current,
-            judgment: stray,
-            unanchored: true,
+            judgment: 'no-verdict',
           });
-          setPhase(`Live said a ${stray === 'affirmed' ? '"Yes"' : '"My turn"'} verdict with no attempt pending — likely a lost learner transcript on ${activeItemIdRef.current}.`);
+          setPhase(`The Live judge never took a branch for ${activeItemIdRef.current}; waiting (resync will re-cue).`);
+          return;
         }
-        continue;
+        // Alias cross-check comes from the attempt's transcript when Live
+        // supplied one; a transcript-less attempt (DI-1 shape) is judged but
+        // excluded from agreement stats.
+        const item = activeItemOf();
+        const aliasMatch = emission.attempt.transcript != null && item
+          ? matchesAsrAliases(emission.attempt.transcript, item)
+          : undefined;
+        applyVerdict(emission.judgment, aliasMatch, loopRef.current.queueCue);
+        return;
       }
-      judgmentBufferRef.current += ` ${message.content}`;
-      const judgment = classifyTutorJudgment(judgmentBufferRef.current);
-      if (judgment === 'pending') continue;
-      pendingAttemptRef.current = null;
-      judgmentBufferRef.current = '';
-      applyVerdict(judgment, pending);
-      if (!runningRef.current) break;
+      case 'unanchored-verdict':
+        pushEvent({
+          speaker: 'judge',
+          text: `Live ${emission.judgment} with NO voice-anchored attempt`,
+          itemId: activeItemIdRef.current,
+          judgment: emission.judgment,
+          unanchored: true,
+        });
+        setPhase(`Live took a branch with no local voice turn at all on ${activeItemIdRef.current} — investigate.`);
+        return;
+      case 'resync': {
+        const item = activeItemOf();
+        if (!item) return;
+        pushEvent({
+          speaker: 'judge',
+          text: `resync after ${emission.misses} misses — re-cueing ${item.display}`,
+          itemId: item.id,
+          action: 'stay',
+        });
+        setPhase(`Loop resync: re-cueing ${item.display}.`);
+        loopRef.current.queueCue(itemCue(item));
+        return;
+      }
     }
-    // Verdict processing is a cue trigger: clearing the pending attempt (or an
-    // advance queueing its cue while the room is already quiet) can leave a
-    // fireable cue with no future audio-fall or voice-close edge to release it.
-    if (runningRef.current) schedulePendingCue();
-  }, [ctx, items, pushEvent, queueCueAfterSpeech, schedulePendingCue]);
+  }, [applyVerdict, pushEvent]);
+
+  const loop = useJudgedSpeechLoop({
+    enabled: running,
+    voice: { config: { silenceThreshold: vadThreshold } },
+    onEmission: handleEmission,
+    onTutorText: (text) => {
+      tutorTranscriptRef.current += ` ${text}`;
+      const detected = detectDIItemFromTutorText(tutorTranscriptRef.current, itemsRef.current);
+      pushEvent({ speaker: 'tutor', text, detectedItemId: detected?.id });
+    },
+    onVoiceTurnClose: (event) => {
+      pushEvent({
+        speaker: 'mic',
+        text: `local voice ${(event.durationMs / 1000).toFixed(1)}s, peak ${event.peak.toFixed(3)}${event.duringTutorAudio ? ', opened over tutor audio' : ''}`,
+        durationMs: event.durationMs,
+        peakLevel: Number(event.peak.toFixed(3)),
+        duringTutorAudio: event.duringTutorAudio || undefined,
+      });
+    },
+  });
+  // handleEmission fires from inside the loop's dispatch, before `loop` from
+  // this render is assignable — route self-references through a ref.
+  const loopRef = useRef(loop);
+  loopRef.current = loop;
 
   const prepareLive = useCallback(async () => {
     if (preparing) return;
@@ -380,41 +312,32 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     if (!firstItem) return;
     eventNRef.current = 0;
     runStartRef.current = performance.now();
-    lastTutorQuietAtRef.current = null;
     tutorTranscriptRef.current = '';
-    conversationIndexRef.current = ctx.conversation.length;
     setEvents([]);
     matchedItemIdsRef.current.clear();
     correctionsRef.current.clear();
-    pendingAttemptRef.current = null;
-    judgmentBufferRef.current = '';
-    voiceTurns.reset();
-    clearPendingCue();
+    loop.reset();
     activeItemIdRef.current = firstItem.id;
     setActiveItemId(firstItem.id);
     runningRef.current = true;
     setRunning(true);
     setPhase('The Live tutor is conducting the lesson. Speak naturally when she asks.');
-    ctx.sendText(itemCue(firstItem, true), { silent: true });
-  }, [clearPendingCue, ctx, items]);
+    loop.sendCueNow(itemCue(firstItem, true));
+    loop.arm();
+  }, [ctx, items, loop]);
 
   const stopRun = useCallback(() => {
     runningRef.current = false;
     setRunning(false);
-    lastTutorQuietAtRef.current = null;
-    pendingAttemptRef.current = null;
-    judgmentBufferRef.current = '';
-    // Flipping `running` false disables useLiveVoiceTurns, which force-closes
-    // any open turn (activityEnd included).
-    clearPendingCue();
+    // Disabling disarms the engine and closes any open voice turn; an abrupt
+    // stop also drops whatever cue was queued.
+    loop.clearQueuedCue();
     setPhase('Run stopped — the Live tutor remains warm.');
-  }, [clearPendingCue]);
+  }, [loop]);
 
   useEffect(() => () => {
     runningRef.current = false;
-    if (cueTimerRef.current != null) window.clearTimeout(cueTimerRef.current);
-    if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
-    // useLiveVoiceTurns closes any open turn on its own unmount.
+    // The engine and voice hook clean up their own timers/turns on unmount.
     ctx.stopListening();
     if (weConnectedRef.current) ctx.disconnect();
   // Context methods are stable; this is unmount-only cleanup.
@@ -424,28 +347,35 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
   const summary = useMemo(() => summarizeEvents(events), [events]);
   const ready = ctx.isConnected && ctx.isListening;
   const activeItem = items.find((item) => item.id === activeItemId) ?? items[0];
-  const awaitingJudgment = pendingAttemptRef.current != null;
+  const awaitingJudgment = loop.isAwaitingJudgment();
 
   const copyRun = useCallback(async () => {
     const payload = {
       bench: 'direct-instruction',
       at: new Date().toISOString(),
       config: {
-        architecture: 'live-judged-two-branch-sentinel-with-frontend-progression-authority',
+        architecture: 'judged-speech-loop-engine-with-di-progression-policy',
         live: 'gemini-3.1-flash-live-preview-audio-with-input-output-transcription',
         judge: 'gemini-live-in-band (affirm="Yes", correct="My turn")',
         crossCheck: 'whole-token-asr-alias-match-on-input-transcript (passive)',
         timing: 'frontend:tutor-audio-fall-to-live-input-transcription-arrival',
         geminiVad: { ...DI_AUDIO_INPUT, note: 'automatic VAD disabled; client brackets turns' },
+        engine: {
+          attemptAnchor: 'local-voice-turn-close (DI-1); transcripts annotate, never anchor',
+          verdictScan: 'sentence-opener sentinels over post-attempt tutor output',
+          sentinels: loop.config.sentinels,
+          verdictTimeoutMs: loop.config.verdictTimeoutMs,
+          resyncAfterMisses: loop.config.resyncAfterMisses,
+        },
         localVad: {
           role: 'turn-authority (useLiveVoiceTurns / voiceTurnMachine)',
-          ...voiceTurns.config,
+          ...loop.voiceTurns.config,
           gatedWhileTutorAudioPlays: false,
           bargeIn: 'activityStart over tutor audio interrupts generation; client flushes on ai_interrupted',
           echoDefense: 'browser AEC on capture + DI-2 dual threshold (barge-in bar = silenceThreshold × bargeInMultiplier)',
           measuredFloors: {
-            ambientRms: Number(voiceTurns.floorsRef.current.ambientRms.toFixed(4)),
-            echoRms: Number(voiceTurns.floorsRef.current.echoRms.toFixed(4)),
+            ambientRms: Number(loop.voiceTurns.floorsRef.current.ambientRms.toFixed(4)),
+            echoRms: Number(loop.voiceTurns.floorsRef.current.echoRms.toFixed(4)),
           },
           phantomCommitGuard: 'transcripts without local voice are logged, never judged',
         },
@@ -460,7 +390,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     } catch {
       setPhase('Clipboard copy failed.');
     }
-  }, [events, items, summary]);
+  }, [events, items, summary, loop]);
 
   const setItem = (id: string, patch: Partial<DIItem>) => {
     setItems((previous) => previous.map((item) => item.id === id ? { ...item, ...patch } : item));
@@ -474,7 +404,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
         </button>
         <div>
           <h1 className="text-xl font-semibold text-slate-100">Direct Instruction Bench</h1>
-          <p className="text-xs text-slate-400">Live judges each attempt in-band from the audio it heard; the bench parses the branch and alone advances the lesson.</p>
+          <p className="text-xs text-slate-400">The judged-loop engine anchors attempts to local voice turns and binds the Live judge’s in-band verdicts; the bench maps them to DI progression.</p>
         </div>
       </div>
 
@@ -487,7 +417,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
             </p>
           </div>
           <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-wide text-cyan-200">
-            Live-judged POC
+            Engine pilot
           </span>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -556,8 +486,8 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
               className="w-16 rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200"
             />
           </label>
-          <span className="font-mono text-[10px] text-slate-500" title="EMA noise floors: ambient (tutor silent) / echo residual (tutor speaking). Barge-in bar opens at threshold × {String(voiceTurns.config.bargeInMultiplier)}.">
-            floors {voiceTurns.floorsRef.current.ambientRms.toFixed(3)}/{voiceTurns.floorsRef.current.echoRms.toFixed(3)}
+          <span className="font-mono text-[10px] text-slate-500" title={`EMA noise floors: ambient (tutor silent) / echo residual (tutor speaking). Barge-in bar opens at threshold × ${loop.voiceTurns.config.bargeInMultiplier}.`}>
+            floors {loop.voiceTurns.floorsRef.current.ambientRms.toFixed(3)}/{loop.voiceTurns.floorsRef.current.echoRms.toFixed(3)}
           </span>
         </div>
 

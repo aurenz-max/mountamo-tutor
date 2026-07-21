@@ -12,7 +12,6 @@ import {
   verifyLine,
 } from './diScript';
 import {
-  classifyTutorJudgment,
   detectDIItemFromTutorText,
   matchesAsrAliases,
   MAX_CORRECTIONS_PER_ITEM,
@@ -20,6 +19,7 @@ import {
   summarizeEvents,
   type BenchEvent,
 } from './diBenchModel';
+import { DI_SENTINELS, scanForSentinel } from '../../hooks/judgedLoopModel';
 
 describe('live-judged Direct Instruction bench model', () => {
   it('keeps the active opening item set', () => {
@@ -50,25 +50,19 @@ describe('live-judged Direct Instruction bench model', () => {
     }
   });
 
-  it('never lets a non-verdict scripted line collide with a sentinel', () => {
+  it('never lets a non-verdict scripted line collide with an engine sentinel', () => {
+    // Cross-module contract: the DI script and the engine's DI_SENTINELS must
+    // stay collision-free — no cue/model/guide/test line may scan as a verdict.
     for (const item of DEFAULT_ITEMS) {
       for (const line of [modelLine(item), guideLine(item), testLine(item)]) {
-        expect(['affirmed', 'corrected']).not.toContain(classifyTutorJudgment(line));
+        expect(['affirmed', 'corrected']).not.toContain(scanForSentinel(line, DI_SENTINELS));
       }
     }
-    expect(classifyTutorJudgment(completeCue())).not.toBe('affirmed');
-  });
-
-  it('classifies tutor turns by their opening sentinel only', () => {
-    expect(classifyTutorJudgment('Yes, mmm.')).toBe('affirmed');
-    expect(classifyTutorJudgment('Yes. Apple starts with short a.')).toBe('affirmed');
-    expect(classifyTutorJudgment('My turn: sss, as in sun. Your turn. What sound?')).toBe('corrected');
-    expect(classifyTutorJudgment('Your turn. What sound?')).toBe('off-script');
-    expect(classifyTutorJudgment('Yesterday we practiced.')).toBe('off-script');
-    expect(classifyTutorJudgment('')).toBe('pending');
-    expect(classifyTutorJudgment('Ye')).toBe('pending');
-    expect(classifyTutorJudgment('My')).toBe('pending');
-    expect(classifyTutorJudgment('My friend')).toBe('off-script');
+    expect(scanForSentinel(completeCue(), DI_SENTINELS)).not.toBe('affirmed');
+    for (const item of DEFAULT_ITEMS) {
+      expect(scanForSentinel(verifyLine(item), DI_SENTINELS)).toBe('affirmed');
+      expect(scanForSentinel(correctionLine(item), DI_SENTINELS)).toBe('corrected');
+    }
   });
 
   it('cross-checks lossy input transcripts with whole-token aliases', () => {
