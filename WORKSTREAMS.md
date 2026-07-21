@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched 2026-07-16
+### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched 2026-07-20
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -73,15 +73,21 @@ queue AND this file's "last touched" in the same slice.
   flash/hide subitize and Grade 1–2 make-ten preserved. Browser follow-on fixed: make-ten → add now
   clears the completed frame before operate begins. Verified jsdom 5/5, full suite 810/810,
   typecheck:lumina 0, eval-test 4/4 modes; report `qa/reader-fit/ten-frame-item12-2026-07-16.md`;
-  pixel/real-click → HUMAN-CHECKS #31. **Next = #13 counting-board subitize** (display fix), then
-  coin-counter `count-like` confirm/clear. Execution handoff:
+  pixel/real-click → HUMAN-CHECKS #31. **#13 counting-board subitize DONE 2026-07-20** —
+  contract-first flash-then-hide DISPLAY fork (K band+mode: objects render only during the flash,
+  stepper/Check gated behind the hide, `handleObjectTap` no-op so the scene can't be tap-counted);
+  count_all @ K + Grade-1 subitize + Pre-K perceptual all unchanged; no generator/schema/catalog
+  change. Verified jsdom 3/3, full suite 844/844, typecheck:lumina 0, eval-test @ K PASS (content
+  unchanged). Contract `docs/contracts/counting-board.md` (R4); report
+  `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
+  coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now (per `/pm` 2026-07-19):** pull **#13 counting-board `subitize` display fix** —
-  `/reader-fit --fix counting-board`, contract-first; full prompt =
-  `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 2. Then Task 3 (coin-counter
-  `count-like` confirm/clear), then the **2b tail** (rule-5 feedback-on-object + per-mode picture
-  passes). Stream untouched since 07-16 (3 days) but remains user-designated TOP PRIORITY — resume,
-  don't park.
+- **Now (per `/pm` 2026-07-20):** #13 closed. Pull **Task 3 — coin-counter `count-like`
+  confirm/clear** (the last un-swept direct-manipulation candidate from the 07-16 sibling census;
+  full prompt = `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 3), then the **2b tail**
+  (rule-5 feedback-on-object + per-mode picture passes for compare_numbers/order/one_more_less).
+  Uncommitted this slice: `CountingBoard.tsx` + its jsdom test + `docs/contracts/counting-board.md`
+  + QA docs — `/ship` when ready.
 - **History (#9 explainer tail):** pilot + fact-file DONE 2026-07-15, tail reconciled. The
   "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
   READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
@@ -150,10 +156,27 @@ queue AND this file's "last touched" in the same slice.
   response times improved (1706/1192ms vs probe 2986/1882ms). New engine input from the run:
   a mid-cue attempt can consume a cue FRAGMENT as its verdict (benign off-script) — verdict
   classification must only consume tutor output that begins a NEW turn after the attempt closed.
-- **Now = extraction step 2: judged-loop engine** — generalize diBenchModel + re-entrant cue
-  pacing; parameterized sentinels; DI-1 voice-anchored attempts + unanchored-verdict binding +
-  resync re-cue; DI-3 arming; mid-cue verdict scoping (above). Then (3) DI primitive as first
-  consumer (generator-backed items). Bench stays as the modality's measurement harness.
+- **Extraction step 2 CODE-COMPLETE 2026-07-20 (uncommitted):** the judged-loop engine.
+  `hooks/judgedLoopModel.ts` (pure reducer: voice-anchored attempts DI-1 — attempts exist at LOCAL
+  voice-turn close, transcripts only annotate; sentence-scoped sentinel scanning — fixes the
+  mid-cue-fragment misread; off-script only on sentence+quiet; DI-3 arming; no-verdict timeout 8s;
+  resync emission after 2 misses; vitest 13/13, every case traced to a live-run shape) +
+  `hooks/useJudgedSpeechLoop.ts` (conversation feed, tutor-quiet clock, tick, cue queue with
+  verify-beat + fire-into-silence; disable keeps the queued closing cue, clearQueuedCue for abrupt
+  stops) + bench rewritten as pilot consumer (owns only DI pedagogy: script, progression policy,
+  alias cross-check, run log; `classifyTutorJudgment` deleted from diBenchModel — collision test now
+  runs against engine DI_SENTINELS). typecheck:lumina 0, full suite 844/844.
+- **Step 2 RUNTIME-VERIFIED 2026-07-21 + COMMITTED (#33 struck):** user run PASS
+  (`qa/di-bench/run-2026-07-21-engine-gate.md`) — 4/4, 0 unanchored, and the crown jewel: the
+  probe run's transcript-loss failure RECURRED live (voice turn, no transcript, "Yes, sss.") and
+  the voice-anchored attempt absorbed it — judged, advanced, no desync. Off-script-at-quiet
+  exercised (tutor re-modeled without the "My turn" opener; engine stayed correctly). Resync/
+  timeout unit-covered, not yet observed live (watch-items). Primitive note: tutoring directive
+  should remind that EVERY correction begins "My turn:" (model dropped it on a re-correction).
+- **Now = extraction step 3: DI primitive** as the engine's first real consumer — generator-backed
+  items (no DEFAULT_ITEMS), catalog entry + eval modes, `/primitive` L0 birth + `/curriculum-fit`
+  (K phonics letter-sounds is starved — GK LA graph repair memory). Bench stays as the modality's
+  measurement harness.
 - **WIP note:** RESOLVED 2026-07-16 (user) — media-player parked (B1 shipped), so ACTIVE =
   reader-fit (top) + DI bench = **2 ACTIVE, within the 2+1 limit.** DI kept deliberately as a
   proof-of-concept — the user's read is "something doable here but tricky to get right," so it stays
@@ -185,7 +208,7 @@ WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as
 |---|---|---|---|
 | media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
 | SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **3 contracts** derived (media-player added 2026-07-16 via reader-fit #9a Step 1 — first CONFLICTED contract) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **7 contracts on disk** (newest: counting-board 2026-07-20 via reader-fit #13; ten-frame 2026-07-16 via #12; media-player 2026-07-16 via #9a Step 1 — the CONFLICTED one) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
 | Flash-lite truncation hardening | memory `project_flash-lite-truncation-template` | ~50-gen sweep | 07-06 |
