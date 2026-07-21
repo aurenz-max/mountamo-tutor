@@ -2148,7 +2148,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'say, in one warm child-friendly sentence, exactly what to do — and NAME the specific choice so the child knows what they are deciding. '
             + 'Match the wording to the challenge type ({{challengeType}}): '
             + 'compare-groups → "Which side has MORE — the left side or the right side? Tap that side. If they are the same, tap the equals in the middle."; '
-            + 'compare-numbers → "Which number is bigger, {{leftNumber}} or {{rightNumber}}? Pick the alligator mouth that eats the bigger one."; '
+            + 'compare-numbers → "Which number is bigger, {{leftNumber}} or {{rightNumber}}? Tap the bigger number. If they are the same, tap the equals sign in the middle." (a reader who sees alligator mouths can pick the mouth that eats the bigger number instead); '
             + 'one-more-one-less → we start at {{targetNumber}}, and you voice EVERY question the screen shows (askFor: {{askFor}}), giving "one less" exactly the same attention as "one more": '
             + 'if it asks for one more, say "Find the number that is one MORE than {{targetNumber}} and tap it."; if it asks for one less, say "Find the number that is one LESS than {{targetNumber}} and tap it."; '
             + 'if it asks for BOTH, voice both asks equally — "Find one MORE than {{targetNumber}}, and also find one LESS than {{targetNumber}} — tap a number for each." Never skip or shortchange the "one less" side; '

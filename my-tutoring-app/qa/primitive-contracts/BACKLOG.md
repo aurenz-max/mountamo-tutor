@@ -38,6 +38,16 @@ band spread of any math primitive; multiple historical fidelity fixes
 
 ## Done
 
+- **counting-board — derived 2026-07-20** → `docs/contracts/counting-board.md`. Pulled out of queue
+  order as the contract-first step of reader-fit BACKLOG **#13** (K `subitize` flash-then-hide display
+  fork). **8 requirements** (7 OBSERVED, R4 REQUIRED — the item-13 K subitize flash lifecycle), **0
+  open conflicts** (item 13 is COMPATIBLE / fork-by-band+mode — changes only R4's K subitize display),
+  **2 gaps**: G1 `count_on` @ EMERGING (same visible-scene defect one band up — deferred to the
+  EMERGING re-audit, NOT pre-ruled), G2 `subitize_perceptual` flash @ Pre-K (catalog promises "Flash
+  1–3 objects" but the component shows them persistently — reuse the K flash lifecycle). Static
+  derivation (no live census — the 07-16 sibling census is declared complete). Strongest evidence =
+  the counting-board oracle (answer-key-desync/scope/reachability rules) + eval report + topic-fidelity
+  2026-06-27. Catalog projection: faithful, no change. Report: `qa/reader-fit/counting-board-item13-2026-07-20.md`.
 - **media-player — derived 2026-07-16 (3rd contract; first with an OPEN conflict)** →
   `docs/contracts/media-player.md`. Pulled OUT of queue order as Step 1 of reader-fit BACKLOG
   **#9a** (user-pivoted REIMAGINING — contract-first mandatory). **8 requirements** (7 OBSERVED;

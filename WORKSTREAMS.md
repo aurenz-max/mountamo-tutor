@@ -45,9 +45,13 @@ queue AND this file's "last touched" in the same slice.
   `ReadMeButton` shared helper (first instance of the systemic replay item). Contract-first:
   `docs/contracts/comparison-builder.md` derived, edit COMPATIBLE (no fork). Verified tsc 0-new +
   typecheck:lumina 0 + jsdom 12/12 + full suite 790/790 + tutor-test Tier-1/2 pass. Report:
-  `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. **2b TAIL still open** (Audit-C rule-5
-  feedback-on-object; per-mode picture passes for compare_numbers/order/one_more_less). **Committed
-  `39f2543`.** Pixel → HUMAN-CHECKS #26.
+  `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Head **Committed `39f2543`** (pixel → HUMAN-CHECKS #26).
+  **2b TAIL DONE 2026-07-20** — Audit-C rule-5 feedback-on-object (text card hidden at K, wrong tap shakes the
+  touched object) + per-mode PRE picture passes (compare_numbers → tap the bigger numeral + `=`, no `<>` /
+  alligator / Check; order → wordless graduated-bar direction; one_more_less → 5-cell window + wordless ⬆/⬇ +
+  tap=choose). Band+mode fork (builds contract G1). Verified jsdom 25/25, full 857/857, typecheck:lumina 0,
+  eval-test @ K 3/3, contract `--check` COMPATIBLE. Report: `qa/reader-fit/comparison-builder-PRE-2b-tail-2026-07-20.md`.
+  Residual: live `--lesson` + pixel → HUMAN-CHECKS #35. **comparison-builder #2b now FULLY RESOLVED.**
   **#11 addition-subtraction-scene `act_out` @ K DONE + USER-CONFIRMED LIVE 2026-07-16** — TRUE direct
   manipulation (seed startCount → tap-add/remove → auto-judge on the enacted count); fork by band+mode
   (solve_story tiles + create_story build + Grade-1 count model all preserved); deterministic
@@ -82,12 +86,13 @@ queue AND this file's "last touched" in the same slice.
   `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
   coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now (per `/pm` 2026-07-20):** #13 closed. Pull **Task 3 — coin-counter `count-like`
-  confirm/clear** (the last un-swept direct-manipulation candidate from the 07-16 sibling census;
-  full prompt = `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 3), then the **2b tail**
-  (rule-5 feedback-on-object + per-mode picture passes for compare_numbers/order/one_more_less).
-  Uncommitted this slice: `CountingBoard.tsx` + its jsdom test + `docs/contracts/counting-board.md`
-  + QA docs — `/ship` when ready.
+- **Now (per `/pm` 2026-07-20):** #13 closed; **2b tail closed 2026-07-20** (see the #2b row above).
+  Remaining pull = **Task 3 — coin-counter `count-like` confirm/clear** (the last un-swept
+  direct-manipulation candidate from the 07-16 sibling census; full prompt =
+  `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 3). Then, with the demand-side K queue
+  drained, re-run the topic-trace census at grade 1 (EMERGING) to re-seed the band.
+  Uncommitted (a sibling #13 session): `CountingBoard.tsx` + its jsdom test +
+  `docs/contracts/counting-board.md` + QA docs — `/ship` when ready (separate slice from this 2b-tail one).
 - **History (#9 explainer tail):** pilot + fact-file DONE 2026-07-15, tail reconciled. The
   "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
   READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
@@ -104,11 +109,13 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction module (bench-first) — last touched 2026-07-19
-- **Queue:** `my-tutoring-app/qa/HANDOFF-di-bench-2026-07-16.md` (charter + gates; graduate to a
-  BACKLOG file if the bench passes).
-- **Executor skills:** human browser run → HUMAN-CHECKS #30. Keep this a dev bench; choose a
-  production primitive/spoken-judge path only after the architecture gate.
+### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-20
+- **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
+  architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
+  core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
+  is historical.
+- **Executor skills:** `/primitive` (L0 birth per pack) + `/curriculum-fit` + `/eval-test` +
+  `/tutor-test`; bench sitting per NEW response class before wiring (standing gate in the BACKLOG).
 - **User-pulled 2026-07-16.** Test one turn controller over one Gemini Live audio session: exact
   I-do/we-do/you-do scripts, Live input/output transcription, and an asynchronous Flash-Lite JSON
   report that alone authorizes advance/retry.
@@ -173,14 +180,15 @@ queue AND this file's "last touched" in the same slice.
   exercised (tutor re-modeled without the "My turn" opener; engine stayed correctly). Resync/
   timeout unit-covered, not yet observed live (watch-items). Primitive note: tutoring directive
   should remind that EVERY correction begins "My turn:" (model dropped it on a re-correction).
-- **Now = extraction step 3: DI primitive** as the engine's first real consumer — generator-backed
-  items (no DEFAULT_ITEMS), catalog entry + eval modes, `/primitive` L0 birth + `/curriculum-fit`
-  (K phonics letter-sounds is starved — GK LA graph repair memory). Bench stays as the modality's
-  measurement harness.
-- **WIP note:** RESOLVED 2026-07-16 (user) — media-player parked (B1 shipped), so ACTIVE =
-  reader-fit (top) + DI bench = **2 ACTIVE, within the 2+1 limit.** DI kept deliberately as a
-  proof-of-concept — the user's read is "something doable here but tricky to get right," so it stays
-  live at bench stage; its next action is a single human sitting (HUMAN-CHECKS #30), not a build.
+- **Now = `qa/di/BACKLOG.md` item 1: `di-letter-sounds`** — first custom-made pack over the
+  committed engine stack. Hand-authored script (port the diScript SHAPE), generator-scoped item
+  menu (rhyme-studio K pattern, no hardcoded items), new `primitives/direct-instruction/` family +
+  `catalog/di.ts` section, normal manifest entry (no new launch surface). Curriculum home = the
+  starved GK phonics band. Then item 2 di-word-reading (bench probe first), item 3 di-math-facts
+  (gated on a number-words bench probe; watch sentinel collision with natural "Yes!").
+- **WIP note:** the 07-16 "proof-of-concept, not a build" framing is RETIRED (user call
+  2026-07-20) — the bench proved the architecture; DI is now a build stream. ACTIVE = reader-fit
+  (top) + DI = **2 ACTIVE, within the 2+1 limit.**
 
 *(SP-27 Tutoring Context Integrity + media-player reimagining both PARKED — see PARKED table.
 WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as of 2026-07-16.)*

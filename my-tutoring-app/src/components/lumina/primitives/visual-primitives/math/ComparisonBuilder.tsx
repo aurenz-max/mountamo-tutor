@@ -173,7 +173,7 @@ function readMeAskClause(challenge: ComparisonBuilderChallenge): string {
     case 'compare-groups':
       return 'Tap the side that has more. If the two sides have the same, tap the equals sign in the middle.';
     case 'compare-numbers':
-      return `Tap the symbol that goes between ${challenge.leftNumber ?? ''} and ${challenge.rightNumber ?? ''}.`;
+      return `Tap the number that is bigger, ${challenge.leftNumber ?? ''} or ${challenge.rightNumber ?? ''}. If they are the same, tap the equals sign in the middle.`;
     case 'order': {
       const dir = challenge.direction === 'descending' ? 'greatest to least' : 'least to greatest';
       return `Tap the numbers one at a time to put them in order from ${dir}.`;
@@ -360,6 +360,27 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     () => () => { if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current); },
     [],
   );
+
+  // Rule-5 feedback-on-the-object (K band): a wrong tap flashes/shakes the TAPPED
+  // object itself instead of a text card (the card is hidden at K; SFX + spoken
+  // hint still carry it). `wrongFlash` holds a per-element key — 'more'/'less'/
+  // 'equal' (compare-groups), 'num-<symbol>' (compare-numbers), 'more-<n>'/
+  // 'less-<n>' (one-more-one-less) — that the render matches to apply motion.shake.
+  // Self-clears after the 350ms shake so a re-tap can re-arm it. Precedent:
+  // rhyme-studio / word-workout rule-5 treatment (ring/shake + SFX, no text card).
+  const [wrongFlash, setWrongFlash] = useState<string | null>(null);
+  const wrongFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => { if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current); },
+    [],
+  );
+  const flashWrong = useCallback((key: string) => {
+    if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
+    // Re-arm cleanly if the same key shakes twice in a row (null → key on the next frame).
+    setWrongFlash(null);
+    setWrongFlash(key);
+    wrongFlashTimer.current = setTimeout(() => setWrongFlash(null), 600);
+  }, []);
 
   // K (pre-reader) is a hard band gate: at K the answer surface is picture-primary
   // and the adult chrome (mode tabs, counter, grade/type badges, count badges) is
@@ -609,20 +630,26 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         });
       } else {
         SoundManager.playIncorrect();
+        // Rule-5: the wrong feedback lands on the tapped side (shake), not a text card.
+        flashWrong(answer);
       }
     },
     [
       currentChallenge, challengeResults, allChallengesComplete,
-      checkCompareGroups, recordResult, currentAttempts,
+      checkCompareGroups, recordResult, currentAttempts, flashWrong,
     ],
   );
 
   // -------------------------------------------------------------------------
   // Check Answer — compare-numbers
   // -------------------------------------------------------------------------
-  const checkCompareNumbers = useCallback(() => {
-    if (!currentChallenge || !selectedAnswer) return false;
-    const correct = selectedAnswer === currentChallenge.correctSymbol;
+  const checkCompareNumbers = useCallback((answerArg?: '<' | '>' | '=') => {
+    // answerArg lets the K tap=choose path (tap the bigger numeral) evaluate the
+    // just-derived symbol without waiting for setSelectedAnswer to flush; the
+    // Grade-1 Check path passes nothing and reads selectedAnswer.
+    const selected = answerArg ?? (selectedAnswer as '<' | '>' | '=' | null);
+    if (!currentChallenge || !selected) return false;
+    const correct = selected === currentChallenge.correctSymbol;
     incrementAttempts();
 
     if (correct) {
@@ -640,11 +667,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('error');
       noteWrongAnswer(
         `choose the symbol comparing ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}`,
-        `picked "${selectedAnswer}"`,
+        `picked "${selected}"`,
         `the correct symbol is "${currentChallenge.correctSymbol}" (${currentChallenge.leftNumber} ${currentChallenge.correctSymbol} ${currentChallenge.rightNumber})`,
       );
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctSymbol}" `
+        `[ANSWER_INCORRECT] Student chose "${selected}" but correct is "${currentChallenge.correctSymbol}" `
         + `for ${currentChallenge.leftNumber} vs ${currentChallenge.rightNumber}. `
         + `Attempt ${currentAttempts + 1}. `
         + `${useAlligatorMnemonic
@@ -657,6 +684,42 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
     return correct;
   }, [currentChallenge, selectedAnswer, incrementAttempts, noteWrongAnswer, useAlligatorMnemonic, currentAttempts, sendText, tutorRevealClause]);
+
+  // -------------------------------------------------------------------------
+  // K tap=choose — compare-numbers. The pre-reader taps the BIGGER numeral
+  // directly (K.CC.C.7 = compare two written numerals) instead of reading a
+  // <, >, = symbol. The two numeral boxes + a middle "=" ARE the answer surface;
+  // the tapped side derives the symbol (tap the bigger → the comparison), so
+  // there are no symbol buttons, no alligator, and no Check button at K.
+  //   tap LEFT  → asserting left is bigger  → '>'  (left > right)
+  //   tap RIGHT → asserting right is bigger → '<'  (left < right)
+  //   tap SAME  → '='
+  // -------------------------------------------------------------------------
+  const handleTapNumberSide = useCallback(
+    (symbol: '<' | '>' | '=') => {
+      const alreadySolved = challengeResults.some(
+        (r) => r.challengeId === currentChallenge?.id && r.correct,
+      );
+      if (!currentChallenge || alreadySolved || allChallengesComplete) return;
+      setSelectedAnswer(symbol);
+      const correct = checkCompareNumbers(symbol);
+      if (correct) {
+        SoundManager.playCorrect();
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
+      } else {
+        SoundManager.playIncorrect();
+        flashWrong(`num-${symbol}`);
+      }
+    },
+    [
+      currentChallenge, challengeResults, allChallengesComplete,
+      checkCompareNumbers, recordResult, currentAttempts, flashWrong,
+    ],
+  );
 
   // -------------------------------------------------------------------------
   // Check Answer — order
@@ -708,19 +771,23 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
   // -------------------------------------------------------------------------
   // Check Answer — one-more-one-less
   // -------------------------------------------------------------------------
-  const checkOneMoreOneLess = useCallback(() => {
+  const checkOneMoreOneLess = useCallback((moreArg?: number | null, lessArg?: number | null) => {
     if (!currentChallenge || currentChallenge.targetNumber === undefined) return false;
     const target = currentChallenge.targetNumber;
     const askFor = currentChallenge.askFor ?? 'both';
+    // The K tap=choose path passes the just-tapped value(s) so evaluation doesn't
+    // wait for setState to flush; the Grade-1 Check path passes nothing.
+    const moreVal = moreArg !== undefined ? moreArg : oneMoreAnswer;
+    const lessVal = lessArg !== undefined ? lessArg : oneLessAnswer;
     incrementAttempts();
 
     let correct = false;
     if (askFor === 'one-more') {
-      correct = oneMoreAnswer === target + 1;
+      correct = moreVal === target + 1;
     } else if (askFor === 'one-less') {
-      correct = oneLessAnswer === target - 1;
+      correct = lessVal === target - 1;
     } else {
-      correct = oneMoreAnswer === target + 1 && oneLessAnswer === target - 1;
+      correct = moreVal === target + 1 && lessVal === target - 1;
     }
 
     if (correct) {
@@ -739,10 +806,10 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       setFeedbackType('error');
       const studentAnswers =
         askFor === 'both'
-          ? `one more: ${oneMoreAnswer ?? '?'}, one less: ${oneLessAnswer ?? '?'}`
+          ? `one more: ${moreVal ?? '?'}, one less: ${lessVal ?? '?'}`
           : askFor === 'one-more'
-            ? `${oneMoreAnswer ?? '?'}`
-            : `${oneLessAnswer ?? '?'}`;
+            ? `${moreVal ?? '?'}`
+            : `${lessVal ?? '?'}`;
       noteWrongAnswer(
         `find one ${askFor === 'both' ? 'more and one less' : askFor === 'one-more' ? 'more' : 'less'} than ${target}`,
         `answered ${studentAnswers}`,
@@ -790,6 +857,68 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
       }
     },
     [isK, currentChallenge, oneMoreAnswer, oneLessAnswer, sendText],
+  );
+
+  // -------------------------------------------------------------------------
+  // K tap=choose — one-more-one-less. Tapping a number cell IS the answer (no
+  // Check). For a single ask (one-more OR one-less) the tap is atomic → evaluate
+  // at once. For 'both' the first tap gives immediate rule-5 feedback if wrong,
+  // then the DISAMBIGUATE beat asks for the other part; the second tap completes
+  // and evaluates. Wrong lands on the tapped cell (shake); correct records +
+  // advances. Grade-1 keeps the Check-button path (handleCheckAnswer).
+  // -------------------------------------------------------------------------
+  const handleTapOneMoreLess = useCallback(
+    (which: 'more' | 'less', n: number) => {
+      const alreadySolved = challengeResults.some(
+        (r) => r.challengeId === currentChallenge?.id && r.correct,
+      );
+      if (!currentChallenge || currentChallenge.type !== 'one-more-one-less'
+        || alreadySolved || allChallengesComplete) return;
+      const target = currentChallenge.targetNumber ?? 0;
+      const askFor = currentChallenge.askFor ?? 'both';
+
+      if (which === 'more') setOneMoreAnswer(n); else setOneLessAnswer(n);
+      voiceOtherOneMoreLess(which);
+
+      const nextMore = which === 'more' ? n : oneMoreAnswer;
+      const nextLess = which === 'less' ? n : oneLessAnswer;
+      const ready =
+        askFor === 'one-more' ? nextMore !== null
+          : askFor === 'one-less' ? nextLess !== null
+            : nextMore !== null && nextLess !== null;
+
+      if (!ready) {
+        // 'both', only one part answered — immediate feedback if THIS part is wrong;
+        // otherwise wait for the DISAMBIGUATE-prompted other part.
+        const partCorrect = which === 'more' ? n === target + 1 : n === target - 1;
+        if (!partCorrect) {
+          SoundManager.playIncorrect();
+          flashWrong(`${which}-${n}`);
+        } else {
+          // First part accepted — soft tick; the DISAMBIGUATE beat asks the other.
+          SoundManager.select();
+        }
+        return;
+      }
+
+      const correct = checkOneMoreOneLess(nextMore, nextLess);
+      if (correct) {
+        SoundManager.playCorrect();
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+        });
+      } else {
+        SoundManager.playIncorrect();
+        flashWrong(`${which}-${n}`);
+      }
+    },
+    [
+      currentChallenge, challengeResults, allChallengesComplete,
+      oneMoreAnswer, oneLessAnswer, voiceOtherOneMoreLess,
+      checkOneMoreOneLess, recordResult, currentAttempts, flashWrong,
+    ],
   );
 
   // -------------------------------------------------------------------------
@@ -931,6 +1060,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     setFeedbackType('');
     setOrderFlash(null);
     if (orderFlashTimer.current) clearTimeout(orderFlashTimer.current);
+    setWrongFlash(null);
+    if (wrongFlashTimer.current) clearTimeout(wrongFlashTimer.current);
     // Clear the per-challenge DISAMBIGUATE latches so the next one-more-one-less
     // voices both sub-questions fresh.
     disambiguatedMoreRef.current = false;
@@ -1045,6 +1176,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
               stroke={selectedAnswer === 'more' ? 'rgba(249,115,22,0.9)' : 'rgba(249,115,22,0.2)'}
               strokeWidth={selectedAnswer === 'more' ? 3 : 1.5}
               style={{ cursor: tappable ? 'pointer' : 'default' }}
+              className={wrongFlash === 'more' ? motion.shake : undefined}
               onClick={tappable ? () => handleTapSide('more') : undefined}
             />
             <text
@@ -1065,6 +1197,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
               stroke={selectedAnswer === 'less' ? 'rgba(59,130,246,0.9)' : 'rgba(59,130,246,0.2)'}
               strokeWidth={selectedAnswer === 'less' ? 3 : 1.5}
               style={{ cursor: tappable ? 'pointer' : 'default' }}
+              className={wrongFlash === 'less' ? motion.shake : undefined}
               onClick={tappable ? () => handleTapSide('less') : undefined}
             />
             <text
@@ -1082,6 +1215,7 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             {kTapMode && (
               <g
                 style={{ cursor: tappable ? 'pointer' : 'default' }}
+                className={wrongFlash === 'equal' ? motion.shake : undefined}
                 onClick={tappable ? () => handleTapSide('equal') : undefined}
               >
                 <circle
@@ -1243,6 +1377,55 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     const left = currentChallenge.leftNumber ?? 0;
     const right = currentChallenge.rightNumber ?? 0;
 
+    // K (pre-reader) picture-primary tap=choose: the child taps the BIGGER numeral
+    // directly (K.CC.C.7 = compare two written numerals) instead of reading a
+    // <, >, = symbol. The two numeral boxes + a middle "=" ARE the answer surface;
+    // tap the bigger side (or "=" if equal), the tap derives the symbol and
+    // evaluates — no symbol buttons, no alligator mnemonic, no Check button.
+    if (isK) {
+      const kTappable = !isCurrentChallengeComplete && !allChallengesComplete;
+      // tap left → assert left bigger → '>'; tap right → '<'; tap "=" → '='.
+      const numberBox = (
+        value: number,
+        symbol: '<' | '>' | '=',
+        colorClass: string,
+      ) => {
+        const chosen = selectedAnswer === symbol;
+        return (
+          <button
+            type="button"
+            disabled={!kTappable}
+            onClick={() => kTappable && handleTapNumberSide(symbol)}
+            className={`w-28 h-28 rounded-2xl border-2 flex items-center justify-center transition-all ${colorClass} ${
+              chosen ? 'ring-4 ring-white/40' : ''
+            } ${wrongFlash === `num-${symbol}` ? motion.shake : ''}`}
+          >
+            <span className="text-5xl font-bold">{value}</span>
+          </button>
+        );
+      };
+      return (
+        <div className="flex items-center justify-center gap-4">
+          {numberBox(left, '>', 'bg-orange-500/10 border-orange-400/40 text-orange-300')}
+          {/* Middle "=" — tappable "the same" target, mirrors compare-groups. */}
+          <button
+            type="button"
+            disabled={!kTappable}
+            onClick={() => kTappable && handleTapNumberSide('=')}
+            aria-label="the same"
+            className={`w-16 h-16 rounded-full border-2 flex items-center justify-center transition-all text-3xl font-bold ${
+              selectedAnswer === '='
+                ? 'bg-purple-500/20 border-purple-400/90 text-purple-200 ring-4 ring-white/30'
+                : 'bg-purple-500/8 border-purple-400/40 text-purple-300'
+            } ${wrongFlash === 'num-=' ? motion.shake : ''}`}
+          >
+            =
+          </button>
+          {numberBox(right, '<', 'bg-blue-500/10 border-blue-400/40 text-blue-300')}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         {/* Large number display with symbol slot */}
@@ -1333,11 +1516,37 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
     return (
       <div className="space-y-5">
-        {/* Direction label */}
-        <div className="text-center">
-          <LuminaBadge accent="purple" className="text-xs">
-            {direction === 'ascending' ? 'Least → Greatest' : 'Greatest → Least'}
-          </LuminaBadge>
+        {/* Direction cue. Grade-1 reads the text badge; at K (band gate) the
+            direction is WORDLESS — three graduated bars matching the fill order:
+            short→tall = put the smallest on the left (ascending), tall→short =
+            biggest on the left (descending). The bar heights ARE the instruction,
+            so a non-reader sees which way to build without decoding the words. */}
+        <div className="flex justify-center">
+          {isK ? (
+            <svg
+              width={104} height={44} viewBox="0 0 104 44"
+              role="img"
+              aria-label={direction === 'ascending' ? 'smallest to biggest' : 'biggest to smallest'}
+            >
+              {[0, 1, 2].map((i) => {
+                const h = direction === 'ascending' ? 12 + i * 12 : 36 - i * 12;
+                return (
+                  <rect
+                    key={i}
+                    x={8 + i * 32} y={40 - h}
+                    width={22} height={h} rx={4}
+                    fill="rgba(168,85,247,0.45)"
+                    stroke="rgba(168,85,247,0.7)"
+                    strokeWidth={1.5}
+                  />
+                );
+              })}
+            </svg>
+          ) : (
+            <LuminaBadge accent="purple" className="text-xs">
+              {direction === 'ascending' ? 'Least → Greatest' : 'Greatest → Least'}
+            </LuminaBadge>
+          )}
         </div>
 
         {/* Ordered slots — bespoke drop targets speaking the shared zone
@@ -1428,17 +1637,50 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
     const target = currentChallenge.targetNumber ?? 5;
     const askFor = currentChallenge.askFor ?? 'both';
     const maxNum = Math.max(target + 5, 20);
+    const bandMax = gradeBand === '1' ? 20 : 10;
+
+    // Answer-surface cells. At K (band gate, rule 4) the full 0-20 number line
+    // (up to 21 cells per row) is a load violation, so K shows only a 5-cell
+    // WINDOW centered on the target ([target-2 .. target+2] clamped to the band) —
+    // always containing target-1 / target / target+1, the only viable answers.
+    // Grade-1 keeps the full number line.
+    const cells: number[] = isK
+      ? (() => {
+          const lo = Math.max(0, target - 2);
+          const hi = Math.min(bandMax, target + 2);
+          return Array.from({ length: hi - lo + 1 }, (_, k) => lo + k);
+        })()
+      : Array.from({ length: Math.min(maxNum + 1, 21) }, (_, i) => i);
 
     const numberRow = (
+      which: 'more' | 'less',
       selected: number | null,
-      onSelect: (n: number) => void,
       label: string,
       colorClass: string,
     ) => (
       <div className="space-y-2">
-        <p className={`text-sm font-medium text-center ${colorClass}`}>{label}</p>
+        {/* Header: WORDLESS at K — an up arrow (one more, emerald) or down arrow
+            (one less, blue); the tutor voices the ask. Grade-1 reads the text. */}
+        {isK ? (
+          <div className="flex justify-center" aria-label={which === 'more' ? 'one more' : 'one less'}>
+            <svg width={30} height={30} viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path
+                d={which === 'more'
+                  ? 'M12 4 L12 20 M12 4 L6 10 M12 4 L18 10'   /* up = one more */
+                  : 'M12 20 L12 4 M12 20 L6 14 M12 20 L18 14'} /* down = one less */
+                fill="none"
+                stroke={which === 'more' ? 'rgba(52,211,153,0.95)' : 'rgba(96,165,250,0.95)'}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        ) : (
+          <p className={`text-sm font-medium text-center ${colorClass}`}>{label}</p>
+        )}
         <div className="flex justify-center gap-1.5 flex-wrap">
-          {Array.from({ length: Math.min(maxNum + 1, 21) }, (_, i) => {
+          {cells.map((i) => {
             // Bespoke number-line cells: selected uses tokenized grading color;
             // the target marker stays an amber affordance unique to this surface.
             const cellState = selected === i ? 'selected' : 'idle';
@@ -1446,6 +1688,8 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
             // (showTargetMarker=false). The amber Target box above still shows the
             // number (the stimulus), so the problem stays solvable.
             const isTarget = showTargetMarker && i === target && selected !== i;
+            // Rule-5: a wrong tap shakes THIS cell (K); no text card.
+            const isWrong = wrongFlash === `${which}-${i}`;
             return (
               <button
                 key={i}
@@ -1454,11 +1698,16 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
                   isTarget
                     ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
                     : answerStateClass(cellState)
-                }`}
+                } ${isWrong ? motion.shake : ''}`}
                 onClick={() => {
-                  if (!isCurrentChallengeComplete) {
+                  if (isCurrentChallengeComplete) return;
+                  if (isK) {
+                    // tap=choose: the handler owns SFX + evaluation + advance.
+                    handleTapOneMoreLess(which, i);
+                  } else {
                     SoundManager.select();
-                    onSelect(i);
+                    if (which === 'more') setOneMoreAnswer(i); else setOneLessAnswer(i);
+                    voiceOtherOneMoreLess(which);
                   }
                 }}
                 disabled={isCurrentChallengeComplete}
@@ -1473,26 +1722,27 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
 
     return (
       <div className="space-y-5">
-        {/* Target number */}
+        {/* Target number — the big numeral is the stimulus; the "Target" caption is
+            a word, hidden at K (the tutor names it; a non-reader can't read it). */}
         <div className="flex items-center justify-center">
           <div className="w-24 h-24 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex flex-col items-center justify-center">
             <span className="text-4xl font-bold text-amber-300">{target}</span>
-            <span className="text-xs text-amber-400/70 mt-1">Target</span>
+            {!isK && <span className="text-xs text-amber-400/70 mt-1">Target</span>}
           </div>
         </div>
 
         {/* Number rows */}
         {(askFor === 'one-more' || askFor === 'both') &&
           numberRow(
+            'more',
             oneMoreAnswer,
-            (n) => { setOneMoreAnswer(n); voiceOtherOneMoreLess('more'); },
             `One more than ${target}?`,
             'text-emerald-400',
           )}
         {(askFor === 'one-less' || askFor === 'both') &&
           numberRow(
+            'less',
             oneLessAnswer,
-            (n) => { setOneLessAnswer(n); voiceOtherOneMoreLess('less'); },
             `One less than ${target}?`,
             'text-blue-400',
           )}
@@ -1586,8 +1836,11 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
           </>
         )}
 
-        {/* Feedback */}
-        {feedback && feedbackType && (
+        {/* Feedback — text card at Grade 1+. At K (band gate, rule 5) the feedback
+            lands on the touched object instead (group/side/cell shake for wrong,
+            order slots flash), with SFX + a spoken tutor hint; a non-reader can't
+            read a card, so it is hidden here and the object + voice carry it. */}
+        {feedback && feedbackType && !isK && (
           <LuminaFeedbackCard
             status={feedbackType === 'success' ? 'correct' : 'incorrect'}
           >
@@ -1598,9 +1851,16 @@ const ComparisonBuilder: React.FC<ComparisonBuilderProps> = ({ data, className }
         {/* Action buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {/* No Check at K compare-groups — tapping a group is the atomic answer. */}
+            {/* No Check at K for the tap=choose modes — compare-groups (tap a side),
+                compare-numbers (tap the bigger numeral), one-more-one-less (tap the
+                number cell). Order keeps Check at K: it is a multi-part construction
+                (place N numbers in sequence), which the band contract allows. */}
             {!isCurrentChallengeComplete && !allChallengesComplete
-              && !(gradeBand === 'K' && currentChallenge?.type === 'compare-groups') && (
+              && !(isK && (
+                currentChallenge?.type === 'compare-groups'
+                || currentChallenge?.type === 'compare-numbers'
+                || currentChallenge?.type === 'one-more-one-less'
+              )) && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}

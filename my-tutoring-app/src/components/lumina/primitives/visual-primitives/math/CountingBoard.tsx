@@ -41,6 +41,7 @@ export interface CountingBoardChallenge {
   arrangement: 'scattered' | 'line' | 'groups' | 'circle';
   groupSize?: number | null;
   startFrom?: number | null;    // for count_on mode
+  flashDuration?: number | null; // ms the objects stay visible in K subitize flash-then-hide
   hint: string;
   narration: string;
 }
@@ -107,6 +108,12 @@ const WORKSPACE_WIDTH = 480;
 const WORKSPACE_HEIGHT = 320;
 const OBJECT_SIZE = 40;
 const OBJECT_PADDING = 24;
+
+// K subitize flash-then-hide timing. Objects appear for the flash window, then
+// hide before the numeric answer surface is enabled — genuine subitizing is
+// instant recognition, not tap-counting a static scene (reader-fit item 13).
+const SUBITIZE_FLASH_MS = 1500;   // default; overridable per-challenge via flashDuration
+const SUBITIZE_PREP_MS = 800;     // brief "get ready" beat before the flash begins
 
 // ============================================================================
 // Position Generators
@@ -337,6 +344,12 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // Subitize state
   const [subitizeInput, setSubitizeInput] = useState('');
   const [subitizeStartTime, setSubitizeStartTime] = useState(0);
+  // K subitize flash-then-hide lifecycle: objects are visible ONLY while
+  // `isSubitizeFlashing`; the numeric stepper is enabled once `subitizeAnswerReady`
+  // (the flash has completed). Reader grades ignore both and keep objects visible.
+  const [isSubitizeFlashing, setIsSubitizeFlashing] = useState(false);
+  const [subitizeAnswerReady, setSubitizeAnswerReady] = useState(false);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pre-K subitize state (hand-image answer)
   const [handChoice, setHandChoice] = useState<number | null>(null);
@@ -366,6 +379,11 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const currentChallenge = useMemo(() => {
     return challenges[currentChallengeIndex] || null;
   }, [challenges, currentChallengeIndex]);
+
+  // Reader-fit item 13: at K, `subitize` flashes the objects then hides them
+  // before the numeric answer. Reader grades (Grade 1) keep the objects visible.
+  // The fork is band + mode scoped — count_all and subitize_perceptual are untouched.
+  const isKSubitize = gradeBand === 'K' && currentChallenge?.type === 'subitize';
 
   // Per-challenge scatter seed: stable within a challenge (positions don't jump
   // as the student taps) but varied across challenges so no two scattered boards
@@ -475,6 +493,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleObjectTap = useCallback((objectIndex: number) => {
     if (hasSubmittedEvaluation) return;
+    // K subitize is perceptual recognition, never tap-counting: no tap ever
+    // mutates counted state (objects are only on screen during the brief flash).
+    if (isKSubitize) return;
 
     if (countedObjects.has(objectIndex)) {
       SoundManager.invalid();   // ← blocked action (already counted), not a wrong answer
@@ -507,7 +528,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     });
     setFeedback('');
     setFeedbackType('');
-  }, [hasSubmittedEvaluation, countedObjects, doubleCounted, isConnected, sendText, objects.type]);
+  }, [hasSubmittedEvaluation, isKSubitize, countedObjects, doubleCounted, isConnected, sendText, objects.type]);
 
   // -------------------------------------------------------------------------
   // Challenge Checking
@@ -651,6 +672,10 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setHandChoice(null);
     setFeedback('');
     setFeedbackType('');
+    // Re-arm the K subitize flash so a retry re-shows then re-hides the objects.
+    if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
+    setIsSubitizeFlashing(false);
+    setSubitizeAnswerReady(false);
 
     // Re-setup count-on pre-counted objects
     if (currentChallenge.type === 'count_on') {
@@ -806,6 +831,11 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     setCountOrder(new Map());
     setDoubleCounted(false);
     setCurrentRetries(0);
+    // Re-arm the K subitize flash for the next challenge (the auto-start effect
+    // re-fires because both flags are cleared).
+    if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
+    setIsSubitizeFlashing(false);
+    setSubitizeAnswerReady(false);
     const nextChallenge = challenges[currentChallengeIndex + 1];
 
     // Set phase
@@ -857,6 +887,45 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct
   );
+
+  // -------------------------------------------------------------------------
+  // K subitize flash-then-hide (reader-fit item 13)
+  // -------------------------------------------------------------------------
+  const startSubitizeFlash = useCallback(() => {
+    if (!currentChallenge) return;
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
+    }
+    setSubitizeInput('');
+    setFeedback('');
+    setFeedbackType('');
+    setSubitizeAnswerReady(false);
+    setIsSubitizeFlashing(true);
+    setSubitizeStartTime(Date.now());
+
+    const duration = currentChallenge.flashDuration || SUBITIZE_FLASH_MS;
+    flashTimeoutRef.current = setTimeout(() => {
+      setIsSubitizeFlashing(false);
+      setSubitizeAnswerReady(true);   // objects now hidden — the numeral answer is legitimate
+      flashTimeoutRef.current = null;
+    }, duration);
+  }, [currentChallenge]);
+
+  // Auto-start the flash when a K subitize challenge is first shown (a brief prep
+  // beat, then flash → hide). Fires once per challenge: after the flash completes
+  // `subitizeAnswerReady` is true, so this guard no longer matches.
+  useEffect(() => {
+    if (isKSubitize && !isSubitizeFlashing && !subitizeAnswerReady && !isCurrentChallengeComplete) {
+      const timer = setTimeout(() => startSubitizeFlash(), SUBITIZE_PREP_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [isKSubitize, isSubitizeFlashing, subitizeAnswerReady, isCurrentChallengeComplete, startSubitizeFlash]);
+
+  // Cancel any in-flight flash timeout on unmount.
+  useEffect(() => () => {
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Auto-submit evaluation when all challenges complete
@@ -1002,8 +1071,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               })()
             )}
 
-            {/* Objects */}
-            {positions.map((pos, index) => {
+            {/* Objects — hidden during the K subitize answer phase (flash-then-hide) */}
+            {!(isKSubitize && !isSubitizeFlashing) && positions.map((pos, index) => {
               const isCounted = countedObjects.has(index);
               const countNum = countOrder.get(index);
               const isPreCounted = currentPhase === 'countOn' && index < preCountedCount;
@@ -1117,29 +1186,50 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Subitize Input */}
-        {currentPhase === 'subitize' && !isCurrentChallengeComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
-            <div className="flex items-center gap-1.5">
-              <LuminaButton
-                className="h-10 w-10 text-lg font-bold p-0"
-                onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
-                disabled={hasSubmittedEvaluation}
-              >
-                &minus;
-              </LuminaButton>
-              <span className="w-12 text-center text-2xl font-bold text-orange-300 tabular-nums select-none">
-                {parseInt(subitizeInput, 10) || 0}
-              </span>
-              <LuminaButton
-                className="h-10 w-10 text-lg font-bold p-0"
-                onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
-                disabled={hasSubmittedEvaluation}
-              >
-                +
-              </LuminaButton>
+        {/* K subitize: pre-flash / flashing "watch" prompt (objects are on screen briefly) */}
+        {isKSubitize && !subitizeAnswerReady && !isCurrentChallengeComplete && (
+          <div className="flex items-center justify-center">
+            <span className="text-orange-300 text-sm font-medium">
+              👀 {isSubitizeFlashing ? 'Look quick!' : 'Get ready to look…'}
+            </span>
+          </div>
+        )}
+
+        {/* Subitize Input — for K, only after the flash has hidden the objects */}
+        {currentPhase === 'subitize' && !isCurrentChallengeComplete && (!isKSubitize || subitizeAnswerReady) && (
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
+              <div className="flex items-center gap-1.5">
+                <LuminaButton
+                  className="h-10 w-10 text-lg font-bold p-0"
+                  onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
+                  disabled={hasSubmittedEvaluation}
+                >
+                  &minus;
+                </LuminaButton>
+                <span className="w-12 text-center text-2xl font-bold text-orange-300 tabular-nums select-none">
+                  {parseInt(subitizeInput, 10) || 0}
+                </span>
+                <LuminaButton
+                  className="h-10 w-10 text-lg font-bold p-0"
+                  onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
+                  disabled={hasSubmittedEvaluation}
+                >
+                  +
+                </LuminaButton>
+              </div>
             </div>
+            {isKSubitize && (
+              <LuminaButton
+                tone="subtle"
+                className="text-xs"
+                onClick={startSubitizeFlash}
+                disabled={hasSubmittedEvaluation}
+              >
+                Show again
+              </LuminaButton>
+            )}
           </div>
         )}
 
@@ -1192,6 +1282,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                     onClick={handleCheckAnswer}
                     disabled={
                       (currentPhase === 'count' && countedObjects.size === 0) ||
+                      (isKSubitize && !subitizeAnswerReady) ||
                       hasSubmittedEvaluation
                     }
                   />

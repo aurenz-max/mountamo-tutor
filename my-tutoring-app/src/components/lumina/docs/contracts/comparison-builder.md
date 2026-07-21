@@ -65,11 +65,12 @@ _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
 
 ## Gap requirements (close matches — the improvement queue)
 
-### G1 — one_more_less / compare_numbers / order @ PRE not yet reader-fit complete · QUEUED in reader-fit 2b
+### G1 — one_more_less / compare_numbers / order @ PRE not yet reader-fit complete · BUILT 2026-07-20 (item 2b tail)
 - **Near-consumer:** K math census routes these three modes at K, but only compare_groups has the full PRE band-gate (Audit C). one_more_less shows up to 21 number cells (rule-4 load); order shows a direction badge text; compare_numbers shows the `< > =` symbol read.
 - **Shortfall:** each needs its own tap/picture-primary pass + a symmetric DISAMBIGUATE (one_more_less voices "one more" but not "one less" — Pulse 2026-07-16).
 - **Path:** band gate (component) + catalog directive → `/reader-fit --fix comparison-builder`.
 - **Relation to R-series:** extends R1/R2 to the other three modes; no conflict.
+- **Built (2026-07-20):** compare_numbers @ K → tap the BIGGER numeral + middle "=" (K.CC.C.7 compare-written-numerals; no `< > =` buttons, no alligator, no Check); order @ K → wordless graduated-bar direction cue (text badge Grade-1 only); one_more_less @ K → 5-cell window centered on the target (down from up to 21) + wordless ⬆/⬇ row headers + tap=choose. Rule-5: wrong taps shake the touched object (group/numeral/cell), text card hidden at K (SFX + spoken hint carry it). Report: `qa/reader-fit/comparison-builder-PRE-2b-tail-2026-07-20.md`.
 
 ## Catalog projection
 
@@ -81,3 +82,4 @@ _None open._ (2026-07-16 chrome band-gate is COMPATIBLE — see changelog.)
 
 - 2026-07-16 — derived (initial). 7 requirements, 0 conflicts, 1 gap (G1).
 - 2026-07-16 — item 2b edit (K chrome band-gate + symmetric one_more_less DISAMBIGUATE + shared 🔊 Read-me). Assessed **COMPATIBLE**: band-gating `showCountBadges` OFF at all K tiers is *stricter than* the R5 tier lever (which only hid it at `hard`) and no consumer depends on K count badges being visible — the reader-fit Audit A already classified them as a count leak ("Supportive→leaks count"). R5's grade-1 behavior is untouched (band-gate keys on `gradeBand==='K'`, not on tier). R1 tap surface preserved (band-gate hides chrome, not the group pictures/`=`). R2 extended (one_less now voiced identically). No fork required.
+- 2026-07-20 — item 2b TAIL edit (rule-5 feedback-on-object at K + per-mode PRE picture passes for compare_numbers / order / one_more_less). Assessed **COMPATIBLE** — a band+mode fork keyed on `gradeBand==='K'`, never on tier; it BUILDS gap G1. Other-consumer probes held: R1 compare-groups tap surface unchanged (added only a shake class on wrong taps); R5 Grade-1 tier levers untouched (K gates are band-scoped — the alligator/count-badge/target-marker/slot-hint tier withdrawal still applies at Grade-1); R4/R7 generator untouched; R6 K taps still record + submit on completion; R2 directive reworded compare-numbers answer-free ("tap the bigger number"), keys unchanged. R3 no handlebars/answer added. Verified: `typecheck:lumina` 0, full vitest **857/857**, `ComparisonBuilder.reader-fit.test.tsx` **25/25**. Check report: `qa/primitive-contracts/comparison-builder-check-2026-07-20.md`. No fork ladder needed (K presentation is the fork). Residual: live `--lesson` + browser pixel → HUMAN-CHECKS.

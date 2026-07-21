@@ -20,6 +20,16 @@ with the same object count was byte-identical. Fix: derive a per-challenge seed 
 through `generatePositions → generateScatteredPositions`, and add it to the `positions` memo deps.
 Line/groups/circle layouts unaffected (they ignore the seed). tsc: no new errors.
 
+**2026-07-20 — subitize re-verified PASS after the reader-fit item-13 K flash-then-hide DISPLAY
+fork.** The fork is component-only (no generator/schema/catalog change), so subitize CONTENT is
+unchanged: eval-test @ K ("Subitizing to 5") returned `pass`, 7 subitize challenges, every
+`targetAnswer === count`, counts 2–5 (K perceptual band; topic "to 5" ceiling honored — no
+magnitude past 5), no bound number leaked into instruction/hint/narration. The flash-then-hide
+lifecycle itself (objects appear briefly, then hide before the numeric stepper enables; hidden
+objects are not tappable) is a runtime display behavior eval-test does not observe — it is verified
+by the jsdom behavioral suite `CountingBoard.reader-fit.test.tsx` (3/3). Contract:
+`docs/contracts/counting-board.md` R4. See reader-fit BACKLOG item 13.
+
 **2026-07-03 — CB-2 fixed (GENERATOR, deterministic scaffold default).** User-reported: in a mixed-mode
 board, counted objects showed the tap highlight ring but no per-object count number. Root cause: the
 per-object counter is gated on `showOptions.showLastNumber`, which in the untiered/mixed path came

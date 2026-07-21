@@ -85,6 +85,36 @@ const oneMoreLess = (
   askFor,
 });
 
+const numbers = (
+  id: string,
+  leftNumber: number,
+  rightNumber: number,
+  correctSymbol: '<' | '>' | '=',
+): ComparisonBuilderChallenge => ({
+  id,
+  type: 'compare-numbers',
+  instruction: 'Which number is bigger?',
+  leftNumber,
+  rightNumber,
+  correctSymbol,
+});
+
+const orderCh = (
+  id: string,
+  nums: number[],
+  direction: 'ascending' | 'descending',
+): ComparisonBuilderChallenge => ({
+  id,
+  type: 'order',
+  instruction: 'Put the numbers in order.',
+  numbers: nums,
+  direction,
+});
+
+// class attribute works for both HTML and SVG elements (SVG className is not a plain string).
+const hasShake = (el: Element | null) =>
+  !!el && (el.getAttribute('class') ?? '').includes('animate-lumina-shake');
+
 beforeEach(() => {
   cleanup();
   sendTextSpy.mockClear();
@@ -187,5 +217,116 @@ describe('ComparisonBuilder reader-fit (one_more_less DISAMBIGUATE symmetry — 
     expect(disambiguateCall).toBeTruthy();
     // "one less than 5" is fine; asserting the ANSWER (4) is not.
     expect(disambiguateCall).not.toMatch(/one less is 4|the answer is 4|is 4\b/i);
+  });
+});
+
+// ── Slice 1 (item 2b tail) — rule-5 feedback lands on the tapped object at K ──
+describe('ComparisonBuilder reader-fit (rule-5 feedback-on-object — item 2b tail)', () => {
+  it('K compare-groups WRONG tap: no text card, and the tapped side shakes', () => {
+    render(<ComparisonBuilder data={data([groups('c1', 1, 4, 'less'), groups('c2', 2, 2, 'equal')])} />);
+    fireEvent.click(groupRects()[0]); // taps LEFT (asserts left more) — wrong (left has fewer)
+    // The text feedback card is hidden at K…
+    expect(screen.queryByText(/not quite/i)).toBeNull();
+    // …and the wrongly-tapped left group carries the feedback (shake).
+    expect(hasShake(groupRects()[0])).toBe(true);
+    // Still solvable — no advance.
+    expect(screen.queryByText(/next challenge/i)).toBeNull();
+  });
+
+  it('GRADE-1 control: a wrong answer DOES show the text feedback card', () => {
+    render(<ComparisonBuilder data={data1([groups('c1', 1, 4, 'less'), groups('c2', 2, 2, 'equal')])} />);
+    fireEvent.click(screen.getByRole('button', { name: /^more$/i })); // wrong (left has fewer)
+    fireEvent.click(screen.getByRole('button', { name: /check/i }));
+    expect(screen.getByText(/not quite — count each group/i)).toBeTruthy();
+  });
+});
+
+// ── Slice 2a — compare-numbers @ K: tap the bigger numeral, no symbols/Check ──
+describe('ComparisonBuilder reader-fit (compare-numbers @ K — item 2b tail)', () => {
+  it('K surface: no < > symbol buttons, no Check — the numerals + "=" are the answer', () => {
+    render(<ComparisonBuilder data={data([numbers('c1', 3, 7, '<'), numbers('c2', 2, 2, '=')])} />);
+    expect(screen.queryByRole('button', { name: '<' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '>' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /check/i })).toBeNull();
+    // Both numerals are tappable and the middle "=" affordance exists.
+    expect(screen.getByRole('button', { name: '3' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '7' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /the same/i })).toBeTruthy();
+  });
+
+  it('tapping the BIGGER numeral atomically completes the challenge', async () => {
+    render(<ComparisonBuilder data={data([numbers('c1', 3, 7, '<'), numbers('c2', 2, 2, '=')])} />);
+    fireEvent.click(screen.getByRole('button', { name: '7' })); // right is bigger → correct
+    expect((await screen.findByText(/next challenge/i))).toBeTruthy();
+  });
+
+  it('tapping the "=" when the numbers are equal completes', async () => {
+    render(<ComparisonBuilder data={data([numbers('c1', 5, 5, '='), numbers('c2', 3, 1, '>')])} />);
+    fireEvent.click(screen.getByRole('button', { name: /the same/i }));
+    expect((await screen.findByText(/next challenge/i))).toBeTruthy();
+  });
+
+  it('a WRONG numeral tap does not complete and shakes that box', () => {
+    render(<ComparisonBuilder data={data([numbers('c1', 3, 7, '<'), numbers('c2', 2, 2, '=')])} />);
+    const left = screen.getByRole('button', { name: '3' });
+    fireEvent.click(left); // asserts left (3) bigger — wrong
+    expect(screen.queryByText(/next challenge/i)).toBeNull();
+    expect(hasShake(screen.getByRole('button', { name: '3' }))).toBe(true);
+  });
+
+  it('GRADE-1 control: symbol buttons + Check are present', () => {
+    render(<ComparisonBuilder data={data1([numbers('c1', 3, 7, '<')])} />);
+    expect(screen.getByRole('button', { name: /check/i })).toBeTruthy();
+    // The "=" symbol button is text at Grade 1 (no aria-label affordance).
+    expect(screen.getByRole('button', { name: '=' })).toBeTruthy();
+  });
+});
+
+// ── Slice 2b — order @ K: wordless direction, text badge only at Grade 1 ──
+describe('ComparisonBuilder reader-fit (order direction @ K — item 2b tail)', () => {
+  it('K: the text direction badge is hidden (wordless cue instead)', () => {
+    render(<ComparisonBuilder data={data([orderCh('c1', [3, 1, 2], 'ascending')])} />);
+    expect(screen.queryByText(/least/i)).toBeNull();
+    expect(screen.queryByText(/greatest/i)).toBeNull();
+  });
+
+  it('GRADE-1 control: the text direction badge is present', () => {
+    render(<ComparisonBuilder data={data1([orderCh('c1', [3, 1, 2], 'ascending')])} />);
+    expect(screen.getByText(/least/i)).toBeTruthy();
+  });
+});
+
+// ── Slice 2c — one-more-one-less @ K: 5-cell window, tap=choose, per-cell shake ──
+describe('ComparisonBuilder reader-fit (one-more-one-less @ K — item 2b tail)', () => {
+  it('K caps the answer surface to a 5-cell window around the target (no 0 / no 20)', () => {
+    render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both')])} />);
+    // Window for target 5 is [3,4,5,6,7]; cells outside it are gone.
+    expect(screen.queryByRole('button', { name: '0' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '1' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '20' })).toBeNull();
+    // The viable answers (4 and 6) are present.
+    expect(screen.getAllByRole('button', { name: '6' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: '4' }).length).toBeGreaterThan(0);
+  });
+
+  it('single ask: tapping the correct cell atomically completes (no Check at K)', async () => {
+    render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'one-more'), oneMoreLess('c2', 6, 'one-more')])} />);
+    expect(screen.queryByRole('button', { name: /check/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '6' })); // one more than 5
+    expect((await screen.findByText(/next challenge/i))).toBeTruthy();
+  });
+
+  it("'both': answering one-more then one-less completes the challenge", async () => {
+    render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'both'), oneMoreLess('c2', 5, 'both')])} />);
+    fireEvent.click(screen.getAllByRole('button', { name: '6' })[0]); // one-more row
+    fireEvent.click(screen.getAllByRole('button', { name: '4' })[1]); // one-less row
+    expect((await screen.findByText(/next challenge/i))).toBeTruthy();
+  });
+
+  it('a WRONG cell tap does not complete and shakes that cell', () => {
+    render(<ComparisonBuilder data={data([oneMoreLess('c1', 5, 'one-more')])} />);
+    fireEvent.click(screen.getByRole('button', { name: '4' })); // one LESS, but asked for one more → wrong
+    expect(screen.queryByText(/next challenge/i)).toBeNull();
+    expect(hasShake(screen.getByRole('button', { name: '4' }))).toBe(true);
   });
 });

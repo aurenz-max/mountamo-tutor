@@ -7,7 +7,7 @@ subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
 
 ## Queue
 
-### 2b. comparison-builder @ PRE — remaining slices (after 2026-07-16 fix) — **3 top priorities DONE 2026-07-16; tail (rule-5 + per-mode picture passes) still open**
+### 2b. comparison-builder @ PRE — ✅ FULLY RESOLVED 2026-07-20 (head 07-14/07-16 + tail 07-20)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped 07-14; the three
 Pulse-walk priorities (chrome band-gate, one_less symmetry, 🔊 Read-me) shipped 07-16.
 Report: `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Contract:
@@ -25,22 +25,20 @@ Report: `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Contract:
   `primitives/shared/ReadMeButton.tsx` (thin `LuminaReadAloud` wrapper) rendered at K in the
   prompt row, SAME position across all four modes; re-voices instruction + answer-free ask.
   First instance of the systemic 🔊-Read-me item below.
-- **Audit-C rule 5 (feedback on the object) — STILL OPEN:** wrong answer is still a text card +
-  generic beep — make the tapped group flash/shake instead of a text card at K.
-- **Other eval modes at PRE:** one_more_less (up to 21 number cells — rule 4 load),
-  compare_numbers (< > = symbol reading), order (direction badge text) — each needs
-  its own tap/picture-primary + disambiguate pass. (The bespoke live journey now
-  supports all four types via `disambiguate_groups` — reuse it when fixing them.)
+- ~~**Audit-C rule 5 (feedback on the object).**~~ **DONE 2026-07-20.** At K the text
+  feedback card is hidden; a wrong tap shakes the touched object (group side / `=` for
+  compare-groups + compare-numbers numeral box + one_more_less cell; order slots already
+  flashed). SFX + the silent spoken hint carry it. Shared `wrongFlash` key + `flashWrong()`.
+- ~~**Other eval modes at PRE.**~~ **DONE 2026-07-20** (band+mode fork, builds contract G1):
+  **compare_numbers** → tap the BIGGER numeral + middle `=` (K.CC.C.7; no `< > =` buttons,
+  no alligator, no Check); **order** → wordless graduated-bar direction cue (text badge
+  Grade-1 only); **one_more_less** → 5-cell window centered on target (down from up to 21)
+  + wordless ⬆/⬇ row headers + tap=choose. jsdom `ComparisonBuilder.reader-fit.test.tsx`
+  **25/25**; full **857/857**; `typecheck:lumina` 0; eval-test @ K 3/3 pass; contract
+  `--check` COMPATIBLE. Report: `qa/reader-fit/comparison-builder-PRE-2b-tail-2026-07-20.md`.
+  Residual: live `--lesson` + pixel → HUMAN-CHECKS #35; order @ K 4–5-tile load = queued
+  EMERGING re-audit note (not a K blocker).
 - ~~Behavioral confirm of the tutor beat~~ **DONE 2026-07-14** — live `--lesson` 3/3 PASS.
-
-### 13. counting-board `subitize` @ K — subitize DISPLAY fix (from the 2026-07-16 sibling audit)
-Promoted from the systemic note. NOT a manipulation swap: the K `subitize` stepper
-(`CountingBoard.tsx` ~1120–1144, judged ~:547) sits over objects that stay VISIBLE + tap-countable,
-but genuine subitizing needs them to flash-then-hide. **Fix:** make K `subitize` flash/hide the
-objects (mirror ten-frame subitize) → the number answer becomes legit; do NOT convert to
-tap-counting (wrong skill). `count_all` unchanged; `count-on` is Grade-1 → EMERGING re-audit, not
-here. Contract-first (`docs/contracts/counting-board.md`). Executor: `/reader-fit --fix counting-board`.
-Full prompt: `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` (Task 2). Reference: item 11.
 
 ### 9a. media-player — **PROMOTED to its own workstream 2026-07-16 (user-approved) — no longer worked from this queue**
 Step 1 (contract) closed here; Steps 2–3 live in
@@ -120,14 +118,15 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
       remains flash→hide→number, build/count-all is unchanged, and Grade 1–2 make-ten retains the
       stepper. Contract + report: `docs/contracts/ten-frame.md` and
       `qa/reader-fit/ten-frame-item12-2026-07-16.md`. Browser/pixel check → HUMAN-CHECKS #31.
-    - **POSSIBLE — `counting-board` subitize phase.** `CountingBoard.tsx:1120–1144` (stepper "How
-      many do you see?", judged `:547`) sits over a countable scene that is NEVER flashed/hidden
-      (objects stay visible) and IS tap-countable in the sibling `count_all` phase
-      (`handleObjectTap:476`, answer = `countedObjects.size` — the good pattern). Subitizing argues
-      for a number answer, but because the objects are fully visible + demonstrably tappable, decide
-      whether K subitize should flash/hide (like ten-frame) or accept enacted taps. Its `count-on`
-      phase (`:1146–1173`, judged `:609`) is the same defect but is a **Grade-1** challenge type
-      (catalog `:2032`) — just above the K band; note for the EMERGING re-audit.
+    - **RESOLVED 2026-07-20 — `counting-board` subitize phase (item 13).** Decided: K subitize
+      flashes-then-hides (like ten-frame), keeping the number answer — NOT enacted taps (that is the
+      sibling `count_all` skill). Band+mode fork: at `gradeBand==='K' && type==='subitize'` objects
+      render only during the flash window, the stepper/Check enable only after they hide, and
+      `handleObjectTap` is a no-op so the scene can never be tap-counted. `count_all` @ K and
+      Grade-1 subitize unchanged. Contract + report: `docs/contracts/counting-board.md` (R4) and
+      `qa/reader-fit/counting-board-item13-2026-07-20.md`. Browser/pixel → HUMAN-CHECKS #34. Its
+      `count-on` phase (`:1146–1173`, judged `:609`) is the same defect but a **Grade-1** type —
+      deferred to the EMERGING re-audit (contract gap G1).
     - **NOT instances (checked + cleared):** number-bond (missing-part/fact-family are pure-symbol —
       `BondDiagram` draws pips only when counters are passed, which those modes don't; decompose uses
       tap-to-place = good), compare-objects (`type=number` is Grade-1 `non_standard` measurement; K is
@@ -135,7 +134,7 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
       (tap the character = manipulation), sorting-station (tap IS the manipulation). Pure
       symbol/equation, place-value, geometry, and upper-grade primitives are out of scope.
     - **PROMOTED to discrete fix items 2026-07-16** (user durability call): ten-frame make-ten →
-      **item 12 (DONE 2026-07-16)**, counting-board subitize (display fix) → **item 13**. coin-counter `count-like` =
+      **item 12 (DONE 2026-07-16)**, counting-board subitize (display fix) → **item 13 (DONE 2026-07-20)**. coin-counter `count-like` =
       the one un-swept gap → confirm/clear as Task 3. Execution handoff (ten-frame first):
       `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`. The sibling audit above IS the census
       of record — do NOT re-sweep.
@@ -163,6 +162,20 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
   edit after pilots 1–2 confirm the pattern.
 
 ## Done
+- **13. counting-board `subitize` @ K — flash-then-hide DISPLAY fork, READY pending browser check (2026-07-20).**
+  Contract-first (`docs/contracts/counting-board.md` derived this run — 8 requirements, 0 conflicts,
+  gaps G1 count_on@EMERGING + G2 perceptual-flash@Pre-K). NOT a manipulation swap: the K stepper now
+  sits over objects that FLASH then HIDE (mirroring ten-frame subitize), so the numeral answer is
+  legitimate. Fork by band+mode at `gradeBand==='K' && type==='subitize'`: `isSubitizeFlashing`
+  gates object rendering, `subitizeAnswerReady` gates the stepper+Check, an auto-start effect runs
+  prep(800ms)→flash(1500ms)→hide, `handleObjectTap` is a no-op for K subitize (scene can't be
+  tap-counted), "Show again" re-flashes, and flash state re-arms on retry/advance. `count_all` @ K,
+  Grade-1 subitize, and Pre-K `subitize_perceptual` all UNCHANGED. No generator/schema/catalog
+  change (optional `flashDuration?` field defaults to a constant; generator does not emit it).
+  Verified: touched-file tsc 0-new + `typecheck:lumina` 0; jsdom `CountingBoard.reader-fit.test.tsx`
+  **3/3** (K flash→hide + tap-guard, count_all control, Grade-1 control); full suite **844/844**;
+  eval-test @ K `subitize` **PASS** (7 challenges, target===count, counts 2–5, scope honored — content
+  unchanged). Report: `counting-board-item13-2026-07-20.md`. Pixel/feel → HUMAN-CHECKS #34.
 - **12. ten-frame `make_ten` @ K — direct manipulation, READY pending browser check (2026-07-16).**
   Contract-first fork by band+mode (`docs/contracts/ten-frame.md`): K seed counters are fixed;
   tapping empty cells places the complement; the final fill auto-judges from the enacted count;
