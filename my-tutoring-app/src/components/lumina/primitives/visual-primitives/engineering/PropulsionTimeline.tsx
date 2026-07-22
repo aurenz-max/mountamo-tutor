@@ -11,11 +11,13 @@ import {
   LuminaCardContent,
   LuminaButton,
   LuminaBadge,
+  LuminaReadAloud,
   answerStateClasses,
   dropZoneStateClass,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -162,7 +164,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   });
 
   // ── AI Tutoring ───────────────────────────────────────────────────────────
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'propulsion-timeline' as any,
     instanceId: data.instanceId || `pt-${Date.now()}`,
     primitiveData: {
@@ -174,6 +176,20 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
     },
     gradeLevel: gradeBand === 'K-2' ? 'kindergarten' : 'elementary',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Every milestone story, phase intro, and hint here is text a K–2 reader
+  // cannot decode. These taps route to a NON-silent sendText — the read-aloud
+  // IS the tutor speaking the words on screen, word for word. (Milestone stories
+  // and phase intros carry no answer, so reading them verbatim is always safe.)
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const exploreMilestone = useCallback((id: string) => {
@@ -318,10 +334,15 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
           const isSelected = milestone.id === selectedMilestoneId;
           const isExplored = exploredMilestones.has(milestone.id);
           return (
-            <button
+            <div
               key={milestone.id}
+              role="button"
+              tabIndex={0}
               onClick={() => exploreMilestone(milestone.id)}
-              className={`w-full text-left relative transition-all ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); exploreMilestone(milestone.id); }
+              }}
+              className={`w-full text-left relative transition-all cursor-pointer ${
                 isSelected ? 'scale-[1.01]' : ''
               }`}
             >
@@ -349,7 +370,24 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
 
                 {isSelected && (
                   <div className="mt-2 space-y-2">
-                    <p className="text-sm text-slate-300">{milestone.description}</p>
+                    <div className="flex items-start gap-2">
+                      <p className="text-sm text-slate-300 flex-1">{milestone.description}</p>
+                      <LuminaReadAloud
+                        iconOnly
+                        size="sm"
+                        accent="cyan"
+                        speaking={isAudioPlaying}
+                        aria-label="Read this milestone to me"
+                        className="flex-shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          readBlockAloud(
+                            `${milestone.name}, from the year ${milestone.year}. ${milestone.description} Why it mattered: ${milestone.significance}`,
+                            '[READ_MILESTONE]',
+                          );
+                        }}
+                      />
+                    </div>
                     <div className="p-2 rounded-lg bg-white/5">
                       <p className="text-xs text-amber-300 font-medium">Why it mattered:</p>
                       <p className="text-xs text-slate-400">{milestone.significance}</p>
@@ -369,7 +407,7 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
                   </div>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -386,9 +424,20 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
     return (
       <LuminaCard className="bg-amber-500/5 border-amber-400/20 shadow-none">
         <LuminaCardHeader className="pb-3">
-          <LuminaCardTitle className="text-base text-amber-200">
-            Put these in order! ({seqChallengeIdx + 1}/{sequencingChallenges.length})
-          </LuminaCardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <LuminaCardTitle className="text-base text-amber-200">
+              Put these in order! ({seqChallengeIdx + 1}/{sequencingChallenges.length})
+            </LuminaCardTitle>
+            <ReadMeButton
+              instruction="Put these in order, from the oldest invention to the newest one."
+              ask="Tap the milestones one at a time to build your order. Look at the year on each one."
+              speaking={isAudioPlaying}
+              onAskTutor={(m) => sendText?.(m)}
+              tag="[READ_SEQUENCE]"
+              className="flex-shrink-0"
+              aria-label="Read the ordering task to me"
+            />
+          </div>
         </LuminaCardHeader>
         <LuminaCardContent className="space-y-4">
           {/* User's order */}
@@ -462,7 +511,18 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
 
           {seqChecked && (
             <div className="space-y-2">
-              <p className="text-xs text-slate-400 italic">{currentSeqChallenge.hint}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-xs text-slate-400 italic flex-1">{currentSeqChallenge.hint}</p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the clue to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(currentSeqChallenge.hint, '[READ_HINT]')}
+                />
+              </div>
               <LuminaButton onClick={nextSequence}>
                 {seqChallengeIdx < sequencingChallenges.length - 1 ? 'Next Challenge' : 'Finish'}
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -477,7 +537,18 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
   // ── Render: Connect Phase (Innovation Chains) ─────────────────────────────
   const renderConnectPhase = () => (
     <div className="space-y-4">
-      <p className="text-sm text-slate-400">Trace how one invention led to the next:</p>
+      <div className="flex items-start gap-2">
+        <p className="text-sm text-slate-400 flex-1">Trace how one invention led to the next:</p>
+        <LuminaReadAloud
+          iconOnly
+          size="sm"
+          accent="cyan"
+          speaking={isAudioPlaying}
+          aria-label="Read this to me"
+          className="flex-shrink-0"
+          onClick={() => readBlockAloud('Trace how one invention led to the next. Tap a chain to hear its story.', '[READ_CONNECT]')}
+        />
+      </div>
       {innovationChains.map((chain, idx) => {
         const isExplored = exploredChains.has(idx);
         const chainMilestones = chain.milestoneIds.map(id => milestones.find(m => m.id === id)).filter(Boolean) as TimelineMilestone[];
@@ -530,7 +601,18 @@ const PropulsionTimeline: React.FC<PropulsionTimelineProps> = ({ data, className
     const maxSpeed = Math.max(...speedRecords.map(r => r.speed), 1);
     return (
       <div className="space-y-4">
-        <p className="text-sm text-slate-400">Watch how top speeds have changed over time:</p>
+        <div className="flex items-start gap-2">
+          <p className="text-sm text-slate-400 flex-1">Watch how top speeds have changed over time:</p>
+          <LuminaReadAloud
+            iconOnly
+            size="sm"
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read this to me"
+            className="flex-shrink-0"
+            onClick={() => readBlockAloud('Watch how top speeds have changed over time. Look how the bars get longer and longer!', '[READ_SPEED]')}
+          />
+        </div>
         <div className="space-y-2">
           {[...speedRecords].sort((a, b) => a.year - b.year).map((record, idx) => {
             const pct = Math.max(5, (record.speed / maxSpeed) * 100);

@@ -576,6 +576,13 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
+          title: 'PRE-READER PICTURE ORDER (K)',
+          instruction:
+            'If this activity is the picture-order task for a young child (you will receive [ACTIVITY_START_PRE] with a question and a numbered list of steps), READ IT ALOUD as your greeting: say the question warmly, then read every step out loud in order, word for word, and invite the child to tap the pictures to put them in order. '
+            + 'Reading the steps aloud IS your greeting — this OVERRIDES any one-sentence or "keep it brief" cap; do not shorten it or skip a step. '
+            + 'Never say the final order as the answer. On [PRE_WRONG] give ONE encouraging hint about what happens FIRST; on [PRE_COMPLETE] celebrate in one short sentence.',
+        },
+        {
           title: 'STEP NAVIGATION',
           instruction:
             'When you receive [STEP_NAVIGATION], briefly introduce the new step and connect it to the previous one '

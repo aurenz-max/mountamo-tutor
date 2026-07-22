@@ -47,7 +47,7 @@ export interface SortingCategory {
 
 export interface SortingStationChallenge {
   id: string;
-  type: 'sort-by-one' | 'sort-by-attribute' | 'count-and-compare' | 'two-attributes' | 'odd-one-out' | 'tally-record';
+  type: 'sort-by-one' | 'sort-by-attribute' | 'count-and-compare' | 'two-attributes' | 'odd-one-out' | 'tally-record' | 'sort-variety';
   instruction: string;
   objects: SortingObject[];
   sortingAttribute?: string;
@@ -93,6 +93,7 @@ export interface SortingStationData {
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'sort-by-one':       { label: 'Sort by One',     icon: '🎨', accentColor: 'orange' },
+  'sort-variety':      { label: 'Sort Again',      icon: '🔄', accentColor: 'orange' },
   'sort-by-attribute': { label: 'Pick & Sort',     icon: '🔍', accentColor: 'purple' },
   'count-and-compare': { label: 'Count & Compare', icon: '📊', accentColor: 'blue' },
   'two-attributes':    { label: 'Two Attributes',  icon: '🔗', accentColor: 'emerald' },
@@ -409,7 +410,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     SoundManager.select();
     const type = currentChallenge.type;
 
-    if (type === 'sort-by-one' || type === 'sort-by-attribute' || (type === 'tally-record' && tallyRecordPhase === 'sort')) {
+    if (type === 'sort-by-one' || type === 'sort-variety' || type === 'sort-by-attribute' || (type === 'tally-record' && tallyRecordPhase === 'sort')) {
       setSelectedObjectId(prev => prev === objId ? null : objId);
     } else if (type === 'two-attributes') {
       setSelectedObjects(prev => {
@@ -468,7 +469,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     incrementAttempts();
     const type = currentChallenge.type;
 
-    if (type === 'sort-by-one' || type === 'sort-by-attribute') {
+    if (type === 'sort-by-one' || type === 'sort-variety' || type === 'sort-by-attribute') {
       const cats = derivedCategories;
       if (cats.length === 0) return;
 
@@ -890,7 +891,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
   const canCheck = useMemo(() => {
     if (!currentChallenge || isCurrentChallengeComplete) return false;
     switch (currentChallenge.type) {
-      case 'sort-by-one': return binAssignments.size > 0;
+      case 'sort-by-one':
+      case 'sort-variety': return binAssignments.size > 0;
       case 'sort-by-attribute': return selectedAttribute !== null && binAssignments.size > 0;
       case 'count-and-compare': return countComparePhase === 'count'
         ? Object.keys(enteredBinCounts).length > 0
@@ -953,7 +955,7 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
         )}
 
         {/* Objects pile and bins */}
-        {(currentChallenge.type === 'sort-by-one' || currentChallenge.type === 'tally-record' || selectedAttribute) && (
+        {(currentChallenge.type === 'sort-by-one' || currentChallenge.type === 'sort-variety' || currentChallenge.type === 'tally-record' || selectedAttribute) && (
           <>
             {/* Unsorted objects */}
             <div className={`bg-slate-800/20 rounded-xl border border-white/5 ${isK ? 'p-6 max-w-[840px] mx-auto' : 'p-4'}`}>
@@ -1096,8 +1098,8 @@ const SortingStation: React.FC<SortingStationProps> = ({ data, className }) => {
     if (!currentChallenge || allChallengesComplete) return null;
     const type = currentChallenge.type;
 
-    // Sort-by-one / Sort-by-attribute
-    if (type === 'sort-by-one' || type === 'sort-by-attribute') {
+    // Sort-by-one / Sort-variety / Sort-by-attribute
+    if (type === 'sort-by-one' || type === 'sort-variety' || type === 'sort-by-attribute') {
       return renderSortingUI();
     }
 

@@ -42,6 +42,10 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc: `"tally-record": Sort objects and record the count of each group using tallies.`,
     schemaDescription: "'tally-record' (sort and tally counts)",
   },
+  'sort-variety': {
+    promptDoc: `"sort-variety": FLEXIBLE CLASSIFICATION — one fixed object set, sorted by a DIFFERENT valid rule each round (the rule rotation IS the taught skill). Renders as a single-attribute sort per round.`,
+    schemaDescription: "'sort-variety' (re-sort the same set by a different rule)",
+  },
 };
 
 type ChallengeType =
@@ -50,7 +54,8 @@ type ChallengeType =
   | 'count-and-compare'
   | 'odd-one-out'
   | 'two-attributes'
-  | 'tally-record';
+  | 'tally-record'
+  | 'sort-variety';
 
 // ============================================================================
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -232,6 +237,7 @@ function resolveProblemShape(
     case 'sort-by-one':
     case 'sort-by-attribute':
     case 'tally-record':
+    case 'sort-variety':
       promptLines.push(
         `Use about ${objectCount} objects across about ${categoryCount} groups (stay within the grade band — do not exceed ${binCap} groups or ${win.max} objects).`,
       );
@@ -840,6 +846,185 @@ The objective category is the MAIN modality. Never make color/size the knowledge
   return { title: data.title, description: data.description, challenges };
 }
 
+/**
+ * Objective binding for sort-variety (flexible classification). This is the R1
+ * EXEMPTION recorded in the contract (G3): unlike every other mode, rotating the
+ * sorting RULE across rounds IS the declared task — so this section INSTRUCTS the
+ * axis-switch that buildSortingObjectiveSection forbids, while still fencing the
+ * rotation to genuinely meaningful dimensions of the same on-topic object set
+ * (never a perceptual axis picked for variety's sake). See docs/contracts/sorting-station.md.
+ */
+function buildVarietyObjectiveSection(topic: string, intent: string | undefined, rounds: number): string {
+  const specificObjective = intent?.trim() || topic;
+  return `
+## OBJECTIVE BINDING — FLEXIBLE CLASSIFICATION (this mode's DECLARED task)
+- Broad lesson topic: "${topic}"
+- Specific objective for THIS activity: "${specificObjective}"
+- The taught skill is FLEXIBLE CLASSIFICATION: the SAME set of objects can be correctly grouped in more than one way. Rotating the sorting RULE across rounds IS the objective — unlike a normal sort, you SHOULD change the sorting attribute each round.
+- Provide ONE fixed set of objects, then ${rounds} rounds that each sort THOSE SAME objects by a DIFFERENT, genuinely meaningful dimension of them (for example: what kind of thing it is, how big it is, what it is used for, where it belongs).
+- Every rotated dimension must be a REAL, sensible property of these specific objects. Do NOT invent a perceptual axis (like color) purely for variety if it is not a natural, meaningful property of the set.
+- Keep every round on the same topic and the same object family; the variety comes from the RULE, never from swapping in an unrelated theme.
+`;
+}
+
+/** Variety-mode objects: type, size, AND category are REQUIRED so the set always carries
+ *  3 candidate axes (code then keeps whichever 2-3 actually split into groups). Forcing the
+ *  fields is what makes flexible re-sorting reliable — an "at least two" ask flash-lite honors
+ *  only ~half the time. */
+const varietyObjectItemSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    label: { type: Type.STRING, description: "Display label (e.g., 'Fire Truck')" },
+    emoji: { type: Type.STRING, description: "Single emoji (e.g., '🚒')" },
+    type: { type: Type.STRING, description: "What KIND it is — ONE simple lowercase word (e.g. 'truck', 'boat')." },
+    size: { type: Type.STRING, description: "Size — ONE simple lowercase word, from a small shared set (e.g. 'big' or 'small')." },
+    category: { type: Type.STRING, description: "A meaning group — ONE simple lowercase word, from a small shared set (e.g. 'land' or 'water')." },
+  },
+  required: ["label", "emoji", "type", "size", "category"],
+};
+
+/** sort-variety: one shared object set + N rounds, each round naming a different sort rule. */
+const varietySchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Fun title for the activity" },
+    description: { type: Type.STRING, description: "Brief educational description" },
+    objects: {
+      type: Type.ARRAY,
+      description: "ONE shared set of objects, each filling type, size, AND category with ONE simple lowercase word each (NEVER combine dimensions in a field, NEVER use slashes). Use a SMALL shared vocabulary so objects share groups (e.g. size is always 'big' or 'small'); each field must have 2+ distinct values across the set.",
+      items: varietyObjectItemSchema,
+    },
+    rounds: {
+      type: Type.ARRAY,
+      description: "One entry per sorting rule you intend (code re-validates each against the objects). Each names a DIFFERENT single attribute field.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          sortingAttribute: {
+            type: Type.STRING,
+            enum: ['category', 'type', 'size', 'shape', 'color'],
+            description: "The ONE object field THIS round sorts by. MUST differ from every other round and MUST be a field you actually filled with 2+ distinct simple values across the objects.",
+          },
+          instruction: {
+            type: Type.STRING,
+            description: "Warm instruction naming THIS round's rule (e.g. 'Now sort them by size!').",
+          },
+          categoryEmojis: {
+            type: Type.ARRAY,
+            description: "One picture per bin for this round's values; a single emoji standing for the WHOLE group. NEVER reuse an object's own emoji.",
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.STRING, description: "The sortingAttribute value this bin holds" },
+                emoji: { type: Type.STRING, description: "Single representative emoji for that whole group" },
+              },
+              required: ["value", "emoji"],
+            },
+          },
+        },
+        required: ["sortingAttribute", "instruction"],
+      },
+    },
+  },
+  required: ["title", "description", "objects", "rounds"],
+};
+
+async function generateVarietyChallenges(
+  topic: string,
+  intent: string | undefined,
+  gradeLevel: string,
+  count: number,
+  tierSection: string,
+): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
+  // 2-3 rounds is the flexible-classification sweet spot: enough to show the same
+  // set groups multiple ways, few enough that every axis stays genuinely meaningful
+  // (a 4th forced axis is where contrived perceptual sorts creep in).
+  const roundCount = Math.min(3, Math.max(2, count - 1));
+
+  const prompt = `
+Create a FLEXIBLE-CLASSIFICATION sorting activity for teaching "${topic}" to ${gradeLevel} students.
+${gradeGuidance(gradeLevel)}
+${buildVarietyObjectiveSection(topic, intent, roundCount)}
+${tierSection}
+Provide ONE shared set of objects and ${roundCount} sorting rules.
+- objects: 4-8 objects. Every object fills type, size, AND category, each with ONE simple lowercase word. Example: { "label": "Fire Truck", "emoji": "🚒", "type": "truck", "size": "big", "category": "land" }. NEVER put two ideas in one field, NEVER use slashes.
+- Use a SMALL shared vocabulary so objects share groups (e.g. every object's size is 'big' or 'small'; category is 'land' or 'water'). Each field must have 2+ distinct values across the set so it forms real groups.
+- rounds: ${roundCount} entries, each naming a DIFFERENT field (type / size / category), with a warm instruction naming that round's rule + categoryEmojis (one per group).
+- Every round sorts the SAME objects; do not introduce new objects between rounds. Stay on the objective's topic and object family.
+`;
+
+  const binCap = gradeBinCap(resolveGradeBand(gradeLevel));
+
+  // Build the rotated rounds from ONE generation. Code OWNS which axes are valid (derived
+  // from the actual objects — each must split into 2..binCap real groups); the LLM only
+  // supplies the object window + optional instruction/emoji hints. This makes "a different
+  // rule each round" true by construction and caps bins at the grade band. Returns the
+  // challenges (may be < 2 if the set is thin — the caller retries).
+  const buildRounds = (data: {
+    objects?: RawSortingObject[];
+    rounds?: { sortingAttribute?: string; instruction?: string; categoryEmojis?: { value?: string; emoji?: string }[] }[];
+  }): SortingStationChallenge[] => {
+    const rawObjects = data.objects ?? [];
+    const challenges: SortingStationChallenge[] = [];
+    const usedAttrs = new Set<string>();
+
+    const tryAddRound = (
+      attr: string | undefined,
+      instruction?: string,
+      emojis?: { value?: string; emoji?: string }[],
+    ): void => {
+      const sortAttr = (attr || '').trim();
+      if (!sortAttr || usedAttrs.has(sortAttr) || challenges.length >= roundCount) return;
+      // Fresh object instances per round (same labels/attributes) so the orchestrator's
+      // per-challenge id re-numbering stays independent; pedagogically it's still the same set.
+      const objects = toLuminaObjects(rawObjects, challenges.length * 100);
+      const groups = new Set(objects.map(o => o.attributes[sortAttr]).filter(Boolean));
+      if (groups.size < 2 || groups.size > binCap) return; // must form 2..binCap real groups
+      const categories = deriveCategories(objects, sortAttr, buildEmojiByValue(emojis));
+      if (categories.length < 2) return;
+      usedAttrs.add(sortAttr);
+      challenges.push({
+        id: `c${challenges.length + 1}`,
+        type: 'sort-variety',
+        instruction: instruction || `Sort them a new way — by ${sortAttr}!`,
+        sortingAttribute: sortAttr,
+        objects,
+        categories,
+      } satisfies SortingStationChallenge);
+    };
+
+    // 1. Honor the LLM's intended rounds first (keeps its instructions + emojis).
+    for (const round of data.rounds ?? []) {
+      tryAddRound(round.sortingAttribute, round.instruction, round.categoryEmojis);
+    }
+    // 2. Supplement from whatever OTHER required axes the objects carry, so a thin `rounds`
+    //    still reaches roundCount. 'category' first (objective-relevant), then the rest.
+    for (const attr of ['category', 'type', 'size', 'shape', 'color']) tryAddRound(attr);
+
+    return challenges;
+  };
+
+  // Retry once: with type/size/category required, a single draw usually yields 2-3 axes, but
+  // flash-lite occasionally collapses a field to one shared value (unsplittable). A second draw
+  // almost always recovers; only then do we fail loudly rather than shipping a 1-rule "variety".
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: { responseMimeType: "application/json", responseSchema: varietySchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (!data?.objects?.length) continue;
+    const challenges = buildRounds(data);
+    if (challenges.length >= 2) {
+      return { title: data.title, description: data.description, challenges };
+    }
+    console.warn(`[SortingStation] sort-variety attempt ${attempt + 1}: only ${challenges.length} rotatable rule(s), retrying`);
+  }
+
+  throw new Error('sort-variety: could not build 2+ rotatable rules after retry (object set lacked 2 separately-splittable axes)');
+}
+
 // ============================================================================
 // Generator dispatch map
 // ============================================================================
@@ -859,7 +1044,23 @@ const GENERATOR_MAP: Record<string, SubGenerator> = {
   'count-and-compare': generateCountCompareChallenges,
   'odd-one-out': generateOddOneOutChallenges,
   'two-attributes': generateTwoAttributesChallenges,
+  'sort-variety': generateVarietyChallenges,
 };
+
+/**
+ * The types an UNPINNED (mixed) session draws from. sort-variety is deliberately
+ * EXCLUDED: it is a whole-session flexible-classification task (one shared set,
+ * N rotated rules) — meaningless as a single interleaved challenge — so it runs
+ * only when the eval mode is pinned or intent-resolved, never in a random mix.
+ */
+const MIXED_TYPES: readonly string[] = [
+  'sort-by-one',
+  'sort-by-attribute',
+  'tally-record',
+  'count-and-compare',
+  'odd-one-out',
+  'two-attributes',
+];
 
 // ============================================================================
 // Orchestrator — delegates to sub-generators, runs in parallel, combines
@@ -892,7 +1093,7 @@ export const generateSortingStation = async (
   logEvalModeResolution('SortingStation', config?.targetEvalMode, evalConstraint);
 
   const gradeBand = resolveGradeBand(gradeLevel);
-  const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(GENERATOR_MAP);
+  const allowedTypes = evalConstraint?.allowedTypes ?? MIXED_TYPES;
 
   // ── Within-mode support tier ──
   // The eval mode owns WHICH challenge type; config.difficulty owns how much on-workspace

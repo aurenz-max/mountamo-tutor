@@ -13,7 +13,7 @@
 | percent-bar | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/percent-bar-2026-06-14.md) |
 | measurement-tools | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/measurement-tools-2026-05-22.md) |
 | tape-diagram | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/tape-diagram-2026-06-14.md) |
-| sorting-station | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/sorting-station-2026-06-14.md) |
+| sorting-station | 7 | 6 | 1 | 2026-07-21 | [sort_variety added (G3); SST-1 deferred](eval-reports/sorting-station-sort-variety-2026-07-21.md) |
 | number-sequencer | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-sequencer-2026-06-14.md) |
 | base-ten-blocks | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/base-ten-blocks-2026-06-20.md) |
 | phonics-blender | 4 | 4 | 0 | 2026-07-15 | [reader-fit @ PRE](reader-fit/phonics-blender-PRE-2026-07-15.md) |
@@ -104,7 +104,7 @@
 | vocabulary-explorer | 3 | 3 | 0 | 2026-07-07 | [report](eval-reports/vocabulary-explorer-2026-07-06.md) — VE-5 RESOLVED 2026-07-07 (SP-6 truncation bounded) |
 | foundation-explorer | 4 | 3 | 1 | 2026-07-04 | [report](eval-reports/foundation-explorer-2026-07-04.md) |
 
-**Totals:** 352/369 modes passing (95.4%) | 27 open issues (5 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW)
+**Totals:** 353/370 modes passing (95.4%) | 27 open issues (5 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW) — sorting-station `sort_variety` added 2026-07-21 (G3, flexible re-sorting)
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 
@@ -259,7 +259,7 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 
 ### SP-19: Orchestrator-same-mode parallel calls converge on identical answer when the answer space is LLM-chosen
 
-**Affected:** function-sketch (classify-shape — FS-2; likely also compare-functions, less so identify-features)
+**Affected:** function-sketch (classify-shape — FS-2; likely also compare-functions, less so identify-features), sorting-station (sort_one — SST-1; cross-**session** variant: single call, but the LLM-owned **object set** converges on the same canonical anchors every session when the objective's object universe is small, e.g. tow-truck parts hook/cable/winch)
 **Risk:** Any primitive that uses the "fan out N parallel sub-generator calls with identical args" pattern (PRD_WITHIN_MODE_INSTANCE_DENSITY §6a #7) AND whose eval mode's *correct answer* is something Gemini freely picks rather than something the catalog/post-process enumerates. Matrix-display, fraction-bar, coin-counter etc. are unaffected because the per-call answer space is small/discrete and post-process drives it. Classify-shape is the first observed case where the "answer" is a function family that the LLM picks deterministically based on the topic — so 4 parallel calls with the same topic all pick the same family.
 **Root cause:** Structured output converges per-call. The orchestrator pattern assumes per-call independence gives diversity, which holds when the post-process owns the answer choice (e.g., matrix operands derived from problem range) but breaks when the LLM owns it (e.g., "pick a function family that fits this topic"). Same topic → same family every time.
 **Fix pattern:** Identify which field in the schema represents "the answer" and force diversity across the parallel batch. Either (1) pass a `target<Answer>` parameter into each sub-call drawn from a shuffled round-robin (matrix-display SP-18 / coin-counter count-like pattern), (2) post-classify the emitted data and reject duplicates beyond an allowed count, or (3) collapse the parallel calls into a single multi-challenge call that explicitly demands variety (reverses the orchestrator pattern — only viable if Gemini doesn't malform the larger schema). Option 1 is the cleanest and matches the SP-18 fix.
@@ -440,6 +440,7 @@ added; prompt/title movement alone is not a full-fidelity verdict. See
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
+| SST-1 | sorting-station | sort_one (all sort-family) | HIGH → DEFERRED | Content variety (SP-19 cross-session variant) | Cross-**session** object-noun convergence: "hook" in 5/5 sessions, ~10 canonical items dominate all draws when the objective's object universe is small. **Reframed 2026-07-21:** the user's lived "same thing over and over" was NOT object nouns — it was the same CLASSIFICATION RULE every round (rule-monotony), resolved by the new `sort_variety` mode (G3). The object-noun convergence here is a distinct, lower-priority issue: a prompt-entropy fix (seed + rotating directive) was A/B-proven only MODERATE (44→54 distinct items, killed the 5/5 anchor, but hook still 4/5) and REVERTED — a code-owned per-topic pool has no home without a maintenance treadmill. DEFERRED pending a better entropy lever. Solvable, no leak. See [report](eval-reports/sorting-station-sort-variety-2026-07-21.md). | GENERATOR |
 | HIST-1 | histogram | all modes | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe with intent "daily temperatures" vs. "daily reading minutes" changed the session title, but each session still mixed temperature/height/score/time/minutes datasets. The deterministic context pool ignores intent, so student-facing values do not consistently serve the assigned objective. Add an intent-aware context selector; do not count prompt/title movement as FULL fidelity. | GENERATOR |
 | NF-1 | net-folder | identify_solid (likely all modes) | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe requested cubes vs. triangular prisms; both sessions generated rectangular-prism challenges. The code-picked solid selector ignores intent even though prompt framing now receives scope. Add an intent-aware deterministic solid selector and re-probe every mode. | GENERATOR |
 | TU-1 | fast-fact | tutoring | HIGH | Answer leak | `{{correctAnswer}}` interpolated into a scaffolding level — a script the tutor reads aloud (fine in contextKeys, not in spoken text). `/tutor-test` sweep 2026-07-08. | CATALOG |

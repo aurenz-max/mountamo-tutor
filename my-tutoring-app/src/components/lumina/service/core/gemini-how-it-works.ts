@@ -121,7 +121,8 @@ const challengeSchema: Schema = {
     option1: { type: Type.STRING, description: "Second answer option (for identify/predict)" },
     option2: { type: Type.STRING, description: "Third answer option (for identify/predict)" },
     option3: { type: Type.STRING, description: "Fourth answer option (for identify/predict)" },
-    correctIndex: { type: Type.NUMBER, description: "Index of correct option 0-3 (for identify/predict)" },
+    correctAnswer: { type: Type.STRING, description: "The AUTHORITATIVE correct answer: copy the EXACT text of the correct option (must match one of option0-option3 verbatim). Do NOT use a number — write out the full option text. This must be consistent with the explanation." },
+    correctIndex: { type: Type.NUMBER, description: "Index of correct option 0-3 — must point to the same option as correctAnswer" },
     // For sequence (flat fields for up to 5 items)
     sequenceItem0Id: { type: Type.STRING, description: "ID for sequence item 0 (e.g. 's0')" },
     sequenceItem0Text: { type: Type.STRING, description: "Text for sequence item 0" },
@@ -200,10 +201,77 @@ const howItWorksSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
+// Pre-reader (K / PRE band) reduced schema
+// ---------------------------------------------------------------------------
+// Deliberately tiny (one shallow object + a 3-4 item array) so flash-lite emits
+// clean JSON. NO magazine fields (quickFacts, glossary, whatsHappening, key
+// terms), NO multiple-choice challenges, NO image prompts. The emoji IS the
+// answer surface; the label is a caption; `spoken` is what the tutor reads aloud.
+const preReaderStepSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    emoji: { type: Type.STRING, description: "ONE emoji that concretely pictures this step (e.g. '🚗' for a broken-down car, '⛓️' for hooking up). Never a letter or number." },
+    label: { type: Type.STRING, description: "A 1-3 word caption for the step (e.g. 'Hook the car'). Simple words a 5-year-old knows." },
+    spoken: { type: Type.STRING, description: "ONE short spoken sentence the tutor reads aloud for this step (e.g. 'The truck hooks up the car.'). Plain, concrete, present tense." },
+  },
+  required: ["emoji", "label", "spoken"],
+};
+
+const preReaderSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: "Very short title (e.g. 'How a Tow Truck Works')" },
+    overview: { type: Type.STRING, description: "ONE short, warm spoken sentence introducing the process for a 5-year-old" },
+    question: { type: Type.STRING, description: "The spoken ordering prompt, child-simple (e.g. 'Put the tow truck steps in order.')" },
+    steps: {
+      type: Type.ARRAY,
+      items: preReaderStepSchema,
+      description: "EXACTLY 3-4 steps, AUTHORED IN CORRECT ORDER (first step first). Each is one concrete, orderable action — no trap steps, no 'not part of the process' items.",
+    },
+  },
+  required: ["title", "overview", "question", "steps"],
+};
+
+// ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+function validatePreReaderData(raw: any): HowItWorksData {
+  const title = String(raw.title || 'How It Works');
+  const overview = String(raw.overview || '');
+  const question = String(raw.question || 'Put the steps in order.');
+
+  const steps: NonNullable<HowItWorksData['preReader']>['steps'] = [];
+  if (Array.isArray(raw.steps)) {
+    for (const s of raw.steps.slice(0, 4)) {
+      const emoji = String(s?.emoji || '').trim();
+      const label = String(s?.label || '').trim();
+      const spoken = String(s?.spoken || '').trim();
+      if (emoji && label) {
+        steps.push({ id: `p${steps.length}`, emoji, label, spoken: spoken || label });
+      }
+    }
+  }
+  // A pre-reader ordering task needs at least 3 real steps. Fewer is a real
+  // generation failure — surface it rather than shipping a 1-2 card "order" that
+  // isn't an ordering task.
+  if (steps.length < 3) {
+    throw new Error('[HowItWorks] Pre-reader generation produced fewer than 3 steps — refusing to ship a non-ordering task.');
+  }
+
+  return {
+    title,
+    subtitle: '',
+    overview,
+    category: undefined,
+    steps: [],
+    summary: { text: overview, keyTakeaway: overview },
+    challenges: [],
+    preReader: { question, steps },
+  };
+}
 
 function validateHowItWorksData(raw: any): HowItWorksData {
   const title = raw.title || 'How It Works';
@@ -235,15 +303,12 @@ function validateHowItWorksData(raw: any): HowItWorksData {
       return step;
     });
   }
-  // Pad to minimum 4 steps
-  while (steps.length < 4) {
-    const n = steps.length + 1;
-    steps.push({
-      stepNumber: n,
-      title: `Step ${n}`,
-      description: 'Details coming soon.',
-      imagePrompt: `Step ${n} of ${title}`,
-    });
+  // NEVER pad steps with placeholder filler ("Details coming soon."). A filler
+  // step teaches nothing and reads as broken. Keep only the real steps the model
+  // produced. A fully empty step list is a real generation failure — surface it
+  // (retry/error) rather than shipping an empty shell.
+  if (steps.length === 0) {
+    throw new Error('[HowItWorks] Generation produced no steps — refusing to ship an empty process.');
   }
 
   // --- Summary ---
@@ -301,8 +366,33 @@ function validateHowItWorksData(raw: any): HowItWorksData {
           String(c.option2 || c.options?.[2] || 'Option C'),
           String(c.option3 || c.options?.[3] || 'Option D'),
         ];
+        // Authoritative answer is the TEXT the model wrote (flash-lite reliably
+        // names the right answer but frequently miscounts the index). Derive the
+        // index from that text; fall back to the numeric index only when the
+        // text doesn't resolve to an option.
         let correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
         if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+
+        const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+        const answerText = typeof c.correctAnswer === 'string' ? c.correctAnswer : '';
+        if (answerText) {
+          const matchedIndex = options.findIndex(o => norm(o) === norm(answerText));
+          if (matchedIndex >= 0) {
+            if (matchedIndex !== correctIndex) {
+              console.warn(
+                `[HowItWorks] correctIndex/correctAnswer mismatch for "${base.question}": `
+                + `index said option ${correctIndex} ("${options[correctIndex]}") but correctAnswer text `
+                + `"${answerText}" resolves to option ${matchedIndex}. Trusting the answer text.`,
+              );
+            }
+            correctIndex = matchedIndex;
+          } else {
+            console.warn(
+              `[HowItWorks] correctAnswer "${answerText}" did not match any option for `
+              + `"${base.question}"; falling back to correctIndex ${correctIndex}.`,
+            );
+          }
+        }
         return { ...base, options, correctIndex };
       }
 
@@ -331,23 +421,36 @@ function validateHowItWorksData(raw: any): HowItWorksData {
         } else if (Array.isArray(c.correctOrder)) {
           correctOrder = c.correctOrder.map(String);
         }
+        // --- Answer-key integrity guard ---
+        // flash-lite frequently drops or garbles correctOrderCsv, yielding an
+        // empty or partial key. An empty/mismatched key makes the sequence
+        // UNWINNABLE (exact-array-equality never matches) — the challenge can
+        // never be passed and the whole lesson soft-locks. Per the prompt
+        // convention, items are AUTHORED in correct chronological order, so the
+        // item IDs in their authored order ARE the canonical answer key.
+        const itemIds = sequenceItems.map(i => i.id);
+        const keyIsValid =
+          correctOrder.length === itemIds.length &&
+          new Set(correctOrder).size === itemIds.length &&
+          correctOrder.every(id => itemIds.includes(id));
+        if (!keyIsValid) {
+          if (correctOrder.length > 0) {
+            console.warn('[HowItWorks] Invalid sequence correctOrder — falling back to authored item order', { correctOrder, itemIds });
+          }
+          correctOrder = itemIds;
+        }
         return { ...base, sequenceItems, correctOrder };
       }
 
       return base;
     });
   }
-  // Pad to minimum 3 challenges
-  while (challenges.length < 3) {
-    challenges.push({
-      type: 'identify',
-      question: 'Which step involves the key transformation?',
-      options: ['Step 1', 'Step 2', 'Step 3', 'Step 4'],
-      correctIndex: 0,
-      explanation: 'Review the process steps for the answer.',
-      relatedStep: 1,
-    });
-  }
+  // NEVER pad challenges. A placeholder challenge ("Which step involves the key
+  // transformation?" / Step 1-4 / correctIndex 0) is unanswerable from any real
+  // content and its answer key is arbitrary — shipping it violates rule #1
+  // (pedagogically unsound → ship nothing). If the model underproduced, show
+  // only the real challenges; zero challenges is a valid display-only exhibit
+  // (the component auto-submits once all steps are explored).
 
   return {
     title,
@@ -371,6 +474,69 @@ function validateHowItWorksData(raw: any): HowItWorksData {
 
 type HowItWorksConfig = Partial<{ targetEvalMode?: string }>;
 
+// Bands that get the pre-reader (picture-order) subset instead of the reading-
+// heavy magazine + text quiz. These are the non-decoding audiences.
+const PRE_READER_BANDS = new Set(['Toddler', 'Preschool', 'Kindergarten']);
+
+/**
+ * Generate the pre-reader (K / PRE) subset: a picture-primary "put the steps in
+ * order" task. Same primitive, reduced schema — no magazine, no text quiz.
+ */
+const generatePreReaderHowItWorks = async (
+  ctx: GenerationContext,
+  gradeLevelContext: string,
+): Promise<HowItWorksData> => {
+  const { topic } = ctx;
+  const scopeSection = buildScopePromptSection(ctx.scope);
+
+  const prompt = `You are an early-childhood teacher building a SIMPLE picture activity for a child who CANNOT READ.
+
+TOPIC / PROCESS: ${topic}
+${scopeSection}
+TARGET AUDIENCE: ${gradeLevelContext}
+
+## The activity
+The child will see picture cards (one emoji each) and put them IN ORDER by tapping. There is NO reading — the tutor reads everything aloud. So:
+
+1. Break "${topic}" into EXACTLY 3-4 simple, concrete steps a young child can picture.
+2. AUTHOR THE STEPS IN CORRECT ORDER — step 1 happens first, the last step happens last. (The app shuffles the cards before showing them.)
+3. For each step give:
+   - emoji: ONE emoji that clearly pictures the step (never a letter or number).
+   - label: a 1-3 word caption in words a 5-year-old knows.
+   - spoken: ONE short, plain, present-tense sentence the tutor will read aloud.
+4. question: the spoken ordering prompt, child-simple (e.g. "Put the tow truck steps in order.").
+5. overview: ONE short, warm spoken sentence introducing the process.
+
+## Rules
+- EVERY step must be a REAL action that belongs in the sequence. NO trap/distractor steps, NO "not part of the process" items — the child only orders real steps.
+- Keep vocabulary tiny and concrete. No jargon, no numbers, no key terms, no fun facts.
+- The emoji carries the meaning; the label is just a short caption.
+
+Now generate the picture-order activity for "${topic}".`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: preReaderSchema,
+    },
+  });
+
+  if (!response.text) throw new Error("No content generated for how-it-works (pre-reader)");
+
+  const raw = JSON.parse(response.text);
+  const data = validatePreReaderData(raw);
+
+  console.log('[HowItWorks] Generated (pre-reader):', {
+    topic,
+    title: data.title,
+    steps: data.preReader?.steps.length ?? 0,
+  });
+
+  return data;
+};
+
 /**
  * Generate a HowItWorks step-by-step process breakdown.
  */
@@ -385,6 +551,17 @@ export const generateHowItWorks = async (
   // never matched a getGradeLevelContext key.
   const bandKey = (ctx.grade && gradeToBand(ctx.grade)) || inferGradeLevelFromContext(ctx.gradeContext);
   const gradeLevel = bandKey;
+
+  // ── Pre-reader (K / PRE) subset: the same primitive at a reduced complexity ──
+  // A non-reader gets the picture-order task, not the magazine + text quiz.
+  if (PRE_READER_BANDS.has(bandKey)) {
+    try {
+      return await generatePreReaderHowItWorks(ctx, getGradeLevelContext(bandKey));
+    } catch (error) {
+      console.error("[HowItWorks] Pre-reader generation error:", error);
+      throw error;
+    }
+  }
   const gradeLevelContext = getGradeLevelContext(bandKey);
   // Surface the EXACT numeric grade so grade-2 ≠ grade-4 within a band.
   const gradeLine = buildGradeLine(ctx.grade);
@@ -471,23 +648,27 @@ What related processes might interest a student next: "Water Treatment", "Evapor
 
 For "identify" challenges:
 - Provide option0, option1, option2, option3 (4 multiple choice options)
-- Provide correctIndex (0-3)
+- Provide correctAnswer: copy the EXACT text of the correct option (the authoritative answer)
+- Provide correctIndex (0-3) pointing to that same option
 - Question should ask student to match a description to the correct step
 
 For "sequence" challenges:
 - Provide sequenceItem0Id, sequenceItem0Text through sequenceItem4Id, sequenceItem4Text (3-5 items)
 - IDs should be "s0", "s1", etc.
-- Provide correctOrderCsv as comma-separated IDs in correct order (e.g. "s0,s1,s2,s3")
-- Items describe process steps that need reordering
+- AUTHOR THE ITEMS IN CORRECT CHRONOLOGICAL ORDER: item0 = the step that happens FIRST, the last item = the step that happens LAST. (The app shuffles them before showing the student, so never pre-scramble them yourself.)
+- Provide correctOrderCsv listing EVERY item ID in that same correct order (e.g. "s0,s1,s2,s3"). It MUST contain all item IDs, each exactly once — a missing or partial key makes the challenge impossible to pass.
+- EVERY item must be a REAL step that belongs in the sequence. Do NOT include trap/distractor items or steps labelled "not part of the process" — a sequence challenge only reorders real steps.
 
 For "predict" challenges:
 - Provide option0, option1, option2, option3 (4 multiple choice options)
-- Provide correctIndex (0-3)
+- Provide correctAnswer: copy the EXACT text of the correct option (the authoritative answer)
+- Provide correctIndex (0-3) pointing to that same option
 - Question should describe a point in the process and ask what happens next
 
 For "explain" challenges:
 - Provide option0, option1, option2, option3 (4 multiple choice options)
-- Provide correctIndex (0-3)
+- Provide correctAnswer: copy the EXACT text of the correct option (the authoritative answer)
+- Provide correctIndex (0-3) pointing to that same option
 - Question should ask WHY a step is important or necessary (e.g. "Why is Step 3 important?")
 - The correct option explains the PURPOSE or CONSEQUENCE of the step
 - Distractors should be plausible but incorrect reasons
@@ -502,7 +683,7 @@ For "explain" challenges:
 2. All content must be scientifically/factually accurate
 3. NEVER reveal challenge answers in step titles or descriptions
 4. Challenges must be answerable from the content provided
-5. correctIndex must be 0, 1, 2, or 3 — matching the correct option position
+5. For MC challenges, correctAnswer (exact option text), correctIndex, AND the explanation must ALL agree on the same option. The explanation must justify the option named in correctAnswer.
 6. For sequence challenges, correctOrderCsv must contain all provided item IDs
 7. Mix challenge types for variety (unless constrained by eval mode)
 8. Each challenge should reference a specific relatedStep number

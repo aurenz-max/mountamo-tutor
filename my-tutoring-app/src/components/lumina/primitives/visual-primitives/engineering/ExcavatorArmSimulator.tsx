@@ -13,7 +13,9 @@ import {
   LuminaButton,
   LuminaStat,
   LuminaActionButton,
+  LuminaReadAloud,
 } from '../../../ui';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 
 /**
  * Excavator Arm Simulator — "Dig Site Job Board"
@@ -542,12 +544,24 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
     digsUsed, pipeStrikes, spilledUnits,
   ]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'excavator-arm-simulator',
     instanceId: resolvedAiInstanceId,
     primitiveData: aiPrimitiveData,
     exhibitId,
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // AI: welcome the operator once the tutor connects
   const hasIntroducedRef = useRef(false);
@@ -1650,7 +1664,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           </div>
         </div>
       </div>
-      <p className="text-slate-300 text-sm mb-5">{description}</p>
+      <div className="flex items-start gap-2 mb-5">
+        <p className="text-slate-300 text-sm flex-1">{description}</p>
+        <LuminaReadAloud
+          iconOnly
+          size="sm"
+          accent="cyan"
+          speaking={isAudioPlaying}
+          aria-label="Read this to me"
+          className="flex-shrink-0"
+          onClick={() => readBlockAloud(description, '[READ_INTRO]')}
+        />
+      </div>
 
       {/* ── Job briefing — the spine ── */}
       <LuminaPanel accent="orange" className="p-5 space-y-3 mb-5">
@@ -1667,7 +1692,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         </div>
 
         <div>
-          <h4 className="text-white font-semibold text-base">{currentMission.title}</h4>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="text-white font-semibold text-base">{currentMission.title}</h4>
+            <ReadMeButton
+              instruction={currentMission.brief}
+              ask="Move the boom, the stick, and the bucket to do the job."
+              speaking={isAudioPlaying}
+              onAskTutor={(m) => sendText?.(m)}
+              tag="[READ_JOB]"
+              className="flex-shrink-0"
+              aria-label="Read the job to me"
+            />
+          </div>
           <p className="text-slate-300 text-sm mt-1 leading-relaxed">{currentMission.brief}</p>
         </div>
 
@@ -1703,8 +1739,21 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         {/* Pipe strike — site shutdown */}
         {strikeActive && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 space-y-2">
-            <p className="text-red-300 text-sm font-medium">💥 You hit the gas pipe! The site is shut down.</p>
-            <p className="text-slate-400 text-xs">Take shallower scoops and spread them out — never dig deep twice in the same spot.</p>
+            <div className="flex items-start gap-2">
+              <div className="flex-1 space-y-1">
+                <p className="text-red-300 text-sm font-medium">💥 You hit the gas pipe! The site is shut down.</p>
+                <p className="text-slate-400 text-xs">Take shallower scoops and spread them out — never dig deep twice in the same spot.</p>
+              </div>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read this to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud('You hit the gas pipe! The site is shut down. Take shallower scoops and spread them out — never dig deep twice in the same spot.', '[READ_STRIKE]')}
+              />
+            </div>
             <LuminaButton tone="danger" onClick={resetSite} className="w-full">
               Reset the Site &amp; Try Again
             </LuminaButton>
@@ -1714,8 +1763,21 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         {/* Out of fuel */}
         {!strikeActive && outOfFuel && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-2">
-            <p className="text-amber-300 text-sm font-medium">⛽ Out of fuel — and the truck isn&apos;t full yet.</p>
-            <p className="text-slate-400 text-xs">Every scoop has to be a FULL one. Sink the bucket until the bite meter reads 100%, then dig.</p>
+            <div className="flex items-start gap-2">
+              <div className="flex-1 space-y-1">
+                <p className="text-amber-300 text-sm font-medium">⛽ Out of fuel — and the truck isn&apos;t full yet.</p>
+                <p className="text-slate-400 text-xs">Every scoop has to be a FULL one. Sink the bucket until the bite meter reads 100%, then dig.</p>
+              </div>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read this to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud("Out of fuel — and the truck isn't full yet. Every scoop has to be a full one. Sink the bucket until the bite meter reads one hundred percent, then dig.", '[READ_FUEL]')}
+              />
+            </div>
             <LuminaButton tone="subtle" onClick={resetSite} className="w-full">
               Refuel &amp; Restart the Job
             </LuminaButton>
@@ -1726,7 +1788,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         {!currentSolved && !strikeActive && !outOfFuel && (
           showHint ? (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-              <p className="text-amber-300 text-xs">💡 {currentMission.successHint}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-amber-300 text-xs flex-1">💡 {currentMission.successHint}</p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the hint to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(currentMission.successHint, '[READ_HINT]')}
+                />
+              </div>
             </div>
           ) : (
             <button
@@ -1742,7 +1815,18 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
         {showSolveCard && currentSolved && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-3">
             <p className="text-emerald-300 text-sm font-medium">🎉 Job done!</p>
-            <p className="text-slate-300 text-xs leading-relaxed">{currentMission.explainOnSolve}</p>
+            <div className="flex items-start gap-2">
+              <p className="text-slate-300 text-xs leading-relaxed flex-1">{currentMission.explainOnSolve}</p>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read why it worked to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud(currentMission.explainOnSolve, '[READ_SOLVE]')}
+              />
+            </div>
             {currentMissionIdx < missions.length - 1 && (
               <LuminaButton tone="primary" onClick={handleNextMission} className="w-full">
                 Next Job →
@@ -1800,12 +1884,23 @@ const ExcavatorArmSimulator: React.FC<ExcavatorArmSimulatorProps> = ({ data, cla
           </div>
 
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-            <p className="text-amber-300 text-xs leading-relaxed">
-              <span className="font-semibold">The big idea:</span> every job used the same machine — three
-              simple rotating joints that combine into reach, precision, and power. Engineers call a chain of
-              joints like this a <span className="font-semibold">kinematic chain</span> — and your own
-              shoulder-elbow-wrist works exactly the same way.
-            </p>
+            <div className="flex items-start gap-2">
+              <p className="text-amber-300 text-xs leading-relaxed flex-1">
+                <span className="font-semibold">The big idea:</span> every job used the same machine — three
+                simple rotating joints that combine into reach, precision, and power. Engineers call a chain of
+                joints like this a <span className="font-semibold">kinematic chain</span> — and your own
+                shoulder-elbow-wrist works exactly the same way.
+              </p>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read the big idea to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud('The big idea: every job used the same machine — three simple rotating joints that combine into reach, precision, and power. Engineers call a chain of joints like this a kinematic chain — and your own shoulder, elbow, and wrist works exactly the same way.', '[READ_BIGIDEA]')}
+              />
+            </div>
           </div>
 
           {data.instanceId && (

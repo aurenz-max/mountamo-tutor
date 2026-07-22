@@ -11,9 +11,11 @@ import {
   LuminaButton,
   LuminaBadge,
   LuminaPanel,
+  LuminaReadAloud,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -669,7 +671,7 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
   });
 
   // ---- AI Tutoring ----
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'airfoil-lab' as any,
     instanceId: data.instanceId || `al-${Date.now()}`,
     primitiveData: {
@@ -686,6 +688,18 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     },
     gradeLevel: data.gradeBand === '1-2' ? 'kindergarten' : 'elementary',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ---- Intro message ----
   const introducedRef = useRef(false);
@@ -831,6 +845,16 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
     ? (computedResults.liftForce / computedResults.dragForce)
     : Infinity;
 
+  // Plain-text twin of the "How Wings Create Lift" prose (spans stripped) so the
+  // 🔊 reads exactly what is visible; the L/D sentence only for the 3-5 band.
+  const howLiftText =
+    'An airfoil is the cross-section shape of a wing. Its curved shape makes air flow faster over the top and slower underneath. '
+    + 'Bernoulli’s Principle: faster air means lower pressure. Above the wing the particles spread apart and speed up, so there is low pressure. Below the wing they bunch up and slow down, so there is high pressure. The pressure difference pushes the wing upward — that is lift. '
+    + 'Stall: tilt the airfoil too steeply and the upper particles can’t hold onto the surface. They detach and swirl, the pressure equalizes, and lift collapses suddenly.'
+    + (data.gradeBand === '3-5'
+      ? ' L over D Ratio: the lift-to-drag ratio measures how efficient the wing is. Higher means more lift for less drag — great for gliders and fuel efficiency.'
+      : '');
+
   // ---- Render ----
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -867,8 +891,17 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
 
         <div className="relative z-10">
           {/* Description */}
-          <div className="mb-6 text-center max-w-2xl mx-auto">
-            <p className="text-slate-300 font-light">{data.airfoil.description}</p>
+          <div className="mb-6 max-w-2xl mx-auto flex items-start justify-center gap-2">
+            <p className="text-slate-300 font-light text-center">{data.airfoil.description}</p>
+            <LuminaReadAloud
+              iconOnly
+              size="sm"
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the description to me"
+              className="flex-shrink-0"
+              onClick={() => readBlockAloud(data.airfoil.description, '[READ_INTRO]')}
+            />
           </div>
 
           {/* Stall warning */}
@@ -1120,10 +1153,31 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                           <SpotlightCard key={idx} color="168, 85, 247" className="bg-slate-800/30 p-3">
                             <div className="p-3">
                               <div className="text-xs text-purple-400 font-mono font-bold mb-1">{comp.name}</div>
-                              <p className="text-sm text-slate-300">{comp.question}</p>
+                              <div className="flex items-start gap-2">
+                                <p className="text-sm text-slate-300 flex-1">{comp.question}</p>
+                                <ReadMeButton
+                                  instruction={comp.question}
+                                  speaking={isAudioPlaying}
+                                  onAskTutor={(m) => sendText?.(m)}
+                                  tag="[READ_COMPARE_Q]"
+                                  className="flex-shrink-0"
+                                  aria-label="Read the question to me"
+                                />
+                              </div>
                               <details className="mt-2">
                                 <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300">Show explanation</summary>
-                                <p className="text-xs text-slate-400 mt-1">{comp.explanation}</p>
+                                <div className="flex items-start gap-2 mt-1">
+                                  <p className="text-xs text-slate-400 flex-1">{comp.explanation}</p>
+                                  <LuminaReadAloud
+                                    iconOnly
+                                    size="sm"
+                                    accent="cyan"
+                                    speaking={isAudioPlaying}
+                                    aria-label="Read the explanation to me"
+                                    className="flex-shrink-0"
+                                    onClick={() => readBlockAloud(comp.explanation, '[READ_COMPARE_EXPLANATION]')}
+                                  />
+                                </div>
                               </details>
                             </div>
                           </SpotlightCard>
@@ -1158,7 +1212,20 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                           className="bg-slate-800/30"
                         >
                           <div className="p-4">
-                            <p className="text-sm text-slate-200 font-medium mb-2">{challenge.scenario}</p>
+                            <div className="flex items-start gap-2 mb-2">
+                              <p className="text-sm text-slate-200 font-medium flex-1">{challenge.scenario}</p>
+                              {/* Wrap in a stopPropagation span so tapping 🔊 does not toggle the card. */}
+                              <span onClick={e => e.stopPropagation()} className="flex-shrink-0">
+                                <ReadMeButton
+                                  instruction={challenge.scenario}
+                                  ask={`Change the wing shape and tilt it until the lift is ${challenge.targetLift} and the drag is ${challenge.targetDrag}, then tap Check My Solution.`}
+                                  speaking={isAudioPlaying}
+                                  onAskTutor={(m) => sendText?.(m)}
+                                  tag="[READ_CHALLENGE]"
+                                  aria-label="Read the challenge to me"
+                                />
+                              </span>
+                            </div>
                             <div className="flex gap-2 mb-2">
                               <LuminaBadge accent="blue" className="text-[10px]">
                                 Lift: {challenge.targetLift}
@@ -1169,7 +1236,18 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
                             </div>
                             {isActive && (
                               <div className="mt-3 space-y-2">
-                                <p className="text-xs text-amber-300/70 italic">{challenge.hint}</p>
+                                <div className="flex items-start gap-2">
+                                  <p className="text-xs text-amber-300/70 italic flex-1">{challenge.hint}</p>
+                                  <LuminaReadAloud
+                                    iconOnly
+                                    size="sm"
+                                    accent="cyan"
+                                    speaking={isAudioPlaying}
+                                    aria-label="Read the hint to me"
+                                    className="flex-shrink-0"
+                                    onClick={e => { e.stopPropagation(); readBlockAloud(challenge.hint, '[READ_HINT]'); }}
+                                  />
+                                </div>
                                 <LuminaButton
                                   tone="primary"
                                   size="sm"
@@ -1203,6 +1281,15 @@ const AirfoilLab: React.FC<AirfoilLabProps> = ({ data, className }) => {
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <Wind className="w-5 h-5 text-cyan-400" />
               How Wings Create Lift
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read how wings make lift to me"
+                className="flex-shrink-0 ml-auto"
+                onClick={() => readBlockAloud(howLiftText, '[READ_HOW_LIFT]')}
+              />
             </h4>
             <div className="space-y-2">
               <p className="text-slate-300 text-sm">

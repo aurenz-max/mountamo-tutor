@@ -207,6 +207,8 @@ export type {
   CalendarExplorerMetrics,
   TimelineBuilderMetrics,
   CompareObjectsMetrics,
+  // Direct Instruction metrics
+  DiLetterSoundsMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

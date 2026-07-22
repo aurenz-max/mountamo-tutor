@@ -166,6 +166,7 @@ export interface SentenceSchemaData {
 export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } from './primitives/visual-primitives/literacy/SentenceAnalyzer';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
+export type { DiLetterSoundsData } from './primitives/visual-primitives/direct-instruction/DiLetterSounds';
 
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
@@ -1366,6 +1367,7 @@ export type ComponentId =
 
   // Language Arts Suite (K-6 ELA Expansion — PRD_LANGUAGE_ARTS_SUITE.md)
   | 'phonics-blender'           // Sound-by-sound word building with phoneme tiles and audio (K-2)
+  | 'di-letter-sounds'          // Live-judged Direct Instruction: continuous letter sounds, spoken call-response (K)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)

@@ -368,7 +368,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       : 'idle';
 
   return (
-    <LuminaCard surface="raised" className="max-w-3xl mx-auto">
+    <LuminaCard surface="elevated" className="max-w-3xl mx-auto">
       <LuminaCardHeader>
         <div className="flex items-center justify-between gap-3">
           <div>

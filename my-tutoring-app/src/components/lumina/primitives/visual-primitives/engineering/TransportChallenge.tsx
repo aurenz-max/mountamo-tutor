@@ -13,6 +13,7 @@ import {
   LuminaActionButton,
   LuminaAnswerChoice,
   LuminaFeedbackCard,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
@@ -21,6 +22,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ─── Data Interfaces ──────────────────────────────────────────────────────────
@@ -315,7 +317,7 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
   // ── AI Tutoring ───────────────────────────────────────────────────────────
   const currentScenario = scenarios[currentIndex];
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'transport-challenge' as any,
     instanceId: resolvedInstanceId,
     primitiveData: {
@@ -327,6 +329,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
     },
     gradeLevel: 'K-5',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ── Per-Scenario State ────────────────────────────────────────────────────
   const [scenarioPhase, setScenarioPhase] = useState<ScenarioPhase>('picking');
@@ -566,7 +580,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
             {currentIndex + 1} / {scenarios.length}
           </LuminaBadge>
         </div>
-        <p className="text-slate-400 text-sm">{description}</p>
+        <div className="flex items-start gap-2">
+          <p className="text-slate-400 text-sm flex-1">{description}</p>
+          <LuminaReadAloud
+            iconOnly
+            size="sm"
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read the lesson intro to me"
+            className="flex-shrink-0"
+            onClick={() => readBlockAloud(description, '[READ_INTRO]')}
+          />
+        </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
@@ -586,7 +611,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
           <>
             {/* ── Scenario Header ──────────────────────────────────────── */}
             <LuminaPanel>
-              <h3 className="text-slate-100 font-semibold text-lg mb-1">{scenario.title}</h3>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="text-slate-100 font-semibold text-lg">{scenario.title}</h3>
+                <ReadMeButton
+                  instruction={`${scenario.title}. Move ${scenario.peopleToTransport} people from ${scenario.origin} to ${scenario.destination}, about ${scenario.distanceKm} kilometers away.`}
+                  ask="Look at the rules, then choose a vehicle for the job."
+                  speaking={isAudioPlaying}
+                  onAskTutor={(m) => sendText(m)}
+                  tag="[READ_SCENARIO]"
+                  className="flex-shrink-0"
+                  aria-label="Read the transport task to me"
+                />
+              </div>
               <p className="text-slate-300 text-sm mb-3">
                 Transport <span className="text-blue-300 font-bold">{scenario.peopleToTransport} people</span> from{' '}
                 <span className="text-amber-300">{scenario.origin}</span> to{' '}
@@ -836,7 +872,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                 {/* Trade-off Question */}
                 {(scenarioPhase === 'question' || scenarioPhase === 'answered') && (
                   <LuminaPanel className="space-y-3">
-                    <p className="text-slate-100 font-medium text-sm">{scenario.tradeOffQuestion}</p>
+                    <div className="flex items-start gap-2">
+                      <p className="text-slate-100 font-medium text-sm flex-1">{scenario.tradeOffQuestion}</p>
+                      <ReadMeButton
+                        instruction={scenario.tradeOffQuestion}
+                        ask="Read the choices and tap the one you think is best."
+                        speaking={isAudioPlaying}
+                        onAskTutor={(m) => sendText(m)}
+                        tag="[READ_QUESTION]"
+                        className="flex-shrink-0"
+                        aria-label="Read the question to me"
+                      />
+                    </div>
                     <div className="space-y-2">
                       {scenario.tradeOffOptions.map((opt, i) => {
                         const isSelected = questionAnswer === i;
@@ -876,7 +923,18 @@ const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className
                         <LuminaFeedbackCard
                           status={questionAnswer === scenario.tradeOffCorrectIndex ? 'correct' : 'insight'}
                         >
-                          {scenario.explanation}
+                          <div className="flex items-start gap-2">
+                            <span className="flex-1">{scenario.explanation}</span>
+                            <LuminaReadAloud
+                              iconOnly
+                              size="sm"
+                              accent="cyan"
+                              speaking={isAudioPlaying}
+                              aria-label="Read the explanation to me"
+                              className="flex-shrink-0"
+                              onClick={() => readBlockAloud(scenario.explanation, '[READ_EXPLANATION]')}
+                            />
+                          </div>
                         </LuminaFeedbackCard>
                         <LuminaActionButton action="next" onClick={handleNextScenario} className="w-full">
                           {currentIndex < scenarios.length - 1 ? 'Next Scenario →' : 'See Results'}

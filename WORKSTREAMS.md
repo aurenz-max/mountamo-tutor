@@ -109,7 +109,7 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-20
+### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-21
 - **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
   architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
   core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
@@ -180,12 +180,26 @@ queue AND this file's "last touched" in the same slice.
   exercised (tutor re-modeled without the "My turn" opener; engine stayed correctly). Resync/
   timeout unit-covered, not yet observed live (watch-items). Primitive note: tutoring directive
   should remind that EVERY correction begins "My turn:" (model dropped it on a re-correction).
-- **Now = `qa/di/BACKLOG.md` item 1: `di-letter-sounds`** — first custom-made pack over the
-  committed engine stack. Hand-authored script (port the diScript SHAPE), generator-scoped item
-  menu (rhyme-studio K pattern, no hardcoded items), new `primitives/direct-instruction/` family +
-  `catalog/di.ts` section, normal manifest entry (no new launch surface). Curriculum home = the
-  starved GK phonics band. Then item 2 di-word-reading (bench probe first), item 3 di-math-facts
-  (gated on a number-words bench probe; watch sentinel collision with natural "Yes!").
+- **DONE 2026-07-20 — `di-letter-sounds` BORN L0** (BACKLOG item 1 struck). First custom-made pack
+  over the committed engine stack: new family `primitives/visual-primitives/direct-instruction/`
+  (`DiLetterSounds.tsx` + hand-authored `diLetterSoundsScript.ts`), `catalog/di.ts`,
+  `service/direct-instruction/gemini-di-letter-sounds.ts` (Fork A menu-scoped generator, no
+  hardcoded items), `registry/generators/diGenerators.ts`, evaluation metrics + a
+  `direct-instruction-tester` dev panel. typecheck:lumina PASS; eval-test PASS ×3 (topic fidelity
+  confirmed); curriculum-fit MATCH (K LA Letter-Sound Correspondence, 0.788 — the starved GK band).
+  Birth cert + 6-layer follow-up queue: `qa/eval-reports/di-letter-sounds-birth.md`. **Live loop
+  UNVERIFIED through the primitive → HUMAN-CHECKS #36** (engine 4 runs PASS). Two L0 gaps to
+  `/add-tutoring-scaffold`: lesson-mode connect needs `manual_activity`+DI-tutoring through the
+  shared session; add `subject_for_domain('di')→LANGUAGE_ARTS` to the retrieval matcher.
+- **Tester validated (`/pm` 2026-07-21):** dedicated `direct-instruction-tester` dev panel
+  (`DirectInstructionPrimitivesTester.tsx`) wired into `DevPanelRouter`, generates via the eval-test
+  API route (never imports the server-only generator), renders `DiLetterSounds`. typecheck:lumina 0.
+  **Sole open gate = HUMAN-CHECKS #36** (drive the panel with a real mic — the whole primitive IS the
+  live loop; tsc/eval-test only exercise the generator). This gates di-letter-sounds' ladder climb.
+- **Now = `qa/di/BACKLOG.md` item 2: `di-word-reading`** (CVC/sight words — bench probe first),
+  then item 3 di-math-facts (gated on a number-words bench probe; watch sentinel collision with
+  natural "Yes!"). Or advance di-letter-sounds up its own ladder (`/add-eval-modes` → …) once
+  HUMAN-CHECKS #36 clears.
 - **WIP note:** the 07-16 "proof-of-concept, not a build" framing is RETIRED (user call
   2026-07-20) — the bench proved the architecture; DI is now a build stream. ACTIVE = reader-fit
   (top) + DI = **2 ACTIVE, within the 2+1 limit.**
@@ -217,6 +231,7 @@ WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as
 | media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
 | SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
 | Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **7 contracts on disk** (newest: counting-board 2026-07-20 via reader-fit #13; ten-frame 2026-07-16 via #12; media-player 2026-07-16 via #9a Step 1 — the CONFLICTED one) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
+| Engineering tutoring-scaffold wiring | `my-tutoring-app/qa/engineering-tutoring-scaffold/BACKLOG.md` | **NEW 2026-07-21 (user).** Bring engineering primitives to L2 (`/add-tutoring-scaffold`). **Phase A** = 12 primitives with NO `useLuminaAI` tutor channel (machine-profile, dump-truck-loader, bridge-builder, tower-stacker, gear-train-builder, pulley-system-builder, lever-lab, ramp-lab, wheel-axle-explorer, shape-strength-tester, foundation-builder, blueprint-canvas) — wiring the channel also unlocks read-aloud there (finishes the 07-21 sweep). Pilot A1 machine-profile end-to-end + live-verify BEFORE sweeping A2–A12. **Phase B** = `/tutor-test` the 12 that already have the channel for L2 *sufficiency* (not just presence). Executors: `/add-tutoring-scaffold` → `/tutor-test` → `/reader-fit --fix`. | 07-21 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |
 | Flash-lite truncation hardening | memory `project_flash-lite-truncation-template` | ~50-gen sweep | 07-06 |

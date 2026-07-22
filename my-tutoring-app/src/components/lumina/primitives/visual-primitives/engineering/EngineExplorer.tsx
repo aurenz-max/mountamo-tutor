@@ -10,6 +10,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaAnswerChoice,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../ui';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../../../evaluation';
 import type { EngineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -775,12 +777,24 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
     selectedZone: selectedZone || 'none',
   }), [engineType, engineName, vehicleContext, fuel, load, rpm, exploredZones, challengeResults.length, challenges.length, selectedZone]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'engine-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '1-2' ? 'K-2' : '3-5',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // AI: Activity start
   const hasIntroducedRef = useRef(false);
@@ -986,7 +1000,12 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <LuminaCardTitle className="text-lg">{engineName}</LuminaCardTitle>
-              <p className="text-slate-400 text-sm mt-1">{overview}</p>
+              <div className="flex items-start gap-2 mt-1">
+                <p className="text-slate-400 text-sm flex-1">{overview}</p>
+                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                  aria-label="Read the overview to me" className="flex-shrink-0"
+                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')} />
+              </div>
             </div>
             <div className="flex gap-2">
               <LuminaBadge>{engineType.replace(/_/g, ' ')}</LuminaBadge>
@@ -1017,9 +1036,17 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
           {/* Zone Info Card */}
           {zoneInfo && selectedZone && (
             <LuminaPanel accent="cyan" className="animate-fade-in">
-              <h4 className="text-white font-semibold text-lg">
-                {layout.zones.find(z => z.id === selectedZone)?.name || selectedZone}
-              </h4>
+              <div className="flex items-start gap-2">
+                <h4 className="text-white font-semibold text-lg flex-1">
+                  {layout.zones.find(z => z.id === selectedZone)?.name || selectedZone}
+                </h4>
+                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                  aria-label="Read this part to me" className="flex-shrink-0"
+                  onClick={() => readBlockAloud(
+                    `${layout.zones.find(z => z.id === selectedZone)?.name || selectedZone}. ${zoneInfo.explanation} Here's a way to picture it: ${zoneInfo.analogy}`,
+                    '[READ_ZONE]',
+                  )} />
+              </div>
               <p className="text-slate-300 text-sm mt-2">{zoneInfo.explanation}</p>
               <div className="flex items-start gap-2 mt-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
                 <span className="text-amber-400 shrink-0">💡</span>
@@ -1136,7 +1163,18 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
                 <LuminaBadge className="text-xs">{currentChallenge.type}</LuminaBadge>
               </div>
 
-              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-slate-200 text-sm font-medium flex-1">{currentChallenge.instruction}</p>
+                <ReadMeButton
+                  instruction={currentChallenge.instruction}
+                  ask="Look at the choices below and tap the one you think is right."
+                  speaking={isAudioPlaying}
+                  onAskTutor={(m) => sendText?.(m)}
+                  tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0"
+                  aria-label="Read the question to me"
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {currentChallenge.options.map(opt => {
@@ -1166,10 +1204,15 @@ const EngineExplorer: React.FC<EngineExplorerProps> = ({ data, className }) => {
 
               {showHint && (
                 <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                  <p className="text-amber-200 text-sm">
-                    <span className="text-amber-400 font-semibold">Hint: </span>
-                    {currentChallenge.hint}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-amber-200 text-sm flex-1">
+                      <span className="text-amber-400 font-semibold">Hint: </span>
+                      {currentChallenge.hint}
+                    </p>
+                    <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                      aria-label="Read the hint to me" className="flex-shrink-0"
+                      onClick={() => readBlockAloud(currentChallenge.hint, '[READ_HINT]')} />
+                  </div>
                 </div>
               )}
             </LuminaPanel>

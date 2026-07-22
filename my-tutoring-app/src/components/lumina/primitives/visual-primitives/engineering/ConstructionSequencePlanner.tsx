@@ -11,6 +11,7 @@ import {
   LuminaPanel,
   LuminaFeedbackCard,
   LuminaDropZone,
+  LuminaReadAloud,
   type FeedbackStatus,
 } from '../../../ui';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../../evaluation';
 import type { ConstructionSequencePlannerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -630,12 +632,24 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     parallelAllowed,
   }), [projectType, gradeLevel, tasks.length, targetWeeks, criticalPath.length, parallelAllowed]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'construction-sequence-planner',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ---- Canvas rendering ----
   useEffect(() => {
@@ -977,7 +991,18 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
             )}
           </div>
           <LuminaCardTitle className="text-2xl font-light text-white">{title}</LuminaCardTitle>
-          <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
+          <div className="flex items-start gap-2">
+            <p className="text-slate-300 text-sm leading-relaxed flex-1">{description}</p>
+            <LuminaReadAloud
+              iconOnly
+              size="sm"
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the project introduction to me"
+              className="flex-shrink-0"
+              onClick={() => readBlockAloud(`${title}. ${description}`, '[READ_INTRO]')}
+            />
+          </div>
         </LuminaCardHeader>
 
         <LuminaCardContent className="space-y-6">
@@ -997,13 +1022,24 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
             <>
               {/* Schedule / Task List */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <h3 className="text-sm font-medium text-slate-200">
                     Drag tasks into the correct construction order:
                   </h3>
-                  <span className="text-xs text-slate-500 font-mono">
-                    {tasks.length} tasks
-                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-slate-500 font-mono">
+                      {tasks.length} tasks
+                    </span>
+                    <ReadMeButton
+                      instruction="Drag the tasks up and down to put them in the order you would build them."
+                      ask="answer-free what-to-do (e.g. drag each task into the order you think it should happen, with the very first job at the top)"
+                      speaking={isAudioPlaying}
+                      onAskTutor={(m) => sendText?.(m)}
+                      tag="[READ_SEQUENCE]"
+                      className="flex-shrink-0"
+                      aria-label="Read the task to me"
+                    />
+                  </div>
                 </div>
                 {schedule.map((id, idx) => {
                   const task = taskMap.get(id);
@@ -1149,21 +1185,50 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
           {/* Feedback */}
           {feedback && (
             <LuminaFeedbackCard status={feedbackStatus} className="p-3">
-              {feedback}
+              <div className="flex items-start gap-2">
+                <span className="flex-1">{feedback}</span>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the feedback to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(feedback, '[READ_FEEDBACK]')}
+                />
+              </div>
             </LuminaFeedbackCard>
           )}
 
           {/* Critical Path Info (grades 3+) */}
           {parallelAllowed && phase === 'plan' && (
             <LuminaPanel className="p-3">
-              <p className="text-xs text-slate-400">
-                <span className="text-amber-400 font-medium">Critical path</span>: the longest
-                chain of tasks that can&apos;t be done in parallel. Your project can&apos;t finish
-                faster than {totalWeeks} weeks no matter how you schedule.
-                {totalWeeks <= targetWeeks
-                  ? ' You can meet the deadline!'
-                  : ` The deadline of ${targetWeeks} weeks is tight — you'll need to find parallel paths.`}
-              </p>
+              <div className="flex items-start gap-2">
+                <p className="text-xs text-slate-400 flex-1">
+                  <span className="text-amber-400 font-medium">Critical path</span>: the longest
+                  chain of tasks that can&apos;t be done in parallel. Your project can&apos;t finish
+                  faster than {totalWeeks} weeks no matter how you schedule.
+                  {totalWeeks <= targetWeeks
+                    ? ' You can meet the deadline!'
+                    : ` The deadline of ${targetWeeks} weeks is tight — you'll need to find parallel paths.`}
+                </p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the critical path explanation to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(
+                    `Critical path: the longest chain of tasks that can't be done in parallel. `
+                    + `Your project can't finish faster than ${totalWeeks} weeks no matter how you schedule. `
+                    + (totalWeeks <= targetWeeks
+                      ? 'You can meet the deadline!'
+                      : `The deadline of ${targetWeeks} weeks is tight — you'll need to find parallel paths.`),
+                    '[READ_CRITICAL_PATH]',
+                  )}
+                />
+              </div>
             </LuminaPanel>
           )}
         </LuminaCardContent>

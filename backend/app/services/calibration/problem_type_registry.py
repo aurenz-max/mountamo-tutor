@@ -243,6 +243,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "sorting-station": {
         "sort_one":         PriorConfig(1.5, "Concrete: sort by single visible attribute"),
         "sort_attribute":   PriorConfig(2.5, "Pictorial: sort by named property"),
+        "sort_variety":     PriorConfig(3.0, "Pictorial: re-sort the same set by a different rule (flexible classification)"),
         "count_compare":    PriorConfig(3.5, "Pictorial: count and compare sorted groups"),
         "odd_one_out":      PriorConfig(4.0, "Pictorial: identify the exception"),
         "two_attributes":   PriorConfig(5.0, "Transitional: multi-criterion classification"),

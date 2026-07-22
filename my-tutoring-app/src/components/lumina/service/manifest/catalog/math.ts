@@ -2990,7 +2990,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   {
     id: 'sorting-station',
     description: 'Interactive sorting station where students categorize objects by the lesson\'s objective-relevant rule, including semantic categories (needs/wants, roles, kinds) and visible attributes when those attributes are the taught concept. Supports single-criterion sorting, multi-criterion classification, count-and-compare, odd-one-out, and tally recording. ESSENTIAL for Kindergarten and Grade 1 math and concept classification.',
-    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Objects per challenge: 4–6 at Kindergarten, 5–8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. BAND FLOOR: at Kindergarten (pre-reader) route only sort_one and odd_one_out — both are picture-primary tap tasks. sort_attribute (choosing HOW to sort from named axes), count_compare (entering counts via steppers + reading a comparison question), two_attributes (two-criteria simultaneous classification), and tally_record (sort-then-tally numeric recording) all demand reading or numeric entry above a pre-reader and are for Grade 1+.',
+    constraints: 'Best for K-1. The objective category must remain the main modality across challenges; vary objects, not the taught sorting rule. Use color/size/shape as the primary axis only when the objective explicitly teaches it. Objects should be familiar. Objects per challenge: 4–6 at Kindergarten, 5–8 at Grade 1. Bins: max 3 at Kindergarten, max 4 at Grade 1. BAND FLOOR: at Kindergarten (pre-reader) route only sort_one and odd_one_out — both are picture-primary tap tasks. sort_attribute (choosing HOW to sort from named axes), sort_variety (following a new named rule each round), count_compare (entering counts via steppers + reading a comparison question), two_attributes (two-criteria simultaneous classification), and tally_record (sort-then-tally numeric recording) all demand reading or numeric entry above a pre-reader and are for Grade 1+.',
     evalModes: [
       {
         evalMode: 'sort_one',
@@ -3007,6 +3007,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 2,
         challengeTypes: ['sort-by-attribute'],
         description: 'Grade 1+ ONLY (never Kindergarten — choosing HOW to sort from named text attribute buttons is a metacognitive task above a pre-reader). Objects have multiple attributes; student chooses how to sort.',
+      },
+      {
+        evalMode: 'sort_variety',
+        label: 'Sort Again — Different Rule (Tier 2+)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['sort-variety'],
+        description: 'Grade 1+ ONLY for now (never Kindergarten — following a new named sorting rule each round is a reading demand above a pre-reader; a voiced-rule K variant is a follow-up, re-audited not unfloored). FLEXIBLE CLASSIFICATION: re-sort the SAME set of objects by a DIFFERENT valid rule each round (kind → size → use). Rule rotation IS the declared task — the sanctioned exemption to taught-rule stability, which still holds for every other mode.',
       },
       {
         evalMode: 'count_compare',

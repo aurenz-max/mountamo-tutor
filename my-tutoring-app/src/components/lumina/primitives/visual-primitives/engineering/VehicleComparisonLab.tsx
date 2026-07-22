@@ -13,10 +13,12 @@ import {
   LuminaPanel,
   LuminaActionButton,
   LuminaFeedbackCard,
+  LuminaReadAloud,
   answerStateClasses,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -156,7 +158,7 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     [vehicles, selectedVehicleIds]
   );
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'vehicle-comparison-lab' as any,
     instanceId: data.instanceId || `vcl-${Date.now()}`,
     primitiveData: {
@@ -168,6 +170,20 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
     },
     gradeLevel: gradeBand === 'K-2' ? 'kindergarten' : 'elementary',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Every load-bearing string here is text a K–2 reader cannot decode. These
+  // taps route to a NON-silent sendText — the read-aloud IS the tutor speaking
+  // the words on screen, word for word. Never hint an answer (post-answer
+  // explanation excepted, since it is already revealed on the card).
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ── Track comparison pairs ────────────────────────────────────────────────
   const trackComparisonPair = useCallback((ids: string[]) => {
@@ -412,7 +428,22 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
           </h3>
         </div>
 
-        <p className="text-slate-200">{challenge.scenario}</p>
+        <div className="flex items-start gap-2">
+          <p className="text-slate-200 flex-1">{challenge.scenario}</p>
+          <ReadMeButton
+            instruction={challenge.scenario}
+            ask={
+              challenge.constraints.passengers > 0
+                ? `You need to carry ${challenge.constraints.passengers} friends and travel ${challenge.constraints.distance} kilometers. Look at the pictures and tap the vehicle that fits best.`
+                : 'Look at the pictures and tap the vehicle that fits best.'
+            }
+            speaking={isAudioPlaying}
+            onAskTutor={(m) => sendText?.(m)}
+            tag="[READ_SCENARIO]"
+            className="flex-shrink-0"
+            aria-label="Read the challenge to me"
+          />
+        </div>
 
         {challenge.constraints.passengers > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -456,7 +487,18 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
 
         {challengeAnswer && (
           <LuminaFeedbackCard status={answeredCorrectly ? 'correct' : 'incorrect'}>
-            <p className="text-sm">{challenge.explanation}</p>
+            <div className="flex items-start gap-2">
+              <p className="text-sm flex-1">{challenge.explanation}</p>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read this to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud(challenge.explanation, '[READ_EXPLANATION]')}
+              />
+            </div>
             <LuminaActionButton
               action="next"
               onClick={nextChallenge}
@@ -486,7 +528,18 @@ const VehicleComparisonLab: React.FC<VehicleComparisonLabProps> = ({ data, class
               </div>
               <div>
                 <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-                <p className="text-sm text-slate-400 mt-0.5">{instructions}</p>
+                <div className="flex items-start gap-2 mt-0.5">
+                  <p className="text-sm text-slate-400">{instructions}</p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    aria-label="Read the instructions to me"
+                    className="flex-shrink-0"
+                    onClick={() => readBlockAloud(instructions, '[READ_INSTRUCTIONS]')}
+                  />
+                </div>
               </div>
             </div>
             <LuminaBadge>{gradeBand}</LuminaBadge>

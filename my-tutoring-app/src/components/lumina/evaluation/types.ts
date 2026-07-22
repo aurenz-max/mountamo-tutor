@@ -3280,6 +3280,19 @@ export interface CompareObjectsMetrics extends BasePrimitiveMetrics {
   totalChallenges: number;
 }
 
+// Direct Instruction (live-judged spoken family)
+export interface DiLetterSoundsMetrics extends BasePrimitiveMetrics {
+  type: 'di-letter-sounds';
+  challengeType: 'letter_sound'; // union widens when /add-eval-modes builds the ladder
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total spoken attempts across all sounds (corrections + 1 each)
+  firstTryCount: number;          // sounds affirmed on the first attempt
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3475,7 +3488,9 @@ export type PrimitiveMetrics =
   // Calendar
   | CalendarExplorerMetrics
   | TimelineBuilderMetrics
-  | CompareObjectsMetrics;
+  | CompareObjectsMetrics
+  // Direct Instruction
+  | DiLetterSoundsMetrics;
 
 // =============================================================================
 // Session & Summary Types

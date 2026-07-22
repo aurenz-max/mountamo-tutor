@@ -13,6 +13,7 @@ import {
   LuminaAnswerChoice,
   LuminaAccordion,
   LuminaAccordionItem,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../ui';
 import {
@@ -21,6 +22,7 @@ import {
 } from '../../../evaluation';
 import type { HydraulicsLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -245,6 +247,12 @@ const DEFAULT_MISSIONS: HydraulicsMission[] = [
     explainOnSolve: "You built a huge force multiplier — a tiny input piston and a giant output piston. A gentle 45 N push became a massive lifting force. That's exactly how a real excavator moves tons of rock!",
   },
 ];
+
+// The debrief throughline, hoisted so the read-aloud speaks the exact on-screen words.
+const BIG_IDEA_TEXT =
+  "every mission was Pascal's Law — pressure is the same everywhere in the fluid, so a "
+  + "gentle push on a small piston becomes a huge force on a big one. Shrink the input, "
+  + "grow the output, and you multiply force. That's how real machines lift tons.";
 
 // ============================================================================
 // Particle Physics
@@ -1150,12 +1158,24 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
     loadWeight, systemPressure, outputForce, forceRatio, isLifting,
     exploredZones, currentMission.title, solvedMissionIds.size, missions.length, selectedZone]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'hydraulics-lab',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '3-5' ? '3-5' : '6-8',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // AI: Activity start
   const hasIntroducedRef = useRef(false);
@@ -1445,7 +1465,18 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <LuminaCardTitle className="text-lg">{scenarioName}</LuminaCardTitle>
-              <LuminaCardDescription className="text-sm mt-1">{overview}</LuminaCardDescription>
+              <div className="flex items-start gap-2 mt-1">
+                <LuminaCardDescription className="text-sm flex-1">{overview}</LuminaCardDescription>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the overview to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <LuminaBadge>{scenario.replace(/_/g, ' ')}</LuminaBadge>
@@ -1471,9 +1502,20 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               )}
             </div>
 
-            <div>
-              <h3 className="text-white font-semibold text-base">{currentMission.title}</h3>
-              <p className="text-slate-300 text-sm mt-1 leading-relaxed">{currentMission.brief}</p>
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <h3 className="text-white font-semibold text-base">{currentMission.title}</h3>
+                <p className="text-slate-300 text-sm mt-1 leading-relaxed">{currentMission.brief}</p>
+              </div>
+              <ReadMeButton
+                instruction={`${currentMission.title}. ${currentMission.brief}`}
+                ask="Change the controls that aren't locked until the load lifts off the ground."
+                speaking={isAudioPlaying}
+                onAskTutor={(m) => sendText?.(m)}
+                tag="[READ_MISSION]"
+                className="flex-shrink-0"
+                aria-label="Read the mission to me"
+              />
             </div>
 
             {/* Live goal / lift progress — the physics engine is the judge */}
@@ -1502,8 +1544,17 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             {/* Hint — only on request, never auto-revealed */}
             {!currentSolved && (
               showMissionHint ? (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                  <p className="text-amber-300 text-xs">💡 {currentMission.successHint}</p>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
+                  <p className="text-amber-300 text-xs flex-1">💡 {currentMission.successHint}</p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    aria-label="Read the hint to me"
+                    className="flex-shrink-0"
+                    onClick={() => readBlockAloud(currentMission.successHint, '[READ_HINT]')}
+                  />
                 </div>
               ) : (
                 <button
@@ -1519,7 +1570,18 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             {showSolveCard && currentSolved && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 space-y-3">
                 <p className="text-emerald-300 text-sm font-medium">🎉 Mission solved — you lifted it!</p>
-                <p className="text-slate-300 text-xs leading-relaxed">{currentMission.explainOnSolve}</p>
+                <div className="flex items-start gap-2">
+                  <p className="text-slate-300 text-xs leading-relaxed flex-1">{currentMission.explainOnSolve}</p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    aria-label="Read why it worked to me"
+                    className="flex-shrink-0"
+                    onClick={() => readBlockAloud(currentMission.explainOnSolve, '[READ_EXPLAIN]')}
+                  />
+                </div>
                 {currentMissionIdx < missions.length - 1 && (
                   <LuminaButton tone="primary" onClick={handleNextMission} className="w-full">
                     Next Mission →
@@ -1576,13 +1638,19 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
               </div>
 
               {/* The throughline that tied every mission together */}
-              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
-                <p className="text-cyan-300 text-xs leading-relaxed">
-                  <span className="font-semibold">The big idea:</span> every mission was Pascal's Law —
-                  pressure is the same everywhere in the fluid, so a gentle push on a small piston becomes
-                  a huge force on a big one. Shrink the input, grow the output, and you multiply force.
-                  That's how real machines lift tons.
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 flex items-start gap-2">
+                <p className="text-cyan-300 text-xs leading-relaxed flex-1">
+                  <span className="font-semibold">The big idea:</span> {BIG_IDEA_TEXT}
                 </p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the big idea to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(`The big idea: ${BIG_IDEA_TEXT}`, '[READ_DEBRIEF]')}
+                />
               </div>
 
               {!hasSubmittedEvaluation ? (
@@ -1621,10 +1689,19 @@ const HydraulicsLab: React.FC<HydraulicsLabProps> = ({ data, className }) => {
             <LuminaPanel accent="cyan">
               <div className="flex items-start gap-3">
                 <span className="text-cyan-400 text-lg mt-0.5">&#x1F4A1;</span>
-                <div>
+                <div className="flex-1">
                   <p className="text-slate-200 text-sm font-medium">{zoneInfo.analogy}</p>
                   <p className="text-slate-400 text-xs mt-1">{zoneInfo.explanation}</p>
                 </div>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read this part to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(`${zoneInfo.analogy}. ${zoneInfo.explanation}`, '[READ_ZONE]')}
+                />
               </div>
             </LuminaPanel>
           )}

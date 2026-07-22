@@ -10,6 +10,7 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaAnswerChoice,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../ui';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../../../evaluation';
 import type { FlightForcesExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -833,12 +835,24 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
     challengeProgress: `${challengeResults.length}/${challenges.length}`,
   }), [acDef.label, flightState, thrustPct, aoa, speed, altitude, stallCount, statesExplored.size, hasGrabbedPlane, challengeResults.length, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'flight-forces-explorer' as any,
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '1-2' ? 'K-2' : '3-5',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
@@ -1030,7 +1044,18 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <LuminaCardTitle className="text-lg">{aircraftName || acDef.label}</LuminaCardTitle>
-              <p className="text-slate-400 text-sm mt-1">{overview}</p>
+              <div className="flex items-start gap-2 mt-1">
+                <p className="text-slate-400 text-sm flex-1">{overview}</p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the overview to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <LuminaBadge accent={flightState === 'stalling' ? 'rose' : undefined}>
@@ -1167,10 +1192,21 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
               <h4 className="text-red-200 font-semibold text-sm flex items-center gap-2">
                 <span>&#x26A0;&#xFE0F;</span> Stall Discovered!
               </h4>
-              <p className="text-slate-300 text-sm">
-                When the angle of attack is too steep, air particles <span className="text-red-300 font-medium">detach from the wing surface</span> and
-                swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!
-              </p>
+              <div className="flex items-start gap-2">
+                <p className="text-slate-300 text-sm flex-1">
+                  When the angle of attack is too steep, air particles <span className="text-red-300 font-medium">detach from the wing surface</span> and
+                  swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!
+                </p>
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read this to me"
+                  className="flex-shrink-0"
+                  onClick={() => readBlockAloud('When the angle of attack is too steep, air particles detach from the wing surface and swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!', '[READ_STALL]')}
+                />
+              </div>
             </LuminaPanel>
           )}
 
@@ -1196,7 +1232,18 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
                   {currentChallenge.type}
                 </LuminaBadge>
               </div>
-              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-slate-200 text-sm font-medium flex-1">{currentChallenge.instruction}</p>
+                <ReadMeButton
+                  instruction={currentChallenge.instruction}
+                  ask="Look at what is happening to the plane and the air, then tap the answer you think is right."
+                  speaking={isAudioPlaying}
+                  onAskTutor={(m) => sendText?.(m)}
+                  tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0"
+                  aria-label="Read the question to me"
+                />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {currentChallenge.options.map(opt => {
                   const isSelected = selectedAnswer === opt.id;
@@ -1223,10 +1270,21 @@ const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className
               </div>
               {showHint && (
                 <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                  <p className="text-amber-200 text-sm">
-                    <span className="text-amber-400 font-semibold">Hint: </span>
-                    {currentChallenge.hint}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-amber-200 text-sm flex-1">
+                      <span className="text-amber-400 font-semibold">Hint: </span>
+                      {currentChallenge.hint}
+                    </p>
+                    <LuminaReadAloud
+                      iconOnly
+                      size="sm"
+                      accent="cyan"
+                      speaking={isAudioPlaying}
+                      aria-label="Read the hint to me"
+                      className="flex-shrink-0"
+                      onClick={() => readBlockAloud(currentChallenge.hint, '[READ_HINT]')}
+                    />
+                  </div>
                 </div>
               )}
             </LuminaPanel>

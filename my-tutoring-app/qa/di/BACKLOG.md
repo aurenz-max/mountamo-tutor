@@ -54,17 +54,6 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-### 1. di-letter-sounds — first primitive (the benched class)
-Continuous letter sounds + keyword elicitation — exactly what four bench runs
-verified. Port the script SHAPE from `di-bench/diScript.ts` (model/guide/test/
-verify/correction lines, judging contract); replace `DEFAULT_ITEMS` with a
-generator that scopes a curated letter-sound menu to the objective (target
-letters from the subskill; emoji/keyword attached in code). Curriculum home:
-K phonics — the STARVED GK band (GK LA graph repair memory: phonics
-under-served), so `/curriculum-fit` should find real unmet demand. Scope
-exclusions: letter names (blocked), digraphs/blends (bench first, later item).
-Executor: `/primitive` (L0) with the engine as the interaction core.
-
 ### 2. di-word-reading — CVC / sight words
 "What word?" over decodable CVC + high-frequency words ("sam" was bench item 4,
 affirmed). Menu-scoped to the phonics pattern in the objective (reuse the CVC
@@ -87,6 +76,22 @@ Executor: bench probe → `/primitive`.
   the floors readout available in primitive dev builds.
 
 ## Done
+- **#1 di-letter-sounds — BORN L0 (2026-07-20).** First DI primitive, first
+  engine consumer. New family: `primitives/visual-primitives/direct-instruction/`
+  (`DiLetterSounds.tsx` + hand-authored `diLetterSoundsScript.ts`), `catalog/di.ts`,
+  `service/direct-instruction/gemini-di-letter-sounds.ts` (Fork A menu-scoped:
+  curated continuant + short-vowel menu; Gemini picks target letters from the
+  objective, code attaches spoken/keyword/emoji), `registry/generators/diGenerators.ts`.
+  Standing gates met: sentinel-collision ✓ (engine defaults, no line opens with a
+  sentinel), correction re-model/opener directive ✓ (in tutoring block + script).
+  typecheck:lumina PASS; eval-test PASS ×3 (topic fidelity: named letters honored,
+  generic → starter spread, vowels → keyword elicitation). Curriculum-fit: MATCH
+  (K LANGUAGE_ARTS Letter-Sound Correspondence, top-1 0.788 — the starved GK band).
+  Birth cert + follow-up queue: `qa/eval-reports/di-letter-sounds-birth.md`. **Live
+  loop UNVERIFIED through the primitive → HUMAN-CHECKS #36** (engine itself 4 runs
+  PASS). Two known L0 gaps carried to `/add-tutoring-scaffold`: lesson-mode connect
+  needs `manual_activity`+DI-tutoring through the shared session; add
+  `subject_for_domain('di')→LANGUAGE_ARTS` to the retrieval matcher.
 - Engine stack steps 1–3 groundwork (bench POC → live-judged pivot → open-mic →
   extraction 1 `4af21b6` → engine `bc2d303`), runs 2026-07-19..21 all PASS.
   History lives in WORKSTREAMS (DI stream) + `qa/di-bench/` reports.

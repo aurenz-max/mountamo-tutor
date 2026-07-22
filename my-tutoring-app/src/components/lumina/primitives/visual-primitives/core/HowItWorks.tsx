@@ -84,6 +84,17 @@ export interface HowItWorksData {
     relatedStep: number;
   }>;
 
+  // ── Pre-reader (K / PRE band) subset ──
+  // When present, the primitive renders the picture-primary "put the steps in
+  // order" task INSTEAD of the reading-heavy magazine + text quiz. The generator
+  // only emits this at the Kindergarten/Preschool band (the emoji is the answer
+  // surface, steps are authored in correct order, and the tutor reads each step
+  // aloud). Its presence IS the band signal — the component honors the payload.
+  preReader?: {
+    question: string;
+    steps: Array<{ id: string; emoji: string; label: string; spoken: string }>;
+  };
+
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -170,6 +181,14 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const [sequenceChecked, setSequenceChecked] = useState(false);
   const [sequenceCorrect, setSequenceCorrect] = useState(false);
 
+  // ── Pre-reader (K / PRE) picture-order state ──
+  const preReader = data.preReader;
+  const [preOrder, setPreOrder] = useState<string[]>([]); // placed ids, in order
+  const [preTray, setPreTray] = useState<string[]>([]);   // shuffled remaining ids
+  const [preStatus, setPreStatus] = useState<'idle' | 'wrong' | 'correct'>('idle');
+  const preInitRef = useRef(false);
+  const preOrientedRef = useRef(false);
+
   // Timing
   const stepEntryTimes = useRef<Record<number, number>>({ 0: Date.now() });
   const [stepTimes, setStepTimes] = useState<number[]>([]);
@@ -252,7 +271,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Introduce on connect
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
+    // Pre-reader has its own spoken ORIENT beat below — skip the magazine intro.
+    if (!isConnected || hasIntroducedRef.current || preReader) return;
     hasIntroducedRef.current = true;
     sendText(
       `[ACTIVITY_START] How It Works: "${title}" — ${subtitle}. `
@@ -368,7 +388,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Track all steps explored
   const hasNotifiedAllExploredRef = useRef(false);
   useEffect(() => {
-    if (allStepsExplored && !hasNotifiedAllExploredRef.current && isConnected) {
+    if (allStepsExplored && !hasNotifiedAllExploredRef.current && isConnected && !preReader) {
       hasNotifiedAllExploredRef.current = true;
       sendText(
         `[ALL_STEPS_EXPLORED] Student explored all ${totalSteps} steps! `
@@ -383,6 +403,23 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Challenge Handling
   // -------------------------------------------------------------------------
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
+
+  // Effective answer key for the active sequence challenge. Generated content
+  // can ship an empty or mismatched `correctOrder` (flash-lite drops the CSV) —
+  // an empty key makes every arrangement "wrong" and bricks the lesson. When the
+  // key is not a clean permutation of the item IDs, fall back to the authored
+  // item order (items are authored in correct order; the board is shuffled for
+  // display), so the challenge is always winnable.
+  const sequenceKey = useMemo(() => {
+    if (!currentChallenge || currentChallenge.type !== 'sequence') return [] as string[];
+    const ids = (currentChallenge.sequenceItems ?? []).map(i => i.id);
+    const key = currentChallenge.correctOrder ?? [];
+    const valid =
+      key.length === ids.length &&
+      new Set(key).size === ids.length &&
+      key.every(id => ids.includes(id));
+    return valid ? key : ids;
+  }, [currentChallenge]);
 
   const handleStartChallenges = useCallback(() => {
     SoundManager.tap();
@@ -432,7 +469,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const handleSequenceCheck = useCallback(() => {
     if (!currentChallenge || currentChallenge.type !== 'sequence') return;
 
-    const correct = JSON.stringify(sequenceOrder) === JSON.stringify(currentChallenge.correctOrder);
+    const correct = JSON.stringify(sequenceOrder) === JSON.stringify(sequenceKey);
     const attempts = currentAttempts + 1;
     setCurrentAttempts(attempts);
     setSequenceChecked(true);
@@ -457,7 +494,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, sequenceOrder, currentAttempts, isConnected, sendText]);
+  }, [currentChallenge, sequenceOrder, sequenceKey, currentAttempts, isConnected, sendText]);
 
   const recordAllStepTimes = useCallback(() => {
     const now = Date.now();
@@ -545,7 +582,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Auto-submit for display-only mode (no challenges)
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
-    if (challenges.length === 0 && allStepsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
+    // PRE renders the ordering task (its own submit path) — never auto-submit it
+    // just because the empty magazine step list counts as "all explored".
+    if (challenges.length === 0 && allStepsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current && !preReader) {
       hasAutoSubmittedRef.current = true;
       const avgTimePerStep = totalSteps > 0
         ? Math.round(stepTimes.reduce((a, b) => a + (b || 0), 0) / totalSteps)
@@ -581,6 +620,188 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     });
     setSequenceChecked(false);
   }, [sequenceOrder.length]);
+
+  // -------------------------------------------------------------------------
+  // Pre-reader (K / PRE) picture-order handlers + spoken beats
+  // -------------------------------------------------------------------------
+  // Seed the shuffled tray once.
+  useEffect(() => {
+    if (!preReader || preInitRef.current) return;
+    preInitRef.current = true;
+    setPreTray(shuffleArray(preReader.steps.map(s => s.id)));
+  }, [preReader]);
+
+  // ORIENT + STIMULUS: read the question and every step aloud on connect. Not
+  // silent — this IS the spoken instruction channel for a non-reader. (The
+  // catalog aiDirective reinforces it so it survives the lesson one-sentence cap.)
+  useEffect(() => {
+    if (!preReader || !isConnected || preOrientedRef.current) return;
+    preOrientedRef.current = true;
+    const stepsScript = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
+    sendText(
+      `[ACTIVITY_START_PRE] You are helping a child who cannot read. Warmly read the question aloud, then read every step out loud in order — word for word — and invite them to tap the pictures to put them in order. `
+      + `Question: "${preReader.question}" Steps in order: ${stepsScript} `
+      + `Reading these aloud IS your greeting — do not shorten it or skip any step, and never say the final order as the answer.`,
+      {},
+    );
+  }, [preReader, isConnected, sendText]);
+
+  const handlePrePlace = useCallback((id: string) => {
+    if (preStatus === 'correct') return;
+    SoundManager.tap();
+    setPreStatus('idle');
+    setPreTray(prev => prev.filter(x => x !== id));
+    setPreOrder(prev => [...prev, id]);
+  }, [preStatus]);
+
+  const handlePreUndo = useCallback((position: number) => {
+    if (preStatus === 'correct') return;
+    SoundManager.tick();
+    setPreStatus('idle');
+    setPreOrder(prev => {
+      const id = prev[position];
+      if (id === undefined) return prev;
+      setPreTray(t => [...t, id]);
+      return prev.filter((_, i) => i !== position);
+    });
+  }, [preStatus]);
+
+  // Auto-evaluate when every slot is filled (tap=choose, no Check button).
+  const preSubmittedRef = useRef(false);
+  useEffect(() => {
+    if (!preReader || preStatus === 'correct') return;
+    if (preOrder.length !== preReader.steps.length) return;
+    const key = preReader.steps.map(s => s.id); // authored order = correct order
+    const correct = preOrder.every((id, i) => id === key[i]);
+
+    if (correct) {
+      setPreStatus('correct');
+      SoundManager.playCorrect();
+      if (isConnected) {
+        sendText(
+          `[PRE_COMPLETE] The child put all ${preReader.steps.length} steps in the right order. Celebrate warmly in ONE short sentence.`,
+          {},
+        );
+      }
+      if (!hasSubmittedEvaluation && !preSubmittedRef.current) {
+        preSubmittedRef.current = true;
+        const metrics: HowItWorksMetrics = {
+          type: 'how-it-works',
+          stepsExplored: preReader.steps.length,
+          totalSteps: preReader.steps.length,
+          detailsExpanded: 0,
+          sequenceAccuracy: 100,
+          identifyAccuracy: 0,
+          predictAccuracy: 0,
+          challengeAttempts: 1,
+          averageTimePerStep: 0,
+        };
+        submitEvaluation(true, 100, metrics, {});
+      }
+    } else {
+      setPreStatus('wrong');
+      SoundManager.playIncorrect();
+      if (isConnected) {
+        sendText(
+          `[PRE_WRONG] The child ordered the steps but it isn't right yet. Give ONE warm, encouraging spoken hint about what happens FIRST — never say the whole order. Invite them to move a picture and try again.`,
+          {},
+        );
+      }
+    }
+  }, [preOrder, preReader, preStatus, isConnected, sendText, hasSubmittedEvaluation, submitEvaluation]);
+
+  const handlePreReplay = useCallback(() => {
+    SoundManager.tap();
+    if (isConnected && preReader) {
+      const stepsScript = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
+      sendText(
+        `[PRE_REPLAY] Read the question and every step aloud again, in order, word for word: "${preReader.question}" ${stepsScript}`,
+        {},
+      );
+    }
+  }, [isConnected, preReader, sendText]);
+
+  // -------------------------------------------------------------------------
+  // Render: Pre-reader picture-order task
+  // -------------------------------------------------------------------------
+  const renderPreReader = () => {
+    if (!preReader) return null;
+    const byId = (id: string) => preReader.steps.find(s => s.id === id);
+
+    return (
+      <div className="space-y-8 py-4">
+        {/* Spoken prompt + replay (the ONLY words on screen are a caption) */}
+        <div className="flex items-center justify-center gap-3">
+          <p className="text-slate-100 text-xl font-semibold text-center">{preReader.question}</p>
+          <button
+            onClick={handlePreReplay}
+            aria-label="Read to me"
+            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xl hover:bg-cyan-500/25 transition-all"
+          >
+            🔊
+          </button>
+        </div>
+
+        {/* Order slots (tap a filled card to send it back) */}
+        <div className="flex justify-center gap-4 flex-wrap">
+          {preReader.steps.map((_, position) => {
+            const id = preOrder[position];
+            const step = id ? byId(id) : undefined;
+            const filled = !!step;
+            const state: AnswerChoiceState =
+              preStatus === 'correct' && filled ? 'correct'
+              : preStatus === 'wrong' && filled ? 'incorrect'
+              : filled ? 'selected'
+              : 'idle';
+            return (
+              <button
+                key={position}
+                onClick={() => filled && handlePreUndo(position)}
+                disabled={!filled || preStatus === 'correct'}
+                className={`w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all duration-200 ${
+                  filled ? answerStateClasses[state] : 'border-dashed border-white/15 bg-white/[0.02]'
+                }`}
+              >
+                {step ? (
+                  <>
+                    <span className="text-5xl leading-none">{step.emoji}</span>
+                    <span className="text-slate-200 text-xs font-medium">{step.label}</span>
+                  </>
+                ) : (
+                  <span className="text-slate-600 text-3xl font-bold">{position + 1}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tray of remaining picture cards (tap to place) */}
+        {preTray.length > 0 && (
+          <div className="flex justify-center gap-4 flex-wrap">
+            {preTray.map(id => {
+              const step = byId(id);
+              if (!step) return null;
+              return (
+                <button
+                  key={id}
+                  data-step-id={id}
+                  onClick={() => handlePrePlace(id)}
+                  className="w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-white/15 bg-slate-800/60 hover:bg-slate-700/60 hover:border-cyan-400/40 transition-all duration-200 active:scale-95"
+                >
+                  <span className="text-5xl leading-none">{step.emoji}</span>
+                  <span className="text-slate-200 text-xs font-medium">{step.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {preStatus === 'correct' && (
+          <div className="text-center text-6xl animate-bounce">🎉</div>
+        )}
+      </div>
+    );
+  };
 
   // -------------------------------------------------------------------------
   // Render: Step Image
@@ -809,8 +1030,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
               const item = currentChallenge.sequenceItems!.find(si => si.id === id);
               if (!item) return null;
 
-              const isCorrectPosition = sequenceChecked && currentChallenge.correctOrder?.[position] === id;
-              const isWrongPosition = sequenceChecked && !sequenceCorrect && currentChallenge.correctOrder?.[position] !== id;
+              const isCorrectPosition = sequenceChecked && sequenceKey[position] === id;
+              const isWrongPosition = sequenceChecked && !sequenceCorrect && sequenceKey[position] !== id;
 
               const itemState: AnswerChoiceState = isCorrectPosition
                 ? 'correct'
@@ -825,7 +1046,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 >
                   <span className="text-slate-500 text-xs font-mono w-4">{position + 1}.</span>
                   <span className="text-slate-200 text-sm flex-1">{item.text}</span>
-                  {!sequenceChecked && (
+                  {!showChallengeFeedback && (
                     <div className="flex gap-1">
                       <button
                         onClick={() => moveSequenceItem(position, -1)}
@@ -909,6 +1130,17 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Main Render
   // -------------------------------------------------------------------------
+  // Pre-reader (K / PRE) subset: the picture-order task replaces the whole
+  // reading-heavy magazine + text quiz. No header chrome, no counters — the
+  // emoji cards are the entire surface and the tutor carries the words.
+  if (preReader) {
+    return (
+      <div className={`space-y-6 ${className || ''}`}>
+        {renderPreReader()}
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6 ${className || ''}`}>
       {/* ── Header Card ── */}

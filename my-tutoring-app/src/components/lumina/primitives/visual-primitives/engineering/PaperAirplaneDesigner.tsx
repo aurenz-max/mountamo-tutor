@@ -12,12 +12,14 @@ import {
   LuminaPanel,
   LuminaAccordion,
   LuminaAccordionItem,
+  LuminaReadAloud,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PaperAirplaneDesignerMetrics,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -331,12 +333,24 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
     gradeBand,
   }), [selectedTemplate, currentDesign, launchAngle, launchForce, flightLog, designVersion, flightResults, challenges, gradeBand]);
 
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'paper-airplane-designer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ─── Evaluation ─────────────────────────────────────────────────────
 
@@ -777,8 +791,17 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
 
         <div className="relative z-10">
           {/* Description */}
-          <div className="mb-6 text-center max-w-2xl mx-auto">
-            <p className="text-slate-300 font-light">{description}</p>
+          <div className="mb-6 max-w-2xl mx-auto flex items-start justify-center gap-2">
+            <p className="text-slate-300 font-light text-center flex-1">{description}</p>
+            <LuminaReadAloud
+              iconOnly
+              size="sm"
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the instructions to me"
+              className="flex-shrink-0"
+              onClick={() => readBlockAloud(description, '[READ_DESCRIPTION]')}
+            />
           </div>
 
           {/* Phase indicator */}
@@ -1116,19 +1139,30 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
                         const allLogResults = flightLog.map(e => ({ ...e.results, trajectory: [] as TrajectoryPoint[] }));
                         const completed = allLogResults.some(r => getCompletedChallenges(r).includes(ch.id));
                         return (
-                          <div key={ch.id} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          <div key={ch.id} className={`flex items-center justify-between gap-2 p-3 rounded-lg border ${
                             completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-800/30 border-slate-700/30'
                           }`}>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className="text-lg">{completed ? '✅' : '🏆'}</span>
-                              <div>
+                              <div className="min-w-0">
                                 <span className={`text-sm font-semibold ${completed ? 'text-emerald-300' : 'text-slate-300'}`}>{ch.name}</span>
                                 <p className="text-xs text-slate-400">{ch.goal}</p>
                               </div>
                             </div>
-                            {!completed && (
-                              <span className="text-xs text-slate-500 italic">{ch.hint}</span>
-                            )}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {!completed && (
+                                <span className="text-xs text-slate-500 italic">{ch.hint}</span>
+                              )}
+                              <ReadMeButton
+                                instruction={`${ch.name}. ${ch.goal}`}
+                                ask={ch.hint || undefined}
+                                speaking={isAudioPlaying}
+                                onAskTutor={(m) => sendText?.(m)}
+                                tag="[READ_CHALLENGE]"
+                                className="flex-shrink-0"
+                                aria-label="Read the challenge to me"
+                              />
+                            </div>
                           </div>
                         );
                       })}
@@ -1213,12 +1247,32 @@ const PaperAirplaneDesigner: React.FC<PaperAirplaneDesignerProps> = ({ data, cla
 
           {/* ─── Educational tips ─────────────────────────────────────── */}
           <LuminaPanel accent="cyan" className="mt-8 p-5">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Design Tips
-            </h4>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <h4 className="text-white font-semibold flex items-center gap-2">
+                <svg className="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Design Tips
+              </h4>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read the design tips to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud(
+                  'Design Tips. A pointy nose means less air resistance, so the plane flies farther. '
+                  + 'A wide nose means more lift, so it stays up longer. '
+                  + 'Wider wings give more lift but slow the plane down. Try different combinations! '
+                  + 'Change one thing at a time — that way you know what made the difference.'
+                  + (gradeBand === '3-5'
+                    ? ' Use the flight log to compare your designs and find patterns in what works best.'
+                    : ''),
+                  '[READ_TIPS]',
+                )}
+              />
+            </div>
             <div className="space-y-2 text-sm">
               <p className="text-slate-300">
                 <span className="text-sky-400 font-semibold">Pointy nose</span> = less air resistance = flies farther. <span className="text-amber-400 font-semibold">Wide nose</span> = more lift = stays up longer.

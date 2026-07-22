@@ -12,6 +12,7 @@ import {
   LuminaCallout,
   LuminaAnswerChoice,
   LuminaFeedbackCard,
+  LuminaReadAloud,
   type AnswerChoiceState,
 } from '../../../ui';
 import {
@@ -20,6 +21,7 @@ import {
 } from '../../../evaluation';
 import type { PropulsionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -703,12 +705,24 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
     challengeProgress: `${challengeResults.length}/${challenges.length}`,
   }), [propulsion, medium, throttle, speed, exploredCombos.size, noThrustMoments, challengeResults.length, challenges.length]);
 
-  const { sendText, isConnected } = useLuminaAI({
+  const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'propulsion-lab' as any,
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '1-2' ? 'K-2' : '3-5',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // AI: Activity start
   const hasIntroducedRef = useRef(false);
@@ -901,7 +915,12 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <LuminaCardTitle className="text-lg">Propulsion Lab</LuminaCardTitle>
-              <p className="text-slate-400 text-sm mt-1">{overview}</p>
+              <div className="flex items-start gap-2 mt-1">
+                <p className="text-slate-400 text-sm flex-1">{overview}</p>
+                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                  aria-label="Read the overview to me" className="flex-shrink-0"
+                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')} />
+              </div>
             </div>
             <LuminaBadge>Grades {gradeBand}</LuminaBadge>
           </div>
@@ -944,7 +963,12 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
                 );
               })}
             </div>
-            <p className="text-xs text-slate-500 italic">{pDef.pushesAgainst}</p>
+            <div className="flex items-start gap-2">
+              <p className="text-xs text-slate-500 italic flex-1">{pDef.pushesAgainst}</p>
+              <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                aria-label="Read how this propulsion works to me" className="flex-shrink-0"
+                onClick={() => readBlockAloud(`${pDef.label}. ${pDef.pushesAgainst}`, '[READ_PROPULSION]')} />
+            </div>
           </div>
 
           {/* Controls: Medium */}
@@ -1001,8 +1025,19 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
           {/* Key Insight Cards */}
           {noThrustMoments > 0 && (
             <LuminaCallout accent="amber" label="Key Discovery!" icon={<span>&#x1F4A1;</span>} className="animate-fade-in">
-              Some propulsion types need a <span className="text-amber-300 font-medium">medium</span> (air, water) to push against.
-              Rockets carry their own propellant, so they work even in vacuum!
+              <div className="flex items-start gap-2">
+                <p className="flex-1">
+                  Some propulsion types need a <span className="text-amber-300 font-medium">medium</span> (air, water) to push against.
+                  Rockets carry their own propellant, so they work even in vacuum!
+                </p>
+                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                  aria-label="Read the discovery to me" className="flex-shrink-0"
+                  onClick={() => readBlockAloud(
+                    'Some propulsion types need a medium, like air or water, to push against. '
+                    + 'Rockets carry their own propellant, so they work even in vacuum!',
+                    '[READ_DISCOVERY]',
+                  )} />
+              </div>
             </LuminaCallout>
           )}
 
@@ -1028,7 +1063,13 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
                 </LuminaBadge>
               </div>
 
-              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-slate-200 text-sm font-medium flex-1">{currentChallenge.instruction}</p>
+                <ReadMeButton instruction={currentChallenge.instruction}
+                  ask="Watch the simulation, then tap the choice you think is right."
+                  speaking={isAudioPlaying} onAskTutor={(m) => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {currentChallenge.options.map(opt => {
@@ -1059,7 +1100,12 @@ const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> =
 
               {showHint && (
                 <LuminaCallout accent="amber" label="Hint" className="animate-fade-in">
-                  {currentChallenge.hint}
+                  <div className="flex items-start gap-2">
+                    <p className="flex-1">{currentChallenge.hint}</p>
+                    <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
+                      aria-label="Read the hint to me" className="flex-shrink-0"
+                      onClick={() => readBlockAloud(currentChallenge.hint, '[READ_HINT]')} />
+                  </div>
                 </LuminaCallout>
               )}
             </LuminaPanel>

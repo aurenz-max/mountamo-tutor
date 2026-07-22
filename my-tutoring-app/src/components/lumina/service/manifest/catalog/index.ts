@@ -27,6 +27,7 @@ import { LITERACY_CATALOG } from './literacy';
 import { MEDIA_CATALOG } from './media';
 import { ASSESSMENT_CATALOG } from './assessment';
 import { CALENDAR_CATALOG } from './calendar';
+import { DI_CATALOG } from './di';
 
 // ============================================================================
 // Domain Exports (for targeted context)
@@ -45,6 +46,7 @@ export {
   MEDIA_CATALOG,
   ASSESSMENT_CATALOG,
   CALENDAR_CATALOG,
+  DI_CATALOG,
 };
 
 // ============================================================================
@@ -70,6 +72,7 @@ export const UNIVERSAL_CATALOG: ComponentDefinition[] = [
   ...MEDIA_CATALOG,
   ...ASSESSMENT_CATALOG,
   ...CALENDAR_CATALOG,
+  ...DI_CATALOG,
 ];
 
 // ============================================================================
@@ -94,6 +97,7 @@ export const CATALOGS_BY_DOMAIN: Record<string, ComponentDefinition[]> = {
   media: MEDIA_CATALOG,
   assessment: ASSESSMENT_CATALOG,
   calendar: CALENDAR_CATALOG,
+  di: DI_CATALOG,
 };
 
 /**

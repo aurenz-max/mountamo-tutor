@@ -2,7 +2,7 @@
 
 - **Derived:** 2026-07-15 · evidence window: K topic-trace census 2026-07-14 + QA reports through 2026-07-15 + git history to 2026-03
 - **Component:** `primitives/visual-primitives/math/SortingStation.tsx` · **Generator:** `service/math/gemini-sorting-station.ts` · **Catalog:** `service/manifest/catalog/math.ts:2988`
-- **Status:** ACTIVE (no open conflicts; 3 resolved on record; 5 gap requirements OPEN)
+- **Status:** ACTIVE (no open conflicts; 3 resolved on record; 4 gap requirements OPEN, G3 LANDED 2026-07-21)
 - 2026-07-15 (later same day): the PRE presentation layer (R4–R7) LANDED — reader-fit 1e
   committed in `7cb5e5f`, jsdom 6/6 + live `--lesson` 3/3
   (`qa/reader-fit/sorting-station-PRE-2026-07-15.md`). The former in-flight caveat is
@@ -25,9 +25,10 @@
 
 ### R1 — taught-rule stability · OBSERVED
 - **Property:** the objective's classification rule stays THE sort axis across all challenges in a session; variety comes from different on-objective objects, never from switching to color/size/shape (those are distractor features unless the objective teaches them).
+- **EXEMPTION:** `sort_variety` (challengeType `sort-variety`, added 2026-07-21 per G3) is the ONE mode where rule-rotation is the DECLARED task — it intentionally switches `sortingAttribute` each round on a shared object set. R1 stands for every other mode. The probe below is scoped `evalMode !== 'sort_variety'`.
 - **Demanded by:** shapes, needs-vs-wants, community-helpers families (all three were broken by the same drift).
 - **Evidence:** `qa/topic-fidelity/sorting-station-2026-07-14.md` (FIDELITY BUG → fixed); 3/4 census traces showed the drift (shapes→color/size, needs→color, helpers→color).
-- **Probe:** eval-test route, topic "Match 2D shapes" + intent "sort by shape category" ×3 → `sortingAttribute` = shape every challenge; topic "Needs vs Wants" → `category` every challenge; no cross-challenge axis switch.
+- **Probe:** (modes OTHER than `sort_variety`) eval-test route, topic "Match 2D shapes" + intent "sort by shape category" ×3 → `sortingAttribute` = shape every challenge; topic "Needs vs Wants" → `category` every challenge; no cross-challenge axis switch. For `sort_variety` the probe INVERTS: `sortingAttribute` must DIFFER across rounds while the object set stays constant (see G3).
 
 ### R2 — intent binding · OBSERVED
 - **Property:** `ctx.intent` (fallback topic) is consumed as the specific objective via `buildSortingObjectiveSection`; changing intent under a fixed broad topic changes the sort rule.
@@ -114,11 +115,12 @@ sort, 0.683) is fully served today — the other close matches are gaps:
 - **Path:** band gate on the instruction channel — voiced compound instruction (aiDirectives STIMULUS beat, per R5) + pictorial criterion cues (bucketEmoji pairs), THEN a reader-fit re-audit of the mode at PRE. **Not** a simple unflooring — the floor stays until the audit passes.
 - **Relation to R-series:** touches R3 (band floor). The floor is the protection; this gap is the sanctioned way to move it — re-audit, never delete.
 
-### G3 — re-sort the same set by a different rule · OPEN (pre-detected conflict with R1)
+### G3 — re-sort the same set by a different rule · LANDED 2026-07-21 (fork rung 1, per the recorded ruling)
 - **Near-consumer:** K `PTRN001-02` "Sort the same set of objects using a different rule" (probe 0.653).
-- **Shortfall:** flexible re-sorting is a taught K concept, but R1 (taught-rule stability) deliberately forbids axis-switching across challenges — because switching was the 2026-07-14 drift bug.
-- **Path:** eval-mode split (`resort_flex`) where rule-switching IS the declared objective → `/add-eval-modes`. **Ruling recorded now:** R1 stands for every other mode; the new mode declares the switch in its task identity so intent-fidelity probes can tell taught-flexibility from drift. Implementer must extend the R1 probe with a resort_flex exemption, not weaken R1.
-- **Relation to R-series:** pre-detected CONFLICT with R1 — resolved by ruling above (fork rung 1). Do not edit R1's generator guard in place.
+- **Shortfall (was):** flexible re-sorting is a taught concept, but R1 (taught-rule stability) deliberately forbids axis-switching across challenges — because switching was the 2026-07-14 drift bug.
+- **Resolution:** new eval mode `sort_variety` (challengeType `sort-variety`, β 3.0, Grade 1+ floor), added via `/add-eval-modes`. Its sub-generator produces ONE shared object set (type/size/category required) and CODE derives 2-3 rounds, each sorting that set by a different axis that splits it into 2..binCap groups (LLM never owns the axis choice or bin count). R1's generator guard was NOT edited; instead a `buildVarietyObjectiveSection` INSTRUCTS the rotation only for this mode, and the R1 requirement now carries the `sort_variety` exemption + inverted probe. Renders via the existing `sort-by-one` interaction (component branches added). Runtime: eval-test 5/5 fully-valid (3 rounds, distinct rules, constant object set, bins ≤ cap); no regression on sort_one/sort_attribute/odd_one_out/tally_record.
+- **Follow-ups:** (a) K voiced-rule variant (unfloor via reader-fit re-audit, mirroring G2 — NOT a simple floor removal); (b) extend the R1 exemption to the `/topic-fidelity` automated probe.
+- **Relation to R-series:** pre-detected CONFLICT with R1 — resolved by fork rung 1. R1's guard untouched; exemption recorded in R1.
 
 ### G4 — student-created categories · OPEN
 - **Near-consumer:** K `PTRN001-02` "Create and label sorting categories before given objects" (probe 0.636).
@@ -143,4 +145,5 @@ sort, 0.683) is fully served today — the other close matches are gaps:
 - 2026-07-15 — derived (initial, pilot for `/primitive-contract`). 10 requirements, 3 conflicts (all RESOLVED), 1 catalog divergence flagged (constraints object-count). Evidence: K census 2026-07-14, topic-fidelity + reader-fit reports, EVAL_TRACKER SS-1..4, git to 2026-03.
 - 2026-07-15 (later) — reader-fit 1e landed (`7cb5e5f`, live 3/3): R4/R5 caveat cleared; constraints projection unblocked. Added G-series from `curriculum_fit_probe` (MATCH @ K + G1): 5 gap requirements, incl. one pre-detected R1 conflict (G3, ruling recorded) and one band-floor pathway (G2, re-audit not unfloor).
 - 2026-07-15 (rider, during phonics-blender derivation) — **constraints projection APPLIED** (`math.ts:2991`): "Max 4 sorting categories / Max 10 objects per challenge" → enforced band reality (K 4–6 objects/≤3 bins, G1 5–8/≤4 bins). tsc 0-new + `typecheck:lumina` clean. Projection bullet flipped to APPLIED.
+- 2026-07-21 — **G3 LANDED**: added eval mode `sort_variety` (flexible re-sorting) via `/add-eval-modes` — the sanctioned fork rung 1 for the G3/R1 conflict. New challengeType `sort-variety` (renders as sort-by-one; component branches added), catalog mode (β 3.0, G1+ floor), backend prior, code-derived rotation (LLM supplies object window with required type/size/category; code picks the splittable axes + caps bins), R1 exemption + inverted probe recorded. Origin: user report that a single sorting station replays "the same comparison 5×" — variety-in-objects (my first read, SST-1) was the wrong axis; the real gap was variety-in-RULE, which R1/C1 route to a new mode, not an in-place edit. tsc 0-new; eval-test 5/5 valid; sort_one/sort_attribute/odd_one_out/tally_record no regression. Report: `qa/eval-reports/sorting-station-sort-variety-2026-07-21.md`.
 - 2026-07-15 (baseline `--check`, first guard exercise) — **COMPATIBLE, 10/10 requirements hold at runtime**: 24 eval-test draws + jsdom 15/15 + scaffold probe (0 findings, bin-naming directive present) + live K topic-trace (resolver pinned `sort_one` @ K). R8 property amended for precision — object window is tier-conditioned prompt guidance, bin cap is the hard clamp (one untiered G1 draw undershot to 4 objects; no consumer-visible violation, no code change). Report: `qa/primitive-contracts/sorting-station-check-2026-07-15.md`.

@@ -15,12 +15,14 @@ import {
   LuminaButton,
   LuminaBadge,
   LuminaPanel,
+  LuminaReadAloud,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { VehicleDesignStudioMetrics } from '../../../evaluation/types';
 
@@ -397,7 +399,7 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
   });
 
   // ─── AI Tutoring ─────────────────────────────────────────────
-  const { sendText } = useLuminaAI({
+  const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'vehicle-design-studio' as any,
     instanceId: resolvedInstanceId,
     primitiveData: {
@@ -412,6 +414,18 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
     },
     gradeLevel: gradeBand === '2-3' ? 'elementary' : 'elementary',
   });
+
+  // ── Read-aloud for young learners ─────────────────────────────────────────
+  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
+  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
+  const readBlockAloud = useCallback((text: string, tag: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText?.(
+      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
+    );
+  }, [sendText]);
 
   // ─── Handlers ────────────────────────────────────────────────
 
@@ -657,7 +671,18 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
         <LuminaCardContent className="relative z-10 p-6 md:p-8">
           {/* Description */}
           {description && (
-            <p className="text-slate-300 font-light text-center max-w-2xl mx-auto mb-6">{description}</p>
+            <div className="flex items-start justify-center gap-2 max-w-2xl mx-auto mb-6">
+              <p className="text-slate-300 font-light text-center flex-1">{description}</p>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read the introduction to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud(description, '[READ_DESCRIPTION]')}
+              />
+            </div>
           )}
 
           {/* Challenge selector */}
@@ -686,7 +711,28 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
                 ))}
               </div>
               {activeChallenge && (
-                <p className="text-center text-sm text-amber-300/80 mt-2">{activeChallenge.description}</p>
+                <div className="flex items-start justify-center gap-2 mt-2">
+                  <p className="text-center text-sm text-amber-300/80 flex-1">{activeChallenge.description}</p>
+                  <ReadMeButton
+                    instruction={activeChallenge.description}
+                    ask={
+                      `Your job is the "${activeChallenge.name}" mission. `
+                      + [
+                          activeChallenge.constraints.maxWeight != null ? `Keep it under ${activeChallenge.constraints.maxWeight} kilograms. ` : '',
+                          activeChallenge.constraints.maxCost != null ? `Spend no more than ${activeChallenge.constraints.maxCost} dollars. ` : '',
+                          activeChallenge.constraints.minSpeed != null ? `Go at least ${activeChallenge.constraints.minSpeed} kilometers per hour. ` : '',
+                          activeChallenge.constraints.minRange != null ? `Travel at least ${activeChallenge.constraints.minRange} kilometers. ` : '',
+                          activeChallenge.constraints.minCapacity != null ? `Carry at least ${activeChallenge.constraints.minCapacity} riders. ` : '',
+                        ].join('')
+                      + 'Pick a body, a motor, and any controls, then tap Test Design to see how it does.'
+                    }
+                    speaking={isAudioPlaying}
+                    onAskTutor={(m) => sendText?.(m)}
+                    tag="[READ_MISSION]"
+                    className="flex-shrink-0"
+                    aria-label="Read the mission to me"
+                  />
+                </div>
               )}
             </div>
           )}
@@ -993,9 +1039,20 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
             <div className="mb-6 space-y-2">
               {activeTips.map((tip, i) => (
                 <div key={i} className="p-3 bg-amber-500/10 backdrop-blur-sm border border-amber-500/30 rounded-xl">
-                  <p className="text-amber-200 text-sm flex items-start gap-2">
-                    <span className="text-amber-400">Tip:</span> {tip.tip}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-amber-200 text-sm flex items-start gap-2 flex-1">
+                      <span className="text-amber-400">Tip:</span> {tip.tip}
+                    </p>
+                    <LuminaReadAloud
+                      iconOnly
+                      size="sm"
+                      accent="cyan"
+                      speaking={isAudioPlaying}
+                      aria-label="Read this tip to me"
+                      className="flex-shrink-0"
+                      onClick={() => readBlockAloud(tip.tip, '[READ_TIP]')}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1048,12 +1105,28 @@ const VehicleDesignStudio: React.FC<VehicleDesignStudioProps> = ({ data, classNa
 
           {/* Educational Tips */}
           <LuminaPanel accent="indigo" className="p-5">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Engineering Design Tips
-            </h4>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <h4 className="text-white font-semibold flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Engineering Design Tips
+              </h4>
+              <LuminaReadAloud
+                iconOnly
+                size="sm"
+                accent="cyan"
+                speaking={isAudioPlaying}
+                aria-label="Read the design tips to me"
+                className="flex-shrink-0"
+                onClick={() => readBlockAloud(
+                  'Design, then Test, then Analyze, then Iterate. Real engineers follow this cycle to improve their designs. '
+                  + 'Change one thing at a time. If you change everything at once, you will not know what helped. '
+                  + 'Trade-offs are real. A faster vehicle might use more fuel. A bigger body carries more but weighs more. Find the best balance!',
+                  '[READ_DESIGN_TIPS]',
+                )}
+              />
+            </div>
             <div className="space-y-2 text-sm">
               <p className="text-slate-300">
                 <span className="text-indigo-400 font-semibold">Design → Test → Analyze → Iterate</span> — real engineers follow this cycle to improve their designs.
