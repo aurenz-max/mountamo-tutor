@@ -171,6 +171,7 @@ import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBu
 import StoryMap from '../primitives/visual-primitives/literacy/StoryMap';
 import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlender';
 import DiLetterSounds from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
+import DiWordReading from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -1876,6 +1877,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'di-letter-sounds': {
     component: DiLetterSounds,
     sectionTitle: 'Letter Sounds',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-word-reading': {
+    component: DiWordReading,
+    sectionTitle: 'Word Reading',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

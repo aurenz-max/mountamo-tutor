@@ -28,6 +28,45 @@ export const DEFAULT_ITEMS: DIItem[] = [
   { id: 'word-sam', kind: 'word', display: 'sam', spoken: 'sam', reference: 'sam', asrAliases: ['sam'] },
 ];
 
+/**
+ * di-word-reading bench probe (BACKLOG item 2). Single whole words are a NEW
+ * response class relative to letter sounds, so standing gate 1 requires a
+ * sitting here — hand-rolled 10-item list, ~K pace — to confirm Live-judge
+ * reliability on lone words BEFORE any primitive wiring. Seven decodable CVC
+ * spanning all five short vowels + three high-frequency sight words; a few
+ * near-neighbours ("mat"/"matt", "sun"/"son", "red"/"read", "see"/"sea") are
+ * left in on purpose so the probe stresses over-affirmation, not just easy
+ * hits. "sam" leads for continuity — it was DEFAULT_ITEMS' word anchor (bench
+ * item 4, affirmed). The primitive will generator-scope its menu to the
+ * objective's phonics pattern (reuse word-workout's resolveScopedVowels
+ * family); nothing here ships hardcoded into a primitive.
+ */
+export const WORD_READING_PROBE_ITEMS: DIItem[] = [
+  { id: 'word-sam', kind: 'word', display: 'sam', spoken: 'sam', reference: 'sam', asrAliases: ['sam'] },
+  { id: 'word-mat', kind: 'word', display: 'mat', spoken: 'mat', reference: 'mat', asrAliases: ['mat', 'matt'] },
+  { id: 'word-pig', kind: 'word', display: 'pig', spoken: 'pig', reference: 'pig', asrAliases: ['pig'] },
+  { id: 'word-dog', kind: 'word', display: 'dog', spoken: 'dog', reference: 'dog', asrAliases: ['dog', 'dawg'] },
+  { id: 'word-sun', kind: 'word', display: 'sun', spoken: 'sun', reference: 'sun', asrAliases: ['sun', 'son'] },
+  { id: 'word-red', kind: 'word', display: 'red', spoken: 'red', reference: 'red', asrAliases: ['red', 'read'] },
+  { id: 'word-cup', kind: 'word', display: 'cup', spoken: 'cup', reference: 'cup', asrAliases: ['cup'] },
+  { id: 'word-the', kind: 'word', display: 'the', spoken: 'the', reference: 'the', asrAliases: ['the', 'thee', 'duh'] },
+  { id: 'word-see', kind: 'word', display: 'see', spoken: 'see', reference: 'see', asrAliases: ['see', 'sea', 'c'] },
+  { id: 'word-go', kind: 'word', display: 'go', spoken: 'go', reference: 'go', asrAliases: ['go', 'goh', 'goe'] },
+];
+
+/** Selectable bench probe sets. The bench swaps its live item list between
+ *  these; each new DI response class benches here before a primitive wires it. */
+export interface BenchSet {
+  id: string;
+  label: string;
+  items: DIItem[];
+}
+
+export const BENCH_SETS: BenchSet[] = [
+  { id: 'letter-sounds', label: 'Letter sounds', items: DEFAULT_ITEMS },
+  { id: 'word-reading', label: 'Word reading', items: WORD_READING_PROBE_ITEMS },
+];
+
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 

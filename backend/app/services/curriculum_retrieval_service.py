@@ -59,6 +59,11 @@ _DOMAIN_TO_SUBJECT: Dict[str, str] = {
     "physics": "SCIENCE",
     "astronomy": "SCIENCE",
     "engineering": "SCIENCE",
+    # Direct Instruction packs are literacy-first (letter sounds, word reading)
+    # — this removes the --domain literacy workaround for probes/attribution.
+    # REVISIT when di-math-facts is born: the family will then span subjects
+    # and this must become a per-primitive mapping (or the domain must split).
+    "di": "LANGUAGE_ARTS",
 }
 
 # --- Abstain rule (default; calibration sweep deferred, see QA §11 open step) ---

@@ -3283,11 +3283,26 @@ export interface CompareObjectsMetrics extends BasePrimitiveMetrics {
 // Direct Instruction (live-judged spoken family)
 export interface DiLetterSoundsMetrics extends BasePrimitiveMetrics {
   type: 'di-letter-sounds';
-  challengeType: 'letter_sound'; // union widens when /add-eval-modes builds the ladder
+  // L1 ladder (all within the benched continuant response class).
+  challengeType: 'letter_sound' | 'letter_sound_review' | 'first_sound_in_word';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all sounds (corrections + 1 each)
   firstTryCount: number;          // sounds affirmed on the first attempt
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+}
+
+export interface DiWordReadingMetrics extends BasePrimitiveMetrics {
+  type: 'di-word-reading';
+  // L0: one task identity at birth; /add-eval-modes widens this union later
+  // (cvc_reading / sight_word / word_reading_review are the ladder candidates).
+  challengeType: 'read_word';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total spoken attempts across all words (corrections + 1 each)
+  firstTryCount: number;          // words read correctly on the first attempt
   hintsViewed: number;
   overallAccuracy: number;        // 0-100, average per-challenge score
   averageAttemptsPerChallenge: number;
@@ -3490,7 +3505,8 @@ export type PrimitiveMetrics =
   | TimelineBuilderMetrics
   | CompareObjectsMetrics
   // Direct Instruction
-  | DiLetterSoundsMetrics;
+  | DiLetterSoundsMetrics
+  | DiWordReadingMetrics;
 
 // =============================================================================
 // Session & Summary Types

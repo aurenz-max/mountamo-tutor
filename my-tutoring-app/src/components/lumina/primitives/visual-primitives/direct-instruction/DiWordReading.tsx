@@ -1,19 +1,27 @@
 'use client';
 
 /**
- * DiLetterSounds — the first Direct Instruction primitive. Live-judged
- * call-response letter-sounds practice: the Live tutor MODELS a continuous
- * letter sound, GUIDES the learner through it, then TESTS ("your turn, what
- * sound?") and judges the audio it heard in-band. The learner PRODUCES the
- * sound into an open mic; the judged-loop engine anchors each attempt to the
- * local voice turn and reads the tutor's verdict from its sentinel opener.
+ * DiWordReading — DI family primitive #2. Live-judged call-response word
+ * reading: the Live tutor MODELS a printed word (sound-out blend for a
+ * decodable CVC word, whole-word recall for a sight word), GUIDES the learner
+ * through it, then TESTS ("your turn, what word?") and judges the audio it
+ * heard in-band. The learner READS the printed word into an open mic; the
+ * judged-loop engine anchors each attempt to the local voice turn and reads
+ * the tutor's verdict from its sentinel opener.
  *
- * The Live tutor IS the interaction surface here (living-simulation doctrine) —
- * the engine (useJudgedSpeechLoop → judgedLoopModel + useLiveVoiceTurns) owns
- * the loop mechanics; this component owns DI progression (advance / retry /
- * move-on after capped corrections), the kid-facing letter/picture display,
- * and evaluation. Items are generator-scoped to the objective; the script and
- * judging contract are hand-authored (diLetterSoundsScript).
+ * The Live tutor IS the interaction surface (living-simulation doctrine) —
+ * the committed engine (useJudgedSpeechLoop → judgedLoopModel +
+ * useLiveVoiceTurns) owns the loop mechanics; this component owns DI
+ * progression (advance / retry / move-on after capped corrections), the
+ * kid-facing printed-word display, and evaluation. Items are generator-scoped
+ * to the objective; the script and judging contract are hand-authored
+ * (diWordReadingScript). Separate content pack — the di-letter-sounds files
+ * are frozen and untouched.
+ *
+ * ANSWER-LEAK RULE (differs from letter-sounds): decoding print IS the skill,
+ * so the stage shows the PRINTED WORD ONLY — no picture, no emoji, no audio
+ * pre-cue before the child reads. A challenge's emoji appears only AFTER an
+ * affirmed read (reward) and in the completion recap.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,7 +38,7 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
-import type { DiLetterSoundsMetrics } from '../../../evaluation/types';
+import type { DiWordReadingMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
@@ -38,22 +46,20 @@ import {
   completeCue,
   itemCue,
   moveOnCue,
-  type DiLetterSoundChallenge,
-  type DiLetterSoundChallengeType,
-} from './diLetterSoundsScript';
+  DI_WORD_READING_TUTORING,
+  type DiWordReadingChallenge,
+  type DiWordReadingChallengeType,
+} from './diWordReadingScript';
 
-export type { DiLetterSoundChallenge, DiLetterSoundChallengeType } from './diLetterSoundsScript';
+export type { DiWordReadingChallenge, DiWordReadingChallengeType } from './diWordReadingScript';
 
-export interface DiLetterSoundsData {
+export interface DiWordReadingData {
   title: string;
   description: string;
-  /** 3-6 letter-sound items. REQUIRED. Built by the menu-scoped generator. */
-  challenges: DiLetterSoundChallenge[];
-  /** Session core task identity — the resolved/primary eval-mode skill. */
-  challengeType: DiLetterSoundChallengeType;
-  /** Flat "m, s, f" item-set summary, attached by the generator for the
-   *  tutoring scaffold's RUNTIME STATE (catalog contextKey `letters`). */
-  letters?: string;
+  /** 3-6 printed-word items. REQUIRED. Built by the menu-scoped generator. */
+  challenges: DiWordReadingChallenge[];
+  /** Session core task identity — one mode at birth (`read_word`). */
+  challengeType: DiWordReadingChallengeType;
   gradeLevel?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -64,13 +70,18 @@ export interface DiLetterSoundsData {
   exhibitId?: string;
   componentIntent?: string;
   objectiveText?: string;
-  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiLetterSoundsMetrics>) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiWordReadingMetrics>) => void;
 }
 
-/** Corrections the tutor may run on one sound before the lesson moves on anyway.
- *  Per-turn judging is permissive; a weak sound resurfaces through distributed
+/** Corrections the tutor may run on one word before the lesson moves on anyway.
+ *  Per-turn judging is strict; a weak word resurfaces through distributed
  *  review, not by drilling a frustrated five-year-old in place. */
 const MAX_CORRECTIONS_PER_ITEM = 2;
+
+/** Manual voice-activity mode: the engine's amplitude detector brackets every
+ *  learner turn (Gemini's speech-likeness VAD is unusable for short spoken
+ *  responses — bench run-3 ruling). Passed at connect time. */
+const DI_AUDIO_INPUT = { manual_activity: true };
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -86,11 +97,11 @@ interface ItemOutcome {
 const scoreForCorrections = (corrections: number): number =>
   corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
-export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
+export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(
-    () => data.instanceId || `di-letter-sounds-${Math.round(performance.now())}`,
+    () => data.instanceId || `di-word-reading-${Math.round(performance.now())}`,
     [data.instanceId],
   );
 
@@ -100,15 +111,15 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     isComplete,
     recordResult,
     advance,
-  } = useChallengeProgress<DiLetterSoundChallenge>({
+  } = useChallengeProgress<DiWordReadingChallenge>({
     challenges: data.challenges,
     getChallengeId: (ch) => ch.id,
   });
 
   const currentChallenge = data.challenges[currentIndex] ?? null;
 
-  const evaluation = usePrimitiveEvaluation<DiLetterSoundsMetrics>({
-    primitiveType: 'di-letter-sounds',
+  const evaluation = usePrimitiveEvaluation<DiWordReadingMetrics>({
+    primitiveType: 'di-word-reading',
     instanceId: resolvedInstanceId,
     skillId: data.skillId,
     subskillId: data.subskillId,
@@ -124,6 +135,9 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
   const [preparing, setPreparing] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'ready' | 'listening' | 'judging' | 'affirmed' | 'done'>('idle');
   const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
+  /** Reward picture for the word JUST affirmed — post-read only (answer-leak
+   *  rule), cleared the moment the next attempt opens. */
+  const [rewardEmoji, setRewardEmoji] = useState<string | null>(null);
 
   // Progression authority is useChallengeProgress; mirror the index into a ref
   // so the emission handler (fires inside the loop's dispatch) reads it live.
@@ -148,15 +162,14 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     if (submittedRef.current) return;
     submittedRef.current = true;
     const outcomes = outcomesRef.current;
-    const total = data.challenges.length || 1;
     const correctCount = outcomes.filter((o) => o.correct).length;
     const firstTryCount = outcomes.filter((o) => o.correct && o.attempts === 1).length;
     const attemptsCount = outcomes.reduce((sum, o) => sum + o.attempts, 0);
     const overallAccuracy = outcomes.length
       ? Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length)
       : 0;
-    const metrics: DiLetterSoundsMetrics = {
-      type: 'di-letter-sounds',
+    const metrics: DiWordReadingMetrics = {
+      type: 'di-word-reading',
       challengeType: data.challengeType,
       evalMode: data.challengeType,
       totalChallenges: data.challenges.length,
@@ -177,7 +190,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     );
     setRunning(false);
     setPhase('done');
-    setStatusLine('Great work today!');
+    setStatusLine('Great reading today!');
   }, [data.challenges.length, data.challengeType, evaluation]);
 
   // ── DI progression over an engine verdict ────────────────────────
@@ -203,7 +216,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
           // The tutor's correction line already re-modeled and re-elicited
           // in-band; just reflect it and keep listening.
           setPhase('listening');
-          setStatusLine('Let’s try that one again.');
+          setStatusLine('Let’s try that word again.');
           return;
         }
         // Corrections capped — record a miss and move the lesson forward.
@@ -235,9 +248,11 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       recordResult({ challengeId: item.id, correct: true, attempts, score });
       lastResponseMsRef.current = null;
       setPhase('affirmed');
+      // Post-read reward only — the picture never precedes the read.
+      setRewardEmoji(item.emoji ?? null);
       const next = data.challenges[idxRef.current + 1] ?? null;
       if (next) {
-        setStatusLine('Yes! Nice sound.');
+        setStatusLine('Yes! Nice reading.');
         loop.queueCue(itemCue(next));
         advance();
       } else {
@@ -255,19 +270,20 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
         case 'attempt-open':
           setPhase('judging');
           setStatusLine('Listening…');
+          setRewardEmoji(null);
           return;
         case 'attempt-transcript':
           lastResponseMsRef.current = emission.responseMs;
           return;
         case 'verdict':
           if (emission.judgment === 'no-verdict') {
-            setStatusLine('One more time—say the sound.');
+            setStatusLine('One more time—what word?');
             return;
           }
           applyVerdict(emission.judgment);
           return;
         case 'resync':
-          setStatusLine('Let’s try that sound again.');
+          setStatusLine('Let’s read that word again.');
           if (loopRef.current) {
             const item = currentOf();
             if (item) loopRef.current.queueCue(itemCue(item));
@@ -293,23 +309,21 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     setStatusLine('Getting ready…');
     try {
       // Only self-connect from a standalone/idle context. In a lesson the
-      // shared session owns the connection and is already opened with the DI
-      // tutoring block + manual_activity — both resolved from the catalog entry
-      // (catalog/di.ts `tutoring` / `audioInput`), same as this fallback path.
+      // shared session owns the connection; DI needs that session opened with
+      // manual_activity + the DI tutoring block (shared DI family follow-up:
+      // /add-tutoring-scaffold lesson-path wiring).
       if (!connectedRef.current && ctx.sessionMode === 'idle') {
         weConnectedRef.current = true;
-        const first = data.challenges[0];
         await ctx.connect({
-          primitive_type: 'di-letter-sounds',
+          primitive_type: 'di-word-reading',
           instance_id: resolvedInstanceId,
           primitive_data: {
-            activity: 'live direct instruction letter sounds',
-            challengeType: data.challengeType,
-            letters: data.challenges.map((c) => c.letter).join(', '),
-            letter: first?.letter ?? '',
-            keyword: first?.keyword ?? '',
+            activity: 'live direct instruction word reading',
+            words: data.challenges.map((c) => c.word),
           },
           grade_level: data.gradeLevel || 'kindergarten',
+          tutoring: DI_WORD_READING_TUTORING,
+          audio_input: DI_AUDIO_INPUT,
         });
         const started = performance.now();
         while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
@@ -322,7 +336,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       if (!listeningRef.current) throw new Error('The microphone did not open.');
 
       setPhase('ready');
-      setStatusLine('Ready! We’ll start with the first sound.');
+      setStatusLine('Ready! We’ll start with the first word.');
       startRun();
     } catch (error) {
       setStatusLine(error instanceof Error ? error.message : 'Could not start.');
@@ -332,23 +346,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     }
     // startRun is stable via ref below; deps intentionally minimal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, data.challenges, data.challengeType, data.gradeLevel, preparing, resolvedInstanceId]);
-
-  // Keep the tutor's RUNTIME STATE truthful as items advance — the catalog
-  // contextKeys (challengeType / letter / keyword / letters) resolve against
-  // this bag. updateContext is the silent channel (no end-of-turn), so these
-  // never perturb the judged loop; the context provider dedupes by value.
-  useEffect(() => {
-    if (!ctx.isConnected || !currentChallenge) return;
-    ctx.updateContext({
-      challengeType: data.challengeType,
-      letter: currentChallenge.letter,
-      keyword: currentChallenge.keyword,
-      letters: data.challenges.map((c) => c.letter).join(', '),
-    });
-    // Context methods are stable; keyed on the current item + connection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType, data.challenges]);
+  }, [ctx, data.challenges, data.gradeLevel, preparing, resolvedInstanceId]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];
@@ -357,10 +355,11 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     outcomesRef.current = [];
     lastResponseMsRef.current = null;
     submittedRef.current = false;
+    setRewardEmoji(null);
     loop.reset();
     setRunning(true);
     setPhase('listening');
-    setStatusLine('Listen, then say the sound.');
+    setStatusLine('Listen, then read the word.');
     loop.sendCueNow(itemCue(first, true));
     loop.arm();
   }, [data.challenges, loop]);
@@ -389,10 +388,10 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       <LuminaCardHeader>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <LuminaCardTitle>{data.title || 'Letter Sounds'}</LuminaCardTitle>
+            <LuminaCardTitle>{data.title || 'Word Reading'}</LuminaCardTitle>
             <LuminaCardDescription>{data.description}</LuminaCardDescription>
           </div>
-          <LuminaBadge accent="cyan">Say it out loud</LuminaBadge>
+          <LuminaBadge accent="cyan">Read it out loud</LuminaBadge>
         </div>
       </LuminaCardHeader>
 
@@ -403,32 +402,28 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
           </div>
         )}
 
-        {/* The kid-facing stage. letter_sound / review show the big grapheme +
-            picture. first_sound_in_word isolates the onset of a spoken WORD, so
-            it shows the picture + the WORD (never the lone grapheme — that would
-            leak the answer the child is meant to hear out of the word). */}
+        {/* The kid-facing stage: the PRINTED WORD ONLY. Decoding print IS the
+            skill, so no picture, emoji, or hint appears before the read — the
+            reward emoji renders only after an affirmed read. */}
         {!isComplete && currentChallenge && (
           <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
-            <div className="text-8xl leading-none" aria-hidden="true">{currentChallenge.emoji}</div>
-            {currentChallenge.challengeType === 'first_sound_in_word' ? (
-              <div className="mt-4 text-5xl font-bold lowercase tracking-wide text-white">
-                {currentChallenge.keyword}
-              </div>
-            ) : (
-              <div className="mt-4 text-7xl font-bold tracking-wide text-white">
-                {currentChallenge.letter}
-              </div>
+            <div className="text-7xl font-bold lowercase tracking-wide text-white">
+              {currentChallenge.word}
+            </div>
+            {rewardEmoji && phase === 'affirmed' && (
+              <div className="mt-3 text-5xl leading-none" aria-hidden="true">{rewardEmoji}</div>
             )}
             <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? (currentChallenge.challengeType === 'first_sound_in_word' ? 'first sound?' : 'your turn') : 'get ready'}
+              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? 'what word?' : 'get ready'}
             </div>
           </div>
         )}
 
-        {/* Completion recap — a per-letter mark, kit-styled. */}
+        {/* Completion recap — a per-word mark, kit-styled. Emojis are safe
+            here: every word has already been read. */}
         {isComplete && (
           <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-6 text-center">
-            <div className="text-2xl font-semibold text-emerald-200">Great work today!</div>
+            <div className="text-2xl font-semibold text-emerald-200">Great reading today!</div>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
               {data.challenges.map((ch) => {
                 const r = challengeResults.find((res) => res.challengeId === ch.id);
@@ -438,8 +433,8 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
                     key={ch.id}
                     className={`flex flex-col items-center rounded-xl border px-4 py-2 ${ok ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}
                   >
-                    <span className="text-2xl font-bold text-white">{ch.letter}</span>
-                    <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
+                    <span className="text-2xl font-bold lowercase text-white">{ch.word}</span>
+                    <span className="text-lg" aria-hidden="true">{ok ? (ch.emoji ?? '✅') : '🔁'}</span>
                   </div>
                 );
               })}
@@ -469,4 +464,4 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
   );
 };
 
-export default DiLetterSounds;
+export default DiWordReading;

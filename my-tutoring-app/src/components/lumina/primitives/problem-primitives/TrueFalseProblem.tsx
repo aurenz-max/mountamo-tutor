@@ -7,6 +7,7 @@ import { LetterTracing } from '../LetterTracing';
 import { InsetRenderer } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
 import { useVoiceChoice } from '../../hooks/useVoiceChoice';
+import { useVoiceViewportGate } from '../../hooks/useVoiceViewportGate';
 import {
   usePrimitiveEvaluation,
   type TrueFalseMetrics,
@@ -36,7 +37,9 @@ import {
  * runs the mic/judge; a spoken verdict routes into the SAME select→submit path
  * a tap uses, so the tap path is unchanged and voice is purely additive. When
  * many problems stack on one screen, the screen owner passes `voiceEligible` so
- * only one mic is ever live (the engine has no global single-mic lock).
+ * only one mic is ever live (the engine has no global single-mic lock), and the
+ * mic is viewport-gated (useVoiceViewportGate) so an off-screen problem never
+ * listens.
  *
  * UI: answer FSM, feedback banner, and action buttons come from the Lumina UI
  * kit (LuminaAnswerChoice / LuminaFeedbackCard / LuminaActionButton). The
@@ -127,9 +130,14 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
     [data.correct],
   );
 
+  // Presence gate: the mic may only be live while this problem is in the
+  // viewing window — an off-screen mount must never judge lesson chatter.
+  const { ref: viewportRef, inView } = useVoiceViewportGate<HTMLDivElement>();
+
   // Eligible unless the screen owner parked this problem (only one mic may be
-  // live across stacked problems). Closed once answered.
-  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted;
+  // live across stacked problems) or it's scrolled out of the viewing window.
+  // Closed once answered.
+  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted && inView;
 
   const voice = useVoiceChoice({
     items: voiceItems,
@@ -169,7 +177,7 @@ export const TrueFalseProblem: React.FC<TrueFalseProblemProps> = ({ data }) => {
   };
 
   return (
-    <div className="w-full">
+    <div ref={viewportRef} className="w-full">
       {/* Statement */}
       <h3 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-tight">
         {data.statement}

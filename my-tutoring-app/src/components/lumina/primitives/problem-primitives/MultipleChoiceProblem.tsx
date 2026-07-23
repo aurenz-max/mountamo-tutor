@@ -12,6 +12,7 @@ import {
 import { InsetRenderer, renderKatexString } from './insets';
 import { SoundManager } from '../../utils/SoundManager';
 import { useVoiceChoice } from '../../hooks/useVoiceChoice';
+import { useVoiceViewportGate } from '../../hooks/useVoiceViewportGate';
 // Eval-loop chrome from the Lumina UI kit (see lumina/ui/index.ts for the full list).
 import {
   LuminaAnswerChoice,
@@ -39,7 +40,8 @@ import {
  * voice self-gates on `multipleChoiceVoiceReady` — the mic only appears when every
  * option is a short plain-English word. When many problems stack on one screen
  * the screen owner passes `voiceEligible` so only one mic is ever live (the engine
- * has no global single-mic lock).
+ * has no global single-mic lock), and the mic is viewport-gated
+ * (useVoiceViewportGate) so an off-screen problem never listens.
  *
  * UI: the option-answer FSM, feedback banner, and action buttons come from the
  * Lumina UI kit (LuminaAnswerChoice / LuminaFeedbackCard / LuminaActionButton).
@@ -179,9 +181,14 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
     }];
   }, [sayable, data.options, data.correctOptionId]);
 
+  // Presence gate: the mic may only be live while this problem is in the
+  // viewing window — an off-screen mount must never judge lesson chatter.
+  const { ref: viewportRef, inView } = useVoiceViewportGate<HTMLDivElement>();
+
   // Eligible unless the screen owner parked this problem (only one mic may be
-  // live across stacked problems). Closed once answered or if not sayable.
-  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted && sayable;
+  // live across stacked problems) or it's scrolled out of the viewing window.
+  // Closed once answered or if not sayable.
+  const voiceEligible = (data.voiceEligible ?? true) && !isSubmitted && sayable && inView;
 
   const voice = useVoiceChoice({
     items: voiceItems,
@@ -268,7 +275,10 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
   // ── Pre-reader render: picture-primary grid, tap = choose, read-aloud ────────
   if (preReader) {
     return (
-      <div ref={blockRef} className="w-full">
+      <div
+        ref={(el) => { blockRef.current = el; viewportRef.current = el; }}
+        className="w-full"
+      >
         <div className="flex items-start gap-3 mb-6">
           <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight flex-1">
             {data.question}
@@ -326,7 +336,7 @@ export const MultipleChoiceProblem: React.FC<MultipleChoiceProblemProps> = ({ da
   }
 
   return (
-    <div className="w-full">
+    <div ref={viewportRef} className="w-full">
       {/* Question */}
       <h3 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-tight">
         {data.question}

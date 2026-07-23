@@ -209,6 +209,7 @@ export type {
   CompareObjectsMetrics,
   // Direct Instruction metrics
   DiLetterSoundsMetrics,
+  DiWordReadingMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

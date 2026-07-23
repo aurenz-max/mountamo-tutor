@@ -109,7 +109,7 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-21
+### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-23
 - **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
   architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
   core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
@@ -191,15 +191,75 @@ queue AND this file's "last touched" in the same slice.
   UNVERIFIED through the primitive → HUMAN-CHECKS #36** (engine 4 runs PASS). Two L0 gaps to
   `/add-tutoring-scaffold`: lesson-mode connect needs `manual_activity`+DI-tutoring through the
   shared session; add `subject_for_domain('di')→LANGUAGE_ARTS` to the retrieval matcher.
-- **Tester validated (`/pm` 2026-07-21):** dedicated `direct-instruction-tester` dev panel
-  (`DirectInstructionPrimitivesTester.tsx`) wired into `DevPanelRouter`, generates via the eval-test
-  API route (never imports the server-only generator), renders `DiLetterSounds`. typecheck:lumina 0.
-  **Sole open gate = HUMAN-CHECKS #36** (drive the panel with a real mic — the whole primitive IS the
-  live loop; tsc/eval-test only exercise the generator). This gates di-letter-sounds' ladder climb.
-- **Now = `qa/di/BACKLOG.md` item 2: `di-word-reading`** (CVC/sight words — bench probe first),
-  then item 3 di-math-facts (gated on a number-words bench probe; watch sentinel collision with
-  natural "Yes!"). Or advance di-letter-sounds up its own ladder (`/add-eval-modes` → …) once
-  HUMAN-CHECKS #36 clears.
+- **LIVE LOOP VERIFIED 2026-07-21 (HUMAN-CHECKS #36 STRUCK):** user drove `direct-instruction-tester`
+  with a real mic — **PASS end-to-end through the primitive**, and the backend log confirms the FULL
+  data loop fired on submit (curriculum resolve → score 9.2/correct → competency + calibration
+  item_beta=2.96 θ=4.71 P=0.92 + mastery lifecycle + +38 XP). **di-letter-sounds L0 is now fully
+  runtime-verified; its lifecycle ladder is UNBLOCKED.** Watch-item (not a defect): the standalone
+  submission mapped to LA001-01-a "Decode short vowel CVC words" (runtime Gemini re-mapper), not the
+  birth-cert home "Letter-Sound Correspondence" — expected under the L0 lesson-mode gap; raises the
+  priority of `/add-tutoring-scaffold` carrying the objective's subskill instead of re-deriving.
+- **DONE 2026-07-21 — di-word-reading bench set WIRED (BACKLOG item 2 in progress).** The single-word
+  response class is a standing-gate-1 bench sitting before `/primitive`; the bench already models
+  `kind: 'word'` end-to-end, so this was content + a set toggle, no engine work. Added
+  `WORD_READING_PROBE_ITEMS` (10: sam·mat·pig·dog·sun·red·cup + sight the·see·go; near-neighbours
+  matt/son/read/sea left in to stress over-affirmation) + `BENCH_SETS` registry in `diScript.ts`,
+  and a **Letter sounds ⇄ Word reading** set toggle in `DirectInstructionBench.tsx` (letter-sounds
+  set untouched). typecheck:lumina PASS. **Probe sitting PENDING → HUMAN-CHECKS #41** (mic run).
+  Gate: judge reliable on lone words → `/primitive`; over-affirms neighbours → log the failure class.
+- **DONE 2026-07-22 — di-letter-sounds L1 eval-modes (birth-cert follow-up #1 struck).** 3-mode
+  ladder, task identities all within the benched continuant response class: `letter_sound` (β1.5,
+  base focused cluster), `letter_sound_review` (β2.5, cumulative mixed-set — anchors the recent
+  focus then broadens across the menu so it isn't a copy of the base cluster), `first_sound_in_word`
+  (β3.5, onset isolation from a spoken word; continuant keywords only, NEW hand-authored DISTAR cue
+  lines + picture/word stage so the lone grapheme never leaks the onset). Fork A: `resolveEvalModes`
+  routes intent→mode, code builds+stamps `challengeType` (no Gemini enum to constrain); the mixed
+  path interleaves all three modes staggered so it never stacks one keyword (SP-21). Wired
+  `catalog/di.ts` evalModes + backend `problem_type_registry.py` (β mirrored) + metrics union +
+  eval-test validator reads `challengeType` + tester mode selector. Verified: real-Gemini eval-test
+  PASS ×4 (each pinned mode single-type; onset drops vowels; mixed = 3-type interleave) + keepable
+  oracle `gemini-di-letter-sounds.test.ts` (4/4); typecheck:lumina clean of this work. **New onset
+  live-tutor wording UNVERIFIED live → HUMAN-CHECKS #42.** Ladder next = `/add-tutoring-scaffold` (L2,
+  birth-cert follow-up #2: move DI block into catalog `tutoring:` + wire the lesson-mode connect gap).
+  Report: `my-tutoring-app/qa/eval-reports/di-letter-sounds-evalmodes-2026-07-22.md`.
+- **DONE 2026-07-22 — `di-word-reading` BORN L0 (BACKLOG item 2 struck).** Second custom-made pack
+  over the committed engine (separate pack; letter-sounds files untouched; no hooks/ change):
+  `DiWordReading.tsx` + hand-authored `diWordReadingScript.ts` (DISTAR two-branch cues — CVC
+  sound-out "sss-aaa-mmm… sam" / sight whole-word; STRICT near-neighbour judging contract; handoff's
+  classic "My turn." model opener re-worded to "I'll sound it out…" — sentinel collision) +
+  `gemini-di-word-reading.ts` (Fork A: 30-CVC-by-vowel + 8-sight menu in code, Gemini enum-selects,
+  vowel/sight scope CODE-enforced) + full registrations (catalog single `read_word` β2.5, backend β,
+  metrics, registry, ComponentId) + a **Letter Sounds ⇄ Word Reading primitive picker** in the
+  direct-instruction-tester (no cloned tester). Answer-leak inversion honored: printed word ONLY
+  before the read; emoji = post-affirmation reward; sight words just affirm. **Standing gate 1
+  (bench sitting #41) WAIVED by user ruling 2026-07-22** — near-neighbour stress folded into the
+  live-loop check. typecheck:lumina 0; eval-test PASS ×4 (named/generic/sight/short-a scope);
+  curriculum-fit **MATCH @ G1 LA001-01** (K = diffuse vote-splitting across sibling CVC families,
+  not a gap). Birth cert + 6-layer queue: `qa/eval-reports/di-word-reading-birth.md`. **Live loop
+  NOT yet driven → HUMAN-CHECKS #43 is the real L0 gate** (mirror of #36; also carries the
+  near-neighbour stress + resync/timeout watch-items).
+- **DONE 2026-07-23 — di-letter-sounds L2 tutoring scaffold + FAMILY lesson-mode wiring
+  (birth-cert follow-up #2 struck; both carried L0 gaps CLOSED).** DI tutoring block moved to
+  `catalog/di.ts` `tutoring:` (+contextKeys challengeType/letter/keyword/letters, +3
+  commonStruggles; sentinel-collision re-checked). Shared wiring, benefits the whole family: new
+  `ComponentDefinition.audioInput` — both DI packs declare `{manual_activity:true}` in the catalog;
+  `connectLesson` scans the manifest and opens the shared Gemini session with it (audio config is
+  connect-time-fixed); `switch_primitive` carries tutoring + audio_input; standalone connect falls
+  back to the catalog (component's explicit passes removed). Subskill carry comes free in lesson
+  mode (ManifestOrderRenderer injection) — ends the 07-21 re-map watch-item.
+  `subject_for_domain('di')→LANGUAGE_ARTS` added (REVISIT at di-math-facts). Generator grew a flat
+  `letters` field; component syncs per-item RUNTIME STATE via silent updateContext. Verified:
+  typecheck:lumina 0; tutor-test Tier 1 PASS (0 HIGH) + Tier 2 probe PASS (0 `(not set)`) —
+  `qa/tutor-reports/di-letter-sounds-2026-07-23.md`. **Lesson-mode live loop → HUMAN-CHECKS #45**
+  (incl. the mixed-lesson trade-off: DI-bearing lessons run manual VAD session-wide, non-DI chat
+  turns won't open). Uncommitted.
+- **Now (two live pulls, either order):** (a) **human mic sittings: HUMAN-CHECKS #45** (DI in a
+  real K lesson — the L2 behavior gate + mixed-lesson trade-off probe) **+ #43** (di-word-reading
+  live loop — the real L0 gate) **+ #42** (letter-sounds onset wording); #41 bench sitting is
+  optional (no longer blocking). (b) climb the ladder — next rung `/add-support-tiers
+  di-letter-sounds` (L3, birth-cert follow-up #3) or di-word-reading's own catalog `tutoring:`
+  move (its L2; shared wiring already in place). Item 3 di-math-facts stays gated on a
+  number-words bench probe (watch sentinel collision with natural "Yes!").
 - **WIP note:** the 07-16 "proof-of-concept, not a build" framing is RETIRED (user call
   2026-07-20) — the bench proved the architecture; DI is now a build stream. ACTIVE = reader-fit
   (top) + DI = **2 ACTIVE, within the 2+1 limit.**

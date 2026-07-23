@@ -5,7 +5,7 @@ import AudioCaptureService from '@/lib/AudioCaptureService';
 import { useAudioPlayback } from '@/lib/hooks/useAudioPlayback';
 import { useExhibitContext } from '@/components/lumina/contexts/ExhibitContext';
 import { useEvaluationContext } from '@/components/lumina/evaluation';
-import type { ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
+import type { AudioInputConfig, ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 
 // Message type from AI
@@ -30,18 +30,10 @@ interface PrimitiveContext {
    *  registering a catalog entry; primitives should omit it. */
   tutoring?: TutoringScaffold | null;
   /** Optional tuning of Gemini's automatic voice-activity detection for this
-   *  session. Generic transport — the backend clamps values. Surfaces whose
-   *  learner speech is atypical (e.g. kindergarten sustained phonemes) request
-   *  higher start sensitivity and a shorter end-of-speech close. */
-  audio_input?: {
-    start_sensitivity?: 'high' | 'low';
-    end_sensitivity?: 'high' | 'low';
-    silence_duration_ms?: number;
-    prefix_padding_ms?: number;
-    /** Disable Gemini's automatic VAD entirely; the surface brackets every
-     *  learner turn itself via sendActivityStart/sendActivityEnd. */
-    manual_activity?: boolean;
-  } | null;
+   *  session. Generic transport — the backend clamps values. Explicit override;
+   *  when omitted, the connect paths fall back to the catalog entry's
+   *  `audioInput` declaration (see AudioInputConfig in lumina/types). */
+  audio_input?: AudioInputConfig | null;
 }
 
 // Lesson context built from exhibit data
@@ -536,7 +528,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               instance_id: primitiveContext.instance_id,
               primitive_data: primitiveContext.primitive_data,
               tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
-              audio_input: primitiveContext.audio_input ?? null,
+              audio_input: primitiveContext.audio_input ?? componentDef?.audioInput ?? null,
             },
             lesson_context: lessonContext,
             student_progress: {
@@ -617,6 +609,17 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           const componentDef = getComponentById(info.firstPrimitive.primitive_type);
 
+          // Gemini's audio-input config (e.g. manual voice-activity for DI
+          // live-judged packs) is fixed at session creation and cannot change
+          // on a primitive switch — so if ANY manifest item's catalog entry
+          // declares one, the whole lesson session opens with it.
+          const lessonAudioInput =
+            info.firstPrimitive.audio_input
+            ?? manifestItems
+              .map((item) => getComponentById(item.componentId)?.audioInput)
+              .find(Boolean)
+            ?? null;
+
           // Consume any pending resume handle (set by reconnect) so this attempt
           // resumes warm; clear it so a later fresh connect starts cold.
           const resumeHandle = resumeWithHandleRef.current;
@@ -632,6 +635,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               instance_id: info.firstPrimitive.instance_id,
               primitive_data: info.firstPrimitive.primitive_data,
               tutoring: info.firstPrimitive.tutoring ?? componentDef?.tutoring ?? null,
+              audio_input: lessonAudioInput,
             },
             lesson_context: lessonContext,
             student_progress: {
@@ -711,6 +715,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         instance_id: primitiveContext.instance_id,
         primitive_data: primitiveContext.primitive_data,
         tutoring: componentDef?.tutoring ?? null,
+        // Informational carry — Gemini's audio config is fixed at session
+        // creation (connectLesson already scanned the manifest and applied it),
+        // but the backend sees what the incoming primitive would have asked for.
+        audio_input: componentDef?.audioInput ?? null,
       },
     }));
 

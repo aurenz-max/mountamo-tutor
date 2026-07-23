@@ -18,14 +18,32 @@
  * line opens with either sentinel, so the sentence-scoped verdict scan is safe.
  */
 
-import type { TutoringScaffold } from '../../../types';
+/**
+ * The eval-mode task identities this pack teaches (L1 ladder, all within the
+ * benched continuant response class — the produced audio is a held sound in
+ * every mode):
+ * - `letter_sound`         — isolated grapheme→phoneme (the base skill).
+ * - `letter_sound_review`  — mixed-set cumulative/spaced review of taught sounds
+ *                            (same production, a WIDE cross-menu spread not a
+ *                            focused teaching cluster).
+ * - `first_sound_in_word`  — onset isolation: the tutor says a whole word and
+ *                            the child produces its FIRST sound (phonemic
+ *                            awareness). Continuant keywords only (a short-vowel
+ *                            onset distorts for a K child). Letter NAMES stay
+ *                            BLOCKED; blends/digraphs/stops bench first.
+ */
+export type DiLetterSoundChallengeType =
+  | 'letter_sound'
+  | 'letter_sound_review'
+  | 'first_sound_in_word';
 
 /** One letter-sound item the tutor drills. Mirrors the generator output shape. */
 export interface DiLetterSoundChallenge {
   id: string;
-  /** Core task identity — the field exists from day one so /add-eval-modes can
-   *  widen the union cheaply (e.g. a future 'letter_name' or 'blend' tier). */
-  challengeType: 'letter_sound';
+  /** Which eval-mode SKILL this item drills (see DiLetterSoundChallengeType).
+   *  Drives the cue SHAPE (onset items get word-first lines) and the kid-facing
+   *  display (onset items show the picture/word, never the isolated grapheme). */
+  challengeType: DiLetterSoundChallengeType;
   /** The grapheme shown on screen, e.g. "m". */
   letter: string;
   /** The stretched continuous sound the learner must produce, e.g. "mmm". */
@@ -44,43 +62,61 @@ export interface DiLetterSoundChallenge {
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 
+/** Onset-isolation items (first_sound_in_word) drill the SAME continuant sound
+ *  but from a whole spoken word, so every cue leads with the word and isolates
+ *  its first sound. Checked before elicitation because these items are always
+ *  continuants (isolated elicitation) yet need the word-first phrasing. */
+const isOnset = (it: DiLetterSoundChallenge) => it.challengeType === 'first_sound_in_word';
+
 /** MODEL: the tutor says the sound first (DISTAR "my turn"). Single repetition —
  *  bench run-2 timing showed tutor talk-time dominates the per-item cycle; brisk
  *  pacing is the product at this age. */
 export const modelLine = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `The first sound in ${it.keyword} is short ${it.letter}. Listen: ${it.keyword}.`
-    : `This sound is ${it.spoken}, as in ${it.keyword}. Listen: ${it.spoken}.`;
+  isOnset(it)
+    ? `Listen: ${it.keyword}. ${sentenceCase(it.keyword)} starts with ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `The first sound in ${it.keyword} is short ${it.letter}. Listen: ${it.keyword}.`
+      : `This sound is ${it.spoken}, as in ${it.keyword}. Listen: ${it.spoken}.`;
 
 /** GUIDE: the tutor and learner say it together ("say it with me"). */
 export const guideLine = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `Together, say ${it.keyword}: ${it.keyword}.`
-    : `Together: ${it.spoken}, as in ${it.keyword}.`;
+  isOnset(it)
+    ? `Together: ${it.keyword} starts with ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `Together, say ${it.keyword}: ${it.keyword}.`
+      : `Together: ${it.spoken}, as in ${it.keyword}.`;
 
 /** TEST: the learner produces it alone ("your turn"). */
 export const testLine = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `Your turn. Say ${it.keyword}.`
-    : 'Your turn. What sound?';
+  isOnset(it)
+    ? `Your turn. What is the first sound in ${it.keyword}?`
+    : it.elicitation === 'keyword'
+      ? `Your turn. Say ${it.keyword}.`
+      : 'Your turn. What sound?';
 
 /** Affirmation branch. MUST begin with "Yes" — the engine scans that sentinel. */
 export const verifyLine = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `Yes. ${sentenceCase(it.keyword)} starts with short ${it.letter}.`
-    : `Yes, ${it.spoken}.`;
+  isOnset(it)
+    ? `Yes, ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `Yes. ${sentenceCase(it.keyword)} starts with short ${it.letter}.`
+      : `Yes, ${it.spoken}.`;
 
 /** Correction branch. MUST begin with "My turn" — the engine scans that
  *  sentinel. Standing gate 3: every correction re-models then re-elicits. */
 export const correctionLine = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
-    : `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`;
+  isOnset(it)
+    ? `My turn: ${it.keyword} starts with ${it.spoken}. Your turn. What is the first sound in ${it.keyword}?`
+    : it.elicitation === 'keyword'
+      ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
+      : `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`;
 
 const targetDescription = (it: DiLetterSoundChallenge) =>
-  it.elicitation === 'keyword'
-    ? `the word "${it.keyword}"`
-    : `the continuous sound ${it.spoken}`;
+  isOnset(it)
+    ? `the first sound in "${it.keyword}" (the continuous sound ${it.spoken})`
+    : it.elicitation === 'keyword'
+      ? `the word "${it.keyword}"`
+      : `the continuous sound ${it.spoken}`;
 
 /**
  * The in-band judging contract for one item. The Live tutor hears the raw
@@ -116,47 +152,8 @@ ${judgingContract(next)}`
 export const completeCue = () =>
   `[DI_COMPLETE] Speak exactly: "That's the end of our practice. Great work today!"`;
 
-/**
- * The DI tutoring block. Hand-authored per pack (the "custom-made" rule):
- * exact wording is the pedagogy. This ships WITH the primitive at birth
- * because the DI mechanism IS the in-band judging contract — the generic
- * tutor cannot judge or hold the sentinel discipline. (This is the DI family's
- * justified departure from the L0 "defer the tutoring block" default.)
- */
-export const DI_LETTER_SOUNDS_TUTORING: TutoringScaffold = {
-  taskDescription:
-    'Live-judged Direct Instruction letter-sounds practice for a kindergarten learner. You speak the ' +
-    'exact scripted lines from each bracketed application message and judge each learner attempt from ' +
-    'the audio you heard, using only the two allowed reply branches.',
-  scaffoldingLevels: {
-    level1: 'Repeat the prompt once, slowly.',
-    level2: 'Model the requested sound, then ask for one retry.',
-    level3: 'Accept the attempt warmly and continue as instructed.',
-  },
-  aiDirectives: [
-    {
-      title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-      instruction:
-        'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may ' +
-        'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each ' +
-        '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and ' +
-        'corrections must begin with "My turn", using the exact quoted lines. Never begin any other ' +
-        'sentence with those words. Judge honestly from the audio: affirm a reasonable kindergarten ' +
-        'production of the target; correct a wrong, missing, or different production. Every correction ' +
-        're-models the sound and begins with "My turn". Do not praise to be kind. The application decides ' +
-        'which item comes next; never introduce one yourself.',
-    },
-    {
-      title: 'SOUND PRONUNCIATION',
-      instruction:
-        'A stretched letter sequence like "mmm", "sss", or "fff" is a continuous letter sound held for ' +
-        'about two seconds. Never say a letter name and never spell it out — the sound, not the name.',
-    },
-    {
-      title: 'BREVITY',
-      instruction:
-        'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. ' +
-        'Keep pacing brisk: no filler, no chit-chat.',
-    },
-  ],
-};
+// The DI tutoring block (judging directives, sentinel discipline, struggles)
+// lives on the CATALOG entry — catalog/di.ts — since the L2 layer, so both the
+// standalone connect fallback and the lesson auth/switch paths resolve it from
+// the single source of truth. Any wording change there must be re-checked
+// against the sentinel-collision rule this script's cues depend on.

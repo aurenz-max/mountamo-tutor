@@ -167,6 +167,7 @@ export type { SentenceAnalyzerData, SentenceAnalyzerChallenge, SentenceWord } fr
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 export type { DiLetterSoundsData } from './primitives/visual-primitives/direct-instruction/DiLetterSounds';
+export type { DiWordReadingData } from './primitives/visual-primitives/direct-instruction/DiWordReading';
 
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
@@ -1368,6 +1369,7 @@ export type ComponentId =
   // Language Arts Suite (K-6 ELA Expansion — PRD_LANGUAGE_ARTS_SUITE.md)
   | 'phonics-blender'           // Sound-by-sound word building with phoneme tiles and audio (K-2)
   | 'di-letter-sounds'          // Live-judged Direct Instruction: continuous letter sounds, spoken call-response (K)
+  | 'di-word-reading'           // Live-judged Direct Instruction: read printed CVC + sight words aloud (K-G1)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)
@@ -1551,6 +1553,24 @@ export interface TutoringScaffold {
   studentPrompts?: StudentPrompt[];
 }
 
+/**
+ * Optional tuning of Gemini Live's automatic voice-activity detection for
+ * sessions hosting a primitive. Generic transport — the backend clamps values
+ * and ignores unknown keys. Declared on the catalog entry (like `tutoring`)
+ * so BOTH connect paths honor it: a standalone connect falls back to it, and
+ * a lesson session scans the manifest and applies it at auth (Gemini audio
+ * config is fixed at session creation and cannot change on a primitive switch).
+ */
+export interface AudioInputConfig {
+  start_sensitivity?: 'high' | 'low';
+  end_sensitivity?: 'high' | 'low';
+  silence_duration_ms?: number;
+  prefix_padding_ms?: number;
+  /** Disable Gemini's automatic VAD entirely; the surface brackets every
+   *  learner turn itself via sendActivityStart/sendActivityEnd (DI packs). */
+  manual_activity?: boolean;
+}
+
 /** Routing + styling category for a {@link StudentPrompt}. */
 export type StudentPromptKind = 'hint' | 'explain' | 'check' | 'advance';
 
@@ -1612,6 +1632,10 @@ export interface ComponentDefinition {
   constraints?: string; // e.g. "Max 1 per page" or "Requires numeric data"
   /** Optional AI tutoring scaffold. When present, sent to backend during WebSocket auth. */
   tutoring?: TutoringScaffold;
+  /** Optional Gemini Live audio-input request (e.g. manual voice-activity for
+   *  DI live-judged packs). Sent at WebSocket auth; a lesson session applies it
+   *  when ANY of its manifest items declares one. */
+  audioInput?: AudioInputConfig;
   /** Whether this primitive supports evaluation tracking (used by practice-visual-catalog). */
   supportsEvaluation?: boolean;
   /** IRT eval modes with β priors. When present, enables mode-specific generation. */

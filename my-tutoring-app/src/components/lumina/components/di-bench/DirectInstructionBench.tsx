@@ -20,7 +20,7 @@ import { LuminaMicListener } from '../../ui';
 import { useJudgedSpeechLoop } from '../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../hooks/judgedLoopModel';
 import { DEFAULT_VOICE_TURN_CONFIG } from '../../hooks/voiceTurnMachine';
-import { completeCue, DEFAULT_ITEMS, DI_TUTORING, itemCue, moveOnCue } from './diScript';
+import { BENCH_SETS, completeCue, DEFAULT_ITEMS, DI_TUTORING, itemCue, moveOnCue } from './diScript';
 import {
   detectDIItemFromTutorText,
   matchesAsrAliases,
@@ -53,6 +53,7 @@ const DEFAULT_VAD_THRESHOLD = DEFAULT_VOICE_TURN_CONFIG.silenceThreshold;
 
 const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
   const ctx = useLuminaAIContext();
+  const [setId, setSetId] = useState(BENCH_SETS[0]?.id ?? 'letter-sounds');
   const [items, setItems] = useState<DIItem[]>(DEFAULT_ITEMS);
   const [events, setEvents] = useState<BenchEvent[]>([]);
   const [running, setRunning] = useState(false);
@@ -326,6 +327,26 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     loop.arm();
   }, [ctx, items, loop]);
 
+  /** Swap the bench's live item list to another probe set (letter sounds ⇄
+   *  word reading). Only between runs; the cue stream — not the connect-time
+   *  primitive_data — is authoritative, so picking a set before Prepare keeps
+   *  the Live context in sync too. Resets the active item and run telemetry. */
+  const selectSet = useCallback((nextSetId: string) => {
+    if (runningRef.current) return;
+    const set = BENCH_SETS.find((candidate) => candidate.id === nextSetId);
+    if (!set) return;
+    setSetId(nextSetId);
+    setItems(set.items);
+    itemsRef.current = set.items;
+    const firstId = set.items[0]?.id ?? '';
+    activeItemIdRef.current = firstId;
+    setActiveItemId(firstId);
+    matchedItemIdsRef.current.clear();
+    correctionsRef.current.clear();
+    setEvents([]);
+    setPhase(`Loaded the ${set.label.toLowerCase()} probe. Prepare live audio, then Start run.`);
+  }, []);
+
   const stopRun = useCallback(() => {
     runningRef.current = false;
     setRunning(false);
@@ -419,6 +440,20 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
           <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-wide text-cyan-200">
             Engine pilot
           </span>
+        </div>
+        <div className="mt-3 inline-flex rounded-full border border-white/10 bg-slate-900/60 p-0.5 text-xs">
+          {BENCH_SETS.map((set) => (
+            <button
+              key={set.id}
+              onClick={() => selectSet(set.id)}
+              disabled={running}
+              title={running ? 'Stop the run to switch probe sets' : `Load the ${set.label.toLowerCase()} probe (${set.items.length} items)`}
+              className={`rounded-full px-3 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${setId === set.id ? 'bg-cyan-500/20 text-cyan-100' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              {set.label}
+              <span className="ml-1 text-[10px] text-slate-500">{set.items.length}</span>
+            </button>
+          ))}
         </div>
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {items.map((item) => (

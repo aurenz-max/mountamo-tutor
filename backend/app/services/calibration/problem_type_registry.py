@@ -529,6 +529,18 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "hear_see":       PriorConfig(2.5, "Guided: hear sound, identify the letter"),
         "keyword_match":  PriorConfig(3.5, "Application: match letter to keyword"),
     },
+    # Direct Instruction (live-judged spoken production). Continuant response
+    # class throughout; modes differ by task identity, not by sound difficulty.
+    "di-letter-sounds": {
+        "letter_sound":         PriorConfig(1.5, "Isolated: see letter, produce its continuous sound"),
+        "letter_sound_review":  PriorConfig(2.5, "Review: re-produce taught sounds from a mixed cumulative set"),
+        "first_sound_in_word":  PriorConfig(3.5, "Onset isolation: say the first sound of a spoken word"),
+    },
+    # L0 single mode; /add-eval-modes widens (cvc_reading / sight_word /
+    # word_reading_review are the queued ladder candidates).
+    "di-word-reading": {
+        "read_word": PriorConfig(2.5, "Production: read one printed CVC or sight word aloud"),
+    },
     "phoneme-explorer": {
         "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),
         "blend":      PriorConfig(2.5, "Guided: combine phonemes into word"),

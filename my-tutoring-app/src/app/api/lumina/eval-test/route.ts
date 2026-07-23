@@ -334,7 +334,7 @@ function validateChallengeTypes(
   }
 
   // Check root-level type field (e.g., function-machine)
-  const typeFieldNames = ['type', 'mode', 'operation', 'clueType', 'patternType', 'sentenceType'];
+  const typeFieldNames = ['type', 'mode', 'operation', 'clueType', 'patternType', 'sentenceType', 'challengeType'];
   for (const field of typeFieldNames) {
     if (typeof data[field] === 'string' && !challenges) {
       const rootType = data[field] as string;
