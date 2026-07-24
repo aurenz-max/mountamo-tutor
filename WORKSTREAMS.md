@@ -109,7 +109,7 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-23
+### 2. Direct Instruction primitive family (graduated from bench) — last touched 2026-07-24
 - **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
   architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
   core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
@@ -252,14 +252,29 @@ queue AND this file's "last touched" in the same slice.
   typecheck:lumina 0; tutor-test Tier 1 PASS (0 HIGH) + Tier 2 probe PASS (0 `(not set)`) —
   `qa/tutor-reports/di-letter-sounds-2026-07-23.md`. **Lesson-mode live loop → HUMAN-CHECKS #45**
   (incl. the mixed-lesson trade-off: DI-bearing lessons run manual VAD session-wide, non-DI chat
-  turns won't open). Uncommitted.
-- **Now (two live pulls, either order):** (a) **human mic sittings: HUMAN-CHECKS #45** (DI in a
-  real K lesson — the L2 behavior gate + mixed-lesson trade-off probe) **+ #43** (di-word-reading
-  live loop — the real L0 gate) **+ #42** (letter-sounds onset wording); #41 bench sitting is
-  optional (no longer blocking). (b) climb the ladder — next rung `/add-support-tiers
-  di-letter-sounds` (L3, birth-cert follow-up #3) or di-word-reading's own catalog `tutoring:`
-  move (its L2; shared wiring already in place). Item 3 di-math-facts stays gated on a
-  number-words bench probe (watch sentinel collision with natural "Yes!").
+  turns won't open). **Committed `2e5814a` 2026-07-23** (L0 word-reading + L1 letter-sounds modes +
+  L2 scaffold/lesson-mode wiring + useVoiceViewportGate all in one commit; tree clean).
+- **#42 + #43 VERIFIED LIVE 2026-07-23/24 (both struck).** User mic runs: word-reading (sam·mat·cat·hat
+  all read+affirmed, printed-word-only stage) + letter-sounds onset + mixed (SP-21 interleave m·s·f·s).
+  User verdict: "a true awesome Lumina-native modality." Tester mode-switch kickoff bug fixed
+  (`DirectInstructionPrimitivesTester` remounts the pack per Generate via `runKey` — components kick off
+  a mic gesture and don't reset on new data; a lesson gives each objective a fresh instance so it's a
+  tester-only artifact). typecheck:lumina 0; **needs the same mode-switch glance to confirm live.**
+- **PHASE SET 2026-07-24 (user): "more DI packs" — content density within DI** (voice-transport
+  unification stays PARKED; not this phase). WIP unchanged (reader-fit TOP + DI).
+- **Now = `qa/di/BACKLOG.md` item 3 `di-math-facts`.** Two gates before `/primitive`:
+  (1) **bench probe** — number words are a NEW response class; the bench (`diScript.ts`) currently only
+  models `kind:'sound'|'word'`, so this needs a small **`kind:'fact'` extension** (printed problem
+  "2 + 1" + spoken answer "three" + new model/guide/test/correction branches) plus a `MATH_FACTS_PROBE_ITEMS`
+  set + BENCH_SETS entry → then a `HUMAN-CHECKS` probe row (mirror of the word-reading path). (2) **sentinel
+  collision** — affirm `"Yes"` / correct `"My turn"` are exact-scripted so a spontaneous "Yes!" can't
+  leak, but the correction opener reads oddly for arithmetic; the probe is where we decide whether to keep
+  the defaults or give the pack distinct openers. Then `/primitive` (silent response-time = the fluency
+  signal, no-timer ruling). **Prereq: `/ship` the current uncommitted slice first** (tester fix +
+  voice-transport charter + this reconcile) so the math-facts work starts from a clean tree.
+- **Still open (not blocking the phase): HUMAN-CHECKS #45** — DI in a real K lesson (L2 lesson-mode
+  behavior + the mixed-lesson VAD trade-off measurement). Worth running opportunistically; it's the
+  evidence that would later justify un-parking voice-transport.
 - **WIP note:** the 07-16 "proof-of-concept, not a build" framing is RETIRED (user call
   2026-07-20) — the bench proved the architecture; DI is now a build stream. ACTIVE = reader-fit
   (top) + DI = **2 ACTIVE, within the 2+1 limit.**
@@ -288,6 +303,7 @@ WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as
 
 | Stream | Queue / doc | Next action | As of |
 |---|---|---|---|
+| Voice transport unification | `my-tutoring-app/qa/voice-transport/CHARTER.md` | **NEW 2026-07-23 (user direction).** Promote the DI-proven client-side turn authority (`voiceTurnMachine`/`useLiveVoiceTurns`) from DI-private mode to Lumina's SESSION-WIDE voice transport, so students can talk to the tutor throughout a lesson and verbally refer back to prior sections. Dissolves the DI mixed-lesson manual-VAD trade-off (L2 wiring 07-23, HUMAN-CHECKS #45 measures the interim). Phases: calibration beat → lesson-level turn authority (DI becomes a consumer) → contextual close-timing + viewport claim → refer-back Tier-3 journey beats (the raised live-testing bar). Charter has the evidence base + watch-items. Pull only when a WIP slot opens. | 07-23 |
 | media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
 | SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
 | Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **7 contracts on disk** (newest: counting-board 2026-07-20 via reader-fit #13; ten-frame 2026-07-16 via #12; media-player 2026-07-16 via #9a Step 1 — the CONFLICTED one) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation BEFORE the reader-fit #9 shared-PRE-pattern fix pass (its files are already in flight in the working tree), then #2 knowledge-check (before `true_false @ PRE` lands) | 07-15 |
