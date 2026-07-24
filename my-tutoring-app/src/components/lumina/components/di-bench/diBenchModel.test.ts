@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BENCH_SETS,
   completeCue,
   correctionLine,
   DEFAULT_ITEMS,
   guideLine,
   itemCue,
+  MATH_FACTS_PROBE_ITEMS,
   modelLine,
   moveOnCue,
   scoreFidelity,
@@ -95,6 +97,59 @@ describe('live-judged Direct Instruction bench model', () => {
       .toEqual({ kind: 'move-on', nextItemId: null });
     expect(moveOnCue(DEFAULT_ITEMS[1], DEFAULT_ITEMS[2])).toContain('[DI_MOVE_ON]');
     expect(moveOnCue(DEFAULT_ITEMS[3])).toContain("That's the end of our practice.");
+  });
+
+  it('exposes the math-facts probe as a bench set with full number-word coverage', () => {
+    expect(BENCH_SETS.map((set) => set.id)).toEqual(['letter-sounds', 'word-reading', 'math-facts']);
+    const probe = BENCH_SETS.find((set) => set.id === 'math-facts')!.items;
+    expect(probe).toBe(MATH_FACTS_PROBE_ITEMS);
+    expect(probe).toHaveLength(10);
+    // The probe's point: every number word 1-10 appears exactly once as a target.
+    expect([...probe.map((item) => item.spoken)].sort()).toEqual(
+      ['eight', 'five', 'four', 'nine', 'one', 'seven', 'six', 'ten', 'three', 'two'].sort(),
+    );
+  });
+
+  it('keeps every math-fact line on the two-branch sentinel contract', () => {
+    for (const item of MATH_FACTS_PROBE_ITEMS) {
+      expect(verifyLine(item).toLowerCase().startsWith('yes')).toBe(true);
+      expect(correctionLine(item).toLowerCase().startsWith('my turn')).toBe(true);
+      for (const line of [modelLine(item), guideLine(item), testLine(item)]) {
+        expect(['affirmed', 'corrected']).not.toContain(scanForSentinel(line, DI_SENTINELS));
+      }
+      expect(scanForSentinel(verifyLine(item), DI_SENTINELS)).toBe('affirmed');
+      expect(scanForSentinel(correctionLine(item), DI_SENTINELS)).toBe('corrected');
+    }
+  });
+
+  it('retains the DISTAR math-fact phrasing', () => {
+    const fact = MATH_FACTS_PROBE_ITEMS.find((item) => item.id === 'fact-2p1')!;
+    expect(modelLine(fact)).toBe('Listen: two plus one is three.');
+    expect(guideLine(fact)).toBe('Together: two plus one is three.');
+    expect(testLine(fact)).toBe('Your turn. What is two plus one?');
+    expect(verifyLine(fact)).toBe('Yes, two plus one is three.');
+    expect(correctionLine(fact)).toBe('My turn: two plus one is three. Your turn. What is two plus one?');
+    const cue = itemCue(fact);
+    expect(cue).toContain('the spoken number word "three" answering two plus one');
+  });
+
+  it('cross-checks number-word answers including digit and homophone lexicalizations', () => {
+    const three = MATH_FACTS_PROBE_ITEMS.find((item) => item.id === 'fact-2p1')!;
+    expect(matchesAsrAliases('Three!', three)).toBe(true);
+    expect(matchesAsrAliases('3', three)).toBe(true);
+    expect(matchesAsrAliases('free', three)).toBe(true);
+    expect(matchesAsrAliases('four', three)).toBe(false);
+    const eight = MATH_FACTS_PROBE_ITEMS.find((item) => item.id === 'fact-4p4')!;
+    expect(matchesAsrAliases('ate', eight)).toBe(true);
+    const one = MATH_FACTS_PROBE_ITEMS.find((item) => item.id === 'fact-0p1')!;
+    expect(matchesAsrAliases('won', one)).toBe(true);
+  });
+
+  it('detects fact transitions from output transcription', () => {
+    expect(detectDIItemFromTutorText('Your turn. What is two plus one?', MATH_FACTS_PROBE_ITEMS)?.id)
+      .toBe('fact-2p1');
+    expect(detectDIItemFromTutorText('Yes, five plus five is ten.', MATH_FACTS_PROBE_ITEMS)?.id)
+      .toBe('fact-5p5');
   });
 
   it('retains the expected DI phrasing for diagnostics', () => {

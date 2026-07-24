@@ -262,16 +262,16 @@ queue AND this file's "last touched" in the same slice.
   tester-only artifact). typecheck:lumina 0; **needs the same mode-switch glance to confirm live.**
 - **PHASE SET 2026-07-24 (user): "more DI packs" — content density within DI** (voice-transport
   unification stays PARKED; not this phase). WIP unchanged (reader-fit TOP + DI).
-- **Now = `qa/di/BACKLOG.md` item 3 `di-math-facts`.** Two gates before `/primitive`:
-  (1) **bench probe** — number words are a NEW response class; the bench (`diScript.ts`) currently only
-  models `kind:'sound'|'word'`, so this needs a small **`kind:'fact'` extension** (printed problem
-  "2 + 1" + spoken answer "three" + new model/guide/test/correction branches) plus a `MATH_FACTS_PROBE_ITEMS`
-  set + BENCH_SETS entry → then a `HUMAN-CHECKS` probe row (mirror of the word-reading path). (2) **sentinel
-  collision** — affirm `"Yes"` / correct `"My turn"` are exact-scripted so a spontaneous "Yes!" can't
-  leak, but the correction opener reads oddly for arithmetic; the probe is where we decide whether to keep
-  the defaults or give the pack distinct openers. Then `/primitive` (silent response-time = the fluency
-  signal, no-timer ruling). **Prereq: `/ship` the current uncommitted slice first** (tester fix +
-  voice-transport charter + this reconcile) so the math-facts work starts from a clean tree.
+- **Now = `qa/di/BACKLOG.md` item 3 `di-math-facts` — bench probe WIRED 2026-07-24; gate = sitting
+  HUMAN-CHECKS #46.** The `/ship` prereq ran (tester runKey fix `7283ef5` + charter/reconcile `d99ad29`
+  + a drive-by ledger-gate fix `ec6d16e`: DI generators migrated to `registerContextGenerator` — they
+  were the last two legacy registrations and failed `npm test`'s intent-contract invariant). Then the
+  bench extension: `kind:'fact'` + `DIItem.problem` + fact model/guide/test/verify/correction branches
+  + `MATH_FACTS_PROBE_ITEMS` (10 K-1 addition facts, every number word 1–10, homophones in) + `Math
+  facts` BENCH_SETS entry + 5 model tests. Sentinel call (gate 2): probe keeps engine defaults ("Yes"/
+  "My turn" exact-scripted = collision-safe); the #46 sitting decides whether arithmetic gets a distinct
+  correction opener before the primitive locks its script. After the sitting: `/primitive di-math-facts`
+  (silent response-time = the fluency signal, no-timer ruling).
 - **Still open (not blocking the phase): HUMAN-CHECKS #45** — DI in a real K lesson (L2 lesson-mode
   behavior + the mixed-lesson VAD trade-off measurement). Worth running opportunistically; it's the
   evidence that would later justify un-parking voice-transport.

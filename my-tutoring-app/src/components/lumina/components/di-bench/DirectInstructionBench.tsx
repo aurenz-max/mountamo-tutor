@@ -458,7 +458,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {items.map((item) => (
             <div key={item.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${activeItemId === item.id ? 'border-cyan-400/50 bg-cyan-500/10' : 'border-white/10 bg-slate-800/50'}`}>
-              <span className="w-10 text-center text-lg font-bold text-slate-100">{item.display}</span>
+              <span className="min-w-[2.5rem] whitespace-nowrap text-center text-lg font-bold text-slate-100">{item.display}</span>
               <span className="text-[10px] uppercase text-slate-500">{matchedItemIdsRef.current.has(item.id) ? 'matched' : item.kind}</span>
               <label className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
                 spoken

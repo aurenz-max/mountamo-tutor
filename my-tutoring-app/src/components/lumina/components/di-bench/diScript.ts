@@ -54,6 +54,36 @@ export const WORD_READING_PROBE_ITEMS: DIItem[] = [
   { id: 'word-go', kind: 'word', display: 'go', spoken: 'go', reference: 'go', asrAliases: ['go', 'goh', 'goe'] },
 ];
 
+/**
+ * di-math-facts bench probe (BACKLOG item 3). Spoken NUMBER WORDS are a NEW
+ * response class relative to letter sounds and read words, so standing gate 1
+ * requires a sitting here — hand-rolled 10-item list, K-1 addition facts —
+ * to confirm Live-judge reliability on number-word answers BEFORE any
+ * primitive wiring. The printed problem ("2 + 1") is the stimulus; the spoken
+ * answer number word ("three") is the judged target. Answers deliberately
+ * cover every number word 1–10, and the homophonic ones stay in on purpose
+ * (one/won, two/to/too, four/for, eight/ate) so the probe stresses
+ * over-affirmation and digit-vs-word ASR lexicalization, not just easy hits.
+ * Sentinel call for the probe: keep the proven engine defaults ("Yes" /
+ * "My turn") — both branches are exact-scripted so a spontaneous math-tutor
+ * "Yes!" cannot leak a verdict; whether arithmetic wants a distinct correction
+ * opener is exactly what the sitting decides before the primitive locks its
+ * script. The primitive will generator-scope fact families to the objective;
+ * nothing here ships hardcoded into a primitive.
+ */
+export const MATH_FACTS_PROBE_ITEMS: DIItem[] = [
+  { id: 'fact-1p1', kind: 'fact', display: '1 + 1', problem: 'one plus one', spoken: 'two', reference: 'two', asrAliases: ['two', '2', 'to', 'too'] },
+  { id: 'fact-2p1', kind: 'fact', display: '2 + 1', problem: 'two plus one', spoken: 'three', reference: 'three', asrAliases: ['three', '3', 'free', 'tree'] },
+  { id: 'fact-2p2', kind: 'fact', display: '2 + 2', problem: 'two plus two', spoken: 'four', reference: 'four', asrAliases: ['four', '4', 'for', 'fore'] },
+  { id: 'fact-3p2', kind: 'fact', display: '3 + 2', problem: 'three plus two', spoken: 'five', reference: 'five', asrAliases: ['five', '5'] },
+  { id: 'fact-3p3', kind: 'fact', display: '3 + 3', problem: 'three plus three', spoken: 'six', reference: 'six', asrAliases: ['six', '6', 'sick'] },
+  { id: 'fact-4p3', kind: 'fact', display: '4 + 3', problem: 'four plus three', spoken: 'seven', reference: 'seven', asrAliases: ['seven', '7'] },
+  { id: 'fact-4p4', kind: 'fact', display: '4 + 4', problem: 'four plus four', spoken: 'eight', reference: 'eight', asrAliases: ['eight', '8', 'ate'] },
+  { id: 'fact-5p4', kind: 'fact', display: '5 + 4', problem: 'five plus four', spoken: 'nine', reference: 'nine', asrAliases: ['nine', '9'] },
+  { id: 'fact-5p5', kind: 'fact', display: '5 + 5', problem: 'five plus five', spoken: 'ten', reference: 'ten', asrAliases: ['ten', '10', 'tin'] },
+  { id: 'fact-0p1', kind: 'fact', display: '0 + 1', problem: 'zero plus one', spoken: 'one', reference: 'one', asrAliases: ['one', '1', 'won'] },
+];
+
 /** Selectable bench probe sets. The bench swaps its live item list between
  *  these; each new DI response class benches here before a primitive wires it. */
 export interface BenchSet {
@@ -65,54 +95,70 @@ export interface BenchSet {
 export const BENCH_SETS: BenchSet[] = [
   { id: 'letter-sounds', label: 'Letter sounds', items: DEFAULT_ITEMS },
   { id: 'word-reading', label: 'Word reading', items: WORD_READING_PROBE_ITEMS },
+  { id: 'math-facts', label: 'Math facts', items: MATH_FACTS_PROBE_ITEMS },
 ];
 
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 
+/** 'fact' only: spoken form of the printed problem. */
+const factProblem = (it: DIItem) => it.problem ?? it.display;
+
 export const modelLine = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `The first sound in ${it.keyword} is short ${it.display}. Listen: ${it.keyword}.`
-    : it.kind === 'sound'
-      // Single model repetition: run-2 timing showed tutor talk-time dominates
-      // the per-item cycle (~10s of ~13s); pacing is the product at this age.
-      ? `This sound is ${it.spoken}, as in ${it.keyword}. Listen: ${it.spoken}.`
-      : `This word is ${it.spoken}. Listen: ${it.spoken}.`;
+  it.kind === 'fact'
+    ? `Listen: ${factProblem(it)} is ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `The first sound in ${it.keyword} is short ${it.display}. Listen: ${it.keyword}.`
+      : it.kind === 'sound'
+        // Single model repetition: run-2 timing showed tutor talk-time dominates
+        // the per-item cycle (~10s of ~13s); pacing is the product at this age.
+        ? `This sound is ${it.spoken}, as in ${it.keyword}. Listen: ${it.spoken}.`
+        : `This word is ${it.spoken}. Listen: ${it.spoken}.`;
 
 export const guideLine = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `Together, say ${it.keyword}: ${it.keyword}.`
-    : it.kind === 'sound'
-      ? `Together: ${it.spoken}, as in ${it.keyword}.`
-      : `Together: ${it.spoken}.`;
+  it.kind === 'fact'
+    ? `Together: ${factProblem(it)} is ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `Together, say ${it.keyword}: ${it.keyword}.`
+      : it.kind === 'sound'
+        ? `Together: ${it.spoken}, as in ${it.keyword}.`
+        : `Together: ${it.spoken}.`;
 
 export const testLine = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `Your turn. Say ${it.keyword}.`
-    : it.kind === 'sound'
-      ? 'Your turn. What sound?'
-      : 'Your turn. What word?';
+  it.kind === 'fact'
+    ? `Your turn. What is ${factProblem(it)}?`
+    : it.elicitation === 'keyword'
+      ? `Your turn. Say ${it.keyword}.`
+      : it.kind === 'sound'
+        ? 'Your turn. What sound?'
+        : 'Your turn. What word?';
 
 /** Affirmation branch. MUST begin with "Yes" — the bench parses that sentinel. */
 export const verifyLine = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `Yes. ${sentenceCase(it.keyword)} starts with short ${it.display}.`
-    : `Yes, ${it.spoken}.`;
+  it.kind === 'fact'
+    ? `Yes, ${factProblem(it)} is ${it.spoken}.`
+    : it.elicitation === 'keyword'
+      ? `Yes. ${sentenceCase(it.keyword)} starts with short ${it.display}.`
+      : `Yes, ${it.spoken}.`;
 
 /** Correction branch. MUST begin with "My turn" — the bench parses that sentinel. */
 export const correctionLine = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
-    : it.kind === 'sound'
-      ? `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`
-      : `My turn: ${it.spoken}. Your turn. What word?`;
+  it.kind === 'fact'
+    ? `My turn: ${factProblem(it)} is ${it.spoken}. Your turn. What is ${factProblem(it)}?`
+    : it.elicitation === 'keyword'
+      ? `My turn: ${it.keyword}. Your turn. Say ${it.keyword}.`
+      : it.kind === 'sound'
+        ? `My turn: ${it.spoken}, as in ${it.keyword}. Your turn. What sound?`
+        : `My turn: ${it.spoken}. Your turn. What word?`;
 
 const targetDescription = (it: DIItem) =>
-  it.elicitation === 'keyword'
-    ? `the word "${it.keyword}"`
-    : it.kind === 'sound'
-      ? `the continuous sound ${it.spoken}`
-      : `the word "${it.spoken}"`;
+  it.kind === 'fact'
+    ? `the spoken number word "${it.spoken}" answering ${factProblem(it)}`
+    : it.elicitation === 'keyword'
+      ? `the word "${it.keyword}"`
+      : it.kind === 'sound'
+        ? `the continuous sound ${it.spoken}`
+        : `the word "${it.spoken}"`;
 
 /**
  * The in-band judging contract for one item. The Live tutor hears the raw

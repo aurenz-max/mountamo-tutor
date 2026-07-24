@@ -1,4 +1,4 @@
-export type DIItemKind = 'sound' | 'word';
+export type DIItemKind = 'sound' | 'word' | 'fact';
 
 export interface DIItem {
   id: string;
@@ -7,6 +7,9 @@ export interface DIItem {
   spoken: string;
   keyword?: string;
   elicitation?: 'isolated' | 'keyword';
+  /** 'fact' only: spoken form of the printed problem ("two plus one" for "2 + 1").
+   *  The learner's target stays `spoken` (the answer number word). */
+  problem?: string;
   reference: string;
   /** Common text tokens produced when Live ASR hears the intended response. */
   asrAliases?: string[];
@@ -185,11 +188,14 @@ export function detectDIItemFromTutorText(text: string, items: DIItem[]): DIItem
   for (const item of items) {
     const spoken = normalized(item.spoken);
     const keyword = normalized(item.keyword ?? '');
-    const patterns = item.kind === 'word'
-      ? [`this word is ${spoken}`, `that word is ${spoken}`]
-      : item.elicitation === 'keyword'
-        ? [`this sound is ${spoken}`, `that sound is ${spoken}`, `first sound in ${keyword}`, `say ${keyword}`]
-        : [`this sound is ${spoken}`, `that sound is ${spoken}`];
+    const problem = normalized(item.problem ?? item.display);
+    const patterns = item.kind === 'fact'
+      ? [`what is ${problem}`, `${problem} is ${spoken}`]
+      : item.kind === 'word'
+        ? [`this word is ${spoken}`, `that word is ${spoken}`]
+        : item.elicitation === 'keyword'
+          ? [`this sound is ${spoken}`, `that sound is ${spoken}`, `first sound in ${keyword}`, `say ${keyword}`]
+          : [`this sound is ${spoken}`, `that sound is ${spoken}`];
     for (const pattern of patterns) {
       const position = transcript.lastIndexOf(pattern);
       if (position >= 0 && (!best || position > best.position)) best = { item, position };
