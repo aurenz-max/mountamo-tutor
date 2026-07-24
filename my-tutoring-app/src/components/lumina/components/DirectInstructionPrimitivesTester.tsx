@@ -58,6 +58,12 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
   const [evalMode, setEvalMode] = useState<string>(DI_PRIMITIVES[0].evalModes[0].key);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bumped on every Generate so the rendered pack REMOUNTS. The DI components
+  // kick the live loop off a mic gesture and don't reset on new data (a lesson
+  // gives each objective a fresh instance, so they never need to) — in this
+  // tester the same instance is reused across mode switches, so without a fresh
+  // key it would keep showing the prior run's recap instead of re-engaging.
+  const [runKey, setRunKey] = useState(0);
 
   const pickPrimitive = useCallback((opt: DiPrimitiveOption) => {
     setPrimitive(opt);
@@ -83,6 +89,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
         throw new Error(json.error || 'Generation failed');
       }
       setGenerated({ id: primitive.id, data: json.fullData } as DiData);
+      setRunKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed');
     } finally {
@@ -121,10 +128,10 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       </div>
       {error && <p className="mb-4 text-sm text-rose-300">{error}</p>}
       {generated?.id === 'di-letter-sounds' && (
-        <DiLetterSounds {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiLetterSounds key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
       )}
       {generated?.id === 'di-word-reading' && (
-        <DiWordReading {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiWordReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
       )}
     </div>
   );
