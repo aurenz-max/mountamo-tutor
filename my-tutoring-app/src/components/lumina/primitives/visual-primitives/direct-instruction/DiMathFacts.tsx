@@ -143,9 +143,12 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
   const [preparing, setPreparing] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'ready' | 'listening' | 'judging' | 'affirmed' | 'done'>('idle');
   const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
-  /** Show the completed equation for the fact JUST affirmed — post-answer only
-   *  (answer-leak rule), cleared the moment the next attempt opens. */
-  const [showEquation, setShowEquation] = useState(false);
+  /** The fact JUST affirmed, VALUE-CAPTURED at verdict time — never derived
+   *  from currentChallenge, which advance() has already moved to the NEXT fact
+   *  by the time this renders (deriving it printed the next fact's sum before
+   *  the child answered — an answer leak, browser-caught 2026-07-24). Post-
+   *  answer reward only; cleared the moment the next attempt opens. */
+  const [reward, setReward] = useState<{ display: string; answer: number } | null>(null);
 
   // Progression authority is useChallengeProgress; mirror the index into a ref
   // so the emission handler (fires inside the loop's dispatch) reads it live.
@@ -264,7 +267,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       lastResponseMsRef.current = null;
       setPhase('affirmed');
       // Post-answer reward only — the sum never precedes the answer.
-      setShowEquation(true);
+      setReward({ display: item.display, answer: item.answerNumeral });
       const next = data.challenges[idxRef.current + 1] ?? null;
       if (next) {
         setStatusLine('Yes! Quick thinking.');
@@ -285,7 +288,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
         case 'attempt-open':
           setPhase('judging');
           setStatusLine('Listening…');
-          setShowEquation(false);
+          setReward(null);
           return;
         case 'attempt-transcript':
           lastResponseMsRef.current = emission.responseMs;
@@ -370,7 +373,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     outcomesRef.current = [];
     lastResponseMsRef.current = null;
     submittedRef.current = false;
-    setShowEquation(false);
+    setReward(null);
     loop.reset();
     setRunning(true);
     setPhase('listening');
@@ -417,17 +420,21 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
           </div>
         )}
 
-        {/* The kid-facing stage: the PRINTED PROBLEM ONLY. The sum never
-            appears before the child answers — the completed equation renders
-            only after an affirmed answer (reward). No timer, ever. */}
+        {/* The kid-facing stage: the PRINTED PROBLEM ONLY, always the LIVE
+            challenge (advance() moves it right after an affirm). The completed
+            equation for the JUST-affirmed fact renders as a separate chip
+            below, from value-captured `reward` — never from currentChallenge,
+            whose sum belongs to the next, unanswered fact. No timer, ever. */}
         {!isComplete && currentChallenge && (
           <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             <div className="text-7xl font-bold tracking-wide text-white">
               {currentChallenge.display}
-              {showEquation && phase === 'affirmed' && (
-                <span className="text-emerald-300"> = {currentChallenge.answerNumeral}</span>
-              )}
             </div>
+            {reward && phase === 'affirmed' && (
+              <div className="mt-3 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-1.5 text-3xl font-bold text-emerald-300">
+                {reward.display} = {reward.answer}
+              </div>
+            )}
             <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
               {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? 'say the answer' : 'get ready'}
             </div>
