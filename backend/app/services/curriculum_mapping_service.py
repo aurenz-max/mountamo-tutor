@@ -155,6 +155,10 @@ class CurriculumMappingService:
         domain is cross-cutting/unknown (the caller then keeps its fallback path)."""
         return self.retrieval_matcher.subject_for_domain(domain)
 
+    def subject_for_primitive(self, primitive_type: Optional[str], domain: Optional[str]) -> Optional[str]:
+        """Curriculum subject_id for a primitive — per-primitive override first, then the domain default."""
+        return self.retrieval_matcher.subject_for_primitive(primitive_type, domain)
+
     async def resolve_by_retrieval(
         self,
         *,
@@ -185,7 +189,7 @@ class CurriculumMappingService:
         guess or the lesson manifest instead of the domain. Domain mapping is preferred
         when present; the override only supplies a subject the domain couldn't.
         """
-        subject = self.subject_for_domain(primitive_domain) or subject_override
+        subject = self.subject_for_primitive(primitive_type, primitive_domain) or subject_override
         if not subject:
             # Cross-cutting / unknown domain AND no subject hint — retrieval can't scope.
             return None

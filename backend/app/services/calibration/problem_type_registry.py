@@ -541,6 +541,11 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "di-word-reading": {
         "read_word": PriorConfig(2.5, "Production: read one printed CVC or sight word aloud"),
     },
+    # L0 single mode; /add-eval-modes widens (counting_next / fact_review /
+    # subtraction_fact are the queued ladder candidates; multiplication at G3).
+    "di-math-facts": {
+        "answer_fact": PriorConfig(2.0, "Production: answer a printed addition fact aloud with the number word"),
+    },
     "phoneme-explorer": {
         "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),
         "blend":      PriorConfig(2.5, "Guided: combine phonemes into word"),

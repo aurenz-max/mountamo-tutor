@@ -103,8 +103,20 @@
 | race-track-lab | 5 | 5 | 0 | 2026-06-21 | [structural sweep](eval-reports/race-track-lab-2026-06-21.md) |
 | vocabulary-explorer | 3 | 3 | 0 | 2026-07-07 | [report](eval-reports/vocabulary-explorer-2026-07-06.md) — VE-5 RESOLVED 2026-07-07 (SP-6 truncation bounded) |
 | foundation-explorer | 4 | 3 | 1 | 2026-07-04 | [report](eval-reports/foundation-explorer-2026-07-04.md) |
+| di-letter-sounds | 3 | 3 | 0 | 2026-07-22 | [L1 eval-modes](eval-reports/di-letter-sounds-evalmodes-2026-07-22.md) — `letter_sound` / `letter_sound_review` / `first_sound_in_word`; real-Gemini PASS ×4 (each pinned mode single-type, mixed = SP-21 3-type interleave) + keepable oracle 4/4. L0 birth: [cert](eval-reports/di-letter-sounds-birth.md) |
+| di-word-reading | 1 | 1 | 0 | 2026-07-22 | [report](eval-reports/di-word-reading-2026-07-22.md) — `read_word`; PASS ×4 (named / generic / sight-scoped / vowel-scoped, scope code-enforced). L0 birth: [cert](eval-reports/di-word-reading-birth.md) |
+| di-math-facts | 1 | 1 | 0 | 2026-07-24 | [report](eval-reports/di-math-facts-2026-07-24.md) — `answer_fact`; PASS ×6 (within-5 / K-generic / make-ten / doubles / named facts / within-10 @ G1; all 30 challenges recomputed programmatically, scope code-enforced). L0 birth: [cert](eval-reports/di-math-facts-birth.md) |
 
-**Totals:** 353/370 modes passing (95.4%) | 27 open issues (5 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW) — sorting-station `sort_variety` added 2026-07-21 (G3, flexible re-sorting)
+**Totals:** 358/375 modes passing (95.5%) | 27 open issues (5 CRITICAL, 21 HIGH, 1 MEDIUM, 0 LOW) — sorting-station `sort_variety` added 2026-07-21 (G3, flexible re-sorting); DI family backfilled 2026-07-24
+
+Note: **Direct Instruction (DI) family — dashboard backfill 2026-07-24 (`/pm`).** The DI packs are
+live-judged voice primitives whose eval-tests ran and passed at birth, but no row was ever written
+here — the family was invisible in the tracker for 4 days across two shipped primitives. Rows above
+are backfilled from the committed birth/eval reports (no re-run; content unchanged). **`di-math-facts`
+is mid-birth in a concurrent session as of this reconcile** — its eval + curriculum-fit reports are on
+disk (`eval-reports/di-math-facts-2026-07-24.md`, `curriculum-fit/di-math-facts-2026-07-24.md`) but
+its row lands with its birth cert, owned by that session. Standing correction: a DI `/primitive` or
+`/add-eval-modes` run writes its dashboard row like any other primitive.
 
 Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier difficulty sweep (scaffold withdrawal, structural lever, magnitude invariance, no leak, null-tier no-op). A CRITICAL blocker was found AND fixed in the same run: the generator was the only math generator still pinned to the retired `gemini-2.0-flash-lite` (404) — swapped to `gemini-flash-lite-latest`. See SP-22.
 

@@ -54,23 +54,13 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-### 3. di-math-facts — counting + addition facts (K-1 first)
-"What is 2 plus 1?" call-response over fact families; multiplication is the
-G3 variant later. **Standing gate 1 PASSED 2026-07-24** — bench probe wired
-(`8e30a52`: `kind:'fact'` + `DIItem.problem` + fact cue branches +
-`MATH_FACTS_PROBE_ITEMS` + `Math facts` set) and the #46 sitting ran clean:
-3/3 number-word answers affirmed from audio, aliasAgree 3/3 (ASR lexicalized
-WORDS — digit aliases never needed), 0 unanchored/phantom/echo, commit lag
-~933ms constant → silent response-time VIABLE as the fluency signal
-(`qa/di-bench/run-2026-07-24-math-facts-probe.md`). **Sentinel call (gate 2):
-engine defaults KEPT** ("Yes"/"My turn"); no correction fired in the sitting,
-so the fact correction opener has never been heard live. **Carried into the
-primitive's L0 live-loop check:** drive wrong answers to fire "My turn:"
-corrections + homophone/over-affirmation stress (one/won, two/too, four/for,
-eight/ate) — mirror of the #41→#43 fold. Birth notes: silent response-time
-capture per attempt (no visible timer); REVISIT `subject_for_domain('di')` —
-currently hardwired LANGUAGE_ARTS, this pack is MATHEMATICS.
-Executor: `/primitive` — NOW UNGATED.
+*(empty 2026-07-24 — the first custom-made set is fully born: three packs at
+L0+. Next pulls come from the LADDER, not new births: each pack's birth-cert
+follow-up queue (`qa/eval-reports/di-{letter-sounds,word-reading,math-facts}-birth.md`)
+— nearest rungs: di-letter-sounds `/add-support-tiers` (L3), di-word-reading
+catalog `tutoring:` move (L2), di-math-facts `/add-eval-modes` (L1). A fourth
+pack proposal (e.g. counting sequence, blends once benched) is a user phase
+call, not a queue default.)*
 
 ## Watch-items (from the engine-gate run)
 - Resync + no-verdict timeout are unit-covered but not yet observed live —
@@ -79,6 +69,32 @@ Executor: `/primitive` — NOW UNGATED.
   the floors readout available in primitive dev builds.
 
 ## Done
+- **#3 di-math-facts — BORN L0 (2026-07-24).** Third DI pack, first MATH pack —
+  separate content pack over the committed engine, sibling files untouched, NO
+  hooks/ change. `DiMathFacts.tsx` + hand-authored `diMathFactsScript.ts`
+  (BENCH-PROVEN cue wording from the #46 probe; permissive on th-fronting +
+  counting-up, STRICT on a different number; sentinels = engine defaults,
+  collision-checked) + `gemini-di-math-facts.ts` (Fork A: code-owned fact pool,
+  scope code-enforced named→make-10→doubles→within-N→grade default K=5/G1=10;
+  Gemini wrapper-only with digit/number-word leak-guard on title/description)
+  + registrations (catalog/di.ts `answer_fact` β2.0 + audioInput, diGenerators
+  registerContextGenerator, metrics union + `meanResponseMs` silent fluency
+  signal, primitiveRegistry, ComponentId, backend problem_type_registry,
+  tester Math Facts picker). **Family REVISIT closed: `subject_for_primitive`
+  per-primitive override (di-math-facts → MATHEMATICS)** wired through
+  retrieval matcher + mapping service + submission_service (both the
+  use_retrieval gate AND resolve_by_retrieval — the second one mattered).
+  Answer-leak rule: sum gated behind affirmation everywhere (stage equation
+  reward, recap, generator title guard). Verified: typecheck:lumina 0; vitest
+  915/915; backend pytest identical to HEAD baseline (10 pre-existing
+  failures, 0 new); real-Gemini eval-test PASS 6/6 scope matrix,
+  programmatically recomputed (`qa/eval-reports/di-math-facts-2026-07-24.md`);
+  curriculum-fit **MATCH ×2** (K OPS001-03 fluency-within-5 0.785; G1
+  OPS001-01 addition-within-10 0.830; `qa/curriculum-fit/di-math-facts-2026-07-24.md`).
+  Birth cert + follow-up queue: `qa/eval-reports/di-math-facts-birth.md`.
+  **Live loop NOT yet driven — HUMAN-CHECKS #48 is the real L0 gate**
+  (correction branch never heard live + #46's homophone stress + MATHEMATICS
+  attribution as the subject-override runtime check).
 - **di-letter-sounds L2 tutoring scaffold + FAMILY lesson-mode wiring (2026-07-23,
   birth-cert follow-up #2 struck).** DI tutoring block moved from
   `diLetterSoundsScript.ts` into `catalog/di.ts` `tutoring:` (single source of

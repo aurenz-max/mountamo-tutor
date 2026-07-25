@@ -1,0 +1,63 @@
+# Birth Certificate — di-math-facts (2026-07-24)
+
+**Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode.
+Third Direct Instruction family pack (after di-letter-sounds, di-word-reading);
+separate content pack over the committed judged-loop engine — sibling pack files
+untouched, NO hooks/ change.
+
+- Core task identity: `answer_fact` (see one printed addition fact, say the answer
+  as a number word; modeled → guided → tested, judged in-band from audio)
+- Generator fork: **A — pool service** (`gemini-di-math-facts.ts`): code owns the
+  fact pool, number words, and ASR aliases; Gemini emits ONLY the wrapper
+  (title/description/factScope hint). Scope code-enforced from objective text
+  (named facts → make-10 → doubles → within-N → grade default K=5/G1=10).
+- Cue channel: DI cue tags `[DI_ITEM]` / `[DI_MOVE_ON]` / `[DI_COMPLETE]` via the
+  judged-loop engine (NOT useLuminaAI sendText — the DI family's cue path). Script
+  hand-authored in `diMathFactsScript.ts`; wording is BENCH-PROVEN (probe sitting
+  2026-07-24, `qa/di-bench/run-2026-07-24-math-facts-probe.md`). Sentinels =
+  engine defaults ("Yes"/"My turn"), probe-verified collision-safe.
+- Tutoring block: `DI_MATH_FACTS_TUTORING` ships at birth from the script file
+  (family's justified L0 departure — the generic tutor cannot hold the judging
+  contract). Catalog `tutoring:` move is this pack's L2.
+- Fluency signal: per-fact `responseMs` captured silently from the engine's
+  attempt timing → `meanResponseMs` metric. NO visible timer (no-timer ruling).
+- Answer-leak audit: stage shows the printed problem ONLY; completed equation
+  ("2 + 1 = 3") renders post-affirmation only; recap shows equations only for
+  affirmed facts (missed facts recap without the sum); generator leak-guard
+  rejects any Gemini title/description containing a digit or number word;
+  kicker text ("say the answer") never references the answer.
+- Design gate (Phase 2): manipulation — pass: spoken production IS the
+  interaction (open mic, no buttons between child and skill) / simulation —
+  chosen exception per DI family doctrine: the living element is the judged
+  dialogue with the Live tutor / production — pass: pure spoken production, no
+  options / timer — pass: silent capture only / layout-leak — pass: sum gated
+  behind affirmation everywhere.
+- Curriculum home: **MATCH ×2** — K OPS001-03 "Fluently add and subtract within
+  5" (0.785, 5/5 coherent); G1 OPS001-01 "Addition within 10" (0.830, 5/5).
+  Load-bearing sibling fix: `subject_for_primitive` per-primitive override
+  (di-math-facts → MATHEMATICS) in `curriculum_retrieval_service.py` +
+  `curriculum_mapping_service.py` + `submission_service.py` — without it the DI
+  domain default (LANGUAGE_ARTS) would have mis-scoped retrieval.
+  Report: `qa/curriculum-fit/di-math-facts-2026-07-24.md`.
+- QA: real-Gemini eval-test **PASS 6/6** across the scope matrix (within-5 /
+  K-generic / make-ten / doubles / named facts / within-10 @ G1), verified
+  programmatically (all 30 challenges recomputed). G1/G4/G5 clean, no fixes
+  needed. Report: `qa/eval-reports/di-math-facts-2026-07-24.md`.
+- **Live loop NOT yet driven — HUMAN-CHECKS #48 is the real L0 gate.** That
+  sitting carries three named stresses: (a) the fact CORRECTION branch
+  ("My turn: …") has NEVER been heard live (bench sitting was all-correct);
+  (b) homophone/over-affirmation stress (one/won, two/too, four/for,
+  eight/ate) — carried from #46; (c) the submit's data loop must attribute to
+  MATHEMATICS (OPS001 family), exercising the new subject override at runtime.
+
+## Follow-up queue (run in order — each skill is the single source of truth for its layer)
+
+| # | Skill | Layer | Input from this birth |
+|---|-------|-------|----------------------|
+| 1 | `/add-eval-modes` | L1 eval-dense | Ladder candidates: `counting_next` (say the number after N — counting sequence), `fact_review` (cumulative spaced mix of taught facts), `subtraction_fact` (within 10); G3 variant `multiplication_fact`. All answers remain number words — the BENCHED response class — so no new bench sitting is required for these rungs (standing gate 1 already satisfied). Mixed path (SP-21) applies once 2+ modes exist. |
+| 2 | `/add-tutoring-scaffold` | L2 tutored | Move `DI_MATH_FACTS_TUTORING` from `diMathFactsScript.ts` into `catalog/di.ts` `tutoring:` (mirror di-letter-sounds L2; shared lesson-mode wiring already in place — catalog `audioInput` declared at birth). contextKeys candidates: challengeType, display, problem, facts (flat summary). commonStruggles candidates: says a nearby-but-wrong number; counts on out loud but never lands the answer; silence after "Your turn". Keep gate-3 correction-opener directive. |
+| 3 | `/add-support-tiers` | L3 tiered | The DISTAR fade IS the natural withdrawal: easy = model+guide+test (current), medium = model+test (drop the guide), hard = test-only ("Your turn. What is X?" cold). Withdrawal lives in the SCRIPT/cue builder per tier — a new cue variant, not a UI flag. |
+| 4 | `/add-structural-difficulty` | L4 shaped | (requires L3) Structural axis: operand structure — within 5 → within 10 (crossing-five) → within 20 (crossing-ten); later a missing-addend shape ("2 + ? is 5") as a separate identity, not a tier. |
+| 5 | `/add-sound` | L5 polished | Minimal by design — the modality is already audio-native (tutor voice). Candidates: soft equation-complete chime on affirm; recap fanfare. Nothing during listening (mic open). |
+| — | `/add-voice-control` | L5 | N/A — the primitive IS voice-native (open-mic judged loop is the core interaction, not an added control layer). |
+| ✓ | `/eval-test di-math-facts` | QA loop | Run after EVERY layer lands (`/eval-fix` for findings) — a layer only counts when eval-test passes at that layer. |

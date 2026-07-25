@@ -61,9 +61,16 @@ _DOMAIN_TO_SUBJECT: Dict[str, str] = {
     "engineering": "SCIENCE",
     # Direct Instruction packs are literacy-first (letter sounds, word reading)
     # — this removes the --domain literacy workaround for probes/attribution.
-    # REVISIT when di-math-facts is born: the family will then span subjects
-    # and this must become a per-primitive mapping (or the domain must split).
+    # Per-primitive overrides now live in _PRIMITIVE_TO_SUBJECT (di-math-facts
+    # -> MATHEMATICS) and win over this default.
     "di": "LANGUAGE_ARTS",
+}
+
+# Per-primitive subject overrides — consulted BEFORE the domain map. The DI
+# family spans subjects (letter sounds / word reading are LANGUAGE_ARTS via the
+# 'di' domain default; math facts is MATHEMATICS), so primitive wins over domain.
+_PRIMITIVE_TO_SUBJECT: Dict[str, str] = {
+    "di-math-facts": "MATHEMATICS",
 }
 
 # --- Abstain rule (default; calibration sweep deferred, see QA §11 open step) ---
@@ -167,6 +174,17 @@ class CurriculumRetrievalMatcher:
         if not domain:
             return None
         return _DOMAIN_TO_SUBJECT.get(domain.strip().lower())
+
+    @staticmethod
+    def subject_for_primitive(primitive_type: Optional[str], domain: Optional[str]) -> Optional[str]:
+        """Curriculum subject_id for a primitive, per-primitive override first,
+        then the catalog-domain default. Use this wherever the primitive type is
+        known; subject_for_domain remains for domain-only callers."""
+        if primitive_type:
+            override = _PRIMITIVE_TO_SUBJECT.get(primitive_type.strip().lower())
+            if override:
+                return override
+        return CurriculumRetrievalMatcher.subject_for_domain(domain)
 
     @staticmethod
     def normalize_grade(grade_level: Optional[str]) -> Optional[str]:

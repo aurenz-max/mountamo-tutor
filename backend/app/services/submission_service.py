@@ -450,14 +450,17 @@ class SubmissionService:
                 # primitive to a Language-Arts skill.
                 primitive_domain = ctx.primitive_domain if ctx else None
                 # Subject for scoped retrieval, primitive-first:
-                #   1. the primitive's catalog DOMAIN (deterministic: math -> MATHEMATICS), else
+                #   1. a per-primitive subject override (e.g. di-math-facts -> MATHEMATICS),
+                #      then the primitive's catalog DOMAIN (deterministic: math -> MATHEMATICS), else
                 #   2. the lesson-supplied subject (curriculum_subject). The frontend already
                 #      resolved primitive-first there: a cross-cutting primitive's own content
                 #      guess (e.g. a knowledge-check orchestrator's subject) when present, else
                 #      the lesson manifest's subject. This is what lets an `assessment`-domain
                 #      primitive — which subject_for_domain can't scope — reach retrieval at all.
                 # Frontend emits a subject_id enum; normalize defensively for stray display names.
-                domain_subject = self.curriculum_mapping_service.subject_for_domain(primitive_domain)
+                domain_subject = self.curriculum_mapping_service.subject_for_primitive(
+                    (ctx.primitive_type if ctx else None) or primitive_type, primitive_domain
+                )
                 subject_override = self._normalize_subject_id(ctx.curriculum_subject if ctx else None)
                 use_retrieval = bool(domain_subject or subject_override)
 

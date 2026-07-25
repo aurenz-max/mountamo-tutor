@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched 2026-07-20
+### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched 2026-07-20 (**4 days idle**, `/pm` 2026-07-24)
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -86,13 +86,20 @@ queue AND this file's "last touched" in the same slice.
   `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
   coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now (per `/pm` 2026-07-20):** #13 closed; **2b tail closed 2026-07-20** (see the #2b row above).
-  Remaining pull = **Task 3 — coin-counter `count-like` confirm/clear** (the last un-swept
-  direct-manipulation candidate from the 07-16 sibling census; full prompt =
-  `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 3). Then, with the demand-side K queue
-  drained, re-run the topic-trace census at grade 1 (EMERGING) to re-seed the band.
-  Uncommitted (a sibling #13 session): `CountingBoard.tsx` + its jsdom test +
-  `docs/contracts/counting-board.md` + QA docs — `/ship` when ready (separate slice from this 2b-tail one).
+- **Now (re-verified by `/pm` 2026-07-24):** #13 closed; **2b tail closed 2026-07-20** (see the #2b
+  row above). Remaining pull = **Task 3 — coin-counter `count-like` confirm/clear** (the last
+  un-swept direct-manipulation candidate from the 07-16 sibling census; full prompt =
+  `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md` Task 3). **Confirmed genuinely open** —
+  `CoinCounter.tsx` has a `gradeBand` prop but NO `isK` fork anywhere (it only picks the grade
+  LABEL at line 321/844), so the K `count-like` interaction has never been band-gated or
+  direct-manipulation-audited. It is a READ-then-verdict task (~30 min), not a build: enacted count
+  → record CLEARED under the systemic note; stepper/number-pad over a manipulable coin set → promote
+  a new BACKLOG item with the item-11 fix direction. No source edit unless it's a confirmed proxy.
+  Then, with the demand-side K queue drained, re-run the topic-trace census at grade 1 (EMERGING) to
+  re-seed the band.
+  **Stale line removed 2026-07-24:** the "uncommitted `CountingBoard.tsx` + contract + QA docs"
+  note was true on 07-20 and is now false — that sibling slice SHIPPED (tree carries no reader-fit
+  files; the only uncommitted surface is DI).
 - **History (#9 explainer tail):** pilot + fact-file DONE 2026-07-15, tail reconciled. The
   "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
   READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
@@ -270,9 +277,44 @@ queue AND this file's "last touched" in the same slice.
   defaults kept. Report + run JSON: `qa/di-bench/run-2026-07-24-math-facts-probe.md`. (Probe wiring
   `8e30a52`; ship-prereq slices `ec6d16e` ledger-gate fix — DI gens were the last legacy registrations,
   context-native migration now 100% — + `7283ef5` tester runKey + `d99ad29` charter/reconcile.)
-- **Now = `/primitive di-math-facts` (BACKLOG item 3, UNGATED).** Silent response-time = the fluency
-  signal (no-timer ruling); L0 live check must drive wrong answers ("My turn:" correction opener heard
-  live) + homophones; REVISIT `subject_for_domain('di')` — hardwired LANGUAGE_ARTS, this pack is MATH.
+- **#3 di-math-facts — BORN L0 2026-07-24 (BACKLOG item 3 STRUCK; the first custom-made set is
+  complete: three packs at L0+).** Third DI pack, first MATH pack — `DiMathFacts.tsx` +
+  hand-authored `diMathFactsScript.ts` (bench-proven #46 cue wording; strict on a different number,
+  permissive on th-fronting/counting-up) + `gemini-di-math-facts.ts` (Fork A code-owned fact pool,
+  scope code-enforced named→make-10→doubles→within-N→grade default, wrapper leak-guard) + full
+  registration (catalog `answer_fact` β2.0 + audioInput, registerContextGenerator, metrics union
+  incl. silent `meanResponseMs` fluency signal, backend registry, tester picker). Verified:
+  typecheck:lumina 0; vitest 915/915; backend pytest = HEAD baseline (0 new); real-Gemini eval-test
+  **PASS 6/6** (30 challenges programmatically recomputed); curriculum-fit **MATCH ×2** (K OPS001-03
+  fluency-within-5 0.785 / G1 OPS001-01 addition-within-10 0.830). EVAL_TRACKER row added
+  (358/375). Birth cert + ladder queue: `qa/eval-reports/di-math-facts-birth.md` (L1 candidates
+  counting_next / fact_review / subtraction_fact — all still number words, the benched class, so no
+  new bench sitting gates the ladder).
+  **L0 gate NOT closed: the live loop has never been driven → HUMAN-CHECKS #48**, carrying three
+  named stresses — (a) the fact CORRECTION branch ("My turn: …") has never been heard live (the #46
+  bench sitting was all-correct) + the live half of the sentinel-opener judgment, (b)
+  homophone/over-affirmation stress (one/won, two/too, four/for, eight/ate), (c) the submit must
+  attribute to MATHEMATICS (OPS001), which is what exercises the new subject override at runtime.
+- **Next pull (queue empty — ladder, not births):** di-math-facts `/add-eval-modes` (L1) or
+  di-word-reading catalog `tutoring:` move (L2) or di-letter-sounds `/add-support-tiers` (L3);
+  a fourth pack is a user phase call. Nearest human gates: #48 (math-facts live loop) + #45
+  (DI in a real K lesson).
+- **STALENESS CORRECTION (`/pm` 2026-07-24): `subject_for_domain('di')` REVISIT is RESOLVED in the
+  working tree** (uncommitted) — the queue text calling it "hardwired LANGUAGE_ARTS" is now stale.
+  `curriculum_retrieval_service.py` grew `_PRIMITIVE_TO_SUBJECT` (`di-math-facts → MATHEMATICS`) +
+  `subject_for_primitive()` (per-primitive override wins, domain default falls through), threaded
+  through `curriculum_mapping_service.subject_for_primitive()` and `submission_service` (which now
+  passes `ctx.primitive_type`). The DI family can span subjects without splitting the domain.
+  **Unverified at runtime** — a math-facts submission must be seen resolving to MATHEMATICS before
+  this is called done (fold it into the L0 live-loop check, same sitting as the data-loop trace that
+  closed #36).
+- **REGISTER GAP CLOSED (`/pm` 2026-07-24): the DI family was invisible in `qa/EVAL_TRACKER.md`.**
+  Two shipped, eval-tested packs (di-letter-sounds 3 modes, di-word-reading 1 mode) had passing
+  eval-tests with reports on disk but no dashboard row — so the tracker under-reported the portfolio
+  and a session reading it would not know DI primitives existed. Backfilled from the committed
+  reports (no re-run): totals 353/370 → **357/374**, 0 new open issues. Standing correction recorded
+  in the tracker: a DI `/primitive` / `/add-eval-modes` run writes its row like any other primitive.
+  `di-math-facts`'s row is owned by the in-flight session and lands with its birth cert.
 - **Still open (not blocking the phase): HUMAN-CHECKS #45** — DI in a real K lesson (L2 lesson-mode
   behavior + the mixed-lesson VAD trade-off measurement). Worth running opportunistically; it's the
   evidence that would later justify un-parking voice-transport.
@@ -280,25 +322,29 @@ queue AND this file's "last touched" in the same slice.
   2026-07-20) — the bench proved the architecture; DI is now a build stream. ACTIVE = reader-fit
   (top) + DI = **2 ACTIVE, within the 2+1 limit.**
 
-*(SP-27 Tutoring Context Integrity + media-player reimagining both PARKED — see PARKED table.
-WIP = **2 ACTIVE** (reader-fit TOP-PRIORITY + DI bench), within the 2+1 limit as of 2026-07-16.)*
+*(SP-27 Tutoring Context Integrity + media-player reimagining + voice-transport unification all
+PARKED — see PARKED table. WIP = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP-PRIORITY + DI family),
+within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activity since 07-21.)*
 
 ## DELEGATED
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` reconcile 2026-07-19 — supersedes the 07-16 SECOND PASS):** the 07-16 two-stream
-> uncommitted batch has SHIPPED — ten-frame #12 in `9999880`, DI live-judged/open-mic in `6635877`,
-> QA-doc reconcile in `10b17d9`; main pushed & in sync. The only uncommitted surface today is
-> **single-stream (DI bench): extraction step 1** — `hooks/voiceTurnMachine.ts` +
-> `hooks/useLiveVoiceTurns.ts` + the bench refactor, **deliberately held** pending its runtime gate
-> (HUMAN-CHECKS **#32**, one browser/mic sitting), plus this WORKSTREAMS/HUMAN-CHECKS reconcile
-> (shared QA docs — commit in their own slice per standing hygiene).
+> **WIP note (`/pm` reconcile 2026-07-24 — supersedes the 07-19 note):** HEAD `f48512f`, main.
+> Portfolio = **2 ACTIVE + 0 DELEGATED** — **within the 2+1 limit**, but only ONE lane is moving.
 >
-> Portfolio = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP + DI bench) — **within the 2+1 limit**.
-> Reader-fit is 3 days idle but user-designated TOP PRIORITY → resume at #13, don't park.
-> Residuals human-only: HUMAN-CHECKS #3–#32; phonics tap-pronounce runtime verification
-> (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
+> **Uncommitted surface is single-stream (DI) and mid-build** — the `di-math-facts` pack + its 8
+> registrations + the 4 backend files carrying the per-primitive subject override. A concurrent
+> session owns it; **nothing here is `/ship`-ready until its birth cert + eval-test + curriculum-fit
+> land**. Ship hygiene is otherwise clean (no cross-stream mixing).
+>
+> **Reader-fit (TOP PRIORITY by user designation 2026-07-16) is 4 days idle** — last touched
+> 2026-07-20, while DI ran 07-21→07-24 on a user-set phase ("more DI packs"). This is the one WIP
+> tension in the portfolio: the designation and the phase point at different lanes. Not auto-parked
+> — the user's call. Its next pull is verified genuinely open (below), so resuming costs no
+> re-derivation.
+> **Human-only residuals:** HUMAN-CHECKS #3–#47 (next free ID **48**); phonics tap-pronounce runtime
+> verification (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 

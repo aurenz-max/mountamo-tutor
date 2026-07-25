@@ -168,6 +168,7 @@ export type { StoryTalkData } from './primitives/visual-primitives/literacy/Stor
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 export type { DiLetterSoundsData } from './primitives/visual-primitives/direct-instruction/DiLetterSounds';
 export type { DiWordReadingData } from './primitives/visual-primitives/direct-instruction/DiWordReading';
+export type { DiMathFactsData } from './primitives/visual-primitives/direct-instruction/DiMathFacts';
 
 // Module C: Math Tool Visuals
 export type MathVisualType = 'bar-model' | 'number-line' | 'base-ten-blocks' | 'fraction-circles';
@@ -1370,6 +1371,7 @@ export type ComponentId =
   | 'phonics-blender'           // Sound-by-sound word building with phoneme tiles and audio (K-2)
   | 'di-letter-sounds'          // Live-judged Direct Instruction: continuous letter sounds, spoken call-response (K)
   | 'di-word-reading'           // Live-judged Direct Instruction: read printed CVC + sight words aloud (K-G1)
+  | 'di-math-facts'             // Live-judged Direct Instruction: spoken math fact fluency call-response (K-G2)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)

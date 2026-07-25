@@ -3308,6 +3308,23 @@ export interface DiWordReadingMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
+  type: 'di-math-facts';
+  // L0: one task identity at birth; /add-eval-modes widens this union later
+  // (counting_next / fact_review / subtraction_fact are the ladder candidates).
+  challengeType: 'answer_fact';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total spoken attempts across all facts (corrections + 1 each)
+  firstTryCount: number;          // facts answered correctly on the first attempt
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+  /** Silent fluency signal (no-timer ruling): mean ms from tutor prompt to the
+   *  learner's spoken attempt across timed attempts; null when none were timed. */
+  meanResponseMs: number | null;
+}
+
 export type PrimitiveMetrics =
   // Engineering
   | TowerStackerMetrics
@@ -3506,7 +3523,8 @@ export type PrimitiveMetrics =
   | CompareObjectsMetrics
   // Direct Instruction
   | DiLetterSoundsMetrics
-  | DiWordReadingMetrics;
+  | DiWordReadingMetrics
+  | DiMathFactsMetrics;
 
 // =============================================================================
 // Session & Summary Types

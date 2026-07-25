@@ -128,4 +128,27 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // moving it here is the pack's own /add-tutoring-scaffold (L2) layer.
     audioInput: { manual_activity: true },
   },
+  {
+    id: 'di-math-facts',
+    description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed addition fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 addition fact fluency: sums within 5, sums within 10, doubles, and make-ten facts. ESSENTIAL for K/G1 MATHEMATICS operations — addition fact fluency and spoken number-word production for early learners.',
+    constraints: 'Requires microphone + live audio tutor. Addition facts within 10 only at birth — no subtraction, multiplication, or multi-digit problems. The manifest must NOT supply specific facts; the scoped fact pool builds problems from the objective (within 5 / within 10 / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the sum never appears on screen before the child answers.',
+    // L0: ONE eval mode at birth. Ladder candidates (counting_next / fact_review /
+    // subtraction_fact; G3 multiplication_fact) are queued on the birth cert for
+    // /add-eval-modes. β mirrors backend problem_type_registry.py → "di-math-facts".
+    evalModes: [
+      {
+        evalMode: 'answer_fact',
+        label: 'Answer a Fact',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['answer_fact'],
+        description: 'See one printed addition fact, say the answer as a number word — modeled and guided first, then answered alone.',
+      },
+    ],
+    supportsEvaluation: true,
+    // Same judged-loop engine, same transport need (see di-letter-sounds).
+    // Its tutoring block still ships from diMathFactsScript at connect time;
+    // moving it here is the pack's own /add-tutoring-scaffold (L2) layer.
+    audioInput: { manual_activity: true },
+  },
 ];

@@ -6,6 +6,7 @@ import { EvaluationProvider } from '../evaluation';
 import { ExhibitProvider } from '../contexts/ExhibitContext';
 import DiLetterSounds, { type DiLetterSoundsData } from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading, { type DiWordReadingData } from '../primitives/visual-primitives/direct-instruction/DiWordReading';
+import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
 
 interface Props { onBack: () => void; }
 
@@ -13,7 +14,7 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading';
+type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
@@ -45,11 +46,21 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
       { key: 'read_word', label: 'Read a Word' },
     ],
   },
+  {
+    id: 'di-math-facts',
+    label: 'Math Facts',
+    subtitle: 'Printed addition facts, spoken number-word answers ("What is 2 plus 1?").',
+    defaultTopic: 'addition facts within 5',
+    evalModes: [
+      { key: 'answer_fact', label: 'Answer a Fact' },
+    ],
+  },
 ];
 
 type DiData =
   | { id: 'di-letter-sounds'; data: DiLetterSoundsData }
-  | { id: 'di-word-reading'; data: DiWordReadingData };
+  | { id: 'di-word-reading'; data: DiWordReadingData }
+  | { id: 'di-math-facts'; data: DiMathFactsData };
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
   const [primitive, setPrimitive] = useState<DiPrimitiveOption>(DI_PRIMITIVES[0]);
@@ -132,6 +143,9 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       )}
       {generated?.id === 'di-word-reading' && (
         <DiWordReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+      )}
+      {generated?.id === 'di-math-facts' && (
+        <DiMathFacts key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
       )}
     </div>
   );

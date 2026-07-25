@@ -210,6 +210,7 @@ export type {
   // Direct Instruction metrics
   DiLetterSoundsMetrics,
   DiWordReadingMetrics,
+  DiMathFactsMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

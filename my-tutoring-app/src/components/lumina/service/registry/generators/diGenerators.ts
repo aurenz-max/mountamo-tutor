@@ -9,6 +9,7 @@
 import { registerContextGenerator } from '../contentRegistry';
 import { generateDiLetterSounds } from '../../direct-instruction/gemini-di-letter-sounds';
 import { generateDiWordReading } from '../../direct-instruction/gemini-di-word-reading';
+import { generateDiMathFacts } from '../../direct-instruction/gemini-di-math-facts';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -25,6 +26,16 @@ registerContextGenerator('di-word-reading', async (ctx) => ({
   type: 'di-word-reading',
   instanceId: ctx.instanceId,
   data: await generateDiWordReading(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
+}));
+
+// di-math-facts — printed addition facts, pool-scoped to the objective.
+registerContextGenerator('di-math-facts', async (ctx) => ({
+  type: 'di-math-facts',
+  instanceId: ctx.instanceId,
+  data: await generateDiMathFacts(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
   }),
