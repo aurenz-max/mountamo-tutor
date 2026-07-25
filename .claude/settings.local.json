@@ -1,11 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Read(**)",
-      "Glob",
-      "Grep",
-      "Bash(*)",
-      "Read"
+      "Read(**)"
     ],
     "deny": [],
     "ask": []

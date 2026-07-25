@@ -11,6 +11,7 @@ import {
   LuminaPanel,
   LuminaActionButton,
   LuminaInput,
+  motion,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -47,6 +48,13 @@ export interface CoinCounterChallenge {
   // count — "How much money is shown?"
   displayedCoins?: CoinDef[];
   correctTotal?: number; // in cents
+  /** Which catalog eval mode built this 'count' card. `count-like` (single denomination,
+   *  β1.5) and `count-mixed` (β2.5) BOTH render as challenge type 'count', and the coin
+   *  set alone CANNOT tell them apart — the generator only rejects multi-type sets for
+   *  count-like, never single-type sets for count-mixed, so a G2 count-mixed card that
+   *  happens to draw 3 dimes would be misread as "like". Stamped by the generator from
+   *  targetEvalMode so the K enacted-count fork can never fire on a count-mixed card. */
+  countMode?: 'like' | 'mixed';
 
   // make-amount — "Make 47¢ using coins"
   targetAmount?: number;
@@ -267,6 +275,20 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   // count mode
   const [countInput, setCountInput] = useState('');
 
+  // count mode @ K (count-like only) — the coins ARE the answer surface. Kept in TAP
+  // ORDER (not a Set) so each counted coin keeps the running skip-count total it was
+  // stamped with; re-tapping never renumbers the ones already counted.
+  const [countedOrder, setCountedOrder] = useState<number[]>([]);
+  const [wrongCoin, setWrongCoin] = useState<number | null>(null);
+  const wrongCoinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Per-challenge auto-judge latch (declared with its state so `resetDomainState`,
+   *  defined above the enacted block, can clear it without a use-before-declare hop). */
+  const hasJudgedEnactedRef = useRef(false);
+  useEffect(
+    () => () => { if (wrongCoinTimer.current) clearTimeout(wrongCoinTimer.current); },
+    [],
+  );
+
   // make-amount mode
   const [placedCoins, setPlacedCoins] = useState<CoinType[]>([]);
 
@@ -344,6 +366,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     setChangeInput('');
     setFeedback('');
     setFeedbackType('');
+    // Enacted-count state + its per-challenge latch. Clearing the latch HERE as well as
+    // in the id-keyed effect is deliberate: a stale latch would soft-lock the next K
+    // card (it would never auto-judge).
+    setCountedOrder([]);
+    setWrongCoin(null);
+    if (wrongCoinTimer.current) clearTimeout(wrongCoinTimer.current);
+    hasJudgedEnactedRef.current = false;
   }, []);
 
   // ── Check Handlers ─────────────────────────────────────────────────
@@ -587,6 +616,76 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     [placedCoins],
   );
 
+  // ── Enacted count (K + count-like) ─────────────────────────────────
+  // At K the counting act itself must be ENACTED, not computed-then-typed: the child
+  // taps each coin and the running skip-count total climbs (5, 10, 15…), which IS the
+  // "skip counting and summation" skill count-like exists to teach. Fork is band+mode:
+  // Grade 1+ and every count-mixed card keep the number input + Check untouched.
+  const enactedCoins = useMemo(
+    () => (currentChallenge?.type === 'count' ? expandCoins(currentChallenge.displayedCoins || []) : []),
+    [currentChallenge],
+  );
+
+  const isEnactedCount =
+    gradeBand === 'K'
+    && currentChallenge?.type === 'count'
+    && currentChallenge?.countMode === 'like'
+    && enactedCoins.length > 0;
+
+  /** Running total after the first `n` taps — the value stamped on the nth coin. */
+  const runningTotalAt = useCallback(
+    (n: number) => countedOrder.slice(0, n).reduce((sum, idx) => sum + COIN_VALUES[enactedCoins[idx]], 0),
+    [countedOrder, enactedCoins],
+  );
+
+  const handleEnactedCoinTap = useCallback((idx: number) => {
+    if (isCurrentChallengeCorrect) return;
+    // Re-tapping an already-counted coin is the classic K double-count error. Feedback
+    // lands ON the touched object (Audit-C rule 5) — shake + SFX, no text card.
+    if (countedOrder.includes(idx)) {
+      incrementAttempts();
+      SoundManager.playIncorrect();
+      if (wrongCoinTimer.current) clearTimeout(wrongCoinTimer.current);
+      setWrongCoin(null);
+      setWrongCoin(idx);
+      wrongCoinTimer.current = setTimeout(() => setWrongCoin(null), 600);
+      return;
+    }
+    SoundManager.tap();
+    setCountedOrder((prev) => [...prev, idx]);
+  }, [isCurrentChallengeCorrect, countedOrder, incrementAttempts]);
+
+  // Auto-judge the moment every coin has been counted exactly once — no Check button
+  // at K. Latched per challenge so the effect can never re-fire and double-record.
+  useEffect(() => {
+    hasJudgedEnactedRef.current = false;
+  }, [currentChallenge?.id]);
+
+  useEffect(() => {
+    if (!isEnactedCount || hasJudgedEnactedRef.current || !currentChallenge) return;
+    if (countedOrder.length !== enactedCoins.length) return;
+    hasJudgedEnactedRef.current = true;
+
+    const target = currentChallenge.correctTotal ?? 0;
+    incrementAttempts();
+    SoundManager.playCorrect();
+    setFeedback(`You counted ${formatCents(target)}!`);
+    setFeedbackType('success');
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts: currentAttempts + 1,
+    });
+    sendText(
+      `[ANSWER_CORRECT] Student counted every coin by tapping and reached ${formatCents(target)}. `
+      + `Celebrate the skip-count briefly.`,
+      { silent: true },
+    );
+  }, [
+    isEnactedCount, currentChallenge, countedOrder.length, enactedCoins.length,
+    currentAttempts, incrementAttempts, recordResult, sendText,
+  ]);
+
   // ── Render Helpers ─────────────────────────────────────────────────
 
   const renderCoinGroup = (coins: CoinDef[], label?: string) => {
@@ -629,8 +728,60 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     );
   };
 
+  /** K + count-like: the coins are the answer surface. No number input, no Check. */
+  const renderEnactedCountChallenge = () => {
+    if (!currentChallenge) return null;
+    const total = runningTotalAt(countedOrder.length);
+    const allCounted = countedOrder.length === enactedCoins.length;
+
+    return (
+      <div className="space-y-4">
+        {/* Running skip-count readout. Starts at 0 and is BUILT by the taps — it never
+            shows the answer before the child has counted there. */}
+        <div className="flex justify-center">
+          <span
+            data-testid="enacted-running-total"
+            className={`text-4xl font-bold tabular-nums transition-colors ${
+              allCounted ? 'text-emerald-300' : 'text-slate-200'
+            }`}
+          >
+            {formatCents(total)}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-3 justify-center p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
+          {enactedCoins.map((coin, i) => {
+            const order = countedOrder.indexOf(i);
+            const counted = order >= 0;
+            return (
+              <div key={`enacted-${coin}-${i}`} className="relative">
+                <CoinVisual
+                  type={coin}
+                  onClick={() => handleEnactedCoinTap(i)}
+                  selected={counted}
+                  disabled={isCurrentChallengeCorrect}
+                  showValue={showCoinValues}
+                  className={wrongCoin === i ? motion.shake : ''}
+                />
+                {counted && (
+                  <span
+                    data-testid={`coin-count-badge-${i}`}
+                    className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 border border-emerald-300/60 text-white text-[11px] font-bold flex items-center justify-center pointer-events-none select-none shadow"
+                  >
+                    {runningTotalAt(order + 1)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderCountChallenge = () => {
     if (!currentChallenge) return null;
+    if (isEnactedCount) return renderEnactedCountChallenge();
     const coins = currentChallenge.displayedCoins || [];
     return (
       <div className="space-y-4">
@@ -922,7 +1073,10 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
 
             {/* Action buttons */}
             <div className="flex items-center justify-center gap-3">
+              {/* The enacted K count has no Check — the taps ARE the answer and it
+                  auto-judges, so a Check button would be a dead control. */}
               {!isCurrentChallengeCorrect ? (
+                isEnactedCount ? null : (
                 <LuminaActionButton
                   action="check"
                   onClick={handleCheckAnswer}
@@ -934,6 +1088,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
                     (currentChallenge.type === 'make-change' && !changeInput)
                   }
                 />
+                )
               ) : (
                 <LuminaActionButton
                   action="next"

@@ -7,6 +7,7 @@ import { ExhibitProvider } from '../contexts/ExhibitContext';
 import DiLetterSounds, { type DiLetterSoundsData } from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading, { type DiWordReadingData } from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
+import DiSentenceReading, { type DiSentenceReadingData } from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 
 interface Props { onBack: () => void; }
 
@@ -14,13 +15,17 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts';
+type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-sentence-reading';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
   label: string;
   subtitle: string;
   defaultTopic: string;
+  /** The band the pack is curriculum-scoped to. Grade is a real generator input
+   *  (di-sentence-reading narrows its word ceiling below G1), so the tester must
+   *  not send kindergarten for every pack. */
+  defaultGrade: string;
   evalModes: ReadonlyArray<{ key: string; label: string }>;
 }
 
@@ -30,6 +35,7 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
     label: 'Letter Sounds',
     subtitle: 'Continuous letter sounds, spoken call-response.',
     defaultTopic: 'letter sounds m, s, a, f',
+    defaultGrade: 'kindergarten',
     evalModes: [
       { key: 'letter_sound', label: 'Letter Sound (isolated)' },
       { key: 'letter_sound_review', label: 'Sound Review (mixed set)' },
@@ -42,6 +48,7 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
     label: 'Word Reading',
     subtitle: 'Read printed CVC + sight words aloud ("What word?").',
     defaultTopic: 'reading short a words',
+    defaultGrade: 'kindergarten',
     evalModes: [
       { key: 'read_word', label: 'Read a Word' },
     ],
@@ -49,10 +56,28 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
   {
     id: 'di-math-facts',
     label: 'Math Facts',
-    subtitle: 'Printed addition facts, spoken number-word answers ("What is 2 plus 1?").',
+    subtitle: 'Printed facts, spoken number-word answers ("What is 2 plus 1?").',
     defaultTopic: 'addition facts within 5',
+    defaultGrade: 'kindergarten',
     evalModes: [
+      { key: 'counting_next', label: 'The Number After' },
       { key: 'answer_fact', label: 'Answer a Fact' },
+      { key: 'fact_review', label: 'Fact Review (mixed set)' },
+      { key: 'subtraction_fact', label: 'Take-Away Fact' },
+    ],
+  },
+  {
+    id: 'di-sentence-reading',
+    label: 'Sentence Reading',
+    subtitle: 'Read a printed 3-8 word sentence aloud, judged word by word.',
+    defaultTopic: 'reading simple sentences',
+    defaultGrade: 'first grade',
+    evalModes: [
+      { key: 'decodable_sentence', label: 'Sound-It-Out Sentence' },
+      { key: 'read_sentence', label: 'Read a Sentence' },
+      { key: 'sentence_review', label: 'Sentence Review (mixed set)' },
+      { key: 'sight_phrase_sentence', label: 'Sight-Word Sentence' },
+      { key: 'mixed', label: 'Mixed (all modes)' },
     ],
   },
 ];
@@ -60,7 +85,8 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
 type DiData =
   | { id: 'di-letter-sounds'; data: DiLetterSoundsData }
   | { id: 'di-word-reading'; data: DiWordReadingData }
-  | { id: 'di-math-facts'; data: DiMathFactsData };
+  | { id: 'di-math-facts'; data: DiMathFactsData }
+  | { id: 'di-sentence-reading'; data: DiSentenceReadingData };
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
   const [primitive, setPrimitive] = useState<DiPrimitiveOption>(DI_PRIMITIVES[0]);
@@ -91,7 +117,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
         componentId: primitive.id,
         evalMode,
         topic,
-        gradeLevel: 'kindergarten',
+        gradeLevel: primitive.defaultGrade,
         intent: topic,
       });
       const res = await fetch(`/api/lumina/eval-test?${params.toString()}`);
@@ -106,7 +132,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
     } finally {
       setLoading(false);
     }
-  }, [topic, evalMode, primitive.id]);
+  }, [topic, evalMode, primitive.id, primitive.defaultGrade]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16">
@@ -146,6 +172,9 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       )}
       {generated?.id === 'di-math-facts' && (
         <DiMathFacts key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+      )}
+      {generated?.id === 'di-sentence-reading' && (
+        <DiSentenceReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
       )}
     </div>
   );

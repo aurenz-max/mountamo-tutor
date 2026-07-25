@@ -1,0 +1,114 @@
+{
+  "bench": "direct-instruction",
+  "at": "2026-07-25T18:08:09.087Z",
+  "_note": "TRIMMED EXPORT. The raw run carried 263 events, 216 of them single-word tutor output-transcription fragments with no analytic value. Kept here: every mic / learner / judge event (the evidence for every verdict), plus the tutor fragment that OPENS each cue or verdict branch (the pacing anchors). Summary + config + items are verbatim from the raw export.",
+  "config": {
+    "architecture": "judged-speech-loop-engine-with-di-progression-policy",
+    "live": "gemini-3.1-flash-live-preview-audio-with-input-output-transcription",
+    "judge": "gemini-live-in-band (affirm=\"Yes\", correct=\"My turn\")",
+    "crossCheck": "whole-token-asr-alias-match-on-input-transcript (passive)",
+    "timing": "frontend:tutor-audio-fall-to-live-input-transcription-arrival",
+    "geminiVad": { "manual_activity": true },
+    "engine": {
+      "attemptAnchor": "local-voice-turn-close (DI-1); transcripts annotate, never anchor",
+      "verdictScan": "sentence-opener sentinels over post-attempt tutor output",
+      "sentinels": { "affirm": [["yes"]], "correct": [["my", "turn"]] },
+      "verdictTimeoutMs": 8000,
+      "resyncAfterMisses": 2
+    },
+    "localVad": {
+      "silenceThreshold": 0.025,
+      "bargeInMultiplier": 2,
+      "hysteresisHoldRatio": 0.6,
+      "silenceCloseMs": 500,
+      "minVoiceMs": 120,
+      "gatedWhileTutorAudioPlays": false,
+      "measuredFloors": { "ambientRms": 0.0049, "echoRms": 0.0002 }
+    }
+  },
+  "probeSet": "sentence-reading (10 items, 3-8 word ladder)",
+  "summary": {
+    "tutorEvents": 216,
+    "learnerEvents": 15,
+    "judgeEvents": 16,
+    "micEvents": 16,
+    "turnsOverTutorAudio": 1,
+    "timedResponses": 13,
+    "meanFrontendResponseMs": 3815,
+    "meanCommitLagMs": 2745,
+    "affirmed": 10,
+    "corrected": 3,
+    "offScript": 0,
+    "unanchoredVerdicts": 0,
+    "aliasAgree": 11,
+    "aliasDisagree": 2
+  },
+  "events": [
+    { "n": 1, "atMs": 1136, "speaker": "tutor", "text": "It's great to see you! Let's practice some reading together.", "_note": "UNSCRIPTED opening greeting before the first Listen: — minor fidelity leak, see report finding 5" },
+    { "n": 8, "atMs": 2846, "speaker": "tutor", "text": "\n\nListen: The cat sat." },
+    { "n": 19, "atMs": 13768, "speaker": "mic", "text": "local voice 0.8s, peak 0.108", "durationMs": 850, "peakLevel": 0.108 },
+    { "n": 20, "atMs": 14004, "speaker": "learner", "text": "the car", "responseMs": 2615, "commitLagMs": 1595, "itemId": "sent-cat-sat", "aliasMatch": false },
+    { "n": 22, "atMs": 14734, "speaker": "judge", "text": "Live affirmed The cat sat.", "itemId": "sent-cat-sat", "judgment": "affirmed", "aliasMatch": false, "action": "advance", "_note": "AMBIGUOUS: transcript reads 'the car' but Live judges AUDIO. Either an ASR artifact of a correct read, or a false affirm. Only the human in the chair knows. See report finding 4." },
+
+    { "n": 26, "atMs": 18424, "speaker": "tutor", "text": "Listen: I see a pig." },
+    { "n": 39, "atMs": 28708, "speaker": "mic", "text": "local voice 1.6s, peak 0.107", "durationMs": 1620, "peakLevel": 0.107 },
+    { "n": 40, "atMs": 28932, "speaker": "learner", "text": "I see a pig.", "responseMs": 3344, "commitLagMs": 2364, "itemId": "sent-see-pig", "aliasMatch": true },
+    { "n": 42, "atMs": 29749, "speaker": "judge", "text": "Live affirmed I see a pig.", "itemId": "sent-see-pig", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 46, "atMs": 34082, "speaker": "tutor", "text": "Listen: Sam has a red cup." },
+    { "n": 47, "atMs": 45087, "speaker": "mic", "text": "local voice 1.8s, peak 0.094, opened over tutor audio", "durationMs": 1789, "peakLevel": 0.094, "duringTutorAudio": true, "_note": "BARGE-IN: learner read over the model line and was still judged correctly" },
+    { "n": 48, "atMs": 45345, "speaker": "learner", "text": "Sam has a red cup.", "responseMs": 2476, "commitLagMs": 2557, "itemId": "sent-red-cup", "aliasMatch": true },
+    { "n": 50, "atMs": 46430, "speaker": "judge", "text": "Live affirmed Sam has a red cup.", "itemId": "sent-red-cup", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 56, "atMs": 50841, "speaker": "tutor", "text": "Listen: Sam sat on the mat." },
+    { "n": 69, "atMs": 61727, "speaker": "mic", "text": "local voice 1.4s, peak 0.122", "durationMs": 1450, "peakLevel": 0.122 },
+    { "n": 70, "atMs": 61999, "speaker": "learner", "text": "Sam Saad", "responseMs": 3482, "commitLagMs": 2232, "itemId": "sent-sat-mat", "aliasMatch": false },
+    { "n": 71, "atMs": 62917, "speaker": "mic", "text": "local voice 0.4s, peak 0.093", "durationMs": 420, "peakLevel": 0.093 },
+    { "n": 72, "atMs": 62917, "speaker": "judge", "text": "attempt superseded by a newer answer before the verdict", "itemId": "sent-sat-mat", "_note": "SPLIT #1 — one sentence read produced two voice turns (500ms silenceCloseMs). See report finding 2." },
+    { "n": 73, "atMs": 63142, "speaker": "learner", "text": " on Matt", "responseMs": null, "commitLagMs": 1156, "itemId": "sent-sat-mat", "aliasMatch": false },
+    { "n": 75, "atMs": 64004, "speaker": "judge", "text": "Live corrected Sam sat on the mat.", "itemId": "sent-sat-mat", "judgment": "corrected", "aliasMatch": false, "action": "retry" },
+    { "n": 84, "atMs": 72307, "speaker": "mic", "text": "local voice 1.5s, peak 0.123", "durationMs": 1451, "peakLevel": 0.123 },
+    { "n": 85, "atMs": 72543, "speaker": "learner", "text": "Sam sat", "responseMs": 3436, "commitLagMs": 2196, "itemId": "sent-sat-mat", "aliasMatch": false },
+    { "n": 87, "atMs": 73676, "speaker": "judge", "text": "attempt superseded by a newer answer before the verdict", "itemId": "sent-sat-mat", "_note": "SPLIT #2 — same sentence, split again on the retry" },
+    { "n": 88, "atMs": 73920, "speaker": "learner", "text": " on the mat.", "responseMs": null, "commitLagMs": 1354, "itemId": "sent-sat-mat", "aliasMatch": false },
+    { "n": 90, "atMs": 74624, "speaker": "judge", "text": "Live affirmed Sam sat on the mat.", "itemId": "sent-sat-mat", "judgment": "affirmed", "aliasMatch": false, "action": "advance", "_note": "aliasMatch false ONLY because the sentence was split across two transcript fragments; the read was correct" },
+
+    { "n": 96, "atMs": 78604, "speaker": "tutor", "text": "Listen: The dog is in the sun." },
+    { "n": 110, "atMs": 90487, "speaker": "mic", "text": "local voice 2.6s, peak 0.138", "durationMs": 2649, "peakLevel": 0.138 },
+    { "n": 111, "atMs": 90727, "speaker": "learner", "text": "The dog is in the sun.", "responseMs": 3822, "commitLagMs": 3401, "itemId": "sent-dog-sun", "aliasMatch": true },
+    { "n": 113, "atMs": 91483, "speaker": "judge", "text": "Live affirmed The dog is in the sun.", "itemId": "sent-dog-sun", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 118, "atMs": 95869, "speaker": "tutor", "text": "Listen: I can see the big pig." },
+    { "n": 132, "atMs": 107126, "speaker": "mic", "text": "local voice 1.9s, peak 0.120", "durationMs": 1880, "peakLevel": 0.12 },
+    { "n": 133, "atMs": 107367, "speaker": "learner", "text": "I can see the pig.", "responseMs": 3282, "commitLagMs": 2632, "itemId": "sent-big-pig", "aliasMatch": false, "_note": "DELIBERATE ONE-WORD OMISSION: 'big' dropped from a 6-word sentence" },
+    { "n": 135, "atMs": 108001, "speaker": "judge", "text": "Live corrected I can see the big pig.", "itemId": "sent-big-pig", "judgment": "corrected", "aliasMatch": false, "action": "retry", "_note": "*** THE GATE: caught it. ***" },
+    { "n": 145, "atMs": 116856, "speaker": "mic", "text": "local voice 2.2s, peak 0.089", "durationMs": 2219, "peakLevel": 0.089 },
+    { "n": 146, "atMs": 117104, "speaker": "learner", "text": "I can see the big pig.", "responseMs": 3660, "commitLagMs": 2985, "itemId": "sent-big-pig", "aliasMatch": true },
+    { "n": 148, "atMs": 117768, "speaker": "judge", "text": "Live affirmed I can see the big pig.", "itemId": "sent-big-pig", "judgment": "affirmed", "aliasMatch": true, "action": "advance", "_note": "Whole-sentence correction produced a self-repaired correct read on the first retry" },
+
+    { "n": 154, "atMs": 121805, "speaker": "tutor", "text": "Listen: The red hen ran to the pen." },
+    { "n": 169, "atMs": 134516, "speaker": "mic", "text": "local voice 2.2s, peak 0.115", "durationMs": 2222, "peakLevel": 0.115 },
+    { "n": 170, "atMs": 134785, "speaker": "learner", "text": "The hen ran to the pen.", "responseMs": 4194, "commitLagMs": 3000, "itemId": "sent-hen-pen", "aliasMatch": false, "_note": "DELIBERATE ONE-WORD OMISSION: 'red' dropped from a 7-word sentence" },
+    { "n": 172, "atMs": 135384, "speaker": "judge", "text": "Live corrected The red hen ran to the pen.", "itemId": "sent-hen-pen", "judgment": "corrected", "aliasMatch": false, "action": "retry", "_note": "*** THE GATE, again: caught it. ***" },
+    { "n": 182, "atMs": 145944, "speaker": "mic", "text": "local voice 3.7s, peak 0.111", "durationMs": 3670, "peakLevel": 0.111 },
+    { "n": 183, "atMs": 146219, "speaker": "learner", "text": "The red hen ran to the pen.", "responseMs": 5351, "commitLagMs": 4453, "itemId": "sent-hen-pen", "aliasMatch": true },
+    { "n": 185, "atMs": 146941, "speaker": "judge", "text": "Live affirmed The red hen ran to the pen.", "itemId": "sent-hen-pen", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 192, "atMs": 151184, "speaker": "tutor", "text": "Listen: Can the dog get the ball?" },
+    { "n": 204, "atMs": 162335, "speaker": "mic", "text": "local voice 2.0s, peak 0.110", "durationMs": 1969, "peakLevel": 0.11 },
+    { "n": 205, "atMs": 162581, "speaker": "learner", "text": "Can the dog get the ball?", "responseMs": 3025, "commitLagMs": 2725, "itemId": "sent-get-ball", "aliasMatch": true },
+    { "n": 207, "atMs": 163160, "speaker": "judge", "text": "Live affirmed Can the dog get the ball?", "itemId": "sent-get-ball", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 213, "atMs": 167170, "speaker": "tutor", "text": "Listen: We go up and we go down." },
+    { "n": 231, "atMs": 178293, "speaker": "mic", "text": "local voice 0.7s, peak 0.224", "durationMs": 680, "peakLevel": 0.224 },
+    { "n": 232, "atMs": 180673, "speaker": "mic", "text": "local voice 1.7s, peak 0.097", "durationMs": 1701, "peakLevel": 0.097 },
+    { "n": 233, "atMs": 180673, "speaker": "judge", "text": "attempt superseded by a newer answer before the verdict", "itemId": "sent-up-down", "_note": "SPLIT #3 — 2.4s gap between the two turns on the repeated-phrase sentence" },
+    { "n": 234, "atMs": 183801, "speaker": "learner", "text": "We go up and we go down.", "responseMs": 7368, "commitLagMs": 5337, "itemId": "sent-up-down", "aliasMatch": true },
+    { "n": 236, "atMs": 184463, "speaker": "judge", "text": "Live affirmed We go up and we go down.", "itemId": "sent-up-down", "judgment": "affirmed", "aliasMatch": true, "action": "advance" },
+
+    { "n": 242, "atMs": 188653, "speaker": "tutor", "text": "Listen: The big pig had a red hat on." },
+    { "n": 260, "atMs": 201673, "speaker": "mic", "text": "local voice 2.4s, peak 0.155", "durationMs": 2378, "peakLevel": 0.155 },
+    { "n": 261, "atMs": 201957, "speaker": "learner", "text": "The big pig had a red hat on.", "responseMs": 3538, "commitLagMs": 3181, "itemId": "sent-red-hat", "aliasMatch": true, "_note": "Longest item (8 words) read clean — no length ceiling found in this range" },
+    { "n": 263, "atMs": 202606, "speaker": "judge", "text": "Live affirmed The big pig had a red hat on.", "itemId": "sent-red-hat", "judgment": "affirmed", "aliasMatch": true, "action": "complete" }
+  ]
+}

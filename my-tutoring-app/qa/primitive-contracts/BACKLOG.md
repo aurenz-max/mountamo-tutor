@@ -38,6 +38,21 @@ band spread of any math primitive; multiple historical fidelity fixes
 
 ## Done
 
+- **coin-counter — derived 2026-07-25 (`--census`)** → `docs/contracts/coin-counter.md`. Pulled out
+  of queue order as the contract-first step of reader-fit **Task 3** (K `count-like` enacted count).
+  **10 requirements**, **1 conflict RESOLVED in the same run** (C1: K count-like enacted vs G2
+  count-mixed typed → fork rung 1 eval-mode split + rung 2 band gate, via a generator-stamped
+  `countMode`), **6 gaps**. `--check` on the finished edit: **COMPATIBLE**
+  (`qa/primitive-contracts/coin-counter-check-2026-07-25.md`) — probes re-run for every OBSERVED
+  requirement of a consumer other than the edit's own, plus `git diff` showing **0 deletions**.
+  **What the census changed:** the primitive has **7** eval modes (not 6 — `fewest-coins` too), and
+  its only authored consumer is **`MEAS001-07-c` @ GRADE 1**, not K — there is no K money subskill
+  in the curriculum at all (`PRIMITIVE_GAPS.md` GAP-007's "MATHEMATICS (K)" label is stale; the K
+  `MEAS001-07-A…F` sharing that ID stem is "Time Durations"). Channel [4] (calibration) was
+  **unavailable** — `/api/calibration/items` returns `Not authenticated`, so real-usage counts are
+  unknown rather than zero; worth fixing before the next contract run that needs item history.
+  Highest-value gap: **G1** — the Grade-1 `count-like` consumer still has the proxy this task fixed
+  at K. Report: `qa/reader-fit/coin-counter-task3-2026-07-25.md`.
 - **counting-board — derived 2026-07-20** → `docs/contracts/counting-board.md`. Pulled out of queue
   order as the contract-first step of reader-fit BACKLOG **#13** (K `subitize` flash-then-hide display
   fork). **8 requirements** (7 OBSERVED, R4 REQUIRED — the item-13 K subitize flash lifecycle), **0

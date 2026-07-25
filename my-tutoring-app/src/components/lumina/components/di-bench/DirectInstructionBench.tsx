@@ -458,7 +458,16 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
         <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {items.map((item) => (
             <div key={item.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${activeItemId === item.id ? 'border-cyan-400/50 bg-cyan-500/10' : 'border-white/10 bg-slate-800/50'}`}>
-              <span className="min-w-[2.5rem] whitespace-nowrap text-center text-lg font-bold text-slate-100">{item.display}</span>
+              {/* Sentences are far too long for the nowrap chip the short kinds
+                  use — truncate with the full text on hover instead. */}
+              <span
+                className={item.kind === 'sentence'
+                  ? 'min-w-0 flex-1 truncate text-left text-sm font-semibold text-slate-100'
+                  : 'min-w-[2.5rem] whitespace-nowrap text-center text-lg font-bold text-slate-100'}
+                title={item.display}
+              >
+                {item.display}
+              </span>
               <span className="text-[10px] uppercase text-slate-500">{matchedItemIdsRef.current.has(item.id) ? 'matched' : item.kind}</span>
               <label className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
                 spoken
@@ -472,7 +481,15 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
       {running && activeItem && (
         <div className="mb-4 flex min-h-40 items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-6 text-center">
           <div>
-            <div className="text-7xl font-bold tracking-wide text-white">{activeItem.display}</div>
+            {/* The stage is the thing the learner READS, so a sentence has to be
+                legible at reading size and wrap — 7xl is for a lone grapheme. */}
+            <div
+              className={activeItem.kind === 'sentence'
+                ? 'mx-auto max-w-2xl text-3xl font-bold leading-snug tracking-wide text-white'
+                : 'text-7xl font-bold tracking-wide text-white'}
+            >
+              {activeItem.display}
+            </div>
             <div className="mt-3 text-xs uppercase tracking-[0.2em] text-cyan-300">
               {awaitingJudgment ? 'judging' : 'listening'}
             </div>

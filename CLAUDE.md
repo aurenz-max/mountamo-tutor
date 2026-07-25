@@ -30,16 +30,11 @@ When Gemini schemas are too complex (6+ types, deeply nested), the LLM will prod
 ## Project Management
 
 Work is managed as **tasks in queues, executed by skills** — not ad-hoc orchestration.
-`WORKSTREAMS.md` (repo root) is the portfolio index: ACTIVE/DELEGATED/PARKED streams,
-WIP limit 2+1, each stream pointing at its queue file. Sessions answering "what's next"
-read `WORKSTREAMS.md` and pull the TOP item of an ACTIVE stream's queue; new findings
-get QUEUED in the owning register (reader-fit BACKLOG, EVAL_TRACKER, SP-27 PRD phases,
-HUMAN-CHECKS) with an executor skill named — not fixed inline unless they are the active
-task. Whoever closes work updates the owning queue AND `WORKSTREAMS.md` in the same
-slice. `/pm` runs the reconciliation function (staleness sweep, human-check refresh,
-WIP enforcement, next-3-moves plan); queues are authority over memory and over stale
-reports. Human-only browser/pixel verification debt lives in
-`my-tutoring-app/qa/HUMAN-CHECKS.md`, never buried in per-stream Done entries.
+Sessions answering "what's next" read `WORKSTREAMS.md` and pull the TOP item of an
+ACTIVE stream's queue. New findings get QUEUED in the owning register with an executor
+skill named — not fixed inline unless they are the active task. Whoever closes work
+updates the owning queue AND `WORKSTREAMS.md` in the same slice. Queues are authority
+over memory and over stale reports. Mechanics + registers: `/pm`.
 
 ## Development Workflow
 
@@ -57,13 +52,7 @@ When editing React components, prefer writing complete replacement files over in
 
 ## UI / Styling
 
-Lumina has a UI kit at `my-tutoring-app/src/components/lumina/ui/` (glass aesthetic): `LuminaCard`, `LuminaButton`, `LuminaPanel`, `LuminaAccordion`, `LuminaPrompt`, `LuminaFeedbackCard`, `LuminaAnswerChoice`, `LuminaChallengeCounter`, `LuminaMicListener`, and more — see `ui/index.ts` and design tokens in `ui/tokens.ts`.
-
-**IMPORTANT: build primitive UI from the Lumina kit — not raw shadcn, not custom div patterns.** `/migrate-primitive` exists to move older raw-shadcn primitives onto the kit; never author new code that would need migrating.
-
-**The kit is the frame only, never the interaction surface.** Headers, cards, buttons, feedback, counters, prompts come from the kit; the core manipulative (canvas, draggable objects, simulation) is bespoke per primitive.
-
-For surfaces the kit doesn't cover, fall back to shadcn/ui with Lumina theming: glass `bg-slate-900/40 border-white/10 backdrop-blur-xl`, text `text-slate-100` (primary) / `text-slate-400` (secondary) / `text-slate-600` (muted).
+Primitive UI is built from the Lumina kit, never raw shadcn — full rules (kit boundary, theming fallbacks) in `my-tutoring-app/src/components/lumina/CLAUDE.md`.
 
 ## Curriculum Rules
 
@@ -71,20 +60,8 @@ For surfaces the kit doesn't cover, fall back to shadcn/ui with Lumina theming: 
 
 **Before any subskill ID change:** Create a lineage record via `POST /api/lineage/` BEFORE modifying the draft. The `curriculum_lineage` collection maps old subskill IDs to canonical successors so student data survives curriculum iteration.
 
-## Development Commands
-
-### Frontend (Next.js)
-- `cd my-tutoring-app && npm run dev` - Start development server
-- `cd my-tutoring-app && npm run build` - Build for production
-- `cd my-tutoring-app && npm run lint` - Run ESLint
-
-### Backend (FastAPI)
-- `cd backend && uvicorn app.main:app --reload` - Start development server
-- `cd backend && python -m pytest tests/` - Run backend tests
-
 ## Architecture (brief)
 
-- **Frontend:** Next.js 14 + React + TypeScript + shadcn/ui. Lumina primitives live in `my-tutoring-app/src/components/lumina/`.
 - **Backend:** FastAPI + Firestore + BigQuery (analytics only). Key services: CompetencyService, MasteryLifecycleEngine (4-gate model), PlanningService (stateless, Firestore-native).
 - **AI:** Gemini for content generation (manifests, generators, tutoring). Azure Speech for TTS. Gemini Live for real-time audio tutoring.
 - **Manifest pipeline:** Topic → Gemini manifest (picks primitives from live catalog) → per-primitive Gemini generators → hydrated interactive content.

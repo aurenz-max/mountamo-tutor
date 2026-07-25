@@ -1,34 +1,45 @@
 'use client';
 
 /**
- * DiMathFacts — DI family primitive #3. Live-judged call-response math facts:
- * the Live tutor MODELS a printed addition fact ("Listen: two plus one is
- * three."), GUIDES the learner through it, then TESTS ("Your turn. What is
- * two plus one?") and judges the spoken NUMBER WORD from the audio it heard
- * in-band. The learner SEES the printed problem and SPEAKS the answer into an
- * open mic; the judged-loop engine anchors each attempt to the local voice
- * turn and reads the tutor's verdict from its sentinel opener.
+ * DiSentenceReading — DI family primitive #4, and the family's first CONNECTED
+ * TEXT pack. Live-judged call-response sentence reading: the Live tutor MODELS
+ * a printed sentence fluently ("Listen: The cat sat."), reads it TOGETHER with
+ * the learner, then TESTS ("Your turn. Read it.") and judges the audio it heard
+ * in-band — every word, in order. The learner SEES the printed sentence and
+ * READS it aloud into an open mic; the judged-loop engine anchors each attempt
+ * to the local voice turn and reads the tutor's verdict from its sentinel
+ * opener.
  *
- * The Live tutor IS the interaction surface (living-simulation doctrine) —
- * the committed engine (useJudgedSpeechLoop → judgedLoopModel +
- * useLiveVoiceTurns) owns the loop mechanics; this component owns DI
- * progression (advance / retry / move-on after capped corrections), the
- * kid-facing printed-problem display, and evaluation. Facts are
- * generator-scoped to the objective; the script and judging contract are
- * hand-authored (diMathFactsScript, bench-proven wording — probe sitting
- * 2026-07-24). Separate content pack — the letter-sounds and word-reading
- * files are frozen and untouched.
+ * The Live tutor IS the interaction surface (living-simulation doctrine) — the
+ * committed engine (useJudgedSpeechLoop → judgedLoopModel + useLiveVoiceTurns)
+ * owns the loop mechanics; this component owns DI progression (advance / retry
+ * / move-on after capped corrections), the kid-facing printed-sentence stage,
+ * and evaluation. Sentences are generator-scoped to the objective; the script
+ * and judging contract are hand-authored and bench-proven
+ * (diSentenceReadingScript — standing gate 1 PASSED 2026-07-25). Separate
+ * content pack: the letter-sounds, word-reading, and math-facts files are
+ * frozen and untouched.
  *
- * ANSWER-LEAK RULE: the stage shows the PRINTED PROBLEM ONLY ("2 + 1") — the
- * sum never appears before the child answers. The completed equation
- * ("2 + 1 = 3") renders only AFTER an affirmed answer (reward) and in the
- * completion recap for affirmed facts; missed facts recap without the answer.
+ * WHY THIS PACK EXISTS: `read-aloud-studio` already owns G1-6 read-aloud, and
+ * its own catalog says "Student self-assessment only, no AI speech grading" —
+ * it has a mic, records, tracks WPM, and judges nothing, so it produces no
+ * evidence the IRT model can use. A beginning reader cannot self-assess their
+ * own accuracy. This pack takes judged short-sentence accuracy at G1-2; the
+ * fork (never a conversion) keeps read-aloud-studio's calibrated eval modes
+ * meaning what they already mean.
  *
- * FLUENCY (the reason this pack exists): per-fact response time is captured
- * SILENTLY from the engine's attempt timing into metrics (meanResponseMs).
- * No visible timer, ever — speed is measured, never performed (no-timer
- * ruling). The bench probe showed commit lag is ~constant (~933ms), so
- * responseMs is a stable think-time proxy.
+ * VOICE TURN LENGTH — the one engineering result the bench sitting forced
+ * (finding 2, ship-blocking): a child reading connected text PAUSES
+ * mid-sentence, and the family default `silenceCloseMs: 500` (tuned for
+ * one-word answers) split one read into TWO voice turns three times in ten
+ * items. That broke the alias cross-check and nulled `responseMs` on second
+ * fragments. This pack passes ~1100ms; a mid-sentence pause is part of the
+ * response, not the end of it. The family default is deliberately NOT changed —
+ * 500ms is correct for the three short-response packs.
+ *
+ * ANSWER-LEAK RULE (inherited from di-word-reading): decoding print IS the
+ * skill, so the stage shows the PRINTED SENTENCE ONLY — no picture, emoji, or
+ * hint before the read. The reward emoji renders only after an affirmed read.
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -46,7 +57,7 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
-import type { DiMathFactsMetrics } from '../../../evaluation/types';
+import type { DiSentenceReadingMetrics } from '../../../evaluation/types';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
@@ -54,23 +65,28 @@ import {
   completeCue,
   itemCue,
   moveOnCue,
-  type DiMathFactsChallenge,
-  type DiMathFactsChallengeType,
-} from './diMathFactsScript';
+  type DiSentenceReadingChallenge,
+  type DiSentenceReadingChallengeType,
+} from './diSentenceReadingScript';
 
-export type { DiMathFactsChallenge, DiMathFactsChallengeType } from './diMathFactsScript';
+export type {
+  DiSentenceReadingChallenge,
+  DiSentenceReadingChallengeType,
+} from './diSentenceReadingScript';
 
-export interface DiMathFactsData {
+export interface DiSentenceReadingData {
   title: string;
   description: string;
-  /** 3-6 printed addition facts. REQUIRED. Built by the scoped fact pool. */
-  challenges: DiMathFactsChallenge[];
+  /** 3-6 printed sentences. REQUIRED. Built by the menu-scoped generator. */
+  challenges: DiSentenceReadingChallenge[];
   /** Session core task identity — the resolved/primary eval-mode skill. */
-  challengeType: DiMathFactsChallengeType;
-  /** Flat "2 + 1, 3 + 1" item-set summary (printed problems only, never the
-   *  answers), attached by the generator for the tutoring scaffold's RUNTIME
-   *  STATE (catalog contextKey `facts`). */
-  facts?: string;
+  challengeType: DiSentenceReadingChallengeType;
+  /** Flat "The cat sat. | I see a pig." item-set summary, attached by the
+   *  generator for the tutoring scaffold's RUNTIME STATE (catalog contextKey
+   *  `sentences`). Unlike the sibling packs there is nothing to withhold here —
+   *  the printed sentence is both stimulus and target, and is already on the
+   *  child's screen. */
+  sentences?: string;
   gradeLevel?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -81,54 +97,73 @@ export interface DiMathFactsData {
   exhibitId?: string;
   componentIntent?: string;
   objectiveText?: string;
-  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiMathFactsMetrics>) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiSentenceReadingMetrics>) => void;
 }
 
-/** Corrections the tutor may run on one fact before the lesson moves on anyway.
- *  Per-turn judging is honest but warm; a weak fact resurfaces through
- *  distributed review, not by drilling a frustrated five-year-old in place. */
+/** Corrections the tutor may run on one sentence before the lesson moves on
+ *  anyway. Per-turn judging is strict; a hard sentence resurfaces through
+ *  distributed review, not by drilling a discouraged reader in place. */
 const MAX_CORRECTIONS_PER_ITEM = 2;
 
 /** Manual voice-activity mode: the engine's amplitude detector brackets every
- *  learner turn (Gemini's speech-likeness VAD is unusable for short spoken
- *  responses — bench run-3 ruling). Passed at connect time. */
+ *  learner turn (Gemini's speech-likeness VAD is unusable for these responses —
+ *  bench run-3 ruling). Resolved from the catalog on both connect paths; passed
+ *  here for the standalone fallback. */
 const DI_AUDIO_INPUT = { manual_activity: true };
 
-/** Floor for the completed-equation beat — a resolved fact stays on screen this
- *  long even if the tutor's audio ends early, so the child always sees their
- *  answer land. Ceiling releases the stage if the audio edge never arrives. */
+/**
+ * Silence that closes a learner voice turn, for CONNECTED TEXT (bench sitting
+ * 2026-07-25, finding 2 — the pack's ship-blocking fix). The family default is
+ * 500ms, tuned for one-word answers; a child reading a sentence pauses between
+ * words and that pause is part of ONE response. Three of ten probe items split
+ * into two turns at 500ms, which broke the alias cross-check and lost timing on
+ * the second fragment. Pack-level only — the engine default is untouched.
+ */
+const SENTENCE_SILENCE_CLOSE_MS = 1100;
+
+/** Floor for the affirmed-sentence beat — a read sentence stays marked on
+ *  screen this long even if the tutor's audio ends early, so the child always
+ *  sees their read land. Ceiling releases the stage if the edge never arrives.
+ *  Matters MORE here than for facts: the affirm restates the WHOLE sentence. */
 const REWARD_BEAT_MIN_MS = 900;
-const REWARD_BEAT_MAX_MS = 3000;
+const REWARD_BEAT_MAX_MS = 3500;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** One resolved fact outcome, accumulated synchronously for metrics. */
+/** One resolved sentence outcome, accumulated synchronously for metrics. */
 interface ItemOutcome {
   id: string;
   correct: boolean;
   attempts: number;
   score: number;
-  /** Silent fluency signal: tutor-audio-fall → learner attempt (ms). */
+  /** Silent latency signal: tutor-audio-fall → learner attempt (ms). */
   responseMs: number | null;
+  /** Sentence length actually read — the pack's difficulty axis. */
+  wordCount: number;
 }
 
 const scoreForCorrections = (corrections: number): number =>
   corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
-export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
+/** Print size for a beginning reader: as large as the sentence allows without
+ *  wrapping into a wall. Length is the only variable that matters here. */
+const sentenceSizeClass = (wordCount: number): string =>
+  wordCount <= 4 ? 'text-5xl' : wordCount <= 6 ? 'text-4xl' : 'text-3xl';
+
+export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(
-    () => data.instanceId || `di-math-facts-${Math.round(performance.now())}`,
+    () => data.instanceId || `di-sentence-reading-${Math.round(performance.now())}`,
     [data.instanceId],
   );
 
-  /** RUNTIME STATE contextKey `facts` — the generator's flat summary, derived
-   *  here as a fallback so the tutor never reads "(not set)" for a session
-   *  built before the field existed. Printed problems only, never answers. */
-  const factsSummary = useMemo(
-    () => data.facts || data.challenges.map((c) => c.display).join(', '),
-    [data.facts, data.challenges],
+  /** RUNTIME STATE contextKey `sentences` — the generator's flat summary,
+   *  derived here as a fallback so the tutor never reads "(not set)" for a
+   *  session built before the field existed. */
+  const sentencesSummary = useMemo(
+    () => data.sentences || data.challenges.map((c) => c.text).join(' | '),
+    [data.sentences, data.challenges],
   );
 
   const {
@@ -137,15 +172,15 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     isComplete,
     recordResult,
     advance,
-  } = useChallengeProgress<DiMathFactsChallenge>({
+  } = useChallengeProgress<DiSentenceReadingChallenge>({
     challenges: data.challenges,
     getChallengeId: (ch) => ch.id,
   });
 
   const currentChallenge = data.challenges[currentIndex] ?? null;
 
-  const evaluation = usePrimitiveEvaluation<DiMathFactsMetrics>({
-    primitiveType: 'di-math-facts',
+  const evaluation = usePrimitiveEvaluation<DiSentenceReadingMetrics>({
+    primitiveType: 'di-sentence-reading',
     instanceId: resolvedInstanceId,
     skillId: data.skillId,
     subskillId: data.subskillId,
@@ -161,12 +196,11 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
   const [preparing, setPreparing] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'ready' | 'listening' | 'judging' | 'affirmed' | 'done'>('idle');
   const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
-  /** The fact JUST affirmed, VALUE-CAPTURED at verdict time (never derived from
-   *  currentChallenge — that read printed the NEXT fact's sum before the child
-   *  answered, an answer leak browser-caught 2026-07-24). During the reward
-   *  beat it REPLACES the printed problem on the stage rather than stacking a
-   *  second chip under it, so only one fact is ever on screen. */
-  const [reward, setReward] = useState<{ display: string; answer: number } | null>(null);
+  /** The sentence JUST affirmed, VALUE-CAPTURED at verdict time (never derived
+   *  from currentChallenge — that read would print the NEXT sentence while the
+   *  tutor is still restating the last one). During the beat it REPLACES the
+   *  stage sentence rather than stacking a second one under it. */
+  const [reward, setReward] = useState<{ text: string; wordCount: number; emoji?: string } | null>(null);
 
   // Progression authority is useChallengeProgress; mirror the index into a ref
   // so the emission handler (fires inside the loop's dispatch) reads it live.
@@ -188,17 +222,17 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
   );
 
   // ── The reward beat ──────────────────────────────────────────────
-  // A resolved fact does NOT advance the stage on the spot. The child answers,
-  // the tutor confirms, the equation completes in place ("3 - 2" → "3 - 2 = 1"),
-  // and only THEN does the next problem appear. Advancing at verdict time put
-  // the next problem and the last answer on screen together — two facts at once
-  // reads as overload to a five-year-old (user browser check 2026-07-25).
+  // A resolved sentence does NOT advance the stage on the spot. The child
+  // reads, the tutor restates the whole sentence back, the read sentence is
+  // marked in place, and only THEN does the next one appear. Advancing at
+  // verdict time would put the next sentence on screen while the tutor is
+  // still saying the last one — two sentences at once, overload for a
+  // beginning reader (the fix di-math-facts made after a browser check).
   //
-  // The swap is edge-driven, not timed: the engine sends the next [DI_ITEM] cue
-  // 400ms after the tutor's audio falls (VERIFY_BEAT_MS), so the falling edge of
-  // that audio is the exact moment the tutor stops talking about THIS fact and
-  // starts modelling the NEXT one. The visual rides that edge. The timers below
-  // are only floors and failsafes, never the primary clock.
+  // The swap is edge-driven, not timed: the engine sends the next [DI_ITEM]
+  // cue 400ms after the tutor's audio falls (VERIFY_BEAT_MS), so that falling
+  // edge is the exact moment the tutor stops talking about THIS sentence. The
+  // timers below are only a floor and a failsafe, never the primary clock.
   const pendingAdvanceRef = useRef(false);
   const rewardStartedAtRef = useRef(0);
   const advanceTimerRef = useRef<number | null>(null);
@@ -211,23 +245,22 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     }
   }, []);
 
-  /** End the reward beat and move the stage to the next fact. Idempotent. */
+  /** End the reward beat and move the stage to the next sentence. Idempotent. */
   const commitAdvance = useCallback(() => {
     if (!pendingAdvanceRef.current) return;
     pendingAdvanceRef.current = false;
     clearAdvanceTimer();
     // Bump the index ref with the state, not a render later: emissions fire
     // inside the loop's dispatch, so a verdict landing before React re-renders
-    // would otherwise resolve against the fact we just left. The render pass
-    // reassigns this from currentIndex to the same value.
+    // would otherwise resolve against the sentence we just left.
     idxRef.current = Math.min(idxRef.current + 1, data.challenges.length - 1);
     setReward(null);
     setPhase('listening');
-    setStatusLine('Listen, then say the answer.');
+    setStatusLine('Listen, then read it.');
     advance();
   }, [advance, clearAdvanceTimer, data.challenges.length]);
 
-  /** Hold the resolved fact on screen; the audio-fall edge (or the cap) releases it. */
+  /** Hold the read sentence on screen; the audio-fall edge (or cap) releases it. */
   const scheduleAdvance = useCallback(() => {
     pendingAdvanceRef.current = true;
     rewardStartedAtRef.current = performance.now();
@@ -238,8 +271,9 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     }, REWARD_BEAT_MAX_MS);
   }, [clearAdvanceTimer, commitAdvance]);
 
-  // The release edge: the tutor's line about THIS fact finished. Held to a floor
-  // so a clipped affirmation can't flash the completed equation past the child.
+  // The release edge: the tutor's line about THIS sentence finished. Held to a
+  // floor so a clipped affirmation can't flash the marked sentence past the
+  // child. The restating affirm is long here, so the edge usually wins.
   useEffect(() => {
     const wasPlaying = tutorAudioRef.current;
     tutorAudioRef.current = ctx.isAudioPlaying;
@@ -271,14 +305,22 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     const overallAccuracy = outcomes.length
       ? Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length)
       : 0;
-    // Silent fluency signal (no-timer ruling): mean response time across the
-    // attempts that carried timing. Null when the engine timed none.
+    // Silent latency signal (no-timer ruling): time from the tutor's prompt to
+    // the learner starting to read. L0 NEVER judges it — the judging contract
+    // explicitly refuses to penalise slowness — but hesitation-to-start is real
+    // reading signal and a later pace/fluency mode would need it.
     const timed = outcomes.filter((o) => o.responseMs != null) as Array<ItemOutcome & { responseMs: number }>;
     const meanResponseMs = timed.length
       ? Math.round(timed.reduce((sum, o) => sum + o.responseMs, 0) / timed.length)
       : null;
-    const metrics: DiMathFactsMetrics = {
-      type: 'di-math-facts',
+    // The set's actual difficulty: a 4-word set and an 8-word set are not the
+    // same task, and sentence length is exactly the axis /add-structural-
+    // difficulty will modulate. Without it the metrics cannot tell them apart.
+    const meanSentenceWords = outcomes.length
+      ? Math.round((outcomes.reduce((sum, o) => sum + o.wordCount, 0) / outcomes.length) * 10) / 10
+      : 0;
+    const metrics: DiSentenceReadingMetrics = {
+      type: 'di-sentence-reading',
       challengeType: data.challengeType,
       evalMode: data.challengeType,
       totalChallenges: data.challenges.length,
@@ -291,6 +333,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
         ? Math.round((attemptsCount / outcomes.length) * 10) / 10
         : 0,
       meanResponseMs,
+      meanSentenceWords,
     };
     evaluation.submitResult(
       overallAccuracy >= 50,
@@ -300,7 +343,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     );
     setRunning(false);
     setPhase('done');
-    setStatusLine('Great work today!');
+    setStatusLine('Great reading today!');
   }, [clearAdvanceTimer, data.challenges.length, data.challengeType, evaluation]);
 
   // ── DI progression over an engine verdict ────────────────────────
@@ -323,16 +366,16 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
         const used = prevCorrections + 1;
         correctionsRef.current.set(item.id, used);
         if (used <= MAX_CORRECTIONS_PER_ITEM) {
-          // The tutor's correction line already re-modeled and re-elicited
-          // in-band; just reflect it and keep listening.
+          // The tutor's correction line already re-modeled the whole sentence
+          // and re-elicited in-band; just reflect it and keep listening.
           setPhase('listening');
-          setStatusLine('Let’s try that one again.');
+          setStatusLine('Let’s read that one again.');
           return;
         }
         // Corrections capped — record a miss and move the lesson forward.
         outcomesRef.current.push({
           id: item.id, correct: false, attempts: used, score: 0,
-          responseMs: lastResponseMsRef.current,
+          responseMs: lastResponseMsRef.current, wordCount: item.wordCount,
         });
         recordResult({ challengeId: item.id, correct: false, attempts: used, score: 0 });
         const next = data.challenges[idxRef.current + 1] ?? null;
@@ -340,9 +383,9 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
         if (next) {
           setStatusLine('Good try. Let’s keep going.');
           loop.queueCue(moveOnCue(item, next));
-          // No reward to show (the fact went unanswered), but the stage still
-          // holds: the move-on cue CONTAINS the next fact's model line, so the
-          // swap belongs at the same audio edge, not before "Good try" is said.
+          // No reward to show, but the stage still holds: the move-on cue
+          // CONTAINS the next sentence's model line, so the swap belongs at the
+          // same audio edge, not before "Good try" has been said.
           scheduleAdvance();
         } else {
           loop.queueCue(moveOnCue(item));
@@ -356,17 +399,16 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       const score = scoreForCorrections(prevCorrections);
       outcomesRef.current.push({
         id: item.id, correct: true, attempts, score,
-        responseMs: lastResponseMsRef.current,
+        responseMs: lastResponseMsRef.current, wordCount: item.wordCount,
       });
       recordResult({ challengeId: item.id, correct: true, attempts, score });
       lastResponseMsRef.current = null;
       setPhase('affirmed');
-      // Post-answer reward only — the sum never precedes the answer. This
-      // REPLACES the printed problem for the beat rather than stacking under it.
-      setReward({ display: item.solvedDisplay, answer: item.answerNumeral });
+      // Post-read reward only — nothing pictures the sentence before it is read.
+      setReward({ text: item.text, wordCount: item.wordCount, emoji: item.emoji });
       const next = data.challenges[idxRef.current + 1] ?? null;
       if (next) {
-        setStatusLine('Yes! Quick thinking.');
+        setStatusLine('Yes! Nice reading.');
         loop.queueCue(itemCue(next));
         scheduleAdvance();
       } else {
@@ -382,8 +424,8 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     (emission: LoopEmission) => {
       switch (emission.kind) {
         case 'attempt-open':
-          // The child got ahead of the beat — flush it FIRST so the stage can
-          // never show a resolved fact while they are answering the next one.
+          // The child got ahead of the beat — flush it FIRST so a read sentence
+          // can never be up while they are already reading the next one.
           commitAdvance();
           setPhase('judging');
           setStatusLine('Listening…');
@@ -394,19 +436,19 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
           return;
         case 'verdict':
           if (emission.judgment === 'no-verdict') {
-            setStatusLine('One more time—what is it?');
+            setStatusLine('One more time—read it for me.');
             return;
           }
           applyVerdict(emission.judgment);
           return;
         case 'resync':
-          // Mid-beat, the next fact's cue is ALREADY queued by applyVerdict —
-          // re-cueing here would fight it. Just settle the beat.
+          // Mid-beat, the next sentence's cue is ALREADY queued by applyVerdict
+          // — re-cueing here would fight it. Just settle the beat.
           if (pendingAdvanceRef.current) {
             commitAdvance();
             return;
           }
-          setStatusLine('Let’s hear that one again.');
+          setStatusLine('Let’s read that one again.');
           if (loopRef.current) {
             const item = currentOf();
             if (item) loopRef.current.queueCue(itemCue(item));
@@ -421,6 +463,9 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
 
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    // The pack's one engine parameter: a mid-sentence pause is part of the
+    // response (bench finding 2). Family default stays 500ms.
+    voice: { config: { silenceCloseMs: SENTENCE_SILENCE_CLOSE_MS } },
     onEmission: handleEmission,
   });
   loopRef.current = loop;
@@ -437,19 +482,25 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       // (catalog/di.ts `tutoring` / `audioInput`), same as this fallback path.
       if (!connectedRef.current && ctx.sessionMode === 'idle') {
         weConnectedRef.current = true;
-        const first = data.challenges[0];
         await ctx.connect({
-          primitive_type: 'di-math-facts',
+          primitive_type: 'di-sentence-reading',
           instance_id: resolvedInstanceId,
           primitive_data: {
-            activity: 'live direct instruction math facts',
+            activity: 'live direct instruction sentence reading',
+            // Resolved against the catalog contextKeys. The tutor MODELS these
+            // aloud by design — the printed sentence is the stimulus, and the
+            // model line is the instruction — so unlike the sibling packs there
+            // is no answer side to keep out of RUNTIME STATE.
             challengeType: data.challengeType,
-            // Stimulus side only — never solvedDisplay/answerWord (answer-leak rule).
-            facts: factsSummary,
-            display: first?.display ?? '',
-            problem: first?.problem ?? '',
+            sentences: sentencesSummary,
+            text: data.challenges[0]?.text ?? '',
+            wordCount: data.challenges[0]?.wordCount ?? 0,
+            // The support tier the cue is composed at, so the tutor's own
+            // scaffolding channel cannot re-read a sentence a `hard` item
+            // deliberately withheld.
+            supportTier: data.challenges[0]?.supportTier ?? 'easy',
           },
-          grade_level: data.gradeLevel || 'kindergarten',
+          grade_level: data.gradeLevel || 'first grade',
           audio_input: DI_AUDIO_INPUT,
         });
         const started = performance.now();
@@ -463,7 +514,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       if (!listeningRef.current) throw new Error('The microphone did not open.');
 
       setPhase('ready');
-      setStatusLine('Ready! We’ll start with the first one.');
+      setStatusLine('Ready! We’ll start with the first sentence.');
       startRun();
     } catch (error) {
       setStatusLine(error instanceof Error ? error.message : 'Could not start.');
@@ -473,25 +524,24 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     }
     // startRun is stable via ref below; deps intentionally minimal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, data.challenges, data.challengeType, data.gradeLevel, factsSummary, preparing, resolvedInstanceId]);
+  }, [ctx, data.challenges, data.challengeType, data.gradeLevel, sentencesSummary, preparing, resolvedInstanceId]);
 
-  // Keep the tutor's RUNTIME STATE truthful as facts advance — the catalog
-  // contextKeys (challengeType / display / problem / facts) resolve against this
-  // bag. updateContext is the silent channel (no end-of-turn), so these never
-  // perturb the judged loop; the context provider dedupes by value. Stimulus
-  // side only: the answer reaches the tutor inside the [DI_ITEM] judging
-  // contract, never through RUNTIME STATE.
+  // Keep the tutor's RUNTIME STATE truthful as sentences advance — the catalog
+  // contextKeys (challengeType / text / wordCount / sentences) resolve against
+  // this bag. updateContext is the SILENT channel (no end_of_turn), so these
+  // never perturb the judged loop; the context provider dedupes by value.
   useEffect(() => {
     if (!ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: data.challengeType,
-      display: currentChallenge.display,
-      problem: currentChallenge.problem,
-      facts: factsSummary,
+      text: currentChallenge.text,
+      wordCount: currentChallenge.wordCount,
+      sentences: sentencesSummary,
+      supportTier: currentChallenge.supportTier ?? 'easy',
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType, factsSummary]);
+  }, [ctx.isConnected, currentChallenge, data.challengeType, sentencesSummary]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];
@@ -506,7 +556,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     loop.reset();
     setRunning(true);
     setPhase('listening');
-    setStatusLine('Listen, then say the answer.');
+    setStatusLine('Listen, then read it.');
     loop.sendCueNow(itemCue(first, true));
     loop.arm();
   }, [clearAdvanceTimer, data.challenges, loop]);
@@ -535,10 +585,10 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       <LuminaCardHeader>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <LuminaCardTitle>{data.title || 'Math Facts'}</LuminaCardTitle>
+            <LuminaCardTitle>{data.title || 'Sentence Reading'}</LuminaCardTitle>
             <LuminaCardDescription>{data.description}</LuminaCardDescription>
           </div>
-          <LuminaBadge accent="cyan">Say it out loud</LuminaBadge>
+          <LuminaBadge accent="cyan">Read it out loud</LuminaBadge>
         </div>
       </LuminaCardHeader>
 
@@ -549,57 +599,55 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
           </div>
         )}
 
-        {/* The kid-facing stage holds exactly ONE fact at a time. Before the
-            answer: the printed problem alone ("3 - 2"). After the tutor affirms:
-            the SAME fact completes in place ("3 - 2 = 1", emerald + pop) for the
-            reward beat, and only when that beat releases does the next problem
-            appear. Showing the next problem while the last answer was still up
-            put two facts on screen at once — overload at this age (user browser
-            check 2026-07-25). The completed form is value-captured `reward`,
-            never derived from currentChallenge. No timer, ever. */}
+        {/* The kid-facing stage holds exactly ONE sentence at a time. Before the
+            read: the printed sentence alone — decoding print IS the skill, so no
+            picture, emoji, or hint precedes it. After the tutor affirms: the
+            SAME sentence is marked read in place (emerald + pop) for the reward
+            beat, and only when that beat releases does the next sentence
+            appear. The marked form is value-captured `reward`, never derived
+            from currentChallenge. No timer, ever. */}
         {!isComplete && currentChallenge && (
           <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             {reward && phase === 'affirmed' ? (
               <div
-                key={`solved-${reward.display}`}
-                className={`rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-2 text-7xl font-bold tracking-wide text-emerald-300 ${motion.pop}`}
+                key={`read-${reward.text}`}
+                className={`rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 font-bold leading-snug tracking-wide text-emerald-300 ${sentenceSizeClass(reward.wordCount)} ${motion.pop}`}
               >
-                {reward.display}
+                {reward.text}
               </div>
             ) : (
               <div
-                key={`problem-${currentChallenge.id}`}
-                className={`text-7xl font-bold tracking-wide text-white ${motion.reveal}`}
+                key={`sentence-${currentChallenge.id}`}
+                className={`font-bold leading-snug tracking-wide text-white ${sentenceSizeClass(currentChallenge.wordCount)} ${motion.reveal}`}
               >
-                {currentChallenge.display}
+                {currentChallenge.text}
               </div>
             )}
+            {reward?.emoji && phase === 'affirmed' && (
+              <div className="mt-3 text-5xl leading-none" aria-hidden="true">{reward.emoji}</div>
+            )}
             <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? 'say the answer' : 'get ready'}
+              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? 'read it' : 'get ready'}
             </div>
           </div>
         )}
 
-        {/* Completion recap — a per-fact mark, kit-styled. Completed equations
-            are safe ONLY for affirmed facts; a missed fact recaps without its
-            answer (it resurfaces through review, and the recap must not leak
-            what the child never produced). */}
+        {/* Completion recap — a per-sentence mark, kit-styled. Every sentence
+            was already printed on the stage, so showing them all is safe. */}
         {isComplete && (
           <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-6 text-center">
-            <div className="text-2xl font-semibold text-emerald-200">Great work today!</div>
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <div className="text-2xl font-semibold text-emerald-200">Great reading today!</div>
+            <div className="mt-4 flex flex-col items-center gap-2">
               {data.challenges.map((ch) => {
                 const r = challengeResults.find((res) => res.challengeId === ch.id);
                 const ok = r?.correct;
                 return (
                   <div
                     key={ch.id}
-                    className={`flex flex-col items-center rounded-xl border px-4 py-2 ${ok ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}
+                    className={`flex w-full max-w-md items-center justify-between gap-3 rounded-xl border px-4 py-2 text-left ${ok ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}
                   >
-                    <span className="text-2xl font-bold text-white">
-                      {ok ? ch.solvedDisplay : ch.display}
-                    </span>
-                    <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
+                    <span className="text-lg font-semibold text-white">{ch.text}</span>
+                    <span className="text-lg" aria-hidden="true">{ok ? (ch.emoji ?? '✅') : '🔁'}</span>
                   </div>
                 );
               })}
@@ -629,4 +677,4 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
   );
 };
 
-export default DiMathFacts;
+export default DiSentenceReading;

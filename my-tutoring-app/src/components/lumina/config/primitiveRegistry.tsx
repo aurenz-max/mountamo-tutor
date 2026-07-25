@@ -173,6 +173,7 @@ import PhonicsBlender from '../primitives/visual-primitives/literacy/PhonicsBlen
 import DiLetterSounds from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
+import DiSentenceReading from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -1898,6 +1899,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'di-math-facts': {
     component: DiMathFacts,
     sectionTitle: 'Math Facts',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-sentence-reading': {
+    component: DiSentenceReading,
+    sectionTitle: 'Sentence Reading',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

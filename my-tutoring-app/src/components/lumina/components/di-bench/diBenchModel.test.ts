@@ -10,6 +10,7 @@ import {
   modelLine,
   moveOnCue,
   scoreFidelity,
+  SENTENCE_READING_PROBE_ITEMS,
   testLine,
   verifyLine,
 } from './diScript';
@@ -100,7 +101,9 @@ describe('live-judged Direct Instruction bench model', () => {
   });
 
   it('exposes the math-facts probe as a bench set with full number-word coverage', () => {
-    expect(BENCH_SETS.map((set) => set.id)).toEqual(['letter-sounds', 'word-reading', 'math-facts']);
+    expect(BENCH_SETS.map((set) => set.id)).toEqual([
+      'letter-sounds', 'word-reading', 'math-facts', 'sentence-reading',
+    ]);
     const probe = BENCH_SETS.find((set) => set.id === 'math-facts')!.items;
     expect(probe).toBe(MATH_FACTS_PROBE_ITEMS);
     expect(probe).toHaveLength(10);
@@ -150,6 +153,68 @@ describe('live-judged Direct Instruction bench model', () => {
       .toBe('fact-2p1');
     expect(detectDIItemFromTutorText('Yes, five plus five is ten.', MATH_FACTS_PROBE_ITEMS)?.id)
       .toBe('fact-5p5');
+  });
+
+  it('exposes the sentence-reading probe with a 3-to-8-word length ladder', () => {
+    const probe = BENCH_SETS.find((set) => set.id === 'sentence-reading')!.items;
+    expect(probe).toBe(SENTENCE_READING_PROBE_ITEMS);
+    expect(probe).toHaveLength(10);
+    expect(probe.every((item) => item.kind === 'sentence')).toBe(true);
+    // The ladder is the point: the sitting reports WHERE reliability breaks by
+    // length, and that ceiling becomes the pack's max sentence length.
+    const lengths = probe.map((item) => item.spoken.split(' ').length);
+    expect(Math.min(...lengths)).toBe(3);
+    expect(Math.max(...lengths)).toBe(8);
+  });
+
+  it('keeps every sentence line on the two-branch sentinel contract', () => {
+    for (const item of SENTENCE_READING_PROBE_ITEMS) {
+      expect(verifyLine(item).toLowerCase().startsWith('yes')).toBe(true);
+      expect(correctionLine(item).toLowerCase().startsWith('my turn')).toBe(true);
+      // The real collision risk for connected text: a sentence could itself
+      // start with "Yes" or contain a clause that scans as a verdict.
+      for (const line of [modelLine(item), guideLine(item), testLine(item)]) {
+        expect(['affirmed', 'corrected']).not.toContain(scanForSentinel(line, DI_SENTINELS));
+      }
+      expect(scanForSentinel(verifyLine(item), DI_SENTINELS)).toBe('affirmed');
+      expect(scanForSentinel(correctionLine(item), DI_SENTINELS)).toBe('corrected');
+    }
+  });
+
+  it('reads connected text as a fluent model, not a spelled-out one', () => {
+    const item = SENTENCE_READING_PROBE_ITEMS.find((i) => i.id === 'sent-sat-mat')!;
+    expect(modelLine(item)).toBe('Listen: Sam sat on the mat.');
+    expect(guideLine(item)).toBe('Together: Sam sat on the mat.');
+    expect(testLine(item)).toBe('Your turn. Read it.');
+    expect(verifyLine(item)).toBe('Yes, that says Sam sat on the mat.');
+    expect(correctionLine(item)).toBe('My turn: Sam sat on the mat. Your turn. Read it again.');
+  });
+
+  it('judges connected text on word-by-word accuracy, never on speed', () => {
+    const cue = itemCue(SENTENCE_READING_PROBE_ITEMS.find((i) => i.id === 'sent-red-hat')!);
+    expect(cue).toContain('every word in order');
+    // The rubber-stamp guard: "reasonably close" must NOT reach a sentence item.
+    expect(cue).not.toContain('reasonably close');
+    expect(cue).toContain('ANY word skipped, added, or read as a different word');
+    expect(cue).toContain('judge accuracy, never speed');
+  });
+
+  it('cross-checks a read sentence as a strict full-sentence containment', () => {
+    const item = SENTENCE_READING_PROBE_ITEMS.find((i) => i.id === 'sent-red-hat')!;
+    expect(matchesAsrAliases('The big pig had a red hat on.', item)).toBe(true);
+    // A one-word substitution must NOT pass the cross-check — this is the
+    // signal the sitting reads when the Live judge and the transcript disagree.
+    expect(matchesAsrAliases('The big pig had a red hut on.', item)).toBe(false);
+    // ...nor an omission.
+    expect(matchesAsrAliases('The big pig had a hat on.', item)).toBe(false);
+  });
+
+  it('detects sentence transitions from output transcription', () => {
+    expect(detectDIItemFromTutorText('Listen: The cat sat.', SENTENCE_READING_PROBE_ITEMS)?.id)
+      .toBe('sent-cat-sat');
+    expect(
+      detectDIItemFromTutorText('Yes, that says we go up and we go down.', SENTENCE_READING_PROBE_ITEMS)?.id,
+    ).toBe('sent-up-down');
   });
 
   it('retains the expected DI phrasing for diagnostics', () => {

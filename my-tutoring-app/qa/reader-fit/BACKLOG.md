@@ -138,6 +138,66 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
       the one un-swept gap → confirm/clear as Task 3. Execution handoff (ten-frame first):
       `qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`. The sibling audit above IS the census
       of record — do NOT re-sweep.
+    - **RESOLVED 2026-07-25 — `coin-counter` `count-like` (Task 3). VERDICT: PROXY (CLEARED=false), fixed.**
+      The handoff's read held at every pointer: coins rendered `<CoinVisual disabled />` with no
+      `onClick`, the answer was a typed `LuminaInput type="number"` behind Check, and `gradeBand`
+      was cosmetic-only (no `isK` anywhere). K now ENACTS: tap each coin, a badge stamps the
+      **running skip-count total** (5→10→15) in tap order, auto-judge when every coin is counted
+      exactly once, no number input and no Check at K; re-tapping a counted coin is a rejected
+      double-count that shakes the object (Audit-C rule 5) — so the enacted path is failable, not a
+      walk-through. Fork is **band+mode**; Grade 1+ and every `count-mixed` card are byte-identical
+      (`git diff` = 160 insertions, **0 deletions**). Contract derived first (none existed):
+      `docs/contracts/coin-counter.md`; `--check` **COMPATIBLE**
+      (`qa/primitive-contracts/coin-counter-check-2026-07-25.md`). Verified tsc 0-new (all 803
+      pre-existing errors are outside `components/lumina/`) + typecheck:lumina 0 + jsdom **9/9**
+      (both non-vacuity probes fail the right tests) + full vitest **930/930** + real-Gemini
+      eval-test **6/6 @K, 6/6 @G1, 6/6 count-mixed @G2** + **real-Chrome mouse-click probe PASS**.
+      Report: `qa/reader-fit/coin-counter-task3-2026-07-25.md`. Pixel → HUMAN-CHECKS **#52**.
+      - **RULING (split mechanism):** the component can't tell count-like from count-mixed by
+        `challenge.type`, so the generator now **stamps `countMode: 'like'|'mixed'` from
+        `targetEvalMode`**. Inspecting `displayedCoins` for a single type was REJECTED — the
+        generator rejects multi-type sets for count-like but has **no converse rule**, so a G2
+        count-mixed card drawing three dimes would silently flip into K's enacted mode and ablate a
+        live consumer. `[[value-origin-not-code-touch]]`.
+      - **RULING (`showCoinValues` on like coins):** **legitimate recognition aid, NOT a rule-#1
+        leak — kept default-true.** The objective is *skip counting and summation*; the denomination
+        is the skip-count INTERVAL (an input), not the answer, and coin-value recall is a different
+        subskill (`MEAS001-07-b` → knowledge-check). The total is never printed. Contrast
+        comparison-builder's "Left: 3 / Right: 5" (the answer) and `identify`, which already hides
+        values because there the value IS the answer. Narrow exception queued as **G4**: a
+        count-like card showing exactly ONE coin prints its own total.
+      - **PREMISE CORRECTION (the big one) — `count-like` is a GRADE 1 skill.** The census found the
+        only authored consumer is **`MEAS001-07-c` @ Grade 1** ("Focus: Skip counting and
+        summation… single-denomination sets"), and live routing confirms it resolves at Grade 1.
+        **There is no K money subskill in the curriculum at all** — the strand is G1 `MEAS001-07` +
+        G2 `MEAS002-05`; the K `MEAS001-07-A…F` sharing that stem is **"Time Durations"**.
+        `PRIMITIVE_GAPS.md` GAP-007 mislabels these as "MATHEMATICS (K)" — that stale grade label is
+        the likely origin of the K framing. **K is still reachable** (a K topic-driven money lesson
+        routes `identify`→`count-like`), so the fork is live code, not dead code — but the PRIMARY
+        consumer is Grade 1 and **still has the proxy**. Deliberately NOT widened here: Grade 1 is a
+        live consumer with β1.5 item history and changing its interaction deserves its own slice.
+        → contract gap **G1**, the highest-value follow-up, and the first item for the EMERGING census.
+      - **Other gaps opened:** **G2** `resolveGradeBand` parses `ctx.gradeContext` PROSE (which
+        `GenerationContext` explicitly forbids) — so Grades 2–3 are unreachable and G2 money lessons
+        silently run as Grade 1 (`/topic-fidelity`); **G3** K chrome (grade badge / "1/2" counter /
+        phase badge) is not band-gated and the instruction has no 🔊 — found by the pixel check
+        (`/reader-fit --fix`); **G5** the count fallback is a MIXED set; **G6** the catalog advertises
+        a K band the curriculum lacks.
+    - **Task 3 (coin-counter) — ~~NEXT PULL~~ DONE 2026-07-25 (see above); dedicated handoff `/pm` 2026-07-25:**
+      `qa/HANDOFF-reader-fit-coin-counter-2026-07-25.md`. It **supersedes** the 07-16 Task 3 prompt,
+      which was written blind and has a naming error that sends a session hunting for a mode that
+      doesn't exist: `count-like` is a CATALOG eval mode (`catalog/math.ts:3613`, β1.5) whose
+      `challengeTypes` is `['count']` — the component type is `'count'` (`CoinCounter.tsx:39`), and
+      `count-mixed` (β2.5) shares it. The handoff carries a completed line-exact source read whose
+      **indicated verdict is PROXY, not clear**: in `renderCountChallenge` (`:632`) the coins go
+      through `renderCoinGroup` → `<CoinVisual disabled />` (`:599`, no `onClick`) and the answer is
+      a typed `LuminaInput type="number"` (`:640`) behind a Check button (`:928`/`:931`); `gradeBand`
+      is used only for cosmetic labels (`:321`, `:844`) — no `isK` fork exists in the file. Two
+      rulings the executing session must record: (a) the count-like vs count-mixed split (the
+      component can't tell them apart by `challenge.type`), (b) whether `showCoinValues` defaulting
+      true is a legit recognition aid or a rule-#1 leak for LIKE coins. **Contract-first is
+      REQUIRED** — no `docs/contracts/coin-counter.md` exists and the component spans 6 eval modes
+      K–3, so `/primitive-contract coin-counter --census` runs before any edit.
 - **On-demand instruction replay across K eval modes (seeded 2026-07-16).** Every K math primitive
   should expose a persistent LuminaReadAloud "🔊 Read me" that repeats the current
   instruction/question, in a CONSISTENT position across all of that primitive's eval modes (so a

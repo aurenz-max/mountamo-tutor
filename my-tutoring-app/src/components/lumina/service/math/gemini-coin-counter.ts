@@ -534,6 +534,11 @@ Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instruc
         hint: (flat.hint as string) || "Add up the value of each coin!",
         displayedCoins: displayed,
         correctTotal: coinDefTotal(displayed), // always derive
+        // Stamp WHICH eval mode built this card. count-like and count-mixed both emit
+        // type 'count', and the coin set can't be re-inspected to tell them apart (a
+        // mixed set may legitimately draw one denomination). The mode is only knowable
+        // HERE, at the origin — [[value-origin-not-code-touch]].
+        countMode: singleCoinType ? ("like" as const) : ("mixed" as const),
       };
     })
     .filter((c): c is CoinCounterChallenge => c !== null);

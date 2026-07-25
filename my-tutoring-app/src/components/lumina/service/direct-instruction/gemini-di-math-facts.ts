@@ -1,13 +1,13 @@
 /**
  * gemini-di-math-facts — pool-scoped generator for the di-math-facts
- * primitive. Fork A (pool service): the item CONTENT is a code-owned addition
- * fact pool scoped to the objective — per-challenge data is value-only
- * (operands, sums, number words), and structured-output Gemini is convergent
- * on values, so Gemini NEVER emits per-challenge facts. Gemini's only job is
- * the session wrapper (kid title + description) and a factScope hint used
- * ONLY when the objective text is too generic for the code regexes to pin a
- * scope. Operands, display, spoken problem, answer word/numeral, and ASR
- * aliases are all derived deterministically in code.
+ * primitive. Fork A (pool service): the item CONTENT is a code-owned fact pool
+ * scoped to the objective — per-challenge data is value-only (operands,
+ * answers, number words), and structured-output Gemini is convergent on
+ * values, so Gemini NEVER emits per-challenge facts. Gemini's only job is the
+ * session wrapper (kid title + description) and a factScope hint used ONLY
+ * when the objective text is too generic for the code regexes to pin a scope.
+ * Operands, display, spoken problem, answer word/numeral, the solved form, and
+ * ASR aliases are all derived deterministically in code.
  *
  * SCOPE: the objective text is code-enforced over the model's pick (the
  * census lesson — the prompt asks, the code guarantees). Named facts
@@ -16,17 +16,26 @@
  * (K → within 5, else within 10).
  *
  * VARIANCE: a session never drills one answer by accident — the first
- * selection pass keeps at most ONE fact per distinct sum until the count is
- * met, zero-operand facts (a=0 or b=0) are capped at one per session, and
- * commuted duplicates (2+3 vs 3+2) are deduped by canonical key. make-ten
- * sessions are the sanctioned exception: every answer IS ten, so the
- * back-fill pass supplies the rest.
+ * selection pass keeps at most ONE fact per distinct ANSWER until the count is
+ * met, trivial facts (adding/subtracting zero, counting from zero) are capped
+ * at one per session, and duplicates collapse on a per-skill canonical key
+ * (addition commutes, subtraction does not). make-ten sessions are the
+ * sanctioned exception: every answer IS ten, so the back-fill pass supplies
+ * the rest.
  *
- * EVAL MODES (L0) — ONE task identity at birth: `answer_fact`. Ladder
- * candidates (counting_next / fact_review / subtraction_fact) are queued on
- * the birth certificate for /add-eval-modes — not built now. The
- * resolveEvalModes call is wired so the eventual ladder drops in without
- * reshaping this generator; today every resolution lands on answer_fact.
+ * EVAL MODES (L1) — task identities, resolved from intent or pinned by the
+ * tester/curator, then built HERE (Fork A: Gemini never emits the challenge
+ * type — code stamps it, so there is no schema enum to constrain):
+ *   - counting_next    — say the number after N (rote counting sequence).
+ *   - answer_fact      — say the answer to a printed addition fact. The base.
+ *   - fact_review      — cumulative mix drawn WIDE across the grade's whole
+ *                        fact space, anchored on the objective's focus.
+ *   - subtraction_fact — say the answer to a printed subtraction fact.
+ * Every mode's spoken answer is a NUMBER WORD — the response class benched in
+ * the #46 probe sitting — so the ladder needed no new bench sitting (standing
+ * gate 1). The unconstrained ("mixed", resolution === null) path builds a
+ * spread across ALL FOUR modes — never one Gemini-picked type (SP-21 Fork-A
+ * discipline).
  */
 
 import { Type, Schema } from "@google/genai";
@@ -40,7 +49,7 @@ import type {
 
 // ── Number words + ASR aliases (code-owned) ─────────────────────────
 
-/** Number words 0..20 — the full sum range this pack can ever speak. */
+/** Number words 0..20 — the full answer range this pack can ever speak. */
 const NUMBER_WORDS = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
   'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
@@ -139,9 +148,18 @@ const gradeDefaultScope = (gradeLevel: string): { kind: 'within'; maxSum: number
   maxSum: /kinder|pre-?k|\bk\b/i.test(gradeLevel) ? 5 : 10,
 });
 
-// ── Fact pool builder (deterministic, in code) ──────────────────────
+/** The largest number this session may reach — the ceiling every non-addition
+ *  pool is built against (subtraction minuends, the counting sequence). */
+const ceilingOf = (scope: FactScope, gradeLevel: string): number => {
+  if (scope.kind === 'within') return scope.maxSum;
+  if (scope.kind === 'make_10') return 10;
+  if (scope.kind === 'doubles') return 10;
+  return gradeDefaultScope(gradeLevel).maxSum; // named facts → the grade band
+};
 
-/** Enumerate the scoped pool. Named scopes never reach here. */
+// ── Pool builders (deterministic, in code, one per skill) ───────────
+
+/** Addition pool. Named scopes never reach here. */
 const buildPool = (scope: Exclude<FactScope, { kind: 'named' }>): FactPair[] => {
   if (scope.kind === 'make_10') {
     // Every pair that makes ten: (0,10) .. (10,0).
@@ -160,6 +178,53 @@ const buildPool = (scope: Exclude<FactScope, { kind: 'named' }>): FactPair[] => 
   return pool;
 };
 
+/**
+ * Subtraction pool, derived from the SAME objective scope so a "make ten"
+ * lesson drills ten's partners rather than arbitrary differences:
+ *   make_10 → the make-ten inverse (10 − n, the partner fact)
+ *   doubles → halving (2n − n)
+ *   within N / named → every minuend up to the ceiling.
+ * `b < a` throughout, so no item ever answers zero (a K child reading "3 − 3"
+ * as an answer is a separate concept, not fact fluency).
+ */
+const buildSubtractionPool = (scope: FactScope, ceiling: number): FactPair[] => {
+  if (scope.kind === 'make_10') {
+    return Array.from({ length: 9 }, (_, i) => ({ a: 10, b: i + 1 })); // 10−1 .. 10−9
+  }
+  if (scope.kind === 'doubles') {
+    return Array.from({ length: 5 }, (_, i) => ({ a: 2 * (i + 1), b: i + 1 }));
+  }
+  const pool: FactPair[] = [];
+  for (let a = 1; a <= ceiling; a++) {
+    for (let b = 0; b < a; b++) pool.push({ a, b });
+  }
+  return pool;
+};
+
+/** Counting-sequence pool: start at n, say n+1. `b` is fixed at 1 (the step). */
+const buildCountingPool = (ceiling: number): FactPair[] =>
+  Array.from({ length: ceiling }, (_, i) => ({ a: i, b: 1 }));
+
+// ── Per-skill answer / identity / triviality ───────────────────────
+
+/** The answer for one pair UNDER a given skill — the single authority. */
+const answerFor = (type: DiMathFactsChallengeType, p: FactPair): number =>
+  type === 'counting_next' ? p.a + 1
+    : type === 'subtraction_fact' ? p.a - p.b
+      : p.a + p.b;
+
+/** Canonical identity. Addition commutes (2+3 ≡ 3+2); subtraction does not. */
+const keyFor = (type: DiMathFactsChallengeType, p: FactPair): string =>
+  type === 'counting_next' ? `next:${p.a}`
+    : type === 'subtraction_fact' ? `${p.a}-${p.b}`
+      : p.a <= p.b ? `${p.a}+${p.b}` : `${p.b}+${p.a}`;
+
+/** Facts that teach nothing when repeated: ± zero, or counting up from zero. */
+const isTrivial = (type: DiMathFactsChallengeType, p: FactPair): boolean =>
+  type === 'counting_next' ? p.a === 0
+    : type === 'subtraction_fact' ? p.b === 0
+      : p.a === 0 || p.b === 0;
+
 /** Fisher-Yates. App code, not a workflow script — Math.random is fine. */
 const shuffle = <T,>(items: T[]): T[] => {
   const out = [...items];
@@ -170,46 +235,47 @@ const shuffle = <T,>(items: T[]): T[] => {
   return out;
 };
 
-/** Canonical key — commuted duplicates (2+3 / 3+2) collapse to one fact. */
-const factKey = (p: FactPair): string =>
-  p.a <= p.b ? `${p.a}+${p.b}` : `${p.b}+${p.a}`;
-
 /**
- * Variance-enforced selection: seed facts (explicitly named by the objective)
- * are taken first and bypass the variance caps; then a first pass keeps at
- * most ONE fact per distinct sum until the count is met; then a back-fill
- * pass completes the session. Zero-operand facts are capped at one, and
- * everything dedupes on the canonical key.
+ * Variance-enforced selection for ONE skill: seed facts (explicitly named by
+ * the objective) are taken first and bypass the variance caps; then a first
+ * pass keeps at most ONE item per distinct ANSWER until the count is met; then
+ * a back-fill pass completes the session. Trivial items are capped at one, and
+ * everything dedupes on the skill's canonical key.
  */
-const selectVaried = (pool: FactPair[], count: number, seed: FactPair[] = []): FactPair[] => {
+const selectVaried = (
+  pool: FactPair[],
+  count: number,
+  type: DiMathFactsChallengeType,
+  seed: FactPair[] = [],
+): FactPair[] => {
   const out: FactPair[] = [];
   const keys = new Set<string>();
-  const sums = new Set<number>();
-  let zeros = 0;
+  const answers = new Set<number>();
+  let trivials = 0;
   const take = (p: FactPair) => {
-    keys.add(factKey(p));
-    sums.add(p.a + p.b);
-    if (p.a === 0 || p.b === 0) zeros += 1;
+    keys.add(keyFor(type, p));
+    answers.add(answerFor(type, p));
+    if (isTrivial(type, p)) trivials += 1;
     out.push(p);
   };
   for (const p of seed) {
     if (out.length >= count) break;
-    if (keys.has(factKey(p))) continue;
+    if (keys.has(keyFor(type, p))) continue;
     take(p); // the objective asked for this exact fact — it always ships
   }
   // Pass 1: distinct answers only.
   for (const p of pool) {
     if (out.length >= count) break;
-    if (keys.has(factKey(p))) continue;
-    if ((p.a === 0 || p.b === 0) && zeros >= 1) continue;
-    if (sums.has(p.a + p.b)) continue;
+    if (keys.has(keyFor(type, p))) continue;
+    if (isTrivial(type, p) && trivials >= 1) continue;
+    if (answers.has(answerFor(type, p))) continue;
     take(p);
   }
-  // Pass 2: back-fill (repeat sums allowed — the make-ten case lives here).
+  // Pass 2: back-fill (repeat answers allowed — the make-ten case lives here).
   for (const p of pool) {
     if (out.length >= count) break;
-    if (keys.has(factKey(p))) continue;
-    if ((p.a === 0 || p.b === 0) && zeros >= 1) continue;
+    if (keys.has(keyFor(type, p))) continue;
+    if (isTrivial(type, p) && trivials >= 1) continue;
     take(p);
   }
   return out;
@@ -222,6 +288,60 @@ const EASY_SPREAD: FactPair[] = [
   { a: 1, b: 1 }, { a: 2, b: 1 }, { a: 2, b: 2 }, { a: 3, b: 1 }, { a: 3, b: 2 },
 ];
 
+/**
+ * The pool ONE skill draws from, given the objective's resolved scope.
+ *
+ * `fact_review` is the deliberate departure: its POOL is the grade's ENTIRE
+ * fact space, not the narrow focus, because a review that re-drills only the
+ * freshly-taught cluster is not a review. Its thread back to the lesson comes
+ * from `seedForType`, which anchors up to 2 items from the focused pool. True
+ * spaced review is bounded by the taught-set from student history, which is
+ * unavailable at generation time — this grade-wide spread is the L1
+ * approximation (same call as di-letter-sounds `letter_sound_review`; see the
+ * L2 contextKeys note there).
+ */
+const poolForType = (
+  type: DiMathFactsChallengeType,
+  scope: FactScope,
+  gradeLevel: string,
+  ceiling: number,
+): FactPair[] => {
+  switch (type) {
+    case 'counting_next':
+      return buildCountingPool(ceiling);
+    case 'subtraction_fact':
+      return buildSubtractionPool(scope, ceiling);
+    case 'fact_review':
+      return buildPool(gradeDefaultScope(gradeLevel));
+    case 'answer_fact':
+    default:
+      return buildPool(scope.kind === 'named' ? gradeDefaultScope(gradeLevel) : scope);
+  }
+};
+
+/**
+ * The items that ALWAYS ship for a skill, ahead of its pool.
+ *
+ * Two different jobs, both addition-only (a named "3 + 2" says nothing about
+ * which subtraction or counting item to drill, so those skills draw purely
+ * from their own scoped pool):
+ *  - Facts the objective NAMED — the census lesson: if the objective said
+ *    "3 + 2", that fact ships.
+ *  - `fact_review` ANCHORS — review broadens across the whole grade band, but
+ *    a review of a doubles lesson containing no doubles has lost its thread to
+ *    what was just taught. Up to 2 items from the focused pool keep it.
+ *    (Observed live: a `doubles` objective drew zero doubles before this.)
+ */
+const seedForType = (
+  type: DiMathFactsChallengeType,
+  scope: FactScope,
+): FactPair[] => {
+  if (type !== 'answer_fact' && type !== 'fact_review') return [];
+  if (scope.kind === 'named') return scope.facts;
+  if (type === 'fact_review') return shuffle(buildPool(scope)).slice(0, 2);
+  return []; // answer_fact's pool already IS the focused scope
+};
+
 // ── Challenge builder (all fields derived — never from the LLM) ─────
 
 const buildChallenge = (
@@ -229,31 +349,83 @@ const buildChallenge = (
   index: number,
   type: DiMathFactsChallengeType,
 ): DiMathFactsChallenge => {
-  const sum = pair.a + pair.b;
-  return {
-    id: `dimf-${index + 1}-${pair.a}p${pair.b}`,
+  const answer = answerFor(type, pair);
+  const base = {
     challengeType: type,
+    answerWord: NUMBER_WORDS[answer],
+    answerNumeral: answer,
+    asrAliases: aliasesFor(answer),
+  };
+  if (type === 'counting_next') {
+    return {
+      ...base,
+      id: `dimf-${index + 1}-n${pair.a}`,
+      a: pair.a,
+      b: 1,
+      display: `${pair.a} →`,
+      problem: `the number after ${NUMBER_WORDS[pair.a]}`,
+      solvedDisplay: `${pair.a} → ${answer}`,
+    };
+  }
+  if (type === 'subtraction_fact') {
+    return {
+      ...base,
+      id: `dimf-${index + 1}-${pair.a}m${pair.b}`,
+      a: pair.a,
+      b: pair.b,
+      display: `${pair.a} - ${pair.b}`,
+      problem: `${NUMBER_WORDS[pair.a]} minus ${NUMBER_WORDS[pair.b]}`,
+      solvedDisplay: `${pair.a} - ${pair.b} = ${answer}`,
+    };
+  }
+  return {
+    ...base,
+    id: `dimf-${index + 1}-${pair.a}p${pair.b}`,
     a: pair.a,
     b: pair.b,
     display: `${pair.a} + ${pair.b}`,
     problem: `${NUMBER_WORDS[pair.a]} plus ${NUMBER_WORDS[pair.b]}`,
-    answerWord: NUMBER_WORDS[sum],
-    answerNumeral: sum,
-    asrAliases: aliasesFor(sum),
+    solvedDisplay: `${pair.a} + ${pair.b} = ${answer}`,
   };
+};
+
+/** Split `count` across `k` skills as evenly as possible, each skill ≥1. */
+const distribute = (count: number, k: number): number[] => {
+  const base = Math.floor(count / k);
+  const rem = count % k;
+  return Array.from({ length: k }, (_, i) => base + (i < rem ? 1 : 0));
 };
 
 // ── Gemini wrapper (title/description/scope hint ONLY — Fork A) ─────
 
-/** Skill docs for the intent→mode router (Fork A — no schema to constrain).
- *  One identity at birth; /add-eval-modes widens this record later. */
+/** Skill docs for the intent→mode router (Fork A — no schema to constrain). */
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  counting_next: {
+    promptDoc:
+      `"counting_next": the child sees a number ("5 →") and says the number that comes NEXT ("six"). Rote counting sequence — the skill underneath counting on.`,
+    schemaDescription: "'counting_next' (say the number after)",
+  },
   answer_fact: {
     promptDoc:
-      `"answer_fact": the child sees ONE printed addition fact ("2 + 1") and speaks the answer number word ("three"). The base skill.`,
+      `"answer_fact": the child sees ONE printed addition fact ("2 + 1") and speaks the answer number word ("three"). The base skill, drilled as the objective's focused set.`,
     schemaDescription: "'answer_fact' (say the answer to the printed fact)",
   },
+  fact_review: {
+    promptDoc:
+      `"fact_review": cumulative / spaced review — the child answers facts already taught, drawn as a WIDE mix across the whole grade range rather than one focused set.`,
+    schemaDescription: "'fact_review' (mixed cumulative review)",
+  },
+  subtraction_fact: {
+    promptDoc:
+      `"subtraction_fact": the child sees ONE printed subtraction fact ("3 - 1") and speaks the answer number word ("two"). Take-away facts within the same range.`,
+    schemaDescription: "'subtraction_fact' (say the answer to a take-away fact)",
+  },
 };
+
+/** Every identity this pack can build, easiest → hardest (the mixed spread). */
+const ALL_TYPES: DiMathFactsChallengeType[] = [
+  'counting_next', 'answer_fact', 'fact_review', 'subtraction_fact',
+];
 
 const FACT_SCOPES = ['within_5', 'within_10', 'make_10', 'doubles'];
 
@@ -277,7 +449,7 @@ const wrapperSchema: Schema = {
       type: Type.STRING,
       enum: FACT_SCOPES,
       description:
-        "Your read of the objective's addition-fact scope: sums within 5, sums within 10, " +
+        "Your read of the objective's number range: sums within 5, sums within 10, " +
         "pairs that make ten, or doubles. Used only when the objective text does not pin one itself.",
     },
   },
@@ -315,26 +487,25 @@ export const generateDiMathFacts = async (
   const scopeText = `${intent ?? ''} ${config?.objectiveText ?? ''} ${topic}`;
   const textScope = resolveTextScope(scopeText);
 
-  const prompt = `Scope a brisk Direct Instruction math-facts practice (printed addition facts, spoken answers) for a young learner.
+  const prompt = `Scope a brisk Direct Instruction math-facts practice (printed problems, spoken number-word answers) for a young learner.
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
 
 RULES:
-- Read the objective and pick the factScope that matches it: 'within_5' (sums to five), 'within_10' (sums to ten), 'make_10' (pairs that make ten), or 'doubles' (a number plus itself). A generic objective for a kindergartner means 'within_5'; otherwise 'within_10'.
+- Read the objective and pick the factScope that matches its number range: 'within_5' (numbers to five), 'within_10' (numbers to ten), 'make_10' (pairs that make ten), or 'doubles' (a number plus itself). A generic objective for a kindergartner means 'within_5'; otherwise 'within_10'.
 - Write a warm, short kid title and a one-sentence description. They MUST NOT contain any digits or number words — the child must produce the answers, never hear or see them first.
 
 Return the wrapper JSON only.`;
 
-  // Resolve which eval-mode SKILL this objective calls for. One identity at
-  // birth — every resolution lands on answer_fact; the call is wired so the
-  // /add-eval-modes ladder drops in without reshaping this generator.
+  // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
+  // resolution drives which challenge types we BUILD (no schema enum exists).
   const resolution = await resolveEvalModes(
     'di-math-facts',
     { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
     CHALLENGE_TYPE_DOCS,
   );
-  const modeType: DiMathFactsChallengeType =
-    (resolution?.allowedTypes?.[0] as DiMathFactsChallengeType | undefined) ?? 'answer_fact';
+  const modeTypes: DiMathFactsChallengeType[] =
+    (resolution?.allowedTypes as DiMathFactsChallengeType[] | undefined) ?? ALL_TYPES; // mixed = all four
 
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
@@ -349,7 +520,7 @@ Return the wrapper JSON only.`;
         responseSchema: wrapperSchema,
         systemInstruction:
           "You are an early-math specialist scoping a Direct Instruction math-facts drill. " +
-          "You classify the objective's addition-fact scope and write a warm kid-facing title and " +
+          "You classify the objective's number range and write a warm kid-facing title and " +
           "description. You never reveal any fact or answer — no digits and no number words appear " +
           "in the title or description.",
       },
@@ -383,39 +554,72 @@ Return the wrapper JSON only.`;
   // always wins over the model's pick (code-enforced scope).
   const scope: FactScope = textScope ?? modelScope ?? gradeDefaultScope(gradeLevel);
   const scopeSource = textScope ? 'text' : modelScope ? 'model' : 'grade-default';
+  const ceiling = ceilingOf(scope, gradeLevel);
 
-  // Build the session facts — deterministic pool, variance-enforced pick.
-  let pairs: FactPair[];
-  if (scope.kind === 'named') {
-    // Named facts win outright; back-fill from the grade-default pool if the
-    // objective named fewer than a full session.
-    pairs = selectVaried(shuffle(buildPool(gradeDefaultScope(gradeLevel))), count, scope.facts);
+  /** One skill's share of the session — its own scoped pool, own variance. */
+  const buildFor = (type: DiMathFactsChallengeType, n: number): FactPair[] =>
+    selectVaried(
+      shuffle(poolForType(type, scope, gradeLevel, ceiling)),
+      n,
+      type,
+      seedForType(type, scope),
+    );
+
+  // Build the challenge set from the resolved mode(s). Single mode → all one
+  // skill; blend/mixed → an interleaved spread so every mode appears (SP-21).
+  let challenges: DiMathFactsChallenge[];
+  if (modeTypes.length === 1) {
+    challenges = buildFor(modeTypes[0], count)
+      .map((pair, i) => buildChallenge(pair, i, modeTypes[0]));
   } else {
-    pairs = selectVaried(shuffle(buildPool(scope)), count);
+    const shares = distribute(count, modeTypes.length);
+    const perModePairs = modeTypes.map((t, i) => buildFor(t, shares[i]));
+    // Round-robin interleave so the session alternates skills.
+    const interleaved: Array<{ pair: FactPair; type: DiMathFactsChallengeType }> = [];
+    const maxLen = Math.max(...perModePairs.map((ps) => ps.length));
+    for (let round = 0; round < maxLen; round++) {
+      for (let m = 0; m < modeTypes.length; m++) {
+        const pair = perModePairs[m][round];
+        if (pair) interleaved.push({ pair, type: modeTypes[m] });
+      }
+    }
+    challenges = interleaved
+      .slice(0, count)
+      .map(({ pair, type }, i) => buildChallenge(pair, i, type));
   }
 
   // Guarantee a runnable session even if every scope filter emptied out.
-  if (pairs.length === 0) pairs = EASY_SPREAD.slice(0, count);
+  if (challenges.length === 0) {
+    challenges = EASY_SPREAD.slice(0, count)
+      .map((pair, i) => buildChallenge(pair, i, 'answer_fact'));
+  }
 
-  const challenges = pairs.map((pair, i) => buildChallenge(pair, i, modeType));
+  // Session identity = the first item's skill (a pinned mode → that mode).
+  const primaryType: DiMathFactsChallengeType = challenges[0]?.challengeType ?? 'answer_fact';
 
   const data: DiMathFactsData = {
     title,
     description,
-    challengeType: challenges[0]?.challengeType ?? 'answer_fact',
+    challengeType: primaryType,
     gradeLevel: gradeLevel || 'kindergarten',
     challenges,
+    // Flat item-set summary for the tutoring scaffold's RUNTIME STATE (catalog
+    // contextKey `facts`) — present from the first auth-time prompt, before the
+    // component's live context sync takes over. PRINTED PROBLEMS ONLY: the
+    // answer-leak rule holds here too, so never `solvedDisplay`/`answerWord`.
+    facts: challenges.map((c) => c.display).join(', '),
   };
 
   console.log("DI Math Facts Generated:", {
     title: data.title,
-    mode: resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'answer_fact',
+    modes: resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed',
+    types: challenges.map((c) => c.challengeType),
     scope: scope.kind === 'named'
       ? `named(${scope.facts.length}) [${scopeSource}]`
       : scope.kind === 'within'
         ? `within ${scope.maxSum} [${scopeSource}]`
         : `${scope.kind} [${scopeSource}]`,
-    facts: challenges.map((c) => `${c.a}+${c.b}=${c.answerNumeral}`),
+    items: challenges.map((c) => `${c.display} = ${c.answerNumeral}`),
     count: challenges.length,
   });
 

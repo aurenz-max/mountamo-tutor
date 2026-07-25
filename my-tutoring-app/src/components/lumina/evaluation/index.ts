@@ -211,6 +211,7 @@ export type {
   DiLetterSoundsMetrics,
   DiWordReadingMetrics,
   DiMathFactsMetrics,
+  DiSentenceReadingMetrics,
   // Session types
   SessionEvaluationSummary,
   CompetencyUpdateSuggestion,

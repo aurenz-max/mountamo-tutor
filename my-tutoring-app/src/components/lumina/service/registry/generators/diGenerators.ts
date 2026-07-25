@@ -10,6 +10,7 @@ import { registerContextGenerator } from '../contentRegistry';
 import { generateDiLetterSounds } from '../../direct-instruction/gemini-di-letter-sounds';
 import { generateDiWordReading } from '../../direct-instruction/gemini-di-word-reading';
 import { generateDiMathFacts } from '../../direct-instruction/gemini-di-math-facts';
+import { generateDiSentenceReading } from '../../direct-instruction/gemini-di-sentence-reading';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -31,11 +32,23 @@ registerContextGenerator('di-word-reading', async (ctx) => ({
   }),
 }));
 
-// di-math-facts — printed addition facts, pool-scoped to the objective.
+// di-math-facts — printed addition/subtraction facts + the next-number step,
+// pool-scoped to the objective (skill chosen by the L1 eval-mode resolution).
 registerContextGenerator('di-math-facts', async (ctx) => ({
   type: 'di-math-facts',
   instanceId: ctx.instanceId,
   data: await generateDiMathFacts(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
+}));
+
+// di-sentence-reading — printed short sentences (3-8 words), menu-scoped to the
+// objective's phonics pattern / sight-word focus and the grade word ceiling.
+registerContextGenerator('di-sentence-reading', async (ctx) => ({
+  type: 'di-sentence-reading',
+  instanceId: ctx.instanceId,
+  data: await generateDiSentenceReading(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
   }),

@@ -3310,9 +3310,8 @@ export interface DiWordReadingMetrics extends BasePrimitiveMetrics {
 
 export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
   type: 'di-math-facts';
-  // L0: one task identity at birth; /add-eval-modes widens this union later
-  // (counting_next / fact_review / subtraction_fact are the ladder candidates).
-  challengeType: 'answer_fact';
+  // L1 task identities — all answered with a spoken number word.
+  challengeType: 'counting_next' | 'answer_fact' | 'fact_review' | 'subtraction_fact';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all facts (corrections + 1 each)
@@ -3323,6 +3322,35 @@ export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
   /** Silent fluency signal (no-timer ruling): mean ms from tutor prompt to the
    *  learner's spoken attempt across timed attempts; null when none were timed. */
   meanResponseMs: number | null;
+}
+
+export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
+  type: 'di-sentence-reading';
+  // L1 task identities — all the same response class (a printed 3-8 word
+  // sentence read aloud); the mode changes which reading skill is exercised.
+  challengeType:
+    | 'decodable_sentence'
+    | 'read_sentence'
+    | 'sentence_review'
+    | 'sight_phrase_sentence';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total spoken attempts across all sentences (corrections + 1 each)
+  firstTryCount: number;          // sentences read correctly on the first attempt
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+  /** Silent latency signal (no-timer ruling): mean ms from the tutor's prompt
+   *  to the learner starting to read, across timed attempts; null when none
+   *  were timed. L0 NEVER judges it — the judging contract explicitly refuses
+   *  to penalise slowness — but hesitation-to-start is real reading signal a
+   *  later pace/fluency mode would need. */
+  meanResponseMs: number | null;
+  /** Mean sentence length actually read (3-8). Sentence length is this pack's
+   *  structural-difficulty axis — the thing /add-structural-difficulty will
+   *  modulate — so without it the metrics cannot tell a 4-word set from an
+   *  8-word one, and two sessions with identical accuracy are not comparable. */
+  meanSentenceWords: number;
 }
 
 export type PrimitiveMetrics =
@@ -3524,7 +3552,8 @@ export type PrimitiveMetrics =
   // Direct Instruction
   | DiLetterSoundsMetrics
   | DiWordReadingMetrics
-  | DiMathFactsMetrics;
+  | DiMathFactsMetrics
+  | DiSentenceReadingMetrics;
 
 // =============================================================================
 // Session & Summary Types

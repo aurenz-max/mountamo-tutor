@@ -17,6 +17,14 @@ top item from an ACTIVE stream's queue, runs that item's executor skill, and
 records the result in the same slice. `/pm` is the layer that keeps the queues
 truthful and ordered; the per-primitive skills are the workers.
 
+### Portfolio model
+
+`WORKSTREAMS.md` (repo root) is the portfolio index: streams are ACTIVE,
+DELEGATED, or PARKED, each pointing at its queue file, under a **WIP limit of
+2+1** (two ACTIVE streams plus one opportunistic). Human-only browser/pixel
+verification debt lives in `my-tutoring-app/qa/HUMAN-CHECKS.md` — never buried
+in per-stream Done entries, because only the user can close those rows.
+
 ### Queue → executor registry
 
 | Queue / register | Task type | Executor skill(s) | Update discipline |

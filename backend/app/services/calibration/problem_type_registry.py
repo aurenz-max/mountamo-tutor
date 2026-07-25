@@ -541,10 +541,27 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "di-word-reading": {
         "read_word": PriorConfig(2.5, "Production: read one printed CVC or sight word aloud"),
     },
-    # L0 single mode; /add-eval-modes widens (counting_next / fact_review /
-    # subtraction_fact are the queued ladder candidates; multiplication at G3).
+    # L1 ladder (2026-07-24). Every mode answers with a spoken NUMBER WORD —
+    # one benched response class, four skills. Deferred: multiplication (G3,
+    # needs its own curriculum fit + grade gate); missing-addend (L4).
     "di-math-facts": {
-        "answer_fact": PriorConfig(2.0, "Production: answer a printed addition fact aloud with the number word"),
+        "counting_next":    PriorConfig(1.5, "Sequence: see a number, say the number that comes next"),
+        "answer_fact":      PriorConfig(2.0, "Production: answer a printed addition fact aloud with the number word"),
+        "fact_review":      PriorConfig(2.5, "Review: answer taught facts from a wide cumulative mix"),
+        "subtraction_fact": PriorConfig(3.0, "Production: answer a printed subtraction fact aloud with the number word"),
+    },
+    # L1 ladder (2026-07-25). Connected text — every mode is the SAME response
+    # class (a printed 3-8 word sentence read aloud), the class benched in the
+    # standing-gate sitting, so the ladder needed no new sitting. A mode changes
+    # which POOL is drawn, i.e. which reading skill the item exercises.
+    # read_sentence keeps its L0 β of 3.0, one rung above read_word (2.5).
+    # Deferred: a longer-text rung (leaves the benched scope) and pace/expression
+    # (read-aloud-studio's territory; L0 judging refuses to judge speed).
+    "di-sentence-reading": {
+        "decodable_sentence":    PriorConfig(2.5, "Production: read a fully sound-it-out CVC sentence aloud — blending in connected text"),
+        "read_sentence":         PriorConfig(3.0, "Production: read one printed short sentence aloud, every word in order"),
+        "sentence_review":       PriorConfig(3.5, "Review: re-read taught sentences drawn from a wide cumulative mix"),
+        "sight_phrase_sentence": PriorConfig(4.0, "Production: read a sentence dense in irregular high-frequency words — whole-word recall in connected text"),
     },
     "phoneme-explorer": {
         "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),

@@ -1,4 +1,4 @@
-export type DIItemKind = 'sound' | 'word' | 'fact';
+export type DIItemKind = 'sound' | 'word' | 'fact' | 'sentence';
 
 export interface DIItem {
   id: string;
@@ -11,7 +11,13 @@ export interface DIItem {
    *  The learner's target stays `spoken` (the answer number word). */
   problem?: string;
   reference: string;
-  /** Common text tokens produced when Live ASR hears the intended response. */
+  /** Common text tokens produced when Live ASR hears the intended response.
+   *
+   *  NOTE for kind 'sentence': the alias check is whole-token CONTAINMENT, so a
+   *  multi-word `spoken` turns it into a strict full-sentence match. That is the
+   *  point — for connected text, "did the transcript contain the sentence
+   *  verbatim" is a genuinely useful accuracy cross-check, and a disagreement
+   *  with the Live judge is exactly the signal the probe is looking for. */
   asrAliases?: string[];
 }
 
@@ -191,11 +197,16 @@ export function detectDIItemFromTutorText(text: string, items: DIItem[]): DIItem
     const problem = normalized(item.problem ?? item.display);
     const patterns = item.kind === 'fact'
       ? [`what is ${problem}`, `${problem} is ${spoken}`]
-      : item.kind === 'word'
-        ? [`this word is ${spoken}`, `that word is ${spoken}`]
-        : item.elicitation === 'keyword'
-          ? [`this sound is ${spoken}`, `that sound is ${spoken}`, `first sound in ${keyword}`, `say ${keyword}`]
-          : [`this sound is ${spoken}`, `that sound is ${spoken}`];
+      : item.kind === 'sentence'
+        // The sentence text itself is the only reliable marker — every sentence
+        // item shares the same generic test line ("Your turn. Read it."), so
+        // unlike the other kinds the cue wording cannot identify the item.
+        ? [`listen ${spoken}`, `together ${spoken}`, `that says ${spoken}`]
+        : item.kind === 'word'
+          ? [`this word is ${spoken}`, `that word is ${spoken}`]
+          : item.elicitation === 'keyword'
+            ? [`this sound is ${spoken}`, `that sound is ${spoken}`, `first sound in ${keyword}`, `say ${keyword}`]
+            : [`this sound is ${spoken}`, `that sound is ${spoken}`];
     for (const pattern of patterns) {
       const position = transcript.lastIndexOf(pattern);
       if (position >= 0 && (!best || position > best.position)) best = { item, position };
