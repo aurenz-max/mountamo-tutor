@@ -56,21 +56,21 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ### 3. di-math-facts — counting + addition facts (K-1 first)
 "What is 2 plus 1?" call-response over fact families; multiplication is the
-G3 variant later. **Bench probe WIRED 2026-07-24**: `diScript.ts` grew
-`kind:'fact'` (printed problem via `display`, spoken problem via new
-`DIItem.problem`, answer number word via `spoken`) + fact branches in
-model/guide/test/verify/correction/target lines + `MATH_FACTS_PROBE_ITEMS`
-(10 K-1 addition facts, answers = every number word 1–10, homophones kept in:
-one/won, two/too, four/for, eight/ate) + a `Math facts` BENCH_SETS entry;
-fact patterns in `detectDIItemFromTutorText`; 5 new model tests (sentinel
-contract verified for every fact line). **GATE NOW = the sitting: HUMAN-CHECKS
-#46** (number words unbenched — digit-vs-word ASR + homophone + correction
-stress; BLOCKING, unlike waived #41). Sentinel call (gate 2): probe keeps the
-proven engine defaults — "Yes"/"My turn" are exact-scripted so a spontaneous
-math-tutor "Yes!" can't leak a verdict; the sitting decides whether arithmetic
-wants a distinct correction opener before the primitive locks its script.
-Silent response-time capture is the fluency signal (no-timer ruling).
-Executor: sitting #46 → `/primitive`.
+G3 variant later. **Standing gate 1 PASSED 2026-07-24** — bench probe wired
+(`8e30a52`: `kind:'fact'` + `DIItem.problem` + fact cue branches +
+`MATH_FACTS_PROBE_ITEMS` + `Math facts` set) and the #46 sitting ran clean:
+3/3 number-word answers affirmed from audio, aliasAgree 3/3 (ASR lexicalized
+WORDS — digit aliases never needed), 0 unanchored/phantom/echo, commit lag
+~933ms constant → silent response-time VIABLE as the fluency signal
+(`qa/di-bench/run-2026-07-24-math-facts-probe.md`). **Sentinel call (gate 2):
+engine defaults KEPT** ("Yes"/"My turn"); no correction fired in the sitting,
+so the fact correction opener has never been heard live. **Carried into the
+primitive's L0 live-loop check:** drive wrong answers to fire "My turn:"
+corrections + homophone/over-affirmation stress (one/won, two/too, four/for,
+eight/ate) — mirror of the #41→#43 fold. Birth notes: silent response-time
+capture per attempt (no visible timer); REVISIT `subject_for_domain('di')` —
+currently hardwired LANGUAGE_ARTS, this pack is MATHEMATICS.
+Executor: `/primitive` — NOW UNGATED.
 
 ## Watch-items (from the engine-gate run)
 - Resync + no-verdict timeout are unit-covered but not yet observed live —

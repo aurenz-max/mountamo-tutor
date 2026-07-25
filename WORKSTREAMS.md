@@ -262,16 +262,17 @@ queue AND this file's "last touched" in the same slice.
   tester-only artifact). typecheck:lumina 0; **needs the same mode-switch glance to confirm live.**
 - **PHASE SET 2026-07-24 (user): "more DI packs" — content density within DI** (voice-transport
   unification stays PARKED; not this phase). WIP unchanged (reader-fit TOP + DI).
-- **Now = `qa/di/BACKLOG.md` item 3 `di-math-facts` — bench probe WIRED 2026-07-24; gate = sitting
-  HUMAN-CHECKS #46.** The `/ship` prereq ran (tester runKey fix `7283ef5` + charter/reconcile `d99ad29`
-  + a drive-by ledger-gate fix `ec6d16e`: DI generators migrated to `registerContextGenerator` — they
-  were the last two legacy registrations and failed `npm test`'s intent-contract invariant). Then the
-  bench extension: `kind:'fact'` + `DIItem.problem` + fact model/guide/test/verify/correction branches
-  + `MATH_FACTS_PROBE_ITEMS` (10 K-1 addition facts, every number word 1–10, homophones in) + `Math
-  facts` BENCH_SETS entry + 5 model tests. Sentinel call (gate 2): probe keeps engine defaults ("Yes"/
-  "My turn" exact-scripted = collision-safe); the #46 sitting decides whether arithmetic gets a distinct
-  correction opener before the primitive locks its script. After the sitting: `/primitive di-math-facts`
-  (silent response-time = the fluency signal, no-timer ruling).
+- **#46 math-facts probe sitting PASSED 2026-07-24 (struck; user: "worked great!").** Number words
+  judged reliably from audio: 3/3 affirmed, aliasAgree 3/3 (ASR wrote WORDS — digit aliases never
+  needed), 0 unanchored/phantom/echo-opened, commit lag ~933ms CONSTANT → silent response-time viable
+  as the fluency signal. Carried to the primitive's L0 live loop (mirror of #41→#43): fact correction
+  branch never fired (3/10 items, all correct) + homophone stress. Sentinel gate 2 resolved: engine
+  defaults kept. Report + run JSON: `qa/di-bench/run-2026-07-24-math-facts-probe.md`. (Probe wiring
+  `8e30a52`; ship-prereq slices `ec6d16e` ledger-gate fix — DI gens were the last legacy registrations,
+  context-native migration now 100% — + `7283ef5` tester runKey + `d99ad29` charter/reconcile.)
+- **Now = `/primitive di-math-facts` (BACKLOG item 3, UNGATED).** Silent response-time = the fluency
+  signal (no-timer ruling); L0 live check must drive wrong answers ("My turn:" correction opener heard
+  live) + homophones; REVISIT `subject_for_domain('di')` — hardwired LANGUAGE_ARTS, this pack is MATH.
 - **Still open (not blocking the phase): HUMAN-CHECKS #45** — DI in a real K lesson (L2 lesson-mode
   behavior + the mixed-lesson VAD trade-off measurement). Worth running opportunistically; it's the
   evidence that would later justify un-parking voice-transport.
