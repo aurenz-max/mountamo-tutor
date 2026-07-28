@@ -2,6 +2,33 @@
  * Direct Instruction Catalog — the DI primitive family. Live-judged
  * call-response over Gemini Live: the tutor models/guides/tests a spoken
  * response and judges the audio in-band. Custom-made scripts per pack.
+ *
+ * MISCONCEPTION SCOPE — family ruling, 2026-07-25. Every pack declares
+ * `misconceptionScope: 'primitive'`. PRD §5 rev-2 reserves `'skill'` for
+ * "content-generic delivery vehicles" (KnowledgeCheck, MultipleChoice); DI
+ * packs are the opposite — each is a hand-authored DISTAR script for ONE
+ * response class, so the interaction model IS the concept. Primitive scope
+ * also survives the standalone tester, where the subskill is unreliable (the
+ * 2026-07-21 run had the runtime Gemini re-mapper land on a different subskill
+ * than the birth-cert home) and `'skill'` would gate those runs out entirely.
+ *
+ * The declaration is gate 3 of `captureMisconception` — without it the packets
+ * the components now build are dropped before the distiller, so this and the
+ * component wiring only work as a pair.
+ *
+ * ⚠ KNOWN, ACCEPTED RISK: `di-math-facts` carries FOUR task identities under
+ * one primitive_type, and primitive scope stores ONE misconception per pack
+ * per student — so a diagnosis earned on `subtraction_fact` ("counts up
+ * instead of back") would also be offered on `counting_next`, where counting
+ * up is the CORRECT move. These eval modes are task identities, not difficulty
+ * tiers, so the leak is genuine. Mitigation (shipped, not deferred): each pack
+ * names its task identity inside `challengeSummary`, so the distilled sentence
+ * is SELF-LIMITING ("when subtracting, the student…") and S5/S7 apply it
+ * narrowly even though the key is coarse. If that proves insufficient the
+ * escalation is a PRD amendment (identity += declared eval-mode family), NOT
+ * quietly flipping DI to `'skill'`. di-sentence-reading carries a milder
+ * version of the same tension: 4 modes, but all "read this sentence aloud", so
+ * a misconception genuinely does transfer.
  */
 import { ComponentDefinition } from '../../../types';
 
@@ -40,6 +67,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
     // Judged-loop engine needs manual voice-activity brackets (Gemini's own VAD
     // is unusable for held phonemes — bench run-3 ruling). Declared here so a
     // LESSON session containing this primitive opens with manual activity; the
@@ -123,6 +152,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
     // Same judged-loop engine, same transport need (see di-letter-sounds).
     // Its tutoring block still ships from diWordReadingScript at connect time;
     // moving it here is the pack's own /add-tutoring-scaffold (L2) layer.
@@ -173,6 +204,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
     // Same judged-loop engine, same transport need (see di-letter-sounds).
     audioInput: { manual_activity: true },
     // L2 tutoring block — hand-authored (DI "custom-made" rule: exact wording is
@@ -304,6 +337,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
     // Same judged-loop engine, same transport need (see di-letter-sounds).
     audioInput: { manual_activity: true },
     // Tutoring block — hand-authored (DI "custom-made" rule: exact wording is

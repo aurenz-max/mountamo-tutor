@@ -12,6 +12,7 @@ from google.genai import types
 from google.genai.types import LiveConnectConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content
 
 from ...core.config import settings
+from ...services.session_ledger import SessionLedger, classify_cue
 
 # Enhanced logging configuration
 logging.basicConfig(
@@ -387,6 +388,10 @@ async def lumina_tutor_session(websocket: WebSocket):
     await websocket.accept()
     logger.info("Lumina Tutor WebSocket connection accepted")
 
+    # Structured per-session diagnosis ledger (write-only, never throws).
+    ledger = SessionLedger()
+    ledger.write("connection-accepted", client=str(websocket.client))
+
     gemini_session = None
 
     # Metrics tracking
@@ -423,6 +428,7 @@ async def lumina_tutor_session(websocket: WebSocket):
         user_id = decoded_token['uid']
         user_email = decoded_token.get('email', 'Unknown')
         logger.info(f"Authentication successful for user {user_id} ({user_email})")
+        ledger.write("auth-ok", uid=user_id, email=user_email)
 
         # Extract session mode and contexts
         session_mode = auth_data.get("session_mode", "standalone")
@@ -443,8 +449,22 @@ async def lumina_tutor_session(websocket: WebSocket):
         # clamped here and unknown keys ignored.
         audio_input = primitive_context.get("audio_input") or {}
 
+        # Client-side correlation key: the diRunLog runId minted by the DI run
+        # log (or any future client run recorder). Joins this ledger to the
+        # client's own run JSON and to /api/di-run-logs uploads.
+        client_run_id = auth_data.get("client_run_id")
+
         logger.info(f"Initializing Lumina AI session (mode={session_mode}) for primitive: {primitive_type} (instance: {instance_id})")
         logger.info(f"Lesson: {lesson_context.get('topic', 'Unknown')} - {len(lesson_context.get('ordered_components', []))} activities")
+        ledger.write(
+            "session-init",
+            mode=session_mode,
+            primitive=primitive_type,
+            instance=instance_id,
+            client_run_id=client_run_id,
+            warm_resume=bool(initial_resumption_handle),
+            audio_input=audio_input or None,
+        )
 
         # Send authentication success (safe: no concurrency yet)
         await websocket.send_json({
@@ -663,6 +683,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                             progress_update = message.get("student_progress", {})
 
                             logger.info(f"Context update received for {primitive_type}")
+                            ledger.write(
+                                "context-update",
+                                primitive=primitive_type,
+                                keys=list(new_state.keys()),
+                            )
 
                             # Forward state change to Gemini (silent — no response expected).
                             # end_of_turn=False injects context without giving Gemini the
@@ -709,6 +734,12 @@ async def lumina_tutor_session(websocket: WebSocket):
                             tutoring_scaffold = new_primitive.get("tutoring")
 
                             logger.info(f"Switching primitive: {old_type} -> {primitive_type} (instance: {instance_id})")
+                            ledger.write(
+                                "switch-primitive",
+                                from_primitive=old_type,
+                                to_primitive=primitive_type,
+                                instance=instance_id,
+                            )
 
                             # Build primitive-specific scaffolding for the new primitive
                             scaffold_text = get_primitive_specific_instructions(
@@ -757,9 +788,11 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                 except WebSocketDisconnect:
                     logger.info("Client disconnected")
+                    ledger.write("client-disconnected")
                     stop_event.set()
                 except Exception as e:
                     logger.error(f"Error in client message handler: {e}")
+                    ledger.write("client-handler-error", error=str(e))
                     stop_event.set()
 
             async def handle_text_to_gemini(session):
@@ -783,6 +816,13 @@ async def lumina_tutor_session(websocket: WebSocket):
                         logger.info(f"Sending text to Gemini (end_of_turn={end_of_turn}): {text[:100]}...")
                         await session.send_realtime_input(text=text)
                         logger.info(f"Text sent to Gemini successfully")
+                        ledger.write(
+                            "text-to-gemini",
+                            kind=classify_cue(text),
+                            end_of_turn=end_of_turn,
+                            chars=len(text),
+                            preview=text[:160],
+                        )
                 except Exception as e:
                     logger.error(f"Error sending text to Gemini: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
@@ -798,6 +838,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                             else:
                                 await session.send_realtime_input(activity_end=types.ActivityEnd())
                             logger.info(f"Sent {item['activity']} to Gemini")
+                            ledger.write("activity-signal", signal=item["activity"])
                             continue
                         await session.send_realtime_input(
                             audio=types.Blob(
@@ -822,7 +863,9 @@ async def lumina_tutor_session(websocket: WebSocket):
                     while True:
                         turn_count += 1
                         logger.info(f"Waiting for Gemini response (turn {turn_count})...")
+                        ledger.write("gemini-turn-start", turn=turn_count, resume=resume_count)
                         go_away_pending = False
+                        turn_had_content = False
                         async for response in session.receive():
                             # Capture the rolling resumption handle. Passing this back
                             # on reconnect restores the conversation transparently.
@@ -844,9 +887,21 @@ async def lumina_tutor_session(websocket: WebSocket):
                             if go_away is not None:
                                 time_left = getattr(go_away, 'time_left', None)
                                 logger.warning(f"Gemini GoAway received (time_left={time_left}); will resume")
+                                # mid_turn=True means a generation was in flight when
+                                # Gemini said goodbye — the resume path currently does
+                                # NOT re-cue it (DI BACKLOG item 5 suspect (a)).
+                                ledger.write(
+                                    "go-away",
+                                    time_left=time_left,
+                                    turn=turn_count,
+                                    mid_turn=turn_had_content,
+                                    pending_text=text_queue.qsize(),
+                                    pending_audio=audio_queue.qsize(),
+                                )
                                 go_away_pending = True
 
                             if hasattr(response, 'server_content') and response.server_content:
+                                turn_had_content = True
                                 # Barge-in: Gemini cancelled the rest of its generation
                                 # because the user started speaking (activity_start under
                                 # manual VAD, or automatic VAD detection). Forward it
@@ -854,6 +909,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 # instead of playing a tail the model already abandoned.
                                 if getattr(response.server_content, 'interrupted', False):
                                     logger.info("Gemini generation interrupted by user activity (barge-in)")
+                                    ledger.write("barge-in", turn=turn_count)
                                     await ws_send_queue.put({"type": "ai_interrupted"})
 
                                 # Handle model turn (AI speaking)
@@ -907,6 +963,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if hasattr(response.server_content, 'input_transcription') and response.server_content.input_transcription:
                                     if hasattr(response.server_content.input_transcription, 'text') and response.server_content.input_transcription.text:
                                         logger.info(f"User transcription: {response.server_content.input_transcription.text}")
+                                        ledger.write(
+                                            "user-transcript",
+                                            turn=turn_count,
+                                            text=response.server_content.input_transcription.text,
+                                        )
 
                                         await ws_send_queue.put({
                                             "type": "user_transcription",
@@ -917,6 +978,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if hasattr(response.server_content, 'output_transcription') and response.server_content.output_transcription:
                                     if hasattr(response.server_content.output_transcription, 'text') and response.server_content.output_transcription.text:
                                         logger.info(f"AI transcription: {response.server_content.output_transcription.text}")
+                                        ledger.write(
+                                            "ai-transcript",
+                                            turn=turn_count,
+                                            text=response.server_content.output_transcription.text,
+                                        )
 
                                         await ws_send_queue.put({
                                             "type": "ai_transcription",
@@ -926,6 +992,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 # Check for end of turn
                                 if getattr(response.server_content, 'turn_complete', False) or getattr(response.server_content, 'end_of_turn', False):
                                     logger.info("AI turn finished (flag detected).")
+                                    ledger.write("gemini-turn-end", turn=turn_count, via="flag")
                                     await ws_send_queue.put({"type": "ai_turn_end"})
 
                             # GoAway carried in this response: stop reading and resume.
@@ -939,6 +1006,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # Fallback: when the receive() iterator completes, the turn is done
                         # even if no explicit end_of_turn flag was set on any response
                         logger.info("AI turn finished (iterator ended).")
+                        ledger.write("gemini-turn-end", turn=turn_count, via="iterator")
                         await ws_send_queue.put({"type": "ai_turn_end"})
 
                 except WebSocketDisconnect:
@@ -953,6 +1021,11 @@ async def lumina_tutor_session(websocket: WebSocket):
                     # otherwise there's nothing to continue from.
                     logger.error(f"Error handling Gemini responses: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
+                    ledger.write(
+                        "gemini-error",
+                        error=str(e),
+                        will_resume=bool(resumption_handle["value"]),
+                    )
                     if resumption_handle["value"]:
                         logger.info("Resumption handle present — will resume after drop")
                         await ws_send_queue.put({
@@ -992,6 +1065,13 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 f"Gemini Live session connected "
                                 f"({'resuming' if resuming else 'fresh'}, resume #{resume_count})"
                             )
+                            ledger.write(
+                                "gemini-connected",
+                                fresh=not resuming,
+                                resume=resume_count,
+                                pending_text=text_queue.qsize(),
+                                pending_audio=audio_queue.qsize(),
+                            )
                             if resuming:
                                 await ws_send_queue.put({
                                     "type": "session_resumed",
@@ -1026,6 +1106,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # the handle is likely stale/expired — drop it and retry cold
                         # so the student keeps a working tutor instead of a dead one.
                         logger.error(f"Gemini connect failed (resuming={resuming}): {connect_err}")
+                        ledger.write("gemini-connect-failed", resuming=resuming, error=str(connect_err))
                         if resuming:
                             logger.info("Discarding stale resumption handle; retrying cold")
                             resumption_handle["value"] = None
@@ -1043,8 +1124,15 @@ async def lumina_tutor_session(websocket: WebSocket):
                         resume_count += 1
                         if resume_count > MAX_RESUMES:
                             logger.warning("Max Gemini resumes reached — ending session")
+                            ledger.write("max-resumes", resumes=resume_count)
                             break
                         logger.info(f"Resuming Gemini session (attempt {resume_count})")
+                        ledger.write(
+                            "gemini-resume",
+                            attempt=resume_count,
+                            pending_text=text_queue.qsize(),
+                            pending_audio=audio_queue.qsize(),
+                        )
                         continue
 
                     # No handle / terminal outcome → stop.
@@ -1073,8 +1161,10 @@ async def lumina_tutor_session(websocket: WebSocket):
 
     except WebSocketDisconnect:
         logger.info("Lumina Tutor WebSocket disconnected")
+        ledger.write("ws-disconnected")
     except asyncio.TimeoutError:
         logger.error("Authentication timeout in Lumina tutor session")
+        ledger.write("auth-timeout")
         try:
             await websocket.close(code=4008, reason="Authentication timeout")
         except:
@@ -1082,6 +1172,7 @@ async def lumina_tutor_session(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Lumina tutor session error: {e}")
         logger.error(f"Full traceback: {traceback.format_exc()}")
+        ledger.write("session-error", error=str(e), error_type=type(e).__name__)
         try:
             await websocket.close(code=1011, reason="Internal server error")
         except:
@@ -1096,4 +1187,14 @@ async def lumina_tutor_session(websocket: WebSocket):
 
         # Log final metrics
         logger.info(f"Session metrics (mode={session_mode}) - Hints: {hints_given}, Interactions: {total_interactions}, Turns: {conversation_turns}, Voice: {voice_interactions}")
+        ledger.write(
+            "session-end",
+            mode=session_mode,
+            primitive=primitive_type,
+            hints=hints_given,
+            interactions=total_interactions,
+            turns=conversation_turns,
+            voice=voice_interactions,
+        )
+        ledger.close()
         logger.info("Lumina tutor session cleanup completed")

@@ -29,7 +29,8 @@ from .api.endpoints import (
     calibration,
     evaluations,
     pulse,
-    student_profile)
+    student_profile,
+    di_run_logs)
 
 from .api import etl_routes
 from .core.config import settings
@@ -39,13 +40,17 @@ from .core.middleware import get_user_context
 
 import logging
 
-# Configure root logging
+# Configure root logging.
+# force=True is load-bearing: endpoint modules imported above call basicConfig
+# at import time (gemini.py wins, with NO format string), and without force
+# this call is a no-op — which is why backend logs had no timestamps.
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),  # Console output
-    ]
+    ],
+    force=True,
 )
 
 logger = logging.getLogger(__name__)
@@ -276,6 +281,13 @@ app.include_router(
     prefix="/api/pulse",
     tags=["pulse"],
     dependencies=[Depends(get_user_context)]
+)
+
+# DI Run Logs — diagnosis telemetry drop-box (token auth only; no profile fetch)
+app.include_router(
+    di_run_logs.router,
+    prefix="/api/di-run-logs",
+    tags=["di-run-logs"]
 )
 
 # ============================================================================

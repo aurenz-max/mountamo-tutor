@@ -429,6 +429,103 @@ export const DIAGNOSIS_SCENARIOS: DiagnosisScenario[] = [
     evidence:{challengeSummary:'Delete /s/ from stop.',expected:'Tap the initial /s/.',observed:'Tapped /t/ once, then corrected to /s/.'},expectation:'abstain',note:'One corrected tap is not a stable manipulation rule.'
   },
 
+  // ── Direct Instruction family (2026-07-25) ────────────────────────────────
+  // The packets below are the EXACT shape `diDiagnosisEvidence.ts` builds, down
+  // to the wording of `challengeSummary` and `observed`, so Probe D regresses
+  // the real evidence rather than a hand-written idealisation of it.
+  //
+  // Every DI packet is Tier A: the Live tutor judges the audio in-band and
+  // speaks its verdict, and since contrastive correction that verdict NAMES the
+  // error. `judgeFeedback` here is a real correction line from the script.
+  //
+  // Note what the task-identity prefix is doing: `misconceptionScope` is
+  // 'primitive' and di-math-facts has four identities, so the summary has to
+  // carry the identity or a subtraction diagnosis would be offered on
+  // `counting_next`, where counting up is CORRECT.
+  {
+    id: 'di-math-facts-successor-for-subtraction',
+    label: 'DI math facts — subtraction returns the successor (judge-backed)',
+    subject: 'Math', subskillId: 'MATH-GK-OPS-SUB-01', evalMode: 'subtraction_fact', gradeLevel: 'K', success: false, score: 0,
+    evidence: {
+      challengeSummary: 'Direct Instruction math facts — answering a printed SUBTRACTION (take-away) fact aloud. "5 - 1" was printed on screen and the tutor asked what five minus one is. The learner answers by SPEAKING a number word; the tutor judges the audio.',
+      expected: 'Say the number word "four" (4).',
+      observed: 'Student said: "six".',
+      judgeFeedback: 'My turn: not six — five minus one is four. Your turn. What is five minus one?',
+      priorAttempts: [
+        { challenge: 'Direct Instruction math facts — answering a printed SUBTRACTION (take-away) fact aloud. "3 - 1" was printed on screen and the tutor asked what three minus one is.', observed: 'Student said: "four". Tutor judged: "My turn: not four — three minus one is two. Your turn. What is three minus one?"' },
+        { challenge: 'Direct Instruction math facts — answering a printed SUBTRACTION (take-away) fact aloud. "3 - 1" was printed on screen and the tutor asked what three minus one is.', observed: 'Student said: "four". Tutor judged: "My turn: not four — three minus one is two. Your turn. What is three minus one?"' },
+        { challenge: 'Direct Instruction math facts — answering a printed SUBTRACTION (take-away) fact aloud. "5 - 1" was printed on screen and the tutor asked what five minus one is.', observed: 'Student said: "six". Tutor judged: "My turn: not six — five minus one is four. Your turn. What is five minus one?"' },
+      ],
+    },
+    expectation: 'generative',
+    note: 'The handoff\'s worked example. Every answer is first+1: counting UP the sequence where the fact counts back. Verdict should predict the successor and should stay bounded to SUBTRACTION — a sentence that generalises to "the student counts up" would be wrong on this pack\'s counting_next mode.',
+  },
+  {
+    id: 'di-math-facts-echoes-last-number',
+    label: 'DI math facts — answers with the last number heard (judge-backed)',
+    subject: 'Math', subskillId: 'MATH-GK-OPS-ADD-01', evalMode: 'answer_fact', gradeLevel: 'K', success: false, score: 0,
+    evidence: {
+      challengeSummary: 'Direct Instruction math facts — answering a printed ADDITION fact aloud. "2 + 1" was printed on screen and the tutor asked what two plus one is. The learner answers by SPEAKING a number word; the tutor judges the audio.',
+      expected: 'Say the number word "three" (3).',
+      observed: 'Student said: "one".',
+      judgeFeedback: 'My turn: not one — two plus one is three. Your turn. What is two plus one?',
+      priorAttempts: [
+        { challenge: 'Direct Instruction math facts — answering a printed ADDITION fact aloud. "3 + 2" was printed on screen and the tutor asked what three plus two is.', observed: 'Student said: "two". Tutor judged: "My turn: not two — three plus two is five. Your turn. What is three plus two?"' },
+        { challenge: 'Direct Instruction math facts — answering a printed ADDITION fact aloud. "4 + 1" was printed on screen and the tutor asked what four plus one is.', observed: 'Student said: "one". Tutor judged: "My turn: not one — four plus one is five. Your turn. What is four plus one?"' },
+      ],
+    },
+    expectation: 'generative',
+    note: 'The echo signature the catalog names as a commonStruggle: the answer is always the SECOND addend, i.e. the last number spoken. Verdict should predict the repeated addend, not "the student cannot add".',
+  },
+  {
+    id: 'di-letter-sounds-name-for-sound',
+    label: 'DI letter sounds — produces the letter NAME instead of its sound (judge-backed)',
+    subject: 'Phonics', subskillId: 'ELA-GK-PHON-LSC-01', evalMode: 'letter_sound', gradeLevel: 'K', success: false, score: 0,
+    evidence: {
+      challengeSummary: 'Direct Instruction letter sounds — saying the continuous SOUND a printed letter makes (grapheme → phoneme). The letter "m" was printed on screen (keyword "moon"). The learner PRODUCES the sound aloud; the tutor judges the audio.',
+      expected: 'Produce the held continuous sound "mmm" — the sound, never the letter name.',
+      observed: 'Student said: "em".',
+      judgeFeedback: 'My turn: not em — mmm, as in moon. Your turn. What sound?',
+      priorAttempts: [
+        { challenge: 'Direct Instruction letter sounds — the letter "s" was printed on screen (keyword "sun").', observed: 'Student said: "ess". Tutor judged: "My turn: not ess — sss, as in sun. Your turn. What sound?"' },
+        { challenge: 'Direct Instruction letter sounds — the letter "f" was printed on screen (keyword "fan").', observed: 'Student said: "ef". Tutor judged: "My turn: not ef — fff, as in fan. Your turn. What sound?"' },
+      ],
+    },
+    expectation: 'generative',
+    note: 'The pack\'s signature K error, and one only a spoken judge can see. Verdict should predict the letter NAME as the produced response. LEAK check matters here: naming the target sound "mmm" is fine (it is the rule), reciting the item list is not.',
+  },
+  {
+    id: 'di-math-facts-single-fact-slip',
+    label: 'DI math facts — one wrong fact, corrected on the retry',
+    subject: 'Math', subskillId: 'MATH-GK-OPS-ADD-01', evalMode: 'answer_fact', gradeLevel: 'K', success: false, score: 33,
+    evidence: {
+      challengeSummary: 'Direct Instruction math facts — answering a printed ADDITION fact aloud. "4 + 1" was printed on screen and the tutor asked what four plus one is. The learner answers by SPEAKING a number word; the tutor judges the audio.',
+      expected: 'Say the number word "five" (5).',
+      observed: 'Student said: "six".',
+      judgeFeedback: 'My turn: not six — four plus one is five. Your turn. What is four plus one?',
+      priorAttempts: [],
+    },
+    expectation: 'abstain',
+    note: 'The DI OVERREACH trap: one miss, off by one, and every other fact in the session was affirmed. A judge-backed (Tier A) packet is NOT automatically diagnosable — presence of judgeFeedback must not talk the distiller into a rule that one item cannot support.',
+  },
+  {
+    id: 'di-sentence-reading-mixed-misreads',
+    label: 'DI sentence reading — three misreads with no shared rule',
+    subject: 'Reading', subskillId: 'ELA-G1-READ-ACC-01', evalMode: 'read_sentence', gradeLevel: '1', success: false, score: 33,
+    evidence: {
+      challengeSummary: 'Direct Instruction sentence reading — reading a printed short sentence aloud, every word in order. The 4-word sentence "Mom got a pot." was printed on screen. The learner READS it aloud; the tutor judges the audio word by word — a skipped, added, or swapped word is a miss however small the word.',
+      expected: 'Read the sentence aloud accurately, every word in order: "Mom got a pot.".',
+      observed: 'Student said: "Mom got the pot".',
+      judgeFeedback: 'My turn: not the pot — Mom got a pot. Your turn. Read it again.',
+      priorAttempts: [
+        { challenge: 'Direct Instruction sentence reading — the 5-word sentence "The big red hen ran." was printed on screen.', observed: 'Student said: "The big red hen ran" — affirmed on the retry.' },
+        { challenge: 'Direct Instruction sentence reading — the 4-word sentence "I see a pig." was printed on screen.', observed: 'Student said: "I see a pig" after a long pause.' },
+      ],
+    },
+    expectation: 'abstain',
+    note: 'One article substitution plus two reads that were actually accurate. No rule connects them — a self-corrected pause and a slow read are not errors. MUST abstain; this guards against the distiller treating any Tier-A packet as a diagnosis.',
+  },
+
   // ── Must ABSTAIN — weak / noisy / single slip ─────────────────────────────
   {
     id: 'single-arithmetic-slip',

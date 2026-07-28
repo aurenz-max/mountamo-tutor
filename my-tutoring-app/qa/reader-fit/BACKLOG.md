@@ -7,6 +7,43 @@ subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
 
 ## Queue
 
+### 14. EMERGING (Grade 1) band — RE-SEED THE QUEUE — **TOP / NEXT PULL** (opened `/pm` 2026-07-25)
+**The demand-side K queue is DRAINED** (Task 3 / coin-counter closed 2026-07-25 was the last
+census-routed K item). This section exists because the milestone that follows it — "re-run the
+topic-trace census at grade 1" — was recorded only as narrative inside Done entries, so a session
+pulling the top of this queue found nothing pullable. It is now an item.
+
+- **14a. Run the EMERGING census** — `/topic-trace` over real Grade-1 subskills across LA / Math /
+  SS, the same shape as the K census of 2026-07-14 (`qa/topic-traces/k-*-2026-07-14.md`), whose
+  routing tallies are what seeded every demand-side item in this file. Output: per-primitive routing
+  frequency at Grade 1 → new numbered items here, ranked by observed routing.
+- **14b. coin-counter contract gap G1 — ALREADY WAITING, the census's first item.** Task 3 fixed
+  `count-like` at **K**, but the census inside that task found the mode's only authored consumer is
+  **`MEAS001-07-c` @ Grade 1** ("Focus: Skip counting and summation… single-denomination sets") —
+  **there is no K money subskill in the curriculum at all** (the strand is G1 `MEAS001-07` + G2
+  `MEAS002-05`; the K `MEAS001-07-A…F` sharing that stem is *Time Durations*, and
+  `PRIMITIVE_GAPS.md` GAP-007 mislabels them "MATHEMATICS (K)" — the likely origin of the K
+  framing). So **the PRIMARY consumer still has the compute-then-type proxy that K just lost.**
+  Deliberately not widened in Task 3: Grade 1 is a live consumer carrying β1.5 item history, and
+  changing its interaction deserves its own slice. Read `docs/contracts/coin-counter.md` first
+  (10 requirements, C1 resolved) and run `--check` on the edit. Report:
+  `qa/reader-fit/coin-counter-task3-2026-07-25.md`.
+- **14c. coin-counter G2 — Grades 2–3 are UNREACHABLE** (`/topic-fidelity`, not `/reader-fit`).
+  `resolveGradeBand` parses `ctx.gradeContext` **PROSE**, which `GenerationContext` explicitly
+  forbids, so G2 money lessons silently run as Grade 1. This is a grade-fidelity dead band of the
+  class `project_grade-fidelity-dead-band` closed elsewhere — `normalizeObjectiveGrade` is the only
+  sanctioned parser.
+- **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (surfaced by the Task 3 pixel check,
+  carried on HUMAN-CHECKS **#52**): the K screen still shows a "Kindergarten" grade badge, a "1/2"
+  counter, and a "🔢 Count" phase badge, and the instruction is English prose with no read-aloud.
+  **This is the exact class comparison-builder band-gated away in #2b** — the systemic chrome +
+  🔊-replay items below already own the pattern, so this is a small application of a solved fix,
+  not new design. Cheapest item in the section; judge on #52 whether it jumps ahead of 14b.
+
+*(Ordering note: 14b is the highest-value and 14d the cheapest. 14a is what keeps this section from
+being a coin-counter tail — without the census the band has one primitive's worth of demand and no
+evidence about the rest.)*
+
 ### 2b. comparison-builder @ PRE — ✅ FULLY RESOLVED 2026-07-20 (head 07-14/07-16 + tail 07-20)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped 07-14; the three
 Pulse-walk priorities (chrome band-gate, one_less symmetry, 🔊 Read-me) shipped 07-16.

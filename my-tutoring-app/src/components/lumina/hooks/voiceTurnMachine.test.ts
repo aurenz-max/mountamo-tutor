@@ -88,6 +88,10 @@ describe('voiceTurnMachine', () => {
       kind: 'close',
       startedAt: 0,
       durationMs: 300,
+      // No frame period supplied → voicedMs is the raw span, i.e. the exact
+      // pre-2026-07-26 measurement. Callers that cannot tell us the period get
+      // the old behaviour rather than a guess.
+      voicedMs: 300,
       peak: 0.2,
       duringTutorAudio: true,
       belowMinVoice: false,
@@ -103,6 +107,57 @@ describe('voiceTurnMachine', () => {
     ]);
     const close = events.find((event) => event.kind === 'close');
     expect(close).toMatchObject({ durationMs: 80, belowMinVoice: true });
+  });
+
+  describe('frame quantisation (DI sitting 2026-07-26)', () => {
+    // The machine samples the level once per capture frame — 85.3ms at
+    // 48kHz/4096 — so `durationMs` spans first-above to last-above and misses
+    // the closing frame's dwell. Against minVoiceMs=120 that quietly demanded
+    // THREE frames of speech, and one-word answers ("five", "four") arrive in
+    // two. Their activityEnd had already gone to Gemini, so the judge affirmed
+    // answers the client then refused to own.
+    const FRAME = 85.3;
+    const quantised = { ...config, framePeriodMs: FRAME };
+
+    /** An utterance spanning `frames` capture frames, then silence. */
+    const utterance = (frames: number) => {
+      const audio = Array.from({ length: frames }, (_, i) => ({ level: 0.045, now: i * FRAME }));
+      const last = (frames - 1) * FRAME;
+      return [...audio, { level: 0.001, now: last + FRAME }, { level: 0.001, now: last + FRAME + 600 }];
+    };
+
+    const closeOf = (frames: number, cfg = quantised) => {
+      let state = IDLE_VOICE_TURN;
+      let close;
+      for (const frame of utterance(frames)) {
+        const step = stepVoiceTurn(state, { tutorAudible: false, ...frame }, cfg);
+        state = step.state;
+        if (step.event?.kind === 'close') close = step.event;
+      }
+      return close;
+    };
+
+    it('a two-frame word is voice, not a blip — the answers the sitting lost', () => {
+      // Measured span 85ms (one period), real speech ~171ms.
+      expect(closeOf(2)).toMatchObject({ durationMs: 85, voicedMs: 170, belowMinVoice: false });
+    });
+
+    it('a one-frame blip is still rejected', () => {
+      // Measured span 0ms, real speech ~85ms — under the bar either way.
+      expect(closeOf(1)).toMatchObject({ durationMs: 0, voicedMs: 85, belowMinVoice: true });
+    });
+
+    it('without the fix that same two-frame word reads as a blip', () => {
+      // The regression this guards: framePeriodMs 0 is the old measurement.
+      expect(closeOf(2, config)).toMatchObject({ durationMs: 85, voicedMs: 85, belowMinVoice: true });
+    });
+
+    it('the bench probe turns clear the bar under both measurements', () => {
+      // 2026-07-24 math-facts probe: 179/172/170ms — three frames, ~50ms of
+      // margin. That is why the bar was never caught: the probe skated it.
+      expect(closeOf(3, config)).toMatchObject({ durationMs: 171, belowMinVoice: false });
+      expect(closeOf(3)).toMatchObject({ voicedMs: 256, belowMinVoice: false });
+    });
   });
 
   it('force-close mirrors the open turn and is a no-op when idle', () => {

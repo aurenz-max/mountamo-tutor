@@ -133,3 +133,22 @@ script wording are bench-proven, but this component, its generator, and the rais
   heard live in any pack.
 - **(e) LANGUAGE_ARTS attribution on submit** — should resolve via the domain default
   with no per-primitive override (contrast di-math-facts, which needed one).
+
+## Misconception Loop — scope ruling (2026-07-25, family-wide)
+
+`misconceptionScope: 'primitive'` (declared in `catalog/di.ts`). PRD §5 rev-2
+reserves `'skill'` for content-generic delivery vehicles; this pack is a
+hand-authored DISTAR script for ONE response class, so the interaction model IS
+the concept. Primitive scope also survives the standalone tester, where the
+subskill is unreliable and `'skill'` would gate those runs out entirely.
+
+The pack's misses now ship a **Tier-A `DiagnosisEvidence` packet** (the child's
+transcript + the tutor's own judging sentence + earlier misses as
+`priorAttempts`) as `submitResult`'s 6th arg. Because primitive scope keys on
+the pack alone, each packet names its TASK IDENTITY inside `challengeSummary`
+so the distilled sentence stays self-limiting across eval modes.
+
+Gate: `/misconception-test di-math-facts` 2026-07-25 — Probe D 10/10,
+Probe R CLOSED, **Probe G NOT-WIRED** (no DI generator consumes
+`remediationFocus`; that is DI BACKLOG item 1, `/add-misconception-loop`).
+Report: `qa/misconception/di-math-facts-2026-07-25.md`.

@@ -7,6 +7,7 @@ import { useExhibitContext } from '@/components/lumina/contexts/ExhibitContext';
 import { useEvaluationContext } from '@/components/lumina/evaluation';
 import type { AudioInputConfig, ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
+import { getClientRunId } from '@/components/lumina/service/clientRunId';
 
 // Message type from AI
 interface Message {
@@ -131,6 +132,10 @@ interface LuminaAIContextType {
   stopListening: () => void;
   isListening: boolean;
   micLevel: number;
+  /** How often `micLevel` updates, in ms — one audio-capture frame. Consumers
+   *  that measure DURATION from micLevel samples are quantised to this and must
+   *  account for it; 0 means not yet known (no audio context). */
+  micFramePeriodMs: number;
   /** Manual voice-activity brackets. Only meaningful for sessions connected
    *  with audio_input.manual_activity; no-ops when the socket is closed. */
   sendActivityStart: () => void;
@@ -203,6 +208,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [conversation, setConversation] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
+  const [micFramePeriodMs, setMicFramePeriodMs] = useState(0);
 
   // Unexpected-end tracking. sessionEnded flips true on a server/Gemini close or
   // network drop (NOT on a user-initiated disconnect), so the UI can offer a
@@ -448,6 +454,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         onStateChange: (state) => {
           setIsListening(state.isCapturing);
           if (!state.isCapturing) setMicLevel(0);
+          // The audio context exists by the time capture starts, so the frame
+          // period is knowable exactly here — never guessed downstream.
+          if (state.isCapturing) {
+            setMicFramePeriodMs(audioServiceRef.current?.getFramePeriodMs() ?? 0);
+          }
         },
         onError: (error) => console.error('Audio capture error:', error),
         onAudioData: (frame) => {
@@ -522,6 +533,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             type: 'authenticate',
             session_mode: 'standalone',
             token,
+            client_run_id: getClientRunId(),
             resumption_handle: resumeHandle,
             primitive_context: {
               primitive_type: primitiveContext.primitive_type,
@@ -629,6 +641,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             type: 'authenticate',
             session_mode: 'lesson',
             token,
+            client_run_id: getClientRunId(),
             resumption_handle: resumeHandle,
             primitive_context: {
               primitive_type: info.firstPrimitive.primitive_type,
@@ -971,6 +984,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     stopListening,
     isListening,
     micLevel,
+    micFramePeriodMs,
     sendActivityStart,
     sendActivityEnd,
   };

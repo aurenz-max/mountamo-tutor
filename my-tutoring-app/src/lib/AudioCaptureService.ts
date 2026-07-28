@@ -59,6 +59,28 @@ class AudioCaptureService {
         this.ws = ws;
     }
 
+    /**
+     * How often `onAudioData` fires, in milliseconds — one ScriptProcessor
+     * callback per BUFFER_SIZE frames at the CONTEXT's native rate (not the
+     * 16 kHz target; the downsample happens after the callback). 4096 frames
+     * at 48 kHz is 85.3 ms.
+     *
+     * This is the resolution of every consumer that samples the mic level, so
+     * anything measuring the DURATION of speech from those samples is quantised
+     * to it. Exposed because a consumer that assumes millisecond resolution
+     * silently mis-measures short utterances: the local voice-turn detector read
+     * one-word answers ("five", "four") as 85 ms of speech and rejected them as
+     * sub-minimum blips (DI sitting 2026-07-26).
+     *
+     * Returns 0 before the audio context exists — the rate is not knowable until
+     * the device grants one, and callers must treat 0 as "unknown", not as zero.
+     */
+    getFramePeriodMs(): number {
+        const sampleRate = this.audioContext?.sampleRate;
+        if (!sampleRate) return 0;
+        return (this.BUFFER_SIZE / sampleRate) * 1000;
+    }
+
     private async setupAudioContext(): Promise<void> {
         try {
             console.log('Setting up audio context...');

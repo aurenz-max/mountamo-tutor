@@ -86,8 +86,17 @@ queue AND this file's "last touched" in the same slice.
   `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
   coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now (2026-07-25): Task 3 CLOSED — the demand-side K queue is DRAINED. Next = re-run the
-  topic-trace census at GRADE 1 (EMERGING) to re-seed the band, and it already has its first item.**
+- **Now (`/pm` 2026-07-25 EOD): Task 3 CLOSED, the demand-side K queue is DRAINED, and the next
+  pull is now an ACTUAL QUEUE ITEM — `BACKLOG.md` **§14 EMERGING (Grade 1) — re-seed the queue**.**
+  *Reconciliation:* the "re-run the census at grade 1" milestone had been recorded only as narrative
+  inside Done entries, so a session pulling the top of the reader-fit queue found 2b (resolved), 9a
+  (promoted away), and 9b–9d (done) — nothing pullable. §14 fixes that and ships with four sub-items
+  already: **14a** run the EMERGING census (`/topic-trace` over real G1 subskills, the shape of the
+  07-14 K census that seeded every demand-side item in the file); **14b** coin-counter gap **G1** —
+  highest value, because `count-like`'s only authored consumer is `MEAS001-07-c` **@ Grade 1** and it
+  STILL has the compute-then-type proxy that K just lost; **14c** gap G2, a `/topic-fidelity` job
+  (`resolveGradeBand` parses `ctx.gradeContext` PROSE, so Grades 2–3 are unreachable); **14d** gap G3,
+  the cheapest — K chrome not band-gated + no 🔊, the exact class #2b already solved.
   **coin-counter `count-like` @ K — VERDICT PROXY (CLEARED=false), FIXED.** K now enacts the count:
   tap each coin, a badge stamps the **running skip-count total** (5→10→15) in tap order, auto-judge
   when every coin is counted exactly once, no number input and no Check at K; a re-tap is a rejected
@@ -168,7 +177,7 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-07-25** (di-sentence-reading BORN L0 → live-verified → L1, one day; BACKLOG item 2 struck)
+### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-07-27** (child-paced `answer_fact` K run COHERENT, diagnosed from the AUTO-PERSISTED log alone — no human copy: 5/5 completed, 3 plain-fallback corrections byte-stable → **#55(e) HALF-closed** (spoken-no-number half; the SILENCE route still rides the 90s micro-run), counting-aloud supersession chains absorbed benignly (item 9 Tier-2 "rapid double answers" class, first live observation → watch-item), `[DI_COMPLETE]` tail flush held, cuesStalled 0; report `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`. Prior 07-26: decoherence ROOT-CAUSED — voice turn gate `minVoiceMs` frame quantization, engine fix + retro-anchor — and VERIFIED live same day: coherent run through the family's **first live `[DI_MOVE_ON]`**; #49(c) + #50(a) CLOSED (both ear halves user-confirmed: move-on line heard, "My turn" works for math), #55(c)/(d-math) closed, #50(c) HALF-closed (subject override ✓ MATHEMATICS, but free-form landed `OPS002-04-c @ G2` → BACKLOG item 6). **PLUS the family's first REAL-CHILD run** (`qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md`, corrected same day): judge-over-transcript HELD — ASR collapsed on child speech ("Please" for a spoken "three", user-confirmed) while the in-band judge contrasted the right number — and turn-gate fix + script shape held under barge-in chaos; **the real break = a mid-run STALL** (no verdict ever arrives, silent "Listening…", GoAway-resume drops the in-flight turn as lead suspect) → **BACKLOG item 5** (escalation ladder + re-cue-on-resume) + clock-skew WS hard-fail (item 7); residual — **user ruling: telemetry FIRST** — **item 8 BUILT + SMOKE-VERIFIED same day** (timestamps un-broken via basicConfig force; server JSONL session ledger with GoAway `mid_turn` stamping; `/api/di-run-logs` drop-box; client ring + auto-flush piloted in DiMathFacts; two live smokes: first caught the mint-after-auth correlation race + flush truncation, both fixed; second run 4/4 — `client_run_id` joins ledger↔run files; residual = induced-stall acceptance gate, rides the recipe sitting; then sweep flush to the other 3 packs) and **item 9 tier-1 SHIPPED** (seeded reducer fuzz in `npm test`, 0 violations → the stall lives above the reducers); **THE RECIPE RUN RAN EOD — COHERENT: item 1 CLOSED** (5/5 items capped, 5× `[DI_MOVE_ON]`, 14 byte-template contrastive corrections = #55 c/d-math at scale, echo rule 5/5 → mean 0 → S1 gate reached, no GoAway/stall; `qa/di-bench/run-2026-07-26-math-facts-sustained-miss.md`); **S1 CONFIRMED — the misconception loop's FIRST LIVE CAPTURE:** stored `"identifies the answer to a subtraction fact as the second number in the expression"` — correct 5/5, bounded, generative, Tier-A over garbage ASR; item 2's consumption half now has live Firestore data; next = 90s silence micro-run (no-verdict→resync + #55(e) + item-8 acceptance) → item-5 fix; tier-2 = DI journey family on `run_tutor_live.py`, not a new harness)
 - **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
   architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
   core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
@@ -586,21 +595,100 @@ queue AND this file's "last touched" in the same slice.
   still classify as `corrected`). **UNBENCHED per the family rule → HUMAN-CHECKS #55, riding the
   same mic run as #54/#50(a).** letter-sounds + word-reading still carry the old re-model — port
   only after #55.
-- **Next pull (2026-07-25):** di-sentence-reading **`/add-structural-difficulty` (L4)** — now
-  unblocked; the axis is already built and measured (sentence LENGTH, carried as `wordCount` +
-  `meanSentenceWords`), with one hard constraint: the **8-word benched ceiling is not a difficulty
-  knob** — raising it needs a new bench sitting, not an L4 decision. Ladder alternative: **di-math-facts
-  `/add-support-tiers` (L3)** is the
-  natural continuation — the birth cert already specifies the fade (easy = model+guide+test, medium =
-  model+test, hard = test-only cold), and it lives in the SCRIPT/cue builder as a per-tier cue
-  variant, never a UI flag; alternatives are di-word-reading catalog `tutoring:` move (L2) or
-  di-letter-sounds `/add-support-tiers` (L3). A **fifth** pack is a user phase call — the fourth
-  (di-sentence-reading) is born, and note a "counting sequence" pack is no longer a candidate at all
-  since `counting_next` absorbed that step; the remaining benched-class gap is blends.
-  **Nearest human gates, in leverage order: #54** (di-sentence-reading L0 — the newest and only
-  un-driven pack, and the one carrying an engine-parameter change), then **#50** (a deliberately
-  WRONG math-facts answer: the correction branch has never been heard in ANY pack across four
-  sittings) + **#49(a)/(c)**, then **#45** (DI in a real K lesson). #48 is struck.
+- **DI misconception evidence — SHIPPED 2026-07-25 (BACKLOG item 1 struck; the ① below is DONE).**
+  All four packs. A DI miss produced `{correct: false, score: 0}` and nothing else; it now produces a
+  **Tier-A `DiagnosisEvidence` packet** — the child's transcript, the tutor's own judging sentence,
+  and the earlier misses as `priorAttempts` — shipped as `submitResult`'s **6th** arg, with
+  `misconceptionScope: 'primitive'` declared on all four catalog entries (the second gate, without
+  which the packets are dropped before the distiller).
+  **The handoff's step 1 was necessary but NOT sufficient — the finding worth carrying forward.**
+  It said to expose the `verdictText` the reducer already computes. But the reducer classifies from
+  the sentinel OPENER and fires immediately (by design — progression must not wait on a sentence),
+  while Gemini forwards `output_transcription` in **sub-word chunks**. So `verdictText` is truncated
+  at "My turn" — and for a contrastive correction the opener is exactly the part carrying **no
+  diagnosis**. Shipping it as `judgeFeedback` would have produced a Tier-A packet that names nothing,
+  **worse than honest Tier B**. Closed with a second additive emission: `useJudgedSpeechLoop` keeps
+  accumulating past the verdict and emits **`verdict-text`** when the line completes. Reducer
+  untouched; one place, not four.
+  **Gate `/misconception-test di-math-facts` = PARTIAL, deliberately.** Probe D **10/10 draws**
+  (3 GENERATIVE + 2 ABSTAINED, 0 LEAK, 0 OVERREACH, every packet at `tier=judge`) — and the abstains
+  held on Tier-A packets, which was this design's likeliest failure mode. Probe R **CLOSED** (backend
+  9/9, new DI scope case), S4 Firestore exposure **pass**. **Probe G is NOT-WIRED** → new DI BACKLOG
+  item 1: no DI generator consumes `remediationFocus`, so a stored diagnosis changes nothing yet.
+  That is a design question, not a missing import — DI's spoken copy is byte-frozen, so the only
+  honest remediation lever is which ITEMS the pool draws. Verified: typecheck:lumina **0**, vitest
+  **985/985**. Report: `qa/misconception/di-math-facts-2026-07-25.md`.
+- **Next pull — ① is DONE (2026-07-25); ② is now the top pull.** *(The ① text below is kept as the
+  reasoning trail for the slice that shipped.)*
+  **① ~~DI BACKLOG item 1 — FAMILY-WIDE: the wrong answer's CONTENT is discarded~~ DONE 2026-07-25** (executor:
+  `/primitive` follow-up or a dedicated slice; all four packs, component-owned). A miss IS recorded
+  (`outcomes[]` carries `{correct, attempts, score}`; metrics carry `attemptsCount`/`firstTryCount`/
+  `overallAccuracy`), but **WHAT the child said is thrown on the floor** — the engine emits
+  `attempt-transcript` with `text` and every DI component keeps only `emission.responseMs`. So the
+  data loop can see THAT a child missed `5 − 1` twice, never that they said "four" both times, which
+  is a textbook diagnosable misconception. **📋 Handoff written `/pm` 2026-07-25:
+  `qa/HANDOFF-di-misconception-evidence-2026-07-25.md`** (paste-able, line-exact).
+  **User ruling — it feeds the FRONTEND misconception system, and the BACKLOG's "non-metric bag"
+  fix shape is superseded:** the accumulation is right, the destination is wrong — the shipped
+  channel is **`diagnosisEvidence`** (Misconception Loop S1), `submitResult`'s 6th arg. Two findings
+  from the read change the job: **(1) `catalog/di.ts` declares no `misconceptionScope`**, so
+  `captureMisconception` gate 3 drops every DI submission before the distiller — all four packs are
+  invisible to the loop today; **(2) the ENGINE also discards the tutor's judging sentence**
+  (`judgedLoopModel.ts:252-255` computes `verdictText`, emits only the `judgment`), and that
+  sentence is what buys **Tier A** — the loop's highest-fidelity tier, written for judge-driven
+  primitives, which DI is the only real instance of. Since contrastive correction landed, that
+  discarded sentence NAMES the error. Template: `PhonicsBlender.tsx:540-566`. Gate:
+  `/misconception-test di-math-facts`.
+  **①ᵇ THE SITTING RAN 2026-07-25 AND DECOHERED — BACKLOG item 1. DIAGNOSED + FIXED + FIX
+  VERIFIED LIVE 2026-07-26:** the channel was none of the four hypotheses — the voice turn gate's
+  `minVoiceMs: 120` silently meant "three 85ms frames", so two-frame one-word answers were rejected
+  while Gemini had already judged them → unanchored verdicts dropped → desync. Engine fix
+  (framePeriodMs → `voicedMs`, retro-anchor, cue ledger) verified live same day: coherent
+  `fact_review` run, first-ever live `[DI_MOVE_ON]` at the correction cap, contrastive correction
+  held byte-identical (#55 math half). `qa/di-bench/run-2026-07-26-math-facts-turn-gate.md` +
+  `-verify.md`. **Residual (now the top pull): the sustained-miss recipe run** — wrong on MOST
+  items, same rule, mean < 60 — for multi-cap resync/rapid-retry stress + the S1 misconception
+  capture (the 07-26 run's mean of 80 was correctly below the write gate). *(Original finding kept
+  below as the reasoning trail.)* The user drove the consistent successor rule and the tutor + pack lost coherence.
+  **No usable record survived**, and that is the first finding: the packs handled **5 of the 8**
+  `LoopEmission` kinds and hit `default: return` on the three that MEAN desync
+  (`attempt-superseded` / `phantom-transcript` / `unanchored-verdict` — the canonical DI-1 signal),
+  and wired neither `onTutorText` nor `onVoiceTurnClose`, so nothing captured **what the tutor
+  actually said**. The bench has had all of this since the open-mic runs, which is why every prior DI
+  failure was diagnosable and this one was not.
+  **Instrumentation landed in the same slice:** `diRunLog.ts` + `DiRunLogPanel.tsx` (shared, all four
+  packs) give the primitive path bench parity — a coherence-flag row first, then attempts / affirmed /
+  corrected / move-ons / resyncs / echo-opened / mean response + commit lag, and **Copy run JSON**
+  mirroring the bench payload. Verified `typecheck:lumina` 0, full vitest **997/997**, new
+  `diRunLog.test.ts` 12/12 with **non-vacuity proven** (reverting the three captures fails 5).
+  Logging is write-only and cannot influence progression.
+  **Ruled out, don't re-chase:** the misconception slice (`awaitingJudgeTextRef` is pure
+  record-keeping, cleared on `attempt-open` and reset, never gates progression) and `off-script`
+  (handled correctly — returns and keeps listening). **Live hypotheses:** `[DI_MOVE_ON]` at the
+  correction cap (a consistent wrong rule caps EVERY item, and move-on has never fired live in any
+  pack), resync fighting the tutor's own in-band re-elicitation, contrastive-correction drift (#55,
+  still UNBENCHED), unanchored verdicts under rapid retry. **Cheap bisect:** the same rule in the
+  always-instrumented `di-bench` math-facts probe separates an engine fault from pack orchestration.
+  **② Then the mic sitting, RE-RUN with the panel open (#54 + #50 + #55 + #49(a)/(c) — ONE run).**
+  ① is landed, so the ordering already paid off: this is the **first deliberately-WRONG DI run ever
+  driven**, and it now produces the family's first recorded wrong-answer transcripts, judge
+  sentences, and a real distiller call instead of ears-only evidence. It is also the S1 live-capture
+  check no probe can reach — watch the console for
+  `[captureMisconception] stored for di-math-facts: …` (or `abstained: …`, which is success) — and the
+  gate that unblocks **porting contrastive correction to di-letter-sounds + di-word-reading** (family
+  rule: the rewording is UNBENCHED until #55 closes).
+  **③ Then the ladder.** di-sentence-reading `/add-structural-difficulty` (L4) — axis already built
+  and measured (sentence LENGTH, carried as `wordCount` + `meanSentenceWords`), with one hard
+  constraint: the **8-word benched ceiling is not a difficulty knob**; raising it needs a new bench
+  sitting, not an L4 decision. Alternatives at the same rung: **di-math-facts `/add-support-tiers`
+  (L3)** (birth cert already specifies the fade — easy = model+guide+test / medium = model+test /
+  hard = test-only cold — as a per-tier cue variant in the SCRIPT, never a UI flag; di-sentence-reading's
+  L3 is the worked template), di-word-reading catalog `tutoring:` move (L2), di-letter-sounds
+  `/add-support-tiers` (L3).
+  A **fifth pack** is a user phase call, not a queue default — the remaining benched-class gap is
+  blends; a "counting sequence" pack is no longer a candidate at all (`counting_next` absorbed it).
+  **Human gates in leverage order:** the ② sitting, then **#45** (DI in a real K lesson — the
+  evidence that would justify un-parking voice-transport). #48 struck; #53 folded into #54(b).
 - **`subject_for_domain('di')` REVISIT — RESOLVED AND NOW COMMITTED (`/pm` 2026-07-25 correction of
   its own 07-24 note).** The 07-24 line called this "resolved in the working tree (uncommitted)";
   that is now stale — `curriculum_retrieval_service.py` (`_PRIMITIVE_TO_SUBJECT`
@@ -634,34 +722,35 @@ within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activit
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` reconcile 2026-07-25 — supersedes the 07-24 note):** HEAD `19874c5`, main.
-> Portfolio = **2 ACTIVE + 0 DELEGATED** — **within the 2+1 limit**, but still only ONE lane moving.
+> **WIP note (`/pm` reconcile 2026-07-27 — supersedes the 07-25 EOD note):** HEAD `712e54a`, main.
+> Portfolio = **2 ACTIVE + 0 DELEGATED**, within the 2+1 limit. DI is the only lane that moved since
+> (the 07-26 decoherence→telemetry day); reader-fit idle 2 days — within tolerance, queue freshly
+> re-seeded (§14) so a session can pull cold.
 >
-> **Uncommitted surface is `/ship`-READY and spans TWO concerns — slice it.**
-> (a) **DI slice** — di-math-facts L1 eval-modes + L2 tutoring scaffold: the pack files
-> (`DiMathFacts.tsx`, `diMathFactsScript.ts`, `gemini-di-math-facts.ts`), `catalog/di.ts`,
-> `diGenerators.ts`, `evaluation/types.ts`, the tester, backend `problem_type_registry.py`, plus the
-> two new QA reports and the register updates (EVAL_TRACKER 361/378, HUMAN-CHECKS #48/#49, DI
-> BACKLOG, WORKSTREAMS, birth cert). Both layers are verified per doctrine (real-Gemini eval-test
-> ×8 with 40/40 recomputed; `/tutor-test` 0 HIGH + Tier-2 on two modes; tsc/vitest green) — the
-> only thing outstanding is the LIVE mic sitting, which is queued human debt, not a ship blocker.
-> (b) **Docs slice** — root `CLAUDE.md` trimmed (PM + UI/Styling sections compressed, Development
-> Commands dropped), the UI-kit rules extracted to a NEW untracked
-> `my-tutoring-app/src/components/lumina/CLAUDE.md`, and `.claude/skills/pm/SKILL.md` gaining the
-> Portfolio-model section. **These two files must ship TOGETHER** — the trimmed root CLAUDE.md
-> already points at the lumina CLAUDE.md, so committing (a) without (b) leaves a dangling pointer.
-> (c) **Flag, don't ship blind:** `.claude/settings.local.json` REMOVES four allow-entries
-> (`Bash(*)`, `Glob`, `Grep`, `Read`), leaving only `Read(**)`. If that narrowing wasn't deliberate,
-> revert it rather than letting it ride a slice.
+> **The tree is NOT clean — it carries the entire 07-26 DI day, uncommitted:** 26 modified files
+> (+2,145/−145) plus ~15 new ones, ALL one stream. Contents: the turn-gate engine fix
+> (framePeriodMs→`voicedMs`, retro-anchor, cue ledger — the decoherence root cause), telemetry item 8
+> (backend `session_ledger.py` + `di_run_logs.py` + the `main.py` logging fix; client `diRunLog` /
+> `DiRunLogPanel` / `clientRunId` + the DiMathFacts flush pilot), the tier-1 fuzz suites,
+> misconception-evidence tests + golden scenario, and four 07-26 run reports + queue updates.
+> **Propose `/ship` in 3 slices:** (1) engine turn-gate fix + fuzz suites (the behavior change, its
+> own revert unit), (2) telemetry (backend ledger/drop-box + client flush pilot), (3) QA docs +
+> queues (HUMAN-CHECKS / BACKLOG / WORKSTREAMS in their own slice per standing hygiene).
+> ⚠️ **Pre-ship gate: `backend/logs/` is NOT gitignored** and now holds runtime session ledgers +
+> auto-uploaded run files from real sittings (child-session transcripts included). Add `backend/logs/`
+> to `.gitignore` in the telemetry slice so no `git add -A` can ever sweep student-session data into
+> the repo. (Verified via `git status` showing `??`; an earlier `check-ignore -v` "match" was a
+> blank-line quirk — do not trust it.)
+> ⚠️ **Standing flag, THIRD `/pm` raising it:** `.claude/settings.local.json` allow-list is still
+> `["Read(**)"]` alone — every session pays permission prompts for routine shell/search. Restore
+> `Bash(*)` / `Glob` / `Grep` if the narrowing wasn't deliberate; no other stream owns this.
 >
-> **Reader-fit (TOP PRIORITY by user designation 2026-07-16) is now 5 days idle** — last touched
-> 2026-07-20, while DI ran 07-21→07-25 on a user-set phase ("more DI packs"). Unchanged WIP tension:
-> the designation and the phase point at different lanes. Not auto-parked — the user's call. Its
-> next pull (coin-counter Task 3) was verified genuinely open on 07-24 and nothing has touched
-> `CoinCounter.tsx` since, so resuming still costs no re-derivation.
-> **Human-only residuals:** HUMAN-CHECKS #3–#49 (next free ID **50**); the nearest DI gates (#48 +
-> #49) close in ONE mic sitting and are the L0/L1/L2 gate for the whole math-facts pack; phonics
-> tap-pronounce runtime verification (reader-fit BACKLOG #7 follow-up, `/tutor-test`).
+> **Human-only residuals:** open rows run to **#56; next free ID = 57**. The 07-25 "one big sitting"
+> framing is RETIRED — the math half closed 07-26 (#50(a), #49(c), #55(c)/(d-math) struck). What
+> remains is **two short runs**: **#56** (the ~90s silence micro-run — no-verdict→resync live +
+> #55(e) + item 8's induced-stall acceptance gate) and the **sentence half** of the deliberately-wrong
+> recipe (#54(a)/(b)/(d) + #55(a)/(b)/(d-reading) + #50(b) + #49(a)). Then **#45** (DI in a real K
+> lesson), the evidence that would justify un-parking voice-transport.
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 
@@ -670,7 +759,7 @@ within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activit
 | Voice transport unification | `my-tutoring-app/qa/voice-transport/CHARTER.md` | **NEW 2026-07-23 (user direction).** Promote the DI-proven client-side turn authority (`voiceTurnMachine`/`useLiveVoiceTurns`) from DI-private mode to Lumina's SESSION-WIDE voice transport, so students can talk to the tutor throughout a lesson and verbally refer back to prior sections. Dissolves the DI mixed-lesson manual-VAD trade-off (L2 wiring 07-23, HUMAN-CHECKS #45 measures the interim). Phases: calibration beat → lesson-level turn authority (DI becomes a consumer) → contextual close-timing + viewport claim → refer-back Tier-3 journey beats (the raised live-testing bar). Charter has the evidence base + watch-items. Pull only when a WIP slot opens. | 07-23 |
 | media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
 | SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **7 contracts on disk** (newest: counting-board 2026-07-20 via reader-fit #13; ten-frame 2026-07-16 via #12; media-player 2026-07-16 via #9a Step 1 — the CONFLICTED one) + **baseline `--check` ×2 PASSED 07-15** (first guard exercise: both COMPATIBLE, 20/20 requirements hold at runtime; ss R8 amended for precision — object window is prompt+tier-conditioned, bin cap is the hard clamp; reports in `qa/primitive-contracts/`). Next = #3 **foundation-explorer** derivation, then #2 knowledge-check (before `true_false @ PRE` lands). *(`/pm` 2026-07-25: the old "its files are already in flight in the working tree" caveat is STALE — the #9 explainer-tail work shipped; the tree is DI-only.)* | 07-15 |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **8 contracts on disk** — newest **coin-counter 2026-07-25** (derived contract-first inside reader-fit Task 3: 10 requirements, C1 resolved, 6 gaps incl. the G1 that seeds the EMERGING census); then counting-board 07-20 (#13), ten-frame 07-16 (#12), media-player 07-16 (#9a Step 1 — the CONFLICTED one). **`--check` guard now exercised ×4, all COMPATIBLE** (sorting-station + phonics-blender 07-15, comparison-builder 07-20, coin-counter 07-25; reports in `qa/primitive-contracts/`). Queue unchanged: next = #3 **foundation-explorer**, then #2 knowledge-check (before `true_false @ PRE` lands). **Note the pattern — every contract so far was derived as a by-product of a reader-fit fix, never as a standalone pull**, which is why the stated queue order keeps not being what actually lands. | **07-25** |
 | Engineering tutoring-scaffold wiring | `my-tutoring-app/qa/engineering-tutoring-scaffold/BACKLOG.md` | **NEW 2026-07-21 (user).** Bring engineering primitives to L2 (`/add-tutoring-scaffold`). **Phase A** = 12 primitives with NO `useLuminaAI` tutor channel (machine-profile, dump-truck-loader, bridge-builder, tower-stacker, gear-train-builder, pulley-system-builder, lever-lab, ramp-lab, wheel-axle-explorer, shape-strength-tester, foundation-builder, blueprint-canvas) — wiring the channel also unlocks read-aloud there (finishes the 07-21 sweep). Pilot A1 machine-profile end-to-end + live-verify BEFORE sweeping A2–A12. **Phase B** = `/tutor-test` the 12 that already have the channel for L2 *sufficiency* (not just presence). Executors: `/add-tutoring-scaffold` → `/tutor-test` → `/reader-fit --fix`. | 07-21 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |

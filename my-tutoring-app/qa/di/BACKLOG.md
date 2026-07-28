@@ -54,7 +54,237 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-1. **FAMILY-WIDE: the wrong answer's CONTENT is discarded** *(found 2026-07-25
+8. **FAMILY-WIDE + BACKEND: DIAGNOSIS-GRADE TELEMETRY — TOP PULL, user ruling
+   2026-07-26 ("first, we need enough logging to actually diagnose, evaluate,
+   and improve").** *(Executor: dedicated slice, before item 5's fix and before
+   any further sittings.)* Third consecutive failure sitting whose FIRST finding
+   was "the record can't support diagnosis": 07-25 decoherence (no record
+   survived), 07-26 morning (took two sittings to make `belowMinVoice` visible),
+   07-26 child run (no client JSON — panel not copied; server log untimestamped
+   and truncated). Scope:
+   - **(a) timestamps + session/turn ids on every backend log line** (logging
+     format change, trivial);
+   - **(b) a server-side structured per-session JSONL ledger** — the server twin
+     of the client panel: cue sent/acked, activity signals, transcription events
+     with ts, verdict-relevant turns, **GoAway/resume stamped with whether a cue
+     or attempt was IN FLIGHT** (makes item 5's suspect (a) directly readable);
+   - **(c) client run log AUTO-PERSISTS** — every run, saved without a human
+     click (localStorage ring + auto-download or dev-endpoint POST at run end
+     AND on disconnect/beforeunload). Copy-run-JSON stays as the convenience
+     path, never the only path;
+   - **(d) a correlation key stamped on BOTH sides** (session id + cue seq) so
+     client `seq` joins server turns;
+   **Acceptance gate: a deliberately induced stall must be fully diagnosable
+   from persisted artifacts alone — no human memory, no lucky copy.**
+   **BUILT 2026-07-26 (same session as the ruling) — needs one live sitting to
+   close.** Shipped: (a) `main.py` basicConfig gains `force=True` — the
+   timestamped format was ALREADY configured but was a no-op because
+   `gemini.py`'s import-time `basicConfig` (no format) won the root-logger race;
+   (b) `services/session_ledger.py` (write-only, never-throws) + full wiring in
+   `lumina_tutor.py` → `logs/lumina-sessions/<ts>-<id>.jsonl`: auth/init,
+   text-to-Gemini classified by bracket tag, activity signals, both transcript
+   streams, turn start/end, barge-ins, **GoAway stamped with `mid_turn` +
+   pending queue depths** (item 5's suspect (a) becomes directly readable),
+   resume/connect-failed/max-resumes, client disconnect, session errors (the
+   clock-skew class now lands in the ledger), final metrics; (c)
+   `POST /api/di-run-logs` (token auth) → `logs/di-runs/*.json`; (d) client:
+   `diRunLog` mints `meta.runId`, mirrors every run into a localStorage ring
+   (last 5, throttled 1s), and `flushDiRunLog(reason)` auto-uploads — piloted in
+   **DiMathFacts only** (run-end + teardown, deduped) per pilot-then-sweep; (e)
+   correlation: `clientRunId` registry → `client_run_id` in BOTH LuminaAIContext
+   auth sends → stamped into the ledger `session-init`. Gates: py_compile clean,
+   `typecheck:lumina` 0, full vitest 1014/1014.
+   **SMOKE-VERIFIED LIVE 2026-07-26, two user runs.** Run 1 (3/4): timestamps ✓,
+   ledger narrative ✓ (180 events), zero-click upload ✓ — but `client_run_id:
+   None`: the runId was minted at arm time, ~200ms AFTER the auth message left.
+   Fixed same slice (pack registers the id BEFORE `ctx.connect`; `startDiRunLog`
+   claims it, second-run collision guarded) + a deduped 6s tail re-flush (run 1's
+   `cuesStalled: 1` was flush truncation — `[DI_COMPLETE]` lands ~3s after
+   submit). Run 2 (4/4): ledger `session-init client_run_id = 4b9baa743d20` ===
+   both run files' runId; tail file shows cues 6/6, stalled 0. **Remaining:** the
+   acceptance gate rides the item-1 recipe sitting (induced-stall diagnosability
+   via the last-item silence segment); then sweep flush wiring to the other
+   three packs (pilot passed).
+1. **FAMILY-WIDE: SUSTAINED-MISS DECOHERENCE — CLOSED 2026-07-26** (root cause
+   = turn gate, fixed, fix verified live, and the full recipe run re-driven
+   COHERENT the same day — see the strike at the bottom of this item; residual
+   = S1 console confirm + the 90s silence micro-run). *(opened 2026-07-25 from
+   the user's first deliberately-wrong mic sitting; diagnosed 2026-07-26.)*
+   **DIAGNOSED — none of the four hypotheses below; the channel was the voice
+   turn GATE.** `minVoiceMs: 120` silently meant "three 85ms capture frames", so
+   a two-frame one-word answer ("five") was rejected as a blip while its audio
+   had already gone to Gemini → the judge affirmed → `unanchored-verdict` →
+   dropped → desync. Exposure = the single-word response class (three of four
+   packs). Full mechanism, why the bench never caught it (3 coin-flip turns at
+   ~50ms margin), and fixes (framePeriodMs plumbed → `voicedMs`; retro-anchor
+   inside 4s; belowMinVoice observability + cue ledger — all engine-level):
+   `qa/di-bench/run-2026-07-26-math-facts-turn-gate.md`.
+   **FIX VERIFIED LIVE 2026-07-26** (`run-2026-07-26-math-facts-turn-gate-verify.md`
+   + JSON): coherent `fact_review` run, all four predicted numbers hit
+   (unanchored 0 / retroAnchored 0 / voiced 165–254ms on one-word answers /
+   move-on flagged), and **hypothesis (a) is retired — `[DI_MOVE_ON]` fired live
+   for the first time in any pack and stayed coherent** through cap → cue held
+   by audio → sent → recap. Contrastive correction (c) also held: two byte-identical
+   filled contrasts, no drift, no marks spoken (#55 math half).
+   **REMAINING — one capped item is not the sustained-miss stress:** re-drive the
+   #50 recipe proper (wrong on MOST items, SAME rule, session mean < 60) to (i)
+   stress resync-vs-re-elicitation (b) and rapid-retry unanchored (d) at
+   MULTIPLE caps, and (ii) reach the S1 misconception live capture — the 07-26
+   run's mean was 80, correctly below the write gate. Also still open from the
+   turn-gate report: **watchdog** (no timeout on "item cued, nothing happened")
+   and **`facts` in RUNTIME STATE** (the fabrication vector).
+   **What happened:** the user drove `di-math-facts` answering with a consistent
+   wrong rule (always the successor: `5 − 1` → "six"), per the #50 recipe. The
+   run decohered. **No usable record survived**, which is itself the first
+   finding.
+   **✅ FIXED IN THE SAME SLICE — the packs were structurally blind to desync.**
+   `diRunLog.ts` + `DiRunLogPanel.tsx` (new, shared by all four packs) give the
+   primitive path bench parity. Before it, a pack handled 5 of the 8
+   `LoopEmission` kinds and hit `default: return` on the three that MEAN
+   decoherence — `attempt-superseded`, `phantom-transcript`, and
+   `unanchored-verdict` (the canonical DI-1 signal) — and wired neither
+   `onTutorText` nor `onVoiceTurnClose`, so **there was no record of what the
+   tutor actually said** and none of the mic floors telemetry. The panel leads
+   with a coherence row (superseded / phantom / unanchored / off-script /
+   no-verdict) and has Copy-run-JSON mirroring the bench payload.
+   Verified: `typecheck:lumina` 0; full vitest **997/997**; new
+   `diRunLog.test.ts` 12/12 with **non-vacuity proven** (reverting the three
+   captures fails 5). Logging is write-only — it cannot influence progression.
+   **RULED OUT, do not re-chase:** the misconception slice that landed the same
+   day. `awaitingJudgeTextRef` is pure record-keeping, cleared on `attempt-open`
+   and on reset, and never gates progression; `off-script` is also handled
+   correctly (returns, keeps listening).
+   **LIVE HYPOTHESES, in order — all first-observation paths, which is why five
+   all-correct sittings never surfaced this:**
+   - **(a) `[DI_MOVE_ON]` at the correction cap.** A consistent wrong rule caps
+     EVERY item, and move-on had never fired live in any pack. Now flagged
+     `move-on` in the log.
+   - **(b) resync fighting the tutor's own re-elicitation.** After 2 misses the
+     engine emits `resync` and the pack re-cues, but the correction line already
+     re-elicited in-band → two competing cues. Unit-covered, never observed live.
+   - **(c) contrastive-correction fidelity (#55, UNBENCHED).** The tutor now
+     fills a `⟨what they said⟩` slot; drift, editorialising, or speaking the
+     `⟨ ⟩` marks would break sentinel classification → repeated off-script. The
+     complete judging line is now captured via `verdict-text` + `onTutorText`,
+     which is exactly where this shows.
+   - **(d) unanchored verdicts under rapid retry** — previously invisible.
+   **Cheap bisect available:** the `di-bench` math-facts probe (`kind: 'fact'`)
+   has always been fully instrumented. Driving the same successor rule there
+   separates an ENGINE fault (reproduces in the bench) from a PACK
+   orchestration fault (bench clean, pack breaks) — the bench has no cue
+   builders, reward beat, or advance scheduling.
+   ~~**Next action: re-drive HUMAN-CHECKS #50 with the panel open and Copy run
+   JSON**, save under `qa/di-bench/`, then triage by flag.~~ **Done 2026-07-26 —
+   triage complete (see the status block above).** ~~Next action: the
+   sustained-miss recipe run (mean < 60), same panel + Copy run JSON.~~
+   **THE RECIPE RUN RAN 2026-07-26 EOD — COHERENT. Item 1's decoherence is
+   CLOSED** (`qa/di-bench/run-2026-07-26-math-facts-sustained-miss.md`): all 5
+   items capped, **5× `[DI_MOVE_ON]`**, 15 contrastive corrections all
+   byte-template (#55 c/d-math at scale), 1 benign supersession absorbed, 0
+   unanchored/phantom/no-verdict/stalled, no GoAway, no stall — under the exact
+   conditions that decohered 07-25. Learner ran the ECHO rule 5/5 consistent
+   (mean 0 → S1 gate reached; ASR wrote "SeaWorld"/"cero" for a spoken "zero",
+   judge named it right — judge-over-transcript confirmed a 2nd time).
+   ~~**Residuals, one micro-run + one console line:** (i) user to confirm the
+   `[captureMisconception]` console result (stored/abstained);~~ **(i) CONFIRMED
+   2026-07-26 — S1 CLOSED, the loop's FIRST LIVE CAPTURE:** `stored for
+   di-math-facts: "The student identifies the answer to a subtraction fact as
+   the second number in the expression."` — correct on all 5 items, bounded
+   (subtraction-scoped, no overreach), generative (predicts unseen items), and
+   distilled from Tier-A judge sentences over garbage ASR. A real active
+   misconception now sits in Firestore under `misconceptionKey: "di-math-facts"`
+   — **item 2's consumption design now has live data.** Remaining: (ii) the 90s
+   SILENCE run (answer nothing on item 1) → no-verdict→resync live, #55(e)
+   fallback, and item 8's induced-stall acceptance gate.
+5. **FAMILY-WIDE: mid-run STALL — no verdict ever arrives and the primitive
+   dead-ends in silent "Listening…" (the first real-child run's biggest break).**
+   *(opened 2026-07-26 from the child stress run,
+   `qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md` Finding 1 — CORRECTED
+   report: the earlier "fabricated contrast" defect was withdrawn, the child really
+   said "three"; ASR wrote "Please". Executor: engine/`lumina_tutor.py` slice —
+   escalation ladder + re-cue-on-resume; verification rides the item-1 recipe
+   sitting.)* From ~turn 15 the child kept answering — repeated
+   `activity_start`/`activity_end` pairs — with ZERO AI output and no verdict;
+   "Waiting for Gemini response (turn 16)" never satisfied; no recovery, no visible
+   failure state. **Mechanism candidates (log truncated + untimestamped, can't pin):
+   (a) GoAway/resume mid-attempt drops the in-flight turn and nothing re-cues the
+   active item on resume** (Session A shows GoAways cycling ~50s with instant
+   re-GoAway); **(b) generation wedged under the barge-in storm.** The no-verdict
+   timeout → resync exists and likely fired (same-item re-cue observed) but re-cueing
+   a dead session is not recovery. **Fix shape: (i) re-cue the active `[DI_ITEM]`
+   after any resume; (ii) client escalation ladder — N re-cues with no tutor audio →
+   reconnect + re-cue → still dead = visible "let's reconnect" state, never silent
+   Listening…; (iii) the GoAway watch-item's "run complete, stop resuming" exit.**
+9. **STOCHASTIC ADVERSARIAL STUDENT — make the child run repeatable (opened
+   2026-07-26 from the user's design question: the loop must be robust to a kid
+   who finds wrong answers funny).** Three tiers, different failure classes:
+   - **Tier 1 — reducer fuzz — SHIPPED 2026-07-26, green.**
+     `voiceTurnMachine.fuzz.test.ts` + `judgedLoopModel.fuzz.test.ts`: seeded
+     mulberry32 PRNG (a failure names its seed+step and replays exactly), 120
+     seeds × 250-300 random events per suite, invariants asserted every step.
+     Load-bearing oracles: the voice open/close ledger (alternation, post-close
+     state === IDLE, `voicedMs = durationMs + frame`, quantised-config variant)
+     and the **attempt ledger** — every attempt opened is accounted for
+     (superseded / resolved by a non-retro verdict / discarded by arm-disarm /
+     still open); an attempt lost with no verdict is the stall class. Also
+     pinned: disarmed loop is inert, resync pairs with its miss-verdict in-step,
+     reducer never emits `verdict-text`, no negative timing fields. Runs in
+     `npm test` (1014/1014). Found no violations in current code — the reducers
+     are clean; the stall lives ABOVE them (transport/session), which is item
+     5's territory. Extend the event generator when new emission kinds land.
+   - **Tier 2 — headless adversarial live student (after items 8 + 5):** build
+     ON `backend/tests/tutor_live/run_tutor_live.py` (user call 2026-07-26 —
+     take inspiration from /tutor-test): it already authenticates on the real WS
+     like LuminaAIContext, replays beats, captures per-beat transcripts, judges
+     with code oracles, and scores rate-based over `--runs N`; add a DI journey
+     family + audio/activity-signal student turns (the WS protocol already
+     accepts both), reusing its taxonomy/triage. NOT a new harness — the
+     tutor-live Tier-3 pattern driving the REAL judged loop, `--runs N`, with
+     behavior policies drawn stochastically per turn: wrong-same-rule,
+     wrong-random, silence through a test prompt, barge-in mid-model,
+     answer-over-tutor-audio, rapid double answers, walk-away. Pass criterion is
+     the liveness invariant (no state older than X s without escalation), NOT
+     item scores. TTS input will not reproduce child ACOUSTICS — fine; this tier
+     targets orchestration, not ASR.
+   - **Tier 3 — periodic real-child sittings:** the only source of the
+     child-acoustics class (ASR collapse, judge-over-transcript) and of genuine
+     adversarial creativity. Keep them; with item 8 landed, each one
+     automatically leaves a diagnosable record.
+2. **FAMILY-WIDE: DI packs produce no REMEDIATION content from a stored
+   misconception (S5).** *(opened 2026-07-25 by `/misconception-test di-math-facts`
+   — executor: `/add-misconception-loop`, then re-run `/misconception-test` for a
+   full-gate PASS.)* Item 2 below closed the PRODUCTION half: a wrong DI answer
+   now yields a Tier-A packet and the distiller writes a real, bounded diagnosis
+   from it (Probe D 10/10). The CONSUMPTION half is untouched — **no DI generator
+   imports `buildRemediationPrompt`**, so an active misconception changes nothing
+   about the next session and Probe G is **NOT-WIRED**.
+   **This is a design question, not a missing import.** Every literacy/math
+   primitive that consumes `remediationFocus` does it by rewording the generator
+   prompt; DI's spoken copy is **bench-proven and byte-frozen** (do-not: "don't
+   re-word any cue, judging contract, or correction line"). So the only honest
+   lever here is **which items the pool draws** — e.g. a "counts up instead of
+   back" diagnosis biases the subtraction pool toward take-away facts whose
+   answer is NOT the successor, so the wrong rule visibly fails. Decide that
+   lever before writing code; do not reach for prompt rewording by analogy with
+   the literacy packs.
+   Report: `qa/misconception/di-math-facts-2026-07-25.md`.
+6. **Free-form DI attribution lands off-grade/off-family: K `fact_review` →
+   `OPS002-04-c @ grade=2` (subject override ✓ MATHEMATICS).** *(opened 2026-07-26,
+   stress-sitting report; #50(c) half-closed by the same evidence. Executor: probe
+   `curriculum_retrieval_service` on the standalone free-form path — is the scope
+   grade coming from student 1004's profile instead of the content, and is
+   `fact_review`'s "across the whole grade range" evalModeDescription steering the
+   embedding? Standalone-only exposure; lesson mode carries the objective's subskill.)*
+   Birth-cert home is the OPS001 family (K OPS001-03 / G1 OPS001-01); the full data
+   loop (calibration θ, mastery gate 0→2, XP) wrote against OPS002-04-c, so standalone
+   DI sittings are calibrating the WRONG node.
+7. **Tutor WebSocket hard-fails on 1s clock skew.** *(opened 2026-07-26, stress-sitting
+   report. Executor: one-line — pass `clock_skew_seconds` (e.g. 10) to
+   `auth.verify_id_token` in `lumina_tutor.py:422`; check the HTTP auth path for the
+   same.)* `Token used too early, 1785081560 < 1785081561` → `InvalidIdTokenError` →
+   session dead, client must reconnect.
+3. ~~**FAMILY-WIDE: the wrong answer's CONTENT is discarded**~~ **DONE 2026-07-25 — STRUCK, see Done.**
+   *(kept below for the reasoning trail.)* *(found 2026-07-25
    answering the user's "so you won't see an incorrect in the logs?" — executor:
    `/primitive` follow-up or a dedicated slice; all three packs, engine-adjacent
    but component-owned).* A miss IS recorded — `outcomes[]` carries
@@ -67,11 +297,32 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    THAT a child missed `5 - 1` twice, never that they said "four" both times —
    an off-by-one that is a textbook diagnosable misconception. This is exactly
    the input `project_misconception-loop` wants, and DI is the family best
-   positioned to produce it (the tutor already judged the audio). Fix shape:
-   accumulate per-attempt `{text, judgment}` into the outcome and ship it in the
-   evaluation payload's non-metric bag. Check the misconception loop's identity
-   ruling (primitive_type + declared scope) before choosing the field name.
-2. ~~**DI sentence reading — 4th pack.**~~ **BORN L0 2026-07-25 — STRUCK, see Done.**
+   positioned to produce it (the tutor already judged the audio).
+   **📋 HANDOFF: `qa/HANDOFF-di-misconception-evidence-2026-07-25.md`** — paste-able,
+   line-exact, written after reading both sides. **It SUPERSEDES the fix shape
+   stated below** (kept for the reasoning trail).
+   *(superseded fix shape: "accumulate per-attempt `{text, judgment}` into the
+   outcome and ship it in the evaluation payload's non-metric bag".)* The
+   accumulation half is right; the destination is wrong — the non-metric bag
+   (`studentWork`) is inert storage no consumer reads for diagnosis. The shipped
+   channel is **`diagnosisEvidence`** (Misconception Loop S1,
+   `evaluation/diagnosis/types.ts`), passed as `submitResult`'s 6th arg.
+   **Two findings from the handoff read that change the job:**
+   - **`catalog/di.ts` declares NO `misconceptionScope`,** so all four packs are
+     invisible to the loop — `captureMisconception` gate 3 drops every DI
+     submission before the distiller. Two gates must open: the declaration AND
+     the packet. (Scope ruling + the `di-math-facts` cross-identity risk are
+     worked in the handoff; recommendation is `'primitive'`.)
+   - **The ENGINE discards the tutor's judging sentence too** — `judgedLoopModel.ts:252-255`
+     computes `verdictText`, classifies it with `scanForSentinel`, and emits only
+     the `judgment`. That sentence is what buys **Tier A** (`judgeFeedback`, the
+     loop's highest-fidelity tier, written for exactly this family), and since
+     contrastive correction it NAMES the error. One additive field.
+   Template to copy, not design from scratch: `PhonicsBlender.tsx:540-566`
+   (spoken, judge-driven, already Tier A). **Sequence this BEFORE the #54/#50/#55
+   mic sitting** — that is the first deliberately-wrong DI run ever driven, and
+   with this landed it yields recorded evidence instead of ears-only notes.
+4. ~~**DI sentence reading — 4th pack.**~~ **BORN L0 2026-07-25 — STRUCK, see Done.**
    *(Kept below: the sitting's rulings, which are now the pack's design record and
    the input to its ladder. Standing gate 1 PASSED 2026-07-25, user mic sitting,
    "this worked so well!".)* 10/10 items, 10 affirmed / 3 corrected / **0
@@ -152,27 +403,124 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    wiring. Do NOT skip the bench because the mechanism looks familiar — the
    probe being wired is NOT the gate; the sitting is.
 
-*(the ladder — still the default pull ahead of new births; empty of births as of
-2026-07-24 — the first custom-made set is fully born: three packs at
-L0+. Next pulls come from the LADDER, not new births: each pack's birth-cert
-follow-up queue (`qa/eval-reports/di-{letter-sounds,word-reading,math-facts}-birth.md`)
-— nearest rungs: **di-math-facts `/add-support-tiers` (L3)** — its L1
-`/add-eval-modes` and L2 `/add-tutoring-scaffold` both landed (see Done), and
-the L3 fade is already specified on the birth cert (easy = model+guide+test,
-medium = model+test, hard = test-only, as a cue variant per tier, NOT a UI
-flag) — di-letter-sounds `/add-support-tiers` (L3), di-word-reading catalog
-`tutoring:` move (L2). A fourth pack proposal (blends once benched) is a user
-phase call, not a queue default. NOTE: a "counting sequence" pack is no longer
-the obvious fourth — di-math-facts absorbed the next-number step as its
-`counting_next` eval mode.)*
+*(the ladder — the default pull once the numbered queue above is empty. Updated
+`/pm` 2026-07-25 EOD; the prior note said "three packs at L0+" and was written
+before di-sentence-reading existed.)*
+
+**Family ladder state — four packs, all born, all L0 live-gated:**
+
+| Pack | Born | L0 live gate | L1 modes | L2 scaffold | L3 tiers | Next rung |
+|---|---|---|---|---|---|---|
+| di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | — | `/add-support-tiers` (L3) |
+| di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | — (script-local) | — | catalog `tutoring:` move (L2) |
+| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | — | `/add-support-tiers` (L3) |
+| di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | `/add-structural-difficulty` (L4) |
+
+Nearest rungs, in order: **di-sentence-reading L4** (axis already built and
+measured — sentence LENGTH via `wordCount`/`meanSentenceWords`; hard constraint:
+the **8-word benched ceiling is NOT a difficulty knob**, raising it needs a bench
+sitting) · **di-math-facts L3** (birth cert specifies the fade; di-sentence-reading's
+L3 is now the worked template for a live-judged spoken pack — modality #2
+instruction-as-scaffold, DISTAR's model→guide→test IS the ladder, in the SCRIPT
+never a UI flag) · di-letter-sounds L3 · di-word-reading L2.
+
+**Two family-wide debts sit ABOVE the ladder** and are why the numbered queue is
+not empty: **item 1** (no remediation content from a stored misconception — the
+consumption half of the loop, all four packs) and the **contrastive-correction
+port** to di-letter-sounds + di-word-reading, which is gated on HUMAN-CHECKS #55
+(the rewording is UNBENCHED until that sitting).
+*(The prior first debt — the wrong answer's content being discarded — closed
+2026-07-25; the packet now reaches the distiller and a real diagnosis comes back.
+What is still missing is anything that USES it.)*
+
+A **fifth pack** is a user phase call, not a queue default — the remaining
+benched-class gap is **blends**. A "counting sequence" pack is no longer a
+candidate at all: di-math-facts absorbed the next-number step as `counting_next`.
 
 ## Watch-items (from the engine-gate run)
 - Resync + no-verdict timeout are unit-covered but not yet observed live —
-  first primitive's live runs should try to trigger both.
+  first primitive's live runs should try to trigger both. **Update 2026-07-26:
+  the child stress run re-sent the same `[DI_ITEM]` (1+1) after ≥2 misses — the
+  resync signature, LIKELY first live firing, but uninstrumented (no client run
+  JSON); the item-1 recipe sitting confirms or denies.**
+- **(2026-07-26 stress run)** GoAway rapid-resume loop: post-run, 4×
+  GoAway→resume→instant GoAway until client disconnect — no "run complete, stop
+  resuming" exit in `lumina_tutor.py`. **Striking MID-run this is item 5's stall
+  candidate (a)** — the fix rides that item.
+- **(2026-07-26 stress run)** Session metrics counters count audio frames, not
+  turns (`Turns: 28885` for a ~90s session) — fix before anyone charts them.
+- **(2026-07-26 stress run — reading outcome data)** with a real child voice the
+  ASR transcript is garbage ("Please" for a spoken "three", "sechs" for "six")
+  while the in-band judge stays right — so `attempts` on a capped item are real
+  answers even when transcripts read as noise, and NO channel that echoes ASR
+  text (server log, panel `attempt-transcript`, misconception packet transcript
+  field) is a trustworthy record of what a child said. The judge's own sentence
+  (`verdict-text`/`judgeFeedback`, Tier A) is. Item 2's remediation design must
+  lean on Tier A, never raw transcripts.
 - Echo blip class: floors readout margin was ~6× in the hook-parity run; keep
   the floors readout available in primitive dev builds.
+- **(2026-07-27 child-paced K run, `answer_fact`, runId `42279e964031`)**
+  counting-up-aloud produces rapid supersession chains — 1+3 answered by counting
+  "one → two → three → four" = 3 consecutive supersessions, and the engine absorbed
+  all of them: intermediate count words were superseded BEFORE any verdict could
+  bind, the final answer judged correctly (5 supersessions run-total, 0 unanchored).
+  This is item 9 Tier-2's "rapid double answers" behavior class, first observed
+  live, benign — keep it in the Tier-2 policy list as a REGRESSION check, not a new
+  build item. Same run: third clean zero-click auto-persist for the item-8 pilot
+  (tail flush captured `[DI_COMPLETE]`, cuesStalled 0) and three live firings of
+  the plain correction FALLBACK, byte-stable → #55(e) half-closed.
+  Report: `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`.
 
 ## Done
+- **FAMILY-WIDE: the wrong answer now feeds the misconception loop (2026-07-25,
+  queue item 1 struck).** All four packs. A DI miss used to produce
+  `{correct: false, score: 0}` and nothing else; it now produces a **Tier-A
+  `DiagnosisEvidence` packet** — what the child said, what the tutor said about
+  it, and the earlier misses as `priorAttempts`. Executed per
+  `qa/HANDOFF-di-misconception-evidence-2026-07-25.md`; the handoff's ruling held
+  (the destination is `diagnosisEvidence`, submitResult's **6th** arg, NOT the
+  inert non-metric bag).
+  **THE HANDOFF'S STEP 1 WAS NOT SUFFICIENT, and the gap is the finding worth
+  keeping.** It said to add `verdictText` to the verdict emission and populate it
+  from the string the reducer already computes. Correct as far as it goes — but
+  the reducer classifies from the sentinel **opener** and fires immediately (by
+  design: progression must not wait on a sentence), while Gemini forwards
+  `output_transcription` in **sub-word chunks** (which is why `couldBecomeOpener`
+  exists at all). So `verdictText` is truncated at "My turn" — and for a
+  contrastive correction the opener is precisely the part carrying **no
+  diagnosis**; "not one — two plus one is three" arrives after it. Shipping that
+  as `judgeFeedback` would have produced a Tier-A packet that names nothing,
+  which is **worse than honest Tier B**. Fixed with a second, additive emission:
+  `useJudgedSpeechLoop` keeps accumulating past the verdict and emits
+  **`verdict-text`** when the line completes (audio falls, or the learner answers
+  over it). Reducer untouched; one place, not four.
+  **Two runtime details that only a test caught:** transcription chunks carry
+  their own leading whitespace, so the accumulator concatenates WITHOUT a
+  separator (joining with a space fabricates "My turn : not one"); and a capped
+  correction on the FINAL item submits synchronously, mid-sentence, so the
+  headline packet falls back to the fullest line captured for the **same item**
+  (exact `challenge` match, never a heuristic on the text).
+  **Scope ruling recorded: `misconceptionScope: 'primitive'` on all four packs**
+  (module docblock in `catalog/di.ts` carries the full reasoning + the accepted
+  risk). The `di-math-facts` cross-identity leak is real — 4 task identities, one
+  key, and "counts up instead of back" is CORRECT on `counting_next` — and the
+  mitigation is shipped, not deferred: each pack names its task identity inside
+  `challengeSummary`. **Probe D confirmed it works at the sentence level:** both
+  draws came back bounded ("treats *subtraction by one* as addition by one"),
+  never the unbounded "the student counts up". Escalation if it ever fails stays
+  a PRD amendment (identity += eval-mode family), NOT flipping DI to `'skill'`.
+  Verified: `typecheck:lumina` **0**; vitest **985/985** (was 964; the engine
+  suite and `diCorrectionContrast` 15/15 both stayed green); backend round-trip
+  **9/9** with a new DI scope case; `/misconception-test di-math-facts` —
+  **Probe D 10/10 draws** (3 GENERATIVE + 2 ABSTAINED, 0 LEAK, 0 OVERREACH, every
+  packet at `tier=judge`), **Probe R CLOSED**, **S4 Firestore exposure pass**
+  (`misconceptionKey: "di-math-facts"`). Non-vacuity proven twice: reverting the
+  engine field drops the tier to `structured`, and reverting the same-item
+  fallback leaves the headline as the bare "My turn" opener.
+  **Gate is PARTIAL, deliberately: Probe G is NOT-WIRED → new queue item 1.**
+  **S1 live capture stays browser-owned → HUMAN-CHECKS #54/#50/#55**, which is
+  the first deliberately-wrong DI sitting and now yields RECORDED evidence.
+  Report: `qa/misconception/di-math-facts-2026-07-25.md`.
 - **Contrastive correction — di-sentence-reading + di-math-facts (2026-07-25, user
   ruling; MVP scope, audio only).** The first live correction run in ANY DI pack
   (#54 sitting) overturned the sentence pack's bench finding (b): a reader read

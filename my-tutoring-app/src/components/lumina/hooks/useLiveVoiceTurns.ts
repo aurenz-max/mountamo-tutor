@@ -76,8 +76,13 @@ export function useLiveVoiceTurns(options: LiveVoiceTurnsOptions): LiveVoiceTurn
   const ctx = useLuminaAIContext();
   const { enabled } = options;
 
+  // The capture service's real frame period, not a default and not an estimate:
+  // it is the machine's sampling resolution, and without it `minVoiceMs` silently
+  // means "three frames" instead of "120ms of speech" (see voiceTurnMachine's
+  // module note). An explicit override still wins, for tests and the bench.
   const config: VoiceTurnConfig = {
     ...DEFAULT_VOICE_TURN_CONFIG,
+    framePeriodMs: ctx.micFramePeriodMs || DEFAULT_VOICE_TURN_CONFIG.framePeriodMs,
     ...options.config,
   };
 

@@ -62,12 +62,26 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import {
+  logDiCue,
+  logDiEmission,
+  logDiStage,
+  logDiTutorText,
+  logDiVoiceClose,
+  startDiRunLog,
+} from './diRunLog';
+import {
   completeCue,
   itemCue,
   moveOnCue,
   type DiSentenceReadingChallenge,
   type DiSentenceReadingChallengeType,
 } from './diSentenceReadingScript';
+import {
+  buildDiDiagnosisEvidence,
+  completeLatestJudgeFeedback,
+  pushFailedVerdict,
+  type DiFailedVerdict,
+} from './diDiagnosisEvidence';
 
 export type {
   DiSentenceReadingChallenge,
@@ -150,6 +164,33 @@ const scoreForCorrections = (corrections: number): number =>
 const sentenceSizeClass = (wordCount: number): string =>
   wordCount <= 4 ? 'text-5xl' : wordCount <= 6 ? 'text-4xl' : 'text-3xl';
 
+/**
+ * Misconception Loop S1 — how each task identity is NAMED to the distiller.
+ *
+ * The pack is primitive-scoped, so one misconception is stored per student
+ * across all four modes. That tension is MILDER here than in di-math-facts:
+ * every mode is "read this printed sentence aloud", so a diagnosis about how
+ * this reader decodes genuinely does transfer. Naming the identity anyway
+ * keeps the distilled sentence honest about what was actually observed —
+ * failing a sight-word sentence and failing a fully decodable one are
+ * different findings even when both transfer.
+ */
+const TASK_PHRASE: Record<DiSentenceReadingChallengeType, string> = {
+  decodable_sentence: 'reading a sentence whose every content word is sound-it-out decodable (blending carried into connected text)',
+  read_sentence: 'reading a printed short sentence aloud — every word, in order',
+  sentence_review: 're-reading sentences of the kind already taught, drawn as a mixed review set',
+  sight_phrase_sentence: 'reading a sentence dense in IRREGULAR high-frequency (sight) words that cannot be sounded out',
+};
+
+const challengeSummaryFor = (item: DiSentenceReadingChallenge): string =>
+  `Direct Instruction sentence reading — ${TASK_PHRASE[item.challengeType]}. `
+  + `The ${item.wordCount}-word sentence "${item.text}" was printed on screen. `
+  + 'The learner READS it aloud; the tutor judges the audio word by word — a '
+  + 'skipped, added, or swapped word is a miss however small the word.';
+
+const expectedFor = (item: DiSentenceReadingChallenge): string =>
+  `Read the sentence aloud accurately, every word in order: "${item.text}".`;
+
 export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
   const ctx = useLuminaAIContext();
 
@@ -209,6 +250,17 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
   const correctionsRef = useRef(new Map<string, number>());
   const outcomesRef = useRef<ItemOutcome[]>([]);
   const lastResponseMsRef = useRef<number | null>(null);
+  /** What the child read aloud on the OPEN attempt — the engine emits it on
+   *  `attempt-transcript` and every DI pack used to drop it. Cleared at
+   *  `attempt-open` so a missing transcript can never inherit the last one. */
+  const lastHeardRef = useRef<string | null>(null);
+  /** Misconception Loop S1 — judge-backed misses, bounded. DATA only, never
+   *  student-visible: in this family a stray write to a status line would be
+   *  spoken aloud by the tutor. */
+  const failedVerdictsRef = useRef<DiFailedVerdict[]>([]);
+  /** A miss is logged at verdict time holding only the sentinel opener;
+   *  this marks it as awaiting the complete line from `verdict-text`. */
+  const awaitingJudgeTextRef = useRef(false);
   const submittedRef = useRef(false);
   const weConnectedRef = useRef(false);
   const connectedRef = useRef(ctx.isConnected);
@@ -335,11 +387,20 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
       meanResponseMs,
       meanSentenceWords,
     };
+    // Misconception Loop S1 — the packet, on diagnosable sessions only. The
+    // threshold mirrors `captureMisconception`'s OWN failure gate
+    // (`success === false || score < 60`) rather than this pack's success bar
+    // of 50, so evidence exists exactly when the loop would use it.
+    const diagnosisEvidence = overallAccuracy < 60
+      ? buildDiDiagnosisEvidence(failedVerdictsRef.current)
+      : undefined;
     evaluation.submitResult(
       overallAccuracy >= 50,
       overallAccuracy,
       metrics,
       { outcomes },
+      undefined,
+      diagnosisEvidence,
     );
     setRunning(false);
     setPhase('done');
@@ -350,7 +411,7 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
   const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
 
   const applyVerdict = useCallback(
-    (judgment: 'affirmed' | 'corrected' | 'off-script') => {
+    (judgment: 'affirmed' | 'corrected' | 'off-script', verdictText?: string) => {
       const item = currentOf();
       const loop = loopRef.current;
       if (!item || !loop) return;
@@ -365,6 +426,17 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
       if (judgment === 'corrected') {
         const used = prevCorrections + 1;
         correctionsRef.current.set(item.id, used);
+        // Misconception Loop S1 — log EVERY correction, not just the capped
+        // one. The #54 live run's reader repeated the SAME substitution three
+        // times on one sentence; that repeat is precisely the `priorAttempts`
+        // consistency signal, and it only exists if every retry is logged.
+        failedVerdictsRef.current = pushFailedVerdict(failedVerdictsRef.current, {
+          challenge: challengeSummaryFor(item),
+          expected: expectedFor(item),
+          heard: lastHeardRef.current,
+          judgeFeedback: verdictText ?? '',
+        });
+        awaitingJudgeTextRef.current = true;
         if (used <= MAX_CORRECTIONS_PER_ITEM) {
           // The tutor's correction line already re-modeled the whole sentence
           // and re-elicited in-band; just reflect it and keep listening.
@@ -373,6 +445,14 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
           return;
         }
         // Corrections capped — record a miss and move the lesson forward.
+        // Flagged in the run log: [DI_MOVE_ON] had never fired in ANY pack live
+        // before the sustained-miss sitting, so this is a first-observation path.
+        logDiStage(
+          'move-on',
+          `correction cap (${MAX_CORRECTIONS_PER_ITEM}) reached — moving on`,
+          { itemId: item.id, itemDisplay: item.text },
+          'move-on',
+        );
         outcomesRef.current.push({
           id: item.id, correct: false, attempts: used, score: 0,
           responseMs: lastResponseMsRef.current, wordCount: item.wordCount,
@@ -420,27 +500,65 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
     [currentOf, data.challenges, finishAndSubmit, recordResult, scheduleAdvance],
   );
 
+  /** Item context for the run log. Diagnostics only. */
+  const logCtx = useCallback(() => {
+    const item = currentOf();
+    return { itemId: item?.id, itemDisplay: item?.text };
+  }, [currentOf]);
+
   const handleEmission = useCallback(
     (emission: LoopEmission) => {
+      // Run log FIRST, before the switch — so the three kinds this pack
+      // deliberately ignores for progression (attempt-superseded,
+      // phantom-transcript, unanchored-verdict) are still recorded on their way
+      // to `default: return`. For THIS pack attempt-superseded matters most: it
+      // is the mid-sentence-pause split that `silenceCloseMs: 1100` exists to
+      // prevent, and the run log is where its numeric proof now lives.
+      logDiEmission(emission, logCtx());
+
       switch (emission.kind) {
         case 'attempt-open':
           // The child got ahead of the beat — flush it FIRST so a read sentence
           // can never be up while they are already reading the next one.
           commitAdvance();
+          // A fresh attempt has no transcript yet; stale text would be
+          // attributed to the wrong read in the evidence packet.
+          lastHeardRef.current = null;
+          awaitingJudgeTextRef.current = false;
           setPhase('judging');
           setStatusLine('Listening…');
           setReward(null);
           return;
         case 'attempt-transcript':
           lastResponseMsRef.current = emission.responseMs;
+          // What the CHILD read. Kept, not dropped — the misread words are
+          // half the misconception evidence.
+          lastHeardRef.current = emission.text;
           return;
         case 'verdict':
           if (emission.judgment === 'no-verdict') {
             setStatusLine('One more time—read it for me.');
             return;
           }
-          applyVerdict(emission.judgment);
+          // …and what the TUTOR said about it. Nothing on this path is ever
+          // rendered or spoken; it goes to the distiller only.
+          applyVerdict(emission.judgment, emission.verdictText);
           return;
+        case 'verdict-text': {
+          // The tutor's judging line finished streaming. A verdict fires on the
+          // chunk that completes the sentinel ("My turn"), which for a
+          // contrastive correction is the one part carrying NO diagnosis —
+          // "not four — three minus one is two" arrives after it. Upgrade the
+          // miss logged at verdict time from that opener to the whole sentence.
+          if (emission.judgment === 'corrected' && awaitingJudgeTextRef.current) {
+            awaitingJudgeTextRef.current = false;
+            failedVerdictsRef.current = completeLatestJudgeFeedback(
+              failedVerdictsRef.current,
+              emission.text,
+            );
+          }
+          return;
+        }
         case 'resync':
           // Mid-beat, the next sentence's cue is ALREADY queued by applyVerdict
           // — re-cueing here would fight it. Just settle the beat.
@@ -467,6 +585,14 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
     // response (bench finding 2). Family default stays 500ms.
     voice: { config: { silenceCloseMs: SENTENCE_SILENCE_CLOSE_MS } },
     onEmission: handleEmission,
+    // Diagnostics: the tutor's raw output transcription + mic turn telemetry.
+    // The bench has wired both since the open-mic runs; the packs shipped with
+    // neither, so a decohered run had no record of what the tutor actually SAID
+    // (the only way to see contrastive-correction drift, a spoken ⟨ ⟩ marker, or
+    // a missed sentinel) and none of the floors data that explains a split turn.
+    onTutorText: (text) => logDiTutorText(text, logCtx()),
+    onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
+    onCue: (event) => logDiCue(event, logCtx()),
   });
   loopRef.current = loop;
 
@@ -549,17 +675,35 @@ export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
     correctionsRef.current.clear();
     outcomesRef.current = [];
     lastResponseMsRef.current = null;
+    lastHeardRef.current = null;
+    failedVerdictsRef.current = [];
+    awaitingJudgeTextRef.current = false;
     submittedRef.current = false;
     pendingAdvanceRef.current = false;
     clearAdvanceTimer();
     setReward(null);
     loop.reset();
+    // Fresh diagnostics timeline for this run (diagnostics only). supportTier is
+    // pinned because at `hard` the tutor must never speak the sentence — a cold
+    // read that leaks is only readable against the tier the run actually used.
+    startDiRunLog({
+      primitiveId: 'di-sentence-reading',
+      challengeType: data.challengeType,
+      gradeLevel: data.gradeLevel,
+      supportTier: first.supportTier ?? 'easy',
+      totalItems: data.challenges.length,
+      silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
+    });
     setRunning(true);
     setPhase('listening');
     setStatusLine('Listen, then read it.');
     loop.sendCueNow(itemCue(first, true));
     loop.arm();
-  }, [clearAdvanceTimer, data.challenges, loop]);
+    logDiStage('run-start', `armed with ${data.challenges.length} items`, {
+      itemId: first.id,
+      itemDisplay: first.text,
+    });
+  }, [clearAdvanceTimer, data.challenges, data.challengeType, data.gradeLevel, loop]);
 
   // Unmount cleanup — never leave Live holding the mic or an open turn.
   useEffect(() => () => {

@@ -16,7 +16,20 @@ class _TracingStore(InMemoryFirestoreService):
         return await super().resolve_misconception(student_id, primitive_type, skill_id)
 
 
-def _submission(score: float, primitive_tag: str, skill_tag=None, primitive_type="tape-diagram") -> ProblemSubmission:
+_DEFAULT_EVAL_MODES = {
+    "cvc-speller": "spell_word",
+    # The DI packs' eval modes are TASK IDENTITIES, not difficulty tiers.
+    "di-math-facts": "subtraction_fact",
+}
+
+
+def _submission(
+    score: float,
+    primitive_tag: str,
+    skill_tag=None,
+    primitive_type="tape-diagram",
+) -> ProblemSubmission:
+    eval_mode = _DEFAULT_EVAL_MODES.get(primitive_type, "solve_comparison")
     return ProblemSubmission(
         subject="Mathematics",
         problem={
@@ -38,7 +51,7 @@ def _submission(score: float, primitive_tag: str, skill_tag=None, primitive_type
             "pre_evaluated": True,
             "success": score >= 80,
             "score": score,
-            "metrics": {"type": primitive_type, "evalMode": "spell_word" if primitive_type == "cvc-speller" else "solve_comparison"},
+            "metrics": {"type": primitive_type, "evalMode": eval_mode},
             "eval_mode": "solve_comparison",
         },
         source="lesson",
@@ -259,5 +272,65 @@ def test_picture_vocabulary_skill_scoped_round_trip_resolves_only_matching_skill
     sibling_result, active_after_sibling, result, active = asyncio.run(scenario())
     assert "picture-vocabulary::SKILL-1" in active_after_sibling
     assert not sibling_result.review["metadata"].get("remediation_successful")
+    assert not active
+    assert result.review["metadata"]["remediation_successful"] is True
+
+
+def test_di_math_facts_primitive_scoped_round_trip_resolves_only_itself():
+    """The first DIRECT INSTRUCTION family entry in the scope matrix.
+
+    DI is the family the Tier-A path was written for — the Live tutor judges
+    the audio in-band and speaks the verdict — so its diagnoses are the ones
+    most likely to be high-confidence. It is also the family whose subject is
+    resolved by a per-primitive override (`subject_for_primitive`:
+    di-math-facts → MATHEMATICS) rather than by domain, which is exactly the
+    kind of join that silently mis-scopes. Pin the primitive-scoped key shape
+    for a DI primitive_type, not just literacy/math ones.
+    """
+    async def scenario():
+        store = _TracingStore()
+        await store.add_or_update_misconception(
+            990039, "di-math-facts", "primitive",
+            "When subtracting one, the student says the number that comes after "
+            "the given number instead of before it.",
+            "attempt-di-math-facts", subskill_id="MATH-GK-OPS-SUB-01",
+        )
+        service = SubmissionService(None, None, firestore_service=store)
+        service._update_competency = lambda **_kwargs: asyncio.sleep(0, result={"updated": True})
+
+        # A sibling DI pack must NOT resolve it: the packs share an engine, a
+        # transport and a script shape, so a family-wide key would look right
+        # and be wrong.
+        sibling_result = await service.handle_submission(
+            _submission(95.0, "di-sentence-reading", primitive_type="di-sentence-reading"),
+            {"firebase_uid": "synthetic-user", "student_id": 990039, "email": "x@test"},
+        )
+        active_after_sibling = await store.get_active_misconceptions(990039)
+
+        # A WEAK run of the right pack must not resolve it either.
+        weak_result = await service.handle_submission(
+            _submission(50.0, "di-math-facts", primitive_type="di-math-facts"),
+            {"firebase_uid": "synthetic-user", "student_id": 990039, "email": "x@test"},
+        )
+        active_after_weak = await store.get_active_misconceptions(990039)
+
+        result = await service.handle_submission(
+            _submission(90.0, "di-math-facts", primitive_type="di-math-facts"),
+            {"firebase_uid": "synthetic-user", "student_id": 990039, "email": "x@test"},
+        )
+        return (
+            sibling_result, active_after_sibling,
+            weak_result, active_after_weak,
+            result, await store.get_active_misconceptions(990039),
+        )
+
+    (sibling_result, active_after_sibling,
+     weak_result, active_after_weak,
+     result, active) = asyncio.run(scenario())
+    # Primitive scope ⇒ the key is the primitive id alone, no skill suffix.
+    assert "di-math-facts" in active_after_sibling
+    assert not sibling_result.review["metadata"].get("remediation_successful")
+    assert "di-math-facts" in active_after_weak
+    assert not weak_result.review["metadata"].get("remediation_successful")
     assert not active
     assert result.review["metadata"]["remediation_successful"] is True

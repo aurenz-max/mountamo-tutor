@@ -80,8 +80,85 @@ describe('reduceJudgedLoop', () => {
         judgment: 'affirmed',
         attempt: { turn: turn({ duringTutorAudio: true }), transcript: null, transcriptAt: null },
         misses: 0,
+        verdictText: 'Yes, sss.',
       },
     ]);
+  });
+
+  // ── The tutor's judging sentence survives the reducer (2026-07-25) ─────────
+  // The reducer used to compute `verdictText`, classify it, and throw the
+  // sentence away — so a consumer learned THAT the tutor corrected, never what
+  // it said. Since contrastive correction that sentence NAMES the error, and it
+  // is the difference between Misconception-Loop Tier B and Tier A.
+  describe('verdictText', () => {
+    it('carries the correction sentence verbatim, error-naming slot and all', () => {
+      const spoken = 'My turn: not one — two plus one is three. Your turn. What is two plus one?';
+      const { emissions } = drive([
+        { type: 'arm' },
+        { type: 'voice-close', turn: turn() },
+        { type: 'tutor-text', text: spoken, at: 3000 },
+      ]);
+      expect(emissions.find((emission) => emission.kind === 'verdict')).toMatchObject({
+        judgment: 'corrected',
+        verdictText: spoken,
+      });
+    });
+
+    it('is TRUNCATED at the sentinel — the reducer classifies, it does not wait', () => {
+      // Load-bearing, and the reason `verdict-text` exists at the hook layer.
+      // Output transcription streams in sub-word chunks and the verdict fires
+      // on the chunk that completes the opener, so the reducer NEVER sees the
+      // rest of the line. For a contrastive correction the opener is precisely
+      // the part carrying no diagnosis: a consumer that treated this as the
+      // judge's explanation would ship a Tier-A packet that names nothing.
+      const { emissions } = drive([
+        { type: 'arm' },
+        { type: 'voice-close', turn: turn() },
+        { type: 'tutor-text', text: 'My turn', at: 3000 },
+        { type: 'tutor-text', text: ': not the pot — Mom got a pot.', at: 3200 },
+      ]);
+      const verdicts = emissions.filter((emission) => emission.kind === 'verdict');
+      expect(verdicts).toHaveLength(1);
+      expect(verdicts[0]).toMatchObject({ judgment: 'corrected', verdictText: 'My turn' });
+    });
+
+    it('collapses the accumulator whitespace it is about to be quoted through', () => {
+      // Fragments are joined with a space onto a buffer seeded from '', and the
+      // fragments often carry their own leading space. Harmless to the scanner,
+      // visible in evidence, which quotes this verbatim.
+      const { emissions } = drive([
+        { type: 'arm' },
+        { type: 'voice-close', turn: turn() },
+        { type: 'tutor-text', text: 'is sam. Listen: sam.', at: 2500 },
+        { type: 'tutor-text', text: ' Yes, sam.', at: 2900 },
+      ]);
+      expect(emissions.find((emission) => emission.kind === 'verdict')).toMatchObject({
+        judgment: 'affirmed',
+        verdictText: 'is sam. Listen: sam. Yes, sam.',
+      });
+    });
+
+    it('is ABSENT on off-script and no-verdict — neither is a judgment', () => {
+      // Off-script means the tutor did not judge; no-verdict means it said
+      // nothing at all. Labelling either as `verdictText` would launder
+      // unclassified chatter into `judgeFeedback` and fake a Tier-A packet.
+      const offScript = drive([
+        { type: 'arm' },
+        { type: 'voice-close', turn: turn() },
+        { type: 'tutor-text', text: 'Something else entirely.', at: 2500 },
+        { type: 'tutor-quiet', at: 3000 },
+      ]);
+      const timedOut = drive([
+        { type: 'arm' },
+        { type: 'voice-close', turn: turn() },
+        { type: 'tick', at: 2000 + config.verdictTimeoutMs },
+      ]);
+      for (const { emissions } of [offScript, timedOut]) {
+        const verdict = emissions.find((emission) => emission.kind === 'verdict');
+        expect(verdict).toBeDefined();
+        expect(verdict && 'verdictText' in verdict ? verdict.verdictText : undefined).toBeUndefined();
+      }
+    });
   });
 
   it('annotates the attempt when the transcript arrives, with both clocks', () => {

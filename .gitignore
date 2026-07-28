@@ -25,3 +25,7 @@ ENV/
 
 # Generated reports
 backend/reports/
+
+# Runtime telemetry drop-boxes (session ledgers + auto-flushed DI run logs, user call 2026-07-27)
+# Evidence ships curated under qa/ — raw runtime logs never enter the repo.
+backend/logs/

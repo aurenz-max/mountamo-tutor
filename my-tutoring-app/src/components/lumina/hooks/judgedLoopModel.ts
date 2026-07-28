@@ -48,16 +48,36 @@ export interface JudgedLoopConfig {
   verdictTimeoutMs: number;
   /** Consecutive misses (off-script / no-verdict) that trigger a resync. */
   resyncAfterMisses: number;
+  /**
+   * How recently the learner must have left an UNANCHORED trace (a sub-minimum
+   * voice blip, or a transcript with no attempt) for a verdict that lands with
+   * no attempt to be retro-anchored to it instead of discarded.
+   *
+   * The safety net for the class of failure the 2026-07-26 sitting exposed: the
+   * client brackets a turn for Gemini and then declines to open an attempt for
+   * it, so a correct answer is heard, judged, affirmed — and dropped. Bounded by
+   * time because the window's whole job is to distinguish "the tutor is judging
+   * the thing the learner just said" from "the tutor said a sentinel
+   * spontaneously", which is what `unanchored-verdict` still reports.
+   */
+  retroAnchorWindowMs: number;
 }
 
 export const DEFAULT_JUDGED_LOOP_CONFIG: JudgedLoopConfig = {
   sentinels: DI_SENTINELS,
   verdictTimeoutMs: 8000,
   resyncAfterMisses: 2,
+  retroAnchorWindowMs: 4000,
 };
 
 const tokenize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+
+/** Reassembled tutor speech, tidied for quoting. Output transcription arrives
+ *  as sub-word chunks that are joined with a space, so the raw accumulation
+ *  carries doubled and leading spaces the reducer never needed to care about —
+ *  but anything quoted into evidence does. */
+export const normalizeSpeech = (value: string) => value.replace(/\s+/g, ' ').trim();
 
 /** What a scan of tutor text found. 'pending' = a partial sentinel may still
  *  be completing in the stream; 'none' = no sentinel yet (NOT off-script —
@@ -124,9 +144,24 @@ export interface LoopAttempt {
 
 export type LoopJudgment = 'affirmed' | 'corrected' | 'off-script' | 'no-verdict';
 
+/**
+ * Evidence that the learner spoke without the loop opening an attempt for it —
+ * a sub-minimum voice blip, a transcript arriving with nothing to bind it to, or
+ * both for the same utterance. Held only long enough to retro-anchor a verdict
+ * that would otherwise be thrown away.
+ */
+export interface UnanchoredSignal {
+  at: number;
+  /** The blip's turn record, when a voice turn is what produced the signal. */
+  turn: VoiceTurnRecord | null;
+  transcript: string | null;
+}
+
 export interface JudgedLoopState {
   armed: boolean;
   attempt: LoopAttempt | null;
+  /** Most recent learner trace with no attempt behind it. See UnanchoredSignal. */
+  unanchoredSignal: UnanchoredSignal | null;
   /** Tutor text accumulated since the pending attempt closed. */
   verdictText: string;
   /** The tutor completed at least one full sentence since the attempt. */
@@ -141,6 +176,7 @@ export interface JudgedLoopState {
 export const IDLE_JUDGED_LOOP: JudgedLoopState = {
   armed: false,
   attempt: null,
+  unanchoredSignal: null,
   verdictText: '',
   sawSentenceSinceAttempt: false,
   sawQuietSinceAttempt: false,
@@ -152,6 +188,9 @@ export type LoopEvent =
   | { type: 'arm' }
   | { type: 'disarm' }
   | { type: 'voice-close'; turn: VoiceTurnRecord }
+  /** A sub-minimum voice turn. No attempt opens — but its activity brackets
+   *  already reached Gemini, so it is evidence the learner spoke. */
+  | { type: 'voice-blip'; turn: VoiceTurnRecord }
   | { type: 'transcript'; text: string; at: number }
   | { type: 'tutor-text'; text: string; at: number }
   | { type: 'tutor-quiet'; at: number }
@@ -170,7 +209,65 @@ export type LoopEmission =
       commitLagMs: number;
     }
   | { kind: 'phantom-transcript'; text: string; at: number }
-  | { kind: 'verdict'; judgment: LoopJudgment; attempt: LoopAttempt; misses: number }
+  | {
+      kind: 'verdict';
+      judgment: LoopJudgment;
+      attempt: LoopAttempt;
+      misses: number;
+      /**
+       * The attempt was reconstructed from an UNANCHORED trace (a sub-minimum
+       * blip and/or a transcript with nothing to bind it to) rather than from a
+       * voice turn the loop accepted. The judgment is the tutor's own and is
+       * acted on normally; this flag exists so a run log can distinguish a clean
+       * loop from one running on the safety net — a run with these in it has a
+       * turn-detection problem even though nothing was lost.
+       */
+      retroAnchored?: boolean;
+      /**
+       * The tutor's OWN judging sentence(s), verbatim — everything it said
+       * between the attempt closing and the sentinel that classified it.
+       *
+       * Present only for 'affirmed' | 'corrected', because only those are a
+       * judgment: 'off-script' means the tutor did not judge (the accumulated
+       * text is unclassified chatter) and 'no-verdict' means it said nothing
+       * at all. Keeping the field to the judging branches is what lets a
+       * consumer ship it straight into `DiagnosisEvidence.judgeFeedback`
+       * (Misconception Loop Tier A) without laundering noise into evidence.
+       *
+       * Since the 2026-07-25 contrastive-correction ruling a correction NAMES
+       * the error ("My turn: not one — two plus one is three."), so this
+       * string is the diagnosis the judge already articulated. Additive and
+       * optional: consumers that only need `judgment` are unaffected.
+       *
+       * ⚠ This is what the tutor had said AT CLASSIFICATION TIME, which is
+       * usually a fragment. Output transcription streams in sub-word chunks
+       * (hence `couldBecomeOpener` below), and the verdict deliberately fires
+       * on the chunk that completes the sentinel so progression is not
+       * delayed — so this is often just "My turn". The part that NAMES the
+       * error arrives afterwards: see the 'verdict-text' emission.
+       */
+      verdictText?: string;
+    }
+  | {
+      /**
+       * The tutor's judging line, COMPLETE — emitted once that line has
+       * finished streaming (its audio fell, or the learner answered over it).
+       *
+       * Produced by `useJudgedSpeechLoop`, not by the reducer: only the
+       * runtime knows when a turn is over. It lives in this union so a
+       * consumer's `switch (emission.kind)` stays exhaustive over one type.
+       *
+       * WHY IT EXISTS. `verdict.verdictText` is truncated at the sentinel by
+       * construction, and for a contrastive correction the sentinel is the
+       * one part that carries no diagnosis ("My turn:" — not what was wrong).
+       * Everything downstream of it does: "not one — two plus one is three."
+       * A consumer building Misconception-Loop evidence logs the miss at the
+       * verdict and upgrades its `judgeFeedback` here.
+       */
+      kind: 'verdict-text';
+      judgment: 'affirmed' | 'corrected';
+      text: string;
+    }
   | { kind: 'unanchored-verdict'; judgment: 'affirmed' | 'corrected' }
   | { kind: 'resync'; misses: number };
 
@@ -204,9 +301,26 @@ export function reduceJudgedLoop(
         state: {
           ...state,
           attempt,
+          // A real attempt supersedes any unanchored trace: whatever the blip
+          // was, this turn is what the tutor will be judging.
+          unanchoredSignal: null,
           verdictText: '',
           sawSentenceSinceAttempt: false,
           sawQuietSinceAttempt: false,
+        },
+        emissions,
+      };
+    }
+
+    case 'voice-blip': {
+      // Deliberately opens NO attempt — the turn was below the voice bar and
+      // may be noise. But activityEnd went to Gemini regardless, so if a verdict
+      // arrives with nothing anchored, this is what it was judging.
+      if (!state.armed || state.attempt) return { state, emissions };
+      return {
+        state: {
+          ...state,
+          unanchoredSignal: { at: event.turn.closedAt, turn: event.turn, transcript: null },
         },
         emissions,
       };
@@ -216,8 +330,21 @@ export function reduceJudgedLoop(
       if (!state.armed) return { state, emissions };
       const attempt = state.attempt;
       if (!attempt) {
+        // Gemini heard the learner and the loop has nothing to bind it to. Still
+        // reported as a phantom (it IS one), but kept as the strongest possible
+        // retro-anchor: it carries the learner's actual words.
         emissions.push({ kind: 'phantom-transcript', text: event.text, at: event.at });
-        return { state, emissions };
+        return {
+          state: {
+            ...state,
+            unanchoredSignal: {
+              at: event.at,
+              turn: state.unanchoredSignal?.turn ?? null,
+              transcript: event.text,
+            },
+          },
+          emissions,
+        };
       }
       const text = attempt.transcript ? `${attempt.transcript} ${event.text}` : event.text;
       const annotated: LoopAttempt = { ...attempt, transcript: text, transcriptAt: attempt.transcriptAt ?? event.at };
@@ -241,18 +368,63 @@ export function reduceJudgedLoop(
     case 'tutor-text': {
       if (!state.armed) return { state, emissions };
       if (!state.attempt) {
-        // No attempt to bind to. With voice-anchoring this should be rare
-        // (it needs a verdict with no local voice at all) — keep it visible.
         const stray = scanForSentinel(event.text, config.sentinels);
-        if (stray === 'affirmed' || stray === 'corrected') {
-          emissions.push({ kind: 'unanchored-verdict', judgment: stray });
+        if (stray !== 'affirmed' && stray !== 'corrected') return { state, emissions };
+        // The tutor judged something. If the learner left a trace we declined to
+        // anchor — a sub-minimum blip, a transcript with no attempt — this
+        // verdict is ABOUT that trace, and dropping it loses a real answer the
+        // tutor already affirmed (the 2026-07-26 stall). Rebuild the attempt and
+        // let progression run; the flag marks that it came off the safety net.
+        const signal = state.unanchoredSignal;
+        if (signal && event.at - signal.at <= config.retroAnchorWindowMs) {
+          const retro: LoopAttempt = {
+            turn: signal.turn ?? {
+              openedAt: signal.at, closedAt: signal.at, durationMs: 0, peak: 0, duringTutorAudio: false,
+            },
+            transcript: signal.transcript,
+            transcriptAt: signal.transcript == null ? null : signal.at,
+          };
+          emissions.push({
+            kind: 'verdict',
+            judgment: stray,
+            attempt: retro,
+            misses: 0,
+            verdictText: normalizeSpeech(event.text),
+            retroAnchored: true,
+          });
+          return {
+            state: {
+              ...state,
+              unanchoredSignal: null,
+              verdictText: '',
+              sawSentenceSinceAttempt: false,
+              sawQuietSinceAttempt: false,
+              consecutiveMisses: 0,
+            },
+            emissions,
+          };
         }
+        // Nothing to bind it to at all — the tutor spoke a sentinel on its own.
+        emissions.push({ kind: 'unanchored-verdict', judgment: stray });
         return { state, emissions };
       }
       const verdictText = `${state.verdictText} ${event.text}`;
       const scan = scanForSentinel(verdictText, config.sentinels);
       if (scan === 'affirmed' || scan === 'corrected') {
-        emissions.push({ kind: 'verdict', judgment: scan, attempt: state.attempt, misses: 0 });
+        // Ship the sentence, not just the classification. The reducer already
+        // has it; dropping it is what forced consumers to guess at WHY the
+        // tutor corrected (Misconception Loop Tier B) instead of quoting the
+        // judge that already said so (Tier A). Whitespace is collapsed because
+        // the accumulator seeds from '' and joins fragments with a space that
+        // the fragments often already carry — and this string is quoted
+        // verbatim into evidence.
+        emissions.push({
+          kind: 'verdict',
+          judgment: scan,
+          attempt: state.attempt,
+          misses: 0,
+          verdictText: normalizeSpeech(verdictText),
+        });
         return {
           state: {
             ...state,

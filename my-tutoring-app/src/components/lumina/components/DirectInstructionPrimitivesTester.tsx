@@ -8,6 +8,7 @@ import DiLetterSounds, { type DiLetterSoundsData } from '../primitives/visual-pr
 import DiWordReading, { type DiWordReadingData } from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
 import DiSentenceReading, { type DiSentenceReadingData } from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
+import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
 
 interface Props { onBack: () => void; }
 
@@ -176,6 +177,10 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       {generated?.id === 'di-sentence-reading' && (
         <DiSentenceReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
       )}
+      {/* Bench-parity diagnostics. Reads the diRunLog module store, so it needs
+          no props from the pack and never renders in a lesson. Read its FLAGS
+          row first when a sitting decoheres. */}
+      {generated && <DiRunLogPanel />}
     </div>
   );
 };

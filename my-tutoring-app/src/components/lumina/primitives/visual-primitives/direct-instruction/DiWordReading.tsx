@@ -43,6 +43,14 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import {
+  logDiCue,
+  logDiEmission,
+  logDiStage,
+  logDiTutorText,
+  logDiVoiceClose,
+  startDiRunLog,
+} from './diRunLog';
+import {
   completeCue,
   itemCue,
   moveOnCue,
@@ -50,6 +58,12 @@ import {
   type DiWordReadingChallenge,
   type DiWordReadingChallengeType,
 } from './diWordReadingScript';
+import {
+  buildDiDiagnosisEvidence,
+  completeLatestJudgeFeedback,
+  pushFailedVerdict,
+  type DiFailedVerdict,
+} from './diDiagnosisEvidence';
 
 export type { DiWordReadingChallenge, DiWordReadingChallengeType } from './diWordReadingScript';
 
@@ -96,6 +110,31 @@ interface ItemOutcome {
 
 const scoreForCorrections = (corrections: number): number =>
   corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
+
+/**
+ * Misconception Loop S1 — how the task is NAMED to the distiller.
+ *
+ * One task identity at L0 (`read_word`), so there is no cross-identity leak to
+ * mitigate here yet. What DOES vary and matters diagnostically is `wordType`:
+ * failing a decodable CVC word is a BLENDING failure and failing an irregular
+ * sight word is a RECALL failure — different processes, and a diagnosis that
+ * conflated them would misdirect the next problem. The ladder candidates on
+ * this pack's birth cert (`cvc_reading` / `sight_word`) split exactly along
+ * that line; naming it now means the evidence already says which one it was.
+ */
+const TASK_PHRASE: Record<DiWordReadingChallengeType, string> = {
+  read_word: 'reading ONE printed word aloud',
+};
+
+const challengeSummaryFor = (item: DiWordReadingChallenge): string =>
+  `Direct Instruction word reading — ${TASK_PHRASE[item.challengeType]}. `
+  + (item.wordType === 'sight'
+    ? `The IRREGULAR high-frequency (sight) word "${item.word}" was printed on screen — it cannot be sounded out and must be recognised whole. `
+    : `The decodable CVC word "${item.word}" was printed on screen — it is read by blending its sounds. `)
+  + 'Nothing but the printed word is shown; the learner READS it aloud and the tutor judges the audio.';
+
+const expectedFor = (item: DiWordReadingChallenge): string =>
+  `Read the printed word aloud as "${item.word}".`;
 
 export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const ctx = useLuminaAIContext();
@@ -146,6 +185,17 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const correctionsRef = useRef(new Map<string, number>());
   const outcomesRef = useRef<ItemOutcome[]>([]);
   const lastResponseMsRef = useRef<number | null>(null);
+  /** What the child read aloud on the OPEN attempt — the engine emits it on
+   *  `attempt-transcript` and every DI pack used to drop it. Cleared at
+   *  `attempt-open` so a missing transcript can never inherit the last one. */
+  const lastHeardRef = useRef<string | null>(null);
+  /** Misconception Loop S1 — judge-backed misses, bounded. DATA only, never
+   *  student-visible: in this family a stray write to a status line would be
+   *  spoken aloud by the tutor. */
+  const failedVerdictsRef = useRef<DiFailedVerdict[]>([]);
+  /** A miss is logged at verdict time holding only the sentinel opener;
+   *  this marks it as awaiting the complete line from `verdict-text`. */
+  const awaitingJudgeTextRef = useRef(false);
   const submittedRef = useRef(false);
   const weConnectedRef = useRef(false);
   const connectedRef = useRef(ctx.isConnected);
@@ -182,11 +232,20 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
         ? Math.round((attemptsCount / outcomes.length) * 10) / 10
         : 0,
     };
+    // Misconception Loop S1 — the packet, on diagnosable sessions only. The
+    // threshold mirrors `captureMisconception`'s OWN failure gate
+    // (`success === false || score < 60`) rather than this pack's success bar
+    // of 50, so evidence exists exactly when the loop would use it.
+    const diagnosisEvidence = overallAccuracy < 60
+      ? buildDiDiagnosisEvidence(failedVerdictsRef.current)
+      : undefined;
     evaluation.submitResult(
       overallAccuracy >= 50,
       overallAccuracy,
       metrics,
       { outcomes },
+      undefined,
+      diagnosisEvidence,
     );
     setRunning(false);
     setPhase('done');
@@ -197,7 +256,7 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
 
   const applyVerdict = useCallback(
-    (judgment: 'affirmed' | 'corrected' | 'off-script') => {
+    (judgment: 'affirmed' | 'corrected' | 'off-script', verdictText?: string) => {
       const item = currentOf();
       const loop = loopRef.current;
       if (!item || !loop) return;
@@ -212,6 +271,17 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
       if (judgment === 'corrected') {
         const used = prevCorrections + 1;
         correctionsRef.current.set(item.id, used);
+        // Misconception Loop S1 — log EVERY correction, not just the capped
+        // one. This pack's signature error class is the NEAR NEIGHBOUR
+        // (sun/son, red/read), and a near neighbour repeated across retries is
+        // exactly the `priorAttempts` consistency signal.
+        failedVerdictsRef.current = pushFailedVerdict(failedVerdictsRef.current, {
+          challenge: challengeSummaryFor(item),
+          expected: expectedFor(item),
+          heard: lastHeardRef.current,
+          judgeFeedback: verdictText ?? '',
+        });
+        awaitingJudgeTextRef.current = true;
         if (used <= MAX_CORRECTIONS_PER_ITEM) {
           // The tutor's correction line already re-modeled and re-elicited
           // in-band; just reflect it and keep listening.
@@ -220,6 +290,14 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
           return;
         }
         // Corrections capped — record a miss and move the lesson forward.
+        // Flagged in the run log: [DI_MOVE_ON] had never fired in ANY pack live
+        // before the sustained-miss sitting, so this is a first-observation path.
+        logDiStage(
+          'move-on',
+          `correction cap (${MAX_CORRECTIONS_PER_ITEM}) reached — moving on`,
+          { itemId: item.id, itemDisplay: item.word },
+          'move-on',
+        );
         outcomesRef.current.push({
           id: item.id, correct: false, attempts: used, score: 0,
           responseMs: lastResponseMsRef.current,
@@ -264,24 +342,62 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
     [advance, currentOf, data.challenges, finishAndSubmit, recordResult],
   );
 
+  /** Item context for the run log. Diagnostics only. */
+  const logCtx = useCallback(() => {
+    const item = currentOf();
+    return { itemId: item?.id, itemDisplay: item?.word };
+  }, [currentOf]);
+
   const handleEmission = useCallback(
     (emission: LoopEmission) => {
+      // Run log FIRST, before the switch — so the three kinds this pack
+      // deliberately ignores for progression (attempt-superseded,
+      // phantom-transcript, unanchored-verdict) are still recorded on their way
+      // to `default: return`. Those three are exactly what a decohered sitting
+      // needs and what the packs used to drop without trace. Logging must never
+      // influence the loop: nothing below reads it.
+      logDiEmission(emission, logCtx());
+
       switch (emission.kind) {
         case 'attempt-open':
+          // A fresh attempt has no transcript yet; stale text would be
+          // attributed to the wrong read in the evidence packet.
+          lastHeardRef.current = null;
+          awaitingJudgeTextRef.current = false;
           setPhase('judging');
           setStatusLine('Listening…');
           setRewardEmoji(null);
           return;
         case 'attempt-transcript':
           lastResponseMsRef.current = emission.responseMs;
+          // What the CHILD read. Kept, not dropped — the misread word is half
+          // the evidence, and for this pack it names the near neighbour.
+          lastHeardRef.current = emission.text;
           return;
         case 'verdict':
           if (emission.judgment === 'no-verdict') {
             setStatusLine('One more time—what word?');
             return;
           }
-          applyVerdict(emission.judgment);
+          // …and what the TUTOR said about it. Nothing on this path is ever
+          // rendered or spoken; it goes to the distiller only.
+          applyVerdict(emission.judgment, emission.verdictText);
           return;
+        case 'verdict-text': {
+          // The tutor's judging line finished streaming. A verdict fires on the
+          // chunk that completes the sentinel ("My turn"), which for a
+          // contrastive correction is the one part carrying NO diagnosis —
+          // "not four — three minus one is two" arrives after it. Upgrade the
+          // miss logged at verdict time from that opener to the whole sentence.
+          if (emission.judgment === 'corrected' && awaitingJudgeTextRef.current) {
+            awaitingJudgeTextRef.current = false;
+            failedVerdictsRef.current = completeLatestJudgeFeedback(
+              failedVerdictsRef.current,
+              emission.text,
+            );
+          }
+          return;
+        }
         case 'resync':
           setStatusLine('Let’s read that word again.');
           if (loopRef.current) {
@@ -299,6 +415,14 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const loop = useJudgedSpeechLoop({
     enabled: running,
     onEmission: handleEmission,
+    // Diagnostics: the tutor's raw output transcription + mic turn telemetry.
+    // The bench has wired both since the open-mic runs; the packs shipped with
+    // neither, so a decohered run had no record of what the tutor actually SAID.
+    // For THIS pack the tutor text is also the near-neighbour check — whether it
+    // affirmed "matt" for "mat" is only visible in what it said.
+    onTutorText: (text) => logDiTutorText(text, logCtx()),
+    onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
+    onCue: (event) => logDiCue(event, logCtx()),
   });
   loopRef.current = loop;
 
@@ -354,15 +478,30 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
     correctionsRef.current.clear();
     outcomesRef.current = [];
     lastResponseMsRef.current = null;
+    lastHeardRef.current = null;
+    failedVerdictsRef.current = [];
+    awaitingJudgeTextRef.current = false;
     submittedRef.current = false;
     setRewardEmoji(null);
     loop.reset();
+    // Fresh diagnostics timeline for this run (diagnostics only).
+    startDiRunLog({
+      primitiveId: 'di-word-reading',
+      challengeType: data.challengeType,
+      gradeLevel: data.gradeLevel,
+      totalItems: data.challenges.length,
+      silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
+    });
     setRunning(true);
     setPhase('listening');
     setStatusLine('Listen, then read the word.');
     loop.sendCueNow(itemCue(first, true));
     loop.arm();
-  }, [data.challenges, loop]);
+    logDiStage('run-start', `armed with ${data.challenges.length} items`, {
+      itemId: first.id,
+      itemDisplay: first.word,
+    });
+  }, [data.challenges, data.challengeType, data.gradeLevel, loop]);
 
   // Unmount cleanup — never leave Live holding the mic or an open turn.
   useEffect(() => () => {
