@@ -45,7 +45,47 @@ import type { DiMathFactsData } from "../../primitives/visual-primitives/direct-
 import type {
   DiMathFactsChallenge,
   DiMathFactsChallengeType,
+  DiMathFactsSupportTier,
 } from "../../primitives/visual-primitives/direct-instruction/diMathFactsScript";
+
+// ── Support tier harness (L3) ───────────────────────────────────────
+
+type SupportTier = DiMathFactsSupportTier;
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; the L0 easy shape stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * How much of the DISTAR sequence precedes the child's answer.
+ *
+ * The withdrawal is IDENTICAL across all four eval modes, and that is correct
+ * rather than lazy: every mode is the same act (see the printed problem, speak
+ * the number word), so the same three sub-steps precede it. What a MODE changes
+ * is which facts are drawn; what a TIER changes is how much of the sequence is
+ * handed over. Kept per-type-capable so a future mode can diverge.
+ *
+ * The tier NEVER changes which facts are selected — that would be structural
+ * difficulty (operand structure — within 5 → crossing five → crossing ten — is
+ * this pack's structural axis, queued for /add-structural-difficulty), and
+ * mixing the two would make a tier change the content instead of the support.
+ */
+const resolveSupportStructure = (
+  _type: DiMathFactsChallengeType,
+  tier: SupportTier,
+): { tier: SupportTier; describe: string } => ({
+  tier,
+  describe:
+    tier === 'hard'
+      ? 'cold answer — no model, no choral practice; the child retrieves the fact unaided'
+      : tier === 'medium'
+        ? 'modeled once, then answered alone — the choral "Together" step is withdrawn'
+        : 'modeled and practiced together first — the full DISTAR sequence',
+});
 
 // ── Number words + ASR aliases (code-owned) ─────────────────────────
 
@@ -473,6 +513,13 @@ export const generateDiMathFacts = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which fact skill,
+     * difficulty = how much of the DISTAR sequence precedes the answer.
+     * NEVER changes which facts are selected.
+     */
+    difficulty?: string;
     [key: string]: unknown;
   },
 ): Promise<DiMathFactsData> => {
@@ -592,6 +639,31 @@ Return the wrapper JSON only.`;
   if (challenges.length === 0) {
     challenges = EASY_SPREAD.slice(0, count)
       .map((pair, i) => buildChallenge(pair, i, 'answer_fact'));
+  }
+
+  // ── Support tier, applied deterministically at the END ─────────────
+  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
+  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
+  // it too (gating on a single pinned mode is the silent no-op this layer exists
+  // to kill). Code owns the support structure; the LLM only scoped the wrapper.
+  //
+  // Deliberately NOT injected into the Gemini prompt, unlike the math
+  // references (same departure as di-sentence-reading L3). Fork A here means
+  // the model's only job is the wrapper + a factScope hint — so a tier line in
+  // the prompt could only do one thing: nudge it toward a different FACT RANGE.
+  // That is tier→content leakage, i.e. structural difficulty through the back
+  // door, and it would break the one hard rule. Operand structure is this
+  // pack's structural axis and belongs to /add-structural-difficulty, not
+  // here. The tier is 100% code-composed into the cue (diMathFactsScript
+  // `leadInFor` + `coldAnswerGuard`).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  if (supportTier) {
+    for (const ch of challenges) {
+      ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
+    }
+    console.log(
+      `[DiMathFacts] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'answer_fact', supportTier).describe}`,
+    );
   }
 
   // Session identity = the first item's skill (a pinned mode → that mode).

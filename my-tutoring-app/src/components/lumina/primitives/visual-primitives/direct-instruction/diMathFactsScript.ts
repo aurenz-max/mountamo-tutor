@@ -71,11 +71,51 @@ export type DiMathFactsChallengeType =
   | 'fact_review'
   | 'subtraction_fact';
 
+/**
+ * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
+ * contract: `challengeType` = WHICH fact skill, `supportTier` = HOW MUCH of the
+ * DISTAR sequence the child is handed before they answer. The fade the birth
+ * certificate specified, worked template di-sentence-reading L3:
+ *
+ *   easy   MODEL + GUIDE + TEST   hear the fact twice, then answer alone
+ *   medium MODEL + TEST           hear the fact once, then answer alone
+ *   hard   TEST only              RETRIEVE the answer cold, never having heard it
+ *
+ * `hard` matters MORE here than in the sentence pack. There the withheld model
+ * was an echo route onto a target already printed on screen; here the screen
+ * never shows the answer (answer-leak rule), so the model line is the ONLY
+ * pre-answer channel that carries it. Withdrawing it turns the item into a
+ * genuine retrieval probe — which is what fact FLUENCY exists to measure, and
+ * what makes the silent `responseMs` a true retrieval-time signal rather than
+ * partly an echo delay.
+ *
+ * The withdrawal is identical across all four task identities, and that is
+ * correct rather than lazy: every mode is the same act (see the printed
+ * problem, speak the number word), so the same three sub-steps precede it. A
+ * MODE changes which facts are drawn; a TIER changes how much of the sequence
+ * is handed over.
+ *
+ * NEVER withdrawn at any tier:
+ *  - the PRINTED PROBLEM on screen (it is the stimulus — withdrawing it would
+ *    turn a read fact into a dictated one, a different task);
+ *  - the CORRECTION's re-model (standing gate 3 — DISTAR always re-models on
+ *    an error; remediation is not scaffolding);
+ *  - the restating AFFIRM ("Yes, two plus one is three." — it models the
+ *    complete fact at the moment it is most useful);
+ *  - the judging contract (a tier changes how much help precedes the answer,
+ *    never how the answer is judged — else tiers stop being comparable evidence).
+ */
+export type DiMathFactsSupportTier = 'easy' | 'medium' | 'hard';
+
 /** One printed problem the tutor drills. Mirrors the generator output. */
 export interface DiMathFactsChallenge {
   id: string;
   /** Which eval-mode SKILL this item drills. */
   challengeType: DiMathFactsChallengeType;
+  /** How much of the DISTAR sequence precedes the child's answer. Absent =
+   *  easy (the L0 shape), so a session generated before L3 behaves exactly as
+   *  it did. */
+  supportTier?: DiMathFactsSupportTier;
   /** The two numbers in the printed problem. Their RELATIONSHIP depends on the
    *  challengeType (a + b / a − b / the number after a, where b is 1), so
    *  `answerNumeral` is authoritative — never recompute it from a and b. */
@@ -170,20 +210,54 @@ If the learner gives the SAME wrong number again, use the contrast branch again 
 Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
 
-/** Present one item: model, guide, test, then judge in-band until told otherwise. */
+/**
+ * The spoken lead-in for one item, composed from its SUPPORT TIER. This is the
+ * whole L3 ladder: `easy` hands over model + guide, `medium` only the model,
+ * `hard` nothing at all. Absent tier = `easy`, the L0 shape — at which the
+ * composed block is byte-for-byte the bench-proven "${model} ${guide} ${test}"
+ * string the #46 probe sitting validated.
+ */
+const leadInFor = (it: DiMathFactsChallenge): string => {
+  switch (it.supportTier) {
+    case 'hard':   return '';
+    case 'medium': return `${modelLine(it)} `;
+    case 'easy':
+    default:       return `${modelLine(it)} ${guideLine(it)} `;
+  }
+};
+
+/**
+ * At `hard` the tutor must not say the fact — or its answer — before the
+ * learner does; that is the entire point of the tier, and unlike the sentence
+ * pack the answer exists NOWHERE else pre-attempt (the stage shows only the
+ * unsolved problem). The omitted lines already withhold it (the tutor may only
+ * speak what "Speak exactly" quotes), but this makes the intent explicit per
+ * item rather than relying on the omission alone: the catalog's scaffolding
+ * levels and struggle responses are a second channel that could otherwise
+ * volunteer the fact (the tier gotcha — a tier withheld by the script but
+ * revealed by the tutor is only half applied). The CORRECTION branch still
+ * re-models at every tier by design; this guards the pre-attempt window only.
+ */
+const coldAnswerGuard = (it: DiMathFactsChallenge): string =>
+  it.supportTier === 'hard'
+    ? '\nThe learner is answering this one cold on purpose: do NOT say the fact, or its answer, before they answer.'
+    : '';
+
+/** Present one item: the tier's lead-in, then the test, then judge in-band
+ *  until told otherwise. */
 export const itemCue = (it: DiMathFactsChallenge, opening = false) => `[DI_ITEM]${opening
   ? ' You are running a short, brisk math-facts practice for a young learner. Never say, reproduce, or invent text inside square brackets; those labels are private application metadata.'
   : ''}
 Speak exactly:
-"${modelLine(it)} ${guideLine(it)} ${testLine(it)}"
+"${leadInFor(it)}${testLine(it)}"${coldAnswerGuard(it)}
 ${judgingContract(it)}`;
 
 /** Corrections cap reached: acknowledge neutrally and move the lesson forward.
  *  A hard fact resurfaces through distributed review, not by drilling a
- *  frustrated five-year-old in place. */
+ *  frustrated five-year-old in place. The NEXT item presents at ITS tier. */
 export const moveOnCue = (it: DiMathFactsChallenge, next?: DiMathFactsChallenge) => next
   ? `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
-"Good try. We will practice more later. ${modelLine(next)} ${guideLine(next)} ${testLine(next)}"
+"Good try. We will practice more later. ${leadInFor(next)}${testLine(next)}"${coldAnswerGuard(next)}
 ${judgingContract(next)}`
   : `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
 "Good try. We will practice more later. That's the end of our math practice."`;

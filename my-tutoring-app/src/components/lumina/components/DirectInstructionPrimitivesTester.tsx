@@ -94,6 +94,11 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
   const [generated, setGenerated] = useState<DiData | null>(null);
   const [topic, setTopic] = useState(DI_PRIMITIVES[0].defaultTopic);
   const [evalMode, setEvalMode] = useState<string>(DI_PRIMITIVES[0].evalModes[0].key);
+  // L3 support tier (config.difficulty). '' = manifest default (absent tier =
+  // the L0 easy shape). The eval-test route already threads ?difficulty=
+  // verbatim into config, so this is the runtime path for the tier mic checks
+  // (HUMAN-CHECKS #50(d) math / #54(d) sentence — hear the `hard` cold ask).
+  const [difficulty, setDifficulty] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Bumped on every Generate so the rendered pack REMOUNTS. The DI components
@@ -121,6 +126,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
         gradeLevel: primitive.defaultGrade,
         intent: topic,
       });
+      if (difficulty) params.set('difficulty', difficulty);
       const res = await fetch(`/api/lumina/eval-test?${params.toString()}`);
       const json = await res.json();
       if (!res.ok || !json.fullData) {
@@ -133,7 +139,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
     } finally {
       setLoading(false);
     }
-  }, [topic, evalMode, primitive.id, primitive.defaultGrade]);
+  }, [topic, evalMode, difficulty, primitive.id, primitive.defaultGrade]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16">
@@ -161,6 +167,12 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
         <input value={topic} onChange={(e) => setTopic(e.target.value)} className="flex-1 rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" placeholder="objective / target items" />
         <select value={evalMode} onChange={(e) => setEvalMode(e.target.value)} className="rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200">
           {primitive.evalModes.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+        </select>
+        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-slate-200" title="L3 support tier — how much of the DISTAR sequence precedes the child's turn">
+          <option value="">Tier: default (easy)</option>
+          <option value="easy">Tier: easy (model + guide)</option>
+          <option value="medium">Tier: medium (model only)</option>
+          <option value="hard">Tier: hard (cold)</option>
         </select>
         <button onClick={() => void generate()} disabled={loading} className="rounded-full border border-cyan-400/40 bg-cyan-500/20 px-4 py-2 text-sm text-cyan-200 disabled:opacity-40">{loading ? 'Generating…' : 'Generate'}</button>
       </div>

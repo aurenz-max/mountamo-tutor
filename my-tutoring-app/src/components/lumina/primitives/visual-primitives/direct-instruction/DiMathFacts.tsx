@@ -84,7 +84,7 @@ import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 
-export type { DiMathFactsChallenge, DiMathFactsChallengeType } from './diMathFactsScript';
+export type { DiMathFactsChallenge, DiMathFactsChallengeType, DiMathFactsSupportTier } from './diMathFactsScript';
 
 export interface DiMathFactsData {
   title: string;
@@ -639,6 +639,10 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
             facts: factsSummary,
             display: first?.display ?? '',
             problem: first?.problem ?? '',
+            // The support tier the cue is composed at, so the tutor's own
+            // scaffolding channel cannot volunteer a fact a `hard` item
+            // deliberately withheld before the answer.
+            supportTier: first?.supportTier ?? 'easy',
           },
           grade_level: data.gradeLevel || 'kindergarten',
           audio_input: DI_AUDIO_INPUT,
@@ -679,6 +683,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       display: currentChallenge.display,
       problem: currentChallenge.problem,
       facts: factsSummary,
+      supportTier: currentChallenge.supportTier ?? 'easy',
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -699,11 +704,15 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     setReward(null);
     resetStall();
     loop.reset();
-    // Fresh diagnostics timeline for this run (diagnostics only).
+    // Fresh diagnostics timeline for this run (diagnostics only). supportTier
+    // is pinned because at `hard` the tutor must never say the fact or its
+    // answer pre-attempt — a cold answer that leaks is only readable against
+    // the tier the run actually used.
     startDiRunLog({
       primitiveId: 'di-math-facts',
       challengeType: data.challengeType,
       gradeLevel: data.gradeLevel,
+      supportTier: first.supportTier ?? 'easy',
       totalItems: data.challenges.length,
       silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
     });

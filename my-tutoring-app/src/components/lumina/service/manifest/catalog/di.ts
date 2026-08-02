@@ -225,7 +225,18 @@ export const DI_CATALOG: ComponentDefinition[] = [
       // Stimulus-side only. The answer (answerWord / solvedDisplay) is deliberately
       // absent: the tutor already receives it inside each [DI_ITEM] judging
       // contract, and RUNTIME STATE is echoed far more loosely than a scripted line.
-      contextKeys: ['challengeType', 'display', 'problem', 'facts'],
+      // `supportTier` (L3) is the tier the cue is composed at, so the tutor's own
+      // scaffolding channel stays tier-aware — at `hard` nothing may speak the
+      // fact or its answer before the learner's attempt.
+      contextKeys: ['challengeType', 'display', 'problem', 'facts', 'supportTier'],
+      // L3 tier audit: unlike di-sentence-reading, level 1 needed NO rewording —
+      // it repeats the QUESTION, which is the stimulus already printed on the
+      // child's screen, never the fact statement carrying the answer. Levels 2-3
+      // are safe for the sibling pack's reason: they describe what happens AFTER
+      // an attempt, and a correction re-models the whole fact at every tier by
+      // design (standing gate 3 — remediation is not scaffolding). The same
+      // ruling covers the commonStruggles below that model the fact: each is a
+      // post-attempt (or non-attempt) remediation, i.e. correction territory.
       scaffoldingLevels: {
         level1: 'Repeat the question once, slowly.',
         level2: 'Model the whole fact, then ask for one retry.',
@@ -264,7 +275,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'sentence with those words — even excited praise like "Yes!" outside the affirmation line is '
             + 'forbidden. Judge honestly from the audio: affirm the right number, correct a wrong or missing '
             + 'one. EVERY correction re-models the whole fact and begins with "My turn". Do not praise to be '
-            + 'kind. The application decides which fact comes next; never introduce one yourself.',
+            + 'kind. The application decides which fact comes next; never introduce one yourself. Some items '
+            + 'deliberately give you nothing to say before the question — when the quoted text is only the '
+            + '"Your turn" ask, the learner is answering cold on purpose: never say the fact or its answer '
+            + 'before they have answered.',
         },
         {
           title: 'NUMBER WORDS',
