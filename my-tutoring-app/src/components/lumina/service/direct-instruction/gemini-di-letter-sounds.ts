@@ -33,7 +33,51 @@ import type {
   DiLetterSoundsData,
   DiLetterSoundChallenge,
 } from "../../primitives/visual-primitives/direct-instruction/DiLetterSounds";
-import type { DiLetterSoundChallengeType } from "../../primitives/visual-primitives/direct-instruction/diLetterSoundsScript";
+import type {
+  DiLetterSoundChallengeType,
+  DiLetterSoundsSupportTier,
+} from "../../primitives/visual-primitives/direct-instruction/diLetterSoundsScript";
+
+// ── Support tier harness (L3) ───────────────────────────────────────
+
+type SupportTier = DiLetterSoundsSupportTier;
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; the L0 easy shape stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * How much of the DISTAR sequence precedes the child's attempt.
+ *
+ * The withdrawal is IDENTICAL across all three eval modes, and that is correct
+ * rather than lazy: every mode is the same act (meet the stimulus, produce the
+ * held sound), so the same three sub-steps precede it. What a MODE changes is
+ * which items are drawn and how the cue is phrased (the script owns that); what
+ * a TIER changes is how much of the sequence is handed over. Kept
+ * per-type-capable so a future mode can diverge.
+ *
+ * The tier NEVER changes which letters are selected — that would be structural
+ * difficulty (item-set composition — continuants-only → +short vowels →
+ * confusable contrasts (m/n, f/v) — is this pack's structural axis, queued for
+ * /add-structural-difficulty), and mixing the two would make a tier change the
+ * content instead of the support.
+ */
+const resolveSupportStructure = (
+  _type: DiLetterSoundChallengeType,
+  tier: SupportTier,
+): { tier: SupportTier; describe: string } => ({
+  tier,
+  describe:
+    tier === 'hard'
+      ? 'cold production — no model, no choral practice; the child retrieves the sound unaided'
+      : tier === 'medium'
+        ? 'modeled once, then produced alone — the choral "Together" step is withdrawn'
+        : 'modeled and practiced together first — the full DISTAR sequence',
+});
 
 /** One curated menu entry: everything the tutor and the picture need. */
 interface MenuEntry {
@@ -220,6 +264,13 @@ export const generateDiLetterSounds = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which sound skill,
+     * difficulty = how much of the DISTAR sequence precedes the attempt.
+     * NEVER changes which letters are selected.
+     */
+    difficulty?: string;
     [key: string]: unknown;
   },
 ): Promise<DiLetterSoundsData> => {
@@ -330,6 +381,31 @@ Return the wrapper JSON only.`;
   if (challenges.length === 0) {
     challenges = lettersForType('letter_sound', DEFAULT_LETTERS, count)
       .map((letter, i) => buildChallenge(letter, i, 'letter_sound'));
+  }
+
+  // ── Support tier, applied deterministically at the END ─────────────
+  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
+  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
+  // it too (gating on a single pinned mode is the silent no-op this layer exists
+  // to kill). Code owns the support structure; the LLM only picked the letters.
+  //
+  // Deliberately NOT injected into the Gemini prompt, unlike the math
+  // references (same departure as both DI siblings). Fork A here means the
+  // model's only job is picking letters + the wrapper — so a tier line in the
+  // prompt could only do one thing: nudge it toward different LETTERS. That is
+  // tier→content leakage, i.e. structural difficulty through the back door,
+  // and it would break the one hard rule. Item-set composition is this pack's
+  // structural axis and belongs to /add-structural-difficulty, not here. The
+  // tier is 100% code-composed into the cue (diLetterSoundsScript `leadInFor`
+  // + `coldSoundGuard`).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  if (supportTier) {
+    for (const ch of challenges) {
+      ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
+    }
+    console.log(
+      `[DiLetterSounds] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}`,
+    );
   }
 
   // Session identity = the first item's skill (a pinned mode → that mode).

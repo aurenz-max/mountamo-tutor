@@ -86,7 +86,19 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
         + 'application message and judge each learner attempt from the audio you heard, using only '
         + 'the two allowed reply branches.',
-      contextKeys: ['challengeType', 'letter', 'keyword', 'letters'],
+      // Stimulus-side only — the target sound reaches the tutor inside each
+      // [DI_ITEM] judging contract, never through RUNTIME STATE. `supportTier`
+      // (L3) is the tier the cue is composed at, so the tutor's own scaffolding
+      // channel stays tier-aware — at `hard` nothing may say, stretch, or model
+      // the target sound before the learner's attempt.
+      contextKeys: ['challengeType', 'letter', 'keyword', 'letters', 'supportTier'],
+      // L3 tier audit (2026-08-01): like di-math-facts, NO rewording was needed.
+      // Level 1 repeats the PROMPT — the ask the tutor just spoke ("Your turn.
+      // What sound?"), which never carries the target sound — not the model
+      // line. Levels 2-3 and the sound-modeling commonStruggles below all
+      // describe post-attempt (or non-attempt) remediation — correction
+      // territory, which re-models at every tier by design (standing gate 3:
+      // remediation is not scaffolding).
       scaffoldingLevels: {
         level1: 'Repeat the prompt once, slowly.',
         level2: 'Model the requested sound, then ask for one retry.',
@@ -117,7 +129,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'sentence with those words. Judge honestly from the audio: affirm a reasonable kindergarten '
             + 'production of the target; correct a wrong, missing, or different production. Every correction '
             + 're-models the sound and begins with "My turn". Do not praise to be kind. The application decides '
-            + 'which item comes next; never introduce one yourself.',
+            + 'which item comes next; never introduce one yourself. Some items deliberately give you nothing '
+            + 'to model before the ask — when the quoted text is only the "Your turn" line, the learner is '
+            + 'answering cold on purpose: never say, stretch, or model the target sound before they have '
+            + 'answered.',
         },
         {
           title: 'SOUND PRONUNCIATION',

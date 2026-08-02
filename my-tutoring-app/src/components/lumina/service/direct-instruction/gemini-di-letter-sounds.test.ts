@@ -51,3 +51,38 @@ describe('di-letter-sounds L1 eval-mode ladder', () => {
     expect(new Set(firstRound).size).toBe(firstRound.length);
   });
 });
+
+describe('di-letter-sounds L3 support tier (config.difficulty)', () => {
+  const genTiered = (targetEvalMode: string, difficulty?: string) =>
+    generateDiLetterSounds('letter sounds', 'kindergarten', {
+      intent: 'letter sounds',
+      targetEvalMode,
+      ...(difficulty !== undefined ? { difficulty } : {}),
+    });
+
+  it('a pinned mode + hard stamps EVERY challenge hard, letters untouched', async () => {
+    const plain = await genTiered('letter_sound');
+    const hard = await genTiered('letter_sound', 'hard');
+    expect(hard.challenges.every((c) => c.supportTier === 'hard')).toBe(true);
+    // The tier never changes which letters are drawn — same deterministic
+    // fallback ladder, same selection (offline path is order-stable).
+    expect(hard.challenges.map((c) => c.letter)).toEqual(plain.challenges.map((c) => c.letter));
+  });
+
+  it('mixed + medium tiers ALL THREE identities (gate on tier presence, never a pinned mode)', async () => {
+    const data = await genTiered('mixed', 'medium');
+    const types = new Set(data.challenges.map((c) => c.challengeType));
+    expect(types.size).toBe(3);
+    expect(data.challenges.every((c) => c.supportTier === 'medium')).toBe(true);
+  });
+
+  it('no difficulty param → no supportTier field at all (pre-L3 byte-compatible)', async () => {
+    const data = await genTiered('letter_sound');
+    expect(data.challenges.every((c) => !('supportTier' in c))).toBe(true);
+  });
+
+  it('an unknown difficulty value is ignored, not coerced', async () => {
+    const data = await genTiered('letter_sound', 'extreme');
+    expect(data.challenges.every((c) => !('supportTier' in c))).toBe(true);
+  });
+});

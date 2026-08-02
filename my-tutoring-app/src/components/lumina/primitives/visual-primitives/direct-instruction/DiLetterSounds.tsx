@@ -61,7 +61,7 @@ import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 
-export type { DiLetterSoundChallenge, DiLetterSoundChallengeType } from './diLetterSoundsScript';
+export type { DiLetterSoundChallenge, DiLetterSoundChallengeType, DiLetterSoundsSupportTier } from './diLetterSoundsScript';
 
 export interface DiLetterSoundsData {
   title: string;
@@ -485,6 +485,10 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
             letters: data.challenges.map((c) => c.letter).join(', '),
             letter: first?.letter ?? '',
             keyword: first?.keyword ?? '',
+            // The support tier the cue is composed at, so the tutor's own
+            // scaffolding channel cannot volunteer a sound a `hard` item
+            // deliberately withheld before the attempt.
+            supportTier: first?.supportTier ?? 'easy',
           },
           grade_level: data.gradeLevel || 'kindergarten',
         });
@@ -512,9 +516,10 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
   }, [ctx, data.challenges, data.challengeType, data.gradeLevel, preparing, resolvedInstanceId]);
 
   // Keep the tutor's RUNTIME STATE truthful as items advance — the catalog
-  // contextKeys (challengeType / letter / keyword / letters) resolve against
-  // this bag. updateContext is the silent channel (no end-of-turn), so these
-  // never perturb the judged loop; the context provider dedupes by value.
+  // contextKeys (challengeType / letter / keyword / letters / supportTier)
+  // resolve against this bag. updateContext is the silent channel (no
+  // end-of-turn), so these never perturb the judged loop; the context provider
+  // dedupes by value.
   useEffect(() => {
     if (!ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
@@ -522,6 +527,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       letter: currentChallenge.letter,
       keyword: currentChallenge.keyword,
       letters: data.challenges.map((c) => c.letter).join(', '),
+      supportTier: currentChallenge.supportTier ?? 'easy',
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -539,11 +545,15 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     submittedRef.current = false;
     resetStall();
     loop.reset();
-    // Fresh diagnostics timeline for this run (diagnostics only).
+    // Fresh diagnostics timeline for this run (diagnostics only). supportTier
+    // is pinned because at `hard` the tutor must never say the target sound
+    // pre-attempt — a cold production that leaks is only readable against the
+    // tier the run actually used.
     startDiRunLog({
       primitiveId: 'di-letter-sounds',
       challengeType: data.challengeType,
       gradeLevel: data.gradeLevel,
+      supportTier: first.supportTier ?? 'easy',
       totalItems: data.challenges.length,
       silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
     });

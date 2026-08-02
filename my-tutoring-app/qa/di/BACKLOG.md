@@ -65,9 +65,16 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > 2026-08-01** — the delegated slice landed (script-composed fade + `supportTier`
 > contextKey + the tester's new family tier selector; 14/14 new tests, 3/3
 > real-pipeline probes; ear-check → HUMAN-CHECKS #50(d); report
-> `qa/eval-reports/di-math-facts-support-tiers-2026-08-01.md`); the ladder still
-> runs SERIALLY and `catalog/di.ts` is free again — **next rung =
-> di-letter-sounds L3**) → **item 2**
+> `qa/eval-reports/di-math-facts-support-tiers-2026-08-01.md`);
+> **di-letter-sounds L3 DONE 2026-08-01** — third use of the template
+> (`leadInFor` + `coldSoundGuard` composed in the script; per-mode composition
+> verified — onset keeps the WORD in the ask while its sound withdraws, vowels
+> keep the keyword while "short a" naming withdraws; catalog audit clean like
+> math's, no rewording; 20 new tests with non-vacuity ×7, 3/3 real-pipeline
+> probes incl. mixed-all-tiered; ear-check → HUMAN-CHECKS **#57**; report
+> `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`); the ladder
+> still runs SERIALLY and `catalog/di.ts` is free again — **next rung =
+> di-word-reading L2**) → **item 2**
 > remediation-lever design (the misconception loop's consumption half — a real
 > platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
 > flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel
@@ -564,23 +571,22 @@ before di-sentence-reading existed.)*
 
 | Pack | Born | L0 live gate | L1 modes | L2 scaffold | L3 tiers | Next rung |
 |---|---|---|---|---|---|---|
-| di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | — | `/add-support-tiers` (L3) |
+| di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | — (script-local) | — | catalog `tutoring:` move (L2) |
 | di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | `/add-structural-difficulty` (L4) |
 
-Nearest rungs, in order (08-01 ruling): **di-letter-sounds L3** (third use of
-the sentence/math L3 template — modality #2 instruction-as-scaffold, DISTAR's
-model→guide→test IS the ladder, in the SCRIPT never a UI flag; the tester's tier
-selector already covers it; **📋 HANDOFF:
-`qa/HANDOFF-di-letter-sounds-L3-2026-08-01.md`** — paste-able, carries the
-per-mode onset caution + second-channel audit + the serial `catalog/di.ts`
-constraint) · **di-word-reading L2** (catalog `tutoring:` move;
-shared wiring already in place) · **di-sentence-reading L4** (axis already built
-and measured — sentence LENGTH via `wordCount`/`meanSentenceWords`; hard
-constraint: the **8-word benched ceiling is NOT a difficulty knob**, raising it
-needs a bench sitting) · di-math-facts L4 (operand structure, per its birth
-cert). ~~di-math-facts L3~~ **DONE 2026-08-01**.
+Nearest rungs, in order (08-01 ruling): **di-word-reading L2** (catalog
+`tutoring:` move; shared wiring already in place) · **di-sentence-reading L4**
+(axis already built and measured — sentence LENGTH via
+`wordCount`/`meanSentenceWords`; hard constraint: the **8-word benched ceiling
+is NOT a difficulty knob**, raising it needs a bench sitting) ·
+**di-letter-sounds L4** (item-set composition per its birth cert:
+continuants-only → +short vowels → confusable contrasts m/n, f/v) ·
+di-math-facts L4 (operand structure, per its birth cert).
+~~di-math-facts L3~~ **DONE 2026-08-01**. ~~di-letter-sounds L3~~ **DONE
+2026-08-01** (third template use; ear-check → #57; report
+`qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`).
 
 **Two family-wide debts sit ABOVE the ladder** and are why the numbered queue is
 not empty: **item 1** (no remediation content from a stored misconception — the

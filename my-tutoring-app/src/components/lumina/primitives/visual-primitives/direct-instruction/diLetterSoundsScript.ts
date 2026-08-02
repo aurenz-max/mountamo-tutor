@@ -37,6 +37,50 @@ export type DiLetterSoundChallengeType =
   | 'letter_sound_review'
   | 'first_sound_in_word';
 
+/**
+ * The within-mode SUPPORT tier (L3, 2026-08-01). Second field of the two-field
+ * contract: `challengeType` = WHICH sound skill, `supportTier` = HOW MUCH of
+ * the DISTAR sequence the child is handed before they produce the sound. Third
+ * use of the DI L3 template (di-sentence-reading 07-25 the original,
+ * di-math-facts 08-01 the closest sibling):
+ *
+ *   easy   MODEL + GUIDE + TEST   hear the sound twice, then produce it alone
+ *   medium MODEL + TEST           hear it once, then produce it alone
+ *   hard   TEST only              produce it COLD, never having heard it
+ *
+ * Why `hard` matters here: the model line SPEAKS the very sound the child is
+ * about to produce — the echo route. At hard the item becomes a genuine
+ * grapheme→sound retrieval probe and the silent `responseMs` becomes true
+ * retrieval time rather than partly an echo delay. Two per-mode nuances the
+ * withdrawal must respect (and does, because the test lines already carry the
+ * stimulus, never the target sound):
+ *  - `first_sound_in_word`: the spoken WORD stays in the ask at every tier —
+ *    it is the stimulus (there is no printed grapheme on that stage) — but its
+ *    first sound is never spoken pre-attempt at hard: a genuine onset probe.
+ *  - keyword-elicited vowels: the ask ("Your turn. Say apple.") still speaks
+ *    the keyword — the elicitation requires it — so what hard withdraws is the
+ *    model's sound-naming ("The first sound in apple is short a"), never the
+ *    word. The guard protects the SOUND, not the word.
+ *
+ * The withdrawal is identical across all three task identities, and that is
+ * correct rather than lazy: every mode is the same act (meet the stimulus,
+ * produce the held sound), so the same three sub-steps precede it. A MODE
+ * changes which items are drawn and how the cue is phrased; a TIER changes how
+ * much of the sequence is handed over.
+ *
+ * NEVER withdrawn at any tier:
+ *  - the on-screen stimulus (printed grapheme, or keyword + picture for onset
+ *    items — withdrawing it would change the task identity);
+ *  - the CORRECTION's re-model (standing gate 3 — DISTAR always re-models on
+ *    an error; remediation is not scaffolding). This pack still carries the
+ *    PLAIN correction — the contrastive port is frozen on HUMAN-CHECKS #55
+ *    (family rule);
+ *  - the restating AFFIRM (it models the sound at the moment it is most useful);
+ *  - the judging contract (a tier changes how much help precedes the attempt,
+ *    never how it is judged — else tiers stop being comparable evidence).
+ */
+export type DiLetterSoundsSupportTier = 'easy' | 'medium' | 'hard';
+
 /** One letter-sound item the tutor drills. Mirrors the generator output shape. */
 export interface DiLetterSoundChallenge {
   id: string;
@@ -44,6 +88,10 @@ export interface DiLetterSoundChallenge {
    *  Drives the cue SHAPE (onset items get word-first lines) and the kid-facing
    *  display (onset items show the picture/word, never the isolated grapheme). */
   challengeType: DiLetterSoundChallengeType;
+  /** How much of the DISTAR sequence precedes the child's attempt. Absent =
+   *  easy (the L0 shape), so a session generated before L3 behaves exactly as
+   *  it did. */
+  supportTier?: DiLetterSoundsSupportTier;
   /** The grapheme shown on screen, e.g. "m". */
   letter: string;
   /** The stretched continuous sound the learner must produce, e.g. "mmm". */
@@ -130,20 +178,56 @@ Each time the learner responds, judge the audio you heard against ${targetDescri
 Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
 
-/** Present one item: model, guide, test, then judge in-band until told otherwise. */
+/**
+ * The spoken lead-in for one item, composed from its SUPPORT TIER. This is the
+ * whole L3 ladder: `easy` hands over model + guide, `medium` only the model,
+ * `hard` nothing at all. Absent tier = `easy`, the L0 shape — at which the
+ * composed block is byte-for-byte the bench-proven "${model} ${guide} ${test}"
+ * string the L0 eval runs validated.
+ */
+const leadInFor = (it: DiLetterSoundChallenge): string => {
+  switch (it.supportTier) {
+    case 'hard':   return '';
+    case 'medium': return `${modelLine(it)} `;
+    case 'easy':
+    default:       return `${modelLine(it)} ${guideLine(it)} `;
+  }
+};
+
+/**
+ * At `hard` the tutor must not say the target SOUND before the learner does —
+ * that is the entire point of the tier: the model line is the echo route, and
+ * withdrawing it makes the item a genuine retrieval probe. The omitted lines
+ * already withhold it (the tutor may only speak what "Speak exactly" quotes),
+ * but this makes the intent explicit per item rather than relying on the
+ * omission alone: the catalog's scaffolding levels and struggle responses are
+ * a second channel that could otherwise volunteer the sound (the tier gotcha —
+ * a tier withheld by the script but revealed by the tutor is only half
+ * applied). Guarded per-SOUND, never per-word: onset asks and keyword
+ * elicitations still speak the stimulus word inside the quoted line by design.
+ * The CORRECTION branch still re-models at every tier; this guards the
+ * pre-attempt window only.
+ */
+const coldSoundGuard = (it: DiLetterSoundChallenge): string =>
+  it.supportTier === 'hard'
+    ? '\nThe learner is answering this one cold on purpose: do NOT say, stretch, or model the target sound before they answer.'
+    : '';
+
+/** Present one item: the tier's lead-in, then the test, then judge in-band
+ *  until told otherwise. */
 export const itemCue = (it: DiLetterSoundChallenge, opening = false) => `[DI_ITEM]${opening
   ? ' You are running a short, brisk kindergarten letter-sounds practice. Never say, reproduce, or invent text inside square brackets; those labels are private application metadata.'
   : ''}
 Speak exactly:
-"${modelLine(it)} ${guideLine(it)} ${testLine(it)}"
+"${leadInFor(it)}${testLine(it)}"${coldSoundGuard(it)}
 ${judgingContract(it)}`;
 
 /** Corrections cap reached: acknowledge neutrally and move the lesson forward.
  *  A weak sound resurfaces through distributed review, not by drilling a
- *  frustrated five-year-old in place. */
+ *  frustrated five-year-old in place. The NEXT item presents at ITS tier. */
 export const moveOnCue = (it: DiLetterSoundChallenge, next?: DiLetterSoundChallenge) => next
   ? `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
-"Good try. We will practice more later. ${modelLine(next)} ${guideLine(next)} ${testLine(next)}"
+"Good try. We will practice more later. ${leadInFor(next)}${testLine(next)}"${coldSoundGuard(next)}
 ${judgingContract(next)}`
   : `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
 "Good try. We will practice more later. That's the end of our practice."`;
