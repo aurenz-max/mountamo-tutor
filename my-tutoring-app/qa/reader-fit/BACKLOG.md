@@ -4,45 +4,87 @@ Working queue for `/reader-fit`. Top = next. Seeded 2026-07-13 from two live
 user-observed K-lesson failures + the 2026-07-12 cognitive-load audit.
 Re-seeded 2026-07-14 demand-side from the K topic-trace census (6 real K
 subskills × LA/Math/SS; reports in `qa/topic-traces/k-*-2026-07-14.md`).
+Re-seeded 2026-08-01 for EMERGING from 6 real Grade-1 subskills across the same
+LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 14. EMERGING (Grade 1) band — RE-SEED THE QUEUE — **TOP / NEXT PULL** (opened `/pm` 2026-07-25)
-**The demand-side K queue is DRAINED** (Task 3 / coin-counter closed 2026-07-25 was the last
-census-routed K item). This section exists because the milestone that follows it — "re-run the
-topic-trace census at grade 1" — was recorded only as narrative inside Done entries, so a session
-pulling the top of this queue found nothing pullable. It is now an item.
+### 14. EMERGING (Grade 1) band — **RE-SEEDED / TOP QUEUE** (census 2026-08-01)
 
-- **14a. Run the EMERGING census** — `/topic-trace` over real Grade-1 subskills across LA / Math /
-  SS, the same shape as the K census of 2026-07-14 (`qa/topic-traces/k-*-2026-07-14.md`), whose
-  routing tallies are what seeded every demand-side item in this file. Output: per-primitive routing
-  frequency at Grade 1 → new numbered items here, ranked by observed routing.
-- **14b. coin-counter contract gap G1 — ALREADY WAITING, the census's first item.** Task 3 fixed
-  `count-like` at **K**, but the census inside that task found the mode's only authored consumer is
-  **`MEAS001-07-c` @ Grade 1** ("Focus: Skip counting and summation… single-denomination sets") —
-  **there is no K money subskill in the curriculum at all** (the strand is G1 `MEAS001-07` + G2
-  `MEAS002-05`; the K `MEAS001-07-A…F` sharing that stem is *Time Durations*, and
-  `PRIMITIVE_GAPS.md` GAP-007 mislabels them "MATHEMATICS (K)" — the likely origin of the K
-  framing). So **the PRIMARY consumer still has the compute-then-type proxy that K just lost.**
-  Deliberately not widened in Task 3: Grade 1 is a live consumer carrying β1.5 item history, and
-  changing its interaction deserves its own slice. Read `docs/contracts/coin-counter.md` first
-  (10 requirements, C1 resolved) and run `--check` on the edit. Report:
+**Census of record:** six published Grade-1 subskills, two each from LA / Math / SS, run through the
+real `/topic-trace` brief → manifest → generator pipeline. Reports:
+`qa/topic-traces/g1-{silent-e,common-nouns,count-forward-to-120,identical-coins,map-legends,invention-listening}-2026-08-01.md`.
+
+**Routing tally (42 generated components):** `knowledge-check` 6; `sorting-station` 4;
+`foundation-explorer` 3; `annotated-example`, `coin-counter`, `comparison-panel`,
+`concept-card-grid`, `hundreds-chart`, `image-comparison`, and `number-sequencer` 2 each; 15
+singletons. Healthy high-frequency evidence: all four sorting-station draws stamped Grade 1 and
+stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
+`SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
+
+**Pull order:** 14e → 14b → 14f → 14g → 14h/14i → 14j → 14k/14l. 14c/14d remain the older
+coin-counter tail after the Grade-1 demand work.
+
+- ~~**14a. Run the EMERGING census.**~~ **DONE 2026-08-01.** Six real subskills, 42 generated
+  components, zero generator errors. The scope/presentation findings below are the re-seeded queue.
+- **14e. P0 — numeric Grade-1 generator-boundary dead band (systemic; TOP / NEXT PULL).** The
+  manifest correctly returns `Grade 1`/`1`, but `geminiService.normalizeGradeLevel` accepts only
+  named bands and maps either numeric spelling to `elementary`; topic-driven curator objectives do
+  not stamp `objectiveGrade`, so precise `ctx.grade` is absent. The fallout is visible across the
+  census: `phonics-blender` and `word-sorter` stamp K, `sentence-analyzer` stamps 4,
+  `hundreds-chart` stamps 2 in both draws, `fast-fact` stamps 3–5, and media/DI/deep-dive/KC payloads
+  retain generic grades-1–5 prose. Fix the boundary/grade stamp once, add a numeric-grade regression
+  oracle, then replay the six reports before treating band-only symptoms as primitive-local bugs.
+  Executor: `/topic-fidelity`; this is the same dead-band class as 14c but one layer upstream.
+- **14b. coin-counter contract gap G1 — CONFIRMED by authored demand (2/42 routes).** The
+  `MEAS001-07-c` trace routed `coin-counter` twice (`identify`, `count-like`). In the exact primary
+  consumer, count-like stamps `gradeBand: 1`, `countMode: like`, and **`showRunningTotal: false`**:
+  the Grade-1 child still computes over inert coins, types a total, then presses Check even though
+  the manifest intent explicitly asks for tap-each-coin running totals. Widen the existing K
+  band+mode enacted-count contract deliberately to Grade 1; read `docs/contracts/coin-counter.md`
+  first and run `--check`. Evidence: `qa/topic-traces/g1-identical-coins-2026-08-01.md` plus
   `qa/reader-fit/coin-counter-task3-2026-07-25.md`.
+- **14f. knowledge-check @ EMERGING — 6/42, routed in every census lesson.** This is the most
+  frequent primitive and closes the K backlog's explicit "complex-type routing re-audit once the K
+  queue drains" follow-up. Scope mostly holds, but the generator sees generic `elementary`, and the
+  failures cluster where Grade-1 modality matters: map-symbol matching becomes reading descriptions
+  of pictures, while the invention `analyze` draw promises picture support but emits long text-only
+  multi-clause analysis/matching. After 14e, audit mixed-mode selection + Grade-1 reading load and
+  visual insets across all six saved topics; do not copy the K picture-primary floor wholesale.
+- **14g. DI family intent/scope fidelity — 3/42 routes, 2/3 fail.** `di-sentence-reading` stayed on
+  its noun objective, but `di-word-reading` replaced a CVCe intent with `cat/red/pig/sun`, and
+  `di-math-facts counting_next` replaced 1–120 with values only through 12. These are generator
+  scope failures, not reader-fit chrome. Coordinate with the ACTIVE DI workstream and do not edit
+  its shared files concurrently; carry the two census topics as content-contract regressions there.
+- **14h. number-sequencer @ G1 — 2/42, both contract-misaligned.** The first blended pin
+  `count_from|before_after` leaks three unrequested modes (`fill-missing`, `decade-fill`,
+  `order-cards`). The second intent asks for 101, 102, _, 104 but the generator prompt/sanitizer
+  hard-clamps Grade 1 to 100, making the published `NBT001-01-a` ceiling of 120 unrepresentable.
+  Executor: `/eval-fix` + `/topic-fidelity`; extend the structural contract before lifting the cap.
+- **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** `gemini-hundreds-chart.ts` defaults
+  `gradeBand` to `2` when the manifest omits an override. In the 1–120 trace it also substitutes
+  skip-counting by 2/5/10 and ends at 100 despite an explicit 100–120 intent; in the identical-coin
+  trace it injects a by-2 challenge into the requested nickel/dime 5/10 focus. Fix grade resolution,
+  eval-mode focus, and the chart's honest 120 capability together.
+- **14j. annotated-example scope/grade binding — 2/42, 1 severe failure.** The counting example
+  is healthy (108, 109, ?, 111). The coin intent pins **6 nickels = 30¢**, but the generated worked
+  example becomes **4×5 = 20 dimes = 200¢**, introducing multiplication and a much larger value.
+  Pin the manifest problem through the problem-author/solver boundary and add a Grade-1 operation
+  ceiling oracle.
+- **14k. number-line `between` on a precise missing-number objective — 1/42.** Intent requests a
+  hidden value around 90–110; data defaults to 19–38 and accepts any number strictly between broad
+  endpoints. The generator preserved neither the inferred 120 range nor the exact-adjacent-number
+  task. Fix target: `gemini-number-line.ts` range resolution + `between` semantics.
+- **14l. flashcard-deck final-assessment expansion — 1/42.** A 10-card review of the narrated
+  light-bulb lesson announces 15 cards and expands into Internet, medicine, patent, prototype, and
+  other untaught material. This repeats the K census's card-padding failure. Honor requested count
+  and enumerated taught concepts in `gemini-flashcard-deck.ts`.
 - **14c. coin-counter G2 — Grades 2–3 are UNREACHABLE** (`/topic-fidelity`, not `/reader-fit`).
-  `resolveGradeBand` parses `ctx.gradeContext` **PROSE**, which `GenerationContext` explicitly
-  forbids, so G2 money lessons silently run as Grade 1. This is a grade-fidelity dead band of the
-  class `project_grade-fidelity-dead-band` closed elsewhere — `normalizeObjectiveGrade` is the only
-  sanctioned parser.
-- **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (surfaced by the Task 3 pixel check,
-  carried on HUMAN-CHECKS **#52**): the K screen still shows a "Kindergarten" grade badge, a "1/2"
-  counter, and a "🔢 Count" phase badge, and the instruction is English prose with no read-aloud.
-  **This is the exact class comparison-builder band-gated away in #2b** — the systemic chrome +
-  🔊-replay items below already own the pattern, so this is a small application of a solved fix,
-  not new design. Cheapest item in the section; judge on #52 whether it jumps ahead of 14b.
-
-*(Ordering note: 14b is the highest-value and 14d the cheapest. 14a is what keeps this section from
-being a coin-counter tail — without the census the band has one primitive's worth of demand and no
-evidence about the rest.)*
+  `resolveGradeBand` parses `ctx.gradeContext` prose instead of canonical `ctx.grade`, so G2 money
+  lessons silently run as Grade 1. Re-check after 14e; the generator-local fallback may still fail.
+- **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (HUMAN-CHECKS **#52**). The K screen
+  still shows grade/counter/phase badges and an English instruction with no replay. This is the
+  comparison-builder #2b class and remains the cheapest residual, not Grade-1 demand.
 
 ### 2b. comparison-builder @ PRE — ✅ FULLY RESOLVED 2026-07-20 (head 07-14/07-16 + tail 07-20)
 Scaffold P1–P3 + component P1 (compare_groups tap-the-side) shipped 07-14; the three
