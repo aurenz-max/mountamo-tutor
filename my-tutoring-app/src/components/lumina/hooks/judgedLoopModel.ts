@@ -269,7 +269,49 @@ export type LoopEmission =
       text: string;
     }
   | { kind: 'unanchored-verdict'; judgment: 'affirmed' | 'corrected' }
-  | { kind: 'resync'; misses: number };
+  | { kind: 'resync'; misses: number }
+  | {
+      /**
+       * The Live session was RESUMED — a transparent server-side Gemini resume
+       * (GoAway / drop) or a warm client-socket reconnect; both end in the
+       * server's `session_resumed` message, surfaced by the context as
+       * `sessionResumeCount`. Produced by `useJudgedSpeechLoop`, never by the
+       * reducer; it lives in this union so a consumer's switch stays
+       * exhaustive over one type.
+       *
+       * WHY IT EXISTS (DI BACKLOG item 5, suspect (a)). A resume restores the
+       * CONVERSATION but not the item in flight: the verdict pending when the
+       * old connection died is gone, and nothing re-elicits the item — the
+       * child keeps answering into a session that will never judge them. The
+       * engine stays pedagogy-free — it does NOT resend cue text; the consumer
+       * re-cues its current item (packs share this with their 'resync'
+       * branch). Because a re-cued [DI_ITEM] carries the full item contract,
+       * this also makes the backend's COLD retry (conversation history lost)
+       * safe for DI.
+       */
+      kind: 'session-resumed';
+    }
+  | {
+      /**
+       * Consecutive cues went out and the tutor NEVER made a sound — no audio
+       * rise and no output transcription within CUE_DEAD_MS of each send. The
+       * session behind the socket is dead (a mid-attempt GoAway whose resume
+       * restored nothing, or a wedged generation): re-cueing into it is not
+       * recovery. Detection is cue→tutor-AUDIO liveness, never cue→verdict —
+       * child think-time is unbounded (35.9s observed benign) and must never
+       * trip this.
+       *
+       * Hook-produced (only the runtime owns the clocks). Consumers respond by
+       * reconnecting the transport (ctx.reconnect(), warm via the stashed
+       * handle); the session_resumed that follows converges on
+       * 'session-resumed' → re-cue. If the silence continues, another emission
+       * follows after each further SESSION_DEAD_CUES × CUE_DEAD_MS, so a
+       * failed recovery surfaces as a second emission — packs escalate to a
+       * visible recovery card, never a silent "Listening…".
+       */
+      kind: 'session-dead';
+      deadCues: number;
+    };
 
 export interface JudgedLoopStep {
   state: JudgedLoopState;

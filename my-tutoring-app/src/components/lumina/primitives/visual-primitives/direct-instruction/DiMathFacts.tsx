@@ -80,6 +80,9 @@ import {
   pushFailedVerdict,
   type DiFailedVerdict,
 } from './diDiagnosisEvidence';
+import { DiStallCard } from './DiStallCard';
+import { useDiStallRecovery } from './useDiStallRecovery';
+import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 
 export type { DiMathFactsChallenge, DiMathFactsChallengeType } from './diMathFactsScript';
 
@@ -249,6 +252,26 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     () => data.challenges[idxRef.current] ?? null,
     [data.challenges],
   );
+
+  // ── Session-liveness recovery (BACKLOG item 5) ───────────────────
+  // The engine detects a dead session (cues out, tutor silent) and emits
+  // session-dead; this hook reconnects warm and, when recovery fails, flips
+  // `stalled` so the stage renders DiStallCard instead of a silent Listening….
+  const {
+    stalled,
+    noteDead: noteSessionDead,
+    noteResumed: noteSessionResumed,
+    retry: retryStall,
+    reset: resetStall,
+  } = useDiStallRecovery({
+    running,
+    currentItemId: () => currentOf()?.id ?? null,
+    onStatus: setStatusLine,
+  });
+
+  // (iii-a) Standalone tester path: close the session once the run is truly
+  // over (recap sent + played), removing the post-run GoAway-flap trigger.
+  const postRun = useDiPostRunDisconnect({ done: phase === 'done', weConnectedRef });
 
   // ── The reward beat ──────────────────────────────────────────────
   // A resolved fact does NOT advance the stage on the spot. The child answers,
@@ -539,7 +562,12 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
           }
           return;
         }
-        case 'resync':
+        case 'session-resumed':
+        case 'resync': {
+          // A resume restored the SESSION but not the item in flight — the
+          // pending verdict died with the old connection (item 5 suspect (a)).
+          // Recover exactly like a resync: re-cue the current item verbatim.
+          if (emission.kind === 'session-resumed') noteSessionResumed();
           // Mid-beat, the next fact's cue is ALREADY queued by applyVerdict —
           // re-cueing here would fight it. Just settle the beat.
           if (pendingAdvanceRef.current) {
@@ -552,11 +580,18 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
             if (item) loopRef.current.queueCue(itemCue(item));
           }
           return;
+        }
+        case 'session-dead':
+          // Ladder level 2: cues were going out and the tutor was proven
+          // silent — re-cueing into a dead session is not recovery. Reconnect
+          // warm; success converges on the 'session-resumed' branch above.
+          noteSessionDead();
+          return;
         default:
           return;
       }
     },
-    [applyVerdict, commitAdvance, currentOf],
+    [applyVerdict, commitAdvance, currentOf, noteSessionDead, noteSessionResumed],
   );
 
   const loop = useJudgedSpeechLoop({
@@ -569,7 +604,11 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     // a missed sentinel) and none of the floors data that explains a split turn.
     onTutorText: (text) => logDiTutorText(text, logCtx()),
     onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
-    onCue: (event) => logDiCue(event, logCtx()),
+    onCue: (event) => {
+      logDiCue(event, logCtx());
+      // (iii-a): lets the post-run disconnect see the closing cue go out.
+      postRun.noteCue(event);
+    },
   });
   loopRef.current = loop;
 
@@ -658,6 +697,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
     pendingAdvanceRef.current = false;
     clearAdvanceTimer();
     setReward(null);
+    resetStall();
     loop.reset();
     // Fresh diagnostics timeline for this run (diagnostics only).
     startDiRunLog({
@@ -676,7 +716,7 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
       itemId: first.id,
       itemDisplay: first.display,
     });
-  }, [clearAdvanceTimer, data.challenges, data.challengeType, data.gradeLevel, loop]);
+  }, [clearAdvanceTimer, data.challenges, data.challengeType, data.gradeLevel, loop, resetStall]);
 
   // Unmount cleanup — never leave Live holding the mic or an open turn.
   useEffect(() => () => {
@@ -727,7 +767,13 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
             put two facts on screen at once — overload at this age (user browser
             check 2026-07-25). The completed form is value-captured `reward`,
             never derived from currentChallenge. No timer, ever. */}
-        {!isComplete && currentChallenge && (
+        {/* Level-3 stall: the session died and recovery failed. The card takes
+            the stage's place — visible state, never a silent "Listening…". */}
+        {!isComplete && currentChallenge && stalled && (
+          <DiStallCard onRetry={retryStall} />
+        )}
+
+        {!isComplete && currentChallenge && !stalled && (
           <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             {reward && phase === 'affirmed' ? (
               <div

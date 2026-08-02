@@ -107,10 +107,15 @@ describe('judgedLoopModel fuzz — attempt ledger + emission invariants under ra
           expect(emissions, explain(seed, step, `disarmed loop emitted ${emissions.map((e) => e.kind).join(',')}`)).toEqual([]);
         }
 
-        // The reducer never emits verdict-text (that is the hook's channel).
+        // The reducer never emits the hook-owned kinds: verdict-text (turn
+        // completion is runtime knowledge) and session-resumed / session-dead
+        // (the item-5 liveness ladder lives in the hook's clocks — the reducer
+        // stays fuzz-clean and untouched by design).
+        const hookOnly = emissions.filter((e) =>
+          e.kind === 'verdict-text' || e.kind === 'session-resumed' || e.kind === 'session-dead');
         expect(
-          emissions.some((e) => e.kind === 'verdict-text'),
-          explain(seed, step, 'reducer emitted verdict-text'),
+          hookOnly.length > 0,
+          explain(seed, step, `reducer emitted hook-owned kind(s): ${hookOnly.map((e) => e.kind).join(',')}`),
         ).toBe(false);
 
         for (let i = 0; i < emissions.length; i++) {

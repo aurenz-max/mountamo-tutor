@@ -43,14 +43,16 @@ export type DiRunSpeaker = 'learner' | 'tutor' | 'judge' | 'stage';
  * coherent; any of them is a lead, and the first four were previously invisible.
  */
 export type DiRunFlag =
-  | 'unanchored'   // verdict with no voice-anchored attempt (DI-1)
-  | 'superseded'   // attempt replaced before its verdict (silenceCloseMs class)
-  | 'phantom'      // transcript with no open attempt
-  | 'no-verdict'   // judge never took a branch before the timeout
-  | 'off-script'   // tutor spoke at quiet without taking a branch
-  | 'resync'       // engine re-cued after N misses
-  | 'move-on'      // correction cap hit — never once observed live before
-  | 'retro';       // verdict rebuilt from an unanchored trace (turn detection is marginal)
+  | 'unanchored'       // verdict with no voice-anchored attempt (DI-1)
+  | 'superseded'       // attempt replaced before its verdict (silenceCloseMs class)
+  | 'phantom'          // transcript with no open attempt
+  | 'no-verdict'       // judge never took a branch before the timeout
+  | 'off-script'       // tutor spoke at quiet without taking a branch
+  | 'resync'           // engine re-cued after N misses
+  | 'move-on'          // correction cap hit — never once observed live before
+  | 'retro'            // verdict rebuilt from an unanchored trace (turn detection is marginal)
+  | 'session-dead'     // cues going out, tutor proven silent — the mid-run stall, caught live (item 5)
+  | 'session-resumed'; // transport resumed; the pack re-cues the item in flight
 
 export interface DiRunEvent {
   seq: number;
@@ -121,6 +123,13 @@ export interface DiRunCounters {
   /** Cues composed but never spoken (`queued − sent − dropped`). Non-zero means
    *  the surface stopped driving the tutor — the stall signature. */
   cuesStalled: number;
+  /** Sent cues the tutor never reacted to within the liveness window — the
+   *  OTHER stall signature: the surface kept driving, the tutor was dead. */
+  cuesDead: number;
+  /** session-dead emissions (ladder level 2 fired). */
+  sessionDeads: number;
+  /** session-resumed emissions (transport resumes the pack re-cued over). */
+  sessionResumes: number;
   meanResponseMs: number | null;
   meanCommitLagMs: number | null;
 }
@@ -310,6 +319,31 @@ export function logDiEmission(emission: LoopEmission, ctx: DiRunItemContext = {}
       });
       return;
 
+    case 'session-resumed':
+      // The transport resumed (server GoAway/drop resume or warm client
+      // reconnect). The resume restored the conversation, not the item in
+      // flight — the pack re-cues it on this signal (BACKLOG item 5 fix (i)).
+      push({
+        ...base,
+        speaker: 'stage',
+        kind: emission.kind,
+        text: 'session resumed — re-cueing the item in flight',
+        flag: 'session-resumed',
+      });
+      return;
+
+    case 'session-dead':
+      // The ladder's level-2 detection: cues went out and the tutor was proven
+      // silent. Paired in the timeline with the cue-dead events that built it.
+      push({
+        ...base,
+        speaker: 'stage',
+        kind: emission.kind,
+        text: `session dead: ${emission.deadCues} consecutive cues with no tutor audio or text`,
+        flag: 'session-dead',
+      });
+      return;
+
     default:
       return;
   }
@@ -339,6 +373,8 @@ const summarizeCue = (text: string): string => {
  * never spoken — which from outside is indistinguishable from a verdict that
  * never fired, and was the ambiguity at the centre of the 2026-07-25 sitting.
  * `blocked` alone is normal (the cue waits for the next release edge).
+ * `dead` sits outside the ledger arithmetic: the cue WAS spoken to a session
+ * that never reacted (liveness window elapsed) — the item-5 stall signature.
  */
 export function logDiCue(event: CueLogEvent, ctx: DiRunItemContext = {}): void {
   push({
@@ -418,6 +454,12 @@ export function deriveDiRunCounters(timeline: readonly DiRunEvent[]): DiRunCount
     cuesDropped,
     cuesBlocked: countKind('cue-blocked'),
     cuesStalled: Math.max(0, cuesQueued - cuesSent - cuesDropped),
+    // By KIND, not flag: the recovery hook's stage lines (stall-reconnect,
+    // stall) share the session-dead FLAG for grep-ability, which double-counted
+    // the first live episode (2026-08-01 drive read sessionDeads: 2 for one).
+    cuesDead: countKind('cue-dead'),
+    sessionDeads: countKind('session-dead'),
+    sessionResumes: countKind('session-resumed'),
     meanResponseMs: mean(
       timeline.map((e) => e.responseMs).filter((v): v is number => typeof v === 'number'),
     ),

@@ -165,8 +165,10 @@ async def verify_firebase_token(
             )
             raise HTTPException(status_code=401, detail="Invalid token format")
         
-        # Verify with Firebase
-        decoded_token = auth.verify_id_token(token)
+        # Verify with Firebase. clock_skew_seconds tolerates a freshly-minted
+        # token whose iat sits ~1s ahead of this server's clock ("Token used
+        # too early" otherwise 401s a valid request).
+        decoded_token = auth.verify_id_token(token, clock_skew_seconds=10)
         
         # Additional security checks
         current_time = datetime.utcnow().timestamp()

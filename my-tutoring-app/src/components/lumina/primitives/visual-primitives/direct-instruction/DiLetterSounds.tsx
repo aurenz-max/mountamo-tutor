@@ -35,6 +35,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import {
+  flushDiRunLog,
   logDiCue,
   logDiEmission,
   logDiStage,
@@ -42,6 +43,7 @@ import {
   logDiVoiceClose,
   startDiRunLog,
 } from './diRunLog';
+import { mintRunId, setClientRunId } from '../../../service/clientRunId';
 import {
   completeCue,
   itemCue,
@@ -55,6 +57,9 @@ import {
   pushFailedVerdict,
   type DiFailedVerdict,
 } from './diDiagnosisEvidence';
+import { DiStallCard } from './DiStallCard';
+import { useDiStallRecovery } from './useDiStallRecovery';
+import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 
 export type { DiLetterSoundChallenge, DiLetterSoundChallengeType } from './diLetterSoundsScript';
 
@@ -195,6 +200,26 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     [data.challenges],
   );
 
+  // ── Session-liveness recovery (BACKLOG item 5) ───────────────────
+  // The engine detects a dead session (cues out, tutor silent) and emits
+  // session-dead; this hook reconnects warm and, when recovery fails, flips
+  // `stalled` so the stage renders DiStallCard instead of a silent Listening….
+  const {
+    stalled,
+    noteDead: noteSessionDead,
+    noteResumed: noteSessionResumed,
+    retry: retryStall,
+    reset: resetStall,
+  } = useDiStallRecovery({
+    running,
+    currentItemId: () => currentOf()?.id ?? null,
+    onStatus: setStatusLine,
+  });
+
+  // (iii-a) Standalone tester path: close the session once the run is truly
+  // over (recap sent + played), removing the post-run GoAway-flap trigger.
+  const postRun = useDiPostRunDisconnect({ done: phase === 'done', weConnectedRef });
+
   const finishAndSubmit = useCallback(() => {
     if (submittedRef.current) return;
     submittedRef.current = true;
@@ -238,6 +263,14 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     setRunning(false);
     setPhase('done');
     setStatusLine('Great work today!');
+    // Diagnosis telemetry: mark run end and upload the run log so the artifact
+    // exists without a human Copy click. Fire-and-forget — never gates the UI.
+    logDiStage('run-end', 'run complete — submitting + flushing run log');
+    void flushDiRunLog('run-end');
+    // The [DI_COMPLETE] cue and its audio land seconds after submit; re-flush
+    // once so the artifact carries the tail (deduped away if nothing changed —
+    // the smoke run's spurious cuesStalled:1 was this truncation).
+    setTimeout(() => void flushDiRunLog('run-end-tail'), 6000);
   }, [data.challenges.length, data.challengeType, evaluation]);
 
   // ── DI progression over an engine verdict ────────────────────────
@@ -382,18 +415,30 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
           }
           return;
         }
-        case 'resync':
+        case 'session-resumed':
+        case 'resync': {
+          // A resume restored the SESSION but not the item in flight — the
+          // pending verdict died with the old connection (item 5 suspect (a)).
+          // Recover exactly like a resync: re-cue the current item verbatim.
+          if (emission.kind === 'session-resumed') noteSessionResumed();
           setStatusLine('Let’s try that sound again.');
           if (loopRef.current) {
             const item = currentOf();
             if (item) loopRef.current.queueCue(itemCue(item));
           }
           return;
+        }
+        case 'session-dead':
+          // Ladder level 2: cues were going out and the tutor was proven
+          // silent — re-cueing into a dead session is not recovery. Reconnect
+          // warm; success converges on the 'session-resumed' branch above.
+          noteSessionDead();
+          return;
         default:
           return;
       }
     },
-    [applyVerdict, currentOf],
+    [applyVerdict, currentOf, noteSessionDead, noteSessionResumed],
   );
 
   const loop = useJudgedSpeechLoop({
@@ -406,7 +451,11 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     // none of the floors data that explains an echo-opened turn.
     onTutorText: (text) => logDiTutorText(text, logCtx()),
     onVoiceTurnClose: (event) => logDiVoiceClose(event, logCtx()),
-    onCue: (event) => logDiCue(event, logCtx()),
+    onCue: (event) => {
+      logDiCue(event, logCtx());
+      // (iii-a): lets the post-run disconnect see the closing cue go out.
+      postRun.noteCue(event);
+    },
   });
   loopRef.current = loop;
 
@@ -415,6 +464,10 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     if (preparing) return;
     setPreparing(true);
     setStatusLine('Getting ready…');
+    // Register the upcoming run's id BEFORE connect so the WS auth message
+    // carries it as client_run_id — the server-ledger correlation key.
+    // startDiRunLog claims this same id when the run arms.
+    setClientRunId(mintRunId());
     try {
       // Only self-connect from a standalone/idle context. In a lesson the
       // shared session owns the connection and is already opened with the DI
@@ -484,6 +537,7 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
     failedVerdictsRef.current = [];
     awaitingJudgeTextRef.current = false;
     submittedRef.current = false;
+    resetStall();
     loop.reset();
     // Fresh diagnostics timeline for this run (diagnostics only).
     startDiRunLog({
@@ -502,12 +556,15 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
       itemId: first.id,
       itemDisplay: first.letter ?? first.keyword,
     });
-  }, [data.challenges, data.challengeType, data.gradeLevel, loop]);
+  }, [data.challenges, data.challengeType, data.gradeLevel, loop, resetStall]);
 
   // Unmount cleanup — never leave Live holding the mic or an open turn.
   useEffect(() => () => {
     ctx.stopListening();
     if (weConnectedRef.current) ctx.disconnect();
+    // Diagnosis telemetry: an abandoned or broken run still leaves its record
+    // (deduped against the run-end flush by (runId, seq)).
+    void flushDiRunLog('teardown');
     // Context methods are stable; unmount-only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -546,7 +603,13 @@ export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
             picture. first_sound_in_word isolates the onset of a spoken WORD, so
             it shows the picture + the WORD (never the lone grapheme — that would
             leak the answer the child is meant to hear out of the word). */}
-        {!isComplete && currentChallenge && (
+        {/* Level-3 stall: the session died and recovery failed. The card takes
+            the stage's place — visible state, never a silent "Listening…". */}
+        {!isComplete && currentChallenge && stalled && (
+          <DiStallCard onRetry={retryStall} />
+        )}
+
+        {!isComplete && currentChallenge && !stalled && (
           <div className="mb-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
             <div className="text-8xl leading-none" aria-hidden="true">{currentChallenge.emoji}</div>
             {currentChallenge.challengeType === 'first_sound_in_word' ? (

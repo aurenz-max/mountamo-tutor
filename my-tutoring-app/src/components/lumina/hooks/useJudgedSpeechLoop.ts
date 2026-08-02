@@ -43,6 +43,20 @@ const VERIFY_BEAT_MS = 400;
 const PENDING_CUE_MAX_WAIT_MS = 5000;
 /** Verdict-timeout scan cadence. */
 const TICK_MS = 1000;
+/**
+ * Session-liveness ladder, level 2 (DI BACKLOG item 5). After a cue is SENT,
+ * the tutor always speaks — model line, guide line, or a test lead-in (even
+ * `hard` cold reads say "Your turn. Read it."). So the liveness signal is
+ * cue→tutor-AUDIO (or output transcription), never cue→verdict: child
+ * think-time is unbounded (35.9s observed, benign) and a cue→verdict watchdog
+ * would false-trigger on every long think. If nothing from the tutor arrives
+ * within this window the cue is counted DEAD. Hook-level const by design —
+ * promote to config only if a pack ever needs to differ.
+ */
+const CUE_DEAD_MS = 10_000;
+/** Consecutive dead cues (~20s of proven tutor silence while cues go out) that
+ *  make the session DEAD → `session-dead` emission. */
+const SESSION_DEAD_CUES = 2;
 
 /**
  * A cue's journey through the verify beat. DIAGNOSTICS ONLY — nothing in the
@@ -56,7 +70,11 @@ const TICK_MS = 1000;
  * signal is a `queued` with no matching `sent`, not a `blocked` by itself.
  */
 export interface CueLogEvent {
-  phase: 'queued' | 'sent' | 'blocked' | 'dropped';
+  /** 'dead' = the cue was sent and the tutor produced NOTHING (no audio rise,
+   *  no transcription) within CUE_DEAD_MS — one rung of the session-liveness
+   *  ladder. Diagnostics like the rest: it does not consume a 'queued', so the
+   *  `queued − sent − dropped` ledger arithmetic is unaffected. */
+  phase: 'queued' | 'sent' | 'blocked' | 'dropped' | 'dead';
   /** The cue text, verbatim. Consumers are expected to truncate for display. */
   text: string;
   /** On 'blocked': which gate held it. */
@@ -128,6 +146,13 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   const pendingCueRef = useRef<string | null>(null);
   const cueTimerRef = useRef<number | null>(null);
   const cueFallbackTimerRef = useRef<number | null>(null);
+  // ── Session-liveness ladder state (DI BACKLOG item 5) ─────────────────────
+  const deadCueTimerRef = useRef<number | null>(null);
+  const deadCueCountRef = useRef(0);
+  const lastSentCueRef = useRef<string | null>(null);
+  /** Baseline for the resume signal; null until the mount effect seeds it so a
+   *  resume that predates this run never re-fires into it. */
+  const lastResumeCountRef = useRef<number | null>(null);
 
   // ── The tutor's judging line, captured whole ───────────────────────────────
   // The reducer classifies a verdict from the sentinel OPENER, so it fires on
@@ -160,6 +185,51 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     if (cueFallbackTimerRef.current != null) { window.clearTimeout(cueFallbackTimerRef.current); cueFallbackTimerRef.current = null; }
   }, []);
 
+  /** Stop the dead-cue watch. Called on every tutor-liveness signal (audio
+   *  rise, output transcription), on resume, and on disable/reset. */
+  const clearDeadCueWatch = useCallback((resetCount: boolean) => {
+    if (deadCueTimerRef.current != null) {
+      window.clearTimeout(deadCueTimerRef.current);
+      deadCueTimerRef.current = null;
+    }
+    if (resetCount) deadCueCountRef.current = 0;
+  }, []);
+
+  /**
+   * Start (or restart) the dead-cue watch after a cue is SENT. If the tutor
+   * shows no life within CUE_DEAD_MS the cue is counted dead (reported through
+   * the cue channel as phase 'dead'); at SESSION_DEAD_CUES consecutive dead
+   * cues a `session-dead` emission fires and the count restarts, so continued
+   * silence — i.e. a recovery that didn't recover — produces a SECOND emission
+   * for the consumer to escalate on. The timer self-restarts because the dead
+   * scenario is precisely the one where no further cue may ever be sent (a
+   * child waiting on a tutor that will never speak sends nothing).
+   */
+  const armDeadCueWatch = useCallback((cueText: string) => {
+    // No enabled gate HERE: a run's OPENER is sent in the same synchronous
+    // frame as setRunning(true), before that render commits, so an
+    // enabled-check at arm time reads stale `false` and skips the one cue a
+    // from-birth-dead session ever sends (found live 2026-07-31 — the fault
+    // drive stalled and the ladder slept). The deadline callback below checks
+    // `enabled` at FIRE time (≥10s later, long since committed), which also
+    // keeps the run-end closing cue from counting dead after disable.
+    lastSentCueRef.current = cueText;
+    if (deadCueTimerRef.current != null) window.clearTimeout(deadCueTimerRef.current);
+    const onDeadline = () => {
+      deadCueTimerRef.current = null;
+      if (!callbacksRef.current.enabled) return;
+      deadCueCountRef.current += 1;
+      callbacksRef.current.onCue?.({ phase: 'dead', text: lastSentCueRef.current ?? '' });
+      if (deadCueCountRef.current >= SESSION_DEAD_CUES) {
+        const deadCues = deadCueCountRef.current;
+        deadCueCountRef.current = 0;
+        callbacksRef.current.onEmission?.({ kind: 'session-dead', deadCues });
+      }
+      deadCueTimerRef.current = window.setTimeout(onDeadline, CUE_DEAD_MS);
+    };
+    deadCueTimerRef.current = window.setTimeout(onDeadline, CUE_DEAD_MS);
+  }, []);
+
   // Declared before the voice hook so its close callback can trigger cue
   // release; reads all gating state through refs, so ordering is safe.
   const voiceActiveRef = useRef<() => boolean>(() => false);
@@ -188,9 +258,10 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       if (cue) {
         ctx.sendText(cue, { silent: true });
         callbacksRef.current.onCue?.({ phase: 'sent', text: cue });
+        armDeadCueWatch(cue);
       }
     }, VERIFY_BEAT_MS);
-  }, [ctx]);
+  }, [armDeadCueWatch, ctx]);
 
   const dispatch = useCallback((event: LoopEvent) => {
     const step = reduceJudgedLoop(loopStateRef.current, event, configRef.current);
@@ -249,6 +320,9 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       if (message.role === 'user') {
         dispatch({ type: 'transcript', text: message.content, at: now });
       } else {
+        // Tutor output of any kind is session liveness — the dead-cue watch
+        // asks "did the tutor react to the cue at all", not "did it judge".
+        clearDeadCueWatch(true);
         callbacksRef.current.onTutorText?.(message.content);
         // Extend an open judging line BEFORE dispatching, so the chunk that
         // triggered the verdict isn't counted twice: at that point nothing is
@@ -266,13 +340,16 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
         dispatch({ type: 'tutor-text', text: message.content, at: now });
       }
     }
-  }, [ctx.conversation, enabled, dispatch]);
+  }, [ctx.conversation, enabled, dispatch, clearDeadCueWatch]);
 
   // Tutor audio falling edge: the response clock + the off-script gate + a
-  // cue release edge.
+  // cue release edge. The RISING edge is the primary liveness signal for the
+  // dead-cue watch: the tutor started saying something, so the session behind
+  // the socket is alive.
   useEffect(() => {
     const wasPlaying = previousAudioPlayingRef.current;
     previousAudioPlayingRef.current = ctx.isAudioPlaying;
+    if (!wasPlaying && ctx.isAudioPlaying) clearDeadCueWatch(true);
     if (wasPlaying && !ctx.isAudioPlaying) {
       // The tutor stopped talking: its judging line is complete. Emit it
       // BEFORE the quiet dispatch, so the order a consumer sees is always
@@ -281,7 +358,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       if (enabled) dispatch({ type: 'tutor-quiet', at: performance.now() });
       schedulePendingCue();
     }
-  }, [ctx.isAudioPlaying, enabled, dispatch, flushJudgeText, schedulePendingCue]);
+  }, [ctx.isAudioPlaying, enabled, dispatch, flushJudgeText, schedulePendingCue, clearDeadCueWatch]);
 
   // Verdict-timeout scan while an attempt is pending.
   useEffect(() => {
@@ -292,6 +369,27 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     return () => window.clearInterval(interval);
   }, [enabled, dispatch]);
 
+  // Resume signal (DI BACKLOG item 5, fix (i)): the context bumps
+  // sessionResumeCount for every transparent server-side resume AND every warm
+  // client-socket reconnect (both end in the server's session_resumed). The
+  // resume restored the conversation, not the item in flight — surface it so
+  // the consumer can re-cue. The baseline seeds silently (a resume that
+  // happened before this run started is not this run's business) and keeps
+  // tracking while disabled so enabling never replays a stale resume.
+  const resumeCount = ctx.sessionResumeCount ?? 0;
+  useEffect(() => {
+    if (lastResumeCountRef.current === null || resumeCount === lastResumeCountRef.current) {
+      lastResumeCountRef.current = resumeCount;
+      return;
+    }
+    lastResumeCountRef.current = resumeCount;
+    if (!callbacksRef.current.enabled) return;
+    // Fresh connection, fresh liveness slate: the re-cue this triggers re-arms
+    // the dead-cue watch, which is what catches a resume into a dead session.
+    clearDeadCueWatch(true);
+    callbacksRef.current.onEmission?.({ kind: 'session-resumed' });
+  }, [resumeCount, clearDeadCueWatch]);
+
   // Disable → disarm (the voice hook closes its own turn). A queued cue is
   // deliberately NOT dropped: consumers queue their closing line ("run
   // complete") and then disable, and that line must still fire after the
@@ -299,7 +397,8 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     if (enabled) return;
     dispatch({ type: 'disarm' });
-  }, [enabled, dispatch]);
+    clearDeadCueWatch(true);
+  }, [enabled, dispatch, clearDeadCueWatch]);
 
   const clearQueuedCue = useCallback(() => {
     if (pendingCueRef.current != null) {
@@ -338,7 +437,8 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     // makes `queued − sent − dropped > 0` a clean read of "a cue stalled".
     callbacksRef.current.onCue?.({ phase: 'queued', text });
     callbacksRef.current.onCue?.({ phase: 'sent', text });
-  }, [clearCueTimers, ctx]);
+    armDeadCueWatch(text);
+  }, [armDeadCueWatch, clearCueTimers, ctx]);
 
   const arm = useCallback(() => dispatch({ type: 'arm' }), [dispatch]);
   const disarm = useCallback(() => dispatch({ type: 'disarm' }), [dispatch]);
@@ -350,12 +450,16 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     pendingJudgeRef.current = null;
     pendingCueRef.current = null;
     clearCueTimers();
+    clearDeadCueWatch(true);
     conversationIndexRef.current = ctx.conversation.length;
   // voiceTurns is a fresh object each render but reset/refs are stable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearCueTimers, ctx, voiceTurns.reset]);
+  }, [clearCueTimers, clearDeadCueWatch, ctx, voiceTurns.reset]);
 
-  useEffect(() => () => clearCueTimers(), [clearCueTimers]);
+  useEffect(() => () => {
+    clearCueTimers();
+    clearDeadCueWatch(true);
+  }, [clearCueTimers, clearDeadCueWatch]);
 
   return {
     voiceTurns,

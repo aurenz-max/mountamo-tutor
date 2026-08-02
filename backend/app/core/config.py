@@ -9,6 +9,27 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Tutor"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
+
+    # Deployment environment marker. Dev-only affordances (fault injection)
+    # refuse to arm unless this explicitly says dev — defaulting to production
+    # keeps them impossible to trip by setting a single stray env var.
+    ENVIRONMENT: str = Field(default="production", env="ENVIRONMENT")
+
+    # Fault injection for the Lumina tutor transport (DI BACKLOG item 5's
+    # verification path — dev ONLY, gated on ENVIRONMENT above). When > 0, the
+    # first cue-classified client text of a session arms a mute: model output
+    # (audio + transcription + text) is dropped for this many seconds, which
+    # reproduces the mid-run "dead session behind a silent Listening…" stall so
+    # the client's liveness ladder can be exercised without a human sitting.
+    # NEVER persist this in .env — the arming site (lumina_tutor.py) refuses
+    # values that aren't in the PROCESS environment, so it can only be armed
+    # shell-scoped for a single run ($env:LUMINA_FAULT_MUTE_S='25'; uvicorn …).
+    LUMINA_FAULT_MUTE_S: int = Field(default=0, env="LUMINA_FAULT_MUTE_S")
+    # How many sessions (one mute episode each) the fault arms for before going
+    # inert, counted per server process. 1 = stall once, recovery's reconnect
+    # gets a healthy session (ladder level 2 must END COHERENT); 2 = the
+    # reconnected session stalls too (ladder must reach the level-3 card).
+    LUMINA_FAULT_MUTE_EPISODES: int = Field(default=1, env="LUMINA_FAULT_MUTE_EPISODES")
     
     # Database settings
     DATABASE_URL: str = "sqlite:///./ai_tutor.db"

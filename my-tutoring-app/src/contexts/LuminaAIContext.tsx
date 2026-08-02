@@ -105,6 +105,15 @@ interface LuminaAIContextType {
   /** Machine-readable cause of the last unexpected end (e.g.
    *  'gemini_session_closed', 'disconnected'), or null while connected. */
   sessionEndedReason: string | null;
+  /** Monotonically increasing count of session RESUMES — bumped on every
+   *  server `session_resumed`, which covers both transparent server-side
+   *  Gemini resumes (GoAway / drop) and warm client-socket reconnects (the
+   *  auth-supplied resumption handle makes the backend's first Gemini connect
+   *  a resume too). A counter, not a callback: consumers effect-key on it, so
+   *  a resume across an unmount/remount isn't lost. A resume restores the
+   *  CONVERSATION, never the work in flight — consumers that had cued
+   *  something re-cue it when this changes (DI BACKLOG item 5, fix (i)). */
+  sessionResumeCount: number;
   /** Synchronous flag (ref) that a lesson session owns this provider. Primitives
    *  read it to suppress their standalone auto-connect and avoid racing it. */
   lessonModeRef: React.MutableRefObject<boolean>;
@@ -215,6 +224,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // reconnect instead of sitting on a perpetual "Connecting…".
   const [sessionEnded, setSessionEnded] = useState(false);
   const [sessionEndedReason, setSessionEndedReason] = useState<string | null>(null);
+  // Consumer-visible resume signal — see LuminaAIContextType.sessionResumeCount.
+  const [sessionResumeCount, setSessionResumeCount] = useState(0);
 
   // Session mode and active primitive tracking
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
@@ -375,9 +386,14 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setIsAIResponding(false);
         } else if (messageType === 'session_resumed') {
           // Transparent server-side resume completed; conversation continues.
+          // Also arrives when a warm client-socket reconnect lands (the
+          // backend treats the auth-supplied handle as a resume), so this ONE
+          // branch is the signal for both resume shapes. The bump is what lets
+          // consumers re-cue work whose response died with the old connection.
           console.log('Lumina AI resumed:', message.message);
           setSessionEnded(false);
           setSessionEndedReason(null);
+          setSessionResumeCount((count) => count + 1);
         } else if (messageType === 'session_ended') {
           // Server told us the Gemini session ended (usually the Live duration
           // limit). The socket close follows; flag it now so the UI flips to the
@@ -968,6 +984,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     sessionMode,
     sessionEnded,
     sessionEndedReason,
+    sessionResumeCount,
     lessonModeRef,
     activePrimitiveId,
     activePrimitiveType,

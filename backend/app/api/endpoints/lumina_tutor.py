@@ -3,6 +3,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import asyncio
 import json
 import logging
+import os
+import time
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 import traceback
@@ -48,6 +50,59 @@ CHANNELS = 1
 
 # Router setup
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Fault injection — DI BACKLOG item 5's dev-only verification path.
+#
+# With LUMINA_FAULT_MUTE_S > 0 (and ENVIRONMENT explicitly dev), the FIRST
+# cue-classified client text of a session arms a mute window: model output
+# (audio, output transcription, text) is dropped on the way to the client for
+# that many seconds. The session is otherwise fully live — Gemini still hears
+# and responds — which is exactly the observed stall shape: a dead tutor
+# behind a healthy socket and a silent "Listening…". One-shot per session;
+# LUMINA_FAULT_MUTE_EPISODES caps how many sessions arm per server process
+# (1 = the reconnect after ladder level 2 gets a healthy session; 2 = the
+# reconnected session stalls too, forcing the level-3 recovery card).
+#
+# GENERIC by design: arming keys off classify_cue(text) != "text" (any
+# bracket-tag cue), never off DI content — transport behavior must not branch
+# on DI semantics.
+#
+# PERSISTENCE GUARD: the flag must arrive in the PROCESS environment (a
+# shell-scoped var that dies with the shell). Settings load backend/.env via
+# pydantic WITHOUT touching os.environ, so a value that reaches settings but
+# not os.environ was persisted in .env — the form that silently mutes the
+# first session of every future backend boot. That form is refused, loudly.
+# ---------------------------------------------------------------------------
+_FAULT_MUTE_SESSIONS_ARMED = {"count": 0}
+_FAULT_MUTE_REFUSAL_LOGGED = {"done": False}
+
+
+def _fault_mute_allowed() -> bool:
+    """The fault refuses to arm unless settings explicitly say dev AND the
+    flag was passed shell-scoped (see PERSISTENCE GUARD in the docblock)."""
+    try:
+        if int(getattr(settings, "LUMINA_FAULT_MUTE_S", 0) or 0) <= 0:
+            return False
+        if str(getattr(settings, "ENVIRONMENT", "production")).lower() not in (
+            "dev", "development", "local",
+        ):
+            return False
+        if not os.environ.get("LUMINA_FAULT_MUTE_S"):
+            if not _FAULT_MUTE_REFUSAL_LOGGED["done"]:
+                _FAULT_MUTE_REFUSAL_LOGGED["done"] = True
+                logger.error(
+                    "LUMINA_FAULT_MUTE_S is persisted in backend/.env - REFUSING "
+                    "to arm fault injection. Persisted fault flags silently "
+                    "sabotage every future boot; delete the line. To run a fault "
+                    "drive, pass it shell-scoped instead, e.g. PowerShell: "
+                    "$env:LUMINA_FAULT_MUTE_S='25'; uvicorn app.main:app"
+                )
+            return False
+        return True
+    except (TypeError, ValueError):
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -424,7 +479,10 @@ async def lumina_tutor_session(websocket: WebSocket):
         # Authenticate using Firebase
         from firebase_admin import auth
         token = auth_data.get("token", "").replace('Bearer ', '')
-        decoded_token = auth.verify_id_token(token)
+        # clock_skew_seconds: a freshly-minted token can carry iat ~1s ahead of
+        # this server's clock, which hard-fails the whole session ("Token used
+        # too early"). Tolerate small skew instead of dying on it.
+        decoded_token = auth.verify_id_token(token, clock_skew_seconds=10)
         user_id = decoded_token['uid']
         user_email = decoded_token.get('email', 'Unknown')
         logger.info(f"Authentication successful for user {user_id} ({user_email})")
@@ -575,6 +633,15 @@ async def lumina_tutor_session(websocket: WebSocket):
         stop_event = asyncio.Event()
         # Latest resumption handle from Gemini (mutable holder so closures share it).
         resumption_handle: Dict[str, Optional[str]] = {"value": initial_resumption_handle}
+        # Fault-injection mute window for THIS session (see module docblock).
+        # until=0.0 means never armed; armed once, by the first cue-classified
+        # client text, only when _fault_mute_allowed().
+        fault_mute: Dict[str, float] = {"until": 0.0, "dropped": 0.0}
+        if _fault_mute_allowed():
+            logger.warning(
+                f"LUMINA_FAULT_MUTE_S={settings.LUMINA_FAULT_MUTE_S} is armed-able "
+                f"(ENVIRONMENT={settings.ENVIRONMENT}) — dev fault injection active"
+            )
 
         if True:
             # Send session ready message via the send queue
@@ -816,13 +883,39 @@ async def lumina_tutor_session(websocket: WebSocket):
                         logger.info(f"Sending text to Gemini (end_of_turn={end_of_turn}): {text[:100]}...")
                         await session.send_realtime_input(text=text)
                         logger.info(f"Text sent to Gemini successfully")
+                        text_kind = classify_cue(text)
                         ledger.write(
                             "text-to-gemini",
-                            kind=classify_cue(text),
+                            kind=text_kind,
                             end_of_turn=end_of_turn,
                             chars=len(text),
                             preview=text[:160],
                         )
+
+                        # Fault injection (dev only): the FIRST cue-classified
+                        # text of an eligible session arms the mute window.
+                        # Generic — keys off the bracket-tag class, never DI
+                        # content.
+                        if (
+                            fault_mute["until"] == 0.0
+                            and text_kind != "text"
+                            and _fault_mute_allowed()
+                            and _FAULT_MUTE_SESSIONS_ARMED["count"]
+                                < int(getattr(settings, "LUMINA_FAULT_MUTE_EPISODES", 1) or 1)
+                        ):
+                            _FAULT_MUTE_SESSIONS_ARMED["count"] += 1
+                            fault_mute["until"] = time.monotonic() + settings.LUMINA_FAULT_MUTE_S
+                            logger.warning(
+                                f"FAULT INJECTION: muting model output for "
+                                f"{settings.LUMINA_FAULT_MUTE_S}s (episode "
+                                f"{_FAULT_MUTE_SESSIONS_ARMED['count']})"
+                            )
+                            ledger.write(
+                                "fault-mute-armed",
+                                seconds=settings.LUMINA_FAULT_MUTE_S,
+                                episode=_FAULT_MUTE_SESSIONS_ARMED["count"],
+                                trigger=text_kind,
+                            )
                 except Exception as e:
                     logger.error(f"Error sending text to Gemini: {e}")
                     logger.error(f"Full traceback: {traceback.format_exc()}")
@@ -858,6 +951,19 @@ async def lumina_tutor_session(websocket: WebSocket):
                     we hold a resumption handle — resume the SAME conversation.
                   - 'stop': nothing left to resume (no handle) or terminal error.
                 """
+                def fault_muted() -> bool:
+                    """Dev fault injection: True while the armed mute window is
+                    open — the caller drops this piece of MODEL OUTPUT (audio /
+                    output transcription / text). Everything else (handles,
+                    GoAway, user transcription, turn ends) flows normally."""
+                    if fault_mute["until"] and time.monotonic() < fault_mute["until"]:
+                        fault_mute["dropped"] += 1
+                        return True
+                    if fault_mute["until"] and fault_mute["dropped"]:
+                        ledger.write("fault-mute-expired", dropped=int(fault_mute["dropped"]))
+                        fault_mute["dropped"] = 0.0
+                    return False
+
                 try:
                     turn_count = 0
                     while True:
@@ -932,7 +1038,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
                                                 gemini_logger.info(f"Received text from Gemini: {part.text[:100]}...")
                                                 clean_text = part.text.strip()
-                                                if clean_text:
+                                                if clean_text and not fault_muted():
                                                     logger.info(f"AI text response: {clean_text}")
 
                                                     await ws_send_queue.put({
@@ -944,18 +1050,19 @@ async def lumina_tutor_session(websocket: WebSocket):
                                             if hasattr(part, 'inline_data') and part.inline_data:
                                                 audio_data = getattr(part.inline_data, 'data', None)
                                                 if audio_data:
-                                                    import base64
-                                                    audio_b64 = base64.b64encode(audio_data).decode()
-                                                    logger.debug(f"Sending audio chunk to client ({len(audio_data)} bytes)")
+                                                    if not fault_muted():
+                                                        import base64
+                                                        audio_b64 = base64.b64encode(audio_data).decode()
+                                                        logger.debug(f"Sending audio chunk to client ({len(audio_data)} bytes)")
 
-                                                    await ws_send_queue.put({
-                                                        "type": "ai_audio",
-                                                        "format": "raw-pcm",
-                                                        "sampleRate": RECEIVE_SAMPLE_RATE,
-                                                        "bitsPerSample": 16,
-                                                        "channels": CHANNELS,
-                                                        "data": audio_b64
-                                                    })
+                                                        await ws_send_queue.put({
+                                                            "type": "ai_audio",
+                                                            "format": "raw-pcm",
+                                                            "sampleRate": RECEIVE_SAMPLE_RATE,
+                                                            "bitsPerSample": 16,
+                                                            "channels": CHANNELS,
+                                                            "data": audio_b64
+                                                        })
                                                 else:
                                                     gemini_logger.warning(f"inline_data present but no data: {part.inline_data}")
 
@@ -978,16 +1085,21 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if hasattr(response.server_content, 'output_transcription') and response.server_content.output_transcription:
                                     if hasattr(response.server_content.output_transcription, 'text') and response.server_content.output_transcription.text:
                                         logger.info(f"AI transcription: {response.server_content.output_transcription.text}")
+                                        # Still ledgered when fault-muted: the ledger
+                                        # must show what Gemini SAID while the client
+                                        # heard nothing — that asymmetry IS the
+                                        # induced stall's diagnosable signature.
                                         ledger.write(
                                             "ai-transcript",
                                             turn=turn_count,
                                             text=response.server_content.output_transcription.text,
                                         )
 
-                                        await ws_send_queue.put({
-                                            "type": "ai_transcription",
-                                            "content": response.server_content.output_transcription.text
-                                        })
+                                        if not fault_muted():
+                                            await ws_send_queue.put({
+                                                "type": "ai_transcription",
+                                                "content": response.server_content.output_transcription.text
+                                            })
 
                                 # Check for end of turn
                                 if getattr(response.server_content, 'turn_complete', False) or getattr(response.server_content, 'end_of_turn', False):
