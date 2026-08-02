@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
+import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { PhonemeExplorerData } from "../../primitives/visual-primitives/literacy/PhonemeExplorer";
 import {
@@ -90,6 +90,99 @@ export function phonemeRemediationMoveFor(
 }
 
 const TOTAL_CHALLENGES = 5;
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (ctx.supportTier) — scaffolding WITHDRAWAL, axis 1.
+//
+// THE ONE RULE: the tier never changes WHICH content is drawn. No tier text ever
+// reaches the prompt — the model authors the same phonemes, words, emojis and
+// distractors at every tier — and these scaffold flags are stamped in CODE after
+// the parse, deterministically, per challenge (so a blended plan gets the right
+// flags for each of its modes). What a tier changes is how much on-screen and
+// spoken HELP surrounds that identical item:
+//
+//   1. showExampleWord / showExampleHint (isolate) — the worked-example card
+//      ("🐻 Bear / starts with B"). easy = whole card, medium = card without the
+//      "starts with" sub-label, hard = no card. The phoneme tile is the STIMULUS
+//      and is never withdrawn at any tier.
+//   2. showChoiceEmoji (every mode) — the picture cue on the answer buttons and
+//      on the segment/manipulate target. hard hides it so the student decodes
+//      PRINT. The emoji fields stay in the data (the schema requires them and the
+//      tutor still names words) — this is a RENDER-time withdrawal.
+//   3. showBlendCue (blend) / showOperationDetail (manipulate) — the instruction
+//      furniture: the "Blend these sounds together:" cue with its "+" separators,
+//      and the printed operation description. At hard the tiles read as a cold
+//      sequence and the operation is carried by the tutor's VOICE instead of
+//      print (the neutral replacement line is picked in code — never by asking
+//      the LLM to reword natural language, which desyncs from the answer).
+//   4. readOptionsAloud — the tutor's automatic enumeration of all four options.
+//      Withdrawn at hard so the student reads them; on-demand pronunciation of
+//      the phoneme/word (the primitive's whole point) is never withdrawn.
+//
+// BAND WINS: at K (the pre-reader band) the picture cue IS the pre-reader's
+// access to the option words, so #2 and #4 are never withdrawn there no matter
+// what the tier says. The tier still withdraws #1 and #3 at K — those are worked
+// examples and instruction furniture a pre-reader cannot read anyway.
+// ---------------------------------------------------------------------------
+
+export interface PhonemeSupportScaffold {
+  /** isolate — show the worked-example card at all. Default (absent): shown. */
+  showExampleWord?: boolean;
+  /** isolate — show the "starts with X" sub-label under the example. Default: shown. */
+  showExampleHint?: boolean;
+  /** all modes — show emoji on choice buttons + segment/manipulate target. Default: shown. */
+  showChoiceEmoji?: boolean;
+  /** blend — show the "Blend these sounds together:" cue and "+" separators. Default: shown. */
+  showBlendCue?: boolean;
+  /** manipulate — show the authored operationDescription (vs a neutral line). Default: shown. */
+  showOperationDetail?: boolean;
+  /** tutor — auto-read all four options at challenge start. Default: read. */
+  readOptionsAloud?: boolean;
+}
+
+/** Pre-reader band: the grade key the generator resolved for this lesson. */
+function isPreReaderGradeKey(gradeKey: string): boolean {
+  return gradeKey.trim().toUpperCase() === 'K';
+}
+
+/**
+ * Resolve the scaffold stamps for ONE challenge from its own mode + the tier.
+ * Display/instruction only — never touches the words, phonemes, choices, or the
+ * correct answer. Exported for the support-tier regression suite.
+ */
+export function resolvePhonemeSupportScaffold(
+  mode: PhonemeMode,
+  tier: SupportTier,
+  gradeKey: string,
+): PhonemeSupportScaffold {
+  const hard = tier === 'hard';
+  // Band support composes with the tier and ALWAYS wins.
+  const printOnly = hard && !isPreReaderGradeKey(gradeKey);
+
+  const scaffold: PhonemeSupportScaffold = {
+    showChoiceEmoji: !printOnly,
+    readOptionsAloud: !printOnly,
+  };
+
+  switch (mode) {
+    case 'isolate':
+      scaffold.showExampleWord = !hard;
+      scaffold.showExampleHint = tier === 'easy';
+      break;
+    case 'blend':
+      scaffold.showBlendCue = !hard;
+      break;
+    case 'manipulate':
+      scaffold.showOperationDetail = !hard;
+      break;
+    case 'segment':
+      // segment has no instruction furniture of its own — the target word IS the
+      // stimulus and the options are the answer surface.
+      break;
+  }
+
+  return scaffold;
+}
 
 const SYSTEM_INSTRUCTION =
   "You are an expert K-2 reading specialist designing phoneme awareness activities. " +
@@ -408,8 +501,31 @@ export const generatePhonemeExplorer = async (
     // ── Sequential IDs ───────────────────────────────────────────────
     challenges.forEach((ch, i) => { ch.id = `c${i + 1}`; });
 
+    // ── Within-mode support tier: withdraw on-screen / spoken scaffolding ──
+    //    Applied PER CHALLENGE from that challenge's OWN mode, so a blended plan
+    //    gets the right flags for each item. Gated ONLY on ctx.supportTier being
+    //    present — absent ⇒ no fields stamped ⇒ byte-identical legacy full-help
+    //    render. Never touches words, phonemes, choices, or the answer.
+    const supportTier = ctx.supportTier;
+    if (supportTier) {
+      for (const ch of challenges) {
+        Object.assign(
+          ch,
+          resolvePhonemeSupportScaffold(ch.mode as PhonemeMode, supportTier, gradeKey),
+        );
+      }
+      console.log(
+        `[phoneme-explorer] Support tier "${supportTier}" applied per-challenge `
+        + `(grade ${gradeKey}${isPreReaderGradeKey(gradeKey) ? ', pre-reader band keeps picture cues + read-aloud' : ''}); `
+        + `modes: ${challenges.map((ch) => ch.mode).join(', ')}`,
+      );
+    }
+
     const finalData: PhonemeExplorerData = {
       title: `Sound Safari: ${topic}`,
+      // Tell the live tutor the support level so its reveal latitude matches the
+      // screen (see the SUPPORT TIER reveal-policy directive in the catalog).
+      ...(supportTier ? { supportTier } : {}),
       challenges: challenges as unknown as PhonemeExplorerData['challenges'],
     };
 
@@ -417,6 +533,7 @@ export const generatePhonemeExplorer = async (
       title: finalData.title,
       challengeCount: finalData.challenges.length,
       modes: finalData.challenges.map((ch) => ch.mode),
+      supportTier: finalData.supportTier ?? '(none)',
     });
 
     return finalData;

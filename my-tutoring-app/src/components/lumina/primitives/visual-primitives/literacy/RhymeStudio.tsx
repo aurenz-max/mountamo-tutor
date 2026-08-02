@@ -58,11 +58,29 @@ interface RhymeChallenge {
   options?: RhymeOption[];
   acceptableAnswers?: string[];
   remediationMove?: 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
+
+  // ── Within-mode support-tier scaffolds (stamped by the generator from
+  //    ctx.supportTier). Display / instruction / tutor-latitude ONLY — they NEVER
+  //    change the words, which option is correct, or the acceptableAnswers data.
+  //    All optional; absent ⇒ legacy full-help behavior (every cue shown). ──
+  /** #1 perception — amber rime-suffix highlight on the target card. Default: shown. */
+  showRhymeFamilyHighlight?: boolean;
+  /** #1 perception — the reader-grade prose image caption under a word/option. Default: shown. */
+  showWordImage?: boolean;
+  /** #2 instruction — the on-screen task restatement. Default: shown. */
+  showInstructionText?: boolean;
+  /** #2 instruction — may the tutor enumerate the answer choices aloud? Default: yes.
+   *  FORCED true at PRE — the read-aloud is a non-reader's only instruction channel. */
+  tutorNamesOptions?: boolean;
+  /** #5 answer-form — correct tiles in the 4-tile production bank. Default: 2. */
+  productionCorrectCount?: number;
 }
 
 export interface RhymeStudioData {
   title: string;
   gradeLevel: string;
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: RhymeChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -119,6 +137,10 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 
 const MAX_ATTEMPTS = 3;
 
+// Production word-bank size. The bank always holds this many tiles; the support
+// tier only shifts how many of them are correct rhymes (see productionCorrectCount).
+const PRODUCTION_BANK_SIZE = 4;
+
 // Common K-level words used as distractors for the production word bank.
 // These are short CVC/CVCC words spanning many different rime patterns so we
 // can always find a few that do NOT rhyme with the target family.
@@ -143,6 +165,30 @@ function splitByRhymeFamily(word: string, rhymeFamily: string): [string, string]
   return [word, ''];
 }
 
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The live tutor is a
+ * SECOND scaffold channel, so its latitude must match what the screen withdrew:
+ *  - easy   → may name the rhyme family and walk the student through the ending sound.
+ *  - medium → the family highlight is off screen, so nudge by ear only; don't spell
+ *             the rime out unless asked.
+ *  - hard   → the screen shows no highlight, no instruction text and no read-out of
+ *             the choices, so the tutor names the target + question ONLY.
+ * At EVERY tier the tutor never says which word rhymes (that IS the answer).
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  mode: string,
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return `[SUPPORT_TIER easy] Full scaffolding: you may name the rhyme family and stretch the ending sound to help the student hear it. Still never say which word is the answer.`;
+  }
+  if (tier === 'medium') {
+    return `[SUPPORT_TIER medium] Light scaffolding: the rhyme family is NOT highlighted on screen — guide by ear ("listen to how it ends"), don't spell out the rime unless the student is stuck, and never say which word is the answer.`;
+  }
+  return `[SUPPORT_TIER hard] Minimal scaffolding: the screen shows no rhyme-family highlight and no written question${mode === 'recognition' ? '' : ', and you must NOT read the answer choices aloud'}. Say only the target word and the question, then wait. Never name the rhyme family and never say which word is the answer.`;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -151,6 +197,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const {
     title,
     gradeLevel,
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -229,6 +276,14 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   const currentChallenge = challenges[currentIndex];
   const previousModeRef = useRef<string | null>(null);
 
+  // ── Support-tier scaffolds (read with `!== false` so an ABSENT field is the
+  //    legacy full-help render). Band supports compose and always WIN: at PRE the
+  //    picture surface and the tutor's word read-aloud can never be withdrawn. ──
+  const showRhymeFamilyHighlight = currentChallenge?.showRhymeFamilyHighlight !== false;
+  const showInstructionText = currentChallenge?.showInstructionText !== false;
+  const showWordImage = isPreReader || currentChallenge?.showWordImage !== false;
+  const tutorNamesOptions = isPreReader || currentChallenge?.tutorNamesOptions !== false;
+
   // ── Shuffled identification options ──────────────────────────────
   // Memoised per challenge so it doesn't re-shuffle on every render.
   const shuffledIdentificationOptions = useMemo(() => {
@@ -247,14 +302,21 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       : currentChallenge.rhymeFamily.toLowerCase();
     const target = currentChallenge.targetWord.toLowerCase();
 
-    // Pick 2 distractors that don't rhyme with the target
+    // #5 answer-form lever: how many of the 4 bank tiles are correct rhymes.
+    // Absent ⇒ 2 (legacy: 2 correct + 2 distractors). hard ⇒ 1 correct + 3
+    // distractors — same bank size, same acceptableAnswers data, a correct tile is
+    // ALWAYS present; only the chance of a lucky tap drops.
+    const correctTake = Math.max(1, currentChallenge.productionCorrectCount ?? 2);
+    const distractorTake = Math.max(0, PRODUCTION_BANK_SIZE - correctTake);
+
+    // Pick the distractors that don't rhyme with the target
     const distractors = DISTRACTOR_POOL
       .filter(w => !w.endsWith(suffix) && w !== target)
       .sort(() => Math.random() - 0.5)
-      .slice(0, 2);
+      .slice(0, distractorTake);
 
-    // Take up to 2 acceptable answers
-    const correct = (currentChallenge.acceptableAnswers ?? []).slice(0, 2);
+    // Take the acceptable answers that will be shown as correct tiles
+    const correct = (currentChallenge.acceptableAnswers ?? []).slice(0, correctTake);
 
     // Combine and shuffle
     const combined = [
@@ -272,6 +334,10 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
   // still inject the same words as reinforcement.
   const currentOptionWords = useMemo(() => {
     if (!currentChallenge) return '';
+    // #2 instruction lever: at hard the tutor names the target + question only, so
+    // the durable catalog read-aloud channel gets no choice list either. Forced on
+    // at PRE (see tutorNamesOptions) — a non-reader has no other way in.
+    if (!tutorNamesOptions) return '';
     if (currentChallenge.mode === 'identification') {
       return shuffledIdentificationOptions.map(o => o.word).join(', ');
     }
@@ -279,7 +345,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       return productionWordBank.map(o => o.word).join(', ');
     }
     return '';
-  }, [currentChallenge, shuffledIdentificationOptions, productionWordBank]);
+  }, [currentChallenge, tutorNamesOptions, shuffledIdentificationOptions, productionWordBank]);
 
   // ── AI Tutoring integration ───────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
@@ -292,7 +358,8 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     totalChallenges: challenges.length,
     currentPhase: currentChallenge?.mode ?? '',
     attempts: currentAttempts,
-  }), [currentChallenge, currentOptionWords, currentIndex, challenges.length, currentAttempts]);
+    supportTier: supportTier ?? null,
+  }), [currentChallenge, currentOptionWords, currentIndex, challenges.length, currentAttempts, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'rhyme-studio',
@@ -308,7 +375,9 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
 
-    // Build mode-specific context so the AI knows the exact words for challenge 1
+    // Build mode-specific context so the AI knows the exact words for challenge 1.
+    // The two recognition words are the STIMULUS (never withdrawn); only the
+    // enumeration of the answer CHOICES is tier-gated.
     let firstChallengeWords = '';
     if (currentChallenge.mode === 'recognition') {
       firstChallengeWords =
@@ -316,23 +385,29 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
         + `Then ask "Do these words rhyme?" Do NOT reveal the answer.`;
     } else if (currentChallenge.mode === 'identification') {
       const optionWords = shuffledIdentificationOptions.map(o => o.word).join(', ');
-      firstChallengeWords =
-        `Say the target word "${currentChallenge.targetWord}" and the options: ${optionWords}. `
-        + `Ask "Which word rhymes with ${currentChallenge.targetWord}?"`;
+      firstChallengeWords = tutorNamesOptions
+        ? `Say the target word "${currentChallenge.targetWord}" and the options: ${optionWords}. `
+          + `Ask "Which word rhymes with ${currentChallenge.targetWord}?"`
+        : `Say ONLY the target word "${currentChallenge.targetWord}" and ask `
+          + `"Which word rhymes with ${currentChallenge.targetWord}?" Do NOT read the answer choices aloud — the student reads them.`;
     } else {
       const bankWords = productionWordBank.map(o => o.word).join(', ');
-      firstChallengeWords =
-        `Say the target word "${currentChallenge.targetWord}" and the options: ${bankWords}. `
-        + `Ask "Which of these words rhymes with ${currentChallenge.targetWord}?"`;
+      firstChallengeWords = tutorNamesOptions
+        ? `Say the target word "${currentChallenge.targetWord}" and the options: ${bankWords}. `
+          + `Ask "Which of these words rhymes with ${currentChallenge.targetWord}?"`
+        : `Say ONLY the target word "${currentChallenge.targetWord}" and ask `
+          + `"Which of these words rhymes with ${currentChallenge.targetWord}?" Do NOT read the word bank aloud — the student reads it.`;
     }
 
+    const policy = tutorRevealPolicy(supportTier, currentChallenge.mode);
     sendText(
       `[ACTIVITY_START] This is a rhyming activity for Grade ${gradeLevel}. `
       + `There are ${challenges.length} challenges. `
-      + `Warmly introduce the activity (1-2 sentences), then: ${firstChallengeWords}`,
+      + `Warmly introduce the activity (1-2 sentences), then: ${firstChallengeWords}`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [hasStarted, isConnected, currentChallenge, gradeLevel, challenges.length, sendText, shuffledIdentificationOptions]);
+  }, [hasStarted, isConnected, currentChallenge, gradeLevel, challenges.length, sendText, shuffledIdentificationOptions, productionWordBank, tutorNamesOptions, supportTier]);
 
   // ── Phase transition detection ────────────────────────────────────
   useEffect(() => {
@@ -353,28 +428,43 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
     if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
 
+    const policy = tutorRevealPolicy(supportTier, currentChallenge.mode);
+    const withPolicy = (msg: string) => (policy ? `${msg} ${policy}` : msg);
+
     if (currentChallenge.mode === 'recognition') {
       sendText(
-        `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and "${currentChallenge.comparisonWord}". `
-        + `Then ask "Do these words rhyme?"`,
+        withPolicy(
+          `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and "${currentChallenge.comparisonWord}". `
+          + `Then ask "Do these words rhyme?"`,
+        ),
         { silent: true },
       );
     } else if (currentChallenge.mode === 'identification') {
       const optionWords = shuffledIdentificationOptions.map(o => o.word).join(', ');
       sendText(
-        `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and ask "Which word rhymes with ${currentChallenge.targetWord}?" `
-        + `Then say each option: ${optionWords}.`,
+        withPolicy(
+          tutorNamesOptions
+            ? `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and ask "Which word rhymes with ${currentChallenge.targetWord}?" `
+              + `Then say each option: ${optionWords}.`
+            : `[PRONOUNCE_WORDS] Say ONLY "${currentChallenge.targetWord}" and ask "Which word rhymes with ${currentChallenge.targetWord}?" `
+              + `Do NOT read the answer choices aloud — the student reads them.`,
+        ),
         { silent: true },
       );
     } else {
       const bankWords = productionWordBank.map(o => o.word).join(', ');
       sendText(
-        `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and ask "Which of these words rhymes with ${currentChallenge.targetWord}?" `
-        + `Then say each option: ${bankWords}.`,
+        withPolicy(
+          tutorNamesOptions
+            ? `[PRONOUNCE_WORDS] Say "${currentChallenge.targetWord}" and ask "Which of these words rhymes with ${currentChallenge.targetWord}?" `
+              + `Then say each option: ${bankWords}.`
+            : `[PRONOUNCE_WORDS] Say ONLY "${currentChallenge.targetWord}" and ask "Which of these words rhymes with ${currentChallenge.targetWord}?" `
+              + `Do NOT read the word bank aloud — the student reads it.`,
+        ),
         { silent: true },
       );
     }
-  }, [currentIndex, currentChallenge, isConnected, sendText, productionWordBank, shuffledIdentificationOptions]);
+  }, [currentIndex, currentChallenge, isConnected, sendText, productionWordBank, shuffledIdentificationOptions, tutorNamesOptions, supportTier]);
 
   // ── Reset interaction state when challenge advances ───────────────
   useEffect(() => {
@@ -832,26 +922,34 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
     if (!currentChallenge) return null;
     return (
       <div className="space-y-4">
+        {/* ANSWER-LEAK GUARD (recognition): the amber rime highlight used to be
+            painted on the comparison card ONLY when doesRhyme was true, so the
+            highlight WAS the yes/no answer. Recognition therefore shows NO rime
+            highlight on either card before the student answers; after the challenge
+            resolves the rime is revealed as feedback (target always, comparison only
+            when the pair really rhymes) — that is the teaching moment. */}
         <div className="grid grid-cols-2 gap-4">
           {renderWordCard(
             currentChallenge.targetWord,
-            currentChallenge.rhymeFamily,
-            currentChallenge.targetWordImage,
+            showResult ? currentChallenge.rhymeFamily : '',
+            showWordImage ? currentChallenge.targetWordImage : '',
             isCelebrating ? 'ring-2 ring-emerald-500/50' : '',
             currentChallenge.targetWordEmoji,
           )}
           {currentChallenge.comparisonWord && renderWordCard(
             currentChallenge.comparisonWord,
-            currentChallenge.doesRhyme ? currentChallenge.rhymeFamily : '',
-            currentChallenge.comparisonWordImage ?? '',
+            showResult && currentChallenge.doesRhyme ? currentChallenge.rhymeFamily : '',
+            showWordImage ? (currentChallenge.comparisonWordImage ?? '') : '',
             isCelebrating ? 'ring-2 ring-emerald-500/50' : '',
             currentChallenge.comparisonWordEmoji,
           )}
         </div>
 
         {/* The question is spoken by the tutor at PRE (audio is the instruction
-            channel); a non-reader cannot use the on-screen sentence. */}
-        {!isPreReader && (
+            channel); a non-reader cannot use the on-screen sentence. At the hard
+            support tier the restatement is withdrawn for readers too — the tutor
+            still asks it aloud, so the task is never lost. */}
+        {!isPreReader && showInstructionText && (
           <p className="text-center text-lg text-slate-300 font-medium">
             Do these words rhyme?
           </p>
@@ -900,16 +998,19 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
+        {/* #1 perception lever: the target card's amber rime highlight is the
+            strongest visual cue — withdrawn at medium/hard, revealed on resolution. */}
         {renderWordCard(
           currentChallenge.targetWord,
-          currentChallenge.rhymeFamily,
-          currentChallenge.targetWordImage,
+          showRhymeFamilyHighlight || showResult ? currentChallenge.rhymeFamily : '',
+          showWordImage ? currentChallenge.targetWordImage : '',
           undefined,
           currentChallenge.targetWordEmoji,
         )}
 
-        {/* Question spoken by the tutor at PRE (audio is the instruction channel). */}
-        {!isPreReader && (
+        {/* Question spoken by the tutor at PRE (audio is the instruction channel);
+            also withdrawn at the hard support tier (the tutor still asks it). */}
+        {!isPreReader && showInstructionText && (
           <p className="text-center text-lg text-slate-300 font-medium">
             Which word rhymes with{' '}
             <span className="text-amber-300">{currentChallenge.targetWord}</span>?
@@ -949,7 +1050,7 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
                 ) : (
                   <>
                     <span className="text-2xl font-bold block">{option.word}</span>
-                    {option.image && (
+                    {option.image && showWordImage && (
                       <span className="text-xs text-slate-500 mt-1 block">{option.image}</span>
                     )}
                   </>
@@ -971,14 +1072,20 @@ const RhymeStudio: React.FC<RhymeStudioProps> = ({ data, className }) => {
       <div className="space-y-4">
         {renderWordCard(
           currentChallenge.targetWord,
-          currentChallenge.rhymeFamily,
-          currentChallenge.targetWordImage,
+          showRhymeFamilyHighlight || showResult ? currentChallenge.rhymeFamily : '',
+          showWordImage ? currentChallenge.targetWordImage : '',
+          undefined,
+          currentChallenge.targetWordEmoji,
         )}
 
-        <p className="text-center text-lg text-slate-300 font-medium">
-          Pick a word that rhymes with{' '}
-          <span className="text-amber-300">{currentChallenge.targetWord}</span>
-        </p>
+        {/* Task restatement — band-gated like the other two modes (a non-reader
+            cannot use it; the tutor voices it) and withdrawn at the hard tier. */}
+        {!isPreReader && showInstructionText && (
+          <p className="text-center text-lg text-slate-300 font-medium">
+            Pick a word that rhymes with{' '}
+            <span className="text-amber-300">{currentChallenge.targetWord}</span>
+          </p>
+        )}
 
         {/* Rhyme word tiles — bespoke interaction surface; grading colors
             come from the shared answerStateClasses token. */}

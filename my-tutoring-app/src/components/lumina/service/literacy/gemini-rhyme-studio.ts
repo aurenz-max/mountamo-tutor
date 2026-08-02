@@ -105,6 +105,88 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 
+// ---------------------------------------------------------------------------
+// WITHIN-MODE SUPPORT TIER (ctx.supportTier) — scaffolding withdrawal.
+//
+// INVARIANT: the tier NEVER touches the prompt and NEVER changes which content is
+// drawn. Word choice, rhyme families, which option is correct, and the
+// acceptableAnswers data are all identical at every tier — the LLM is never told
+// the tier exists. Everything below is stamped in CODE, post-parse, and is purely
+// a DISPLAY / INSTRUCTION / TUTOR-latitude decision.
+//
+// Levers (one field each), by modality:
+//   #1 perception   showRhymeFamilyHighlight — the amber rime-suffix highlight on
+//                     the target card. easy shows it; medium/hard withdraw it, so
+//                     the student must hear the rime instead of seeing it outlined.
+//   #1 perception   showWordImage            — the reader-grade prose image caption
+//                     under a word / option tile (a semantic self-check cue).
+//                     FORCED TRUE at K: the emoji IS the pre-reader answer surface.
+//   #2 instruction  showInstructionText      — the on-screen task restatement
+//                     ("Which word rhymes with cat?"). hard hides it; the tutor
+//                     still asks the question by voice, so the task is never lost.
+//   #2 instruction  tutorNamesOptions        — whether the tutor enumerates the
+//                     answer choices / word bank out loud. hard suppresses the
+//                     enumeration (target + question only). FORCED TRUE at K —
+//                     the catalog PRE read-aloud is a non-reader's ONLY instruction
+//                     channel and may never be withdrawn by a tier.
+//   #5 answer-form  productionCorrectCount   — how many of the production word
+//                     bank's 4 tiles are correct rhymes: 2 (easy/medium) → 1 (hard).
+//                     The bank size and the acceptableAnswers data are unchanged and
+//                     a correct tile is ALWAYS present — only the hit rate drops.
+// ---------------------------------------------------------------------------
+
+export type RhymeSupportTier = 'easy' | 'medium' | 'hard';
+
+export interface RhymeSupportScaffold {
+  showRhymeFamilyHighlight: boolean;
+  showInstructionText: boolean;
+  tutorNamesOptions: boolean;
+  showWordImage: boolean;
+  productionCorrectCount: number;
+}
+
+/** The scaffolding ladder. easy = every help shown (identical to legacy). */
+export function resolveRhymeSupportScaffold(tier: RhymeSupportTier): RhymeSupportScaffold {
+  return {
+    // The rime highlight is the single strongest visual give-away — it is the
+    // first thing withdrawn.
+    showRhymeFamilyHighlight: tier === 'easy',
+    showWordImage: tier === 'easy',
+    // Instruction + tutor enumeration survive to medium; hard is the "work from
+    // the words alone" rung.
+    showInstructionText: tier !== 'hard',
+    tutorNamesOptions: tier !== 'hard',
+    productionCorrectCount: tier === 'hard' ? 1 : 2,
+  };
+}
+
+/**
+ * Stamp the tier's scaffold fields onto each challenge, in place.
+ *
+ * BAND SUPPORTS ALWAYS WIN: at the pre-reader band (K) the picture surface and the
+ * tutor's word read-aloud are the child's only channels, so `showWordImage` and
+ * `tutorNamesOptions` are forced TRUE no matter what the tier says.
+ *
+ * Called AFTER the K emoji post-process so band rules are applied on top of a
+ * fully-formed pre-reader challenge.
+ */
+export function applyRhymeSupportTier(
+  challenges: Array<Record<string, unknown>>,
+  tier: RhymeSupportTier,
+  isPreReaderBand: boolean,
+): void {
+  const sc = resolveRhymeSupportScaffold(tier);
+  for (const ch of challenges) {
+    ch.showRhymeFamilyHighlight = sc.showRhymeFamilyHighlight;
+    ch.showInstructionText = sc.showInstructionText;
+    // ── Band floor (K = pre-reader) ──
+    ch.showWordImage = isPreReaderBand ? true : sc.showWordImage;
+    ch.tutorNamesOptions = isPreReaderBand ? true : sc.tutorNamesOptions;
+    // Answer-form lever only exists where there is a word bank.
+    if (ch.mode === 'production') ch.productionCorrectCount = sc.productionCorrectCount;
+  }
+}
+
 /**
  * Schema definition for Rhyme Studio Data
  *
@@ -224,6 +306,10 @@ export const generateRhymeStudio = async (
   const intent = ctx.intent;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as RhymeStudioConfig;
+  // Support tier arrives already normalized ('easy'|'medium'|'hard'|undefined) from
+  // resolveGenerationContext — never re-parse config.difficulty here. It is applied
+  // in code AFTER the model responds; it never enters the prompt.
+  const supportTier = ctx.supportTier;
   // ── Eval mode resolution ────────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
     'rhyme-studio',
@@ -441,6 +527,23 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       });
     }
 
+    // ── Within-mode support tier: withdraw on-screen / instructional / tutor
+    //    scaffolding. Applied LAST-but-one, AFTER the K emoji attach, so the
+    //    pre-reader band floor is imposed on a fully-formed K challenge and always
+    //    wins over the tier. Gated ONLY on supportTier being present — absent ⇒ no
+    //    fields stamped ⇒ byte-identical legacy full-help render. ──
+    if (supportTier) {
+      applyRhymeSupportTier(
+        result.challenges as Array<Record<string, unknown>>,
+        supportTier,
+        gradeLevelKey === 'K',
+      );
+      console.log(
+        `[rhyme-studio] Support tier "${supportTier}" applied to ${result.challenges.length} challenge(s)`
+        + `${gradeLevelKey === 'K' ? ' (PRE band floor: picture + tutor read-aloud forced on)' : ''}`,
+      );
+    }
+
     // Post-process: remove recognition challenges that use irregular-spelling words (SP-7 safety net)
     const irregularSet = new Set(IRREGULAR_RHYME_WORDS);
     result.challenges = result.challenges.filter((ch: Record<string, unknown>) => {
@@ -463,11 +566,21 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         comparisonWordImage: 'a red hat',
         doesRhyme: true,
       }];
+      if (supportTier) {
+        applyRhymeSupportTier(
+          result.challenges as Array<Record<string, unknown>>,
+          supportTier,
+          gradeLevelKey === 'K',
+        );
+      }
     }
 
     const finalData: RhymeStudioData = {
       title: result.title,
       gradeLevel: gradeLevelKey,
+      // Tell the live tutor the support level whenever a tier is present — it drives
+      // the tutor's reveal policy (how much it may say out loud).
+      ...(supportTier ? { supportTier } : {}),
       challenges: result.challenges,
     };
 

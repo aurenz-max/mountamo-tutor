@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
+import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { clampGradeToK2 } from "../scopeContext";
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
@@ -59,6 +59,63 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     schemaDescription: "'diphthong' (vowel diphthongs)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (ctx.supportTier) — SCAFFOLD WITHDRAWAL ONLY
+//
+// CONTRACT (docs/contracts/phonics-blender.md): difficulty here is owned by the
+// EVAL-MODE ladder (cvc → cvce_blend → digraph → advanced). A support tier is
+// strictly WITHIN-MODE: it withdraws on-screen / instructional HELP and NEVER
+// touches which words are drawn, the `patternType`, the phoneme model, or the
+// answer (R9 — tier must be separable from mode for calibration).
+//
+// That is exactly why nothing below reaches the prompt: the scaffold fields are
+// stamped in CODE after the parse, deterministically, so the DRAW is identical
+// across tiers and only the presentation differs.
+//
+// Levers (one field each), by modality:
+//   #1 perception  showBlendPreview   — the listen-phase preview row.
+//                                       'full' ("c · a · t → cat") → 'word' (the
+//                                       target word only, no ordered letter
+//                                       chain) → 'none' (row hidden; the student
+//                                       works from tap-to-hear audio + emoji).
+//   #4 structure   showSlotCount      — the build area's exact-phoneme-count "?"
+//                                       drop slots vs. ONE open drop zone at hard.
+//                                       The Check enable rule stays length-based
+//                                       either way, so the answer is unchanged.
+//   #1 perception  showTileLetters    — the small letters sub-label under the /k/
+//                                       notation on READER-grade tiles. NO-OP at
+//                                       Kindergarten, whose tiles are letter-
+//                                       PRIMARY by band contract (R3).
+//   #2 instruction nameTargetPhonemes — the tutor enumerates the word's sounds
+//                                       when it introduces the word (easy/medium)
+//                                       vs. names only the word (hard).
+//
+// NEVER withdrawn at ANY tier or grade (band supports always win):
+//   • tap-to-hear phoneme + whole-word audio ([PRONOUNCE_SOUND]) — R2, the point
+//     of the primitive;
+//   • the Grade-K how-to-play protocol — R1 (protocol, not answer);
+//   • letter-primary K tiles — R3;  • the Check confirm — R4 (no auto-submit);
+//   • the word emoji — R8;         • the tile set itself — R6/R7 (no distractors,
+//     no extra tiles, ever);        • the deterministic "Blend!" fallback.
+// ---------------------------------------------------------------------------
+
+interface PhonicsBlenderSupportScaffold {
+  showBlendPreview: 'full' | 'word' | 'none';
+  showSlotCount: boolean;
+  showTileLetters: boolean;
+  nameTargetPhonemes: boolean;
+}
+
+/** Pure tier → scaffold map. No content, no word choice, no patternType. */
+function resolveSupportScaffold(tier: SupportTier): PhonicsBlenderSupportScaffold {
+  return {
+    showBlendPreview: tier === 'easy' ? 'full' : tier === 'medium' ? 'word' : 'none',
+    showSlotCount: tier !== 'hard',
+    showTileLetters: tier !== 'hard',
+    nameTargetPhonemes: tier !== 'hard',
+  };
+}
 
 /**
  * Schema definition for Phonics Blender Data
@@ -313,6 +370,8 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
 
     // Merge only primitive data overrides. Cross-cutting registry signals are
     // private prompt inputs and must never ride into student-visible data.
+    // `difficulty` stays stripped here on purpose — the support tier is read
+    // from the normalized `ctx.supportTier` below, never re-parsed from config.
     const {
       targetEvalMode: _targetEvalMode,
       remediationFocus: _remediationFocus,
@@ -338,10 +397,28 @@ Now generate a phonics blending activity for "${topic}" at grade level ${gradeLe
         ?? defaultPatternType) as PhonicsBlenderData['patternType'];
     }
 
+    // ── Within-mode support tier: withdraw scaffolding ONLY ────────────
+    // Gated SOLELY on ctx.supportTier (already normalized upstream in
+    // resolveGenerationContext) — never on patternType, never by re-parsing
+    // config.difficulty here. No tier ⇒ no fields stamped ⇒ byte-identical
+    // legacy full-help render. Runs AFTER the config merge so the tier is the
+    // last word on presentation, and AFTER the patternType injection so it is
+    // obvious the tier never participates in resolving the pattern (R9).
+    const supportTier = ctx.supportTier;
+    if (supportTier) {
+      const scaffold = resolveSupportScaffold(supportTier);
+      finalData.supportTier = supportTier;
+      finalData.showBlendPreview = scaffold.showBlendPreview;
+      finalData.showSlotCount = scaffold.showSlotCount;
+      finalData.showTileLetters = scaffold.showTileLetters;
+      finalData.nameTargetPhonemes = scaffold.nameTargetPhonemes;
+    }
+
     console.log('Phonics Blender Generated:', {
       title: finalData.title,
       gradeLevel: finalData.gradeLevel,
       patternType: finalData.patternType,
+      supportTier: supportTier ?? '(none — full help)',
       wordCount: finalData.words?.length || 0,
       words: finalData.words?.map(w => w.targetWord) || [],
     });

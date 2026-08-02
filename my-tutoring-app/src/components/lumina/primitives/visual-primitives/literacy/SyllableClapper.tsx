@@ -34,11 +34,27 @@ interface SyllableChallenge {
   syllables: string[];         // ["but", "ter", "fly"]
   imageDescription: string;
   difficulty: number;           // 3-5
+  /** WORD-LENGTH band (the eval mode). NOT the support tier — see `supportTier`. */
   challengeType: 'easy' | 'medium' | 'hard';
+
+  // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from
+  //    ctx.supportTier). Display / feedback only — they NEVER change the word,
+  //    the syllable split, or the answer. All optional; absent ⇒ byte-identical
+  //    legacy full-help render, so every existing payload is unaffected. ──
+  /** #1 perception — show the 6-circle clap tally + the count echo on Check. Default: shown. */
+  showClapCounter?: boolean;
+  /** #2 feedback — say WHICH WAY the clap count missed ("too many"/"not enough"). Default: directional. */
+  directionalErrorHint?: boolean;
 }
 
 export interface SyllableClapperData {
   title: string;
+  /**
+   * Within-mode SUPPORT tier from the manifest (config.difficulty). Orthogonal
+   * to `challengeType`, which happens to use the same three words for the WORD
+   * LENGTH band. Threaded to the tutor reveal policy.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SyllableChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -81,6 +97,39 @@ const MAX_ATTEMPTS = 3;
 const GRADE_LEVEL = 'K';
 
 // ============================================================================
+// SUPPORT-TIER reveal policy
+//
+// The live tutor is a SECOND scaffold channel, so its modelling latitude has to
+// match the on-screen tier — otherwise a hard tier hides the clap tally while
+// the tutor happily chants "but...ter...fly" and hands the answer over anyway.
+// This is also the selector that finally makes the catalog's scaffoldingLevels
+// ladder real: level1/2/3 were all shipped to the model with nothing choosing
+// among them.
+//   easy   → level 3: pre-segmented model on a miss + syllable replay after a
+//                     correct answer.
+//   medium → level 2: still model the segmented re-say on a miss, but no
+//                     post-correct replay — their own count is the confirmation.
+//   hard   → level 1: say the word NATURALLY and WHOLE on a miss; never
+//                     pre-segment it (the segmentation IS the answer) and never
+//                     replay the parts after a correct answer.
+// At EVERY tier the tutor still SAYS THE WORD on demand — this is a listening
+// task and the spoken stimulus is the primitive's whole point; it is never
+// withdrawn. And at every tier the tutor must never state the NUMBER of parts
+// before the student claps.
+// ============================================================================
+
+function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return '[SUPPORT_TIER easy] Full scaffolding (use scaffolding level 3): you may say the word broken into its parts with clear pauses and clap along, and you may replay the parts after a correct answer. Never state the NUMBER of parts before the student claps.';
+  }
+  if (tier === 'medium') {
+    return '[SUPPORT_TIER medium] Light scaffolding (use scaffolding level 2): on a miss, say the word slowly and let the student find the parts. Do NOT replay the parts after a correct answer. Never state the NUMBER of parts before the student claps.';
+  }
+  return '[SUPPORT_TIER hard] Minimal scaffolding (use scaffolding level 1): say the word NATURALLY and WHOLE at normal pace. Never break it into parts for the student, never clap along, and never replay the parts after a correct answer — the segmentation is exactly what they are producing. Ask what they hear. Never state the NUMBER of parts.';
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -88,6 +137,7 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
   const {
     title,
     challenges = [],
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -153,6 +203,19 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
 
   const currentChallenge = challenges[currentIndex];
 
+  // ── Support-tier scaffolds ────────────────────────────────────
+  // Read with `!== false` so an ABSENT field (every legacy payload, and any
+  // session the manifest sends without a difficulty) renders the full-help UI
+  // byte-identically. Gated on the tier fields ONLY — never on challengeType,
+  // whose 'easy'|'medium'|'hard' values name the WORD-LENGTH band, not support.
+  const showClapCounter = currentChallenge?.showClapCounter !== false;
+  const directionalErrorHint = currentChallenge?.directionalErrorHint !== false;
+  // Segmented modelling by the tutor is the audible twin of the on-screen tally:
+  // withdrawn only at the hard tier, kept whenever no tier was sent.
+  const tutorMaySegment = supportTier !== 'hard';
+  // Replaying the syllables after a correct answer is the top rung only.
+  const tutorMayReplayAfterCorrect = supportTier === undefined || supportTier === 'easy';
+
   // ── AI Tutoring integration ───────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
     currentWord: currentChallenge?.word ?? '',
@@ -162,7 +225,8 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     currentChallenge: currentIndex + 1,
     totalChallenges: challenges.length,
     attempts: currentAttempts,
-  }), [currentChallenge, currentIndex, challenges.length, currentAttempts, clapCount]);
+    supportTier: supportTier ?? null,
+  }), [currentChallenge, currentIndex, challenges.length, currentAttempts, clapCount, supportTier]);
 
   const { sendText, isConnected } = useLuminaAI({
     primitiveType: 'syllable-clapper',
@@ -178,25 +242,29 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
     if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
 
+    const policy = tutorRevealPolicy(supportTier);
     sendText(
       `[ACTIVITY_START] This is a syllable clapping activity for kindergarten. `
       + `There are ${challenges.length} words to clap. `
       + `Warmly introduce the activity: "We're going to clap the parts of words!" `
-      + `Then say the first word "${currentChallenge.word}" clearly and naturally.`,
+      + `Then say the first word "${currentChallenge.word}" clearly and naturally.`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [hasStarted, isConnected, currentChallenge, challenges.length, sendText]);
+  }, [hasStarted, isConnected, currentChallenge, challenges.length, sendText, supportTier]);
 
   // ── Pronounce word when challenge changes ─────────────────────
   useEffect(() => {
     if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
     if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
 
+    const policy = tutorRevealPolicy(supportTier);
     sendText(
-      `[PRONOUNCE_SOUND] The word is "${currentChallenge.word}". ${currentChallenge.word}.`,
+      `[PRONOUNCE_SOUND] The word is "${currentChallenge.word}". ${currentChallenge.word}.`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [currentIndex, currentChallenge, isConnected, sendText]);
+  }, [currentIndex, currentChallenge, isConnected, sendText, supportTier]);
 
   // ── Reset state when challenge advances ───────────────────────
   useEffect(() => {
@@ -246,32 +314,45 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
       sendText(
         `[CLAP_CORRECT] Student correctly clapped ${clapCount} times for "${currentChallenge.word}" `
         + `(${currentChallenge.syllableCount} syllables: ${currentChallenge.syllables.join(', ')}). `
-        + `Celebrate briefly: "Yes! ${currentChallenge.word} has ${currentChallenge.syllableCount} parts! Let's hear them..."`,
+        + (tutorMayReplayAfterCorrect
+          ? `Celebrate briefly: "Yes! ${currentChallenge.word} has ${currentChallenge.syllableCount} parts! Let's hear them..."`
+          : `Celebrate briefly: "Yes! ${currentChallenge.word} has ${currentChallenge.syllableCount} parts!" Then STOP — do NOT say the parts again.`),
         { silent: true },
       );
 
-      // After a beat, ask AI to pronounce the syllables
-      setTimeout(() => {
-        sendText(
-          `[PRONOUNCE_SYLLABLES] Say "${currentChallenge.word}" broken into syllables with clear pauses: `
-          + `"${currentChallenge.syllables.join('...')}". Exaggerate the breaks slightly.`,
-          { silent: true },
-        );
-      }, 2000);
+      // After a beat, replay the syllables — the TOP scaffold rung only. At
+      // medium/hard the student's own correct count is the confirmation.
+      if (tutorMayReplayAfterCorrect) {
+        setTimeout(() => {
+          sendText(
+            `[PRONOUNCE_SYLLABLES] Say "${currentChallenge.word}" broken into syllables with clear pauses: `
+            + `"${currentChallenge.syllables.join('...')}". Exaggerate the breaks slightly.`,
+            { silent: true },
+          );
+        }, 2000);
+      }
     } else {
       SoundManager.playIncorrect();
       setFeedback(
-        clapCount > currentChallenge.syllableCount
-          ? "That's too many claps. Listen again..."
-          : "That's not enough claps. Listen again...",
+        directionalErrorHint
+          ? (clapCount > currentChallenge.syllableCount
+            ? "That's too many claps. Listen again..."
+            : "That's not enough claps. Listen again...")
+          // hard: no direction of error — the student re-segments the word
+          // instead of binary-searching the count.
+          : 'Not quite. Listen again.',
       );
       setFeedbackType('error');
 
       sendText(
         `[CLAP_INCORRECT] Student clapped ${clapCount} times but "${currentChallenge.word}" has `
         + `${currentChallenge.syllableCount} syllables. Attempt ${currentAttempts + 1}. `
-        + `Say "Hmm, let me say it again slowly. Listen for the parts..." `
-        + `then re-say with breaks: "${currentChallenge.syllables.join('...')}".`,
+        + (tutorMaySegment
+          ? `Say "Hmm, let me say it again slowly. Listen for the parts..." `
+            + `then re-say with breaks: "${currentChallenge.syllables.join('...')}".`
+          : `Say "Not quite — listen again." then say the WHOLE word "${currentChallenge.word}" `
+            + `naturally at normal pace. Do NOT break it into parts, do NOT clap along, and do NOT `
+            + `say how many parts it has — finding the parts is the student's work.`),
         { silent: true },
       );
 
@@ -301,7 +382,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
         }, 1500);
       }
     }
-  }, [hasChecked, clapCount, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [
+    hasChecked, clapCount, currentChallenge, currentAttempts,
+    incrementAttempts, recordResult, sendText,
+    directionalErrorHint, tutorMaySegment, tutorMayReplayAfterCorrect,
+  ]);
 
   // ── Handle syllable segment tap ───────────────────────────────
   const handleSyllableTap = useCallback((syllable: string) => {
@@ -513,9 +598,11 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
               )}
             </div>
 
-            {/* Clap counter (circles) */}
-            {!hasChecked && (
-              <div className="flex justify-center gap-2">
+            {/* Clap counter (circles) — support-tier lever #1: withdrawn at the
+                hard tier so the running count lives in working memory. Absent
+                field ⇒ shown (legacy). */}
+            {!hasChecked && showClapCounter && (
+              <div className="flex justify-center gap-2" data-testid="clap-tally">
                 {Array.from({ length: MAX_CLAPS }).map((_, idx) => (
                   <div
                     key={idx}
@@ -561,7 +648,12 @@ const SyllableClapper: React.FC<SyllableClapperProps> = ({ data, className }) =>
                   )}
                   {clapCount > 0 && (
                     <LuminaActionButton action="check" onClick={handleCheck}>
-                      Check ({clapCount} clap{clapCount !== 1 ? 's' : ''})
+                      {/* The count echo is the SAME scaffold as the tally above —
+                          withdrawing one without the other would leak the count
+                          straight back. Both ride on showClapCounter. */}
+                      {showClapCounter
+                        ? `Check (${clapCount} clap${clapCount !== 1 ? 's' : ''})`
+                        : 'Check'}
                     </LuminaActionButton>
                   )}
                 </div>

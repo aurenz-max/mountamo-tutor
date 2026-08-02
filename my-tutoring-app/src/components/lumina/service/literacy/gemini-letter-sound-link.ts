@@ -17,6 +17,114 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
 type LetterSoundRemediationMove = 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
 
+// ---------------------------------------------------------------------------
+// Within-mode support tier (ctx.supportTier) — scaffolding withdrawal ONLY.
+//
+// The tier NEVER touches content selection: it is not in the prompt, and every
+// field below is stamped in CODE post-parse. It never changes which letter,
+// which sound, which keyword, or which option is correct — only how much help
+// surrounds the same item. Absent tier ⇒ nothing stamped ⇒ byte-identical
+// legacy full-help render.
+//
+// ANSWER DIMENSION DIFFERS PER MODE (letter-spotter precedent: when the target
+// IS the answer, nothing names it):
+//   see-hear      → the SOUND is the answer (its keyword encodes the sound)
+//   hear-see      → the LETTER is the answer (the sound is the given stimulus)
+//   keyword-match → the KEYWORD WORD is the answer (as is the sound it starts with)
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+/** Attempts before a challenge locks and reveals. Absent tier ⇒ component legacy (3). */
+const MAX_ATTEMPTS_BY_TIER: Record<SupportTier, number> = {
+  easy: 3,
+  medium: 3,
+  hard: 2,
+};
+
+export interface LetterSoundSupportScaffold {
+  /** #1 perception — when the keyword picture anchor appears. */
+  showKeywordAnchor: 'proactive' | 'after-miss' | 'never';
+  /** #2 instruction — on-card task cue. null = withdrawn (hard). Never names the answer. */
+  strategyHint: string | null;
+  /** #2 instruction — footer protocol cue. null = withdrawn (hard, and hear-see which has no footer). */
+  protocolHint: string | null;
+  /** #2 instruction — the hear-see "more than one letter makes this sound" nudge. */
+  showSharedSoundHint: boolean;
+  /** #3 answer-form — may the student audition an option before committing? */
+  auditionBeforeCommit: boolean;
+}
+
+/**
+ * Tier-authored on-card cues, per mode. HARD RULE: cue text NEVER names the
+ * target sound, the keyword word, or the target letter — it only frames the
+ * listening move. `medium` re-states the shipped legacy line verbatim so the
+ * medium render is identical to the untiered one.
+ */
+const TASK_CUE: Record<LetterSoundMode, { easy: string; medium: string }> = {
+  'see-hear': {
+    easy: 'Look at the letter, then listen to BOTH bubbles before you pick.',
+    medium: 'Which sound does this letter make?',
+  },
+  'hear-see': {
+    easy: 'Listen to the sound, then say it back yourself before you look at the letters.',
+    medium: 'Tap to hear the sound, then find the letter!',
+  },
+  'keyword-match': {
+    easy: 'Sound out the letter quietly to yourself, then listen for the picture that starts the same way.',
+    // Verbatim legacy line (ASCII apostrophe, matching the component's &apos;).
+    medium: 'Which word starts with this letter\'s sound?',
+  },
+};
+
+const PROTOCOL_CUE: Record<LetterSoundMode, { easy: string; medium: string } | null> = {
+  'see-hear': {
+    easy: 'Tap each speaker to hear the sound, then tap your answer again to choose it',
+    medium: 'Listen to both, then tap your choice again to keep it.',
+  },
+  // hear-see has no protocol footer on the card (the letters are visible).
+  'hear-see': null,
+  'keyword-match': {
+    easy: 'Tap each picture to hear the word, then choose which one starts with this letter\'s sound',
+    medium: 'Listen to both pictures, then tap your choice again to keep it.',
+  },
+};
+
+/**
+ * Resolve the per-challenge scaffold for a tier. Pure + exported so the tier
+ * mapping (including the K band-gate) is unit-testable without calling Gemini.
+ *
+ * BAND WINS: `auditionBeforeCommit` is forced tier-inert at K — the pre-reader
+ * contract (LetterSoundLink.reader-fit) depends on the audition-then-commit
+ * two-tap protocol, so no tier may withdraw it there. It is also never withdrawn
+ * for see-hear at ANY grade: those options are bare speaker bubbles with no
+ * visual identity, so the audition IS how the stimulus is perceived — removing
+ * it would convert the task into a coin flip rather than withdraw support.
+ */
+export function resolveLetterSoundSupportScaffold(
+  mode: LetterSoundMode,
+  tier: SupportTier,
+  gradeKey: string,
+): LetterSoundSupportScaffold {
+  const cue = TASK_CUE[mode];
+  const protocol = PROTOCOL_CUE[mode];
+
+  const strategyHint = tier === 'hard' ? null : cue[tier === 'easy' ? 'easy' : 'medium'];
+  const protocolHint = tier === 'hard' || !protocol
+    ? null
+    : protocol[tier === 'easy' ? 'easy' : 'medium'];
+
+  const auditionWithdrawable = mode === 'keyword-match' && gradeKey !== 'K';
+
+  return {
+    showKeywordAnchor: tier === 'easy' ? 'proactive' : tier === 'hard' ? 'never' : 'after-miss',
+    strategyHint,
+    protocolHint,
+    showSharedSoundHint: tier !== 'hard',
+    auditionBeforeCommit: !(tier === 'hard' && auditionWithdrawable),
+  };
+}
+
 export function letterSoundRemediationMoveFor(
   mode: LetterSoundMode,
   remediationFocus?: string,
@@ -298,6 +406,10 @@ export const generateLetterSoundLink = async (
   const gradeLevel = ctx.gradeContext;
   const gradeKey = resolvePreReaderGradeKey(ctx);
   const config = ctx.raw as LetterSoundLinkConfig;
+  // Normalized upstream in resolveGenerationContext (never re-parsed here).
+  // Support tier NEVER enters the prompt — it is stamped in code post-parse so
+  // it cannot steer which letters/sounds/keywords Gemini picks.
+  const supportTier = ctx.supportTier;
 
   // -------------------------------------------------------------------------
   // Eval mode resolution
@@ -476,6 +588,31 @@ LETTER GROUP DATA:
           ],
         }];
       }
+    }
+
+    // ------------------------------------------------------------------
+    // Within-mode support tier: withdraw scaffolding ONLY. Runs AFTER every
+    // structural fixup so it can never change the item — gated ONLY on the
+    // support tier (never on the pinned eval mode, which would be a silent
+    // no-op in blended sessions). Applied PER CHALLENGE from each challenge's
+    // OWN mode, because the answer dimension differs by mode.
+    // ------------------------------------------------------------------
+    if (supportTier && result.challenges) {
+      for (const ch of result.challenges) {
+        const sc = resolveLetterSoundSupportScaffold(ch.mode as LetterSoundMode, supportTier, gradeKey);
+        ch.showKeywordAnchor = sc.showKeywordAnchor;
+        ch.strategyHint = sc.strategyHint;
+        ch.protocolHint = sc.protocolHint;
+        ch.showSharedSoundHint = sc.showSharedSoundHint;
+        ch.auditionBeforeCommit = sc.auditionBeforeCommit;
+      }
+      result.supportTier = supportTier;
+      result.maxAttempts = MAX_ATTEMPTS_BY_TIER[supportTier];
+      console.log(
+        `[letter-sound-link] Support tier "${supportTier}" applied per-challenge `
+        + `(grade ${gradeKey}${gradeKey === 'K' ? ' — audition lever forced inert by the PRE band' : ''}; `
+        + `maxAttempts ${result.maxAttempts})`,
+      );
     }
 
     console.log('Letter Sound Link Generated:', {

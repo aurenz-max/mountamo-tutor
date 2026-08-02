@@ -50,6 +50,23 @@ export interface PhonicsBlenderData {
     imageDescription?: string;         // Description of the target word for visual context
   }>;
 
+  // ── Within-mode support tier scaffolds (stamped in code by the generator from
+  //    ctx.supportTier). Presentation / instruction ONLY — they never change the
+  //    words, the phonemes, the tile set, or the answer. ALL OPTIONAL: absent ⇒
+  //    the legacy full-help render, byte for byte. Never withdrawn at any tier:
+  //    tap-to-hear audio (R2), the K how-to-play protocol (R1), letter-primary K
+  //    tiles (R3), the Check confirm (R4), the emoji (R8), the Blend! fallback. ──
+  /** Threaded to the tutor so its reveal latitude matches the on-screen tier. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Listen-phase preview row: 'full' = "c · a · t → cat", 'word' = the word only, 'none' = hidden. Default 'full'. */
+  showBlendPreview?: 'full' | 'word' | 'none';
+  /** Build area: exact-phoneme-count "?" slots (true) vs. one open drop zone (false). Default true. Check stays length-based either way. */
+  showSlotCount?: boolean;
+  /** Reader-grade tiles: the letters sub-label under the /k/ notation. Default true. NO-OP at K (tiles are letter-primary there). */
+  showTileLetters?: boolean;
+  /** Tutor: enumerate the word's sounds when introducing it. Default true. */
+  nameTargetPhonemes?: boolean;
+
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
   skillId?: string;
@@ -95,6 +112,37 @@ const PATTERN_LABELS: Record<string, string> = {
   'diphthong': 'Diphthongs',
 };
 
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The tutor is a SECOND
+ * scaffold channel, so its latitude must match the on-screen tier — otherwise a cue
+ * the tier just withdrew from the screen leaks straight back in by voice.
+ *   easy   → may say the sounds in order and walk the build step by step.
+ *   medium → confirm a single sound if asked; never recite the whole order.
+ *   hard   → the screen no longer shows the letter chain OR how many tiles are
+ *            needed, so the tutor must not enumerate the sounds, their count, or
+ *            their order either; it guides by questioning.
+ * NEVER gated by tier: pronouncing a tapped sound or word ([PRONOUNCE_SOUND]) — that
+ * on-demand audio IS the primitive (contract R2) — and the Grade-K how-to-play
+ * protocol (contract R1), which is protocol, not answer.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  isPreReader: boolean,
+): string {
+  if (!tier) return '';
+  const protocol = isPreReader
+    ? ' The Grade-K how-to-play protocol is NOT withdrawn — still tell the child how to play in kid words.'
+    : '';
+  const audio = ' Always pronounce any sound or word the student taps.';
+  if (tier === 'easy') {
+    return `[SUPPORT_TIER easy] Full scaffolding: you may say the word's sounds in order and walk the student through building it step by step.${audio}${protocol}`;
+  }
+  if (tier === 'medium') {
+    return `[SUPPORT_TIER medium] Light scaffolding: confirm one sound if the student asks, but do not recite the whole sound sequence or the tile order unprompted.${audio}${protocol}`;
+  }
+  return `[SUPPORT_TIER hard] Minimal scaffolding: the screen no longer shows the sound-by-sound preview or how many tiles are needed, so do NOT list the word's sounds, say how many there are, or give their order. Ask what they hear and which sound comes first — guide by questioning.${audio}${protocol}`;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -105,6 +153,11 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     gradeLevel,
     patternType,
     words = [],
+    supportTier,
+    showBlendPreview,
+    showSlotCount,
+    showTileLetters,
+    nameTargetPhonemes,
     instanceId,
     skillId,
     subskillId,
@@ -177,6 +230,17 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   // hear stimulus is spoken via [PRONOUNCE_SOUND]. Reader grades keep the full UI.
   const isPreReader = isPreReaderGrade(gradeLevel);
 
+  // ── Within-mode support tier: resolved ONCE, read-with-legacy-default so an
+  //    untiered payload renders exactly as it always did. Band supports win — the
+  //    K letter-primary tiles (R3), tap-to-hear audio (R2), the Check confirm (R4)
+  //    and the emoji (R8) are outside every lever below. ──
+  const blendPreview: 'full' | 'word' | 'none' =
+    showBlendPreview === 'none' ? 'none' : showBlendPreview === 'word' ? 'word' : 'full';
+  const slotCountShown = showSlotCount !== false;
+  const tileLettersShown = showTileLetters !== false;
+  const phonemesNamed = nameTargetPhonemes !== false;
+  const revealPolicy = tutorRevealPolicy(supportTier, isPreReader);
+
   // Per-word rows for the shared PhaseSummaryPanel (manual PhaseResult[] —
   // words are the natural breakdown, same pattern as DoubleNumberLine).
   const wordResults = useMemo<PhaseResult[]>(() => {
@@ -213,10 +277,13 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       .join(' + '),
     completedWords: completedWords.size,
     attempts: attemptsPerWord[currentWord?.id || ''] || 0,
+    // The tutor must know the on-screen support level so its own reveal latitude
+    // matches it (see tutorRevealPolicy + the catalog SUPPORT TIER directive).
+    supportTier: supportTier ?? null,
   }), [
     patternType, gradeLevel, words.length,
     currentWord, currentPhase, placedPhonemeIds,
-    completedWords, attemptsPerWord,
+    completedWords, attemptsPerWord, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -242,11 +309,17 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       `[ACTIVITY_START] This is a phonics blending activity for Grade ${gradeLevel} (${patternLabel}). `
       + `There are ${words.length} words to blend. `
       + `Introduce the activity warmly: mention we're practicing phonics and blending sounds into words. `
-      + `Then introduce the first word: "${currentWord.targetWord}" which has ${currentWord.phonemes.length} sounds (${phonemeList}). `
-      + `Encourage the student to tap each sound tile to hear it. Keep it brief and enthusiastic — 2-3 sentences max.`,
+      // Instruction lever: at hard the tutor names the word but does NOT enumerate
+      // its sounds or their count (the screen withdrew both). The Grade-K how-to-play
+      // protocol is untouched at every tier — it is protocol, not answer (R1).
+      + (phonemesNamed
+        ? `Then introduce the first word: "${currentWord.targetWord}" which has ${currentWord.phonemes.length} sounds (${phonemeList}). `
+        : `Then introduce the first word: "${currentWord.targetWord}" — do NOT list its sounds or say how many there are; the student discovers them by tapping. `)
+      + `Encourage the student to tap each sound tile to hear it. Keep it brief and enthusiastic — 2-3 sentences max.`
+      + (revealPolicy ? ` ${revealPolicy}` : ''),
       { silent: true }
     );
-  }, [isConnected, currentWord, gradeLevel, patternType, words.length, sendText]);
+  }, [isConnected, currentWord, gradeLevel, patternType, words.length, sendText, phonemesNamed, revealPolicy]);
 
   // Shuffled phonemes for the bank (build phase)
   const shuffledPhonemes = useMemo(() => {
@@ -386,12 +459,19 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       setSlotFlash('incorrect');
       slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
       // Tell the AI the student got it wrong so it can help
+      // At hard the correct order is withheld from the tutor's hint payload too —
+      // it leans the catalog's level-1 hint style ("which sound comes FIRST?")
+      // instead of being handed the answer it must not say.
       sendText(
-        `[BUILD_INCORRECT] The student tried to build "${currentWord.targetWord}" but placed the sounds as: ${placedSounds}. The correct order is: ${currentWord.phonemes.map(p => p.sound).join(' + ')}. This is attempt ${(attemptsPerWord[wordId] || 0) + 1}. Give a brief hint without giving the answer.`,
+        `[BUILD_INCORRECT] The student tried to build "${currentWord.targetWord}" but placed the sounds as: ${placedSounds}. `
+        + (phonemesNamed
+          ? `The correct order is: ${currentWord.phonemes.map(p => p.sound).join(' + ')}. `
+          : `Do NOT state the correct order or list the sounds — use your level-1 hint style and ask which sound they hear FIRST in the word. `)
+        + `This is attempt ${(attemptsPerWord[wordId] || 0) + 1}. Give a brief hint without giving the answer.`,
         { silent: true }
       );
     }
-  }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes, sendText]);
+  }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes, sendText, phonemesNamed]);
 
   // Complete blending for current word
   const handleBlendComplete = useCallback((spokenAloud = false) => {
@@ -480,7 +560,10 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       if (nextWord) {
         const phonemeList = nextWord.phonemes.map(p => p.sound).join(' + ');
         sendText(
-          `[NEXT_WORD] The student is moving to word ${currentWordIndex + 2} of ${words.length}: "${nextWord.targetWord}" (${phonemeList}). Briefly introduce the new word and encourage them to tap each sound.`,
+          `[NEXT_WORD] The student is moving to word ${currentWordIndex + 2} of ${words.length}: "${nextWord.targetWord}"`
+          + (phonemesNamed ? ` (${phonemeList}).` : ` — do NOT list its sounds.`)
+          + ` Briefly introduce the new word and encourage them to tap each sound.`
+          + (revealPolicy ? ` ${revealPolicy}` : ''),
           { silent: true }
         );
       }
@@ -488,7 +571,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       // All words done - submit evaluation
       submitFinalEvaluation();
     }
-  }, [currentWordIndex, words, sendText, spokenCapture]);
+  }, [currentWordIndex, words, sendText, spokenCapture, phonemesNamed, revealPolicy]);
 
   // Advance from listen to build phase
   const handleStartBuild = useCallback(() => {
@@ -499,14 +582,20 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     // Tell the AI tutor we're moving to the build phase
     if (currentWord) {
       const phonemeList = currentWord.phonemes.map(p => p.sound).join(', ');
+      // The "arrange the tiles in order" instruction is the PLAY PROTOCOL and is
+      // voiced at every tier (and is the K band's only instruction channel, R1);
+      // only the enumeration of the sounds is withdrawn at hard.
       sendText(
         `[PHASE_TO_BUILD] The student finished listening and is now in the Build phase for "${currentWord.targetWord}". `
-        + `The sounds are: ${phonemeList}. `
-        + `Briefly tell them to arrange the sound tiles in the right order to build the word. One sentence.`,
+        + (phonemesNamed
+          ? `The sounds are: ${phonemeList}. `
+          : `Do NOT list the sounds — the student must recall them from tapping. `)
+        + `Briefly tell them to arrange the sound tiles in the right order to build the word. One sentence.`
+        + (revealPolicy ? ` ${revealPolicy}` : ''),
         { silent: true }
       );
     }
-  }, [currentWord, sendText]);
+  }, [currentWord, sendText, phonemesNamed, revealPolicy]);
 
   // Submit final evaluation
   const submitFinalEvaluation = useCallback(() => {
@@ -662,11 +751,15 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
         `}
       >
         {isPreReader ? (
+          // Band support — letter-primary tiles are MANDATED at K and are outside
+          // every support tier (contract R3): showTileLetters is a NO-OP here.
           <span className="text-2xl uppercase">{phoneme.letters}</span>
         ) : (
           <>
             <span className="text-xl">{phoneme.sound}</span>
-            {showLetters && (
+            {/* Reader tiles: the letters sub-label is a spelling cue the hard tier
+                withdraws — the phoneme notation (the stimulus) always stays. */}
+            {showLetters && tileLettersShown && (
               <span className="block text-xs text-slate-400 mt-0.5">{phoneme.letters}</span>
             )}
           </>
@@ -705,24 +798,34 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
           </div>
         </LuminaPanel>
 
-        {/* Slow blend display */}
-        <LuminaPanel className="text-center">
-          {!isPreReader && (
-            <p className="text-slate-500 text-xs mb-2">Blended together:</p>
-          )}
-          <div className="flex items-center justify-center gap-1">
-            {currentWord.phonemes.map((phoneme, i) => (
-              <React.Fragment key={phoneme.id}>
-                <span className="text-2xl font-bold text-slate-200">{phoneme.letters}</span>
-                {i < currentWord.phonemes.length - 1 && (
-                  <span className="text-slate-600 text-lg mx-0.5">{'·'}</span>
-                )}
-              </React.Fragment>
-            ))}
-            <span className="text-slate-500 mx-2">{'→'}</span>
-            <span className="text-2xl font-bold text-emerald-300">{currentWord.targetWord}</span>
-          </div>
-        </LuminaPanel>
+        {/* Slow blend display — the listen-phase preview. Support-tier lever #1:
+            'full' shows the ordered letter chain → the word (legacy/easy), 'word'
+            drops the chain (the segmentation model) and keeps only the target word,
+            'none' hides the row so the student works from the tap-to-hear audio and
+            the emoji — both of which are NEVER withdrawn (R2/R8). */}
+        {blendPreview !== 'none' && (
+          <LuminaPanel className="text-center">
+            {!isPreReader && (
+              <p className="text-slate-500 text-xs mb-2">Blended together:</p>
+            )}
+            <div className="flex items-center justify-center gap-1">
+              {blendPreview === 'full' && (
+                <>
+                  {currentWord.phonemes.map((phoneme, i) => (
+                    <React.Fragment key={phoneme.id}>
+                      <span className="text-2xl font-bold text-slate-200">{phoneme.letters}</span>
+                      {i < currentWord.phonemes.length - 1 && (
+                        <span className="text-slate-600 text-lg mx-0.5">{'·'}</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                  <span className="text-slate-500 mx-2">{'→'}</span>
+                </>
+              )}
+              <span className="text-2xl font-bold text-emerald-300">{currentWord.targetWord}</span>
+            </div>
+          </LuminaPanel>
+        )}
 
         <div className="flex justify-center">
           <LuminaButton tone="primary" onClick={handleStartBuild}>
@@ -785,14 +888,28 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
                 </LuminaDropZone>
               );
             })}
-            {Array.from({ length: emptySlots }).map((_, i) => (
-              <LuminaDropZone
-                key={`empty-${i}`}
-                state={getSlotState(false)}
-                emptyPrompt="?"
-                className="min-h-[48px] min-w-[56px] flex-none px-4 py-3"
-              />
-            ))}
+            {/* Support-tier lever #2: the exact-phoneme-count "?" slots tell the
+                student how many sounds the word has. At hard they collapse into ONE
+                open drop zone, so the count must come from listening. The Check
+                enable rule below stays length-based, so the answer is unchanged and
+                nothing auto-submits (R4). */}
+            {slotCountShown
+              ? Array.from({ length: emptySlots }).map((_, i) => (
+                  <LuminaDropZone
+                    key={`empty-${i}`}
+                    state={getSlotState(false)}
+                    emptyPrompt="?"
+                    className="min-h-[48px] min-w-[56px] flex-none px-4 py-3"
+                  />
+                ))
+              : emptySlots > 0 && (
+                  <LuminaDropZone
+                    key="empty-open"
+                    state={getSlotState(false)}
+                    emptyPrompt="?"
+                    className="min-h-[48px] min-w-[112px] flex-1 px-4 py-3"
+                  />
+                )}
           </div>
         </div>
 

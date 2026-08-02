@@ -26,11 +26,17 @@ C3 there) are the same two conflicts, resolved the same two ways (band gate + sc
 | Eval-test / IRT calibration (4 modes) | EVAL_TRACKER | 4/4 pass row (~19, 2026-07-15) | 2026-07-15 |
 | Grade-fidelity ladder (K/1/2) | git + generator | `qa/topic-fidelity/grade-fidelity-closeout-2026-07-15.md` (Task 4); commit `7cb5e5f` | 2026-07-15 |
 
-> **Note — no support-tier / structural-difficulty consumer.** The generator destructures
-> `difficulty` and immediately `void`s it (`gemini-phonics-blender.ts:324,327`); there is no
-> `config.difficulty` lever. Difficulty here is carried entirely by the eval-mode ladder
-> (cvc → cvce/blend → digraph → advanced), not a support tier. Do not add a "difficulty"
-> requirement — none is demanded, and none is wired.
+> **Note — support tier: WIRED 2026-08-02 (scaffold withdrawal only); structural
+> difficulty still absent.** ~~The generator destructures `difficulty` and immediately
+> `void`s it; there is no `config.difficulty` lever.~~ Superseded — see the 2026-08-02
+> changelog entry. `ctx.supportTier` now stamps four presentation/instruction fields
+> (`showBlendPreview`, `showSlotCount`, `showTileLetters`, `nameTargetPhonemes`) plus
+> `supportTier` itself, in CODE after the parse. The standing ruling is unchanged and now
+> ENFORCED rather than merely asserted: **difficulty here is the eval-mode ladder**
+> (cvc → cvce/blend → digraph → advanced); the tier is strictly WITHIN-mode and must never
+> become a word-difficulty axis. Nothing tier-related reaches the prompt, so the draw is
+> identical across tiers (R9). `config.difficulty` is still stripped from the merge — the
+> tier is read from the normalized `ctx.supportTier`, never re-parsed here.
 
 ## Requirements
 
@@ -166,5 +172,41 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-08-02 — **`/add-support-tiers` (axis 3, scaffold withdrawal). COMPATIBLE — all 10
+  requirements hold; no requirement weakened, no property changed for an existing consumer.**
+  The tier is WITHIN-MODE only and lives entirely in code after the parse — **no tier text
+  reaches the prompt**, so the item draw is unchanged (probe evidence: `digraph`@G1 drew
+  ship/chop/fish/chat/shop at hard, medium AND no-tier; `cvc`@K drew cat/hat/pan/map at both
+  easy and no-tier; `patternType` identical across tiers — **R9 intact**, tier and mode stay
+  separable for calibration).
+  - **Levers (all OPTIONAL; absent ⇒ byte-identical legacy full-help render).**
+    `showBlendPreview` `'full'`→`'word'`→`'none'` (the listen-phase "c · a · t → cat" row:
+    medium drops the ordered letter chain, hard hides the row); `showSlotCount` (hard
+    collapses the exact-phoneme-count "?" slots into ONE open drop zone); `showTileLetters`
+    (hard drops the letters sub-label under `/k/` on **reader** tiles); `nameTargetPhonemes`
+    (hard: `[ACTIVITY_START]`/`[PHASE_TO_BUILD]`/`[NEXT_WORD]` introduce the word without
+    enumerating its sounds or their count, and `[BUILD_INCORRECT]` no longer hands the tutor
+    the correct order — it leans the catalog level-1 hint style).
+  - **Band supports compose and WIN — nothing K needs is withdrawable.** R1 the Grade-K
+    how-to-play protocol is exempt (protocol, not answer) and the hard reveal policy says so
+    in-band; R2 tap-to-hear phoneme/word audio (`[PRONOUNCE_SOUND]`) is untouched at every
+    tier and grade; R3 letter-primary K tiles make `showTileLetters` a **NO-OP at K**;
+    R4 the Check confirm stays and its enable rule stays length-based (no auto-submit at any
+    tier); R6/R7 no distractor or extra tiles were added; R8 the emoji is untouched. The
+    deterministic "Blend!" fallback is never tier-gated.
+  - **Tutor:** `supportTier` added to `aiPrimitiveData` + a `tutorRevealPolicy()` line
+    appended to the three introduce-the-word sends, so the voice channel cannot re-reveal
+    what the screen just withdrew. Catalog rider (applied by the batch orchestrator, not in
+    this slice): `supportTier` added to `tutoring.contextKeys` + a `SUPPORT TIER — REVEAL
+    POLICY` aiDirective.
+  - **Verification:** jsdom 31/31 — the pre-existing `PhonicsBlender.reader-fit.test.tsx`
+    7/7 still green (untouched) plus a new `PhonicsBlender.support-tiers.test.tsx` (24).
+    Non-vacuity: reverting the four gates to hardcoded full-help fails exactly 10 of the new
+    assertions and 0 reader-fit ones. Six live Gemini probes via `/api/lumina/eval-test`
+    (`cvc`@K × hard/easy/none, `digraph`@G1 × hard/medium/none): hard carries the withdrawal
+    stamps, easy/medium carry full-help values, **no-difficulty carries no tier fields at
+    all**, and R6 concatenation + R8 emoji hold on 27/27 generated words.
+  - **Lever dropped:** none of the answer-form levers were attempted — adding phoneme choice
+    buttons or distractor tiles would violate R6/R7 and would convert the build mechanic.
 - 2026-07-15 (baseline `--check`) — **COMPATIBLE, 10/10 requirements hold**: 13 eval-test draws (grade ladder exact K→cvc / 1→blend / 2→r-controlled; mode purity 8/8; concatenation + emoji 63/63 words; cvce silent-e clean; intent bias behaves) + jsdom 7/7 + scaffold probe (0 findings, PRE directive + PRONOUNCE present). R2 live-tap caveat unchanged (stays QUEUED). No property or code changes. Report: `qa/primitive-contracts/phonics-blender-check-2026-07-15.md`.
 - 2026-07-15 — derived (initial, second contract after the sorting-station pilot). 10 requirements (all OBSERVED; R2 carries a queued live-tap caveat, R6 a prompt-vs-code note), 2 conflicts (both RESOLVED via the same band-gate + scoping forks as sorting-station C2/C3), 4 gap requirements from `curriculum_fit_probe` (K/G1 ABSTAIN-diffuse, G2 MATCH): G1 segmentation, G2 onset-rime, G3 vowel-teams (strongest — curriculum names the primitive), G4 decode↔encode boundary ruling. 2 catalog divergences flagged (TTS→Gemini-Live, images→emoji) — projection NOT applied (derive-only). Evidence: curriculum-fit probe 2026-07-15, reader-fit PRE + live 3/3, grade-fidelity close-out, EVAL_TRACKER RF-1/RF-2 + PB2 + SP-7, git to 2026-03.

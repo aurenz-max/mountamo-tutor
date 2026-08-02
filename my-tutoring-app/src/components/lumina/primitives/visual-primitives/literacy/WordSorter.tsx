@@ -44,6 +44,13 @@ export interface MatchPair {
   matchEmoji?: string;
 }
 
+/** A non-answer entry shown in the match column (support-tier answer-form lever). */
+export interface DistractorMatch {
+  id: string;
+  text: string;
+  emoji?: string;
+}
+
 export interface WordSorterChallenge {
   id: string;
   type: 'binary_sort' | 'ternary_sort' | 'match_pairs';
@@ -53,6 +60,25 @@ export interface WordSorterChallenge {
   bucketEmojis?: string[];
   words?: WordCard[];
   pairs?: MatchPair[];
+
+  // ── Within-mode support tier scaffolds (stamped by the generator from
+  //    config.difficulty). Display / instruction only — they NEVER change which
+  //    words are drawn or which bucket is correct. ALL OPTIONAL: absent ⇒ the
+  //    legacy full-help render, so every read below uses `!== false` (or an
+  //    explicit opt-in where the legacy render showed nothing). ──
+  /**
+   * #1 perception — the picture cue on each bucket.
+   * At K this is FORCED on by the band floor (bucket emoji are the pre-reader
+   * answer surface). At reader grades the cue is opt-IN: the legacy render showed
+   * label-only, so it appears only when a tier explicitly grants it.
+   */
+  showBucketEmojis?: boolean;
+  /** #1 perception — badges of the words already filed in each bucket. Default: shown. */
+  showFiledWords?: boolean;
+  /** #2 instruction — the instruction names the sort criterion. Default: named. */
+  namesSortCriterion?: boolean;
+  /** #5 answer-form (match_pairs) — extra non-answer entries in the match column. */
+  distractorMatches?: DistractorMatch[];
 }
 
 export interface WordSorterData {
@@ -60,6 +86,8 @@ export interface WordSorterData {
   description?: string;
   gradeLevel: string;
   sortingTopic: string;
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: WordSorterChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -87,6 +115,43 @@ const BUCKET_COLORS = [
   { text: 'text-emerald-300' },
 ];
 
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The tutor is a second
+ * scaffold channel, so its reveal latitude must MATCH what is on screen:
+ *  - easy   → name each bucket aloud and restate the sorting rule in child terms.
+ *  - medium → name the buckets and ask the question, but stop pre-chewing the rule.
+ *  - hard   → the on-screen instruction hid the criterion, so the tutor must not
+ *             state it either; coach by question.
+ * BAND FLOOR: at K the child cannot read anything on screen, so hard still names
+ * each bucket aloud (and [WORD_STAGED] read-aloud is never withdrawn) — what hard
+ * withholds at K is the sorting RULE. At EVERY tier the tutor never says which
+ * bucket or match is correct.
+ */
+function tutorRevealPolicy(
+  tier: 'easy' | 'medium' | 'hard' | undefined,
+  isPreReader: boolean,
+): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return '[SUPPORT_TIER easy] Full support: name each bucket out loud, restate the sorting rule in child terms, '
+      + 'and think it through with the student. Never say which bucket a word belongs in.';
+  }
+  if (tier === 'medium') {
+    return '[SUPPORT_TIER medium] Light support: name each bucket out loud and ask the sorting question, but do not '
+      + 'restate the rule for every word. Never say which bucket a word belongs in.';
+  }
+  if (isPreReader) {
+    return '[SUPPORT_TIER hard] Name-free coaching, Kindergarten floor: the child cannot read, so you STILL say each '
+      + 'word card aloud when it is staged and you STILL name each bucket out loud so the choices exist for them. '
+      + 'What you withhold is the sorting RULE — do not state the criterion, and never say which bucket a word '
+      + 'belongs in. Coach by question ("Say the word with me. What do you notice about it?").';
+  }
+  return '[SUPPORT_TIER hard] Name-free coaching: the on-screen instruction deliberately does NOT name the sorting '
+    + 'rule, so you must not name it either. Do not state the criterion and do not read the bucket labels aloud — '
+    + 'the student can read them. Coach by question ("Say the word out loud. What do you notice about it?"). '
+    + 'Never say which bucket or match is correct.';
+}
+
 /** Partial credit: 1st try = 100%, 2nd = 75%, 3rd = 50%, 4th+ = 25%. */
 function attemptScore(attempts: number): number {
   if (attempts <= 1) return 100;
@@ -110,6 +175,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     description,
     gradeLevel = 'K',
     sortingTopic,
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -170,6 +236,21 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     [challenges, currentChallengeIndex],
   );
 
+  // ─── Support-tier scaffolds (all default to the legacy full-help render) ───
+  // #1 perception. BAND FLOOR: at K the bucket emoji ARE the pre-reader answer
+  // surface, so no tier may withdraw them. At reader grades the cue is opt-IN —
+  // the legacy render was label-only, so a payload with no tier fields is
+  // byte-identical and only an explicit `true` adds the picture.
+  const showBucketEmojis = isPreReader || currentChallenge?.showBucketEmojis === true;
+  // #1 perception — filed-word badges. Withdrawn at hard so the criterion cannot
+  // be read off the exemplars already sorted. The drop zone's fill state (progress)
+  // survives, so the student still sees that words landed.
+  const showFiledWords = currentChallenge?.showFiledWords !== false;
+  // #2 instruction — when the instruction no longer names the criterion, the
+  // on-screen error line must not name it either ("X doesn't belong in Y" is the
+  // criterion restated), and neither may the tutor.
+  const namesSortCriterion = currentChallenge?.namesSortCriterion !== false;
+
   // ─── Unsorted words ────────────────────────────────────────────
   const unsortedWords = useMemo(() => {
     if (!currentChallenge?.words) return [];
@@ -206,7 +287,14 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   // Stable shuffled order for the matches column — computed once per challenge
   const matchDisplayOrderRef = useRef<{ challengeId: string; order: { id: string; text: string; emoji?: string }[] }>({ challengeId: '', order: [] });
   if (currentChallenge?.type === 'match_pairs' && currentChallenge.pairs && matchDisplayOrderRef.current.challengeId !== currentChallenge.id) {
-    const items = currentChallenge.pairs.map(p => ({ id: p.id, text: p.match, emoji: p.matchEmoji }));
+    // #5 answer-form lever: tier distractors join the SAME column and the SAME
+    // shuffle, so they are positionally indistinguishable from real matches.
+    // Every correct partner is still present — completion keys on pairs.length,
+    // which distractors can never enter (they are never written to matchedPairs).
+    const items = [
+      ...currentChallenge.pairs.map(p => ({ id: p.id, text: p.match, emoji: p.matchEmoji })),
+      ...(currentChallenge.distractorMatches ?? []).map(d => ({ id: d.id, text: d.text, emoji: d.emoji })),
+    ];
     // Fisher-Yates shuffle
     for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -249,6 +337,9 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     totalChallenges: challenges.length,
     gradeLevel,
     sortingTopic,
+    // The support tier the on-screen scaffolds are set to — the catalog's
+    // SUPPORT TIER directive keys the tutor's reveal latitude off this.
+    supportTier: supportTier ?? null,
     // The stimulus word the student is holding (never the answer key) — the
     // scaffold's spoken lines reference it so the tutor can say it aloud.
     selectedWord:
@@ -259,7 +350,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   }), [
     currentChallenge, bucketAssignments.size, matchedPairs.size, currentAttempts,
     currentChallengeIndex, challenges.length, gradeLevel, sortingTopic,
-    stagedWord, selectedWordId, selectedTermId,
+    stagedWord, selectedWordId, selectedTermId, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -274,14 +365,21 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
   useEffect(() => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
+    const policy = tutorRevealPolicy(supportTier, isPreReader);
+    // At hard (reader grades) the bucket-naming step of the SAY THE SORT directive
+    // is scoped off — the reveal policy replaces it with the name-free stance.
+    const openingAsk = supportTier === 'hard' && !isPreReader
+      ? `Follow your SUPPORT TIER directive for this activity: open with a name-free coaching question.`
+      : `Follow your SAY THE SORT OUT LOUD FIRST directive now: say the challenge in child terms, `
+        + `name each bucket aloud, and ask the sorting question.`;
     sendText(
       `[ACTIVITY_START] Word Sorter activity for grade ${gradeLevel}. Topic: ${sortingTopic}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (${currentChallenge?.type}). `
-      + `Follow your SAY THE SORT OUT LOUD FIRST directive now: say the challenge in child terms, `
-      + `name each bucket aloud, and ask the sorting question.`,
+      + openingAsk
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [isConnected, challenges.length, currentChallenge, gradeLevel, sortingTopic, sendText]);
+  }, [isConnected, challenges.length, currentChallenge, gradeLevel, sortingTopic, sendText, supportTier, isPreReader]);
 
   // ─── Pre-reader: tutor voices each word as it comes on stage ───
   // The child cannot read the card; the tutor's voice IS the card (reader-fit
@@ -346,17 +444,27 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     } else {
       SoundManager.playIncorrect();
       incrementAttempts();
-      setFeedback(`Try again — "${word.word}" doesn't belong in "${bucketLabel}".`);
+      // #2 instruction lever: naming the bucket a word does NOT belong in restates
+      // the criterion the hard-tier instruction deliberately withheld.
+      setFeedback(
+        namesSortCriterion
+          ? `Try again — "${word.word}" doesn't belong in "${bucketLabel}".`
+          : 'Try again.',
+      );
       setFeedbackType('error');
       sendText(
-        `[ANSWER_INCORRECT] Student tried to put "${word.word}" in "${bucketLabel}" but it belongs in "${word.correctBucket}". Give a hint without revealing the answer.`,
+        namesSortCriterion
+          ? `[ANSWER_INCORRECT] Student tried to put "${word.word}" in "${bucketLabel}" but it belongs in "${word.correctBucket}". Give a hint without revealing the answer.`
+          // Hard tier: the correct bucket is withheld from the tutor too, so it
+          // cannot leak the criterion the screen is hiding.
+          : `[ANSWER_INCORRECT] Student put "${word.word}" in "${bucketLabel}" and that is not right. Do NOT name the correct group or the sorting rule — ask what they notice about the word and let them try again.`,
         { silent: true },
       );
     }
 
     // Clear feedback after 2s
     setTimeout(() => { setFeedback(''); setFeedbackType(''); }, 2000);
-  }, [hasSubmittedEvaluation, currentChallenge, isPreReader, stagedWord, selectedWordId, incrementAttempts, sendText]);
+  }, [hasSubmittedEvaluation, currentChallenge, isPreReader, stagedWord, selectedWordId, incrementAttempts, sendText, namesSortCriterion]);
 
   // ─── Handle match pair selection ───────────────────────────────
   const handleTermClick = useCallback((termId: string) => {
@@ -381,23 +489,33 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       // it; the tutor speaks on advance/completion, not every pairing.
     } else {
       SoundManager.playIncorrect();
-      const wrongMatch = currentChallenge.pairs.find(p => p.id === matchId);
+      // The tapped entry may be a tier distractor, which has no pair — read the
+      // text off the display order so the tutor never gets a bare "?".
+      const wrongText =
+        currentChallenge.pairs.find(p => p.id === matchId)?.match
+        ?? matchDisplayOrderRef.current.order.find(m => m.id === matchId)?.text
+        ?? '?';
       incrementAttempts();
       setFeedback('Not quite — try a different match.');
       setFeedbackType('error');
       sendText(
-        `[ANSWER_INCORRECT] Student tried to match "${pair.term}" with "${wrongMatch?.match ?? '?'}". Correct match is "${pair.match}". Give a hint.`,
+        namesSortCriterion
+          ? `[ANSWER_INCORRECT] Student tried to match "${pair.term}" with "${wrongText}". Correct match is "${pair.match}". Give a hint.`
+          // Hard tier: the correct partner is withheld from the tutor too.
+          : `[ANSWER_INCORRECT] Student tried to match "${pair.term}" with "${wrongText}" and that is not right. Do NOT name the correct partner or the matching rule — ask what they notice about "${pair.term}" and let them try again.`,
         { silent: true },
       );
     }
 
     setTimeout(() => { setFeedback(''); setFeedbackType(''); }, 2000);
-  }, [hasSubmittedEvaluation, selectedTermId, currentChallenge, incrementAttempts, sendText]);
+  }, [hasSubmittedEvaluation, selectedTermId, currentChallenge, incrementAttempts, sendText, namesSortCriterion]);
 
   // ─── Check if current challenge is done ────────────────────────
   const isChallengeAllSorted = useMemo(() => {
     if (!currentChallenge) return false;
     if (currentChallenge.type === 'match_pairs') {
+      // Keys on pairs.length ONLY — tier distractors are never a completion target,
+      // so adding them can never soft-lock or shorten the challenge.
       return (currentChallenge.pairs?.length ?? 0) > 0 &&
         matchedPairs.size >= (currentChallenge.pairs?.length ?? 0);
     }
@@ -467,15 +585,21 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
     hasRecordedRef.current = null;
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
+    const policy = tutorRevealPolicy(supportTier, isPreReader);
+    const nextAsk = supportTier === 'hard' && !isPreReader
+      ? `Follow your SUPPORT TIER directive for this new challenge: open name-free.`
+      : `Follow your SAY THE SORT OUT LOUD FIRST directive for this new challenge.`;
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (${nextChallenge.type}). `
-      + `Follow your SAY THE SORT OUT LOUD FIRST directive for this new challenge.`,
+      + nextAsk
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
     hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
+    supportTier, isPreReader,
   ]);
 
   // ─── Auto-submit on complete ───────────────────────────────────
@@ -502,7 +626,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
       <div className={`grid gap-4 ${currentChallenge.bucketLabels.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {currentChallenge.bucketLabels.map((label, idx) => {
           const color = BUCKET_COLORS[idx] || BUCKET_COLORS[0];
-          const bucketEmoji = currentChallenge.bucketEmojis?.[idx];
+          const bucketEmoji = showBucketEmojis ? currentChallenge.bucketEmojis?.[idx] : undefined;
           const wordsHere = wordsInBuckets.get(label) || [];
           const zoneState: DropZoneState =
             bucketFlash?.label === label
@@ -527,6 +651,7 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                 </div>
               ) : (
                 <h3 className={`text-sm font-bold ${color.text} mb-3 text-center`}>
+                  {bucketEmoji && <span className="mr-1.5">{bucketEmoji}</span>}
                   {label}
                 </h3>
               )}
@@ -535,15 +660,27 @@ const WordSorter: React.FC<WordSorterProps> = ({ data, className }) => {
                 emptyPrompt={isPreReader ? undefined : 'Tap to place word here'}
                 className="min-h-[104px] pointer-events-none content-center justify-center"
               >
-                {wordsHere.map(w => (
-                  <LuminaBadge
-                    key={w.id}
-                    className={`bg-white/10 border-white/10 text-slate-200 ${isPreReader ? 'text-base' : 'text-xs'}`}
-                  >
-                    {w.emoji && <span className="mr-1">{w.emoji}</span>}
-                    {w.word}
-                  </LuminaBadge>
-                ))}
+                {showFiledWords
+                  ? wordsHere.map(w => (
+                    <LuminaBadge
+                      key={w.id}
+                      className={`bg-white/10 border-white/10 text-slate-200 ${isPreReader ? 'text-base' : 'text-xs'}`}
+                    >
+                      {w.emoji && <span className="mr-1">{w.emoji}</span>}
+                      {w.word}
+                    </LuminaBadge>
+                  ))
+                  // Hard tier: the exemplars are hidden, but PROGRESS is not — an
+                  // anonymous count keeps the "words landed here" feedback without
+                  // handing back the criterion.
+                  : wordsHere.length > 0 && (
+                    <LuminaBadge
+                      aria-label={`${wordsHere.length} words placed here`}
+                      className={`bg-white/10 border-white/10 text-slate-300 ${isPreReader ? 'text-base' : 'text-xs'}`}
+                    >
+                      {wordsHere.length}
+                    </LuminaBadge>
+                  )}
               </LuminaDropZone>
             </button>
           );

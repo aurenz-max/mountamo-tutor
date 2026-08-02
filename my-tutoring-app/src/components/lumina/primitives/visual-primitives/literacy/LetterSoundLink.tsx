@@ -44,6 +44,30 @@ export interface LetterSoundLinkChallenge {
   sharedSoundLetters?: string[];
   /** Private generator trace; never rendered as student-visible copy. */
   remediationMove?: 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
+
+  // ── Within-mode support-tier scaffolds (stamped by the generator from
+  //    ctx.supportTier). Display/instruction only — they NEVER change the letter,
+  //    the sound, the keyword, or which option is correct. Every field is
+  //    OPTIONAL: absent ⇒ byte-identical legacy full-help render. ──
+  /** #1 perception — when the keyword picture anchor appears.
+   *  'proactive' (easy) = before the first attempt, 'after-miss' = legacy,
+   *  'never' (hard) = withdrawn. Absent ⇒ 'after-miss'. */
+  showKeywordAnchor?: 'proactive' | 'after-miss' | 'never';
+  /** #2 instruction — the on-card task cue. undefined ⇒ the legacy fixed line;
+   *  string ⇒ a tier-authored cue; null ⇒ withdrawn (hard). Never names the answer. */
+  strategyHint?: string | null;
+  /** #2 instruction — the footer protocol cue. Same tri-state as strategyHint. */
+  protocolHint?: string | null;
+  /** #2 instruction (hear-see) — the "more than one letter makes this sound" nudge.
+   *  Absent ⇒ shown (legacy). false ⇒ withdrawn (hard). */
+  showSharedSoundHint?: boolean;
+  /** #3 answer-form — may the student audition an option before committing?
+   *  Absent ⇒ legacy audition-then-commit. false ⇒ the first tap commits.
+   *  Honored for keyword-match only (its options carry a picture, so they are
+   *  identifiable without audio); see-hear bubbles have no visual identity, so
+   *  its audition IS the stimulus channel and is never withdrawn. Also forced
+   *  inert at K — the pre-reader band's two-tap protocol always wins. */
+  auditionBeforeCommit?: boolean;
 }
 
 export interface LetterSoundLinkData {
@@ -53,6 +77,10 @@ export interface LetterSoundLinkData {
   challenges: LetterSoundLinkChallenge[];
   /** Canonical grade key ('K' | '1' | '2'…). Drives the pre-reader band-gate. */
   gradeLevel?: string;
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Attempts before a challenge locks and reveals. Absent ⇒ legacy MAX_ATTEMPTS (3). */
+  maxAttempts?: number;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -124,6 +152,53 @@ const SPEAKER_COLORS = [
 const MAX_ATTEMPTS = 3;
 
 // ============================================================================
+// Answer-dimension policy — WHICH FACT IS THE ANSWER DIFFERS PER MODE.
+// The live tutor may never name the current mode's answer dimension before the
+// student answers (letter-spotter precedent: when the target is the answer, the
+// tutor never names it). The other dimension is the on-screen/played stimulus
+// and is always fair game.
+//   see-hear      → the SOUND is the answer (the keyword ENCODES it → also barred)
+//   hear-see      → the LETTER is the answer (the sound is the given stimulus)
+//   keyword-match → the KEYWORD WORD is the answer (as is the sound it starts with)
+// ============================================================================
+
+type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
+
+const ANSWER_DIMENSION: Record<LetterSoundMode, string> = {
+  'see-hear': 'the sound this letter makes, or its keyword word (the keyword encodes that sound)',
+  'hear-see': 'the target letter, or its letter name',
+  'keyword-match': 'the correct keyword word, or the sound this letter makes',
+};
+
+/** May the tutor voice the keyword BEFORE the challenge is resolved? Only where the
+ *  keyword is neither the answer nor an encoding of it — i.e. hear-see, where the
+ *  sound is already the given stimulus. */
+const KEYWORD_SAFE_PRE_ANSWER: Record<LetterSoundMode, boolean> = {
+  'see-hear': false,
+  'hear-see': true,
+  'keyword-match': false,
+};
+
+/** A one-line, answer-free brief the tutor can use to introduce a challenge.
+ *  Names only what is already on screen (the letter) — never the answer. */
+function modeBrief(mode: string, targetLetter: string): string {
+  if (mode === 'hear-see') {
+    return 'a sound will play, and the student picks which of two letters makes it';
+  }
+  if (mode === 'keyword-match') {
+    return `the letter "${targetLetter.toUpperCase()}" is on screen, and the student picks the picture word that starts with its sound`;
+  }
+  return `the letter "${targetLetter.toUpperCase()}" is on screen, and the student picks which of two sounds it makes`;
+}
+
+/** Resolve a display line with the tier tri-state: undefined ⇒ legacy text,
+ *  a string ⇒ the tier-authored cue, null ⇒ withdrawn (render nothing). */
+function resolveCue(cue: string | null | undefined, legacy: string): string | null {
+  if (cue === null) return null;
+  return cue ?? legacy;
+}
+
+// ============================================================================
 // Speaker Icon SVG
 // ============================================================================
 
@@ -186,6 +261,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     cumulativeLetters = [],
     challenges = [],
     gradeLevel = 'K',
+    supportTier,
+    maxAttempts: maxAttemptsProp,
     instanceId,
     skillId,
     subskillId,
@@ -196,6 +273,11 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
   /** Pre-reader band: the two-tap protocol + chrome are voiced/hidden, never read. */
   const isPreReader = gradeLevel === 'K';
+
+  /** Attempts before lock+reveal. Absent tier field ⇒ legacy 3. */
+  const maxAttempts = typeof maxAttemptsProp === 'number' && maxAttemptsProp > 0
+    ? maxAttemptsProp
+    : MAX_ATTEMPTS;
 
   // ---------------------------------------------------------------------------
   // Refs & IDs
@@ -255,6 +337,57 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const currentChallenge = challenges[currentChallengeIndex];
 
   // ---------------------------------------------------------------------------
+  // Support-tier derivations (all default to the legacy full-help behavior)
+  // ---------------------------------------------------------------------------
+
+  /** When the keyword picture anchor may appear. Absent field ⇒ legacy 'after-miss'. */
+  const anchorModeFor = useCallback(
+    (ch?: LetterSoundLinkChallenge) => ch?.showKeywordAnchor ?? 'after-miss',
+    [],
+  );
+
+  /** May the tutor voice [SAY_KEYWORD] for this challenge before it resolves?
+   *  Barred wherever the keyword IS (or encodes) the answer, and withdrawn at
+   *  hard where the anchor itself is withdrawn. */
+  const keywordVoiceAllowed = useCallback(
+    (ch?: LetterSoundLinkChallenge) =>
+      !!ch && KEYWORD_SAFE_PRE_ANSWER[ch.mode] === true && anchorModeFor(ch) !== 'never',
+    [anchorModeFor],
+  );
+
+  /** Proactive anchor (easy) ⇒ the tutor may also voice the keyword up front. */
+  const keywordVoiceUpFront = useCallback(
+    (ch?: LetterSoundLinkChallenge) => keywordVoiceAllowed(ch) && anchorModeFor(ch) === 'proactive',
+    [keywordVoiceAllowed, anchorModeFor],
+  );
+
+  /** Answer-form lever: does the first tap commit? Honored for keyword-match only,
+   *  and NEVER at K — the pre-reader band's audition-then-commit protocol wins. */
+  const commitsOnFirstTap =
+    currentChallenge?.auditionBeforeCommit === false
+    && currentChallenge.mode === 'keyword-match'
+    && !isPreReader;
+
+  /** Tier-aware, MODE-AWARE reveal policy for the live tutor. No tier ever names
+   *  the current mode's answer dimension; the tiers differ only in how much
+   *  strategy the tutor supplies. */
+  const tierTutorClause = useMemo(() => {
+    if (!supportTier || !currentChallenge) return '';
+    const barred = ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer';
+    if (supportTier === 'easy') {
+      return ` SUPPORT TIER easy: name the listening strategy out loud and model the move warmly `
+        + `(e.g. "listen to both, then pick"), but NEVER say ${barred}, and never say which option is correct.`;
+    }
+    if (supportTier === 'hard') {
+      return ` SUPPORT TIER hard: give NO strategy. Ask what the student notices and have them explain `
+        + `their pick. Reveal nothing — never ${barred}, never a strategy, never the correct option. `
+        + `You may still play sounds on request.`;
+    }
+    return ` SUPPORT TIER medium: nudge them to carry out their own approach with one short question; `
+      + `do not lay out the whole strategy, and never say ${barred} or which option is correct.`;
+  }, [supportTier, currentChallenge]);
+
+  // ---------------------------------------------------------------------------
   // Evaluation hook
   // ---------------------------------------------------------------------------
   const {
@@ -283,9 +416,10 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     currentChallenge: currentChallengeIndex + 1,
     totalChallenges: challenges.length,
     attempts: currentAttempts,
+    supportTier: supportTier ?? '',
   }), [
     letterGroup, currentChallenge, currentChallengeIndex,
-    challenges.length, currentAttempts,
+    challenges.length, currentAttempts, supportTier,
   ]);
 
   const { sendText, isConnected } = useLuminaAI({
@@ -301,17 +435,31 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
     hasIntroducedRef.current = true;
 
+    // ANSWER-LEAK FIX: the intro used to state the letter AND its sound AND fire
+    // [SAY_KEYWORD] before challenge 1 — which hands over the answer in see-hear
+    // (sound), keyword-match (keyword/sound) AND hear-see (letter). The brief is
+    // now mode-aware: it names only the on-screen stimulus, and the keyword is
+    // voiced up front ONLY where it is not the answer and the tier invites it.
+    const brief = modeBrief(currentChallenge.mode, currentChallenge.targetLetter);
+    const barred = ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer';
     sendText(
       `[ACTIVITY_START] Letter-sound correspondence activity for Group ${letterGroup} `
       + `(letters: ${cumulativeLetters.join(', ')}). `
       + `There are ${challenges.length} challenges. `
       + `Introduce the activity warmly — we're learning the SOUNDS that letters make! `
-      + `First challenge: "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}. `
-      + `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
-      + `Keep it brief — 2-3 sentences.`,
+      + `First challenge: ${brief}. `
+      + `Do NOT say ${barred} — that is exactly what the student has to find. `
+      + (keywordVoiceUpFront(currentChallenge)
+        ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
+        : '')
+      + `Keep it brief — 2-3 sentences.`
+      + tierTutorClause,
       { silent: true },
     );
-  }, [isConnected, currentChallenge, letterGroup, cumulativeLetters, challenges.length, sendText]);
+  }, [
+    isConnected, currentChallenge, letterGroup, cumulativeLetters, challenges.length,
+    sendText, keywordVoiceUpFront, tierTutorClause,
+  ]);
 
   // ---------------------------------------------------------------------------
   // Auto-play sound for hear-see mode on challenge load
@@ -412,13 +560,22 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
       // Clear playing animation after a short delay
       setTimeout(() => setPlayingOption(null), 1500);
+
+      // #3 answer-form lever (hard, keyword-match, non-K): the audition step is
+      // withdrawn — this tap commits. The word audio above still fires, so the
+      // on-demand audio channel is intact; what is gone is the chance to compare
+      // both options before choosing.
+      if (commitsOnFirstTap) {
+        setSelectedOption(optionIndex);
+        confirmSelection(optionIndex);
+      }
       return;
     }
 
     // Second tap on same option: confirm selection
     setSelectedOption(optionIndex);
     confirmSelection(optionIndex);
-  }, [isLocked, hasSubmittedEvaluation, currentChallenge, listenedOption, sendText]);
+  }, [isLocked, hasSubmittedEvaluation, currentChallenge, listenedOption, sendText, commitsOnFirstTap]);
 
   // ---------------------------------------------------------------------------
   // Confirm selection (called on second tap)
@@ -496,17 +653,25 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       setListenedOption(null);
       setSelectedOption(null);
 
+      // ANSWER-LEAK FIX: [SAY_KEYWORD] used to fire on every miss — in see-hear
+      // and keyword-match the keyword hands over (or encodes) the answer, so it is
+      // suppressed there, and at hard it is suppressed everywhere (the anchor is
+      // withdrawn). The tutor still receives the truth privately, with an explicit
+      // non-reveal instruction, exactly as letter-spotter does.
       sendText(
         `[ANSWER_INCORRECT] The student chose ${wrongDisplay} but the correct answer is `
         + `letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
         + `Attempt ${currentAttempts + 1}. `
-        + `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
-        + `Give a brief hint connecting the letter to its keyword.`,
+        + (keywordVoiceAllowed(currentChallenge)
+          ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
+          : '')
+        + `Give a brief hint WITHOUT saying ${ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer'}.`
+        + tierTutorClause,
         { silent: true },
       );
 
       // After max attempts, reveal and lock
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
+      if (currentAttempts + 1 >= maxAttempts) {
         setFeedback(
           `The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}".`
         );
@@ -533,7 +698,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       }
     }
   }, [
-    currentChallenge, currentAttempts,
+    currentChallenge, currentAttempts, maxAttempts, keywordVoiceAllowed, tierTutorClause,
     incrementAttempts, recordResult, sendText, trackConfusion, updateModeAccuracy,
   ]);
 
@@ -709,14 +874,32 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
     const modeLabel = MODE_CONFIG[nextChallenge.mode]?.description ?? nextChallenge.mode;
 
+    // ANSWER-LEAK FIX: this used to restate letter + sound + keyword for EVERY
+    // upcoming challenge, pre-answer. Same mode-aware rule as [ACTIVITY_START].
+    const nextBarred = ANSWER_DIMENSION[nextChallenge.mode] ?? 'the answer';
+    const nextTierClause = supportTier
+      ? (supportTier === 'easy'
+          ? ` SUPPORT TIER easy: you may name the listening strategy, but never ${nextBarred}.`
+          : supportTier === 'hard'
+            ? ` SUPPORT TIER hard: no strategy, no hints — just set them off. Reveal nothing.`
+            : ` SUPPORT TIER medium: one short nudge only; never ${nextBarred}.`)
+      : '';
+
     sendText(
       `[NEXT_CHALLENGE] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `${modeLabel}. Target: letter "${nextChallenge.targetLetter.toUpperCase()}" → sound ${nextChallenge.targetSound}. `
-      + `[SAY_KEYWORD] ${nextChallenge.targetSound} as in ${nextChallenge.keywordWord}. `
-      + `Briefly introduce the new challenge.`,
+      + `${modeLabel}. This one: ${modeBrief(nextChallenge.mode, nextChallenge.targetLetter)}. `
+      + `Do NOT say ${nextBarred} — that is what the student has to find. `
+      + (keywordVoiceUpFront(nextChallenge)
+        ? `[SAY_KEYWORD] ${nextChallenge.targetSound} as in ${nextChallenge.keywordWord}. `
+        : '')
+      + `Briefly introduce the new challenge.`
+      + nextTierClause,
       { silent: true },
     );
-  }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText, spokenCapture]);
+  }, [
+    advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText,
+    spokenCapture, keywordVoiceUpFront, supportTier,
+  ]);
 
   // Keep a live ref so the auto-advance timer always calls the latest handler.
   const handleNextChallengeRef = useRef(handleNextChallenge);
@@ -791,6 +974,16 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const renderSeeHear = () => {
     if (!currentChallenge) return null;
     const letterColor = getLetterColorClass(currentChallenge.targetLetter);
+    // Tier cues: undefined ⇒ the legacy line (byte-identical), string ⇒ the
+    // tier-authored cue, null ⇒ withdrawn.
+    const taskCue = resolveCue(currentChallenge.strategyHint, 'Which sound does this letter make?');
+    const protocolCue = resolveCue(
+      currentChallenge.protocolHint,
+      'Tap each speaker to hear the sound, then tap your answer again to choose it',
+    );
+    const anchorMode = anchorModeFor(currentChallenge);
+    const showAnchor = anchorMode === 'proactive'
+      || (anchorMode === 'after-miss' && showKeywordHint);
 
     return (
       <div className="space-y-6">
@@ -803,13 +996,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          {!isPreReader && (
-            <p className="text-slate-400 text-sm">Which sound does this letter make?</p>
+          {!isPreReader && taskCue && (
+            <p className="text-slate-400 text-sm">{taskCue}</p>
           )}
         </div>
 
-        {/* Keyword hint — only after wrong attempt. Pre-reader: picture only. */}
-        {showKeywordHint && (
+        {/* Keyword anchor — proactive (easy), after a miss (legacy/medium), or
+            never (hard). Pre-reader: picture only. */}
+        {showAnchor && (
           <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
             <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
             {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
@@ -823,9 +1017,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           )}
         </div>
 
-        {!isPreReader && (
+        {!isPreReader && protocolCue && (
           <p className="text-center text-xs text-slate-600">
-            Tap each speaker to hear the sound, then tap your answer again to choose it
+            {protocolCue}
           </p>
         )}
       </div>
@@ -838,6 +1032,12 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const renderHearSee = () => {
     if (!currentChallenge) return null;
     const options = currentChallenge.options || [];
+    const taskCue = resolveCue(currentChallenge.strategyHint, 'Tap to hear the sound, then find the letter!');
+    const anchorMode = anchorModeFor(currentChallenge);
+    const showAnchor = anchorMode === 'proactive'
+      || (anchorMode === 'after-miss' && showKeywordHint);
+    // The shared-sound nudge is scaffolding, not the stimulus — withdrawn at hard.
+    const showSharedSoundHint = currentChallenge.showSharedSoundHint !== false;
 
     return (
       <div className="space-y-6">
@@ -861,13 +1061,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           >
             <SpeakerIcon className="w-14 h-14 text-amber-300" playing={false} />
           </button>
-          {!isPreReader && (
-            <p className="text-slate-400 text-sm">Tap to hear the sound, then find the letter!</p>
+          {!isPreReader && taskCue && (
+            <p className="text-slate-400 text-sm">{taskCue}</p>
           )}
         </div>
 
-        {/* Keyword hint — only after wrong attempt. Pre-reader: picture only. */}
-        {showKeywordHint && (
+        {/* Keyword anchor — proactive (easy), after a miss (legacy/medium), or
+            never (hard). Pre-reader: picture only. */}
+        {showAnchor && (
           <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
             <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
             {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
@@ -875,7 +1076,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
         )}
 
         {/* Shared sound note */}
-        {!isPreReader && currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
+        {!isPreReader && showSharedSoundHint && currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
           <p className="text-center text-xs text-slate-600">
             Hint: More than one letter might make this sound!
           </p>
@@ -928,14 +1129,24 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                     setShowKeywordHint(true);
                     setSelectedOption(null);
                     trackConfusion(currentChallenge.targetLetter, option.letter || '');
+                    // hear-see: the SOUND is the given stimulus, so replaying it
+                    // ([PRONOUNCE_SOUND]) is never withdrawn. The LETTER is the
+                    // answer — the tutor is told never to name it. The keyword
+                    // anchors the sound, so it is allowed here unless the tier
+                    // has withdrawn the anchor (hard).
                     sendText(
                       `[ANSWER_INCORRECT] Student chose "${(option.letter || '').toUpperCase()}" but correct is "${currentChallenge.targetLetter.toUpperCase()}" (${currentChallenge.targetSound}). `
                       + `Attempt ${currentAttempts + 1}. `
-                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. Give a brief hint.`,
+                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. `
+                      + (keywordVoiceAllowed(currentChallenge)
+                        ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
+                        : '')
+                      + `Give a brief hint WITHOUT saying ${ANSWER_DIMENSION['hear-see']}.`
+                      + tierTutorClause,
                       { silent: true },
                     );
 
-                    if (currentAttempts + 1 >= MAX_ATTEMPTS) {
+                    if (currentAttempts + 1 >= maxAttempts) {
                       setFeedback(
                         `The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}".`
                       );
@@ -979,6 +1190,13 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const renderKeywordMatch = () => {
     if (!currentChallenge) return null;
     const letterColor = getLetterColorClass(currentChallenge.targetLetter);
+    // NB: the legacy JSX wrote these with `&apos;` — an ASCII apostrophe — so the
+    // legacy fallbacks must use the same character to stay byte-identical.
+    const taskCue = resolveCue(currentChallenge.strategyHint, 'Which word starts with this letter\'s sound?');
+    const protocolCue = resolveCue(
+      currentChallenge.protocolHint,
+      'Tap each picture to hear the word, then choose which one starts with this letter\'s sound',
+    );
 
     return (
       <div className="space-y-6">
@@ -991,8 +1209,8 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
           `}>
             {currentChallenge.targetLetter.toUpperCase()}
           </div>
-          {!isPreReader && (
-            <p className="text-slate-400 text-sm">Which word starts with this letter&apos;s sound?</p>
+          {!isPreReader && taskCue && (
+            <p className="text-slate-400 text-sm">{taskCue}</p>
           )}
         </div>
 
@@ -1038,16 +1256,23 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                 {!isListened && !isLocked && (
                   isPreReader
                     ? <EarGlyph className="w-5 h-5 text-slate-400" />
-                    : <span className="text-[10px] text-slate-500">tap to hear</span>
+                    : (
+                      <span className="text-[10px] text-slate-500">
+                        {/* When the audition step is withdrawn the first tap commits,
+                            so the affordance label must say so — never lie about the
+                            protocol. (Never reached at K: the lever is inert there.) */}
+                        {commitsOnFirstTap ? 'tap to choose' : 'tap to hear'}
+                      </span>
+                    )
                 )}
               </button>
             );
           })}
         </div>
 
-        {!isPreReader && (
+        {!isPreReader && protocolCue && (
           <p className="text-center text-xs text-slate-600">
-            Tap each picture to hear the word, then choose which one starts with this letter&apos;s sound
+            {protocolCue}
           </p>
         )}
       </div>

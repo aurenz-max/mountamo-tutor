@@ -166,6 +166,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         'currentWord', 'currentPhase', 'targetPhonemes',
         'placedPhonemes', 'patternType', 'attempts',
         'completedWords', 'totalWords', 'gradeLevel',
+        // Within-mode support tier ('easy'|'medium'|'hard', null when the manifest
+        // sends none). Feeds the SUPPORT TIER — REVEAL POLICY directive below so the
+        // tutor's voice never re-reveals what the on-screen tier just withdrew.
+        'supportTier',
       ],
       scaffoldingLevels: {
         level1:
@@ -228,6 +232,27 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'Examples:\n'
             + '- "[PRONOUNCE] Say the sound /k/ clearly." → Just say the /k/ sound\n'
             + '- "[PRONOUNCE] Say the word cat clearly." → Just say "cat"',
+        },
+        {
+          title: 'SUPPORT TIER — REVEAL POLICY (match your voice to the on-screen help level)',
+          instruction:
+            'This activity carries a within-mode support tier in {{supportTier}} (easy, medium, hard, or '
+            + 'null when no tier was requested). The tier changes ONLY how much help is shown — never the '
+            + 'words, the sounds, or the answer. You are the SECOND scaffold channel, so your reveal '
+            + 'latitude must MATCH it; otherwise a cue the screen just withdrew leaks straight back in by voice.\n'
+            + 'easy or null: full scaffolding — you may say the sounds of the word in order and walk the '
+            + 'student through building it step by step.\n'
+            + 'medium: the screen no longer shows the sound-by-sound chain. Confirm a single sound if the '
+            + 'student asks, but do not recite the whole sequence or the tile order unprompted.\n'
+            + 'hard: the screen shows neither the sound-by-sound chain NOR how many tiles are needed. Do NOT '
+            + 'list the sounds of the word, do NOT say how many there are, and do NOT give their order — even '
+            + 'though {{targetPhonemes}} sits in your context. Open with the level-1 hint style ("Which sound '
+            + 'do you hear FIRST in {{currentWord}}?") and guide by questioning; escalate toward the ordered '
+            + 'sounds only after several failed attempts.\n'
+            + 'NEVER withdrawn at ANY tier: (1) pronunciation on demand — a [PRONOUNCE_SOUND] message is '
+            + 'always answered with the sound or the word, because that audio IS this activity; (2) the '
+            + 'Grade-K how-to-play protocol above — telling a pre-reader HOW TO PLAY is protocol, not the '
+            + 'answer, so it survives every tier.',
         },
       ],
     },
@@ -444,7 +469,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Phase: {{currentPhase}}. Attempts: {{attempts}}.',
       contextKeys: [
         'challengeMode', 'targetWord', 'rhymeFamily', 'comparisonWord', 'optionWords',
-        'currentChallenge', 'totalChallenges', 'currentPhase', 'attempts',
+        'currentChallenge', 'totalChallenges', 'currentPhase', 'attempts', 'supportTier',
       ],
       scaffoldingLevels: {
         level1:
@@ -483,6 +508,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'Say each word distinctly with a brief pause between them. '
             + 'Slightly emphasize the ending sounds to draw attention to the rhyme pattern. '
             + 'Do NOT add extra commentary — just say the words.',
+        },
+        {
+          title: 'SUPPORT TIER — REVEAL POLICY',
+          instruction:
+            'The support tier for this activity is {{supportTier}}. It tells you how much the SCREEN is helping, and your voice must match it — you are a second scaffold channel, not a way around the tier.\n'
+            + '- easy: the rhyme family is highlighted on screen. You may name it and stretch the ending sound.\n'
+            + '- medium: the highlight is gone. Guide by ear ("listen to how it ends"); do not spell the rime out unless the student is stuck.\n'
+            + '- hard: the screen shows no rhyme-family highlight and no written question. Say ONLY the target word and the question, then wait. Never name the rhyme family, and never read the answer choices or the word bank aloud.\n'
+            + 'AT EVERY TIER: never say which word is the answer, and never say the rhyming word for the student.\n'
+            + 'EXCEPTION — Grade K OVERRIDES the tier: the PRE-READER READ-ALOUD directive above is the only instruction channel a non-reader has, so at Grade K always say the target word AND every choice out loud no matter what the tier says.',
         },
       ],
     },
@@ -526,6 +561,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       contextKeys: [
         'currentWord', 'syllableCount', 'syllables',
         'studentClaps', 'currentChallenge', 'totalChallenges', 'attempts',
+        // Within-mode SUPPORT tier ('easy'|'medium'|'hard'; null when the manifest
+        // sent no difficulty). ORTHOGONAL to this primitive's eval modes, which
+        // reuse those same three words for the WORD-LENGTH band.
+        'supportTier',
       ],
       scaffoldingLevels: {
         level1: '"Let\'s clap the word! Say it with me and clap each part."',
@@ -545,6 +584,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'When you receive [PRONOUNCE_SYLLABLES], say the word with clear pauses between syllables '
             + '(e.g., "but...ter...fly"). Exaggerate the breaks slightly. '
             + 'When you receive [PRONOUNCE_SYLLABLE], say just the single syllable requested.',
+        },
+        {
+          title: 'SUPPORT-TIER REVEAL POLICY',
+          instruction:
+            'The support tier for this session is {{supportTier}} (null means full help). That is the '
+            + 'SUPPORT axis — how much scaffolding the student gets — and it is NOT the word-length '
+            + 'band, even though both use the words easy, medium and hard. You are a second scaffold '
+            + 'channel, so match your spoken help to the on-screen tier: '
+            + 'easy or null — you may say the word broken into its parts with clear pauses, clap along, '
+            + 'and replay the parts after a correct answer. '
+            + 'medium — on a miss say the word slowly and let the student find the parts; do NOT replay '
+            + 'the parts after a correct answer. '
+            + 'hard — the clap tally is hidden on screen, so say the word NATURALLY and WHOLE at normal '
+            + 'pace; never break it into parts, never clap along, and never replay the parts. '
+            + 'At EVERY tier you still say the word aloud on demand (this is a listening task, and the '
+            + 'spoken word is never withdrawn), and you NEVER state how many parts the word has before '
+            + 'the student claps — the count IS the answer.',
         },
       ],
     },
@@ -601,7 +657,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         'Phoneme awareness activity. Mode: {{mode}}. '
         + 'Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
       contextKeys: [
-        'mode', 'currentChallenge', 'totalChallenges', 'attempts',
+        'mode', 'currentChallenge', 'totalChallenges', 'attempts', 'supportTier',
       ],
       scaffoldingLevels: {
         level1:
@@ -626,6 +682,21 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'For blend: say each sound slowly then blend. '
             + 'For segment: say the word clearly. '
             + 'For manipulate: say the original word and the operation.',
+        },
+        {
+          title: 'SUPPORT TIER — REVEAL POLICY',
+          instruction:
+            'The student is at support tier {{supportTier}} (easy = max on-screen scaffolding, hard = min). '
+            + 'If it is empty or null this lesson has no tier — behave as easy. '
+            + 'Keep your reveal level in sync with what is on screen. '
+            + 'easy: name the target sound, use the example word, read all four options aloud, and walk the setup. '
+            + 'medium: the worked example on screen has lost its "starts with" sub-label — name the sound and read '
+            + 'the options, but let the student compare them. '
+            + 'hard: the screen has withdrawn the worked-example card, the picture cues on the options, the blend cue '
+            + 'and the printed operation spell-out ON PURPOSE. Do NOT hand any of that back and do NOT list the '
+            + 'options — the student reads them. Keep saying the sound (and, for manipulate, the operation) aloud: '
+            + 'that is the channel the item is carried on once the print is gone. Pronounce anything on request. '
+            + 'At EVERY tier, never say which option is correct.',
         },
       ],
     },
@@ -801,16 +872,26 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       taskDescription:
         'Letter-sound correspondence activity. Group {{letterGroup}}. '
         + 'Mode: {{challengeMode}}. Target: letter "{{targetLetter}}" → sound {{targetSound}}. '
-        + 'Keyword: "{{keywordWord}}". Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}.',
+        + 'Keyword: "{{keywordWord}}". Challenge {{currentChallenge}}/{{totalChallenges}}. Attempts: {{attempts}}. '
+        + 'Support tier: {{supportTier}}. '
+        + 'THE TARGET LINE ABOVE IS PRIVATE CONTEXT, NOT A SCRIPT: which of those facts is the ANSWER '
+        + 'depends on the mode — see the SUPPORT TIER directive before you say any of them.',
       contextKeys: [
         'letterGroup', 'challengeMode', 'targetLetter', 'targetSound',
         'keywordWord', 'currentChallenge', 'totalChallenges', 'attempts',
-        'sharedSoundLetters',
+        'sharedSoundLetters', 'supportTier',
       ],
       scaffoldingLevels: {
-        level1: '"What sound does this letter make? Think of a word that starts with it."',
-        level2: '"This letter makes the sound... think of {{keywordWord}}. What sound does {{keywordWord}} start with?"',
-        level3: '"The letter {{targetLetter}} makes the sound {{targetSound}}, like in {{keywordWord}}. Say it with me: {{targetSound}}!"',
+        level1: '"What do you notice? Take your time — listen once more if you want." (Mode-neutral; reveals nothing.)',
+        level2:
+          'Coach the STRATEGY for THIS mode, never the answer. '
+          + 'see-hear: "Listen to both bubbles again — which one goes with this letter?" (never say the sound or the keyword). '
+          + 'hear-see: "Listen to that sound again, and try saying it yourself — now which letter?" (never say the letter or its name). '
+          + 'keyword-match: "Say this letter\'s sound quietly to yourself, then listen to each picture word" (never say the sound or the keyword).',
+        level3:
+          'Narrow the field WITHOUT naming the answer: have the student rule ONE option out and say why '
+          + '("does that one go with this letter?"). Only once the challenge is resolved — correct, or attempts '
+          + 'exhausted ([NEW_SOUND_INTRO]) — may you say the letter, its sound, and its keyword together.',
       },
       commonStruggles: [
         { pattern: 'Saying the letter name instead of the sound', response: 'That\'s the letter NAME. We want the SOUND it makes. The letter S is named "ess" but it SOUNDS like /s/.' },
@@ -831,7 +912,24 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           title: 'KEYWORD ASSOCIATIONS',
           instruction:
             'When you receive [SAY_KEYWORD], say the sound followed by "as in [keyword]". '
-            + 'Example: "/s/ as in sun". Keep it brief.',
+            + 'Example: "/s/ as in sun". Keep it brief. '
+            + 'NEVER volunteer the keyword on your own: the app sends [SAY_KEYWORD] only in the modes and '
+            + 'support tiers where the keyword is not the answer. No tag, no keyword.',
+        },
+        {
+          title: 'SUPPORT TIER — WHAT YOU MAY REVEAL',
+          instruction:
+            'ANSWER DIMENSION BY MODE — never name the current mode\'s answer before the student has answered. '
+            + 'see-hear: the SOUND is the answer (and the keyword encodes it) — you may refer to the letter on screen. '
+            + 'hear-see: the LETTER is the answer — you may replay the sound freely. '
+            + 'keyword-match: the KEYWORD WORD is the answer (as is the sound it starts with) — you may refer to the letter. '
+            + 'The session may carry {{supportTier}} (easy | medium | hard; empty = default full help). It NEVER changes '
+            + 'which letter, sound, or word is correct — only how much help you give. '
+            + 'easy: name the listening strategy out loud and model the move, staying off the answer dimension. '
+            + 'medium: nudge execution with one short question; no full strategy. '
+            + 'hard: give NO strategy — ask what the student notices and have them justify their pick; reveal nothing. '
+            + 'Every tier keeps the audio: [PRONOUNCE_SOUND] and [TAP_OPTION] are always honored. '
+            + 'Once a challenge is resolved, all tiers may state the letter, its sound, and its keyword.',
         },
         {
           title: 'HOW TO PLAY — SAY IT (the child cannot read the screen)',
@@ -842,7 +940,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'how to play THIS challenge in kid words — this how-to-play IS your greeting, so it '
             + 'OVERRIDES any "keep it to one sentence" rule; use two short sentences if you need them. '
             + 'For "See a letter, pick its sound" and "Match letter to keyword" challenges say something like: '
-            + '"Tap a bubble to hear it. When you find the one that makes {{targetSound}}, tap it again to keep it!" '
+            + '"Tap a bubble to hear it. When you think you found the right one, tap it again to keep it!" '
+            + 'In those two modes NEVER say the sound the letter makes or its keyword — that IS the answer; '
+            + 'say only how to play. (If the tap-again step has been withdrawn for this session, the first tap keeps it — '
+            + 'say "Tap the one you think is right!" instead.) '
             + 'For "Hear a sound, find the letter" challenges say: "Listen… now tap the letter that makes that sound!" '
             + 'NEVER tell them which bubble or letter is correct — only how to play. Warm and quick.',
         },
@@ -1149,7 +1250,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'Mastered vowels: {{masteredVowels}}. Phase: {{currentPhase}}. Attempts: {{attempts}}.',
       contextKeys: [
         'mode', 'currentChallenge', 'totalChallenges', 'masteredVowels',
-        'currentPhase', 'attempts',
+        'currentPhase', 'attempts', 'supportTier',
       ],
       scaffoldingLevels: {
         level1:
@@ -1196,6 +1297,27 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             + 'This voicing IS your greeting and OVERRIDES any one-sentence / keep-it-brief cap. '
             + 'NEVER say which choice is correct and NEVER read a nonsense/target answer that gives it away \u2014 '
             + 'name the task, not the answer.',
+        },
+        {
+          title: 'SUPPORT TIER \u2014 REVEAL POLICY',
+          instruction:
+            'The student is at support tier {{supportTier}} (easy = maximum on-screen scaffolding, hard = minimum). '
+            + 'You are a SECOND scaffold channel, so keep your reveal level in sync with what is actually on screen. '
+            + 'easy: the mode instruction line, the amber changed-letter highlight WITH its before/after chip, the '
+            + 'per-word speaker buttons and a whole-sentence model read are all visible, and comprehension offers only '
+            + 'two choices \u2014 you MAY name which letter changed and where, and the level-3 SENTENCES move '
+            + '("Let me read it first, then you try") is allowed HERE. '
+            + 'medium: the changed letter is still highlighted but the before/after chip is gone and there are three '
+            + 'comprehension choices \u2014 nudge execution only; confirm a sound if asked, do not pre-solve the change. '
+            + 'hard: there is NO instruction line, NO changed-letter highlight, NO word speaker buttons and NO '
+            + 'whole-sentence model read \u2014 noticing what changed IS the task. Do NOT name the changed letter or its '
+            + 'position, do NOT read a target word or the whole sentence aloud, and do NOT offer to read it first '
+            + '(that level-3 SENTENCES move is scoped to easy/medium ONLY). Ask what the student notices instead. '
+            + 'AT EVERY TIER: a per-word [PRONOUNCE] request is still answered with that one word (tap-to-hear is the '
+            + 'measured support and is never withdrawn), and you never say which choice is correct. '
+            + 'KINDERGARTEN OVERRIDES THE TIER: for a pre-reader, keep voicing the play action and keep answering '
+            + '[PRONOUNCE] / [CHAIN_WORD] / [READ_SENTENCE] normally \u2014 the band support wins over any withdrawal. '
+            + 'When supportTier is absent, behave exactly as before \u2014 full scaffolding is on screen.',
         },
       ],
     },
@@ -1989,10 +2111,14 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       taskDescription:
         'Student is sorting words by {{sortingTopic}}. Challenge {{challengeNumber}}/{{totalChallenges}} ({{challengeType}}): {{instruction}}. '
         + 'Buckets: {{bucketLabels}}. Sorted {{wordsSorted}}/{{totalWords}} words. Attempt: {{attemptNumber}}. '
-        + 'Word the student is holding right now (empty if none): {{selectedWord}}.',
+        + 'Word the student is holding right now (empty if none): {{selectedWord}}. '
+        + 'On-screen support tier: {{supportTier}} ("(not set)" = no tier is in play, treat it as full support; '
+        + 'easy/medium = bucket picture cues, already-filed word badges, and a criterion-naming instruction are all on screen; '
+        + 'hard = all three are withdrawn on purpose).',
       contextKeys: [
         'challengeType', 'instruction', 'bucketLabels', 'wordsSorted', 'totalWords',
         'attemptNumber', 'challengeNumber', 'totalChallenges', 'gradeLevel', 'sortingTopic', 'selectedWord',
+        'supportTier',
       ],
       scaffoldingLevels: {
         level1:
@@ -2022,7 +2148,9 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'The student may not be able to read the instruction, the word cards, or the bucket labels — you are their voice. '
             + 'Whenever a new sorting challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), your FIRST action is: '
             + '(1) say what we are doing in child terms — the challenge is: "{{instruction}}"; '
-            + '(2) name each bucket out loud so the child knows the choices: {{bucketLabels}}; '
+            + '(2) name each bucket out loud so the child knows the choices: {{bucketLabels}} — EXCEPT in the name-free '
+            + 'stance the SUPPORT TIER directive defines (support tier "hard" at Grade 1 and above), where you skip this '
+            + 'step and let the on-screen labels speak for themselves; at Kindergarten you name the buckets aloud at EVERY tier; '
             + '(3) ask the sorting question as a spoken question (for example, "Is it an animal, or something an animal DOES?"). '
             + 'Saying the sort out loud IS your greeting for this activity — this overrides any instruction to keep the '
             + 'transition to a single sentence. Never say which bucket a word belongs in.',
@@ -2033,6 +2161,23 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
             'When you receive a [WORD_STAGED] or [WORD_TAP] message, say that word aloud clearly — just the word itself, '
             + 'warmly and once. The child cannot read the card; your voice is how they know what it says. '
             + 'Never hint at which bucket or match the word belongs to when saying it.',
+        },
+        {
+          title: 'SUPPORT TIER — how much of the sorting rule you may say out loud',
+          instruction:
+            'The support tier is {{supportTier}} — the scaffolding level the on-screen activity is set to. Your talk must '
+            + 'MATCH it, because you are a second scaffold channel and can undo what the screen deliberately withheld. '
+            + 'If it is "(not set)" there is no tier in play: behave as at easy. '
+            + 'easy — full support: name each bucket aloud, restate the sorting rule in child terms, and think it through with the student. '
+            + 'medium — light support: name each bucket aloud and ask the sorting question, but do not restate the rule for every word. '
+            + 'hard — name-free coaching: the on-screen instruction does NOT name the sorting rule, the bucket picture cues are '
+            + 'gone, and the already-sorted word badges are hidden, so you must not supply any of that. Do not state the '
+            + 'criterion, do not read the bucket labels aloud for a Grade 1+ student, and never name the group a word belongs '
+            + 'to. Coach by question instead ("Say the word out loud. What do you notice about it?"). '
+            + 'BAND FLOOR — at Kindergarten the child cannot read anything on screen, so at EVERY tier including hard you '
+            + 'still say each word card aloud when it is staged ([WORD_STAGED] / [WORD_TAP]) and you still name each bucket '
+            + 'aloud so the choices exist for them; what hard withholds at Kindergarten is the sorting RULE, never the words. '
+            + 'At every tier you never say which bucket or match is correct — that is the answer the student is producing.',
         },
       ],
     },

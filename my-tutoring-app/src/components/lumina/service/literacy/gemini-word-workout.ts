@@ -1,6 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
+import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import type {
   WordWorkoutData,
   WordWorkoutMode,
@@ -512,6 +512,101 @@ function validateWordChain(
 }
 
 // ============================================================================
+// Within-mode support tier — scaffold withdrawal (axis 1)
+// ----------------------------------------------------------------------------
+// The tier NEVER changes which content is drawn. No tier text reaches the LLM
+// prompt (that would steer word/sentence selection); every field below is
+// stamped in CODE post-parse from `ctx.supportTier`, which resolveGenerationContext
+// already normalized to 'easy' | 'medium' | 'hard'. All it does is withdraw HELP:
+//
+//   #1 chainCueLevel            (word-chains)       full → highlight-only → none
+//   #2 showInstruction          (all modes)         the mode-instruction line
+//   #2 allowSentenceModelRead   (sentence-reading)  the whole-sentence model read
+//   #3 allowPronounce           (real-vs-nonsense)  the per-card speaker buttons
+//   #4 comprehensionChoiceCount (sentence-reading)  2 → 3 → 4 options
+//
+// INVARIANTS
+//  - The stimulus is never withdrawn: chain words, the target word, the picture
+//    options and the sentence all render at every tier, and PER-WORD tap-to-hear
+//    survives every tier (it is the MEASURED support — wordsReadIndependent).
+//  - The comprehension answer sits at index 0 pre-shuffle, so trimming the
+//    distractor slice can never drop it (and the post-filter already guarantees
+//    the answer is one of cvcWords).
+//  - Chain data is untouched: chain[] / changedPositions[] still come straight
+//    out of validateWordChain, so the 1-letter-change validation is unaffected —
+//    hard only stops DRAWING the change, it does not change the chain.
+//  - Every field is OPTIONAL. Absent ⇒ byte-identical legacy full-help render;
+//    the component reads them with `!== false` / `?? legacy`.
+//  - Fallback challenges are deliberately left UNSTAMPED (full help): a
+//    generation failure must not ALSO strip the student's scaffolding.
+// ============================================================================
+
+type ChainCueLevel = 'full' | 'highlight-only' | 'none';
+
+interface SupportScaffold {
+  showInstruction: boolean;
+  chainCueLevel: ChainCueLevel;
+  allowPronounce: boolean;
+  allowSentenceModelRead: boolean;
+  comprehensionChoiceCount: number;
+}
+
+const SUPPORT_SCAFFOLDS: Record<SupportTier, SupportScaffold> = {
+  easy: {
+    showInstruction: true,
+    chainCueLevel: 'full',
+    allowPronounce: true,
+    allowSentenceModelRead: true,
+    comprehensionChoiceCount: 2,
+  },
+  medium: {
+    showInstruction: true,
+    chainCueLevel: 'highlight-only',
+    allowPronounce: true,
+    allowSentenceModelRead: true,
+    comprehensionChoiceCount: 3,
+  },
+  hard: {
+    showInstruction: false,
+    chainCueLevel: 'none',
+    allowPronounce: false,
+    allowSentenceModelRead: false,
+    comprehensionChoiceCount: 4,
+  },
+};
+
+/**
+ * Stamp only the scaffold fields THIS mode actually renders, so an absent field
+ * always means "this mode has no such lever", never "the tier forgot to set it".
+ * Pure display/instruction data — no content field is read or rewritten here.
+ */
+function applySupportTier(
+  mode: WordWorkoutMode,
+  challenges: WordWorkoutChallenge[],
+  tier: SupportTier | undefined,
+): WordWorkoutChallenge[] {
+  if (!tier) return challenges;
+  const sc = SUPPORT_SCAFFOLDS[tier];
+  return challenges.map((ch): WordWorkoutChallenge => {
+    switch (mode) {
+      case 'word-chains':
+        return { ...ch, showInstruction: sc.showInstruction, chainCueLevel: sc.chainCueLevel };
+      case 'real-vs-nonsense':
+        return { ...ch, showInstruction: sc.showInstruction, allowPronounce: sc.allowPronounce };
+      case 'picture-match':
+        return { ...ch, showInstruction: sc.showInstruction };
+      case 'sentence-reading':
+        return {
+          ...ch,
+          showInstruction: sc.showInstruction,
+          allowSentenceModelRead: sc.allowSentenceModelRead,
+          comprehensionChoiceCount: sc.comprehensionChoiceCount,
+        };
+    }
+  });
+}
+
+// ============================================================================
 // Per-mode challenge generator
 // ============================================================================
 
@@ -523,7 +618,8 @@ async function generateModeChallenges(
   count: number,
   intent?: string,
   scopeSection = '',
-  scopedVowels: string[] | null = null
+  scopedVowels: string[] | null = null,
+  supportTier?: SupportTier
 ): Promise<WordWorkoutChallenge[]> {
   try {
     const prompt = getModePrompt(mode, topic, gradeLevel, masteredVowels, count, intent, scopeSection, scopedVowels);
@@ -587,7 +683,10 @@ async function generateModeChallenges(
     }
 
     if (challenges.length === 0) return fallbackFor(mode, count, scopedVowels);
-    return challenges;
+
+    // Support tier LAST — after every content filter, so scaffold withdrawal can
+    // never influence which challenges survive. Fallbacks bypass this on purpose.
+    return applySupportTier(mode, challenges, supportTier);
   } catch (error) {
     console.warn(`[word-workout] ${mode} generation failed, using fallback:`, error);
     return fallbackFor(mode, count, scopedVowels);
@@ -638,6 +737,11 @@ export const generateWordWorkout = async (
   // hidden at K; reader grades unchanged). Stamped into every returned shape.
   const gradeKey = resolvePreReaderGradeKey(ctx);
 
+  // ── Within-mode support tier (axis 1: scaffold withdrawal) ──────────
+  // Already normalized upstream by resolveGenerationContext; NEVER re-parsed from
+  // config.difficulty here, and never mentioned in any prompt.
+  const supportTier = ctx.supportTier;
+
   // Determine which modes to generate
   const explicitMode = config?.mode;
   const evalModes = evalConstraint?.allowedTypes as WordWorkoutMode[] | undefined;
@@ -654,7 +758,8 @@ export const generateWordWorkout = async (
       count,
       intent,
       scopeSection,
-      scopedVowels
+      scopedVowels,
+      supportTier
     );
 
     // Re-assign sequential IDs
@@ -663,13 +768,17 @@ export const generateWordWorkout = async (
       id: `c${i + 1}`,
     }));
 
-    console.log(`[word-workout] Single-mode (${targetMode}): ${finalChallenges.length} challenges`);
+    console.log(`[word-workout] Single-mode (${targetMode}): ${finalChallenges.length} challenges`
+      + (supportTier ? `; support tier "${supportTier}"` : ''));
 
     return {
       title: `CVC Word Workout: ${topic}`,
       mode: targetMode,
       masteredVowels,
       gradeLevel: gradeKey,
+      // Tell the live tutor the support level whenever a tier is present, so its
+      // reveal latitude matches what is (or is not) on screen.
+      ...(supportTier ? { supportTier } : {}),
       challenges: finalChallenges,
     };
   }
@@ -690,7 +799,8 @@ export const generateWordWorkout = async (
       mode === 'word-chains' || mode === 'sentence-reading' ? 1 : countPerMode,
       intent,
       scopeSection,
-      scopedVowels
+      scopedVowels,
+      supportTier
     ))
   );
 
@@ -703,6 +813,7 @@ export const generateWordWorkout = async (
   console.log("[word-workout] Multi-mode generated:", {
     total: allChallenges.length,
     modes: modesToGenerate,
+    supportTier: supportTier ?? '(none)',
   });
 
   return {
@@ -710,6 +821,7 @@ export const generateWordWorkout = async (
     mode: modesToGenerate[0],
     masteredVowels,
     gradeLevel: gradeKey,
+    ...(supportTier ? { supportTier } : {}),
     challenges: allChallenges,
   };
 };

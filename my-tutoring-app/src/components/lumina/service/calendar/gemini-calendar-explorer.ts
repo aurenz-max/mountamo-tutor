@@ -4,7 +4,7 @@ import {
   CalendarExplorerChallenge,
 } from "../../primitives/visual-primitives/calendar/CalendarExplorer";
 import { ai } from "../geminiClient";
-import type { GenerationContext } from "../generation/generationContext";
+import type { GenerationContext, SupportTier } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
@@ -88,6 +88,26 @@ function resolveGradeBand(gradeLevel: string): string {
   return "1";
 }
 
+/**
+ * Map the canonical objective grade ('K' | '1'..'12') onto the component's band.
+ * resolveGradeBand() above only ever saw `gradeContext` PROSE, and its digit tests
+ * match any "4" or "5" anywhere in that prose — a Grade-1 objective was landing on
+ * the "4-5" band. The band is what the component uses to hold the pre-reader floor
+ * and what it hands the live tutor as gradeLevel, so it has to come from the
+ * canonical grade whenever there is one. Returns null when there isn't.
+ */
+export function calendarGradeBandFromGrade(grade?: string): string | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 1) return "1";
+  if (n === 2) return "2";
+  if (n === 3) return "3";
+  return "4-5";
+}
+
 // Ensure variety across months
 function randomMonth(): number {
   return Math.floor(Math.random() * 12) + 1;
@@ -101,6 +121,160 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+// ===========================================================================
+// Within-mode support tier (ctx.supportTier) — SCAFFOLD WITHDRAWAL, not numbers
+//
+// The eval mode is the task identity (identify / count / pattern). The tier only
+// decides how much of the calendar's *help* is on screen while the student does
+// that same task. INVARIANTS:
+//   • The tier never appears in any prompt — every stamp below is applied in CODE
+//     post-parse, so the tier cannot steer WHICH month/day/question Gemini draws.
+//   • The tier never touches question, month, year, correctAnswer or targetDayOfWeek.
+//     The calendar grid itself (the manipulable object) is never withdrawn.
+//   • Every field is OPTIONAL. No tier ⇒ no fields stamped ⇒ byte-identical legacy
+//     full-help render (the component reads them with `!== false`).
+//
+// LEVERS
+//   #1 perception   showTargetDayColumn (count) — the purple pre-marking of every
+//                     target-day cell. It performs the counting task for the
+//                     student, so `hard` drops it and the child must find the
+//                     column and count unaided.
+//   #2 orientation  showDayHeaders / showMonthLabel — the Sun..Sat header row and
+//                     the "March 2025" caption. medium drops the caption (the
+//                     question names the month), hard drops both.
+//   #3 answer-form  count option spread — the code-built options are ALWAYS
+//                     adjacent [n-1, n, n+1, n+2], i.e. already the hard end.
+//                     `easy` REBUILDS them wide (n, n±3, n+6) so a rough count
+//                     discriminates. The correct answer is always present; the
+//                     option count never changes; MC never becomes free entry.
+//   #4 instruction  hint — the generated hints are strategy giveaways ("Look at
+//                     the Friday column and count each one"), which hand over the
+//                     method that `hard` is meant to assess. `hard` replaces the
+//                     hint with a neutral one IN CODE (the LLM never authors the
+//                     hard hint, and never learns a tier exists).
+// ===========================================================================
+
+/** Strategy-free hint stamped at `hard`. Names no column, row, or method. */
+export const CALENDAR_NEUTRAL_HINT = "Use the calendar to work it out.";
+
+interface CalendarSupportScaffold {
+  showDayHeaders: boolean;
+  showMonthLabel: boolean;
+  /** count only — the purple pre-marking of target-day cells. */
+  showTargetDayColumn: boolean;
+  /** count only — rebuild the MC options with a wide spread. */
+  wideOptionSpread: boolean;
+  /** hard only — overwrite the generated strategy hint. */
+  neutralHint: boolean;
+}
+
+function resolveCalendarSupport(tier: SupportTier): CalendarSupportScaffold {
+  switch (tier) {
+    case "easy":
+      return {
+        showDayHeaders: true,
+        showMonthLabel: true,
+        showTargetDayColumn: true,
+        wideOptionSpread: true,
+        neutralHint: false,
+      };
+    case "medium":
+      return {
+        showDayHeaders: true,
+        showMonthLabel: false,
+        showTargetDayColumn: true,
+        wideOptionSpread: false,
+        neutralHint: false,
+      };
+    case "hard":
+    default:
+      return {
+        showDayHeaders: false,
+        showMonthLabel: false,
+        showTargetDayColumn: false,
+        wideOptionSpread: false,
+        neutralHint: true,
+      };
+  }
+}
+
+/**
+ * Build the 4 count options around the computed count.
+ *  - narrow (legacy): [n-1, n, n+1, n+2], clamped at 1 — byte-identical to the
+ *    inline builder in generateCountChallenges for every real month count.
+ *  - wide (easy only): [n-3, n, n+3, n+6], clamped at 1 — a rough count still
+ *    discriminates, so the child is graded on "did you count" not "±1".
+ * The correct answer is ALWAYS present.
+ */
+export function buildCalendarCountOptions(count: number, wide: boolean): string[] {
+  const offsets = wide ? [-3, 0, 3, 6] : [-1, 0, 1, 2];
+  const nums: number[] = [];
+  for (const off of offsets) {
+    const v = count + off;
+    if (v >= 1 && !nums.includes(v)) nums.push(v);
+  }
+  if (!nums.includes(count)) nums.push(count);
+  let step = wide ? 9 : 3;
+  while (nums.length < 4) {
+    const v = count + step;
+    if (!nums.includes(v)) nums.push(v);
+    step += wide ? 3 : 1;
+  }
+  const out = nums.sort((a, b) => a - b).slice(0, 4).map(String);
+  if (!out.includes(String(count))) out[out.length - 1] = String(count);
+  return out;
+}
+
+/**
+ * Stamp the tier's scaffold fields onto every challenge. Pure + deterministic.
+ *
+ * `preReader` is the K band floor: at K the header row, the month caption and the
+ * target-day marking are the pre-reader's ONLY orientation channels (the question
+ * text that names the month is a reading demand K cannot meet, and a child who
+ * cannot read "Fri" can only find the Friday column by its marking). Band supports
+ * compose with tiers and ALWAYS win — the floor is stamped explicitly (`true`), so
+ * it is visible in the payload rather than a silent override at render time.
+ */
+export function applyCalendarSupportTier(
+  challenges: CalendarExplorerChallenge[],
+  supportTier: SupportTier | undefined,
+  preReader: boolean,
+): CalendarExplorerChallenge[] {
+  // Absent tier ⇒ untouched. Legacy payloads carry none of these fields.
+  if (!supportTier) return challenges;
+
+  const sc = resolveCalendarSupport(supportTier);
+
+  return challenges.map((c) => {
+    const next: CalendarExplorerChallenge = { ...c };
+
+    next.showDayHeaders = preReader ? true : sc.showDayHeaders;
+    next.showMonthLabel = preReader ? true : sc.showMonthLabel;
+
+    if (c.type === "count") {
+      next.showTargetDayColumn = preReader ? true : sc.showTargetDayColumn;
+      if (sc.wideOptionSpread) {
+        const n = parseInt(c.correctAnswer, 10);
+        if (!isNaN(n) && n >= 1) next.options = buildCalendarCountOptions(n, true);
+      }
+    }
+
+    if (sc.neutralHint) next.hint = CALENDAR_NEUTRAL_HINT;
+
+    return next;
+  });
+}
+
+/**
+ * Is this a pre-reader (K) instance? The canonical objective grade wins; the raw
+ * grade key is the fallback. NEVER resolveGradeBand() — its `includes("k")` test
+ * matches any prose containing a "k".
+ */
+export function isCalendarPreReader(ctx: Pick<GenerationContext, "grade" | "gradeLevel">): boolean {
+  if (ctx.grade) return ctx.grade === "K";
+  return /kinder|(^|[^a-z])k([^a-z]|$)/i.test(ctx.gradeLevel ?? "");
+}
 
 // ---------------------------------------------------------------------------
 // Flat challenge interface for Gemini output
@@ -602,19 +776,24 @@ EXAMPLE:
 // Fallbacks — one per type, correct by construction
 // ===========================================================================
 
-const FALLBACKS: Record<string, CalendarExplorerChallenge> = {
+export const FALLBACKS: Record<string, CalendarExplorerChallenge> = {
   identify: {
     id: "fb-1",
+    // DATE-ANSWER fallback (was a day-of-week answer, "Wednesday"). An identify
+    // challenge whose correctAnswer is a day NAME is answered from the options
+    // list, not the grid; a numeric answer is answerable by clicking the date,
+    // which is the mode's native act. Keep the fallback in the grid-answerable
+    // class so the safety net is always the simplest working interaction.
     type: "identify",
-    question: "What day of the week is January 1, 2025?",
-    month: 1,
+    question: "What date is the second Tuesday of March 2025?",
+    month: 3,
     year: 2025,
-    // Jan 1, 2025 is a Wednesday
-    correctAnswer: "Wednesday",
-    options: ["Monday", "Tuesday", "Wednesday", "Thursday"],
-    hint: "Find January 1 on the calendar and look at the column header.",
-    narration: "Let's find out what day the new year starts on!",
-    highlightDates: [1],
+    // March 2025 starts on a Saturday → Tuesdays fall on 4, 11, 18, 25.
+    correctAnswer: "11",
+    options: ["4", "11", "18", "25"],
+    hint: "Find the Tuesdays in March, then count to the second one.",
+    narration: "Let's find the second Tuesday in March!",
+    highlightDates: [11],
   },
   count: {
     id: "fb-1",
@@ -647,24 +826,25 @@ const FALLBACKS: Record<string, CalendarExplorerChallenge> = {
 // Main generator — dispatches to per-type sub-generators in parallel
 // ===========================================================================
 
-type CalendarExplorerConfig = Partial<{ targetEvalMode?: string }>;
-
 export const generateCalendarExplorer = async (
   ctx: GenerationContext,
 ): Promise<CalendarExplorerData> => {
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
-  const config = ctx.raw as CalendarExplorerConfig;
+  // Axis 3 — normalized once upstream in resolveGenerationContext. Never re-parse
+  // config.difficulty here.
+  const supportTier = ctx.supportTier;
   // ── Resolve eval mode ──
   const evalConstraint = resolveEvalModeConstraint(
     "calendar-explorer",
-    config?.targetEvalMode,
+    ctx.targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
-  logEvalModeResolution("CalendarExplorer", config?.targetEvalMode, evalConstraint);
+  logEvalModeResolution("CalendarExplorer", ctx.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback.
+  const gradeBand = calendarGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
   // Determine challenge count per type
@@ -731,6 +911,20 @@ export const generateCalendarExplorer = async (
     description = `Practice ${label.toLowerCase()} on the calendar.`;
   }
 
+  // ── Within-mode support tier: withdraw on-screen / instructional scaffolding.
+  //    Applied LAST so fallback challenges are tiered too, in CODE so the tier
+  //    never reached a prompt, and per challenge so a blended session is tiered
+  //    as well (the tier is a student property, not a single-mode one). Gated
+  //    ONLY on supportTier being present. ──
+  const preReader = isCalendarPreReader(ctx);
+  challenges = applyCalendarSupportTier(challenges, supportTier, preReader);
+  if (supportTier) {
+    console.log(
+      `[CalendarExplorer] Support tier "${supportTier}" applied to ${challenges.length} challenge(s)`
+      + (preReader ? " (K band floor: orientation scaffolds held)" : ""),
+    );
+  }
+
   const typeBreakdown = challenges.map((c) => c.type).join(", ");
   console.log(`[CalendarExplorer] Final: ${challenges.length} challenge(s) → [${typeBreakdown}]`);
 
@@ -739,5 +933,8 @@ export const generateCalendarExplorer = async (
     description,
     challenges,
     gradeBand: gradeBand as CalendarExplorerData["gradeBand"],
+    // Tell the live tutor the support level whenever a tier is present — the
+    // reveal policy has to match what the screen withdrew.
+    ...(supportTier ? { supportTier } : {}),
   };
 };

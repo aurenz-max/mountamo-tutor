@@ -64,11 +64,31 @@ interface PhonemeChallenge {
   // -- shared choices (isolate, blend, manipulate) --
   choices?: PhonemeChoice[];
   remediationMove?: 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
+
+  // ── Within-mode support tier scaffolds (stamped by the generator from
+  //    ctx.supportTier). Display/instruction only — they NEVER change the
+  //    phonemes, the words, the choices, or which choice is correct.
+  //    ALL OPTIONAL: absent ⇒ legacy full-help render (every cue shown), which is
+  //    why every read below is `!== false` and never a truthiness check. ──
+  /** isolate — render the worked-example card at all. Default: shown. */
+  showExampleWord?: boolean;
+  /** isolate — render the "starts with X" sub-label under the example. Default: shown. */
+  showExampleHint?: boolean;
+  /** all modes — render emoji on choice buttons + the segment/manipulate target. Default: shown. */
+  showChoiceEmoji?: boolean;
+  /** blend — render the "Blend these sounds together:" cue and the "+" separators. Default: shown. */
+  showBlendCue?: boolean;
+  /** manipulate — render the authored operationDescription (vs a neutral line). Default: shown. */
+  showOperationDetail?: boolean;
+  /** tutor — auto-read all four options at challenge start. Default: read. */
+  readOptionsAloud?: boolean;
 }
 
 export interface PhonemeExplorerData {
   title: string;
   challenges: PhonemeChallenge[];
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Voice control (spoken CHOICE shape) — say an option to pick it.
   gradeLevel?: string;
@@ -153,6 +173,46 @@ function phonemeVoiceReady(choices: PhonemeChoice[], answer: string): boolean {
   );
 }
 
+// A DECLARED pre-reader band always keeps the picture cue on the answer buttons
+// and the tutor's option read-aloud, whatever the support tier says — at K the
+// emoji IS the pre-reader's access to the option words, so no tier may withdraw
+// it. An ABSENT band is not an override: the generator already applied the K
+// guard when it stamped the scaffolds, and an unstamped payload has nothing to
+// override. (Defaulting to "K" here would silently no-op the whole tier.)
+const PRE_READER_BANDS = new Set([
+  'k', 'pre', 'prek', 'pre-k', 'pre_k', 'kindergarten', 'pre-reader', 'prereader',
+]);
+function isPreReaderBand(grade?: string): boolean {
+  if (!grade) return false;
+  return PRE_READER_BANDS.has(grade.trim().toLowerCase());
+}
+
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The tutor is a second
+ * scaffold channel, so its latitude must MATCH what the screen shows:
+ *  - easy   → may walk the whole setup and read every option aloud.
+ *  - medium → nudge only; the worked example is thinner on screen, so be thinner too.
+ *  - hard   → the screen withdrew the worked example / instruction furniture and the
+ *             option enumeration; do not hand any of it back. On-demand pronunciation
+ *             of the sound or the word (this primitive's whole point) always stays.
+ * At EVERY tier the tutor never says which option is correct.
+ */
+function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return `[SUPPORT_TIER easy] Full scaffolding: you may name the target sound, use the example word, `
+      + `read every option aloud, and walk the student through the move. Never say which option is correct.`;
+  }
+  if (tier === 'medium') {
+    return `[SUPPORT_TIER medium] Light scaffolding: name the sound and read the options, but do not pre-solve — `
+      + `let the student compare the options themselves. Never say which option is correct.`;
+  }
+  return `[SUPPORT_TIER hard] Minimal scaffolding: the screen has withdrawn the worked example, the picture cues `
+    + `and the printed instruction furniture on purpose — do NOT hand them back and do NOT list the options. `
+    + `Say the sound (or the word) clearly, ask the student what they hear, and let them read the choices. `
+    + `Pronounce anything on request. Never say which option is correct.`;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -167,9 +227,12 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     objectiveId,
     exhibitId,
     onEvaluationSubmit,
+    supportTier,
   } = data;
 
   const gradeLevel = data.gradeLevel ?? 'K';
+  // Band gate reads the RAW declared band (not the 'K' fallback) — see isPreReaderBand.
+  const preReaderBand = isPreReaderBand(data.gradeLevel);
 
   // ── Activity gate ──────────────────────────────────────────────
   const [hasStarted, setHasStarted] = useState(false);
@@ -233,6 +296,13 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const currentChallenge = challenges[currentIndex];
 
+  // ── Support tier: picture cue on the answer surface ─────────────
+  // hard withdraws the emoji so the student decodes PRINT. The emoji stays in the
+  // data (the generator schema requires it and the tutor still names words) — this
+  // is a render-time withdrawal only. A declared pre-reader band always wins.
+  const showChoiceEmoji =
+    preReaderBand || currentChallenge?.showChoiceEmoji !== false;
+
   // ── Shuffle choices once per challenge (for choice-based modes) ─
   const shuffledChoices = useMemo(() => {
     if (!currentChallenge?.choices) return [];
@@ -246,7 +316,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     totalChallenges: challenges.length,
     attempts: currentAttempts,
     mode: currentChallenge?.mode,
-  }), [currentIndex, challenges.length, currentAttempts, currentChallenge?.mode]);
+    supportTier: supportTier ?? null,
+  }), [currentIndex, challenges.length, currentAttempts, currentChallenge?.mode, supportTier]);
 
   const { sendText, isConnected, isAIResponding, isAudioPlaying } = useLuminaAI({
     primitiveType: 'phoneme-explorer',
@@ -278,15 +349,31 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       ? `[ACTIVITY_START] This is a phoneme awareness activity with ${total} challenges. Warmly introduce: "Let's explore sounds!" `
       : `[NEW_CHALLENGE] `;
 
+    // Support tier — the tutor is the second scaffold channel and must not hand
+    // back what the screen withdrew. At hard the automatic enumeration of all four
+    // options is suppressed (the student reads them); the TASK FRAMING stays, and
+    // on-demand pronunciation of the sound/word is never withdrawn. A declared
+    // pre-reader band always keeps the read-aloud.
+    const enumerate = preReaderBand || ch.readOptionsAloud !== false;
+    const policy = tutorRevealPolicy(supportTier);
+    const tail = policy ? ` ${policy}` : '';
+
     switch (ch.mode) {
       case 'isolate': {
         const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
+        // The worked example is on-screen scaffolding; when it is withdrawn the
+        // tutor must not voice it either. The phoneme SOUND is the stimulus and
+        // is spoken at every tier.
+        const example = ch.showExampleWord === false ? '' : `, like in ${ch.exampleWord}`;
         sendText(
           prefix
           + `Mode: Sound Match. Say the sound "${ch.phonemeSound}" clearly and slowly. `
-          + `Say: "This is the ${ch.phoneme} sound, like in ${ch.exampleWord}! `
+          + `Say: "This is the ${ch.phoneme} sound${example}! `
           + `Which word starts with ${ch.phonemeSound}?" `
-          + `Then read each option aloud: "${choiceWords}".`,
+          + (enumerate
+            ? `Then read each option aloud: "${choiceWords}".`
+            : `Do NOT read the options aloud — the student reads them. Say each sound again if asked.`)
+          + tail,
           { silent: true },
         );
         break;
@@ -297,7 +384,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           prefix
           + `Mode: Sound Blend. Say each sound slowly: "${ch.phonemeDisplay}". `
           + `Say: "Listen... ${ch.phonemeDisplay}... What word do these sounds make?" `
-          + `Read each option aloud: "${choiceWords}".`,
+          + (enumerate
+            ? `Read each option aloud: "${choiceWords}".`
+            : `Do NOT read the options aloud — the student reads them. Repeat the sounds if asked.`)
+          + tail,
           { silent: true },
         );
         break;
@@ -307,18 +397,28 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
           prefix
           + `Mode: Sound Split. Show the word "${ch.targetWord}" ${ch.targetEmoji}. `
           + `Say: "Let's break '${ch.targetWord}' into sounds! How many sounds do you hear?" `
-          + `Read each option aloud: "${ch.segmentOptions?.join(', ')}".`,
+          + (enumerate
+            ? `Read each option aloud: "${ch.segmentOptions?.join(', ')}".`
+            : `Do NOT read the options aloud — the student reads them. Repeat the word if asked.`)
+          + tail,
           { silent: true },
         );
         break;
       }
       case 'manipulate': {
         const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
+        // operationDescription is ALWAYS spoken: at hard the printed panel is
+        // replaced by a neutral line, so the voice is the channel that carries the
+        // operation. Withdrawing both would make the item unanswerable.
         sendText(
           prefix
           + `Mode: Sound Swap. Show word "${ch.originalWord}" ${ch.originalEmoji}. `
           + `Say: "${ch.operationDescription}" `
-          + `"What new word do you get?" Read options: "${choiceWords}".`,
+          + `"What new word do you get?" `
+          + (enumerate
+            ? `Read options: "${choiceWords}".`
+            : `Do NOT read the options aloud — the student reads them. Repeat the instruction if asked.`)
+          + tail,
           { silent: true },
         );
         break;
@@ -610,16 +710,21 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         </div>
       </div>
 
-      {/* Example word — interaction surface (sound object) */}
-      <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
-        <span className="text-3xl">{ch.exampleEmoji}</span>
-        <div className="text-center">
-          <span className="text-xl font-bold text-slate-100">{ch.exampleWord}</span>
-          <p className="text-xs text-slate-500">
-            starts with <span className="text-blue-300 font-semibold">{ch.phoneme}</span>
-          </p>
+      {/* Worked example — SCAFFOLDING, not the stimulus. Withdrawn whole at the
+          hard tier; the "starts with" sub-label goes first at medium. */}
+      {ch.showExampleWord !== false && (
+        <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
+          <span className="text-3xl">{ch.exampleEmoji}</span>
+          <div className="text-center">
+            <span className="text-xl font-bold text-slate-100">{ch.exampleWord}</span>
+            {ch.showExampleHint !== false && (
+              <p className="text-xs text-slate-500">
+                starts with <span className="text-blue-300 font-semibold">{ch.phoneme}</span>
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Question */}
       <p className="text-center text-base text-slate-300 font-medium">
@@ -634,16 +739,20 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   const renderBlendChallenge = (ch: PhonemeChallenge) => (
     <div className="space-y-5">
-      {/* Phoneme tiles — interaction surface (sound objects) */}
+      {/* Phoneme tiles — interaction surface (sound objects), never withdrawn.
+          The cue label and the "+" separators are INSTRUCTION FURNITURE: at the
+          hard tier they go and the tiles read as a cold sequence. */}
       <div className="flex flex-col items-center gap-3">
-        <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
+        {ch.showBlendCue !== false && (
+          <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
+        )}
         <div className="flex items-center gap-2">
           {ch.phonemeSequence?.map((p, i) => (
             <React.Fragment key={i}>
               <div className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center">
                 <span className="text-2xl font-black text-purple-200">/{p}/</span>
               </div>
-              {i < (ch.phonemeSequence?.length ?? 0) - 1 && (
+              {ch.showBlendCue !== false && i < (ch.phonemeSequence?.length ?? 0) - 1 && (
                 <span className="text-purple-400/50 text-lg">+</span>
               )}
             </React.Fragment>
@@ -666,7 +775,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       {/* Target word display — interaction surface (sound object) */}
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center">
-          <span className="text-4xl">{ch.targetEmoji}</span>
+          {/* Picture cue withdrawn at hard — the WORD is the stimulus and stays. */}
+          {showChoiceEmoji && <span className="text-4xl">{ch.targetEmoji}</span>}
           <div className="text-3xl font-black text-emerald-200 mt-2">
             {ch.targetWord}
           </div>
@@ -712,17 +822,21 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       {/* Original word — interaction surface (sound object) */}
       <div className="flex flex-col items-center gap-3">
         <div className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center">
-          <span className="text-4xl">{ch.originalEmoji}</span>
+          {/* Picture cue withdrawn at hard — the WORD is the stimulus and stays. */}
+          {showChoiceEmoji && <span className="text-4xl">{ch.originalEmoji}</span>}
           <div className="text-3xl font-black text-amber-200 mt-2">
             {ch.originalWord}
           </div>
         </div>
       </div>
 
-      {/* Operation instruction */}
+      {/* Operation instruction. At the hard tier the printed spell-out is replaced
+          by a fixed neutral line chosen in CODE (never an LLM rewrite — those
+          desync from the answer); the tutor still says the full operation aloud,
+          so the item stays answerable through the audio channel. */}
       <LuminaPanel className="text-center">
         <p className="text-base text-slate-200 font-medium">
-          {ch.operationDescription}
+          {ch.showOperationDetail === false ? 'Make a new word.' : ch.operationDescription}
         </p>
       </LuminaPanel>
 
@@ -756,7 +870,9 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
               ${isCelebrating && isCorrectChoice ? 'animate-bounce' : ''}
             `}
           >
-            <span className="text-3xl">{choice.emoji}</span>
+            {/* Picture cue withdrawn at hard so the student decodes PRINT.
+                The word — the answer surface — is never withdrawn. */}
+            {showChoiceEmoji && <span className="text-3xl">{choice.emoji}</span>}
             <span className="text-lg font-bold">
               {choice.word}
             </span>

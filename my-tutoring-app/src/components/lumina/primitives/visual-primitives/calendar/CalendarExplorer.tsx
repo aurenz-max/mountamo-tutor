@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,18 @@ export interface CalendarExplorerChallenge {
   highlightDates?: number[];
   /** For count: which day of week to count (e.g., "Tuesday") */
   targetDayOfWeek?: string;
+
+  // ── Within-mode support-tier scaffolds (stamped by the generator from
+  //    ctx.supportTier, in code, post-parse). DISPLAY / INSTRUCTION ONLY — they
+  //    never change the question, the month, or the answer. All optional: absent
+  //    ⇒ legacy full-help render, which is why every read below uses `!== false`.
+  //    The K band floor stamps them back to `true`; band supports always win. ──
+  /** count only — pre-mark every target-day cell in purple. Default: shown. */
+  showTargetDayColumn?: boolean;
+  /** The Sun..Sat header row above the grid. Default: shown. */
+  showDayHeaders?: boolean;
+  /** The "March 2025" caption under the question. Default: shown. */
+  showMonthLabel?: boolean;
 }
 
 export interface CalendarExplorerData {
@@ -43,6 +55,8 @@ export interface CalendarExplorerData {
   description?: string;
   challenges: CalendarExplorerChallenge[];
   gradeBand?: 'K' | '1' | '2' | '3' | '4-5';
+  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -65,9 +79,9 @@ const MONTH_NAMES = [
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  identify: { label: 'Identify', icon: '\uD83D\uDCC5', accentColor: 'blue' },
-  count:    { label: 'Count',    icon: '\uD83D\uDD22', accentColor: 'emerald' },
-  pattern:  { label: 'Pattern',  icon: '\uD83D\uDD0D', accentColor: 'purple' },
+  identify: { label: 'Identify', icon: '📅', accentColor: 'blue' },
+  count:    { label: 'Count',    icon: '🔢', accentColor: 'emerald' },
+  pattern:  { label: 'Pattern',  icon: '🔍', accentColor: 'purple' },
 };
 
 // ============================================================================
@@ -88,6 +102,49 @@ function getDayOfWeek(day: number, month: number, year: number): string {
   return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex];
 }
 
+/**
+ * Is this challenge answered by clicking a date in the grid?
+ *
+ * Only identify challenges use the grid as the answer surface, and ONLY when the
+ * expected answer is a date number — a grid click yields a numeric string, so an
+ * identify challenge whose correctAnswer is a day NAME ("Saturday") could never be
+ * matched from the grid. Those are answered from the generated option list instead
+ * (the grid stays live for locating the date, it just isn't the answer channel).
+ */
+export function isGridAnswerChallenge(challenge: CalendarExplorerChallenge): boolean {
+  return challenge.type === 'identify' && /^\d+$/.test((challenge.correctAnswer ?? '').trim());
+}
+
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The live tutor is a
+ * SECOND scaffold channel, so its reveal latitude must match what the screen shows:
+ *  - easy   → the header row, the month caption and the target-day marking are all
+ *             on screen, so the tutor may name them and walk the strategy.
+ *  - medium → the month caption is gone; nudge the method, don't pre-solve it.
+ *  - hard   → headers, caption AND the target-day marking are all withdrawn, so the
+ *             tutor must not recite the Sun..Sat order, name the column, or hand over
+ *             the counting strategy — that would restore the exact scaffold the tier
+ *             removed (the catalog's level-3 line spells the header order out).
+ * At every tier the tutor never states the answer.
+ */
+export function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return '[SUPPORT_TIER easy] Full scaffolding: the day headers, the month caption and the '
+      + 'highlighted target-day cells are all on screen. You may name the day-of-week order and '
+      + 'point at the column to use. Never state the answer itself.';
+  }
+  if (tier === 'medium') {
+    return '[SUPPORT_TIER medium] Light scaffolding: the month caption is off screen (the question '
+      + 'names the month). Nudge the method, do not pre-solve it, and never state the answer.';
+  }
+  return '[SUPPORT_TIER hard] Minimal scaffolding: the day-name headers, the month caption and the '
+    + 'target-day highlighting are ALL withdrawn on purpose. Do NOT recite the Sun, Mon, Tue... header '
+    + 'order, do not say which column to look at, and do not hand over the counting strategy — that '
+    + 'would put back the exact scaffold this tier removed. Ask what the student notices and guide by '
+    + 'questioning. Never state the answer.';
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -98,6 +155,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
     description,
     challenges,
     gradeBand,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -116,20 +174,6 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
     subskillId,
     objectiveId,
     exhibitId,
-  });
-
-  // ── AI Tutoring ─────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    gradeBand,
-    currentChallenge: challenges[0]?.question,
-  }), [title, gradeBand, challenges]);
-
-  const { sendText } = useLuminaAI({
-    primitiveType: 'calendar-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
   });
 
   // ── Challenge Progress ──────────────────────────────────────────
@@ -151,6 +195,30 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
+  const currentChallenge = challenges[currentIndex];
+
+  // ── AI Tutoring ─────────────────────────────────────────────────
+  // Tracks the ACTIVE challenge — pinning this to challenges[0] left the tutor
+  // coaching question 1 for the whole session.
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    gradeBand,
+    currentChallenge: currentChallenge?.question ?? '',
+    challengeNumber: currentIndex + 1,
+    totalChallenges: challenges.length,
+    challengeType: currentChallenge?.type ?? '',
+    month: currentChallenge ? MONTH_NAMES[currentChallenge.month - 1] ?? '' : '',
+    year: currentChallenge?.year ?? '',
+    supportTier: supportTier ?? null,
+  }), [title, gradeBand, currentChallenge, currentIndex, challenges.length, supportTier]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'calendar-explorer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
   // ── Local State ─────────────────────────────────────────────────
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
@@ -161,7 +229,17 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
   const startTimeRef = useRef(Date.now());
   const challengeStartRef = useRef(Date.now());
 
-  const currentChallenge = challenges[currentIndex];
+  // ── Support-tier scaffold reads ─────────────────────────────────
+  // `!== false` ⇒ an untiered payload renders exactly as before. The K band floor
+  // is re-asserted here as well: nothing a pre-reader needs is ever withdrawn.
+  const preReaderBand = gradeBand === 'K';
+  const showDayHeaders = preReaderBand || currentChallenge?.showDayHeaders !== false;
+  const showMonthLabel = preReaderBand || currentChallenge?.showMonthLabel !== false;
+  const showTargetDayColumn = preReaderBand || currentChallenge?.showTargetDayColumn !== false;
+
+  // ── Answer surface ──────────────────────────────────────────────
+  const answerFromGrid = currentChallenge ? isGridAnswerChallenge(currentChallenge) : false;
+  const showOptionButtons = !answerFromGrid && (currentChallenge?.options?.length ?? 0) > 0;
 
   // ── Calendar Grid Data ──────────────────────────────────────────
   const calendarGrid = useMemo(() => {
@@ -185,8 +263,8 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
     if (allChallengesComplete || !currentChallenge) return;
     SoundManager.tap();        // ← tactile date press
     setClickedDate(day);
-    // For identify challenges, clicking a date IS the answer
-    if (currentChallenge.type === 'identify') {
+    // Only a DATE-answer identify challenge is answered by clicking the grid.
+    if (isGridAnswerChallenge(currentChallenge)) {
       setSelectedAnswer(String(day));
     }
   }, [allChallengesComplete, currentChallenge]);
@@ -202,6 +280,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
 
     const isCorrect = selectedAnswer.toLowerCase().trim() === currentChallenge.correctAnswer.toLowerCase().trim();
     incrementAttempts();
+    const policy = tutorRevealPolicy(supportTier);
 
     if (isCorrect) {
       SoundManager.playCorrect();
@@ -232,12 +311,18 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
         });
         setFeedback({ correct: false, message: `The answer is ${currentChallenge.correctAnswer}.` });
       }
+      // At `hard` the answer is withheld from the tutor as well — the on-screen
+      // scaffolds are gone, so a tutor holding the answer is the last leak path.
       sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}" for: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint.`,
+        supportTier === 'hard'
+          ? `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" for: "${currentChallenge.question}". `
+            + `That is not right. Attempt ${currentAttempts + 1}. Ask one guiding question. ${policy}`
+          : `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}" for: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint.`
+            + (policy ? ` ${policy}` : ''),
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, supportTier]);
 
   const handleNext = useCallback(() => {
     setSelectedAnswer(null);
@@ -274,11 +359,13 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
       return;
     }
 
+    const policy = tutorRevealPolicy(supportTier);
     sendText(
-      `[NEXT_ITEM] Moving to question ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`,
+      `[NEXT_ITEM] Moving to question ${currentIndex + 2} of ${challenges.length}. Introduce it briefly.`
+      + (policy ? ` ${policy}` : ''),
       { silent: true },
     );
-  }, [advanceProgress, challengeResults, challenges, currentIndex, phaseResults, resolvedInstanceId, sendText, submitResult]);
+  }, [advanceProgress, challengeResults, challenges, currentIndex, phaseResults, sendText, submitResult, supportTier]);
 
   // ── Determine if we can proceed ─────────────────────────────────
   const hasAnsweredCurrent = challengeResults.some(r => r.challengeId === currentChallenge?.id);
@@ -336,18 +423,23 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
               <p className="text-lg text-slate-100 font-medium mb-2">
                 {currentChallenge.question}
               </p>
-              <p className="text-xs text-slate-500">
-                {MONTH_NAMES[currentChallenge.month - 1]} {currentChallenge.year}
-              </p>
+              {/* Month caption — an orientation scaffold; withdrawn at medium/hard,
+                  where the question text already names the month. */}
+              {showMonthLabel && (
+                <p className="text-xs text-slate-500" data-testid="month-label">
+                  {MONTH_NAMES[currentChallenge.month - 1]} {currentChallenge.year}
+                </p>
+              )}
             </div>
 
             {/* Calendar Grid */}
             <div className="mb-6">
               <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
-                {/* Day headers */}
-                {DAY_HEADERS.map((day) => (
+                {/* Day headers — orientation scaffold, withdrawn at hard */}
+                {showDayHeaders && DAY_HEADERS.map((day) => (
                   <div
                     key={day}
+                    data-testid="day-header"
                     className="text-center text-xs font-mono text-slate-500 py-1"
                   >
                     {day}
@@ -362,12 +454,15 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
 
                   const isHighlighted = highlightedDates.has(day);
                   const isClicked = clickedDate === day;
-                  const isSelected = currentChallenge.type === 'identify' && selectedAnswer === String(day);
+                  const isSelected = answerFromGrid && selectedAnswer === String(day);
 
-                  // Determine day-of-week for count-type highlighting
+                  // Determine day-of-week for count-type highlighting. The purple
+                  // pre-marking does the counting task for the student, so it is
+                  // withdrawn at hard (showTargetDayColumn === false).
                   const dayOfWeek = getDayOfWeek(day, currentChallenge.month, currentChallenge.year);
-                  const isTargetDay = currentChallenge.type === 'count' &&
-                    currentChallenge.targetDayOfWeek &&
+                  const isTargetDay = showTargetDayColumn &&
+                    currentChallenge.type === 'count' &&
+                    !!currentChallenge.targetDayOfWeek &&
                     dayOfWeek === currentChallenge.targetDayOfWeek;
 
                   const isWeekend = new Date(currentChallenge.year, currentChallenge.month - 1, day).getDay() % 6 === 0;
@@ -376,6 +471,8 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
                     <button
                       key={day}
                       onClick={() => handleDateClick(day)}
+                      data-testid={`date-${day}`}
+                      data-target-day={isTargetDay ? 'true' : undefined}
                       className={`
                         h-10 rounded-lg text-sm font-mono transition-all duration-150
                         ${isHighlighted
@@ -399,8 +496,9 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
               </div>
             </div>
 
-            {/* Answer Options (for count and pattern types) */}
-            {currentChallenge.type !== 'identify' && currentChallenge.options.length > 0 && (
+            {/* Answer Options — every challenge that is NOT answered by clicking a
+                date in the grid (count, pattern, and day-name identify). */}
+            {showOptionButtons && (
               <div className="mb-4">
                 <p className="text-xs text-slate-500 mb-2">Choose your answer:</p>
                 <div className="flex flex-wrap gap-2">
@@ -408,6 +506,7 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
                     <Button
                       key={option}
                       variant="ghost"
+                      data-testid={`option-${option}`}
                       onClick={() => handleOptionSelect(option)}
                       className={`
                         border transition-all
@@ -425,8 +524,8 @@ const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
               </div>
             )}
 
-            {/* For identify type — show selected date */}
-            {currentChallenge.type === 'identify' && selectedAnswer && !feedback && (
+            {/* For date-answer identify — show the selected date */}
+            {answerFromGrid && selectedAnswer && !feedback && (
               <div className="mb-4 text-sm text-slate-300">
                 Selected: <span className="text-blue-300 font-medium">{selectedAnswer}</span>
               </div>

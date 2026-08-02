@@ -40,6 +40,66 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// Within-mode SUPPORT TIER (axis 3) — scaffolding withdrawal
+//
+// ⚠ NAME-COLLISION WARNING (read before touching anything below):
+// this primitive's EVAL MODES / `challengeType` values are LITERALLY
+// 'easy' | 'medium' | 'hard' — but those name WORD LENGTH (1-2 / 2-3 / 3-4
+// syllables), i.e. the task's content band. The SUPPORT TIER is a completely
+// SEPARATE axis that arrives on `config.difficulty` and is normalized upstream
+// into `ctx.supportTier`. The two are ORTHOGONAL: evalMode='medium' with
+// supportTier='hard' is a legal and common pairing (2-3 syllable words, clap
+// tally hidden). NEVER infer one from the other, and NEVER let the tier write
+// `challengeType` — that would silently re-band the content.
+//
+// LEVERS (one field each), by modality:
+//   #1 perception  showClapCounter      — the 6-circle clap tally AND the count
+//                                          echo in the Check button label
+//                                          ("Check (3 claps)"). easy/medium show
+//                                          them; hard withdraws BOTH, so the
+//                                          running count lives in working memory
+//                                          instead of on screen.
+//   #2 feedback    directionalErrorHint — easy/medium tell the student WHICH WAY
+//                                          they were wrong ("too many" / "not
+//                                          enough claps"); hard gives a neutral
+//                                          "Not quite. Listen again." so the
+//                                          student re-segments the word rather
+//                                          than binary-searching the count.
+//
+// INVARIANTS. The tier NEVER touches the word, the syllable split,
+// `syllableCount`, `difficulty` or `challengeType`. No tier text reaches the
+// LLM prompt at all — both fields are stamped in CODE, deterministically, after
+// the parse — so a tier can never steer which words are drawn. The clap BUTTON
+// (the manipulable) and the spoken-word channel (the stimulus; this is a
+// LISTENING task) are never withdrawn at any tier.
+// ============================================================================
+
+export type SyllableSupportTier = 'easy' | 'medium' | 'hard';
+
+export interface SyllableClapperSupportScaffold {
+  /** #1 — 6-circle clap tally + the count echo on the Check button. */
+  showClapCounter: boolean;
+  /** #2 — "too many" / "not enough" vs. a neutral miss message. */
+  directionalErrorHint: boolean;
+}
+
+/**
+ * Resolve the on-screen scaffolds for one SUPPORT tier.
+ *
+ * Pure + exported so the tier ladder is unit-testable without a Gemini call.
+ * Takes the support tier ONLY — it must never see `challengeType` / the eval
+ * mode (see the name-collision warning above).
+ */
+export function resolveSyllableSupportScaffold(
+  tier: SyllableSupportTier,
+): SyllableClapperSupportScaffold {
+  return {
+    showClapCounter: tier !== 'hard',
+    directionalErrorHint: tier !== 'hard',
+  };
+}
+
+// ============================================================================
 // Schema
 // ============================================================================
 
@@ -145,6 +205,13 @@ export const generateSyllableClapper = async (
   );
 
   const challengeCount = config?.challengeCount ?? 8;
+
+  // ── Support tier (axis 3) ─────────────────────────────────────────
+  // Normalized upstream by resolveGenerationContext (config.difficulty →
+  // 'easy'|'medium'|'hard'|undefined). Read it here and NOWHERE else — never
+  // re-parse config.difficulty, and never confuse it with targetEvalMode, whose
+  // values happen to share these three words (see the warning block above).
+  const supportTier = ctx.supportTier as SyllableSupportTier | undefined;
 
   // ── Eval mode resolution ──────────────────────────────────────────
   const evalConstraint = resolveEvalModeConstraint(
@@ -362,8 +429,31 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       }];
     }
 
+    // ── Within-mode support tier: withdraw on-screen / feedback scaffolding
+    //    (never the word, the split, or the count). Stamped PER CHALLENGE in
+    //    code AFTER the parse, so the tier cannot have influenced which words
+    //    the LLM drew. Gated ONLY on supportTier being present — never on
+    //    challengeType / the eval mode, which share the same three words. ──
+    if (supportTier) {
+      const sc = resolveSyllableSupportScaffold(supportTier);
+      for (const ch of result.challenges as Record<string, unknown>[]) {
+        ch.showClapCounter = sc.showClapCounter;
+        ch.directionalErrorHint = sc.directionalErrorHint;
+      }
+      console.log(
+        `[syllable-clapper] Support tier "${supportTier}" applied to `
+        + `${result.challenges.length} challenge(s) — showClapCounter=${sc.showClapCounter}, `
+        + `directionalErrorHint=${sc.directionalErrorHint}. Eval mode (word band) `
+        + `"${config?.targetEvalMode ?? 'blended'}" is UNCHANGED by the tier.`,
+      );
+    }
+
     const finalData: SyllableClapperData = {
       title: result.title,
+      // Tell the live tutor the support level whenever a tier is present — the
+      // tutor is a second scaffold channel and its modelling latitude must match
+      // the on-screen tier (see tutorRevealPolicy in SyllableClapper.tsx).
+      ...(supportTier ? { supportTier } : {}),
       challenges: result.challenges,
     };
 
@@ -372,6 +462,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       challengeCount: finalData.challenges.length,
       challengeTypes: finalData.challenges.map((c) => c.challengeType),
       syllableCounts: finalData.challenges.map((c) => c.syllableCount),
+      supportTier: supportTier ?? '(none — legacy full help)',
     });
 
     return finalData;

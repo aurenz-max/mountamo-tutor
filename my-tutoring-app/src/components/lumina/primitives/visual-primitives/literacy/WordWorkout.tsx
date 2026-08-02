@@ -58,6 +58,27 @@ export interface WordWorkoutChallenge {
   sightWords?: string[];
   comprehensionQuestion?: string;
   comprehensionAnswer?: string;
+
+  // ── Within-mode support tier scaffolds (stamped by the generator from
+  //    ctx.supportTier). Display/instruction ONLY — they never change the words,
+  //    the chain, the sentence, or which option is correct. All optional; absent
+  //    ⇒ legacy full-help render (every field is read with `!== false` / `?? …`).
+  //    The pre-reader band composes with and WINS over these: an audio channel a
+  //    Kindergartner depends on is restored at PRE regardless of tier. ──
+  /** #2 instruction — show the mode-instruction line. Default: shown. */
+  showInstruction?: boolean;
+  /** #1 perception (word-chains) — how much of the letter change is drawn:
+   *  'full' = amber highlight + the "b → c" delta chip, 'highlight-only' = amber
+   *  only, 'none' = neither (finding what changed IS the skill). Default: 'full'. */
+  chainCueLevel?: 'full' | 'highlight-only' | 'none';
+  /** #3 audio (real-vs-nonsense) — per-card speaker buttons. Default: shown. */
+  allowPronounce?: boolean;
+  /** #2 audio (sentence-reading) — the whole-sentence model read. Per-WORD
+   *  tap-to-hear is never withdrawn (it is the measured support). Default: shown. */
+  allowSentenceModelRead?: boolean;
+  /** #4 answer-form (sentence-reading) — comprehension option count. The answer
+   *  is always retained (it is index 0 pre-shuffle). Default: 4. */
+  comprehensionChoiceCount?: number;
 }
 
 export interface WordWorkoutData {
@@ -72,6 +93,11 @@ export interface WordWorkoutData {
    * Reader grades leave the full UI unchanged.
    */
   gradeLevel?: string;
+  /**
+   * Within-mode support tier from the manifest (config.difficulty). Threaded to
+   * the live tutor so its reveal latitude matches the on-screen scaffolding.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
   challenges: WordWorkoutChallenge[];
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -131,6 +157,37 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'sentence-reading': { label: 'Sentence Reading', icon: '📖', accentColor: 'amber' },
 };
 
+/**
+ * Tutor reveal policy keyed to the within-mode support tier. The tutor is a
+ * SECOND scaffold channel, so its latitude must match what is on screen — at
+ * `hard` the amber changed-letter cue, the delta chip, the instruction line, the
+ * word speakers and the whole-sentence model read are all withdrawn, so a tutor
+ * that still narrates "we changed the first letter" would hand back exactly the
+ * scaffold the tier removed. This also scopes the catalog's level3 SENTENCES copy
+ * ("Let me read it first, then you try") to easy/medium, where it is truthful.
+ * Per-word [PRONOUNCE] stays answerable at EVERY tier (measured support), and no
+ * tier ever lets the tutor say which choice is correct.
+ */
+function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
+  if (!tier) return '';
+  if (tier === 'easy') {
+    return '[SUPPORT_TIER easy] Full scaffolding is on screen: the instruction line, the changed '
+      + 'letter highlighted with its before/after chip, the word speaker buttons, a whole-sentence '
+      + 'model read, and only two comprehension choices. You MAY name which letter changed and where, '
+      + 'and you MAY read a sentence first and then have the student try. Never say which choice is correct.';
+  }
+  if (tier === 'medium') {
+    return '[SUPPORT_TIER medium] Partial scaffolding: the changed letter is still highlighted but the '
+      + 'before/after chip is gone, and there are three comprehension choices. Nudge execution only — '
+      + 'confirm a sound if asked, do not pre-solve the change, and never say which choice is correct.';
+  }
+  return '[SUPPORT_TIER hard] Minimal scaffolding: NO instruction line, NO changed-letter highlight, '
+    + 'NO word speaker buttons and NO whole-sentence model read are shown. Noticing what changed IS the '
+    + 'task, so do NOT name the changed letter or its position, do NOT read a target word or the whole '
+    + 'sentence aloud, and never say which choice is correct. Ask what the student notices and let them '
+    + 'decode. A per-word [PRONOUNCE] request is still answered — say only that one word.';
+}
+
 /** Attempt-based scoring: first try = 100, 2nd = 80, 3+ = 60 */
 function attemptScore(attempts: number): number {
   if (attempts <= 1) return 100;
@@ -148,6 +205,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     mode: defaultMode,
     masteredVowels = [],
     gradeLevel: dataGradeLevel,
+    supportTier,
     challenges = [],
     instanceId,
     skillId,
@@ -181,6 +239,23 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
   const currentChallenge = challenges[currentIndex];
   const currentMode: WordWorkoutMode = currentChallenge?.mode || defaultMode;
+
+  // ── Support-tier scaffolds, composed with the band gate ───────────
+  // Every read is `!== false` / `?? legacy`, so a payload WITHOUT these fields
+  // renders exactly as it did before support tiers existed. Band wins over tier:
+  // the on-demand audio channels a pre-reader depends on (hearing a word, hearing
+  // the sentence) are restored at PRE no matter what the tier asked for.
+  const showModeInstruction = !isPreReader && currentChallenge?.showInstruction !== false;
+  const chainCueLevel = currentChallenge?.chainCueLevel ?? 'full';
+  const showChangedLetter = chainCueLevel !== 'none';
+  const showChangeDelta = chainCueLevel === 'full';
+  const allowPronounce = isPreReader || currentChallenge?.allowPronounce !== false;
+  const allowSentenceModelRead =
+    isPreReader || currentChallenge?.allowSentenceModelRead !== false;
+  const comprehensionChoiceCount = Math.max(
+    2,
+    currentChallenge?.comprehensionChoiceCount ?? 4,
+  );
 
   // ── Phase results for PhaseSummaryPanel ───────────────────────────
   const phaseResults = usePhaseResults({
@@ -263,8 +338,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       totalChallenges: challenges.length,
       currentPhase: currentMode,
       attempts: currentAttempts,
+      // Mirrors the on-screen scaffolding so the tutor's reveal latitude tracks it.
+      supportTier: supportTier ?? null,
     }),
-    [currentMode, masteredVowels, currentIndex, challenges.length, currentAttempts]
+    [currentMode, masteredVowels, currentIndex, challenges.length, currentAttempts, supportTier]
   );
 
   const { sendText, isConnected } = useLuminaAI({
@@ -297,17 +374,19 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       'sentence-reading': 'they will read a little sentence and tap any word to hear it',
     };
 
+    const policy = tutorRevealPolicy(supportTier);
     sendText(
-      isPreReader
+      (isPreReader
         ? `[ACTIVITY_START] Word game for a Kindergartner who CANNOT read yet — you are the only voice for the instructions. `
           + `Warmly, in ONE short sentence, tell them ${PLAY_ACTION[currentMode]}. `
           + `Do NOT read any answer aloud. This is your greeting — it overrides any one-sentence cap.`
         : `[ACTIVITY_START] CVC Word Workout${isMultiMode ? ' — multi-mode session with ' + modeCount + ' activity types' : ' — ' + MODE_CONFIG[currentMode].label + ' mode'}. `
           + `${challenges.length} challenges. Mastered vowels: ${masteredVowels.join(', ') || 'all'}. `
-          + `Introduce warmly for a young reader. 2-3 sentences.`,
+          + `Introduce warmly for a young reader. 2-3 sentences.`)
+      + (policy ? ` ${policy}` : ''),
       { silent: true }
     );
-  }, [isConnected, currentChallenge, currentMode, defaultMode, challenges, masteredVowels, isPreReader, sendText]);
+  }, [isConnected, currentChallenge, currentMode, defaultMode, challenges, masteredVowels, isPreReader, supportTier, sendText]);
 
   // ── Derived values (stable per challenge) ─────────────────────────
   const shuffledPair = useMemo(() => {
@@ -566,13 +645,18 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
   const handleChainAdvance = useCallback(() => {
     if (!currentChallenge?.chain) return;
     const chain = currentChallenge.chain;
+    // Support tier: at chainCueLevel 'none' the on-screen change cue is withdrawn,
+    // so the tutor must not narrate the word / what changed either — that would
+    // hand back exactly the scaffold the tier removed. Band wins: at PRE the tutor
+    // is the pre-reader's only channel, so the cue is restored there regardless.
+    const chainCueMuted = !isPreReader && currentChallenge.chainCueLevel === 'none';
 
     if (chainStartTime === null) {
       setChainStartTime(Date.now());
       // Voice mode: stay SILENT so the student decodes the shown word without
       // the tutor reading it for them (and without tutor audio colliding with
       // the open mic). Tap mode keeps its spoken cue.
-      if (!voiceOnRef.current) {
+      if (!voiceOnRef.current && !chainCueMuted) {
         sendText(
           `[CHAIN_WORD] "${chain[0]}". Say the word.`,
           { silent: true }
@@ -589,7 +673,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
       const changedIdx = currentChallenge.changedPositions?.[chainPosition];
       const posLabel =
         changedIdx === 0 ? 'first' : changedIdx === 2 ? 'last' : 'middle';
-      if (!voiceOnRef.current) {
+      if (!voiceOnRef.current && !chainCueMuted) {
         sendText(
           `[CHAIN_WORD] "${nextWord}" — changed the ${posLabel} letter from "${prevWord}". Say it.`,
           { silent: true }
@@ -615,7 +699,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentChallenge, chainPosition, chainStartTime, recordResult, sendText]);
+  }, [currentChallenge, chainPosition, chainStartTime, isPreReader, recordResult, sendText]);
 
   // The word currently lit in the chain — the target for a spoken answer.
   // Empty (mic dormant) until the student taps "Start Reading" and until the
@@ -812,7 +896,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     if (!currentChallenge) return null;
     return (
       <div className="space-y-4">
-        {!isPreReader && (
+        {showModeInstruction && (
           <p className="text-slate-300 text-center text-lg font-medium">
             {MODE_CONFIG['real-vs-nonsense'].instruction}
           </p>
@@ -854,16 +938,21 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 <span className="text-3xl font-bold text-slate-100 tracking-wide">
                   {word}
                 </span>
-                <LuminaReadAloud
-                  iconOnly
-                  size="sm"
-                  aria-label={`Hear ${word}`}
-                  className="absolute top-2 right-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePronounce(word);
-                  }}
-                />
+                {/* Support tier #3: hard withdraws the speaker so the student
+                    decodes silently. At PRE the band restores it — hearing the
+                    two words IS how a pre-reader plays this mode. */}
+                {allowPronounce && (
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    aria-label={`Hear ${word}`}
+                    className="absolute top-2 right-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePronounce(word);
+                    }}
+                  />
+                )}
               </div>
             );
           })}
@@ -877,7 +966,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
     return (
       <div className="space-y-4">
         <div className="text-center">
-          {!isPreReader && (
+          {showModeInstruction && (
             <p className="text-slate-400 text-sm mb-2">
               {MODE_CONFIG['picture-match'].instruction}
             </p>
@@ -948,7 +1037,7 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        {!isPreReader && (
+        {showModeInstruction && (
           <p className="text-slate-300 text-center text-lg font-medium">
             {MODE_CONFIG['word-chains'].instruction}
           </p>
@@ -993,6 +1082,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                     <span
                       key={li}
                       className={
+                        /* Support tier #1: at chainCueLevel 'none' the amber
+                           changed-letter highlight is withdrawn — the word still
+                           renders, but WHICH letter changed is now the task. */
+                        showChangedLetter &&
                         changedIdx !== undefined &&
                         li === changedIdx &&
                         (isActive || isRead || isChainComplete)
@@ -1008,7 +1101,10 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                     </span>
                   ))}
                 </span>
-                {prevWord &&
+                {/* Support tier #1: the explicit "b → c" delta chip is the
+                    strongest cue — only 'full' keeps it. */}
+                {showChangeDelta &&
+                  prevWord &&
                   changedIdx !== undefined &&
                   (isActive || isRead || isChainComplete) && (
                     <span className="text-xs text-slate-500 ml-auto">
@@ -1068,9 +1164,14 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
 
     return (
       <div className="space-y-4">
-        <p className="text-slate-300 text-center text-lg font-medium">
-          {MODE_CONFIG['sentence-reading'].instruction}
-        </p>
+        {/* Was the ONE mode missing the !isPreReader gate the other three have
+            (a pre-reader can't read "Read this sentence"). Now band-gated AND
+            tier-gated, in that order. */}
+        {showModeInstruction && (
+          <p className="text-slate-300 text-center text-lg font-medium">
+            {MODE_CONFIG['sentence-reading'].instruction}
+          </p>
+        )}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
           <div className="flex flex-wrap gap-2 justify-center">
             {words.map((word, idx) => {
@@ -1099,12 +1200,21 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
               );
             })}
           </div>
-          <p className="text-slate-500 text-xs text-center mt-3">
-            Tap any word to hear it
-          </p>
+          {/* The per-word buttons above are NEVER withdrawn — tap-to-hear is the
+              measured support (wordsReadIndependent). Only the HINT that points
+              at it goes away with the model read. */}
+          {allowSentenceModelRead && (
+            <p className="text-slate-500 text-xs text-center mt-3">
+              Tap any word to hear it
+            </p>
+          )}
         </div>
         <div className="flex justify-center gap-3">
-          <LuminaReadAloud label="Hear the Sentence" onClick={handleModelRead} />
+          {/* Support tier #2: hard withdraws the whole-sentence MODEL read — the
+              student must assemble the sentence themselves. Band wins at PRE. */}
+          {allowSentenceModelRead && (
+            <LuminaReadAloud label="Hear the Sentence" onClick={handleModelRead} />
+          )}
           {!showComprehension && !showNext && (
             <LuminaButton tone="primary" onClick={handleSentenceDone}>
               I Read It!
@@ -1121,8 +1231,13 @@ const WordWorkout: React.FC<WordWorkoutProps> = ({ data, className }) => {
                 // Build choices from CVC words in the sentence
                 const answer = currentChallenge.comprehensionAnswer?.toLowerCase().trim() || '';
                 const cvcWords = (currentChallenge.cvcWords || []).map((w) => w.toLowerCase());
-                // Ensure answer is included, plus 2-3 distractors from CVC words
-                const distractors = cvcWords.filter((w) => w !== answer).slice(0, 3);
+                // Support tier #4: the answer-form lever. The answer is ALWAYS
+                // index 0 here (structurally retained however far the distractor
+                // slice is trimmed), and the generator's post-filter guarantees it
+                // is one of cvcWords. Absent tier ⇒ 4 ⇒ slice(0, 3) = legacy.
+                const distractors = cvcWords
+                  .filter((w) => w !== answer)
+                  .slice(0, comprehensionChoiceCount - 1);
                 const choices = [answer, ...distractors];
                 // Deterministic shuffle based on challenge id
                 const seed = currentChallenge.id

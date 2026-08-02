@@ -5,6 +5,7 @@ import { clampGradeToK2 } from "../scopeContext";
 import {
   WordSorterData,
   WordSorterChallenge,
+  type DistractorMatch,
 } from '../../primitives/visual-primitives/literacy/WordSorter';
 import {
   resolveEvalModeConstraint,
@@ -47,6 +48,133 @@ const GRADE_GUIDELINES: Record<string, string> = {
 function resolveGradeKey(gradeLevel: string): string {
   if (['K', '1', '2'].includes(gradeLevel)) return gradeLevel;
   return 'K';
+}
+
+// ---------------------------------------------------------------------------
+// Within-mode SUPPORT TIER (config.difficulty → ctx.supportTier).
+//
+// A tier withdraws HELP. It NEVER changes which words / categories / pairs get
+// drawn (the schema and the content prompt are byte-identical at every tier —
+// the single tier-shaped prompt clause constrains the instruction SENTENCE's
+// wording and says so explicitly), and it never changes which bucket is correct.
+//
+// Levers (one field each), by modality:
+//   #1 perception   showBucketEmojis   — the picture cue on each bucket. Withdrawn
+//                                        at hard so the student reads the category
+//                                        rather than the icon. FORCED TRUE at K:
+//                                        bucket emoji are the pre-reader ANSWER
+//                                        SURFACE (schema-required at K, reader-fit
+//                                        RF-4) — the band floor always beats a tier.
+//   #1 perception   showFiledWords     — the badges of already-filed words sitting
+//                                        inside each bucket. Withdrawn at hard so
+//                                        the sort criterion cannot be inferred from
+//                                        the exemplars already placed. K-safe: the
+//                                        staged card, the bucket emoji, and the drop
+//                                        zone's fill state are all untouched.
+//   #2 instruction  namesSortCriterion — whether the generated instruction NAMES the
+//                                        criterion ("Sort these words into nouns and
+//                                        verbs") or states the goal only ("Put each
+//                                        word where it belongs"). Also collapses the
+//                                        component's named error line to "Try again."
+//   #5 answer-form  distractorMatches  — match_pairs only: extra NON-answer entries in
+//                                        the match column (0 easy / 1 medium / 2 hard).
+//                                        Every correct match is still present and
+//                                        completion still keys on pairs.length — only
+//                                        the discrimination load rises.
+//
+// NEVER withdrawn: the word-card emoji (that is the STIMULUS, schema-required at
+// K/1), the number of bucket labels (that is the eval-mode / β axis — binary stays
+// 2, ternary stays 3), or the K staged-word read-aloud ([WORD_STAGED]).
+// ---------------------------------------------------------------------------
+
+export type WordSorterSupportTier = 'easy' | 'medium' | 'hard';
+
+export interface WordSorterSupportScaffold {
+  /** Show the picture cue on each bucket. Withdrawn at hard — except at K. */
+  showBucketEmojis: boolean;
+  /** Show the badges of already-filed words inside each bucket. Withdrawn at hard. */
+  showFiledWords: boolean;
+  /** The instruction names the sort criterion (vs. goal-only phrasing at hard). */
+  namesSortCriterion: boolean;
+  /** match_pairs: how many non-answer entries to add to the match column. */
+  distractorMatchCount: number;
+}
+
+/**
+ * Resolve the scaffold set for one tier at one grade band.
+ *
+ * BAND FLOOR: at K the bucket emoji ARE the pre-reader answer surface (a K child
+ * cannot read "Animals"), so they are forced on at every tier. Nothing the PRE
+ * band needs is withdrawn by a tier.
+ */
+export function resolveWordSorterSupport(
+  tier: WordSorterSupportTier,
+  gradeKey: string,
+): WordSorterSupportScaffold {
+  const isPreReader = gradeKey === 'K';
+  return {
+    showBucketEmojis: isPreReader ? true : tier !== 'hard',
+    showFiledWords: tier !== 'hard',
+    namesSortCriterion: tier !== 'hard',
+    distractorMatchCount: tier === 'hard' ? 2 : tier === 'medium' ? 1 : 0,
+  };
+}
+
+/**
+ * The ONE tier-shaped prompt clause. It constrains how the instruction SENTENCE is
+ * worded and says so out loud, so it cannot steer which words or categories the
+ * model picks. The tier's NAME never reaches the prompt.
+ */
+function instructionWordingRule(namesSortCriterion: boolean): string {
+  return namesSortCriterion
+    ? '- instruction WORDING: name the sorting/matching criterion inside the sentence '
+      + '(e.g., "Sort these words into nouns and verbs", "Match each word with its opposite")'
+    : '- instruction WORDING: state the GOAL ONLY — write a bare directive such as "Put each word where it belongs" '
+      + 'or "Match each word with its partner". Do NOT name the categories, the relationship, or the sorting rule '
+      + 'anywhere in the instruction sentence. This is a WORDING rule ONLY: choose exactly the same words, categories '
+      + 'and pairs you would have chosen otherwise';
+}
+
+export type { DistractorMatch };
+
+/**
+ * Choose up to `count` decoy entries for the match column (#5 answer-form lever).
+ *
+ * Every guard here is an ANSWER-LEAK guard — a distractor a student can spot
+ * WITHOUT solving the task makes the item easier, not harder:
+ *  - never duplicates a real match or a real term (case-insensitive),
+ *  - never duplicates another decoy,
+ *  - must be visually indistinguishable from the real matches: if EVERY real match
+ *    carries an emoji, a decoy without one is dropped; if NONE do, decoy emoji are
+ *    stripped.
+ * Deterministic (pool order, no randomness) — the component owns the shuffle.
+ */
+export function selectDistractorMatches(
+  pairs: { term: string; match: string; matchEmoji?: string }[],
+  pool: DistractorMatch[],
+  count: number,
+): DistractorMatch[] {
+  if (count <= 0 || pairs.length === 0) return [];
+  const allHaveEmoji = pairs.every((p) => !!p.matchEmoji);
+  const noneHaveEmoji = pairs.every((p) => !p.matchEmoji);
+
+  const taken = new Set<string>();
+  for (const p of pairs) {
+    taken.add(p.match.trim().toLowerCase());
+    taken.add(p.term.trim().toLowerCase());
+  }
+
+  const out: DistractorMatch[] = [];
+  for (const d of pool) {
+    if (out.length >= count) break;
+    const text = (d.text ?? '').trim();
+    const key = text.toLowerCase();
+    if (!key || taken.has(key)) continue;
+    if (allHaveEmoji && !d.emoji) continue;
+    taken.add(key);
+    out.push({ id: d.id, text, ...(d.emoji && !noneHaveEmoji ? { emoji: d.emoji } : {}) });
+  }
+  return out;
 }
 
 const SYSTEM_INSTRUCTION =
@@ -163,12 +291,30 @@ function buildMatchPairsSchema(gradeKey: string): Schema {
     pairProps[`pair${i}MatchEmoji`] = { type: Type.STRING, description: `Pair ${i} match emoji — a single emoji that SHOWS the match's meaning` };
   }
 
+  // Decoy pool for the match column (#5 answer-form support-tier lever). ALWAYS
+  // requested, with the SAME schema and the SAME prompt lines at every tier, so
+  // asking for decoys can never steer which pairs get drawn. Code decides post-parse
+  // how many (0/1/2) are actually shown; at easy / no-tier none are.
+  for (let i = 0; i < 2; i++) {
+    pairProps[`decoy${i}Word`] = {
+      type: Type.STRING,
+      description: `Decoy word ${i} — a plausible word that is NOT the partner of ANY term above. `
+        + `Same word class and length band as the real match words so it cannot be spotted without solving the task.`,
+    };
+    pairProps[`decoy${i}Emoji`] = {
+      type: Type.STRING,
+      description: `Decoy word ${i} emoji — a single emoji that SHOWS the decoy word's meaning`,
+    };
+  }
+
   // Required at K-1 — every observed K/1 draw shipped the match column with
   // zero emojis, leaving pure print for children who cannot read it (RF-4).
+  // The decoy emoji ride the same rule: a decoy with no picture next to matches
+  // that all have one is spottable without solving the task (answer leak).
   const emojiRequired = (gradeKey === 'K' || gradeKey === '1')
     ? ['pair0TermEmoji', 'pair0MatchEmoji', 'pair1TermEmoji', 'pair1MatchEmoji',
       'pair2TermEmoji', 'pair2MatchEmoji', 'pair3TermEmoji', 'pair3MatchEmoji',
-      'pair4TermEmoji', 'pair4MatchEmoji']
+      'pair4TermEmoji', 'pair4MatchEmoji', 'decoy0Emoji', 'decoy1Emoji']
     : [];
 
   return {
@@ -190,6 +336,7 @@ function buildMatchPairsSchema(gradeKey: string): Schema {
             "pair0Term", "pair0Match", "pair1Term", "pair1Match",
             "pair2Term", "pair2Match", "pair3Term", "pair3Match",
             "pair4Term", "pair4Match",
+            "decoy0Word", "decoy1Word",
             ...emojiRequired],
         },
         description: "3-4 match pairs challenges",
@@ -223,6 +370,7 @@ interface FlatChallenge {
 function reconstructSortChallenge(
   flat: FlatChallenge,
   type: 'binary_sort' | 'ternary_sort',
+  scaffold?: WordSorterSupportScaffold,
 ): WordSorterChallenge | null {
   const bucketLabels: string[] = [];
   if (flat.bucket0) bucketLabels.push(flat.bucket0 as string);
@@ -271,7 +419,7 @@ function reconstructSortChallenge(
     return null;
   }
 
-  return {
+  const challenge: WordSorterChallenge = {
     id: flat.id as string,
     type,
     instruction: flat.instruction as string,
@@ -279,9 +427,23 @@ function reconstructSortChallenge(
     ...(hasBucketEmojis ? { bucketEmojis } : {}),
     words: shuffleArray(words),
   };
+
+  // Support-tier stamps — CODE-side, post-parse, deterministic. Gated ONLY on the
+  // scaffold being present: with no tier, no field is written and the payload is
+  // byte-identical to the legacy full-help draw.
+  if (scaffold) {
+    challenge.showBucketEmojis = scaffold.showBucketEmojis;
+    challenge.showFiledWords = scaffold.showFiledWords;
+    challenge.namesSortCriterion = scaffold.namesSortCriterion;
+  }
+
+  return challenge;
 }
 
-function reconstructMatchPairsChallenge(flat: FlatChallenge): WordSorterChallenge | null {
+function reconstructMatchPairsChallenge(
+  flat: FlatChallenge,
+  scaffold?: WordSorterSupportScaffold,
+): WordSorterChallenge | null {
   const pairCount = typeof flat.pairCount === 'number' ? Math.min(flat.pairCount, 6) : 6;
   const pairs = [];
 
@@ -304,12 +466,38 @@ function reconstructMatchPairsChallenge(flat: FlatChallenge): WordSorterChalleng
     return null;
   }
 
-  return {
+  const challenge: WordSorterChallenge = {
     id: flat.id as string,
     type: 'match_pairs',
     instruction: flat.instruction as string,
     pairs: shuffleArray(pairs),
   };
+
+  // Support-tier stamps. match_pairs has no buckets, so only the instruction lever
+  // and the answer-form lever apply. The correct partner for every term is ALWAYS
+  // present — decoys are added alongside, never substituted in — and completion
+  // still keys on pairs.length, so the task identity is unchanged.
+  if (scaffold) {
+    challenge.namesSortCriterion = scaffold.namesSortCriterion;
+
+    const pool: DistractorMatch[] = [];
+    for (let i = 0; i < 2; i++) {
+      const text = flat[`decoy${i}Word`] as string | undefined;
+      if (!text) continue;
+      const emoji = (flat[`decoy${i}Emoji`] as string) || undefined;
+      pool.push({ id: `d${i}`, text, ...(emoji ? { emoji } : {}) });
+    }
+    const decoys = selectDistractorMatches(pairs, pool, scaffold.distractorMatchCount);
+    if (decoys.length > 0) challenge.distractorMatches = decoys;
+    if (decoys.length < scaffold.distractorMatchCount) {
+      console.warn(
+        `[WordSorter] match_pairs: only ${decoys.length}/${scaffold.distractorMatchCount} decoy(s) usable `
+        + `(leak guards dropped the rest) for challenge ${flat.id as string}`,
+      );
+    }
+  }
+
+  return challenge;
 }
 
 // ---------------------------------------------------------------------------
@@ -320,7 +508,9 @@ async function generateBinarySortChallenges(
   topic: string,
   gradeKey: string,
   intent?: string,
+  scaffold?: WordSorterSupportScaffold,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive 2-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
@@ -337,7 +527,7 @@ For each challenge:
 RULES:
 - Distribute words roughly evenly across the 2 buckets
 - Mix up word order — do NOT group by bucket
-- Do NOT reveal answers in the instruction
+- Do NOT reveal answers in the instruction${wordingRule}
 - All words must be age-appropriate for grade ${gradeKey}
 
 Generate 3-4 challenges with different sorting criteria.`;
@@ -356,7 +546,7 @@ Generate 3-4 challenges with different sorting criteria.`;
   if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
 
   const challenges = (data.challenges as FlatChallenge[])
-    .map((flat) => reconstructSortChallenge(flat, 'binary_sort'))
+    .map((flat) => reconstructSortChallenge(flat, 'binary_sort', scaffold))
     .filter((c): c is WordSorterChallenge => c !== null);
 
   const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
@@ -375,7 +565,9 @@ async function generateTernarySortChallenges(
   topic: string,
   gradeKey: string,
   intent?: string,
+  scaffold?: WordSorterSupportScaffold,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive 3-BUCKET word sorting activity for "${topic}" (Grade ${gradeKey}).
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the words and sorting categories toward "${intent}" when possible — but always keep the sort age-appropriate and the categories unambiguous. Never reveal the sort answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
@@ -392,7 +584,7 @@ For each challenge:
 RULES:
 - Distribute words across all 3 buckets (at least 2 per bucket)
 - Mix up word order — do NOT group by bucket
-- Do NOT reveal answers in the instruction
+- Do NOT reveal answers in the instruction${wordingRule}
 - All words must be age-appropriate for grade ${gradeKey}
 
 Generate 3-4 challenges with different sorting criteria.`;
@@ -411,7 +603,7 @@ Generate 3-4 challenges with different sorting criteria.`;
   if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
 
   const challenges = (data.challenges as FlatChallenge[])
-    .map((flat) => reconstructSortChallenge(flat, 'ternary_sort'))
+    .map((flat) => reconstructSortChallenge(flat, 'ternary_sort', scaffold))
     .filter((c): c is WordSorterChallenge => c !== null);
 
   const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
@@ -430,7 +622,9 @@ async function generateMatchPairsChallenges(
   topic: string,
   gradeKey: string,
   intent?: string,
+  scaffold?: WordSorterSupportScaffold,
 ): Promise<{ title: string; sortingTopic: string; challenges: WordSorterChallenge[] }> {
+  const wordingRule = scaffold ? `\n${instructionWordingRule(scaffold.namesSortCriterion)}` : '';
   const prompt = `Create an interactive word PAIR MATCHING activity for "${topic}" (Grade ${gradeKey}).
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean the terms and matches toward "${intent}" when possible — but always keep the pairing age-appropriate and unambiguous. Never reveal the match answer in the focus.\n` : ''}
 ${GRADE_GUIDELINES[gradeKey] || GRADE_GUIDELINES['K']}
@@ -442,10 +636,13 @@ For each challenge:
 - pair0TermEmoji..pair5TermEmoji: Emoji for each term (REQUIRED for K-1 — must show the word's meaning)
 - pair0Match..pair5Match: The matching words (right column)
 - pair0MatchEmoji..pair5MatchEmoji: Emoji for each match (REQUIRED for K-1 — young students match by picture, not print)
+- decoy0Word, decoy1Word: TWO decoy words that are NOT the partner of ANY term — same word class and length band as the real match words, so they look like they belong in the right column
+- decoy0Emoji, decoy1Emoji: Emoji for each decoy (REQUIRED for K-1 — a decoy with no picture beside matches that all have one gives itself away)
 
 RULES:
 - Each pair should have a clear, unambiguous relationship (opposites, synonyms, singular/plural, etc.)
-- Do NOT reveal answers through ordering — randomize the match column
+- Do NOT reveal answers through ordering — randomize the match column${wordingRule}
+- The decoy words must NEVER be a correct partner for any term, and must never repeat a term or a match
 - All words must be age-appropriate for grade ${gradeKey}
 - For K: use simple opposites (big/small, hot/cold) or rhyming pairs (cat/hat)
 - For grade 1-2: can include singular/plural, word/antonym, word/synonym
@@ -466,7 +663,7 @@ Generate 3-4 challenges with different matching criteria.`;
   if (!data?.challenges?.length) return { title: '', sortingTopic: '', challenges: [] };
 
   const challenges = (data.challenges as FlatChallenge[])
-    .map((flat) => reconstructMatchPairsChallenge(flat))
+    .map((flat) => reconstructMatchPairsChallenge(flat, scaffold))
     .filter((c): c is WordSorterChallenge => c !== null);
 
   const rejected = (data.challenges as FlatChallenge[]).length - challenges.length;
@@ -523,6 +720,23 @@ export const generateWordSorter = async (
   // to 'K' (grades 1-2 got kindergarten vocab). grade>2 clamps to '2' (K-2 primitive).
   const gradeKey = clampGradeToK2(ctx.grade, resolveGradeKey(gradeLevel) as "K" | "1" | "2");
 
+  // ── Within-mode support tier ────────────────────────────────────────
+  // ctx.supportTier is already normalized ('easy' | 'medium' | 'hard' | undefined)
+  // by resolveGenerationContext from config.difficulty. Gated ONLY on the tier
+  // being present — never on the pinned eval mode — so a blended draw gets the
+  // same scaffolding level as a pinned one. Absent ⇒ no scaffold fields at all.
+  const supportTier = ctx.supportTier;
+  const scaffold = supportTier ? resolveWordSorterSupport(supportTier, gradeKey) : undefined;
+  if (scaffold) {
+    console.log(`[word-sorter] Support tier "${supportTier}" @ grade ${gradeKey}:`, {
+      showBucketEmojis: scaffold.showBucketEmojis,
+      showFiledWords: scaffold.showFiledWords,
+      namesSortCriterion: scaffold.namesSortCriterion,
+      distractorMatchCount: scaffold.distractorMatchCount,
+      bandFloor: gradeKey === 'K' ? 'K: bucket emoji forced ON (pre-reader answer surface)' : 'n/a',
+    });
+  }
+
   // ── Determine which modes to generate ───────────────────────────────
   const allowedTypes = evalConstraint
     ? evalConstraint.allowedTypes
@@ -533,13 +747,13 @@ export const generateWordSorter = async (
   const generators: Promise<SubResult>[] = [];
 
   if (allowedTypes.includes('binary_sort')) {
-    generators.push(generateBinarySortChallenges(topic, gradeKey, intent));
+    generators.push(generateBinarySortChallenges(topic, gradeKey, intent, scaffold));
   }
   if (allowedTypes.includes('ternary_sort')) {
-    generators.push(generateTernarySortChallenges(topic, gradeKey, intent));
+    generators.push(generateTernarySortChallenges(topic, gradeKey, intent, scaffold));
   }
   if (allowedTypes.includes('match_pairs')) {
-    generators.push(generateMatchPairsChallenges(topic, gradeKey, intent));
+    generators.push(generateMatchPairsChallenges(topic, gradeKey, intent, scaffold));
   }
 
   const subResults = await Promise.all(generators);
@@ -566,12 +780,16 @@ export const generateWordSorter = async (
     sortingTopic: firstTopic,
     challenges: allChallenges,
     ...configRest,
+    // Tell the live tutor the support level so its reveal policy matches the
+    // screen. Written LAST so a stray config key can never clobber it.
+    ...(supportTier ? { supportTier } : {}),
   };
 
   console.log('Word Sorter Generated:', {
     title: finalData.title,
     gradeLevel: finalData.gradeLevel,
     sortingTopic: finalData.sortingTopic,
+    supportTier: finalData.supportTier ?? '(none)',
     challengeCount: finalData.challenges?.length || 0,
     challengeTypes: finalData.challenges?.map(ch => ch.type) || [],
   });
