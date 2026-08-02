@@ -3597,6 +3597,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
             + 'Always connect coin values to skip counting patterns. '
             + 'Celebrate correct identification and counting streaks.',
         },
+        {
+          title: 'GRADE 1 COUNT-LIKE — ENACTED TAP COUNT',
+          instruction:
+            'When gradeBand is 1 and the student is counting LIKE coins (single denomination), the coins '
+            + 'on screen are tappable: the student taps each coin once to count it, and the total entry box '
+            + 'appears only after every coin is tagged. When you read the counting instruction, ALSO tell the '
+            + 'student to tap each coin to count it, then type the total — this protocol line is part of the '
+            + 'instruction, even when asked to keep it brief. If the running total is hidden on screen, coach '
+            + 'skip counting out loud ("5, 10, 15…") on struggle, but NEVER state the final total.',
+        },
       ],
     },
     supportsEvaluation: true,

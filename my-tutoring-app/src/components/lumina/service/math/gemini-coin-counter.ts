@@ -72,7 +72,9 @@ const TIER_GUARDRAIL =
 interface SupportScaffold {
   /** per-coin ¢ readout (recognition aid). identify always hides it in the component (that IS the task). */
   showCoinValues: boolean;
-  /** make-amount running placed-total tracker. */
+  /** "display the accumulation" lever — the make-amount running placed-total tracker,
+   *  AND (same easy-only fade) whether the G1 enacted count-like tap-count shows the
+   *  climbing skip-count readout/badges or plain ✓ tags (reader-fit 14b). */
   showRunningTotal: boolean;
   promptLines: string[];
 }
@@ -98,6 +100,10 @@ function resolveSupportStructure(type: string, tier: SupportTier): SupportScaffo
       break;
     case 'count':
       showCoinValues = tier !== 'hard';
+      // G1 enacted count-like consumes this as "show the climbing skip-count while
+      // tapping". Identical mapping to make-amount's (easy only), so the single
+      // data-level value below serves both consumers.
+      showRunningTotal = tier === 'easy';
       if (tier === 'easy') lines.push('EASY: the instruction NAMES the skip-counting strategy (e.g. "count by 10s for the dimes, then add the pennies").');
       else if (tier === 'medium') lines.push('MEDIUM: neutral "How much money is shown?"; no strategy named.');
       else lines.push('HARD: terse prompt, no strategy named — on-screen coin ¢ labels are HIDDEN, so the student must recall each coin\'s value before skip-counting.');
@@ -910,7 +916,9 @@ export const generateCoinCounter = async (
   if (supportTier) {
     // value-label withdrawal is uniform across every value-bearing mode at a given tier.
     data.showCoinValues = resolveSupportStructure("count", supportTier).showCoinValues;
-    // running total is the make-amount tracking aid.
+    // running total = the make-amount tracking aid AND the G1 enacted count-like
+    // accumulation display — the 'count' and 'make-amount' fades are identical
+    // (easy only), so one data-level value serves both.
     data.showRunningTotal = resolveSupportStructure("make-amount", supportTier).showRunningTotal;
     data.supportTier = supportTier;
     console.log(

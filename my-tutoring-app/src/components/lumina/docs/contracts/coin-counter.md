@@ -105,6 +105,31 @@ treat "how many real attempts exist" as unknown, not zero.
   clicks → 5¢/10¢/15¢, double-tap held at 10¢, badges `["5","10","15"]`, 0 inputs, 0 Check).
 - **Probe:** jsdom band suite (9 tests) + a real click in Chrome. **Both ran 2026-07-25.**
 
+### R11 — G1 `count-like` ENACTS the tag, keeps the TYPED total · OBSERVED (NEW 2026-08-01)
+- **Property:** at `gradeBand==='1'` AND `countMode==='like'`, every coin is tappable and must be
+  tagged exactly once — a re-tap is a rejected double-count (shake on the object, attempt++), and
+  the number input + Check render ONLY after every coin is tagged. The answer remains the TYPED
+  total judged against `correctTotal` — there is NO auto-judge at G1. `showRunningTotal`
+  (support tier: easy → true, medium/hard → false; component default true) selects the display:
+  running-value badges + climbing readout (self-check workspace) vs plain ✓ tags with no readout
+  (the child accumulates mentally and produces the total).
+- **Demanded by:** G1 `MEAS001-07-c` ("Skip counting and summation… single-denomination sets") —
+  the PRIMARY authored consumer; census 2026-08-01 (`qa/topic-traces/g1-identical-coins-2026-08-01.md`)
+  confirmed the manifest intent asks for tap-each-coin running totals while the render was still
+  the inert-coins proxy.
+- **Evidence:** `qa/reader-fit/coin-counter-14b-2026-08-01.md`; real-Chrome probe (✓ tags at
+  medium, double-tap held, input+Check revealed after last tag, typed 15¢ graded correct; easy
+  readout climbed 0¢→10¢→30¢ with value badges).
+- **Probe:** jsdom `CoinCounter.reader-fit.test.tsx` G1 describe (6 tests + non-vacuity) +
+  eval-test `count-like` @ Grade 1.
+- **Calibration note (β1.5, live item history):** the ANSWER ACT is unchanged (typed total), so
+  the mode's task identity holds. What changed: (a) tagging is now REQUIRED before answering — a
+  protocol addition, and double-count taps now increment attempts; (b) the easy tier displays the
+  accumulation (self-check workspace, same philosophy as make-amount's easy tier). At the
+  census-routed medium tier the measured construct — mental skip-count summation — is unchanged.
+  **Full K parity (auto-judge on tag-completion) was REJECTED**: it would ablate the "summation"
+  half of the authored focus and collapse the item toward unfailable.
+
 ### R10 — the grade band gates the coin pool · OBSERVED **but the resolver is DEFECTIVE**
 - **Property:** K sees penny/nickel/dime only; G1 adds quarter; G2+ adds half-dollar/dollar.
 - **Evidence:** `gradeCoinPool` / `gradeCoinsPrompt`.
@@ -135,7 +160,15 @@ The K enacted path additionally requires `gradeBand==='K'`, so the Grade-1 `coun
 
 ## Gap requirements (close matches — the improvement queue)
 
-### G1 — Grade-1 `count-like` is still a compute-then-type proxy · OPEN (**highest-value gap**)
+### G1 — Grade-1 `count-like` is still a compute-then-type proxy · ~~OPEN~~ **BUILT 2026-08-01 → R11**
+**Resolution (reader-fit 14b):** widened as fork rung 2 (band+mode gate), deliberately as a G1
+VARIANT rather than full K parity — the child tags each coin by tapping, then still TYPES the
+total, preserving the "summation" half of the authored focus and the β1.5 answer act. Running
+total display is tier-governed via `showRunningTotal` (its meaning now covers this display; the
+generator's stamped values are unchanged). See R11 for the property + calibration note. As this
+gap anticipated, the change supersedes R3's *sibling* behavior at G1 count-like ONLY; R3 itself
+(count-mixed typed at every band) is guard-tested unchanged. Original gap text kept below for
+the record.
 - **Near-consumer:** G1 `MEAS001-07-c` — the PRIMARY, curriculum-routed consumer of count-like
   (census 2026-07-25: routed at Grade 1, `difficulty=medium`).
 - **Shortfall:** the subskill's stated focus is "**Skip counting and summation**", and at Grade 1
@@ -225,3 +258,11 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   6 gaps. Contract created during reader-fit Task 3; R9 is that task's product, C1 is its ruling.
 - 2026-07-25 — `--check` after the Task-3 edit: **COMPATIBLE**
   (`qa/primitive-contracts/coin-counter-check-2026-07-25.md`).
+- 2026-08-01 — `--check` after the 14b widening (G1 enacted tag-then-type variant): **COMPATIBLE**
+  (`qa/primitive-contracts/coin-counter-check-2026-08-01.md`). G1 gap → **R11** (BUILT);
+  `showRunningTotal`'s meaning extended to the G1 enacted count display (same easy-only fade,
+  stamped values unchanged); catalog gains a scoped GRADE 1 COUNT-LIKE aiDirective (spoken twin
+  for the tap protocol). Standing rulings preserved: `countMode` stamped from `targetEvalMode`
+  (never inspect `displayedCoins`); `showCoinValues` default-true on like coins. K (R9),
+  count-mixed (R3), and identify (R4) verified unchanged — jsdom guards + eval-tests
+  (6/6 @ G1 like, 6/6 @ K like, 6/6 @ G2 mixed, 0 desyncs) + real-Chrome probe.

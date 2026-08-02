@@ -53,7 +53,7 @@ export interface CoinCounterChallenge {
    *  set alone CANNOT tell them apart — the generator only rejects multi-type sets for
    *  count-like, never single-type sets for count-mixed, so a G2 count-mixed card that
    *  happens to draw 3 dimes would be misread as "like". Stamped by the generator from
-   *  targetEvalMode so the K enacted-count fork can never fire on a count-mixed card. */
+   *  targetEvalMode so the K/G1 enacted-count forks can never fire on a count-mixed card. */
   countMode?: 'like' | 'mixed';
 
   // make-amount — "Make 47¢ using coins"
@@ -83,7 +83,10 @@ export interface CoinCounterData {
   /** Show the ¢ value label on each coin (recognition aid). Withdrawn at the hard tier.
    *  Always ignored for 'identify' (revealing the value reveals the coin). Default: true. */
   showCoinValues?: boolean;
-  /** Show the running placed-total in make-amount (tracking aid). Withdrawn past easy. Default: true. */
+  /** Show the running placed-total in make-amount (tracking aid), AND — G1 count-like —
+   *  whether the enacted tap-count displays the climbing skip-count readout/badges (easy
+   *  tier: self-check workspace) or plain ✓ tags (medium/hard: the child accumulates
+   *  mentally and types the total). Same easy-only fade for both. Default: true. */
   showRunningTotal?: boolean;
   /** The applied support tier — kept in sync with the tutor's reveal level. */
   supportTier?: 'easy' | 'medium' | 'hard';
@@ -202,6 +205,25 @@ function tierRevealClause(tier: string | undefined, type: string): string {
     : ' [TIER hard] On-screen coin values are HIDDEN — do NOT state any coin\'s value, the total, or the answer; ask which coins they see and what each is worth.';
 }
 
+/**
+ * Spoken twin for the Grade-1 enacted count protocol (reader-fit 14b). The on-screen
+ * "Tap each coin to count it!" cue is a short sentence, which the EMERGING band may
+ * only lean on if it is ALSO spoken — so every challenge-start message carries the
+ * protocol for the tutor. Answer-free by construction (names the acts, never a value).
+ */
+function enactedCountG1Clause(
+  gradeBand: string,
+  ch: CoinCounterChallenge | null | undefined,
+): string {
+  if (gradeBand !== '1' || ch?.type !== 'count' || ch?.countMode !== 'like') return '';
+  return (
+    ' [G1 ENACTED COUNT] The coins on screen are tappable: the student taps each coin'
+    + ' once to count it, and the total entry box appears only after every coin is'
+    + ' tagged. When you read the instruction, ALSO tell the student to tap each coin'
+    + ' to count it, then type the total. Never state the total.'
+  );
+}
+
 function formatCents(cents: number): string {
   if (cents >= 100) {
     const dollars = Math.floor(cents / 100);
@@ -275,7 +297,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   // count mode
   const [countInput, setCountInput] = useState('');
 
-  // count mode @ K (count-like only) — the coins ARE the answer surface. Kept in TAP
+  // count mode @ K/G1 (count-like only) — the coins are tapped-to-count. Kept in TAP
   // ORDER (not a Set) so each counted coin keeps the running skip-count total it was
   // stamped with; re-tapping never renumbers the ones already counted.
   const [countedOrder, setCountedOrder] = useState<number[]>([]);
@@ -324,6 +346,7 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     totalChallenges: challenges.length,
     currentChallengeIndex,
     challengeType: currentChallenge?.type ?? 'count',
+    countMode: currentChallenge?.countMode,
     instruction: currentChallenge?.instruction ?? '',
     targetCoin: currentChallenge?.targetCoin,
     correctTotal: currentChallenge?.correctTotal,
@@ -352,7 +375,8 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
       `[ACTIVITY_START] Coin Counter activity for Grade ${gradeBand}. `
       + `${challenges.length} challenges. First: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}). `
       + `Introduce warmly: "Let's learn about coins and money!" Then read the first instruction.`
-      + tierRevealClause(supportTier, currentChallenge?.type ?? 'count'),
+      + tierRevealClause(supportTier, currentChallenge?.type ?? 'count')
+      + enactedCountG1Clause(gradeBand, currentChallenge),
       { silent: true },
     );
   }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, supportTier]);
@@ -582,12 +606,13 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`,
+      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read it to the student.`
+      + enactedCountG1Clause(gradeBand, nextChallenge),
       { silent: true },
     );
   }, [
     advanceProgress, phaseResults, challengeResults, challenges, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex,
+    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex, gradeBand,
   ]);
 
   // Auto-submit when all complete
@@ -620,7 +645,8 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
   // At K the counting act itself must be ENACTED, not computed-then-typed: the child
   // taps each coin and the running skip-count total climbs (5, 10, 15…), which IS the
   // "skip counting and summation" skill count-like exists to teach. Fork is band+mode:
-  // Grade 1+ and every count-mixed card keep the number input + Check untouched.
+  // G1 count-like gets its own tag-then-type variant (below); Grade 2+ and every
+  // count-mixed card keep the number input + Check untouched.
   const enactedCoins = useMemo(
     () => (currentChallenge?.type === 'count' ? expandCoins(currentChallenge.displayedCoins || []) : []),
     [currentChallenge],
@@ -631,6 +657,24 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     && currentChallenge?.type === 'count'
     && currentChallenge?.countMode === 'like'
     && enactedCoins.length > 0;
+
+  // ── Enacted count, Grade-1 VARIANT (reader-fit 14b) ────────────────
+  // MEAS001-07-c's authored focus is "skip counting AND summation", and G1 count-like
+  // is a live β1.5 item — so G1 does NOT inherit K's auto-judge. The child tags each
+  // coin by tapping (a re-tap is a rejected double-count, as at K), and the number
+  // input + Check appear only once every coin is tagged: the typed total keeps the
+  // summation half student-produced and the answer act identical to the item history.
+  // `showRunningTotal` (support tier) decides whether taps stamp the climbing
+  // skip-count (easy) or a plain ✓ tag (medium/hard). Grade 2+ and every count-mixed
+  // card keep the original inert-coins + typed path.
+  const isEnactedCountG1 =
+    gradeBand === '1'
+    && currentChallenge?.type === 'count'
+    && currentChallenge?.countMode === 'like'
+    && enactedCoins.length > 0;
+
+  const allEnactedCounted =
+    enactedCoins.length > 0 && countedOrder.length === enactedCoins.length;
 
   /** Running total after the first `n` taps — the value stamped on the nth coin. */
   const runningTotalAt = useCallback(
@@ -779,9 +823,86 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
     );
   };
 
+  /** Grade 1 + count-like (14b): the child TAGS each coin by tapping — the
+   *  organization of the skip count is enacted, a re-tap is a rejected
+   *  double-count — then TYPES the total once every coin is tagged. The
+   *  "summation" half of MEAS001-07-c stays student-produced. `showRunningTotal`
+   *  decides whether taps stamp the climbing skip-count values + readout (easy
+   *  tier: self-check workspace) or a plain ✓ tag (medium/hard: the child
+   *  accumulates mentally). */
+  const renderEnactedCountG1Challenge = () => {
+    if (!currentChallenge) return null;
+
+    return (
+      <div className="space-y-4">
+        {showRunningTotal && (
+          <div className="flex justify-center">
+            <span
+              data-testid="enacted-running-total-g1"
+              className={`text-4xl font-bold tabular-nums transition-colors ${
+                allEnactedCounted ? 'text-emerald-300' : 'text-slate-200'
+              }`}
+            >
+              {formatCents(runningTotalAt(countedOrder.length))}
+            </span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3 justify-center p-3 rounded-xl bg-slate-800/30 border border-white/5 min-h-[60px]">
+          {enactedCoins.map((coin, i) => {
+            const order = countedOrder.indexOf(i);
+            const counted = order >= 0;
+            return (
+              <div key={`enacted-g1-${coin}-${i}`} className="relative">
+                <CoinVisual
+                  type={coin}
+                  onClick={() => handleEnactedCoinTap(i)}
+                  selected={counted}
+                  disabled={isCurrentChallengeCorrect}
+                  showValue={showCoinValues}
+                  className={wrongCoin === i ? motion.shake : ''}
+                />
+                {counted && (
+                  <span
+                    data-testid={`coin-count-badge-${i}`}
+                    className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 border border-emerald-300/60 text-white text-[11px] font-bold flex items-center justify-center pointer-events-none select-none shadow"
+                  >
+                    {showRunningTotal ? runningTotalAt(order + 1) : '✓'}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {!allEnactedCounted ? (
+          /* Short cue in house style ("Tap a coin to add it"); its spoken twin is
+             enactedCountG1Clause on every challenge-start message. */
+          <p className="text-slate-500 text-xs text-center">Tap each coin to count it!</p>
+        ) : (
+          <div className="flex items-center gap-3 justify-center">
+            <span className="text-slate-400 text-sm">Total:</span>
+            <LuminaInput
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={countInput}
+              onChange={(e) => setCountInput(e.target.value)}
+              disabled={isCurrentChallengeCorrect}
+              placeholder="¢"
+              className="w-24 px-3 py-2 text-center text-lg"
+            />
+            <span className="text-slate-400">cents</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderCountChallenge = () => {
     if (!currentChallenge) return null;
     if (isEnactedCount) return renderEnactedCountChallenge();
+    if (isEnactedCountG1) return renderEnactedCountG1Challenge();
     const coins = currentChallenge.displayedCoins || [];
     return (
       <div className="space-y-4">
@@ -1074,9 +1195,11 @@ const CoinCounter: React.FC<CoinCounterProps> = ({ data, className }) => {
             {/* Action buttons */}
             <div className="flex items-center justify-center gap-3">
               {/* The enacted K count has no Check — the taps ARE the answer and it
-                  auto-judges, so a Check button would be a dead control. */}
+                  auto-judges, so a Check button would be a dead control. The G1 enacted
+                  count keeps Check, but only once every coin is tagged (it appears
+                  together with the total input). */}
               {!isCurrentChallengeCorrect ? (
-                isEnactedCount ? null : (
+                isEnactedCount || (isEnactedCountG1 && !allEnactedCounted) ? null : (
                 <LuminaActionButton
                   action="check"
                   onClick={handleCheckAnswer}

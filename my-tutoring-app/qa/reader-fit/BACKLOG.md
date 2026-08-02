@@ -37,17 +37,30 @@ coin-counter tail after the Grade-1 demand work.
   oracle, then replay the six reports before treating band-only symptoms as primitive-local bugs.
   Executor: `/topic-fidelity`; this is the same dead-band class as 14c but one layer upstream.
   **📋 HANDOFF (paste-able, line-exact anchors verified): `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md`.**
-- **14b. coin-counter contract gap G1 — CONFIRMED by authored demand (2/42 routes).** The
-  `MEAS001-07-c` trace routed `coin-counter` twice (`identify`, `count-like`). In the exact primary
-  consumer, count-like stamps `gradeBand: 1`, `countMode: like`, and **`showRunningTotal: false`**:
-  the Grade-1 child still computes over inert coins, types a total, then presses Check even though
-  the manifest intent explicitly asks for tap-each-coin running totals. Widen the existing K
-  band+mode enacted-count contract deliberately to Grade 1; read `docs/contracts/coin-counter.md`
-  first and run `--check`. Evidence: `qa/topic-traces/g1-identical-coins-2026-08-01.md` plus
-  `qa/reader-fit/coin-counter-task3-2026-07-25.md`. NOT gated on 14e (coin-counter stamps G1
-  correctly); file-disjoint from 14e, safe to run in a parallel session.
-  **📋 HANDOFF: `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`** (carries the β1.5
-  decision, the standing rulings, and the byte-identical discipline).
+- ~~**14b. coin-counter contract gap G1 — CONFIRMED by authored demand (2/42 routes).**~~
+  **DONE 2026-08-01.** Widened as a deliberate **G1 VARIANT** (contract **R11**), NOT full K
+  parity: at `gradeBand==='1' && countMode==='like'` the child TAGS each coin by tapping (re-tap =
+  rejected double-count, shake + attempt), and the number input + Check appear only after every
+  coin is tagged — the TYPED total keeps the "summation" half of `MEAS001-07-c` student-produced
+  and the β1.5 answer act intact (full K parity/auto-judge was REJECTED: it would collapse the
+  item toward unfailable). `showRunningTotal` RECONCILED: it now also governs the G1 enacted
+  display — easy = climbing skip-count readout + value badges (self-check workspace, the
+  make-amount philosophy); medium/hard = plain ✓ tags, child sums mentally — so the census's
+  `showRunningTotal:false` @ medium now means something instead of being dead (generator stamped
+  values unchanged). Catalog gains a scoped GRADE-1 COUNT-LIKE aiDirective (durable spoken twin
+  for the tap protocol); standing rulings preserved (countMode from `targetEvalMode`;
+  `showCoinValues` default-true on like coins). K (R9), `count-mixed` (R3), `identify` (R4)
+  guard-verified unchanged. Verified: jsdom **17/17** (+2 non-vacuity probes bite), full vitest
+  **1076/1076**, typecheck:lumina 0 + tsc 803-baseline 0-new, real-Gemini eval-test **6/6 @ G1
+  like + 6/6 @ K like + 6/6 @ G2 mixed** (0 desyncs), **real-Chrome click probe ALL PASS**
+  (tap → badge → reveal → typed 15¢ graded; easy readout 0→10→30). Contract `--check`
+  **COMPATIBLE** (`qa/primitive-contracts/coin-counter-check-2026-08-01.md`). Report:
+  `qa/reader-fit/coin-counter-14b-2026-08-01.md`. Residuals: pixel/feel → HUMAN-CHECKS **#58**;
+  Tier-3 live `--lesson` ORIENT confirm queued (directive uses the proven cap-overriding carrier);
+  G4 single-coin leak observed live again (K draw, one nickel) — still its own `/oracle-test` item.
+  Original evidence: `qa/topic-traces/g1-identical-coins-2026-08-01.md`,
+  `qa/reader-fit/coin-counter-task3-2026-07-25.md`, HANDOFF
+  `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.
 - **14f. knowledge-check @ EMERGING — 6/42, routed in every census lesson.** This is the most
   frequent primitive and closes the K backlog's explicit "complex-type routing re-audit once the K
   queue drains" follow-up. Scope mostly holds, but the generator sees generic `elementary`, and the

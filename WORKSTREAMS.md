@@ -94,7 +94,7 @@ queue AND this file's "last touched" in the same slice.
   **Top pull = 14e**, the numeric Grade-1 generator-boundary dead band (`Grade 1`/`1` collapses to
   `elementary` before `GenerationContext`, producing K/2/4/3–5 payload stamps); then **14b**, now
   directly confirmed on authored `MEAS001-07-c` demand (`count-like`, Grade 1,
-  `showRunningTotal:false` → the compute-then-type proxy survives). **Both have paste-able
+  `showRunningTotal:false` → the compute-then-type proxy survives). **14b DONE 2026-08-01** (G1 enacted tag-then-type variant; contract R11, `--check` COMPATIBLE; report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel → HUMAN-CHECKS #58). **Both have paste-able
   handoffs (`/pm` 2026-08-01, file-disjoint — safe as two parallel sessions):
   `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md` +
   `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.** Next by observed demand:
