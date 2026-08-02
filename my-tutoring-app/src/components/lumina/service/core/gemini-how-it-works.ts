@@ -98,7 +98,7 @@ const stepSchema: Schema = {
     stepNumber: { type: Type.NUMBER, description: "Step number (1-based)" },
     title: { type: Type.STRING, description: "Short title for this step (2-5 words)" },
     description: { type: Type.STRING, description: "2-3 sentence description of what happens in this step" },
-    whatsHappening: { type: Type.STRING, description: "Optional deeper explanation of the underlying mechanism (1-2 sentences)" },
+    whatsHappening: { type: Type.STRING, description: "Optional deeper mechanism note — 1-2 SHORT sentences, under 40 words total. Omit when the description already covers it." },
     imagePrompt: { type: Type.STRING, description: "Photorealistic image prompt — describe a real-world scene as a photographer would see it, with natural lighting, real materials, and a clear camera angle. No glowing effects, no cross-sections, no diagram overlays." },
     keyTermTerm: { type: Type.STRING, description: "Optional key vocabulary term introduced in this step" },
     keyTermDefinition: { type: Type.STRING, description: "Definition of the key term (required if keyTermTerm provided)" },
@@ -156,7 +156,7 @@ const quickFactsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     duration: { type: Type.STRING, description: "How long the process takes (e.g. 'About 2 hours', 'Over millions of years')" },
-    whereItHappens: { type: Type.STRING, description: "Where this process occurs (e.g. 'Inside your stomach', 'In the clouds')" },
+    whereItHappens: { type: Type.STRING, description: "Where this process occurs, as ONE short phrase under 15 words (e.g. 'Inside your stomach', 'In the clouds')" },
     inventedBy: { type: Type.STRING, description: "Who discovered/invented/first described it (if applicable)" },
     funComparison: { type: Type.STRING, description: "Kid-friendly size/speed/scale comparison (e.g. 'Faster than a cheetah!')" },
     energySource: { type: Type.STRING, description: "What powers or drives the process (e.g. 'Heat from the sun', 'Chemical reactions')" },
@@ -177,6 +177,8 @@ const howItWorksSchema: Schema = {
     steps: {
       type: Type.ARRAY,
       items: stepSchema,
+      minItems: '4',
+      maxItems: '6',
       description: "4-6 sequential steps of the process",
     },
     summary: summarySchema,
@@ -184,16 +186,20 @@ const howItWorksSchema: Schema = {
     realWorldExamples: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
+      maxItems: '4',
       description: "2-4 real-world examples where this process is seen (e.g. 'Your kitchen faucet', 'Car wash sprayers')",
     },
     relatedProcesses: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
+      maxItems: '3',
       description: "2-3 related processes the student might explore next",
     },
     challenges: {
       type: Type.ARRAY,
       items: challengeSchema,
+      minItems: '3',
+      maxItems: '4',
       description: "3-4 comprehension challenges about the process",
     },
   },
@@ -273,10 +279,19 @@ function validatePreReaderData(raw: any): HowItWorksData {
   };
 }
 
+// HW-5: length clamps. A *parsed* runaway (a repetition loop that still closed
+// its quotes) previously flowed unclamped into the Quick Facts card — 337 KB in
+// one rendered string. No legitimate value approaches these ceilings, so a
+// clamp can only bound degenerate output, never damage real content.
+const clampStr = (v: unknown, max: number): string => {
+  const s = String(v);
+  return s.length > max ? `${s.slice(0, max).trimEnd()}…` : s;
+};
+
 function validateHowItWorksData(raw: any): HowItWorksData {
-  const title = raw.title || 'How It Works';
-  const subtitle = raw.subtitle || '';
-  const overview = raw.overview || '';
+  const title = clampStr(raw.title || 'How It Works', 120);
+  const subtitle = clampStr(raw.subtitle || '', 200);
+  const overview = clampStr(raw.overview || '', 600);
 
   // --- Category ---
   const validCategories = ['science', 'engineering', 'nature', 'cooking', 'technology', 'body', 'history'];
@@ -288,18 +303,18 @@ function validateHowItWorksData(raw: any): HowItWorksData {
     steps = raw.steps.slice(0, 6).map((s: any, i: number) => {
       const step: HowItWorksData['steps'][0] = {
         stepNumber: typeof s.stepNumber === 'number' ? s.stepNumber : i + 1,
-        title: String(s.title || `Step ${i + 1}`),
-        description: String(s.description || ''),
-        imagePrompt: String(s.imagePrompt || `Step ${i + 1} of ${title}`),
+        title: clampStr(s.title || `Step ${i + 1}`, 80),
+        description: clampStr(s.description || '', 400),
+        imagePrompt: clampStr(s.imagePrompt || `Step ${i + 1} of ${title}`, 600),
       };
-      if (s.whatsHappening) step.whatsHappening = String(s.whatsHappening);
+      if (s.whatsHappening) step.whatsHappening = clampStr(s.whatsHappening, 300);
       if (s.keyTermTerm && s.keyTermDefinition) {
         step.keyTerm = {
-          term: String(s.keyTermTerm),
-          definition: String(s.keyTermDefinition),
+          term: clampStr(s.keyTermTerm, 60),
+          definition: clampStr(s.keyTermDefinition, 200),
         };
       }
-      if (s.funFact) step.funFact = String(s.funFact);
+      if (s.funFact) step.funFact = clampStr(s.funFact, 300);
       return step;
     });
   }
@@ -313,35 +328,35 @@ function validateHowItWorksData(raw: any): HowItWorksData {
 
   // --- Summary ---
   const summary: HowItWorksData['summary'] = {
-    text: String(raw.summary?.text || 'Summary coming soon.'),
-    keyTakeaway: String(raw.summary?.keyTakeaway || 'More to explore!'),
+    text: clampStr(raw.summary?.text || 'Summary coming soon.', 500),
+    keyTakeaway: clampStr(raw.summary?.keyTakeaway || 'More to explore!', 250),
   };
   if (raw.summary?.totalTime) {
-    summary.totalTime = String(raw.summary.totalTime);
+    summary.totalTime = clampStr(raw.summary.totalTime, 60);
   }
 
-  // --- Quick Facts ---
+  // --- Quick Facts --- (120-char clamp: HW-5's 337 KB runaway landed here)
   let quickFacts: HowItWorksData['quickFacts'] = undefined;
   if (raw.quickFacts && typeof raw.quickFacts === 'object') {
     const qf: NonNullable<HowItWorksData['quickFacts']> = {};
-    if (raw.quickFacts.duration) qf.duration = String(raw.quickFacts.duration);
-    if (raw.quickFacts.whereItHappens) qf.whereItHappens = String(raw.quickFacts.whereItHappens);
-    if (raw.quickFacts.inventedBy) qf.inventedBy = String(raw.quickFacts.inventedBy);
-    if (raw.quickFacts.funComparison) qf.funComparison = String(raw.quickFacts.funComparison);
-    if (raw.quickFacts.energySource) qf.energySource = String(raw.quickFacts.energySource);
+    if (raw.quickFacts.duration) qf.duration = clampStr(raw.quickFacts.duration, 120);
+    if (raw.quickFacts.whereItHappens) qf.whereItHappens = clampStr(raw.quickFacts.whereItHappens, 120);
+    if (raw.quickFacts.inventedBy) qf.inventedBy = clampStr(raw.quickFacts.inventedBy, 120);
+    if (raw.quickFacts.funComparison) qf.funComparison = clampStr(raw.quickFacts.funComparison, 120);
+    if (raw.quickFacts.energySource) qf.energySource = clampStr(raw.quickFacts.energySource, 120);
     if (Object.keys(qf).length > 0) quickFacts = qf;
   }
 
   // --- Real World Examples ---
   let realWorldExamples: string[] | undefined = undefined;
   if (Array.isArray(raw.realWorldExamples) && raw.realWorldExamples.length > 0) {
-    realWorldExamples = raw.realWorldExamples.slice(0, 5).map(String);
+    realWorldExamples = raw.realWorldExamples.slice(0, 5).map((x: unknown) => clampStr(x, 150));
   }
 
   // --- Related Processes ---
   let relatedProcesses: string[] | undefined = undefined;
   if (Array.isArray(raw.relatedProcesses) && raw.relatedProcesses.length > 0) {
-    relatedProcesses = raw.relatedProcesses.slice(0, 4).map(String);
+    relatedProcesses = raw.relatedProcesses.slice(0, 4).map((x: unknown) => clampStr(x, 150));
   }
 
   // --- Challenges (3-4) ---
@@ -615,7 +630,7 @@ ${challengeTypeSection}
 - stepNumber starts at 1
 - title: 2-5 word label for the step
 - description: 2-3 sentences explaining what happens — vivid, concrete language
-- whatsHappening: Deeper explanation of the underlying mechanism (1-2 sentences) — ALWAYS provide this
+- whatsHappening: OPTIONAL deeper mechanism note — include only when there is a real mechanism to add, in 1-2 SHORT sentences (under 40 words). Never pad; omit it when the description already says it
 - imagePrompt: Photorealistic image prompt describing a REAL-WORLD scene as a photographer would capture it. Describe the actual objects, materials, textures, natural lighting, and camera angle. NO glowing effects, NO cross-sections, NO cutaways, NO diagram overlays, NO magical/sci-fi styling. Think documentary photography, not textbook illustration. (e.g. "Close-up of a diesel engine compartment on a yellow Caterpillar excavator, showing the engine block, hydraulic hoses, and oil filter, photographed in natural daylight at a construction site")
 - keyTermTerm + keyTermDefinition: Important vocabulary — aim for at least 2-3 key terms across all steps
 - funFact: A SURPRISING, specific fact with a number or comparison — aim for at least 3 across all steps
@@ -627,7 +642,7 @@ Provide quick reference facts about the process:
 - inventedBy: Who discovered or first described it (if applicable)
 - funComparison: A kid-friendly "wow" comparison (e.g. "Your small intestine is as long as a school bus!")
 - energySource: What powers or drives the process
-Provide at least 3 of these 5 fields.
+Each field is ONE short phrase, under 15 words. Include only the fields where you have something real and specific to say — one or two is fine, and omitting quickFacts entirely is fine. Never elaborate or repeat to fill a field.
 
 ### Real World Examples (2-4 items)
 Everyday places students can see this process: "Your kitchen faucet", "A car engine", "When you breathe"
@@ -694,36 +709,61 @@ Now generate the How It Works content.`;
 
   logEvalModeResolution('HowItWorks', config?.targetEvalMode, evalConstraint);
 
-  try {
+  // HW-4: bounded retry + hard output cap. flash-lite intermittently falls into
+  // single-string repetition (observed live: "surface crust" ×~1,700 inside
+  // quickFacts.whereItHappens) and runs to the model's 65K output ceiling —
+  // unbounded, that is a 340 KB payload or an unterminated-JSON crash, and this
+  // generator runs under Promise.all so a throw costs the whole exhibit.
+  // maxOutputTokens turns the runaway into a fast truncation (a clean payload is
+  // ~2K tokens, so 8192 is 4× headroom), the parse guard turns the truncation
+  // into a retry, and only a double failure still throws — the no-filler rule in
+  // validateHowItWorksData (empty steps refuse to ship) makes a skeleton
+  // degrade dishonest for this primitive, unlike vocabulary-explorer's.
+  const MAX_ATTEMPTS = 2;
+  let raw: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: activeSchema,
+        maxOutputTokens: 8192,
       },
     });
 
-    if (!response.text) throw new Error("No content generated for how-it-works");
-
-    const raw = JSON.parse(response.text);
-    const data = validateHowItWorksData(raw);
-
-    console.log('[HowItWorks] Generated:', {
-      topic,
-      gradeLevel,
-      title: data.title,
-      steps: data.steps.length,
-      challenges: data.challenges?.length ?? 0,
-      category: data.category,
-      quickFacts: data.quickFacts ? Object.keys(data.quickFacts).length : 0,
-      realWorldExamples: data.realWorldExamples?.length ?? 0,
-      relatedProcesses: data.relatedProcesses?.length ?? 0,
-    });
-
-    return data;
-  } catch (error) {
-    console.error("[HowItWorks] Generation error:", error);
-    throw error;
+    if (!response.text) {
+      console.warn(`[HowItWorks] Empty response on attempt ${attempt}/${MAX_ATTEMPTS}.`);
+      continue;
+    }
+    try {
+      raw = JSON.parse(response.text);
+      break;
+    } catch (err) {
+      console.warn(
+        `[HowItWorks] JSON parse failed on attempt ${attempt}/${MAX_ATTEMPTS} `
+        + `(${response.text.length} chars; finishReason=${response.candidates?.[0]?.finishReason ?? 'unknown'}). `
+        + `${err instanceof Error ? err.message : err}`,
+      );
+    }
   }
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('[HowItWorks] Generation failed after bounded retries — no parseable payload.');
+  }
+
+  const data = validateHowItWorksData(raw);
+
+  console.log('[HowItWorks] Generated:', {
+    topic,
+    gradeLevel,
+    title: data.title,
+    steps: data.steps.length,
+    challenges: data.challenges?.length ?? 0,
+    category: data.category,
+    quickFacts: data.quickFacts ? Object.keys(data.quickFacts).length : 0,
+    realWorldExamples: data.realWorldExamples?.length ?? 0,
+    relatedProcesses: data.relatedProcesses?.length ?? 0,
+  });
+
+  return data;
 };

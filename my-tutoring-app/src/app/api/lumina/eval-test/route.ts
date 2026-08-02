@@ -87,8 +87,29 @@ export async function GET(request: NextRequest) {
       const data = result.data as Record<string, unknown>;
       const validation = validateChallengeTypes(data, componentId, evalMode);
 
+      // HW-6: a flash-lite repetition runaway can parse cleanly and still be a
+      // 300 KB payload — challenge-count validation alone reported one as a
+      // pass. Report payload size + the longest single string, and fail on a
+      // degenerate one: no legitimate field approaches 10 KB (passages and
+      // briefs top out far below), so a string past that bar is a repetition
+      // loop, not content.
+      let longestString = 0;
+      let longestStringPath = '';
+      const walkStrings = (node: unknown, path: string): void => {
+        if (typeof node === 'string') {
+          if (node.length > longestString) { longestString = node.length; longestStringPath = path; }
+        } else if (Array.isArray(node)) {
+          node.forEach((v, i) => walkStrings(v, `${path}[${i}]`));
+        } else if (node && typeof node === 'object') {
+          for (const [k, v] of Object.entries(node)) walkStrings(v, path ? `${path}.${k}` : k);
+        }
+      };
+      walkStrings(result.data, '');
+      const payloadBytes = JSON.stringify(result.data).length;
+      const runawaySuspect = longestString > 10_000;
+
       return NextResponse.json({
-        status: validation.valid ? 'pass' : 'fail',
+        status: validation.valid && !runawaySuspect ? 'pass' : 'fail',
         componentId,
         evalMode,
         duration,
@@ -104,6 +125,11 @@ export async function GET(request: NextRequest) {
           typesFound: validation.typesFound,
           disallowedTypes: validation.disallowedTypes,
           error: validation.error,
+          payloadBytes,
+          longestStringLength: longestString,
+          longestStringPath,
+          runawaySuspect,
+          ...(runawaySuspect ? { runawayError: `Longest string is ${longestString} chars at ${longestStringPath} — repetition-loop suspect` } : {}),
         },
         fullData: result.data,
       });
