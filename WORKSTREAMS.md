@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-07-25** (Task 3 closed; **demand-side K queue DRAINED**)
+### 1. Reader-fit K → EMERGING queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-08-01** (**§14a census DONE; Grade-1 queue RE-SEEDED**)
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -86,17 +86,17 @@ queue AND this file's "last touched" in the same slice.
   `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
   coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
   `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
-- **Now (`/pm` 2026-07-25 EOD): Task 3 CLOSED, the demand-side K queue is DRAINED, and the next
-  pull is now an ACTUAL QUEUE ITEM — `BACKLOG.md` **§14 EMERGING (Grade 1) — re-seed the queue**.**
-  *Reconciliation:* the "re-run the census at grade 1" milestone had been recorded only as narrative
-  inside Done entries, so a session pulling the top of the reader-fit queue found 2b (resolved), 9a
-  (promoted away), and 9b–9d (done) — nothing pullable. §14 fixes that and ships with four sub-items
-  already: **14a** run the EMERGING census (`/topic-trace` over real G1 subskills, the shape of the
-  07-14 K census that seeded every demand-side item in the file); **14b** coin-counter gap **G1** —
-  highest value, because `count-like`'s only authored consumer is `MEAS001-07-c` **@ Grade 1** and it
-  STILL has the compute-then-type proxy that K just lost; **14c** gap G2, a `/topic-fidelity` job
-  (`resolveGradeBand` parses `ctx.gradeContext` PROSE, so Grades 2–3 are unreachable); **14d** gap G3,
-  the cheapest — K chrome not band-gated + no 🔊, the exact class #2b already solved.
+- **Now (2026-08-01): §14a DONE; the EMERGING queue is evidence-seeded.** Six published Grade-1
+  subskills (2× LA / 2× Math / 2× SS) ran through the real `/topic-trace` pipeline: **42 generated
+  components, zero generator errors**. The routing census is led by knowledge-check 6, sorting-station
+  4, foundation-explorer 3, then seven primitives at 2 each. Reports:
+  `qa/topic-traces/g1-*-2026-08-01.md`; ranked findings live in `qa/reader-fit/BACKLOG.md` §14.
+  **Top pull = 14e**, the numeric Grade-1 generator-boundary dead band (`Grade 1`/`1` collapses to
+  `elementary` before `GenerationContext`, producing K/2/4/3–5 payload stamps); then **14b**, now
+  directly confirmed on authored `MEAS001-07-c` demand (`count-like`, Grade 1,
+  `showRunningTotal:false` → the compute-then-type proxy survives). Next by observed demand:
+  knowledge-check EMERGING 6/42 → DI intent fidelity 3/42 (coordinate with the active DI stream) →
+  number-sequencer/hundreds-chart 2 each → annotated-example → number-line/flashcard singletons.
   **coin-counter `count-like` @ K — VERDICT PROXY (CLEARED=false), FIXED.** K now enacts the count:
   tap each coin, a badge stamps the **running skip-count total** (5→10→15) in tap order, auto-judge
   when every coin is counted exactly once, no number input and no Check at K; a re-tap is a rejected
@@ -177,7 +177,7 @@ queue AND this file's "last touched" in the same slice.
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-07-27** (child-paced `answer_fact` K run COHERENT, diagnosed from the AUTO-PERSISTED log alone — no human copy: 5/5 completed, 3 plain-fallback corrections byte-stable → **#55(e) HALF-closed** (spoken-no-number half; the SILENCE route still rides the 90s micro-run), counting-aloud supersession chains absorbed benignly (item 9 Tier-2 "rapid double answers" class, first live observation → watch-item), `[DI_COMPLETE]` tail flush held, cuesStalled 0; report `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`. Prior 07-26: decoherence ROOT-CAUSED — voice turn gate `minVoiceMs` frame quantization, engine fix + retro-anchor — and VERIFIED live same day: coherent run through the family's **first live `[DI_MOVE_ON]`**; #49(c) + #50(a) CLOSED (both ear halves user-confirmed: move-on line heard, "My turn" works for math), #55(c)/(d-math) closed, #50(c) HALF-closed (subject override ✓ MATHEMATICS, but free-form landed `OPS002-04-c @ G2` → BACKLOG item 6). **PLUS the family's first REAL-CHILD run** (`qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md`, corrected same day): judge-over-transcript HELD — ASR collapsed on child speech ("Please" for a spoken "three", user-confirmed) while the in-band judge contrasted the right number — and turn-gate fix + script shape held under barge-in chaos; **the real break = a mid-run STALL** (no verdict ever arrives, silent "Listening…", GoAway-resume drops the in-flight turn as lead suspect) → **BACKLOG item 5** (escalation ladder + re-cue-on-resume) + clock-skew WS hard-fail (item 7); residual — **user ruling: telemetry FIRST** — **item 8 BUILT + SMOKE-VERIFIED same day** (timestamps un-broken via basicConfig force; server JSONL session ledger with GoAway `mid_turn` stamping; `/api/di-run-logs` drop-box; client ring + auto-flush piloted in DiMathFacts; two live smokes: first caught the mint-after-auth correlation race + flush truncation, both fixed; second run 4/4 — `client_run_id` joins ledger↔run files; residual = induced-stall acceptance gate, rides the recipe sitting; then sweep flush to the other 3 packs) and **item 9 tier-1 SHIPPED** (seeded reducer fuzz in `npm test`, 0 violations → the stall lives above the reducers); **THE RECIPE RUN RAN EOD — COHERENT: item 1 CLOSED** (5/5 items capped, 5× `[DI_MOVE_ON]`, 14 byte-template contrastive corrections = #55 c/d-math at scale, echo rule 5/5 → mean 0 → S1 gate reached, no GoAway/stall; `qa/di-bench/run-2026-07-26-math-facts-sustained-miss.md`); **S1 CONFIRMED — the misconception loop's FIRST LIVE CAPTURE:** stored `"identifies the answer to a subtraction fact as the second number in the expression"` — correct 5/5, bounded, generative, Tier-A over garbage ASR; item 2's consumption half now has live Firestore data; next = 90s silence micro-run (no-verdict→resync + #55(e) + item-8 acceptance) → item-5 fix; tier-2 = DI journey family on `run_tutor_live.py`, not a new harness)
+### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-08-01** (**item 8's 3-pack FLUSH SWEEP DONE, parallel lane** — `run-end` + deduped 6s tail + `teardown` flushes and the pre-connect `setClientRunId(mintRunId())` registration replicated byte-for-byte from the DiMathFacts pilot into di-letter-sounds / di-word-reading / di-sentence-reading; typecheck:lumina 0, full vitest 1041/1041; item 8 residual = the acceptance gate only (rides item 9 Tier 2 / a sitting); no non-math pack has flushed LIVE yet — each pack's next live run confirms free, artifact in `logs/di-runs/`. **BACKLOG item 5 STRUCK — stall fix BUILT, and LEVEL-2 RECOVERY CONFIRMED LIVE in a user fault drive**: dead cues at exactly 10s/20s → `session-dead` → warm reconnect **327ms** → `session-resumed` → in-flight item re-cued verbatim → affirm → advance; whole episode reconstructed from persisted artifacts alone (run `7f0a1543ff7c`, client teardown flush + server ledger = item 8's acceptance shape demonstrated); the drives caught two real bugs, both fixed same slice — the OPENER never armed the dead-cue watch (stale-`enabled` at arm time; ladder slept for the from-birth-dead session) and `sessionDeads` double-counted (flag→kind); residual runtime = level-3 card (`EPISODES=2`) + an end-coherent full run, folded into item 9 Tier 2's stall journey. Build detail, 07-31 per the dev-first ruling and the 07-27 handoff executed line-exact: (i) `LuminaAIContext.sessionResumeCount` → engine `session-resumed` emission → all 4 packs re-cue the item in flight through their resync branch (backend cold retry now safe for DI); (ii) engine dead-cue watch — cue→tutor-AUDIO liveness, never cue→verdict, 10s × 2 → `session-dead` → shared `useDiStallRecovery`: level 2 = warm `ctx.reconnect()` (mic never touched, open-mic doctrine), level 3 = picture-primary `DiStallCard` 🔄 + `flushDiRunLog('stall')` at the failure moment — never silent "Listening…"; (iii-a) standalone post-run disconnect removes the GoAway-flap trigger, (iii-b) server-side variant DEFERRED; dev-gated **`LUMINA_FAULT_MUTE_S`** fault injection (backend, refuses to arm unless `ENVIRONMENT=dev`) machine-covers item 8's induced-stall acceptance gate; verified vitest **1025/1025** (new session-liveness suite 11/11, fuzz hook-only-kinds invariant extended, reducer untouched/fuzz-clean) + `typecheck:lumina` 0 + py_compile clean; **runtime confirmation = the fault-injected drive**; #56 shrinks to the ear halves; slice report `qa/di-bench/slice-2026-07-31-item5-stall-fix.md`. **RE-POINTED `/pm` 2026-08-01 (user ruling: PUSH DEVELOPMENT):** top pull is the **family ladder** — **di-math-facts `/add-support-tiers` (L3) DONE 2026-08-01** (the birth-cert fade composed in the SCRIPT; 14/14 new tests with non-vacuity + 3/3 real-pipeline probes incl. the blended path; the tester gained the family tier selector that also makes #54(d) drivable; live `hard` ear-check → **#50(d)**; see the DONE entry below) — **next rung = di-letter-sounds L3** (then di-word-reading L2 → di-sentence-reading L4; `catalog/di.ts` is free again for the next serial rung), then **item 2** remediation-lever design; **item 9 Tier 2 DEMOTED but queued** — it stays the absorber of item 5's residual runtime checks (level-3 🔄 card via `EPISODES=2` + an end-coherent run), build it when testing capability is warranted again. **Fault-flag time bomb DEFUSED same day** (user: "we are making ticking time bombs"): `LUMINA_FAULT_MUTE_S=25` removed from `backend/.env`, and the backend now REFUSES .env-persisted fault flags (process-env only, one loud ERROR; guard exercised 4-path in the venv). Full ruling text at the top of the BACKLOG. Prior 07-27: child-paced `answer_fact` K run COHERENT, diagnosed from the AUTO-PERSISTED log alone — no human copy: 5/5 completed, 3 plain-fallback corrections byte-stable → **#55(e) HALF-closed** (spoken-no-number half; the SILENCE route still rides the 90s micro-run), counting-aloud supersession chains absorbed benignly (item 9 Tier-2 "rapid double answers" class, first live observation → watch-item), `[DI_COMPLETE]` tail flush held, cuesStalled 0; report `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`. Prior 07-26: decoherence ROOT-CAUSED — voice turn gate `minVoiceMs` frame quantization, engine fix + retro-anchor — and VERIFIED live same day: coherent run through the family's **first live `[DI_MOVE_ON]`**; #49(c) + #50(a) CLOSED (both ear halves user-confirmed: move-on line heard, "My turn" works for math), #55(c)/(d-math) closed, #50(c) HALF-closed (subject override ✓ MATHEMATICS, but free-form landed `OPS002-04-c @ G2` → BACKLOG item 6). **PLUS the family's first REAL-CHILD run** (`qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md`, corrected same day): judge-over-transcript HELD — ASR collapsed on child speech ("Please" for a spoken "three", user-confirmed) while the in-band judge contrasted the right number — and turn-gate fix + script shape held under barge-in chaos; **the real break = a mid-run STALL** (no verdict ever arrives, silent "Listening…", GoAway-resume drops the in-flight turn as lead suspect) → **BACKLOG item 5** (escalation ladder + re-cue-on-resume) + clock-skew WS hard-fail (item 7); residual — **user ruling: telemetry FIRST** — **item 8 BUILT + SMOKE-VERIFIED same day** (timestamps un-broken via basicConfig force; server JSONL session ledger with GoAway `mid_turn` stamping; `/api/di-run-logs` drop-box; client ring + auto-flush piloted in DiMathFacts; two live smokes: first caught the mint-after-auth correlation race + flush truncation, both fixed; second run 4/4 — `client_run_id` joins ledger↔run files; residual = induced-stall acceptance gate, rides the recipe sitting; then sweep flush to the other 3 packs) and **item 9 tier-1 SHIPPED** (seeded reducer fuzz in `npm test`, 0 violations → the stall lives above the reducers); **THE RECIPE RUN RAN EOD — COHERENT: item 1 CLOSED** (5/5 items capped, 5× `[DI_MOVE_ON]`, 14 byte-template contrastive corrections = #55 c/d-math at scale, echo rule 5/5 → mean 0 → S1 gate reached, no GoAway/stall; `qa/di-bench/run-2026-07-26-math-facts-sustained-miss.md`); **S1 CONFIRMED — the misconception loop's FIRST LIVE CAPTURE:** stored `"identifies the answer to a subtraction fact as the second number in the expression"` — correct 5/5, bounded, generative, Tier-A over garbage ASR; item 2's consumption half now has live Firestore data; next = 90s silence micro-run (no-verdict→resync + #55(e) + item-8 acceptance) → item-5 fix; tier-2 = DI journey family on `run_tutor_live.py`, not a new harness)
 - **Queue:** `my-tutoring-app/qa/di/BACKLOG.md` — **GRADUATED 2026-07-20** (bench passed its
   architecture gate across 4 live runs; user call: DI = a new primitive FAMILY alongside
   core/math/literacy, first set custom-made). Old charter `qa/HANDOFF-di-bench-2026-07-16.md`
@@ -689,6 +689,34 @@ queue AND this file's "last touched" in the same slice.
   blends; a "counting sequence" pack is no longer a candidate at all (`counting_next` absorbed it).
   **Human gates in leverage order:** the ② sitting, then **#45** (DI in a real K lesson — the
   evidence that would justify un-parking voice-transport). #48 struck; #53 folded into #54(b).
+- **DONE 2026-08-01 — di-math-facts L3 support tiers (birth-cert follow-up #3 struck; second pack at
+  L3, first MATH pack tiered).** The ladder rung the 08-01 re-point named, executed on
+  di-sentence-reading's L3 template point-for-point: zero `showOptions`, so the whole ladder is
+  modality #2 instruction-as-scaffold over **DISTAR's own model→guide→test** — easy = model+guide+test
+  (byte-for-byte the #46 bench-proven block) / medium = model+test / hard = **cold answer**, composed
+  in the SCRIPT (`leadInFor` + `coldAnswerGuard` in `diMathFactsScript.ts`), never a UI flag.
+  **`hard` matters MORE here than in the sentence pack:** the screen never shows the sum (answer-leak
+  rule), so the model line was the ONLY pre-attempt channel carrying the answer — at hard the item
+  becomes a genuine **retrieval probe**, and silent `responseMs` becomes true retrieval time instead
+  of partly echo delay. Never withdrawn: printed problem, correction re-model (gate 3, plain AND
+  contrastive), restating affirm, judging contract (byte-identical across tiers, test-pinned).
+  **Tutor second-channel audit came back CLEAN, unlike the sibling** — level 1 repeats the QUESTION
+  (stimulus, on screen), not the target; the fact-modeling levels/struggles are all post-attempt
+  remediation = correction territory; audit note recorded in `catalog/di.ts`. Channel closed anyway:
+  per-item cold-answer guard + `supportTier` contextKey (connect payload / `updateContext` /
+  `startDiRunLog`) + one cold-items clause in the LIVE-JUDGED directive. Same Fork-A departure as the
+  sibling: **no `tierSection` in the prompt** (a tier line could only nudge the fact RANGE =
+  structural difficulty by the back door; operand structure is L4's axis). **Family gap closed in the
+  same slice: the direct-instruction-tester had NO difficulty control**, so no DI tier (incl. the
+  sibling's #54(d) hard cold-read check) was actually drivable — added the tier selector riding the
+  eval-test route's existing `?difficulty=` tap. Verified: typecheck:lumina **0**; vitest
+  **1041/1041** (new suite 14/14, non-vacuity proven — 5 fail when hard is reverted); **and 3/3
+  probes through the REAL pipeline** (dev server + real Gemini): pinned `answer_fact`+hard → all
+  challenges `'hard'`, scope intact; `mixed`+medium → the SP-21 four-identity interleave ALL got the
+  tier (the gate-on-tier-not-mode rule live); no param → no field (pre-L3 byte-compatible). Live
+  `hard` ear-check folded into **#50(d)** (rides the deliberately-wrong sitting). L4
+  `/add-structural-difficulty` now unblocked. Report:
+  `qa/eval-reports/di-math-facts-support-tiers-2026-08-01.md`.
 - **`subject_for_domain('di')` REVISIT — RESOLVED AND NOW COMMITTED (`/pm` 2026-07-25 correction of
   its own 07-24 note).** The 07-24 line called this "resolved in the working tree (uncommitted)";
   that is now stale — `curriculum_retrieval_service.py` (`_PRIMITIVE_TO_SUBJECT`
@@ -722,35 +750,68 @@ within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activit
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` reconcile 2026-07-27 — supersedes the 07-25 EOD note):** HEAD `712e54a`, main.
-> Portfolio = **2 ACTIVE + 0 DELEGATED**, within the 2+1 limit. DI is the only lane that moved since
-> (the 07-26 decoherence→telemetry day); reader-fit idle 2 days — within tolerance, queue freshly
-> re-seeded (§14) so a session can pull cold.
->
-> **The tree is NOT clean — it carries the entire 07-26 DI day, uncommitted:** 26 modified files
-> (+2,145/−145) plus ~15 new ones, ALL one stream. Contents: the turn-gate engine fix
-> (framePeriodMs→`voicedMs`, retro-anchor, cue ledger — the decoherence root cause), telemetry item 8
-> (backend `session_ledger.py` + `di_run_logs.py` + the `main.py` logging fix; client `diRunLog` /
-> `DiRunLogPanel` / `clientRunId` + the DiMathFacts flush pilot), the tier-1 fuzz suites,
-> misconception-evidence tests + golden scenario, and four 07-26 run reports + queue updates.
-> **Propose `/ship` in 3 slices:** (1) engine turn-gate fix + fuzz suites (the behavior change, its
-> own revert unit), (2) telemetry (backend ledger/drop-box + client flush pilot), (3) QA docs +
-> queues (HUMAN-CHECKS / BACKLOG / WORKSTREAMS in their own slice per standing hygiene).
-> ⚠️ **Pre-ship gate: `backend/logs/` is NOT gitignored** and now holds runtime session ledgers +
-> auto-uploaded run files from real sittings (child-session transcripts included). Add `backend/logs/`
-> to `.gitignore` in the telemetry slice so no `git add -A` can ever sweep student-session data into
-> the repo. (Verified via `git status` showing `??`; an earlier `check-ignore -v` "match" was a
-> blank-line quirk — do not trust it.)
-> ⚠️ **Standing flag, THIRD `/pm` raising it:** `.claude/settings.local.json` allow-list is still
+> **WIP note (`/pm` 2026-08-01 — supersedes the 07-27 note below):** HEAD `d906c68`, main.
+> **Uncommitted surface = ONE stream's worth (DI) + this run's backend guard:** the 07-31/08-01
+> item-5 stall-fix slice (engine hooks + 4 packs + session-liveness/fuzz tests + `DiStallCard` +
+> recovery/disconnect hooks + `LuminaAIContext` + backend clock-skew & ledger edits + QA docs) plus
+> the fault-flag persistence guard (`lumina_tutor.py`, `config.py`) landed by this `/pm`.
+> **Ship proposal:** slice 1 = the DI stall-fix + guard (same files, one stream, all verified —
+> vitest 1025/1025, typecheck:lumina 0, py_compile clean, level-2 recovery confirmed live);
+> slice 2 = shared registers (WORKSTREAMS, HUMAN-CHECKS, DI BACKLOG) in their own commit.
+> **Two user rulings recorded this run:**
+> **(1) Fault-flag time bombs (defused + guarded).** `LUMINA_FAULT_MUTE_S=25` had been left in
+> `backend/.env` — it would have silently muted the first DI session of every backend boot. Removed,
+> and the class is closed in code: fault flags now REFUSE to arm from .env persistence (pydantic
+> loads .env without touching os.environ, so the persisted form is detectable) — one loud ERROR
+> names the fix; shell-scoped arming (`$env:LUMINA_FAULT_MUTE_S='25'; uvicorn …`) still works for
+> deliberate drives. Guard exercised on all four paths via the backend venv. Memory:
+> `feedback_no-persisted-fault-flags`.
+> **(2) Scope pivot: PUSH DEVELOPMENT.** Testing of DI was good but must stop dominating sessions;
+> favor platform capabilities that don't require substantial testing. DI re-pointed at its LADDER
+> (machine-gated /add-* rungs) + item 2 design; item 9 Tier 2 (headless student = testing
+> capability) demoted-but-queued, absorbing the level-3-card + end-coherent-run residuals.
+> Reader-fit's §14a EMERGING census (pure agent work) fits the ruling and is that stream's pull.
+> Portfolio = **2 ACTIVE + 0 DELEGATED**, within limit. Reader-fit idle since 07-25 — resume via
+> 14a rather than parking (it IS the development frontier for the K-2 demand map).
+> ⚠️ **Standing flag, FOURTH raising:** `.claude/settings.local.json` allow-list is still
 > `["Read(**)"]` alone — every session pays permission prompts for routine shell/search. Restore
-> `Bash(*)` / `Glob` / `Grep` if the narrowing wasn't deliberate; no other stream owns this.
+> `Bash(*)` / `Glob` / `Grep` if the narrowing wasn't deliberate (`/fewer-permission-prompts` can
+> seed it); no other stream owns this.
 >
-> **Human-only residuals:** open rows run to **#56; next free ID = 57**. The 07-25 "one big sitting"
-> framing is RETIRED — the math half closed 07-26 (#50(a), #49(c), #55(c)/(d-math) struck). What
-> remains is **two short runs**: **#56** (the ~90s silence micro-run — no-verdict→resync live +
-> #55(e) + item 8's induced-stall acceptance gate) and the **sentence half** of the deliberately-wrong
-> recipe (#54(a)/(b)/(d) + #55(a)/(b)/(d-reading) + #50(b) + #49(a)). Then **#45** (DI in a real K
-> lesson), the evidence that would justify un-parking voice-transport.
+> **WIP note (`/pm` status re-check 2026-07-27 late — superseded by the 2026-08-01 note above):** HEAD **`d906c68`**, main, **tree CLEAN, pushed** (main in sync with origin). Portfolio =
+> **2 ACTIVE + 0 DELEGATED**, within the 2+1 limit. Reader-fit idle 2 days — within tolerance, queue
+> freshly re-seeded (§14) so a session can pull cold.
+>
+> **The earlier reconcile note's `/ship` section is DISCHARGED — the entire 07-26 DI day landed in
+> `d906c68`** (one commit rather than the proposed 3 slices; acceptable — it is one stream's work):
+> turn-gate engine fix + fuzz suites + telemetry item 8 + misconception-evidence tests + all run
+> reports + register updates (incl. this `/pm`'s #56 row and preamble refresh). **Both pre-ship
+> gates were honored in the same commit:** `backend/logs/` is now gitignored with the "raw runtime
+> logs never enter the repo" comment (and `git ls-files backend/logs` confirms nothing tracked), so
+> the student-session-data exposure is closed.
+> ⚠️ **Standing flag, still open (third `/pm` raising it):** `.claude/settings.local.json`
+> allow-list remains `["Read(**)"]` alone — every session pays permission prompts for routine
+> shell/search. Restore `Bash(*)` / `Glob` / `Grep` if the narrowing wasn't deliberate; no other
+> stream owns this.
+>
+> **Post-commit movement (2026-07-27 evening): a child-paced `answer_fact` K run, COHERENT** —
+> diagnosed from the auto-persisted log alone (item 8's zero-click path working in anger), 3
+> plain-fallback corrections byte-stable → **#55(e) HALF-closed** (spoken-no-number half; the
+> literal-SILENCE route still rides #56), counting-aloud supersession chains absorbed benignly
+> (first live sight of item 9 Tier-2's "rapid double answers" class). Report:
+> `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`.
+> **Human-only residuals:** open rows run to **#56; next free ID = 57**. Two short runs remain:
+> **#56** (the ~90s silence micro-run — no-verdict→resync live + #55(e)'s silence route + item 8's
+> induced-stall acceptance gate) and the **sentence half** of the deliberately-wrong recipe
+> (#54(a)/(b)/(d) + #55(a)/(b)/(d-reading) + #50(b) + #49(a)). Then **#45** (DI in a real K lesson),
+> the evidence that would justify un-parking voice-transport.
+> **DEV-FIRST RULING (user, 2026-07-27): human sittings must not be the critical path.** Recorded at
+> the top of the DI BACKLOG queue. Code runway, none of it human-gated: **item 5** (stall fix) →
+> **item 9 Tier 2** (headless student — machine-verifies item 5 + the silence path, shrinking #56 to
+> an ear-check) → **item 8 flush sweep** → **item 6 probe** → **item 2 design**. Reader-fit's 14a
+> EMERGING census is likewise pure agent work. **Item 7 (clock-skew) FIXED this session** —
+> `clock_skew_seconds=10` at the tutor-WS + shared HTTP auth sites, py_compile clean, uncommitted.
+> Only the contrastive-correction port stays frozen on a sitting (#55, family rule).
 
 ## PARKED (trusted-as-of date; re-verify before acting)
 

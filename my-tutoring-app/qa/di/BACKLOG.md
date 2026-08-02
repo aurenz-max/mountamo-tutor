@@ -54,7 +54,51 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-8. **FAMILY-WIDE + BACKEND: DIAGNOSIS-GRADE TELEMETRY — TOP PULL, user ruling
+> **ORDERING RULING (user, 2026-08-01): PUSH DEVELOPMENT — supersedes the 07-27
+> pull order below.** After two weeks of testing-heavy DI iteration the user
+> wants sessions spending tokens on PLATFORM CAPABILITY, favoring work that does
+> not require substantial testing (machine-gated ladder rungs, design slices,
+> mechanical sweeps) over test-infrastructure builds and mic sittings. New pull
+> order: **the family ladder** (di-math-facts L3 → di-letter-sounds L3 →
+> di-word-reading L2 → di-sentence-reading L4 — all script/config-level,
+> eval-test/tutor-test gated, zero sittings required; **di-math-facts L3 DONE
+> 2026-08-01** — the delegated slice landed (script-composed fade + `supportTier`
+> contextKey + the tester's new family tier selector; 14/14 new tests, 3/3
+> real-pipeline probes; ear-check → HUMAN-CHECKS #50(d); report
+> `qa/eval-reports/di-math-facts-support-tiers-2026-08-01.md`); the ladder still
+> runs SERIALLY and `catalog/di.ts` is free again — **next rung =
+> di-letter-sounds L3**) → **item 2**
+> remediation-lever design (the misconception loop's consumption half — a real
+> platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
+> flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel
+> lane — no file overlap with the L3 slice)** → **item 6** probe (backend-only).
+> **Item 9 Tier 2 is DEMOTED from top pull but stays queued** as the absorber of
+> item 5's residual runtime checks (the level-3 🔄 card via
+> `LUMINA_FAULT_MUTE_EPISODES=2` + an end-coherent full run) — build it when a
+> testing-capability slice is warranted again, not next.
+>
+> **FAULT-FLAG HYGIENE (user ruling, 2026-08-01: "we are making ticking time
+> bombs").** `LUMINA_FAULT_MUTE_S=25` had been left in `backend/.env` and was
+> silently sabotaging the first run of every backend boot. Defused + guarded
+> the same day: the flag is gone from .env, and `lumina_tutor.py` now REFUSES
+> to arm any fault flag that reaches settings without being in the PROCESS
+> environment (pydantic loads .env without touching os.environ, so persistence
+> is detectable) — it logs one loud ERROR naming the fix instead. Fault drives
+> arm shell-scoped for one run only: `$env:LUMINA_FAULT_MUTE_S='25'; uvicorn
+> app.main:app`. The rule generalizes: any dev/testing affordance must be
+> impossible to leave armed — refuse persisted forms loudly, never rely on a
+> human remembering to clean up.
+>
+> *(07-27 ruling, kept for the record — human sittings must not be the critical
+> path; that half still stands. Its pull order — item 9 Tier 2 → flush sweep →
+> item 6 → item 2 — is superseded above. Item 7 fixed 2026-07-27. Human rows
+> (#56, the sentence sitting, #45) stay valuable but nothing waits on them —
+> the ONLY code frozen on a sitting is the contrastive-correction port to
+> di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
+
+8. **FAMILY-WIDE + BACKEND: DIAGNOSIS-GRADE TELEMETRY — ~~TOP PULL~~ built +
+   smoke-verified; residual = acceptance gate ONLY (rides a sitting or item 9
+   Tier 2) — the 3-pack flush sweep DONE 2026-08-01. Original ruling
    2026-07-26 ("first, we need enough logging to actually diagnose, evaluate,
    and improve").** *(Executor: dedicated slice, before item 5's fix and before
    any further sittings.)* Third consecutive failure sitting whose FIRST finding
@@ -103,8 +147,28 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    submit). Run 2 (4/4): ledger `session-init client_run_id = 4b9baa743d20` ===
    both run files' runId; tail file shows cues 6/6, stalled 0. **Remaining:** the
    acceptance gate rides the item-1 recipe sitting (induced-stall diagnosability
-   via the last-item silence segment); then sweep flush wiring to the other
-   three packs (pilot passed).
+   via the last-item silence segment); ~~then sweep flush wiring to the other
+   three packs (pilot passed)~~ **FLUSH SWEEP DONE 2026-08-01** — the pilot's
+   four pieces replicated byte-for-byte from DiMathFacts into DiLetterSounds /
+   DiWordReading / DiSentenceReading: pre-connect `setClientRunId(mintRunId())`
+   (the correlation-race fix — the WS auth message must already carry the id),
+   `run-end` flush + deduped 6s `run-end-tail` re-flush (fits under
+   `useDiPostRunDisconnect`'s 7s floor), and `teardown` flush on unmount. The
+   stall-moment flush was already family-wide via shared `useDiStallRecovery`.
+   Gates: `typecheck:lumina` 0, full vitest 1041/1041. Runtime status,
+   honestly: the pattern passed 3 live runs in DiMathFacts and this is
+   mechanical replication, but no non-math pack has flushed live yet — the next
+   live run of each pack is the free confirmation (its artifact lands in
+   `logs/di-runs/` joined to the session ledger, or this reopens).
+   **Update 2026-07-31 (item 5 slice): the
+   acceptance gate is now MACHINE-COVERABLE — `LUMINA_FAULT_MUTE_S` induces the
+   stall on demand (dev-gated), and the artifacts to reconstruct it all exist:
+   ledger `fault-mute-armed`/`go-away`/`gemini-resume` stamps + still-ledgered
+   `ai-transcript` during the mute, client `cue-dead` events, `session-dead` /
+   `stall-reconnect` / `stall` stage lines, and the NEW `flushDiRunLog('stall')`
+   at the failure moment. Drive it via item 9 Tier 2's stall journey (or #56);
+   if the episode can't be reconstructed from persisted files alone, this item
+   reopens.**
 1. **FAMILY-WIDE: SUSTAINED-MISS DECOHERENCE — CLOSED 2026-07-26** (root cause
    = turn gate, fixed, fix verified live, and the full recipe run re-driven
    COHERENT the same day — see the strike at the bottom of this item; residual
@@ -196,14 +260,86 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    — **item 2's consumption design now has live data.** Remaining: (ii) the 90s
    SILENCE run (answer nothing on item 1) → no-verdict→resync live, #55(e)
    fallback, and item 8's induced-stall acceptance gate.
-5. **FAMILY-WIDE: mid-run STALL — no verdict ever arrives and the primitive
-   dead-ends in silent "Listening…" (the first real-child run's biggest break).**
-   *(opened 2026-07-26 from the child stress run,
-   `qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md` Finding 1 — CORRECTED
-   report: the earlier "fabricated contrast" defect was withdrawn, the child really
-   said "three"; ASR wrote "Please". Executor: engine/`lumina_tutor.py` slice —
-   escalation ladder + re-cue-on-resume; verification rides the item-1 recipe
-   sitting.)* From ~turn 15 the child kept answering — repeated
+5. ~~**FAMILY-WIDE: mid-run STALL — no verdict ever arrives and the primitive
+   dead-ends in silent "Listening…" (the first real-child run's biggest break).**~~
+   **BUILT + UNIT-VERIFIED 2026-07-31; LEVEL-2 RECOVERY RUNTIME-CONFIRMED
+   2026-08-01 (user fault drive, `LUMINA_FAULT_MUTE_S=25`):** dead cues at
+   exactly 10s/20s → `session-dead` → warm reconnect in **327ms** →
+   `session-resumed` → the in-flight item re-cued verbatim → answer affirmed →
+   run advanced. Artifacts reconstruct the whole episode from files alone
+   (run `7f0a1543ff7c`: client teardown flush + server ledgers). Two bugs the
+   drives caught, both fixed same slice: the OPENER never armed the dead-cue
+   watch (stale-`enabled` at arm time — the ladder slept for the from-birth-dead
+   session; arm is now unconditional, gate at fire time) and `sessionDeads`
+   double-counted (flag→kind). **Remaining runtime = the level-3 card
+   (`LUMINA_FAULT_MUTE_EPISODES=2`) + an end-coherent full run — fold into
+   item 9 Tier 2's stall journey.** Slice report:
+   `qa/di-bench/slice-2026-07-31-item5-stall-fix.md`. What shipped, per the
+   handoff's three parts:
+   - **(i) Re-cue after ANY resume, client-owned:** `LuminaAIContext` exposes
+     **`sessionResumeCount`** (bumped in the ONE `session_resumed` branch —
+     covers transparent server resumes AND warm client reconnects, since the
+     auth-supplied handle makes the backend's first connect a resume too);
+     `useJudgedSpeechLoop` watches it and emits **`{ kind: 'session-resumed' }`**;
+     all four packs handle it as a shared case with `resync` (beat-fight guard
+     preserved in math/sentence). Bonus banked: the backend's COLD retry
+     (history lost) is now safe for DI — a re-cued `[DI_ITEM]` carries the full
+     contract.
+   - **(ii) Escalation ladder:** engine-owned detection — after a cue is SENT,
+     no tutor audio rise AND no output text within `CUE_DEAD_MS` (10s) = one
+     dead cue (cue channel phase `'dead'`); 2 consecutive → **`{ kind:
+     'session-dead' }`**, re-emitting on continued silence so failed recovery
+     escalates. Liveness is cue→tutor-AUDIO, never cue→verdict — 40s think-time
+     is unit-pinned benign. Pack-owned recovery — shared `useDiStallRecovery`:
+     level 2 = `ctx.reconnect()` **warm** (NOT disconnect()+connect(), which
+     would destroy the mic — open-mic doctrine); level 3 (second death on one
+     item / 12s grace with no resume signal — covers the cold-retry corner,
+     which sends no `session_resumed` / `sessionEnded` mid-run) = shared
+     **`DiStallCard`** (picture-primary 🔄, tap = reconnect-and-re-cue) +
+     **`flushDiRunLog('stall')` at the failure moment**. The ladder converges
+     on (i). Mic untouched everywhere.
+   - **(iii-a) Post-run GoAway flap, pack-side:** shared `useDiPostRunDisconnect`
+     — standalone path only (`weConnectedRef`), disconnects after submit + the
+     closing cue actually SENT + its recap audio risen-and-fallen, floor 7s
+     (outlives the 6s tail re-flush), ceiling 20s. Lesson mode untouched.
+     **(iii-b) — server-side terminal-GoAway-before-input — explicitly
+     DEFERRED** per the handoff's "if unsure, ship (iii-a) alone"; revisit only
+     if the flap survives (iii-a) in a ledger.
+   - **Fault injection (serves item 8's gate too):** `LUMINA_FAULT_MUTE_S` (+
+     `LUMINA_FAULT_MUTE_EPISODES`, default 1) in backend settings — the FIRST
+     cue-classified text of a session arms an N-second mute of MODEL OUTPUT
+     only (audio/transcription/text dropped client-ward; `ai-transcript` still
+     ledgered, so the ledger shows what Gemini said while the client heard
+     nothing — the diagnosable asymmetry). Refuses to arm unless
+     `ENVIRONMENT` says dev (new setting, default production; local `.env` now
+     carries `ENVIRONMENT=dev`). EPISODES=1 → recovery's reconnect gets a
+     healthy session (run must END COHERENT); =2 → the reconnect stalls too →
+     level-3 card.
+   - **Verified (dev-first):** new `useJudgedSpeechLoop.session-liveness.test.tsx`
+     (11 tests: resume signal incl. disabled-swallow + no-cue-resend; dead-cue
+     ladder incl. think-time false-trigger guard, liveness clears, re-emission,
+     ledger independence); fuzz hook-only-kinds invariant extended
+     (`session-resumed`/`session-dead` never from the reducer — reducer
+     untouched, stays fuzz-clean); full vitest **1025/1025**;
+     `typecheck:lumina` **0**; backend py_compile clean. **NOT yet exercised at
+     runtime** — the fault-injected drive is the confirmation gate and lands
+     with item 9 Tier 2 (its stall journey MUST arm the flag).
+   *(original finding, kept as the trail: opened 2026-07-26 from the child
+   stress run, `qa/di-bench/run-2026-07-26-math-facts-stress-sitting.md`
+   Finding 1 — CORRECTED report: the earlier "fabricated contrast" defect was
+   withdrawn, the child really said "three"; ASR wrote "Please".)*
+   **📋 HANDOFF (executed 2026-07-31): `qa/HANDOFF-di-stall-fix-2026-07-27.md`** — paste-able,
+   line-exact, written after reading both sides (backend resume loop + client
+   engine/pack). It SUPERSEDES the verification note above per the dev-first
+   ruling: build + verify via unit tests + a dev-only fault-injection flag
+   (`LUMINA_FAULT_MUTE_S`, which also machine-covers item 8's induced-stall
+   acceptance gate); a sitting is confirmation, not the gate. Key findings from
+   the read: `session_resumed` is swallowed inside `LuminaAIContext` (`:376-380`,
+   flags only — the missing link for re-cue-on-resume); the liveness signal must
+   be cue→tutor-AUDIO, never cue→verdict (35.9s benign think observed 07-27);
+   the `DiMathFacts.tsx:542` resync branch is the worked re-cue template incl.
+   the beat-fight guard; recovery converges on the resume signal (ladder level 2
+   reconnects warm via the stashed handle, then part (i) re-cues). From ~turn 15 the child kept answering — repeated
    `activity_start`/`activity_end` pairs — with ZERO AI output and no verdict;
    "Waiting for Gemini response (turn 16)" never satisfied; no recovery, no visible
    failure state. **Mechanism candidates (log truncated + untimestamped, can't pin):
@@ -232,7 +368,14 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
      `npm test` (1014/1014). Found no violations in current code — the reducers
      are clean; the stall lives ABOVE them (transport/session), which is item
      5's territory. Extend the event generator when new emission kinds land.
-   - **Tier 2 — headless adversarial live student (after items 8 + 5):** build
+     **Extended 2026-07-31 (item 5 slice):** `session-resumed`/`session-dead`
+     joined `verdict-text` in the hook-only-kinds invariant — the reducer stays
+     untouched and fuzz-clean; the ladder lives in the hook's clocks.
+   - **Tier 2 — headless adversarial live student (item 5 shipped 2026-07-31 —
+     THIS IS NOW TOP PULL). Its stall journey MUST arm `LUMINA_FAULT_MUTE_S`
+     (+ a second journey with `LUMINA_FAULT_MUTE_EPISODES=2` for the level-3
+     card path) — that drive is item 5's runtime confirmation AND item 8's
+     acceptance-gate evidence.** Build
      ON `backend/tests/tutor_live/run_tutor_live.py` (user call 2026-07-26 —
      take inspiration from /tutor-test): it already authenticates on the real WS
      like LuminaAIContext, replays beats, captures per-beat transcripts, judges
@@ -278,11 +421,21 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    Birth-cert home is the OPS001 family (K OPS001-03 / G1 OPS001-01); the full data
    loop (calibration θ, mastery gate 0→2, XP) wrote against OPS002-04-c, so standalone
    DI sittings are calibrating the WRONG node.
-7. **Tutor WebSocket hard-fails on 1s clock skew.** *(opened 2026-07-26, stress-sitting
-   report. Executor: one-line — pass `clock_skew_seconds` (e.g. 10) to
-   `auth.verify_id_token` in `lumina_tutor.py:422`; check the HTTP auth path for the
-   same.)* `Token used too early, 1785081560 < 1785081561` → `InvalidIdTokenError` →
-   session dead, client must reconnect.
+7. ~~**Tutor WebSocket hard-fails on 1s clock skew.**~~ **FIXED 2026-07-27 (`/pm`
+   session).** `clock_skew_seconds=10` passed at both scoped sites: the Lumina
+   tutor WS auth (`lumina_tutor.py`, where the observed failure killed a live
+   session) and the shared HTTP path (`auth.py` `verify_firebase_token`, which
+   `require_auth` — incl. the DI run-log drop-box — rides). firebase-admin 6.9.0
+   supports the param (≥6.4). py_compile clean. **Honest verification note:** the
+   1s-skew condition cannot be reproduced on demand locally; this is the SDK's
+   documented mitigation for exactly the logged error (`Token used too early,
+   1785081560 < 1785081561`). Runtime evidence arrives free — the session ledger
+   now records auth failures, so any recurrence would be visible in
+   `logs/lumina-sessions/`. Other WS endpoints (gemini/education/practice/
+   daily-briefing/core-utils) share the same class but were left untouched —
+   out of the item's scope; sweep only if the ledger ever shows them failing.
+   *(original finding: `Token used too early` → `InvalidIdTokenError` → session
+   dead, client must reconnect; opened 2026-07-26, stress-sitting report.)*
 3. ~~**FAMILY-WIDE: the wrong answer's CONTENT is discarded**~~ **DONE 2026-07-25 — STRUCK, see Done.**
    *(kept below for the reasoning trail.)* *(found 2026-07-25
    answering the user's "so you won't see an incorrect in the logs?" — executor:
@@ -413,16 +566,18 @@ before di-sentence-reading existed.)*
 |---|---|---|---|---|---|---|
 | di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | — | `/add-support-tiers` (L3) |
 | di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | — (script-local) | — | catalog `tutoring:` move (L2) |
-| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | — | `/add-support-tiers` (L3) |
+| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | `/add-structural-difficulty` (L4) |
 
-Nearest rungs, in order: **di-sentence-reading L4** (axis already built and
-measured — sentence LENGTH via `wordCount`/`meanSentenceWords`; hard constraint:
-the **8-word benched ceiling is NOT a difficulty knob**, raising it needs a bench
-sitting) · **di-math-facts L3** (birth cert specifies the fade; di-sentence-reading's
-L3 is now the worked template for a live-judged spoken pack — modality #2
-instruction-as-scaffold, DISTAR's model→guide→test IS the ladder, in the SCRIPT
-never a UI flag) · di-letter-sounds L3 · di-word-reading L2.
+Nearest rungs, in order (08-01 ruling): **di-letter-sounds L3** (third use of
+the sentence/math L3 template — modality #2 instruction-as-scaffold, DISTAR's
+model→guide→test IS the ladder, in the SCRIPT never a UI flag; the tester's tier
+selector already covers it) · **di-word-reading L2** (catalog `tutoring:` move;
+shared wiring already in place) · **di-sentence-reading L4** (axis already built
+and measured — sentence LENGTH via `wordCount`/`meanSentenceWords`; hard
+constraint: the **8-word benched ceiling is NOT a difficulty knob**, raising it
+needs a bench sitting) · di-math-facts L4 (operand structure, per its birth
+cert). ~~di-math-facts L3~~ **DONE 2026-08-01**.
 
 **Two family-wide debts sit ABOVE the ladder** and are why the numbered queue is
 not empty: **item 1** (no remediation content from a stored misconception — the
@@ -443,10 +598,16 @@ candidate at all: di-math-facts absorbed the next-number step as `counting_next`
   the child stress run re-sent the same `[DI_ITEM]` (1+1) after ≥2 misses — the
   resync signature, LIKELY first live firing, but uninstrumented (no client run
   JSON); the item-1 recipe sitting confirms or denies.**
-- **(2026-07-26 stress run)** GoAway rapid-resume loop: post-run, 4×
+- ~~**(2026-07-26 stress run)** GoAway rapid-resume loop: post-run, 4×
   GoAway→resume→instant GoAway until client disconnect — no "run complete, stop
   resuming" exit in `lumina_tutor.py`. **Striking MID-run this is item 5's stall
-  candidate (a)** — the fix rides that item.
+  candidate (a)** — the fix rides that item.~~ **FOLDED INTO the item-5 strike
+  2026-07-31:** the MID-run half is the shipped ladder; the POST-run flap's
+  trigger is removed client-side by (iii-a) `useDiPostRunDisconnect` (standalone
+  disconnects once the recap has played). **(iii-b) — server-side "resumed
+  connection GoAways before ANY client input → terminal" — DEFERRED**; revisit
+  only if a ledger still shows the flap after (iii-a). Watch the first
+  fault-injected / #56 run's ledger tail for it.
 - **(2026-07-26 stress run)** Session metrics counters count audio frames, not
   turns (`Turns: 28885` for a ~90s session) — fix before anyone charts them.
 - **(2026-07-26 stress run — reading outcome data)** with a real child voice the
