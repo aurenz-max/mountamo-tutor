@@ -572,7 +572,10 @@ before di-sentence-reading existed.)*
 Nearest rungs, in order (08-01 ruling): **di-letter-sounds L3** (third use of
 the sentence/math L3 template — modality #2 instruction-as-scaffold, DISTAR's
 model→guide→test IS the ladder, in the SCRIPT never a UI flag; the tester's tier
-selector already covers it) · **di-word-reading L2** (catalog `tutoring:` move;
+selector already covers it; **📋 HANDOFF:
+`qa/HANDOFF-di-letter-sounds-L3-2026-08-01.md`** — paste-able, carries the
+per-mode onset caution + second-channel audit + the serial `catalog/di.ts`
+constraint) · **di-word-reading L2** (catalog `tutoring:` move;
 shared wiring already in place) · **di-sentence-reading L4** (axis already built
 and measured — sentence LENGTH via `wordCount`/`meanSentenceWords`; hard
 constraint: the **8-word benched ceiling is NOT a difficulty knob**, raising it

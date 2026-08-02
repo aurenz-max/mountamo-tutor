@@ -36,6 +36,7 @@ coin-counter tail after the Grade-1 demand work.
   retain generic grades-1–5 prose. Fix the boundary/grade stamp once, add a numeric-grade regression
   oracle, then replay the six reports before treating band-only symptoms as primitive-local bugs.
   Executor: `/topic-fidelity`; this is the same dead-band class as 14c but one layer upstream.
+  **📋 HANDOFF (paste-able, line-exact anchors verified): `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md`.**
 - **14b. coin-counter contract gap G1 — CONFIRMED by authored demand (2/42 routes).** The
   `MEAS001-07-c` trace routed `coin-counter` twice (`identify`, `count-like`). In the exact primary
   consumer, count-like stamps `gradeBand: 1`, `countMode: like`, and **`showRunningTotal: false`**:
@@ -43,7 +44,10 @@ coin-counter tail after the Grade-1 demand work.
   the manifest intent explicitly asks for tap-each-coin running totals. Widen the existing K
   band+mode enacted-count contract deliberately to Grade 1; read `docs/contracts/coin-counter.md`
   first and run `--check`. Evidence: `qa/topic-traces/g1-identical-coins-2026-08-01.md` plus
-  `qa/reader-fit/coin-counter-task3-2026-07-25.md`.
+  `qa/reader-fit/coin-counter-task3-2026-07-25.md`. NOT gated on 14e (coin-counter stamps G1
+  correctly); file-disjoint from 14e, safe to run in a parallel session.
+  **📋 HANDOFF: `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`** (carries the β1.5
+  decision, the standing rulings, and the byte-identical discipline).
 - **14f. knowledge-check @ EMERGING — 6/42, routed in every census lesson.** This is the most
   frequent primitive and closes the K backlog's explicit "complex-type routing re-audit once the K
   queue drains" follow-up. Scope mostly holds, but the generator sees generic `elementary`, and the
