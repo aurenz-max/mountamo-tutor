@@ -69,6 +69,9 @@ coin-counter tail after the Grade-1 demand work.
   of pictures, while the invention `analyze` draw promises picture support but emits long text-only
   multi-clause analysis/matching. After 14e, audit mixed-mode selection + Grade-1 reading load and
   visual insets across all six saved topics; do not copy the K picture-primary floor wholesale.
+  **📋 HANDOFF: `qa/HANDOFF-reader-fit-14f-knowledge-check-emerging-2026-08-01.md`** (all six
+  census verdicts tabled; contract-first REQUIRED — no `docs/contracts/knowledge-check.md` exists,
+  and deriving it also closes the PARKED contracts queue's item #2).
 - **14g. DI family intent/scope fidelity — 3/42 routes, 2/3 fail.** `di-sentence-reading` stayed on
   its noun objective, but `di-word-reading` replaced a CVCe intent with `cat/red/pig/sun`, and
   `di-math-facts counting_next` replaced 1–120 with values only through 12. These are generator

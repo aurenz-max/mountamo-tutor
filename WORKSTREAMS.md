@@ -104,7 +104,10 @@ queue AND this file's "last touched" in the same slice.
   `showRunningTotal` reconciled as the enacted-display lever (easy = climbing skip-count
   readout/badges, medium/hard = plain ✓ tags). Contract **R11** + `--check` **COMPATIBLE**;
   report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel/feel → HUMAN-CHECKS **#58**.
-  **Next pull = 14f.** Both 14e and 14b had paste-able
+  **Next pull = 14f** — 📋 handoff ready (`/pm` 2026-08-01):
+  `qa/HANDOFF-reader-fit-14f-knowledge-check-emerging-2026-08-01.md` (contract-first REQUIRED;
+  all six census verdicts tabled; audit axes = grade consumption / mixed-mode selection / visual
+  insets). Both 14e and 14b had paste-able
   handoffs (`/pm` 2026-08-01, file-disjoint — safe as two parallel sessions):
   `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md` +
   `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.** Next by observed demand:
