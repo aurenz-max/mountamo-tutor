@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ExhibitManifest } from '../../types';
 import type { StudentGenerationContext } from '../studentContext/types';
+import { resolveGenerationContext } from '../generation/resolveGenerationContext';
 import { flattenManifestToLayout, misconceptionMatchesComponent } from './flattenManifest';
 
 const manifest: ExhibitManifest = {
@@ -116,9 +117,26 @@ describe('flattenManifestToLayout misconception threading', () => {
     expect(item.config?.objectiveGrade).toBe('K');
   });
 
-  it('leaves grade undefined when no objective carries one (brief path)', () => {
-    const [item] = flattenManifestToLayout(manifest, objectives);
-    expect(item.config?.objectiveGrade).toBeUndefined();
+  it('stamps a topic-driven manifest numeric grade for canonical downstream parsing', () => {
+    const numericGradeManifest: ExhibitManifest = {
+      ...manifest,
+      gradeLevel: 'Grade 1',
+      finalAssessment: {
+        componentId: 'knowledge-check',
+        instanceId: 'kc-1',
+        title: 'Check understanding',
+        intent: 'Assess comparing quantities',
+      },
+    };
+
+    const layout = flattenManifestToLayout(numericGradeManifest, objectives);
+    expect(layout[0].config?.objectiveGrade).toBe('Grade 1');
+    expect(resolveGenerationContext(layout[0], manifest.topic, 'band prose', 'elementary').grade)
+      .toBe('1');
+    expect(layout[1].config?.objectiveGrade).toBe('Grade 1');
+    expect(layout[1].config?.lessonObjectives).toEqual([
+      expect.objectContaining({ id: 'obj-compare', grade: 'Grade 1' }),
+    ]);
   });
 
   it('matches skill scope only inside the canonical skill', () => {

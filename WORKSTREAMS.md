@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K → EMERGING queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-08-01** (**§14a census DONE; Grade-1 queue RE-SEEDED**)
+### 1. Reader-fit K → EMERGING queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-08-01** (**§14e + §14b DONE 2026-08-01; 14f next**)
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -91,10 +91,20 @@ queue AND this file's "last touched" in the same slice.
   components, zero generator errors**. The routing census is led by knowledge-check 6, sorting-station
   4, foundation-explorer 3, then seven primitives at 2 each. Reports:
   `qa/topic-traces/g1-*-2026-08-01.md`; ranked findings live in `qa/reader-fit/BACKLOG.md` §14.
-  **Top pull = 14e**, the numeric Grade-1 generator-boundary dead band (`Grade 1`/`1` collapses to
-  `elementary` before `GenerationContext`, producing K/2/4/3–5 payload stamps); then **14b**, now
-  directly confirmed on authored `MEAS001-07-c` demand (`count-like`, Grade 1,
-  `showRunningTotal:false` → the compute-then-type proxy survives). **14b DONE 2026-08-01** (G1 enacted tag-then-type variant; contract R11, `--check` COMPATIBLE; report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel → HUMAN-CHECKS #58). **Both have paste-able
+  **14e DONE 2026-08-01:** the numeric Grade-1 generator boundary now stamps topic-driven and final
+  assessment configs with raw `objectiveGrade`, then resolves it through the one canonical parser;
+  numeric prompt bands reuse that parser too. Two live trace replays stamped Grade 1 on **15/15**
+  calls and cleared `phonics-blender` K → 1; primitive-local `hundreds-chart` 2 and DI generic prose
+  remain queued. Full vitest 1,076/1,076; Lumina typecheck 0; tsc 803 baseline before/after.
+  Reports: `qa/topic-fidelity/numeric-grade-generator-boundary-2026-08-01.md` and
+  `qa/topic-traces/g1-numeric-grade-14e-replay-2026-08-01.md`. **14b DONE 2026-08-01** (parallel
+  session): coin-counter G1 `count-like` now enacts the tag — the child taps each coin (re-tap =
+  rejected double-count), then still TYPES the total, keeping the β1.5 answer act and the
+  "summation" half of `MEAS001-07-c` student-produced (full K parity was deliberately REJECTED);
+  `showRunningTotal` reconciled as the enacted-display lever (easy = climbing skip-count
+  readout/badges, medium/hard = plain ✓ tags). Contract **R11** + `--check` **COMPATIBLE**;
+  report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel/feel → HUMAN-CHECKS **#58**.
+  **Next pull = 14f.** Both 14e and 14b had paste-able
   handoffs (`/pm` 2026-08-01, file-disjoint — safe as two parallel sessions):
   `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md` +
   `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.** Next by observed demand:

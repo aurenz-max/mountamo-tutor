@@ -7,6 +7,7 @@ import {
 
 import { generateIntroBriefing as generateIntroBriefingWithSubject } from "./curator-brief/gemini-curator-brief";
 import type { StudentPersona } from "./studentContext/types";
+import { normalizeObjectiveGrade } from "./generation/resolveGenerationContext";
 
 // Foundational Concept Teaching
 import { ai } from "./geminiClient";
@@ -33,7 +34,21 @@ export const normalizeGradeLevel = (gradeLevel: string): string => {
     'toddler', 'preschool', 'kindergarten', 'elementary',
     'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd'
   ]);
-  return VALID_GRADES.has(normalized) ? normalized : 'elementary';
+  if (VALID_GRADES.has(normalized)) return normalized;
+
+  // Numeric curriculum grades are parsed by the same canonical parser that
+  // produces GenerationContext.grade. This function only collapses that
+  // canonical value into the existing prompt-band enum.
+  const objectiveGrade = normalizeObjectiveGrade(gradeLevel);
+  if (objectiveGrade === 'K') return 'kindergarten';
+  if (objectiveGrade) {
+    const grade = Number(objectiveGrade);
+    if (grade <= 5) return 'elementary';
+    if (grade <= 8) return 'middle-school';
+    return 'high-school';
+  }
+
+  return 'elementary';
 };
 
 const getGradeLevelContext = (gradeLevel: string): string => {

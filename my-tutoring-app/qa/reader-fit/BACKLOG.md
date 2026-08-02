@@ -22,20 +22,21 @@ singletons. Healthy high-frequency evidence: all four sorting-station draws stam
 stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
 `SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
 
-**Pull order:** 14e → 14b → 14f → 14g → 14h/14i → 14j → 14k/14l. 14c/14d remain the older
+**Remaining pull order:** 14f → 14g → 14h/14i → 14j → 14k/14l. 14c/14d remain the older
 coin-counter tail after the Grade-1 demand work.
 
 - ~~**14a. Run the EMERGING census.**~~ **DONE 2026-08-01.** Six real subskills, 42 generated
   components, zero generator errors. The scope/presentation findings below are the re-seeded queue.
-- **14e. P0 — numeric Grade-1 generator-boundary dead band (systemic; TOP / NEXT PULL).** The
-  manifest correctly returns `Grade 1`/`1`, but `geminiService.normalizeGradeLevel` accepts only
-  named bands and maps either numeric spelling to `elementary`; topic-driven curator objectives do
-  not stamp `objectiveGrade`, so precise `ctx.grade` is absent. The fallout is visible across the
-  census: `phonics-blender` and `word-sorter` stamp K, `sentence-analyzer` stamps 4,
-  `hundreds-chart` stamps 2 in both draws, `fast-fact` stamps 3–5, and media/DI/deep-dive/KC payloads
-  retain generic grades-1–5 prose. Fix the boundary/grade stamp once, add a numeric-grade regression
-  oracle, then replay the six reports before treating band-only symptoms as primitive-local bugs.
-  Executor: `/topic-fidelity`; this is the same dead-band class as 14c but one layer upstream.
+- ~~**14e. P0 — numeric Grade-1 generator-boundary dead band (systemic).**~~ **DONE 2026-08-01.**
+  Topic-driven components and final assessments now inherit raw `manifest.gradeLevel` as
+  `objectiveGrade`; the existing `normalizeObjectiveGrade` remains the only parser and resolves
+  `Grade 1`/`1` to precise `ctx.grade: '1'`. `normalizeGradeLevel` reuses that parser to map numeric
+  inputs into the existing named bands. Non-vacuity proved: six new assertions failed before the
+  fix; focused 41/41 and full 1,076/1,076 pass after. Two real `/topic-trace` replays stamped Grade 1
+  on **15/15** generator calls; `phonics-blender` cleared K → 1. `hundreds-chart` 2 and DI generic
+  prose persisted, correctly staying in 14i/14g rather than widening this slice. Reports:
+  `qa/topic-fidelity/numeric-grade-generator-boundary-2026-08-01.md` and
+  `qa/topic-traces/g1-numeric-grade-14e-replay-2026-08-01.md`.
   **📋 HANDOFF (paste-able, line-exact anchors verified): `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md`.**
 - ~~**14b. coin-counter contract gap G1 — CONFIRMED by authored demand (2/42 routes).**~~
   **DONE 2026-08-01.** Widened as a deliberate **G1 VARIANT** (contract **R11**), NOT full K

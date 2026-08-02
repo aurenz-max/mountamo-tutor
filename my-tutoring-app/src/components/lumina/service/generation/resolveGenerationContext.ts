@@ -35,7 +35,7 @@ function normalizeSupportTier(difficulty: unknown): SupportTier | undefined {
  * 'Grade 2', '2nd'); anything unrecognized → undefined (band defaults stand).
  * This is the ONLY place grade strings are parsed — generators read `ctx.grade`.
  */
-function normalizeObjectiveGrade(raw: unknown): string | undefined {
+export function normalizeObjectiveGrade(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const g = raw.trim();
   if (!g) return undefined;

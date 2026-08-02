@@ -63,7 +63,11 @@ export const flattenManifestToLayout = (
   // band even while the lesson runs on the Kindergarten stage. Subskill/skill IDs
   // are deliberately NOT recovered this way — those are per-component and are
   // rescued authoritatively at render (ManifestOrderRenderer / EvaluationContext).
-  const lessonGrade = (objectives ?? []).find(o => o.grade)?.grade;
+  // Topic-driven objectives do not carry curriculum metadata, but the manifest
+  // itself can carry a precise spelling such as "Grade 1" or "1". Stamp that
+  // raw value too: normalizeObjectiveGrade remains the only parser downstream,
+  // while named bands such as "elementary" safely normalize to undefined.
+  const lessonGrade = (objectives ?? []).find(o => o.grade)?.grade ?? manifest.gradeLevel;
   const resolveObjective = (block: { objectiveId: string; objectiveText: string; objectiveVerb: string }) => {
     const auth = objectiveById.get(block.objectiveId);
     return {
@@ -157,12 +161,15 @@ export const flattenManifestToLayout = (
       intent: manifest.finalAssessment.intent,
       config: {
         ...manifest.finalAssessment.config,
+        // A final assessment spans the lesson, which is single-grade here.
+        // Keep the raw spelling for canonical parsing at the generator boundary.
+        objectiveGrade: lessonGrade,
         lessonObjectives: (objectives ?? []).map(o => ({
           id: o.id,
           text: o.text,
           subskillId: o.subskillId,
           skillId: o.skillId,
-          grade: o.grade,
+          grade: o.grade ?? lessonGrade,
         })),
       },
       objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
