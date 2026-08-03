@@ -18,6 +18,7 @@ import type {
   ProblemType,
   InsetType,
   ProblemDifficulty,
+  KnowledgeCheckVisualType,
 } from '../../types';
 import type { BloomsTier } from './gemini-knowledge-check';
 
@@ -56,9 +57,14 @@ const ORCHESTRATOR_SCHEMA: Schema = {
             nullable: true,
             description: 'Inset to attach, or null for plain text. One of: katex, data-table, passage, chart, code, number-line, definition-box, or null',
           },
+          visualType: {
+            type: Type.STRING,
+            nullable: true,
+            description: 'Picture evidence rendered above the problem, or null. Use object-collection for map symbols/coins/picture keys; comparison-panel for before/after or side-by-side pictures. Visual problems MUST use multiple_choice.',
+          },
           brief: {
             type: Type.STRING,
-            description: 'Detailed content brief for the generator. Specify: what concept to test, what angle/misconception to target, what the inset should show (if any). Must be self-contained — the generator sees only this brief.',
+            description: 'Detailed content brief for the generator. Specify: what concept to test, what angle/misconception to target, and what the inset or visual should show (if any). Must be self-contained — the generator sees only this brief.',
           },
           cognitiveNote: {
             type: Type.STRING,
@@ -70,7 +76,7 @@ const ORCHESTRATOR_SCHEMA: Schema = {
             description: 'The id of the SINGLE lesson objective this problem primarily assesses (from the Lesson Objectives list), or null if no objectives were provided',
           },
         },
-        required: ['index', 'problemType', 'difficulty', 'insetType', 'brief', 'cognitiveNote', 'objectiveId'],
+        required: ['index', 'problemType', 'difficulty', 'insetType', 'visualType', 'brief', 'cognitiveNote', 'objectiveId'],
       },
     },
   },
@@ -87,6 +93,78 @@ export interface KcLessonObjective {
   text: string;
   subskillId?: string;
   skillId?: string;
+  grade?: string;
+}
+
+const VISUAL_TASK_RE = /\b(map|symbol|legend|picture|image|visual|coin|shape|color|diagram|invention|before[- /]?after|look at|shown)\b/i;
+
+function combinedTaskText(
+  topic: string,
+  context?: string,
+  objectives?: KcLessonObjective[],
+): string {
+  return [topic, context, ...(objectives ?? []).map((o) => o.text)]
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** A visual gate needs evidence from the objective/intent, never a topic-specific
+ *  hardcode. This catches the two census shapes (map symbols; promised pictures)
+ *  and the same modality class for coins/shapes/diagrams. */
+export function requiresVisualSupport(
+  topic: string,
+  context?: string,
+  objectives?: KcLessonObjective[],
+): boolean {
+  return VISUAL_TASK_RE.test(combinedTaskText(topic, context, objectives));
+}
+
+function preferredVisualType(taskText: string): KnowledgeCheckVisualType {
+  return /\b(before|after|change|compare|difference|invention)\b/i.test(taskText)
+    ? 'comparison-panel'
+    : 'object-collection';
+}
+
+/** Enforce schema-backed picture evidence per visual problem. Nonvisual siblings
+ *  keep their planned types, preserving mixed-set diversity. */
+export function applyVisualTaskPolicy(
+  problems: KnowledgeCheckProblemPlan[],
+  options: { required: boolean; taskText: string },
+): void {
+  if (options.required) {
+    for (const problem of problems) {
+      // A text-column match is the exact failure shape for Grade-1 map symbols
+      // and picture-supported before/after tasks. Give that individual item
+      // visible evidence even when another sibling already has a visual.
+      if (problem.problemType === 'matching_activity' && !problem.visualType) {
+        problem.visualType = preferredVisualType(options.taskText);
+        problem.brief = `${problem.brief} Replace the text-column match with one picture-based choice about the visibly rendered evidence.`;
+      }
+    }
+  }
+
+  for (const problem of problems) {
+    if (!problem.visualType) continue;
+    // Only MCQ currently has the bounded visual response schema. Coerce the
+    // individual problem, never the whole set.
+    problem.problemType = 'multiple_choice';
+    problem.insetType = null;
+  }
+
+  if (!options.required || problems.some((p) => p.visualType)) return;
+
+  const target = problems.find((p) => p.problemType === 'multiple_choice') ?? problems[0];
+  if (!target) return;
+  target.problemType = 'multiple_choice';
+  target.insetType = null;
+  target.visualType = preferredVisualType(options.taskText);
+  target.brief = `${target.brief} Render the picture evidence itself using a ${target.visualType}; ask about what is visibly shown, never a prose description of the picture.`;
+}
+
+function audienceLabel(gradeLevel: string, preciseGrade?: string): string {
+  if (preciseGrade === 'K') return 'kindergarten';
+  if (preciseGrade && /^\d{1,2}$/.test(preciseGrade)) return `Grade ${preciseGrade}`;
+  return gradeLevel;
 }
 
 function buildOrchestratorPrompt(
@@ -96,20 +174,35 @@ function buildOrchestratorPrompt(
   bloomsTier?: BloomsTier,
   context?: string,
   objectives?: KcLessonObjective[],
+  preciseGrade?: string,
 ): string {
+  const audience = audienceLabel(gradeLevel, preciseGrade);
+  const gradeOne = preciseGrade === '1';
+  const visualRequired = gradeOne && requiresVisualSupport(topic, context, objectives);
   const tierGuidance = bloomsTier
     ? getTierGuidance(bloomsTier)
     : `No specific cognitive tier requested. Use your judgment to create a progression from easier to harder.`;
 
-  return `You are an expert assessment designer. Plan a ${count}-problem knowledge check on "${topic}" for ${gradeLevel} students.
+  return `You are an expert assessment designer. Plan a ${count}-problem knowledge check on "${topic}" for ${audience} students.
 
 Your job is to decide the optimal MIX of problem types and rich inline content (insets) that will best assess this topic at this level. You are NOT generating the problems — you are planning them. A separate generator will produce each problem from your brief.
 
 ## GRADE-LEVEL FIT (HARD CONSTRAINT — overrides the cognitive tier below)
-Every problem must be readable and doable by a ${gradeLevel} student. This governs BOTH:
-- **Reading level**: vocabulary, sentence length, and phrasing must match ${gradeLevel}. Do NOT use adult or technical words a student at this grade would not know.
-- **Structural + cognitive load**: scenario complexity, number of concepts per problem, and options-per-problem must fit ${gradeLevel}. For early grades (toddler/preschool/kindergarten/elementary): concrete, familiar contexts; ONE concept per problem; short sentences; 3–4 options maximum.
+Every problem must be readable and doable by a ${audience} student. This governs BOTH:
+- **Reading level**: vocabulary, sentence length, and phrasing must match ${audience}. Do NOT use adult or technical words a student at this grade would not know.
+- **Structural + cognitive load**: scenario complexity, number of concepts per problem, and options-per-problem must fit ${audience}. For early grades (toddler/preschool/kindergarten/elementary): concrete, familiar contexts; ONE concept per problem; short sentences; 3–4 options maximum.
 When the requested cognitive tier and the grade band conflict, the GRADE WINS — express the tier's thinking with grade-appropriate words and a context a student at this grade can actually reason about (a "which is better?" judgment a young child can make), never by raising the reading level.
+${gradeOne ? `
+### PRECISE GRADE 1 / EMERGING READER PROFILE
+The broad band is elementary, but the exact learner is Grade 1. Plan for an emerging reader:
+- one short sentence or instruction at a time; no multi-clause scenario;
+- one concept and one reasoning move per problem;
+- MCQ/true-false stem at most 16 words; option/distractor text at most 5 words;
+- matching: exactly 3 pairs with 1-3 words per side;
+- categorization: 2 categories and 4-6 short items;
+- sequencing: 3-4 brief steps; fill-in: one blank and a 3-4 word bank.
+Keep analyze/evaluate as the KIND of thinking (compare a visible before/after, choose the better reason), not longer reading.
+` : ''}
 
 First, set "subject" to the single closest curriculum subject this assessment tests — one of MATHEMATICS, LANGUAGE_ARTS, SCIENCE, SOCIAL_STUDIES. Judge from the actual content being assessed, not the assessment format. Pick the best fit even when the topic is cross-cutting.
 
@@ -133,10 +226,21 @@ Insets are rendered ABOVE the problem and make the question richer. Only use whe
 - **definition-box**: Vocabulary term with definition and example. Use for: vocabulary assessment, terminology, word meaning in context.
 - **null**: No inset — plain text problem. Perfectly fine for many topics. Don't force insets where they don't add value.
 
+## Available Visual Types (Picture Evidence)
+Visuals render ABOVE the question using existing component renderers. They are NOT prose prompts:
+- **object-collection**: exactly 3 visible emoji objects/groups. Use for map symbols and keys, coins, shapes, or picture identification.
+- **comparison-panel**: exactly 2 labeled emoji scenes. Use for before/after, change over time, or side-by-side comparison.
+- **null**: the task does not require picture evidence.
+A visual problem MUST use multiple_choice, set insetType to null, and describe the exact visible objects/scenes in its brief. The question must require inspecting the rendered visual.
+${visualRequired ? `
+### VISUAL EVIDENCE REQUIRED FOR THIS GRADE-1 TASK
+The objective/intent explicitly depends on pictures or visual symbols. At least ONE planned problem MUST set visualType to object-collection or comparison-panel. Do not turn the picture into text such as "a green tree icon". Render the symbol/picture and ask about IT.
+` : ''}
+
 ## Cognitive Level
 ${tierGuidance}
 
-The cognitive tier sets the KIND of thinking, expressed WITHIN the ${gradeLevel} band — "hard" means hard FOR THIS GRADE, never adult-level vocabulary or scenarios. The GRADE-LEVEL FIT constraint above overrides the tier whenever they conflict.
+The cognitive tier sets the KIND of thinking, expressed WITHIN the ${audience} band — "hard" means hard FOR THIS GRADE, never adult-level vocabulary or scenarios. The GRADE-LEVEL FIT constraint above overrides the tier whenever they conflict.
 
 ${context ? `## Additional Context\n${context}\n` : ''}
 ${objectives && objectives.length > 0 ? `## Lesson Objectives (tag every problem)
@@ -146,11 +250,11 @@ Set each problem's "objectiveId" to the id of the SINGLE objective it primarily 
 ` : ''}
 ## Rules
 1. **Diversity**: Use at least 2 different problem types for sets of 3+, at least 3 different types for sets of 5+. Don't default to all multiple choice.
-2. **Inset fit**: Only attach an inset when it genuinely enhances the problem. Math topics should get katex. Reading/history should get passages. Data topics should get tables or charts. Generic topics may not need any insets.
+2. **Evidence fit**: Use visualType when the assessed evidence is a picture/symbol/coin/shape/before-after scene. Use insetType for equations, passages, tables, charts, code, or number lines. Never set both on one problem. Generic topics may need neither.
 3. **Difficulty progression**: Sequence from easier to harder within the set. First problem should be accessible, last should challenge.
-4. **Brief quality**: Each brief must be detailed enough that a separate AI can generate the problem without seeing the other problems. Include: what concept to test, what angle, what the inset should show, what misconceptions to target.
-5. **Topic and grade in every brief**: Always mention "${topic}" and "${gradeLevel}" context in the brief, AND state the grade-appropriate reading level and option count (3–4 for early grades) so generators stay on-target and in-band.
-6. **Inset-problem coherence**: When using an inset, the brief must describe both the inset content AND the question — they are generated together as one unit.
+4. **Brief quality**: Each brief must be detailed enough that a separate AI can generate the problem without seeing the other problems. Include: what concept to test, what angle, what the inset/visual should show, what misconceptions to target.
+5. **Topic and grade in every brief**: Always mention "${topic}" and "${audience}" context in the brief, AND state the grade-appropriate reading level and option count (3–4 for early grades) so generators stay on-target and in-band.
+6. **Evidence-problem coherence**: When using an inset or visual, the brief must describe both the evidence content AND the question — they are generated together as one unit.
 
 Plan the ${count} problems now.`;
 }
@@ -199,6 +303,8 @@ const VALID_INSET_TYPES = new Set<string>([
   'katex', 'data-table', 'passage', 'chart', 'code', 'number-line', 'definition-box',
 ]);
 
+const VALID_VISUAL_TYPES = new Set<string>(['object-collection', 'comparison-panel']);
+
 const VALID_DIFFICULTIES = new Set<string>(['easy', 'medium', 'hard']);
 
 const VALID_SUBJECTS = new Set<string>(CURRICULUM_SUBJECT_IDS);
@@ -210,10 +316,15 @@ export async function runKnowledgeCheckOrchestrator(
   bloomsTier?: BloomsTier,
   context?: string,
   objectives?: KcLessonObjective[],
+  preciseGrade?: string,
 ): Promise<KnowledgeCheckPlan> {
-  const prompt = buildOrchestratorPrompt(topic, gradeLevel, count, bloomsTier, context, objectives);
+  const prompt = buildOrchestratorPrompt(
+    topic, gradeLevel, count, bloomsTier, context, objectives, preciseGrade,
+  );
 
-  console.log('[KC Orchestrator] Planning assessment:', { topic, gradeLevel, count, bloomsTier });
+  console.log('[KC Orchestrator] Planning assessment:', {
+    topic, gradeLevel, preciseGrade, count, bloomsTier,
+  });
 
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -250,6 +361,11 @@ export async function runKnowledgeCheckOrchestrator(
       insetType: p.insetType && VALID_INSET_TYPES.has(p.insetType)
         ? (p.insetType as InsetType)
         : null,
+      // 14f is a precise Grade-1 fork. Other bands retain their existing
+      // inset/text planning until their own consumer evidence asks for visuals.
+      visualType: preciseGrade === '1' && p.visualType && VALID_VISUAL_TYPES.has(p.visualType)
+        ? (p.visualType as KnowledgeCheckVisualType)
+        : null,
       brief: p.brief || `Generate a ${p.problemType} problem about "${topic}" for ${gradeLevel} students.`,
       cognitiveNote: p.cognitiveNote || '',
       objectiveId:
@@ -262,6 +378,12 @@ export async function runKnowledgeCheckOrchestrator(
   if (validProblems.length === 0) {
     throw new Error('[KC Orchestrator] Produced no valid problems');
   }
+
+  const taskText = combinedTaskText(topic, context, objectives);
+  applyVisualTaskPolicy(validProblems, {
+    required: preciseGrade === '1' && requiresVisualSupport(topic, context, objectives),
+    taskText,
+  });
 
   // Warn if count mismatch but don't fail
   if (validProblems.length !== count) {
@@ -286,6 +408,7 @@ export async function runKnowledgeCheckOrchestrator(
       type: p.problemType,
       difficulty: p.difficulty,
       inset: p.insetType || 'none',
+      visual: p.visualType || 'none',
       objective: p.objectiveId || 'untagged',
     })),
   });

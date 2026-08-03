@@ -372,6 +372,9 @@ registerContextGenerator('knowledge-check', async (ctx) => {
 
   const problems = await generateKnowledgeCheck(ctx.topic, ctx.gradeLevel, {
     useOrchestrator: true,
+    // Grade 1-5 share the `elementary` band. The canonical objective grade is
+    // what lets KC calibrate reading load without widening the K pre-reader UI.
+    preciseGrade: ctx.grade,
     count: config.count || config.problemCount || 1,
     context: config.context,
     // Fall back to this instance's manifest intent so the per-component

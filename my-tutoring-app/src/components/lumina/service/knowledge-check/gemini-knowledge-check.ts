@@ -27,6 +27,8 @@ import {
   InsetType,
   Inset,
   KnowledgeCheckPlan,
+  KnowledgeCheckVisualType,
+  VisualPrimitive,
 } from "../../types";
 import { runKnowledgeCheckOrchestrator, type KcLessonObjective } from './gemini-knowledge-check-orchestrator';
 
@@ -465,7 +467,10 @@ function extractInset(raw: any, insetType?: InsetType): Inset | undefined {
 /**
  * Convert grade level to descriptive educational context for prompts
  */
-const getGradeLevelContext = (gradeLevel: string): string => {
+const getGradeLevelContext = (gradeLevel: string, preciseGrade?: string): string => {
+  if (preciseGrade === '1') {
+    return 'Grade 1 emerging readers (ages 6-7) - Use familiar words, one short sentence at a time, one concept per problem, and concrete examples. The student can read short text independently but should not decode multi-clause scenarios.';
+  }
   const contexts: Record<string, string> = {
     'toddler': 'toddlers (ages 1-3) - Use very simple language, basic concepts, concrete examples, and playful engagement. Focus on sensory experiences and foundational learning.',
     'preschool': 'preschool children (ages 3-5) - Use simple sentences, colorful examples, storytelling, and hands-on concepts. Build curiosity and wonder.',
@@ -481,6 +486,126 @@ const getGradeLevelContext = (gradeLevel: string): string => {
   return contexts[gradeLevel] || contexts['elementary'];
 };
 
+type GradeOneProblemShape =
+  | 'multiple_choice'
+  | 'true_false'
+  | 'fill_in_blanks'
+  | 'matching_activity'
+  | 'categorization_activity'
+  | 'sequencing_activity';
+
+/** Precise Grade-1 constraints are deliberately presentation-neutral: unlike K,
+ *  they do not floor problem types or turn the whole surface picture-primary. */
+function buildGradeOneReaderPrompt(
+  preciseGrade: string | undefined,
+  shape: GradeOneProblemShape,
+): string {
+  if (preciseGrade !== '1') return '';
+  const shapeRule: Record<GradeOneProblemShape, string> = {
+    multiple_choice: 'Question: at most 16 words and one clause. Each option: 1-5 words. Use 3-4 options.',
+    true_false: 'Statement: at most 16 words and one clause.',
+    fill_in_blanks: 'Use exactly ONE blank in one sentence of at most 16 words. Word bank: 3-4 short words.',
+    matching_activity: 'Use exactly 3 pairs. Prompt: at most 8 words. Each side: 1-3 words.',
+    categorization_activity: 'Use exactly 2 categories and 4-6 items. Instruction: at most 8 words. Each label: 1-3 words.',
+    sequencing_activity: 'Use 3-4 steps. Instruction: at most 8 words. Each step: 1-4 words.',
+  };
+  return `
+## PRECISE GRADE 1 / EMERGING READER — HARD CONSTRAINT
+The learner is in Grade 1, not the broad grades 1-5 elementary average.
+- Use familiar, decodable words and ONE short sentence/instruction at a time.
+- No semicolons, parenthetical explanations, stacked conditions, or multi-clause scenarios.
+- Test ONE concept and ONE reasoning move. Analyze/evaluate means compare or judge concrete evidence, not read more text.
+- ${shapeRule[shape]}
+- Rationale: at most two short sentences; teachingNote and successCriteria do not add student-facing reading load.
+`;
+}
+
+function injectVisualFields(
+  problemSchema: Schema,
+  visualType?: KnowledgeCheckVisualType,
+): void {
+  if (!visualType || !problemSchema.properties) return;
+  const properties = problemSchema.properties as Record<string, Schema>;
+  const required = (problemSchema.required ??= []);
+  const add = (name: string, schema: Schema) => {
+    properties[name] = schema;
+    required.push(name);
+  };
+
+  if (visualType === 'object-collection') {
+    add('visualInstruction', { type: Type.STRING, description: 'Short optional caption for the visible picture key; use an empty string when the question is sufficient.' });
+    for (let i = 0; i < 3; i++) {
+      add(`visualItem${i}Name`, { type: Type.STRING, description: `Visible object/symbol ${i + 1} short name` });
+      add(`visualItem${i}Icon`, { type: Type.STRING, description: `ONE distinct emoji that visibly depicts object/symbol ${i + 1}` });
+      add(`visualItem${i}Count`, { type: Type.NUMBER, description: `How many copies of object/symbol ${i + 1} to render (1-6)` });
+    }
+    return;
+  }
+
+  add('visualLeftLabel', { type: Type.STRING, description: 'Left scene label, 1-3 words (for example Before)' });
+  add('visualLeftName', { type: Type.STRING, description: 'Left visible scene/object short name' });
+  add('visualLeftIcon', { type: Type.STRING, description: 'ONE emoji depicting the left scene/object' });
+  add('visualRightLabel', { type: Type.STRING, description: 'Right scene label, 1-3 words (for example After)' });
+  add('visualRightName', { type: Type.STRING, description: 'Right visible scene/object short name' });
+  add('visualRightIcon', { type: Type.STRING, description: 'ONE distinct emoji depicting the right scene/object' });
+}
+
+function buildVisualPrompt(visualType?: KnowledgeCheckVisualType): string {
+  if (!visualType) return '';
+  if (visualType === 'object-collection') {
+    return `
+## REQUIRED VISUAL: OBJECT COLLECTION
+The response schema has exactly 3 flat visualItem fields. Fill every name/icon/count.
+The three DISTINCT emojis are the evidence shown above the question (for example a map key or coin groups).
+Ask a question that requires LOOKING at those rendered symbols/objects. Never replace an emoji with prose such as "a green tree icon". Keep each count from 1-6.
+`;
+  }
+  return `
+## REQUIRED VISUAL: COMPARISON PANEL
+Fill both flat scene records (left label/name/icon and right label/name/icon).
+The two DISTINCT emojis are rendered side by side above the question. Ask about the visible before/after or comparison; never merely describe the promised pictures in text.
+`;
+}
+
+function extractVisual(
+  raw: Record<string, unknown>,
+  visualType?: KnowledgeCheckVisualType,
+): VisualPrimitive | undefined {
+  const text = (key: string) => typeof raw[key] === 'string' ? raw[key].trim() : '';
+  if (!visualType) return undefined;
+  if (visualType === 'object-collection') {
+    const items = [0, 1, 2].map((i) => ({
+      name: text(`visualItem${i}Name`),
+      icon: text(`visualItem${i}Icon`),
+      count: Math.max(1, Math.min(6, Math.round(Number(raw[`visualItem${i}Count`]) || 1))),
+    }));
+    if (items.some((item) => !item.name || !item.icon)) return undefined;
+    if (new Set(items.map((item) => item.icon)).size !== items.length) return undefined;
+    return {
+      type: 'object-collection',
+      data: {
+        instruction: text('visualInstruction') || undefined,
+        items,
+        layout: 'row',
+      },
+    };
+  }
+
+  const left = { label: text('visualLeftLabel'), name: text('visualLeftName'), icon: text('visualLeftIcon') };
+  const right = { label: text('visualRightLabel'), name: text('visualRightName'), icon: text('visualRightIcon') };
+  if (Object.values(left).some((v) => !v) || Object.values(right).some((v) => !v)) return undefined;
+  if (left.icon === right.icon) return undefined;
+  return {
+    type: 'comparison-panel',
+    data: {
+      panels: [
+        { label: left.label, collection: { items: [{ name: left.name, icon: left.icon, count: 1 }], layout: 'row' } },
+        { label: right.label, collection: { items: [{ name: right.name, icon: right.icon, count: 1 }], layout: 'row' } },
+      ],
+    },
+  };
+}
+
 // ============================================================================
 // MULTIPLE CHOICE PROBLEMS
 // ============================================================================
@@ -495,9 +620,11 @@ export const generateMultipleChoiceProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
+  visualType?: KnowledgeCheckVisualType,
 ): Promise<MultipleChoiceProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
   const optionLabels = getMcOptionLabels(bloomsTier, gradeLevel);
   const optionCount = optionLabels.length;
   const isPreReader = isPreReaderGradeKey(gradeLevel);
@@ -536,6 +663,8 @@ export const generateMultipleChoiceProblems = async (
             options: {
               type: Type.ARRAY,
               description: `Array of ${optionCount} answer options`,
+              minItems: String(optionCount),
+              maxItems: String(optionCount),
               items: {
                 type: Type.OBJECT,
                 properties: optionProps,
@@ -570,6 +699,7 @@ export const generateMultipleChoiceProblems = async (
   // Inject inset schema into each problem item when insetType is specified
   const itemSchema = (multipleChoiceSchema.properties as any).problems.items;
   injectInsetIntoSchema(itemSchema, insetType);
+  injectVisualFields(itemSchema, visualType);
 
   // Add optionFormat to schema when katex inset (options may also be LaTeX)
   if (insetType === 'katex') {
@@ -582,6 +712,8 @@ export const generateMultipleChoiceProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const visualPrompt = buildVisualPrompt(visualType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'multiple_choice');
 
   const prompt = `You are an expert educational assessment designer creating multiple choice questions for a knowledge check.
 
@@ -589,9 +721,9 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}${isPreReader ? PRE_READER_MC_PALETTE : ''}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}${visualPrompt}${isPreReader ? PRE_READER_MC_PALETTE : ''}
 ## Your Mission:
-Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
+Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}${visualType ? `\nEach problem MUST populate the schema's flat ${visualType} fields; the rendered visual is the evidence the question asks about.` : ''}
 
 ## Quality Standards:
 
@@ -645,20 +777,27 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
     if (!response.text) throw new Error("No content generated");
     const data = JSON.parse(response.text);
 
-    const problems = data.problems.map((problem: any) => ({
-      type: 'multiple_choice' as const,
-      id: problem.id,
-      difficulty: problem.difficulty,
-      gradeLevel: gradeLevel,
-      question: problem.question,
-      options: problem.options,
-      correctOptionId: problem.correctOptionId,
-      rationale: problem.rationale,
-      teachingNote: problem.teachingNote,
-      successCriteria: problem.successCriteria,
-      ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
-      ...(problem.optionFormat === 'katex' ? { optionFormat: 'katex' as const } : {}),
-    }));
+    const problems = data.problems.map((problem: any) => {
+      const visual = extractVisual(problem, visualType);
+      if (visualType && !visual) {
+        throw new Error(`[Knowledge Check] Planned ${visualType} was missing required picture fields`);
+      }
+      return {
+        type: 'multiple_choice' as const,
+        id: problem.id,
+        difficulty: problem.difficulty,
+        gradeLevel: gradeLevel,
+        question: problem.question,
+        options: problem.options,
+        correctOptionId: problem.correctOptionId,
+        rationale: problem.rationale,
+        teachingNote: problem.teachingNote,
+        successCriteria: problem.successCriteria,
+        ...(extractInset(problem, insetType) ? { inset: extractInset(problem, insetType) } : {}),
+        ...(visual ? { visual } : {}),
+        ...(problem.optionFormat === 'katex' ? { optionFormat: 'katex' as const } : {}),
+      };
+    });
 
     console.log('Multiple Choice Generated from dedicated service:', {
       topic,
@@ -686,9 +825,10 @@ export const generateTrueFalseProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
 ): Promise<TrueFalseProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
   const trueFalseSchema: Schema = {
     type: Type.OBJECT,
@@ -743,6 +883,7 @@ export const generateTrueFalseProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'true_false');
 
   const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
 
@@ -750,7 +891,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the statement directly references.` : ''}
 
@@ -837,9 +978,10 @@ export const generateFillInBlanksProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
 ): Promise<FillInBlanksProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
   const fillInBlanksSchema: Schema = {
     type: Type.OBJECT,
@@ -865,7 +1007,10 @@ export const generateFillInBlanksProblems = async (
             },
             blanks: {
               type: Type.ARRAY,
-              description: "Array of blank definitions, one for each [blank_N] in the text. Easy should have 1 blank, Medium 2 blanks, Hard 3 blanks.",
+              description: preciseGrade === '1'
+                ? "Exactly one blank definition for [blank_1]."
+                : "Array of blank definitions, one for each [blank_N] in the text. Easy should have 1 blank, Medium 2 blanks, Hard 3 blanks.",
+              ...(preciseGrade === '1' ? { minItems: "1", maxItems: "1" } : {}),
               items: {
                 type: Type.OBJECT,
                 properties: {
@@ -888,7 +1033,8 @@ export const generateFillInBlanksProblems = async (
             wordBank: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "Word bank containing all correct answers PLUS 2-3 plausible distractors. Distractors should be related to the topic but clearly incorrect for the given context."
+              description: "Word bank containing all correct answers PLUS plausible distractors. Distractors should be related to the topic but clearly incorrect for the given context.",
+              ...(preciseGrade === '1' ? { minItems: "3", maxItems: "4" } : {}),
             },
             rationale: {
               type: Type.STRING,
@@ -917,6 +1063,7 @@ export const generateFillInBlanksProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'fill_in_blanks');
 
   const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
 
@@ -924,7 +1071,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
 
@@ -1016,9 +1163,10 @@ export const generateCategorizationProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
 ): Promise<CategorizationActivityProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
   const categorizationSchema: Schema = {
     type: Type.OBJECT,
@@ -1045,11 +1193,17 @@ export const generateCategorizationProblems = async (
             categories: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "2-4 category names that items will be sorted into"
+              description: preciseGrade === '1'
+                ? "Exactly 2 short category names"
+                : "2-4 category names that items will be sorted into",
+              ...(preciseGrade === '1' ? { minItems: "2", maxItems: "2" } : {}),
             },
             categorizationItems: {
               type: Type.ARRAY,
-              description: "6-12 items to be categorized (should be balanced across categories)",
+              description: preciseGrade === '1'
+                ? "4-6 short items, balanced across the two categories"
+                : "6-12 items to be categorized (should be balanced across categories)",
+              ...(preciseGrade === '1' ? { minItems: "4", maxItems: "6" } : {}),
               items: {
                 type: Type.OBJECT,
                 properties: {
@@ -1092,6 +1246,7 @@ export const generateCategorizationProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'categorization_activity');
 
   const prompt = `You are an expert educational assessment designer creating categorization activities for a knowledge check.
 
@@ -1099,7 +1254,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1195,9 +1350,10 @@ export const generateMatchingProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
 ): Promise<MatchingActivityProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
   const matchingSchema: Schema = {
     type: Type.OBJECT,
@@ -1223,7 +1379,10 @@ export const generateMatchingProblems = async (
             },
             leftItems: {
               type: Type.ARRAY,
-              description: "Items in the left column (3-8 items depending on difficulty). These are what students will select first.",
+              description: preciseGrade === '1'
+                ? "Exactly 3 short items in the left column."
+                : "Items in the left column (3-8 items depending on difficulty). These are what students will select first.",
+              ...(preciseGrade === '1' ? { minItems: "3", maxItems: "3" } : {}),
               items: {
                 type: Type.OBJECT,
                 properties: {
@@ -1242,6 +1401,7 @@ export const generateMatchingProblems = async (
             rightItems: {
               type: Type.ARRAY,
               description: "Items in the right column (same count as leftItems). These are the matching targets.",
+              ...(preciseGrade === '1' ? { minItems: "3", maxItems: "3" } : {}),
               items: {
                 type: Type.OBJECT,
                 properties: {
@@ -1260,6 +1420,7 @@ export const generateMatchingProblems = async (
             mappings: {
               type: Type.ARRAY,
               description: "Correct mappings from left items to right items. Each left item maps to exactly one right item (1:1 relationship).",
+              ...(preciseGrade === '1' ? { minItems: "3", maxItems: "3" } : {}),
               items: {
                 type: Type.OBJECT,
                 properties: {
@@ -1303,6 +1464,7 @@ export const generateMatchingProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'matching_activity');
 
   const prompt = `You are an expert educational assessment designer creating matching activities for knowledge checks.
 
@@ -1310,7 +1472,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1413,9 +1575,10 @@ export const generateSequencingProblems = async (
   count: number = 1,
   context?: string,
   bloomsTier?: BloomsTier,
-  insetType?: InsetType
+  insetType?: InsetType,
+  preciseGrade?: string,
 ): Promise<SequencingActivityProblemData[]> => {
-  const gradeLevelContext = getGradeLevelContext(gradeLevel);
+  const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
   const sequencingSchema: Schema = {
     type: Type.OBJECT,
@@ -1442,7 +1605,10 @@ export const generateSequencingProblems = async (
             items: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "4-8 items in the CORRECT ORDER. These will be shuffled when presented to students. Each item should be a clear, concise step or stage."
+              description: preciseGrade === '1'
+                ? "3-4 brief items in the CORRECT ORDER. These will be shuffled for students."
+                : "4-8 items in the CORRECT ORDER. These will be shuffled when presented to students. Each item should be a clear, concise step or stage.",
+              ...(preciseGrade === '1' ? { minItems: "3", maxItems: "4" } : {}),
             },
             rationale: {
               type: Type.STRING,
@@ -1471,6 +1637,7 @@ export const generateSequencingProblems = async (
 
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
+  const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'sequencing_activity');
 
   const prompt = `You are an expert educational assessment designer creating sequencing activities for a knowledge check.
 
@@ -1478,7 +1645,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1566,7 +1733,16 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
 // MAIN DISPATCHER
 // ============================================================================
 
-type GenFn = (topic: string, gradeLevel: string, count: number, context?: string, bloomsTier?: BloomsTier, insetType?: InsetType) => Promise<ProblemData[]>;
+type GenFn = (
+  topic: string,
+  gradeLevel: string,
+  count: number,
+  context?: string,
+  bloomsTier?: BloomsTier,
+  insetType?: InsetType,
+  preciseGrade?: string,
+  visualType?: KnowledgeCheckVisualType,
+) => Promise<ProblemData[]>;
 
 const GENERATOR_MAP: Record<string, GenFn> = {
   'multiple_choice': generateMultipleChoiceProblems,
@@ -1588,6 +1764,7 @@ async function generateFromPlan(
   topic: string,
   gradeLevel: string,
   bloomsTier?: BloomsTier,
+  preciseGrade?: string,
 ): Promise<ProblemData | null> {
   const generator = GENERATOR_MAP[plan.problemType];
   if (!generator) {
@@ -1603,6 +1780,8 @@ async function generateFromPlan(
       plan.brief, // orchestrator brief becomes the context
       bloomsTier,
       plan.insetType || undefined,
+      preciseGrade,
+      plan.visualType || undefined,
     );
     return results[0] || null;
   } catch (err) {
@@ -1633,6 +1812,8 @@ export const generateKnowledgeCheck = async (
     /** Raw eval-mode pin (single | blend 'a|b' | mixed). Normalized to one tier internally. */
     bloomsTier?: BloomsTier | string;
     insetType?: InsetType;
+    /** Canonical curriculum grade (`K` | `1`..`12`) supplied by the registry. */
+    preciseGrade?: string;
     /** Force orchestrator even when problemType is set */
     useOrchestrator?: boolean;
     /** Lesson objectives (with curriculum IDs) — the orchestrator tags each
@@ -1650,10 +1831,12 @@ export const generateKnowledgeCheck = async (
   const useOrchestrator = config?.useOrchestrator || !config?.problemType;
 
   if (useOrchestrator) {
-    console.log('[Knowledge Check] Orchestrated mode:', { topic, gradeLevel, count, bloomsTier });
+    console.log('[Knowledge Check] Orchestrated mode:', {
+      topic, gradeLevel, preciseGrade: config?.preciseGrade, count, bloomsTier,
+    });
 
     const plan = await runKnowledgeCheckOrchestrator(
-      topic, gradeLevel, count, bloomsTier, context, config?.objectives
+      topic, gradeLevel, count, bloomsTier, context, config?.objectives, config?.preciseGrade,
     );
 
     // PRE-band routing floor: a pre-reader cannot do text-column / drag / typing
@@ -1664,13 +1847,19 @@ export const generateKnowledgeCheck = async (
         if (!PRE_READER_PROBLEM_TYPES.has(p.problemType as ProblemType)) {
           p.problemType = 'multiple_choice';
           p.insetType = null; // insets (tables/charts/passages) are also non-band at K
+          p.visualType = null; // K keeps its proven picture-primary option surface
         }
+        // Even an allowed MCQ/TF keeps the existing K contract: picture options,
+        // not an added Grade-1 visual evidence panel.
+        p.visualType = null;
       }
     }
 
     // Stage 2: parallel generation from the plan
     const results = await Promise.all(
-      plan.problems.map(p => generateFromPlan(p, topic, gradeLevel, bloomsTier))
+      plan.problems.map((p) => generateFromPlan(
+        p, topic, gradeLevel, bloomsTier, config?.preciseGrade,
+      ))
     );
 
     // Per-problem objective attribution: stamp BEFORE filtering nulls so the
@@ -1726,7 +1915,9 @@ export const generateKnowledgeCheck = async (
     throw new Error(`Unknown problem type: ${problemType}`);
   }
 
-  const problems = await generator(topic, gradeLevel, count, context, bloomsTier, insetType);
+  const problems = await generator(
+    topic, gradeLevel, count, context, bloomsTier, insetType, config?.preciseGrade,
+  );
   console.log(`[Knowledge Check] Direct: ${problems.length} ${problemType} problem(s) generated`);
   return problems;
 };

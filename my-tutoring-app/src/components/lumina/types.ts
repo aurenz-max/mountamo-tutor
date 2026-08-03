@@ -1796,6 +1796,10 @@ export interface KnowledgeCheckProblemPlan {
   problemType: ProblemType;
   difficulty: ProblemDifficulty;
   insetType: InsetType | null;
+  /** Existing visual renderer to populate for a picture-dependent problem.
+   *  Kept to two bounded, schema-backed shapes so Flash Lite never invents a
+   *  free-form image URL/base64 payload. */
+  visualType?: KnowledgeCheckVisualType | null;
   /** Detailed content brief — the generator uses this as context */
   brief: string;
   /** Why this problem is placed here in the sequence */
@@ -1804,6 +1808,8 @@ export interface KnowledgeCheckProblemPlan {
    *  didn't provide objectives, or the model couldn't pick one honestly). */
   objectiveId?: string | null;
 }
+
+export type KnowledgeCheckVisualType = 'object-collection' | 'comparison-panel';
 
 /**
  * Full orchestrator output — plans the entire knowledge check assessment.
