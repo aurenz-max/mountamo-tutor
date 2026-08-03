@@ -355,6 +355,14 @@ Return the wrapper JSON only.`;
     challengeType: challenges[0]?.challengeType ?? 'read_word',
     gradeLevel: gradeLevel || 'kindergarten',
     challenges,
+    // Flat item-set summary for the tutoring scaffold's RUNTIME STATE (catalog
+    // contextKey `words`) — present from the first auth-time prompt, before the
+    // component's live context sync takes over. Same shape as the sibling packs'
+    // `sentences` / `letters` / `facts`. It lists words the child has not read
+    // yet, which is why the catalog's WORD READING directive carries an explicit
+    // never-preview clause: this is background for the tutor, never something to
+    // say aloud ahead of the printed word.
+    words: challenges.map((c) => c.word).join(', '),
   };
 
   console.log("DI Word Reading Generated:", {

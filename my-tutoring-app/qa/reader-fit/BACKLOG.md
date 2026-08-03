@@ -77,11 +77,23 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   full 1085/1085, Lumina typecheck 0. Real-Gemini G1 `analyze`, map `mixed`, and K regression pass;
   both census replays flipped. Report: `qa/reader-fit/knowledge-check-14f-2026-08-02.md`;
   pixel/feel → HUMAN-CHECKS **#59**.
-- **14g. DI family intent/scope fidelity — 3/42 routes, 2/3 fail.** `di-sentence-reading` stayed on
-  its noun objective, but `di-word-reading` replaced a CVCe intent with `cat/red/pig/sun`, and
-  `di-math-facts counting_next` replaced 1–120 with values only through 12. These are generator
-  scope failures, not reader-fit chrome. Coordinate with the ACTIVE DI workstream and do not edit
-  its shared files concurrently; carry the two census topics as content-contract regressions there.
+- **14g. DI family intent/scope fidelity — 3/42 routes.** `di-sentence-reading` stayed on
+  its noun objective. **The `di-word-reading` half is CLOSED 2026-08-03 by the DI workstream —
+  verdict WRONG-PRIMITIVE, not a generator bug.** Reproduced by probe (a CVCe ask returns
+  `cat, pin, dog, sun`), but the catalog constrains this pack to short-vowel CVC + starter sight
+  words: there is no CVCe word in the menu and inventing one leaves the benched single-word response
+  class, so serving in-scope words is the CORRECT degradation. The real defect was this entry's own
+  steering — the old constraints excluded "digraphs, blends, multisyllable", and CVCe is none of
+  those, so a single-syllable silent-e word read as in-scope to the manifest. Fixed in
+  `catalog/di.ts` constraints (silent-e / magic-e / long vowel named out of scope + pointer to
+  phonics-blender `cvce_blend` / cvc-speller / decodable-reader). Measured, not assumed:
+  `manifestOnly` traces on 14g's exact topic went **2/3 → 0/3** picks, while the pack's real homes
+  still route **3/3** (short-a CVC @ G1) and **2/2** (sight words @ K). No generator code touched.
+  Report: `qa/tutor-reports/di-word-reading-2026-08-03.md`.
+  **Still open: `di-math-facts counting_next` replaced 1–120 with values only through 12** — a
+  genuine in-scope failure (counting_next IS the pack's mode; the range is the contract). Executor:
+  `/topic-fidelity` then `/eval-fix`, in the DI workstream. Do not edit its shared files
+  concurrently.
 - **14h. number-sequencer @ G1 — 2/42, both contract-misaligned.** The first blended pin
   `count_from|before_after` leaks three unrequested modes (`fill-missing`, `decade-fill`,
   `order-cards`). The second intent asks for 101, 102, _, 104 but the generator prompt/sanitizer

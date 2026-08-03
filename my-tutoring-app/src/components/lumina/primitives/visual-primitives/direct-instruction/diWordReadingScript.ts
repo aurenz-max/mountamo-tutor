@@ -32,8 +32,6 @@
  * different word (sun/son, red/read) must be corrected, not affirmed.
  */
 
-import type { TutoringScaffold } from '../../../types';
-
 /**
  * The single L0 task identity. Ladder candidates for a LATER /add-eval-modes
  * (do NOT build now): `cvc_reading` (decodable only) / `sight_word`
@@ -146,50 +144,8 @@ ${judgingContract(next)}`
 export const completeCue = () =>
   `[DI_COMPLETE] Speak exactly: "That's the end of our reading practice. Great reading today!"`;
 
-/**
- * The DI tutoring block. Hand-authored per pack (the "custom-made" rule):
- * exact wording is the pedagogy. This ships WITH the primitive at birth
- * because the DI mechanism IS the in-band judging contract — the generic
- * tutor cannot judge or hold the sentinel discipline. (The DI family's
- * justified departure from the L0 "defer the tutoring block" default.)
- */
-export const DI_WORD_READING_TUTORING: TutoringScaffold = {
-  taskDescription:
-    'Live-judged Direct Instruction word-reading practice for a beginning reader. You speak the ' +
-    'exact scripted lines from each bracketed application message and judge each learner attempt from ' +
-    'the audio you heard, using only the two allowed reply branches.',
-  scaffoldingLevels: {
-    level1: 'Repeat the prompt once, slowly.',
-    level2: 'Model the word (sound it out if decodable), then ask for one retry.',
-    level3: 'Accept the attempt warmly and continue as instructed.',
-  },
-  aiDirectives: [
-    {
-      title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-      instruction:
-        'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may ' +
-        'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each ' +
-        '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and ' +
-        'corrections must begin with "My turn", using the exact quoted lines. Never begin any other ' +
-        'sentence with those words. Judge honestly from the audio: affirm a real read of the target word; ' +
-        'correct a wrong, missing, or different word. EVERY correction re-models the word (sounding it ' +
-        'out when the correction line does) and begins with "My turn". Do not praise to be kind. The ' +
-        'application decides which word comes next; never introduce one yourself.',
-    },
-    {
-      title: 'WORD READING',
-      instruction:
-        'The target is a whole printed word read aloud. A hyphenated stretch like "sss-aaa-mmm" is a ' +
-        'slow sound-out blend: say each sound smoothly and then the whole word fast. Never spell with ' +
-        'letter names. Affirm a correct read whether it was fluent or sounded out first — but judge the ' +
-        'FINAL word strictly: a close-sounding different word (like "son" for "sun" or "read" for "red") ' +
-        'is wrong and gets the correction branch.',
-    },
-    {
-      title: 'BREVITY',
-      instruction:
-        'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. ' +
-        'Keep pacing brisk: no filler, no chit-chat.',
-    },
-  ],
-};
+// The DI tutoring block (judging directives, sentinel discipline, struggles)
+// lives on the CATALOG entry — catalog/di.ts — since the L2 layer, so both the
+// standalone connect fallback and the lesson auth/switch paths resolve it from
+// the single source of truth. Any wording change there must be re-checked
+// against the sentinel-collision rule this script's cues depend on.

@@ -152,7 +152,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
   {
     id: 'di-word-reading',
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the tutor models a printed word — sounding out a decodable CVC word ("sss-aaa-mmm… sam") or naming a sight word whole — practices it together, then asks the child to read it and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
-    constraints: 'Requires microphone + live audio tutor. Short-vowel CVC words and starter sight words only — NO digraphs, blends, or multisyllable words. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
+    constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
     // L0: ONE eval mode at birth. Ladder candidates (cvc_reading / sight_word /
     // word_reading_review) are queued on the birth cert for /add-eval-modes.
     // β mirrors backend problem_type_registry.py → "di-word-reading".
@@ -170,9 +170,113 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
     // Same judged-loop engine, same transport need (see di-letter-sounds).
-    // Its tutoring block still ships from diWordReadingScript at connect time;
-    // moving it here is the pack's own /add-tutoring-scaffold (L2) layer.
     audioInput: { manual_activity: true },
+    // L2 tutoring block (2026-08-03) — hand-authored (DI "custom-made" rule:
+    // exact wording is the pedagogy). Moved here from diWordReadingScript at the
+    // L2 layer so both connect paths (standalone fallback + lesson
+    // auth/switch_primitive) resolve it from the catalog, the single source of
+    // truth. The cue lines and per-item judging contract stay in
+    // diWordReadingScript (bench-proven wording, byte-frozen); this block is the
+    // session-level frame around them. Sentinel discipline re-checked on all the
+    // new copy: no scaffolding level, struggle response, or directive sentence
+    // begins with "Yes" or "My turn" — the engine's sentence-scoped verdict scan
+    // must never see a phantom opener.
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction word-reading practice for a beginning reader '
+        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
+        + 'application message and judge each learner attempt from the audio you heard, using only '
+        + 'the two allowed reply branches.',
+      // Follows the SENTENCE precedent, not math's: the printed word is the
+      // stimulus and the target at once — the tutor must have it to model it,
+      // and the child is already looking at it — so there is no answer side to
+      // withhold, and `word` legitimately sits in RUNTIME STATE. What IS new
+      // here is `words`: the whole practice list, including words not yet shown.
+      // That is the sibling packs' shape (`sentences` / `letters` / `facts`) and
+      // the reason the WORD READING directive below carries an explicit
+      // never-preview clause.
+      // `wordType` carries the branch that matters pedagogically: a decodable
+      // word is BLENDED, an irregular sight word is recalled whole and must
+      // never be sounded out. The handoff's fifth candidate — the graphemes /
+      // sound-out blend — is deliberately NOT here: it is absent on every sight
+      // word (an absent key renders the literal string "(not set)" into RUNTIME
+      // STATE), it is derived rather than generated (so it can never resolve at
+      // Tier-2 probe time), and the [DI_ITEM] cue already carries the blend
+      // verbatim for the item in flight. RUNTIME STATE is the ambient frame,
+      // not a second copy of the script.
+      contextKeys: ['challengeType', 'word', 'wordType', 'words'],
+      // Ported from the L0 block unchanged, and re-audited against the pack's
+      // pre-read rule ("no audio pre-cues before the child reads"). Level 1
+      // repeats the PROMPT — "Your turn. What word?", which never carries the
+      // word — not the model line. Levels 2-3 describe what happens AFTER an
+      // attempt: correction territory, which re-models at every tier by design
+      // (standing gate 3 — remediation is not scaffolding). The same ruling
+      // covers the word-modeling struggle responses below.
+      scaffoldingLevels: {
+        level1: 'Repeat the prompt once, slowly.',
+        level2: 'Model the word (sound it out if decodable), then ask for one retry.',
+        level3: 'Accept the attempt warmly and continue as instructed.',
+      },
+      // Observable behaviours only. The first is this pack's signature error
+      // class and the one real risk the waived bench gate deferred here
+      // (near-neighbour over-affirmation: matt/mat, son/sun, read/red,
+      // sea/see); the last protects against OVER-correcting a child who
+      // actually read the word, which the strict contract makes the live risk
+      // in the other direction.
+      commonStruggles: [
+        {
+          pattern: 'Reads a close-sounding DIFFERENT word — "matt" for "mat", "son" for "sun", "read" for "red"',
+          response: 'A different word is a different word: correct it and re-model the target, however close it sounded.',
+        },
+        {
+          pattern: 'Spells the word with letter NAMES ("see-ay-tee") instead of reading it',
+          response: 'Say that letters have a name and a sound, sound the word out yourself, then ask for the whole word.',
+        },
+        {
+          pattern: 'Sounds the word out but stops before saying it fast — "sss-aaa-mmm" with no whole word at the end',
+          response: 'Treat the blend alone as unfinished: re-model the sound-out ending in the whole word, then ask what word it is.',
+        },
+        {
+          pattern: 'Sounds it out slowly first and then says the whole word correctly',
+          response: 'That is a correct read — affirm it, because blending out loud is the skill at this stage, not a fault.',
+        },
+        {
+          pattern: 'Stays silent after "Your turn. What word?"',
+          response: 'Read the word together once, then hand it back to them alone.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
+            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
+            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
+            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
+            + 'sentence with those words. Judge honestly from the audio: affirm a real read of the target word; '
+            + 'correct a wrong, missing, or different word. EVERY correction re-models the word (sounding it '
+            + 'out when the correction line does) and begins with "My turn". Do not praise to be kind. The '
+            + 'application decides which word comes next; never introduce one yourself.',
+        },
+        {
+          title: 'WORD READING',
+          instruction:
+            'The target is a whole printed word read aloud. A hyphenated stretch like "sss-aaa-mmm" is a '
+            + 'slow sound-out blend: say each sound smoothly and then the whole word fast. Never spell with '
+            + 'letter names. Affirm a correct read whether it was fluent or sounded out first — but judge the '
+            + 'FINAL word strictly: a close-sounding different word (like "son" for "sun" or "read" for "red") '
+            + 'is wrong and gets the correction branch. The practice word list in your runtime state is '
+            + 'background only: the child must READ each word off the screen, so never say a word aloud before '
+            + 'the quoted lesson text for that word asks you to, and never preview a word that is still coming.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat.',
+        },
+      ],
+    },
   },
   {
     id: 'di-math-facts',

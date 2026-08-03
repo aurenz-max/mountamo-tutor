@@ -56,7 +56,6 @@ import {
   completeCue,
   itemCue,
   moveOnCue,
-  DI_WORD_READING_TUTORING,
   type DiWordReadingChallenge,
   type DiWordReadingChallengeType,
 } from './diWordReadingScript';
@@ -79,6 +78,13 @@ export interface DiWordReadingData {
   challenges: DiWordReadingChallenge[];
   /** Session core task identity — one mode at birth (`read_word`). */
   challengeType: DiWordReadingChallengeType;
+  /** Flat "sam, mat, cat, hat" item-set summary, attached by the generator for
+   *  the tutoring scaffold's RUNTIME STATE (catalog contextKey `words`). Like
+   *  di-sentence-reading's `sentences`, there is no answer side to withhold —
+   *  the printed word IS the target and is already on the child's screen — but
+   *  the list does name words not yet shown, which the catalog's WORD READING
+   *  directive covers with an explicit never-preview clause. */
+  words?: string;
   gradeLevel?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -147,6 +153,14 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
   const resolvedInstanceId = useMemo(
     () => data.instanceId || `di-word-reading-${Math.round(performance.now())}`,
     [data.instanceId],
+  );
+
+  /** RUNTIME STATE contextKey `words` — the generator's flat summary, derived
+   *  here as a fallback so the tutor never reads "(not set)" for a session
+   *  built before the field existed. */
+  const wordsSummary = useMemo(
+    () => data.words || data.challenges.map((c) => c.word).join(', '),
+    [data.words, data.challenges],
   );
 
   const {
@@ -486,9 +500,9 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
     setClientRunId(mintRunId());
     try {
       // Only self-connect from a standalone/idle context. In a lesson the
-      // shared session owns the connection; DI needs that session opened with
-      // manual_activity + the DI tutoring block (shared DI family follow-up:
-      // /add-tutoring-scaffold lesson-path wiring).
+      // shared session owns the connection and is already opened with the DI
+      // tutoring block + manual_activity — both resolved from the catalog entry
+      // (catalog/di.ts `tutoring` / `audioInput`), same as this fallback path.
       if (!connectedRef.current && ctx.sessionMode === 'idle') {
         weConnectedRef.current = true;
         await ctx.connect({
@@ -496,10 +510,18 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
           instance_id: resolvedInstanceId,
           primitive_data: {
             activity: 'live direct instruction word reading',
-            words: data.challenges.map((c) => c.word),
+            // Resolved against the catalog contextKeys. The printed word is
+            // both stimulus and target — the tutor MODELS it by design and the
+            // child is already looking at it — so, like di-sentence-reading,
+            // there is no answer side to keep out of RUNTIME STATE.
+            challengeType: data.challengeType,
+            words: wordsSummary,
+            word: data.challenges[0]?.word ?? '',
+            // Decodable → blended; irregular sight word → recalled whole and
+            // never sounded out. The blend itself stays in the [DI_ITEM] cue.
+            wordType: data.challenges[0]?.wordType ?? 'cvc',
           },
           grade_level: data.gradeLevel || 'kindergarten',
-          tutoring: DI_WORD_READING_TUTORING,
           audio_input: DI_AUDIO_INPUT,
         });
         const started = performance.now();
@@ -523,7 +545,23 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
     }
     // startRun is stable via ref below; deps intentionally minimal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, data.challenges, data.gradeLevel, preparing, resolvedInstanceId]);
+  }, [ctx, data.challenges, data.challengeType, data.gradeLevel, wordsSummary, preparing, resolvedInstanceId]);
+
+  // Keep the tutor's RUNTIME STATE truthful as words advance — the catalog
+  // contextKeys (challengeType / word / wordType / words) resolve against this
+  // bag. updateContext is the SILENT channel (no end_of_turn), so these never
+  // perturb the judged loop; the context provider dedupes by value.
+  useEffect(() => {
+    if (!ctx.isConnected || !currentChallenge) return;
+    ctx.updateContext({
+      challengeType: data.challengeType,
+      word: currentChallenge.word,
+      wordType: currentChallenge.wordType,
+      words: wordsSummary,
+    });
+    // Context methods are stable; keyed on the current item + connection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected, currentChallenge, data.challengeType, wordsSummary]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];

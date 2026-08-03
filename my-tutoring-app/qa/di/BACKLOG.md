@@ -572,12 +572,29 @@ before di-sentence-reading existed.)*
 | Pack | Born | L0 live gate | L1 modes | L2 scaffold | L3 tiers | Next rung |
 |---|---|---|---|---|---|---|
 | di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
-| di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | — (script-local) | — | catalog `tutoring:` move (L2) |
+| di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | ✅ 08-03 | — | `/add-eval-modes` (L1 — the pack's own next rung; birth-cert candidates cvc_reading / sight_word / word_reading_review) |
 | di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | `/add-structural-difficulty` (L4) |
 
-Nearest rungs, in order (08-01 ruling): **di-word-reading L2** (catalog
-`tutoring:` move; shared wiring already in place) · **di-sentence-reading L4**
+~~**di-word-reading L2**~~ **DONE 2026-08-03** — the family is now ENTIRELY
+catalog-resolved (no pack ships a script-local tutoring block). Added what L0
+deferred: `{{challengeType}}` + 4 contextKeys (`challengeType`/`word`/`wordType`/
+`words`), 5 observed `commonStruggles`, a generator flat `words` summary, the
+component `updateContext` sync, and ONE new directive clause (the word list is
+now visible in RUNTIME STATE, so the tutor is told never to preview a word that
+is still coming). The handoff's 5th contextKey (`graphemes`/sound-out) was
+dropped by design — absent on every sight word, derived rather than generated
+(so it can never resolve at probe time), and already carried verbatim in the
+`[DI_ITEM]` cue. Cue lines + `correctionLine` byte-untouched (#55 still gates the
+contrastive port). Gates: typecheck:lumina 0, `npm test` 1286/1286, `/tutor-test`
+Tier 1 **0 HIGH** (the family's 2 structural WARNs), **Tier 2 × 3 content shapes**
+all keys resolved / zero `(not set)`; standing gates 2+3 re-verified mechanically
+over the assembled prompt (37 sentences, 0 sentinel openers). Live glance (5
+struggles → chattiness; the never-preview clause needs a run reaching item 2+)
+rides the next DI sitting — not a new gate. Report
+`qa/tutor-reports/di-word-reading-2026-08-03.md`.
+
+Nearest rungs, in order: **di-sentence-reading L4**
 (axis already built and measured — sentence LENGTH via
 `wordCount`/`meanSentenceWords`; hard constraint: the **8-word benched ceiling
 is NOT a difficulty knob**, raising it needs a bench sitting) ·
