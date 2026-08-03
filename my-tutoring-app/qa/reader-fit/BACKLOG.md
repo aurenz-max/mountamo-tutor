@@ -22,8 +22,10 @@ singletons. Healthy high-frequency evidence: all four sorting-station draws stam
 stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
 `SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
 
-**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m** (systemic grade resolvers, piloted
-by 14c) → 14g → 14h → 14i → 14j → 14k/14l. 14d remains the older coin-counter chrome tail.
+**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m** (systemic grade resolvers, **piloted
+on `number-line`** — pilot swapped off coin-counter by user ruling, see 14m) → 14h → 14i → 14j →
+14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
+14d is archived with the rest of the coin-counter tail.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
 defect and a census found 18 more generators carrying it. Fixing the class once is cheaper than
 meeting it three more times down the queue — and one instance was already fixed blind in another
@@ -149,18 +151,35 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   **Why this is worth its own item:** it is mechanical, machine-gated (`/eval-test` per generator at
   two grades), needs zero sittings, and it is the difference between 14e being a boundary fix and
   14e being a real one. It also fits the 08-01 push-development ruling.
-  **Executor:** `/topic-fidelity` per generator → `/eval-fix`. **Sequence:** do coin-counter (14c)
-  first — it has a derived contract with the defect already written up as gap **G2**, so it is the
-  cheapest correct pilot — then hundreds-chart (14i), then the **7 remaining K-2/elementary
-  generators** named above, and the **11 chemistry generators last** (grades 8-12, and their prose
-  bands are coarse enough that the defect may not bite — verify before spending the slice).
-  **Do NOT bulk-sweep before the coin-counter pilot is runtime-exercised** (pilot-then-sweep).
+  **Executor:** `/topic-fidelity` per generator → `/eval-fix`. **Sequence: pilot on `number-line`**,
+  then hundreds-chart (14i), then the remaining K-2/elementary generators named above, and the
+  **11 chemistry generators last** (grades 8-12, and their prose bands are coarse enough that the
+  defect may not bite — verify before spending the slice). 14c (coin-counter) rides the sweep at
+  its turn; it is NOT the pilot.
+  **Why number-line and not coin-counter — a deliberate reversal (user, 2026-08-03):** the first
+  version of this item named coin-counter as pilot *because its contract already documented the
+  defect as gap G2*, i.e. it was the cheapest thing for a session to pull. That is exactly the trap
+  the user named: **a heavily-worked primitive keeps winning pulls because prior work makes each
+  next item cheap**, regardless of demand. coin-counter routes **3** across both censuses and had
+  already consumed 2 build slices, 2 contract checks, and 2 human-check rows. number-line is the
+  better pilot on the merits: it carries **real census demand via 14k** (a 90–110 intent rendering
+  as 19–38), so one slice closes an observed failure *and* proves the template. Its defect is
+  confirmed — `gemini-number-line.ts:890` tests
+  `lower.includes('k') || includes('1') || includes('2')`, and `elementary` prose contains none of
+  those, so a **Grade-1 objective lands on the `3-5` band**; the range resolver then explicitly
+  falls back to "existing grade-band defaults", which is the likely mechanism behind 14k.
+  **Accept the cost honestly:** number-line has no derived contract, so contract-first adds work
+  coin-counter would not have needed. Paying it once is the point — that cost differential is the
+  whole reason the worked primitive kept winning.
+  **Do NOT bulk-sweep before the number-line pilot is runtime-exercised** (pilot-then-sweep).
 - **14c. coin-counter G2 — Grades 2–3 are UNREACHABLE** (`/topic-fidelity`, not `/reader-fit`).
   `resolveGradeBand` parses `ctx.gradeContext` prose instead of canonical `ctx.grade`, so G2 money
   lessons silently run as Grade 1. ~~Re-check after 14e; the generator-local fallback may still
   fail.~~ **RE-CHECKED `/pm` 2026-08-03: still open, confirmed in the tree** —
-  `gemini-coin-counter.ts:798` still reads `ctx.gradeContext` and 14e did not touch it. **This is
-  now the PILOT for systemic item 14m** (contract gap G2 already documents it).
+  `gemini-coin-counter.ts:798` still reads `ctx.gradeContext` and 14e did not touch it. **Rides the
+  14m sweep at its turn — deliberately NOT the pilot** (reversed 2026-08-03; see 14m for why). It
+  stays queued because it is the one coin-counter gap with real demand: three authored G2 consumers
+  (`MEAS002-05-a/-b/-c`) currently run as Grade 1. Everything else on this primitive is archived.
 - **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (HUMAN-CHECKS **#52**). The K screen
   still shows grade/counter/phase badges and an English instruction with no replay. This is the
   comparison-builder #2b class and remains the cheapest residual, not Grade-1 demand.

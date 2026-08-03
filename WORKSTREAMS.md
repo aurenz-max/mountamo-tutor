@@ -801,7 +801,33 @@ within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activit
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` 2026-08-03 full reconcile — supersedes the 08-01 notes below):** HEAD
+> **WIP note (`/pm` 2026-08-03 EVENING reconcile — supersedes the morning note below):** HEAD
+> **`603cc82`**, main, **in sync with origin.** Movement since the morning reconcile: **two DI
+> ladder rungs landed, committed AND pushed same-day** — `66a2d66` (di-word-reading L2, the family
+> now entirely catalog-resolved, + 14g's di-word-reading half closed WRONG-PRIMITIVE with measured
+> 2/3→0/3 steering) and `603cc82` (di-sentence-reading L4, first pack at L4, the family's L4
+> template). Both commits carried their queue + WORKSTREAMS updates in the same slice — grooming
+> held; this reconcile found only ONE staleness: the DI BACKLOG's 08-01 ordering block still said
+> "next rung = di-word-reading L2" after both rungs landed (the ladder table below it was current).
+> Fixed — **DI next serial rung = di-letter-sounds L4** (item-set composition per birth cert).
+> **Human-check re-grep:** both 08-03 reports SELF-declare "no new row" and the claim verified —
+> the L4 8-word cold read folds into existing #54(d) (clause added), the L2 chattiness glance rides
+> the next DI sitting. Next free ID still **62**.
+> **Uncommitted surface = pure register/skill docs, ONE `docs(pm)` slice, no code:** the
+> primitive-contract **Phase 2b (G-series) REMOVAL** (user ruling 08-03 — contracts record what must
+> stay TRUE, never an improvement wishlist; 9 contracts had manufactured 26 gaps, ~500 by
+> construction at catalog scale; governing rulings `qa-is-a-gate-not-a-census` +
+> `worked-primitives-self-select`) + the reader-fit **14m pilot swap coin-counter → number-line**
+> (same ruling family; WORKSTREAMS already carried it committed, the BACKLOG edit is the lagging
+> half) + this reconcile's corrections (DI pointer, #54(d) fold-in, this note).
+> **Convergence worth naming:** 14m's number-line pilot is contract-first, and number-line is
+> ALREADY item 5 of the contracts derivation queue — one slice serves both queues.
+> Portfolio = **2 ACTIVE + 1 opportunistic, at the limit**; both ACTIVE streams touched today.
+> ⚠️ **Standing flag, SEVENTH raising:** `.claude/settings.local.json` allow-list is still
+> `["Read(**)"]` alone (re-verified this run). Either restore `Bash(*)` / `Glob` / `Grep` or record
+> the narrowing as deliberate so `/pm` can stop raising it.
+>
+> **WIP note (`/pm` 2026-08-03 morning full reconcile — superseded by the note above):** HEAD
 > **`8ce40ec`**, main. **Uncommitted surface = ONE stream's worth (reader-fit 14f knowledge-check)**
 > — 4 source files + contract + reader-fit test + 5 QA docs + 5 shared registers. Clean to ship.
 > **Ship proposal, 2 slices — EXECUTED `/ship` 2026-08-03:** (1) the 14f code + its contract + its

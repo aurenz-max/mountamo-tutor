@@ -73,8 +73,10 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > math's, no rewording; 20 new tests with non-vacuity ×7, 3/3 real-pipeline
 > probes incl. mixed-all-tiered; ear-check → HUMAN-CHECKS **#57**; report
 > `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`); the ladder
-> still runs SERIALLY and `catalog/di.ts` is free again — **next rung =
-> di-word-reading L2**) → **item 2**
+> still runs SERIALLY and `catalog/di.ts` is free again — ~~next rung =
+> di-word-reading L2~~ **✅ 08-03 `66a2d66`; di-sentence-reading L4 ✅ 08-03
+> `603cc82`; next rung = di-letter-sounds L4, per the ladder table below**) →
+> **item 2**
 > remediation-lever design (the misconception loop's consumption half — a real
 > platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
 > flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel

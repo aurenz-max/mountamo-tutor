@@ -144,33 +144,32 @@ usually an eval-test route call (the same battery `/topic-fidelity` uses:
 honored + discrimination + no-regression) or a saved topic-trace `replay` body.
 A requirement without a probe is an opinion.
 
-### Phase 2b — Derive GAP requirements (close matches)
+### ~~Phase 2b — Derive GAP requirements~~ · **REMOVED 2026-08-03 (user ruling) — do not re-add**
 
-The R-series protects existing consumers; the **G-series** is the improvement half:
-what would this primitive need so its NEAR-consumers could route to it well? Sources,
-all evidence-bearing (a gap without a named near-consumer is a wish — those go to
-`/lumina-portfolio`, not here):
+**This skill derives no improvement queue. It records what the primitive must KEEP
+TRUE, never what it should become.**
 
-```bash
-# THE close-match detector — subskills whose demand embedding almost matches this
-# primitive's catalog identity:
-cd backend && PYTHONPATH=$(pwd) ./venv/Scripts/python.exe \
-  scripts/curriculum_fit_probe.py --primitive <id> --domain <domain> --grades K,1
-```
+The old Phase 2b emitted a G-series wishlist per contract and said outright that
+"gaps are the contract's queue-feeding surface." It worked exactly as written, which
+was the problem: **9 contracts emitted 26 gaps (20 still open)**, and at that rate
+deriving contracts across the catalog manufactures ~500 open items by construction.
+The yield was poor — a coin-counter audit found 5 of its 6 gaps read as open queue
+items but only ~1.5 had real value (the rest were narrow, failure-path-only, or not
+primitive work at all). Worse, a well-specified gap list is the cheapest thing for a
+session to pull, so the most-worked primitive kept winning pulls regardless of demand
+([[worked-primitives-self-select]]).
 
-plus: WRONG-PRIMITIVE verdicts in `qa/topic-fidelity/` naming this primitive as the
-near-fit; band-audit open findings (a mode floored out of a band is a gap if the
-curriculum demands the task IN that band); census lessons where it was routed but
-only partially served the objective.
+The R-series and `--check` are the value here and are untouched — they are what made
+the 14b and 14f edits safe. The wishlist was the part manufacturing backlog.
 
-Each gap records: the near-consumer + evidence (probe score / verdict / trace), the
-**shortfall** (what's missing, as a property), the **fork rung + executor skill** that
-would implement it, and its **relation to the R-series** — a gap that contradicts an
-existing requirement is a pre-detected CONFLICT: the resolution ruling gets written
-NOW (usually "new eval mode where X is the objective"), so the future implementer
-forks instead of relaxing the requirement. Gaps are the contract's queue-feeding
-surface: pulling one into an ACTIVE stream's queue (with its executor skill) is how
-contracts turn into build work.
+**If a derivation surfaces genuine unmet demand** (a WRONG-PRIMITIVE verdict naming
+this primitive as the near-fit, a band the curriculum demands but the primitive floors
+out), that is a **`/pm` discovery-routing decision, not a contract artifact**: it goes
+to the owning queue only if it clears the demand gate (routes in a census, or is a
+rule-#1 violation, or is field-reported) and is otherwise archived. Recording it here
+puts it in a doc no queue owns, where it accrues silently.
+
+Governing ruling: [[qa-is-a-gate-not-a-census]].
 
 ### Phase 3 — Write the contract + catalog projection
 
@@ -238,14 +237,6 @@ side effect of an edit.
 ### C1 — R<i> vs R<j> — <status: OPEN | RESOLVED via <fork rung> on <date>>
 <one paragraph: which consumers, why both are right, the ruling>
 
-## Gap requirements (close matches — the improvement queue)
-
-### G1 — <short handle> · <status: OPEN | QUEUED in <stream> | BUILT <date>>
-- **Near-consumer:** <subskill/band/topic + evidence: probe score, verdict, trace>
-- **Shortfall:** <the property the primitive lacks, stated testably>
-- **Path:** <fork rung + executor skill, e.g. "eval-mode split → /add-eval-modes">
-- **Relation to R-series:** <none | pre-detected conflict with R<i>: ruling here>
-
 ## Catalog projection
 
 - **description:** <current → proposed, or "faithful as of <date>">
@@ -266,10 +257,10 @@ side effect of an edit.
   still resolves here via the authored map (channel [3]) — the census alone under-counts.
   Keep channel [3] rows even at zero recent runs.
 - **Contracts are derived, not authored wishes.** Never write an R-requirement no
-  consumer demands, and never write a G-gap no NEAR-consumer demands (a gap needs a
-  probe score, a WRONG-PRIMITIVE verdict, or a band-audit finding behind it). Pure
-  "would be nice" is `/lumina-portfolio` material; letting it in rots the doc's
-  authority. Every line traces to evidence.
+  consumer demands. Every line traces to evidence, and a contract records only what
+  must stay true — **not** what the primitive should become. Improvement ideas belong
+  to a queue that owns them (via `/pm` discovery routing, subject to the demand gate),
+  never to this doc; see the removed Phase 2b for why.
 - **Never feed contracts forward into curriculum data.** The reverse index is edit-time
   tooling. Writing primitive hints into subskills recreates the maintenance treadmill
   the manifest exists to avoid.
