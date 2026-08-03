@@ -27,7 +27,10 @@
  *   a proven ceiling, not an observed failure) — longer connected text is
  *   unbenched and must never ship without a new sitting. The ceiling only
  *   NARROWS when the objective or a lower grade asks for it; it never sits
- *   below what the lesson intends.
+ *   below what the lesson intends. Within the ceiling, a support tier draws
+ *   from a word-count BAND (L4 structural difficulty, resolveProblemShape) —
+ *   the band narrows the draw toward shorter or longer sentences; it never
+ *   widens the ceiling.
  * - Session order ramps SHORT → LONG: the teaching order the bench ran.
  *
  * EVAL MODES (L1, 2026-07-25) — task identities, resolved from intent or pinned
@@ -84,10 +87,11 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
  * sentences are drawn; what a TIER changes is how much of the sequence is
  * handed over. Kept per-type-capable so a future mode can diverge.
  *
- * The tier NEVER changes which sentences are selected — that would be
- * structural difficulty (sentence LENGTH is this pack's structural axis, queued
- * for /add-structural-difficulty), and mixing the two would make a tier change
- * the content instead of the support.
+ * This dial changes only what is SPOKEN before the read. Which sentences are
+ * drawn is the tier's OTHER dial — resolveProblemShape (L4 structural
+ * difficulty) re-ranks the selection toward the tier's word-count band. Two
+ * named resolvers on one tier enum, so neither axis hides inside the other:
+ * a hard item is both a LONGER sentence and a COLD read.
  */
 const resolveSupportStructure = (
   _type: DiSentenceReadingChallengeType,
@@ -101,6 +105,56 @@ const resolveSupportStructure = (
         ? 'modeled once, then read alone — the choral "Together" step is withdrawn'
         : 'modeled and read together first — the full DISTAR sequence',
 });
+
+// ── Structural difficulty (L4) ──────────────────────────────────────
+
+/**
+ * The tier's SECOND dial (axis 2, /add-structural-difficulty): how much
+ * connected text one read coordinates, expressed as a word-count BAND inside
+ * the session ceiling. Length is this pack's structural lever — more words
+ * mean more chances to drop, swap, or add one, which is the exact error class
+ * the judge exists to catch — and it is already measured (`wordCount` per
+ * challenge, `meanSentenceWords` per session), so the tier moves a dial the
+ * telemetry can see.
+ *
+ * THE GUARDRAIL (this pack's magnitude analog): the band NEVER exceeds the
+ * session ceiling — grade- and objective-narrowed, capped by the BENCHED
+ * 8-word limit — and never drops below the 3-word floor. A narrowed ceiling
+ * saturates the ladder honestly: at ceiling 5 the hard band is [4,5], the top
+ * of what is allowed, never a push past it. Raising the 8-word ceiling is a
+ * bench sitting, not a difficulty decision.
+ *
+ * Identical across all four eval modes (same act — read the printed
+ * sentence), per-type-capable so a future mode can diverge. A mode's IDENTITY
+ * lives in its POOL (poolForType), which the band never overrides: sight
+ * stays sight and decodable stays decodable, whatever the length target — a
+ * pool whose long end is short simply saturates below the nominal band.
+ *
+ * Exported for the structural test suite.
+ */
+export const resolveProblemShape = (
+  _type: DiSentenceReadingChallengeType,
+  tier: SupportTier,
+  ceiling: number,
+): { band: readonly [number, number]; promptLine: string } => {
+  const lo = MIN_SENTENCE_WORDS;
+  const hi = Math.max(lo, Math.min(ceiling, MAX_SENTENCE_WORDS));
+  const band: readonly [number, number] =
+    tier === 'easy'
+      ? [lo, Math.min(lo + 1, hi)]
+      : tier === 'hard'
+        ? [Math.max(lo, hi - 1), hi]
+        : (() => {
+            const mid = Math.max(lo, Math.min(Math.floor((lo + hi) / 2), hi - 1));
+            return [mid, Math.min(mid + 1, hi)] as const;
+          })();
+  return {
+    band,
+    promptLine:
+      `- DIFFICULTY TIER (${tier}): prefer sentences of ${band[0]}-${band[1]} words when the topic allows. ` +
+      `The application re-ranks every pick toward that band, so choosing inside it keeps your topical steering.`,
+  };
+};
 
 type ShortVowel = 'a' | 'e' | 'i' | 'o' | 'u';
 
@@ -146,6 +200,15 @@ const spokenForm = (text: string) =>
  * the same control the bench probe used.
  *
  * The ten `benched: true` entries are the exact sentences from the sitting.
+ *
+ * L4 additions (2026-08-03): seven 7-8 word entries — one per pure short
+ * vowel plus two sight-heavy — so the hard tier's [7,8] band has pool support
+ * in every eval mode. Before them the menu held only three entries above six
+ * words and the hard tier would have saturated at 6 for most scopes. Every
+ * added word already appears elsewhere in this menu (the attribution control:
+ * a miss traces to CONNECTED TEXT, never to a new word), every entry is
+ * inside the benched 3-8 class, and each was checked sentinel-safe like the
+ * rest (isSentinelSafe rejects at module load regardless).
  */
 const SENTENCE_MENU: Record<string, MenuEntry> = {
   // ── benched ten (proven live 2026-07-25) ─────────────────────────
@@ -167,6 +230,7 @@ const SENTENCE_MENU: Record<string, MenuEntry> = {
   'pat-cat': { text: 'Sam can pat the cat.', vowels: ['a'], decodable: true, emoji: '🐱' },
   'man-map': { text: 'The man had a map.', vowels: ['a'], decodable: true, emoji: '🗺️' },
   'cat-nap': { text: 'Can the cat nap?', vowels: ['a'], decodable: true, emoji: '😴' },
+  'sam-cat-mat': { text: 'Sam and the cat sat on the mat.', vowels: ['a'], decodable: true, emoji: '🐱' },
 
   // ── short e ──────────────────────────────────────────────────────
   'red-hen': { text: 'The red hen ran.', vowels: ['e', 'a'], decodable: true, emoji: '🐔' },
@@ -174,24 +238,28 @@ const SENTENCE_MENU: Record<string, MenuEntry> = {
   'hen-in-pen': { text: 'The hen is in the pen.', vowels: ['e'], decodable: true, emoji: '🐔' },
   'ten-men': { text: 'Ten men sat on the bed.', vowels: ['e', 'a'], decodable: true, emoji: '🛏️' },
   'get-net': { text: 'Get the net.', vowels: ['e'], decodable: true, emoji: '🥅' },
+  'ten-red-bed': { text: 'Ten men get in the red bed.', vowels: ['e'], decodable: true, emoji: '🛏️' },
 
   // ── short i ──────────────────────────────────────────────────────
   'pig-dig': { text: 'The pig can dig.', vowels: ['i'], decodable: true, emoji: '🐷' },
   'sit-big': { text: 'Sit on the big rug.', vowels: ['i', 'u'], decodable: true },
   'dig-pit': { text: 'Did the pig dig a pit?', vowels: ['i'], decodable: true, emoji: '🐷' },
   'pin-big': { text: 'The pin is big.', vowels: ['i'], decodable: true, emoji: '📌' },
+  'big-pig-pit': { text: 'The big pig can sit in the pit.', vowels: ['i'], decodable: true, emoji: '🐷' },
 
   // ── short o ──────────────────────────────────────────────────────
   'dog-hot': { text: 'The dog is hot.', vowels: ['o'], decodable: true, emoji: '🐶' },
   'dog-log': { text: 'The dog sat on a log.', vowels: ['o'], decodable: true, emoji: '🪵' },
   'mom-pot': { text: 'Mom got a pot.', vowels: ['o'], decodable: true, emoji: '🍲' },
   'dog-hop': { text: 'The dog can hop.', vowels: ['o'], decodable: true, emoji: '🐶' },
+  'hot-dog-log': { text: 'The hot dog can hop on the log.', vowels: ['o'], decodable: true, emoji: '🪵' },
 
   // ── short u ──────────────────────────────────────────────────────
   'sun-up': { text: 'The sun is up.', vowels: ['u'], decodable: true, emoji: '☀️' },
   'bug-cup': { text: 'A bug is in the cup.', vowels: ['u'], decodable: true, emoji: '🐛' },
   'pup-run': { text: 'The pup can run.', vowels: ['u'], decodable: true, emoji: '🐕' },
   'gus-cup': { text: 'Gus has a red cup.', vowels: ['u', 'e'], decodable: true, emoji: '🥤' },
+  'pup-sun-run': { text: 'The pup can run in the sun.', vowels: ['u'], decodable: true, emoji: '🐕' },
 
   // ── sight-word heavy: IRREGULAR high-frequency density ────────────
   // The `sight_phrase_sentence` pool. Each carries 2+ words that cannot be
@@ -207,11 +275,31 @@ const SENTENCE_MENU: Record<string, MenuEntry> = {
   'we-like': { text: 'We like to go up.', vowels: ['u'], sightHeavy: true },
   'go-see': { text: 'We go to see the pig.', vowels: ['i'], sightHeavy: true, emoji: '🐷' },
   'here-it-is': { text: 'Here it is.', vowels: ['i'], sightHeavy: true },
+  'you-up-down': { text: 'You and I can go up and down.', vowels: [], sightHeavy: true },
+  'like-look-dog': { text: 'We like to look at my big dog.', vowels: ['i', 'o'], sightHeavy: true, emoji: '🐶' },
 };
 
 /** Words a reader actually produces — the pack's difficulty axis. */
 const countWords = (text: string) =>
   text.trim().split(/\s+/).filter(Boolean).length;
+
+/** Distance from a word count to the tier band — 0 inside it (L4 rank key). */
+const bandDistance = (words: number, [lo, hi]: readonly [number, number]): number =>
+  words < lo ? lo - words : words > hi ? words - hi : 0;
+
+/**
+ * Stable re-rank toward a tier band: in-band entries first, then nearest, the
+ * incoming order breaking ties. This is L4's ENFORCEMENT half — the prompt's
+ * tier line merely describes the band; selection order is what actually
+ * decides, and it is code-owned. Stability is load-bearing: inside equal band
+ * distance the existing preference order (topical picks first, benched lead,
+ * review shuffle) survives untouched.
+ */
+const rankByBand = (ids: string[], band: readonly [number, number]): string[] =>
+  ids
+    .map((id, i) => ({ id, i, d: bandDistance(countWords(SENTENCE_MENU[id].text), band) }))
+    .sort((a, b) => a.d - b.d || a.i - b.i)
+    .map((x) => x.id);
 
 /**
  * STANDING GATE 2 (sentinel collision), enforced in code rather than trusted.
@@ -363,11 +451,21 @@ const poolForType = (
  * anchor a review of a short-a lesson can contain no short-a sentence at all
  * and has lost its thread to what was just taught. Up to 2 focused items keep
  * it. Every other mode's pool is already scoped, so none needs a seed.
+ *
+ * Under an L4 band the anchors are drawn nearest-band-first from the focus
+ * pool (still shuffled inside equal distance), so a hard review anchors on the
+ * LONG focus sentences where the focus pool has any — the anchor rule and the
+ * band compose instead of fighting.
  */
 const seedForType = (
   type: DiSentenceReadingChallengeType,
   focusPool: string[],
-): string[] => (type === 'sentence_review' ? shuffle(focusPool).slice(0, 2) : []);
+  band?: readonly [number, number],
+): string[] => {
+  if (type !== 'sentence_review') return [];
+  const anchors = shuffle(focusPool);
+  return (band ? rankByBand(anchors, band) : anchors).slice(0, 2);
+};
 
 /** Gemini emits ONLY the wrapper — never the sentences themselves (Fork A). */
 const wrapperSchema: Schema = {
@@ -502,7 +600,8 @@ const buildChallenge = (
     challengeType: type,
     text: entry.text,
     // Computed here, never taken from the model: it drives the print size and
-    // the meanSentenceWords metric, and it is the axis L4 will modulate.
+    // the meanSentenceWords metric, and it is the axis L4 modulates
+    // (resolveProblemShape → rankByBand).
     wordCount: countWords(entry.text),
     ...(entry.vowels.length ? { vowels: [...entry.vowels] } : {}),
     ...(entry.emoji ? { emoji: entry.emoji } : {}),
@@ -539,9 +638,12 @@ export const generateDiSentenceReading = async (
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which reading
-     * skill, difficulty = how much of the DISTAR sequence precedes the read.
-     * NEVER changes which sentences are selected.
+     * Second field of the two-field contract: targetEvalMode = which reading
+     * skill, difficulty = ONE tier enum driving BOTH within-mode dials — how
+     * much of the DISTAR sequence precedes the read (L3,
+     * resolveSupportStructure) and which word-count band the sentences are
+     * drawn from (L4, resolveProblemShape). It never raises the session word
+     * ceiling and never overrides an eval mode's pool.
      */
     difficulty?: string;
     [key: string]: unknown;
@@ -559,6 +661,15 @@ export const generateDiSentenceReading = async (
   const scopedVowels = resolveScopedVowels(scopeText);
   const sightScoped = resolveSightScope(scopeText);
   const wordCeiling = resolveWordCeiling(gradeLevel, scopeText);
+
+  // Resolved BEFORE the prompt: L4 needs the tier in two places — one advisory
+  // line the model sees, one enforcement pass the code owns (one key, two
+  // places; the shape is mode-agnostic today, so the session line uses the
+  // base mode's — buildFor re-resolves per challenge type regardless).
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const sessionShape = supportTier
+    ? resolveProblemShape('read_sentence', supportTier, wordCeiling)
+    : null;
 
   // The FOCUS pool — what the objective itself scopes to, after the hard length
   // ceiling. Each eval mode derives its own pool from this (poolForType).
@@ -596,7 +707,7 @@ ${promptMenu}
 
 RULES:
 - Choose the ${count} sentences that best match the topic/objective, ordered SHORTEST to LONGEST so the practice ramps up.
-- If the objective names a phonics pattern (like "short a"), choose sentences built on that vowel.${scopedVowels ? `\n- HARD VOWEL SCOPE: this objective is about short ${scopedVowels.join(', ')} — every sentence you pick MUST use that vowel.` : ''}
+- If the objective names a phonics pattern (like "short a"), choose sentences built on that vowel.${scopedVowels ? `\n- HARD VOWEL SCOPE: this objective is about short ${scopedVowels.join(', ')} — every sentence you pick MUST use that vowel.` : ''}${sessionShape ? `\n${sessionShape.promptLine}` : ''}
 - If the objective is about sight words / high-frequency words, choose the sight-heavy sentences.
 - If it is generic ("sentence reading", "reading simple sentences"), pick a spread across different vowels and different lengths.
 - Write a warm, short kid title and a one-sentence description. NEVER quote, paraphrase, or hint at any target sentence — the child must read the sentences, not hear them first.
@@ -661,7 +772,10 @@ Return the wrapper JSON only.`;
   const buildFor = (type: DiSentenceReadingChallengeType, n: number): string[] => {
     const modePool = poolForType(type, focusPool, inCeiling, n);
     if (modePool.length === 0) return [];
-    const seed = seedForType(type, focusPool).filter((id) => modePool.includes(id));
+    // L4: this mode's length band. Identical across modes today (same act);
+    // resolved per type so a future mode can diverge, mirroring the L3 shape.
+    const shape = supportTier ? resolveProblemShape(type, supportTier, wordCeiling) : null;
+    const seed = seedForType(type, focusPool, shape?.band).filter((id) => modePool.includes(id));
     const isReview = type === 'sentence_review';
 
     // `sentence_review` deliberately STOPS at its ≤2 anchors and takes none of
@@ -681,6 +795,33 @@ Return the wrapper JSON only.`;
     const backfill = isReview
       ? shuffle(modePool)
       : [...BENCHED_IDS.filter((id) => modePool.includes(id)), ...modePool];
+    // L4 enforcement: ONE stable re-rank of the whole candidate list — in-band
+    // first, nearest next, the prior preference order breaking ties — so an
+    // out-of-band topical pick loses to an in-band back-fill (the prompt line
+    // is advisory; this ordering is authoritative). Review's ≤2 anchors stay
+    // in front regardless: the lesson thread is part of that mode's IDENTITY,
+    // and seedForType already drew the nearest-band anchors available.
+    if (shape) {
+      const anchored = isReview ? seed : [];
+      const ranked = rankByBand(
+        Array.from(new Set([...preferred, ...backfill])).filter((id) => !anchored.includes(id)),
+        shape.band,
+      );
+      // Trim to the in-band set (or the nearest n when the pool's band support
+      // is thin) BEFORE the variance rotation. Rotation exists to stop five
+      // near-identical sentences, but its family-novelty pull must never
+      // outrank the band — first caught by the structural suite, where pass 1
+      // reached past three in-band sight sentences to grab a 4-word one for
+      // vowel variety. Inside the window it diversifies; outside it, nothing.
+      const inBand = ranked.filter(
+        (id) => bandDistance(countWords(SENTENCE_MENU[id].text), shape.band) === 0,
+      ).length;
+      const window = ranked.slice(0, Math.max(n, inBand));
+      // Length-family rotation is disabled under a band (variety of length is
+      // the opposite of a pinned length target) — rotation falls back to the
+      // vowel family, which is what review always used.
+      return selectSentences([...anchored, ...window], [], n, false);
+    }
     // Review rotates by VOWEL even when the objective pinned one (breadth across
     // patterns IS the skill); every other mode rotates by length inside a pinned
     // vowel, since there the vowel is already fixed.
@@ -736,23 +877,24 @@ Return the wrapper JSON only.`;
   // Gated ONLY on a tier being present, and resolved from each challenge's OWN
   // mode — difficulty is a STUDENT property, so a blended/mixed session must get
   // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). Code owns the support structure; the LLM only chose the sentences.
+  // to kill). Code owns the support structure; the LLM only steered topically.
   //
-  // Deliberately NOT injected into the Gemini prompt, unlike the math
-  // references. Fork A here means the model's only job is picking sentence ids —
-  // so a tier line in the prompt could only do one thing: nudge it toward
-  // different SENTENCES. That is tier→content leakage, i.e. structural
-  // difficulty through the back door, and it would break the one hard rule.
-  // Sentence LENGTH is this pack's structural axis and belongs to
-  // /add-structural-difficulty, not here. The tier is 100% code-composed into
-  // the cue (diSentenceReadingScript `leadInFor`).
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  // L4 note (2026-08-03): the L3 ruling here used to be "never inject the tier
+  // into the prompt — it could only nudge sentence choice". Structural
+  // difficulty is EXACTLY that nudge, now designed: the prompt DESCRIBES the
+  // band (one advisory line) and rankByBand ENFORCES it at selection time —
+  // one key (the tier enum), two places, code authoritative. What remains
+  // forbidden is the tier touching the vowel/sight SCOPE, a mode's POOL, or
+  // the session word CEILING.
   if (supportTier) {
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
     }
+    const inBand = sessionShape
+      ? challenges.filter((ch) => bandDistance(ch.wordCount, sessionShape.band) === 0).length
+      : 0;
     console.log(
-      `[DiSentenceReading] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'read_sentence', supportTier).describe}`,
+      `[DiSentenceReading] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'read_sentence', supportTier).describe}; length band ${sessionShape?.band[0]}-${sessionShape?.band[1]} (ceiling ${wordCeiling}), in-band ${inBand}/${challenges.length}`,
     );
   }
 

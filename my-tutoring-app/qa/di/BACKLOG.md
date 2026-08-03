@@ -574,7 +574,7 @@ before di-sentence-reading existed.)*
 | di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | ✅ 08-03 | — | `/add-eval-modes` (L1 — the pack's own next rung; birth-cert candidates cvc_reading / sight_word / word_reading_review) |
 | di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
-| di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | `/add-structural-difficulty` (L4) |
+| di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | **✅ L4 08-03** → `/add-sound` (L5) |
 
 ~~**di-word-reading L2**~~ **DONE 2026-08-03** — the family is now ENTIRELY
 catalog-resolved (no pack ships a script-local tutoring block). Added what L0
@@ -594,13 +594,29 @@ struggles → chattiness; the never-preview clause needs a run reaching item 2+)
 rides the next DI sitting — not a new gate. Report
 `qa/tutor-reports/di-word-reading-2026-08-03.md`.
 
-Nearest rungs, in order: **di-sentence-reading L4**
-(axis already built and measured — sentence LENGTH via
-`wordCount`/`meanSentenceWords`; hard constraint: the **8-word benched ceiling
-is NOT a difficulty knob**, raising it needs a bench sitting) ·
-**di-letter-sounds L4** (item-set composition per its birth cert:
-continuants-only → +short vowels → confusable contrasts m/n, f/v) ·
-di-math-facts L4 (operand structure, per its birth cert).
+~~**di-sentence-reading L4**~~ **DONE 2026-08-03 — first pack at L4, the
+family's L4 template.** The tier now drives BOTH dials: DISTAR fade (L3) +
+sentence-LENGTH band (L4) — easy [3,4] / medium [5,6] / hard [7,8] inside the
+session ceiling, clamped in `resolveProblemShape` and enforced at selection by
+`rankByBand` (one key, two places; the prompt line is advisory, the code
+authoritative; the **benched 8-word ceiling stays a hard cap, never a knob** —
+a K/narrowed ceiling saturates the ladder honestly). Pool identity outranks the
+band (sight stays sight, review keeps nearest-band lesson anchors); 7 menu
+additions (one 7-8w sentence per pure vowel + 2 sight-heavy, ALL from the
+established vocabulary) give the hard band real pool support. Template lesson
+for the L4 siblings: the variance rotation's family-novelty pull must be
+trimmed to the band WINDOW first — caught by the new suite, it out-pulled the
+band before ever running live. No spoken copy changed → **no new ear row**;
+the 8-word COLD read (L4×L3 hard) folds into the pack's next sitting. Gates:
+typecheck:lumina 0, tsc = 1021 baseline, 17 new tests (9 fail on revert),
+full vitest 1303/1303, live `/eval-test` sweep **6/6** (hard 7-8w / easy 3-4w /
+mixed+medium all-tiered / K saturation / scope-beats-band / no-tier control).
+Report `qa/eval-reports/di-sentence-reading-structural-difficulty-2026-08-03.md`.
+
+Nearest rungs, in order: **di-letter-sounds L4** (item-set composition per its
+birth cert: continuants-only → +short vowels → confusable contrasts m/n, f/v) ·
+di-math-facts L4 (operand structure, per its birth cert) · di-word-reading L1
+backfill (eval-mode split).
 ~~di-math-facts L3~~ **DONE 2026-08-01**. ~~di-letter-sounds L3~~ **DONE
 2026-08-01** (third template use; ear-check → #57; report
 `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`).
