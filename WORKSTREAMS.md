@@ -18,7 +18,7 @@ queue AND this file's "last touched" in the same slice.
 
 ## ACTIVE
 
-### 1. Reader-fit K → EMERGING queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-08-01** (**§14e + §14b DONE 2026-08-01; 14f next**)
+### 1. Reader-fit K → EMERGING queue — TOP PRIORITY (user, 2026-07-16) — last touched **2026-08-02** (**§14f DONE; next = NEW systemic §14m — generator-local grade resolvers, piloted by 14c coin-counter — which `/pm` 2026-08-03 put ahead of 14g**)
 - **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
 - **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
 - **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
@@ -104,14 +104,17 @@ queue AND this file's "last touched" in the same slice.
   `showRunningTotal` reconciled as the enacted-display lever (easy = climbing skip-count
   readout/badges, medium/hard = plain ✓ tags). Contract **R11** + `--check` **COMPATIBLE**;
   report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel/feel → HUMAN-CHECKS **#58**.
-  **Next pull = 14f** — 📋 handoff ready (`/pm` 2026-08-01):
-  `qa/HANDOFF-reader-fit-14f-knowledge-check-emerging-2026-08-01.md` (contract-first REQUIRED;
-  all six census verdicts tabled; audit axes = grade consumption / mixed-mode selection / visual
-  insets). Both 14e and 14b had paste-able
+  **14f DONE 2026-08-02:** knowledge-check now consumes precise Grade 1, schema-bounds every
+  problem shape, and renders bounded existing visual evidence for map/symbol/invention tasks;
+  visual text-column matching is converted per problem while nonvisual mixed siblings and K/PRE
+  remain intact. Contract derived + check **COMPATIBLE**; real-Gemini analyze/map/K probes pass;
+  both failing census topics replay clean; full 1085/1085, Lumina typecheck 0. Report:
+  `qa/reader-fit/knowledge-check-14f-2026-08-02.md`; pixel → HUMAN-CHECKS #59.
+  Both 14e and 14b had paste-able
   handoffs (`/pm` 2026-08-01, file-disjoint — safe as two parallel sessions):
   `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md` +
   `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.** Next by observed demand:
-  knowledge-check EMERGING 6/42 → DI intent fidelity 3/42 (coordinate with the active DI stream) →
+  DI intent fidelity 3/42 (coordinate with the active DI stream) →
   number-sequencer/hundreds-chart 2 each → annotated-example → number-line/flashcard singletons.
   **coin-counter `count-like` @ K — VERDICT PROXY (CLEARED=false), FIXED.** K now enacts the count:
   tap each coin, a badge stamps the **running skip-count total** (5→10→15) in tap order, auto-judge
@@ -762,12 +765,83 @@ queue AND this file's "last touched" in the same slice.
 PARKED — see PARKED table. WIP = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP-PRIORITY + DI family),
 within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activity since 07-21.)*
 
+### 3. Support-tiers campaign (non-math) — **OPPORTUNISTIC (+1)** — last touched **2026-08-02**
+- **Queue:** *none on disk — this is the gap.* The campaign has shipped two batches and **has no
+  queue file and had no WORKSTREAMS row until `/pm` 2026-08-03.** It has been running out of memory
+  (`project_nonmath-support-tiers-batch1`) and per-batch reports, which is precisely the state the
+  portfolio model exists to prevent. **Before batch 3 is pulled, give it
+  `qa/support-tiers/BACKLOG.md`** listing the remaining 15 by primitive — otherwise the next session
+  re-derives the roster from a report tail again.
+- **Executor skills:** `/add-support-tiers` (+ `/add-eval-modes` first for the ~59 that lack modes),
+  `/eval-test`, `/primitive-contract --check`.
+- **State: 21/36 non-math primitives wired.** Batch 2 (**committed `423c58f`**, report
+  `qa/eval-reports/support-tiers-batch2-2026-08-02.md`) took 13/36 → 21/36 via an 8-agent
+  orchestrated Workflow — 7 implemented, 1 partial (letter-sound-link `see_hear` correctly declined
+  single-tap commit: its options are bare speaker bubbles, so a first tap would commit an *unheard*
+  option). ~15 remain, plus ~59 that need `/add-eval-modes` before they are even eligible.
+- **The batch's real value was the defects it found en route, not the tiers** — and this is the
+  argument for the campaign continuing: a **rule-#1 answer leak in rhyme-studio** (the rime
+  highlight rendered only when the pair rhymed, so the highlight WAS the yes/no answer), **three
+  live rule-#1 tutor leaks in letter-sound-link** ([ACTIVITY_START] named the sound and keyword
+  before the challenge), an **unanswerable calendar-explorer identify** mode, and the
+  **calendar-explorer grade-band bug that turned out to be systemic** (now reader-fit **14m**).
+  Profiling 8 primitives closely enough to withdraw their scaffolding is what surfaced these; none
+  were findable from the tier work alone.
+- **Residuals:** hard-tier browser feel-pass → **HUMAN-CHECKS #60** (opened `/pm` 2026-08-03); the
+  live-tutor ear-check that reveal-policy directives hold in real audio rides any DI/lesson sitting
+  at a hard tier. Neither blocks batch 3.
+- **Note the shape for reuse:** the orchestration pattern held — profiles → orchestrator writes
+  line-anchored specs → agents implement mechanically → orchestrator applies all catalog patches
+  serially and runs the merge gates. Zero collisions across 7 agents in `catalog/literacy.ts`, and
+  the concurrent 14f session's uncommitted register edits were untouched. One trap recorded: apply
+  structured-output patches with **UTF-8 decoding**, since PowerShell 5.1 `Get-Content` ANSI-decoded
+  the journal and briefly wrote em-dash mojibake into the catalogs.
+
 ## DELEGATED
 
 *(none — lane 3 closed 2026-07-15, folded to the PARKED contracts stream below.)*
 
-> **WIP note (`/pm` 2026-08-01 second run, handoff planning — supersedes the earlier 08-01 note
-> below):** HEAD **`66b3cd8`**, main, **tree CLEAN, in sync with origin.** The earlier note's
+> **WIP note (`/pm` 2026-08-03 full reconcile — supersedes the 08-01 notes below):** HEAD
+> **`8ce40ec`**, main. **Uncommitted surface = ONE stream's worth (reader-fit 14f knowledge-check)**
+> — 4 source files + contract + reader-fit test + 5 QA docs + 5 shared registers. Clean to ship.
+> **Ship proposal, 2 slices — EXECUTED `/ship` 2026-08-03:** (1) the 14f code + its contract + its
+> reports (one stream, fully verified per its report: COMPATIBLE check, Lumina typecheck 0,
+> real-Gemini probes) → **`7ba48ba`**; (2) the shared registers (WORKSTREAMS, EVAL_TRACKER,
+> HUMAN-CHECKS, both BACKLOGs) in their own commit — they now carry this reconcile's corrections as
+> well as 14f's, so they are genuinely a separate concern. Ship-time gates re-run on the whole tree:
+> `typecheck:lumina` 0, **full suite 1286/1286** (the 14f report's 1085 was that session's count;
+> the suite has grown by `423c58f` + `8ce40ec` since). Portfolio = **2 ACTIVE + 1 opportunistic**,
+> at the limit.
+>
+> **Three staleness corrections made this run** (all of the "recorded-open but actually done" class
+> the skill warns about, and all three were invisible from the queues alone):
+> **(1) how-it-works HW-4/HW-5/HW-6 were recorded OPEN while the fix sat at HEAD.** The 08-02
+> diagnosis session wrote the tracker rows; the fixing session landed `8ce40ec` and never struck
+> them. Verified in the tree (`maxOutputTokens: 8192` + 2-attempt retry, `clampStr` across every
+> free-text field, and a payload/longest-string detector in `eval-test/route.ts`). Struck as
+> CODE-LANDED with re-verification named. **HW-2/HW-3 likewise cleared** — the 9-run sweep proved
+> both fixed and said so in its report, but nobody carried it to the tracker.
+> **(2) The eval-test harness is now runaway-instrumented for EVERY primitive** (HW-6's fix is
+> route-level, not how-it-works-level). Any sweep that has been trusting `status: pass` was blind to
+> the SP-6b class; it no longer is. That is a portfolio-wide gain hiding inside a single-primitive
+> commit.
+> **(3) A systemic defect was being met one instance at a time** — see reader-fit **14m**, opened
+> this run. 14e made `ctx.grade` precise; **19 of the 26 generators carrying a local band resolver
+> still substring-match `gradeContext` PROSE** (8 of them on the K-2 surface, 11 chemistry).
+> coin-counter (14c), hundreds-chart (14i), and
+> calendar-explorer were three independent sightings of one bug, and calendar-explorer was already
+> fixed blind inside the support-tiers batch — which is exactly the fix template for the other 19.
+>
+> **Human-check debt re-grepped:** two rows added (**#60** support-tiers hard-tier feel pass — its
+> own report names it; **#61** how-it-works HW-1, a CRITICAL open since 2026-03-22 that had no row
+> at all, which is why it has been invisible rather than deprioritized). Next free ID = 62.
+> ⚠️ **Standing flag, SIXTH raising:** `.claude/settings.local.json` allow-list is still
+> `["Read(**)"]` alone (re-verified this run — file is 9 lines, `allow: ["Read(**)"]`). Every
+> session pays permission prompts for routine shell/search. This has now outlived five reconciles;
+> either restore `Bash(*)` / `Glob` / `Grep` or record that the narrowing is deliberate so `/pm`
+> can stop raising it.
+>
+> **WIP note (`/pm` 2026-08-01 second run, handoff planning — superseded by the note above):** HEAD **`66b3cd8`**, main, **tree CLEAN, in sync with origin.** The earlier note's
 > "uncommitted surface = DI stall-fix + guard" is DISCHARGED — that whole day landed
 > (`f156f21` stall fix, `9af684c` math-facts L3, `79dcbdd` 14a census, `66b3cd8` rulings).
 > **Three parallel-session handoffs written this run** (paste-able, line-exact, file-disjoint by
@@ -854,7 +928,7 @@ within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activit
 | Voice transport unification | `my-tutoring-app/qa/voice-transport/CHARTER.md` | **NEW 2026-07-23 (user direction).** Promote the DI-proven client-side turn authority (`voiceTurnMachine`/`useLiveVoiceTurns`) from DI-private mode to Lumina's SESSION-WIDE voice transport, so students can talk to the tutor throughout a lesson and verbally refer back to prior sections. Dissolves the DI mixed-lesson manual-VAD trade-off (L2 wiring 07-23, HUMAN-CHECKS #45 measures the interim). Phases: calibration beat → lesson-level turn authority (DI becomes a consumer) → contextual close-timing + viewport claim → refer-back Tier-3 journey beats (the raised live-testing bar). Charter has the evidence base + watch-items. Pull only when a WIP slot opens. | 07-23 |
 | media-player reimagining | `qa/media-player-reimagining/BACKLOG.md` + `docs/contracts/media-player.md` | **PARKED 2026-07-16 (user — B1 shipped & browser-confirmed, `39f2543`).** B1 done: 3 eval modes live (PRE `listen_and_look` / EMERGING `listen_for_details` / ESTABLISHED `story_analysis`), MP-1/2/3 cleared, PRE band + tester refactor user-verified. Resume at **B2 (EMERGING polish)** or B4 `/tutor-test` probe; **B5 live `--lesson` @ K still queued** (live tutor beats, not tester-covered). Contract is CONFLICTED — C1's resolution IS this stream; read it first on resume. | 07-16 |
 | SP-27 Tutoring Context Integrity | `docs/PRD_TUTORING_CONTEXT_INTEGRITY.md` + sweep `qa/tutor-reports/sweep-2026-07-14.md` | **PARKED 2026-07-16 (deliberate, single-stream focus on reader-fit).** Resume at Phase 0: harden `scaffoldAudit.ts` (invalid-syntax + studentPrompts coverage + fingerprints), **re-run the now-stale sweep** (comparison-builder edits since), cut the monotonic baseline, add the Vitest + report-only runtime gates. NOT urgent — failures cluster in physics/advanced-math sims students aren't routed to; K primitives are already green. **Carry-forward HIGH — RESOLVED + COMMITTED 2026-07-16 (`39f2543`):** the `fast-fact` spoken answer-leak (`scaffoldingLevels.level3` interpolated `{{correctAnswer}}` then said "try again") is FIXED — level3 rewritten answer-free in `catalog/core.ts`; Tier-1 audit re-run confirms the `answer-leak-in-scaffold` finding cleared (fast-fact HIGH→WARN; only a pre-existing `indirect-script` level2 copy nit remains). `correctAnswer` retained in taskDescription/RUNTIME STATE for tutor-reference (allowed). This was the single audibly-harmful SP-27 defect; the rest of the stream stays parked. | 07-16 |
-| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **8 contracts on disk** — newest **coin-counter 2026-07-25** (derived contract-first inside reader-fit Task 3: 10 requirements, C1 resolved, 6 gaps incl. the G1 that seeds the EMERGING census); then counting-board 07-20 (#13), ten-frame 07-16 (#12), media-player 07-16 (#9a Step 1 — the CONFLICTED one). **`--check` guard now exercised ×4, all COMPATIBLE** (sorting-station + phonics-blender 07-15, comparison-builder 07-20, coin-counter 07-25; reports in `qa/primitive-contracts/`). Queue unchanged: next = #3 **foundation-explorer**, then #2 knowledge-check (before `true_false @ PRE` lands). **Note the pattern — every contract so far was derived as a by-product of a reader-fit fix, never as a standalone pull**, which is why the stated queue order keeps not being what actually lands. | **07-25** |
+| Primitive contracts | `my-tutoring-app/qa/primitive-contracts/BACKLOG.md` | **9 contracts on disk** — newest **knowledge-check 2026-08-02** (derived contract-first inside reader-fit 14f: 9 requirements, 2 conflicts resolved, G1/G2 built; G3 true/false PRE parity remains). **`--check` guard now exercised ×5, all COMPATIBLE**; reports live in `qa/primitive-contracts/`. Next = #3 **foundation-explorer**, then #4 concept-card-grid. **Note the pattern — every contract so far was derived as a by-product of a reader-fit fix, never as a standalone pull**, which is why the stated queue order keeps not being what actually lands. | **08-02** |
 | Engineering tutoring-scaffold wiring | `my-tutoring-app/qa/engineering-tutoring-scaffold/BACKLOG.md` | **NEW 2026-07-21 (user).** Bring engineering primitives to L2 (`/add-tutoring-scaffold`). **Phase A** = 12 primitives with NO `useLuminaAI` tutor channel (machine-profile, dump-truck-loader, bridge-builder, tower-stacker, gear-train-builder, pulley-system-builder, lever-lab, ramp-lab, wheel-axle-explorer, shape-strength-tester, foundation-builder, blueprint-canvas) — wiring the channel also unlocks read-aloud there (finishes the 07-21 sweep). Pilot A1 machine-profile end-to-end + live-verify BEFORE sweeping A2–A12. **Phase B** = `/tutor-test` the 12 that already have the channel for L2 *sufficiency* (not just presence). Executors: `/add-tutoring-scaffold` → `/tutor-test` → `/reader-fit --fix`. | 07-21 |
 | Misconception loop | memory `project_misconception-loop` | Phase 3A | 07-12 |
 | Literacy eval-modes densification | memory `project_literacy-evalmodes-densification` | tree is CLEAN (no longer uncommitted — /ship step moot); remaining = `/eval-test` the 6 task-identity ladders to confirm they draw, then close | 07-15 |

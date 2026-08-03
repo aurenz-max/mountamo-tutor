@@ -22,8 +22,12 @@ singletons. Healthy high-frequency evidence: all four sorting-station draws stam
 stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
 `SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
 
-**Remaining pull order:** 14f → 14g → 14h/14i → 14j → 14k/14l. 14c/14d remain the older
-coin-counter tail after the Grade-1 demand work.
+**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m** (systemic grade resolvers, piloted
+by 14c) → 14g → 14h → 14i → 14j → 14k/14l. 14d remains the older coin-counter chrome tail.
+*Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
+defect and a census found 18 more generators carrying it. Fixing the class once is cheaper than
+meeting it three more times down the queue — and one instance was already fixed blind in another
+stream (calendar-explorer, `423c58f`), which is the signal that it needs an owner.
 
 - ~~**14a. Run the EMERGING census.**~~ **DONE 2026-08-01.** Six real subskills, 42 generated
   components, zero generator errors. The scope/presentation findings below are the re-seeded queue.
@@ -62,16 +66,17 @@ coin-counter tail after the Grade-1 demand work.
   Original evidence: `qa/topic-traces/g1-identical-coins-2026-08-01.md`,
   `qa/reader-fit/coin-counter-task3-2026-07-25.md`, HANDOFF
   `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.
-- **14f. knowledge-check @ EMERGING — 6/42, routed in every census lesson.** This is the most
-  frequent primitive and closes the K backlog's explicit "complex-type routing re-audit once the K
-  queue drains" follow-up. Scope mostly holds, but the generator sees generic `elementary`, and the
-  failures cluster where Grade-1 modality matters: map-symbol matching becomes reading descriptions
-  of pictures, while the invention `analyze` draw promises picture support but emits long text-only
-  multi-clause analysis/matching. After 14e, audit mixed-mode selection + Grade-1 reading load and
-  visual insets across all six saved topics; do not copy the K picture-primary floor wholesale.
-  **📋 HANDOFF: `qa/HANDOFF-reader-fit-14f-knowledge-check-emerging-2026-08-01.md`** (all six
-  census verdicts tabled; contract-first REQUIRED — no `docs/contracts/knowledge-check.md` exists,
-  and deriving it also closes the PARKED contracts queue's item #2).
+- ~~**14f. knowledge-check @ EMERGING — 6/42, routed in every census lesson.**~~ **DONE
+  2026-08-02.** Contract derived first (`docs/contracts/knowledge-check.md`), then precise
+  `ctx.grade` was threaded into both planning stages. Grade-1 schemas now bound stems/options and
+  all six problem shapes; inherently visual map/coin/shape/invention tasks use existing bounded
+  `ObjectCollection` / `ComparisonPanel` renderers with required flat fields and reject missing
+  evidence. Text-column matching on a visual task is deterministically converted per problem;
+  nonvisual mixed siblings, K emoji-picture/type floor, voice, `::pN`, and final attribution stay
+  intact. **COMPATIBLE** contract check; 9 focused reader-fit tests, 230/230 contract-facing tests,
+  full 1085/1085, Lumina typecheck 0. Real-Gemini G1 `analyze`, map `mixed`, and K regression pass;
+  both census replays flipped. Report: `qa/reader-fit/knowledge-check-14f-2026-08-02.md`;
+  pixel/feel → HUMAN-CHECKS **#59**.
 - **14g. DI family intent/scope fidelity — 3/42 routes, 2/3 fail.** `di-sentence-reading` stayed on
   its noun objective, but `di-word-reading` replaced a CVCe intent with `cat/red/pig/sun`, and
   `di-math-facts counting_next` replaced 1–120 with values only through 12. These are generator
@@ -82,7 +87,9 @@ coin-counter tail after the Grade-1 demand work.
   `order-cards`). The second intent asks for 101, 102, _, 104 but the generator prompt/sanitizer
   hard-clamps Grade 1 to 100, making the published `NBT001-01-a` ceiling of 120 unrepresentable.
   Executor: `/eval-fix` + `/topic-fidelity`; extend the structural contract before lifting the cap.
-- **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** `gemini-hundreds-chart.ts` defaults
+- **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** *(Instance of systemic **14m** — take
+  the grade-resolution half from there; the eval-mode/120-ceiling half is local to this item.)*
+  `gemini-hundreds-chart.ts:522` defaults
   `gradeBand` to `2` when the manifest omits an override. In the 1–120 trace it also substitutes
   skip-counting by 2/5/10 and ends at 100 despite an explicit 100–120 intent; in the identical-coin
   trace it injects a by-2 challenge into the requested nickel/dime 5/10 focus. Fix grade resolution,
@@ -100,9 +107,48 @@ coin-counter tail after the Grade-1 demand work.
   light-bulb lesson announces 15 cards and expands into Internet, medicine, patent, prototype, and
   other untaught material. This repeats the K census's card-padding failure. Honor requested count
   and enumerated taught concepts in `gemini-flashcard-deck.ts`.
+- **14m. SYSTEMIC — generator-local grade resolvers never got 14e's memo.** *(Opened `/pm`
+  2026-08-03. This is the OWNING entry for the class; **14c and 14i are instances of it** and should
+  be worked through this item, not separately.)*
+  **The finding:** 14e made `ctx.grade` precise at the generation boundary, but a generator only
+  benefits if it READS it. Census over the 219 Gemini generators (`resolveGradeBand|resolveBand|
+  gradeToBand(`): **27 files match; excluding 1 test file → 26 generators, of which 19 never
+  reference `ctx.grade` at all** — they resolve the band by substring-matching `ctx.gradeContext`
+  PROSE, which `GenerationContext` explicitly forbids. So 14e fixed the supply and these 19 still
+  consume the old signal. **11 of the 19 are chemistry** (grades 8-12, low routing pressure); the
+  other 8 are `coin-counter`, `sorting-station`, `number-line`, `number-tracer`, `fraction-circles`,
+  `shape-composer`, `net-folder`, `timeline-builder` — those are the K-2/elementary surface and the
+  ones that matter. `hundreds-chart` carries a *different shape* of the same defect (a hard
+  `?? '2'` default rather than a prose parse) and so does not appear in that 19.
+  **Three independently-observed instances, none of them found by looking for this class:**
+  (a) **coin-counter** (14c) — `gemini-coin-counter.ts:190,798,809`: `gl.includes('k')` returns 'K'
+  for ANY prose containing a k, and `elementary` prose covers grades 1–5, so bands '2'/'3' are
+  unreachable and three authored G2 consumers silently run as Grade 1;
+  (b) **hundreds-chart** (14i) — `gemini-hundreds-chart.ts:522`: `config?.gradeBand ?? '2'`, a hard
+  default that ignores `ctx.grade` entirely, which is exactly why both census draws stamped Grade 2;
+  (c) **calendar-explorer** — found LIVE by the support-tiers batch-2 probes (`/api/lumina/eval-test`
+  with grade=1 emitted band **4-5**, because `/4|5/.test(gl)` matches a "4" anywhere in the prose).
+  **A fix template already shipped — copy it, don't re-derive it.** calendar-explorer was repaired
+  in `423c58f`: a new `calendarGradeBandFromGrade(ctx.grade)` takes precedence and returns `null`
+  when there is no canonical grade, with the prose resolver kept ONLY as the fallback
+  (`gemini-calendar-explorer.ts:82-109`, and its comment documents the defect). That shape —
+  canonical first, prose as fallback, never delete the fallback — is the whole fix, ~15 lines per
+  generator.
+  **Why this is worth its own item:** it is mechanical, machine-gated (`/eval-test` per generator at
+  two grades), needs zero sittings, and it is the difference between 14e being a boundary fix and
+  14e being a real one. It also fits the 08-01 push-development ruling.
+  **Executor:** `/topic-fidelity` per generator → `/eval-fix`. **Sequence:** do coin-counter (14c)
+  first — it has a derived contract with the defect already written up as gap **G2**, so it is the
+  cheapest correct pilot — then hundreds-chart (14i), then the **7 remaining K-2/elementary
+  generators** named above, and the **11 chemistry generators last** (grades 8-12, and their prose
+  bands are coarse enough that the defect may not bite — verify before spending the slice).
+  **Do NOT bulk-sweep before the coin-counter pilot is runtime-exercised** (pilot-then-sweep).
 - **14c. coin-counter G2 — Grades 2–3 are UNREACHABLE** (`/topic-fidelity`, not `/reader-fit`).
   `resolveGradeBand` parses `ctx.gradeContext` prose instead of canonical `ctx.grade`, so G2 money
-  lessons silently run as Grade 1. Re-check after 14e; the generator-local fallback may still fail.
+  lessons silently run as Grade 1. ~~Re-check after 14e; the generator-local fallback may still
+  fail.~~ **RE-CHECKED `/pm` 2026-08-03: still open, confirmed in the tree** —
+  `gemini-coin-counter.ts:798` still reads `ctx.gradeContext` and 14e did not touch it. **This is
+  now the PILOT for systemic item 14m** (contract gap G2 already documents it).
 - **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (HUMAN-CHECKS **#52**). The K screen
   still shows grade/counter/phase badges and an English instruction with no replay. This is the
   comparison-builder #2b class and remains the cheapest residual, not Grade-1 demand.

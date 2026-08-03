@@ -60,8 +60,8 @@
 | double-number-line | 3 | 3 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/double-number-line-2026-06-14.md) |
 | place-value-chart | 4 | 4 | 0 | 2026-06-20 | [structural sweep](eval-reports/place-value-chart-2026-06-20.md) |
 | function-machine | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/function-machine-2026-06-14.md) |
-| knowledge-check | 4 | 4 | 0 | 2026-07-02 | [grade-precedence fix](eval-reports/knowledge-check-2026-07-02.md) |
-| how-it-works | 3 | 1 | 2 | 2026-05-03 | [report](eval-reports/how-it-works-2026-05-03.md) |
+| knowledge-check | 4 | 4 | 0 | 2026-08-02 | [Grade-1 reader-fit + visual evidence](eval-reports/knowledge-check-2026-08-02.md) |
+| how-it-works | 3 | 0 | 3 | 2026-08-02 | [SP-6b single-string runaway, 5/9 runs](eval-reports/how-it-works-2026-08-02.md) — **fix landed `8ce40ec`; HW-2/3 cleared, HW-4/5/6 struck as code-landed. Counts are the PRE-FIX run and stay until `/eval-test how-it-works` ×6 re-verifies** (`/pm` 2026-08-02). HW-1 (explain click no-op) still open → HUMAN-CHECKS #61 |
 | light-shadow-lab | 4 | 4 | 0 | 2026-06-21 | [structural sweep](eval-reports/light-shadow-lab-2026-06-21.md) |
 | constellation-builder | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/constellation-builder-2026-03-29.md) |
 | sound-wave-explorer | 4 | 4 | 0 | 2026-03-29 | [report](eval-reports/sound-wave-explorer-2026-03-29.md) |
@@ -183,6 +183,37 @@ Issues that appear across multiple primitives. Fix the pattern, not just individ
 **Root cause:** Schema complexity exceeds what flash-lite can reliably handle. Generator fallback functions (`validateChoices`) silently replace malformed data with "???" placeholders instead of failing loudly or retrying. The number-tracer variant is distinct: the field (`strokePaths`) is never consumed by the component (it falls back to hardcoded `getDigitPaths(digit)`) and is force-zeroed by the generator, yet the schema still requires Gemini to emit it — pure dead weight that causes truncation.
 **Fix pattern:** (1) Simplify schema for flash-lite, OR use a more capable model for complex modes. (2) Fallback functions should throw/retry instead of producing placeholder data that appears valid. (3) **SCHEMA-SIMPLIFY (number-tracer variant):** if a field is force-overwritten in post-process or never read by the component, remove it from the schema entirely — don't ask Gemini for data you discard. Mirrors the SP-17 schema-removal pattern.
 **Status:** Mitigated for phoneme-explorer — hardcoded quality fallbacks replace "???" placeholders, sanitize functions strip chain-of-thought leakage. **Resolved for number-tracer (NT-1)** — removed the dead `strokePaths` field from the schema; component supplies canonical paths via `getDigitPaths`. Root cause (flash-lite unreliability) remains for nested schemas generally; consider model upgrade for long-term fix.
+
+#### SP-6b: the runaway is often inside ONE STRING, not an array — `maxItems` does not bind it
+
+**Established 2026-08-02 on how-it-works (HW-4), 9 instrumented runs.** SP-6's
+standing advice ("bound EVERY array with `minItems`/`maxItems`") assumes the
+overflow is a runaway *array*. In 5/9 how-it-works runs the arrays were correctly
+sized (`steps` 4-6, `challenges` 3) and the entire overflow lived in a **single
+free-text string value** — `quickFacts.whereItHappens` emitting `"surface crust"`
+× ~1,700 (337 KB in the worst parsed run; the crash run hit the model's 65,536-token
+ceiling mid-string). Array bounds would have prevented none of them.
+
+**Where it loops:** open-ended elaboration fields that carry (a) no length guidance
+in the schema description and (b) prompt pressure to fill them regardless of whether
+there is anything real to say ("ALWAYS provide this", "provide at least 3 of these 5").
+When the honest answer is six words and the prompt demands a paragraph, the model
+pads — and padding is the state that induces repetition degeneracy. These are
+usually the *least* pedagogically load-bearing fields in the schema.
+
+**Fix pattern (single-string variant):**
+1. `maxOutputTokens` sized ~4× a clean payload — turns a 65K-token runaway into a cheap fast failure.
+2. Bounded retry + degrade, never throw (generators run under `Promise.all`).
+3. **Clamp every free-text string in post-process validation** — the only defense on a runaway that *parses* and reaches the render path.
+4. Put explicit length limits in the schema `description` ("one short phrase, under 15 words") and drop "ALWAYS provide"-style pressure from the prompt.
+
+**Re-check LSP-1 (letter-spotter, ~383 KB) against this variant** — it is currently
+filed as "same unbounded-array signature", but the size profile matches SP-6b.
+Instrument the longest string before applying the `maxItems` template there.
+
+**Detection:** payload size and longest-string length, NOT `status`. See HW-6 —
+eval-test returned `status: "pass"` on a 342 KB runaway because `validation` only
+reports `challengeCount`/`typesFound`.
 
 ### SP-7: Generator produces phonetically incorrect content (literacy)
 
@@ -454,6 +485,9 @@ added; prompt/title movement alone is not a full-fidelity verdict. See
 
 | ID | Primitive | Mode | Severity | Category | Summary | Fix Type |
 |----|-----------|------|----------|----------|---------|----------|
+| ~~HW-4~~ | ~~how-it-works~~ | ~~all modes~~ | ~~CRITICAL (intermittent)~~ | ~~Truncated JSON (SP-6b)~~ | ~~Field-reported `Unterminated string in JSON at position 479945`. Reproduced 2026-08-02: **5/9 runs emitted a runaway string, 1/9 crashed outright.** flash-lite loops inside ONE free-text field (`quickFacts.whereItHappens` 4/5, `steps[].whatsHappening` 1/5) and runs to the 65,536-token ceiling — `"surface crust"` × ~1,700, 337 KB vs. a 6.5 KB healthy payload. Arrays were correctly sized every run, so `maxItems` does NOT bind this.~~ **CODE LANDED `8ce40ec` (`/pm` 2026-08-02 staleness sweep — these three rows were written by the DIAGNOSIS session and the fixing session did not strike them).** Tree now carries `maxOutputTokens: 8192` + a bounded 2-attempt retry loop (`gemini-how-it-works.ts:717-744`). **RE-VERIFICATION PENDING — machine-gated, no human needed:** run `/eval-test how-it-works` (≥6 runs; the fix is intermittent-class, so one green run proves nothing) and read the NEW `longestStringLength`/`runawaySuspect` fields, not `status` alone. | GENERATOR |
+| ~~HW-5~~ | ~~how-it-works~~ | ~~all modes~~ | ~~HIGH~~ | ~~Unclamped render~~ | ~~On runaways that still parse (4/9), `validateHowItWorksData` copies the string through with no length cap and `quickFactEntries` renders every entry — a 337 KB string lands in the "📍 Where" card.~~ **CODE LANDED `8ce40ec`.** `clampStr` now bounds every free-text field in validation (`gemini-how-it-works.ts:286-345`; quickFacts capped at 120 chars, the exact field that carried the 337 KB). Rides HW-4's re-verification run. | GENERATOR |
+| ~~HW-6~~ | ~~how-it-works (harness)~~ | ~~all modes~~ | ~~HIGH~~ | ~~Blind validator~~ | ~~eval-test returned `status: "pass"` on a run carrying a 337 KB repetition loop — `validation` only reports `challengeCount`/`typesFound`.~~ **CODE LANDED `8ce40ec`** — `eval-test/route.ts:90-132` now walks the payload, reports `payloadBytes` / `longestStringLength` / `longestStringPath`, and **fails the run** at `runawaySuspect` (longest string > 10,000 chars). This is a HARNESS-WIDE gain: every primitive's eval-test run is now instrumented for the SP-6b class, not just how-it-works. | HARNESS |
 | SST-1 | sorting-station | sort_one (all sort-family) | HIGH → DEFERRED | Content variety (SP-19 cross-session variant) | Cross-**session** object-noun convergence: "hook" in 5/5 sessions, ~10 canonical items dominate all draws when the objective's object universe is small. **Reframed 2026-07-21:** the user's lived "same thing over and over" was NOT object nouns — it was the same CLASSIFICATION RULE every round (rule-monotony), resolved by the new `sort_variety` mode (G3). The object-noun convergence here is a distinct, lower-priority issue: a prompt-entropy fix (seed + rotating directive) was A/B-proven only MODERATE (44→54 distinct items, killed the 5/5 anchor, but hook still 4/5) and REVERTED — a code-owned per-topic pool has no home without a maintenance treadmill. DEFERRED pending a better entropy lever. Solvable, no leak. See [report](eval-reports/sorting-station-sort-variety-2026-07-21.md). | GENERATOR |
 | HIST-1 | histogram | all modes | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe with intent "daily temperatures" vs. "daily reading minutes" changed the session title, but each session still mixed temperature/height/score/time/minutes datasets. The deterministic context pool ignores intent, so student-facing values do not consistently serve the assigned objective. Add an intent-aware context selector; do not count prompt/title movement as FULL fidelity. | GENERATOR |
 | NF-1 | net-folder | identify_solid (likely all modes) | HIGH | Topic fidelity (SP-28 Tier-2) | Fixed-topic probe requested cubes vs. triangular prisms; both sessions generated rectangular-prism challenges. The code-picked solid selector ignores intent even though prompt framing now receives scope. Add an intent-aware deterministic solid selector and re-probe every mode. | GENERATOR |
@@ -550,8 +584,8 @@ added; prompt/title movement alone is not a full-fidelity verdict. See
 | ~~FC-1~~ | ~~fraction-circles~~ | ~~all~~ | ~~MEDIUM~~ | ~~Low variety (entropy)~~ | ~~Generator emitted a near-frozen fraction ladder every run (always opened 1/2; canonical 2/3,3/4 ladder).~~ Fixed 2026-06-18: added `createFractionPool` to `numberPoolService.ts` (discrete-pool pattern over grade-legal denominator set == scope) + wired into the generator with `authoritativeSource:'the topic'`; replaced the "start with halves/thirds" convergence rule. Re-ran 3×/mode: numerators now span 1–11, 0 run-to-run repetition; scope-conflict (K-2 + "halves/fourths") respected the den≤4 ceiling. | ~~GENERATOR~~ |
 | AE-4 | annotated-example | — | HIGH | Redundant steps | Case-split step solves both branches producing `x<5` and `x>-1`; steps 2 and 3 redundantly re-solve the same two cases. Architect doesn't recognize case-split implies per-case work is complete (SP-16) | GENERATOR |
 | HW-1 | how-it-works | predict | CRITICAL | Broken interaction | `handleMCAnswer` early-returns for `'explain'` type at HowItWorks.tsx:386 but the render block includes explain in the option-button condition — clicking any option on an explain challenge does nothing (no selection, no feedback, no advance). User-reported: stuck on "Why are nitrogen shocks important..." Challenge 3 of 3. | COMPONENT |
-| HW-2 | how-it-works | predict | HIGH | Eval mode bleed | `validateHowItWorksData` pads challenges to min 3 with hardcoded `type: 'identify'`, ignoring the eval mode's allowed types. Predict mode (allowed: predict, explain) returned a boilerplate identify challenge — eval-test API explicitly flagged disallowed type. | GENERATOR |
-| HW-3 | how-it-works | sequence | HIGH | Missing data | Flash Lite drops nullable `sequenceItem*` flat fields (SP-14) — observed sequence challenge with only 2 items + empty `correctOrder` array. Challenge unsolvable; component renders 2 reorder rows that can never match the empty target. | GENERATOR |
+| ~~HW-2~~ | ~~how-it-works~~ | ~~predict~~ | ~~HIGH~~ | ~~Eval mode bleed~~ | ~~`validateHowItWorksData` pads challenges to min 3 with hardcoded `type: 'identify'`, ignoring the eval mode's allowed types.~~ **CLEARED 2026-08-02** by the 9-run instrumented sweep: the hardcoded padding is gone (`gemini-how-it-works.ts:448-453`) and observed types matched the mode in **all 9 runs**. See [report](eval-reports/how-it-works-2026-08-02.md) §"Prior issues". | ~~GENERATOR~~ |
+| ~~HW-3~~ | ~~how-it-works~~ | ~~sequence~~ | ~~HIGH~~ | ~~Missing data~~ | ~~Flash Lite drops nullable `sequenceItem*` flat fields (SP-14) — observed sequence challenge with only 2 items + empty `correctOrder` array.~~ **CLEARED 2026-08-02** by the same sweep: the authored-order fallback (`gemini-how-it-works.ts:424-441`) held on every sequence run. See [report](eval-reports/how-it-works-2026-08-02.md) §"Prior issues". | ~~GENERATOR~~ |
 | ~~MD-1~~ | ~~matrix-display~~ | ~~add_subtract~~ | ~~HIGH~~ | ~~Eval mode bleed (SP-18)~~ | ~~Mode advertises `['add', 'subtract']` but generator picks `evalConstraint.allowedTypes[0]` — every session was all-add, never subtract.~~ Fixed 2026-05-23: `selectMatrixChallenges` now accepts the full `allowedTypes` array; per-session shuffled round-robin (`sessionOrder[idx % sessionOrder.length]`) interleaves the bundle across challenges. | ~~GENERATOR~~ |
 | ~~MD-2~~ | ~~matrix-display~~ | ~~determinant_inverse~~ | ~~HIGH~~ | ~~Eval mode bleed (SP-18)~~ | ~~Mode advertises `['determinant', 'inverse']` but generator only picked first type — every session was all-determinant, never inverse.~~ Fixed 2026-05-23: same single fix as MD-1 — call site now passes `evalConstraint.allowedTypes` (full array) into `selectMatrixChallenges`. | ~~GENERATOR~~ |
 | ~~BS-1~~ | ~~balance-scale~~ | ~~equality, one_step, one_step_hard, two_step_intro, two_step~~ | ~~CRITICAL~~ | ~~Impossible challenge~~ | ~~Canonical-form RHS unsolvable via click-remove.~~ Fixed 2026-05-21 (DEC-BS-1 resolved as option 3): builders now produce decomposed RHS `[answer, b]`; multiply/divide modes paired with component-side whole-side divide. | ~~GENERATOR + COMPONENT~~ |

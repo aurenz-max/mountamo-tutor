@@ -7,12 +7,6 @@ already suffered a cross-consumer break outranks a merely busy one).
 
 ## Queue
 
-### 2. knowledge-check
-"Closes EVERY K lesson the manifest builds" (K census top finding). Largest blast
-radius in the portfolio; picture_mcq @ PRE + K type-floor are already de facto
-requirements with no contract doc. true_false @ PRE is queued work that MUST go
-through `--check` when it lands.
-
 ### 3. foundation-explorer
 4/6 census routing; head of the reader-fit explainer tail (BACKLOG #9) — derive the
 contract BEFORE that fix pass so the shared-PRE-pattern extraction doesn't ablate
@@ -37,6 +31,17 @@ band spread of any math primitive; multiple historical fidelity fixes
   sessions.
 
 ## Done
+
+- **knowledge-check — derived 2026-08-02** → `docs/contracts/knowledge-check.md`. Pulled as the
+  mandatory contract-first step of reader-fit **14f**. **9 requirements**, **2 conflicts resolved**
+  up front (K picture primacy vs Grade-1 independent reading → precise-grade + visual-task gate;
+  mixed diversity vs visual evidence → per-problem gate), **3 gaps**: G1 precise Grade-1 reading
+  load and G2 schema-backed visual support are the 14f implementation; G3 true/false PRE parity
+  remains separately queued. Derived from the saved six-topic Grade-1 census (knowledge-check
+  **6/42, every lesson**), PRE reader-fit/live-tutor reports, KC-1/KC-2, oracle/component paths,
+  and git history. Post-edit live channels added three eval-test probes and both failing Grade-1
+  topic replays; `knowledge-check-check-2026-08-02.md` records **COMPATIBLE**. Catalog projection
+  report-only; no routing prose changed.
 
 - **coin-counter — derived 2026-07-25 (`--census`)** → `docs/contracts/coin-counter.md`. Pulled out
   of queue order as the contract-first step of reader-fit **Task 3** (K `count-like` enacted count).
