@@ -28,7 +28,7 @@ hundreds-chart/14i + the six K-2 resolvers + coin-counter/14c + 12 chemistry inc
 matter-explorer, a census under-count found in-flight; 43 new tests, 21 real-Gemini probes,
 typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400; report
 `qa/reader-fit/14m-sweep-2026-08-04.md`) →
-14h → 14j → 14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides
+~~14h~~ **14h CLOSED 2026-08-04** → 14j → 14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides
 the 14m sweep; 14d is archived with the rest of the coin-counter tail. 14k's mechanism is now
 PINNED (see the updated entry) — it is range/window/accept work, not grade work.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
@@ -101,11 +101,16 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   genuine in-scope failure (counting_next IS the pack's mode; the range is the contract). Executor:
   `/topic-fidelity` then `/eval-fix`, in the DI workstream. Do not edit its shared files
   concurrently.
-- **14h. number-sequencer @ G1 — 2/42, both contract-misaligned.** The first blended pin
-  `count_from|before_after` leaks three unrequested modes (`fill-missing`, `decade-fill`,
-  `order-cards`). The second intent asks for 101, 102, _, 104 but the generator prompt/sanitizer
-  hard-clamps Grade 1 to 100, making the published `NBT001-01-a` ceiling of 120 unrepresentable.
-  Executor: `/eval-fix` + `/topic-fidelity`; extend the structural contract before lifting the cap.
+- ~~**14h. number-sequencer @ G1 — 2/42, both contract-misaligned.**~~ **DONE 2026-08-04.**
+  Contract derived first (8 requirements; `--check` COMPATIBLE). The blend now uses the shared
+  blend-aware resolver plus schema/post-filter enforcement: exact replay emits only
+  `count-from|before-after`. Grade 1 now resolves a structured topic/intent numeric window
+  (one temperature-0 Flash Lite call only when no explicit range exists): generic practice
+  remains ≤100, narrower ≤20 tracks, and published `NBT001-01-a` can reach 120. Render/input
+  ranges derive from actual values, so exact `101,102,_,104` renders and grades 103; rejected
+  cards are topped up in-range to the 3-card mastery floor. All 5 modes PASS live; 13 fidelity
+  probes track; focused 24/24, full 1406/1406, Lumina typecheck 0, tsc 803 baseline. Report:
+  `qa/reader-fit/number-sequencer-14h-2026-08-04.md`. **Next = 14j.**
 - **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** *(Instance of systemic **14m**.)*
   **Grade-resolution half DONE 2026-08-04 (14m sweep slice 1):** `hundredsChartGradeBandFromGrade`
   (K/1→'1', 2→'2', 3→'3', 4+→'4', null without a grade) threaded canonical-first —
@@ -125,7 +130,8 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   is healthy (108, 109, ?, 111). The coin intent pins **6 nickels = 30¢**, but the generated worked
   example becomes **4×5 = 20 dimes = 200¢**, introducing multiplication and a much larger value.
   Pin the manifest problem through the problem-author/solver boundary and add a Grade-1 operation
-  ceiling oracle.
+  ceiling oracle. **Code-ready handoff (premise-corrected: solver is already pinned; the drift is
+  in problem authoring): `qa/HANDOFF-reader-fit-14j-annotated-example-2026-08-04.md`.**
 - **14k. number-line `between` on a precise missing-number objective — 1/42.** Intent requests a
   hidden value around 90–110; data defaults to 19–38 and accepts any number strictly between broad
   endpoints. The generator preserved neither the inferred 120 range nor the exact-adjacent-number

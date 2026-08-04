@@ -9,7 +9,7 @@ import { numberSequencerOracle } from '../number-sequencer';
  * comparison-builder / array-grid blocks.
  */
 
-// gradeBand '1' → intrinsic ceiling 100; topic names 100, so clean values stay in scope.
+// gradeBand '1' → capability ceiling 120; topic names 100, so clean values stay in scope.
 const nsCtx = { componentId: 'number-sequencer', evalMode: 'fill_missing', topic: 'Counting and skip counting to 100', gradeLevel: 'grade 2' };
 // Scope-bearing topic → ceiling 50; used to prove the scope check bites on the 67-90 cards.
 const nsTo50Ctx = { ...nsCtx, topic: 'Counting to 50' };
@@ -45,7 +45,7 @@ const beforeAfterClean = {
 const orderClean = {
   title: 'Put Them In Order', gradeBand: '1', showNumberLine: true, showDotArrays: false,
   challenges: [
-    { id: 'o1', type: 'order-cards', instruction: '?', sequence: [8, 2, 5, 1], correctAnswers: [1, 2, 5, 8], rangeMin: 1, rangeMax: 10 },
+    { id: 'o1', type: 'order-cards', instruction: '?', sequence: [8, 2, 5, 1], correctAnswers: [1, 2, 5, 8], rangeMin: 1, rangeMax: 8 },
     { id: 'o2', type: 'order-cards', instruction: '?', sequence: [14, 20, 11, 17, 13], correctAnswers: [11, 13, 14, 17, 20], rangeMin: 11, rangeMax: 20 },
     { id: 'o3', type: 'order-cards', instruction: '?', sequence: [42, 49, 45, 41, 47], correctAnswers: [41, 42, 45, 47, 49], rangeMin: 41, rangeMax: 49 },
     { id: 'o4', type: 'order-cards', instruction: '?', sequence: [70, 30, 90, 20, 50], correctAnswers: [20, 30, 50, 70, 90], rangeMin: 20, rangeMax: 90 },
@@ -93,6 +93,18 @@ describe('number-sequencer oracle', () => {
   });
   it('passes clean decade-fill', () => {
     expect(numberSequencerOracle.verify(decadeClean, nsCtx).violations).toEqual([]);
+  });
+  it('passes a Grade-1 local window above 100 when the topic requires counting to 120', () => {
+    const data = {
+      ...decadeClean,
+      challenges: [
+        { id: 'h1', type: 'decade-fill', instruction: '?', sequence: [100, 101, null, 103, 104], correctAnswers: [102], rangeMin: 100, rangeMax: 104 },
+        { id: 'h2', type: 'decade-fill', instruction: '?', sequence: [107, 108, null, 110, 111], correctAnswers: [109], rangeMin: 107, rangeMax: 111 },
+        { id: 'h3', type: 'decade-fill', instruction: '?', sequence: [116, 117, null, 119, 120], correctAnswers: [118], rangeMin: 116, rangeMax: 120 },
+      ],
+    };
+    const ctx = { ...nsCtx, topic: 'Count forward within 120' };
+    expect(numberSequencerOracle.verify(data, ctx).violations).toEqual([]);
   });
 
   // ── answer-key-desync ──

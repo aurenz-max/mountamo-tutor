@@ -2732,8 +2732,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-sequencer',
-    description: 'Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), and decade-fill (fill missing numbers on a hundred chart). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
-    constraints: 'Best for numbers 1-100. K: 1-20 range, Grade 1: 1-100 range. Each challenge set should include 5-10 challenges mixing different types.',
+    description: 'Interactive number sequencing with 5 challenge types: fill-missing (complete number sequences with blanks), before-after (identify numbers before/after a given number), order-cards (arrange shuffled numbers in order), count-from (continue counting forward/backward from a starting number), and decade-fill (fill missing numbers across decade boundaries in a local number window). Uses a "number train" visual metaphor. Perfect for building sequential number understanding. ESSENTIAL for K-1 math.',
+    constraints: 'K: 1-20 range. Grade 1: broad practice defaults to 1-100 and may extend through 120 only when the objective/topic/intent requires it. Pinned single or blended eval modes must emit only their catalog challenge types; unpinned mixed sessions may combine all five.',
     evalModes: [
       {
         evalMode: 'count_from',

@@ -1,12 +1,14 @@
 import { Type, Schema } from "@google/genai";
-import { NumberSequencerData } from "../../primitives/visual-primitives/math/NumberSequencer";
+import type {
+  NumberSequencerChallenge,
+  NumberSequencerData,
+} from "../../primitives/visual-primitives/math/NumberSequencer";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
-  resolveEvalModeConstraint,
+  resolveEvalModes,
   constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
+  buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
@@ -285,6 +287,8 @@ type NumberSequencerConfig = {
   difficulty?: string;
   challengeCount?: number;
   gradeBand?: 'K' | '1';
+  /** Optional explicit numeric scope; skips topic/intent range resolution. */
+  numberRange?: { min: number; max: number };
   /** Target eval mode from the IRT calibration system. Constrains which challenge types to generate. */
   targetEvalMode?: string;
   /** Intent or title from the manifest item. */
@@ -295,35 +299,181 @@ type NumberSequencerConfig = {
   objectiveVerb?: string;
 };
 
+// ---------------------------------------------------------------------------
+// Topic/intent numeric scope resolver (Tier 2 topic-fidelity fix)
+// ---------------------------------------------------------------------------
+
+const numberSequencerRangeSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    hasExplicitRange: {
+      type: Type.BOOLEAN,
+      description: 'True only when topic/objective/intent explicitly names or clearly implies the numeric values this activity should use',
+    },
+    min: {
+      type: Type.NUMBER,
+      description: 'Smallest student-facing value requested by the lesson scope',
+    },
+    max: {
+      type: Type.NUMBER,
+      description: 'Largest student-facing value requested by the lesson scope; never above 120',
+    },
+  },
+  required: ['hasExplicitRange', 'min', 'max'],
+};
+
+async function resolveNumberSequencerRange(
+  topic: string,
+  objectiveText: string | undefined,
+  intent: string | undefined,
+): Promise<{ min: number; max: number } | null> {
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Resolve the numeric scope for one Grade-1 NUMBER SEQUENCER activity.
+
+TOPIC: "${topic}"
+${objectiveText ? `LEARNING OBJECTIVE: "${objectiveText}"\n` : ''}${intent ? `COMPONENT INTENT: "${intent}"\n` : ''}
+Return hasExplicitRange=true ONLY when the lesson content itself names or clearly implies a numeric bound/window (examples: "within 20" -> 1..20; "count to 120" -> 1..120; "use 101 through 120" -> 101..120).
+- Do NOT treat the words "Grade 1", challenge counts, dates, IDs, or generic "number practice" as numeric scope.
+- Number-sequencer values are positive whole numbers. Clamp min to at least 1 and max to at most 120.
+- If there is no explicit lesson range, return hasExplicitRange=false, min=1, max=100.`,
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: numberSequencerRangeSchema,
+      },
+    });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text) as {
+      hasExplicitRange?: unknown;
+      min?: unknown;
+      max?: unknown;
+    };
+    if (parsed.hasExplicitRange !== true) return null;
+    const min = Math.max(1, Math.round(Number(parsed.min)));
+    const max = Math.min(120, Math.round(Number(parsed.max)));
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+    return { min, max };
+  } catch (error) {
+    console.warn('[NumberSequencer] topic range resolution failed:', error);
+    return null;
+  }
+}
+
+function buildFallbackChallenge(
+  type: ChallengeType,
+  range: { min: number; max: number },
+  ordinal = 0,
+): NumberSequencerChallenge {
+  const rangeLo = Math.max(1, Math.round(range.min));
+  const hi = Math.max(rangeLo + 1, Math.round(range.max));
+  const maxWindowStart = Math.max(rangeLo, hi - 4);
+  const lo = Math.min(maxWindowStart, rangeLo + ordinal * 5);
+  const values = Array.from(
+    { length: Math.min(5, hi - lo + 1) },
+    (_, index) => lo + index,
+  );
+  const last = values[values.length - 1];
+  const id = `fallback${ordinal + 1}`;
+
+  switch (type) {
+    case 'count-from':
+      return { id, type, instruction: `Count forward from ${lo}!`, sequence: [lo], correctAnswers: values.slice(1), rangeMin: lo, rangeMax: last, startNumber: lo, direction: 'forward' };
+    case 'before-after':
+      return { id, type, instruction: `What number comes after ${lo}?`, sequence: [lo, null], correctAnswers: [lo + 1], rangeMin: lo, rangeMax: lo + 1 };
+    case 'order-cards': {
+      const sorted = values.slice(0, Math.max(2, Math.min(4, values.length)));
+      const rotation = 1 + (ordinal % Math.max(1, sorted.length - 1));
+      const shuffled = [...sorted.slice(rotation), ...sorted.slice(0, rotation)];
+      return { id, type, instruction: 'Put these numbers in order!', sequence: shuffled, correctAnswers: sorted, rangeMin: sorted[0], rangeMax: sorted[sorted.length - 1] };
+    }
+    case 'decade-fill':
+    case 'fill-missing': {
+      const blankIndex = ordinal % values.length;
+      const sequence: (number | null)[] = [...values];
+      const answer = values[blankIndex];
+      sequence[blankIndex] = null;
+      return { id, type, instruction: 'Can you find the missing number?', sequence, correctAnswers: [answer], rangeMin: values[0], rangeMax: last };
+    }
+  }
+}
+
+function challengeValues(challenge: Pick<NumberSequencerChallenge, 'sequence' | 'correctAnswers' | 'startNumber'>): number[] {
+  return [
+    ...challenge.sequence.filter((n): n is number => typeof n === 'number'),
+    ...challenge.correctAnswers.filter((n): n is number => typeof n === 'number'),
+    ...(typeof challenge.startNumber === 'number' ? [challenge.startNumber] : []),
+  ];
+}
+
+function challengeFitsRange(
+  challenge: Pick<NumberSequencerChallenge, 'sequence' | 'correctAnswers' | 'startNumber'>,
+  range: { min: number; max: number },
+): boolean {
+  const values = challengeValues(challenge);
+  return values.length > 0
+    && values.every((value) => Number.isInteger(value) && value >= range.min && value <= range.max);
+}
+
 export const generateNumberSequencer = async (ctx: GenerationContext): Promise<NumberSequencerData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config: NumberSequencerConfig = { ...(ctx.raw as NumberSequencerConfig), intent: ctx.intent };
-  // ── Resolve eval mode from the catalog (single source of truth) ──
-  const evalConstraint = resolveEvalModeConstraint(
+  // ── Resolve an explicit single mode / curated blend from the catalog. ──
+  // Deliberately omit intent here: an unpinned session keeps the legacy mixed
+  // behavior, while pins such as "count_from|before_after" are now understood as
+  // a two-mode union instead of falling through as an unknown key (reader-fit 14h).
+  const evalResolution = await resolveEvalModes(
     'number-sequencer',
-    config?.targetEvalMode,
+    { targetEvalMode: config?.targetEvalMode },
     CHALLENGE_TYPE_DOCS,
   );
 
   // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(numberSequencerSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
+  const activeSchema = evalResolution
+    ? constrainChallengeTypeEnum(numberSequencerSchema, evalResolution.allowedTypes, CHALLENGE_TYPE_DOCS)
     : numberSequencerSchema;
 
   // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
+  const challengeTypeSection = buildModeConstraintSection(evalResolution, CHALLENGE_TYPE_DOCS);
 
-  const gradeBand = config?.gradeBand || (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
+  const canonicalGradeBand = ctx.grade
+    ? (ctx.grade.toUpperCase() === 'K' ? 'K' : '1')
+    : undefined;
+  const gradeBand = config?.gradeBand
+    ?? canonicalGradeBand
+    ?? (gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1');
   const challengeCount = config?.challengeCount || 5;
+
+  // Structured numeric scope. Grade 1 pays for one tiny resolver call only when
+  // the manifest did not already provide a range. Generic/no-bound lessons retain
+  // the legacy 1-100 default; an explicit lesson bound may extend through 120.
+  const defaultNumberRange = gradeBand === 'K' ? { min: 1, max: 20 } : { min: 1, max: 100 };
+  const gradeCapabilityMax = gradeBand === 'K' ? 20 : 120;
+  let resolvedNumberRange = defaultNumberRange;
+  if (config?.numberRange) {
+    const min = Math.max(1, Math.round(config.numberRange.min));
+    const max = Math.min(gradeCapabilityMax, Math.round(config.numberRange.max));
+    if (Number.isFinite(min) && Number.isFinite(max) && max > min) {
+      resolvedNumberRange = { min, max };
+    }
+  } else if (gradeBand === '1') {
+    const inferred = await resolveNumberSequencerRange(topic, ctx.objective.text, config?.intent);
+    if (inferred) resolvedNumberRange = inferred;
+  }
+  console.log(
+    `[NumberSequencer] numeric window: ${resolvedNumberRange.min}-${resolvedNumberRange.max} `
+    + `(source=${config?.numberRange ? 'config' : resolvedNumberRange === defaultNumberRange ? 'grade-default' : 'topic-intent'})`,
+  );
 
   // ── Within-mode support tier (config.difficulty) ──
   // The student's tier DRIVES the deterministic application below (per challenge).
   // pinnedType (exactly one mode) is used ONLY for the prompt tierSection tone.
   const supportTier = normalizeSupportTier(config?.difficulty);
   const pinnedType =
-    evalConstraint?.allowedTypes.length === 1
-      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+    evalResolution?.allowedTypes.length === 1
+      ? (evalResolution.allowedTypes[0] as ChallengeType)
       : undefined;
   const tierScaffold =
     pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
@@ -338,6 +488,8 @@ export const generateNumberSequencer = async (ctx: GenerationContext): Promise<N
   const prompt = `
 Create an educational number sequencing activity for teaching "${topic}" to ${gradeLevel} students.
 ${scopeSection}
+RESOLVED NUMERIC WINDOW — AUTHORITATIVE FOR THIS RENDER: ${resolvedNumberRange.min} through ${resolvedNumberRange.max}.
+Every value in sequence, correctAnswers, startNumber, rangeMin, and rangeMax MUST stay inside this window.
 CONTEXT:
 - A number sequencer helps students build sequential number understanding
 - Students practice recognizing number order, finding missing numbers, and counting forward/backward
@@ -345,7 +497,7 @@ CONTEXT:
 
 ${challengeTypeSection}
 ${tierSection}
-${!evalConstraint ? `
+${!evalResolution ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
   * Numbers range from 1-20
@@ -358,7 +510,8 @@ GUIDELINES FOR GRADE LEVELS:
   * showNumberLine: true (visual support)
 
 - Grade 1 (gradeBand "1"):
-  * Numbers range from 1-100
+  * Default broad practice uses numbers from 1-100
+  * When the AUTHORITATIVE topic/objective/intent explicitly requires counting within 120, values may extend through 120; never exceed 120
   * Sequences with 2-3 blanks
   * Before/after with larger numbers
   * Order 4-6 cards
@@ -379,7 +532,7 @@ REQUIREMENTS:
 7. rangeMin and rangeMax should reflect the actual number range used in that challenge
 8. Use warm, encouraging instruction text appropriate for young children
 9. For gradeBand "K": do NOT include decade-fill challenges, keep numbers 1-20
-10. For gradeBand "1": include at least one decade-fill challenge, numbers up to 100
+10. For gradeBand "1": This render's resolved numeric window is ${resolvedNumberRange.min}-${resolvedNumberRange.max}. Default broad practice stays at or below 100; use 101-120 only when the AUTHORITATIVE scope explicitly requires it; never exceed 120. ${evalResolution?.allowedTypes.includes('decade-fill') ? 'Include decade-fill because the active eval-mode set allows it.' : evalResolution ? 'Do NOT introduce decade-fill or any other challenge type outside the active eval-mode set.' : 'In a genuinely mixed session, include at least one decade-fill challenge.'}
 11. Set gradeBand to "${gradeBand}"
 12. Set showNumberLine based on grade level guidance above
 13. Set showDotArrays based on grade level guidance above
@@ -387,7 +540,14 @@ REQUIREMENTS:
 Return the complete number sequencer configuration.
 `;
 
-  logEvalModeResolution('NumberSequencer', config?.targetEvalMode, evalConstraint);
+  if (evalResolution) {
+    console.log(
+      `[NumberSequencer] evalMode: "${config?.targetEvalMode}" → schema enum: `
+      + `[${evalResolution.allowedTypes.join(', ')}]`,
+    );
+  } else {
+    console.log('[NumberSequencer] No targetEvalMode — full schema, mixed difficulty');
+  }
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
@@ -404,10 +564,9 @@ Return the complete number sequencer configuration.
     throw new Error('No valid number sequencer data returned from Gemini API');
   }
 
-  // Validation: ensure gradeBand is valid
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
-    data.gradeBand = gradeBand;
-  }
+  // The resolved manifest/curriculum band is authoritative; never trust Gemini to
+  // restamp it (especially when the canonical objective grade is available).
+  data.gradeBand = gradeBand;
 
   // Validation: ensure booleans have defaults
   if (typeof data.showNumberLine !== 'boolean') {
@@ -420,8 +579,9 @@ Return the complete number sequencer configuration.
   // Validate challenge types (safety net — schema enum handles the eval mode case)
   const validTypes = ['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill'];
 
-  data.challenges = (data.challenges || []).filter(
-    (c: { type: string }) => validTypes.includes(c.type)
+  data.challenges = (data.challenges || []).filter((c: { type: string }) =>
+    validTypes.includes(c.type)
+      && (!evalResolution || evalResolution.allowedTypes.includes(c.type))
   );
 
   // Per-challenge validation
@@ -437,7 +597,7 @@ Return the complete number sequencer configuration.
     }
 
     // Validate range bounds
-    const maxForGrade = data.gradeBand === 'K' ? 20 : 100;
+    const maxForGrade = resolvedNumberRange.max;
     if (!challenge.rangeMin || challenge.rangeMin < 0) {
       challenge.rangeMin = 1;
     }
@@ -511,18 +671,21 @@ Return the complete number sequencer configuration.
     }
   }
 
+  const beforeScopeFilter = data.challenges.length;
+  data.challenges = (data.challenges as NumberSequencerChallenge[])
+    .filter((challenge) => challengeFitsRange(challenge, resolvedNumberRange));
+  if (data.challenges.length < beforeScopeFilter) {
+    console.warn(
+      `[NumberSequencer] Rejected ${beforeScopeFilter - data.challenges.length} challenge(s) outside `
+      + `resolved range ${resolvedNumberRange.min}-${resolvedNumberRange.max}`,
+    );
+  }
+
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'fill-missing';
-    const fallbacks: Record<string, { type: string; instruction: string; sequence: (number | null)[]; correctAnswers: number[]; rangeMin: number; rangeMax: number; startNumber?: number; direction?: string }> = {
-      'count-from': { type: 'count-from', instruction: 'Count forward from 3!', sequence: [], correctAnswers: [4, 5, 6, 7], rangeMin: 3, rangeMax: 7, startNumber: 3, direction: 'forward' },
-      'before-after': { type: 'before-after', instruction: 'What number comes after 5?', sequence: [5, null], correctAnswers: [6], rangeMin: 5, rangeMax: 6 },
-      'order-cards': { type: 'order-cards', instruction: 'Put these numbers in order!', sequence: [4, 1, 3, 2], correctAnswers: [1, 2, 3, 4], rangeMin: 1, rangeMax: 4 },
-      'fill-missing': { type: 'fill-missing', instruction: 'Can you find the missing number?', sequence: [1, 2, null, 4, 5], correctAnswers: [3], rangeMin: 1, rangeMax: 5 },
-      'decade-fill': { type: 'decade-fill', instruction: 'Fill in the missing decade numbers!', sequence: [10, null, 30, null, 50], correctAnswers: [20, 40], rangeMin: 10, rangeMax: 50 },
-    };
+    const fallbackType = (evalResolution?.allowedTypes[0] ?? 'fill-missing') as ChallengeType;
     console.log(`[NumberSequencer] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [{ id: 'seq1', ...fallbacks[fallbackType] ?? fallbacks['fill-missing'] }];
+    data.challenges = [buildFallbackChallenge(fallbackType, resolvedNumberRange)];
   }
 
   // ── Apply the support-tier structure deterministically (code owns the SUPPORT
@@ -642,14 +805,60 @@ Return the complete number sequencer configuration.
     );
   }
 
+  // Support reshaping can extend an established arithmetic run. Re-apply the
+  // structured ceiling afterward so harder never means larger/out-of-scope.
+  const beforeFinalScopeFilter = data.challenges.length;
+  data.challenges = (data.challenges as NumberSequencerChallenge[])
+    .filter((challenge) => challengeFitsRange(challenge, resolvedNumberRange));
+  if (data.challenges.length < beforeFinalScopeFilter) {
+    console.warn(
+      `[NumberSequencer] Rejected ${beforeFinalScopeFilter - data.challenges.length} post-tier challenge(s) `
+      + `outside resolved range ${resolvedNumberRange.min}-${resolvedNumberRange.max}`,
+    );
+  }
+  if (data.challenges.length === 0) {
+    const fallbackType = (evalResolution?.allowedTypes[0] ?? 'fill-missing') as ChallengeType;
+    data.challenges = [buildFallbackChallenge(fallbackType, resolvedNumberRange)];
+  }
+
+  // Filtering must not turn a mastery session into a one-card demo. Add distinct,
+  // deterministic, in-range cards until the oracle's three-challenge floor holds.
+  const minimumChallengeCount = Math.min(3, challengeCount);
+  const fallbackType = (evalResolution?.allowedTypes[0] ?? 'fill-missing') as ChallengeType;
+  const signatures = new Set(
+    (data.challenges as NumberSequencerChallenge[]).map((challenge) =>
+      `${challenge.type}|${challenge.sequence.join(',')}|${challenge.correctAnswers.join(',')}`,
+    ),
+  );
+  for (let ordinal = 0; data.challenges.length < minimumChallengeCount && ordinal < 20; ordinal++) {
+    const candidate = buildFallbackChallenge(fallbackType, resolvedNumberRange, ordinal);
+    const signature = `${candidate.type}|${candidate.sequence.join(',')}|${candidate.correctAnswers.join(',')}`;
+    if (signatures.has(signature)) continue;
+    signatures.add(signature);
+    data.challenges.push(candidate);
+  }
+
+  // Derive the render/input window from the values the child actually sees or
+  // produces. This keeps 101-120 work local and reachable instead of masking it
+  // behind the old rangeMax=100 clamp. It also synchronizes the optional number
+  // line and numeric input bounds with the challenge's answer source (G4).
+  for (const challenge of data.challenges as Array<{
+    sequence: (number | null)[];
+    correctAnswers: number[];
+    startNumber?: number;
+    rangeMin: number;
+    rangeMax: number;
+  }>) {
+    const values = challengeValues(challenge);
+    if (values.length > 0) {
+      challenge.rangeMin = Math.min(...values);
+      challenge.rangeMax = Math.max(...values);
+    }
+  }
+
   // Final summary log
   const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
   console.log(`[NumberSequencer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
-
-  // Apply explicit config overrides
-  if (config?.gradeBand !== undefined) {
-    data.gradeBand = config.gradeBand;
-  }
 
   return data;
 };

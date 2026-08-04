@@ -54,7 +54,9 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    unreachable); an order-cards key must be a permutation of the pool.
  *  - scope             : every value the student reads OR produces (visible terms +
  *    all correctAnswers) honors the objective ceiling. Ceiling = ctx.scopeMax ??
- *    topic ceiling ?? the gradeBand intrinsic (K→20, 1→100 — the generator's own clamp).
+ *    topic ceiling ?? the gradeBand intrinsic (K→20, 1→120 capability ceiling).
+ *    The rendered/input window must equal the actual min/max values so every answer
+ *    is reachable without drawing the whole grade span (reader-fit 14h contract R4).
  *  - clustering        : answer sets spread across challenges (no "every card has the
  *    same answers"), and no exact-duplicate card (same type + sequence + answers).
  *  - schema            : sequence non-trivial (≥2 terms and ≥1 blank for null-fill;
@@ -72,9 +74,10 @@ const NULL_FILL_TYPES = new Set(['fill-missing', 'before-after', 'decade-fill'])
 const DIRECTIONS = new Set(['forward', 'backward']);
 
 // Intrinsic value ceiling when neither the harness nor the topic names one — the
-// generator's own per-band clamp (gemini-number-sequencer.ts:440).
-const INTRINSIC_BY_BAND: Record<string, number> = { K: 20, '1': 100 };
-const DEFAULT_INTRINSIC = 100;
+// generator's own per-band capability ceiling. Grade-1 broad practice still defaults
+// to ≤100; authoritative scope may extend the primitive through 120.
+const INTRINSIC_BY_BAND: Record<string, number> = { K: 20, '1': 120 };
+const DEFAULT_INTRINSIC = 120;
 
 function isInt(v: unknown): v is number {
   return Number.isInteger(v);
@@ -156,10 +159,22 @@ export const numberSequencerOracle: ContentOracle = {
 
       // ── scope: every visible term + every answer honors the ceiling ──
       const visibleVals = sequence.filter((v): v is number => typeof v === 'number');
-      const allVals = [...visibleVals, ...ans];
+      const startValue = isInt(c.startNumber) ? [c.startNumber as number] : [];
+      const allVals = [...visibleVals, ...ans, ...startValue];
       const over = allVals.find((v) => v > ceiling);
       if (over !== undefined) {
         violations.push({ check: 'scope', where: id, detail: `value ${over} exceeds objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+      }
+      if (allVals.length > 0) {
+        const expectedMin = Math.min(...allVals);
+        const expectedMax = Math.max(...allVals);
+        if (c.rangeMin !== expectedMin || c.rangeMax !== expectedMax) {
+          violations.push({
+            check: 'schema',
+            where: id,
+            detail: `render range [${String(c.rangeMin)},${String(c.rangeMax)}] must equal actual value window [${expectedMin},${expectedMax}] — otherwise inputs/number-line/grid can hide or misframe the answer`,
+          });
+        }
       }
 
       // ── type-specific answer-key-desync ──
