@@ -63,6 +63,17 @@ export interface PlanetaryExplorerData {
   animateTransitions?: boolean;
   gradeLevel?: string;
 
+  /**
+   * Within-mode support tier stamped by the generator from config.difficulty.
+   * Scaffold WITHDRAWAL only — never changes planets, questions, options, or
+   * correctIndex. Absent ⇒ full-support legacy render (easy = legacy).
+   *   L1: 'hard' hides canvas planet-name labels ONLY while in the quiz view.
+   *   L2: 'hard' hides comparisonToEarth captions (raw value + unit remain).
+   *   L3: 'hard' skips the first-miss tutor hint (silent retry; the 2-attempt
+   *       allowance itself is unchanged).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props
   instanceId?: string;
   skillId?: string;
@@ -128,6 +139,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     showOrbits = true,
     showScale = true,
     gradeLevel,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -275,7 +287,10 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     planetsRemaining: planets.slice(currentPlanetIndex + 1).map((p) => p.planetId),
     questionText: viewMode === 'quiz' ? currentQuizQuestion?.question : currentFlatQuestion?.question.question,
     gradeLevel,
-  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode]);
+    // Support tier rides to the live tutor so its reveal policy can match the
+    // on-screen scaffold level. Omitted entirely when no tier is present.
+    ...(supportTier ? { supportTier } : {}),
+  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'planetary-explorer',
@@ -339,11 +354,14 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       });
       sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}" for "${q.question}". Give a clear explanation.`, { silent: true });
     } else {
-      // First incorrect attempt — hint
-      sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}". Give a hint without revealing the answer.`, { silent: true });
+      // First incorrect attempt — hint (L3: withdrawn at the hard tier — silent
+      // retry; the 2-attempt allowance itself is unchanged)
+      if (supportTier !== 'hard') {
+        sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}". Give a hint without revealing the answer.`, { silent: true });
+      }
       setSelectedOption(null);
     }
-  }, [selectedOption, currentFlatQuestion, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [selectedOption, currentFlatQuestion, currentAttempts, incrementAttempts, recordResult, sendText, supportTier]);
 
   const handleNextQuestion = useCallback(() => {
     setSelectedOption(null);
@@ -423,10 +441,14 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
       setQuizResults((prev) => [...prev, { correct: false, attempts: newAttempts }]);
       sendText(`[QUIZ_INCORRECT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but correct is "${currentQuizQuestion.options[currentQuizQuestion.correctIndex]}". Explain why.`, { silent: true });
     } else {
-      sendText(`[QUIZ_HINT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but that's not right. Give a hint about the correct planet without naming it.`, { silent: true });
+      // L3: first-miss hint withdrawn at the hard tier — silent retry; the
+      // 2-attempt allowance itself is unchanged
+      if (supportTier !== 'hard') {
+        sendText(`[QUIZ_HINT] Student chose "${currentQuizQuestion.options[quizSelectedOption]}" but that's not right. Give a hint about the correct planet without naming it.`, { silent: true });
+      }
       setQuizSelectedOption(null);
     }
-  }, [quizSelectedOption, currentQuizQuestion, quizAttempts, sendText]);
+  }, [quizSelectedOption, currentQuizQuestion, quizAttempts, sendText, supportTier]);
 
   const handleQuizNext = useCallback(() => {
     const nextIndex = quizIndex + 1;
@@ -513,6 +535,11 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     const visitedPlanetIds = new Set(planets.slice(0, currentPlanetIndex).map((p) => p.planetId.toLowerCase()));
     const journeyPlanetIds = new Set(planets.map((p) => p.planetId.toLowerCase()));
     const allVisited = viewMode === 'quiz' || viewMode === 'summary';
+    // L1 (support tier): at 'hard', planet-name labels are withdrawn ONLY while
+    // the identification quiz is on screen — the labeled diagram would answer
+    // distance/order identify questions. Labels remain a legitimate scaffold in
+    // every other view (overview, planet-info, questions, transition, summary).
+    const hideQuizLabels = supportTier === 'hard' && viewMode === 'quiz';
 
     return (
       <div className="relative w-full h-48 md:h-64 overflow-hidden rounded-xl bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border border-white/5">
@@ -573,7 +600,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                 }}
               />
               {/* Label */}
-              {isInJourney && (
+              {isInJourney && !hideQuizLabels && (
                 <span
                   className={`absolute text-[10px] -translate-x-1/2 transition-opacity ${
                     isActive ? 'text-white font-medium' : 'text-slate-500'
@@ -715,7 +742,10 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                     <div className="text-slate-100 text-sm font-medium">
                       {stat.value}{stat.unit ? ` ${stat.unit}` : ''}
                     </div>
-                    {stat.comparisonToEarth && (
+                    {/* L2 (support tier): at 'hard' the Earth-comparison caption is
+                        withdrawn — raw value + unit only; the student does the
+                        scale reasoning. Values themselves are never changed. */}
+                    {stat.comparisonToEarth && supportTier !== 'hard' && (
                       <div className="text-slate-500 text-[10px] mt-0.5">{stat.comparisonToEarth}</div>
                     )}
                   </button>
@@ -908,7 +938,6 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
             {/* Options (planet names) */}
             <div className="space-y-2">
               {q.options.map((option, i) => {
-                const planetVis = getPlanetVisual(option.toLowerCase());
                 let optionStyle = 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-200';
                 if (quizShowFeedback) {
                   if (i === q.correctIndex) {
@@ -929,10 +958,11 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                     disabled={quizShowFeedback}
                     className={`w-full text-left p-3 rounded-lg border transition-all flex items-center gap-2 ${optionStyle}`}
                   >
-                    <div
-                      className="w-4 h-4 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: planetVis.color }}
-                    />
+                    {/* Neutral marker at EVERY tier — a planet's signature color
+                        here answers color-descriptive identify questions ("the
+                        red planet") straight from the dot (rule-#1 leak). The
+                        planet-info/stats views keep their colors untouched. */}
+                    <div className="w-4 h-4 rounded-full flex-shrink-0 bg-slate-600" />
                     <span className="text-slate-500 mr-1 text-sm">{String.fromCharCode(65 + i)}.</span>
                     {option}
                   </button>

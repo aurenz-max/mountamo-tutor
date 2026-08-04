@@ -46,6 +46,15 @@ export interface ParagraphArchitectData {
     concludingSentence: string;
   };
 
+  /**
+   * Within-mode support tier stamped by the generator from config.difficulty.
+   * Scaffolding-withdrawal axis ONLY — the frames, linking words, and model
+   * paragraph are identical at every tier; only how much of that scaffolding is
+   * SHOWN changes (model role labels / order, frame selectors, linking-word
+   * bank). Absent ⇒ full-support legacy render, byte-identical to pre-tier.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
   skillId?: string;
@@ -73,6 +82,40 @@ type LearningPhase = 'explore' | 'practice' | 'apply';
 interface SentencePart {
   text: string;
   role: 'topic' | 'detail' | 'conclusion';
+}
+
+// =============================================================================
+// Deterministic shuffle (hard-tier Explore model order)
+// =============================================================================
+// The Explore checker is string equality vs modelParagraph.topicSentence, so the
+// order of modelParts is free to vary — shuffling it removes the positional leak
+// (topic sentence always rendered first). Seeded from the paragraph text itself
+// so the order is stable across re-renders and test runs.
+
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return h >>> 0;
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const out = [...arr];
+  let s = seed || 1;
+  const rand = () => {
+    // mulberry32 — small deterministic PRNG
+    s |= 0;
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 // =============================================================================
@@ -245,6 +288,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     concludingSentenceFrames = [],
     linkingWords = [],
     modelParagraph,
+    supportTier,
     // Evaluation props
     instanceId,
     skillId,
@@ -253,6 +297,25 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     exhibitId,
     onEvaluationSubmit,
   } = data;
+
+  // -------------------------------------------------------------------------
+  // Within-mode support tier — scaffolding withdrawal render gates
+  // -------------------------------------------------------------------------
+  // Every flag defaults to FULL-SUPPORT legacy when the field is absent; 'easy'
+  // renders byte-identical to legacy. Content (frames, linking words, model
+  // paragraph) never changes — only whether the scaffold is shown.
+
+  // L1 — Explore model: labeled hamburger (easy) → plain unlabeled list
+  //      (medium) → unlabeled + shuffled order (hard).
+  const showModelLabels = supportTier !== 'medium' && supportTier !== 'hard';
+  const shuffleModelParts = supportTier === 'hard';
+  // L2 — Practice sentence-frame selectors: shown (easy/medium) → hidden (hard;
+  //      the student types, and the completeness checker passes on typed text).
+  const showSentenceFrames = supportTier !== 'hard';
+  // L3 — Linking-word chip bank: both phases (easy) → Practice only (medium) →
+  //      none (hard).
+  const showPracticeLinkingBank = supportTier !== 'hard';
+  const showApplyLinkingBank = supportTier !== 'medium' && supportTier !== 'hard';
 
   // -------------------------------------------------------------------------
   // State
@@ -323,6 +386,10 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       topic,
       gradeLevel,
       currentPhase,
+      // Within-mode support tier — drives the tutor's SUPPORT TIER reveal
+      // policy (catalog aiDirectives). Absent ⇒ key omitted (the template
+      // renders "(not set)" and the tutor behaves as at easy).
+      ...(supportTier ? { supportTier } : {}),
       exploreCompleted: exploreCorrect,
       practiceSubmitted,
       detailCount: currentPhase === 'apply'
@@ -333,7 +400,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
         : practiceLinkingWordsUsed.length,
     }),
     [
-      paragraphType, topic, gradeLevel, currentPhase,
+      paragraphType, topic, gradeLevel, currentPhase, supportTier,
       exploreCorrect, practiceSubmitted,
       applyDetails, practiceDetails,
       applyLinkingWordsUsed, practiceLinkingWordsUsed,
@@ -361,8 +428,21 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       })),
       { text: modelParagraph.concludingSentence, role: 'conclusion' },
     ];
-    return parts;
-  }, [modelParagraph]);
+    if (!shuffleModelParts) return parts; // legacy order (easy/medium/absent)
+    // Hard tier: deterministic shuffle so the topic sentence's POSITION cannot
+    // give the Explore answer away (legacy order always listed it first). The
+    // checker compares sentence TEXT, not index, so the shuffle is check-safe.
+    const seed = hashString(
+      modelParagraph.topicSentence + '|' + modelParagraph.concludingSentence,
+    );
+    const shuffled = seededShuffle(parts, seed);
+    if (shuffled.length > 1 && shuffled[0].role === 'topic') {
+      // Never leave the topic sentence in the legacy first slot at hard.
+      const j = 1 + (seed % (shuffled.length - 1));
+      [shuffled[0], shuffled[j]] = [shuffled[j], shuffled[0]];
+    }
+    return shuffled;
+  }, [modelParagraph, shuffleModelParts]);
 
   // -------------------------------------------------------------------------
   // Phase 1: Explore handlers
@@ -385,8 +465,11 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
       } else {
         SoundManager.playIncorrect();
         setExploreCorrect(false);
+        // F2: position-free wording — never say WHERE the topic sentence sits
+        // (legacy text said "is the first sentence", which both leaked the
+        // answer position and becomes false under the hard-tier shuffle).
         setFeedback(
-          'Not quite. The topic sentence is the first sentence that tells the main idea. Try again!'
+          "Not quite. It's the sentence that tells the main idea of the whole paragraph. Try again!"
         );
         sendText(
           `[EXPLORE_INCORRECT] The student chose "${sentence}" but it is not the topic sentence. `
@@ -574,9 +657,31 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
         detailSentenceFrames.length +
         concludingSentenceFrames.length;
 
+      // F1 — typed linking-word credit: the chip-click arrays only capture
+      // bank inserts, so when the bank is withdrawn (medium/hard tiers) the
+      // 15-pt linking-word score component would be unearnable. Scan the
+      // SUBMITTED sentences for this activity's linking words (case-
+      // insensitive, word-boundary — "sofa" never credits "so") and credit
+      // the union of chip-clicked + typed. Ships at ALL tiers: it is a
+      // correctness fix, not a lever.
+      const submittedText = [
+        applyTopicSentence,
+        ...filledDetails,
+        applyConclusionSentence,
+      ]
+        .join(' ')
+        .toLowerCase();
+      const typedLinkingWords = linkingWords.filter((word) => {
+        const w = word.trim().toLowerCase();
+        if (!w) return false;
+        const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`\\b${escaped}\\b`).test(submittedText);
+      });
+
       const totalLinkingWords = [
         ...practiceLinkingWordsUsed,
         ...applyLinkingWordsUsed,
+        ...typedLinkingWords,
       ];
       const uniqueLinkingWords = Array.from(new Set(totalLinkingWords));
 
@@ -627,6 +732,7 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
     applyConclusionSentence,
     applyLinkingWordsUsed,
     practiceLinkingWordsUsed,
+    linkingWords,
     practiceFramesUsed,
     exploreCorrect,
     practiceSubmitted,
@@ -744,34 +850,61 @@ const ParagraphArchitect: React.FC<ParagraphArchitectProps> = ({
         <TabsContent value="explore" className="space-y-4 mt-0">
           {modelParagraph ? (
             <>
-              {/* Hamburger model view */}
-              <LuminaCard>
-                <LuminaCardHeader className="pb-2 pt-3 px-4">
-                  <LuminaCardTitle className="text-sm text-slate-400 font-medium">
-                    Model Paragraph -- The Hamburger
-                  </LuminaCardTitle>
-                </LuminaCardHeader>
-                <LuminaCardContent className="px-4 pb-4 space-y-2">
-                  {/* Hamburger visualization */}
-                  <div className="space-y-1.5">
-                    <HamburgerLayer role="topic" label="Top Bun (Topic)">
-                      {modelParagraph.topicSentence}
-                    </HamburgerLayer>
-                    {modelParagraph.detailSentences.map((sentence, idx) => (
-                      <HamburgerLayer
-                        key={idx}
-                        role="detail"
-                        label={`Filling ${idx + 1} (Detail)`}
-                      >
-                        {sentence}
+              {/* Hamburger model view.
+                  L1 tier gate: easy/absent = labeled hamburger (legacy; the
+                  role labels are the scaffold). medium/hard = plain UNLABELED
+                  list — no role labels and no bun/filling color-coding (the
+                  amber/emerald palette IS a role label). At hard, modelParts is
+                  additionally shuffled so position can't reveal the topic. */}
+              {showModelLabels ? (
+                <LuminaCard>
+                  <LuminaCardHeader className="pb-2 pt-3 px-4">
+                    <LuminaCardTitle className="text-sm text-slate-400 font-medium">
+                      Model Paragraph -- The Hamburger
+                    </LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent className="px-4 pb-4 space-y-2">
+                    {/* Hamburger visualization */}
+                    <div className="space-y-1.5">
+                      <HamburgerLayer role="topic" label="Top Bun (Topic)">
+                        {modelParagraph.topicSentence}
                       </HamburgerLayer>
-                    ))}
-                    <HamburgerLayer role="conclusion" label="Bottom Bun (Conclusion)">
-                      {modelParagraph.concludingSentence}
-                    </HamburgerLayer>
-                  </div>
-                </LuminaCardContent>
-              </LuminaCard>
+                      {modelParagraph.detailSentences.map((sentence, idx) => (
+                        <HamburgerLayer
+                          key={idx}
+                          role="detail"
+                          label={`Filling ${idx + 1} (Detail)`}
+                        >
+                          {sentence}
+                        </HamburgerLayer>
+                      ))}
+                      <HamburgerLayer role="conclusion" label="Bottom Bun (Conclusion)">
+                        {modelParagraph.concludingSentence}
+                      </HamburgerLayer>
+                    </div>
+                  </LuminaCardContent>
+                </LuminaCard>
+              ) : (
+                <LuminaCard>
+                  <LuminaCardHeader className="pb-2 pt-3 px-4">
+                    <LuminaCardTitle className="text-sm text-slate-400 font-medium">
+                      Model Paragraph
+                    </LuminaCardTitle>
+                  </LuminaCardHeader>
+                  <LuminaCardContent className="px-4 pb-4">
+                    <div className="space-y-1.5">
+                      {modelParts.map((part, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-sm leading-relaxed text-slate-200"
+                        >
+                          {part.text}
+                        </div>
+                      ))}
+                    </div>
+                  </LuminaCardContent>
+                </LuminaCard>
+              )}
 
               {/* Identification challenge */}
               <LuminaCard>

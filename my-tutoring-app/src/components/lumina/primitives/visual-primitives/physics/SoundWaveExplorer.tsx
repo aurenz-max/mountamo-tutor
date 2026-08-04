@@ -54,6 +54,14 @@ export interface SoundWaveExplorerData {
   objects: VibrationObject[];
   challenges: SoundChallenge[];
 
+  /**
+   * Within-mode support tier stamped by the generator (config.difficulty).
+   * Withdrawal is text-overlay + hint-timing ONLY — tap-to-vibrate, the Web Audio
+   * tone, and the observe-only slider unlock are the phenomenon/task identity and
+   * are NEVER tier-gated. Absent → full-support legacy rendering (byte-identical).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -408,6 +416,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
     gradeLevel,
     objects,
     challenges,
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -435,7 +444,11 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
     theme,
     gradeLevel,
     challengeCount: challenges.length,
-  }), [theme, gradeLevel, challenges.length]);
+    // Thread the support tier to the live tutor — the catalog reveal policy keys
+    // off it (easy may name the produced pitch/volume category; medium/hard must
+    // not for graded items). Omitted entirely when absent.
+    ...(supportTier ? { supportTier } : {}),
+  }), [theme, gradeLevel, challenges.length, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'sound-wave-explorer',
@@ -534,6 +547,36 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
   const pitchLabel = speedLevel <= 2 ? 'Low' : speedLevel <= 3 ? 'Medium' : 'High';
   const volumeLabel = forceLevel <= 2 ? 'Quiet' : forceLevel <= 3 ? 'Medium' : 'Loud';
 
+  // ── Support-tier render gates (text/overlay withdrawal ONLY) ─────
+  // LIVING-SIM RULE: tap-to-vibrate, the Web Audio tone, and the observe-only
+  // slider unlock are the phenomenon/task identity — never gated by tier.
+  // Absent tier (or 'easy') = byte-identical legacy full support.
+  //
+  // L1 — live "Pitch/Volume" readout + "No sound in vacuum!": at medium/hard they
+  // show ONLY during observe challenges (and post-completion free play, where no
+  // graded item remains); in graded predict/classify/apply items the wave shape
+  // and the real audio remain the perceptual channel.
+  const waveReadoutVisible =
+    supportTier == null ||
+    supportTier === 'easy' ||
+    currentChallenge?.type === 'observe' ||
+    allChallengesComplete;
+  // L2 — slider mapping labels: medium drops the live Quiet/Loud/High/Low word,
+  // hard also drops the "(Volume)" / "(Pitch)" mapping parentheticals.
+  const forceSliderLabel = supportTier === 'hard' ? 'Force' : 'Force (Volume)';
+  const speedSliderLabel = supportTier === 'hard' ? 'Speed' : 'Speed (Pitch)';
+  const showLiveCategoryWord = supportTier == null || supportTier === 'easy';
+  // L3 — amplitude guide tick-marks: hidden at hard (pure overlay).
+  const showAmplitudeGuide = supportTier !== 'hard';
+
+  // Wave-display overlay text. The idle "Tap the object to see the wave" prompt
+  // is never withdrawn; only the answer-bearing readout / vacuum fact is gated.
+  const waveOverlayText: string | null = medium === 'vacuum'
+    ? (waveReadoutVisible ? 'No sound in vacuum!' : (isVibrating ? null : 'Tap the object to see the wave'))
+    : isVibrating
+      ? (waveReadoutVisible ? `Pitch: ${pitchLabel}  •  Volume: ${volumeLabel}` : null)
+      : 'Tap the object to see the wave';
+
   const wavePath = useMemo(
     () => generateWavePath(isVibrating ? amplitude : 0, wavelength, medium, distance),
     [isVibrating, amplitude, wavelength, medium, distance],
@@ -620,9 +663,20 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
       );
     } else {
       SoundManager.playIncorrect();
+      // L4 — hint escalation by support tier: medium holds the authored hint back
+      // until the 2nd wrong attempt; hard never surfaces it. The 3rd-attempt
+      // answer reveal below is KEPT at every tier — it closes the challenge for
+      // scoring.
+      const attemptNumber = currentAttempts + 1; // this wrong attempt, 1-based
+      const authoredHint = currentChallenge.hint ?? 'Not quite — try tapping the object and listening carefully!';
+      const genericRetry = 'Not quite — try again.';
       setFeedback({
         correct: false,
-        message: currentChallenge.hint ?? 'Not quite — try tapping the object and listening carefully!',
+        message: supportTier === 'hard'
+          ? genericRetry
+          : supportTier === 'medium' && attemptNumber < 2
+            ? genericRetry
+            : authoredHint,
       });
 
       if (currentAttempts >= 2) {
@@ -639,7 +693,7 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedMcAnswer, currentAttempts, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, selectedMcAnswer, currentAttempts, supportTier, incrementAttempts, recordResult, sendText]);
 
   // ── Advance to next challenge ────────────────────────────────────
   const handleNextChallenge = useCallback(() => {
@@ -710,8 +764,8 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
                 strokeDasharray="4 6"
               />
 
-              {/* Amplitude guide */}
-              {isVibrating && medium !== 'vacuum' && (
+              {/* Amplitude guide — L3: withdrawn at the hard tier (pure overlay) */}
+              {showAmplitudeGuide && isVibrating && medium !== 'vacuum' && (
                 <>
                   <line x1={WAVE_START_X - 15} y1={WAVE_Y - amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} x2={WAVE_START_X - 5} y2={WAVE_Y - amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
                   <line x1={WAVE_START_X - 15} y1={WAVE_Y + amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} x2={WAVE_START_X - 5} y2={WAVE_Y + amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
@@ -728,15 +782,14 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
                 opacity={isVibrating ? 1 : 0.3}
               />
 
-              {/* Labels */}
-              <text x={SVG_WIDTH / 2} y={20} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={12} fontFamily="sans-serif">
-                {medium === 'vacuum'
-                  ? 'No sound in vacuum!'
-                  : isVibrating
-                    ? `Pitch: ${pitchLabel}  •  Volume: ${volumeLabel}`
-                    : 'Tap the object to see the wave'
-                }
-              </text>
+              {/* Labels — L1: the live pitch/volume readout and the vacuum fact
+                  withdraw outside observe challenges at medium/hard; the idle
+                  "Tap the object to see the wave" prompt is never withdrawn. */}
+              {waveOverlayText !== null && (
+                <text x={SVG_WIDTH / 2} y={20} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={12} fontFamily="sans-serif">
+                  {waveOverlayText}
+                </text>
+              )}
 
               {/* Medium label */}
               <text x={SVG_WIDTH - 50} y={SVG_HEIGHT - 10} textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize={11} fontFamily="sans-serif">
@@ -751,8 +804,9 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
           {/* Force slider (volume) */}
           <div className="space-y-1">
             <label className="text-slate-400 text-xs font-medium flex justify-between">
-              <span>Force (Volume)</span>
-              <span className="text-slate-500">{volumeLabel}</span>
+              {/* L2: hard drops the (Volume) mapping; medium+ drops the live word */}
+              <span>{forceSliderLabel}</span>
+              {showLiveCategoryWord && <span className="text-slate-500">{volumeLabel}</span>}
             </label>
             <Slider
               value={[forceLevel]}
@@ -768,8 +822,9 @@ export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExp
           {/* Speed slider (pitch) */}
           <div className="space-y-1">
             <label className="text-slate-400 text-xs font-medium flex justify-between">
-              <span>Speed (Pitch)</span>
-              <span className="text-slate-500">{pitchLabel}</span>
+              {/* L2: hard drops the (Pitch) mapping; medium+ drops the live word */}
+              <span>{speedSliderLabel}</span>
+              {showLiveCategoryWord && <span className="text-slate-500">{pitchLabel}</span>}
             </label>
             <Slider
               value={[speedLevel]}

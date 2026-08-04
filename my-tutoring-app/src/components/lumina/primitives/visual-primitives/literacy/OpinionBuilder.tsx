@@ -42,6 +42,12 @@ export interface OpinionBuilderData {
     counterArgumentStarters?: string[];
   };
 
+  /** Within-mode support tier stamped by the generator from config.difficulty.
+   *  DISPLAY gates only (starter chips, linking palette, placeholders) — absent
+   *  → full-support legacy render, byte-identical. Never changes framework,
+   *  reasonCount, counterArgumentEnabled, or scoring. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props
   instanceId?: string;
   skillId?: string;
@@ -73,15 +79,77 @@ const OREO_COLORS: Record<string, string> = {
   conclusion: 'bg-amber-900/30 border-amber-700/40 text-amber-200',
 };
 
+// ---------------------------------------------------------------------------
+// Support-tier display levers (data.supportTier, stamped by the generator from
+// config.difficulty). All three levers are DISPLAY gates over generated content
+// — starters/words are shown or hidden, never rewritten — and every gate
+// defaults to the full-support legacy render when the field is absent.
+//   L1 starter chips:    easy = all phases (legacy) · medium = CLAIM phase only
+//                        (first-step support) · hard = no chips anywhere
+//   L2 linking palette:  easy = palette + live green usage highlight (legacy) ·
+//                        medium = palette shown, highlight off · hard = hidden
+//                        (typed linking words STILL score — countLinkingWords
+//                        scans the text, never the palette render)
+//   L3 placeholders:     easy = the exact legacy instructional strings (incl.
+//                        the counter worked frame) · medium = generic
+//                        non-modeling prompts · hard = neutral short prompts
+// framework / reasonCount / counterArgumentEnabled are task identity /
+// structural axes — never touched by tier.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+
+interface PlaceholderSet {
+  claim: (framework: 'oreo' | 'cer') => string;
+  reason: (framework: 'oreo' | 'cer') => string;
+  counter: string;
+  conclusion: string;
+}
+
+/** L3 — per-tier textarea placeholders (code-built UI strings, display-only).
+ *  `legacy` = the exact pre-tier literals, byte-identical (absent tier / easy). */
+const PLACEHOLDERS: Record<'legacy' | 'medium' | 'hard', PlaceholderSet> = {
+  legacy: {
+    claim: (fw) => `State your ${fw === 'oreo' ? 'opinion' : 'claim'}...`,
+    reason: (fw) => `${fw === 'oreo' ? 'Give a reason' : 'Provide evidence'}...`,
+    counter: 'Some people might say... However, I believe...',
+    conclusion: 'Restate your opinion/claim in a new way...',
+  },
+  medium: {
+    claim: () => 'Take a clear position on the prompt.',
+    reason: (fw) => (fw === 'oreo' ? 'Explain one reason for your opinion.' : 'Give one piece of evidence for your claim.'),
+    counter: 'Address the other side of the argument.',
+    conclusion: 'Bring your argument to a close.',
+  },
+  hard: {
+    claim: (fw) => (fw === 'oreo' ? 'Write your opinion.' : 'Write your claim.'),
+    reason: (fw) => (fw === 'oreo' ? 'Write your reason.' : 'Write your evidence.'),
+    counter: 'Write your counter-argument.',
+    conclusion: 'Write your conclusion.',
+  },
+};
+
 // ============================================================================
 // Component
 // ============================================================================
 
 const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
   const {
-    title, gradeLevel, framework, prompt, scaffold,
+    title, gradeLevel, framework, prompt, scaffold, supportTier,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
+
+  // Support-tier display gates — absent tier ⇒ every gate = full-support legacy.
+  const tier: SupportTier | null = supportTier ?? null;
+  /** L1 — starter chips: hard = none; medium = claim phase only; else all (legacy). */
+  const showStartersFor = (phase: 'claim' | 'reason' | 'counter' | 'conclusion'): boolean =>
+    tier === 'hard' ? false : tier === 'medium' ? phase === 'claim' : true;
+  /** L2 — linking-words palette visibility (hidden at hard only). */
+  const showLinkingPalette = tier !== 'hard';
+  /** L2 — live green usage highlight (easy/legacy only; off at medium). */
+  const highlightLinkingUsage = tier !== 'medium' && tier !== 'hard';
+  /** L3 — per-tier placeholder strings (legacy literals when tier absent/easy). */
+  const placeholders = PLACEHOLDERS[tier === 'medium' ? 'medium' : tier === 'hard' ? 'hard' : 'legacy'];
 
   const [currentPhase, setCurrentPhase] = useState<BuildPhase>('claim');
   const [claimText, setClaimText] = useState('');
@@ -206,12 +274,13 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
     </div>
   );
 
-  // Render linking words palette
+  // Render linking words palette (L2: live usage highlight gated off at medium;
+  // the whole palette is gated off at hard by the call sites).
   const renderLinkingWords = () => (
     <div className="flex flex-wrap gap-1 mt-2">
       <span className="text-xs text-slate-600 mr-1">Linking words:</span>
       {scaffold.linkingWords.map((w, i) => (
-        <span key={i} className={`text-xs px-1.5 py-0.5 rounded ${usedLinkingWords.has(w) ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 text-slate-500'}`}>
+        <span key={i} className={`text-xs px-1.5 py-0.5 rounded ${highlightLinkingUsage && usedLinkingWords.has(w) ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 text-slate-500'}`}>
           {w}
         </span>
       ))}
@@ -293,11 +362,11 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               <textarea
                 value={claimText}
                 onChange={e => setClaimText(e.target.value)}
-                placeholder={`State your ${framework === 'oreo' ? 'opinion' : 'claim'}...`}
+                placeholder={placeholders.claim(framework)}
                 rows={3}
                 className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
               />
-              {renderStarters(scaffold.claimStarters, 'claim')}
+              {showStartersFor('claim') && renderStarters(scaffold.claimStarters, 'claim')}
             </div>
             <div className="flex justify-end">
               <LuminaButton tone="primary" onClick={nextPhase} disabled={!claimText.trim()}>
@@ -320,14 +389,14 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
                     next[i] = e.target.value;
                     setReasonTexts(next);
                   }}
-                  placeholder={`${framework === 'oreo' ? 'Give a reason' : 'Provide evidence'}...`}
+                  placeholder={placeholders.reason(framework)}
                   rows={2}
                   className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
                 />
-                {renderStarters(scaffold.reasonStarters, 'reason', i)}
+                {showStartersFor('reason') && renderStarters(scaffold.reasonStarters, 'reason', i)}
               </div>
             ))}
-            {renderLinkingWords()}
+            {showLinkingPalette && renderLinkingWords()}
             <div className="flex justify-between">
               <LuminaButton onClick={prevPhase}>Back</LuminaButton>
               <LuminaButton tone="primary" onClick={nextPhase} disabled={!reasonTexts.some(r => r.trim())}>
@@ -345,11 +414,11 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               <textarea
                 value={counterText}
                 onChange={e => setCounterText(e.target.value)}
-                placeholder="Some people might say... However, I believe..."
+                placeholder={placeholders.counter}
                 rows={3}
                 className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
               />
-              {scaffold.counterArgumentStarters && renderStarters(scaffold.counterArgumentStarters, 'counter')}
+              {showStartersFor('counter') && scaffold.counterArgumentStarters && renderStarters(scaffold.counterArgumentStarters, 'counter')}
             </div>
             <div className="flex justify-between">
               <LuminaButton onClick={prevPhase}>Back</LuminaButton>
@@ -366,11 +435,11 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
               <textarea
                 value={conclusionText}
                 onChange={e => setConclusionText(e.target.value)}
-                placeholder="Restate your opinion/claim in a new way..."
+                placeholder={placeholders.conclusion}
                 rows={3}
                 className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-blue-500/40 resize-none"
               />
-              {renderStarters(scaffold.conclusionStarters, 'conclusion')}
+              {showStartersFor('conclusion') && renderStarters(scaffold.conclusionStarters, 'conclusion')}
             </div>
             <div className="flex justify-between">
               <LuminaButton onClick={prevPhase}>Back</LuminaButton>
@@ -383,7 +452,7 @@ const OpinionBuilder: React.FC<OpinionBuilderProps> = ({ data, className }) => {
         {currentPhase === 'review' && (
           <div className="space-y-4">
             {renderArgumentStack()}
-            {renderLinkingWords()}
+            {showLinkingPalette && renderLinkingWords()}
             {!hasSubmittedEvaluation ? (
               <div className="flex justify-between">
                 <LuminaButton onClick={prevPhase}>Edit</LuminaButton>

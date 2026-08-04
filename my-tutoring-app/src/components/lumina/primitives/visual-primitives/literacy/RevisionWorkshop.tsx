@@ -42,6 +42,15 @@ export interface RevisionWorkshopData {
   draft: string;                       // The full draft passage with weaknesses
   targets: RevisionTarget[];           // Specific revision targets in the draft
 
+  /**
+   * Within-mode support tier — scaffolding withdrawal ONLY, stamped in code by
+   * the generator from config.difficulty. Absent → full-support legacy render.
+   * easy = legacy; medium = suggestions behind a tap-to-reveal "Show hint";
+   * hard = suggestions hidden, plain (unhighlighted) read-phase draft, and the
+   * exact focus count omitted. Content is identical at every tier.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props
   instanceId?: string;
   skillId?: string;
@@ -97,20 +106,53 @@ const SKILL_HIGHLIGHT: Record<RevisionSkill, string> = {
 };
 
 // ============================================================================
+// Reorganize initial order (F1 fix)
+// ============================================================================
+// The generator requires targets in the CORRECT logical order, so an identity
+// initial state IS the answer key (the checker scores origIdx === pos).
+// Fisher-Yates shuffle, re-drawing while the result equals the identity
+// permutation — guaranteed not-solved at start for length >= 2. Applies at ALL
+// tiers: without it, submitting untouched scores 100%.
+const shuffledSentenceOrder = (length: number): number[] => {
+  const order = Array.from({ length }, (_, i) => i);
+  if (length < 2) return order;
+  do {
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+  } while (order.every((v, i) => v === i));
+  return order;
+};
+
+// ============================================================================
 // Component
 // ============================================================================
 
 const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) => {
   const {
-    title, gradeLevel, revisionSkill, draft, targets,
+    title, gradeLevel, revisionSkill, draft, targets, supportTier,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
 
   const [currentPhase, setCurrentPhase] = useState<WorkshopPhase>('read');
   const [revisions, setRevisions] = useState<Record<string, string>>({}); // targetId -> student revision
   const [beforeAfterCompared, setBeforeAfterCompared] = useState(false);
-  // Reorganize mode: track sentence order as array of target indices
-  const [sentenceOrder, setSentenceOrder] = useState<number[]>(() => targets.map((_, i) => i));
+  // Reorganize mode: track sentence order as array of target indices.
+  // F1: initialized SHUFFLED (never identity) — identity is the answer key.
+  const [sentenceOrder, setSentenceOrder] = useState<number[]>(() => shuffledSentenceOrder(targets.length));
+
+  // ── Support-tier render gates (absent tier → full-support legacy) ──
+  // L1: per-target suggestion — easy/absent always visible, medium behind a
+  //     tap-to-reveal "Show hint" toggle, hard hidden entirely.
+  const showSuggestions = supportTier !== 'hard';
+  const suggestionsTapToReveal = supportTier === 'medium';
+  const [revealedHints, setRevealedHints] = useState<Set<number>>(new Set());
+  // L2: read-phase dashed skill-colored highlights — withdrawn at hard (plain
+  //     draft; the student locates the weak spots).
+  const showDraftHighlights = supportTier !== 'hard';
+  // L3: exact focus count ("N areas to improve") — omitted at hard.
+  const showFocusCount = supportTier !== 'hard';
 
   const skillAccent = SKILL_ACCENTS[revisionSkill];
 
@@ -303,16 +345,23 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
             <p className="text-xs text-slate-500">
               {isReorganize
                 ? 'Read this passage — the sentences are out of order. Your job is to put them in the right order:'
-                : 'Read this draft and notice the highlighted areas that need revision:'}
+                : showDraftHighlights
+                  ? 'Read this draft and notice the highlighted areas that need revision:'
+                  : 'Read this draft carefully:'}
             </p>
-            {/* Bespoke reading surface — the draft text body with highlightable spans. */}
+            {/* Bespoke reading surface — the draft text body with highlightable spans.
+                L2: at hard the highlights are withdrawn — plain draft, the student
+                locates the weak spots (the revise phase still enumerates targets). */}
             <div className="rounded-lg bg-white/5 border border-white/10 p-4">
-              {isReorganize
+              {isReorganize || !showDraftHighlights
                 ? <p className="text-sm leading-relaxed text-slate-200">{draft}</p>
                 : renderDraftWithHighlights()}
             </div>
+            {/* L3: the exact target count is a perception scaffold — omitted at hard. */}
             <LuminaPanel accent="amber" className="p-2">
-              <p className="text-xs text-amber-300">Focus: <span className="font-bold">{SKILL_LABELS[revisionSkill]}</span> — {isReorganize ? `${targets.length} sentences to reorder` : `${targets.length} areas to improve`}</p>
+              <p className="text-xs text-amber-300">Focus: <span className="font-bold">{SKILL_LABELS[revisionSkill]}</span> — {showFocusCount
+                ? (isReorganize ? `${targets.length} sentences to reorder` : `${targets.length} areas to improve`)
+                : (isReorganize ? 'Put the sentences in a logical order.' : 'Look for areas to improve.')}</p>
             </LuminaPanel>
             <div className="flex justify-end">
               <LuminaButton tone="primary" onClick={nextPhase}>
@@ -364,13 +413,25 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
               <>
                 <p className="text-xs text-slate-500">Revise each highlighted section:</p>
                 {/* Bespoke edit surface — per-target revision composers. */}
-                {targets.map(target => (
+                {targets.map((target, targetIdx) => (
                   <div key={target.targetId} className="rounded-lg bg-white/5 border border-white/10 p-3 space-y-2">
                     <div className="flex items-start gap-2">
                       <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${SKILL_HIGHLIGHT[revisionSkill]}`}>Original</span>
                       <p className="text-sm text-slate-400 line-through">{target.originalText}</p>
                     </div>
-                    <p className="text-xs text-slate-500">{target.suggestion}</p>
+                    {/* L1: suggestion — easy/absent always visible; medium tap-to-reveal; hard hidden. */}
+                    {showSuggestions && (
+                      suggestionsTapToReveal && !revealedHints.has(targetIdx) ? (
+                        <button
+                          onClick={() => { SoundManager.select(); setRevealedHints(prev => new Set(prev).add(targetIdx)); }}
+                          className="text-xs px-2 py-1 rounded border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 transition-all"
+                        >
+                          Show hint
+                        </button>
+                      ) : (
+                        <p className="text-xs text-slate-500">{target.suggestion}</p>
+                      )
+                    )}
 
                     {target.alternatives && target.alternatives.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
@@ -409,8 +470,11 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
         {/* Phase 3: Compare */}
         {currentPhase === 'compare' && (
           <div className="space-y-4">
-            {/* Bespoke before/after comparison surface. */}
-            <div className={`grid ${isReorganize ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
+            {/* Bespoke before/after comparison surface.
+                F2: the Ideal Order panel IS the answer key (the checker scores
+                origIdx === pos) and an Edit path leads back to the revise phase —
+                so it renders only AFTER submit, at ALL tiers. */}
+            <div className={`grid ${isReorganize && hasSubmittedEvaluation ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
               <div className="rounded-lg bg-rose-500/5 border border-rose-500/20 p-3">
                 <p className="text-xs font-bold text-rose-400 mb-2">{isReorganize ? 'Scrambled' : 'Before'}</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{draft}</p>
@@ -419,7 +483,7 @@ const RevisionWorkshop: React.FC<RevisionWorkshopProps> = ({ data, className }) 
                 <p className="text-xs font-bold text-emerald-400 mb-2">Your Order</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{getRevisedDraft()}</p>
               </div>
-              {isReorganize && (
+              {isReorganize && hasSubmittedEvaluation && (
                 <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
                   <p className="text-xs font-bold text-blue-400 mb-2">Ideal Order</p>
                   <p className="text-sm text-slate-300 leading-relaxed">{idealDraft}</p>

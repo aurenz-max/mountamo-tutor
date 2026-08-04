@@ -536,10 +536,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "letter_sound_review":  PriorConfig(2.5, "Review: re-produce taught sounds from a mixed cumulative set"),
         "first_sound_in_word":  PriorConfig(3.5, "Onset isolation: say the first sound of a spoken word"),
     },
-    # L0 single mode; /add-eval-modes widens (cvc_reading / sight_word /
-    # word_reading_review are the queued ladder candidates).
+    # L1 ladder (2026-08-04). Same spoken single-word response class throughout;
+    # modes differ by code-owned word pool, not by surface interaction.
     "di-word-reading": {
-        "read_word": PriorConfig(2.5, "Production: read one printed CVC or sight word aloud"),
+        "cvc_reading":         PriorConfig(2.0, "Decoding: blend and read one short-vowel CVC word aloud"),
+        "read_word":           PriorConfig(2.5, "Production: read one printed CVC or sight word aloud"),
+        "sight_word":          PriorConfig(3.0, "Recall: read one irregular high-frequency word aloud as a whole"),
+        "word_reading_review": PriorConfig(3.5, "Review: read taught CVC and sight words from a wide cumulative mix"),
     },
     # L1 ladder (2026-07-24). Every mode answers with a spoken NUMBER WORD —
     # one benched response class, four skills. Deferred: multiplication (G3,

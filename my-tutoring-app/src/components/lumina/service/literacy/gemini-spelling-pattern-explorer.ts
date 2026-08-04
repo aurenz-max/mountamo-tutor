@@ -53,7 +53,55 @@ const spellingPatternExplorerSchema: Schema = {
   required: ["title", "gradeLevel", "patternType", "patternWords", "highlightPattern", "ruleTemplate", "correctRule", "dictationWords"]
 };
 
-type SpellingPatternExplorerConfig = Partial<SpellingPatternExplorerData & { targetEvalMode: string }>;
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT content
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; byte-identical legacy payload). */
+export function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+type SpellingPatternExplorerConfig = Partial<SpellingPatternExplorerData & {
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes
+   * numbers/content values — this primitive's tiers are 100% component display
+   * gates driven by the typed `supportTier` stamp below; nothing tier-shaped
+   * ever reaches the prompt.
+   */
+  difficulty: string;
+}>;
+
+/**
+ * Post-parse finalize: strip the tier-steering config fields from the spread
+ * (so the raw `difficulty` string never leaks into component data, exactly like
+ * `targetEvalMode`) and stamp the typed `supportTier` AFTER the spread so a
+ * config-provided value can never clobber the normalized tier. Gated ONLY on
+ * the tier being non-null — absent/unknown difficulty stamps NOTHING and the
+ * payload stays byte-identical legacy.
+ */
+export function finalizeSpellingPatternExplorerData(
+  result: SpellingPatternExplorerData,
+  config: SpellingPatternExplorerConfig | undefined,
+): SpellingPatternExplorerData {
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const { targetEvalMode: _unusedMode, difficulty: _unusedDifficulty, ...configRest } = config ?? {};
+  void _unusedMode;
+  void _unusedDifficulty;
+  return {
+    ...result,
+    ...configRest,
+    ...(supportTier ? { supportTier } : {}),
+  };
+}
 
 export const generateSpellingPatternExplorer = async (
   ctx: GenerationContext,
@@ -142,9 +190,13 @@ Rules:
     const text = response.text;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as SpellingPatternExplorerData;
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
-    void _unused;
-    return { ...result, ...configRest };
+    // Single exit path: strip difficulty/targetEvalMode from the config spread and
+    // stamp the typed supportTier in code (display gating is component-side).
+    const data = finalizeSpellingPatternExplorerData(result, config);
+    if (data.supportTier) {
+      console.log(`[SpellingPatternExplorer] Support tier "${data.supportTier}" stamped (component display gates own the withdrawal)`);
+    }
+    return data;
   } catch (error) {
     console.error("Error generating spelling pattern explorer:", error);
     throw error;

@@ -75,9 +75,9 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`); the ladder
 > still runs SERIALLY and `catalog/di.ts` is free again — ~~next rung =
 > di-word-reading L2~~ **✅ 08-03 `66a2d66`; di-sentence-reading L4 ✅ 08-03
-> `603cc82`; di-letter-sounds L4 ✅ 08-03; next rung = di-math-facts L4**) →
-> **item 2**
-> remediation-lever design (the misconception loop's consumption half — a real
+> `603cc82`; di-letter-sounds L4 ✅ 08-03; di-math-facts L4 ✅ 08-04;
+> di-word-reading L1 ✅ 08-04**) → **item 2 remediation implementation**
+> (design closed 08-04; the misconception loop's consumption half — a real
 > platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
 > flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel
 > lane — no file overlap with the L3 slice)** → **item 6** probe (backend-only).
@@ -410,7 +410,14 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    from it (Probe D 10/10). The CONSUMPTION half is untouched — **no DI generator
    imports `buildRemediationPrompt`**, so an active misconception changes nothing
    about the next session and Probe G is **NOT-WIRED**.
-   **This is a design question, not a missing import.** Every literacy/math
+   **DESIGN CLOSED 2026-08-04; implementation remains open.** The ruled lever is
+   code-owned item selection only: typed, narrow diagnosis→move resolvers;
+   up to two targeted items followed by transfer items; mode/scope/tier/count
+   invariant; unknown or cross-mode diagnoses no-op; no diagnosis sent to the
+   wrapper LLM and no spoken copy changes. Pilot `di-math-facts/subtraction_fact`
+   first, then Probe G before any family sweep. Code-ready handoff:
+   `qa/di/HANDOFF-di-remediation-levers-2026-08-04.md`.
+   This was a design question, not a missing import. Every literacy/math
    primitive that consumes `remediationFocus` does it by rewording the generator
    prompt; DI's spoken copy is **bench-proven and byte-frozen** (do-not: "don't
    re-word any cue, judging contract, or correction line"). So the only honest
@@ -418,7 +425,7 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    back" diagnosis biases the subtraction pool toward take-away facts whose
    answer is NOT the successor, so the wrong rule visibly fails. Decide that
    lever before writing code; do not reach for prompt rewording by analogy with
-   the literacy packs.
+   the literacy packs. That lever is now ruled in the handoff above.
    Report: `qa/misconception/di-math-facts-2026-07-25.md`.
 6. **Free-form DI attribution lands off-grade/off-family: K `fact_review` →
    `OPS002-04-c @ grade=2` (subject override ✓ MATHEMATICS).** *(opened 2026-07-26,
@@ -574,8 +581,8 @@ before di-sentence-reading existed.)*
 | Pack | Born | L0 live gate | L1 modes | L2 scaffold | L3 tiers | Next rung |
 |---|---|---|---|---|---|---|
 | di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | **✅ L4 08-03** → `/add-sound` (L5) |
-| di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | ✅ 08-03 | — | `/add-eval-modes` (L1 — the pack's own next rung; birth-cert candidates cvc_reading / sight_word / word_reading_review) |
-| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
+| di-word-reading | 07-22 | ✅ 07-23 (#43) | ✅ 08-04 (4) | ✅ 08-03 | — | L1 backfill complete; family priority is item 2 remediation implementation |
+| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | **✅ L4 08-04**; pilot item 2 remediation implementation here |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | **✅ L4 08-03** → `/add-sound` (L5) |
 
 ~~**di-word-reading L2**~~ **DONE 2026-08-03** — the family is now ENTIRELY
@@ -631,15 +638,16 @@ live `/eval-test` sweep 7/7. Existing HUMAN-CHECKS #57 now carries the hard
 contrast-set glance; no new row. Report
 `qa/eval-reports/di-letter-sounds-structural-difficulty-2026-08-03.md`.
 
-Nearest rungs, in order: **di-math-facts L4** (operand structure, per its birth
-cert) · di-word-reading L1 backfill (eval-mode split) · the L5 polish choices
-for the two packs now at L4.
+Nearest rungs: ~~**di-math-facts L4**~~ **DONE 2026-08-04** ·
+~~di-word-reading L1 backfill~~ **DONE 2026-08-04** · next lifecycle work is
+L3 support tiers for word reading; the queue's top platform capability is item
+2 remediation implementation from the new handoff.
 ~~di-math-facts L3~~ **DONE 2026-08-01**. ~~di-letter-sounds L3~~ **DONE
 2026-08-01** (third template use; ear-check → #57; report
 `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`).
 
 **Two family-wide debts sit ABOVE the ladder** and are why the numbered queue is
-not empty: **item 1** (no remediation content from a stored misconception — the
+not empty: **item 2** (no remediation content from a stored misconception — the
 consumption half of the loop, all four packs) and the **contrastive-correction
 port** to di-letter-sounds + di-word-reading, which is gated on HUMAN-CHECKS #55
 (the rewording is UNBENCHED until that sitting).

@@ -153,10 +153,18 @@ export const DI_CATALOG: ComponentDefinition[] = [
     id: 'di-word-reading',
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the tutor models a printed word — sounding out a decodable CVC word ("sss-aaa-mmm… sam") or naming a sight word whole — practices it together, then asks the child to read it and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
-    // L0: ONE eval mode at birth. Ladder candidates (cvc_reading / sight_word /
-    // word_reading_review) are queued on the birth cert for /add-eval-modes.
+    // L1 eval modes (2026-08-04): same spoken single-word response class;
+    // modes differ by code-owned word pool and review identity.
     // β mirrors backend problem_type_registry.py → "di-word-reading".
     evalModes: [
+      {
+        evalMode: 'cvc_reading',
+        label: 'Read a CVC Word',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['cvc_reading'],
+        description: 'Blend and read one decodable short-vowel CVC word; a named vowel pattern binds the whole set.',
+      },
       {
         evalMode: 'read_word',
         label: 'Read a Word',
@@ -164,6 +172,22 @@ export const DI_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['read_word'],
         description: 'See one printed word, read it aloud — blend-and-read for decodable CVC words, whole-word recall for sight words.',
+      },
+      {
+        evalMode: 'sight_word',
+        label: 'Read a Sight Word',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['sight_word'],
+        description: 'Recall and read one irregular high-frequency word as a whole, without sounding it out.',
+      },
+      {
+        evalMode: 'word_reading_review',
+        label: 'Word Reading Review',
+        beta: 3.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['word_reading_review'],
+        description: 'Cumulative spaced review across taught short-vowel CVC families and irregular sight words.',
       },
     ],
     supportsEvaluation: true,

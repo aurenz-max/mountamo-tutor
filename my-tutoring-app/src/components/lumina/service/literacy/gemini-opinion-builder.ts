@@ -60,7 +60,18 @@ const opinionBuilderSchema: Schema = {
   required: ["title", "gradeLevel", "framework", "prompt", "scaffold"]
 };
 
-type OpinionBuilderConfig = Partial<OpinionBuilderData> & { targetEvalMode?: string };
+type OpinionBuilderConfig = Partial<OpinionBuilderData> & {
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode picks the framework
+   * (task identity); difficulty picks how much on-screen scaffolding the
+   * component shows within it. NEVER changes content values — no prompt
+   * steering; the pipeline normalizes it to ctx.supportTier and the code below
+   * stamps the typed field the component reads (raw string never leaks).
+   */
+  difficulty?: string;
+};
 
 export const generateOpinionBuilder = async (
   ctx: GenerationContext,
@@ -68,6 +79,15 @@ export const generateOpinionBuilder = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as OpinionBuilderConfig;
+  // ── Within-mode support tier (config.difficulty): DISPLAY scaffolding only.
+  //    Arrives already normalized ('easy'|'medium'|'hard'|undefined) from
+  //    resolveGenerationContext — never re-parse config.difficulty here. It is
+  //    stamped in code AFTER the model responds and never enters the prompt, so
+  //    generation is byte-identical across tiers. The component withdraws
+  //    starter chips / linking palette / placeholder modeling from the typed
+  //    stamp; framework, reasonCount, and counterArgumentEnabled (task identity
+  //    / structural axes) are never touched by tier. ──
+  const supportTier = ctx.supportTier;
 
   // ---------------------------------------------------------------------------
   // Eval mode resolution
@@ -154,10 +174,20 @@ Generate:
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as OpinionBuilderData;
 
-    // Exclude targetEvalMode from config spread
-    const { targetEvalMode: _unused, ...restConfig } = config ?? {};
+    // Config-spread leak guard: exclude targetEvalMode AND the raw difficulty
+    // string from the spread — the component reads only the typed supportTier
+    // stamp below, never the raw axis value.
+    const { targetEvalMode: _unused, difficulty: _difficulty, ...restConfig } = config ?? {};
     void _unused;
-    return { ...result, ...restConfig };
+    void _difficulty;
+    // Stamp the tier IN CODE post-parse on the (single) success exit path.
+    // Gated ONLY on supportTier being present — absent ⇒ no field stamped ⇒
+    // byte-identical legacy payload. Never gated on eval-mode resolution.
+    return {
+      ...result,
+      ...restConfig,
+      ...(supportTier ? { supportTier } : {}),
+    };
   } catch (error) {
     console.error("Error generating opinion builder:", error);
     throw error;

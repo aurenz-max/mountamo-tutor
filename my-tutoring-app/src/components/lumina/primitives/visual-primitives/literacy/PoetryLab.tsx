@@ -61,6 +61,15 @@ export interface PoetryLabData {
   gradeLevel: string;
   mode: PoetryMode;
 
+  /**
+   * Within-mode support tier — scaffolding withdrawal ONLY (display/help, never
+   * content or checking). Stamped by the generator for analysis/composition;
+   * NEVER present on rhyme_hunt, where the K-1 band contract wins over tier and
+   * the RhymeHunt fork must never read it. Absent ⇒ full-support legacy render;
+   * 'easy' renders byte-identical to legacy.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Rhyme Hunt mode data (K-1, audio-first)
   rounds?: RhymeHuntRound[];
 
@@ -459,7 +468,31 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     figurativeInstances, rhymeScheme, rhymeSchemeOptions,
     templateType, compositionPrompt, templateConstraints,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
+    supportTier,
   } = data;
+
+  // ── Support-tier render gates — scaffolding WITHDRAWAL only. Content,
+  // options, and checking are tier-invariant. Absent tier ⇒ every gate takes
+  // its full-support legacy value; 'easy' renders byte-identical to legacy.
+  // rhyme_hunt never reaches this fork (band/mode gate wins over tier).
+  // L1 — figurative count disclosure (easy: "(N to find)" + "Found: N / M";
+  //      medium: "Found: N" only; hard: no counts — the student decides when
+  //      the hunt is done; the Next gate and scoring read foundFigurative
+  //      independently, so no phase can dead-end).
+  const showFigurativeTargetCount = !supportTier || supportTier === 'easy';
+  const showFigurativeFoundCount = supportTier !== 'hard';
+  // L2 — rhyme-scheme live overlay (easy: colored-letter preview per selection;
+  //      medium: letters without color coding; hard: no preview — bare poem).
+  const showRhymePreview = supportTier !== 'hard';
+  const colorRhymePreview = !supportTier || supportTier === 'easy';
+  // L3 — composition syllable feedback (easy: live green/red N/M chips +
+  //      placeholder targets; medium: neutral count chip, targets stay in the
+  //      hint line; hard: no per-line chips or placeholder targets — the
+  //      constraints stay stated once in the prompt panel, which is task
+  //      identity and never withdrawn).
+  const showSyllableChips = supportTier !== 'hard';
+  const judgeSyllableChips = !supportTier || supportTier === 'easy';
+  const showPlaceholderTargets = !supportTier || supportTier === 'easy';
 
   // Analysis state
   const analysisPhases = useMemo(() => computeAnalysisPhases(data), [data]);
@@ -551,12 +584,16 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
     return <p className="text-sm leading-relaxed whitespace-pre-line">{elements}</p>;
   }, [poem, poemLines, figurativeInstances, foundFigurative, analysisPhase, toggleFigurative]);
 
-  // Render rhyme scheme overlay on lines
+  // Render rhyme scheme overlay on lines. L2 medium withdraws the color coding
+  // (letters render in one neutral style so same-letter lines no longer
+  // visually pair themselves); hard never calls this — the panel is gated off.
   const renderRhymeLines = () => {
     if (!poemLines || !selectedRhymeScheme) return null;
     return poemLines.map((line, i) => {
       const letter = selectedRhymeScheme[i] || '';
-      const colorClass = RHYME_COLORS[letter] || 'text-slate-500';
+      const colorClass = colorRhymePreview
+        ? (RHYME_COLORS[letter] || 'text-slate-500')
+        : 'text-slate-300 bg-slate-500/20';
       return (
         <div key={i} className="flex items-center gap-2">
           <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${colorClass}`}>{letter}</span>
@@ -721,11 +758,14 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
         </div>
       )}
 
-      {/* Phase: Figurative Language */}
+      {/* Phase: Figurative Language — L1 gates the count disclosure only; the
+          Next gate and scoring read foundFigurative independently at all tiers */}
       {analysisPhase === 'figurative' && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500">Tap the figurative language in the poem ({figurativeInstances?.length || 0} to find):</p>
-          <p className="text-xs text-slate-400">Found: {foundFigurative.size} / {figurativeInstances?.length || 0}</p>
+          <p className="text-xs text-slate-500">Tap the figurative language in the poem{showFigurativeTargetCount ? ` (${figurativeInstances?.length || 0} to find)` : ''}:</p>
+          {showFigurativeFoundCount && (
+            <p className="text-xs text-slate-400">Found: {foundFigurative.size}{showFigurativeTargetCount ? ` / ${figurativeInstances?.length || 0}` : ''}</p>
+          )}
           <div className={`flex ${hasPrevPhase ? 'justify-between' : 'justify-end'}`}>
             {hasPrevPhase && <LuminaButton onClick={prevAnalysis}>Back</LuminaButton>}
             <LuminaButton tone="primary" onClick={nextAnalysis} disabled={foundFigurative.size === 0}>
@@ -739,7 +779,7 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
       {analysisPhase === 'rhyme' && (
         <div className="space-y-3">
           <p className="text-xs text-slate-500">What is the rhyme scheme of this poem?</p>
-          {selectedRhymeScheme && (
+          {showRhymePreview && selectedRhymeScheme && (
             <LuminaPanel className="space-y-1">
               {renderRhymeLines()}
             </LuminaPanel>
@@ -773,7 +813,10 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
               {analysisPhases.includes('mood') && (
                 <LuminaPanel className="p-2 text-center">
                   <p className="text-xs text-slate-500">Mood</p>
-                  <p className={`text-sm font-medium ${selectedMood === correctMood ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedMood}</p>
+                  {/* F1: correctness stays NEUTRAL until submitAnalysis has run
+                      (at every tier) — the pre-submit emerald reveal plus the
+                      Edit path was a free guess-and-check loop */}
+                  <p className={`text-sm font-medium ${hasSubmittedEvaluation && selectedMood === correctMood ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedMood}</p>
                 </LuminaPanel>
               )}
               {analysisPhases.includes('figurative') && (
@@ -785,7 +828,8 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
               {analysisPhases.includes('rhyme') && (
                 <LuminaPanel className="p-2 text-center">
                   <p className="text-xs text-slate-500">Rhyme</p>
-                  <p className={`text-sm font-mono font-medium ${selectedRhymeScheme === rhymeScheme ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedRhymeScheme}</p>
+                  {/* F1: neutral until submitted — same leak class as mood above */}
+                  <p className={`text-sm font-mono font-medium ${hasSubmittedEvaluation && selectedRhymeScheme === rhymeScheme ? 'text-emerald-300' : 'text-slate-300'}`}>{selectedRhymeScheme}</p>
                 </LuminaPanel>
               )}
             </div>
@@ -831,6 +875,7 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
             const acrosticLetter = templateConstraints?.acrosticWord?.[i];
             return (
               <div key={i} className="flex items-center gap-2">
+                {/* Acrostic letter chips are task identity — never tier-gated */}
                 {acrosticLetter && (
                   <span className="w-6 h-6 rounded bg-violet-500/20 text-violet-300 text-sm font-bold flex items-center justify-center">{acrosticLetter}</span>
                 )}
@@ -841,15 +886,24 @@ const LegacyPoetryLab: React.FC<PoetryLabProps> = ({ data, className }) => {
                     next[i] = e.target.value;
                     setCompositionLines(next);
                   }}
-                  placeholder={`Line ${i + 1}${targetSyllables ? ` (${targetSyllables} syllables)` : ''}...`}
+                  placeholder={`Line ${i + 1}${showPlaceholderTargets && targetSyllables ? ` (${targetSyllables} syllables)` : ''}...`}
                   className="flex-1 text-sm"
                 />
-                {targetSyllables !== undefined && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    Math.abs(syllables - targetSyllables) <= 1 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-                  }`}>
-                    {syllables}/{targetSyllables}
-                  </span>
+                {/* L3: easy = judged green/red N/M chip; medium = neutral live
+                    count only (target stays in the hint line); hard = no chip.
+                    submitComposition recomputes syllables itself either way. */}
+                {targetSyllables !== undefined && showSyllableChips && (
+                  judgeSyllableChips ? (
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      Math.abs(syllables - targetSyllables) <= 1 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                    }`}>
+                      {syllables}/{targetSyllables}
+                    </span>
+                  ) : (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-300">
+                      {syllables}
+                    </span>
+                  )
                 )}
               </div>
             );

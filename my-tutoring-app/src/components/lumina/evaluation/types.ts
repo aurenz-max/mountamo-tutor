@@ -3296,9 +3296,8 @@ export interface DiLetterSoundsMetrics extends BasePrimitiveMetrics {
 
 export interface DiWordReadingMetrics extends BasePrimitiveMetrics {
   type: 'di-word-reading';
-  // L0: one task identity at birth; /add-eval-modes widens this union later
-  // (cvc_reading / sight_word / word_reading_review are the ladder candidates).
-  challengeType: 'read_word';
+  // L1 task identities — all answered by reading one printed word aloud.
+  challengeType: 'cvc_reading' | 'read_word' | 'sight_word' | 'word_reading_review';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all words (corrections + 1 each)

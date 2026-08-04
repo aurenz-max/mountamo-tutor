@@ -15,16 +15,18 @@
  * sight-word objective draws from the sight set. No DEFAULT_ITEMS-style
  * content ships from the component; all items originate here.
  *
- * EVAL MODES (L0) — ONE task identity at birth: `read_word`. Ladder
- * candidates (cvc_reading / sight_word / word_reading_review) are queued on
- * the birth certificate for /add-eval-modes — not built now. The
- * resolveEvalModes call is wired so the eventual ladder drops in without
- * reshaping this generator; today every resolution lands on read_word.
+ * EVAL MODES (L1): `cvc_reading`, the preserved `read_word` base,
+ * `sight_word`, and `word_reading_review`. Fork-A code owns every pool and
+ * explicitly interleaves curated blends / mixed sessions.
  */
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
-import { resolveEvalModes, type ChallengeTypeDoc } from "../evalMode";
+import {
+  buildModeConstraintSection,
+  resolveEvalModes,
+  type ChallengeTypeDoc,
+} from "../evalMode";
 import type {
   DiWordReadingData,
   DiWordReadingChallenge,
@@ -139,12 +141,34 @@ const DEFAULT_WORDS = ['sam', 'pig', 'sun', 'the'];
 /** Skill docs for the intent→mode router (Fork A — no schema to constrain).
  *  One identity at birth; /add-eval-modes widens this record later. */
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  cvc_reading: {
+    promptDoc:
+      `"cvc_reading": the child blends and reads ONE decodable short-vowel CVC word. Every item is CVC; a named short-vowel scope remains binding.`,
+    schemaDescription: "'cvc_reading' (blend and read a decodable CVC word)",
+  },
   read_word: {
     promptDoc:
       `"read_word": the child sees ONE printed word and reads it aloud — blend-and-read for a decodable CVC word, whole-word recall for a sight word. The base skill.`,
     schemaDescription: "'read_word' (read the printed word aloud)",
   },
+  sight_word: {
+    promptDoc:
+      `"sight_word": the child recalls and reads ONE irregular high-frequency word as a whole. Never sound it out; every item comes from the sight-word set.`,
+    schemaDescription: "'sight_word' (recall an irregular high-frequency word)",
+  },
+  word_reading_review: {
+    promptDoc:
+      `"word_reading_review": cumulative spaced review across taught CVC vowel families and sight words, anchored on the objective focus but never collapsed to one narrow set.`,
+    schemaDescription: "'word_reading_review' (mixed cumulative word review)",
+  },
 };
+
+const ALL_TYPES: DiWordReadingChallengeType[] = [
+  'cvc_reading', 'read_word', 'sight_word', 'word_reading_review',
+];
+// Sight + distinct vowel families first: after up to two lesson anchors, even
+// the default four-item review still crosses decoding and whole-word recall.
+const REVIEW_SPREAD = ['the', 'red', 'pig', 'dog', 'sun', 'sam'];
 
 /** Gemini emits ONLY the wrapper — never the per-item content (Fork A). */
 const wrapperSchema: Schema = {
@@ -215,6 +239,55 @@ const takeUnique = (source: string[], n: number): string[] => {
   return out;
 };
 
+/** Code-owned pool for one task identity. Eval-mode identity outranks a
+ * conflicting content hint; review keeps at most two focus anchors, then
+ * broadens across every vowel family plus sight-word recall. */
+const candidatesForType = (
+  type: DiWordReadingChallengeType,
+  modelSelected: string[],
+  scopeText: string,
+  scopedVowels: ShortVowel[] | null,
+  sightScoped: boolean,
+): string[] => {
+  const named = scanWordsFromText(scopeText);
+  if (type === 'cvc_reading') {
+    const pool = cvcWordsForVowels(scopedVowels);
+    return takeUnique([...named, ...modelSelected, ...pool].filter((w) => pool.includes(w)), pool.length);
+  }
+  if (type === 'sight_word') {
+    return takeUnique(
+      [...named, ...modelSelected, ...SIGHT_WORDS].filter((w) => SIGHT_WORDS.includes(w)),
+      SIGHT_WORDS.length,
+    );
+  }
+  if (type === 'word_reading_review') {
+    const focus = scopedVowels
+      ? [...named, ...modelSelected, ...cvcWordsForVowels(scopedVowels)]
+        .filter((w) => cvcWordsForVowels(scopedVowels).includes(w))
+      : sightScoped
+        ? [...named, ...modelSelected, ...SIGHT_WORDS].filter((w) => SIGHT_WORDS.includes(w))
+        : [...named, ...modelSelected];
+    return takeUnique([...focus.slice(0, 2), ...REVIEW_SPREAD, ...MENU_WORDS], MENU_WORDS.length);
+  }
+  if (scopedVowels) {
+    const pool = cvcWordsForVowels(scopedVowels);
+    return takeUnique([...named, ...modelSelected, ...pool].filter((w) => pool.includes(w)), pool.length);
+  }
+  if (sightScoped) {
+    return takeUnique(
+      [...named, ...modelSelected, ...SIGHT_WORDS].filter((w) => SIGHT_WORDS.includes(w)),
+      SIGHT_WORDS.length,
+    );
+  }
+  return takeUnique([...named, ...modelSelected, ...DEFAULT_WORDS, ...MENU_WORDS], MENU_WORDS.length);
+};
+
+const distribute = (count: number, k: number): number[] => {
+  const base = Math.floor(count / k);
+  const remainder = count % k;
+  return Array.from({ length: k }, (_, i) => base + (i < remainder ? 1 : 0));
+};
+
 const buildChallenge = (
   word: string,
   index: number,
@@ -256,9 +329,20 @@ export const generateDiWordReading = async (
   const scopedVowels = resolveScopedVowels(scopeText);
   const sightScoped = resolveSightScope(scopeText);
 
+  const resolution = await resolveEvalModes(
+    'di-word-reading',
+    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const modeTypes: DiWordReadingChallengeType[] =
+    (resolution?.allowedTypes as DiWordReadingChallengeType[] | undefined) ?? ALL_TYPES;
+  const modeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+
   const prompt = `Pick the target WORDS for a brisk Direct Instruction word-reading practice (beginning reader).
 
 TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
+
+${modeSection}
 
 You may ONLY choose from these words:
 - Decodable CVC: ${cvcWordsForVowels(null).join(', ')}
@@ -276,14 +360,6 @@ Return the wrapper JSON only.`;
   // Resolve which eval-mode SKILL this objective calls for. One identity at
   // birth — every resolution lands on read_word; the call is wired so the
   // /add-eval-modes ladder drops in without reshaping this generator.
-  const resolution = await resolveEvalModes(
-    'di-word-reading',
-    { targetEvalMode: config?.targetEvalMode, intent, objectiveText: config?.objectiveText },
-    CHALLENGE_TYPE_DOCS,
-  );
-  const modeType: DiWordReadingChallengeType =
-    (resolution?.allowedTypes?.[0] as DiWordReadingChallengeType | undefined) ?? 'read_word';
-
   let selected: string[] = [];
   let title = 'Word Reading';
   let description = 'Let’s read some words out loud together!';
@@ -328,21 +404,37 @@ Return the wrapper JSON only.`;
     selected = scanWordsFromText(scopeText);
   }
 
-  // Code-enforce the objective's scope over whatever was selected (the census
-  // lesson: the prompt asks, the code guarantees).
-  if (scopedVowels) {
-    const scopedPool = cvcWordsForVowels(scopedVowels);
-    selected = selected.filter((w) => scopedPool.includes(w));
-    selected = takeUnique([...selected, ...scopedPool], count);
-  } else if (sightScoped) {
-    selected = selected.filter((w) => SIGHT_WORDS.includes(w));
-    selected = takeUnique([...selected, ...SIGHT_WORDS], count);
-  } else {
-    if (selected.length === 0) selected = [...DEFAULT_WORDS];
-    selected = takeUnique([...selected, ...DEFAULT_WORDS, ...MENU_WORDS], count);
-  }
+  // Fork-A authoritative build. Single pins use one pool; blends and mixed
+  // sessions split the item budget and interleave every selected identity.
+  // A shared used-set prevents duplicate printed words across mode slices.
+  const used = new Set<string>();
+  const buildWordsFor = (type: DiWordReadingChallengeType, n: number): string[] => {
+    const candidates = candidatesForType(type, selected, scopeText, scopedVowels, sightScoped);
+    let words = takeUnique(candidates.filter((word) => !used.has(word)), n);
+    if (words.length < n) words = takeUnique([...words, ...candidates], n);
+    words.forEach((word) => used.add(word));
+    return words;
+  };
 
-  let challenges = selected.map((word, i) => buildChallenge(word, i, modeType));
+  let challenges: DiWordReadingChallenge[];
+  if (modeTypes.length === 1) {
+    challenges = buildWordsFor(modeTypes[0], count)
+      .map((word, i) => buildChallenge(word, i, modeTypes[0]));
+  } else {
+    const shares = distribute(count, modeTypes.length);
+    const perModeWords = modeTypes.map((type, i) => buildWordsFor(type, shares[i]));
+    const interleaved: Array<{ word: string; type: DiWordReadingChallengeType }> = [];
+    const maxLength = Math.max(...perModeWords.map((words) => words.length));
+    for (let round = 0; round < maxLength; round++) {
+      for (let mode = 0; mode < modeTypes.length; mode++) {
+        const word = perModeWords[mode][round];
+        if (word) interleaved.push({ word, type: modeTypes[mode] });
+      }
+    }
+    challenges = interleaved
+      .slice(0, count)
+      .map(({ word, type }, i) => buildChallenge(word, i, type));
+  }
 
   // Guarantee a runnable session even if every scope filter emptied out.
   if (challenges.length === 0) {
@@ -367,7 +459,8 @@ Return the wrapper JSON only.`;
 
   console.log("DI Word Reading Generated:", {
     title: data.title,
-    mode: resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'read_word',
+    mode: resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed',
+    types: challenges.map((c) => c.challengeType),
     scope: scopedVowels ? `short ${scopedVowels.join(',')}` : sightScoped ? 'sight words' : 'generic',
     words: challenges.map((c) => `${c.word}(${c.wordType})`),
     count: challenges.length,

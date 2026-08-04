@@ -131,7 +131,20 @@ const paragraphArchitectSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns ParagraphArchitectData with grade-appropriate scaffolding
  */
-type ParagraphArchitectConfig = Partial<ParagraphArchitectData & { targetEvalMode: string }>;
+type ParagraphArchitectConfig = Partial<
+  ParagraphArchitectData & {
+    targetEvalMode: string;
+    /**
+     * Within-mode support tier ('easy' | 'medium' | 'hard') — the second axis of
+     * the two-field contract: targetEvalMode = WHICH genre (task identity),
+     * difficulty = how much scaffolding is shown within it. NEVER changes the
+     * frames, linking words, model paragraph, or paragraphType. Normalized once
+     * at the registry boundary (read via ctx.supportTier); stripped from the
+     * config spread below so the raw string never leaks into component data.
+     */
+    difficulty: string;
+  }
+>;
 
 export const generateParagraphArchitect = async (
   ctx: GenerationContext,
@@ -139,6 +152,16 @@ export const generateParagraphArchitect = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as ParagraphArchitectConfig;
+
+  // ── Within-mode support tier (scaffolding withdrawal — axis 3) ──
+  // Arrives already normalized ('easy'|'medium'|'hard'|undefined) from
+  // resolveGenerationContext — never re-parse config.difficulty here. The tier
+  // NEVER enters the prompt and NEVER changes the generated content: the frames,
+  // linking words, model paragraph, and paragraphType are identical at every
+  // tier. It is stamped in CODE post-parse and drives only the component's
+  // scaffold display (model labels/shuffle, frame selectors, linking-word bank)
+  // plus the live tutor's reveal policy.
+  const supportTier = ctx.supportTier;
 
   // ---------------------------------------------------------------------------
   // Eval mode resolution
@@ -392,11 +415,23 @@ Now generate a paragraph architect activity for "${topic}" at grade level ${grad
 
     const result = JSON.parse(text) as ParagraphArchitectData;
 
-    // Merge with any config overrides (excluding targetEvalMode)
-    const { targetEvalMode: _unused, paragraphType: _unusedType, ...configRest } = config ?? {};
+    // Merge with any config overrides (excluding targetEvalMode, the identity
+    // paragraphType, and the raw difficulty string — the tier reaches the
+    // component only as the typed `supportTier` stamp below, never as a leaked
+    // config passthrough).
+    const {
+      targetEvalMode: _unused,
+      paragraphType: _unusedType,
+      difficulty: _unusedDifficulty,
+      ...configRest
+    } = config ?? {};
     const finalData: ParagraphArchitectData = {
       ...result,
       ...configRest,
+      // ── Support-tier stamp: post-parse, code-owned, AFTER the config merge.
+      //    Gated ONLY on the tier being present (never on eval-mode resolution)
+      //    — absent ⇒ field absent ⇒ byte-identical legacy full-help payload. ──
+      ...(supportTier ? { supportTier } : {}),
     };
 
     console.log('Paragraph Architect Generated:', {
@@ -409,6 +444,7 @@ Now generate a paragraph architect activity for "${topic}" at grade level ${grad
       conclusionFrames: finalData.concludingSentenceFrames.length,
       linkingWords: finalData.linkingWords.length,
       hasModel: !!finalData.modelParagraph,
+      supportTier: finalData.supportTier ?? null,
     });
 
     return finalData;

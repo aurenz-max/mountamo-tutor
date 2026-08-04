@@ -41,6 +41,27 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — scaffolding withdrawal ONLY.
+//
+// INVARIANT: the tier NEVER touches the prompt and NEVER changes which content
+// is drawn. The draft, targets, suggestions, alternatives, and idealRevisions
+// are identical at every tier — the LLM is never told the tier exists. The tier
+// is stamped IN CODE post-parse; the component reads the typed `supportTier`
+// field and withdraws on-screen scaffolding (suggestion visibility, read-phase
+// highlights, the exact focus count).
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; byte-identical legacy output). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
 const revisionWorkshopSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -66,7 +87,16 @@ const revisionWorkshopSchema: Schema = {
   required: ["title", "gradeLevel", "revisionSkill", "draft", "targets"]
 };
 
-type RevisionWorkshopConfig = Partial<RevisionWorkshopData & { targetEvalMode: string }>;
+type RevisionWorkshopConfig = Partial<RevisionWorkshopData & {
+  targetEvalMode: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which revision
+   * skill, difficulty = how much on-screen scaffolding within it. NEVER
+   * changes the draft, targets, or any content values.
+   */
+  difficulty: string;
+}>;
 
 export const generateRevisionWorkshop = async (
   ctx: GenerationContext,
@@ -74,6 +104,10 @@ export const generateRevisionWorkshop = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as RevisionWorkshopConfig;
+
+  // ── Within-mode support tier (config.difficulty): scaffolding level only.
+  //    Resolved here, stamped in code post-parse. Never enters the prompt. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   // ── Grade resolution ────────────────────────────────────────────────
   // Honor the objective's canonical curriculum grade (ctx.grade, the ONLY
@@ -176,10 +210,23 @@ ${selectedSkill === 'reorganize' ? reorganizeRules : standardRules}`;
     if (!text) throw new Error("No data returned from Gemini API");
     const result = JSON.parse(text) as RevisionWorkshopData;
 
-    // Merge with any config overrides (excluding targetEvalMode)
-    const { targetEvalMode: _unused, ...configRest } = config ?? {};
+    // Merge with any config overrides (excluding targetEvalMode AND difficulty —
+    // difficulty is the tier signal, consumed above; the raw string must never
+    // leak into component data. The component reads only the typed supportTier.)
+    const { targetEvalMode: _unused, difficulty: _difficulty, ...configRest } = config ?? {};
     void _unused;
-    return { ...result, ...configRest };
+    void _difficulty;
+    const merged: RevisionWorkshopData = { ...result, ...configRest };
+
+    // ── Stamp the tier IN CODE, post-parse, AFTER the config spread so the
+    //    stamp survives any raw manifest override (the spread runs last).
+    //    Gated ONLY on supportTier being non-null — absent ⇒ no field stamped
+    //    ⇒ byte-identical legacy payload. ──
+    if (supportTier) {
+      merged.supportTier = supportTier;
+      console.log(`[RevisionWorkshop] Support tier "${supportTier}" stamped (skill=${merged.revisionSkill}, targets=${merged.targets?.length ?? 0}).`);
+    }
+    return merged;
   } catch (error) {
     console.error("Error generating revision workshop:", error);
     throw error;

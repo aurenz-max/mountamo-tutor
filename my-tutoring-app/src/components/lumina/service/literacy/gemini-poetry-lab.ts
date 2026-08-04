@@ -430,7 +430,19 @@ const finalizeComposition = (result: PoetryLabData): PoetryLabData => {
 // parallel orchestrator: there is never a second mode to fan out.
 // ---------------------------------------------------------------------------
 
-type PoetryLabConfig = Partial<PoetryLabData & { targetEvalMode: string }>;
+type PoetryLabConfig = Partial<PoetryLabData & {
+  targetEvalMode: string;
+  /**
+   * Within-mode support tier ('easy'|'medium'|'hard') — the SECOND axis of the
+   * two-field contract (targetEvalMode = task identity; difficulty = scaffolding
+   * withdrawal ONLY). Normalized ONCE at the registry boundary into
+   * ctx.supportTier and never re-parsed here; it NEVER changes poem content,
+   * options, counts, or checking. Excluded from the config spread below so the
+   * raw string never leaks into component data — the component reads only the
+   * typed supportTier field stamped in code.
+   */
+  difficulty: string;
+}>;
 
 export const generatePoetryLab = async (
   ctx: GenerationContext,
@@ -438,6 +450,11 @@ export const generatePoetryLab = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as PoetryLabConfig;
+  // Within-mode support tier — arrives already normalized
+  // ('easy'|'medium'|'hard'|undefined) from resolveGenerationContext; never
+  // re-parse config.difficulty here. Applied in CODE post-finalize (below); it
+  // never enters the prompt and never changes which content is drawn.
+  const supportTier = ctx.supportTier;
 
   // Grade rung: ctx.grade is the canonical per-objective curriculum grade
   // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
@@ -549,12 +566,27 @@ Generate:
         : requestedMode === 'composition'
           ? finalizeComposition(parsed)
           : finalizeAnalysis(parsed);
+      // ── Within-mode support tier stamp (IN CODE, post-finalize) ──────────
+      // MODE GATE WINS OVER TIER: rhyme_hunt is the K-1 pre-reader band's mode —
+      // its keep-true set (emoji answer surface, audio-first read-aloud, zero
+      // chrome) is a band contract, so the tier is a NO-OP there: supportTier is
+      // never stamped and the payload stays shape-identical to a no-difficulty
+      // run. Gated ONLY on supportTier being present (never on eval-mode
+      // resolution), so an absent/unknown difficulty yields byte-identical
+      // legacy data.
+      if (supportTier && requestedMode !== 'rhyme_hunt') {
+        result.supportTier = supportTier;
+        console.log(`[PoetryLab] Support tier "${supportTier}" stamped (mode: ${requestedMode})`);
+      }
       // Exclude routing/content fields from config spread so the validated root
       // mode and rounds remain load-bearing for eval-test and the component.
+      // `difficulty` is the tier's RAW transport string — stripped here so the
+      // component only ever sees the typed supportTier field stamped above.
       const {
         targetEvalMode: _targetEvalMode,
         mode: _requestedMode,
         rounds: _configuredRounds,
+        difficulty: _difficulty,
         ...restConfig
       } = config || {};
       return { ...result, ...restConfig };

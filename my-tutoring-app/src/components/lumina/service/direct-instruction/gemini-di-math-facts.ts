@@ -87,6 +87,70 @@ const resolveSupportStructure = (
         : 'modeled and practiced together first — the full DISTAR sequence',
 });
 
+// ── Structural difficulty (L4): operand-boundary shape ─────────────
+
+export interface DiMathFactsProblemShape {
+  /** Largest answer/minuend/start+1 this tier prefers, inside the pool cap. */
+  maximum: number;
+  /** Boundary the selected fact must cross; null means the within-five floor. */
+  crossingBoundary: 5 | 10 | null;
+  /** True when the requested rung cannot exist inside this pool's ceiling. */
+  saturated: boolean;
+  promptLines: string[];
+}
+
+/**
+ * One source of truth for the birth-certificate axis:
+ *   easy   → within five
+ *   medium → within ten, crossing five
+ *   hard   → within twenty, crossing ten
+ *
+ * The objective/eval-mode pool remains authoritative. A within-five pool
+ * collapses every tier to the floor; a within-ten pool honestly saturates hard
+ * at crossing five. Crossing ten is available only when the objective already
+ * permits a pool above ten — difficulty never widens that pool by itself.
+ */
+export const resolveProblemShape = (
+  _type: DiMathFactsChallengeType,
+  tier: SupportTier,
+  poolCeiling: number,
+): DiMathFactsProblemShape => {
+  const legalCeiling = Math.max(1, Math.min(20, Math.floor(poolCeiling)));
+  const requestedMaximum = tier === 'easy' ? 5 : tier === 'medium' ? 10 : 20;
+  const requestedBoundary: 5 | 10 | null =
+    tier === 'easy' ? null : tier === 'medium' ? 5 : 10;
+  const maximum = Math.min(legalCeiling, requestedMaximum);
+  const crossingBoundary: 5 | 10 | null =
+    requestedBoundary !== null && maximum > requestedBoundary
+      ? requestedBoundary
+      : maximum > 5
+        ? 5
+        : null;
+  const saturated = maximum < requestedMaximum || crossingBoundary !== requestedBoundary;
+  const description = crossingBoundary === 10
+    ? 'prefer facts that cross ten, staying within the objective pool'
+    : crossingBoundary === 5
+      ? 'prefer facts that cross five, staying within the objective pool'
+      : 'keep facts within five';
+
+  return {
+    maximum,
+    crossingBoundary,
+    saturated,
+    promptLines: [
+      `${description}; never widen factScope or replace an explicitly named/focused fact`,
+    ],
+  };
+};
+
+const buildTierPromptSection = (tier: SupportTier | null): string => {
+  if (!tier) return '';
+  // Twenty is the design ceiling, not a license to widen the actual pool. The
+  // post-process resolves again with each mode's real cap before selection.
+  const shape = resolveProblemShape('answer_fact', tier, 20);
+  return `\nDIFFICULTY TIER (${tier}):\n- ${shape.promptLines.join('\n- ')}\n`;
+};
+
 // ── Number words + ASR aliases (code-owned) ─────────────────────────
 
 /** Number words 0..20 — the full answer range this pack can ever speak. */
@@ -210,8 +274,11 @@ const buildPool = (scope: Exclude<FactScope, { kind: 'named' }>): FactPair[] => 
     return Array.from({ length: 5 }, (_, i) => ({ a: i + 1, b: i + 1 }));
   }
   const pool: FactPair[] = [];
-  for (let a = 0; a <= scope.maxSum; a++) {
-    for (let b = 0; b <= scope.maxSum - a; b++) {
+  // The within-twenty L4 rung crosses ten with two single-digit/ten operands;
+  // never turn it into multi-digit addition (e.g. 15 + 2) by accident.
+  const operandCap = Math.min(10, scope.maxSum);
+  for (let a = 0; a <= operandCap; a++) {
+    for (let b = 0; b <= Math.min(operandCap, scope.maxSum - a); b++) {
       if (a + b >= 1) pool.push({ a, b });
     }
   }
@@ -265,6 +332,55 @@ const isTrivial = (type: DiMathFactsChallengeType, p: FactPair): boolean =>
     : type === 'subtraction_fact' ? p.b === 0
       : p.a === 0 || p.b === 0;
 
+/** The value whose ceiling defines "within N" for each task identity. */
+const structuralMagnitude = (
+  type: DiMathFactsChallengeType,
+  p: FactPair,
+): number =>
+  type === 'counting_next' ? p.a
+    : type === 'subtraction_fact' ? p.a
+      : p.a + p.b;
+
+/** Does this fact actually require stepping across the requested boundary? */
+export const crossesOperandBoundary = (
+  type: DiMathFactsChallengeType,
+  p: FactPair,
+  boundary: 5 | 10,
+): boolean => {
+  if (type === 'counting_next') return p.a === boundary;
+  if (type === 'subtraction_fact') {
+    return p.a > boundary && answerFor(type, p) <= boundary;
+  }
+  // Addition is commutative for identity but not for the spoken route. The
+  // code-owned pool contains both orientations, so require the displayed first
+  // addend to begin at/below the boundary and the sum to land above it.
+  return p.a <= boundary && p.a + p.b > boundary;
+};
+
+/**
+ * Stable structural ranking: exact tier shape first, then the same tier's
+ * legal upper band, then lower-band fallbacks. The input has already been
+ * shuffled, so this changes only structural priority, not within-shape variety.
+ */
+const rankByProblemShape = (
+  pairs: FactPair[],
+  type: DiMathFactsChallengeType,
+  shape: DiMathFactsProblemShape,
+): FactPair[] => {
+  const rank = (p: FactPair): number => {
+    const magnitude = structuralMagnitude(type, p);
+    if (magnitude > shape.maximum) return 3;
+    if (shape.crossingBoundary === null) return magnitude <= shape.maximum ? 0 : 3;
+    if (crossesOperandBoundary(type, p, shape.crossingBoundary)) return 0;
+    if (magnitude > shape.crossingBoundary) return 1;
+    return 2;
+  };
+  return pairs
+    .map((pair, index) => ({ pair, index, rank: rank(pair) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(({ pair }) => pair);
+};
+
 /** Fisher-Yates. App code, not a workflow script — Math.random is fine. */
 const shuffle = <T,>(items: T[]): T[] => {
   const out = [...items];
@@ -317,6 +433,34 @@ const selectVaried = (
     if (keys.has(keyFor(type, p))) continue;
     if (isTrivial(type, p) && trivials >= 1) continue;
     take(p);
+  }
+  return out;
+};
+
+/**
+ * Count → honor → reconstruct for a code-owned pool. Exact boundary facts are
+ * exhausted before same-tier upper-band fallbacks, and only then may an
+ * objective-defined pool that cannot express the tier (make-ten / named facts)
+ * fill from its remaining legal items. Reusing the prior result as `seed`
+ * preserves identities and variance across each stage.
+ */
+const selectVariedForShape = (
+  pool: FactPair[],
+  count: number,
+  type: DiMathFactsChallengeType,
+  shape: DiMathFactsProblemShape,
+  seed: FactPair[] = [],
+): FactPair[] => {
+  const insideTier = pool.filter((p) => structuralMagnitude(type, p) <= shape.maximum);
+  const exact = shape.crossingBoundary === null
+    ? insideTier
+    : insideTier.filter((p) => crossesOperandBoundary(type, p, shape.crossingBoundary!));
+  let out = selectVaried(exact, count, type, seed);
+  if (out.length < count) {
+    out = selectVaried(insideTier, count, type, out);
+  }
+  if (out.length < count) {
+    out = selectVaried(pool, count, type, out);
   }
   return out;
 };
@@ -375,10 +519,14 @@ const poolForType = (
 const seedForType = (
   type: DiMathFactsChallengeType,
   scope: FactScope,
+  shape?: DiMathFactsProblemShape,
 ): FactPair[] => {
   if (type !== 'answer_fact' && type !== 'fact_review') return [];
   if (scope.kind === 'named') return scope.facts;
-  if (type === 'fact_review') return shuffle(buildPool(scope)).slice(0, 2);
+  if (type === 'fact_review') {
+    const candidates = shuffle(buildPool(scope));
+    return (shape ? rankByProblemShape(candidates, type, shape) : candidates).slice(0, 2);
+  }
   return []; // answer_fact's pool already IS the focused scope
 };
 
@@ -516,8 +664,7 @@ export const generateDiMathFacts = async (
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second axis of the two-field contract: targetEvalMode = which fact skill,
-     * difficulty = how much of the DISTAR sequence precedes the answer.
-     * NEVER changes which facts are selected.
+     * difficulty = both DISTAR withdrawal and in-pool operand structure.
      */
     difficulty?: string;
     [key: string]: unknown;
@@ -528,6 +675,7 @@ export const generateDiMathFacts = async (
     MAX_INSTANCE_COUNT,
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
   );
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   // The objective's fact scope, resolved from ALL the text we have and
   // code-enforced below (topic/objective beats whatever the model picks).
@@ -536,7 +684,7 @@ export const generateDiMathFacts = async (
 
   const prompt = `Scope a brisk Direct Instruction math-facts practice (printed problems, spoken number-word answers) for a young learner.
 
-TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
+TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}${buildTierPromptSection(supportTier)}
 
 RULES:
 - Read the objective and pick the factScope that matches its number range: 'within_5' (numbers to five), 'within_10' (numbers to ten), 'make_10' (pairs that make ten), or 'doubles' (a number plus itself). A generic objective for a kindergartner means 'within_5'; otherwise 'within_10'.
@@ -603,14 +751,22 @@ Return the wrapper JSON only.`;
   const scopeSource = textScope ? 'text' : modelScope ? 'model' : 'grade-default';
   const ceiling = ceilingOf(scope, gradeLevel);
 
+  /** Review is capped by the taught grade-wide pool; other identities inherit
+   * the objective's resolved ceiling. The tier can narrow, never widen, it. */
+  const poolCeilingFor = (type: DiMathFactsChallengeType): number =>
+    type === 'fact_review' ? gradeDefaultScope(gradeLevel).maxSum : ceiling;
+
   /** One skill's share of the session — its own scoped pool, own variance. */
-  const buildFor = (type: DiMathFactsChallengeType, n: number): FactPair[] =>
-    selectVaried(
-      shuffle(poolForType(type, scope, gradeLevel, ceiling)),
-      n,
-      type,
-      seedForType(type, scope),
-    );
+  const buildFor = (type: DiMathFactsChallengeType, n: number): FactPair[] => {
+    const pool = shuffle(poolForType(type, scope, gradeLevel, ceiling));
+    const shape = supportTier
+      ? resolveProblemShape(type, supportTier, poolCeilingFor(type))
+      : undefined;
+    const seed = seedForType(type, scope, shape);
+    return shape
+      ? selectVariedForShape(pool, n, type, shape, seed)
+      : selectVaried(pool, n, type, seed);
+  };
 
   // Build the challenge set from the resolved mode(s). Single mode → all one
   // skill; blend/mixed → an interleaved spread so every mode appears (SP-21).
@@ -656,7 +812,6 @@ Return the wrapper JSON only.`;
   // pack's structural axis and belongs to /add-structural-difficulty, not
   // here. The tier is 100% code-composed into the cue (diMathFactsScript
   // `leadInFor` + `coldAnswerGuard`).
-  const supportTier = normalizeSupportTier(config?.difficulty);
   if (supportTier) {
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
@@ -664,6 +819,25 @@ Return the wrapper JSON only.`;
     console.log(
       `[DiMathFacts] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'answer_fact', supportTier).describe}`,
     );
+    console.log('[DiMathFacts] Structural tier results:', challenges.map((ch) => {
+      const shape = resolveProblemShape(
+        ch.challengeType,
+        supportTier,
+        poolCeilingFor(ch.challengeType),
+      );
+      const pair = { a: ch.a, b: ch.b };
+      const actual = shape.crossingBoundary === null
+        ? structuralMagnitude(ch.challengeType, pair) <= shape.maximum
+        : crossesOperandBoundary(ch.challengeType, pair, shape.crossingBoundary);
+      return {
+        type: ch.challengeType,
+        target: shape.crossingBoundary === null
+          ? `within-${shape.maximum}`
+          : `cross-${shape.crossingBoundary}`,
+        actual,
+        saturated: shape.saturated || !actual,
+      };
+    }));
   }
 
   // Session identity = the first item's skill (a pinned mode → that mode).

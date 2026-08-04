@@ -45,6 +45,11 @@ export interface SpellingPatternExplorerData {
   dictationWords: string[];             // Words to spell using the rule
   dictationHints?: string[];            // Optional hints per word
 
+  // Within-mode support tier (config.difficulty → generator stamp).
+  // Display-only scaffold withdrawal — absent ⇒ full-support legacy render.
+  // Content (patternWords, dictationWords, rule) is byte-identical across tiers.
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props
   instanceId?: string;
   skillId?: string;
@@ -85,9 +90,29 @@ const PATTERN_ACCENTS: Record<PatternType, LuminaAccent> = {
 const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data, className }) => {
   const {
     title, gradeLevel, patternType, patternWords, highlightPattern,
-    ruleTemplate, correctRule, dictationWords, dictationHints,
+    ruleTemplate, correctRule, dictationWords, dictationHints, supportTier,
     instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
   } = data;
+
+  // ── Support-tier render gates (absent ⇒ full-support legacy) ──────────────
+  // 100% display withdrawal: no gate below ever touches content or the checker.
+  // The per-word hint button is the ONLY stimulus identifying which word to
+  // spell (no TTS exists), so it is NEVER tier-gated at any tier.
+  // L1: explicit pattern-reveal panel — withdrawn at medium/hard.
+  const showPatternPanel = !supportTier || supportTier === 'easy';
+  // L2: word-tile pattern highlights — all (legacy/easy) → first 3 worked
+  // examples (medium) → none (hard: the student induces the pattern).
+  const highlightLimit =
+    !supportTier || supportTier === 'easy' ? Number.POSITIVE_INFINITY
+    : supportTier === 'medium' ? 3
+    : 0;
+  // L3: fill-in-the-blank ruleTemplate — withdrawn at hard.
+  const showRuleTemplate = supportTier !== 'hard';
+  // L4: live correct-glow on dictation inputs — neutral until Review at hard
+  // (closes the letter-by-letter brute-force channel).
+  const liveCorrectGlow = supportTier !== 'hard';
+  // L5: "show" reveal button — withdrawn at hard (the hint stays available).
+  const showRevealButton = supportTier !== 'hard';
 
   const [currentPhase, setCurrentPhase] = useState<SpellingPhase>('observe');
   const [patternIdentified, setPatternIdentified] = useState(false);
@@ -226,18 +251,25 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
         {/* Phase 1: Observe */}
         {currentPhase === 'observe' && (
           <div className="space-y-3">
+            {/* Keep-true: this prompt renders at EVERY tier — it is the task framing. */}
             <p className="text-xs text-slate-500">Look at these words. What pattern do they share?</p>
-            {/* Interaction surface: word tiles with highlighted grapheme pattern */}
+            {/* Interaction surface: word tiles. L2 tier gate: all highlighted
+                (legacy/easy) → first 3 worked examples (medium) → none (hard). */}
             <div className="flex flex-wrap gap-3">
               {patternWords.map((word, i) => (
                 <div key={i} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-lg">
-                  {highlightWordPattern(word)}
+                  {i < highlightLimit
+                    ? highlightWordPattern(word)
+                    : <span className="text-slate-200">{word}</span>}
                 </div>
               ))}
             </div>
-            <LuminaPanel accent="amber" className="p-2">
-              <p className="text-xs text-amber-300">Pattern: <span className="font-bold text-yellow-300">{highlightPattern}</span></p>
-            </LuminaPanel>
+            {/* L1 tier gate: the explicit pattern reveal is easy/legacy only. */}
+            {showPatternPanel && (
+              <LuminaPanel accent="amber" className="p-2">
+                <p className="text-xs text-amber-300">Pattern: <span className="font-bold text-yellow-300">{highlightPattern}</span></p>
+              </LuminaPanel>
+            )}
             <LuminaActionButton
               action="next"
               onClick={() => { SoundManager.select(); setPatternIdentified(true); setCurrentPhase('rule'); }}
@@ -252,9 +284,13 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
         {currentPhase === 'rule' && (
           <div className="space-y-3">
             <p className="text-xs text-slate-500">Complete the spelling rule:</p>
-            <LuminaPanel>
-              <p className="text-sm text-slate-300 italic">{ruleTemplate}</p>
-            </LuminaPanel>
+            {/* L3 tier gate: the fill-in-the-blank template is withdrawn at hard —
+                the student states the rule unaided (the placeholder still frames it). */}
+            {showRuleTemplate && (
+              <LuminaPanel>
+                <p className="text-sm text-slate-300 italic">{ruleTemplate}</p>
+              </LuminaPanel>
+            )}
             {/* Interaction surface: student writes the rule in their own words */}
             <textarea
               value={studentRule}
@@ -283,7 +319,10 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
               return (
                 <div key={i} className="flex items-center gap-2">
                   <span className="text-xs text-slate-500 w-6">{i + 1}.</span>
-                  {/* Interaction surface: spelling-entry box (graded via answerStateClasses) */}
+                  {/* Interaction surface: spelling-entry box (graded via answerStateClasses).
+                      L4 tier gate: the live correct-glow is suppressed at hard — the input
+                      stays neutral until Review, closing letter-by-letter brute force.
+                      The checker itself is untouched at every tier. */}
                   <input
                     value={spellings[i] || ''}
                     onChange={e => {
@@ -295,10 +334,12 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
                     disabled={isRevealed}
                     className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
                       isRevealed ? answerStateClasses.correct
-                      : spellings[i] && isCorrect ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-200'
+                      : liveCorrectGlow && spellings[i] && isCorrect ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-200'
                       : 'bg-white/5 border-white/10 text-slate-200 focus:border-blue-500/40'
                     }`}
                   />
+                  {/* Keep-true: the hint button is the ONLY stimulus identifying which
+                      word to spell (no TTS exists) — NEVER tier-gated, at any tier. */}
                   {hasHint && !showHints.has(i) && (
                     <button onClick={() => setShowHints(prev => new Set(Array.from(prev).concat(i)))}
                       className="text-xs text-slate-500 hover:text-slate-400">hint</button>
@@ -306,7 +347,8 @@ const SpellingPatternExplorer: React.FC<SpellingPatternExplorerProps> = ({ data,
                   {showHints.has(i) && hasHint && (
                     <span className="text-xs text-amber-300">{dictationHints![i]}</span>
                   )}
-                  {spellings[i] && !isCorrect && (
+                  {/* L5 tier gate: the free answer reveal is withdrawn at hard. */}
+                  {showRevealButton && spellings[i] && !isCorrect && (
                     <button onClick={() => setRevealedWords(prev => new Set(Array.from(prev).concat(i)))}
                       className="text-xs text-slate-500 hover:text-slate-400">show</button>
                   )}

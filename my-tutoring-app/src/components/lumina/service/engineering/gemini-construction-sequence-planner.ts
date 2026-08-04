@@ -47,6 +47,33 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// Within-mode support tier (config.difficulty) — scaffolding level, NOT content
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; byte-identical legacy data). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** Stamp the tier onto a payload IN CODE, post-parse. Covers EVERY exit path
+ *  (happy path AND all fallback returns). Null tier → data returned untouched,
+ *  with NO tier field added — the byte-compatible legacy shape the component's
+ *  full-support default relies on. The tier NEVER changes tasks, dependencies,
+ *  durations, task counts, or targetWeeks — the component reads `supportTier`
+ *  and withdraws on-screen scaffolding only. */
+function applyTier(
+  data: ConstructionSequencePlannerData,
+  tier: SupportTier | null,
+): ConstructionSequencePlannerData {
+  return tier ? { ...data, supportTier: tier } : data;
+}
+
+// ============================================================================
 // Eval Mode → Task Count Mapping
 // ============================================================================
 
@@ -466,7 +493,16 @@ function getHouseFallback(gradeLevel: string, evalMode?: string): ConstructionSe
 // Generator
 // ============================================================================
 
-type ConstructionSequencePlannerConfig = Partial<{ targetEvalMode?: string }>;
+type ConstructionSequencePlannerConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes the
+   * tasks, dependencies, durations, task counts, or targetWeeks.
+   */
+  difficulty?: string;
+}>;
 
 export const generateConstructionSequencePlanner = async (
   ctx: GenerationContext,
@@ -476,6 +512,11 @@ export const generateConstructionSequencePlanner = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ConstructionSequencePlannerConfig;
   const targetEvalMode = config?.targetEvalMode;
+
+  // Within-mode support tier: resolved from config.difficulty ONLY (never from
+  // eval-mode resolution — a missing pinnedType must not silently no-op the
+  // tier). Stamped post-parse on every exit path via applyTier().
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   // Resolve eval mode constraint from catalog
   const constraint = resolveEvalModeConstraint(
@@ -556,7 +597,7 @@ TASK FIELD NOTES:
   const raw: RawGeminiResponse | null = result.text ? JSON.parse(result.text) : null;
   if (!raw) {
     console.warn('[ConstructionSequencePlanner] No data from Gemini — using fallback');
-    return getHouseFallback(gradeLevel, targetEvalMode);
+    return applyTier(getHouseFallback(gradeLevel, targetEvalMode), supportTier);
   }
 
   // ---- Reconstruct from flat fields ----
@@ -565,7 +606,7 @@ TASK FIELD NOTES:
   // If reconstruction failed (missing required tasks), use fallback
   if (tasks.length === 0) {
     console.warn('[ConstructionSequencePlanner] Task reconstruction failed — using fallback');
-    return getHouseFallback(gradeLevel, targetEvalMode);
+    return applyTier(getHouseFallback(gradeLevel, targetEvalMode), supportTier);
   }
 
   // Validate minimum task count for the eval mode
@@ -573,7 +614,7 @@ TASK FIELD NOTES:
     console.warn(
       `[ConstructionSequencePlanner] Gemini returned ${tasks.length} tasks but ${targetEvalMode ?? 'default'} requires ${taskCount.min}-${taskCount.max} — using fallback`
     );
-    return getHouseFallback(gradeLevel, targetEvalMode);
+    return applyTier(getHouseFallback(gradeLevel, targetEvalMode), supportTier);
   }
 
   // ---- Validation pipeline ----
@@ -620,5 +661,9 @@ TASK FIELD NOTES:
     challenges,
   };
 
-  return data;
+  if (supportTier) {
+    console.log(`[ConstructionSequencePlanner] Support tier "${supportTier}" stamped (scaffold withdrawal only — tasks/deps/targetWeeks untouched).`);
+  }
+
+  return applyTier(data, supportTier);
 };

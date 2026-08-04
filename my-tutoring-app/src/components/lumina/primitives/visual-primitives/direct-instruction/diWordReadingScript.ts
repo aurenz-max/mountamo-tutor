@@ -32,17 +32,17 @@
  * different word (sun/son, red/read) must be corrected, not affirmed.
  */
 
-/**
- * The single L0 task identity. Ladder candidates for a LATER /add-eval-modes
- * (do NOT build now): `cvc_reading` (decodable only) / `sight_word`
- * (irregular high-frequency) / `word_reading_review` (mixed spaced set).
- */
-export type DiWordReadingChallengeType = 'read_word';
+/** The L1 task identities: decodable, base mixed, sight-word, and review. */
+export type DiWordReadingChallengeType =
+  | 'cvc_reading'
+  | 'read_word'
+  | 'sight_word'
+  | 'word_reading_review';
 
 /** One printed word the tutor drills. Mirrors the generator output shape. */
 export interface DiWordReadingChallenge {
   id: string;
-  /** Which eval-mode SKILL this item drills — one identity at birth. */
+  /** Which eval-mode skill this item drills. */
   challengeType: DiWordReadingChallengeType;
   /** The printed word shown on screen and read aloud, e.g. "sam". */
   word: string;

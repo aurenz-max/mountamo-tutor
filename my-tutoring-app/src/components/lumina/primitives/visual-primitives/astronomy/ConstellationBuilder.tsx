@@ -52,6 +52,14 @@ export interface ConstellationBuilderData {
   description: string;
   gradeLevel: string;
 
+  /**
+   * Within-mode support tier stamped by the generator from config.difficulty.
+   * Render-side withdrawal ONLY (member-star highlight, distractor-star
+   * interactivity, hint specificity) — never content. Absent → full-support
+   * legacy render, identical to 'easy'.
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   stars: StarData[];
   challenges: ConstellationChallenge[];
 
@@ -81,6 +89,21 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 // =============================================================================
+// Support-tier constants
+// =============================================================================
+
+/** L3 (medium/hard): generic-but-never-silent feedback — the K-5 floor. */
+const GENERIC_HINT = 'Not quite — try again.';
+
+/**
+ * F1 (all tiers, defect fix — not a tier lever): static pad pool for the
+ * seasonal option collapse. The generator only requires distractors for
+ * identify challenges, so a lone seasonal challenge can arrive with a single
+ * option — unanswerable as a discrimination. Real constellation names only.
+ */
+const SEASONAL_NAME_POOL = ['Orion', 'Ursa Major', 'Cassiopeia', 'Leo', 'Scorpius', 'Lyra'];
+
+// =============================================================================
 // Helper: compute star visual size from magnitude
 // =============================================================================
 
@@ -89,9 +112,12 @@ function starRadius(magnitude: number): number {
   return Math.max(1.5, 6 - magnitude * 0.8);
 }
 
-function starOpacity(magnitude: number, isConstellation: boolean): number {
-  if (isConstellation) return 1;
-  // Background stars are dimmer
+function starOpacity(magnitude: number, isConstellation: boolean, highlightMembers: boolean): number {
+  // L1 (support tier): forcing member stars to full opacity is an easy/legacy
+  // support. At medium/hard the tier withdraws it — opacity comes from
+  // magnitude alone, so membership carries no opacity signal.
+  if (isConstellation && highlightMembers) return 1;
+  // Stars dim with magnitude (higher magnitude = dimmer star)
   return Math.max(0.25, 1 - magnitude * 0.15);
 }
 
@@ -147,6 +173,14 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
 
   // Current challenge
   const currentChallenge = challenges[currentChallengeIndex] ?? null;
+
+  // ── Support tier (generator-stamped from config.difficulty) ──
+  // Absent field → full-support legacy render, byte-identical to 'easy'.
+  const supportTier = data.supportTier ?? null;
+  /** L1: bright `#fffbe6` fill + forced opacity-1 member-star highlight — easy/legacy only. */
+  const highlightMembers = supportTier === null || supportTier === 'easy';
+  /** L2/L3 withdrawal gate — medium and hard withdraw the same supports here. */
+  const tierWithdrawn = supportTier === 'medium' || supportTier === 'hard';
 
   // Per-challenge local state
   const [drawnConnections, setDrawnConnections] = useState<ConnectionLine[]>([]);
@@ -240,7 +274,8 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
       } else {
         SoundManager.invalid();
         incrementAttempts();
-        setFeedback({ type: 'hint', message: 'Look for the numbered star!' });
+        // L3: specific directive hint at easy/legacy, generic (never silent) at medium/hard
+        setFeedback({ type: 'hint', message: tierWithdrawn ? GENERIC_HINT : 'Look for the numbered star!' });
       }
       return;
     }
@@ -249,7 +284,8 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     if (currentChallenge.type === 'free_connect') {
       if (!constellationStarIds.has(starId)) {
         incrementAttempts();
-        setFeedback({ type: 'wrong', message: 'That star isn\'t part of this constellation. Try a brighter one!' });
+        // L3: the discriminating-feature hint ("brighter") is easy/legacy support
+        setFeedback({ type: 'wrong', message: tierWithdrawn ? GENERIC_HINT : 'That star isn\'t part of this constellation. Try a brighter one!' });
         setSelectedStarId(null);
         return;
       }
@@ -282,11 +318,12 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
         setFeedback(null);
       } else {
         incrementAttempts();
-        setFeedback({ type: 'wrong', message: 'Those two stars aren\'t connected in this constellation.' });
+        // L3: specific pair hint at easy/legacy, generic at medium/hard
+        setFeedback({ type: 'wrong', message: tierWithdrawn ? GENERIC_HINT : 'Those two stars aren\'t connected in this constellation.' });
       }
       setSelectedStarId(null);
     }
-  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, incrementAttempts]);
+  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, incrementAttempts, tierWithdrawn]);
 
   // Handle identify mode answer
   const handleIdentifyAnswer = useCallback((answer: string) => {
@@ -404,7 +441,19 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     if (currentChallenge.distractorName0) distractors.push(currentChallenge.distractorName0);
     if (currentChallenge.distractorName1) distractors.push(currentChallenge.distractorName1);
     if (currentChallenge.distractorName2) distractors.push(currentChallenge.distractorName2);
-    return Array.from(new Set([...allNames, ...distractors])).sort(() => Math.random() - 0.5);
+    const options = Array.from(new Set([...allNames, ...distractors]));
+    // F1 (all tiers): a collapsed pool (<2 options) is unanswerable as a
+    // discrimination — pad deterministically from the static pool up to 3
+    // options. The correct answer is always retained (options only grow).
+    if (options.length < 2) {
+      const existing = new Set(options);
+      for (const name of SEASONAL_NAME_POOL) {
+        if (options.length >= 3) break;
+        if (name === currentChallenge.constellationName || existing.has(name)) continue;
+        options.push(name);
+      }
+    }
+    return options.sort(() => Math.random() - 0.5);
   }, [currentChallenge, challenges]);
 
   // Overall score for display
@@ -535,11 +584,19 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
                     const cx = star.x * 6;
                     const cy = star.y * 4.5;
                     const r = starRadius(star.magnitude);
-                    const opacity = starOpacity(star.magnitude, star.isPartOfConstellation);
+                    const opacity = starOpacity(star.magnitude, star.isPartOfConstellation, highlightMembers);
                     const isSelected = star.id === selectedStarId;
                     const isGuidedTarget = currentChallenge.type === 'guided_trace' &&
                       currentChallenge.starOrder[guidedStep] === star.id;
-                    const isInteractive = currentChallenge.type !== 'identify' && star.isPartOfConstellation;
+                    // L2 (medium/hard, free_connect ONLY): background stars become
+                    // clickable — a wrong tap costs an attempt via the existing
+                    // wrong-star branch in handleStarClick, whose membership source
+                    // (constellationStarIds, derived from correctConnections) is the
+                    // checker's own. guided_trace stays inert for non-members (order
+                    // is the task); identify stays non-interactive by design.
+                    const isInteractive = currentChallenge.type !== 'identify' &&
+                      (star.isPartOfConstellation ||
+                        (tierWithdrawn && currentChallenge.type === 'free_connect'));
 
                     return (
                       <g key={star.id}>
@@ -559,12 +616,14 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
                             </text>
                           </>
                         )}
-                        {/* Star dot */}
+                        {/* Star dot — L1: the bright member fill is easy/legacy support;
+                            at medium/hard all stars share the uniform background fill
+                            (magnitude alone drives the render — no membership signal) */}
                         <circle
                           cx={cx}
                           cy={cy}
                           r={r}
-                          fill={star.isPartOfConstellation ? '#fffbe6' : '#e2e8f0'}
+                          fill={star.isPartOfConstellation && highlightMembers ? '#fffbe6' : '#e2e8f0'}
                           opacity={opacity}
                           className={isInteractive ? 'cursor-pointer' : ''}
                           onClick={() => isInteractive && handleStarClick(star.id)}

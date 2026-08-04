@@ -296,11 +296,35 @@ function validateStarReferences(
 }
 
 // ============================================================================
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — render-support level, NOT content
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; byte-identical legacy output). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ============================================================================
 // GENERATOR FUNCTION
 // ============================================================================
 
 type ConstellationBuilderConfig = {
   targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen support within it. NEVER changes
+   * numbers/content values — stars and challenges are identical across tiers;
+   * the component withdraws render-side support (member-star highlight,
+   * distractor-star interactivity, hint specificity) from the stamped
+   * `supportTier` field alone.
+   */
+  difficulty?: string;
 };
 
 export const generateConstellationBuilder = async (
@@ -310,6 +334,10 @@ export const generateConstellationBuilder = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as ConstellationBuilderConfig;
+  // ── Within-mode support tier: resolved from config.difficulty, stamped
+  //    post-parse on EVERY exit path below. Gated ONLY on the tier itself —
+  //    never on eval-mode resolution (the batch-1 silent-no-op trap). ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as
     'K' | '1' | '2' | '3' | '4' | '5';
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];
@@ -471,7 +499,14 @@ Generate a complete, educationally sound activity configuration with real conste
       gradeLevel: resolvedGrade,
       stars,
       challenges,
+      // Support-tier stamp — the component's render levers key off this field
+      // alone; absent = byte-identical legacy full-support output.
+      ...(supportTier ? { supportTier } : {}),
     };
+
+    if (supportTier) {
+      console.log(`[ConstellationBuilder] Support tier "${supportTier}" stamped (render-side withdrawal only — content unchanged).`);
+    }
 
     return finalData;
   } catch (error) {
@@ -482,6 +517,9 @@ Generate a complete, educationally sound activity configuration with real conste
       title: 'Constellation Builder',
       description: 'Connect stars to discover constellations in the night sky!',
       gradeLevel: resolvedGrade,
+      // Support-tier stamp on the fallback exit path too (harness rule: stamp
+      // EVERY exit path). The fallback content below is unchanged across tiers.
+      ...(supportTier ? { supportTier } : {}),
       stars: [
         { id: 's1', x: 25, y: 30, magnitude: 2, isPartOfConstellation: true },
         { id: 's2', x: 30, y: 28, magnitude: 2, isPartOfConstellation: true },

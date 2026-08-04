@@ -54,6 +54,14 @@ export interface ConstructionSequencePlannerData {
   parallelAllowed: boolean;
   challenges: ConstructionChallenge[];
 
+  /**
+   * Within-mode support tier stamped by the generator from config.difficulty
+   * (second axis of the two-field contract). Controls SCAFFOLD WITHDRAWAL only —
+   * tasks, dependencies, durations, targetWeeks, and the checker never change
+   * with it. Absent → full-support legacy render (byte-identical).
+   */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
@@ -422,6 +430,13 @@ interface GanttProps {
   isBuilding: boolean;
   currentBuildTask: string | null;
   completedTasks: Set<string>;
+  /**
+   * L4 support-tier gate: false suppresses the amber critical-path outline and
+   * its legend chip (hard tier, plan phase — the "find the longest path" answer
+   * must not be pre-highlighted). Default true = legacy full disclosure; the
+   * build/results views never pass false, so the outline returns there.
+   */
+  showCriticalHighlight?: boolean;
 }
 
 const GanttTimeline: React.FC<GanttProps> = ({
@@ -434,6 +449,7 @@ const GanttTimeline: React.FC<GanttProps> = ({
   isBuilding,
   currentBuildTask,
   completedTasks,
+  showCriticalHighlight = true,
 }) => {
   const taskMap = new Map(tasks.map(t => [t.id, t]));
   const maxWeek = Math.max(totalWeeks, targetWeeks) + 2;
@@ -468,7 +484,7 @@ const GanttTimeline: React.FC<GanttProps> = ({
         const task = taskMap.get(id);
         if (!task) return null;
         const start = earliestStart.get(id) ?? 0;
-        const isCritical = criticalPath.includes(id);
+        const isCritical = showCriticalHighlight && criticalPath.includes(id);
         const isActive = currentBuildTask === id;
         const isDone = completedTasks.has(id);
         const catColor = CAT_COLORS[task.category];
@@ -503,10 +519,12 @@ const GanttTimeline: React.FC<GanttProps> = ({
       })}
       {/* Legend */}
       <div className="flex items-center gap-4 mt-3 ml-[140px]">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 border-2 border-amber-500 rounded-sm" />
-          <span className="text-[10px] text-slate-400">Critical Path</span>
-        </div>
+        {showCriticalHighlight && (
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 border-2 border-amber-500 rounded-sm" />
+            <span className="text-[10px] text-slate-400">Critical Path</span>
+          </div>
+        )}
         <div className="flex items-center gap-1">
           {/* dropzone-triage: decorative legend sample, out of scope */}
           <div className="w-6 h-0.5 border-t-2 border-dashed border-amber-500/40" />
@@ -539,6 +557,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     targetWeeks = 20,
     parallelAllowed = false,
     challenges = [],
+    supportTier,
     instanceId,
     skillId,
     subskillId,
@@ -622,6 +641,33 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
+  // ---- Support-tier scaffold gates (absent tier = full-support legacy) ----
+  // The tier withdraws on-screen scaffolding ONLY. It never touches the
+  // draggable task list, the Canvas consequence animation, the shuffle, the
+  // task content, the live scheduleWeeks badge (core feedback loop for
+  // deadline/parallel modes), or the non-critical-path read-aloud surfaces
+  // (band accessibility — band wins over tier).
+  const tierActive = supportTier === 'medium' || supportTier === 'hard';
+  // L1 — "Needs:" dependency labels: full names (easy/legacy) → count only → hidden.
+  const showDepNames = !tierActive;
+  const showDepCounts = supportTier === 'medium';
+  // L2 — unmet-dep red border: live (easy/legacy) → only after a failed build → off.
+  // "Failed build" is derived from existing state (no new persistence): a build
+  // attempt that has not produced a successful submission — every success path
+  // calls submitResults(true), flipping hasSubmittedEvaluation.
+  const hasFailedBuildAttempt = attempts > 0 && !hasSubmittedEvaluation;
+  const depBordersActive = !tierActive || (supportTier === 'medium' && hasFailedBuildAttempt);
+  // L3 — hint: exact task+dep reveal (easy/legacy) → category nudge → button hidden.
+  const showHintButton = supportTier !== 'hard';
+  const hintExact = supportTier !== 'medium';
+  // L4 — critical-path disclosure: outline+panel+number (easy/legacy) →
+  // outline + panel WITHOUT the totalWeeks number → plan-phase outline off,
+  // panel hidden (its read-aloud twin disappears with it). Outline returns in
+  // build/results views (those Gantt renders never pass false).
+  const showCriticalHighlightInPlan = supportTier !== 'hard';
+  const showCriticalPanel = supportTier !== 'hard';
+  const discloseCriticalNumber = !tierActive;
+
   // ---- AI Tutoring ----
   const aiPrimitiveData = useMemo(() => ({
     projectType,
@@ -630,7 +676,10 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
     targetWeeks,
     criticalPathLength: criticalPath.length,
     parallelAllowed,
-  }), [projectType, gradeLevel, tasks.length, targetWeeks, criticalPath.length, parallelAllowed]);
+    // Support tier threaded to the live tutor's reveal policy; omitted when
+    // absent so the legacy payload stays byte-identical.
+    ...(supportTier ? { supportTier } : {}),
+  }), [projectType, gradeLevel, tasks.length, targetWeeks, criticalPath.length, parallelAllowed, supportTier]);
 
   const { sendText, isConnected, isAudioPlaying } = useLuminaAI({
     primitiveType: 'construction-sequence-planner',
@@ -901,7 +950,14 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
       const v = violations[0];
       const task = taskMap.get(v.taskId);
       const dep = taskMap.get(v.missingDep);
-      setFeedback(`${dep?.icon ?? '💡'} "${task?.name}" needs "${dep?.name}" done first. Try moving it earlier!`);
+      if (hintExact) {
+        // easy/legacy: exact task + missing-dependency reveal
+        setFeedback(`${dep?.icon ?? '💡'} "${task?.name}" needs "${dep?.name}" done first. Try moving it earlier!`);
+      } else {
+        // medium: category-level nudge code-built from task data — NO task names
+        const catLabel = (CAT_LABELS[task?.category ?? ''] ?? task?.category ?? 'building').toLowerCase();
+        setFeedback(`💡 Look at the ${catLabel} tasks — one of them is scheduled too early.`);
+      }
       setFeedbackType('info');
     } else if (scheduleWeeks > targetWeeks && parallelAllowed) {
       setFeedback(`💡 Your order is correct but takes ${scheduleWeeks} weeks. Look for tasks that can run in parallel to shorten the schedule!`);
@@ -917,7 +973,7 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
       `Give a brief, specific hint without revealing the answer.`,
       { silent: true },
     );
-  }, [schedule, tasks, scheduleWeeks, targetWeeks, parallelAllowed, sendText]);
+  }, [schedule, tasks, scheduleWeeks, targetWeeks, parallelAllowed, hintExact, sendText]);
 
   // ---- Reset ----
   const handleReset = useCallback(() => {
@@ -1047,11 +1103,16 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                   const isDropTarget = dropTargetIdx === idx;
                   const isDragged = draggedIdx === idx;
                   const catColor = CAT_COLORS[task.category];
-                  // Check if this task has unmet deps in current schedule
+                  // Check if this task has unmet deps in current schedule.
+                  // L2 tier gate: the red warning border renders live at
+                  // easy/legacy, only after a failed build attempt at medium,
+                  // and never at hard (the Canvas build-failure animation is
+                  // the consequence channel there).
                   const unmetDeps = task.dependencies.filter(dep => {
                     const depIdx = schedule.indexOf(dep);
                     return depIdx === -1 || depIdx > idx;
                   });
+                  const showUnmetBorder = depBordersActive && unmetDeps.length > 0;
 
                   return (
                     <LuminaDropZone
@@ -1066,9 +1127,9 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                       onDragEnd={handleDragEnd}
                       className={`min-h-0 flex-nowrap justify-start gap-3 px-3 py-2.5 cursor-move
                         ${isDragged ? 'opacity-30' : ''}
-                        ${unmetDeps.length > 0 ? 'border-l-2' : ''}
+                        ${showUnmetBorder ? 'border-l-2' : ''}
                       `}
-                      style={unmetDeps.length > 0 ? { borderLeftColor: '#ef4444' } : undefined}
+                      style={showUnmetBorder ? { borderLeftColor: '#ef4444' } : undefined}
                     >
                       <div
                         className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold flex-shrink-0 text-white"
@@ -1079,9 +1140,17 @@ const ConstructionSequencePlanner: React.FC<{ data: ConstructionSequencePlannerD
                       <span className="text-xl flex-shrink-0">{task.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-100 truncate">{task.name}</div>
-                        {task.dependencies.length > 0 && (
+                        {/* L1 tier gate: full dependency names (easy/legacy) →
+                            count only (medium) → hidden (hard — infer the order
+                            from build logic + the task descriptions) */}
+                        {task.dependencies.length > 0 && showDepNames && (
                           <div className="text-[10px] text-slate-500 truncate">
                             Needs: {task.dependencies.map(d => taskMap.get(d)?.name ?? d).join(', ')}
+                          </div>
+                        )}
+                        {task.dependencies.length > 0 && showDepCounts && (
+                          <div className="text-[10px] text-slate-500 truncate">
+                            Needs {task.dependencies.length} earlier {task.dependencies.length === 1 ? 'task' : 'tasks'}
                           </div>
                         )}
                       </div>

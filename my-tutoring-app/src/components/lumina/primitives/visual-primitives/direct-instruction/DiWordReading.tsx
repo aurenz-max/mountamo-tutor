@@ -76,7 +76,7 @@ export interface DiWordReadingData {
   description: string;
   /** 3-6 printed-word items. REQUIRED. Built by the menu-scoped generator. */
   challenges: DiWordReadingChallenge[];
-  /** Session core task identity — one mode at birth (`read_word`). */
+  /** Representative session task identity (first item on blend/mixed paths). */
   challengeType: DiWordReadingChallengeType;
   /** Flat "sam, mat, cat, hat" item-set summary, attached by the generator for
    *  the tutoring scaffold's RUNTIME STATE (catalog contextKey `words`). Like
@@ -125,16 +125,17 @@ const scoreForCorrections = (corrections: number): number =>
 /**
  * Misconception Loop S1 — how the task is NAMED to the distiller.
  *
- * One task identity at L0 (`read_word`), so there is no cross-identity leak to
- * mitigate here yet. What DOES vary and matters diagnostically is `wordType`:
- * failing a decodable CVC word is a BLENDING failure and failing an irregular
- * sight word is a RECALL failure — different processes, and a diagnosis that
- * conflated them would misdirect the next problem. The ladder candidates on
- * this pack's birth cert (`cvc_reading` / `sight_word`) split exactly along
- * that line; naming it now means the evidence already says which one it was.
+ * L1 now exposes distinct decodable, base, sight-word, and review identities.
+ * `wordType` remains diagnostically important inside base/review: failing a
+ * decodable CVC word is a BLENDING failure and failing an irregular sight word
+ * is a RECALL failure. Naming both the identity and word type prevents the
+ * evidence from conflating those processes.
  */
 const TASK_PHRASE: Record<DiWordReadingChallengeType, string> = {
+  cvc_reading: 'blending and reading ONE decodable CVC word aloud',
   read_word: 'reading ONE printed word aloud',
+  sight_word: 'recalling and reading ONE irregular sight word aloud',
+  word_reading_review: 'reviewing ONE previously taught printed word aloud',
 };
 
 const challengeSummaryFor = (item: DiWordReadingChallenge): string =>

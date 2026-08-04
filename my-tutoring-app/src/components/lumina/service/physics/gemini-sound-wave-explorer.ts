@@ -185,11 +185,34 @@ const GRADE_CONFIGURATIONS: Record<string, { theme: SoundLabTheme; numChallenges
 };
 
 // ============================================================================
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — display/hint withdrawal ONLY
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null → NO tier applied (byte-identical legacy payload). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ============================================================================
 // GENERATOR FUNCTION
 // ============================================================================
 
 type SoundWaveExplorerConfig = {
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which skill,
+     * difficulty = how much on-screen support within it. NEVER changes content
+     * (objects, challenges, counts, answers) — the component withdraws text
+     * overlays / hint timing only; tap-to-vibrate, the Web Audio tone, and the
+     * observe-only slider unlock are task identity and are never tier-gated.
+     */
+    difficulty?: string;
   };
 
 export const generateSoundWaveExplorer = async (
@@ -198,6 +221,13 @@ export const generateSoundWaveExplorer = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SoundWaveExplorerConfig;
+  // ── Within-mode support tier: resolved from config.difficulty, stamped IN CODE
+  //    post-parse on EVERY exit path (happy + fallback). Never steers the prompt
+  //    or schema — content is identical across tiers. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  if (supportTier) {
+    console.log(`[SoundWaveExplorer] Support tier "${supportTier}" resolved — overlay/hint withdrawal only, content unchanged.`);
+  }
   // Per-primitive intent: the broad subject is the topic, but THIS activity targets a
   // specific objective. Intent steers the LLM-authored text (title/description/challenge
   // wording); the object set itself stays code-picked (see TODO at objectsForGrade).
@@ -306,6 +336,9 @@ Use warm, age-appropriate language for Grade ${finalGrade}.
       gradeLevel: finalGrade as 'K' | '1' | '2' | '3',
       objects,
       challenges,
+      // Support tier stamped in code — component render gates + the tutor reveal
+      // policy key off this field. Omitted when absent (legacy byte-compatible).
+      ...(supportTier ? { supportTier } : {}),
     };
   } catch (error) {
     console.error('Error generating SoundWaveExplorer content:', error);
@@ -340,6 +373,8 @@ Use warm, age-appropriate language for Grade ${finalGrade}.
           hint: 'Think about what happens when you tap something softly versus hard.',
         },
       ],
+      // Same stamp on the fallback exit path — the tier must survive LLM failure.
+      ...(supportTier ? { supportTier } : {}),
     };
   }
 };

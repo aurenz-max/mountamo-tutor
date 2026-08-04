@@ -213,6 +213,14 @@ const storyMapSchema: Schema = {
       description:
         "4-6 key events from the story, in their correct order. For BME, use 3-4 events. For story-mountain, use 5-6 events.",
     },
+    distractorCharacters: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "EXACTLY 2 names of people or animals that do NOT appear in this story — plausible "
+        + "for the story's setting but absent from the passage text. Never reuse a character "
+        + "name and never mention these names in the passage. Names only, no descriptions.",
+    },
   },
   required: [
     "title",
@@ -221,8 +229,71 @@ const storyMapSchema: Schema = {
     "passage",
     "elements",
     "events",
+    "distractorCharacters",
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Within-mode support tier (config.difficulty) — scaffold withdrawal, in CODE.
+// The tier NEVER changes the story, elements, events, or answers; it only stamps
+// the typed fields the component reads to withdraw on-screen support.
+// ---------------------------------------------------------------------------
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; payload stays byte-identical legacy). */
+export function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * Post-parse tier application (nothing tier-shaped reaches the prompt).
+ *
+ * Stamps `supportTier` for any valid tier and, at medium/hard, up to 1/2
+ * VALIDATED distractor character names (L4 answer-form lever). The LLM always
+ * proposes distractors (the schema is tier-independent); CODE decides how many
+ * ship. Validation drops any proposal that (case-insensitively) matches a true
+ * character name or appears anywhere in the passage text; if too few survive,
+ * what's valid ships (degrade gracefully — names are NEVER invented in code).
+ * Absent/unknown tier → the payload is returned untouched (byte-identical legacy);
+ * easy stamps `supportTier` only (0 distractors = legacy truth-only pool).
+ */
+export function applyStoryMapSupportTier(
+  finalData: StoryMapData,
+  rawDistractorCharacters: unknown,
+  difficulty?: string,
+): StoryMapData {
+  const tier = normalizeSupportTier(difficulty);
+  if (!tier) return finalData;
+
+  finalData.supportTier = tier;
+
+  const includeCount = tier === 'hard' ? 2 : tier === 'medium' ? 1 : 0;
+  if (includeCount === 0) return finalData;
+
+  const trueNames = new Set(
+    (finalData.elements?.characters ?? []).map((c) => c.name.toLowerCase().trim()),
+  );
+  const passage = (finalData.passage?.text ?? '').toLowerCase();
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const proposed = Array.isArray(rawDistractorCharacters) ? rawDistractorCharacters : [];
+  for (const entry of proposed) {
+    if (typeof entry !== 'string') continue;
+    const name = entry.trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key) || trueNames.has(key) || passage.includes(key)) continue;
+    seen.add(key);
+    valid.push(name);
+    if (valid.length === includeCount) break;
+  }
+  if (valid.length > 0) finalData.distractorCharacters = valid;
+  return finalData;
+}
 
 /**
  * Determine the appropriate structure type based on grade level.
@@ -248,7 +319,20 @@ function getStructureType(
  * @param config - Optional partial configuration to override generated values
  * @returns StoryMapData with complete story mapping activity
  */
-type StoryMapConfig = Partial<StoryMapData & { targetEvalMode: string }>;
+type StoryMapConfig = Partial<
+  StoryMapData & {
+    targetEvalMode: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second axis of the two-field contract: targetEvalMode = which task identity,
+     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * story, elements, events, or answer content — code stamps `supportTier`
+     * (and tier-gated `distractorCharacters`) post-parse; the raw string never
+     * reaches component data.
+     */
+    difficulty: string;
+  }
+>;
 
 export const generateStoryMap = async (
   ctx: GenerationContext,

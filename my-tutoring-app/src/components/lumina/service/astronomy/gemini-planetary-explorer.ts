@@ -45,6 +45,27 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 // ============================================================================
+// WITHIN-MODE SUPPORT TIER (config.difficulty) — scaffolding level, NOT content
+// ============================================================================
+// The tier is scaffold WITHDRAWAL only, stamped in CODE post-parse. It NEVER
+// enters the prompt and NEVER changes the planets, stats, questions, options,
+// or correctIndex. The component reads the typed `supportTier` field to gate
+// its render levers (quiz-view canvas labels, comparisonToEarth captions,
+// first-miss tutor hint). Schema is at the flash-lite complexity ceiling — do
+// NOT add tier fields to the response schema.
+// ============================================================================
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; payload stays byte-identical legacy). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+// ============================================================================
 // GRADE-APPROPRIATE CONFIGURATION
 // ============================================================================
 
@@ -590,7 +611,16 @@ This mode has TWO parts:
 // GENERATOR FUNCTION
 // ============================================================================
 
-type PlanetaryExplorerConfig = Partial<{ targetEvalMode?: string }>;
+type PlanetaryExplorerConfig = Partial<{
+  targetEvalMode?: string;
+  /**
+   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+   * Second axis of the two-field contract: targetEvalMode = which skill,
+   * difficulty = how much on-screen scaffolding within it. NEVER changes the
+   * planets, stats, questions, options, or answers — display/support only.
+   */
+  difficulty?: string;
+}>;
 
 export const generatePlanetaryExplorer = async (
   ctx: GenerationContext,
@@ -599,6 +629,10 @@ export const generatePlanetaryExplorer = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PlanetaryExplorerConfig;
+  // ── Within-mode support tier (config.difficulty): scaffold withdrawal only.
+  //    Resolved in code, stamped post-parse on EVERY exit path via applyTier.
+  //    Gated ONLY on the tier being non-null — never on eval-mode resolution. ──
+  const supportTier = normalizeSupportTier(config?.difficulty);
   const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as string;
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];
 
@@ -705,6 +739,15 @@ Generate a complete, pedagogically sound planetary exploration journey.
     return { ...data, quizQuestions: quiz };
   };
 
+  // Helper: stamp the support tier on EVERY exit path (happy path AND all
+  // fallback returns). Gated ONLY on supportTier being non-null — absent means
+  // no field is stamped and the payload stays byte-identical legacy.
+  const applyTier = (data: PlanetaryExplorerData): PlanetaryExplorerData => {
+    if (!supportTier) return data;
+    console.log(`[PlanetaryExplorer] Support tier "${supportTier}" stamped (scaffold withdrawal is component-side).`);
+    return { ...data, supportTier };
+  };
+
   try {
     const result = await ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
@@ -725,14 +768,14 @@ Generate a complete, pedagogically sound planetary exploration journey.
 
     if (!title || !description || !introduction || !celebration) {
       console.warn('[PlanetaryExplorer] Missing top-level fields. Using fallback.');
-      return ensureQuizQuestions(buildFallback(resolvedGrade));
+      return applyTier(ensureQuizQuestions(buildFallback(resolvedGrade)));
     }
 
     // ── Reconstruct planets from flat Gemini fields ──
     const rawPlanets = raw.planets;
     if (!Array.isArray(rawPlanets) || rawPlanets.length === 0) {
       console.warn('[PlanetaryExplorer] No planets returned. Using fallback.');
-      return ensureQuizQuestions(buildFallback(resolvedGrade));
+      return applyTier(ensureQuizQuestions(buildFallback(resolvedGrade)));
     }
 
     const validPlanets: PlanetStop[] = [];
@@ -812,7 +855,7 @@ Generate a complete, pedagogically sound planetary exploration journey.
 
     // If all planets rejected, use fallback
     if (validPlanets.length === 0) {
-      return ensureQuizQuestions(buildFallback(resolvedGrade));
+      return applyTier(ensureQuizQuestions(buildFallback(resolvedGrade)));
     }
 
     // Ensure last planet has empty transition
@@ -832,7 +875,7 @@ Generate a complete, pedagogically sound planetary exploration journey.
     // Ensure minimum 2 planets (fallback if only 1)
     if (dedupedPlanets.length < 2) {
       console.warn('[PlanetaryExplorer] Fewer than 2 unique planets. Using fallback.');
-      return ensureQuizQuestions(buildFallback(resolvedGrade));
+      return applyTier(ensureQuizQuestions(buildFallback(resolvedGrade)));
     }
 
     // ── Reconstruct quiz questions for identify mode ──
@@ -864,10 +907,10 @@ Generate a complete, pedagogically sound planetary exploration journey.
     const quizCount = quizQuestions?.length ?? 0;
     console.log(`[PlanetaryExplorer] Generated successfully: ${dedupedPlanets.length} planets, ${totalPerPlanet} per-planet questions, ${quizCount} quiz questions.`);
 
-    return finalData;
+    return applyTier(finalData);
   } catch (error) {
     console.error('[PlanetaryExplorer] Error generating content:', error);
-    return ensureQuizQuestions(buildFallback(resolvedGrade));
+    return applyTier(ensureQuizQuestions(buildFallback(resolvedGrade)));
   }
 };
 
