@@ -75,7 +75,7 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`); the ladder
 > still runs SERIALLY and `catalog/di.ts` is free again — ~~next rung =
 > di-word-reading L2~~ **✅ 08-03 `66a2d66`; di-sentence-reading L4 ✅ 08-03
-> `603cc82`; next rung = di-letter-sounds L4, per the ladder table below**) →
+> `603cc82`; di-letter-sounds L4 ✅ 08-03; next rung = di-math-facts L4**) →
 > **item 2**
 > remediation-lever design (the misconception loop's consumption half — a real
 > platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
@@ -573,7 +573,7 @@ before di-sentence-reading existed.)*
 
 | Pack | Born | L0 live gate | L1 modes | L2 scaffold | L3 tiers | Next rung |
 |---|---|---|---|---|---|---|
-| di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
+| di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | **✅ L4 08-03** → `/add-sound` (L5) |
 | di-word-reading | 07-22 | ✅ 07-23 (#43) | — (1 mode) | ✅ 08-03 | — | `/add-eval-modes` (L1 — the pack's own next rung; birth-cert candidates cvc_reading / sight_word / word_reading_review) |
 | di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | `/add-structural-difficulty` (L4) |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | **✅ L4 08-03** → `/add-sound` (L5) |
@@ -615,10 +615,25 @@ full vitest 1303/1303, live `/eval-test` sweep **6/6** (hard 7-8w / easy 3-4w /
 mixed+medium all-tiered / K saturation / scope-beats-band / no-tier control).
 Report `qa/eval-reports/di-sentence-reading-structural-difficulty-2026-08-03.md`.
 
-Nearest rungs, in order: **di-letter-sounds L4** (item-set composition per its
-birth cert: continuants-only → +short vowels → confusable contrasts m/n, f/v) ·
-di-math-facts L4 (operand structure, per its birth cert) · di-word-reading L1
-backfill (eval-mode split).
+~~**di-letter-sounds L4**~~ **DONE 2026-08-03 — second pack at L4.** The tier
+now drives DISTAR fade (L3) + whole-set composition (L4): easy = unique
+continuants/no complete pair; medium = +≥1 short vowel/no pair; hard = the
+confusable `m/n` and `f/v` pairs together when 3–6-item capacity permits.
+`first_sound_in_word` keeps its continuant-only identity, so medium honestly
+saturates at easy there; hard still advances to confusable continuant pairs.
+`resolveProblemShape` is the single source for prompt + code enforcement; the
+final count→honor→reconstruct pass runs AFTER objective selection and mixed-mode
+rotation, so variance cannot pull an out-of-tier item across the composition
+window. Item count, curated menu, and eval-mode slots never change; no spoken
+copy changed. Gates: typecheck:lumina 0; tsc 803 = baseline; structural suite
+17/17 incl. 2,048 varied-set stress (10 fail on revert); full vitest 1320/1320;
+live `/eval-test` sweep 7/7. Existing HUMAN-CHECKS #57 now carries the hard
+contrast-set glance; no new row. Report
+`qa/eval-reports/di-letter-sounds-structural-difficulty-2026-08-03.md`.
+
+Nearest rungs, in order: **di-math-facts L4** (operand structure, per its birth
+cert) · di-word-reading L1 backfill (eval-mode split) · the L5 polish choices
+for the two packs now at L4.
 ~~di-math-facts L3~~ **DONE 2026-08-01**. ~~di-letter-sounds L3~~ **DONE
 2026-08-01** (third template use; ear-check → #57; report
 `qa/eval-reports/di-letter-sounds-support-tiers-2026-08-01.md`).

@@ -60,13 +60,9 @@ describe('di-letter-sounds L3 support tier (config.difficulty)', () => {
       ...(difficulty !== undefined ? { difficulty } : {}),
     });
 
-  it('a pinned mode + hard stamps EVERY challenge hard, letters untouched', async () => {
-    const plain = await genTiered('letter_sound');
+  it('a pinned mode + hard stamps EVERY challenge hard', async () => {
     const hard = await genTiered('letter_sound', 'hard');
     expect(hard.challenges.every((c) => c.supportTier === 'hard')).toBe(true);
-    // The tier never changes which letters are drawn — same deterministic
-    // fallback ladder, same selection (offline path is order-stable).
-    expect(hard.challenges.map((c) => c.letter)).toEqual(plain.challenges.map((c) => c.letter));
   });
 
   it('mixed + medium tiers ALL THREE identities (gate on tier presence, never a pinned mode)', async () => {

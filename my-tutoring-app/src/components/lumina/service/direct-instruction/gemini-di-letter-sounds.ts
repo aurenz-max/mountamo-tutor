@@ -58,13 +58,10 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
  * held sound), so the same three sub-steps precede it. What a MODE changes is
  * which items are drawn and how the cue is phrased (the script owns that); what
  * a TIER changes is how much of the sequence is handed over. Kept
- * per-type-capable so a future mode can diverge.
- *
- * The tier NEVER changes which letters are selected — that would be structural
- * difficulty (item-set composition — continuants-only → +short vowels →
- * confusable contrasts (m/n, f/v) — is this pack's structural axis, queued for
- * /add-structural-difficulty), and mixing the two would make a tier change the
- * content instead of the support.
+ * per-type-capable so a future mode can diverge. Which letters are selected is
+ * the tier's OTHER dial — resolveProblemShape (L4 structural difficulty)
+ * controls the item-set composition. Two named resolvers share one tier enum:
+ * a hard item set is both confusable-by-composition and produced cold.
  */
 const resolveSupportStructure = (
   _type: DiLetterSoundChallengeType,
@@ -122,6 +119,185 @@ const DEFAULT_LETTERS = ['m', 's', 'a', 'f'];
 /** Cumulative-review walk: continuants and vowels interleaved, widest-first, so
  *  a review session spreads across the menu instead of hugging the focus cluster. */
 const REVIEW_SPREAD_ORDER = ['m', 's', 'a', 'f', 'r', 'i', 'n', 'l', 'o', 'v', 'z', 'u', 'e'];
+
+// ── Structural difficulty (L4) ───────────────────────────────────────────────
+
+const SHORT_VOWELS = MENU_LETTERS.filter((l) => LETTER_SOUND_MENU[l].elicitation === 'keyword');
+const CONFUSABLE_PAIRS = [['m', 'n'], ['f', 'v']] as const;
+
+type ShapeMode = DiLetterSoundChallengeType | 'mixed';
+
+export interface DiLetterSoundsProblemShape {
+  /** Minimum number of short vowels required in the whole item set. */
+  minimumShortVowels: number;
+  /** Hard cap: onset mode must stay continuant-only. */
+  maximumShortVowels: number;
+  /** Exact number of complete m/n or f/v pairs required in the set. */
+  confusablePairTarget: number;
+  promptLine: string;
+  saturated: boolean;
+}
+
+/**
+ * The tier's second dial: item-set composition, clamped to the session size and
+ * the eval mode's identity. The count never changes — difficulty changes the
+ * relationships among the items, not the amount of work or the benched menu.
+ *
+ * first_sound_in_word cannot admit short vowels (its keyword-onset contract is
+ * continuant-only), so medium honestly saturates at easy there. Hard remains a
+ * genuine step because confusable continuant pairs are legal in that mode.
+ */
+export const resolveProblemShape = (
+  type: ShapeMode,
+  tier: SupportTier,
+  count: number,
+): DiLetterSoundsProblemShape => {
+  const size = Math.max(0, Math.min(Math.floor(count), MAX_INSTANCE_COUNT));
+  const onsetOnly = type === 'first_sound_in_word';
+  const vowelCap = onsetOnly ? 0 : size;
+  const pairTarget = tier === 'hard'
+    ? Math.min(CONFUSABLE_PAIRS.length, Math.floor(size / 2))
+    : 0;
+
+  if (tier === 'hard') {
+    return {
+      minimumShortVowels: 0,
+      maximumShortVowels: vowelCap,
+      confusablePairTarget: pairTarget,
+      promptLine:
+        `DIFFICULTY TIER (hard): prefer a ${size}-item set that puts the confusable contrasts m/n and f/v together when the set size permits.`,
+      saturated: pairTarget < CONFUSABLE_PAIRS.length,
+    };
+  }
+
+  if (tier === 'medium' && !onsetOnly) {
+    return {
+      minimumShortVowels: Math.min(1, vowelCap),
+      maximumShortVowels: vowelCap,
+      confusablePairTarget: 0,
+      promptLine:
+        'DIFFICULTY TIER (medium): prefer a mixed set of continuants plus at least one short vowel; do not put m/n or f/v together yet.',
+      saturated: vowelCap === 0,
+    };
+  }
+
+  return {
+    minimumShortVowels: 0,
+    maximumShortVowels: 0,
+    confusablePairTarget: 0,
+    promptLine: onsetOnly && tier === 'medium'
+      ? 'DIFFICULTY TIER (medium): onset mode stays continuant-only; prefer a varied set and do not put m/n or f/v together yet.'
+      : 'DIFFICULTY TIER (easy): prefer continuants only; do not put m/n or f/v together in the same set.',
+    saturated: onsetOnly && tier === 'medium',
+  };
+};
+
+const countConfusablePairs = (letters: readonly string[]): number => {
+  const set = new Set(letters);
+  return CONFUSABLE_PAIRS.filter(([a, b]) => set.has(a) && set.has(b)).length;
+};
+
+const meetsProblemShape = (
+  letters: readonly string[],
+  shape: DiLetterSoundsProblemShape,
+): boolean => {
+  const vowelCount = letters.filter((l) => SHORT_VOWELS.includes(l)).length;
+  return new Set(letters).size === letters.length
+    && vowelCount >= shape.minimumShortVowels
+    && vowelCount <= shape.maximumShortVowels
+    && countConfusablePairs(letters) === shape.confusablePairTarget;
+};
+
+const completesPair = (letter: string, used: ReadonlySet<string>): boolean =>
+  CONFUSABLE_PAIRS.some(([a, b]) =>
+    (letter === a && used.has(b)) || (letter === b && used.has(a)));
+
+/**
+ * Deterministic count → honor-if-valid → reconstruct enforcement. The incoming
+ * challenges already contain the old objective preference, review breadth, and
+ * mixed-mode staggering. That variance work happens FIRST; this function then
+ * trims/rebuilds the final composition window, so rotation can never pull an
+ * out-of-tier letter back into the set (the sentence-reading L4 trap).
+ */
+const enforceProblemShape = (
+  challenges: DiLetterSoundChallenge[],
+  focusLetters: string[],
+  shape: DiLetterSoundsProblemShape,
+): DiLetterSoundChallenge[] => {
+  const incoming = challenges.map((ch) => ch.letter);
+  if (meetsProblemShape(incoming, shape)) return challenges;
+
+  const preferred = takeUnique([
+    ...incoming,
+    ...focusLetters,
+    ...DEFAULT_LETTERS,
+    ...REVIEW_SPREAD_ORDER,
+    ...MENU_LETTERS,
+  ], MENU_LETTERS.length);
+  const result: Array<string | null> = Array(challenges.length).fill(null);
+  const used = new Set<string>();
+
+  const placeRequired = (letter: string, requireNonOnset = false): void => {
+    const matching = challenges.findIndex((ch, i) =>
+      result[i] === null
+      && ch.letter === letter
+      && (!requireNonOnset || ch.challengeType !== 'first_sound_in_word'));
+    const fallback = challenges.findIndex((ch, i) =>
+      result[i] === null
+      && (!requireNonOnset || ch.challengeType !== 'first_sound_in_word'));
+    const index = matching >= 0 ? matching : fallback;
+    if (index >= 0) {
+      result[index] = letter;
+      used.add(letter);
+    }
+  };
+
+  if (shape.confusablePairTarget > 0) {
+    const preferredIndex = (letter: string) => {
+      const index = preferred.indexOf(letter);
+      return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    const selectedPairs = [...CONFUSABLE_PAIRS]
+      .sort((left, right) => {
+        const leftHits = left.filter((l) => incoming.includes(l)).length;
+        const rightHits = right.filter((l) => incoming.includes(l)).length;
+        return rightHits - leftHits
+          || Math.min(...left.map(preferredIndex)) - Math.min(...right.map(preferredIndex));
+      })
+      .slice(0, shape.confusablePairTarget);
+    const required = selectedPairs.flatMap((pair) => [...pair]);
+    required
+      .sort((a, b) => preferredIndex(a) - preferredIndex(b))
+      .forEach((letter) => placeRequired(letter));
+  } else if (shape.minimumShortVowels > 0) {
+    const vowel = preferred.find((l) => SHORT_VOWELS.includes(l)) ?? SHORT_VOWELS[0];
+    placeRequired(vowel, true);
+  }
+
+  for (let i = 0; i < result.length; i++) {
+    if (result[i] !== null) continue;
+    const onsetOnly = challenges[i].challengeType === 'first_sound_in_word';
+    const vowelCount = () => Array.from(used).filter((l) => SHORT_VOWELS.includes(l)).length;
+    const candidate = preferred.find((letter) => {
+      if (used.has(letter)) return false;
+      if (onsetOnly && SHORT_VOWELS.includes(letter)) return false;
+      if (SHORT_VOWELS.includes(letter) && vowelCount() >= shape.maximumShortVowels) return false;
+      if (shape.confusablePairTarget === 0 && completesPair(letter, used)) return false;
+      if (shape.confusablePairTarget > 0
+        && completesPair(letter, used)
+        && countConfusablePairs(Array.from(used).concat(letter)) > shape.confusablePairTarget) return false;
+      return true;
+    });
+    // The curated menu has enough legal unique letters for every supported
+    // 3–6 item set. This fallback is defensive and preserves runnability.
+    const letter = candidate ?? CONTINUANT_LETTERS.find((l) => !used.has(l)) ?? DEFAULT_LETTERS[0];
+    result[i] = letter;
+    used.add(letter);
+  }
+
+  return result.map((letter, i) =>
+    buildChallenge(letter ?? DEFAULT_LETTERS[0], i, challenges[i].challengeType));
+};
 
 /** Skill docs for the intent→mode router (there is no schema to constrain — Fork A). */
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
@@ -266,9 +442,10 @@ export const generateDiLetterSounds = async (
     targetEvalMode?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which sound skill,
-     * difficulty = how much of the DISTAR sequence precedes the attempt.
-     * NEVER changes which letters are selected.
+     * Second field of the two-field contract: targetEvalMode = which sound
+     * skill; difficulty = ONE tier enum driving BOTH within-mode dials — how
+     * much of the DISTAR sequence precedes the attempt (L3) and the item-set
+     * composition (L4). It never changes the item count, menu, or mode identity.
      */
     difficulty?: string;
     [key: string]: unknown;
@@ -280,20 +457,6 @@ export const generateDiLetterSounds = async (
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
   );
 
-  const prompt = `Pick the target letter SOUNDS for a brisk kindergarten Direct Instruction practice.
-
-TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
-
-You may ONLY choose from these letters (each has a continuous, stretchable sound a child can hold, or a short vowel):
-${MENU_LETTERS.join(', ')}
-
-RULES:
-- Choose the ${count} letters whose SOUNDS best match the topic/objective. If the objective names specific letters, use those (only if they are in the allowed set). If it is generic ("letter sounds", "phonics"), pick a spread of the easiest continuous sounds (m, s, f, and a short vowel like a).
-- These are letter SOUNDS, never letter NAMES. Never choose a letter outside the allowed set.
-- Write a warm, short kid title and a one-sentence description. Never reveal or spell out the sounds in the title or description.
-
-Return the wrapper JSON only.`;
-
   // Resolve which eval-mode SKILL(s) this objective calls for. Fork A: the
   // resolution drives which challenge types we BUILD (no schema enum exists).
   const resolution = await resolveEvalModes(
@@ -303,6 +466,23 @@ Return the wrapper JSON only.`;
   );
   const modeTypes: DiLetterSoundChallengeType[] = (resolution?.allowedTypes as DiLetterSoundChallengeType[] | undefined)
     ?? ['letter_sound', 'letter_sound_review', 'first_sound_in_word']; // mixed = all three
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const shapeMode: ShapeMode = modeTypes.length === 1 ? modeTypes[0] : 'mixed';
+  const sessionShape = supportTier ? resolveProblemShape(shapeMode, supportTier, count) : null;
+
+  const prompt = `Pick the target letter SOUNDS for a brisk kindergarten Direct Instruction practice.
+
+TOPIC: "${topic}"${intent ? `\nOBJECTIVE FOCUS: "${intent}"` : ''}
+
+You may ONLY choose from these letters (each has a continuous, stretchable sound a child can hold, or a short vowel):
+${MENU_LETTERS.join(', ')}
+
+RULES:
+- Choose the ${count} letters whose SOUNDS best match the topic/objective. If the objective names specific letters, use those (only if they are in the allowed set). If it is generic ("letter sounds", "phonics"), pick a spread of the easiest continuous sounds (m, s, f, and a short vowel like a).${sessionShape ? `\n- ${sessionShape.promptLine}` : ''}
+- These are letter SOUNDS, never letter NAMES. Never choose a letter outside the allowed set.
+- Write a warm, short kid title and a one-sentence description. Never reveal or spell out the sounds in the title or description.
+
+Return the wrapper JSON only.`;
 
   let selected: string[] = [];
   let title = 'Letter Sounds';
@@ -383,28 +563,22 @@ Return the wrapper JSON only.`;
       .map((letter, i) => buildChallenge(letter, i, 'letter_sound'));
   }
 
-  // ── Support tier, applied deterministically at the END ─────────────
+  // ── Tier axes, applied deterministically at the END ────────────────
   // Gated ONLY on a tier being present, and resolved from each challenge's OWN
   // mode — difficulty is a STUDENT property, so a blended/mixed session must get
   // it too (gating on a single pinned mode is the silent no-op this layer exists
-  // to kill). Code owns the support structure; the LLM only picked the letters.
-  //
-  // Deliberately NOT injected into the Gemini prompt, unlike the math
-  // references (same departure as both DI siblings). Fork A here means the
-  // model's only job is picking letters + the wrapper — so a tier line in the
-  // prompt could only do one thing: nudge it toward different LETTERS. That is
-  // tier→content leakage, i.e. structural difficulty through the back door,
-  // and it would break the one hard rule. Item-set composition is this pack's
-  // structural axis and belongs to /add-structural-difficulty, not here. The
-  // tier is 100% code-composed into the cue (diLetterSoundsScript `leadInFor`
-  // + `coldSoundGuard`).
-  const supportTier = normalizeSupportTier(config?.difficulty);
+  // to kill). L4 now deliberately sends that same tier to TWO places: the
+  // prompt describes the composition preference, then enforceProblemShape is
+  // authoritative after objective selection + mixed-mode rotation. The tier
+  // may change composition, but never count, menu, or eval-mode slot.
   if (supportTier) {
+    challenges = enforceProblemShape(challenges, focusLetters, sessionShape!);
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
     }
+    const letters = challenges.map((ch) => ch.letter);
     console.log(
-      `[DiLetterSounds] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}`,
+      `[DiLetterSounds] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}; composition vowels ${letters.filter((l) => SHORT_VOWELS.includes(l)).length} (min ${sessionShape!.minimumShortVowels}, max ${sessionShape!.maximumShortVowels}), confusable pairs ${countConfusablePairs(letters)}/${sessionShape!.confusablePairTarget}${sessionShape!.saturated ? ' (honest saturation)' : ''}`,
     );
   }
 
