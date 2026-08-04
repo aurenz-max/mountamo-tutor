@@ -6,7 +6,13 @@ Burn down in ONE sitting: `cd my-tutoring-app && npm run dev`, then walk the lis
 When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (it re-greps reports for new "browser glance" debt).
 
-## Open (as of 2026-08-02, refreshed by `/pm` 2026-08-03)
+## Open (as of 2026-08-04, refreshed by `/pm` 2026-08-04)
+
+> **2026-08-04 refresh:** no new human-only row. The two new DI reports either
+> fold their hardest legal selection into existing #50(d) or change no spoken
+> response class; the remediation-lever handoff is design-only. Reader-fit 14h
+> changes generator scope and mode fidelity only and reports complete machine and
+> live-runtime coverage. Next free ID = 62.
 
 > **The 07-25 decoherence arc is CLOSED (2026-07-26; preamble refreshed `/pm` 2026-07-27).** Root
 > cause was the voice turn GATE, not any of the four hypotheses: `minVoiceMs: 120` silently meant
