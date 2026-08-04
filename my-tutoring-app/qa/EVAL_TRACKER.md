@@ -40,7 +40,7 @@
 | ten-frame | 4 | 4 | 0 | 2026-07-16 | [reader-fit item 12 + all-mode eval](eval-reports/ten-frame-2026-07-16.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | addition-subtraction-scene | 4 | 4 | 0 | 2026-06-20 | [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
-| number-line | 5 | 5 | 0 | 2026-06-27 | [topic-range resolver](eval-reports/number-line-2026-06-27.md) |
+| number-line | 5 | 5 | 0 | 2026-08-03 | [14m canonical-grade band pilot](reader-fit/number-line-14m-2026-08-03.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-06-18 | [report](eval-reports/fraction-circles-2026-06-18.md) |
 | number-bond | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-bond-2026-06-14.md) |
 | pattern-builder | 5 | 5 | 0 | 2026-03-17 | [report](eval-reports/pattern-builder-2026-03-17.md) |

@@ -15,11 +15,6 @@ non-K consumers.
 ### 4. concept-card-grid
 3/6 census routing.
 
-### 5. number-line
-Catalog calls it "ESSENTIAL for K-5 math"; 5 eval modes across K-5 = widest
-band spread of any math primitive; multiple historical fidelity fixes
-(resolveTopicNumberRange is the Tier-2 reference implementation).
-
 ## Systemic items
 
 - **BigQuery attempts ETL omits `primitive_type`** (`bigquery_etl.py` ~688) — blocks a
@@ -32,6 +27,19 @@ band spread of any math primitive; multiple historical fidelity fixes
 
 ## Done
 
+- **number-line — derived 2026-08-03** → `docs/contracts/number-line.md`. Pulled out of queue
+  order as the mandatory contract-first step of reader-fit **14m** (systemic grade-resolver
+  pilot). **12 requirements** (10 OBSERVED, 2 INFERRED), **1 OPEN conflict** (C1: authored G1
+  ≤120 magnitude demand vs the K-2 ≤30 legibility clamp → status CONFLICTED; resolution owned by
+  reader-fit 14k, fork required). Decisive census fact: **all 8 authored consumers are Grade 1**
+  (OPS001-03-a/-04-a, NBT001-01-a/-b/-04-b/-05-d/-07-b, PTRN001-05-b) — no authored K or 3-5
+  consumer exists; 3-5 demand is catalog+synthetic only. Code-map finding: every production
+  grade-context prose sentence matched the old K-2 substring test, so the 3-5 band was
+  UNREACHABLE in production until the same-slice R2 fix. `--check` on the finished edit:
+  **COMPATIBLE** (`qa/primitive-contracts/number-line-check-2026-08-03.md`) — R1/R3-R9 probed
+  live, 14k replay measured (stays open, mechanism pinned into C1). Channel [4] again
+  `Not authenticated` (third consecutive run; still worth fixing before a contract run that
+  needs item history). Report: `qa/reader-fit/number-line-14m-2026-08-03.md`.
 - **knowledge-check — derived 2026-08-02** → `docs/contracts/knowledge-check.md`. Pulled as the
   mandatory contract-first step of reader-fit **14f**. **9 requirements**, **2 conflicts resolved**
   up front (K picture primacy vs Grade-1 independent reading → precise-grade + visual-task gate;

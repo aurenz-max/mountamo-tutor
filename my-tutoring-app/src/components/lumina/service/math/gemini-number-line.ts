@@ -892,6 +892,26 @@ function resolveGradeBand(gradeLevel: string): 'K-2' | '3-5' {
   return lower.includes('k') || lower.includes('1') || lower.includes('2') ? 'K-2' : '3-5';
 }
 
+/**
+ * Map the canonical objective grade ('K' | '1'..'12') onto the component's band.
+ * resolveGradeBand() above only ever saw `gradeContext` PROSE, and its substring
+ * tests match every production sentence — "elementary students (grades 1-5)"
+ * contains a '1', middle/high-school prose contains a 'k' (in "thinking") — so
+ * every lesson landed on 'K-2' and the '3-5' band was unreachable, while a bare
+ * band key like "elementary" inverted to '3-5'. The band drives numberType, jump
+ * sizes, order-set size, default ranges, the K-2 range clamp, and the tutor's
+ * gradeLevel handoff, so it has to come from the canonical grade whenever there
+ * is one. Returns null when there isn't.
+ */
+export function numberLineGradeBandFromGrade(grade?: string): 'K-2' | '3-5' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return 'K-2';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 2 ? 'K-2' : '3-5';
+}
+
 // ---------------------------------------------------------------------------
 // Per-mode sub-generators (orchestrator-same-mode, §6a #7)
 // ---------------------------------------------------------------------------
@@ -899,10 +919,10 @@ function resolveGradeBand(gradeLevel: string): 'K-2' | '3-5' {
 async function generatePlotPointChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { targetEvalMode?: string; numberRange?: { min: number; max: number }; difficulty?: string },
+  config?: { targetEvalMode?: string; numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
 ): Promise<SubResult> {
   const isIdentify = config?.targetEvalMode === 'identify';
-  const gradeBand: 'K-2' | '3-5' = isIdentify ? 'K-2' : resolveGradeBand(gradeLevel);
+  const gradeBand: 'K-2' | '3-5' = isIdentify ? 'K-2' : (config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel));
   const numberType: ResolvedRange['numberType'] = isIdentify
     ? 'integer'
     : (gradeBand === 'K-2' ? 'integer' : 'decimal');
@@ -1002,9 +1022,9 @@ Return ONLY:
 async function generateShowJumpChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string },
+  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
 ): Promise<SubResult> {
-  const gradeBand = resolveGradeBand(gradeLevel);
+  const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
   const tier = normalizeSupportTier(config?.difficulty);
   const scaffold = tier ? resolveSupportStructure('show_jump', tier) : null;
@@ -1127,9 +1147,9 @@ Return ONLY:
 async function generateOrderValuesChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string },
+  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
 ): Promise<SubResult> {
-  const gradeBand = resolveGradeBand(gradeLevel);
+  const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
   const perSet = gradeBand === 'K-2' ? 3 : 4;
   const poolNumbers = resolvedPoolNumbers(config, range);
@@ -1199,9 +1219,9 @@ Return ONLY:
 async function generateFindBetweenChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string },
+  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
 ): Promise<SubResult> {
-  const gradeBand = resolveGradeBand(gradeLevel);
+  const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: 10 };
   const poolNumbers = resolvedPoolNumbers(config, range);
   let pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
@@ -1382,10 +1402,14 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   const pool = createSubRangePool(resolvedRange, { sorted: true, unique: true, maxSpan: 25 });
   console.log(`[NumberLine] display:`, pool?.displayRange ?? 'none', `pool:`, pool?.numbers ?? 'none', `difficulty:`, config?.difficulty ?? 'none');
 
+  // Canonical objective grade wins; the prose parser is only the fallback.
+  const canonicalBand = numberLineGradeBandFromGrade(ctx.grade);
+
   const subConfig = {
     targetEvalMode: config?.targetEvalMode,
     numberRange: resolvedRange,
     difficulty: config?.difficulty,
+    canonicalGradeBand: canonicalBand ?? undefined,
   };
 
   // Dispatch per-mode sub-generators in parallel.
@@ -1426,7 +1450,7 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   // ---------------------------------------------------------------------------
 
   if (data.gradeBand !== 'K-2' && data.gradeBand !== '3-5') {
-    data.gradeBand = resolveGradeBand(gradeLevel);
+    data.gradeBand = canonicalBand ?? resolveGradeBand(gradeLevel);
   }
 
   const validNumberTypes = ['integer', 'fraction', 'decimal', 'mixed'];

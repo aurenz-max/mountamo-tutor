@@ -22,10 +22,12 @@ singletons. Healthy high-frequency evidence: all four sorting-station draws stam
 stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
 `SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
 
-**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m** (systemic grade resolvers, **piloted
-on `number-line`** — pilot swapped off coin-counter by user ruling, see 14m) → 14h → 14i → 14j →
-14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
-14d is archived with the rest of the coin-counter tail.
+**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m SWEEP** (pilot on `number-line`
+**DONE 2026-08-03** — template proven + runtime-exercised, so pilot-then-sweep is satisfied;
+next = hundreds-chart (14i), then the remaining K-2/elementary resolvers, chemistry last) →
+14h → 14j → 14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides
+the 14m sweep; 14d is archived with the rest of the coin-counter tail. 14k's mechanism is now
+PINNED (see the updated entry) — it is range/window/accept work, not grade work.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
 defect and a census found 18 more generators carrying it. Fixing the class once is cheaper than
 meeting it three more times down the queue — and one instance was already fixed blind in another
@@ -117,6 +119,16 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   hidden value around 90–110; data defaults to 19–38 and accepts any number strictly between broad
   endpoints. The generator preserved neither the inferred 120 range nor the exact-adjacent-number
   task. Fix target: `gemini-number-line.ts` range resolution + `between` semantics.
+  **MECHANISM PINNED by the 14m pilot's replay (2026-08-03; grade resolution is NOT the cause —
+  post-fix, band correctly K-2, failure persists):** (a) the K-2 clamp `range.max ≤ 30`
+  (`gemini-number-line.ts` validation) vs the authored ≤120 demand of `NBT001-01-a/-b` — recorded
+  as **contract C1 (OPEN)** in `docs/contracts/number-line.md`, so this edit MUST fork
+  (band+magnitude window per trust-intent-over-hardcoded-caps: extend the visual, don't delete the
+  legibility clamp); (b) `createSubRangePool` places its ≤25-unit window UNIFORMLY over the
+  resolved range — no window floor, so a 90–110 intent draws 63–85 (the ordinal-line lesson);
+  (c) `find_between` accepts ANY interior point (`NumberLine.tsx` check) — no exact-adjacent
+  binding. Replay artifact in `qa/primitive-contracts/number-line-check-2026-08-03.md`. Read
+  contract C1 before editing; probe recipes are in the contract.
 - **14l. flashcard-deck final-assessment expansion — 1/42.** A 10-card review of the narrated
   light-bulb lesson announces 15 cards and expands into Internet, medicine, patent, prototype, and
   other untaught material. This repeats the K census's card-padding failure. Honor requested count
@@ -124,6 +136,17 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
 - **14m. SYSTEMIC — generator-local grade resolvers never got 14e's memo.** *(Opened `/pm`
   2026-08-03. This is the OWNING entry for the class; **14c and 14i are instances of it** and should
   be worked through this item, not separately.)*
+  **PILOT DONE 2026-08-03 — number-line ships the template, contract-first, machine-gated,
+  runtime-exercised; the sweep is UNBLOCKED (next: hundreds-chart/14i).** Contract derived
+  (`docs/contracts/number-line.md`, 12 R, C1 OPEN → 14k) + `--check` COMPATIBLE. Focused wiring
+  tests 7/7 with revert-bite; typecheck:lumina 0; tsc 803 baseline; full vitest 1327/1327; 10
+  real-Gemini eval-test probes incl. `grade=4 → 3-5/decimal` — **the first runtime 3-5 render on
+  the ctx path** — and `grade=1 → K-2` for the 8 authored G1 consumers. **PREMISE CORRECTION for
+  the sweep:** production passes grade-context PROSE, and every production sentence matched the
+  old K-2 substring test ("grades 1-5" has a `1`; "thinking" has a `k`) — so the live failure was
+  *everything lands K-2 / 3-5 unreachable*, not G1→3-5; the bare-key inversion only hits raw-key
+  callers. Verify each sweep target's actual input string before predicting direction. Report:
+  `qa/reader-fit/number-line-14m-2026-08-03.md`.
   **The finding:** 14e made `ctx.grade` precise at the generation boundary, but a generator only
   benefits if it READS it. Census over the 219 Gemini generators (`resolveGradeBand|resolveBand|
   gradeToBand(`): **27 files match; excluding 1 test file → 26 generators, of which 19 never
