@@ -314,6 +314,21 @@ const resolveGradeBand = (gradeLevel: string): "3-5" | "6-7" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). The prose test above matches
+ * the '6' in the kindergarten sentence "(ages 5-6)", so a K lesson landed the
+ * 6-7 band. Canonical grade wins when present (below-range grades clamp to the
+ * 3-5 floor rung); null keeps the prose fallback reachable (never deleted).
+ */
+export function mixingAndDissolvingGradeBandFromGrade(grade?: string): "3-5" | "6-7" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "3-5";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 5 ? "3-5" : "6-7";
+}
+
+/**
  * Generate Mixing and Dissolving data using Gemini
  *
  * Creates an interactive solutions/mixtures exploration where students add
@@ -340,7 +355,9 @@ export const generateMixingAndDissolving = async (ctx: GenerationContext): Promi
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MixingAndDissolvingData>;
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const canonicalBand = mixingAndDissolvingGradeBandFromGrade(ctx.grade);
+  const gradeBand = canonicalBand ?? resolveGradeBand(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The topic stays fixed; intent biases which facets the authored challenge text leads with.
   const intent = ctx.intent || "";
@@ -484,7 +501,11 @@ CRITICAL REQUIREMENTS:
     // -----------------------------------------------------------------------
 
     // Ensure gradeBand
-    if (!result.gradeBand || !["3-5", "6-7"].includes(result.gradeBand)) {
+    // With a canonical grade the band is NOT the LLM's choice — code stamps it
+    // (14m); the backstop only fixes invalid stamps on the legacy no-grade path.
+    if (canonicalBand) {
+      result.gradeBand = canonicalBand;
+    } else if (!result.gradeBand || !["3-5", "6-7"].includes(result.gradeBand)) {
       result.gradeBand = gradeBand;
     }
 

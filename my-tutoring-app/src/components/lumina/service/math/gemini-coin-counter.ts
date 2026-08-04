@@ -195,6 +195,28 @@ function resolveGradeBand(gradeLevel: string): string {
   return "1";
 }
 
+/**
+ * Canonical-grade → band mapper (contract gap G2 / systemic 14m).
+ * resolveGradeBand() above only ever saw `gradeContext` PROSE: the elementary
+ * sentence ("grades 1-5") matches no digit test so every G1-5 lesson landed
+ * '1' — the three authored G2 consumers (`MEAS002-05-a/-b/-c`) never saw the
+ * half-dollar/dollar pool — and the bare-"k" test inverts middle/high-school
+ * prose ("thinking") to K. The band drives the coin pool (R10) and the K/G1
+ * interaction forks (R9), so it comes from the canonical grade whenever there
+ * is one. Returns null when there isn't (the prose fallback stands — never
+ * deleted). Grades 4+ clamp to the '3' rung, the ladder's ceiling.
+ */
+export function coinCounterGradeBandFromGrade(grade?: string): "K" | "1" | "2" | "3" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 1) return "1";
+  if (n === 2) return "2";
+  return "3";
+}
+
 function gradeCoinsPrompt(gradeBand: string): string {
   if (gradeBand === "K") return "ONLY use penny (1¢), nickel (5¢), dime (10¢).";
   if (gradeBand === "1") return "Use penny (1¢), nickel (5¢), dime (10¢), quarter (25¢).";
@@ -806,7 +828,9 @@ export const generateCoinCounter = async (
   );
   logEvalModeResolution("CoinCounter", config?.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback
+  // (contract G2, 14m template).
+  const gradeBand = coinCounterGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
   // ── Resolve support tier (drives application for single OR blended sessions) ──

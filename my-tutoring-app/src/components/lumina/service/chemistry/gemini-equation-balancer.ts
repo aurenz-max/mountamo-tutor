@@ -375,6 +375,20 @@ const resolveGradeBand = (gradeLevel: string): "6-7" | "7-8" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). Canonical grade wins when
+ * present (below-range grades clamp to the 6-7 floor rung); null keeps the
+ * prose fallback reachable (never deleted).
+ */
+export function equationBalancerGradeBandFromGrade(grade?: string): "6-7" | "7-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "6-7";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 7 ? "6-7" : "7-8";
+}
+
+/**
  * Generate Equation Balancer data using Gemini
  *
  * Creates an interactive chemical equation balancing activity where students
@@ -396,7 +410,8 @@ export const generateEquationBalancer = async (ctx: GenerationContext): Promise<
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EquationBalancerData>;
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = equationBalancerGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The topic stays fixed; intent biases which facets get the spotlight.
   const intent = ctx.intent || "";

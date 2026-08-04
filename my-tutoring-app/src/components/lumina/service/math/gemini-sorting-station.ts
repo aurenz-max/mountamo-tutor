@@ -479,15 +479,32 @@ const twoAttributesSchema: Schema = {
 // Helpers
 // ============================================================================
 
-function gradeGuidance(gradeLevel: string): string {
-  const isK = /[kK]|kinder/i.test(gradeLevel);
-  return isK
+function gradeGuidance(gradeBand: 'K' | '1'): string {
+  return gradeBand === 'K'
     ? 'Kindergarten: 4-6 objects, 2-3 groups, very familiar concrete objects (animals, fruits, toys), simple warm language.'
     : 'Grade 1: 5-8 objects, 2-4 groups, introduce reasoning, connect to data concepts.';
 }
 
 function resolveGradeBand(gradeLevel: string): 'K' | '1' {
   return /[kK]|kinder/i.test(gradeLevel) ? 'K' : '1';
+}
+
+/**
+ * Canonical-grade → band mapper (systemic 14m). resolveGradeBand() above only
+ * ever saw `gradeContext` PROSE, and its `[kK]` test matches a 'k' anywhere in
+ * it — middle/high-school prose ("critical thinking") would invert to the K
+ * band. The band drives object window, bin cap, compare gap, and the stamped
+ * `gradeBand`, so it comes from the canonical grade whenever there is one.
+ * Returns null when there isn't (the prose fallback stands — never deleted).
+ * Grades 1+ clamp to the '1' rung, the ladder's ceiling.
+ */
+export function sortingStationGradeBandFromGrade(grade?: string): 'K' | '1' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return '1';
 }
 
 /**
@@ -578,6 +595,7 @@ async function generateSortChallenges(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   sortType: 'sort-by-one' | 'sort-by-attribute' | 'tally-record',
   count: number,
   tierSection: string,
@@ -602,7 +620,7 @@ async function generateSortChallenges(
 
   const prompt = `
 Create a sorting activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeLevel)}
+${gradeGuidance(gradeBand)}
 ${buildSortingObjectiveSection(topic, intent)}
 
 TASK TYPE: ${sortType}
@@ -651,12 +669,13 @@ async function generateCountCompareChallenges(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const prompt = `
 Create a count-and-compare activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeLevel)}
+${gradeGuidance(gradeBand)}
 ${buildSortingObjectiveSection(topic, intent)}
 
 TASK: Objects are pre-sorted into groups. Student counts each group and answers a comparison question.
@@ -710,12 +729,13 @@ async function generateOddOneOutChallenges(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const prompt = `
 Create an odd-one-out activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeLevel)}
+${gradeGuidance(gradeBand)}
 ${buildSortingObjectiveSection(topic, intent)}
 
 TASK: Show a group of objects where ONE doesn't belong. Student finds it.
@@ -761,12 +781,13 @@ async function generateTwoAttributesChallenges(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
   const prompt = `
 Create a two-attribute classification activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeLevel)}
+${gradeGuidance(gradeBand)}
 ${buildSortingObjectiveSection(topic, intent)}
 
 TASK: Student finds objects matching TWO criteria at once. The PRIMARY criterion is always the objective-relevant category; the secondary criterion adds the two-attribute reasoning demand without replacing the lesson modality.
@@ -933,6 +954,7 @@ async function generateVarietyChallenges(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
 ): Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }> {
@@ -943,7 +965,7 @@ async function generateVarietyChallenges(
 
   const prompt = `
 Create a FLEXIBLE-CLASSIFICATION sorting activity for teaching "${topic}" to ${gradeLevel} students.
-${gradeGuidance(gradeLevel)}
+${gradeGuidance(gradeBand)}
 ${buildVarietyObjectiveSection(topic, intent, roundCount)}
 ${tierSection}
 Provide ONE shared set of objects and ${roundCount} sorting rules.
@@ -953,7 +975,7 @@ Provide ONE shared set of objects and ${roundCount} sorting rules.
 - Every round sorts the SAME objects; do not introduce new objects between rounds. Stay on the objective's topic and object family.
 `;
 
-  const binCap = gradeBinCap(resolveGradeBand(gradeLevel));
+  const binCap = gradeBinCap(gradeBand);
 
   // Build the rotated rounds from ONE generation. Code OWNS which axes are valid (derived
   // from the actual objects — each must split into 2..binCap real groups); the LLM only
@@ -1033,14 +1055,15 @@ type SubGenerator = (
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
+  gradeBand: 'K' | '1',
   count: number,
   tierSection: string,
 ) => Promise<{ title: string; description: string; challenges: SortingStationChallenge[] }>;
 
 const GENERATOR_MAP: Record<string, SubGenerator> = {
-  'sort-by-one': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'sort-by-one', n, ts),
-  'sort-by-attribute': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'sort-by-attribute', n, ts),
-  'tally-record': (t, i, g, n, ts) => generateSortChallenges(t, i, g, 'tally-record', n, ts),
+  'sort-by-one': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'sort-by-one', n, ts),
+  'sort-by-attribute': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'sort-by-attribute', n, ts),
+  'tally-record': (t, i, g, b, n, ts) => generateSortChallenges(t, i, g, b, 'tally-record', n, ts),
   'count-and-compare': generateCountCompareChallenges,
   'odd-one-out': generateOddOneOutChallenges,
   'two-attributes': generateTwoAttributesChallenges,
@@ -1092,7 +1115,8 @@ export const generateSortingStation = async (
   );
   logEvalModeResolution('SortingStation', config?.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = sortingStationGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? MIXED_TYPES;
 
   // ── Within-mode support tier ──
@@ -1115,7 +1139,7 @@ export const generateSortingStation = async (
   const results = await Promise.all(
     allowedTypes
       .filter(t => GENERATOR_MAP[t])
-      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, challengesPerType, tierSection)),
+      .map(t => GENERATOR_MAP[t](topic, intent, gradeLevel, gradeBand, challengesPerType, tierSection)),
   );
 
   // Combine: flatten challenges, re-number IDs, pick first title

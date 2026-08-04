@@ -322,6 +322,20 @@ const resolveGradeBand = (gradeLevel: string): "5-6" | "7-8" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). Canonical grade wins when
+ * present (below-range grades clamp to the 5-6 floor rung); null keeps the
+ * prose fallback reachable (never deleted).
+ */
+export function energyOfReactionsGradeBandFromGrade(grade?: string): "5-6" | "7-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "5-6";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 6 ? "5-6" : "7-8";
+}
+
+/**
  * Generate Energy of Reactions data using Gemini
  *
  * Creates an interactive energy-of-reactions activity where students explore
@@ -345,7 +359,8 @@ export const generateEnergyOfReactions = async (ctx: GenerationContext): Promise
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EnergyOfReactionsData>;
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = energyOfReactionsGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The topic stays fixed; intent biases which facets get the spotlight.
   const intent = ctx.intent || "";

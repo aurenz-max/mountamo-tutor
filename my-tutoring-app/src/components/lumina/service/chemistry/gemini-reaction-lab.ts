@@ -487,6 +487,23 @@ const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" | "6-8" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). The prose test above matches
+ * none of its K-2 markers in the production elementary sentence ("grades 1-5"),
+ * so published G1/G2 lessons landed the 3-5 band. Canonical grade wins when
+ * present; null keeps the prose fallback reachable (never deleted).
+ */
+export function reactionLabGradeBandFromGrade(grade?: string): "K-2" | "3-5" | "6-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K-2";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 2) return "K-2";
+  if (n <= 5) return "3-5";
+  return "6-8";
+}
+
+/**
  * Generate Reaction Lab data using Gemini
  *
  * Creates an interactive virtual experiment where students combine real substances
@@ -506,7 +523,9 @@ export const generateReactionLab = async (ctx: GenerationContext): Promise<React
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const intent = ctx.intent || "";
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const canonicalBand = reactionLabGradeBandFromGrade(ctx.grade);
+  const gradeBand = canonicalBand ?? resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {
     "K-2":
@@ -618,7 +637,11 @@ Use the right answer format for each challenge type:
     // -----------------------------------------------------------------------
 
     // Ensure gradeBand
-    if (!result.gradeBand || !["K-2", "3-5", "6-8"].includes(result.gradeBand)) {
+    // With a canonical grade the band is NOT the LLM's choice — code stamps it
+    // (14m); the backstop only fixes invalid stamps on the legacy no-grade path.
+    if (canonicalBand) {
+      result.gradeBand = canonicalBand;
+    } else if (!result.gradeBand || !["K-2", "3-5", "6-8"].includes(result.gradeBand)) {
       result.gradeBand = gradeBand;
     }
 

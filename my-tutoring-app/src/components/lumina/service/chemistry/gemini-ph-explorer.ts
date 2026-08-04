@@ -300,6 +300,20 @@ const resolveGradeBand = (gradeLevel: string): "4-6" | "7-8" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). Canonical grade wins when
+ * present (below-range grades clamp to the 4-6 floor rung); null keeps the
+ * prose fallback reachable (never deleted).
+ */
+export function phExplorerGradeBandFromGrade(grade?: string): "4-6" | "7-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "4-6";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 6 ? "4-6" : "7-8";
+}
+
+/**
  * Generate pH Explorer data using Gemini
  *
  * Creates an interactive pH / acid-base exploration where students test
@@ -325,7 +339,8 @@ export const generatePhExplorer = async (ctx: GenerationContext): Promise<PhExpl
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<PhExplorerData>;
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = phExplorerGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The topic stays fixed; intent biases which facets get the spotlight.
   const intent = ctx.intent || "";

@@ -22,9 +22,12 @@ singletons. Healthy high-frequency evidence: all four sorting-station draws stam
 stayed on task; all three foundation-explorer draws stayed in scope. `media-player` reached the real
 `SS004-05-c` consumer in `listen_and_look` mode, but remains owned by its separate workstream.
 
-**Remaining pull order (re-ordered `/pm` 2026-08-03):** **14m SWEEP** (pilot on `number-line`
-**DONE 2026-08-03** — template proven + runtime-exercised, so pilot-then-sweep is satisfied;
-next = hundreds-chart (14i), then the remaining K-2/elementary resolvers, chemistry last) →
+**Remaining pull order (re-ordered `/pm` 2026-08-03):** ~~**14m SWEEP**~~ **14m CLOSED
+2026-08-04 — the FULL sweep shipped in one slice** (pilot number-line `dcfaac7` 08-03 →
+hundreds-chart/14i + the six K-2 resolvers + coin-counter/14c + 12 chemistry incl.
+matter-explorer, a census under-count found in-flight; 43 new tests, 21 real-Gemini probes,
+typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400; report
+`qa/reader-fit/14m-sweep-2026-08-04.md`) →
 14h → 14j → 14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides
 the 14m sweep; 14d is archived with the rest of the coin-counter tail. 14k's mechanism is now
 PINNED (see the updated entry) — it is range/window/accept work, not grade work.
@@ -103,13 +106,21 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   `order-cards`). The second intent asks for 101, 102, _, 104 but the generator prompt/sanitizer
   hard-clamps Grade 1 to 100, making the published `NBT001-01-a` ceiling of 120 unrepresentable.
   Executor: `/eval-fix` + `/topic-fidelity`; extend the structural contract before lifting the cap.
-- **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** *(Instance of systemic **14m** — take
-  the grade-resolution half from there; the eval-mode/120-ceiling half is local to this item.)*
-  `gemini-hundreds-chart.ts:522` defaults
-  `gradeBand` to `2` when the manifest omits an override. In the 1–120 trace it also substitutes
-  skip-counting by 2/5/10 and ends at 100 despite an explicit 100–120 intent; in the identical-coin
-  trace it injects a by-2 challenge into the requested nickel/dime 5/10 focus. Fix grade resolution,
-  eval-mode focus, and the chart's honest 120 capability together.
+- **14i. hundreds-chart @ G1 — 2/42, both stamp Grade 2.** *(Instance of systemic **14m**.)*
+  **Grade-resolution half DONE 2026-08-04 (14m sweep slice 1):** `hundredsChartGradeBandFromGrade`
+  (K/1→'1', 2→'2', 3→'3', 4+→'4', null without a grade) threaded canonical-first —
+  `config?.gradeBand ?? mapper(ctx.grade) ?? '2'`, fallback never deleted. Wiring tests 7/7
+  (revert-bite ×3), typecheck:lumina 0, tsc 803 baseline, full vitest 1334/1334, real-Gemini
+  probes: G1→band 1, G3→[2,3,4,5], G4→[3,4,6,7,8] (**first runtime band-4 on the ctx path**),
+  no-grade→band 2 unchanged. Report `qa/reader-fit/hundreds-chart-14i-2026-08-04.md`.
+  **Intent-focus half MEASURED IN-DESIGN, closed:** the census's "injects a by-2 into the
+  nickel/dime 5/10 focus" is the documented "one or two contrast intervals" allowance
+  (live replay: 6/7 on the named intervals). A zero-contrast money rule would be a design
+  change, not a bug. **120-capability half STAYS OPEN:** the chart is structurally 1–100
+  (`buildSequence`/`gridMax`/catalog all pin 100); honoring a 100–120 intent means EXTENDING
+  the visual to a 120-chart (12 rows, the CCSS 1.NBT.1 classroom standard) per
+  [[trust-intent-over-hardcoded-caps]] — fork territory, its own slice. Until then the better
+  manifest outcome for 100–120 asks is number-line (whose 14k window fix is queued).
 - **14j. annotated-example scope/grade binding — 2/42, 1 severe failure.** The counting example
   is healthy (108, 109, ?, 111). The coin intent pins **6 nickels = 30¢**, but the generated worked
   example becomes **4×5 = 20 dimes = 200¢**, introducing multiplication and a much larger value.
@@ -136,8 +147,20 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
 - **14m. SYSTEMIC — generator-local grade resolvers never got 14e's memo.** *(Opened `/pm`
   2026-08-03. This is the OWNING entry for the class; **14c and 14i are instances of it** and should
   be worked through this item, not separately.)*
+  **✅ CLOSED 2026-08-04 — FULL SWEEP DONE in one slice.** All 20 generators (8 K-2/elementary +
+  hundreds-chart + coin-counter + 11 census chemistry + matter-explorer, an inline-resolver
+  under-count the census grep missed) resolve canonical-first; prose fallbacks kept everywhere.
+  **The chemistry "may not bite" guess was WRONG in the published band:** safety-lab sent K to
+  6-8 off the '6' in the kindergarten prose "(ages 5-6)"; states-of-matter/reaction-lab sent
+  published G1/G2 to 3-5 — verified then fixed, probes green (K→K-2, G1→K-2, G2→K-2, K
+  mixing→3-5 floor). Where the LLM stamped `gradeBand` via schema (fraction-circles + 6
+  chemistry), code now stamps the band whenever a canonical grade exists. Gates: 43 new tests
+  (7 suites, revert-bite per generator), typecheck:lumina 0, tsc 803 baseline, full vitest
+  1400/1400, 21 real-Gemini probes incl. every previously-unreachable rung with authored demand.
+  Report: `qa/reader-fit/14m-sweep-2026-08-04.md`. Residuals queued there: 14i 120-grid fork,
+  14k (unchanged), coin-counter contract G2 note now stale (close on next `--check`).
   **PILOT DONE 2026-08-03 — number-line ships the template, contract-first, machine-gated,
-  runtime-exercised; the sweep is UNBLOCKED (next: hundreds-chart/14i).** Contract derived
+  runtime-exercised.** Contract derived
   (`docs/contracts/number-line.md`, 12 R, C1 OPEN → 14k) + `--check` COMPATIBLE. Focused wiring
   tests 7/7 with revert-bite; typecheck:lumina 0; tsc 803 baseline; full vitest 1327/1327; 10
   real-Gemini eval-test probes incl. `grade=4 → 3-5/decimal` — **the first runtime 3-5 render on
@@ -195,14 +218,12 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   coin-counter would not have needed. Paying it once is the point — that cost differential is the
   whole reason the worked primitive kept winning.
   **Do NOT bulk-sweep before the number-line pilot is runtime-exercised** (pilot-then-sweep).
-- **14c. coin-counter G2 — Grades 2–3 are UNREACHABLE** (`/topic-fidelity`, not `/reader-fit`).
-  `resolveGradeBand` parses `ctx.gradeContext` prose instead of canonical `ctx.grade`, so G2 money
-  lessons silently run as Grade 1. ~~Re-check after 14e; the generator-local fallback may still
-  fail.~~ **RE-CHECKED `/pm` 2026-08-03: still open, confirmed in the tree** —
-  `gemini-coin-counter.ts:798` still reads `ctx.gradeContext` and 14e did not touch it. **Rides the
-  14m sweep at its turn — deliberately NOT the pilot** (reversed 2026-08-03; see 14m for why). It
-  stays queued because it is the one coin-counter gap with real demand: three authored G2 consumers
-  (`MEAS002-05-a/-b/-c`) currently run as Grade 1. Everything else on this primitive is archived.
+- ~~**14c. coin-counter G2 — Grades 2–3 are UNREACHABLE**~~ **✅ CLOSED 2026-08-04 (14m sweep).**
+  `coinCounterGradeBandFromGrade` (K/1/2/3, 4+ clamps to '3') canonical-first per contract gap
+  G2's prescription; prose fallback kept. Probes: **G2 count-mixed → band 2 with a half-dollar
+  drawn** — the `MEAS002-05-a/-b/-c` pool is live for the first time; K/G1 count-like forks
+  byte-exact (R9); no-grade → 1. Wiring tests 6/6 (revert-bite ×3). Contract G2/R10 DEFECT notes
+  now stale → strike on the next `--check`.
 - **14d. coin-counter G3 — K chrome not band-gated + no 🔊** (HUMAN-CHECKS **#52**). The K screen
   still shows grade/counter/phase badges and an English instruction with no replay. This is the
   comparison-builder #2b class and remains the cheapest residual, not Grade-1 demand.

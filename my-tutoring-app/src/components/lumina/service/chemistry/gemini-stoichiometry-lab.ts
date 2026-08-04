@@ -530,6 +530,24 @@ const resolveGradeBand = (gradeLevel: string): GradeBand => {
   return "9-10";
 };
 
+/**
+ * Canonical-grade → band mapper (systemic 14m). The prose test above matches
+ * "high school" in the high-school sentence, so every high-school lesson
+ * landed 11-12 — a grade-9 objective drew the hardest band. Canonical grade
+ * wins when present (below-range grades clamp to the '8' floor rung); null
+ * keeps the prose fallback reachable (never deleted).
+ */
+export function stoichiometryLabGradeBandFromGrade(grade?: string): GradeBand | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "8";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 8) return "8";
+  if (n <= 10) return "9-10";
+  return "11-12";
+}
+
 const GRADE_BAND_GUIDANCE: Record<GradeBand, string> = {
   "8":
     "Grade 8 stoichiometry introduction. Use a SIMPLE synthesis reaction such as " +
@@ -827,7 +845,8 @@ export const generateStoichiometryLab = async (
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config: StoichiometryLabConfig = { ...(ctx.raw as StoichiometryLabConfig), intent: ctx.intent };
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = stoichiometryLabGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
 
   // Resolve eval mode constraint and narrow schema
   const constraint = resolveEvalModeConstraint(

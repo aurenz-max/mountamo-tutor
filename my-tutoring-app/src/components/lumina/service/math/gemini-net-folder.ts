@@ -203,6 +203,24 @@ function resolveGradeBand(gradeLevel: string): '3-4' | '4-5' {
   return '3-4';
 }
 
+/**
+ * Canonical-grade → band mapper (systemic 14m). resolveGradeBand() above only
+ * ever saw `gradeContext` PROSE, and its bare-'5' test matches the '5' in the
+ * production elementary sentence ("grades 1-5") — so EVERY elementary lesson
+ * landed '4-5' (5-solid pool + grid overlay) and '3-4' was unreachable. The
+ * legacy test only promoted an explicit 5, so the mapper keeps grades ≤4 on
+ * '3-4' (below-range grades clamp to that floor rung) and 5+ on '4-5'.
+ * Returns null without a canonical grade (the prose fallback stands).
+ */
+export function netFolderGradeBandFromGrade(grade?: string): '3-4' | '4-5' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return '3-4';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n >= 5 ? '4-5' : '3-4';
+}
+
 function gradeSolidPool(gradeBand: string): string[] {
   if (gradeBand === '3-4') return ['cube', 'rectangular_prism', 'square_pyramid'];
   return ['cube', 'rectangular_prism', 'triangular_prism', 'square_pyramid', 'triangular_pyramid'];
@@ -907,7 +925,8 @@ export const generateNetFolder = async (
   );
   logEvalModeResolution('NetFolder', config?.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = netFolderGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
   // ── Resolve support tier (fold-scaffold axis) ──

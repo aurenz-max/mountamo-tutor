@@ -201,8 +201,32 @@ interface NumberTracerConfig {
   [key: string]: unknown;
 }
 
-function resolveGradeBand(config: NumberTracerConfig | undefined, gradeLevel: string): 'K' | '1' {
+/**
+ * Canonical-grade → band mapper (systemic 14m). The prose test below only
+ * matches 'kinder', so a bare-key caller passing 'K' inverted to the '1' band
+ * and the K/1 split was otherwise an accident of the prose wording. Canonical
+ * grade wins whenever there is one; returns null when there isn't (the
+ * config-pin + prose ladder stands — never deleted). Grades 1+ clamp to '1',
+ * the ladder's ceiling.
+ */
+export function numberTracerGradeBandFromGrade(grade?: string): 'K' | '1' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return '1';
+}
+
+function resolveGradeBand(
+  config: NumberTracerConfig | undefined,
+  gradeLevel: string,
+  canonicalGrade?: string,
+): 'K' | '1' {
+  // Explicit config pin wins; canonical objective grade next; prose last (14m).
   if (config?.gradeBand === 'K' || config?.gradeBand === '1') return config.gradeBand;
+  const canonical = numberTracerGradeBandFromGrade(canonicalGrade);
+  if (canonical) return canonical;
   return gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
 }
 
@@ -526,7 +550,7 @@ export async function generateNumberTracer(ctx: GenerationContext): Promise<Numb
   );
   logEvalModeResolution('NumberTracer', ctx.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(config, gradeLevel);
+  const gradeBand = resolveGradeBand(config, gradeLevel, ctx.grade);
   const totalCount = (config?.challengeCount as number | undefined) ?? 5;
 
   // ── Within-mode support tier — normalized centrally, arrives as ctx.supportTier ──

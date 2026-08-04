@@ -504,6 +504,28 @@ type HundredsChartConfig = {
   difficulty?: string;
 };
 
+/**
+ * Canonical-grade → gradeBand mapper (reader-fit 14i, an instance of systemic 14m).
+ *
+ * The band previously came from `config?.gradeBand ?? '2'` — a hard default that
+ * never read `ctx.grade`, so every production lesson ran band '2': a Grade-1
+ * lesson stamped "Grade 2" (the component hands `Grade ${gradeBand}` to the live
+ * tutor) and bands '3'/'4' with their richer skip pools were unreachable. The
+ * band picks the skip-value pool, so it has to come from the canonical grade
+ * whenever there is one. Returns null when there isn't (the '2' default stands).
+ * K clamps to '1' (the chart's floor rung); grades 5+ clamp to '4' (the ceiling).
+ */
+export function hundredsChartGradeBandFromGrade(grade?: string): '1' | '2' | '3' | '4' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return '1';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 1) return '1';
+  if (n >= 4) return '4';
+  return String(n) as '2' | '3';
+}
+
 export const generateHundredsChart = async (
   ctx: GenerationContext,
 ): Promise<HundredsChartData> => {
@@ -519,7 +541,9 @@ export const generateHundredsChart = async (
   );
 
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
-  const gradeBand = config?.gradeBand ?? '2';
+  // Explicit config pin wins; canonical objective grade next; the legacy '2'
+  // default only when neither exists (fallback never deleted — 14m template).
+  const gradeBand = config?.gradeBand ?? hundredsChartGradeBandFromGrade(ctx.grade) ?? '2';
   const gradeSkips = GRADE_SKIP_VALUES[gradeBand] ?? GRADE_SKIP_VALUES['2'];
 
   // ── Resolve per-mode instance count (only meaningful when an eval mode is pinned) ──

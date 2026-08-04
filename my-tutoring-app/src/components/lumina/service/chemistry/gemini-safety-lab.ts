@@ -322,6 +322,24 @@ const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" | "6-8" => {
 };
 
 /**
+ * Canonical-grade → band mapper (systemic 14m). The prose test above is
+ * digit-trapped both ways: the kindergarten sentence "(ages 5-6)" contains a
+ * '6' so a K lesson landed the 6-8 band, and the elementary sentence
+ * ("grades 1-5") matches '5'/'elementary' so G1/G2 landed 3-5. Canonical grade
+ * wins when present; null keeps the prose fallback reachable (never deleted).
+ */
+export function safetyLabGradeBandFromGrade(grade?: string): "K-2" | "3-5" | "6-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K-2";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 2) return "K-2";
+  if (n <= 5) return "3-5";
+  return "6-8";
+}
+
+/**
  * Generate Safety Lab data using Gemini
  *
  * Creates an interactive lab safety training activity where students identify
@@ -345,7 +363,9 @@ export const generateSafetyLab = async (ctx: GenerationContext): Promise<SafetyL
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<SafetyLabData>;
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const canonicalBand = safetyLabGradeBandFromGrade(ctx.grade);
+  const gradeBand = canonicalBand ?? resolveGradeBand(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The topic stays fixed; intent biases which facets get the spotlight.
   const intent = ctx.intent || "";
@@ -495,8 +515,12 @@ CRITICAL REQUIREMENTS:
     // Validation & Defaults
     // -----------------------------------------------------------------------
 
-    // Ensure gradeBand
-    if (
+    // Ensure gradeBand. With a canonical grade the band is NOT the LLM's
+    // choice — code stamps it (14m); the backstop only fixes invalid stamps
+    // on the legacy no-grade path.
+    if (canonicalBand) {
+      result.gradeBand = canonicalBand;
+    } else if (
       !result.gradeBand ||
       !["K-2", "3-5", "6-8"].includes(result.gradeBand)
     ) {

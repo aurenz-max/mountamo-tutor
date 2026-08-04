@@ -175,15 +175,32 @@ const matterExplorerSchema: Schema = {
  * @param config - Optional config with intent override
  * @returns MatterExplorerData ready for the MatterExplorer component
  */
+/**
+ * Canonical-grade → band mapper (systemic 14m; found during the sweep — the
+ * inline bare-"k" prose test below inverts middle/high-school prose
+ * ("thinking") to K-1 and lands K correctly only by accident). Canonical grade
+ * wins when present; null keeps the prose fallback reachable (never deleted).
+ */
+export function matterExplorerGradeBandFromGrade(grade?: string): "K-1" | "1-2" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K-1";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 1 ? "K-1" : "1-2";
+}
+
 export const generateMatterExplorer = async (ctx: GenerationContext): Promise<MatterExplorerData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const intent = ctx.intent || "";
 
-  const gradeBand = gradeLevel.toLowerCase().includes("k") ||
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const canonicalBand = matterExplorerGradeBandFromGrade(ctx.grade);
+  const gradeBand = canonicalBand ?? (gradeLevel.toLowerCase().includes("k") ||
     gradeLevel.toLowerCase().includes("kindergarten")
     ? "K-1"
-    : "1-2";
+    : "1-2");
 
   const generationPrompt = `Create a Matter Explorer activity about "${topic}" for ${gradeBand === "K-1" ? "Kindergarten to 1st grade" : "1st to 2nd grade"} students.
 ${intent ? `\nTeaching intent: ${intent}` : ""}
@@ -231,8 +248,12 @@ REQUIREMENTS:
     // Validation & Defaults
     // -----------------------------------------------------------------------
 
-    // Ensure gradeBand
-    if (!result.gradeBand || !["K-1", "1-2"].includes(result.gradeBand)) {
+    // Ensure gradeBand. With a canonical grade the band is NOT the LLM's
+    // choice — code stamps it (14m); the backstop only fixes invalid stamps
+    // on the legacy no-grade path.
+    if (canonicalBand) {
+      result.gradeBand = canonicalBand;
+    } else if (!result.gradeBand || !["K-1", "1-2"].includes(result.gradeBand)) {
       result.gradeBand = gradeBand as "K-1" | "1-2";
     }
 

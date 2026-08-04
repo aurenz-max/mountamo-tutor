@@ -312,6 +312,22 @@ const moleculeConstructorSchema: Schema = {
 /**
  * Determine the grade band from grade level context string
  */
+/**
+ * Canonical-grade → band mapper (systemic 14m). The prose test below matches
+ * the '6' in the kindergarten sentence "(ages 5-6)", and the high-school
+ * sentence matches nothing so it fell to 3-5. Canonical grade wins when
+ * present (below-range grades clamp to the 3-5 floor rung); null keeps the
+ * prose fallback reachable (never deleted).
+ */
+export function moleculeConstructorGradeBandFromGrade(grade?: string): "3-5" | "6-8" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "3-5";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 5 ? "3-5" : "6-8";
+}
+
 const resolveGradeBand = (gradeLevel: string): "3-5" | "6-8" => {
   const gl = gradeLevel.toLowerCase();
   if (
@@ -392,7 +408,8 @@ export const generateMoleculeConstructor = async (ctx: GenerationContext): Promi
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
   const intent = ctx.intent || "";
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = moleculeConstructorGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
 
   const gradeBandDescriptions: Record<string, string> = {
     "3-5":

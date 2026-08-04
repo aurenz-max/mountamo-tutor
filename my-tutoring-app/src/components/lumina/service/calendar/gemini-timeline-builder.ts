@@ -54,6 +54,29 @@ function resolveGradeBand(gradeLevel: string): TimelineBuilderData["gradeBand"] 
   return "K-1";
 }
 
+/**
+ * Canonical-grade → band mapper (systemic 14m). resolveGradeBand() above only
+ * ever saw `gradeContext` PROSE: the elementary sentence ("grades 1-5")
+ * contains a '1' and the middle/high-school sentences contain a 'k' (in
+ * "thinking"), so EVERY production lesson landed K-1 and the 2-3/4-5/6-8
+ * rungs were unreachable. The band comes from the canonical grade whenever
+ * there is one; returns null when there isn't (the prose fallback stands —
+ * never deleted). Grades 9+ clamp to the 6-8 rung, the ladder's ceiling.
+ */
+export function timelineBuilderGradeBandFromGrade(
+  grade?: string,
+): TimelineBuilderData["gradeBand"] | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K-1";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 1) return "K-1";
+  if (n <= 3) return "2-3";
+  if (n <= 5) return "4-5";
+  return "6-8";
+}
+
 // ---------------------------------------------------------------------------
 // Flat challenge interface for Gemini output
 // ---------------------------------------------------------------------------
@@ -470,7 +493,8 @@ export const generateTimelineBuilder = async (
   );
   logEvalModeResolution("TimelineBuilder", config?.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = timelineBuilderGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes = evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 
   // Determine challenge count per type

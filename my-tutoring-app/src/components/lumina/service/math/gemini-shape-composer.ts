@@ -170,6 +170,24 @@ function resolveGradeBand(gradeLevel: string): string {
   return "1";
 }
 
+/**
+ * Canonical-grade → band mapper (systemic 14m). resolveGradeBand() above only
+ * ever saw `gradeContext` PROSE, and its bare-"k" test matches a 'k' anywhere
+ * in it — middle/high-school prose ("critical thinking") inverts to the K
+ * band. The band drives the shape pool, the target/picture menus, and the
+ * stamped `gradeBand`, so it comes from the canonical grade whenever there is
+ * one. Returns null when there isn't (the prose fallback stands — never
+ * deleted). Grades 1+ clamp to the '1' rung, the ladder's ceiling.
+ */
+export function shapeComposerGradeBandFromGrade(grade?: string): "K" | "1" | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === "K") return "K";
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return "1";
+}
+
 function gradeShapesPrompt(gradeBand: string): string {
   if (gradeBand === "K")
     return "ONLY use circle, square, triangle, rectangle.";
@@ -1497,7 +1515,8 @@ export const generateShapeComposer = async (
   );
   logEvalModeResolution("ShapeComposer", config?.targetEvalMode, evalConstraint);
 
-  const gradeBand = resolveGradeBand(gradeLevel);
+  // Canonical objective grade wins; the prose parser is only the fallback (14m).
+  const gradeBand = shapeComposerGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
   const allowedTypes =
     evalConstraint?.allowedTypes ?? Object.keys(CHALLENGE_TYPE_DOCS);
 

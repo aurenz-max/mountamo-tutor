@@ -46,6 +46,24 @@ function resolveGradeBand(gradeContext: string): 'K-2' | '3-5' {
     : '3-5';
 }
 
+/**
+ * Canonical-grade → band mapper (systemic 14m). resolveGradeBand() above only
+ * ever saw `gradeContext` PROSE and tests 'kinder'/'k-2'/'1st'/'2nd' — the
+ * production elementary sentence ("elementary students (grades 1-5)") matches
+ * none of them, so Grade-1/2 lessons landed the 3-5 band and drew denominators
+ * up to 12. The band drives the candidate fraction pool and the stamped
+ * `gradeBand`, so it comes from the canonical grade whenever there is one.
+ * Returns null when there isn't (the prose fallback stands — never deleted).
+ */
+export function fractionCirclesGradeBandFromGrade(grade?: string): 'K-2' | '3-5' | null {
+  if (!grade) return null;
+  const g = grade.trim().toUpperCase();
+  if (g === 'K') return 'K-2';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  return n <= 2 ? 'K-2' : '3-5';
+}
+
 /** Roll a Fisher-Yates–shuffled pool of grade-legal proper fractions (the shuffle
  *  IS the entropy). Skips the trivial shade-all whole. Every grade-legal
  *  denominator is GUARANTEED at least one candidate so a topic/intent that names a
@@ -77,8 +95,12 @@ function rollFractionPool(denominators: number[], count = 9): string[] {
 
 /** Build the prompt block that hands Gemini the rolled candidate set. Both the
  *  topic AND the per-instance intent are authoritative for the fraction family. */
-function buildFractionPoolSection(gradeContext: string, intent?: string): string {
-  const dens = GRADE_BAND_DENOMINATORS[resolveGradeBand(gradeContext)];
+function buildFractionPoolSection(
+  gradeContext: string,
+  intent?: string,
+  canonicalBand?: 'K-2' | '3-5' | null,
+): string {
+  const dens = GRADE_BAND_DENOMINATORS[canonicalBand ?? resolveGradeBand(gradeContext)];
   const list = rollFractionPool(dens).join(', ');
   return `
 FRACTION POOL (pre-shuffled by the adaptive system for variety):
@@ -382,8 +404,10 @@ export const generateFractionCircles = async (ctx: GenerationContext): Promise<F
   const tierSection = supportTier ? buildTierPromptSection(tierModes, supportTier) : '';
 
   // ── Pre-roll a grade-legal fraction pool (entropy lives in the prompt); the
-  //    per-instance intent steers the family within it ──
-  const fractionPoolSection = buildFractionPoolSection(gradeContext, config?.intent);
+  //    per-instance intent steers the family within it. Canonical objective
+  //    grade wins the band; the prose parser is only the fallback (14m). ──
+  const canonicalBand = fractionCirclesGradeBandFromGrade(ctx.grade);
+  const fractionPoolSection = buildFractionPoolSection(gradeContext, config?.intent, canonicalBand);
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -459,8 +483,12 @@ Return the complete fraction circles configuration.
 
   // ---- Validation & Defaults ----
 
-  // Ensure gradeBand is valid
-  if (data.gradeBand !== "K-2" && data.gradeBand !== "3-5") {
+  // Ensure gradeBand is valid. With a canonical grade the band is NOT the
+  // LLM's choice — code stamps it (14m); the prose default only backstops
+  // invalid stamps on the legacy no-grade path.
+  if (canonicalBand) {
+    data.gradeBand = canonicalBand;
+  } else if (data.gradeBand !== "K-2" && data.gradeBand !== "3-5") {
     const lower = gradeContext.toLowerCase();
     data.gradeBand =
       lower.includes("kinder") || lower.includes("k-2") || lower.includes("1st") || lower.includes("2nd")
