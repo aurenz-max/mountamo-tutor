@@ -12,6 +12,11 @@ no per-item probes) + batch 2 (8, committed `423c58f`, per-item real-Gemini
 probes — report `qa/eval-reports/support-tiers-batch2-2026-08-02.md`).
 Math is 41/41 COMPLETE — never re-touch it from this queue.
 
+**📋 BATCH 3 HANDOFF (paste-able, anchors verified 2026-08-04):**
+`qa/HANDOFF-support-tiers-batch3-2026-08-04.md` — 10 items (rows 1–13 below
+minus the two flagged), batch-2 orchestration pattern, per-item probe gates,
+closing discipline. A session executing batch 3 starts THERE.
+
 **Executor skills:** `/add-support-tiers` per primitive (+
 `/primitive-contract --check` where a contract exists); batch shape =
 the batch-2 orchestrated workflow (profiles → orchestrator writes
