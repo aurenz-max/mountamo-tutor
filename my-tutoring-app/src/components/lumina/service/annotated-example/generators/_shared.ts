@@ -30,6 +30,8 @@ export interface StepGeneratorContext {
    * injected case, the generator must build from seedNotes alone.
    */
   groundingProse: string;
+  /** Accepted authoring constraints that every renderer must preserve. */
+  authoringGuidance?: string;
 }
 
 export function buildStepContextPrefix(ctx: StepGeneratorContext): string {
@@ -49,6 +51,12 @@ export function buildStepContextPrefix(ctx: StepGeneratorContext): string {
     parts.push(`GROUNDING PROSE (from solver — your truth source for the math):\n${ctx.groundingProse}`);
   } else {
     parts.push(`GROUNDING PROSE: (none — this step was injected by the planner; build it from the seed notes and the problem statement)`);
+  }
+
+  if (ctx.authoringGuidance) {
+    parts.push(
+      `AUTHORING CONTRACT (binding; do not introduce a different scenario, quantity, unit, or operation family):\n${ctx.authoringGuidance}`,
+    );
   }
 
   return parts.join('\n\n');

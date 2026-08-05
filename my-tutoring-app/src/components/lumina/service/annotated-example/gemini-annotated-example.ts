@@ -16,7 +16,7 @@
  * hydrates the worked solution.
  */
 
-import { solveProblem } from './solver';
+import { solveProblem, type SolvedProblem } from './solver';
 import { splitSolverBlocks, type SolverBlock } from './blocks';
 import { planSteps, buildFallbackPlan } from './planner';
 import { assignChallenges } from './challenger';
@@ -30,6 +30,13 @@ import type {
   StepSpec,
 } from '../../primitives/annotated-example/types';
 import type { Inset } from '../../types';
+import {
+  buildAnnotatedExampleAuthoringContract,
+  buildPinnedSolverGuidance,
+  deriveDeterministicRepeatedAdditionModel,
+  validateTextAgainstAuthoringContract,
+  type AnnotatedExampleAuthoringContract,
+} from './authoring-contract';
 
 // ═══════════════════════════════════════════════════════════════════════
 // Stage 3: Spec → Typed Step
@@ -67,6 +74,7 @@ function specToContext(
   gradeContext: string,
   problemStatement: string,
   solutionStrategy: string,
+  authoringGuidance?: string,
 ): StepGeneratorContext {
   return {
     topic,
@@ -77,6 +85,7 @@ function specToContext(
     pedagogicalGoal: spec.pedagogicalGoal,
     seedNotes: spec.seedNotes,
     groundingProse: joinGroundingProse(spec, blocks),
+    authoringGuidance,
   };
 }
 
@@ -87,6 +96,7 @@ async function generateAllSteps(
   gradeContext: string,
   problemStatement: string,
   solutionStrategy: string,
+  authoringGuidance?: string,
 ): Promise<RichExampleStep[]> {
   console.log(`[AnnotatedExample] Generating ${specs.length} step(s) in parallel...`);
   const titles = specs.map((s) => s.title);
@@ -101,6 +111,7 @@ async function generateAllSteps(
         gradeContext,
         problemStatement,
         solutionStrategy,
+        authoringGuidance,
       );
       const generated = await generateStep(spec.stepType, ctx);
       if (!generated) {
@@ -137,6 +148,8 @@ export interface HydratePinnedProblemOptions {
   pinnedInset?: Inset;
   /** Forwarded to the solver via `intent` so a "hard" slot doesn't get a trivial walkthrough. */
   difficulty?: 'easy' | 'medium' | 'hard';
+  /** Structured contract accepted at the problem-authoring boundary. */
+  authoringContract?: AnnotatedExampleAuthoringContract;
 }
 
 async function hydratePinnedProblem(
@@ -151,13 +164,76 @@ async function hydratePinnedProblem(
   const solverIntent = options.difficulty
     ? [options.intent, `Targeted difficulty: ${options.difficulty}.`].filter(Boolean).join(' ')
     : options.intent;
-  const solved = await solveProblem(topic, gradeContext, {
+  const solverConfig = {
     intent: solverIntent,
     objectiveText: options.objectiveText,
     objectiveVerb: options.objectiveVerb,
     pinnedProblem: options.pinnedProblem,
     pinnedInset: options.pinnedInset,
-  });
+  };
+  let solved = await solveProblem(topic, gradeContext, solverConfig);
+
+  if (options.authoringContract) {
+    const firstViolations = validateTextAgainstAuthoringContract(
+      solved.body,
+      options.authoringContract,
+    );
+    const echoMismatch = solved.problemStatement !== options.pinnedProblem;
+    if (echoMismatch || firstViolations.length > 0) {
+      const violationCodes = [
+        ...(echoMismatch ? ['pinned-problem-echo'] : []),
+        ...firstViolations.map((violation) => violation.code),
+      ];
+      console.warn('[AnnotatedExample] Retrying pinned solver after contract rejection', {
+        binding: options.authoringContract.binding,
+        canonicalGrade: options.authoringContract.canonicalGrade ?? 'unspecified',
+        attempt: 1,
+        violationCodes: Array.from(new Set(violationCodes)),
+      });
+      solved = await solveProblem(topic, gradeContext, {
+        ...solverConfig,
+        intent: `${solverIntent ?? ''} REPAIR REQUIRED: the prior solution violated these binding contract checks: ${Array.from(new Set(violationCodes)).join(', ')}. Solve the exact same pinned problem again and remove every violation; do not mention or demonstrate a forbidden method even as a verification.`.trim(),
+      });
+    }
+
+    const remainingViolations = validateTextAgainstAuthoringContract(
+      solved.body,
+      options.authoringContract,
+    );
+    if (
+      solved.problemStatement !== options.pinnedProblem ||
+      remainingViolations.length > 0
+    ) {
+      const deterministic = deriveDeterministicRepeatedAdditionModel(options.authoringContract);
+      if (deterministic) {
+        solved = buildDeterministicPinnedSolution(
+          topic,
+          options.pinnedProblem,
+          options.authoringContract,
+          deterministic,
+        );
+        console.warn('[AnnotatedExample] Using deterministic pinned-solver fallback', {
+          binding: options.authoringContract.binding,
+          canonicalGrade: options.authoringContract.canonicalGrade ?? 'unspecified',
+          violationCodes: Array.from(
+            new Set(remainingViolations.map((violation) => violation.code)),
+          ),
+        });
+      }
+    }
+  }
+
+  if (solved.problemStatement !== options.pinnedProblem) {
+    console.error('[AnnotatedExample] Solver violated pinned-problem echo', {
+      expectedLength: options.pinnedProblem.length,
+      actualLength: solved.problemStatement.length,
+    });
+    throw new Error('[AnnotatedExample] Solver PROBLEM echo was not byte-faithful to pinnedProblem');
+  }
+
+  if (options.authoringContract) {
+    assertHydrationContract('solver', solved.body, options.authoringContract);
+  }
 
   console.log('[AnnotatedExample] Stage 2: block split (deterministic)...');
   const blocks = splitSolverBlocks(solved.body);
@@ -173,6 +249,9 @@ async function hydratePinnedProblem(
     gradeContext,
     solved.problemStatement,
     solved.strategy,
+    options.authoringContract
+      ? buildPinnedSolverGuidance(options.authoringContract)
+      : undefined,
   );
 
   console.log(`[AnnotatedExample] Step generation complete: ${steps.length}/${planner.specs.length} step(s) rendered from ${blocks.length} block(s)`);
@@ -187,6 +266,9 @@ async function hydratePinnedProblem(
     problemStatement: solved.problemStatement,
     solutionStrategy: solved.strategy,
     steps,
+    authoringGuidance: options.authoringContract
+      ? buildPinnedSolverGuidance(options.authoringContract)
+      : undefined,
   });
   if (challenger.failed) {
     console.warn('[AnnotatedExample] Challenger failed — example renders without prediction gates.');
@@ -194,6 +276,46 @@ async function hydratePinnedProblem(
     console.log(
       `[AnnotatedExample] Challenges merged: ${challenger.assignments.length} attached, ${challenger.dropped.length} dropped`,
     );
+  }
+
+  if (options.authoringContract) {
+    let finalText = serializeStudentVisibleSteps(solved.body, steps);
+    let finalViolations = validateTextAgainstAuthoringContract(
+      finalText,
+      options.authoringContract,
+    );
+    if (finalViolations.length > 0 && hasAnyChallenge(steps)) {
+      clearChallenges(steps);
+      challenger.assignments = [];
+      challenger.failed = true;
+      console.warn('[AnnotatedExample] Dropped challenge layer after contract rejection', {
+        binding: options.authoringContract.binding,
+        canonicalGrade: options.authoringContract.canonicalGrade ?? 'unspecified',
+        violationCodes: Array.from(new Set(finalViolations.map((violation) => violation.code))),
+      });
+      finalText = serializeStudentVisibleSteps(solved.body, steps);
+      finalViolations = validateTextAgainstAuthoringContract(finalText, options.authoringContract);
+    }
+    if (finalViolations.length > 0) {
+      const deterministic = deriveDeterministicRepeatedAdditionModel(options.authoringContract);
+      if (deterministic) {
+        steps.splice(
+          0,
+          steps.length,
+          buildDeterministicRepeatedAdditionStep(options.authoringContract, deterministic),
+        );
+        challenger.assignments = [];
+        challenger.failed = true;
+        console.warn('[AnnotatedExample] Using deterministic step-chain fallback', {
+          binding: options.authoringContract.binding,
+          canonicalGrade: options.authoringContract.canonicalGrade ?? 'unspecified',
+          violationCodes: Array.from(new Set(finalViolations.map((violation) => violation.code))),
+        });
+        finalText = serializeStudentVisibleSteps(solved.body, steps);
+        finalViolations = validateTextAgainstAuthoringContract(finalText, options.authoringContract);
+      }
+    }
+    assertHydrationViolations('serialized-step-chain', finalViolations, options.authoringContract);
   }
 
   const separatorCount = (solved.body.match(/^\s*---\s*$/gm) || []).length;
@@ -208,6 +330,7 @@ async function hydratePinnedProblem(
     solutionStrategy: solved.strategy,
     steps,
     solverDebug: {
+      problemEcho: solved.problemStatement,
       body: solved.body,
       separatorCount,
       blocks: blocks.map((b) => ({ index: b.index, prose: b.prose })),
@@ -225,19 +348,25 @@ async function hydratePinnedProblem(
 export interface GenerateAnnotatedExampleInput {
   topic: string;
   gradeContext: string;
-  /** Optional steering text forwarded to the orchestrator. */
+  /** Optional manifest steering promoted into a structured authoring contract. */
   intent?: string;
+  /** Canonical curriculum grade from `ctx.grade`; never inferred from grade prose. */
+  canonicalGrade?: string;
 }
 
 export async function generateAnnotatedExample(
   input: GenerateAnnotatedExampleInput,
 ): Promise<RichAnnotatedExampleData> {
-  const { topic, gradeContext, intent } = input;
+  const { topic, gradeContext, intent, canonicalGrade } = input;
+  const authoringContract = buildAnnotatedExampleAuthoringContract({
+    intent,
+    canonicalGrade,
+  });
 
   const plan = await runAnnotatedExampleOrchestrator({
     topic,
     gradeLevel: gradeContext,
-    context: intent,
+    authoringContract,
   });
 
   console.log('[AnnotatedExample] Hydrating problem:', {
@@ -249,7 +378,119 @@ export async function generateAnnotatedExample(
     pinnedProblem: plan.problemStatement,
     pinnedInset: plan.inset,
     difficulty: plan.difficulty,
+    intent: buildPinnedSolverGuidance(authoringContract),
+    authoringContract,
   });
+}
+
+function assertHydrationContract(
+  stage: 'solver' | 'serialized-step-chain',
+  text: string,
+  contract: AnnotatedExampleAuthoringContract,
+): void {
+  const violations = validateTextAgainstAuthoringContract(text, contract);
+  assertHydrationViolations(stage, violations, contract);
+}
+
+function assertHydrationViolations(
+  stage: 'solver' | 'serialized-step-chain',
+  violations: ReturnType<typeof validateTextAgainstAuthoringContract>,
+  contract: AnnotatedExampleAuthoringContract,
+): void {
+  if (violations.length === 0) return;
+  console.error('[AnnotatedExample] Hydration contract rejected output', {
+    stage,
+    binding: contract.binding,
+    canonicalGrade: contract.canonicalGrade ?? 'unspecified',
+    violationCodes: Array.from(new Set(violations.map((violation) => violation.code))),
+  });
+  throw new Error(
+    `[AnnotatedExample] ${stage} violated accepted authoring contract: ${Array.from(
+      new Set(violations.map((violation) => violation.code)),
+    ).join(', ')}`,
+  );
+}
+
+function serializeStudentVisibleSteps(body: string, steps: RichExampleStep[]): string {
+  return `${body}\n${JSON.stringify(
+    steps.map((step) => ({
+      content: step.content,
+      narrative: step.annotations.narrative,
+      challenge: step.challenge,
+    })),
+  )}`;
+}
+
+function hasAnyChallenge(steps: RichExampleStep[]): boolean {
+  return steps.some(
+    (step) =>
+      Boolean(step.challenge) ||
+      (step.content.type === 'algebra' &&
+        step.content.transitions.some((transition) => Boolean(transition.challenge))),
+  );
+}
+
+function clearChallenges(steps: RichExampleStep[]): void {
+  for (const step of steps) {
+    delete step.challenge;
+    if (step.content.type === 'algebra') {
+      step.content.transitions = step.content.transitions.map((transition) => {
+        const { challenge: _challenge, ...rest } = transition;
+        return rest;
+      });
+    }
+  }
+}
+
+function buildDeterministicPinnedSolution(
+  topic: string,
+  pinnedProblem: string,
+  contract: AnnotatedExampleAuthoringContract,
+  model: NonNullable<ReturnType<typeof deriveDeterministicRepeatedAdditionModel>>,
+): SolvedProblem {
+  const entityLabel = `${model.entity}${model.count === 1 ? '' : 's'}`;
+  const sequence = model.rows.map((row) => row[1]).join(', ');
+  const body = `The pinned worked example specifies ${model.count} ${entityLabel}, ${model.increment} ${model.unit} for each one, and a target of ${model.target} ${model.unit}. Use the requested skip-counting method and keep the exact scenario: ${contract.intent ?? pinnedProblem}
+---
+Skip-count by ${model.increment} ${model.unit} once for each ${model.entity}: ${sequence}. This is repeated addition using the same increment each time.
+---
+The ${model.count}th count in the sequence is ${model.target}. Therefore the final total is ${model.target} ${model.unit}.`;
+  const strategy = `Use skip-counting by ${model.increment} ${model.unit} for each of the ${model.count} ${entityLabel}, stopping at the pinned target of ${model.target} ${model.unit}.`;
+  const title = `Skip-Counting ${entityLabel}`;
+  const rawText = `TITLE: ${title}\nSUBJECT: Mathematics\nPROBLEM: ${pinnedProblem}\n\nSTRATEGY: ${strategy}\n\n${body}`;
+  return {
+    title,
+    subject: 'Mathematics',
+    problemStatement: pinnedProblem,
+    strategy,
+    body,
+    rawText,
+  };
+}
+
+function buildDeterministicRepeatedAdditionStep(
+  contract: AnnotatedExampleAuthoringContract,
+  model: NonNullable<ReturnType<typeof deriveDeterministicRepeatedAdditionModel>>,
+): RichExampleStep {
+  const entityLabel = `${model.entity}${model.count === 1 ? '' : 's'}`;
+  return {
+    id: 1,
+    title: 'Skip-count to the exact target',
+    content: {
+      type: 'table',
+      caption: `Skip-count ${model.count} ${entityLabel} by ${model.increment} ${model.unit}`,
+      headers: [`${model.entity} count`, `Running total (${model.unit})`],
+      rows: model.rows,
+      highlightCell: [model.rows.length - 1, 1],
+    },
+    annotations: {
+      steps: `Count each ${model.entity} once and add ${model.increment} ${model.unit} to the running total.`,
+      strategy: `I use the same increment for every ${model.entity} and stop after ${model.count} counts.`,
+      misconceptions: `Keep the item count separate from the running total in ${model.unit}.`,
+      connections: 'This is repeated addition represented as a running-total table.',
+      narrative: `${contract.intent ?? ''} The final row reaches ${model.target} ${model.unit}.`,
+    },
+  };
 }
 
 /**

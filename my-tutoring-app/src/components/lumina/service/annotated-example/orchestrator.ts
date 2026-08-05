@@ -36,6 +36,13 @@ import type {
   AnnotatedPlannedInsetType,
 } from '../../primitives/annotated-example/types';
 import type { Inset } from '../../types';
+import {
+  buildIntentFaithfulFallback,
+  formatAuthoringContractForPrompt,
+  validateTextAgainstAuthoringContract,
+  type AnnotatedExampleAuthoringContract,
+  type AuthoringViolation,
+} from './authoring-contract';
 
 // ── Stage 1: planning schema (no inset payload) ──────────────────────
 
@@ -74,7 +81,25 @@ const PLANNING_SCHEMA: Schema = {
 
 // ── Stage 1: prompt ──────────────────────────────────────────────────
 
-function buildPlanningPrompt(topic: string, gradeLevel: string, context?: string): string {
+interface RepairContext {
+  rejectedStatement: string;
+  violations: AuthoringViolation[];
+}
+
+function buildPlanningPrompt(
+  topic: string,
+  gradeLevel: string,
+  context?: string,
+  authoringContract?: AnnotatedExampleAuthoringContract,
+  repair?: RepairContext,
+): string {
+  const contractSection = authoringContract
+    ? `\n${formatAuthoringContractForPrompt(authoringContract)}\n`
+    : '';
+  const repairSection = repair
+    ? `\n## Repair the rejected plan\nThe previous problem statement was rejected:\n${repair.rejectedStatement}\n\nViolations to repair:\n${repair.violations.map((violation) => `- ${violation.code}: ${violation.detail}`).join('\n')}\n\nReturn one corrected plan. Do not evade a violation by dropping the concrete scenario or changing the task.\n`
+    : '';
+
   return `You are an expert lesson designer.
 
 Plan a single problem on "${topic}" for a ${gradeLevel} student.
@@ -128,7 +153,7 @@ The \`insetBrief\` is consumed by a separate per-type author. Be specific so the
 
 3. **Pick the inset type (or null) that best teaches the topic**, then author the problem statement and a concrete inset brief.
 
-${context ? `## Additional context\n${context}\n\n` : ''}Plan the problem now.`;
+${contractSection}${context ? `## Additional context\n${context}\n\n` : ''}${repairSection}Plan the problem now.`;
 }
 
 // ── Stage 2: per-slot inset author ───────────────────────────────────
@@ -281,8 +306,13 @@ const VALID_DIFFICULTIES = new Set<AnnotatedExampleDifficulty>(['easy', 'medium'
 export interface RunOrchestratorInput {
   topic: string;
   gradeLevel: string;
-  /** Optional steering text. */
+  /**
+   * Legacy representative-authoring steering. Kept for the practice-problem
+   * sibling; manifest-routed annotated examples use `authoringContract`.
+   */
   context?: string;
+  /** Structured manifest constraints, including canonical grade. */
+  authoringContract?: AnnotatedExampleAuthoringContract;
 }
 
 interface PlanRow {
@@ -296,11 +326,74 @@ interface PlanRow {
 export async function runAnnotatedExampleOrchestrator(
   input: RunOrchestratorInput,
 ): Promise<AnnotatedExampleProblemPlan> {
-  const { topic, gradeLevel, context } = input;
+  const { topic, gradeLevel, context, authoringContract } = input;
 
   console.log('[AE Orchestrator] Stage 1: planning problem', { topic, gradeLevel });
 
-  const plan = await runPlanningStage(topic, gradeLevel, context);
+  let plan: PlanRow;
+  try {
+    plan = await runPlanningStage(topic, gradeLevel, context, authoringContract);
+  } catch (error) {
+    if (!authoringContract || authoringContract.binding !== 'strict') throw error;
+    console.warn('[AE Orchestrator] Planning stage failed; using strict intent fallback', {
+      binding: authoringContract.binding,
+      canonicalGrade: authoringContract.canonicalGrade ?? 'unspecified',
+      attempt: 1,
+      violationCodes: ['planning-stage-error'],
+    });
+    plan = buildFallbackPlan(authoringContract, 'medium');
+  }
+
+  if (authoringContract) {
+    const firstViolations = validateTextAgainstAuthoringContract(
+      plan.problemStatement,
+      authoringContract,
+    );
+    if (firstViolations.length > 0) {
+      logAuthoringRejection(1, authoringContract, firstViolations);
+      let repaired: PlanRow | null = null;
+      try {
+        repaired = await runPlanningStage(topic, gradeLevel, context, authoringContract, {
+          rejectedStatement: plan.problemStatement,
+          violations: firstViolations,
+        });
+      } catch {
+        console.warn('[AE Orchestrator] Authoring repair call failed', {
+          binding: authoringContract.binding,
+          canonicalGrade: authoringContract.canonicalGrade ?? 'unspecified',
+          attempt: 2,
+          violationCodes: ['planning-stage-error'],
+        });
+      }
+      if (!repaired) {
+        plan = buildFallbackPlan(authoringContract, plan.difficulty);
+      } else {
+        const repairViolations = validateTextAgainstAuthoringContract(
+          repaired.problemStatement,
+          authoringContract,
+        );
+        if (repairViolations.length === 0) {
+          plan = repaired;
+          console.info('[AE Orchestrator] Authoring repair accepted', {
+            binding: authoringContract.binding,
+            canonicalGrade: authoringContract.canonicalGrade ?? 'unspecified',
+            attempt: 2,
+          });
+        } else {
+          logAuthoringRejection(2, authoringContract, repairViolations);
+          plan = buildFallbackPlan(authoringContract, repaired.difficulty);
+          console.warn('[AE Orchestrator] Using intent-faithful authoring fallback', {
+            binding: authoringContract.binding,
+            canonicalGrade: authoringContract.canonicalGrade ?? 'unspecified',
+            attempts: 2,
+            violationCodes: Array.from(
+              new Set(repairViolations.map((violation) => violation.code)),
+            ),
+          });
+        }
+      }
+    }
+  }
 
   console.log(
     '[AE Orchestrator] Stage 2: authoring inset',
@@ -344,8 +437,10 @@ async function runPlanningStage(
   topic: string,
   gradeLevel: string,
   context: string | undefined,
+  authoringContract?: AnnotatedExampleAuthoringContract,
+  repair?: RepairContext,
 ): Promise<PlanRow> {
-  const prompt = buildPlanningPrompt(topic, gradeLevel, context);
+  const prompt = buildPlanningPrompt(topic, gradeLevel, context, authoringContract, repair);
 
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -399,5 +494,31 @@ async function runPlanningStage(
     problemStatement,
     insetBrief: insetBrief || `Author the ${insetType} inset coherent with this problem statement.`,
     rationale,
+  };
+}
+
+function logAuthoringRejection(
+  attempt: number,
+  contract: AnnotatedExampleAuthoringContract,
+  violations: AuthoringViolation[],
+): void {
+  console.warn('[AE Orchestrator] Authoring validation rejected plan', {
+    binding: contract.binding,
+    canonicalGrade: contract.canonicalGrade ?? 'unspecified',
+    attempt,
+    violationCodes: Array.from(new Set(violations.map((violation) => violation.code))),
+  });
+}
+
+function buildFallbackPlan(
+  contract: AnnotatedExampleAuthoringContract,
+  difficulty: AnnotatedExampleDifficulty,
+): PlanRow {
+  return {
+    difficulty,
+    insetType: null,
+    problemStatement: buildIntentFaithfulFallback(contract),
+    insetBrief: '',
+    rationale: 'Uses the manifest-specified worked example without widening its scope.',
   };
 }

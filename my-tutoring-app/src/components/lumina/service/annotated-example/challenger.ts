@@ -135,6 +135,8 @@ export interface ChallengerInput {
   problemStatement: string;
   solutionStrategy: string;
   steps: RichExampleStep[];
+  /** Accepted authoring constraints that challenge prompts must not widen. */
+  authoringGuidance?: string;
 }
 
 interface AlgebraStepSummary {
@@ -291,6 +293,8 @@ Grade context: ${input.gradeContext}
 
 ## Strategy
 ${input.solutionStrategy}
+
+${input.authoringGuidance ? `## Binding authoring contract\n${input.authoringGuidance}\n\nEvery prompt, answer, and distractor must remain inside this contract.` : ''}
 
 ## Steps in this example
 

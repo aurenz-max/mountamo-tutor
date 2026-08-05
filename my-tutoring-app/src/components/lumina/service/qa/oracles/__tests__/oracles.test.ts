@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { angleWorkshopOracle } from '../angle-workshop';
+import { annotatedExampleOracle } from '../annotated-example';
 import { balanceScaleOracle } from '../balance-scale';
 import { circleExplorerOracle } from '../circle-explorer';
 import { coordinateGraphOracle } from '../coordinate-graph';
@@ -24,6 +25,97 @@ import { vocabularyExplorerOracle } from '../vocabulary-explorer';
  * recurring bug class gets a fixture the oracle MUST flag, plus a clean
  * fixture it must pass. Fixtures are trimmed from real eval-test output.
  */
+
+const aeCtx = {
+  componentId: 'annotated-example',
+  evalMode: 'default',
+  topic: 'Count identical coins',
+  gradeLevel: 'elementary',
+  grade: '1',
+  intent: 'Use this exact worked example: six nickels. Skip-count by 5 cents to 30 cents.',
+};
+const aeStatement = 'Skip-count six nickels by 5 cents: 5, 10, 15, 20, 25, 30 cents.';
+const aeClean = {
+  title: 'Count Nickels',
+  subject: 'Math',
+  problem: { statement: aeStatement },
+  solutionStrategy: 'Use skip-counting.',
+  steps: [{
+    id: 1,
+    title: 'Skip-count',
+    content: { type: 'algebra', transitions: [{ from: { latex: '5,10,15,20,25' }, to: { latex: '30' }, operation: 'skip-count by 5 cents' }], result: '30 cents' },
+    annotations: { steps: 'Skip-count six nickels.', strategy: 'Count by fives.', misconceptions: 'Do not change the coin.', connections: 'Repeated addition.' },
+  }],
+  solverDebug: {
+    problemEcho: aeStatement,
+    body: 'Skip-count the six nickels by 5 cents: 5, 10, 15, 20, 25, 30 cents.',
+    separatorCount: 0,
+    blocks: [],
+    planner: {},
+    challenger: {},
+  },
+};
+
+describe('annotated-example oracle', () => {
+  it('passes a strict Grade-1 skip-counting payload', () => {
+    expect(annotatedExampleOracle.verify(aeClean, aeCtx).violations).toEqual([]);
+  });
+
+  it('fires on the recorded 4x5 dime/200-cent replacement (non-vacuity)', () => {
+    const badStatement = 'Arrange 20 dimes in a 4 × 5 array and multiply to get 200 cents.';
+    const bad = {
+      ...aeClean,
+      problem: { statement: badStatement },
+      steps: [{ id: 1, content: { type: 'algebra', result: '4 × 5 = 20 dimes = 200 cents' } }],
+      solverDebug: { ...aeClean.solverDebug, problemEcho: badStatement, body: badStatement },
+    };
+    const violations = annotatedExampleOracle.verify(bad, aeCtx).violations;
+    expect(violations.some((violation) => violation.check === 'scope')).toBe(true);
+    expect(violations.some((violation) => violation.check === 'operation-family')).toBe(true);
+  });
+
+  it('fires when only the final step chain introduces multiplication', () => {
+    const bad = JSON.parse(JSON.stringify(aeClean));
+    bad.steps[0].content.transitions.push({
+      from: { latex: '6 \\times 5' },
+      to: { latex: '30' },
+      operation: 'multiply to verify',
+    });
+    const violations = annotatedExampleOracle.verify(bad, aeCtx).violations;
+    expect(
+      violations.some(
+        (violation) => violation.check === 'operation-family' && violation.where === 'solver-and-steps',
+      ),
+    ).toBe(true);
+  });
+
+  it('distinguishes an explicit multiplication objective from introduced multiplication', () => {
+    const statement = 'Use multiplication to calculate 4 × 5.';
+    const data = {
+      ...aeClean,
+      problem: { statement },
+      steps: [{ id: 1, content: { type: 'algebra', result: '4 × 5' } }],
+      solverDebug: { ...aeClean.solverDebug, problemEcho: statement, body: 'Multiply 4 × 5.' },
+    };
+    const result = annotatedExampleOracle.verify(data, {
+      ...aeCtx,
+      intent: 'Use this exact problem: multiply 4 × 5.',
+    });
+    expect(result.violations).toEqual([]);
+  });
+
+  it('fires when the solver echo is not byte-faithful', () => {
+    const bad = {
+      ...aeClean,
+      solverDebug: { ...aeClean.solverDebug, problemEcho: `${aeStatement} Changed.` },
+    };
+    expect(
+      annotatedExampleOracle
+        .verify(bad, aeCtx)
+        .violations.some((violation) => violation.check === 'pinned-problem'),
+    ).toBe(true);
+  });
+});
 
 const tfCtx = { componentId: 'ten-frame', evalMode: 'build', topic: 'Counting to 10', gradeLevel: 'kindergarten' };
 

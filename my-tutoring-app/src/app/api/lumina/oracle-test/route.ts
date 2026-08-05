@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
       evalMode,
       topic,
       gradeLevel,
+      ...(intent ? { intent } : {}),
+      ...(grade ? { grade } : {}),
       ...(scopeMax !== undefined && Number.isFinite(scopeMax) ? { scopeMax } : {}),
     };
 

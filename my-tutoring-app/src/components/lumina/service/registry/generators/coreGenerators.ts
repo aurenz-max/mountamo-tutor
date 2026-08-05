@@ -223,6 +223,7 @@ registerContextGenerator('annotated-example', async (ctx) => {
     topic: ctx.topic,
     gradeContext: ctx.gradeContext,
     intent: ctx.intent,
+    canonicalGrade: ctx.grade,
   });
   return {
     type: 'annotated-example',

@@ -328,6 +328,8 @@ export interface RichAnnotatedExampleData {
 }
 
 export interface SolverDebugPayload {
+  /** Solver's parsed PROBLEM echo; must byte-match `problem.statement`. */
+  problemEcho?: string;
   /** Raw solver prose with `---` separators. */
   body: string;
   /** Number of `---` markers in the body. `separatorCount + 1` = block count. */

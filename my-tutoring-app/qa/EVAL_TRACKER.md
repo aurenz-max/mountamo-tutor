@@ -86,7 +86,7 @@
 | word-builder | 4 | 4 | 0 | 2026-04-11 | [report](eval-reports/word-builder-2026-04-11.md) |
 | dot-plot | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/dot-plot-2026-04-19.md) |
 | bar-model | 6 | 6 | 0 | 2026-04-19 | [report](eval-reports/bar-model-2026-04-19.md) |
-| annotated-example | 1 | 1 | 0 | 2026-04-24 | [report](eval-reports/annotated-example-2026-04-24.md) |
+| annotated-example | 1 | 1 | 0 | 2026-08-04 | [14j scope/grade binding](reader-fit/annotated-example-14j-2026-08-04.md); [April report](eval-reports/annotated-example-2026-04-24.md) |
 | function-sketch | 4 | 3 | 1 | 2026-05-23 | [report](eval-reports/function-sketch-2026-05-23.md) |
 | histogram | 4 | 4 | 0 | 2026-05-22 | [report](eval-reports/histogram-2026-05-22.md) |
 | slope-triangle | 3 | 3 | 0 | 2026-06-20 | [structural sweep](eval-reports/slope-triangle-2026-06-20.md) |
@@ -124,7 +124,7 @@ Note: coordinate-graph (2026-06-14) — all 4 modes pass the support-tier diffic
 
 Note: polygon-area-builder and circle-explorer each have 5 IRT-pinned modes all passing; their "Auto (mixed)" paths (PAB-1 / CE-1) were both fixed 2026-06-06 (SP-21) — each now interleaves all five tiers, scaled easy→hard, across 8 problems.
 
-Note: annotated-example passes structurally (final answers correct, schema refactor successful) but has 3 HIGH content-quality issues around redundant step planning — see AE-1..AE-4 and SP-16.
+Note: annotated-example's reader-fit 14j scope/operation drift is resolved and final-payload-oracled (3/3 live). The separate April campaign remains open: 3 HIGH redundant-step issues plus AE-3 MEDIUM weak verification — see AE-1..AE-4 and SP-16.
 
 Note: **Track-C structural-difficulty eval-test sweep (2026-06-21)** — Step-2c support-tier sweep across the 8 primitives that just got the structural axis. **Tier wiring is correct everywhere it could be verified** (scaffold flip, lever moves easy→hard, magnitude invariant, no leak, null-tier no-op all pass): figurative-language-finder, light-shadow-lab, race-track-lab fully clean; text-structure-analyzer clean on all 4 tier checks. 5 open issues surfaced (detailed rows pending in the issue tables below; recorded here with IDs):
 > - **SSW-1 (sound-swap, CRITICAL, GENERATOR):** generator pinned to the retired `gemini-2.0-flash-lite` → 404 on every call; ships nothing. One-line model swap to `gemini-flash-lite-latest`. PRE-EXISTING (not the Track-C change); same root cause as SP-22 / coordinate-graph. Blocks the whole primitive, so the tier work is runtime-unverified.
@@ -618,6 +618,7 @@ added; prompt/title movement alone is not a full-fidelity verdict. See
 
 | ID | Primitive | Resolved | How |
 |----|-----------|----------|-----|
+| RF14J-1 | annotated-example | 2026-08-04 | CONTRACT-WIRING + POST-PROCESS-VALIDATE + BOUNDED REPAIR/FALLBACK. Concrete manifest examples now become structured numeric/entity/unit/operation constraints with canonical grade; problem plans validate before hydration; solver echo is byte-pinned; step/challenge output keeps the accepted operation family; a denomination-agnostic derived running-total fallback closes stochastic Grade-1 repeated-addition drift. Recorded 4×5 dime/200¢ fixture bites; exact coin final oracle 3/3 live with 0 violations; 108–111 and calculus controls PASS. |
 | RF14H-1 | number-sequencer | 2026-08-04 | EVAL-MODE-WIRING (SP-9). The legacy exact-key resolver treated `count_from\|before_after` as unknown, opening all five challenge types. Switched to the shared blend-aware resolver, schema-enum union, and post-filter. Exact census replay now emits only `count-from`/`before-after`; all five single modes remain exact and PASS. |
 | RF14H-2 | number-sequencer | 2026-08-04 | TOPIC-FIDELITY Tier 2 + POST-PROCESS-DERIVE. Grade-1 101–120 values were generated but `rangeMax` was clamped to 100, so correct cells were invisible. Added a temperature-0 structured range resolver (only when explicit range absent), generic ≤100 fallback, hard ≤120 capability ceiling, out-of-range rejection, local range derivation, and in-range three-card top-up. Exact `101,102,_,104` replay renders/grades 103; 13 scope/intent probes track; full 1406/1406. |
 | SP-28 | cross-board intent contract | 2026-07-14 | SYSTEM + GENERATORS. Migrated the final 5 registry adapters to `registerContextGenerator`; wired authoritative scope into 52 dead-intent generators; replaced the 34-item ledger with all-registry coverage; added `npm run audit:intent-contract` + CI test. Structural coverage 193/193 registry entries and 171/171 generator files. Fixed-topic/varying-intent probes: classification-sorter, machine-profile, timeline-builder, constellation-builder FULL; histogram and net-folder PARTIAL because code-picked values still need Tier-2 selectors. Full suite 726/726; Lumina typecheck clean. |

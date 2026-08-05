@@ -18,6 +18,10 @@ export interface OracleContext {
   evalMode: string;
   topic: string;
   gradeLevel: string;
+  /** Manifest steering used to derive strict scope/operation constraints. */
+  intent?: string;
+  /** Canonical curriculum grade; never inferred from gradeLevel prose. */
+  grade?: string;
   /** Explicit numeric scope ceiling from the harness (?scopeMax=10). Overrides topic parsing. */
   scopeMax?: number;
 }

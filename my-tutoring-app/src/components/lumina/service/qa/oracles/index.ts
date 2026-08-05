@@ -1,5 +1,6 @@
 import type { ContentOracle } from './types';
 import { additionSubtractionSceneOracle } from './addition-subtraction-scene';
+import { annotatedExampleOracle } from './annotated-example';
 import { analogClockOracle } from './analog-clock';
 import { angleWorkshopOracle } from './angle-workshop';
 import { areaModelOracle } from './area-model';
@@ -54,6 +55,7 @@ export type { ContentOracle, OracleContext, OracleResult, OracleViolation } from
  */
 export const CONTENT_ORACLES: ContentOracle[] = [
   additionSubtractionSceneOracle,
+  annotatedExampleOracle,
   analogClockOracle,
   angleWorkshopOracle,
   areaModelOracle,
