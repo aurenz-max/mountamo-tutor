@@ -80,7 +80,12 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > (design closed 08-04; the misconception loop's consumption half — a real
 > platform capability; gate = `/misconception-test`, automated) → ~~**item 8's
 > flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel
-> lane — no file overlap with the L3 slice)** → **item 6** probe (backend-only).
+> lane — no file overlap with the L3 slice)** → ~~**item 6** probe
+> (backend-only)~~ **item 6 DEPRIORITIZED 08-05 (user: free-form calibration
+> imperfection accepted — see item 6). The lane's remaining queue-of-record
+> pulls are 14g's `counting_next` 1–120 fix (in-scope pack development), then
+> NEW development items (next pack / spoken expansion) authored with the
+> user.**
 > **Item 9 Tier 2 is DEMOTED from top pull but stays queued** as the absorber of
 > item 5's residual runtime checks (the level-3 🔄 card via
 > `LUMINA_FAULT_MUTE_EPISODES=2` + an end-coherent full run) — build it when a
@@ -412,7 +417,14 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
    spoken copy changed. Report:
    `qa/misconception/di-family-2026-08-04.md`.
 6. **Free-form DI attribution lands off-grade/off-family: K `fact_review` →
-   `OPS002-04-c @ grade=2` (subject override ✓ MATHEMATICS).** *(opened 2026-07-26,
+   `OPS002-04-c @ grade=2` (subject override ✓ MATHEMATICS).**
+   **DEPRIORITIZED (user ruling 2026-08-05): imperfect free-form calibration is
+   ACCEPTED for now.** Do NOT add hardcoded grade guardrails to the retrieval
+   service (a "K can't achieve G2" clamp is exactly the heuristic the
+   pure-IRT ruling forbids); if this is ever picked up, the fix is better
+   retrieval SIGNAL, not grade rules. Not a pull while the focus is
+   development (primitives / DI packs / spoken modalities). Standalone-only
+   exposure; lesson mode is unaffected. *(opened 2026-07-26,
    stress-sitting report; #50(c) half-closed by the same evidence. Executor: probe
    `curriculum_retrieval_service` on the standalone free-form path — is the scope
    grade coming from student 1004's profile instead of the content, and is
