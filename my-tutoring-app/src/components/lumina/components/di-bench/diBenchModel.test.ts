@@ -3,6 +3,7 @@ import {
   BENCH_SETS,
   completeCue,
   correctionLine,
+  COUNTING_SEQUENCE_PROBE_ITEMS,
   DEFAULT_ITEMS,
   guideLine,
   itemCue,
@@ -102,7 +103,7 @@ describe('live-judged Direct Instruction bench model', () => {
 
   it('exposes the math-facts probe as a bench set with full number-word coverage', () => {
     expect(BENCH_SETS.map((set) => set.id)).toEqual([
-      'letter-sounds', 'word-reading', 'math-facts', 'sentence-reading',
+      'letter-sounds', 'word-reading', 'math-facts', 'counting-120', 'sentence-reading',
     ]);
     const probe = BENCH_SETS.find((set) => set.id === 'math-facts')!.items;
     expect(probe).toBe(MATH_FACTS_PROBE_ITEMS);
@@ -153,6 +154,92 @@ describe('live-judged Direct Instruction bench model', () => {
       .toBe('fact-2p1');
     expect(detectDIItemFromTutorText('Yes, five plus five is ten.', MATH_FACTS_PROBE_ITEMS)?.id)
       .toBe('fact-5p5');
+  });
+
+  it('exposes the counting-to-120 probe with teen/decade and compound coverage', () => {
+    const probe = BENCH_SETS.find((set) => set.id === 'counting-120')!.items;
+    expect(probe).toBe(COUNTING_SEQUENCE_PROBE_ITEMS);
+    expect(probe).toHaveLength(10);
+    expect(probe.every((item) => item.kind === 'counting')).toBe(true);
+    // (a) both sides of at least one teen/decade pair must be on the table, or
+    // the confusion the sitting exists to measure is never actually put to it.
+    const spoken = probe.map((item) => item.spoken);
+    expect(spoken).toContain('thirteen');
+    expect(spoken).toContain('thirty');
+    // (b) the class under test is MULTI-WORD: single-word answers alone would
+    // just re-bench #46.
+    expect(spoken.filter((word) => /[\s-]/.test(word)).length).toBeGreaterThanOrEqual(4);
+    // (c) the objective's ceiling is actually reached.
+    expect(spoken).toContain('one hundred twenty');
+  });
+
+  it('never cross-aliases a teen with its decade sibling', () => {
+    // The alias check is the judge-vs-transcript disagreement meter. Listing
+    // "thirty" under thirteen would hide exactly the confusion being measured.
+    const thirteen = COUNTING_SEQUENCE_PROBE_ITEMS.find((i) => i.id === 'count-12')!;
+    expect(matchesAsrAliases('thirteen', thirteen)).toBe(true);
+    expect(matchesAsrAliases('13', thirteen)).toBe(true);
+    expect(matchesAsrAliases('thirty', thirteen)).toBe(false);
+    const thirty = COUNTING_SEQUENCE_PROBE_ITEMS.find((i) => i.id === 'count-29')!;
+    expect(matchesAsrAliases('thirty', thirty)).toBe(true);
+    expect(matchesAsrAliases('thirteen', thirty)).toBe(false);
+    // A partial compound must not cross-check as the whole number.
+    const oneTwenty = COUNTING_SEQUENCE_PROBE_ITEMS.find((i) => i.id === 'count-119')!;
+    expect(matchesAsrAliases('one hundred twenty', oneTwenty)).toBe(true);
+    expect(matchesAsrAliases('twenty', oneTwenty)).toBe(false);
+  });
+
+  it('carries the bench-proven DISTAR lines unchanged into the counting kind', () => {
+    // The whole reason `counting` reuses the fact wording: the #46-benched lines
+    // are problem-phrased and already read correctly for a counting item, so the
+    // sitting tests the NUMERAL class rather than new sentences.
+    const item = COUNTING_SEQUENCE_PROBE_ITEMS.find((i) => i.id === 'count-29')!;
+    expect(modelLine(item)).toBe('Listen: the number after twenty-nine is thirty.');
+    expect(guideLine(item)).toBe('Together: the number after twenty-nine is thirty.');
+    expect(testLine(item)).toBe('Your turn. What is the number after twenty-nine?');
+    expect(verifyLine(item)).toBe('Yes, the number after twenty-nine is thirty.');
+    expect(correctionLine(item)).toBe(
+      'My turn: the number after twenty-nine is thirty. Your turn. What is the number after twenty-nine?',
+    );
+  });
+
+  it('keeps every counting line on the two-branch sentinel contract', () => {
+    for (const item of COUNTING_SEQUENCE_PROBE_ITEMS) {
+      expect(verifyLine(item).toLowerCase().startsWith('yes')).toBe(true);
+      expect(correctionLine(item).toLowerCase().startsWith('my turn')).toBe(true);
+      for (const line of [modelLine(item), guideLine(item), testLine(item)]) {
+        expect(['affirmed', 'corrected']).not.toContain(scanForSentinel(line, DI_SENTINELS));
+      }
+      expect(scanForSentinel(verifyLine(item), DI_SENTINELS)).toBe('affirmed');
+      expect(scanForSentinel(correctionLine(item), DI_SENTINELS)).toBe('corrected');
+    }
+  });
+
+  it('judges a counting answer strictly — no "reasonably close" past twenty', () => {
+    const cue = itemCue(COUNTING_SEQUENCE_PROBE_ITEMS.find((i) => i.id === 'count-106')!);
+    // The rubber-stamp guard, the counting analog of the sentence one: a teen
+    // and its decade must never be judged as near-misses of each other.
+    expect(cue).not.toContain('reasonably close');
+    expect(cue).toContain('thirteen is not thirty');
+    expect(cue).toContain('said in full');
+    expect(cue).toContain('"hundred seven" is not "one hundred seven"');
+    // Permissiveness that must survive: pronunciation and counting up.
+    expect(cue).toContain('after counting up to it');
+  });
+
+  it('detects counting transitions from output transcription', () => {
+    expect(
+      detectDIItemFromTutorText(
+        'Your turn. What is the number after one hundred nineteen?',
+        COUNTING_SEQUENCE_PROBE_ITEMS,
+      )?.id,
+    ).toBe('count-119');
+    expect(
+      detectDIItemFromTutorText(
+        'Yes, the number after ninety-nine is one hundred.',
+        COUNTING_SEQUENCE_PROBE_ITEMS,
+      )?.id,
+    ).toBe('count-99');
   });
 
   it('exposes the sentence-reading probe with a 3-to-8-word length ladder', () => {

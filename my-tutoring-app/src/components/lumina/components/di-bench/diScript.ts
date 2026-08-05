@@ -85,6 +85,70 @@ export const MATH_FACTS_PROBE_ITEMS: DIItem[] = [
 ];
 
 /**
+ * di-math-facts `counting_next` to 120 — bench probe for the MULTI-WORD NUMERAL
+ * response class (BACKLOG item 10, reader-fit 14g). Standing gate 1: this class
+ * must bench here BEFORE the pack's number-word ceiling moves off twenty.
+ *
+ * Why it is a new class, not more of #46. Every benched DI response so far is a
+ * SINGLE token — one held sound, one word, one number word ("three"). Past
+ * twenty a counting answer becomes a compound utterance said as two or three
+ * words ("fifty-one", "one hundred seven"), and three things change at once:
+ *
+ *  (a) **Teen/decade confusability — the make-or-break.** "Thirteen" and
+ *      "thirty" differ by an unstressed syllable that child speech routinely
+ *      flattens, and they are ADJACENT in exactly the range a 1-120 counting
+ *      objective drills. If Live affirms "thirty" for "thirteen", the pack
+ *      cannot measure counting accuracy past twelve at all and Option B is
+ *      dead — the honest answer would be to keep saturating at twenty. Items
+ *      1-6 put both sides of the 13/30, 14/40, 16/60 and 17/70 pairs on the
+ *      table; drive at least one deliberately wrong ACROSS a pair (say "thirty"
+ *      for thirteen) — an affirm there is the finding.
+ *  (b) **Completeness.** A compound number is ONE answer that arrives in
+ *      pieces, so a partial production ("twenty" for "one hundred twenty",
+ *      "hundred seven") is a wrong answer that sounds like a right one starting
+ *      or ending. Items 8-10 are the stress; the 500ms family `silenceCloseMs`
+ *      is also on trial, because a child who pauses between "one hundred" and
+ *      "seven" splits one answer into two voice turns — the exact break
+ *      di-sentence-reading hit at 3-8 words (it raised to 1100ms; a compound
+ *      numeral may need the same, and that is a PACK config, never the family
+ *      default).
+ *  (c) **Cue readability at length.** The bench-proven DISTAR lines are
+ *      `problem`-phrased and should carry unchanged — "Listen: the number after
+ *      one hundred nineteen is one hundred twenty." Judge whether that still
+ *      reads at pace to a six-year-old, or whether the model/guide pair drags
+ *      once every line carries two long numerals.
+ *
+ * Deliberately NOT cross-aliased: a teen NEVER lists its decade sibling (or the
+ * reverse) in `asrAliases`. The alias check is the passive judge-vs-transcript
+ * disagreement meter, so listing "thirty" under thirteen would hide precisely
+ * the confusion being measured. Digit lexicalizations and true spelling
+ * variants ("fourty", "a hundred") stay in, because the 07-24 sitting showed
+ * ASR writes number WORDS and the digit form was never needed.
+ *
+ * Items are hand-rolled per standing gate 1 — nothing here ships into a
+ * primitive, and the pack's code-owned numeral builder is written only after
+ * this sitting passes.
+ */
+export const COUNTING_SEQUENCE_PROBE_ITEMS: DIItem[] = [
+  // 1-2: both sides of the 13/30 pair, the highest-risk confusion in the range.
+  { id: 'count-12', kind: 'counting', display: '12 →', problem: 'the number after twelve', spoken: 'thirteen', reference: 'thirteen', asrAliases: ['thirteen', '13'] },
+  { id: 'count-29', kind: 'counting', display: '29 →', problem: 'the number after twenty-nine', spoken: 'thirty', reference: 'thirty', asrAliases: ['thirty', '30'] },
+  // 3-4: the first decade transition a child meets past twenty, then 14/40.
+  { id: 'count-39', kind: 'counting', display: '39 →', problem: 'the number after thirty-nine', spoken: 'forty', reference: 'forty', asrAliases: ['forty', '40', 'fourty'] },
+  { id: 'count-13', kind: 'counting', display: '13 →', problem: 'the number after thirteen', spoken: 'fourteen', reference: 'fourteen', asrAliases: ['fourteen', '14'] },
+  // 5: the first TWO-WORD answer — a compound inside a decade, no boundary.
+  { id: 'count-50', kind: 'counting', display: '50 →', problem: 'the number after fifty', spoken: 'fifty-one', reference: 'fifty-one', asrAliases: ['fifty one', '51'] },
+  // 6-7: 16/60 and 17/70, then a two-word answer over a repeated stem.
+  { id: 'count-69', kind: 'counting', display: '69 →', problem: 'the number after sixty-nine', spoken: 'seventy', reference: 'seventy', asrAliases: ['seventy', '70'] },
+  { id: 'count-76', kind: 'counting', display: '76 →', problem: 'the number after seventy-six', spoken: 'seventy-seven', reference: 'seventy-seven', asrAliases: ['seventy seven', '77'] },
+  // 8-10: the hundred boundary and the three-word forms, up to the objective's
+  // ceiling. "One hundred" answered as "hundred" is the completeness stress.
+  { id: 'count-99', kind: 'counting', display: '99 →', problem: 'the number after ninety-nine', spoken: 'one hundred', reference: 'one hundred', asrAliases: ['one hundred', '100', 'a hundred'] },
+  { id: 'count-106', kind: 'counting', display: '106 →', problem: 'the number after one hundred six', spoken: 'one hundred seven', reference: 'one hundred seven', asrAliases: ['one hundred seven', '107', 'a hundred seven', 'one hundred and seven'] },
+  { id: 'count-119', kind: 'counting', display: '119 →', problem: 'the number after one hundred nineteen', spoken: 'one hundred twenty', reference: 'one hundred twenty', asrAliases: ['one hundred twenty', '120', 'a hundred twenty', 'one hundred and twenty'] },
+];
+
+/**
  * di-sentence-reading bench probe (BACKLOG item 2 — the 4th-pack candidate).
  * CONNECTED TEXT is the biggest response-class jump the family has made: every
  * benched class so far is a SHORT production judged whole (one held sound, one
@@ -147,20 +211,30 @@ export const BENCH_SETS: BenchSet[] = [
   { id: 'letter-sounds', label: 'Letter sounds', items: DEFAULT_ITEMS },
   { id: 'word-reading', label: 'Word reading', items: WORD_READING_PROBE_ITEMS },
   { id: 'math-facts', label: 'Math facts', items: MATH_FACTS_PROBE_ITEMS },
+  { id: 'counting-120', label: 'Counting to 120', items: COUNTING_SEQUENCE_PROBE_ITEMS },
   { id: 'sentence-reading', label: 'Sentence reading', items: SENTENCE_READING_PROBE_ITEMS },
 ];
 
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
 
-/** 'fact' only: spoken form of the printed problem. */
+/**
+ * The two kinds whose answer is a spoken NUMBER. They share every cue line
+ * byte-for-byte — the #46-benched wording is `problem`-phrased and already
+ * reads correctly for counting ("the number after twenty-nine is thirty"), so
+ * the probe tests the numeral class rather than new sentences. Only the
+ * JUDGING bar forks (see `judgingCriteria`).
+ */
+const isNumberAnswer = (it: DIItem) => it.kind === 'fact' || it.kind === 'counting';
+
+/** 'fact' / 'counting' only: spoken form of the printed problem. */
 const factProblem = (it: DIItem) => it.problem ?? it.display;
 
 /** 'sentence' only: the printed text as it should be READ, sentence-cased. */
 const sentenceText = (it: DIItem) => it.display.replace(/\s+$/, '');
 
 export const modelLine = (it: DIItem) =>
-  it.kind === 'fact'
+  isNumberAnswer(it)
     ? `Listen: ${factProblem(it)} is ${it.spoken}.`
     : it.kind === 'sentence'
       // No "as in"/restatement scaffold — the model IS the fluent reading.
@@ -174,7 +248,7 @@ export const modelLine = (it: DIItem) =>
           : `This word is ${it.spoken}. Listen: ${it.spoken}.`;
 
 export const guideLine = (it: DIItem) =>
-  it.kind === 'fact'
+  isNumberAnswer(it)
     ? `Together: ${factProblem(it)} is ${it.spoken}.`
     : it.kind === 'sentence'
       // Choral reading — the DISTAR guided step for connected text.
@@ -186,7 +260,7 @@ export const guideLine = (it: DIItem) =>
           : `Together: ${it.spoken}.`;
 
 export const testLine = (it: DIItem) =>
-  it.kind === 'fact'
+  isNumberAnswer(it)
     ? `Your turn. What is ${factProblem(it)}?`
     : it.kind === 'sentence'
       ? 'Your turn. Read it.'
@@ -198,7 +272,7 @@ export const testLine = (it: DIItem) =>
 
 /** Affirmation branch. MUST begin with "Yes" — the bench parses that sentinel. */
 export const verifyLine = (it: DIItem) =>
-  it.kind === 'fact'
+  isNumberAnswer(it)
     ? `Yes, ${factProblem(it)} is ${it.spoken}.`
     : it.kind === 'sentence'
       // Restates the correct production, like every other kind. Probe question
@@ -210,7 +284,7 @@ export const verifyLine = (it: DIItem) =>
 
 /** Correction branch. MUST begin with "My turn" — the bench parses that sentinel. */
 export const correctionLine = (it: DIItem) =>
-  it.kind === 'fact'
+  isNumberAnswer(it)
     ? `My turn: ${factProblem(it)} is ${it.spoken}. Your turn. What is ${factProblem(it)}?`
     : it.kind === 'sentence'
       // Whole-sentence re-model. Word-targeted correction ("that word is mat")
@@ -224,15 +298,17 @@ export const correctionLine = (it: DIItem) =>
           : `My turn: ${it.spoken}. Your turn. What word?`;
 
 const targetDescription = (it: DIItem) =>
-  it.kind === 'fact'
-    ? `the spoken number word "${it.spoken}" answering ${factProblem(it)}`
-    : it.kind === 'sentence'
-      ? `the printed sentence "${sentenceText(it)}" read aloud, every word in order`
-      : it.elicitation === 'keyword'
-        ? `the word "${it.keyword}"`
-        : it.kind === 'sound'
-          ? `the continuous sound ${it.spoken}`
-          : `the word "${it.spoken}"`;
+  it.kind === 'counting'
+    ? `the spoken number "${it.spoken}", said in full, answering ${factProblem(it)}`
+    : it.kind === 'fact'
+      ? `the spoken number word "${it.spoken}" answering ${factProblem(it)}`
+        : it.kind === 'sentence'
+          ? `the printed sentence "${sentenceText(it)}" read aloud, every word in order`
+          : it.elicitation === 'keyword'
+            ? `the word "${it.keyword}"`
+            : it.kind === 'sound'
+              ? `the continuous sound ${it.spoken}`
+              : `the word "${it.spoken}"`;
 
 /**
  * The judging criteria, per response class. The generic "reasonably close for a
@@ -242,12 +318,27 @@ const targetDescription = (it: DIItem) =>
  * sentence branch therefore names accuracy word-by-word, allows the
  * self-correction that real fluency practice depends on, and explicitly refuses
  * to penalise slowness (pace is a later eval mode, never the L0 judgment).
+ *
+ * `counting` forks for the same reason one rung up: past twenty the plausible
+ * near-miss is not a different-sounding number but the item's own teen/decade
+ * sibling, and "reasonably close" would wave through exactly the error the
+ * sitting exists to detect. It also names COMPLETENESS, because a compound
+ * numeral is one answer that arrives in pieces. Permissiveness that survives
+ * both forks: young-child pronunciation and counting up to the answer, matching
+ * the pack's shipped contract (`diMathFactsScript.judgingContract`) so the
+ * bench measures the conditions the primitive would actually run under.
  */
 const judgingCriteria = (it: DIItem) => it.kind === 'sentence'
   ? `- Every word read correctly and in order — including after the learner catches and fixes their own slip — say exactly "${verifyLine(it)}" and stop.
 - ANY word skipped, added, or read as a different word and left uncorrected: say exactly "${correctionLine(it)}" and stop, then wait again.
 Slow, effortful sounding-out that lands on the right words is CORRECT — judge accuracy, never speed. Do not accept a near-miss word to be kind: a different word is a different word.`
-  : `- Correct or reasonably close for a kindergartener: say exactly "${verifyLine(it)}" and stop.
+  : it.kind === 'counting'
+    ? `- The learner said the whole number ${it.spoken} — right away, with young-child pronunciation, or after counting up to it: say exactly "${verifyLine(it)}" and stop.
+- A DIFFERENT number, or only part of this one: say exactly "${correctionLine(it)}" and stop, then wait again.
+A teen and its decade are DIFFERENT numbers, never near-misses: thirteen is not thirty, fourteen is not forty, sixteen is not sixty. They sound alike on purpose — that is the error being practiced out, so listen for the ending and correct the one you actually heard.
+A number said as several words is ONE answer and must arrive whole: "twenty" is not "one hundred twenty", and "hundred seven" is not "one hundred seven". If the learner stops partway, that is the correction branch.
+Judge the number you heard, never the number you expected. Slow is fine; incomplete is not.`
+    : `- Correct or reasonably close for a kindergartener: say exactly "${verifyLine(it)}" and stop.
 - Wrong, missing, or a different sound: say exactly "${correctionLine(it)}" and stop, then wait again.`;
 
 /**
@@ -309,6 +400,22 @@ export const DI_TUTORING: TutoringScaffold = {
       instruction:
         'A stretched letter sequence like "mmm", "sss", or "aaa" is a continuous ' +
         'letter sound held for about two seconds. Never say a letter name and never spell it out.',
+    },
+    {
+      // Scoped to MULTI-WORD numbers on purpose. The `Math facts` set benched
+      // 2026-07-24 (#46) answers one..ten, where no teen/decade pair and no
+      // compound form exists — so this clause cannot change the conditions that
+      // sitting validated, while giving the counting probe the session-level
+      // rule the pack's own catalog entry already carries.
+      title: 'MULTI-WORD NUMBERS',
+      instruction:
+        'Say every number as words, never as digits — read "29 →" aloud as "the number after ' +
+        'twenty-nine". Past twenty an answer may take several words: "fifty-one", "one hundred ' +
+        'seven". That is still ONE answer and it only counts when the whole number arrives — ' +
+        '"hundred seven" and a trailing-off "one hundred" are incomplete, not close. A teen and ' +
+        'its decade are different numbers however alike they sound: thirteen is not thirty, ' +
+        'fourteen is not forty, seventeen is not seventy. Affirming one for the other is a wrong ' +
+        'answer waved through, so judge the number you actually heard.',
     },
     {
       title: 'CONNECTED TEXT',

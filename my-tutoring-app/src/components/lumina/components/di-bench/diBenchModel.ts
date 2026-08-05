@@ -1,4 +1,14 @@
-export type DIItemKind = 'sound' | 'word' | 'fact' | 'sentence';
+/**
+ * `counting` is a separate kind from `fact` even though both print a problem
+ * and elicit a spoken number. The response CLASS differs — a fact answer is one
+ * benched number word (#46), a counting answer past twenty is a MULTI-WORD
+ * numeral ("one hundred seven") — and so does the judging bar: "reasonably
+ * close for a kindergartener" is right for a lone number word and fatal for a
+ * teen/decade pair, where "thirty" is exactly the plausible near-miss the
+ * sitting exists to detect. Keeping the kinds apart leaves the #46-benched
+ * `fact` branch byte-untouched.
+ */
+export type DIItemKind = 'sound' | 'word' | 'fact' | 'counting' | 'sentence';
 
 export interface DIItem {
   id: string;
@@ -7,8 +17,9 @@ export interface DIItem {
   spoken: string;
   keyword?: string;
   elicitation?: 'isolated' | 'keyword';
-  /** 'fact' only: spoken form of the printed problem ("two plus one" for "2 + 1").
-   *  The learner's target stays `spoken` (the answer number word). */
+  /** 'fact' / 'counting' only: spoken form of the printed problem ("two plus
+   *  one" for "2 + 1", "the number after twenty-nine" for "29 →"). The
+   *  learner's target stays `spoken` (the answer, said as a number word). */
   problem?: string;
   reference: string;
   /** Common text tokens produced when Live ASR hears the intended response.
@@ -195,7 +206,7 @@ export function detectDIItemFromTutorText(text: string, items: DIItem[]): DIItem
     const spoken = normalized(item.spoken);
     const keyword = normalized(item.keyword ?? '');
     const problem = normalized(item.problem ?? item.display);
-    const patterns = item.kind === 'fact'
+    const patterns = item.kind === 'fact' || item.kind === 'counting'
       ? [`what is ${problem}`, `${problem} is ${spoken}`]
       : item.kind === 'sentence'
         // The sentence text itself is the only reliable marker — every sentence

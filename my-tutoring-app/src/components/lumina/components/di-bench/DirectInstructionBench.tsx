@@ -471,7 +471,11 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
               <span className="text-[10px] uppercase text-slate-500">{matchedItemIdsRef.current.has(item.id) ? 'matched' : item.kind}</span>
               <label className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
                 spoken
-                <input value={item.spoken} disabled={running} onChange={(event) => setItem(item.id, { spoken: event.target.value })} className="w-20 rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200" />
+                {/* Compound numerals ("one hundred twenty") overflow the chip
+                    the short kinds use, and this field is edited DURING a
+                    sitting to try alternate spoken forms — so it has to be
+                    readable for the counting probe. */}
+                <input value={item.spoken} disabled={running} onChange={(event) => setItem(item.id, { spoken: event.target.value })} className={`${item.kind === 'counting' ? 'w-36' : 'w-20'} rounded border border-white/10 bg-slate-900/60 px-1.5 py-0.5 font-mono text-xs text-slate-200`} />
               </label>
             </div>
           ))}

@@ -153,7 +153,15 @@ const buildTierPromptSection = (tier: SupportTier | null): string => {
 
 // ── Number words + ASR aliases (code-owned) ─────────────────────────
 
-/** Number words 0..20 — the full answer range this pack can ever speak. */
+/**
+ * Number words 0..20 — the full answer range this pack can ever speak, and a
+ * BENCHED boundary rather than an arbitrary one: every entry is a single word,
+ * i.e. the response class the #46 probe sitting validated. Extending past
+ * twenty means compound numerals ("one hundred seven"), a NEW spoken response
+ * class that DI standing gate 1 requires a bench sitting for before any wiring
+ * (qa/di/BACKLOG.md item 10; probe set "Counting to 120" is wired and waiting).
+ * Until that sitting passes, an above-twenty ask saturates here honestly.
+ */
 const NUMBER_WORDS = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
   'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
@@ -222,16 +230,32 @@ const parseNamedFacts = (text: string): FactPair[] => {
  * win over patterns; patterns win over the model's factScope hint; the model
  * hint wins over the grade default (applied by the caller). Null means the
  * text pinned nothing.
+ *
+ * Exported for the focused scope suite — the parse is the load-bearing step
+ * between a published objective and the pool every mode draws from.
  */
-const resolveTextScope = (text: string): FactScope | null => {
+export const resolveTextScope = (text: string): FactScope | null => {
   const named = parseNamedFacts(text);
   if (named.length > 0) return { kind: 'named', facts: named };
   if (/make\s+(a\s+)?ten|sums?\s+of\s+(ten|10)|ten[\s-]*frame/i.test(text)) {
     return { kind: 'make_10' };
   }
   if (/doubles/i.test(text)) return { kind: 'doubles' };
-  const within = /(?:within|up\s+to|sums?\s+to|to)\s+(\d{1,2})/i.exec(text);
+  // THREE digits, anchored on a word boundary. A two-digit capture silently
+  // MANGLED every three-digit ask instead of saturating it: the published G1
+  // objective "counting forward … within 120" parsed as "within 12" and the
+  // counting pool topped out at twelve — reader-fit 14g's census finding. `\b`
+  // keeps the widening honest: "to 2026" now pins nothing (and falls through to
+  // the model hint / grade default) rather than resolving to a truncated "202".
+  const within = /(?:within|up\s+to|sums?\s+to|to)\s+(\d{1,3})\b/i.exec(text);
   if (within) {
+    // The clamp is the pack's BENCHED CEILING, not a knob: every mode's answer
+    // is a spoken number word from NUMBER_WORDS (0..20), the response class the
+    // #46 probe sitting validated. An ask above twenty therefore SATURATES at
+    // twenty — the di-sentence-reading precedent (its benched 8-word ceiling is
+    // a hard cap that saturates, never widens). Raising this ceiling means
+    // MULTI-WORD numerals ("one hundred seven"), an unbenched response class
+    // gated by DI standing gate 1 — see qa/di/BACKLOG.md item 10.
     const maxSum = Math.min(20, Math.max(5, parseInt(within[1], 10)));
     return { kind: 'within', maxSum };
   }
