@@ -71,6 +71,11 @@ export interface StoryMapData {
     order: number;
   }>;
 
+  // Support-tier stamps (generator-owned; medium/hard may ship validated
+  // distractor character names that never appear in the passage)
+  supportTier?: 'easy' | 'medium' | 'hard';
+  distractorCharacters?: string[];
+
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
   skillId?: string;
