@@ -12,6 +12,12 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import {
+  resolvePrepositionScope,
+  composePositionWindow,
+  SUPPORTED_POSITION_SEMANTICS,
+  type SupportedPosition,
+} from "./spatial-scene/resolvePrepositionScope";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -157,20 +163,31 @@ const SCENARIO_THEMES = [
   "a zoo with animals in enclosures",
 ];
 
-const SHARED_CONTEXT = `
+/**
+ * Build the shared prompt context for a resolved position-word WINDOW.
+ *
+ * Was a fixed const whose K line read "ONLY above, below, beside, next_to". That is the
+ * math K.G.1 vocabulary and it silently overrode LA lessons that asked for on/under
+ * ([[trust-intent-over-hardcoded-caps]]). The window is now composed per lesson —
+ * band default, WIDENED by what the lesson actually asked for — and only the words in
+ * that window get their grid semantics stated, so the LLM is never invited to emit a
+ * relation the checker cannot judge.
+ */
+function buildSharedContext(positionWindow: SupportedPosition[]): string {
+  const semantics = positionWindow
+    .map((p) => `  * ${SUPPORTED_POSITION_SEMANTICS[p]}`)
+    .join("\n");
+
+  return `
 CONTEXT:
 - Students interact with a 3x3 grid where emoji objects are placed.
 - Grid positions are 0-based: row 0 is top, row 2 is bottom; col 0 is left, col 2 is right.
 - Available emoji objects: cat, dog, ball, star, tree, house, car, flower, box, chair
   Use these emojis: cat=\u{1F431}, dog=\u{1F415}, ball=\u{26BD}, star=\u{2B50}, tree=\u{1F333}, house=\u{1F3E0}, car=\u{1F697}, flower=\u{1F338}, box=\u{1F4E6}, chair=\u{1FA91}
-- Position words for K grade: ONLY above, below, beside, next_to
-- Position words for Grade 1: above, below, beside, next_to, left_of, right_of
+- Position words you may use for THIS lesson: ONLY ${positionWindow.join(", ")}.
+  Never use a position word outside that list.
 - Spatial relationships on the grid:
-  * "above" = target row < reference row (same col)
-  * "below" = target row > reference row (same col)
-  * "left_of" = target col < reference col (same row)
-  * "right_of" = target col > reference col (same row)
-  * "beside" / "next_to" = same row, adjacent columns (col diff = 1)
+${semantics}
 
 IMPORTANT SPATIAL RULES:
 - ALL positions must be valid grid cells: row and col must be 0, 1, or 2.
@@ -178,6 +195,7 @@ IMPORTANT SPATIAL RULES:
 - Use simple, warm language appropriate for young children.
 - Include helpful hints that guide without giving the answer.
 `;
+}
 
 function clampGrid(value: number, gridSize: number): number {
   return Math.max(0, Math.min(gridSize - 1, Math.round(value)));
@@ -354,7 +372,7 @@ const followDirectionsSchema: Schema = {
 
 async function generateIdentifyDescribe(
   topic: string, gradeLevel: string, theme: string, mode: "identify" | "describe",
-  tierSection: string,
+  tierSection: string, sharedContext: string,
 ): Promise<SpatialSceneChallenge[]> {
   const modeLabel = mode === "identify"
     ? "identify — ask 'Where is X relative to Y?' with 4 position-word options"
@@ -364,7 +382,7 @@ async function generateIdentifyDescribe(
 Create 3 spatial reasoning "${mode}" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
-${SHARED_CONTEXT}
+${sharedContext}
 ${tierSection}
 CHALLENGE TYPE: ${modeLabel}
 - Place 4 scene objects on a 3×3 grid. 2 are key objects (target + reference), 2 are backdrop objects that make the scene feel alive but aren't part of the question.
@@ -449,13 +467,13 @@ CHALLENGE TYPE: ${modeLabel}
 }
 
 async function generatePlace(
-  topic: string, gradeLevel: string, theme: string, tierSection: string,
+  topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
 ): Promise<SpatialSceneChallenge[]> {
   const prompt = `
 Create 3 spatial reasoning "place" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
-${SHARED_CONTEXT}
+${sharedContext}
 ${tierSection}
 CHALLENGE TYPE: place — student taps a grid cell to place an object.
 - Place 4 scene objects on a 3×3 grid as the existing scene (reference + backdrop objects).
@@ -511,13 +529,13 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
 }
 
 async function generateFollowDirections(
-  topic: string, gradeLevel: string, theme: string, tierSection: string,
+  topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
 ): Promise<SpatialSceneChallenge[]> {
   const prompt = `
 Create 2 spatial reasoning "follow_directions" challenges for "${topic}" (${gradeLevel}).
 Theme: ${theme}.
 
-${SHARED_CONTEXT}
+${sharedContext}
 ${tierSection}
 CHALLENGE TYPE: follow_directions — multi-step placement.
 - Place 1 reference scene object on a 3×3 grid.
@@ -689,30 +707,56 @@ export const generateSpatialScene = async (
 
   const theme = randomTheme();
 
+  // -- Determine gradeBand (needed BEFORE dispatch: it seeds the position window) --
+  const gl = gradeLevel.toLowerCase();
+  const gradeBand: "K" | "1" = gl.includes("kinder") || gl.includes("k") ? "K" : "1";
+
+  // -- Resolve the position-word WINDOW from what the lesson actually asked for --
+  // Band default WIDENED by the resolved request; never narrowed. With no request
+  // (or a resolver outage) this is exactly the shipped band vocabulary, so the math
+  // K.G.1 consumer is unchanged (contract R1). See resolvePrepositionScope.ts.
+  const prepositionScope = await resolvePrepositionScope(ctx.scope, gradeLevel);
+  const positionWindow = composePositionWindow(gradeBand, prepositionScope);
+  if (prepositionScope?.requested.length) {
+    console.log(
+      `[SpatialScene] Lesson asked for [${prepositionScope.requested.join(", ")}] → `
+      + `window ${gradeBand}=[${positionWindow.join(", ")}]`,
+    );
+  }
+  if (prepositionScope?.unsupported.length) {
+    // Honest saturation, never silent truncation: say what we could not serve.
+    console.warn(
+      `[SpatialScene] Lesson asked for position words this 3x3 grid cannot express: `
+      + `[${prepositionScope.unsupported.join(", ")}] — served with the supported window instead. `
+      + `See qa/la-k2-grammar/BACKLOG.md.`,
+    );
+  }
+  const sharedContext = buildSharedContext(positionWindow);
+
   // -- Dispatch per-mode sub-generators in parallel --
   const generators: Promise<SpatialSceneChallenge[]>[] = [];
 
   if (allowedTypes.includes("identify")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "identify", tierSection)
+      generateIdentifyDescribe(topic, gradeLevel, theme, "identify", tierSection, sharedContext)
         .catch((e) => { console.error("[SpatialScene] identify failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("describe")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection)
+      generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection, sharedContext)
         .catch((e) => { console.error("[SpatialScene] describe failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("place")) {
     generators.push(
-      generatePlace(topic, gradeLevel, theme, tierSection)
+      generatePlace(topic, gradeLevel, theme, tierSection, sharedContext)
         .catch((e) => { console.error("[SpatialScene] place failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("follow_directions")) {
     generators.push(
-      generateFollowDirections(topic, gradeLevel, theme, tierSection)
+      generateFollowDirections(topic, gradeLevel, theme, tierSection, sharedContext)
         .catch((e) => { console.error("[SpatialScene] follow_directions failed:", e); return []; }),
     );
   }
@@ -753,10 +797,6 @@ export const generateSpatialScene = async (
       + `grid=${supportTier !== "hard"}, labels=${supportTier !== "hard"}, positionHints=${supportTier === "easy"}`,
     );
   }
-
-  // -- Determine gradeBand --
-  const gl = gradeLevel.toLowerCase();
-  const gradeBand: "K" | "1" = gl.includes("kinder") || gl.includes("k") ? "K" : "1";
 
   const typeBreakdown = challenges.map((c) => c.type).join(", ");
   console.log(`[SpatialScene] Final: ${challenges.length} challenge(s) -> [${typeBreakdown}]`);

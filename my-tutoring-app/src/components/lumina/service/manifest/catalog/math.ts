@@ -3741,8 +3741,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'spatial-scene',
-    description: 'Grid-based spatial reasoning for K.G.1 positional language. Students identify, place, and describe object positions using spatial vocabulary (above, below, beside, between). Supports multiple challenge types from simple identification to multi-step spatial placement. ESSENTIAL for K-1 geometry.',
-    constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1.',
+    description: 'Grid-based positional language and prepositions. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of) — tapping the grid to ENACT an instruction like "Put the ball under the box". Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. Supports multiple challenge types from simple identification to multi-step direction following. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
+    constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default — so name the target prepositions in the intent. NOT supported (do not route these here): containment "in/inside", two-reference "between", viewer-relative "in front of/behind", and path words "through/around/across" — a 3x3 static grid cannot express them.',
     tutoring: {
       taskDescription: 'Student identifies, places, or describes positions of objects on a grid using spatial vocabulary (above, below, beside, between).',
       contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'options', 'steps', 'gradeBand'],
