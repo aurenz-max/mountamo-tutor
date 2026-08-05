@@ -151,6 +151,20 @@ rather than pretending it was served** (honest saturation, the di-sentence-readi
 precedent). Queued in `qa/la-k2-grammar/BACKLOG.md`. **Any edit adding these must
 re-read R11 first** — containment inverts it.
 
+### C3 — `above`/`on` are not mutually exclusive — **OPEN (found 2026-08-06)**
+
+R3's semantics make `above` "any vertical distance" and `on` "touching; if there is a
+gap, the word is above". For an **adjacent same-column** pair both words are therefore
+defensible, and the disambiguation is one-directional. Cell-judged modes (`place`,
+`follow_directions`) are immune; `identify`/`describe` are not — their options are
+position words with a single key, so a child answering "above" on a touching pair is
+marked wrong for a correct answer (rule-#1 adjacent). Same shape for `under`/`below`
+and the pre-existing `beside`/`next_to` synonym pair. **Live only when on/under are in
+the window (LA lessons); every 08-05 on/under probe was `place` mode, so this is
+unverified territory, not a measured failure.** Queued as
+`qa/la-k2-grammar/BACKLOG.md` item 2 — fix + an `identify`/`describe` probe promotes
+it to R12.
+
 ## Catalog projection
 
 The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and flagged
@@ -170,6 +184,13 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
+- **2026-08-06** — routing re-probed after the catalog projection (the check the 08-05
+  slice skipped: the projection landed AFTER the last routing probe, and `constraints`
+  now names words to keep OUT). **Routing held and tightened** — LA004-05-B still routes
+  here and now claims TWO instances (`place` + `follow_directions`, was one), with the
+  curator's intent shifted off `in` onto the supported window; LA004-01-F still routes
+  and its `between` request saturated honestly (3 `place` challenges, 0 out-of-window
+  words in any judged field). Opened **C3**.
 - **2026-08-05** — derived (initial). 11 requirements (10 OBSERVED, 1 INFERRED),
   2 conflicts (C1 resolved same slice, C2 open). Edit guard run for the LA preposition
   window: **COMPATIBLE** — R1/R5/R7/R9 re-probed post-edit (probe E: 11 challenges,

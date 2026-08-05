@@ -36,7 +36,26 @@ The resolver already reports all of these as `unsupported` and the generator log
 gap, so demand is measurable today — grep `[SpatialScene] Lesson asked for position
 words this 3x3 grid cannot express`.
 
-### 2. Directional/path prepositions — likely a genuine BIRTH
+### 2. `on`/`above` ambiguity in `identify`/`describe` — RULE-#1 RISK, small fix
+**Found 2026-08-06** re-probing routing after the catalog projection (the check that
+should have run in the 08-05 slice and didn't).
+`SUPPORTED_POSITION_SEMANTICS` makes `above` = "any vertical distance" and `on` =
+"touching; if there is a gap, the word is above". For an **adjacent same-column** pair
+both words are therefore defensible — the disambiguation is one-directional and
+incomplete. Harmless in `place`/`follow_directions` (cell-judged), but in
+`identify`/`describe` the options are position words with ONE key, so a child answering
+"above" on a touching pair is marked wrong for a correct answer. Same defect for
+`under`/`below`, and for `beside`/`next_to` (already synonymous pre-existing — check
+whether both can appear in one options list).
+**Live only when on/under are in the window**, i.e. LA lessons — every 08-05 on/under
+probe was `place` mode, so this is unverified territory, not a measured failure.
+Fix direction: make `above`/`below` exclusive of the adjacent case when `on`/`under`
+are in the same window, OR forbid the ambiguous pair from co-occurring in one options
+list. Then probe `identify` + `describe` pinned at a K LA preposition objective —
+the mode combination the 08-05 slice never exercised.
+Contract: add as R12 + a `describe`-mode probe; `--check` before editing.
+
+### 3. Directional/path prepositions — likely a genuine BIRTH
 **Demand: 2 subskills** (LA004-05-H "through, around, across" multi-step directional;
 LA004-05-F treasure-map path clues).
 A path is not a position — a static 3×3 grid has no route semantics, so this is the one
@@ -44,7 +63,7 @@ preposition sub-cluster that fit-first does NOT resolve into `spatial-scene`. Ca
 a path/route primitive where the child traces a route through a scene. Run
 `/curriculum-fit` before `/primitive` — check `grid-drawing`/engineering surfaces first.
 
-### 3. `word-sorter` K picture-pair mode — `/add-eval-modes`
+### 4. `word-sorter` K picture-pair mode — `/add-eval-modes`
 **Demand: 3 subskills** (LA004-03-C singular↔plural picture pairs, LA004-03-G irregular
 plurals mouse/mice, LA004-06-G irregular past run/ran).
 All three are pair-matching. `match_pairs` (β3.5) is **Grade 1+ only** by an explicit
@@ -53,7 +72,7 @@ for word↔word and wrong for **picture↔picture**: a K child can match 🐭→
 reading. Add a picture-primary pair mode gated to K rather than lowering the existing
 floor. `/reader-fit` closes it.
 
-### 4. Sentence Mechanic — BIRTH (`/primitive`, L0)
+### 5. Sentence Mechanic — BIRTH (`/primitive`, L0)
 **Demand: 4 subskills** (LA004-02-D complete-vs-fragment, -02-E ending punctuation
 . ? !, -02-F question word order + punctuation, +LA004-01-L mixed grammar review).
 `sentence-builder` BUILDS sentences; nothing in the catalog **repairs** them. Confirmed
@@ -63,7 +82,7 @@ repair it, so the L0 birth must be spoken/picture-scaffolded from the start (cat
 **Do `/curriculum-fit` first** — the 08-05 census found the handoff's *other* predicted
 birth already existed as a math primitive.
 
-### 5. ROUTE the 11 already-served subskills — curriculum, **draft-first**
+### 6. ROUTE the 11 already-served subskills — curriculum, **draft-first**
 **Demand: 11 subskills**, zero primitive code.
 `word-sorter` serves these at K today (it is already picture-primary at K — emoji
 required on every card and bucket, plus read-aloud `aiDirectives` with a K band floor):
@@ -80,13 +99,13 @@ feature (the capital letter) that a pre-reader cannot perceive and an emoji cann
 encode. `/reader-fit` it before publishing its re-target; it may belong in EXTEND.
 Each re-target should carry an `/eval-test` before publish.
 
-### 6. `sentence-builder` at Kindergarten — EXTEND (large)
+### 7. `sentence-builder` at Kindergarten — EXTEND (large)
 **Demand: 9 subskills** (LA004-02-B/G/H, LA004-03-D/H, LA004-04-F/I, LA004-01-E,
 LA004-01-I). Built for grades 1-6 with text tiles; K needs picture-bearing tiles and
 read-aloud. Deliberately ranked below the smaller items — it is the biggest EXTEND and
 wants its own contract-first slice.
 
-### 7. Conversation Studio — DESIGN, not a primitive fix
+### 8. Conversation Studio — DESIGN, not a primitive fix
 **Demand: 16 grammar subskills** (LA004-01-C/H, -03-F/I/K, -04-A/B/G/H/J, -06-A/D/E/H/I)
 plus most of the 27 LA005 and 13 LA003/LA007 items outside grammar.
 "Use X in guided speaking/storytelling/conversation" — the modality genuinely IS
