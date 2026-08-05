@@ -120,6 +120,39 @@ const DEFAULT_LETTERS = ['m', 's', 'a', 'f'];
  *  a review session spreads across the menu instead of hugging the focus cluster. */
 const REVIEW_SPREAD_ORDER = ['m', 's', 'a', 'f', 'r', 'i', 'n', 'l', 'o', 'v', 'z', 'u', 'e'];
 
+// Misconception remediation: deterministic letter-menu emphasis.
+export type DiLetterSoundsRemediationMove = 'name_for_sound' | 'confusable_sound_pair';
+
+export const resolveDiRemediationMove = (
+  _challengeType: DiLetterSoundChallengeType,
+  remediationFocus?: string,
+): DiLetterSoundsRemediationMove | null => {
+  const focus = remediationFocus?.trim().toLowerCase();
+  if (!focus) return null;
+  if (/\bletter name\b/.test(focus)
+    && /\b(?:instead of|rather than|for)\b/.test(focus)
+    && /\bsound\b/.test(focus)) {
+    return 'name_for_sound';
+  }
+  const namesReviewedPair = /\bm\s*(?:\/|and|vs\.?|versus)\s*n\b|\bn\s*(?:\/|and|vs\.?|versus)\s*m\b/.test(focus)
+    || /\bf\s*(?:\/|and|vs\.?|versus)\s*v\b|\bv\s*(?:\/|and|vs\.?|versus)\s*f\b/.test(focus);
+  if (namesReviewedPair && /\b(?:confus(?:e[sd]?|ion)|mix(?:es|ed|ing)?|substitut(?:e[sd]?|ion))\b/.test(focus)) {
+    return 'confusable_sound_pair';
+  }
+  return null;
+};
+
+const pairFromFocus = (focus: string): readonly [string, string] | null => {
+  const normalized = focus.toLowerCase();
+  if (/\bm\s*(?:\/|and|vs\.?|versus)\s*n\b|\bn\s*(?:\/|and|vs\.?|versus)\s*m\b/.test(normalized)) {
+    return ['m', 'n'];
+  }
+  if (/\bf\s*(?:\/|and|vs\.?|versus)\s*v\b|\bv\s*(?:\/|and|vs\.?|versus)\s*f\b/.test(normalized)) {
+    return ['f', 'v'];
+  }
+  return null;
+};
+
 // ── Structural difficulty (L4) ───────────────────────────────────────────────
 
 const SHORT_VOWELS = MENU_LETTERS.filter((l) => LETTER_SOUND_MENU[l].elicitation === 'keyword');
@@ -424,6 +457,38 @@ const buildChallenge = (
   };
 };
 
+const applyLetterRemediation = (
+  challenges: DiLetterSoundChallenge[],
+  move: DiLetterSoundsRemediationMove,
+  remediationFocus: string,
+  namedAnchors: string[],
+  shape: DiLetterSoundsProblemShape | null,
+): DiLetterSoundChallenge[] => {
+  const incoming = challenges.map((challenge) => challenge.letter);
+  const protectedLetters = new Set(namedAnchors.filter((letter) => incoming.includes(letter)));
+  const desired = move === 'name_for_sound'
+    ? ['m', 's', 'f', 'r']
+    : [...(pairFromFocus(remediationFocus) ?? [])];
+  const availableSlots = challenges
+    .map((_, index) => index)
+    .filter((index) => !protectedLetters.has(incoming[index]));
+  const replacementOrder = takeUnique([
+    ...desired,
+    ...incoming.filter((letter) => !protectedLetters.has(letter)),
+    ...REVIEW_SPREAD_ORDER,
+  ], MENU_LETTERS.length);
+  const next = [...incoming];
+  const used = new Set(incoming.filter((letter) => protectedLetters.has(letter)));
+  for (const index of availableSlots) {
+    const letter = replacementOrder.find((candidate) => !used.has(candidate));
+    if (!letter) break;
+    next[index] = letter;
+    used.add(letter);
+  }
+  if (shape && !meetsProblemShape(next, shape)) return challenges;
+  return next.map((letter, index) => buildChallenge(letter, index, challenges[index].challengeType));
+};
+
 /** Split `count` across `k` modes as evenly as possible, each mode ≥1. */
 const distribute = (count: number, k: number): number[] => {
   const base = Math.floor(count / k);
@@ -440,6 +505,8 @@ export const generateDiLetterSounds = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /** Private student-model input; consumed only by code-owned menu ranking. */
+    remediationFocus?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second field of the two-field contract: targetEvalMode = which sound
@@ -452,6 +519,7 @@ export const generateDiLetterSounds = async (
   },
 ): Promise<DiLetterSoundsData> => {
   const intent = config?.intent;
+  const remediationFocus = config?.remediationFocus;
   const count = Math.min(
     MAX_INSTANCE_COUNT,
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
@@ -531,6 +599,7 @@ Return the wrapper JSON only.`;
   }
   // The focused objective cluster (deduped, order preserved).
   const focusLetters = takeUnique(selected, MENU_LETTERS.length);
+  const namedAnchors = scanLettersFromText(`${intent ?? ''} ${config?.objectiveText ?? ''} ${topic}`);
 
   // Build the challenge set from the resolved mode(s). Single mode → all one
   // type; blend/mixed → an interleaved spread so every mode appears (SP-21).
@@ -573,6 +642,23 @@ Return the wrapper JSON only.`;
   // may change composition, but never count, menu, or eval-mode slot.
   if (supportTier) {
     challenges = enforceProblemShape(challenges, focusLetters, sessionShape!);
+  }
+
+  const remediationMove = resolveDiRemediationMove(
+    challenges[0]?.challengeType ?? 'letter_sound',
+    remediationFocus,
+  );
+  if (remediationMove) {
+    challenges = applyLetterRemediation(
+      challenges,
+      remediationMove,
+      remediationFocus ?? '',
+      namedAnchors,
+      sessionShape,
+    );
+  }
+
+  if (supportTier) {
     for (const ch of challenges) {
       ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
     }
@@ -580,6 +666,26 @@ Return the wrapper JSON only.`;
     console.log(
       `[DiLetterSounds] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'letter_sound', supportTier).describe}; composition vowels ${letters.filter((l) => SHORT_VOWELS.includes(l)).length} (min ${sessionShape!.minimumShortVowels}, max ${sessionShape!.maximumShortVowels}), confusable pairs ${countConfusablePairs(letters)}/${sessionShape!.confusablePairTarget}${sessionShape!.saturated ? ' (honest saturation)' : ''}`,
     );
+  }
+
+  if (remediationFocus?.trim()) {
+    const letters = challenges.map((challenge) => challenge.letter);
+    const pair = pairFromFocus(remediationFocus);
+    const actual = remediationMove === 'name_for_sound'
+      ? letters.filter((letter) => ['m', 's', 'f', 'r'].includes(letter)).slice(0, 2).length
+      : remediationMove === 'confusable_sound_pair' && pair
+        ? pair.filter((letter) => letters.includes(letter)).length
+        : 0;
+    console.log('[DiRemediation]', {
+      primitive: 'di-letter-sounds',
+      type: challenges[0]?.challengeType ?? 'letter_sound',
+      move: remediationMove,
+      requested: remediationMove ? Math.min(2, challenges.length) : 0,
+      actual,
+      skippedReason: remediationMove && actual < Math.min(2, challenges.length)
+        ? 'incompatible_composition_window'
+        : remediationMove ? null : 'unsupported_focus',
+    });
   }
 
   // Session identity = the first item's skill (a pinned mode → that mode).

@@ -357,6 +357,95 @@ export const crossesOperandBoundary = (
   return p.a <= boundary && p.a + p.b > boundary;
 };
 
+// ── Misconception remediation (pilot): deterministic pool emphasis ─────────
+
+export type DiMathFactsRemediationMove =
+  | 'subtracts_by_adding'
+  | 'echoes_operand'
+  | 'reverses_count_direction';
+
+/**
+ * Resolve only reviewed, task-bounded signatures. This pack stores one
+ * primitive-scoped diagnosis across four task identities, so the task gate is
+ * part of the safety boundary: counting up is an error for subtraction and
+ * the correct response for `counting_next`.
+ */
+export const resolveDiRemediationMove = (
+  challengeType: DiMathFactsChallengeType,
+  remediationFocus?: string,
+): DiMathFactsRemediationMove | null => {
+  const focus = remediationFocus?.trim().toLowerCase();
+  if (!focus) return null;
+  const namesSubtraction = /\b(?:subtraction|subtracts?|subtracting|minus)\b|take[ -]?away/.test(focus);
+  const predictsSuccessor = /\b(?:adds?|adding|successor)\b|\bcomes?\s+after\b/.test(focus);
+  if (challengeType === 'subtraction_fact' && namesSubtraction && predictsSuccessor) {
+    return 'subtracts_by_adding';
+  }
+
+  if (challengeType === 'counting_next') {
+    const namesCounting = /\b(?:count(?:s|ed|ing)?|number\s+after|sequence)\b/.test(focus);
+    const reverses = /\b(?:before|back(?:ward|wards)?|previous|predecessor)\b/.test(focus);
+    return namesCounting && reverses ? 'reverses_count_direction' : null;
+  }
+
+  const echoes = /\b(?:first|second|last)\s+(?:number|operand|addend)\b/.test(focus)
+    || /\b(?:echo(?:es|ed|ing)?|repeat(?:s|ed|ing)?)\s+(?:the\s+)?(?:first|second|last)?\s*(?:number|operand|addend)\b/.test(focus);
+  const taskCompatible = challengeType === 'subtraction_fact'
+    ? namesSubtraction
+    : /\b(?:addition|adds?|adding|plus|addend|fact review)\b/.test(focus);
+  return echoes && taskCompatible ? 'echoes_operand' : null;
+};
+
+const isRemediationTarget = (
+  move: DiMathFactsRemediationMove,
+  type: DiMathFactsChallengeType,
+  pair: FactPair,
+): boolean => {
+  if (move === 'subtracts_by_adding') {
+    return pair.b === 1 && pair.a - 1 !== pair.a + 1;
+  }
+  if (move === 'echoes_operand') {
+    const answer = answerFor(type, pair);
+    return answer !== pair.a && answer !== pair.b;
+  }
+  return type === 'counting_next' && (pair.a % 5 === 0 || pair.a % 5 === 4);
+};
+
+/**
+ * Put at most `requested` legal counterexamples ahead of ordinary transfer
+ * items. Narrow moves with ample transfer capacity withhold extra matches;
+ * echo-safe facts may remain as ordinary tail fill so item count never drops.
+ */
+const rankForRemediation = (
+  pairs: FactPair[],
+  move: DiMathFactsRemediationMove | null,
+  type: DiMathFactsChallengeType,
+  requested: number,
+): FactPair[] => {
+  if (!move || requested <= 0) return pairs;
+  const eligible = pairs.filter((pair) => isRemediationTarget(move, type, pair));
+  const targets = move === 'echoes_operand' && eligible.length > 1
+    ? [
+        eligible[0],
+        eligible.find((pair) =>
+          pair.a !== eligible[0].a
+          && pair.b !== eligible[0].b
+          && keyFor(type, pair) !== keyFor(type, eligible[0])
+          && answerFor(type, pair) !== answerFor(type, eligible[0])) ?? eligible[1],
+      ].slice(0, requested)
+    : eligible.slice(0, requested);
+  const targetKeys = new Set(targets.map((pair) => keyFor(type, pair)));
+  const transfer = pairs.filter((pair) => !isRemediationTarget(move, type, pair));
+  // Echo-safe addition facts make up almost the whole legal pool, so residual
+  // matches remain available as ordinary transfer to preserve item count. The
+  // narrower successor/boundary moves have ample non-target transfer capacity
+  // and can enforce the two-item dosage exactly.
+  const residualMatches = move === 'echoes_operand'
+    ? eligible.filter((pair) => !targetKeys.has(keyFor(type, pair)))
+    : [];
+  return [...targets, ...transfer, ...residualMatches];
+};
+
 /**
  * Stable structural ranking: exact tier shape first, then the same tier's
  * legal upper band, then lower-band fallbacks. The input has already been
@@ -450,17 +539,34 @@ const selectVariedForShape = (
   type: DiMathFactsChallengeType,
   shape: DiMathFactsProblemShape,
   seed: FactPair[] = [],
+  remediationMove: DiMathFactsRemediationMove | null = null,
+  remediationRequested = 0,
 ): FactPair[] => {
   const insideTier = pool.filter((p) => structuralMagnitude(type, p) <= shape.maximum);
   const exact = shape.crossingBoundary === null
     ? insideTier
     : insideTier.filter((p) => crossesOperandBoundary(type, p, shape.crossingBoundary!));
-  let out = selectVaried(exact, count, type, seed);
+  let out = selectVaried(
+    rankForRemediation(exact, remediationMove, type, remediationRequested),
+    count,
+    type,
+    seed,
+  );
   if (out.length < count) {
-    out = selectVaried(insideTier, count, type, out);
+    out = selectVaried(
+      rankForRemediation(insideTier, remediationMove, type, remediationRequested),
+      count,
+      type,
+      out,
+    );
   }
   if (out.length < count) {
-    out = selectVaried(pool, count, type, out);
+    out = selectVaried(
+      rankForRemediation(pool, remediationMove, type, remediationRequested),
+      count,
+      type,
+      out,
+    );
   }
   return out;
 };
@@ -661,6 +767,8 @@ export const generateDiMathFacts = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /** Private student-model input; consumed only by code-owned pool ranking. */
+    remediationFocus?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second axis of the two-field contract: targetEvalMode = which fact skill,
@@ -676,6 +784,7 @@ export const generateDiMathFacts = async (
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
   );
   const supportTier = normalizeSupportTier(config?.difficulty);
+  const remediationFocus = config?.remediationFocus;
 
   // The objective's fact scope, resolved from ALL the text we have and
   // code-enforced below (topic/objective beats whatever the model picks).
@@ -763,9 +872,45 @@ Return the wrapper JSON only.`;
       ? resolveProblemShape(type, supportTier, poolCeilingFor(type))
       : undefined;
     const seed = seedForType(type, scope, shape);
-    return shape
-      ? selectVariedForShape(pool, n, type, shape, seed)
-      : selectVaried(pool, n, type, seed);
+    const remediationMove = resolveDiRemediationMove(type, remediationFocus);
+    const remediationRequested = Math.min(2, n);
+    const selected = shape
+      ? selectVariedForShape(
+          pool,
+          n,
+          type,
+          shape,
+          seed,
+          remediationMove,
+          remediationRequested,
+        )
+      : selectVaried(
+          rankForRemediation(pool, remediationMove, type, remediationRequested),
+          n,
+          type,
+          seed,
+        );
+
+    if (remediationFocus?.trim()) {
+      const actual = remediationMove
+        ? selected.slice(0, remediationRequested)
+          .filter((pair) => isRemediationTarget(remediationMove, type, pair)).length
+        : 0;
+      console.log('[DiRemediation]', {
+        primitive: 'di-math-facts',
+        type,
+        move: remediationMove,
+        requested: remediationMove ? remediationRequested : 0,
+        actual,
+        skippedReason: !remediationMove
+          ? (type === 'subtraction_fact' ? 'unsupported_focus' : 'mode_conflict')
+          : actual < remediationRequested
+            ? 'insufficient_eligible_targets'
+            : null,
+      });
+    }
+
+    return selected;
   };
 
   // Build the challenge set from the resolved mode(s). Single mode → all one

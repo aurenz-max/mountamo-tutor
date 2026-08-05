@@ -170,6 +170,93 @@ const ALL_TYPES: DiWordReadingChallengeType[] = [
 // the default four-item review still crosses decoding and whole-word recall.
 const REVIEW_SPREAD = ['the', 'red', 'pig', 'dog', 'sun', 'sam'];
 
+// ── Misconception remediation: deterministic menu emphasis ────────────────
+
+export type DiWordReadingRemediationMove =
+  | 'stops_before_whole_word'
+  | 'near_neighbor_read'
+  | 'sounds_out_sight_word';
+
+export const resolveDiRemediationMove = (
+  challengeType: DiWordReadingChallengeType,
+  remediationFocus?: string,
+): DiWordReadingRemediationMove | null => {
+  const focus = remediationFocus?.trim().toLowerCase();
+  if (!focus) return null;
+
+  const namesSight = /\b(?:sight|high[ -]?frequency|irregular)\b/.test(focus);
+  const soundsOut = /\b(?:sound(?:s|ed|ing)?[ -]?out|decode[sd]?|decoding)\b/.test(focus);
+  if (namesSight && soundsOut) {
+    return challengeType === 'cvc_reading' ? null : 'sounds_out_sight_word';
+  }
+
+  const namesWholeWord = /\bwhole[ -]?word\b/.test(focus);
+  const stopsEarly = /\b(?:stops?|stopped|without|does not|doesn't|never)\b/.test(focus);
+  if (soundsOut && namesWholeWord && stopsEarly) {
+    return challengeType === 'sight_word' ? null : 'stops_before_whole_word';
+  }
+
+  const nearNeighbor = /\bnear[ -]?neighbou?r\b|\bclose[ -]?sound(?:ing)?\b/.test(focus)
+    || /\b(?:vowel|consonant)\s+substitut(?:e[sd]?|ion)\b/.test(focus);
+  if (nearNeighbor) {
+    return challengeType === 'sight_word' ? null : 'near_neighbor_read';
+  }
+
+  return null;
+};
+
+const CONTINUANT_GRAPHEMES = new Set(['m', 's', 'f', 'r', 'n', 'l', 'v', 'z']);
+const IRREGULAR_SIGHT_ORDER = ['the', 'to', 'see', 'is', 'my', 'we', 'go', 'and'];
+
+const isSmoothCvc = (word: string): boolean => {
+  const entry = WORD_MENU[word];
+  return entry?.wordType === 'cvc'
+    && CONTINUANT_GRAPHEMES.has(word[0])
+    && CONTINUANT_GRAPHEMES.has(word[word.length - 1]);
+};
+
+const oneGraphemeDifferenceAt = (left: string, right: string, position: number | null): boolean => {
+  if (left.length !== right.length) return false;
+  const differences = left.split('').flatMap((letter, index) => letter === right[index] ? [] : [index]);
+  return differences.length === 1 && (position === null || differences[0] === position);
+};
+
+const diagnosedContrastPosition = (focus?: string): number | null => {
+  const normalized = focus?.toLowerCase() ?? '';
+  if (/\b(?:vowel|middle|medial)\b/.test(normalized)) return 1;
+  if (/\b(?:first|initial|onset)\b/.test(normalized)) return 0;
+  if (/\b(?:last|final|ending)\b/.test(normalized)) return 2;
+  return null;
+};
+
+const rankWordsForRemediation = (
+  words: string[],
+  move: DiWordReadingRemediationMove,
+  remediationFocus: string,
+  requested: number,
+): string[] => {
+  if (requested <= 0) return words;
+  let targets: string[] = [];
+  if (move === 'stops_before_whole_word') {
+    targets = words.filter(isSmoothCvc).slice(0, requested);
+  } else if (move === 'sounds_out_sight_word') {
+    targets = IRREGULAR_SIGHT_ORDER.filter((word) => words.includes(word)).slice(0, requested);
+  } else {
+    const cvcWords = words.filter((word) => WORD_MENU[word]?.wordType === 'cvc');
+    const position = diagnosedContrastPosition(remediationFocus);
+    outer: for (let i = 0; i < cvcWords.length; i++) {
+      for (let j = i + 1; j < cvcWords.length; j++) {
+        if (oneGraphemeDifferenceAt(cvcWords[i], cvcWords[j], position)) {
+          targets = [cvcWords[i], cvcWords[j]].slice(0, requested);
+          break outer;
+        }
+      }
+    }
+  }
+  const targetSet = new Set(targets);
+  return [...targets, ...words.filter((word) => !targetSet.has(word))];
+};
+
 /** Gemini emits ONLY the wrapper — never the per-item content (Fork A). */
 const wrapperSchema: Schema = {
   type: Type.OBJECT,
@@ -314,10 +401,13 @@ export const generateDiWordReading = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /** Private student-model input; consumed only by code-owned menu ranking. */
+    remediationFocus?: string;
     [key: string]: unknown;
   },
 ): Promise<DiWordReadingData> => {
   const intent = config?.intent;
+  const remediationFocus = config?.remediationFocus;
   const count = Math.min(
     MAX_INSTANCE_COUNT,
     Math.max(3, config?.challengeCount ?? DEFAULT_INSTANCE_COUNT),
@@ -410,9 +500,41 @@ Return the wrapper JSON only.`;
   const used = new Set<string>();
   const buildWordsFor = (type: DiWordReadingChallengeType, n: number): string[] => {
     const candidates = candidatesForType(type, selected, scopeText, scopedVowels, sightScoped);
-    let words = takeUnique(candidates.filter((word) => !used.has(word)), n);
-    if (words.length < n) words = takeUnique([...words, ...candidates], n);
+    const remediationMove = resolveDiRemediationMove(type, remediationFocus);
+    const namedAnchors = scanWordsFromText(scopeText).filter((word) => candidates.includes(word));
+    const anchors = type === 'word_reading_review'
+      ? takeUnique([...namedAnchors, ...candidates.slice(0, 2)], 2)
+      : takeUnique(namedAnchors, n);
+    const remainder = candidates.filter((word) => !anchors.includes(word));
+    const ranked = remediationMove
+      ? [...anchors, ...rankWordsForRemediation(
+          remainder,
+          remediationMove,
+          remediationFocus ?? '',
+          Math.min(2, Math.max(0, n - anchors.length)),
+        )]
+      : candidates;
+    let words = takeUnique(ranked.filter((word) => !used.has(word)), n);
+    if (words.length < n) words = takeUnique([...words, ...ranked], n);
     words.forEach((word) => used.add(word));
+
+    if (remediationFocus?.trim()) {
+      console.log('[DiRemediation]', {
+        primitive: 'di-word-reading',
+        type,
+        move: remediationMove,
+        requested: remediationMove ? Math.min(2, n) : 0,
+        actual: remediationMove
+          ? words.filter((word) => {
+              if (remediationMove === 'stops_before_whole_word') return isSmoothCvc(word);
+              if (remediationMove === 'sounds_out_sight_word') return SIGHT_WORDS.includes(word);
+              return words.some((other) => other !== word
+                && oneGraphemeDifferenceAt(word, other, diagnosedContrastPosition(remediationFocus)));
+            }).slice(0, 2).length
+          : 0,
+        skippedReason: remediationMove ? null : 'mode_conflict_or_unsupported_focus',
+      });
+    }
     return words;
   };
 

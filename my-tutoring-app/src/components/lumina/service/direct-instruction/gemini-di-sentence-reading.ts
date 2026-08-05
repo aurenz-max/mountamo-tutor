@@ -343,6 +343,113 @@ const ALL_TYPES: DiSentenceReadingChallengeType[] = [
   'decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence',
 ];
 
+// Misconception remediation: deterministic sentence-menu emphasis.
+export type DiSentenceReadingRemediationMove =
+  | 'drops_function_word'
+  | 'near_neighbor_word'
+  | 'word_order_or_addition';
+
+export const resolveDiRemediationMove = (
+  _challengeType: DiSentenceReadingChallengeType,
+  remediationFocus?: string,
+): DiSentenceReadingRemediationMove | null => {
+  const focus = remediationFocus?.trim().toLowerCase();
+  if (!focus || !/\bsentence(?:s)?\b/.test(focus)) return null;
+  if (/\b(?:drop(?:s|ped|ping)?|skip(?:s|ped|ping)?|omit(?:s|ted|ting)?)\b/.test(focus)
+    && (/\bfunction[ -]?word\b/.test(focus) || /\b(?:the|a|is|in|on|and|to)\b/.test(focus))) {
+    return 'drops_function_word';
+  }
+  if (/\bnear[ -]?neighbou?r\b|\bclose[ -]?sound(?:ing)?\b|\b(?:vowel|consonant)\s+substitut(?:e[sd]?|ion)\b/.test(focus)) {
+    return 'near_neighbor_word';
+  }
+  if (/\b(?:swap(?:s|ped|ping)?|reorder(?:s|ed|ing)?|word order|adds? (?:a )?word|extra word)\b/.test(focus)) {
+    return 'word_order_or_addition';
+  }
+  return null;
+};
+
+const FUNCTION_WORDS = ['the', 'a', 'is', 'in', 'on', 'and', 'to', 'can', 'has', 'had', 'up'];
+const CVC_CONTRASTS = [
+  ['cat', 'mat'], ['hen', 'pen'], ['pig', 'dig'], ['dog', 'log'], ['sun', 'run'],
+] as const;
+
+const sentenceTokens = (id: string): string[] =>
+  spokenForm(SENTENCE_MENU[id].text).split(' ').filter(Boolean);
+
+const diagnosedFunctionWord = (focus: string): string | null => {
+  const normalized = focus.toLowerCase();
+  const quoted = /["'](the|a|is|in|on|and|to|can|has|had|up)["']/.exec(normalized)?.[1];
+  return quoted ?? FUNCTION_WORDS.find((word) =>
+    new RegExp(`\\b${word}\\b`).test(normalized)) ?? null;
+};
+
+const isSentenceRemediationTarget = (
+  id: string,
+  move: DiSentenceReadingRemediationMove,
+  focus: string,
+): boolean => {
+  const tokens = sentenceTokens(id);
+  if (move === 'drops_function_word') {
+    const named = diagnosedFunctionWord(focus);
+    return named
+      ? tokens.slice(0, -1).includes(named)
+      : tokens.slice(0, -1).some((token) => FUNCTION_WORDS.includes(token));
+  }
+  if (move === 'near_neighbor_word') {
+    const allTargets = CVC_CONTRASTS.flat();
+    const namedTargets = allTargets.filter((word) =>
+      new RegExp(`\\b${word}\\b`).test(focus.toLowerCase()));
+    const targets: readonly string[] = namedTargets.length > 0 ? namedTargets : allTargets;
+    return tokens.some((token) => targets.includes(token));
+  }
+  const counts = new Map<string, number>();
+  for (const token of tokens) {
+    if (FUNCTION_WORDS.includes(token)) counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+  const noAdjacentRepeat = tokens.every((token, index) => index === 0 || token !== tokens[index - 1]);
+  return noAdjacentRepeat && Array.from(counts.values()).some((count) => count >= 2);
+};
+
+const rankSentencesForRemediation = (
+  ids: string[],
+  move: DiSentenceReadingRemediationMove,
+  focus: string,
+  requested: number,
+): string[] => {
+  const targets = ids.filter((id) => isSentenceRemediationTarget(id, move, focus)).slice(0, requested);
+  const targetSet = new Set(targets);
+  return [...targets, ...ids.filter((id) => !targetSet.has(id))];
+};
+
+const ensureRemediationTargets = (
+  selected: string[],
+  candidates: string[],
+  move: DiSentenceReadingRemediationMove,
+  focus: string,
+  requested: number,
+  protectedAnchors: string[],
+): string[] => {
+  const desired = candidates
+    .filter((id) => isSentenceRemediationTarget(id, move, focus))
+    .slice(0, requested);
+  const next = [...selected];
+  for (const target of desired) {
+    if (next.includes(target)) continue;
+    let replacement = -1;
+    for (let index = next.length - 1; index >= 0; index--) {
+      if (!protectedAnchors.includes(next[index])
+        && !isSentenceRemediationTarget(next[index], move, focus)) {
+        replacement = index;
+        break;
+      }
+    }
+    if (replacement < 0) break;
+    next[replacement] = target;
+  }
+  return Array.from(new Set(next))
+    .sort((left, right) => countWords(SENTENCE_MENU[left].text) - countWords(SENTENCE_MENU[right].text));
+};
+
 /** Fisher-Yates. App code, not a workflow script — Math.random is fine. */
 const shuffle = <T,>(items: T[]): T[] => {
   const out = [...items];
@@ -636,6 +743,8 @@ export const generateDiSentenceReading = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /** Private student-model input; consumed only by code-owned menu ranking. */
+    remediationFocus?: string;
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second field of the two-field contract: targetEvalMode = which reading
@@ -667,6 +776,7 @@ export const generateDiSentenceReading = async (
   // places; the shape is mode-agnostic today, so the session line uses the
   // base mode's — buildFor re-resolves per challenge type regardless).
   const supportTier = normalizeSupportTier(config?.difficulty);
+  const remediationFocus = config?.remediationFocus;
   const sessionShape = supportTier
     ? resolveProblemShape('read_sentence', supportTier, wordCeiling)
     : null;
@@ -777,6 +887,29 @@ Return the wrapper JSON only.`;
     const shape = supportTier ? resolveProblemShape(type, supportTier, wordCeiling) : null;
     const seed = seedForType(type, focusPool, shape?.band).filter((id) => modePool.includes(id));
     const isReview = type === 'sentence_review';
+    const remediationMove = resolveDiRemediationMove(type, remediationFocus);
+    const namedAnchors = scanIdsFromText(scopeText).filter((id) => modePool.includes(id));
+    const protectedAnchors = isReview ? seed : namedAnchors;
+    const remediationRequested = Math.min(2, Math.max(0, n - protectedAnchors.length));
+
+    const finishRemediation = (ids: string[]): string[] => {
+      if (remediationFocus?.trim()) {
+        const actual = remediationMove
+          ? ids.filter((id) => isSentenceRemediationTarget(id, remediationMove, remediationFocus)).slice(0, 2).length
+          : 0;
+        console.log('[DiRemediation]', {
+          primitive: 'di-sentence-reading',
+          type,
+          move: remediationMove,
+          requested: remediationMove ? Math.min(2, n) : 0,
+          actual,
+          skippedReason: remediationMove && actual < Math.min(2, n)
+            ? 'insufficient_eligible_targets'
+            : remediationMove ? null : 'unsupported_focus',
+        });
+      }
+      return ids;
+    };
 
     // `sentence_review` deliberately STOPS at its ≤2 anchors and takes none of
     // the model's topical picks. Those picks are chosen from the prompt menu,
@@ -817,15 +950,57 @@ Return the wrapper JSON only.`;
         (id) => bandDistance(countWords(SENTENCE_MENU[id].text), shape.band) === 0,
       ).length;
       const window = ranked.slice(0, Math.max(n, inBand));
+      const remediationWindow = remediationMove
+        ? rankSentencesForRemediation(
+            window.filter((id) => !protectedAnchors.includes(id)),
+            remediationMove,
+            remediationFocus ?? '',
+            remediationRequested,
+          )
+        : window;
       // Length-family rotation is disabled under a band (variety of length is
       // the opposite of a pinned length target) — rotation falls back to the
       // vowel family, which is what review always used.
-      return selectSentences([...anchored, ...window], [], n, false);
+      const selected = selectSentences([...anchored, ...remediationWindow], [], n, false);
+      return finishRemediation(remediationMove
+        ? ensureRemediationTargets(
+            selected,
+            remediationWindow,
+            remediationMove,
+            remediationFocus ?? '',
+            remediationRequested,
+            protectedAnchors,
+          )
+        : selected);
     }
     // Review rotates by VOWEL even when the objective pinned one (breadth across
     // patterns IS the skill); every other mode rotates by length inside a pinned
     // vowel, since there the vowel is already fixed.
-    return selectSentences(preferred, backfill, n, isReview ? false : scopedVowels !== null);
+    if (remediationMove) {
+      const candidates = Array.from(new Set([...preferred, ...backfill]));
+      const remainder = candidates.filter((id) => !protectedAnchors.includes(id));
+      const ranked = rankSentencesForRemediation(
+        remainder,
+        remediationMove,
+        remediationFocus ?? '',
+        remediationRequested,
+      );
+      const selected = selectSentences(
+        [...protectedAnchors, ...ranked],
+        [],
+        n,
+        isReview ? false : scopedVowels !== null,
+      );
+      return finishRemediation(ensureRemediationTargets(
+        selected,
+        ranked,
+        remediationMove,
+        remediationFocus ?? '',
+        remediationRequested,
+        protectedAnchors,
+      ));
+    }
+    return finishRemediation(selectSentences(preferred, backfill, n, isReview ? false : scopedVowels !== null));
   };
 
   // Build from the resolved mode(s). Single mode → all one skill; blend/mixed →

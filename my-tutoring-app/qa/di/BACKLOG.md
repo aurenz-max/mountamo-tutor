@@ -402,31 +402,15 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
      child-acoustics class (ASR collapse, judge-over-transcript) and of genuine
      adversarial creativity. Keep them; with item 8 landed, each one
      automatically leaves a diagnosable record.
-2. **FAMILY-WIDE: DI packs produce no REMEDIATION content from a stored
-   misconception (S5).** *(opened 2026-07-25 by `/misconception-test di-math-facts`
-   — executor: `/add-misconception-loop`, then re-run `/misconception-test` for a
-   full-gate PASS.)* Item 2 below closed the PRODUCTION half: a wrong DI answer
-   now yields a Tier-A packet and the distiller writes a real, bounded diagnosis
-   from it (Probe D 10/10). The CONSUMPTION half is untouched — **no DI generator
-   imports `buildRemediationPrompt`**, so an active misconception changes nothing
-   about the next session and Probe G is **NOT-WIRED**.
-   **DESIGN CLOSED 2026-08-04; implementation remains open.** The ruled lever is
-   code-owned item selection only: typed, narrow diagnosis→move resolvers;
-   up to two targeted items followed by transfer items; mode/scope/tier/count
-   invariant; unknown or cross-mode diagnoses no-op; no diagnosis sent to the
-   wrapper LLM and no spoken copy changes. Pilot `di-math-facts/subtraction_fact`
-   first, then Probe G before any family sweep. Code-ready handoff:
-   `qa/di/HANDOFF-di-remediation-levers-2026-08-04.md`.
-   This was a design question, not a missing import. Every literacy/math
-   primitive that consumes `remediationFocus` does it by rewording the generator
-   prompt; DI's spoken copy is **bench-proven and byte-frozen** (do-not: "don't
-   re-word any cue, judging contract, or correction line"). So the only honest
-   lever here is **which items the pool draws** — e.g. a "counts up instead of
-   back" diagnosis biases the subtraction pool toward take-away facts whose
-   answer is NOT the successor, so the wrong rule visibly fails. Decide that
-   lever before writing code; do not reach for prompt rewording by analogy with
-   the literacy packs. That lever is now ruled in the handoff above.
-   Report: `qa/misconception/di-math-facts-2026-07-25.md`.
+2. ~~**FAMILY-WIDE: DI packs produce no REMEDIATION content from a stored
+   misconception (S5).**~~ **DONE 2026-08-04 — STRUCK, see Done.** All four
+   generators now consume narrow, task-bounded diagnoses through deterministic
+   code-owned pool/menu ranking. Probe G passed **11/11** moves after the math
+   subtraction pilot gate; null/cross-mode/tier/count/scope/no-leak contracts
+   are pinned, full Vitest passes **1,569/1,569**, Probe R passes 9/9, and S4
+   Firestore exposure passes. No diagnosis enters Gemini or returned data and no
+   spoken copy changed. Report:
+   `qa/misconception/di-family-2026-08-04.md`.
 6. **Free-form DI attribution lands off-grade/off-family: K `fact_review` →
    `OPS002-04-c @ grade=2` (subject override ✓ MATHEMATICS).** *(opened 2026-07-26,
    stress-sitting report; #50(c) half-closed by the same evidence. Executor: probe
@@ -700,6 +684,14 @@ candidate at all: di-math-facts absorbed the next-number step as `counting_next`
   Report: `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`.
 
 ## Done
+- **FAMILY-WIDE: stored misconceptions now change the next DI item draw
+  (2026-08-04, queue item 2 struck).** Typed resolvers and deterministic,
+  bounded selection landed across math facts, letter sounds, word reading, and
+  sentence reading. The pilot used Probe D's actual subtraction diagnosis, then
+  the full 11-move family matrix passed real Probe G with 0 leak/drift/dead-field;
+  Probe R 9/9 and S4 exposure also pass. The wrapper LLM never receives the
+  diagnosis, and all bench-proven spoken copy remains byte-frozen. Report:
+  `qa/misconception/di-family-2026-08-04.md`.
 - **FAMILY-WIDE: the wrong answer now feeds the misconception loop (2026-07-25,
   queue item 1 struck).** All four packs. A DI miss used to produce
   `{correct: false, score: 0}` and nothing else; it now produces a **Tier-A
