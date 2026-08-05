@@ -123,6 +123,8 @@ class Beat:
     # load-bearing content (e.g. a story a non-reader needs read aloud) was
     # dropped. Missing any group → "stimulus-not-read" HIGH.
     must_include: List[List[str]] = field(default_factory=list)
+    # REFER-BACK check: recover facts from earlier sections, one term per group.
+    grounds_in_prior: List[List[str]] = field(default_factory=list)
 
 
 @dataclass
@@ -1546,7 +1548,117 @@ def build_word_workout_journey(live: Dict[str, Any], grade: str) -> Dict[str, An
     }}
 
 
+def _refer_back_scaffold(task: str, keys: List[str]) -> Dict[str, Any]:
+    return {
+        "taskDescription": task,
+        "contextKeys": keys,
+        "scaffoldingLevels": {
+            "level1": "Connect the student's question to lesson evidence already discussed.",
+            "level2": "Name the relevant earlier mechanism in one short explanation.",
+            "level3": "Restate the earlier evidence, then connect it to the current application.",
+        },
+        "commonStruggles": [],
+    }
+
+
+def build_lesson_refer_back_journey(_live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    """Three-section lesson: section 3 explicitly reaches back through 1 and 2."""
+    section_1 = {
+        "title": "Excavator arm parts",
+        "parts": "boom, stick, bucket",
+        "connection": "The boom lifts, the stick reaches, and the bucket scoops.",
+        "gradeLevel": grade,
+    }
+    section_2 = {
+        "title": "How hydraulics move the arm",
+        "mechanism": "Pressurized fluid pushes hydraulic cylinders that move the boom, stick, and bucket.",
+        "gradeLevel": grade,
+    }
+    section_3 = {
+        "title": "Construction-site application",
+        "scenario": "Choose how the excavator should dig a trench and place the soil safely.",
+        "gradeLevel": grade,
+    }
+    first_scaffold = _refer_back_scaffold(
+        "Explore the excavator's three arm parts and what each part does.",
+        ["title", "parts", "connection"],
+    )
+    hydraulics_scaffold = _refer_back_scaffold(
+        "Connect pressurized hydraulic fluid and cylinders to excavator arm motion.",
+        ["title", "mechanism"],
+    )
+    application_scaffold = _refer_back_scaffold(
+        "Apply excavator parts and hydraulics to a safe construction-site plan.",
+        ["title", "scenario"],
+    )
+
+    def switch(component: str, instance: str, data: Dict[str, Any], tutoring: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "type": "switch_primitive",
+            "primitive_context": {
+                "primitive_type": component,
+                "instance_id": instance,
+                "primitive_data": data,
+                "tutoring": tutoring,
+                "audio_input": {"manual_activity": True},
+            },
+        }
+
+    beats = [
+        Beat("greeting", expect="turn", note="lesson greeting carries section 1 parts context"),
+        Beat("section_1_discussion", expect="turn", sends=[text_msg(
+            "Before we move on, name the excavator arm's three main parts and briefly say what they do."
+        )]),
+        Beat("switch_to_hydraulics", expect="turn", sends=[switch(
+            "hydraulics-lab", "refer-back-2", section_2, hydraulics_scaffold,
+        )]),
+        Beat("section_2_discussion", expect="turn", sends=[text_msg(
+            "How does hydraulic fluid make those excavator parts move?"
+        )]),
+        Beat("switch_to_application", expect="turn", sends=[switch(
+            "transport-challenge", "refer-back-3", section_3, application_scaffold,
+        )]),
+        Beat(
+            "refer_back_to_section_1",
+            expect="turn",
+            sends=[text_msg(
+                "I'm planning the trench now. Reach back to the first section: what were the three arm parts, "
+                "and how does what we learned about hydraulics move them?"
+            )],
+            grounds_in_prior=[
+                ["boom"], ["stick"], ["bucket"],
+                ["hydraulic", "pressurized fluid", "fluid pressure", "cylinder"],
+            ],
+            note="section 3 must recover section 1 facts and connect section 2",
+        ),
+    ]
+    lesson_context = {
+        "topic": "How excavators work on a construction site",
+        "grade_level": grade,
+        "objectives": [{"verb": "connect", "text": "excavator parts, hydraulics, and safe application"}],
+        "ordered_components": [
+            {"title": "Excavator arm parts", "component_id": "machine-profile", "instance_id": "refer-back-1"},
+            {"title": "How hydraulics move the arm", "component_id": "hydraulics-lab", "instance_id": "refer-back-2"},
+            {"title": "Construction-site application", "component_id": "transport-challenge", "instance_id": "refer-back-3"},
+        ],
+        "current_index": 0,
+        "previous_results": [],
+    }
+    return {
+        "initial_bag": section_1,
+        "initial_tutoring": first_scaffold,
+        "primitive_type": "machine-profile",
+        "instance_id": "refer-back-1",
+        "lesson_context": lesson_context,
+        "force_lesson": True,
+        "beats": beats,
+        "answers": [],
+        "meta": {"journey": "lesson-refer-back", "sections": 3},
+    }
+
+
 JOURNEYS = {
+    "lesson-refer-back": build_lesson_refer_back_journey,
     "states-of-matter": build_states_of_matter_journey,
     "foundation-explorer": build_foundation_explorer_journey,
     "sorting-station": build_sorting_station_journey,
@@ -1763,6 +1875,14 @@ def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, 
                 add("HIGH", "stimulus-not-read", b,
                     f"tutor did not voice load-bearing content — missing "
                     f"{['/'.join(g) for g in missing]}: \"{spoken[:180]}\"")
+        if r.beat.grounds_in_prior:
+            ns = _norm(spoken)
+            missing = [group for group in r.beat.grounds_in_prior
+                       if not any(_norm(term) in ns for term in group)]
+            if missing:
+                add("HIGH", "grounds-in-prior-section", b,
+                    f"response did not recover prior-section facts "
+                    f"{['/'.join(group) for group in missing]}: \"{spoken[:220]}\"")
         for ans in r.beat.leak_answers:
             na = _norm(ans)
             if len(na) < 3:
@@ -1955,7 +2075,10 @@ async def amain() -> int:
     token = get_id_token()
 
     print(f"[2/4] Generating real content + fetching tutoring block (probe&live)…")
-    live = fetch_live_context(args.frontend, args.component, args.topic, args.grade, args.eval_mode)
+    if args.component == "lesson-refer-back":
+        live = {"status": "static-journey", "tutoring": None, "generatedData": {}}
+    else:
+        live = fetch_live_context(args.frontend, args.component, args.topic, args.grade, args.eval_mode)
     print(f"      tier-1 status: {live.get('status')}; scaffold keys: {list((live.get('tutoring') or {}).keys())}")
 
     build = JOURNEYS.get(args.component, build_generic_journey)
@@ -1972,24 +2095,27 @@ async def amain() -> int:
 
     for i in range(1, runs + 1):
         primitive_ctx = {
-            "primitive_type": args.component,
-            "instance_id": f"tutor-live-{args.component}-{int(time.time())}",
+            "primitive_type": journey.get("primitive_type", args.component),
+            "instance_id": journey.get("instance_id", f"tutor-live-{args.component}-{int(time.time())}"),
             "primitive_data": journey["initial_bag"],
-            "tutoring": live.get("tutoring"),
+            "tutoring": journey.get("initial_tutoring", live.get("tutoring")),
         }
+        if journey.get("force_lesson"):
+            primitive_ctx["audio_input"] = {"manual_activity": True}
         # Lesson mode reproduces the observed K-lesson failure path: the server
         # auto-greets with the scaffold but tells the tutor to keep it brief/one
         # sentence, so a scaffold without a read-aloud directive strands a non-reader.
-        lesson_ctx = {
+        lesson_ctx = journey.get("lesson_context") or ({
             "topic": args.topic,
             "grade_level": args.grade,
             "objectives": [{"verb": "practice", "text": args.topic}],
             "ordered_components": [{"title": args.component, "primitive_type": args.component,
                                     "instance_id": primitive_ctx["instance_id"]}],
-        } if args.lesson else {}
+        } if args.lesson else {})
+        lesson_mode = bool(args.lesson or journey.get("force_lesson"))
         auth_msg = {
             "type": "authenticate",
-            "session_mode": "lesson" if args.lesson else "standalone",
+            "session_mode": "lesson" if lesson_mode else "standalone",
             "token": token,
             "resumption_handle": None,
             "primitive_context": primitive_ctx,
@@ -2007,7 +2133,7 @@ async def amain() -> int:
     style = average_style_metrics(per_run_findings)
     report_path = os.path.join(
         REPO_ROOT, "my-tutoring-app", "qa", "tutor-reports",
-        f"{args.component}-live{'-lesson' if args.lesson else ''}-{date.today().isoformat()}.md",
+        f"{args.component}-live{'-lesson' if (args.lesson or journey.get('force_lesson')) else ''}-{date.today().isoformat()}.md",
     )
     write_report(report_path, args.component, journey, run_results, aggregated, style, all_events)
 

@@ -275,6 +275,92 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
             </div>
           </Section>
 
+          {/* Composition patterns */}
+          <Section
+            title="Focus + Queue"
+            blurb="One active surface; supporting work becomes a quiet outline"
+          >
+            <div className="space-y-3">
+              <LuminaCard surface="elevated" topAccent="blue">
+                <LuminaCardHeader className="pb-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-sm font-semibold text-slate-400">
+                      1
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <LuminaBadge accent="blue" className="text-[10px] uppercase tracking-wider">
+                          Now
+                        </LuminaBadge>
+                        <span>Daily Pulse</span>
+                        <span aria-hidden="true" className="text-slate-700">·</span>
+                        <span>Science</span>
+                        <span aria-hidden="true" className="text-slate-700">·</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" /> 6 min
+                        </span>
+                      </div>
+                      <LuminaCardTitle className="text-lg">Light and Materials</LuminaCardTitle>
+                    </div>
+                  </div>
+                </LuminaCardHeader>
+                <LuminaCardContent>
+                  <div className="ml-11 border-t border-white/5 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                      What you&apos;ll explore
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+                      Explore how light interacts with transparent, translucent, and opaque materials.
+                    </p>
+                    <details className="group mt-2">
+                      <summary className="w-fit cursor-pointer list-none text-xs text-slate-500 transition-colors hover:text-slate-300">
+                        <span className="group-open:hidden">+ 2 more goals</span>
+                        <span className="hidden group-open:inline">Hide additional goals</span>
+                      </summary>
+                      <ul className="mt-2 space-y-1.5 border-l border-white/10 pl-3 text-xs text-slate-500">
+                        <li>Recognize the three states of matter.</li>
+                        <li>Observe how temperature changes materials.</li>
+                      </ul>
+                    </details>
+                  </div>
+                </LuminaCardContent>
+              </LuminaCard>
+
+              {[
+                { index: 2, title: 'Places and Environments', meta: 'New Lesson · Social Studies · 9 min', state: 'Up next' },
+                { index: 3, title: 'Energy', meta: 'Mastery Check · Science · 5 min', state: 'Later' },
+                { index: 4, title: 'Letter Recognition', meta: 'New Lesson · Language Arts · 9 min', state: 'Later' },
+              ].map((item) => (
+                <LuminaPanel key={item.index} className="flex items-center gap-3 px-4 py-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-sm font-semibold text-slate-500">
+                    {item.index}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-300">{item.title}</p>
+                    <p className="truncate text-xs text-slate-600">{item.meta}</p>
+                  </div>
+                  <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
+                    item.state === 'Up next' ? 'text-slate-400' : 'text-slate-600'
+                  }`}>
+                    {item.state}
+                  </span>
+                </LuminaPanel>
+              ))}
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  <strong className="text-slate-300">One focal surface.</strong> Only the current item receives elevation and accent.
+                </p>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  <strong className="text-slate-300">Disclose depth.</strong> Lead with one useful goal; reveal the rest on request.
+                </p>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  <strong className="text-slate-300">One action owner.</strong> Keep the primary CTA on the parent workflow surface.
+                </p>
+              </div>
+            </div>
+          </Section>
+
           {/* Buttons */}
           <Section title="Buttons" blurb="LuminaButton — tone maps to intent">
             <LuminaCard>
@@ -313,13 +399,29 @@ export const DesignStudio: React.FC<DesignStudioProps> = ({ onBack }) => {
           </Section>
 
           {/* Badges */}
-          <Section title="Badges" blurb="LuminaBadge — accent drives the category color">
+          <Section title="Badges" blurb="LuminaBadge — neutral by default; accent communicates meaning">
             <LuminaCard>
               <LuminaCardContent className="pt-6 space-y-4">
-                <Spec label="Default" code="<LuminaBadge>">
-                  <LuminaBadge>Neutral</LuminaBadge>
+                <p className="text-xs leading-relaxed text-slate-400">
+                  In dense layouts, keep category labels neutral. Spend accent color on the active
+                  item, a meaningful state, or evaluation feedback—not every piece of metadata.
+                </p>
+                <Spec label="Categories — neutral" code="<LuminaBadge>">
+                  <div className="flex flex-wrap gap-2">
+                    <LuminaBadge>Science</LuminaBadge>
+                    <LuminaBadge>New Lesson</LuminaBadge>
+                    <LuminaBadge>Daily Practice</LuminaBadge>
+                  </div>
                 </Spec>
-                <Spec label="Accents" code='accent="…"'>
+                <Spec label="State and focus — accented" code='accent="…"'>
+                  <div className="flex flex-wrap gap-2">
+                    <LuminaBadge accent="blue">Now</LuminaBadge>
+                    <LuminaBadge accent="amber">In progress</LuminaBadge>
+                    <LuminaBadge accent="emerald">Complete</LuminaBadge>
+                    <LuminaBadge accent="rose">Try again</LuminaBadge>
+                  </div>
+                </Spec>
+                <Spec label="Palette reference" code="All available accents">
                   <div className="flex flex-wrap gap-2">
                     {LUMINA_ACCENTS.map((accent) => (
                       <LuminaBadge key={accent} accent={accent}>

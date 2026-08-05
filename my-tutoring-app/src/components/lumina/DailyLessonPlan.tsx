@@ -1,306 +1,225 @@
 'use client';
 
 /**
- * DailyLessonPlan — PRD Daily Learning Experience §4 (Session Runner: Tier 1)
+ * DailyLessonPlan — the student-facing outline for today's planned blocks.
  *
- * Shows today's 4–5 lesson blocks in Lumina glass-card style.
- * Each block is a grouped set of related subskills ordered by Bloom's taxonomy.
- * "Start Block" fires onBlockStart(block) so the parent can launch the exhibit.
- *
- * The plan is get-or-create server-side (one doc per student per day), so a
- * fresh fetch returns the same blocks with completed_block_ids intact —
- * progress survives navigation and reloads. completedBlockIds is an
- * optimistic overlay from App.tsx for completions in the current visit;
- * it is merged with the persisted set carried on the plan itself.
+ * When embedded beneath SessionRibbon, the ribbon owns session progress and
+ * the primary action. This component then shows one focused current block and
+ * compact rows for everything already completed or coming later.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Activity,
   BookOpen,
   Brain,
+  Check,
   ChevronRight,
   Clock,
   Coffee,
-  Info,
   RefreshCw,
   Sparkles,
   Star,
   Zap,
 } from 'lucide-react';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   fetchDailySessionPlan,
   prettySubject,
+  type BlockType,
   type DailySessionPlan,
   type LessonBlock,
-  type BloomLevel,
-  type BlockType,
-  type SkillStatus,
 } from '@/lib/sessionPlanAPI';
-
-// ---------------------------------------------------------------------------
-// Styling helpers
-// ---------------------------------------------------------------------------
 
 const BLOCK_TYPE_CONFIG: Record<BlockType, {
   label: string;
-  badgeClass: string;
   icon: React.ElementType;
-  ringClass: string;
 }> = {
-  lesson: {
-    label: 'New Lesson',
-    badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-    icon: BookOpen,
-    ringClass: 'ring-cyan-500/30',
-  },
-  practice: {
-    label: 'Practice',
-    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    icon: Brain,
-    ringClass: 'ring-amber-500/30',
-  },
-  retest: {
-    label: 'Mastery Check',
-    badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-    icon: Zap,
-    ringClass: 'ring-rose-500/30',
-  },
-  pulse: {
-    label: 'Daily Pulse',
-    badgeClass: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
-    icon: Activity,
-    ringClass: 'ring-fuchsia-500/30',
-  },
+  lesson: { label: 'New Lesson', icon: BookOpen },
+  practice: { label: 'Practice', icon: Brain },
+  retest: { label: 'Mastery Check', icon: Zap },
+  pulse: { label: 'Daily Pulse', icon: Activity },
 };
 
-const BLOOM_CONFIG: Record<BloomLevel, { label: string; dotClass: string }> = {
-  identify: { label: 'Identify', dotClass: 'bg-indigo-400' },
-  explain:  { label: 'Explain',  dotClass: 'bg-violet-400' },
-  apply:    { label: 'Apply',    dotClass: 'bg-emerald-400' },
-};
-
-const STATUS_CONFIG: Record<SkillStatus, string> = {
-  new:      'text-cyan-300',
-  review:   'text-amber-300',
-  retest:   'text-rose-300',
-  mastered: 'text-emerald-300',
-};
-
-const SUBJECT_COLORS: Record<string, string> = {
-  ELA:              'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  'Language Arts':  'bg-violet-500/20 text-violet-300 border-violet-500/30',
-  Math:             'bg-blue-500/20   text-blue-300   border-blue-500/30',
-  Mathematics:      'bg-blue-500/20   text-blue-300   border-blue-500/30',
-  Science:          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  'Social Studies': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  _default:         'bg-slate-500/20 text-slate-300 border-slate-500/30',
-};
-
-// Keyed by the PRETTY name — callers pass raw block.subject and we normalize.
-function subjectBadgeClass(subject: string): string {
-  return SUBJECT_COLORS[prettySubject(subject)] ?? SUBJECT_COLORS._default;
+function BlockNumber({ index, completed = false }: { index: number; completed?: boolean }) {
+  return (
+    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
+      completed
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+        : 'border-white/10 bg-white/[0.04] text-slate-400'
+    }`}>
+      {completed ? <Check className="h-4 w-4" /> : index}
+    </span>
+  );
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function BlockCard({
-  block,
-  canStart,
-  isCompleted,
-  result,
-  onStart,
-}: {
-  block: LessonBlock;
-  canStart: boolean;
-  isCompleted: boolean;
-  result?: BlockResult;
-  onStart: (block: LessonBlock) => void;
-}) {
-  const cfg  = BLOCK_TYPE_CONFIG[block.type];
+function BlockIdentity({ block }: { block: LessonBlock }) {
+  const cfg = BLOCK_TYPE_CONFIG[block.type];
   const Icon = cfg.icon;
 
   return (
-    <Card
-      className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ring-1 ${cfg.ringClass} transition-all duration-200`}
-    >
-      {/* Block header */}
-      <CardHeader className="pb-4 pt-5 px-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Block number + completion check */}
-            <span className={`text-sm font-bold uppercase tracking-wider w-8 h-8 rounded-full border flex items-center justify-center shrink-0 transition-all duration-300 ${
-              isCompleted
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                : 'bg-white/5 border-white/10 text-slate-500'
-            }`}>
-              {isCompleted ? '✓' : block.block_index}
-            </span>
+    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+      <span className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5" />
+        {cfg.label}
+      </span>
+      <span aria-hidden="true" className="text-slate-700">·</span>
+      <span>{prettySubject(block.subject)}</span>
+      <span aria-hidden="true" className="text-slate-700">·</span>
+      <span className="flex items-center gap-1">
+        <Clock className="h-3.5 w-3.5" />
+        {block.estimated_minutes} min
+      </span>
+    </div>
+  );
+}
 
-            {/* Block type badge */}
-            <Badge className={`text-xs border px-2.5 py-0.5 ${cfg.badgeClass}`}>
-              <Icon className="w-3.5 h-3.5 mr-1 inline" />
-              {cfg.label}
-            </Badge>
+function CurrentBlockCard({
+  block,
+  result,
+  showStartAction,
+  onStart,
+}: {
+  block: LessonBlock;
+  result?: BlockResult;
+  showStartAction: boolean;
+  onStart: (block: LessonBlock) => void;
+}) {
+  const primaryGoal = block.subskills[0]?.subskill_name;
+  const additionalGoals = block.subskills.slice(1);
 
-            {/* Subject badge */}
-            <Badge className={`text-xs border px-2.5 py-0.5 ${subjectBadgeClass(block.subject)}`}>
-              {prettySubject(block.subject)}
-            </Badge>
-
-            {/* Duration */}
-            <span className="text-xs text-slate-500 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              ~{block.estimated_minutes} min
-            </span>
+  return (
+    <Card className="border-blue-500/25 bg-slate-900/45 ring-1 ring-blue-500/10 backdrop-blur-xl">
+      <CardHeader className="px-5 pb-3 pt-5 md:px-6">
+        <div className="flex items-start gap-3">
+          <BlockNumber index={block.block_index} />
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge className="border-blue-500/20 bg-blue-500/10 px-2 py-0 text-[10px] font-semibold uppercase tracking-wider text-blue-300">
+                Now
+              </Badge>
+              <BlockIdentity block={block} />
+            </div>
+            <h3 className="text-xl font-semibold leading-tight text-slate-100">
+              {block.title}
+            </h3>
+            {block.unit_title && block.unit_title !== block.title && (
+              <p className="mt-1 text-xs text-slate-500">{block.unit_title}</p>
+            )}
           </div>
-
-          {/* Metadata popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors shrink-0">
-                <Info className="w-3.5 h-3.5" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 bg-slate-900 border-white/10 text-slate-300 p-0">
-              <div className="px-4 py-3 border-b border-white/5">
-                <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">Block Metadata</h4>
-              </div>
-              <div className="px-4 py-3 space-y-2 text-xs">
-                <div className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5">
-                  <span className="text-slate-500">block_id</span>
-                  <span className="font-mono text-slate-400 truncate">{block.block_id}</span>
-                  <span className="text-slate-500">lesson_group</span>
-                  <span className="font-mono text-slate-400 truncate">{block.lesson_group_id}</span>
-                  <span className="text-slate-500">priority</span>
-                  <span className="text-slate-400">{block.priority_score.toFixed(2)}</span>
-                  <span className="text-slate-500">type</span>
-                  <span className="text-slate-400">{block.type}</span>
-                </div>
-              </div>
-              <div className="px-4 py-3 border-t border-white/5">
-                <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2">Subskills ({block.subskills.length})</h4>
-                <div className="space-y-2">
-                  {block.subskills.map((ss, i) => (
-                    <div key={`${ss.subskill_id}-${i}`} className="rounded-lg bg-white/5 px-3 py-2">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[11px] font-medium text-slate-200 leading-tight">{ss.subskill_name}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 ${
-                          ss.status === 'new' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25' :
-                          ss.status === 'review' ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' :
-                          ss.status === 'retest' ? 'bg-rose-500/15 text-rose-400 border-rose-500/25' :
-                          'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
-                        }`}>{ss.status}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500">
-                        <span className="font-mono">{ss.subskill_id}</span>
-                        <span>gate {ss.gate}</span>
-                        <span className="capitalize">{ss.bloom_phase}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
         </div>
-
-        {/* Block title */}
-        <h3 className="text-xl font-semibold text-slate-100 mt-3">
-          {block.title}
-        </h3>
-        {block.unit_title && block.unit_title !== block.title && (
-          <p className="text-xs text-slate-500 mt-1">{block.unit_title}</p>
-        )}
       </CardHeader>
 
-      <CardContent className="px-6 pb-5">
-        {/* Bloom's phase breakdown */}
-        <div className="space-y-2.5 mb-5">
-          {block.subskills.map((ss, i) => {
-            const bloomCfg = BLOOM_CONFIG[ss.bloom_phase];
-            return (
-              <div key={`${ss.subskill_id}-${i}`} className="flex items-start gap-3">
-                {/* Bloom dot */}
-                <span className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${bloomCfg.dotClass}`} />
-                {/* Phase label */}
-                <span className="text-xs text-slate-500 uppercase tracking-wider w-16 shrink-0 pt-0.5">
-                  {bloomCfg.label}
-                </span>
-                {/* Subskill name */}
-                <span className={`text-sm leading-snug ${STATUS_CONFIG[ss.status]}`}>
-                  {ss.subskill_name}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      <CardContent className="px-5 pb-5 md:px-6">
+        {primaryGoal && (
+          <div className="ml-11 border-t border-white/5 pt-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+              What you&apos;ll explore
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+              {primaryGoal}
+            </p>
 
-        {/* Start / Complete button */}
-        <div className="flex justify-end">
-          {isCompleted ? (
-            <div className="flex items-center gap-3">
-              {result && result.evalCount > 0 && (
-                <span className="text-sm text-slate-400">
-                  {result.evalCount} answered · avg {Math.round(result.scoreSum / result.evalCount)}%
-                </span>
-              )}
-              <span className="text-sm text-emerald-400 font-medium flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">✓</span>
-                Done
-              </span>
-            </div>
-          ) : (
+            {additionalGoals.length > 0 && (
+              <details className="group mt-2">
+                <summary className="w-fit cursor-pointer list-none text-xs text-slate-500 transition-colors hover:text-slate-300">
+                  <span className="group-open:hidden">
+                    + {additionalGoals.length} more {additionalGoals.length === 1 ? 'goal' : 'goals'}
+                  </span>
+                  <span className="hidden group-open:inline">Hide additional goals</span>
+                </summary>
+                <ul className="mt-2 space-y-1.5 border-l border-white/10 pl-3 text-xs leading-relaxed text-slate-500">
+                  {additionalGoals.map((subskill, index) => (
+                    <li key={`${subskill.subskill_id}-${index}`}>{subskill.subskill_name}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+
+        {showStartAction && (
+          <div className="mt-4 flex justify-end">
             <Button
-              variant="ghost"
-              size="default"
-              disabled={!canStart}
               onClick={() => onStart(block)}
-              className={
-                canStart
-                  ? 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 text-sm px-5'
-                  : 'opacity-40 cursor-not-allowed text-slate-500 text-sm'
-              }
+              className="bg-gradient-to-r from-blue-500 to-violet-500 px-5 font-semibold text-white hover:from-blue-400 hover:to-violet-400"
             >
-              {canStart ? (
-                <>
-                  Start Block
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </>
-              ) : (
-                'Complete previous block first'
-              )}
+              Start
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {result && result.evalCount > 0 && (
+          <p className="mt-3 text-right text-xs text-slate-500">
+            {result.evalCount} answered · avg {Math.round(result.scoreSum / result.evalCount)}%
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function BreakDivider() {
+function CompactBlockRow({
+  block,
+  completed,
+  isNext,
+  result,
+}: {
+  block: LessonBlock;
+  completed: boolean;
+  isNext: boolean;
+  result?: BlockResult;
+}) {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="flex-1 h-px bg-white/5" />
-      <div className="flex items-center gap-2 text-slate-500 text-xs">
-        <Coffee className="w-4 h-4 text-amber-400/60" />
-        <span>Break point — stretch or get some water</span>
+    <div className={`rounded-xl border px-4 py-3 transition-colors md:px-5 ${
+      completed
+        ? 'border-emerald-500/10 bg-emerald-500/[0.025]'
+        : 'border-white/[0.07] bg-slate-900/25'
+    }`}>
+      <div className="flex items-center gap-3">
+        <BlockNumber index={block.block_index} completed={completed} />
+
+        <div className="min-w-0 flex-1">
+          <p className={`truncate text-sm font-medium ${completed ? 'text-slate-500' : 'text-slate-300'}`}>
+            {block.title}
+          </p>
+          <BlockIdentity block={block} />
+        </div>
+
+        <div className="shrink-0 text-right">
+          {completed ? (
+            <>
+              <span className="text-xs font-medium text-emerald-400/80">Done</span>
+              {result && result.evalCount > 0 && (
+                <p className="mt-0.5 text-[10px] text-slate-600">
+                  {Math.round(result.scoreSum / result.evalCount)}%
+                </p>
+              )}
+            </>
+          ) : (
+            <span className={`text-[10px] font-semibold uppercase tracking-wider ${
+              isNext ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              {isNext ? 'Up next' : 'Later'}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex-1 h-px bg-white/5" />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+function BreakDivider() {
+  return (
+    <div className="flex items-center gap-2 px-3 py-0.5 text-[11px] text-slate-600">
+      <Coffee className="h-3.5 w-3.5" />
+      <span>Break after this block</span>
+    </div>
+  );
+}
 
 /** Per-block evaluation results (passed from App.tsx session state). */
 export interface BlockResult {
@@ -310,15 +229,13 @@ export interface BlockResult {
 
 interface DailyLessonPlanProps {
   studentId: string | number;
-  /** Externally managed completed block IDs — persists across component remounts. */
   completedBlockIds?: Set<string>;
-  /** Per-block evaluation results keyed by block_id. */
   blockResults?: Record<string, BlockResult>;
-  /** Pre-loaded plan from parent — skips fetch when provided to avoid clobbering block IDs. */
   initialPlan?: DailySessionPlan | null;
   onPlanLoaded?: (plan: DailySessionPlan) => void;
-  /** Called when the student clicks "Start Block". Parent should launch the exhibit. */
   onBlockStart?: (block: LessonBlock) => void;
+  /** The parent surface owns the session summary, progress, and primary CTA. */
+  embedded?: boolean;
 }
 
 export function DailyLessonPlan({
@@ -328,13 +245,12 @@ export function DailyLessonPlan({
   initialPlan,
   onPlanLoaded,
   onBlockStart,
+  embedded = false,
 }: DailyLessonPlanProps) {
-  const [plan, setPlan]         = useState<DailySessionPlan | null>(initialPlan ?? null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [plan, setPlan] = useState<DailySessionPlan | null>(initialPlan ?? null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Merge server-persisted completion (on the plan doc) with the parent's
-  // optimistic overlay for completions in the current visit.
   const effectiveCompleted: Set<string> = (() => {
     const merged = new Set(plan?.completed_block_ids ?? []);
     completedBlockIds?.forEach(id => merged.add(id));
@@ -353,41 +269,36 @@ export function DailyLessonPlan({
     } finally {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, onPlanLoaded]);
 
   useEffect(() => {
-    // Skip fetch if parent already provided a plan (preserves block IDs across remounts)
     if (initialPlan) return;
     fetchPlan();
   }, [fetchPlan, initialPlan]);
 
   const handleStartBlock = useCallback((block: LessonBlock) => {
-    console.log('[DailyLessonPlan] Starting block:', block.block_id, block.title);
-    // Notify parent to launch the exhibit; completion is recorded (and
-    // persisted) by App.tsx when the exhibit finishes — abandoned blocks
-    // stay incomplete.
     onBlockStart?.(block);
   }, [onBlockStart]);
 
-  // ---------------------------------------------------------------------------
-  // Render states
-  // ---------------------------------------------------------------------------
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-slate-500">
-        <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        <span className="text-sm">Building today's session plan…</span>
+      <div className="flex items-center justify-center py-12 text-slate-500">
+        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+        <span className="text-sm">Building today&apos;s session plan…</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 p-6">
-        <p className="text-rose-400 text-sm mb-3">{error}</p>
-        <Button variant="ghost" size="sm" onClick={() => fetchPlan()}
-          className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-100 text-sm">
+      <Card className="border-white/10 bg-slate-900/40 p-6 backdrop-blur-xl">
+        <p className="mb-3 text-sm text-rose-400">{error}</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => fetchPlan()}
+          className="border border-white/20 bg-white/5 text-sm text-slate-100 hover:bg-white/10"
+        >
           Try again
         </Button>
       </Card>
@@ -396,145 +307,105 @@ export function DailyLessonPlan({
 
   if (!plan) return null;
 
-  const completedCount = effectiveCompleted.size;
-  const totalBlocks    = plan.blocks.length;
-  const progressPct    = totalBlocks > 0 ? Math.round((completedCount / totalBlocks) * 100) : 0;
+  const totalBlocks = plan.blocks.length;
+  const completedCount = plan.blocks.filter(block => effectiveCompleted.has(block.block_id)).length;
+  const currentIndex = plan.blocks.findIndex(block => !effectiveCompleted.has(block.block_id));
 
   return (
-    <div className="space-y-5">
-      {/* ---- Session header ---- */}
-      <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
-        <CardContent className="pt-6 pb-5 px-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
+    <div className="space-y-3">
+      {!embedded && (
+        <Card className="border-white/10 bg-slate-900/40 backdrop-blur-xl">
+          <CardContent className="flex items-center justify-between gap-4 px-5 py-4">
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <h2 className="text-base font-semibold text-slate-100">
-                  {plan.day_of_week}'s Session
+                <Sparkles className="h-4 w-4 text-amber-400" />
+                <h2 className="truncate text-base font-semibold text-slate-100">
+                  {plan.day_of_week}&apos;s Session
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {totalBlocks} block{totalBlocks !== 1 ? 's' : ''} · ~{plan.estimated_total_minutes} min · {plan.total_subskills} subskills
+              <p className="mt-1 text-xs text-slate-500">
+                {completedCount} of {totalBlocks} complete · about {plan.estimated_total_minutes} min
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Stats pills */}
-            <div className="flex gap-2 flex-wrap justify-end">
-              {plan.new_subskills > 0 && (
-                <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
-                  {plan.new_subskills} new
-                </span>
-              )}
-              {plan.review_subskills > 0 && (
-                <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                  {plan.review_subskills} review
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>{completedCount} of {totalBlocks} blocks complete</span>
-              <span>{progressPct}%</span>
-            </div>
-            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-500 to-violet-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Budget breakdown */}
-          <div className="flex gap-4 mt-4 pt-4 border-t border-white/5 text-center">
-            <div className="flex-1">
-              <div className="text-base font-bold text-cyan-400">{plan.intro_budget_minutes} min</div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">New Material</div>
-            </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-amber-400">{plan.review_budget_minutes} min</div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">Reviews</div>
-            </div>
-            <div className="flex-1">
-              <div className="text-base font-bold text-slate-300">{plan.budget_minutes} min</div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider mt-0.5">Total Budget</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ---- Warnings ---- */}
       {plan.warnings.length > 0 && (
         <div className="space-y-1.5">
-          {plan.warnings.map((w, i) => (
-            <div key={i} className="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2.5">
-              {w}
+          {plan.warnings.map((warning, index) => (
+            <div key={index} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-300">
+              {warning}
             </div>
           ))}
         </div>
       )}
 
-      {/* ---- Empty state ---- */}
       {plan.blocks.length === 0 && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
+        <Card className="border-white/10 bg-slate-900/40 backdrop-blur-xl">
           <CardContent className="py-12 text-center">
-            <Star className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-            <p className="text-slate-300 text-base font-medium">No blocks scheduled today</p>
-            <p className="text-slate-500 text-sm mt-1">
+            <Star className="mx-auto mb-3 h-10 w-10 text-amber-400" />
+            <p className="text-base font-medium text-slate-300">No blocks scheduled today</p>
+            <p className="mt-1 text-sm text-slate-500">
               Your planner will schedule new content as prerequisites are met.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* ---- Lesson blocks ---- */}
-      {plan.blocks.map((block, i) => {
-        const prevCompleted = i === 0 || effectiveCompleted.has(plan.blocks[i - 1].block_id);
-        const isCompleted   = effectiveCompleted.has(block.block_id);
+      {plan.blocks.map((block, index) => {
+        const completed = effectiveCompleted.has(block.block_id);
+        const isCurrent = index === currentIndex;
+        const isNext = currentIndex >= 0 && index === currentIndex + 1;
 
         return (
           <React.Fragment key={block.block_id}>
-            <div className={`transition-opacity duration-200 ${isCompleted ? 'opacity-60' : 'opacity-100'}`}>
-              <BlockCard
+            {isCurrent ? (
+              <CurrentBlockCard
                 block={block}
-                canStart={prevCompleted && !isCompleted}
-                isCompleted={isCompleted}
                 result={blockResults?.[block.block_id]}
+                showStartAction={!embedded}
                 onStart={handleStartBlock}
               />
-            </div>
-
-            {/* Break prompt between blocks */}
-            {block.insert_break_after && (
-              <BreakDivider />
+            ) : (
+              <CompactBlockRow
+                block={block}
+                completed={completed}
+                isNext={isNext}
+                result={blockResults?.[block.block_id]}
+              />
             )}
+
+            {block.insert_break_after && <BreakDivider />}
           </React.Fragment>
         );
       })}
 
-      {/* ---- Session complete celebration ---- */}
       {completedCount > 0 && completedCount === totalBlocks && (
-        <Card className="backdrop-blur-xl bg-slate-900/40 border-emerald-500/20 ring-1 ring-emerald-500/20">
-          <CardContent className="py-8 text-center">
-            <div className="text-4xl mb-3">🎉</div>
-            <p className="text-emerald-300 text-lg font-semibold">Session Complete!</p>
-            <p className="text-slate-500 text-sm mt-1">
+        <Card className="border-emerald-500/20 bg-slate-900/40 ring-1 ring-emerald-500/20 backdrop-blur-xl">
+          <CardContent className="py-7 text-center">
+            <p className="text-lg font-semibold text-emerald-300">Session complete!</p>
+            <p className="mt-1 text-sm text-slate-500">
               You finished all {totalBlocks} blocks. Great work today!
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* ---- Refresh ---- */}
-      <div className="flex justify-end pt-1">
-        <Button variant="ghost" size="sm" onClick={() => fetchPlan({ refresh: true })} disabled={loading}
-          className="text-slate-500 hover:text-slate-300 text-sm">
-          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh plan
-        </Button>
-      </div>
+      {!embedded && (
+        <div className="flex justify-end pt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fetchPlan({ refresh: true })}
+            disabled={loading}
+            className="text-sm text-slate-500 hover:text-slate-300"
+          >
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Refresh plan
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

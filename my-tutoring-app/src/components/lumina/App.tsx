@@ -504,6 +504,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
                     initialPlan={sessionPlan}
                     onPlanLoaded={adoptPlan}
                     onBlockStart={handleBlockStart}
+                    embedded
                   />
                 </SessionRibbon>
               ) : null

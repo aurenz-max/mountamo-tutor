@@ -280,32 +280,39 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     if (step.emissions.some((emission) => emission.kind === 'verdict')) schedulePendingCue();
   }, [flushJudgeText, schedulePendingCue]);
 
-  const voiceTurns = useLiveVoiceTurns({
-    enabled,
+  const handleVoiceTurnClose = useCallback((event: Extract<VoiceTurnEvent, { kind: 'close' }>) => {
+    flushJudgeText();
+    callbacksRef.current.onVoiceTurnClose?.(event);
+    const turn = {
+      openedAt: event.startedAt,
+      closedAt: event.startedAt + event.durationMs,
+      durationMs: event.durationMs,
+      peak: event.peak,
+      duringTutorAudio: event.duringTutorAudio,
+    };
+    dispatch(event.belowMinVoice ? { type: 'voice-blip', turn } : { type: 'voice-close', turn });
+    schedulePendingCue();
+  }, [dispatch, flushJudgeText, schedulePendingCue]);
+
+  // Standalone DI remains self-contained. In a lesson, the provider is the one
+  // activity-bracket owner and this judged loop only consumes its turn stream.
+  const usesSharedVoiceTurns = ctx.sessionMode === 'lesson' && !!ctx.sharedVoiceTurns;
+  const localVoiceTurns = useLiveVoiceTurns({
+    enabled: enabled && !usesSharedVoiceTurns,
     config: options.voice?.config,
-    onTurnClose: (event) => {
-      // The learner answered over the tutor's line — it is as finished as it
-      // is going to get. Flush BEFORE the attempt opens, so a consumer that
-      // closes its evidence window on 'attempt-open' still sees the upgrade.
-      flushJudgeText();
-      // Reported ABOVE the min-voice gate: a blip whose activityEnd already
-      // went to Gemini is precisely the turn we decline to anchor, so it must
-      // be visible to the consumer's run log even though nothing anchors to it.
-      callbacksRef.current.onVoiceTurnClose?.(event);
-      const turn = {
-        openedAt: event.startedAt,
-        closedAt: event.startedAt + event.durationMs,
-        durationMs: event.durationMs,
-        peak: event.peak,
-        duringTutorAudio: event.duringTutorAudio,
-      };
-      // A blip opens no attempt — but its activityEnd has already gone out, so
-      // the reducer keeps it as a retro-anchor rather than forgetting the
-      // learner spoke at all.
-      dispatch(event.belowMinVoice ? { type: 'voice-blip', turn } : { type: 'voice-close', turn });
-      schedulePendingCue();
-    },
+    onTurnClose: handleVoiceTurnClose,
   });
+  useEffect(() => {
+    if (!enabled || !usesSharedVoiceTurns) return;
+    return ctx.sharedVoiceTurns.subscribe({ onTurnClose: handleVoiceTurnClose });
+  }, [ctx.sharedVoiceTurns?.subscribe, enabled, handleVoiceTurnClose, usesSharedVoiceTurns]);
+
+  const preserveSharedTransport = useCallback(() => {
+    // A judged-run reset must not close conversation or discard calibration.
+  }, []);
+  const voiceTurns: LiveVoiceTurns = usesSharedVoiceTurns
+    ? { ...ctx.sharedVoiceTurns, reset: preserveSharedTransport }
+    : localVoiceTurns;
   voiceActiveRef.current = voiceTurns.isVoiceActive;
 
   // Conversation feed: user messages are transcripts, assistant messages are

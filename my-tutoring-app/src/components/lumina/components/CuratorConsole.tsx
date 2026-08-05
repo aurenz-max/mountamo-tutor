@@ -15,7 +15,7 @@
  *   - otherwise    → sendText(prompt)    (student-voiced; the AI speaks back)
  *
  * Audio OUTPUT (the AI speaking) is handled by the context. Mic INPUT is
- * intentionally secondary — a small push-to-talk affordance, not the centerpiece.
+ * intentionally secondary — a small lesson-mic pause/resume affordance.
  *
  * Must be rendered inside <LuminaAIProvider> (i.e. within LessonScreen).
  */
@@ -433,7 +433,7 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
           </div>
         )}
 
-        {/* Footer: text + push-to-talk (secondary) */}
+        {/* Footer: text + lesson-mic pause/resume (secondary) */}
         {isConnected && (
           <div className="flex items-center gap-2 border-t border-white/5 pt-3">
             <input
@@ -458,7 +458,7 @@ export const CuratorConsole: React.FC<CuratorConsoleProps> = ({ defaultExpanded 
               className={`rounded-lg p-1.5 transition-colors ${
                 isListening ? 'bg-rose-600 hover:bg-rose-700' : 'bg-white/5 hover:bg-white/10'
               }`}
-              title={isListening ? 'Stop talking' : 'Push to talk'}
+              title={isListening ? 'Pause lesson microphone' : 'Resume lesson microphone'}
             >
               {isListening ? (
                 <MicOff className="h-3.5 w-3.5 text-white" />

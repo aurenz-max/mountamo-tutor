@@ -11,9 +11,9 @@
  * type into". So here the helper is an embodied character — "Pip" — who lives
  * at the edge of the scene, emotes (idle / thinking / speaking / celebrating /
  * sleeping), speaks in a large read-aloud bubble, and offers a *small* number
- * of huge emoji-forward choice bubbles. Voice-first: a hold-to-talk mic is the
- * primary input; typing/transcript hide behind an "advanced" toggle for older
- * grades and accessibility.
+ * of huge emoji-forward choice bubbles. Voice-first: the lesson mic stays open;
+ * typing/transcript hide behind an "advanced" toggle for older grades and
+ * accessibility. The mic control pauses/resumes rather than bracketing a turn.
  *
  * Audio OUTPUT (Pip speaking) is handled by the context's Gemini Live session;
  * the bubble shows the words and the character's mouth animates in sync.
@@ -31,7 +31,7 @@ import { getComponentById } from '../service/manifest/catalog';
 import { getPrimitive } from '../config/primitiveRegistry';
 import { interpolateTemplate } from '../utils/interpolateTemplate';
 import type { ComponentId, StudentPrompt, StudentPromptKind } from '../types';
-import { Mic, Send, RefreshCw, Loader2, MessageSquare, X } from 'lucide-react';
+import { Mic, MicOff, Send, RefreshCw, Loader2, MessageSquare, X } from 'lucide-react';
 
 /** Human-facing name for the active primitive (registry title → title-cased id). */
 function friendlyPrimitiveName(type: string | null): string | null {
@@ -452,12 +452,10 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
 
         {isConnected && (
           <div className="flex flex-col items-center gap-1.5">
-            {/* Hold-to-talk — the primary input for young learners */}
+            {/* Lesson-wide open mic; this control only pauses or resumes it. */}
             <button
-              onPointerDown={() => startListening()}
-              onPointerUp={() => stopListening()}
-              onPointerLeave={() => isListening && stopListening()}
-              aria-label="Hold to talk to Pip"
+              onClick={() => (isListening ? stopListening() : startListening())}
+              aria-label={isListening ? 'Pause the lesson microphone' : 'Resume the lesson microphone'}
               className={`relative flex h-16 w-16 items-center justify-center rounded-full border-2 shadow-xl transition-all active:scale-95 ${
                 isListening
                   ? 'border-rose-300 bg-rose-500'
@@ -467,10 +465,12 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
               {isListening && (
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-60" />
               )}
-              <Mic className="relative h-7 w-7 text-white" />
+              {isListening
+                ? <Mic className="relative h-7 w-7 text-white" />
+                : <MicOff className="relative h-7 w-7 text-white" />}
             </button>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              {isListening ? 'Listening…' : 'Hold to talk'}
+              {isListening ? 'Open mic' : 'Mic paused'}
             </span>
           </div>
         )}

@@ -598,8 +598,10 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
 
   // Unmount cleanup — never leave Live holding the mic or an open turn.
   useEffect(() => () => {
-    ctx.stopListening();
-    if (weConnectedRef.current) ctx.disconnect();
+    if (weConnectedRef.current) {
+      ctx.stopListening();
+      ctx.disconnect();
+    }
     // Diagnosis telemetry: an abandoned or broken run still leaves its record
     // (deduped against the run-end flush by (runId, seq)).
     void flushDiRunLog('teardown');
@@ -614,6 +616,8 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
 
   const micState = preparing
     ? 'opening'
+    : phase === 'idle'
+      ? 'idle'
     : ctx.isListening
       ? 'armed'
       : 'idle';
@@ -691,7 +695,7 @@ export const DiWordReading: React.FC<DiWordReadingData> = (data) => {
               level={ctx.micLevel}
               isSupported={isSupported}
               onStart={() => void prepareLive()}
-              onCancel={running ? undefined : ctx.stopListening}
+              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
               size="lg"
               idleLabel="Tap to start"
               openingLabel="Getting ready…"

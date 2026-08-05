@@ -1,29 +1,12 @@
 'use client';
 
 /**
- * useLiveVoiceTurns — open-mic turn authority over a Gemini Live session.
+ * Open-mic turn authority over a Gemini Live session.
  *
- * Wraps the pure voiceTurnMachine over LuminaAIContext's mic level and
- * playback state, and translates its events into the manual-activity
- * brackets Gemini needs (`sendActivityStart` / `sendActivityEnd`). Built for
- * sessions connected with `audio_input.manual_activity: true` — Gemini's own
- * VAD is off and no learner turn exists unless this hook opens one.
- *
- * Contract (see docs in voiceTurnMachine.ts for the why):
- * - The mic is never gated on tutor audio; opening a turn while the tutor is
- *   audible is native barge-in (Gemini interrupts; the client flushes on
- *   ai_interrupted).
- * - DI-2 dual threshold: barge-in demands `bargeInMultiplier ×` the silence
- *   bar, so AEC echo residue doesn't chop the tutor's lines.
- * - Consumers anchor attempts to these local voice turns — NOT to Live input
- *   transcription, which can be lost under barge-in (DI-1).
- *
- * Calibration groundwork: the hook keeps EMA noise floors for both regimes —
- * `ambient` (tutor silent, no voice open) and `echo` (tutor audible, no voice
- * open). Surfaces can display them and derive threshold suggestions; a future
- * calibration beat will set the config from them automatically.
+ * The public hook consumes LuminaAIContext for standalone surfaces. The
+ * transport-taking variant lets LuminaAIProvider own the single lesson-level
+ * instance without trying to consume its own context.
  */
-
 import { useCallback, useEffect, useRef } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
@@ -34,117 +17,170 @@ import {
   type VoiceTurnConfig,
   type VoiceTurnEvent,
 } from './voiceTurnMachine';
+import {
+  deriveVoiceThresholds,
+  EMPTY_VOICE_CALIBRATION,
+  observeVoiceFloor,
+  type VoiceCalibrationState,
+} from './voiceTurnCalibration';
 
 export interface VoiceFloors {
-  /** EMA of mic RMS while the tutor is silent and no turn is open. */
   ambientRms: number;
-  /** EMA of mic RMS while tutor audio plays and no turn is open — the AEC
-   *  echo residual on this device at this volume. */
   echoRms: number;
+  ambientOpen: number;
+  echoOpen: number;
+  ambientReady: boolean;
+  echoReady: boolean;
+}
+
+export interface LiveVoiceTurnTransport {
+  micLevel: number;
+  micFramePeriodMs: number;
+  isTutorAudible: boolean;
+  sendActivityStart: () => void;
+  sendActivityEnd: () => void;
 }
 
 export interface LiveVoiceTurnsOptions {
-  /** Master switch — typically "a run is active". Disabling force-closes any
-   *  open turn (activityEnd included) so Gemini is never left mid-turn. */
+  /** Disabling force-closes an open turn so Gemini is never left mid-turn. */
   enabled: boolean;
   config?: Partial<VoiceTurnConfig>;
-  /** A turn opened; activityStart has already been sent. */
   onTurnOpen?: (event: Extract<VoiceTurnEvent, { kind: 'open' }>) => void;
-  /** A turn closed; activityEnd has already been sent. Fires for ALL closes,
-   *  including belowMinVoice blips — check the flag before logging/anchoring. */
+  /** Fires for every close, including below-minimum voice blips. */
   onTurnClose?: (event: Extract<VoiceTurnEvent, { kind: 'close' }>) => void;
 }
 
 export interface LiveVoiceTurns {
-  /** Synchronous read of whether a local turn is currently open. Ref-backed —
-   *  safe inside timers and event handlers (cue gates, phantom guards). */
   isVoiceActive: () => boolean;
-  /** Monotonic timestamp of the most recent turn open, or null. Cleared by
-   *  the consumer when it anchors an attempt to the turn (DI-1 model). */
   lastTurnOpenAtRef: React.MutableRefObject<number | null>;
-  /** Live noise-floor telemetry for both regimes. */
   floorsRef: React.MutableRefObject<VoiceFloors>;
-  /** Force-close any open turn and clear floors/turn state (run reset). */
   reset: () => void;
-  /** The resolved config in effect (defaults + overrides). */
   config: VoiceTurnConfig;
 }
 
-const FLOOR_EMA_ALPHA = 0.05;
-
 export function useLiveVoiceTurns(options: LiveVoiceTurnsOptions): LiveVoiceTurns {
   const ctx = useLuminaAIContext();
-  const { enabled } = options;
+  return useLiveVoiceTurnsWithTransport(options, {
+    micLevel: ctx.micLevel,
+    micFramePeriodMs: ctx.micFramePeriodMs,
+    isTutorAudible: ctx.isAudioPlaying,
+    sendActivityStart: ctx.sendActivityStart,
+    sendActivityEnd: ctx.sendActivityEnd,
+  });
+}
 
-  // The capture service's real frame period, not a default and not an estimate:
-  // it is the machine's sampling resolution, and without it `minVoiceMs` silently
-  // means "three frames" instead of "120ms of speech" (see voiceTurnMachine's
-  // module note). An explicit override still wins, for tests and the bench.
-  const config: VoiceTurnConfig = {
+export function useLiveVoiceTurnsWithTransport(
+  options: LiveVoiceTurnsOptions,
+  transport: LiveVoiceTurnTransport,
+): LiveVoiceTurns {
+  const { enabled } = options;
+  const baseConfig: VoiceTurnConfig = {
     ...DEFAULT_VOICE_TURN_CONFIG,
-    framePeriodMs: ctx.micFramePeriodMs || DEFAULT_VOICE_TURN_CONFIG.framePeriodMs,
+    framePeriodMs: transport.micFramePeriodMs || DEFAULT_VOICE_TURN_CONFIG.framePeriodMs,
     ...options.config,
   };
 
   const stateRef = useRef(IDLE_VOICE_TURN);
   const lastTurnOpenAtRef = useRef<number | null>(null);
-  const floorsRef = useRef<VoiceFloors>({ ambientRms: 0, echoRms: 0 });
-  const configRef = useRef(config);
-  configRef.current = config;
+  const calibrationRef = useRef<VoiceCalibrationState>(EMPTY_VOICE_CALIBRATION);
+  const floorsRef = useRef<VoiceFloors>({
+    ambientRms: 0,
+    echoRms: 0,
+    ambientOpen: baseConfig.silenceThreshold,
+    echoOpen: baseConfig.silenceThreshold * baseConfig.bargeInMultiplier,
+    ambientReady: false,
+    echoReady: false,
+  });
+  const configRef = useRef(baseConfig);
+  // Structural policy (close timing, minimum voice) follows the active
+  // primitive; calibrated open bars remain owned by the measured device.
+  configRef.current = {
+    ...configRef.current,
+    ...baseConfig,
+    silenceThreshold: floorsRef.current.ambientOpen,
+    bargeInMultiplier:
+      floorsRef.current.echoOpen / Math.max(floorsRef.current.ambientOpen, Number.EPSILON),
+  };
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
-  const emitClose = useCallback(
-    (event: Extract<VoiceTurnEvent, { kind: 'close' }>) => {
-      ctx.sendActivityEnd();
-      callbacksRef.current.onTurnClose?.(event);
-    },
-    [ctx],
-  );
+  const emitClose = useCallback((event: Extract<VoiceTurnEvent, { kind: 'close' }>) => {
+    transport.sendActivityEnd();
+    callbacksRef.current.onTurnClose?.(event);
+  }, [transport.sendActivityEnd]);
 
-  // Frame loop: micLevel state updates per capture frame; each update steps
-  // the machine once. Mirrors the bench's original inline effect.
   useEffect(() => {
     if (!enabled) return;
     const now = performance.now();
-    const frame = { level: ctx.micLevel, tutorAudible: ctx.isAudioPlaying, now };
 
-    // Noise-floor telemetry only while no turn is open (an open turn's audio
-    // is voice, not floor).
     if (!stateRef.current.active) {
-      const floors = floorsRef.current;
-      if (ctx.isAudioPlaying) {
-        floors.echoRms = floors.echoRms === 0
-          ? ctx.micLevel
-          : floors.echoRms + FLOOR_EMA_ALPHA * (ctx.micLevel - floors.echoRms);
-      } else {
-        floors.ambientRms = floors.ambientRms === 0
-          ? ctx.micLevel
-          : floors.ambientRms + FLOOR_EMA_ALPHA * (ctx.micLevel - floors.ambientRms);
-      }
+      calibrationRef.current = observeVoiceFloor(
+        calibrationRef.current,
+        transport.micLevel,
+        transport.isTutorAudible,
+      );
+      const thresholds = deriveVoiceThresholds(calibrationRef.current, baseConfig);
+      floorsRef.current = {
+        ambientRms: calibrationRef.current.ambientFloor,
+        echoRms: calibrationRef.current.echoFloor,
+        ...thresholds,
+      };
+      configRef.current = {
+        ...baseConfig,
+        silenceThreshold: thresholds.ambientOpen,
+        bargeInMultiplier: thresholds.echoOpen / Math.max(thresholds.ambientOpen, Number.EPSILON),
+      };
+      // The calibration beat is real, not telemetry-only: do not let an
+      // arbitrary device floor open a phantom turn before that regime has
+      // enough samples to set its bar.
+      const activeRegimeReady = transport.isTutorAudible
+        ? thresholds.echoReady
+        : thresholds.ambientReady;
+      if (!activeRegimeReady) return;
     }
 
-    const step = stepVoiceTurn(stateRef.current, frame, configRef.current);
+    const step = stepVoiceTurn(stateRef.current, {
+      level: transport.micLevel,
+      tutorAudible: transport.isTutorAudible,
+      now,
+    }, configRef.current);
     stateRef.current = step.state;
     if (!step.event) return;
     if (step.event.kind === 'open') {
       lastTurnOpenAtRef.current = step.event.at;
-      ctx.sendActivityStart();
+      transport.sendActivityStart();
       callbacksRef.current.onTurnOpen?.(step.event);
       return;
     }
     emitClose(step.event);
-  }, [ctx, ctx.micLevel, ctx.isAudioPlaying, enabled, emitClose]);
+  }, [
+    transport.micLevel,
+    transport.isTutorAudible,
+    transport.sendActivityStart,
+    enabled,
+    emitClose,
+    baseConfig.framePeriodMs,
+    baseConfig.silenceCloseMs,
+    baseConfig.minVoiceMs,
+    baseConfig.hysteresisHoldRatio,
+  ]);
 
   const reset = useCallback(() => {
     const closed = closeVoiceTurn(stateRef.current, configRef.current);
     stateRef.current = closed.state;
     if (closed.event) emitClose(closed.event);
     lastTurnOpenAtRef.current = null;
-    floorsRef.current = { ambientRms: 0, echoRms: 0 };
-  }, [emitClose]);
+    calibrationRef.current = EMPTY_VOICE_CALIBRATION;
+    floorsRef.current = {
+      ambientRms: 0,
+      echoRms: 0,
+      ambientOpen: baseConfig.silenceThreshold,
+      echoOpen: baseConfig.silenceThreshold * baseConfig.bargeInMultiplier,
+      ambientReady: false,
+      echoReady: false,
+    };
+  }, [baseConfig.bargeInMultiplier, baseConfig.silenceThreshold, emitClose]);
 
-  // Disable / unmount: never leave Gemini holding an open turn.
   useEffect(() => {
     if (enabled) return;
     const closed = closeVoiceTurn(stateRef.current, configRef.current);
@@ -156,7 +192,7 @@ export function useLiveVoiceTurns(options: LiveVoiceTurnsOptions): LiveVoiceTurn
     const closed = closeVoiceTurn(stateRef.current, configRef.current);
     stateRef.current = closed.state;
     if (closed.event) emitClose(closed.event);
-  // Unmount-only cleanup; emitClose is stable per ctx.
+  // Unmount only: emitClose uses ref-backed callbacks.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -165,6 +201,6 @@ export function useLiveVoiceTurns(options: LiveVoiceTurnsOptions): LiveVoiceTurn
     lastTurnOpenAtRef,
     floorsRef,
     reset,
-    config,
+    config: configRef.current,
   };
 }

@@ -8,6 +8,15 @@ import { useEvaluationContext } from '@/components/lumina/evaluation';
 import type { AudioInputConfig, ManifestItem, ObjectiveData, TutoringScaffold } from '@/components/lumina/types';
 import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 import { getClientRunId } from '@/components/lumina/service/clientRunId';
+import {
+  useLiveVoiceTurnsWithTransport,
+  type LiveVoiceTurns,
+} from '@/components/lumina/hooks/useLiveVoiceTurns';
+import type { VoiceTurnEvent } from '@/components/lumina/hooks/voiceTurnMachine';
+import {
+  resolveLessonAudioInput,
+  resolveLessonVoiceTurnConfig,
+} from '@/components/lumina/hooks/lessonVoiceTurnPolicy';
 
 // Message type from AI
 interface Message {
@@ -149,6 +158,14 @@ interface LuminaAIContextType {
    *  with audio_input.manual_activity; no-ops when the socket is closed. */
   sendActivityStart: () => void;
   sendActivityEnd: () => void;
+  sharedVoiceTurns: LiveVoiceTurns & {
+    subscribe: (listener: VoiceTurnListener) => () => void;
+  };
+}
+
+interface VoiceTurnListener {
+  onTurnOpen?: (event: Extract<VoiceTurnEvent, { kind: 'open' }>) => void;
+  onTurnClose?: (event: Extract<VoiceTurnEvent, { kind: 'close' }>) => void;
 }
 
 const LuminaAIContext = createContext<LuminaAIContextType | null>(null);
@@ -236,6 +253,37 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // and refreshed by updateContext as the student interacts.
   const [activePrimitiveType, setActivePrimitiveType] = useState<string | null>(null);
   const [activePrimitiveData, setActivePrimitiveData] = useState<Record<string, any> | null>(null);
+
+  const sendActivitySignal = useCallback((kind: 'activity_start' | 'activity_end') => {
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: kind }));
+    }
+  }, []);
+  const sendActivityStart = useCallback(() => sendActivitySignal('activity_start'), [sendActivitySignal]);
+  const sendActivityEnd = useCallback(() => sendActivitySignal('activity_end'), [sendActivitySignal]);
+
+  const voiceTurnListenersRef = useRef(new Set<VoiceTurnListener>());
+  const subscribeSharedVoiceTurns = useCallback((listener: VoiceTurnListener) => {
+    voiceTurnListenersRef.current.add(listener);
+    return () => voiceTurnListenersRef.current.delete(listener);
+  }, []);
+  const lessonVoiceTurns = useLiveVoiceTurnsWithTransport({
+    enabled: isConnected && sessionMode === 'lesson' && isListening,
+    config: resolveLessonVoiceTurnConfig(activePrimitiveType),
+    onTurnOpen: (event) => {
+      voiceTurnListenersRef.current.forEach((listener) => listener.onTurnOpen?.(event));
+    },
+    onTurnClose: (event) => {
+      voiceTurnListenersRef.current.forEach((listener) => listener.onTurnClose?.(event));
+    },
+  }, {
+    micLevel,
+    micFramePeriodMs,
+    isTutorAudible: isAudioPlaying,
+    sendActivityStart,
+    sendActivityEnd,
+  });
 
   // Signature of the last context update actually forwarded to Gemini. Used to
   // drop referentially-churned-but-value-identical updates (see updateContext).
@@ -637,16 +685,15 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           const componentDef = getComponentById(info.firstPrimitive.primitive_type);
 
-          // Gemini's audio-input config (e.g. manual voice-activity for DI
-          // live-judged packs) is fixed at session creation and cannot change
-          // on a primitive switch — so if ANY manifest item's catalog entry
-          // declares one, the whole lesson session opens with it.
-          const lessonAudioInput =
-            info.firstPrimitive.audio_input
+          // Gemini's audio-input mode is fixed at session creation. Every
+          // lesson now uses manual activity because the provider owns the one
+          // shared turn authority; catalog fields may still contribute tuning.
+          const declaredAudioInput = info.firstPrimitive.audio_input
             ?? manifestItems
               .map((item) => getComponentById(item.componentId)?.audioInput)
               .find(Boolean)
-            ?? null;
+            ?? {};
+          const lessonAudioInput = resolveLessonAudioInput(declaredAudioInput);
 
           // Consume any pending resume handle (set by reconnect) so this attempt
           // resumes warm; clear it so a later fresh connect starts cold.
@@ -950,15 +997,15 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const sendActivitySignal = useCallback((kind: 'activity_start' | 'activity_end') => {
-    const socket = socketRef.current;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: kind }));
-    }
-  }, []);
-
-  const sendActivityStart = useCallback(() => sendActivitySignal('activity_start'), [sendActivitySignal]);
-  const sendActivityEnd = useCallback(() => sendActivitySignal('activity_end'), [sendActivitySignal]);
+  // Open one persistent mic when the shared lesson socket becomes ready. This
+  // does not key on isListening, so an explicit pause remains paused.
+  useEffect(() => {
+    if (!isConnected || sessionMode !== 'lesson') return;
+    ensureAudioService();
+    void audioServiceRef.current?.startCapture().catch((error) => {
+      console.error('Unable to open the lesson microphone:', error);
+    });
+  }, [ensureAudioService, isConnected, sessionMode]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1004,6 +1051,10 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     micFramePeriodMs,
     sendActivityStart,
     sendActivityEnd,
+    sharedVoiceTurns: {
+      ...lessonVoiceTurns,
+      subscribe: subscribeSharedVoiceTurns,
+    },
   };
 
   return (
