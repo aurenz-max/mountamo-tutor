@@ -132,7 +132,7 @@ export const MEDIA_CATALOG: ComponentDefinition[] = [
   {
     id: 'flashcard-deck',
     description: 'Interactive flashcard deck for rapid-fire memorization and active recall practice. Students flip cards to reveal answers, mark whether they know each concept, and track their progress. Perfect for vocabulary, key terms, formulas, definitions, facts, language learning, or any content requiring rote memorization. Features 3D flip animations, keyboard shortcuts, audio feedback, shuffle mode, and performance statistics.',
-    constraints: 'Best for content with discrete facts or term-definition pairs. Typically generates 12-20 cards per deck. Ideal for review, test prep, or building fluency. Works for all grade levels - vocabulary and definitions adapt to audience. Use when students need active recall practice rather than passive reading.',
+    constraints: 'Best for content with discrete facts or term-definition pairs. Generates about 12-20 cards for open study, fewer for young learners; when a lesson asks for a specific number of cards, or for a review of material it already taught, the deck honors that exactly and introduces no new vocabulary. Ideal for review, test prep, or building fluency. Works for all grade levels - vocabulary and definitions adapt to audience. Use when students need active recall practice rather than passive reading.',
     tutoring: {
       taskDescription:
         'Guide the student through a flashcard deck about "{{title}}". Each card shows a term on the '

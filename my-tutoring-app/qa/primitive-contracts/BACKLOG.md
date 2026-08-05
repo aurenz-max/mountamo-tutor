@@ -27,6 +27,23 @@ non-K consumers.
 
 ## Done
 
+- **flashcard-deck — derived and checked 2026-08-05** → `docs/contracts/flashcard-deck.md`.
+  Pulled out of queue order as the contract-first step of reader-fit **14l**. **9 requirements**
+  (all OBSERVED; R5 review scope, R6 requested count, and R9 unbounded schema array were all
+  VIOLATED at derivation, R7 canonical grade partial), **2 conflicts both closed in the same run**
+  (C1 generic 15-default vs requested count → constraint-presence fork, 14j's shape; C2 K 6-card
+  cap vs a requested count at K → **ruled: the band load cap wins at PRE**, narrowly, with R8
+  still forbidding any new cap elsewhere). Decisive census facts: the authored map holds **ZERO**
+  flashcard-deck rows across all 365 mappings in all four subjects — every consumer is
+  manifest-emergent and predominantly the **finalAssessment slot** — and the padding defect had
+  **two** independent census instances (G1 invention-listening 08-01, K community-helpers 07-14),
+  which is why it earned a fork rather than a one-off. Anchor correction recorded: the generator is
+  `service/flashcard-deck/gemini-flashcard.ts`, not the `gemini-flashcard-deck.ts` the queue and
+  both censuses name. `--check` on the finished edit: **COMPATIBLE**
+  (`flashcard-deck-check-2026-08-05.md`) — every other-consumer probe re-run live, jsdom 5/5,
+  tutor probe 0 findings, generic control unchanged. Catalog `constraints` projection **APPLIED**
+  (the "typically 12-20 cards" padding invitation). Channel [4] again unavailable (403 — fourth
+  consecutive run). Report: `qa/reader-fit/flashcard-deck-14l-2026-08-05.md`.
 - **annotated-example — derived and checked 2026-08-04** →
   `docs/contracts/annotated-example.md`. Pulled out of queue order as the
   contract-first step of reader-fit **14j**. Seven requirements define the

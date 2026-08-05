@@ -28,7 +28,10 @@ hundreds-chart/14i + the six K-2 resolvers + coin-counter/14c + 12 chemistry inc
 matter-explorer, a census under-count found in-flight; 43 new tests, 21 real-Gemini probes,
 typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400; report
 `qa/reader-fit/14m-sweep-2026-08-04.md`) →
-~~14h~~ **14h CLOSED 2026-08-04** → ~~14j~~ → ~~14k~~ **14k CLOSED 2026-08-04** → 14l.
+~~14h~~ **14h CLOSED 2026-08-04** → ~~14j~~ → ~~14k~~ **14k CLOSED 2026-08-04** →
+~~14l~~ **14l CLOSED 2026-08-05**. **The EMERGING census findings are now fully drained
+except the DI-owned `di-math-facts counting_next` half of 14g** — re-check the §14 pull order
+before assuming what is next.
 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
 14d is archived with the rest of the coin-counter tail.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
@@ -147,10 +150,22 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   tutor live standalone 3/3 and lesson 3/3 passed without answer leakage. Focused 29/29;
   full Vitest 1,569/1,569; touched-surface TypeScript 0 errors. Report:
   `qa/reader-fit/number-line-14k-2026-08-04.md`. **Next = 14l.**
-- **14l. flashcard-deck final-assessment expansion — 1/42.** A 10-card review of the narrated
-  light-bulb lesson announces 15 cards and expands into Internet, medicine, patent, prototype, and
-  other untaught material. This repeats the K census's card-padding failure. Honor requested count
-  and enumerated taught concepts in `gemini-flashcard-deck.ts`.
+- ~~**14l. flashcard-deck final-assessment expansion — 1/42.**~~ **CLOSED 2026-08-05.** A
+  structured temperature-0 request resolver (`service/flashcard-deck/resolveDeckRequest.ts`) reads
+  the requested count, the review framing, and the taught concepts out of **intent prose** — where
+  they always lived, since no manifest producer stamps `config.cardCount` anywhere in the repo. A
+  constraint-presence fork (14j's shape) binds count and scope ONLY when a request is present, so
+  generic open-study decks keep the legacy 15-card identity byte-for-byte; under a review scope the
+  prompt's two expansion-inviting rules invert and a TAUGHT CONCEPTS block forbids new vocabulary.
+  The `cards` schema array is now bounded to the resolved count and sliced in code. Grade-1 replay
+  emits **exactly 10** cards with zero untaught vocabulary (no patent/prototype/Internet/medicine);
+  the **K community-helpers census instance closed as a rider** (stays on the four taught helpers);
+  generic G5 control unchanged at 15; K PRE control holds the 6-card cap with 6/6 distinct emojis.
+  Contract C1 + C2 resolved, `--check` COMPATIBLE. Catalog `constraints` padding invitation removed.
+  Focused 20/20 (revert-bite 10/20 fail pre-fix); full Vitest 1,589/1,589; `typecheck:lumina` 0;
+  tsc 803 baseline. **Anchor correction: the generator is `gemini-flashcard.ts`, not
+  `gemini-flashcard-deck.ts`** (the queue text and both censuses named a file that does not exist).
+  Report: `qa/reader-fit/flashcard-deck-14l-2026-08-05.md`.
 - **14m. SYSTEMIC — generator-local grade resolvers never got 14e's memo.** *(Opened `/pm`
   2026-08-03. This is the OWNING entry for the class; **14c and 14i are instances of it** and should
   be worked through this item, not separately.)*

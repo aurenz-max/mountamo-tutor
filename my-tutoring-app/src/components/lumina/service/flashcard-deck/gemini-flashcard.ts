@@ -1,7 +1,9 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { FlashcardDeckData, FlashcardItem } from '../../types';
 import { ai } from "../geminiClient";
+import { buildGradeLine } from "../scopeContext";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveDeckRequest, type DeckRequest } from "./resolveDeckRequest";
 
 type FlashcardDeckConfig = {
   cardCount?: number;
@@ -10,14 +12,23 @@ type FlashcardDeckConfig = {
 };
 
 /**
- * Schema definition for Flashcard Deck
+ * Schema definition for Flashcard Deck.
+ *
+ * Built per-call so the `cards` array is BOUNDED to the resolved deck size (house rule:
+ * bound ALL schema arrays — [[flash-lite-truncation-template]]; contract R9). The bound is
+ * the enforcement surface for a requested card count: prose alone let a 10-card review
+ * come back as 15.
+ *
+ * NOTE: this SDK types `minItems`/`maxItems` as STRINGS (knowledge-check precedent).
  */
-const flashcardDeckSchema: Schema = {
+const buildFlashcardDeckSchema = (cardCount: number): Schema => ({
   type: Type.OBJECT,
   properties: {
     cards: {
       type: Type.ARRAY,
-      description: "Array of flashcard items",
+      description: `Array of exactly ${cardCount} flashcard items`,
+      minItems: String(cardCount),
+      maxItems: String(cardCount),
       items: {
         type: Type.OBJECT,
         properties: {
@@ -46,7 +57,7 @@ const flashcardDeckSchema: Schema = {
     }
   },
   required: ["cards"]
-};
+});
 
 /**
  * Resolve the pre-reader grade KEY from context. Prefers the canonical numeric
@@ -62,10 +73,50 @@ function resolvePreReaderGradeKey(ctx: GenerationContext): string | undefined {
 }
 
 /**
+ * Build the numbered generation rules. Under a REVIEW scope (the lesson asked to review
+ * material it already taught, and we could enumerate that material) rules 1 and 5 invert:
+ * "cover key terms" and "progress to more advanced concepts" are exactly what turned a
+ * 10-card light-bulb review into a 15-card introduction to `patent` and `prototype`
+ * (contract R5). Absent a review scope this is byte-identical to the legacy prompt —
+ * the constraint-presence fork (contract C1).
+ */
+function buildDeckRules(gradeContext: string, reviewScope: boolean): string {
+  return `Create flashcards that:
+1. ${reviewScope
+    ? 'Cover ONLY the taught concepts listed below — nothing else'
+    : 'Cover key terms, concepts, and important facts'}
+2. Keep definitions concise (under 25 words) for rapid memorization
+3. Use clear, age-appropriate language for ${gradeContext}
+4. Group cards by logical sub-categories
+5. ${reviewScope
+    ? 'Stay at the level the lesson taught — do NOT progress to more advanced concepts'
+    : 'Progress from basic to more advanced concepts'}`;
+}
+
+/**
+ * The taught-concepts block. Only rendered under a review scope. `cardCount` is compared
+ * to the concept count in CODE so the model gets a concrete instruction rather than a
+ * judgement call ([[llm-window-code-builds-structure]]): more cards than concepts means
+ * revisit from another angle, never pad with new vocabulary.
+ */
+function buildReviewScopeBlock(taughtConcepts: string[], cardCount: number): string {
+  const n = taughtConcepts.length;
+  return `
+
+TAUGHT CONCEPTS — the ONLY material this deck may cover (${n}):
+${taughtConcepts.map(c => `- ${c}`).join('\n')}
+
+REVIEW RULES — this deck REVIEWS a lesson the student already had. It is NOT an introduction:
+- Every card's term MUST be one of the taught concepts above, or a plain-language restatement of one.
+- NEVER introduce a term, name, example, or vocabulary word that is not in the list above — no matter how closely related to the topic it seems.
+- ${cardCount > n
+    ? `You must produce ${cardCount} cards from ${n} taught concepts: revisit concepts from different angles (what it is, what it does, why it mattered, what it changed) instead of adding new material.`
+    : `Choose the ${cardCount} most important of the taught concepts above.`}`;
+}
+
+/**
  * Generate a flashcard deck using Gemini AI
- * @param topic The main topic for the flashcard deck
- * @param gradeContext The grade level context for appropriate difficulty
- * @param config Optional configuration for deck generation
+ * @param ctx The generation context (topic, grade, scope/intent, raw config)
  * @returns FlashcardDeckData with generated cards
  */
 export async function generateFlashcardDeck(
@@ -79,11 +130,26 @@ export async function generateFlashcardDeck(
   // Pre-readers get a SHORT deck (a 15-card rote drill is far past the K attention
   // span + violates the band's "one thing at a time" load rule).
   const defaultCount = isPreReader ? 6 : 15;
+
+  // The lesson's request lives in INTENT PROSE — `config.cardCount` is never stamped by
+  // any manifest producer (contract R6). One temperature-0 structured call reads it;
+  // absence is reported honestly so the legacy open-study path stays untouched.
+  const resolved: DeckRequest | null = await resolveDeckRequest(ctx.scope, gradeContext);
+  const configCount = rawConfig.cardCount && rawConfig.cardCount > 0 ? rawConfig.cardCount : null;
+  const requestedCount = configCount ?? resolved?.requestedCount ?? null;
+  const taughtConcepts = resolved?.taughtConcepts ?? [];
+  // A review scope only binds when we could actually enumerate what was taught —
+  // "review ONLY the following: (nothing)" would be worse than the legacy prompt.
+  const reviewScope = Boolean(resolved?.isReview) && taughtConcepts.length > 0;
+
   const config: FlashcardDeckConfig = {
-    cardCount: rawConfig.cardCount || defaultCount,
+    cardCount: requestedCount ?? defaultCount,
     focusArea: ctx.intent || rawConfig.focusArea,
     includeExamples: rawConfig.includeExamples,
   };
+  // At K the 6-card cap WINS over a requested count: it is a developmental load rule,
+  // not a convenience ceiling (contract C2). At every other grade the lesson's request
+  // is law — no hardcoded ceiling may sit below it ([[trust-intent-over-hardcoded-caps]]).
   const cardCount = isPreReader
     ? Math.min(config?.cardCount || defaultCount, 6)
     : (config?.cardCount || defaultCount);
@@ -98,25 +164,28 @@ PRE-READER MODE (kindergarten — the child CANNOT read; the card FACE is a big 
 - category: a single simple word.
 - Avoid abstract terms, formulas, dates, and technical vocabulary entirely.` : '';
 
+  // Canonical grade first, prose fallback kept (the 14m pattern — contract R7). Without
+  // this, grade 1 and grade 5 received identical vocabulary guidance from band prose.
+  const gradeLine = buildGradeLine(ctx.grade);
+  const reviewBlock = reviewScope ? buildReviewScopeBlock(taughtConcepts, cardCount) : '';
+
   const generationPrompt = `Generate a set of ${cardCount} high-quality flashcards for studying: "${topic}"${focusArea ? ` (focus on: ${focusArea})` : ''}.
 
 Target audience: ${gradeContext}
-
-Create flashcards that:
-1. Cover key terms, concepts, and important facts
-2. Keep definitions concise (under 25 words) for rapid memorization
-3. Use clear, age-appropriate language for ${gradeContext}
-4. Group cards by logical sub-categories
-5. Progress from basic to more advanced concepts
+${gradeLine ? `${gradeLine}\n` : ''}
+${buildDeckRules(gradeContext, reviewScope)}
 
 Ensure each card has:
 - term: The concept, word, or question (front of card)
 - definition: The concise answer or explanation (back of card)
 - category: A short sub-category label (e.g., "Vocabulary", "Key Concept", "Formula")
-${preReaderRules}`;
+${reviewBlock}${preReaderRules}`;
 
   try {
-    console.log('📞 Generator params:', { topic, gradeLevel: gradeContext, cardCount, focusArea });
+    console.log('📞 Generator params:', {
+      topic, gradeLevel: gradeContext, cardCount, focusArea,
+      requestedCount, reviewScope, taughtConcepts: taughtConcepts.length,
+    });
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -126,7 +195,7 @@ ${preReaderRules}`;
           thinkingLevel: ThinkingLevel.HIGH,
         },
         responseMimeType: "application/json",
-        responseSchema: flashcardDeckSchema,
+        responseSchema: buildFlashcardDeckSchema(cardCount),
         systemInstruction: `You are an expert educational content creator. Generate high-quality flashcards that promote effective memorization and learning for ${gradeContext} students.`,
       }
     });
@@ -137,21 +206,28 @@ ${preReaderRules}`;
     }
 
     const result = JSON.parse(text);
-    const cards: FlashcardItem[] = (result.cards || []).map((card: any, index: number) => ({
+    // Code owns the final structure: the deck is exactly what was asked for, never more.
+    const rawCards: unknown[] = Array.isArray(result.cards) ? result.cards.slice(0, cardCount) : [];
+    const cards: FlashcardItem[] = rawCards.map((raw: any, index: number) => ({
       id: `${Date.now()}-${index}`,
-      term: card.term || '',
-      definition: card.definition || '',
-      category: card.category || 'General',
+      term: raw.term || '',
+      definition: raw.definition || '',
+      category: raw.category || 'General',
       // Pre-reader card face: keep the emoji, ⭐ fallback so no card is faceless.
       ...(isPreReader
-        ? { cardEmoji: (typeof card.cardEmoji === 'string' && card.cardEmoji.trim()) ? card.cardEmoji.trim() : '⭐' }
-        : (card.cardEmoji ? { cardEmoji: card.cardEmoji } : {})),
+        ? { cardEmoji: (typeof raw.cardEmoji === 'string' && raw.cardEmoji.trim()) ? raw.cardEmoji.trim() : '⭐' }
+        : (raw.cardEmoji ? { cardEmoji: raw.cardEmoji } : {})),
     }));
+
+    if (cards.length < cardCount) {
+      console.warn(`⚠️ Flashcard deck short: asked for ${cardCount}, model returned ${cards.length}`);
+    }
 
     console.log('🃏 Flashcard Deck Generated:', {
       topic,
       gradeLevel: gradeKey,
       isPreReader,
+      reviewScope,
       cardCount: cards.length,
       categories: Array.from(new Set(cards.map(c => c.category)))
     });

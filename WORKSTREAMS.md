@@ -21,7 +21,7 @@ queue AND this file's "last touched" in the same slice.
 
 | Lane | State | Pull now | Ground truth |
 |---|---|---|---|
-| Reader-fit K → EMERGING | ACTIVE — top priority | **Re-check `qa/reader-fit/BACKLOG.md` §14 pull order before assuming the next item.** With 14l closed the EMERGING census findings are fully drained *except* the DI-owned `di-math-facts counting_next` half of 14g, which belongs to the DI lane — so the next pull here is a queue decision, not a carried-over pointer | **14l CLOSED 2026-08-05** (uncommitted): flashcard-deck honors a requested review count and refuses untaught vocabulary; the K community-helpers census instance closed as a rider. Contract derived + C1/C2 resolved, `--check` COMPATIBLE. Focused 20/20 w/ revert-bite; full Vitest **1,589/1,589**; typecheck:lumina 0; tsc 803 baseline. Prior: 14j `f4147ef` + 14k `1fbf4a1` SHIPPED 08-05. |
+| Reader-fit K → EMERGING | ACTIVE — top priority | **Re-check `qa/reader-fit/BACKLOG.md` §14 pull order before assuming the next item.** With 14l closed the EMERGING census findings are fully drained *except* the DI-owned `di-math-facts counting_next` half of 14g, which belongs to the DI lane — so the next pull here is a queue decision, not a carried-over pointer | **14l CLOSED + SHIPPED 2026-08-05**: flashcard-deck honors a requested review count and refuses untaught vocabulary; the K community-helpers census instance closed as a rider. Contract derived + C1/C2 resolved, `--check` COMPATIBLE. Focused 20/20 w/ revert-bite; full Vitest **1,589/1,589**; typecheck:lumina 0; tsc 803 baseline. Prior: 14j `f4147ef` + 14k `1fbf4a1` SHIPPED 08-05. |
 | Direct Instruction family | ACTIVE | **14g `di-math-facts counting_next` 1–120 fix** (in-scope pack development), then author the lane's next DEVELOPMENT item with the user (new pack in a benched response class / spoken expansion) | Item 2 closed (Probe G 11/11, full Vitest 1,569/1,569). **Item 6 DEPRIORITIZED by user ruling 08-05** — imperfect free-form calibration accepted; NO hardcoded grade guardrails in retrieval (pure-IRT family ruling); standalone-only exposure. Item 9 Tier 2 stays demoted-but-queued. Focus per user 08-05: active development — primitives, DI packs, audio/spoken modalities are the foundation. |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | **Batch-3 verification/report closure** via `/eval-test` — **SERIAL, one primitive at a time (user ruling 08-05)**; no Workflow fan-out; append the report + strike per item so an interrupted session lands its progress | Commit `effc7a6` wired batch 3, taking the code surface to 31/36. Required per-item real-Gemini evidence and the batch report are still missing; HUMAN-CHECKS #60/#62 are non-blocking. |
 | Delegated lane | NONE | — | No residual delegated report needs folding. |
@@ -32,9 +32,9 @@ surface SHIPPED 2026-08-05: reader-fit 14j `f4147ef`, 14k `1fbf4a1`, DI item 2
 user-approved in browser 08-05 ("home refresh is good") and CLOSED as a lane**
 (compact header grade selector, constellation idle hero, simplified ribbon;
 typecheck:lumina 0, full Vitest 1,569/1,569; no owning queue was ever needed —
-it closed as a one-off approved surface). **Reader-fit 14l closed 2026-08-05 and is
-UNCOMMITTED in the tree** (generator + new resolver + 20 focused tests + contract +
-catalog constraints prose + registers). Pulls: reader-fit **re-read §14 pull order**
+it closed as a one-off approved surface). **Reader-fit 14l closed and SHIPPED
+2026-08-05** (generator + new resolver + 20 focused tests + contract + catalog
+constraints prose + registers). Pulls: reader-fit **re-read §14 pull order**
 (the EMERGING census is drained but for 14g's DI half — the lane's next item is a
 queue decision under the 08-05 development-first ruling); DI **14g `counting_next`
 fix, then author the next development item** (item 6 DEPRIORITIZED + item 9 Tier 2
