@@ -2,7 +2,7 @@
 
 - **Derived:** 2026-08-03 · evidence window: G1 census 2026-08-01 + eval-reports 2026-03-17→2026-06-27 + authored map (live backend) + git to 2026-03
 - **Component:** `primitives/visual-primitives/math/NumberLine.tsx` · **Generator:** `service/math/gemini-number-line.ts` · **Catalog:** `service/manifest/catalog/math.ts:104`
-- **Status:** CONFLICTED (C1 OPEN — magnitude-ceiling zone; edits there must fork, owned by reader-fit 14k)
+- **Status:** COMPATIBLE (C1 RESOLVED 2026-08-04 by the scoped Grade-1 magnitude + exact-between fork)
 
 Derived as the contract-first step of reader-fit **14m** (systemic grade-resolver pilot).
 Channel [4] (calibration) unavailable this run (`/api/calibration/items` → Not authenticated —
@@ -56,12 +56,11 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `gemini-number-line.ts:1134`; `qa/eval-reports/number-line-2026-06-20.md:10-15`.
 - **Probe:** eval-test `evalMode=order&grade=1` → sets of 3 distinct in-range values.
 
-### R6 — `between` accept shape (as-built) · OBSERVED
-- **Property (what holds today):** one placed point; correct ⇔ strictly between the two endpoint `targetValues` (`NumberLine.tsx:619-627`); pairs drawn from the pool with index-gap ≥ 2 (fallback adjacent); at hard tier `boundGap:'narrow'` guarantees **a representable value strictly between exists** (no unanswerable pair).
-- **Demanded by:** between consumers as shipped; the hard-tier floor by the structural sweep.
-- **Evidence:** `qa/eval-reports/number-line-2026-06-20.md:21`; oracle `service/qa/oracles/number-line.ts:38` (both bounds must be in range).
-- **Zone note:** 14k demands a *stronger* binding here (exact missing adjacent number, range to 120) — that is queued work owned by `qa/reader-fit/BACKLOG.md` 14k, not part of this contract; any edit satisfying 14k must re-verify this R and C1.
-- **Probe:** eval-test `evalMode=between&grade=1` → every challenge has 2 in-range endpoints with ≥1 representable interior value.
+### R6 — `between` accept shape (forked) · OBSERVED
+- **Property:** one placed point. When `exactTargetValue` is absent, the legacy contract is unchanged: correct iff the point is strictly between the two endpoint `targetValues`. When a Grade-1 missing-number intent requests an exact value, the generator emits additive `exactTargetValue` metadata and adjacent bounds `[n-1,n+1]`; only `n` is correct. Structural `boundGap` reshapes legacy pairs only, so support tiers cannot destroy exact-task adjacency.
+- **Demanded by:** legacy between consumers; NBT001-01-a missing-number-within-120; the hard-tier floor by the structural sweep.
+- **Evidence:** `qa/eval-reports/number-line-2026-06-20.md:21`; `gemini-number-line.reader-fit-14k.test.ts`; `NumberLine.reader-fit-14k.test.tsx`; oracle `number-line.reader-fit-14k.test.ts`; browser artifact `qa/reader-fit/number-line-14k-reader-fit.png`.
+- **Probe:** exact missing-number intent → four adjacent-bound challenges with exact targets in the requested focus window; ordinary `between` → no `exactTargetValue` and any representable interior point remains valid.
 
 ### R7 — Support-tier + structural-difficulty invariants · OBSERVED
 - **Property:** absent/unknown `config.difficulty` → exact no-op (grade-band defaults stand). With a tier: scaffolds withdraw easy→hard (anchors count, `tickInterval` coarseness, `showJumpArc`); structural levers move (`labelPlacement` on→mid, `jumpSteps` 1→2 chained with landing-of-op1 = start-of-op2, `orderGap`, `boundGap`); **magnitude stays in band at every tier** (hard ≠ bigger numbers); anchors/highlights never equal a target (leak guard `buildAnchorsForChallenge`).
@@ -70,7 +69,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** eval-test same mode ×3 (`difficulty=easy|hard|none`) → compare anchors/tickInterval/levers; assert max target ≈ equal across tiers; no-tier run byte-shape-compatible.
 
 ### R8 — Display-window span cap (NL-1/SP-2) · OBSERVED
-- **Property:** for integer lines the target pool is drawn from a sub-window of span ≤ 25 (`createSubRangePool maxSpan:25`) regardless of manifest range, so tick labels stay legible; the component auto-zooms to the content window (`NumberLine.tsx:525-556`).
+- **Property:** for integer lines the target pool is drawn from a sub-window of span ≤ 25 (`createSubRangePool maxSpan:25`) regardless of the full authored domain, so tick labels stay legible; the component auto-zooms to that content window. Exact missing-number intents preferentially place this local window over their structured focus range while retaining the honest full domain (for example, 0-120).
 - **Demanded by:** every large-range topic (0-1000 class).
 - **Evidence:** `qa/EVAL_TRACKER.md:556,743` (NL-1); `qa/eval-reports/number-line-2026-04-03.md:14-17`.
 - **Probe:** eval-test `evalMode=plot&topic=numbers to 1000&grade=4` → max(target)−min(target) ≤ 25.
@@ -99,31 +98,27 @@ Real-usage channel [4]: unknown (auth), not zero.
 
 ## Conflicts
 
-### C1 — G1 magnitude demand (≤120) vs K-2 legibility clamp (≤30) — **OPEN**, zone owned by reader-fit 14k
-`NBT001-01-a/-b` (authored, census-routed) demand values through **120**; `NBT001-05-d/-07-b`
-demand two-digit sums/differences to ~90. But the K-2 band — correct for every Grade-1
-consumer — carries a hard `range.max ≤ 30` clamp (`gemini-number-line.ts:1449-1453`), the
-catalog itself promises "K-2 mode (0-20)", and the clamp's lineage is real legibility
-demand (NL-1 tick density; K load rule — a 0-20 line was already a rule-4 violation at K,
-`qa/reader-fit/comparison-builder-PRE-2b-tail-2026-07-20.md:50-54`). Both sides are right
-for their consumers. Resolution direction per [[trust-intent-over-hardcoded-caps]]: raising
-the ceiling requires extending the visual (windowed display over a large range — R8's
-window + auto-zoom is the existing machinery), not deleting the clamp. **Do not edit the
-clamp, the sub-range window placement, or `between` semantics without taking the fork
-ladder; the owning queue item is 14k.** Mechanism notes for that slice: (a) the pool
-window is placed uniformly over the resolved range (`numberPoolService.ts:190-192`) — an
-intent's 90-110 focus is ignored (the "ceiling without a window floor" lesson,
-`qa/topic-fidelity/ordinal-line-2026-07-03.md:72-75`); (b) the K-2 clamp caps the drawn
-line at 30 while pool targets may exceed it; (c) `resolveTopicNumberRange`'s prompt reads
-prose, not canonical grade.
+### C1 — G1 magnitude demand (≤120) vs K-2 legibility clamp (≤30) — **RESOLVED 2026-08-04**
+The implementation takes the contract fork instead of deleting the protective K-2 clamp.
+Ordinary K and K-2 consumers retain their existing ceiling. Only a canonical Grade-1
+request with an explicit resolved domain above 30 and at most 120 may widen the full
+domain, and it remains capped at 120. The structured resolver now separates full domain,
+focus window, and exact-missing-number intent; the pool is preferentially drawn from the
+focus while R8 keeps the rendered line local and legible. `exactTargetValue` is an
+additive challenge property, so legacy `between` acceptance remains intact. Catalog and
+tutor scaffolds now describe the visible-window strategy instead of redirecting Grade-1
+learners to 0-20. This satisfies NBT001-01-a without changing unrelated K, legacy-between,
+or 3-5 behavior.
 
 ## Catalog projection
 
-- **description:** claims "K-2 mode (0-20, counting) and 3-5 mode (negatives, fractions, operations)" — the 3-5 half was unreachable in production until the R2 fix (every prose sentence resolved K-2); post-fix it is honest again. "0-20" understates the K-2 clamp reality (30). **No edit applied this run** (projection would re-route lessons; revisit after 14k settles the magnitude story).
+- **description:** now distinguishes small fully labeled Kindergarten lines from readable local Grade-1 windows within an explicit 0-120 domain; the 3-5 negatives/fractions/operations claim remains intact.
 - **constraints:** faithful ("Requires numeric range. Jump mode requires operations array.") — note the manifest never actually emits `numberRange`; the resolver supplies it (R1).
 - **evalModes:** descriptions match task identities (identify/plot/jump/order/between); no deltas.
+- **tutor projection:** context includes visible bounds and optional exact target; scaffolds count from a visible label and explain the auto-zoomed window without leaking the answer.
 
 ## Changelog
 
 - 2026-08-03 — derived (initial), as contract-first step of reader-fit 14m. 12 requirements (10 OBSERVED, 2 INFERRED), 1 OPEN conflict (C1 → 14k). Channel [4] unavailable (auth).
 - 2026-08-03 — R2 edit (14m pilot): canonical-grade-first band resolution shipped (`numberLineGradeBandFromGrade` + threading, prose fallback kept at all 5 sites). `--check` **COMPATIBLE** — R1/R3-R9 probes hold; 3-5 band reachable at runtime for the first time on the ctx path (grade=4 → 3-5/decimal). C1 remains OPEN (14k replay: band fixed, range/window/accept residuals confirmed live). Report: `qa/primitive-contracts/number-line-check-2026-08-03.md`.
+- 2026-08-04 — reader-fit 14k fork shipped: explicit Grade-1 ranges may reach 120, focus-aware local pooling binds the requested 90-110 window, and exact missing-number `between` challenges use adjacent bounds plus additive `exactTargetValue`. Legacy clamp and any-interior semantics remain covered. C1 RESOLVED; `--check` COMPATIBLE. Report: `qa/primitive-contracts/number-line-check-2026-08-04.md`.

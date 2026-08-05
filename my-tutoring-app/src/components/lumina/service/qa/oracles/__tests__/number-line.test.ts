@@ -94,6 +94,20 @@ describe('number-line oracle', () => {
   it('passes clean find_between', () => {
     expect(numberLineOracle.verify(betweenClean, betweenCtx).violations).toEqual([]);
   });
+  it('passes exact adjacent find_between', () => {
+    const data = {
+      ...betweenClean,
+      gradeBand: 'K-2',
+      numberType: 'integer',
+      challenges: betweenClean.challenges.map((c, index) => ({
+        ...c,
+        targetValues: [90 + index, 92 + index],
+        exactTargetValue: 91 + index,
+      })),
+      range: { min: 0, max: 120 },
+    };
+    expect(numberLineOracle.verify(data, { ...betweenCtx, topic: 'Missing numbers within 120' }).violations).toEqual([]);
+  });
 
   // ── answer-key-desync ──
   it('flags answer-key-desync — a show_jump stored target disagrees with start±change', () => {

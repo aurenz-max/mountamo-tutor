@@ -683,18 +683,48 @@ function buildRangeSchema(): Schema {
   return {
     type: Type.OBJECT,
     properties: {
+      hasExplicitRange: {
+        type: Type.BOOLEAN,
+        description: 'True only when the topic or intent names or clearly implies a numeric bound',
+      },
       min: { type: Type.NUMBER, description: "Smallest number the lesson works with (almost always 0)" },
       max: { type: Type.NUMBER, description: "Largest number the lesson works with, inferred from the topic/intent" },
+      hasFocusWindow: {
+        type: Type.BOOLEAN,
+        description: 'True when the intent requests a local interval inside the full lesson range',
+      },
+      focusMin: { type: Type.NUMBER, description: 'Smallest value in the requested local work window' },
+      focusMax: { type: Type.NUMBER, description: 'Largest value in the requested local work window' },
+      requiresExactMissingNumber: {
+        type: Type.BOOLEAN,
+        description: 'True only for one-hidden-number work in a consecutive by-ones sequence',
+      },
     },
-    required: ["min", "max"],
+    required: [
+      "hasExplicitRange", "min", "max", "hasFocusWindow", "focusMin", "focusMax",
+      "requiresExactMissingNumber",
+    ],
   };
 }
+
+interface ResolvedNumberLineScope {
+  range: { min: number; max: number };
+  focusRange?: { min: number; max: number };
+  hasExplicitRange: boolean;
+  requiresExactMissingNumber: boolean;
+}
+
+const RANGE_SCOPE_INSTRUCTIONS = `
+- Also report whether topic/intent explicitly names or clearly implies the bound; generic number practice is not explicit.
+- Keep the full min/max domain separate from a smaller requested work interval. For example, "values around 90 through 110" means hasFocusWindow=true, focusMin=90, focusMax=110 while the full domain may remain 0..120.
+- requiresExactMissingNumber is true only when the student must identify ONE hidden value in a consecutive by-ones sequence. Generic "find a number between" is false.
+- When there is no focus window, set hasFocusWindow=false and repeat min/max in focusMin/focusMax.`;
 
 async function resolveTopicNumberRange(
   topic: string,
   intent: string | undefined,
   gradeLevel: string,
-): Promise<{ min: number; max: number } | null> {
+): Promise<ResolvedNumberLineScope | null> {
   try {
     const prompt = `A number-line lesson needs its numeric range inferred from what it is teaching.
 
@@ -707,7 +737,7 @@ Return the integer range the student actually works with in THIS lesson.
 - The grade is a CEILING — never return a max larger than that grade would ever use. If the topic gives no bound, pick the conventional top of the grade's range.`;
     const result = await ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
-      contents: prompt,
+      contents: prompt + RANGE_SCOPE_INSTRUCTIONS,
       config: {
         temperature: 0,
         responseMimeType: 'application/json',
@@ -719,7 +749,22 @@ Return the integer range the student actually works with in THIS lesson.
     const min = Math.round(Number(parsed?.min));
     const max = Math.round(Number(parsed?.max));
     if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
-    return { min, max };
+    const rawFocusMin = Math.round(Number(parsed?.focusMin));
+    const rawFocusMax = Math.round(Number(parsed?.focusMax));
+    const focusRange = parsed?.hasFocusWindow === true
+      && Number.isFinite(rawFocusMin)
+      && Number.isFinite(rawFocusMax)
+      && rawFocusMax > rawFocusMin
+      && rawFocusMin >= min
+      && rawFocusMax <= max
+      ? { min: rawFocusMin, max: rawFocusMax }
+      : undefined;
+    return {
+      range: { min, max },
+      focusRange,
+      hasExplicitRange: parsed?.hasExplicitRange === true,
+      requiresExactMissingNumber: parsed?.requiresExactMissingNumber === true,
+    };
   } catch (e) {
     console.warn('[NumberLine] topic range resolution failed:', e);
     return null;
@@ -756,11 +801,20 @@ interface ResolvedRange {
   numberType: 'integer' | 'fraction' | 'decimal' | 'mixed';
 }
 
+interface NumberLineSubConfig {
+  targetEvalMode?: string;
+  numberRange?: { min: number; max: number };
+  focusRange?: { min: number; max: number };
+  exactMissingNumber?: boolean;
+  difficulty?: string;
+  canonicalGradeBand?: 'K-2' | '3-5';
+}
+
 function resolvedPoolNumbers(
-  config: { numberRange?: { min: number; max: number } } | undefined,
+  config: Pick<NumberLineSubConfig, 'numberRange' | 'focusRange'> | undefined,
   fallback: { min: number; max: number },
 ): number[] {
-  const pool = createSubRangePool(config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
+  const pool = createSubRangePool(config?.focusRange ?? config?.numberRange, { sorted: true, unique: true, maxSpan: 25 });
   if (pool?.numbers && pool.numbers.length > 0) return [...pool.numbers];
   return uniqueIntegerPool(fallback.min, fallback.max);
 }
@@ -919,7 +973,7 @@ export function numberLineGradeBandFromGrade(grade?: string): 'K-2' | '3-5' | nu
 async function generatePlotPointChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { targetEvalMode?: string; numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
+  config?: NumberLineSubConfig,
 ): Promise<SubResult> {
   const isIdentify = config?.targetEvalMode === 'identify';
   const gradeBand: 'K-2' | '3-5' = isIdentify ? 'K-2' : (config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel));
@@ -1022,7 +1076,7 @@ Return ONLY:
 async function generateShowJumpChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
+  config?: NumberLineSubConfig,
 ): Promise<SubResult> {
   const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
@@ -1147,7 +1201,7 @@ Return ONLY:
 async function generateOrderValuesChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
+  config?: NumberLineSubConfig,
 ): Promise<SubResult> {
   const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
@@ -1219,12 +1273,20 @@ Return ONLY:
 async function generateFindBetweenChallenges(
   topic: string,
   gradeLevel: string,
-  config?: { numberRange?: { min: number; max: number }; difficulty?: string; canonicalGradeBand?: 'K-2' | '3-5' },
+  config?: NumberLineSubConfig,
 ): Promise<SubResult> {
   const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
   const range = config?.numberRange ?? { min: 0, max: 10 };
   const poolNumbers = resolvedPoolNumbers(config, range);
-  let pairs = selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
+  const exactRange = config?.focusRange ?? range;
+  const exactCandidates = config?.exactMissingNumber
+    ? uniqueIntegerPool(Math.ceil(exactRange.min) + 1, Math.floor(exactRange.max) - 1)
+    : [];
+  const exactTargets = shuffleInPlace(exactCandidates).slice(0, resolveCount('find_between'));
+  const useExactMissing = exactTargets.length === resolveCount('find_between');
+  let pairs: Array<[number, number]> = useExactMissing
+    ? exactTargets.map((target) => [target - 1, target + 1])
+    : selectFindBetweenPairs(poolNumbers, resolveCount('find_between'));
   if (pairs.length === 0) return emptySubResult('compare');
 
   const tier = normalizeSupportTier(config?.difficulty);
@@ -1233,7 +1295,7 @@ async function generateFindBetweenChallenges(
   // The FLOOR (at least one snap-representable value strictly between the bounds)
   // is asserted inside reshapeBetweenPair — a 'narrow' pair is only accepted if it
   // remains answerable, else the band saturates at the smallest valid gap.
-  if (tier) {
+  if (tier && !useExactMissing) {
     const width = resolveProblemShape('find_between', tier).boundGap;
     if (width && width !== 'moderate') {
       const numberType: ResolvedRange['numberType'] = gradeBand === 'K-2' ? 'integer' : 'decimal';
@@ -1255,26 +1317,31 @@ GRADE BAND: ${gradeBand}.
 
 This is challenge ${index + 1} of ${pairs.length} in a session on a number line ranging from ${range.min} to ${range.max}.
 
-For THIS challenge the student must find a value strictly between ${b0} and ${b1}.
+For THIS challenge the student must ${useExactMissing
+    ? `place the ONE missing consecutive integer between neighboring values ${b0} and ${b1}`
+    : `find a value strictly between ${b0} and ${b1}`}.
 
 Return ONLY:
 - title: an engaging session title (shared across all challenges)
 - description: a brief session-level learning goal
-- instruction: a warm, grade-appropriate instruction asking the student to find a number between ${b0} and ${b1}
-- hint: a hint that guides reasoning between the two boundaries WITHOUT naming a specific answer${tierSection}`;
+- instruction: a warm, grade-appropriate instruction asking the student to ${useExactMissing ? 'place the missing number' : 'find a number between the bounds'}
+- hint: a hint that guides reasoning between the two boundaries WITHOUT naming the answer${tierSection}`;
 
   const texts = await Promise.all(pairs.map((p, i) => generateChallengeText(promptFor(p, i))));
 
   const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
   const challenges: NumberLineChallenge[] = pairs.map(([b0, b1], i) => {
     const text = texts[i];
-    const instruction = text?.instruction ?? `Find a number between ${b0} and ${b1}.`;
+    const instruction = text?.instruction ?? (useExactMissing
+      ? `Which number is missing between ${b0} and ${b1}?`
+      : `Find a number between ${b0} and ${b1}.`);
     const hint = text?.hint ?? 'Look at the tick marks between the two values.';
     return {
       id: `find_between-${i}`,
       type: 'find_between',
       instruction,
       targetValues: [b0, b1],
+      exactTargetValue: useExactMissing ? exactTargets[i] : undefined,
       hint,
     };
   });
@@ -1391,11 +1458,13 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   // code-side pickers stop falling back to a blanket 0–20. Grade stays the ceiling;
   // a resolution failure leaves it undefined and the grade-band defaults stand.
   let resolvedRange = config?.numberRange;
+  let resolvedScope: ResolvedNumberLineScope | null = null;
   if (!resolvedRange) {
     const inferred = await resolveTopicNumberRange(topic, config?.intent, gradeLevel);
     if (inferred) {
-      resolvedRange = inferred;
-      console.log(`[NumberLine] topic-resolved range:`, inferred, `(topic="${topic}", intent="${config?.intent ?? ''}")`);
+      resolvedScope = inferred;
+      resolvedRange = inferred.range;
+      console.log(`[NumberLine] topic-resolved scope:`, inferred, `(topic="${topic}", intent="${config?.intent ?? ''}")`);
     }
   }
 
@@ -1404,10 +1473,18 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
 
   // Canonical objective grade wins; the prose parser is only the fallback.
   const canonicalBand = numberLineGradeBandFromGrade(ctx.grade);
+  const explicitGradeOneMagnitudeWindow = ctx.grade === '1'
+    && !!resolvedRange
+    && resolvedRange.max > 30
+    && resolvedRange.max <= 120
+    && (config.numberRange != null || resolvedScope?.hasExplicitRange === true);
 
   const subConfig = {
     targetEvalMode: config?.targetEvalMode,
     numberRange: resolvedRange,
+    focusRange: resolvedScope?.focusRange,
+    exactMissingNumber: ctx.grade === '1'
+      && resolvedScope?.requiresExactMissingNumber === true,
     difficulty: config?.difficulty,
     canonicalGradeBand: canonicalBand ?? undefined,
   };
@@ -1473,7 +1550,9 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
   if (data.gradeBand === 'K-2') {
     data.numberType = 'integer';
     data.range.min = Math.max(-1, Math.round(data.range.min));
-    data.range.max = Math.min(30, Math.round(data.range.max));
+    data.range.max = explicitGradeOneMagnitudeWindow
+      ? Math.min(120, Math.round(data.range.max))
+      : Math.min(30, Math.round(data.range.max));
   }
 
   if (!data.challenges || data.challenges.length === 0) {

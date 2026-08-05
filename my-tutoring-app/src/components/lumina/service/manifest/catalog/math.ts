@@ -102,21 +102,21 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-line',
-    description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and zoom. Supports integers, fractions, decimals, and mixed numbers. K-2 mode (0-20, counting) and 3-5 mode (negatives, fractions, operations). Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
+    description: 'Interactive number line with drag-to-plot, animated jump arcs, ordering, and auto-zoom. Supports integers, fractions, decimals, and mixed numbers. K uses small fully labeled ranges; explicit Grade-1 objectives can use readable local windows within 0-120; grades 3-5 add negatives, fractions, and operations. Perfect for teaching number placement, addition/subtraction as movement, fraction comparison, and ordering. ESSENTIAL for K-5 math.',
     constraints: 'Requires numeric range. Jump mode requires operations array. Challenges drive interactivity.',
     tutoring: {
       taskDescription: 'Work with a number line from {{rangeMin}} to {{rangeMax}} using {{numberType}} numbers in {{interactionMode}} mode.',
-      contextKeys: ['rangeMin', 'rangeMax', 'numberType', 'interactionMode', 'gradeBand', 'instruction', 'challengeType', 'targetValues', 'placedPoints', 'attemptNumber', 'currentPhase'],
+      contextKeys: ['rangeMin', 'rangeMax', 'visibleMin', 'visibleMax', 'numberType', 'interactionMode', 'gradeBand', 'instruction', 'challengeType', 'targetValues', 'exactTargetValue', 'placedPoints', 'attemptNumber', 'currentPhase'],
       scaffoldingLevels: {
         level1: '"Look carefully at the number line. Where do you think that value belongs?"',
-        level2: '"Count the tick marks from {{rangeMin}}. Each mark is one step. How many steps to reach your target?"',
-        level3: '"Let me help: start at {{rangeMin}} and count each tick mark. Point to each one as you count: {{rangeMin}}, then the next mark is {{rangeMin}} + 1..."',
+        level2: '"Find the labeled number just to the left of your target. Count the nearby tick marks one step at a time."',
+        level3: '"Use the labels in the visible window. Start at the closest labeled number on screen and count one tick at a time toward the target."',
       },
       commonStruggles: [
         { pattern: 'Placing point far from target value', response: '"Look at the numbers under the tick marks. Find the two numbers your target is between, then place your point between them."' },
         { pattern: 'Confusing addition direction with subtraction', response: '"Remember: adding moves RIGHT on the number line (numbers get bigger), subtracting moves LEFT (numbers get smaller)."' },
         { pattern: 'Ordering fractions incorrectly', response: '"Try zooming in to see the fraction marks. Compare each fraction to 1/2 first — is it more or less than half?"' },
-        { pattern: 'Not using zoom for precision', response: '"Try the zoom buttons to see smaller divisions between the numbers. This helps place fractions and decimals more precisely."' },
+        { pattern: 'Difficulty reading a large range', response: '"Use the labels in the zoomed window on screen. Start from the closest visible label instead of counting from the beginning of the whole range."' },
       ],
       aiDirectives: [
         {
@@ -131,7 +131,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         {
           title: 'GRADE-BAND ADAPTATION',
           instruction:
-            'For K-2: use counting language — "Let\'s count the hops: 1, 2, 3..." Keep to whole numbers 0-20. '
+            'For K-2: use counting language — "Let\'s count the hops: 1, 2, 3..." Keep to whole numbers. Kindergarten stays on small fully labeled ranges; when an explicit Grade-1 objective extends through 120, coach only the readable auto-zoomed window and never redirect the child back to 0-20. '
             + 'For grades 3-5: introduce fraction/decimal language — "Is 3/4 closer to 1/2 or to 1?" '
             + 'Use benchmark fractions (1/4, 1/2, 3/4) as reference points. '
             + 'For negative numbers: "Numbers left of zero are negative — they are less than zero."',

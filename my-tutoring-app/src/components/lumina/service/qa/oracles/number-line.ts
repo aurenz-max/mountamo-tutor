@@ -312,6 +312,7 @@ export const numberLineOracle: ContentOracle = {
         checked++;
         const lo = Math.min(...tv);
         const hi = Math.max(...tv);
+        const exactTarget = c.exactTargetValue;
         // Well-formed: distinct bounds.
         if (hi - lo <= EPS) {
           violations.push({
@@ -337,10 +338,36 @@ export const numberLineOracle: ContentOracle = {
               detail: `find_between bounds [${lo},${hi}] are within one snap step (${precision}) for numberType ${numberType} — no placeable value lies strictly between them`,
             });
           }
+          if (exactTarget != null) {
+            if (!isNum(exactTarget)) {
+              violations.push({
+                check: 'schema',
+                where: id,
+                detail: `find_between exactTargetValue must be numeric; got ${JSON.stringify(exactTarget)}`,
+              });
+            } else {
+              const exact = exactTarget as number;
+              if (!inRange(exact) || exact <= lo + EPS || exact >= hi - EPS) {
+                violations.push({
+                  check: 'answer-key-desync',
+                  where: id,
+                  detail: `exact missing value ${exact} must be on the line and strictly inside bounds [${lo},${hi}]`,
+                });
+              }
+              if (Math.abs(exact - lo - precision) > EPS || Math.abs(hi - exact - precision) > EPS) {
+                violations.push({
+                  check: 'answer-key-desync',
+                  where: id,
+                  detail: `exact missing value ${exact} is not the single adjacent snap value between [${lo},${hi}] at precision ${precision}`,
+                });
+              }
+              scopeCheck([exact], id, 'find_between exact target');
+            }
+          }
         }
         scopeCheck(tv, id, 'find_between bound');
-        derivedByType.find_between.push(`${lo}-${hi}`);
-        bump(cardSeen, `between|${lo}-${hi}`);
+        derivedByType.find_between.push(`${lo}-${exactTarget ?? '*'}-${hi}`);
+        bump(cardSeen, `between|${lo}-${exactTarget ?? '*'}-${hi}`);
       }
     }
 

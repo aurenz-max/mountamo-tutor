@@ -25,6 +25,7 @@ import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isFindBetweenAnswerCorrect } from './numberLineGrading';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -42,6 +43,12 @@ export interface NumberLineChallenge {
   type: 'plot_point' | 'show_jump' | 'order_values' | 'find_between';
   instruction: string;
   targetValues: number[];
+  /**
+   * Optional stronger answer contract for find_between. When present, the two
+   * targetValues are visible neighboring bounds and this is the one missing
+   * value the student must place. Absent preserves legacy any-interior grading.
+   */
+  exactTargetValue?: number;
   hint: string;
   /** Starting position for show_jump challenges */
   startValue?: number;
@@ -398,6 +405,8 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
   const aiPrimitiveData = useMemo(() => ({
     rangeMin,
     rangeMax,
+    visibleMin,
+    visibleMax,
     numberType: activeNumberType,
     interactionMode,
     gradeBand,
@@ -406,13 +415,14 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
     instruction: currentChallenge?.instruction ?? 'Free explore',
     challengeType: currentChallenge?.type ?? interactionMode,
     targetValues: currentChallenge?.targetValues ?? [],
+    exactTargetValue: currentChallenge?.exactTargetValue,
     placedPoints,
     attemptNumber: currentAttempts + 1,
     zoomLevel,
     currentPhase,
     supportTier,
   }), [
-    rangeMin, rangeMax, activeNumberType, interactionMode, gradeBand,
+    rangeMin, rangeMax, visibleMin, visibleMax, activeNumberType, interactionMode, gradeBand,
     challenges.length, currentChallengeIndex, currentChallenge,
     placedPoints, currentAttempts, zoomLevel, currentPhase, supportTier,
   ]);
@@ -618,10 +628,13 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       }
       case 'find_between': {
         if (placedPoints.length > 0 && targets.length >= 2) {
-          const low = Math.min(...targets);
-          const high = Math.max(...targets);
           const point = placedPoints[placedPoints.length - 1];
-          correct = point > low && point < high;
+          correct = isFindBetweenAnswerCorrect(
+            point,
+            targets,
+            currentChallenge.exactTargetValue,
+            activeNumberType,
+          );
           accuracy = correct ? 100 : 0;
         }
         break;
@@ -651,6 +664,7 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
       sendText(
         `[ANSWER_INCORRECT] Challenge: "${currentChallenge.instruction}". `
         + `Student placed: [${placedPoints.join(', ')}]. Target: [${targets.join(', ')}]. `
+        + `${currentChallenge.exactTargetValue != null ? `Exact missing value: ${currentChallenge.exactTargetValue}. ` : ''}`
         + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`
         + tutorRevealClause(supportTier, currentChallenge.type),
         { silent: true }
@@ -684,7 +698,9 @@ const NumberLine: React.FC<NumberLineProps> = ({ data, className }) => {
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
         const score = Math.round((totalCorrect / challenges.length) * 100);
 
-        const lastTarget = currentChallenge?.targetValues?.[0] ?? 0;
+        const lastTarget = currentChallenge?.exactTargetValue
+          ?? currentChallenge?.targetValues?.[0]
+          ?? 0;
         const lastPlaced = placedPoints[0] ?? jumpEndPoints[jumpEndPoints.length - 1] ?? 0;
 
         const metrics: NumberLineMetrics = {
