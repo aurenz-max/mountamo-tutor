@@ -82,10 +82,16 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > flush sweep** (mechanical, pilot passed 3×)~~ **(DONE 2026-08-01, parallel
 > lane — no file overlap with the L3 slice)** → ~~**item 6** probe
 > (backend-only)~~ **item 6 DEPRIORITIZED 08-05 (user: free-form calibration
-> imperfection accepted — see item 6). The lane's remaining queue-of-record
+> imperfection accepted — see item 6). ~~The lane's remaining queue-of-record
 > pulls are 14g's `counting_next` 1–120 fix (in-scope pack development), then
 > NEW development items (next pack / spoken expansion) authored with the
-> user.**
+> user.~~ **14g LANDED 2026-08-05 as far as machine work reaches:** the parse
+> bug is fixed (a 120 ask now SATURATES at twenty instead of collapsing to
+> twelve) and the 120 EXTENSION became **item 10 — BLOCKED on one ~30-min bench
+> sitting** (standing gate 1, multi-word numerals), whose probe set "Counting to
+> 120" is wired and waiting → HUMAN-CHECKS **#63**. **Next pull is therefore
+> either that sitting (30 min; it unblocks item 10's build slice, or kills
+> Option B on evidence) or authoring the NEXT development item with the user.**
 > **Item 9 Tier 2 is DEMOTED from top pull but stays queued** as the absorber of
 > item 5's residual runtime checks (the level-3 🔄 card via
 > `LUMINA_FAULT_MUTE_EPISODES=2` + an end-coherent full run) — build it when a
@@ -109,6 +115,59 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > (#56, the sentence sitting, #45) stay valuable but nothing waits on them —
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
+
+10. **di-math-facts `counting_next` to 120 — BLOCKED ON ONE ~30-MIN BENCH SITTING
+    (standing gate 1). The probe is wired and waiting; the sitting is HUMAN-CHECKS
+    #63.** *(opened 2026-08-05 from reader-fit 14g; user chose Option B — extend
+    the pack — over Option A's saturate-and-steer. Report:
+    `qa/tutor-reports/di-math-facts-14g-2026-08-05.md`.)*
+    **✅ The parse half is CLOSED** — `resolveTextScope` read "within 120" as
+    "within 12" (two-digit capture); now `(\d{1,3})\b`, so a 120 ask **saturates
+    at the benched twenty** instead of collapsing to twelve. Real-pipeline probes
+    5/5 (max answer 17 pinned, 18 at `hard`); K within-5 and G1 within-10 controls
+    unchanged. Full Vitest 1601/1601, typecheck:lumina 0, tsc 0 new.
+    **❌ What is NOT done: the pack still stops at twenty.** Everything past it is
+    a MULTI-WORD numeral ("one hundred seven") — an unbenched spoken response
+    class. `NUMBER_WORDS` (`gemini-di-math-facts.ts`) is 0..20 and
+    `buildChallenge` speaks `NUMBER_WORDS[answer]`, so raising the clamp without
+    the builder emits `undefined` into the cue.
+    **THE GATE — run the sitting first:** `di-bench` home card 🎯 → probe set
+    **"Counting to 120"** (10 items, `kind: 'counting'`,
+    `components/di-bench/diScript.ts`). It decides three things, in order:
+    **(a) teen/decade — make-or-break.** Drive at least one item deliberately
+    across a pair (say "thirty" for thirteen). If Live affirms it, **Option B is
+    dead on evidence** — keep saturating at twenty and take Option A's catalog
+    steering instead (the 14g word-reading precedent: measure, then flip the
+    verdict). **(b) completeness + `silenceCloseMs`** — a partial compound
+    ("hundred seven") must correct, and a mid-numeral pause must not split one
+    answer into two voice turns; if it does, raise `silenceCloseMs` PACK-scoped
+    (di-sentence-reading used 1100ms), never the family default.
+    **(c) cue drag** at two long numerals per line.
+    **AFTER a passing sitting, the implementation slice (do NOT start it before):**
+    - code-owned numeral builder + ASR aliases to 120 replacing the
+      `NUMBER_WORDS[n]` lookups at `gemini-di-math-facts.ts` (`answerWord`,
+      `problem`, `aliasesFor`) — one function, hyphenation and "one hundred N"
+      forms decided by what the sitting actually affirmed;
+    - raise the `Math.min(20, …)` clamp in `resolveTextScope` **and** `ceilingOf`
+      to the sitting's proven ceiling — it stays a HARD CAP that saturates, never
+      a difficulty knob;
+    - `buildCountingPool` **windowed near the objective's range** — a 1–120
+      session must drill decade transitions near the intent focus (96..120-style
+      windows, the 14k focus-window idea), NEVER 0→1 rote from the bottom;
+    - tier composition stays narrowing-only (`poolCeilingFor`, `:864-866`);
+    - re-check the DISTAR cue lines and the catalog `constraints` + NUMBER WORDS
+      directive for the longer spoken forms;
+    - gates: the existing `.scope`/`.structural`/`.remediation` suites must stay
+      green (they pin saturation at twenty — expect to UPDATE the scope suite's
+      ceiling assertions, deliberately and in the same slice), plus real-pipeline
+      probes on the census objective and the two controls.
+    **Do NOT:** widen via prompt (Fork A — pools are code-owned), turn the ceiling
+    into a difficulty knob, or regex-parse anything new out of NL.
+    **Interim exposure, stated honestly:** while the gate is open a G1 "within
+    120" ask still routes here for a within-20 session, though number-sequencer
+    (14h) and number-line (14k) reach 120 today. If the sitting slips, take
+    Option A's catalog steering as an interim — one `constraints` sentence plus
+    the `manifestOnly` before/after measurement 14g's word-reading half templated.
 
 8. **FAMILY-WIDE + BACKEND: DIAGNOSIS-GRADE TELEMETRY — ~~TOP PULL~~ built +
    smoke-verified; residual = acceptance gate ONLY (rides a sitting or item 9
@@ -578,7 +637,7 @@ before di-sentence-reading existed.)*
 |---|---|---|---|---|---|---|
 | di-letter-sounds | 07-20 | ✅ 07-21 (#36) | ✅ 07-22 (3) | ✅ 07-23 | ✅ 08-01 | **✅ L4 08-03** → `/add-sound` (L5) |
 | di-word-reading | 07-22 | ✅ 07-23 (#43) | ✅ 08-04 (4) | ✅ 08-03 | — | L1 backfill complete; family priority is item 2 remediation implementation |
-| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | **✅ L4 08-04**; pilot item 2 remediation implementation here |
+| di-math-facts | 07-24 | ✅ 07-25 (#48) | ✅ 07-24 (4) | ✅ 07-25 | ✅ 08-01 | **✅ L4 08-04**; item 2 remediation piloted here ✅ 08-04. Next = **item 10's bench sitting** (#63) — the only thing between the pack and a real 1–120 `counting_next` |
 | di-sentence-reading | 07-25 | ✅ 07-25 (#54) | ✅ 07-25 (4) | ✅ 07-25 | ✅ 07-25 | **✅ L4 08-03** → `/add-sound` (L5) |
 
 ~~**di-word-reading L2**~~ **DONE 2026-08-03** — the family is now ENTIRELY
@@ -654,6 +713,16 @@ What is still missing is anything that USES it.)*
 A **fifth pack** is a user phase call, not a queue default — the remaining
 benched-class gap is **blends**. A "counting sequence" pack is no longer a
 candidate at all: di-math-facts absorbed the next-number step as `counting_next`.
+*(Update 2026-08-05: that absorption now carries a RANGE debt — `counting_next`
+serves 0–20 and a published G1 objective asks for 1–120. It stays a pack
+extension, not a fifth pack; see item 10.)*
+
+**Benched response classes, one line each** — the family's real capability
+surface, and the thing every new item checks itself against:
+letter sounds ✅ (#36) · single words ✅ (#43) · single number words 0–20 ✅
+(#46) · short sentences 3–8 words ✅ (#54) · **multi-word numerals ⏳ probe wired
+2026-08-05, sitting #63** · letter NAMES ❌ BLOCKED (LetterSpotter homophone
+ruling) · blends ❌ unbenched.
 
 ## Watch-items (from the engine-gate run)
 - Resync + no-verdict timeout are unit-covered but not yet observed live —

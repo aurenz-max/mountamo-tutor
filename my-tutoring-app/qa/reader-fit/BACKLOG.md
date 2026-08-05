@@ -29,9 +29,12 @@ matter-explorer, a census under-count found in-flight; 43 new tests, 21 real-Gem
 typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400; report
 `qa/reader-fit/14m-sweep-2026-08-04.md`) →
 ~~14h~~ **14h CLOSED 2026-08-04** → ~~14j~~ → ~~14k~~ **14k CLOSED 2026-08-04** →
-~~14l~~ **14l CLOSED 2026-08-05**. **The EMERGING census findings are now fully drained
-except the DI-owned `di-math-facts counting_next` half of 14g** — re-check the §14 pull order
-before assuming what is next.
+~~14l~~ **14l CLOSED 2026-08-05**. ~~**The EMERGING census findings are now fully drained
+except the DI-owned `di-math-facts counting_next` half of 14g**~~ **FULLY DRAINED 2026-08-05
+— 14g's last half closed out of this queue** (parse bug fixed; the 120 range extension is a
+response-class fork now owned by DI BACKLOG item 10, gated on bench sitting #63). **This queue
+has no EMERGING census pull left — the next item here is a fresh priority call, not a
+carried-over pointer.**
 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
 14d is archived with the rest of the coin-counter tail.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
@@ -100,10 +103,19 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   `manifestOnly` traces on 14g's exact topic went **2/3 → 0/3** picks, while the pack's real homes
   still route **3/3** (short-a CVC @ G1) and **2/2** (sight words @ K). No generator code touched.
   Report: `qa/tutor-reports/di-word-reading-2026-08-03.md`.
-  **Still open: `di-math-facts counting_next` replaced 1–120 with values only through 12** — a
-  genuine in-scope failure (counting_next IS the pack's mode; the range is the contract). Executor:
-  `/topic-fidelity` then `/eval-fix`, in the DI workstream. Do not edit its shared files
-  concurrently.
+  ~~**Still open: `di-math-facts counting_next` replaced 1–120 with values only through 12**~~
+  **CLOSED OUT OF THIS QUEUE 2026-08-05 — mechanism ruled, defect fixed, remainder transferred.**
+  The census observation had TWO layers. The **parse bug is fixed**: `resolveTextScope` matched a
+  two-digit capture, so "within 120" read as "within 12" (every three-digit ask was mangled the same
+  way, 100 → 10) — now `(\d{1,3})\b`, and a 120 ask **saturates at the pack's benched twenty**
+  instead of collapsing to twelve. Real-pipeline 5/5 (max answer 17 pinned, 18 at `hard`); K
+  within-5 and G1 within-10 controls unchanged; full Vitest 1601/1601, typecheck:lumina 0.
+  The **range extension to 120 is a FORK, not a wider clamp**: every answer past twenty is a
+  multi-word numeral ("one hundred seven"), an unbenched spoken response class that DI standing
+  gate 1 blocks until a ~30-min bench sitting passes. User chose to extend (Option B) rather than
+  steer away, so it is now **DI BACKLOG item 10**, with the probe set "Counting to 120" wired and
+  the sitting queued as HUMAN-CHECKS **#63**. Nothing further is owed by reader-fit. Report:
+  `qa/tutor-reports/di-math-facts-14g-2026-08-05.md`.
 - ~~**14h. number-sequencer @ G1 — 2/42, both contract-misaligned.**~~ **DONE 2026-08-04.**
   Contract derived first (8 requirements; `--check` COMPATIBLE). The blend now uses the shared
   blend-aware resolver plus schema/post-filter enforcement: exact replay emits only
