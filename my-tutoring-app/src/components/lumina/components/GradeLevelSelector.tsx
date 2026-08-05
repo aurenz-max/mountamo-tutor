@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export type GradeLevel =
   | 'toddler'
@@ -37,17 +38,21 @@ interface GradeLevelSelectorProps {
   value: GradeLevel;
   onChange: (level: GradeLevel) => void;
   className?: string;
+  variant?: 'full' | 'compact';
 }
 
 export const GradeLevelSelector: React.FC<GradeLevelSelectorProps> = ({
   value,
   onChange,
   className = '',
+  variant = 'full',
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLButtonElement>(null);
+  const selectedCompactRef = useRef<HTMLButtonElement>(null);
   const [displayedValue, setDisplayedValue] = useState(value);
   const [fading, setFading] = useState(false);
+  const [compactOpen, setCompactOpen] = useState(false);
 
   const selected = gradeLevelOptions.find(o => o.value === displayedValue) ?? gradeLevelOptions[3];
 
@@ -76,6 +81,75 @@ export const GradeLevelSelector: React.FC<GradeLevelSelectorProps> = ({
     if (level === value) return;
     onChange(level);
   };
+
+  if (variant === 'compact') {
+    const current = gradeLevelOptions.find(option => option.value === value) ?? gradeLevelOptions[3];
+
+    return (
+      <Popover open={compactOpen} onOpenChange={setCompactOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Learning level: ${current.label}`}
+            className={`flex h-8 items-center rounded-full border border-white/10 bg-white/5 px-2.5 text-xs font-medium text-slate-300 transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 max-sm:w-8 max-sm:justify-center max-sm:p-0 ${className}`}
+          >
+            <span aria-hidden className="text-sm leading-none sm:mr-1.5">{current.emoji}</span>
+            <span className="hidden whitespace-nowrap sm:inline">{current.label}</span>
+            <svg
+              aria-hidden
+              className={`ml-2 hidden h-3 w-3 text-slate-500 transition-transform sm:block ${compactOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          onOpenAutoFocus={event => {
+            event.preventDefault();
+            selectedCompactRef.current?.focus();
+          }}
+          className="w-60 rounded-xl border-white/10 bg-slate-900/95 p-1.5 text-slate-200 shadow-2xl shadow-black/40 backdrop-blur-xl"
+        >
+          <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Learning level
+          </div>
+          {gradeLevelOptions.map(option => (
+            <button
+              key={option.value}
+              ref={option.value === value ? selectedCompactRef : undefined}
+              type="button"
+              role="radio"
+              aria-checked={option.value === value}
+              onClick={() => {
+                handleSelect(option.value);
+                setCompactOpen(false);
+              }}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 ${
+                option.value === value
+                  ? 'bg-blue-500/15 text-blue-100'
+                  : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+              }`}
+            >
+              <span aria-hidden className="w-5 text-center text-base leading-none">{option.emoji}</span>
+              <span className="flex-1 font-medium">{option.label}</span>
+              <span className="text-[11px] text-slate-500">{option.shortLabel}</span>
+              {option.value === value && (
+                <svg aria-hidden className="h-3.5 w-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.25" d="m5 12 4 4L19 6" />
+                </svg>
+              )}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <div className={`flex flex-col items-center gap-2 ${className}`}>

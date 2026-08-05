@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { GradeLevelSelector, type GradeLevel } from './GradeLevelSelector';
+import type { GradeLevel } from './GradeLevelSelector';
 import { CurriculumBrowser, type CurriculumContext } from './CurriculumBrowser';
 import { LessonGroupTray, assignBloomPhase, type SelectedSubskill, type BloomPhase } from './LessonGroupBuilder';
 import { SpotlightCard } from './SpotlightCard';
 import { ParticleField } from './ParticleField';
-import { TopicExplorer } from './TopicExplorer';
 import { SoundManager } from '../utils/SoundManager';
 import { useStudent } from '../contexts/StudentContext';
 import { analyticsApi } from '@/lib/studentAnalyticsAPI';
@@ -152,7 +151,6 @@ interface IdleScreenProps {
   topic: string;
   onTopicChange: (topic: string) => void;
   gradeLevel: GradeLevel;
-  onGradeLevelChange: (grade: GradeLevel) => void;
   onGenerate: (options: GenerateOptions) => void;
   onStartPractice: (topic: string, gradeLevel: GradeLevel) => void;
   onCurriculumSelect: (topic: string, grade?: GradeLevel, curriculum?: CurriculumContext) => void;
@@ -174,7 +172,6 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   topic,
   onTopicChange,
   gradeLevel,
-  onGradeLevelChange,
   onGenerate,
   onStartPractice,
   onCurriculumSelect,
@@ -186,6 +183,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
   const [selectedSubskills, setSelectedSubskills] = useState<SelectedSubskill[]>([]);
   const [lessonGroupTrayCollapsed, setLessonGroupTrayCollapsed] = useState(false);
   const [mode, setMode] = useState<HomeMode>('learn');
+  const [curriculumOpen, setCurriculumOpen] = useState(false);
 
   // Recommended fill (Lesson Entry Contract fill mode #3): the IRT selector
   // pre-populates the same tray the student fills by hand.
@@ -314,7 +312,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
 
   return (
     <div className="flex-1 flex flex-col animate-fade-in relative">
-      {/* ── Hero Section with Particle Background ── */}
+      {/* ── Hero Section with responsive constellation field ── */}
       <div className="relative flex flex-col justify-center items-center text-center min-h-[70vh] overflow-hidden">
         <ParticleField className="z-0" />
 
@@ -387,10 +385,6 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
             </p>
           </div>
 
-          {/* Grade level — horizontal chip strip */}
-          <div className="max-w-xl mx-auto">
-            <GradeLevelSelector value={gradeLevel} onChange={onGradeLevelChange} />
-          </div>
         </div>
       </div>
 
@@ -406,42 +400,26 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
           </div>
         )}
 
-        {/* Quick launch row (Practice now lives in the home-screen mode slider) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <SpotlightCard
-            color="168, 85, 247"
-            onClick={() => onNavigate('scratch-pad')}
-            className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20"
-          >
-            <div className="p-5 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-2xl">&#x270F;&#xFE0F;</span>
-              </div>
-              <h4 className="text-sm font-bold text-white group-hover:text-purple-200 transition-colors">Scratch Pad</h4>
-            </div>
-          </SpotlightCard>
-
-          <SpotlightCard
-            color="56, 189, 248"
-            onClick={() => onNavigate('planner-dashboard')}
-            className="bg-gradient-to-br from-cyan-900/20 to-blue-900/20"
-          >
-            <div className="p-5 flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <span className="text-2xl">&#x1F4C5;</span>
-              </div>
-              <h4 className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Planner</h4>
-            </div>
-          </SpotlightCard>
-        </div>
-
-        {/* Dynamic topic explorer */}
-        <TopicExplorer
-          gradeLevel={gradeLevel}
-          onSelectTopic={(t) => { onTopicChange(t); onGenerate({ topic: t, gradeLevel }); }}
-        />
-
         {/* Curriculum Browser */}
+        {studentReady && !isAnonymous && !curriculumOpen && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => setCurriculumOpen(true)}
+              className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-slate-300"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" />
+              </svg>
+              Browse curriculum
+              <svg className="h-3 w-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m9 5 7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {curriculumOpen && (
         <div>
           <div className="flex justify-end items-center gap-2 mb-2">
             {recError && (
@@ -489,6 +467,13 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
               </svg>
               {lessonGroupMode ? 'Exit Build Mode' : 'Build Lesson'}
             </button>
+            <button
+              type="button"
+              onClick={() => setCurriculumOpen(false)}
+              className="rounded-full px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/5 hover:text-slate-300"
+            >
+              Close
+            </button>
           </div>
           <CurriculumBrowser
             onSelectTopic={onCurriculumSelect}
@@ -498,6 +483,7 @@ export const IdleScreen: React.FC<IdleScreenProps> = ({
             onActiveSubjectChange={setBrowsedSubject}
           />
         </div>
+        )}
 
         {selectedSubskills.length > 0 && (
           <LessonGroupTray

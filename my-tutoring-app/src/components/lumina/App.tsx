@@ -5,7 +5,7 @@ import { GenerativeBackground } from './primitives/GenerativeBackground';
 import { DetailDrawer } from './primitives/DetailDrawer';
 import { GameState } from './types';
 import { useExhibitSession, type GenerateOptions } from './hooks/useExhibitSession';
-import type { GradeLevel } from './components/GradeLevelSelector';
+import { GradeLevelSelector, type GradeLevel } from './components/GradeLevelSelector';
 import type { CurriculumContext } from './components/CurriculumBrowser';
 import { IdleScreen } from './components/IdleScreen';
 import { LessonScreen } from './components/LessonScreen';
@@ -423,6 +423,13 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
              <span className="text-xl font-bold tracking-tight text-white">Lumina <span className="text-slate-500 font-light">Exhibits</span></span>
         </div>
         <div className="flex items-center gap-4 text-xs md:text-sm font-mono text-slate-400">
+            {phase === GameState.IDLE && activePanel === null && !sessionPhase && (
+              <GradeLevelSelector
+                value={gradeLevel}
+                onChange={setGradeLevel}
+                variant="compact"
+              />
+            )}
             {/* Signed-in student identity + user menu (progress, sign out) */}
             <StudentBadge onOpenActivity={() => setActivePanel('my-activity')} />
             {/* Exhibit tracker — shown during an exhibit launched from a session block.
@@ -476,7 +483,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
             topic={topic}
             onTopicChange={setTopic}
             gradeLevel={gradeLevel}
-            onGradeLevelChange={setGradeLevel}
             onGenerate={startGenerate}
             onStartPractice={handleStartPractice}
             onCurriculumSelect={handleCurriculumSelect}
