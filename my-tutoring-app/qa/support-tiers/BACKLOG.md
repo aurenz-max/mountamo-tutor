@@ -36,10 +36,21 @@ voice channel matches the screen.
 
 ### TOP — batch-3 verification/report closure
 
+> **EXECUTION SHAPE (user ruling 2026-08-05): SERIAL, one primitive at a
+> time — NO orchestrated Workflow.** Prior attempts ran out of tokens because
+> the parallel fan-out multiplies spend and an interrupted batch lands
+> nothing. Loop: pick the next unstruck target → `/eval-test` it (≥3
+> real-Gemini probes) → append its section to the batch report → strike it in
+> the target list below → move on. Commit after each primitive (or every few)
+> so a token-out session loses nothing. The orchestrated-Workflow batch shape
+> is now OPT-IN only (memory: `serial-over-workflow-token-budget`).
+
 Run `/eval-test` against the 10 shipped targets below using the handoff's
 per-item gates (>=3 real-Gemini probes each, including hard/easy or no-tier
 compatibility as specified), fix only confirmed regressions, and write
-`qa/eval-reports/support-tiers-batch3-2026-08-04.md`. Code is already present in
+`qa/eval-reports/support-tiers-batch3-2026-08-04.md` (append per-item as you
+go — a partial report with 4 finished sections is a valid landing state).
+Code is already present in
 `effc7a6`; this is verification and reporting, not a second implementation pass.
 
 Targets: spelling-pattern-explorer, story-map, opinion-builder,

@@ -21,27 +21,20 @@ queue AND this file's "last touched" in the same slice.
 
 | Lane | State | Pull now | Ground truth |
 |---|---|---|---|
-| Reader-fit K → EMERGING | ACTIVE — top priority | **14l flashcard-deck** | 14k number-line is closed locally: scoped Grade-1 0–120 fork, focus-aware local window, exact missing-number grading, contract C1 resolved; full Vitest 1,569/1,569. |
+| Reader-fit K → EMERGING | ACTIVE — top priority | **14l flashcard-deck** — line-exact handoff ready: `qa/HANDOFF-reader-fit-14l-flashcard-deck-2026-08-05.md` (anchor correction: the generator is `service/flashcard-deck/gemini-flashcard.ts`, NOT the `gemini-flashcard-deck.ts` the queue names; contract-first REQUIRED — none exists) | 14j `f4147ef` + 14k `1fbf4a1` SHIPPED 08-05; 14k closed with contract C1 resolved; full Vitest 1,569/1,569. |
 | Direct Instruction family | ACTIVE | **BACKLOG item 6 probe** (free-form attribution lands `OPS002-04-c @ G2`; backend-only, `curriculum_retrieval_service`); 14g's open `di-math-facts counting_next` 1–120 fix rides this lane | Item 2 is closed: all four packs consume bounded diagnoses through code-owned selection; Probe G 11/11, full Vitest 1,569/1,569, Probe R 9/9, S4 pass. Item 9 Tier 2 stays DEMOTED-but-queued per the 08-01 push-development ruling — the 08-04 "item 9 next" pointer was a staleness against the queue. |
-| Support tiers (non-math) | OPPORTUNISTIC (+1) | **Batch-3 verification/report closure** via `/eval-test`; do not reimplement the 10 shipped primitives | Commit `effc7a6` wired batch 3, taking the code surface to 31/36. Required per-item real-Gemini evidence and the batch report are still missing; HUMAN-CHECKS #60/#62 are non-blocking. |
-| Lumina home shell refresh | ACTIVE — UNREGISTERED | **Classify before more implementation:** create an owning queue/report or park this surface | Five UI files carry a substantial idle/home/session/background redesign, but no workstream row, queue, report, or verification record owns it. Preserve the in-flight edits. |
+| Support tiers (non-math) | OPPORTUNISTIC (+1) | **Batch-3 verification/report closure** via `/eval-test` — **SERIAL, one primitive at a time (user ruling 08-05)**; no Workflow fan-out; append the report + strike per item so an interrupted session lands its progress | Commit `effc7a6` wired batch 3, taking the code surface to 31/36. Required per-item real-Gemini evidence and the batch report are still missing; HUMAN-CHECKS #60/#62 are non-blocking. |
 | Delegated lane | NONE | — | No residual delegated report needs folding. |
 
-**WIP:** 3 ACTIVE + 1 opportunistic in the working tree — one lane above the
-2+1 limit. Nothing new landed since the 08-04 evening closures; HEAD `effc7a6`
-still carries the whole 08-04 surface UNCOMMITTED across FOUR streams:
-reader-fit **14j** (annotated-example + oracle plumbing + `coreGenerators.ts`
-canonicalGrade) and **14k** (NumberLine + grading + `catalog/math.ts` tutoring
-keys), DI **item 2** (4 generators + remediation tests + misconception report),
-the unregistered **home-shell refresh** (5 UI files incl. GradeLevelSelector
-+74), plus shared registers and the `.agents/` Codex skills. **Top portfolio
-move is ship hygiene, not new work:** commit the three CLOSED slices
-stream-by-stream (14j → 14k → DI item 2 → docs/registers), leaving only the
-home-shell edits uncommitted until they get an owner — registering-or-parking
-that lane remains the open user decision, and parking stays the lowest-risk
-proposal. Pulls after shipping: reader-fit **14l flashcard-deck**; DI **item 6
-probe** (item 9 Tier 2 demoted-but-queued); support tiers **batch-3
-verification/report closure**.
+**WIP:** back to **2 ACTIVE + 1 opportunistic — compliant.** The entire 08-04
+surface SHIPPED 2026-08-05: reader-fit 14j `f4147ef`, 14k `1fbf4a1`, DI item 2
+`62e22aa`, registers `f69aa86`, plus the **home-shell refresh `1b3e2db` —
+user-approved in browser 08-05 ("home refresh is good") and CLOSED as a lane**
+(compact header grade selector, constellation idle hero, simplified ribbon;
+typecheck:lumina 0, full Vitest 1,569/1,569; no owning queue was ever needed —
+it closed as a one-off approved surface). Tree is clean. Pulls: reader-fit
+**14l flashcard-deck** (handoff on disk); DI **item 6 probe** (item 9 Tier 2
+demoted-but-queued); support tiers **batch-3 evidence closure, serial**.
 `.claude/settings.local.json` still permits
 only `Read(**)`, so the standing routine-shell permission flag remains unresolved.
 
