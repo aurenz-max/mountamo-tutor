@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Misconception Loop"
+  short_description: "Wire safe misconception-driven remediation"
+  default_prompt: "Use $add-misconception-loop to wire and verify a primitive misconception loop."

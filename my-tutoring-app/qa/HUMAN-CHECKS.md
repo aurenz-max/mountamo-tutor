@@ -4,15 +4,24 @@ Things only a human at a browser can close. Each was verified headlessly
 (jsdom/tsc/live-harness) — only the pixel look or a real click remains.
 Burn down in ONE sitting: `cd my-tutoring-app && npm run dev`, then walk the list.
 When a row is verified, strike it here AND note it in the owning report.
-Maintained by `/pm` (it re-greps reports for new "browser glance" debt).
+Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
+"browser glance" debt.
 
-## Open (as of 2026-08-04, refreshed by `/pm` 2026-08-04)
+## Open (as of 2026-08-05, refreshed by `/pm` 2026-08-05)
+
+> **2026-08-05 refresh:** no new human-only row from the 08-04 EVENING closures —
+> each report self-declares and the claim was re-grepped: reader-fit **14j** is
+> generator-only (no UI file changed); **14k** ran its real-browser exact-click
+> pass in-slice (report + screenshot recorded, so the pixel debt was paid, not
+> deferred); DI **item 2** changes item selection only, no browser/audio behavior
+> and no spoken copy. Next free ID = 63.
 
 > **2026-08-04 refresh:** no new human-only row. The two new DI reports either
 > fold their hardest legal selection into existing #50(d) or change no spoken
 > response class; the remediation-lever handoff is design-only. Reader-fit 14h
 > changes generator scope and mode fidelity only and reports complete machine and
-> live-runtime coverage. Next free ID = 62.
+> live-runtime coverage. Support-tier batch-3 code was discovered in `effc7a6`;
+> its consolidated hard-tier feel pass is now #62. Next free ID = 63.
 
 > **The 07-25 decoherence arc is CLOSED (2026-07-26; preamble refreshed `/pm` 2026-07-27).** Root
 > cause was the voice turn GATE, not any of the four hypotheses: `minVoiceMs: 120` silently meant
@@ -48,8 +57,9 @@ Maintained by `/pm` (it re-greps reports for new "browser glance" debt).
 > sites; arm shell-scoped for one run only). The level-3 🔄 card drive (`EPISODES=2`) and an
 > end-coherent full run stay folded into DI BACKLOG item 9 Tier 2's stall journey.
 
-> **Numbering note (`/pm` 2026-07-24, updated 2026-08-03):** IDs are identifiers, not order — the
-> table is not sorted. Next free ID = **62** (**#60 + #61 opened `/pm` 2026-08-03** from the report
+> **Numbering note (`/pm` 2026-07-24, updated 2026-08-05):** IDs are identifiers, not order — the
+> table is not sorted. Next free ID = **63** (**#62 opened `/pm` 2026-08-04** — support-tiers
+> batch-3 hard-tier feel pass) (**#60 + #61 opened `/pm` 2026-08-03** from the report
 > re-grep: #60 = the support-tiers batch-2 hard-tier feel pass, the human residual its own report
 > names; #61 = how-it-works **HW-1**, a CRITICAL that has never been re-verified since 2026-03-22 —
 > the 08-02 nine-run sweep says so explicitly. Note #61 is NOT new debt from a new fix; it is
@@ -70,6 +80,7 @@ Maintained by `/pm` (it re-greps reports for new "browser glance" debt).
 
 | # | Surface | What to check | How to reach it | Source report |
 |---|---|---|---|---|
+| 62 | **support-tiers batch 3 — hard-tier feel pass (10 primitives)** | One sitting across spelling-pattern-explorer, story-map, opinion-builder, paragraph-architect, poetry-lab, revision-workshop, sound-wave-explorer, constellation-builder, planetary-explorer, and construction-sequence-planner. Compare **easy vs hard** and confirm hard withdraws optional scaffolds without removing the affordance that explains the job; easy help must support self-checking without revealing the answer. Pay special attention to dense literacy layouts, diagram-label readability in science/astronomy, and whether construction ordering remains operable after supports withdraw. This is human-only feel/pixel debt; the queue separately requires machine/runtime probe closure. | Relevant primitive testers → each primitive → toggle difficulty easy vs hard | `qa/HANDOFF-support-tiers-batch3-2026-08-04.md`; batch report pending |
 | 60 | **support-tiers batch 2 — hard-tier feel pass (8 literacy/calendar primitives)** | One sitting, all 8: phoneme-explorer, phonics-blender, syllable-clapper, rhyme-studio, word-sorter, word-workout, letter-sound-link, calendar-explorer. At **difficulty: hard**, confirm the withdrawn scaffolds leave a task that is still DOABLE, not merely harder — the batch withdrew worked examples, blend previews, clap counters, rime highlights, bucket emoji, and keyword anchors, all machine-verified as present/absent but never seen. Watch specifically for: (a) a hard tier that removed the last affordance telling the child what the job IS (vs. what the answer is); (b) rhyme-studio recognition — the rime highlight is now post-resolution only (it used to BE the answer, a rule-#1 leak fixed en route); confirm the pre-answer screen genuinely gives nothing away; (c) letter-sound-link `keyword_match` single-tap commit — one tap now commits, so a mis-tap is a wrong answer; does that feel fair at the target band? Compare each against **easy** (full help) to confirm the ladder reads as a ladder. | LiteracyPrimitivesTester (+ calendar-explorer) → each primitive → toggle difficulty easy vs hard | `qa/eval-reports/support-tiers-batch2-2026-08-02.md` |
 | 61 | **how-it-works HW-1 — `explain` challenge click no-op (long-standing CRITICAL, never re-verified)** | The oldest open CRITICAL in the tracker and a 30-second check. `handleMCAnswer` early-returned for `'explain'` type while the render block still drew option buttons — clicking any option did NOTHING (no selection, no feedback, no advance); user-reported live as "stuck on Challenge 3 of 3". The 2026-03-22 entry says it was converted to MC format, but the 2026-08-02 nine-run sweep explicitly did **not** re-verify it. Drive any how-it-works exhibit to an **explain** challenge and click an option: it must select, give feedback, and advance. If it works, strike HW-1 from EVAL_TRACKER; if it still no-ops, it is a CRITICAL that has been shipping since March. | any lesson/tester routing how-it-works → reach an `explain` challenge | `qa/eval-reports/how-it-works-2026-08-02.md` §"Prior issues" (line 149) |
 | 59 | **knowledge-check @ Grade 1 — bounded visual evidence (reader-fit 14f)** | Pixel/feel only; generation and renderer contracts are machine/live-proven. Check a map-symbol item and an invention item: (a) the 3-symbol `ObjectCollection` reads as the evidence/key, not decorative emoji; (b) the two-panel Before/After comparison is immediately legible; (c) question + four short options fit without crowding at a Grade-1 viewport; (d) a mixed set still feels varied when an individual visual matching plan becomes MCQ; (e) compare K — it must keep the existing emoji option grid/read-aloud surface, not gain the G1 panel. | Any Grade-1 lesson ending in knowledge-check on map symbols or inventions; compare a K knowledge-check | `qa/reader-fit/knowledge-check-14f-2026-08-02.md` |

@@ -27,6 +27,23 @@ non-K consumers.
 
 ## Done
 
+- **annotated-example — derived and checked 2026-08-04** →
+  `docs/contracts/annotated-example.md`. Pulled out of queue order as the
+  contract-first step of reader-fit **14j**. Seven requirements define the
+  constraint-presence fork, canonical-grade operation policy, bounded recovery,
+  byte-pinned downstream problem, exact controls, generic/advanced compatibility,
+  and a final-payload oracle. The finished edit is **COMPATIBLE WITH THE
+  CONSTRAINT-PRESENCE FORK** (`annotated-example-check-2026-08-04.md`): focused
+  227/227, full Vitest 1542/1542, and the exact coin oracle 3/3 live. AE-1–AE-4
+  remain open under SP-16 and were not absorbed into this derivation.
+- **number-sequencer — derived and checked 2026-08-04** →
+  `docs/contracts/number-sequencer.md`. Pulled out of queue order as the
+  contract-first step of reader-fit **14h**. Eight requirements preserve exact
+  single/blended mode identity, grade precedence, scoped Grade-1 capability
+  through 120, local input windows, all five mode semantics, derivability,
+  structural support tiers, and tutor synchronization. The finished edit is
+  **COMPATIBLE** (`number-sequencer-check-2026-08-04.md`): focused 24/24, full
+  Vitest 1406/1406, Lumina typecheck clean, and real-Gemini all-mode coverage.
 - **number-line — derived 2026-08-03** → `docs/contracts/number-line.md`. Pulled out of queue
   order as the mandatory contract-first step of reader-fit **14m** (systemic grade-resolver
   pilot). **12 requirements** (10 OBSERVED, 2 INFERRED), **1 OPEN conflict** (C1: authored G1

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Portfolio Manager"
+  short_description: "Reconcile workstreams and plan next moves"
+  default_prompt: "Use $pm to reconcile the Lumina portfolio and propose the next three concrete moves."

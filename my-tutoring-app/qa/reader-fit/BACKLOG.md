@@ -28,9 +28,9 @@ hundreds-chart/14i + the six K-2 resolvers + coin-counter/14c + 12 chemistry inc
 matter-explorer, a census under-count found in-flight; 43 new tests, 21 real-Gemini probes,
 typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400; report
 `qa/reader-fit/14m-sweep-2026-08-04.md`) →
-~~14h~~ **14h CLOSED 2026-08-04** → 14j → 14k/14l. 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides
-the 14m sweep; 14d is archived with the rest of the coin-counter tail. 14k's mechanism is now
-PINNED (see the updated entry) — it is range/window/accept work, not grade work.
+~~14h~~ **14h CLOSED 2026-08-04** → ~~14j~~ → ~~14k~~ **14k CLOSED 2026-08-04** → 14l.
+14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
+14d is archived with the rest of the coin-counter tail.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same
 defect and a census found 18 more generators carrying it. Fixing the class once is cheaper than
 meeting it three more times down the queue — and one instance was already fixed blind in another
@@ -126,26 +126,27 @@ stream (calendar-explorer, `423c58f`), which is the signal that it needs an owne
   the visual to a 120-chart (12 rows, the CCSS 1.NBT.1 classroom standard) per
   [[trust-intent-over-hardcoded-caps]] — fork territory, its own slice. Until then the better
   manifest outcome for 100–120 asks is number-line (whose 14k window fix is queued).
-- **14j. annotated-example scope/grade binding — 2/42, 1 severe failure.** The counting example
-  is healthy (108, 109, ?, 111). The coin intent pins **6 nickels = 30¢**, but the generated worked
-  example becomes **4×5 = 20 dimes = 200¢**, introducing multiplication and a much larger value.
-  Pin the manifest problem through the problem-author/solver boundary and add a Grade-1 operation
-  ceiling oracle. **Code-ready handoff (premise-corrected: solver is already pinned; the drift is
-  in problem authoring): `qa/HANDOFF-reader-fit-14j-annotated-example-2026-08-04.md`.**
-- **14k. number-line `between` on a precise missing-number objective — 1/42.** Intent requests a
-  hidden value around 90–110; data defaults to 19–38 and accepts any number strictly between broad
-  endpoints. The generator preserved neither the inferred 120 range nor the exact-adjacent-number
-  task. Fix target: `gemini-number-line.ts` range resolution + `between` semantics.
-  **MECHANISM PINNED by the 14m pilot's replay (2026-08-03; grade resolution is NOT the cause —
-  post-fix, band correctly K-2, failure persists):** (a) the K-2 clamp `range.max ≤ 30`
-  (`gemini-number-line.ts` validation) vs the authored ≤120 demand of `NBT001-01-a/-b` — recorded
-  as **contract C1 (OPEN)** in `docs/contracts/number-line.md`, so this edit MUST fork
-  (band+magnitude window per trust-intent-over-hardcoded-caps: extend the visual, don't delete the
-  legibility clamp); (b) `createSubRangePool` places its ≤25-unit window UNIFORMLY over the
-  resolved range — no window floor, so a 90–110 intent draws 63–85 (the ordinal-line lesson);
-  (c) `find_between` accepts ANY interior point (`NumberLine.tsx` check) — no exact-adjacent
-  binding. Replay artifact in `qa/primitive-contracts/number-line-check-2026-08-03.md`. Read
-  contract C1 before editing; probe recipes are in the contract.
+- ~~**14j. annotated-example scope/grade binding — 2/42, 1 severe failure.**~~
+  **CLOSED 2026-08-04.** Exact manifest steering is now promoted to a structured
+  authoring contract; canonical grade reaches the generator; authoring, solver, step,
+  and challenge output are validated; one bounded repair and an intent-faithful/
+  deterministic repeated-addition fallback keep the session in scope. The solver
+  PROBLEM echo is byte-checked and serialized for the final-payload oracle. Exact
+  coin runtime: 6 nickels → 30¢ via skip-counting only. Exact `108,109,?,111`
+  runtime: answer 110. Advanced calculus remains legal (`1/6`). Final real-Gemini
+  oracle **3/3 PASS**, 0 failures/violations; focused 227/227; full Vitest 1542/1542.
+  Report: `qa/reader-fit/annotated-example-14j-2026-08-04.md`. **Next = 14l.**
+- ~~**14k. number-line `between` on a precise missing-number objective — 1/42.**~~
+  **CLOSED 2026-08-04.** The structured scope resolver now separates full domain, focus
+  window, and exact-missing-number intent. A scoped canonical Grade-1 fork preserves an
+  explicit 0–120 range while ordinary K/K-2 clamping remains unchanged; the local pool
+  honors the requested 90–110 focus. Exact cards emit adjacent bounds plus additive
+  `exactTargetValue`, and the component/oracle require that value while legacy cards keep
+  any-interior grading. Contract C1 is RESOLVED / check COMPATIBLE. Real eval-test after
+  the final edit passed 4/4 with targets 97, 100, 105, and 106; browser exact click passed;
+  tutor live standalone 3/3 and lesson 3/3 passed without answer leakage. Focused 29/29;
+  full Vitest 1,569/1,569; touched-surface TypeScript 0 errors. Report:
+  `qa/reader-fit/number-line-14k-2026-08-04.md`. **Next = 14l.**
 - **14l. flashcard-deck final-assessment expansion — 1/42.** A 10-card review of the narrated
   light-bulb lesson announces 15 cards and expands into Internet, medicine, patent, prototype, and
   other untaught material. This repeats the K census's card-padding failure. Honor requested count

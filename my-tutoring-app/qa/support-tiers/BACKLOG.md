@@ -7,15 +7,17 @@ memory is a hint, never authority). **Update discipline:** whoever wires a
 primitive strikes it here with evidence + report link in the same slice, and
 updates the WORKSTREAMS row's "last touched".
 
-**State: 21/36 eligible non-math primitives wired.** Batch 1 (13, 2026-06-21,
-no per-item probes) + batch 2 (8, committed `423c58f`, per-item real-Gemini
-probes — report `qa/eval-reports/support-tiers-batch2-2026-08-02.md`).
+**State: 31/36 eligible non-math primitives code-wired; 21/36 have complete
+batch-report evidence.** Batch 1 (13, 2026-06-21, no per-item probes) + batch 2
+(8, committed `423c58f`, per-item real-Gemini probes — report
+`qa/eval-reports/support-tiers-batch2-2026-08-02.md`) + batch 3 implementation
+(10, committed `effc7a6`; required real-Gemini probe report not shipped).
 Math is 41/41 COMPLETE — never re-touch it from this queue.
 
-**📋 BATCH 3 HANDOFF (paste-able, anchors verified 2026-08-04):**
-`qa/HANDOFF-support-tiers-batch3-2026-08-04.md` — 10 items (rows 1–13 below
-minus the two flagged), batch-2 orchestration pattern, per-item probe gates,
-closing discipline. A session executing batch 3 starts THERE.
+**BATCH 3 STATUS (reconciled 2026-08-04):** implementation from
+`qa/HANDOFF-support-tiers-batch3-2026-08-04.md` landed in `effc7a6` for all 10
+targets. Do not reimplement them. The handoff's closing discipline did not land:
+there is no batch-3 report carrying the required per-item real-Gemini probes.
 
 **Executor skills:** `/add-support-tiers` per primitive (+
 `/primitive-contract --check` where a contract exists); batch shape =
@@ -30,41 +32,35 @@ byte-identical legacy; tier stamped in CODE post-parse from `ctx.supportTier`
 `supportTier` to the tutor + ship a SUPPORT-TIER reveal-policy directive so the
 voice channel matches the screen.
 
-## Queue — remaining 15 eval-wired primitives
+## Queue — top is batch-3 evidence closure, then remaining 5
+
+### TOP — batch-3 verification/report closure
+
+Run `/eval-test` against the 10 shipped targets below using the handoff's
+per-item gates (>=3 real-Gemini probes each, including hard/easy or no-tier
+compatibility as specified), fix only confirmed regressions, and write
+`qa/eval-reports/support-tiers-batch3-2026-08-04.md`. Code is already present in
+`effc7a6`; this is verification and reporting, not a second implementation pass.
+
+Targets: spelling-pattern-explorer, story-map, opinion-builder,
+paragraph-architect, poetry-lab, revision-workshop, sound-wave-explorer,
+constellation-builder, planetary-explorer, construction-sequence-planner.
+
+### Remaining implementation (5)
 
 Ordered literacy-first (the LA K-2 demand map is the density frontier), then
 by routing likelihood. Two rows carry coordination flags — read them before
 pulling.
 
-### Literacy (6)
-1. **spelling-pattern-explorer**
-2. **story-map**
-3. **opinion-builder**
-4. **paragraph-architect**
-5. **poetry-lab** — RF fix + rhyme_hunt K mode shipped previously; check
-   `docs/contracts/` for a contract before editing.
-6. **revision-workshop**
-
-### Physics / astronomy (3)
-7. **sound-wave-explorer**
-8. **constellation-builder**
-9. **planetary-explorer**
-
-### Engineering (5)
-10. **construction-sequence-planner**
-11. **flight-forces-explorer**
-12. **propulsion-lab**
-13. **transport-challenge**
-14. **hydraulics-lab** — ⚠️ OWNED by its mission-reimagining stream
+1. **flight-forces-explorer**
+2. **propulsion-lab**
+3. **transport-challenge**
+4. **hydraulics-lab** — ⚠️ OWNED by its mission-reimagining stream
     (`project_hydraulics-lab-mission-reimagining`); coordinate — do NOT wire
     tiers over a surface that stream is rebuilding.
 
-### Calendar / time (1)
-15. **timeline-builder** — ⚠️ also named in reader-fit **14m** (grade-resolver
-    prose-parse defect, one of the 8 K-2/elementary generators). The 14m sweep
-    owns the grade fix; this queue owns the tier work. If the 14m sweep reaches
-    it first, wire tiers in a separate slice AFTER the resolver fix lands —
-    one owning entry per register, cross-referenced here.
+5. **timeline-builder** — reader-fit **14m** resolver prerequisite shipped;
+   support-tier work is now independently pullable in its own slice.
 
 ## Not yet eligible (~59)
 
@@ -78,10 +74,20 @@ decision, not a batch-3 side effect.
 
 - **HUMAN-CHECKS #60** — batch-2 hard-tier browser feel-pass (8 primitives,
   one sitting).
+- **HUMAN-CHECKS #62** — batch-3 hard-tier browser feel-pass (10 primitives,
+  one sitting).
 - Live-tutor ear-check that reveal-policy directives hold in real audio —
-  rides any DI/lesson sitting at a hard tier. Neither blocks batch 3.
+  rides any DI/lesson sitting at a hard tier. None blocks machine
+  verification/report closure.
 
 ## Done
+
+- **Batch 3 implementation — 2026-08-04, committed `effc7a6` (21/36 → 31/36
+  code-wired):** spelling-pattern-explorer, story-map, opinion-builder,
+  paragraph-architect, poetry-lab, revision-workshop, sound-wave-explorer,
+  constellation-builder, planetary-explorer, construction-sequence-planner.
+  Unit coverage and tier anchors landed. Required per-item real-Gemini probes
+  and the batch report remain the queue's top closure task.
 
 - **Batch 2 — 2026-08-02, committed `423c58f` (13/36 → 21/36):**
   phoneme-explorer, phonics-blender (contract-first), syllable-clapper,
