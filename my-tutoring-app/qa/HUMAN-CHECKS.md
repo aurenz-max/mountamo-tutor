@@ -37,6 +37,21 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > NOT covered** — it is a separate ~30-min DI *bench* sitting on the `Counting to 120`
 > probe set (can multi-word numerals be judged?), not a lesson drive, so **DI item 10
 > (1–120 extension) remains BLOCKED**. Confirmed with the user rather than inferred.
+>
+> **2026-08-06 (late) — #63 RUN, but NOT closed.** The user drove the `Counting to
+> 120` bench probe and it looks good on its counters (3/3 affirmed, 0 off-script, 0
+> unanchored, alias 3/3). It nonetheless exercises **none of #63's three criteria**:
+> the run answered every item CORRECTLY and stopped at item 4 of 10, so (a) the
+> deliberate teen/decade break, (b) the "hundred seven" partial + paused
+> "one hundred … twenty", and (c) cue drag on long numerals are all untested — and
+> **no multi-word numeral was ever spoken**, which is the class the row exists to
+> bench. Correct answers being affirmed cannot distinguish a discriminating judge
+> from a permissive one; that is the whole point of (a)'s deliberate wrong answer.
+> Real result banked: a clean **negative control** — thirteen was not heard as
+> thirty in either direction. **New blocker DI-120-1** (DI BACKLOG item 12): two
+> noise blips at peak 0.018 opened turns over tutor audio, anchored empty attempts
+> and burned `count-39`; fix the barge-in bar BEFORE re-running. Report:
+> `qa/di-bench/run-2026-08-06-counting-120-probe.md`.
 
 ## Open (as of 2026-08-05, refreshed by `/pm` 2026-08-05)
 

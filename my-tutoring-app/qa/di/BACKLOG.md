@@ -116,6 +116,28 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
+12. **DI-120-1 — noise-opened turns anchor empty attempts and burn items.
+    OPENED 2026-08-06 from the #63 sitting. Fix BEFORE re-running #63.**
+    Evidence: `qa/di-bench/run-2026-08-06-counting-120-probe.md`. `count-39` was
+    lost to two corrections and a move-on **without the user ever answering it**.
+    Two mic events at peak **0.018**, both `opened over tutor audio`, produced no
+    learner event and no transcript; DI-1 anchors an attempt at local voice-turn
+    close, so each blip became an empty attempt, barged in on the tutor's own
+    modeling line, and drew a "My turn:" — two of those hit
+    `resyncAfterMisses: 2` and abandoned the item.
+    Real speech in the same run peaked **0.045 / 0.115 / 0.116**; the barge-in bar
+    is `silenceThreshold 0.008 × bargeInMultiplier 1.35 = 0.0108`. **A bar of
+    0.025–0.03 rejects both blips and accepts every real answer** — DI-2's dual
+    threshold re-tuned, not new machinery. Note calibration recorded
+    `echoRms 0.0002` while live leakage hit 0.018 (90×), so the calibration beat
+    may be under-sampling; worth a look while in there.
+    `phantomCommitGuard` does NOT cover this — it guards *transcript without local
+    voice*; this is the inverse, *local voice without transcript*.
+    **Design question to settle in the same slice:** should an attempt that yields
+    NO transcript at all count toward the miss cap? Today it does, and that is
+    what burned `count-39`. Executor: bench re-tune + `voiceTurnMachine` /
+    `judgedLoopModel` unit coverage, then re-run #63.
+
 11. **LESSON-MODE SESSION TUTOR: the script outranks the student (+ resume
     continuity) — ✅✅ CLOSED END-TO-END 2026-08-06.** Machine half shipped
     `d895bfb`; **human acceptance PASSED the same day — HUMAN-CHECKS #64 struck
@@ -244,7 +266,22 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     judge-over-transcript covers the DI half, conversational turns have no
     mitigation on our side today.
 
-10. **di-math-facts `counting_next` to 120 — BLOCKED ON ONE ~30-MIN BENCH SITTING
+10. **di-math-facts `counting_next` to 120 — STILL BLOCKED (standing gate 1).
+    FIRST SITTING RUN 2026-08-06, verdict: none of #63's three criteria
+    exercised.** Report: `qa/di-bench/run-2026-08-06-counting-120-probe.md`.
+    The run drove 4 of 10 items, answered every one CORRECTLY, and stopped at
+    `count-13` — so (a) the deliberate teen/decade break, (b) the "hundred
+    seven" partial + paused "one hundred … twenty", and (c) cue drag on long
+    numerals are all still open, and **no multi-word numeral was ever spoken**.
+    What it DID establish is a clean negative control: thirteen/thirty/fourteen
+    answered correctly were each affirmed with alias agreement, and thirteen was
+    not heard as thirty in either direction. That is the safe half. The fork is
+    decided by the *deliberately wrong* answer, which a run of correct answers
+    cannot test — the same all-correct-run trap that carried the 07-24 and 07-25
+    correction branches forward to #50.
+    **NEW: DI-120-1 must be fixed BEFORE the re-run** (see below), or the same
+    noise blips will burn items again.
+    *(Original entry:)* **BLOCKED ON ONE ~30-MIN BENCH SITTING
     (standing gate 1). The probe is wired and waiting; the sitting is HUMAN-CHECKS
     #63.** *(opened 2026-08-05 from reader-fit 14g; user chose Option B — extend
     the pack — over Option A's saturate-and-steer. Report:

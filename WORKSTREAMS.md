@@ -27,9 +27,19 @@ queue AND this file's "last touched" in the same slice.
 > **DI BACKLOG item 11 end-to-end** and retires the last residual of the voice-transport
 > unification `9d08687` apart from #65. **The DI lane's queue now has no unblocked top
 > item — its next pull is a development item to author with the user.**
-> **#63 was NOT covered** (a separate DI *bench* sitting on the `Counting to 120` probe
-> set, not a lesson drive), so **DI item 10 stays BLOCKED**; #70/#71 also stay open.
-> Confirmed with the user rather than inferred.
+> **#63 was then RUN the same evening — and still does not close.** The `Counting to
+> 120` bench probe drove 4 of 10 items, answered every one CORRECTLY, and stopped at
+> `count-13`, so **none of #63's three criteria were exercised** and **no multi-word
+> numeral was ever spoken** — the class the row exists to bench. Correct answers being
+> affirmed cannot distinguish a discriminating judge from a permissive one; criterion
+> (a) exists precisely because it needs a *deliberately wrong* answer. Banked as real:
+> a clean **negative control** (thirteen not heard as thirty in either direction) and
+> a steady `commitLagMs` ~1220. **DI item 10 stays BLOCKED.** New blocker **DI-120-1**
+> (DI BACKLOG item 12): two noise blips at peak 0.018 opened turns over tutor audio,
+> anchored EMPTY attempts and burned `count-39` without the user ever answering it —
+> the barge-in bar (0.0108) sits below this device's leakage while real speech peaked
+> 0.045–0.116, so 0.025–0.03 separates them cleanly. **Fix that before re-running.**
+> Report `qa/di-bench/run-2026-08-06-counting-120-probe.md`. #70/#71 also stay open.
 
 > **`/pm` 2026-08-06 — the portfolio is TRUTHFUL but UNSHIPPED.** Nothing has been
 > committed since `a695574` (12:43) and the working tree holds **four independent
