@@ -131,7 +131,10 @@ const challengeSummaryFor = (item: DiLetterSoundChallenge): string =>
 const expectedFor = (item: DiLetterSoundChallenge): string =>
   `Produce the held continuous sound "${item.spoken}" — the sound, never the letter name.`;
 
-export const DiLetterSounds: React.FC<DiLetterSoundsData> = (data) => {
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props. */
+export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number }> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(

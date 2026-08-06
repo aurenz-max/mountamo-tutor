@@ -170,7 +170,14 @@ const challengeSummaryFor = (item: DiMathFactsChallenge): string =>
 const expectedFor = (item: DiMathFactsChallenge): string =>
   `Say the number word "${item.answerWord}" (${item.answerNumeral}).`;
 
-export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
+/** PLATFORM PROP CONTRACT: every renderer (ManifestOrderRenderer,
+ *  PrimitiveRenderer, PracticeManifestRenderer, PulseActivityRenderer) mounts a
+ *  registry primitive as `<Component data={…} index={…} />` — the generated data
+ *  arrives as ONE `data` prop, with the evaluation props merged into it. This
+ *  pack originally took the data object AS its props object (bench-only path:
+ *  the DI tester spreads), which rendered fine in the tester and crashed on
+ *  `data.challenges` the first time DI landed in a real lesson. */
+export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(

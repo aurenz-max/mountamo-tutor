@@ -196,7 +196,10 @@ const challengeSummaryFor = (item: DiSentenceReadingChallenge): string =>
 const expectedFor = (item: DiSentenceReadingChallenge): string =>
   `Read the sentence aloud accurately, every word in order: "${item.text}".`;
 
-export const DiSentenceReading: React.FC<DiSentenceReadingData> = (data) => {
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props. */
+export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: number }> = ({ data }) => {
   const ctx = useLuminaAIContext();
 
   const resolvedInstanceId = useMemo(

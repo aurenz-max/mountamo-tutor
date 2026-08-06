@@ -209,9 +209,24 @@ import { ComponentId } from '../types';
  */
 export interface PrimitiveConfig {
   /**
-   * The React component to render
+   * The React component to render.
+   *
+   * PLATFORM PROP CONTRACT — the props type must accept the generated content as
+   * ONE `data` prop, because that is how EVERY renderer mounts a primitive
+   * (`<Component data={…} index={…} />`: ManifestOrderRenderer, PrimitiveRenderer,
+   * PracticeManifestRenderer, PulseActivityRenderer). Evaluation props are merged
+   * INTO `data` by the renderer, not passed alongside it.
+   *
+   * This was `ComponentType<any>`, which let a primitive declared props-are-data
+   * (`React.FC<XData> = (data) => …`) register cleanly: its standalone tester
+   * spreads the data across props so it renders perfectly on the bench, then
+   * `data.<anything>` is undefined the first time it lands in a real lesson.
+   * That shipped in the whole DI family plus calendar-explorer, timeline-builder
+   * and equation-workspace before anyone hit it (2026-08-06). The index signature
+   * keeps components with extra props (onRowClick, onTermClick, totalCards)
+   * assignable — those must stay OPTIONAL to satisfy this contract.
    */
-  component: React.ComponentType<any>;
+  component: React.ComponentType<{ data: any; index?: number; [key: string]: any }>;
 
   /**
    * Optional wrapper component (e.g., for adding headers, managing state)

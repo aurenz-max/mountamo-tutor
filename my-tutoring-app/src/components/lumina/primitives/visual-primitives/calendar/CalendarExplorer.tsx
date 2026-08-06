@@ -149,7 +149,10 @@ export function tutorRevealPolicy(tier?: 'easy' | 'medium' | 'hard'): string {
 // Component
 // ============================================================================
 
-const CalendarExplorer: React.FC<CalendarExplorerData> = (data) => {
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props. */
+const CalendarExplorer: React.FC<{ data: CalendarExplorerData; index?: number }> = ({ data }) => {
   const {
     title,
     description,

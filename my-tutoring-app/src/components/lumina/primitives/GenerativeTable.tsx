@@ -5,11 +5,13 @@ import { TableData } from '../types';
 
 interface GenerativeTableProps {
   data: TableData;
-  index: number;
+  /** Optional so the props type stays assignable to the registry's platform
+   *  prop contract (`{ data, index? }`); every renderer passes it. */
+  index?: number;
   onRowClick?: (item: string) => void;
 }
 
-export const GenerativeTable: React.FC<GenerativeTableProps> = ({ data, index, onRowClick }) => {
+export const GenerativeTable: React.FC<GenerativeTableProps> = ({ data, index = 0, onRowClick }) => {
   const isTall = data.layout === 'tall';
 
   return (

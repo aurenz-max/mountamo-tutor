@@ -26,7 +26,10 @@ import { LuminaButton, LuminaPanel, LuminaCallout } from '../ui';
 
 interface FeatureExhibitProps {
   data: FeatureExhibitData;
-  onTermClick: (term: string) => void;
+  /** Optional so the props type stays assignable to the registry's platform
+   *  prop contract (`{ data, index? }`); the lesson renderer wires it when the
+   *  host provides a term-drawer handler. */
+  onTermClick?: (term: string) => void;
 }
 
 type LearningPhase = 'reading' | 'explore' | 'practice' | 'apply';
@@ -130,7 +133,7 @@ export const FeatureExhibit: React.FC<FeatureExhibitProps> = ({ data, onTermClic
 
   const handleTermClick = (term: string) => {
     setRelatedTermsExplored(prev => prev + 1);
-    onTermClick(term);
+    onTermClick?.(term);
   };
 
   // After reading, move to Phase 1

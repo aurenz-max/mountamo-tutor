@@ -78,7 +78,10 @@ const SCALE_COLORS: Record<string, string> = {
 // Component
 // ============================================================================
 
-const TimelineBuilder: React.FC<TimelineBuilderData> = (data) => {
+/** PLATFORM PROP CONTRACT: registry primitives mount as
+ *  `<Component data={…} index={…} />` — the generated data arrives as ONE `data`
+ *  prop (evaluation props merged in), never spread across props. */
+const TimelineBuilder: React.FC<{ data: TimelineBuilderData; index?: number }> = ({ data }) => {
   const {
     title,
     description,

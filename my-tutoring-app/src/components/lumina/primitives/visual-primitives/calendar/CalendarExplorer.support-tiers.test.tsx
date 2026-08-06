@@ -103,10 +103,12 @@ const dateIdentify = (
 const renderExplorer = (data: Partial<CalendarExplorerData> & { challenges: CalendarExplorerChallenge[] }) =>
   render(
     <CalendarExplorer
-      title="Calendar Explorer"
-      gradeBand="1"
-      instanceId="test-instance"
-      {...data}
+      data={{
+        title: 'Calendar Explorer',
+        gradeBand: '1',
+        instanceId: 'test-instance',
+        ...data,
+      }}
     />,
   );
 

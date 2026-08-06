@@ -8,12 +8,14 @@ import { LuminaPanel, LuminaBadge, LuminaCallout, LuminaReadAloud } from '../ui'
 
 interface ConceptCardProps {
   data: ConceptCardData;
-  index: number;
+  /** Optional so the props type stays assignable to the registry's platform
+   *  prop contract (`{ data, index? }`); the grid renderer always passes it. */
+  index?: number;
   instanceId?: string;
   totalCards?: number;
 }
 
-export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index, instanceId, totalCards }) => {
+export const ConceptCard: React.FC<ConceptCardProps> = ({ data, index = 0, instanceId, totalCards }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);

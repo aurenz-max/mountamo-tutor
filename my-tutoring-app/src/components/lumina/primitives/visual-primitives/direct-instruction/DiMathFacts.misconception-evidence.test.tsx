@@ -91,12 +91,14 @@ const CHALLENGES: DiMathFactsChallenge[] = [
 
 const renderPack = () => render(
   <DiMathFacts
-    title="Quick Flash Practice"
-    description="Say your answers out loud"
-    challenges={CHALLENGES}
-    challengeType="subtraction_fact"
-    gradeLevel="kindergarten"
-    instanceId="test-di-math-facts-evidence"
+    data={{
+      title: 'Quick Flash Practice',
+      description: 'Say your answers out loud',
+      challenges: CHALLENGES,
+      challengeType: 'subtraction_fact',
+      gradeLevel: 'kindergarten',
+      instanceId: 'test-di-math-facts-evidence',
+    }}
   />,
 );
 

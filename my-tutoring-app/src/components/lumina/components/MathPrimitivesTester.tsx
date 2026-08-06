@@ -937,11 +937,13 @@ const PrimitiveRenderer: React.FC<{
     case 'equation-workspace':
       return (
         <EquationWorkspace
-          {...(data as EquationWorkspaceData)}
-          instanceId={`equation-workspace-${Date.now()}`}
-          skillId="math-equation-workspace"
-          subskillId="equation-solving"
-          objectiveId="solve-equations-step-by-step"
+          data={{
+            ...(data as EquationWorkspaceData),
+            instanceId: `equation-workspace-${Date.now()}`,
+            skillId: 'math-equation-workspace',
+            subskillId: 'equation-solving',
+            objectiveId: 'solve-equations-step-by-step',
+          }}
         />
       );
     case 'function-sketch':

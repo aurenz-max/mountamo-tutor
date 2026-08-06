@@ -177,17 +177,21 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
         <button onClick={() => void generate()} disabled={loading} className="rounded-full border border-cyan-400/40 bg-cyan-500/20 px-4 py-2 text-sm text-cyan-200 disabled:opacity-40">{loading ? 'Generating…' : 'Generate'}</button>
       </div>
       {error && <p className="mb-4 text-sm text-rose-300">{error}</p>}
+      {/* Mount exactly as a lesson does — ONE `data` prop with the evaluation
+          props merged in (ManifestOrderRenderer's shape). The bench used to
+          spread the data across props, which is why the packs' props-are-data
+          signature survived here and only crashed in a real lesson. */}
       {generated?.id === 'di-letter-sounds' && (
-        <DiLetterSounds key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiLetterSounds key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {generated?.id === 'di-word-reading' && (
-        <DiWordReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiWordReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {generated?.id === 'di-math-facts' && (
-        <DiMathFacts key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiMathFacts key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {generated?.id === 'di-sentence-reading' && (
-        <DiSentenceReading key={`di-run-${runKey}`} {...generated.data} instanceId="di-tester-1" onEvaluationSubmit={(r) => console.log('[DI eval]', r)} />
+        <DiSentenceReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {/* Bench-parity diagnostics. Reads the diRunLog module store, so it needs
           no props from the pack and never renders in a lesson. Read its FLAGS

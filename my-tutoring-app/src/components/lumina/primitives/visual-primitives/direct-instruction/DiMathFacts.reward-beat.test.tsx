@@ -81,16 +81,16 @@ const CHALLENGES: DiMathFactsChallenge[] = [
   },
 ];
 
-const renderPack = () => render(
-  <DiMathFacts
-    title="Quick Flash Practice"
-    description="Say your answers out loud"
-    challenges={CHALLENGES}
-    challengeType="subtraction_fact"
-    gradeLevel="kindergarten"
-    instanceId="test-di-math-facts"
-  />,
-);
+const PACK_DATA = {
+  title: 'Quick Flash Practice',
+  description: 'Say your answers out loud',
+  challenges: CHALLENGES,
+  challengeType: 'subtraction_fact' as const,
+  gradeLevel: 'kindergarten',
+  instanceId: 'test-di-math-facts',
+};
+
+const renderPack = () => render(<DiMathFacts data={PACK_DATA} />);
 
 /** The tutor judged the open attempt as correct. */
 const affirm = () => act(() => {
@@ -103,16 +103,7 @@ const affirm = () => act(() => {
 /** The tutor's line about this fact finished playing. */
 const tutorAudioFalls = (view: ReturnType<typeof renderPack>) => act(() => {
   ctxState.isAudioPlaying = false;
-  view.rerender(
-    <DiMathFacts
-      title="Quick Flash Practice"
-      description="Say your answers out loud"
-      challenges={CHALLENGES}
-      challengeType="subtraction_fact"
-      gradeLevel="kindergarten"
-      instanceId="test-di-math-facts"
-    />,
-  );
+  view.rerender(<DiMathFacts data={PACK_DATA} />);
 });
 
 describe('DiMathFacts — reward beat', () => {
