@@ -20,6 +20,7 @@ import { doubleNumberLineOracle } from './double-number-line';
 import { equationBuilderOracle } from './equation-builder';
 import { equationWorkspaceOracle } from './equation-workspace';
 import { factorTreeOracle } from './factor-tree';
+import { fastFactOracle } from './fast-fact';
 import { functionMachineOracle } from './function-machine';
 import { functionSketchOracle } from './function-sketch';
 import { fractionBarOracle } from './fraction-bar';
@@ -75,6 +76,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   equationBuilderOracle,
   equationWorkspaceOracle,
   factorTreeOracle,
+  fastFactOracle,
   functionMachineOracle,
   functionSketchOracle,
   fractionBarOracle,

@@ -227,6 +227,31 @@ Every FastFact generator must:
 3. **Validate** output: ensure `correctAnswer` is in `options` (for choice mode), strip duplicate challenges, verify `phaseConfig` keys match challenge types.
 4. **Return** a valid `FastFactData` object.
 
+#### 6.2.1 Answer contract (non-negotiable)
+
+**REPRESENTATION SHIFT.** The visual and the options must be *different representations*
+of the same fact, so the student has to translate rather than pattern-match.
+`Fe` → "Iron" honors it; `7` → `7` and `the` → `the` do not. `visualContent` must never
+equal `correctAnswer` (or any `acceptableAnswers` entry) in any casing or spacing.
+A leaking `text-large` visual is unsalvageable — the large text *is* the stimulus, so
+the item's whole task was pixel-matching and the challenge must be dropped, not stripped.
+
+**The stem must not name the answer.** "Which option spells 'and'?" answered by `and`,
+or "Find the word: look" answered by `look`, is copied out of the question. The one
+exception is a computation stem, where the operands are the problem (`7 + 3` → `10`).
+
+**Exactly one button may grade correct**, under the component's own predicate
+(`isAnswerCorrect`) — so options are deduplicated case-insensitively and any distractor
+that `acceptableAnswers` would also accept is removed.
+
+**The correct option must move.** Parking it in one slot makes the drill winnable by
+position; distribute it across slots over the challenge set.
+
+Enforced in code by `gemini-fast-fact.ts` (`normalizeOptions`, `visualLeaksAnswer`,
+`stemLeaksAnswer`, `placeAnswerAtSlot`) and verified independently by the fast-fact
+oracle (`service/qa/oracles/fast-fact.ts`). Every rule above was written from a live
+2026-08-06 failure, not from theory.
+
 ### 6.3 Catalog Entries (One Per Subject)
 
 ```ts
@@ -295,20 +320,19 @@ Every FastFact generator must:
     {
       "id": "sw-1",
       "type": "recognize",
-      "prompt": { "text": "Which word is 'the'?", "visual": { "type": "text-large", "largeText": "the" } },
+      "prompt": { "text": "Which word finishes the sentence?", "subtext": "I see ___ dog." },
       "correctAnswer": "the",
       "responseMode": "choice",
-      "options": ["the", "teh", "hte", "eth"],
-      "timeLimit": 5
+      "options": ["and", "the", "big"]
     },
     {
       "id": "sw-2",
-      "type": "spell",
-      "prompt": { "text": "Type the word you see:", "visual": { "type": "text-large", "largeText": "said" } },
+      "type": "recognize",
+      "prompt": { "text": "Which word finishes the sentence?", "subtext": "She ___ hello to me." },
       "correctAnswer": "said",
       "acceptableAnswers": ["Said", "SAID"],
-      "responseMode": "type",
-      "timeLimit": 8
+      "responseMode": "choice",
+      "options": ["said", "sat", "sand"]
     }
   ]
 }
