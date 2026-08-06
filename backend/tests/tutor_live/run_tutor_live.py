@@ -125,6 +125,18 @@ class Beat:
     must_include: List[List[str]] = field(default_factory=list)
     # REFER-BACK check: recover facts from earlier sections, one term per group.
     grounds_in_prior: List[List[str]] = field(default_factory=list)
+    # FORBID check: phrases that must NOT be spoken this beat (each entry is a
+    # group of spellings; ANY hit fails). Used by the resume-continuity journey:
+    # after a transparent reconnect the tutor must CONTINUE, not re-greet.
+    forbid: List[List[str]] = field(default_factory=list)
+    # LLM-JUDGE check: a yes/no question about this beat's reply that code
+    # oracles cannot decide (answer-vs-deflect, elicit-vs-tell). Judged by
+    # gemini-flash at temperature 0 against the beat's last student message +
+    # the tutor's spoken reply; judge says no → HIGH "judge-said-no".
+    # The 2026-08-06 pre-fix run proved anchors alone false-pass: the tutor's
+    # deflection "maybe the next activity will show us what they're building"
+    # contains the anchor word "building".
+    judge: Optional[str] = None
 
 
 @dataclass
@@ -1657,8 +1669,202 @@ def build_lesson_refer_back_journey(_live: Dict[str, Any], grade: str) -> Dict[s
     }
 
 
+# ---------------------------------------------------------------------------
+# lesson-curiosity journey — replays the 2026-08-05 real-child failure
+# (qa/tutor-reports/lumina-session-review-2026-08-05.md, DI BACKLOG item 11).
+#
+# A K-age child mid-machine-profile asked "are they going to build a bunch of
+# apartments? can we go over there?" and the tutor answered with a verbatim
+# recitation of the scaffold's level1 line ("What do you already know about an
+# excavator?"). The journey replays the child's exact open-mic transcript blob
+# (repetitions included) and requires the reply to ENGAGE the question's
+# content before any redirect. Run PRE-fix it must FAIL (non-vacuity), post-fix
+# --runs 3 must pass.
+# ---------------------------------------------------------------------------
+
+# Verbatim from catalog/engineering.ts `machine-profile` tutoring block.
+# Static copy so the journey needs no frontend; if the catalog scaffold
+# changes, refresh this dict (the journey tests the PROMPT PRIORITY, not the
+# scaffold wording).
+MACHINE_PROFILE_SCAFFOLD: Dict[str, Any] = {
+    "taskDescription": "Exploring a machine profile: {{machineName}} ({{category}}). Help the student understand how this machine works and connect to their experience.",
+    "contextKeys": ["machineName", "category", "era", "sectionsOpened"],
+    "scaffoldingLevels": {
+        "level1": '"What do you already know about {{machineName}}? Have you ever seen one?"',
+        "level2": '"Let\'s look at the How It Works section. What part surprises you most?"',
+        "level3": '"This machine works by {{howItWorksSummary}}. Can you think of another machine that works in a similar way?"',
+    },
+    "commonStruggles": [
+        {"pattern": "Only looks at the picture, doesn't explore sections",
+         "response": '"There\'s so much more to discover! Try tapping the Key Components section — you\'ll learn what\'s inside."'},
+        {"pattern": "Asks questions the profile doesn't cover",
+         "response": "Answer the student's question using your general knowledge about {{machineName}}, then guide them back to the profile content."},
+    ],
+}
+
+# The child's real turn-8 utterance, verbatim from the session ledger
+# (2026-08-05-235650-lumina-tutor-57f1dc98f7d5.jsonl seq 308) — one ~48s
+# open-mic transcript blob, repetitions and false starts included.
+CHILD_CURIOSITY_UTTERANCE = (
+    "Whoa. What's this? Look at that. Whoa. What do you think they're making "
+    "here? I think they're Hey, there's another one over there. Are they "
+    "making a a big uh Hey, there's another one over there. Over there, too. "
+    "Yeah, are they going to build a big um place for people to live? Hey. "
+    "Are they going to build a bunch of apartments? Hey, can we go over "
+    "there? Yeah."
+)
+
+# Anchors that signal the reply ENGAGED what's being built. The shipped
+# deflection ("It definitely looks like a very busy place! What do you already
+# know about an excavator?") contains none of them.
+CURIOSITY_ENGAGE_ANCHORS = [
+    ["build", "apartment", "house", "home", "place to live", "making",
+     "something big", "tower"],
+]
+
+_EXCAVATOR_PROFILE_DATA_BASE: Dict[str, Any] = {
+    "machineName": "Excavator",
+    "category": "Construction Vehicle",
+    "era": "Modern",
+    "sectionsOpened": 1,
+    # howItWorksSummary deliberately ABSENT: the scaffold's level3 interpolates
+    # {{howItWorksSummary}}, which pre-fix rendered a literal "(not set)" into
+    # the injected prompt (the string the tutor once spoke aloud).
+}
+
+
+def _lesson_switch_msg(component: str, instance: str, data: Dict[str, Any],
+                       tutoring: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    return {
+        "type": "switch_primitive",
+        "primitive_context": {
+            "primitive_type": component,
+            "instance_id": instance,
+            "primitive_data": data,
+            "tutoring": tutoring,
+            "audio_input": {"manual_activity": True},
+        },
+    }
+
+
+def _curiosity_lesson_context(grade: str) -> Dict[str, Any]:
+    return {
+        "topic": "How excavators and dump trucks build big things",
+        "grade_level": grade,
+        "objectives": [{"verb": "explore", "text": "how construction machines work together"}],
+        "ordered_components": [
+            {"title": "Construction vehicles brief", "component_id": "curator-brief",
+             "instance_id": "curiosity-brief"},
+            {"title": "Meet the Excavator", "component_id": "machine-profile",
+             "instance_id": "curiosity-profile"},
+        ],
+        "current_index": 0,
+        "previous_results": [],
+    }
+
+
+def build_lesson_curiosity_journey(_live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    profile_data = {**_EXCAVATOR_PROFILE_DATA_BASE, "gradeLevel": grade}
+    beats = [
+        Beat("greeting", expect="turn", note="lesson greeting on curator-brief"),
+        Beat("switch_to_profile", expect="turn",
+             sends=[_lesson_switch_msg("machine-profile", "curiosity-profile",
+                                       profile_data, MACHINE_PROFILE_SCAFFOLD)],
+             note="tutor may ask the level1 prior-knowledge line here — fine ONCE"),
+        Beat("the_question", expect="turn",
+             sends=[text_msg(CHILD_CURIOSITY_UTTERANCE)],
+             must_include=CURIOSITY_ENGAGE_ANCHORS,
+             # The exact shipped failure: re-asking the scaffold's level1 line.
+             forbid=[["what do you already know"]],
+             judge="Did the tutor DIRECTLY answer the child's question about "
+                   "what is being built — asserting its own contentful guess "
+                   "(e.g. 'it looks like they're building homes for people') — "
+                   "before any redirect back to the activity? Replies that only "
+                   "praise the question, promise the answer will come later or "
+                   "in another activity, narrate what the current page covers, "
+                   "or re-ask a scripted question count as NOT answering.",
+             note="the child's real question, verbatim. The reply must engage "
+                  "what's being built BEFORE any redirect; re-asking the "
+                  "scaffold line alone is the shipped failure"),
+        Beat("follow_up", expect="turn",
+             sends=[text_msg("I think they're building a playground! "
+                             "What do you think they're building?")],
+             must_include=[["playground", "build", "making"]],
+             judge="The child asked the tutor for ITS OWN opinion of what is "
+                   "being built. Did the tutor actually offer its own guess or "
+                   "genuinely engage the child's playground idea as an answer, "
+                   "rather than praising the idea and changing the subject?",
+             note="direct opinion question — must be answered, not deflected"),
+    ]
+    return {
+        "initial_bag": {"title": "Excavators and Dump Trucks", "gradeLevel": grade},
+        "initial_tutoring": None,
+        "primitive_type": "curator-brief",
+        "instance_id": "curiosity-brief",
+        "lesson_context": _curiosity_lesson_context(grade),
+        "force_lesson": True,
+        "beats": beats,
+        "answers": [],
+        "meta": {"journey": "lesson-curiosity",
+                 "source": "2026-08-05-235650 real-child session, turn 8"},
+    }
+
+
+# ---------------------------------------------------------------------------
+# lesson-resume-continuity journey — forced mid-reply connection drop.
+#
+# Requires the backend armed SHELL-SCOPED (never .env — the arming site
+# refuses persisted forms):
+#   $env:ENVIRONMENT='dev'; $env:LUMINA_FAULT_DROP_S='5'; uvicorn app.main:app
+#
+# The [PRIMITIVE SWITCH] cue arms the drop; ~5s later the Gemini receive loop
+# raises, driving the REAL resume path (gemini-error → will_resume →
+# transparent reconnect). Post-fix the tutor must CONTINUE — no re-greeting,
+# no "which part do you want to explore", no "(not set)". require_events pins
+# non-vacuity: a run where no resume actually happened FAILS.
+# ---------------------------------------------------------------------------
+
+RESUME_REGREET_FORBID = [[
+    "welcome", "which part do you want", "what do you want to explore",
+    "what would you like to explore", "hi there", "hello again",
+    "glad you're here", "let's start by",
+]]
+
+
+def build_lesson_resume_continuity_journey(_live: Dict[str, Any], grade: str) -> Dict[str, Any]:
+    profile_data = {**_EXCAVATOR_PROFILE_DATA_BASE, "gradeLevel": grade}
+    beats = [
+        Beat("greeting", expect="turn", note="lesson greeting on curator-brief"),
+        Beat("switch_to_profile", expect="turn",
+             sends=[_lesson_switch_msg("machine-profile", "curiosity-profile",
+                                       profile_data, MACHINE_PROFILE_SCAFFOLD)],
+             forbid=RESUME_REGREET_FORBID,
+             note="the switch cue arms the drop; the reply is cut mid-stream, "
+                  "resumes, and must CONTINUE rather than re-greet"),
+        Beat("coherence_check", expect="turn",
+             sends=[text_msg("Wait, what were you just saying?")],
+             forbid=RESUME_REGREET_FORBID,
+             note="post-resume the tutor must still hold the thread"),
+    ]
+    return {
+        "initial_bag": {"title": "Excavators and Dump Trucks", "gradeLevel": grade},
+        "initial_tutoring": None,
+        "primitive_type": "curator-brief",
+        "instance_id": "curiosity-brief",
+        "lesson_context": _curiosity_lesson_context(grade),
+        "force_lesson": True,
+        "beats": beats,
+        "answers": [],
+        "require_events": ["session_resuming", "session_resumed"],
+        "meta": {"journey": "lesson-resume-continuity",
+                 "fault": "LUMINA_FAULT_DROP_S (shell-scoped, dev only)"},
+    }
+
+
 JOURNEYS = {
     "lesson-refer-back": build_lesson_refer_back_journey,
+    "lesson-curiosity": build_lesson_curiosity_journey,
+    "lesson-resume-continuity": build_lesson_resume_continuity_journey,
     "states-of-matter": build_states_of_matter_journey,
     "foundation-explorer": build_foundation_explorer_journey,
     "sorting-station": build_sorting_station_journey,
@@ -1797,6 +2003,70 @@ class LiveTutorClient:
 
 
 # ---------------------------------------------------------------------------
+# LLM judge — for beat checks code oracles cannot decide (answer-vs-deflect,
+# elicit-vs-tell). One call per judged beat, gemini-flash (never flash-lite),
+# temperature 0, strict JSON. A judge ERROR is a WARN finding, never a silent
+# pass — the gate must not go green because the judge was unreachable.
+# ---------------------------------------------------------------------------
+
+JUDGE_MODEL = "gemini-flash-latest"
+
+
+def _judge_api_key() -> Optional[str]:
+    key = os.getenv("GEMINI_API_KEY")
+    if key:
+        return key
+    # backend/.env carries the backend's key; loaded lazily so journeys with no
+    # judged beats never need it.
+    load_dotenv(os.path.join(REPO_ROOT, "backend", ".env"))
+    return os.getenv("GEMINI_API_KEY")
+
+
+def judge_beats(results: List["BeatResult"]) -> List[Dict[str, str]]:
+    """Run each judged beat's question against its transcript. Returns findings."""
+    judged = [r for r in results if r.beat.judge and (r.transcript or r.ai_text)]
+    if not judged:
+        return []
+    from google import genai as _genai
+    key = _judge_api_key()
+    findings: List[Dict[str, str]] = []
+    if not key:
+        return [{"severity": "WARN", "check": "judge-unavailable", "beat": "*",
+                 "detail": "GEMINI_API_KEY not found — judged beats were NOT evaluated"}]
+    client = _genai.Client(api_key=key)
+    for r in judged:
+        student_texts = [m.get("content", "") for m in r.beat.sends if m.get("type") == "text"]
+        student_said = student_texts[-1] if student_texts else "(no text this beat)"
+        spoken = r.transcript or r.ai_text
+        prompt = (
+            "You are auditing ONE tutor reply from a live voice tutoring session "
+            "with a 5-year-old.\n\n"
+            f"The child said:\n\"{student_said}\"\n\n"
+            f"The tutor replied:\n\"{spoken}\"\n\n"
+            f"Question about the reply: {r.beat.judge}\n\n"
+            'Respond with STRICT JSON only: {"verdict": true|false, "reason": "<one sentence>"}'
+        )
+        try:
+            resp = client.models.generate_content(
+                model=JUDGE_MODEL,
+                contents=prompt,
+                config={"temperature": 0, "response_mime_type": "application/json"},
+            )
+            data = json.loads(resp.text)
+            if not data.get("verdict"):
+                findings.append({
+                    "severity": "HIGH", "check": "judge-said-no", "beat": r.beat.name,
+                    "detail": f"judge: {data.get('reason', '(no reason)')} — reply: \"{spoken[:200]}\"",
+                })
+        except Exception as e:  # noqa: BLE001 — any judge failure must surface
+            findings.append({
+                "severity": "WARN", "check": "judge-unavailable", "beat": r.beat.name,
+                "detail": f"judge call failed ({e}) — this beat was NOT evaluated",
+            })
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Oracles — code-judged checks over the per-beat transcripts.
 #
 # Failure-mode families covered here (the code-orable subset of the taxonomy in
@@ -1883,6 +2153,14 @@ def run_oracles(results: List[BeatResult], events: List[str]) -> List[Dict[str, 
                 add("HIGH", "grounds-in-prior-section", b,
                     f"response did not recover prior-section facts "
                     f"{['/'.join(group) for group in missing]}: \"{spoken[:220]}\"")
+        if r.beat.forbid and spoken:
+            ns = _norm(spoken)
+            hit = [term for group in r.beat.forbid for term in group
+                   if _norm(term) in ns]
+            if hit:
+                add("HIGH", "forbidden-phrase-spoken", b,
+                    f"tutor spoke a forbidden phrase {hit} — e.g. re-greeting/"
+                    f"re-orienting after a transparent resume: \"{spoken[:220]}\"")
         for ans in r.beat.leak_answers:
             na = _norm(ans)
             if len(na) < 3:
@@ -2075,7 +2353,7 @@ async def amain() -> int:
     token = get_id_token()
 
     print(f"[2/4] Generating real content + fetching tutoring block (probe&live)…")
-    if args.component == "lesson-refer-back":
+    if args.component in ("lesson-refer-back", "lesson-curiosity", "lesson-resume-continuity"):
         live = {"status": "static-journey", "tutoring": None, "generatedData": {}}
     else:
         live = fetch_live_context(args.frontend, args.component, args.topic, args.grade, args.eval_mode)
@@ -2126,7 +2404,20 @@ async def amain() -> int:
         client = LiveTutorClient(args.backend_ws)
         results = await client.run(auth_msg, beats)
         run_results.append(results)
-        per_run_findings.append(run_oracles(results, client.events))
+        findings = run_oracles(results, client.events)
+        findings.extend(judge_beats(results))
+        # Journey-declared required events (e.g. the forced drop's resume pair):
+        # missing one means the journey's premise never occurred — the run must
+        # FAIL rather than pass vacuously.
+        for ev in journey.get("require_events", []):
+            if ev not in client.events:
+                findings.append({
+                    "severity": "HIGH", "check": "required-event-missing", "beat": "*",
+                    "detail": f"'{ev}' never received — the journey's premise "
+                              f"(e.g. a forced drop + transparent resume) did not occur; "
+                              f"is the fault flag armed shell-scoped on the backend?",
+                })
+        per_run_findings.append(findings)
         all_events.extend(client.events)
 
     aggregated = aggregate_findings(per_run_findings)

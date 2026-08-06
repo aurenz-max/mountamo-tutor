@@ -77,32 +77,47 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 _FAULT_MUTE_SESSIONS_ARMED = {"count": 0}
 _FAULT_MUTE_REFUSAL_LOGGED = {"done": False}
+_FAULT_DROP_SESSIONS_ARMED = {"count": 0}
+_FAULT_DROP_REFUSAL_LOGGED = {"done": False}
 
 
-def _fault_mute_allowed() -> bool:
-    """The fault refuses to arm unless settings explicitly say dev AND the
+def _fault_flag_allowed(setting_name: str, refusal_state: Dict[str, bool]) -> bool:
+    """A fault flag refuses to arm unless settings explicitly say dev AND the
     flag was passed shell-scoped (see PERSISTENCE GUARD in the docblock)."""
     try:
-        if int(getattr(settings, "LUMINA_FAULT_MUTE_S", 0) or 0) <= 0:
+        if int(getattr(settings, setting_name, 0) or 0) <= 0:
             return False
         if str(getattr(settings, "ENVIRONMENT", "production")).lower() not in (
             "dev", "development", "local",
         ):
             return False
-        if not os.environ.get("LUMINA_FAULT_MUTE_S"):
-            if not _FAULT_MUTE_REFUSAL_LOGGED["done"]:
-                _FAULT_MUTE_REFUSAL_LOGGED["done"] = True
+        if not os.environ.get(setting_name):
+            if not refusal_state["done"]:
+                refusal_state["done"] = True
                 logger.error(
-                    "LUMINA_FAULT_MUTE_S is persisted in backend/.env - REFUSING "
+                    f"{setting_name} is persisted in backend/.env - REFUSING "
                     "to arm fault injection. Persisted fault flags silently "
                     "sabotage every future boot; delete the line. To run a fault "
                     "drive, pass it shell-scoped instead, e.g. PowerShell: "
-                    "$env:LUMINA_FAULT_MUTE_S='25'; uvicorn app.main:app"
+                    f"$env:{setting_name}='25'; uvicorn app.main:app"
                 )
             return False
         return True
     except (TypeError, ValueError):
         return False
+
+
+def _fault_mute_allowed() -> bool:
+    return _fault_flag_allowed("LUMINA_FAULT_MUTE_S", _FAULT_MUTE_REFUSAL_LOGGED)
+
+
+def _fault_drop_allowed() -> bool:
+    """Companion fault: forced mid-session Gemini connection drop
+    (LUMINA_FAULT_DROP_S). Reproduces the observed 1011/1008 "connection died
+    mid-sentence" class so the transparent-resume path and its
+    continue-don't-regreet steering can be exercised without waiting for
+    Google to fail. Same guards as the mute flag."""
+    return _fault_flag_allowed("LUMINA_FAULT_DROP_S", _FAULT_DROP_REFUSAL_LOGGED)
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +129,167 @@ class TextQueueEntry:
     """Entry for the text queue with control over Gemini turn behavior."""
     text: str
     end_of_turn: bool = True  # True = expect a response; False = silent injection
+
+
+class SessionCounters:
+    """Session interaction metrics. Turns/voice count STUDENT-INITIATED
+    conversation events, never transport chunks: one spoken utterance streams
+    as hundreds of audio frames, and counting frames logged `turns: 3059` for
+    a ~30-turn real session (2026-08-05 session review)."""
+
+    def __init__(self) -> None:
+        self.total_interactions = 0   # student-meaningful client messages
+        self.conversation_turns = 0   # text turns + opened voice turns
+        self.voice_interactions = 0   # voice turns opened (activity_start)
+
+    def observe(self, message_type: str) -> None:
+        if message_type == "audio":
+            return  # transport frames, not interactions
+        if message_type == "activity_end":
+            return  # closes the turn already counted at activity_start
+        self.total_interactions += 1
+        if message_type == "activity_start":
+            self.voice_interactions += 1
+            self.conversation_turns += 1
+        elif message_type == "text":
+            self.conversation_turns += 1
+
+
+class SwitchDebouncer:
+    """Coalesce rapid primitive switches so the tutor greets only where the
+    student LANDS. A child flipping through lesson tabs generates one switch
+    per tap, and announcing each made the tutor greet activities the student
+    had already left (observed live 2026-08-05: 7 greetings in ~40s).
+    Trailing debounce: every push (re)starts the settle clock; only the final
+    switch inside the window is announced."""
+
+    def __init__(self, announce, settle_s: float) -> None:
+        self._announce = announce  # async callback(switch_payload: Dict)
+        self._settle_s = settle_s
+        self._pending: Optional[Dict] = None
+        self._task: Optional[asyncio.Task] = None
+        self.coalesced = 0  # switches superseded before they were announced
+
+    def push(self, switch_payload: Dict) -> None:
+        if self._pending is not None:
+            self.coalesced += 1
+        self._pending = switch_payload
+        if self._task and not self._task.done():
+            self._task.cancel()
+        self._task = asyncio.create_task(self._flush_later())
+
+    async def _flush_later(self) -> None:
+        try:
+            await asyncio.sleep(self._settle_s)
+        except asyncio.CancelledError:
+            return
+        pending, self._pending = self._pending, None
+        if pending is not None:
+            await self._announce(pending)
+
+    async def aclose(self) -> None:
+        if self._task and not self._task.done():
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+
+
+class ContextUpdateGate:
+    """Hold "silent" state injections until the tutor is not mid-turn.
+
+    Context updates are queued with end_of_turn=False to mean: put this in the
+    model's context WITHOUT giving it the floor. The Live API has no such mode —
+    send_realtime_input(text=...) always closes the turn AND registers as user
+    activity, so an update landing mid-generation interrupts the tutor. A real
+    session showed 9 of 17 barge-ins were caused by our own sends, four of them
+    by these supposedly-silent updates; one clipped a celebration at its first
+    word ("Perf—", then a restart 1.6s later). 2026-08-06 session review.
+
+    So while the model holds the floor the newest update is parked and earlier
+    ones dropped — a slider dragged across twenty positions is one state, not
+    twenty. The parked update is re-queued when the turn ends, or after
+    MAX_HOLD_S if the model answered with silence and no turn end ever arrives.
+
+    Only end_of_turn=False traffic is gated. Cues that deliberately ask for a
+    response go straight through; interrupting for those is the point.
+    """
+
+    # Longest a state update may sit parked. A normal turn ends well inside
+    # this; the ceiling exists so a silent model can't strand the update.
+    MAX_HOLD_S = 8.0
+
+    def __init__(self, requeue, ledger) -> None:
+        self._requeue = requeue  # async callback(text: str)
+        self._ledger = ledger
+        self._pending: Optional[str] = None
+        self._timer: Optional[asyncio.Task] = None
+        self._busy = False
+        self.held = 0       # updates parked instead of interrupting
+        self.coalesced = 0  # parked updates superseded before release
+
+    def floor_taken(self) -> None:
+        """A model turn is in flight — gate silent updates from here."""
+        self._busy = True
+
+    async def floor_released(self) -> None:
+        """The model's turn ended; anything parked can go now. Idempotent —
+        turn ends are signalled twice (turn_complete flag + iterator end)."""
+        self._busy = False
+        await self._release()
+
+    async def reset(self) -> None:
+        """New Gemini connection: nothing is in flight on it."""
+        self._busy = False
+        await self._release()
+
+    async def admit(self, text: str) -> bool:
+        """True → send it now. False → parked until the floor frees."""
+        if not self._busy:
+            return True
+        if self._pending is None:
+            self.held += 1
+        else:
+            self.coalesced += 1
+        self._pending = text
+        self._cancel_timer()
+        self._timer = asyncio.create_task(self._release_later())
+        self._ledger.write("context-update-held", held=self.held, coalesced=self.coalesced)
+        return False
+
+    async def _release_later(self) -> None:
+        try:
+            await asyncio.sleep(self.MAX_HOLD_S)
+        except asyncio.CancelledError:
+            return
+        # Clear the handle BEFORE releasing: _release cancels the timer, and
+        # this coroutine IS the timer — cancelling ourselves mid-release would
+        # abort the re-queue at its first await.
+        self._timer = None
+        self._ledger.write("context-update-hold-expired", seconds=self.MAX_HOLD_S)
+        self._busy = False
+        await self._release()
+
+    async def _release(self) -> None:
+        self._cancel_timer()
+        pending, self._pending = self._pending, None
+        if pending is not None:
+            await self._requeue(pending)
+
+    def _cancel_timer(self) -> None:
+        if self._timer and not self._timer.done():
+            self._timer.cancel()
+        self._timer = None
+
+    async def aclose(self) -> None:
+        self._cancel_timer()
+
+
+# How long a switch must go un-superseded before the tutor is told about it.
+# Long enough to swallow tab-flipping, short enough that a deliberate landing
+# still gets a timely greeting.
+SWITCH_SETTLE_S = 2.5
 
 
 def format_objectives(objectives: List[Dict]) -> str:
@@ -157,17 +333,35 @@ def format_activities(activities: List[Dict], results: Optional[List[Dict]] = No
 
 def interpolate_template(template: str, data: Dict) -> str:
     """
-    Replace {{key}} placeholders with values from data dict.
-    Unresolved placeholders are replaced with '(not set)'.
+    Replace {{key}} placeholders with values from data dict (lenient).
+    Unresolved placeholders are dropped. NEVER emit a filler marker: the model
+    reads this text, and a real session showed the tutor speaking a literal
+    "(not set)" aloud to a 5-year-old (2026-08-05 review, seq 584).
     """
     import re
     def replacer(match):
         key = match.group(1).strip()
         value = data.get(key)
         if value is None:
-            return '(not set)'
+            return ''
         return str(value)
     return re.sub(r'\{\{(\w+)\}\}', replacer, template)
+
+
+def interpolate_line(template: str, data: Dict) -> Optional[str]:
+    """
+    Strict variant for SCRIPT lines (scaffolding levels, struggle responses):
+    a line with an unresolved placeholder is not a usable script — dropping the
+    whole line beats shipping a sentence with a hole in it. Returns None when
+    any placeholder is unresolved (or the template is empty).
+    """
+    import re
+    if not template:
+        return None
+    if any(data.get(m.group(1).strip()) is None
+           for m in re.finditer(r'\{\{(\w+)\}\}', template)):
+        return None
+    return interpolate_template(template, data)
 
 
 def get_primitive_specific_instructions(
@@ -196,32 +390,41 @@ Grade Level: {primitive_data.get('gradeLevel', 'K-6')}
         tutoring_scaffold.get('taskDescription', ''), primitive_data
     )
 
-    # Build context snapshot from specified keys
+    # Build context snapshot from specified keys. Unset keys are OMITTED — a
+    # placeholder value in RUNTIME STATE ends up in the model's mouth (a real
+    # session ledger shows the tutor speaking "(not set)" as an entire turn).
     context_keys = tutoring_scaffold.get('contextKeys')
     if context_keys:
         context_lines = []
         for key in context_keys:
-            value = primitive_data.get(key, '(not set)')
+            value = primitive_data.get(key)
+            if value is None:
+                continue
             context_lines.append(f"  {key}: {value}")
-        context_section = "\n".join(context_lines)
+        context_section = "\n".join(context_lines) or "  (no state reported yet)"
     else:
         context_section = "\n".join(
             f"  {k}: {v}" for k, v in primitive_data.items()
         )
 
-    # Scaffolding levels
+    # Scaffolding levels — strict interpolation: a hint script with an
+    # unresolved placeholder is dropped rather than shipped with a hole.
     levels = tutoring_scaffold.get('scaffoldingLevels', {})
-    level1 = interpolate_template(levels.get('level1', ''), primitive_data)
-    level2 = interpolate_template(levels.get('level2', ''), primitive_data)
-    level3 = interpolate_template(levels.get('level3', ''), primitive_data)
+    level_lines = []
+    for i, key in enumerate(('level1', 'level2', 'level3'), 1):
+        line = interpolate_line(levels.get(key, ''), primitive_data)
+        if line:
+            level_lines.append(f"Level {i}: {line}")
+    scaffolding_section = "\n".join(level_lines) or "None specified"
 
-    # Common struggles
+    # Common struggles — same strict rule for the scripted responses.
     struggles = tutoring_scaffold.get('commonStruggles', [])
     struggle_lines = []
     for s in struggles:
         pattern = s.get('pattern', '')
-        response = interpolate_template(s.get('response', ''), primitive_data)
-        struggle_lines.append(f'- {pattern} → "{response}"')
+        response = interpolate_line(s.get('response', ''), primitive_data)
+        if response:
+            struggle_lines.append(f'- {pattern} → "{response}"')
     struggles_section = "\n".join(struggle_lines) if struggle_lines else "None specified"
 
     # AI directives (primitive-specific commands injected by the catalog)
@@ -239,9 +442,7 @@ Grade Level: {primitive_data.get('gradeLevel', 'K-6')}
 {context_section}
 
 **SCAFFOLDING STRATEGY:**
-Level 1: {level1}
-Level 2: {level2}
-Level 3: {level3}
+{scaffolding_section}
 
 **COMMON STRUGGLES:**
 {struggles_section}
@@ -319,11 +520,28 @@ Current: {current_activity.get('title', 'Unknown')} (Activity {current_index + 1
 - Success rate: {success_rate * 100:.0f}%
 
 **YOUR ROLE:**
-1. **Provide scaffolded hints** - Never give direct answers
+1. **Provide scaffolded hints** - Never give away the active challenge's answer
 2. **Reference lesson context** - Connect to previous activities when relevant ("Remember in the fraction bar earlier when we...")
 3. **Preview connections** - Link to upcoming activities ("This will help you with the next challenge where...")
-4. **Use Socratic questioning** - Ask guiding questions instead of stating facts
+4. **Use Socratic questioning on the active challenge** - Ask guiding questions instead of stating facts
 5. **Celebrate progress** - Acknowledge the student's journey through the lesson
+
+**QUESTIONS FROM THE STUDENT — this outranks every scripted beat above:**
+When the student asks a question of their OWN — about the scene, the picture, the
+topic, or how the world works — ANSWER IT FIRST: one plain, age-appropriate sentence
+that actually answers what they asked. Then, if it helps, bridge back to the activity.
+- Curiosity is not a challenge. The "never give away the answer" rule protects the
+  active challenge's answer ONLY. A student asking "what are they building?" gets a
+  real answer ("It looks like they're building a big home for lots of people!"),
+  never a scripted prompt, a scaffolding question, or a promise that a later
+  activity will answer it.
+- Never respond to a genuine question by only praising it, narrating what the
+  current page covers, or asking a question back. Answer, THEN engage.
+- If the student asks what YOU think ("what do you think they're building?"),
+  offer a genuine guess of your own ("I think it might be…") — praising their
+  idea and changing the subject is not an answer.
+- A student's spontaneous question is the best teaching moment in the session —
+  running with it matters more than the next scripted beat.
 
 **HINT PROGRESSION SYSTEM:**
 When the student requests a hint, respond based on the level they request:
@@ -335,6 +553,7 @@ When the student requests a hint, respond based on the level they request:
 **CONTEXT MESSAGES (never speak in response to these):**
 - [CONTEXT UPDATE]: silent state change (slider moved, option selected). Note it and STAY SILENT — do not comment, narrate, or ask about it. The student is exploring; narrating every move teaches them to stop and listen instead of play. Only exception: clear struggle (repeated failed attempts on the same thing).
 - [STUDENT ACTION]: a logged interaction. Note it silently.
+- [SESSION RESUMED]: the connection was briefly restored. Follow its instruction exactly; never say the tag aloud or mention any disconnection to the student.
 - Messages that explicitly script a line for you (e.g. 'Celebrate and explain: "..."') are the ONLY state changes you narrate.
 
 **INTERACTION RULES:**
@@ -348,7 +567,7 @@ When the student requests a hint, respond based on the level they request:
 - If student is stuck after Level 3 hint, encourage them to try and provide reassurance
 
 **IMPORTANT:**
-- NEVER solve the problem for the student
+- NEVER solve the problem for the student (their own curiosity questions are not the problem — answer those directly, per QUESTIONS FROM THE STUDENT)
 - ALWAYS wait for the student to respond before continuing (except for [PRONOUNCE] commands)
 - BE PATIENT - learning takes time
 - ENCOURAGE mistakes as learning opportunities
@@ -391,12 +610,29 @@ Learning Objectives:
 {format_activities(ordered_components)}
 
 **YOUR ROLE:**
-1. **Provide scaffolded hints** - Never give direct answers
+1. **Provide scaffolded hints** - Never give away the active challenge's answer
 2. **Reference previous activities** - Connect to what the student has already done ("Remember when we...")
 3. **Preview connections** - Link to upcoming activities ("This will help you with the next challenge where...")
-4. **Use Socratic questioning** - Ask guiding questions instead of stating facts
+4. **Use Socratic questioning on the active challenge** - Ask guiding questions instead of stating facts
 5. **Celebrate progress** - Acknowledge the student's journey through the lesson
 6. **Handle transitions** - When you receive a [PRIMITIVE SWITCH], briefly acknowledge the new activity
+
+**QUESTIONS FROM THE STUDENT — this outranks every scripted beat above:**
+When the student asks a question of their OWN — about the scene, the picture, the
+topic, or how the world works — ANSWER IT FIRST: one plain, age-appropriate sentence
+that actually answers what they asked. Then, if it helps, bridge back to the activity.
+- Curiosity is not a challenge. The "never give away the answer" rule protects the
+  active challenge's answer ONLY. A student asking "what are they building?" gets a
+  real answer ("It looks like they're building a big home for lots of people!"),
+  never a scripted prompt, a scaffolding question, or a promise that a later
+  activity will answer it.
+- Never respond to a genuine question by only praising it, narrating what the
+  current page covers, or asking a question back. Answer, THEN engage.
+- If the student asks what YOU think ("what do you think they're building?"),
+  offer a genuine guess of your own ("I think it might be…") — praising their
+  idea and changing the subject is not an answer.
+- A student's spontaneous question is the best teaching moment in the session —
+  running with it matters more than the next scripted beat.
 
 **HINT PROGRESSION SYSTEM:**
 When the student requests a hint, respond based on the level they request:
@@ -408,6 +644,7 @@ When the student requests a hint, respond based on the level they request:
 **CONTEXT MESSAGES (never speak in response to these):**
 - [CONTEXT UPDATE]: silent state change (slider moved, option selected). Note it and STAY SILENT — do not comment, narrate, or ask about it. The student is exploring; narrating every move teaches them to stop and listen instead of play. Only exception: clear struggle (repeated failed attempts on the same thing).
 - [STUDENT ACTION]: a logged interaction. Note it silently.
+- [SESSION RESUMED]: the connection was briefly restored. Follow its instruction exactly; never say the tag aloud or mention any disconnection to the student.
 - Messages that explicitly script a line for you (e.g. 'Celebrate and explain: "..."') are the ONLY state changes you narrate.
 
 **INTERACTION RULES:**
@@ -420,7 +657,7 @@ When the student requests a hint, respond based on the level they request:
 - If student is stuck after Level 3 hint, encourage them to try and provide reassurance
 
 **IMPORTANT:**
-- NEVER solve the problem for the student
+- NEVER solve the problem for the student (their own curiosity questions are not the problem — answer those directly, per QUESTIONS FROM THE STUDENT)
 - ALWAYS wait for the student to respond before continuing (except for [PRONOUNCE] commands)
 - BE PATIENT - learning takes time
 - ENCOURAGE mistakes as learning opportunities
@@ -451,9 +688,7 @@ async def lumina_tutor_session(websocket: WebSocket):
 
     # Metrics tracking
     hints_given = {"level1": 0, "level2": 0, "level3": 0}
-    total_interactions = 0
-    conversation_turns = 0
-    voice_interactions = 0
+    counters = SessionCounters()
 
     # Mutable primitive tracking (updated on switch_primitive)
     primitive_type = "unknown"
@@ -642,6 +877,52 @@ async def lumina_tutor_session(websocket: WebSocket):
                 f"LUMINA_FAULT_MUTE_S={settings.LUMINA_FAULT_MUTE_S} is armed-able "
                 f"(ENVIRONMENT={settings.ENVIRONMENT}) — dev fault injection active"
             )
+        # Companion fault: forced connection drop at a deadline (at=0.0 = never
+        # armed). Armed like the mute — first cue-classified text, dev only.
+        fault_drop: Dict[str, float] = {"at": 0.0}
+        if _fault_drop_allowed():
+            logger.warning(
+                f"LUMINA_FAULT_DROP_S={settings.LUMINA_FAULT_DROP_S} is armed-able "
+                f"(ENVIRONMENT={settings.ENVIRONMENT}) — forced-drop fault active"
+            )
+        # Whether the LAST Gemini connection died while a model turn was
+        # streaming — decides how the resume steers the tutor (finish the
+        # thought vs. silently keep waiting).
+        interrupt_state: Dict[str, bool] = {"mid_turn": False}
+
+        # Debounced primitive-switch announcements: the tutor is only told
+        # about the switch the student SETTLES on (see SwitchDebouncer).
+        announced_primitive = {"value": primitive_type}
+
+        async def _announce_switch(sw: Dict[str, Any]) -> None:
+            scaffold_text = get_primitive_specific_instructions(
+                sw["primitive_type"], sw["primitive_data"], sw["tutoring"]
+            )
+            from_type = announced_primitive["value"]
+            announced_primitive["value"] = sw["primitive_type"]
+            switch_message = (
+                f"[PRIMITIVE SWITCH] The student has moved to a new activity.\n"
+                f"Previous activity: {from_type}\n"
+                f"New activity: {sw['primitive_type']} (instance: {sw['instance_id']})\n\n"
+                f"{scaffold_text}\n\n"
+                f"Greet the student briefly for this new activity. Keep it to one sentence. "
+                f"If relevant, connect to what they just finished in {from_type}."
+            )
+            ledger.write(
+                "switch-announced",
+                to_primitive=sw["primitive_type"],
+                from_primitive=from_type,
+                coalesced=switch_debouncer.coalesced,
+            )
+            await text_queue.put(TextQueueEntry(text=switch_message, end_of_turn=True))
+
+        switch_debouncer = SwitchDebouncer(_announce_switch, SWITCH_SETTLE_S)
+
+        async def _requeue_context(text: str) -> None:
+            await text_queue.put(TextQueueEntry(text=text, end_of_turn=False))
+
+        # Keeps silent state injections from barging in on the tutor mid-turn.
+        context_gate = ContextUpdateGate(_requeue_context, ledger)
 
         if True:
             # Send session ready message via the send queue
@@ -700,7 +981,6 @@ async def lumina_tutor_session(websocket: WebSocket):
 
             async def handle_client_messages():
                 """Handle messages from the frontend client"""
-                nonlocal hints_given, total_interactions, conversation_turns, voice_interactions
                 nonlocal primitive_type, instance_id, primitive_data, tutoring_scaffold
 
                 try:
@@ -708,8 +988,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                         message = await websocket.receive_json()
                         message_type = message.get("type")
 
-                        # Track interactions
-                        total_interactions += 1
+                        # Track interactions (audio frames are transport, not turns)
+                        counters.observe(message_type)
 
                         if message_type == "request_hint":
                             # Handle tiered hint request
@@ -741,7 +1021,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                             await ws_send_queue.put({
                                 "type": "metrics_update",
                                 "hintsGiven": hints_given,
-                                "totalInteractions": total_interactions
+                                "totalInteractions": counters.total_interactions
                             })
 
                         elif message_type == "update_context":
@@ -808,23 +1088,18 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 instance=instance_id,
                             )
 
-                            # Build primitive-specific scaffolding for the new primitive
-                            scaffold_text = get_primitive_specific_instructions(
-                                primitive_type, primitive_data, tutoring_scaffold
-                            )
+                            # Debounced: a child flipping tabs fires a switch
+                            # per tap; only the one they SETTLE on is announced
+                            # to Gemini (scaffold + one-sentence greeting).
+                            switch_debouncer.push({
+                                "primitive_type": primitive_type,
+                                "instance_id": instance_id,
+                                "primitive_data": primitive_data,
+                                "tutoring": tutoring_scaffold,
+                            })
 
-                            # Send context switch message to Gemini
-                            switch_message = (
-                                f"[PRIMITIVE SWITCH] The student has moved to a new activity.\n"
-                                f"Previous activity: {old_type}\n"
-                                f"New activity: {primitive_type} (instance: {instance_id})\n\n"
-                                f"{scaffold_text}\n\n"
-                                f"Greet the student briefly for this new activity. Keep it to one sentence. "
-                                f"If relevant, connect to what they just finished in {old_type}."
-                            )
-                            await text_queue.put(TextQueueEntry(text=switch_message, end_of_turn=True))
-
-                            # Confirm switch to frontend
+                            # Confirm switch to frontend immediately (UI state
+                            # never waits on the settle window)
                             await ws_send_queue.put({
                                 "type": "primitive_switched",
                                 "primitive_type": primitive_type,
@@ -834,15 +1109,12 @@ async def lumina_tutor_session(websocket: WebSocket):
                         elif message_type == "text":
                             # Handle regular text interaction
                             content = message.get("content", "")
-                            conversation_turns += 1
                             await text_queue.put(TextQueueEntry(text=content, end_of_turn=True))
 
                         elif message_type == "audio":
                             # Handle audio input
                             audio_data = message.get("data") or message.get("audio_data")
                             if audio_data:
-                                voice_interactions += 1
-                                conversation_turns += 1
                                 await audio_queue.put(audio_data)
                                 logger.debug(f"Queued audio data ({len(audio_data)} bytes base64)")
 
@@ -880,9 +1152,24 @@ async def lumina_tutor_session(websocket: WebSocket):
                             text = str(entry)
                             end_of_turn = True
 
+                        # end_of_turn=False means "context, not a prompt". The
+                        # Live API can't express that — every realtime text send
+                        # closes the turn and interrupts an in-flight generation —
+                        # so honour it by WAITING instead: park the update until
+                        # the tutor stops speaking (see ContextUpdateGate).
+                        if not end_of_turn and not await context_gate.admit(text):
+                            logger.info(
+                                f"Holding context update until the tutor's turn ends: {text[:80]}..."
+                            )
+                            continue
+
                         logger.info(f"Sending text to Gemini (end_of_turn={end_of_turn}): {text[:100]}...")
                         await session.send_realtime_input(text=text)
                         logger.info(f"Text sent to Gemini successfully")
+                        # We just handed Gemini the floor; gate silent updates
+                        # until its turn closes.
+                        if end_of_turn:
+                            context_gate.floor_taken()
                         text_kind = classify_cue(text)
                         ledger.write(
                             "text-to-gemini",
@@ -914,6 +1201,30 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 "fault-mute-armed",
                                 seconds=settings.LUMINA_FAULT_MUTE_S,
                                 episode=_FAULT_MUTE_SESSIONS_ARMED["count"],
+                                trigger=text_kind,
+                            )
+
+                        # Companion fault (dev only): forced connection drop N
+                        # seconds after the first cue-classified text — drives
+                        # the real gemini-error → transparent-resume path.
+                        if (
+                            fault_drop["at"] == 0.0
+                            and text_kind != "text"
+                            and _fault_drop_allowed()
+                            and _FAULT_DROP_SESSIONS_ARMED["count"]
+                                < int(getattr(settings, "LUMINA_FAULT_DROP_EPISODES", 1) or 1)
+                        ):
+                            _FAULT_DROP_SESSIONS_ARMED["count"] += 1
+                            fault_drop["at"] = time.monotonic() + settings.LUMINA_FAULT_DROP_S
+                            logger.warning(
+                                f"FAULT INJECTION: Gemini connection will be force-dropped in "
+                                f"{settings.LUMINA_FAULT_DROP_S}s (episode "
+                                f"{_FAULT_DROP_SESSIONS_ARMED['count']})"
+                            )
+                            ledger.write(
+                                "fault-drop-armed",
+                                seconds=settings.LUMINA_FAULT_DROP_S,
+                                episode=_FAULT_DROP_SESSIONS_ARMED["count"],
                                 trigger=text_kind,
                             )
                 except Exception as e:
@@ -964,6 +1275,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         fault_mute["dropped"] = 0.0
                     return False
 
+                turn_had_content = False
                 try:
                     turn_count = 0
                     while True:
@@ -973,6 +1285,17 @@ async def lumina_tutor_session(websocket: WebSocket):
                         go_away_pending = False
                         turn_had_content = False
                         async for response in session.receive():
+                            # Dev fault injection: forced drop deadline reached —
+                            # raise out of the receive loop, exactly the shape of
+                            # a real 1011/1008 mid-generation connection death.
+                            if fault_drop["at"] and time.monotonic() >= fault_drop["at"]:
+                                fault_drop["at"] = 0.0
+                                ledger.write("fault-drop-fired", turn=turn_count)
+                                raise RuntimeError(
+                                    "FAULT INJECTION: forced Gemini connection drop "
+                                    "(LUMINA_FAULT_DROP_S)"
+                                )
+
                             # Capture the rolling resumption handle. Passing this back
                             # on reconnect restores the conversation transparently.
                             sru = getattr(response, 'session_resumption_update', None)
@@ -1021,6 +1344,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 # Handle model turn (AI speaking)
                                 if hasattr(response.server_content, 'model_turn') and response.server_content.model_turn:
                                     model_turn = response.server_content.model_turn
+                                    # The tutor is speaking. Catches turns the
+                                    # student opened by voice, which no text send
+                                    # of ours announced.
+                                    context_gate.floor_taken()
 
                                     if hasattr(model_turn, 'parts') and model_turn.parts:
                                         for part in model_turn.parts:
@@ -1105,10 +1432,12 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 if getattr(response.server_content, 'turn_complete', False) or getattr(response.server_content, 'end_of_turn', False):
                                     logger.info("AI turn finished (flag detected).")
                                     ledger.write("gemini-turn-end", turn=turn_count, via="flag")
+                                    await context_gate.floor_released()
                                     await ws_send_queue.put({"type": "ai_turn_end"})
 
                             # GoAway carried in this response: stop reading and resume.
                             if go_away_pending:
+                                interrupt_state["mid_turn"] = turn_had_content
                                 await ws_send_queue.put({
                                     "type": "session_resuming",
                                     "message": "Reconnecting to keep your tutor live…",
@@ -1119,6 +1448,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                         # even if no explicit end_of_turn flag was set on any response
                         logger.info("AI turn finished (iterator ended).")
                         ledger.write("gemini-turn-end", turn=turn_count, via="iterator")
+                        await context_gate.floor_released()
                         await ws_send_queue.put({"type": "ai_turn_end"})
 
                 except WebSocketDisconnect:
@@ -1140,6 +1470,10 @@ async def lumina_tutor_session(websocket: WebSocket):
                     )
                     if resumption_handle["value"]:
                         logger.info("Resumption handle present — will resume after drop")
+                        # A turn was streaming when the connection died → the
+                        # student heard the tutor cut off mid-sentence; the
+                        # resume must finish the thought, not re-greet.
+                        interrupt_state["mid_turn"] = turn_had_content
                         await ws_send_queue.put({
                             "type": "session_resuming",
                             "message": "Reconnecting to keep your tutor live…",
@@ -1184,11 +1518,49 @@ async def lumina_tutor_session(websocket: WebSocket):
                                 pending_text=text_queue.qsize(),
                                 pending_audio=audio_queue.qsize(),
                             )
+                            # Fresh connection: nothing holds the floor on it, so
+                            # anything parked mid-drop is free to go.
+                            await context_gate.reset()
+
                             if resuming:
                                 await ws_send_queue.put({
                                     "type": "session_resumed",
                                     "message": "Tutor reconnected — right where you left off.",
                                 })
+                                # Conversational continuity (2026-08-05 session
+                                # review): the transport resumes in ~0.5s but the
+                                # model, unsteered, re-greets ("Which part do you
+                                # want to explore?") instead of continuing. If it
+                                # was cut mid-sentence, give it the floor to
+                                # finish the thought; otherwise inject a silent
+                                # note so its NEXT turn continues naturally.
+                                was_mid_turn = interrupt_state["mid_turn"]
+                                interrupt_state["mid_turn"] = False
+                                ledger.write("resume-steering", mid_turn=was_mid_turn)
+                                if was_mid_turn:
+                                    await text_queue.put(TextQueueEntry(
+                                        text=(
+                                            "[SESSION RESUMED] The connection dropped for a moment while "
+                                            "you were speaking and is now restored. Pick your answer back "
+                                            "up where it was cut off and finish the thought in one or two "
+                                            "sentences. Do NOT greet the student again, do NOT re-introduce "
+                                            "the activity, and do NOT ask what they want to explore. Never "
+                                            "say this tag aloud or mention the disconnection."
+                                        ),
+                                        end_of_turn=True,
+                                    ))
+                                else:
+                                    await text_queue.put(TextQueueEntry(
+                                        text=(
+                                            "[SESSION RESUMED] The connection dropped for a moment and is "
+                                            "now restored. Nothing was lost. Stay quiet and keep waiting "
+                                            "for the student. When you next speak, continue naturally from "
+                                            "where the conversation left off — do NOT greet the student "
+                                            "again, re-introduce the activity, or ask what they want to "
+                                            "explore. Never say this tag aloud or mention the disconnection."
+                                        ),
+                                        end_of_turn=False,
+                                    ))
 
                             # Per-connection Gemini I/O tasks. Queues persist across
                             # reconnects, so any text/audio queued mid-drop still sends.
@@ -1250,6 +1622,8 @@ async def lumina_tutor_session(websocket: WebSocket):
                     # No handle / terminal outcome → stop.
                     break
             finally:
+                await switch_debouncer.aclose()
+                await context_gate.aclose()
                 for t in client_tasks:
                     if not t.done():
                         t.cancel()
@@ -1298,15 +1672,15 @@ async def lumina_tutor_session(websocket: WebSocket):
                 pass
 
         # Log final metrics
-        logger.info(f"Session metrics (mode={session_mode}) - Hints: {hints_given}, Interactions: {total_interactions}, Turns: {conversation_turns}, Voice: {voice_interactions}")
+        logger.info(f"Session metrics (mode={session_mode}) - Hints: {hints_given}, Interactions: {counters.total_interactions}, Turns: {counters.conversation_turns}, Voice: {counters.voice_interactions}")
         ledger.write(
             "session-end",
             mode=session_mode,
             primitive=primitive_type,
             hints=hints_given,
-            interactions=total_interactions,
-            turns=conversation_turns,
-            voice=voice_interactions,
+            interactions=counters.total_interactions,
+            turns=counters.conversation_turns,
+            voice=counters.voice_interactions,
         )
         ledger.close()
         logger.info("Lumina tutor session cleanup completed")

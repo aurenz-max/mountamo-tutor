@@ -30,6 +30,15 @@ class Settings(BaseSettings):
     # gets a healthy session (ladder level 2 must END COHERENT); 2 = the
     # reconnected session stalls too (ladder must reach the level-3 card).
     LUMINA_FAULT_MUTE_EPISODES: int = Field(default=1, env="LUMINA_FAULT_MUTE_EPISODES")
+    # Companion fault: forced mid-session Gemini connection drop. When > 0, the
+    # first cue-classified client text of a session arms a timer; that many
+    # seconds later the receive loop raises, reproducing the observed 1011/1008
+    # "connection died mid-sentence" class so the transparent-resume path (and
+    # its continue-don't-regreet steering) can be exercised on demand. Same
+    # rules as the mute flag: dev ONLY, process-env only, NEVER persist in .env
+    # (the arming site refuses persisted forms loudly).
+    LUMINA_FAULT_DROP_S: int = Field(default=0, env="LUMINA_FAULT_DROP_S")
+    LUMINA_FAULT_DROP_EPISODES: int = Field(default=1, env="LUMINA_FAULT_DROP_EPISODES")
     
     # Database settings
     DATABASE_URL: str = "sqlite:///./ai_tutor.db"
