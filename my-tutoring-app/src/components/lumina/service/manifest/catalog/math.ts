@@ -3741,11 +3741,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'spatial-scene',
-    description: 'Grid-based positional language and prepositions. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of) — tapping the grid to ENACT an instruction like "Put the ball under the box". Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. Supports multiple challenge types from simple identification to multi-step direction following. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
-    constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default — so name the target prepositions in the intent. NOT supported (do not route these here): containment "in/inside", two-reference "between", viewer-relative "in front of/behind", and path words "through/around/across" — a 3x3 static grid cannot express them.',
+    description: 'Grid-based positional language and prepositions. Students identify, place, and describe object positions using spatial words (above, below, beside, next to, on, under, left of, right of) — tapping the grid to ENACT an instruction like "Put the ball under the box". Also serves containment ("Put the ball IN the box" — tap the container itself) and two-reference placement ("Put the ball BETWEEN the box and the tree"). Serves both K.G.1 math positional vocabulary and Kindergarten Language Arts preposition skills. Supports multiple challenge types from simple identification to multi-step direction following. ESSENTIAL for K-1 geometry and K-2 grammar prepositions.',
+    constraints: 'Requires a grid layout with placed objects. Challenges array drives interactivity. Grade band K-1. The position-word vocabulary follows whatever words the lesson objective/intent names, widening the grade-band default — so name the target prepositions in the intent. Containment "in/inside" and two-reference "between" are served by their own challenge types (place_in, place_between). NOT supported (do not route these here): viewer-relative "in front of/behind" and path words "through/around/across" — a 3x3 top-down static grid cannot express them.',
     tutoring: {
-      taskDescription: 'Student identifies, places, or describes positions of objects on a grid using spatial vocabulary (above, below, beside, between).',
-      contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'options', 'steps', 'gradeBand'],
+      taskDescription: 'Student identifies, places, or describes positions of objects on a grid using spatial vocabulary (above, below, beside, in, between).',
+      contextKeys: ['instruction', 'sceneObjects', 'targetObject', 'correctPosition', 'referenceObjectName', 'referenceObjectName2', 'options', 'steps', 'gradeBand'],
       scaffoldingLevels: {
         level1: '"Look at the picture. Can you point to the {{targetObject.name}}?"',
         level2: '"The {{targetObject.name}} is higher up than the {{referenceObjectName}}. What position word means \'higher up\'?"',
@@ -3768,6 +3768,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Multiple-choice: Where is the cat? → above/below/beside',
       },
       {
+        evalMode: 'place_in',
+        label: 'Put In — Containment (Scaffold 2)',
+        beta: 1.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['place_in'],
+        description: 'Containment "in": put an object INSIDE a container — "Put the pencil in the box". Student taps the container itself',
+      },
+      {
         evalMode: 'place',
         label: 'Place (Scaffold 2)',
         beta: 2.0,
@@ -3782,6 +3790,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 3,
         challengeTypes: ['describe'],
         description: 'Select the position word for a shown arrangement',
+      },
+      {
+        evalMode: 'place_between',
+        label: 'Between — Two References (Scaffold 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['place_between'],
+        description: 'Two-reference "between": place an object in the empty spot with one named object on each side',
       },
       {
         evalMode: 'follow_directions',

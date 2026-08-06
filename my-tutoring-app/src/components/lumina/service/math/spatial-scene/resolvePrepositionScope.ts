@@ -36,10 +36,16 @@
  * - Returns null on any parse/validation failure, so a resolver outage degrades to
  *   exactly today's behavior → no regression.
  * - `unsupported` is honest saturation, not silent truncation: words the lesson asked
- *   for that a 3×3 static grid cannot express (containment "in", two-reference
- *   "between", viewer-relative "in front of"/"behind", and the path class
- *   "through"/"around"/"across") are reported back so the caller can LOG the gap
- *   rather than pretend it was served. Queued in qa/la-k2-grammar/BACKLOG.md.
+ *   for that a 3×3 static grid cannot express (viewer-relative "in front of"/"behind"
+ *   and the path class "through"/"around"/"across") are reported back so the caller can
+ *   LOG the gap rather than pretend it was served. Queued in qa/la-k2-grammar/BACKLOG.md.
+ *
+ * 2026-08-05 (item 1) — containment `in` and two-reference `between` moved OUT of
+ * `unsupported` and into their own eval modes (`place_in`, `place_between`). They are
+ * NOT relative-position words: `in` targets an OCCUPIED cell (inverting contract R11,
+ * which is why it forks into a new mode rather than editing `place`) and `between`
+ * needs a SECOND reference the single-reference checker cannot take. So they never join
+ * the relative window the legacy modes use — see RELATIVE_POSITIONS below.
  */
 
 import { Type, Schema } from "@google/genai";
@@ -47,15 +53,48 @@ import { ai } from "../../geminiClient";
 import type { PedagogicalScope } from "../../scopeContext";
 
 /**
- * Position words this generator can place on a 3×3 grid AND judge deterministically.
- * A word belongs here only if `SUPPORTED_POSITION_SEMANTICS` below defines an exact
- * row/col rule for it — otherwise the LLM could emit it with no correctness owner.
+ * RELATIVE position words — one target, ONE reference, judged by `positionHolds`.
+ * These are the words that may enter a lesson's position WINDOW and appear as an
+ * `identify`/`describe` option. A word belongs here only if
+ * `SUPPORTED_POSITION_SEMANTICS` defines an exact row/col rule for it AND
+ * `positionHolds` implements that rule — otherwise the LLM could emit it with no
+ * correctness owner.
  */
-export const SUPPORTED_POSITIONS = [
+export const RELATIVE_POSITIONS = [
   "above", "below", "beside", "next_to", "left_of", "right_of", "on", "under",
 ] as const;
 
-export type SupportedPosition = (typeof SUPPORTED_POSITIONS)[number];
+export type RelativePosition = (typeof RELATIVE_POSITIONS)[number];
+
+/**
+ * Prepositions this primitive serves through a DEDICATED eval mode rather than the
+ * relative window, because each one breaks an assumption the relative modes rely on:
+ *
+ * - `in` — containment. The answer cell is the one the container OCCUPIES, inverting
+ *   contract R11 (`place` targets an EMPTY cell) and needing a nested render. Served by
+ *   eval mode `place_in`; forked rather than folded into `place` per the contract ladder.
+ * - `between` — needs TWO reference objects; `positionHolds` takes one. Served by eval
+ *   mode `place_between`, which judges the cell, not a word.
+ */
+export const MODE_POSITIONS = ["in", "between"] as const;
+
+export type ModePosition = (typeof MODE_POSITIONS)[number];
+
+/**
+ * Every preposition the resolver may report as REQUESTED (i.e. that this primitive can
+ * serve somehow). Words outside this list are reported as `unsupported` and logged.
+ */
+export const SUPPORTED_POSITIONS = [
+  ...RELATIVE_POSITIONS, ...MODE_POSITIONS,
+] as const;
+
+export type SupportedPosition = RelativePosition | ModePosition;
+
+/** The eval mode that serves each mode-scoped preposition. */
+export const MODE_FOR_POSITION: Record<ModePosition, string> = {
+  in: "place_in",
+  between: "place_between",
+};
 
 /** Upper sanity bound (house rule: bound ALL schema arrays). */
 const MAX_UNSUPPORTED = 8;
@@ -77,6 +116,8 @@ export const SUPPORTED_POSITION_SEMANTICS: Record<SupportedPosition, string> = {
   next_to: '"next_to" = SAME row, adjacent column (col difference exactly 1)',
   on: '"on" = resting ON TOP of and TOUCHING the reference: target row = reference row - 1, SAME column (rows must be adjacent). Use "on" only when the objects touch; if there is a gap, the word is "above".',
   under: '"under" = directly BENEATH and TOUCHING the reference: target row = reference row + 1, SAME column (rows must be adjacent). Use "under" only when the objects touch; if there is a gap, the word is "below".',
+  in: '"in" = INSIDE the container: the object goes in the SAME cell the container occupies, drawn nested inside it. Not near it, not on top of it — inside it.',
+  between: '"between" = in a cell with one reference object on EACH side: all three share the same row (or the same column) and the target sits in the empty cell separating the two references.',
 };
 
 export interface PrepositionScope {
@@ -84,6 +125,21 @@ export interface PrepositionScope {
   requested: SupportedPosition[];
   /** Position words the lesson asked for that this grid cannot express (logged, not served). */
   unsupported: string[];
+}
+
+/**
+ * The extra eval modes a lesson's request implies.
+ *
+ * `in` and `between` are NOT relative-window words (see MODE_POSITIONS), so a lesson
+ * asking for them is asking for a challenge TYPE, not a vocabulary widening. In a
+ * blended session (no pinned mode) this is what turns the old "we cannot express that"
+ * log line into served content.
+ */
+export function resolveRequestedModes(resolved: PrepositionScope | null): string[] {
+  if (!resolved) return [];
+  return MODE_POSITIONS
+    .filter((p) => (resolved.requested as readonly string[]).includes(p))
+    .map((p) => MODE_FOR_POSITION[p]);
 }
 
 // ---------------------------------------------------------------------------
@@ -123,8 +179,55 @@ export function positionHolds(
     // containment is exactly what makes C3 possible and why the guard below exists.
     case "on": return dr === -1 && dc === 0;
     case "under": return dr === 1 && dc === 0;
+    // Containment: the contained object OCCUPIES the container's cell. This is the
+    // rule that inverts R11, which is why `in` is served by its own eval mode and is
+    // never a relative-window option (see MODE_POSITIONS).
+    case "in": return dr === 0 && dc === 0;
+    // `between` is deliberately NOT judgeable here — it needs a SECOND reference.
+    // Use betweenHolds(). Returning null keeps it out of every options list.
     default: return null;
   }
+}
+
+/**
+ * Does `target` sit between reference `a` and reference `b`?
+ *
+ * The two-reference twin of `positionHolds` — the whole reason `between` could not be
+ * served before (contract C2): the checker took one reference, so the word had no
+ * correctness owner. All three must share a row or a column, with the target strictly
+ * inside the span.
+ */
+export function betweenHolds(target: GridCell, a: GridCell, b: GridCell): boolean {
+  if (a.row === b.row && target.row === a.row) {
+    return target.col > Math.min(a.col, b.col) && target.col < Math.max(a.col, b.col);
+  }
+  if (a.col === b.col && target.col === a.col) {
+    return target.row > Math.min(a.row, b.row) && target.row < Math.max(a.row, b.row);
+  }
+  return false;
+}
+
+/**
+ * The single cell that lies between two reference objects, or null when the pair
+ * admits no unambiguous answer (not collinear, adjacent with no gap, or a span wide
+ * enough to hold more than one "between" cell).
+ *
+ * CODE OWNS THE ANSWER: the generator derives `correctCell` from this rather than
+ * trusting an LLM-emitted cell ([[llm-window-code-builds-structure]]). A pair this
+ * returns null for is REJECTED, never shipped with a guessed answer.
+ */
+export function resolveBetweenCell(a: GridCell, b: GridCell): GridCell | null {
+  if (a.row === b.row) {
+    const lo = Math.min(a.col, b.col);
+    const hi = Math.max(a.col, b.col);
+    return hi - lo === 2 ? { row: a.row, col: lo + 1 } : null;
+  }
+  if (a.col === b.col) {
+    const lo = Math.min(a.row, b.row);
+    const hi = Math.max(a.row, b.row);
+    return hi - lo === 2 ? { row: lo + 1, col: a.col } : null;
+  }
+  return null;
 }
 
 export interface ExclusiveOptions {
@@ -163,7 +266,7 @@ export function enforceSingleDefensibleOption(
   rawOptions: string[],
   target: GridCell,
   reference: GridCell,
-  positionWindow: SupportedPosition[],
+  positionWindow: RelativePosition[],
 ): ExclusiveOptions {
   const trueInWindow = positionWindow.filter((w) => positionHolds(w, target, reference) === true);
 
@@ -197,10 +300,13 @@ export function enforceSingleDefensibleOption(
   for (const opt of rawOptions) {
     if (seen.has(opt)) continue;
     seen.add(opt);
-    if (!(positionWindow as readonly string[]).includes(opt)) {
-      // No grid semantics, or outside the lesson's window — the checker cannot own it.
+    const holds = positionHolds(opt, target, reference);
+    if (!(positionWindow as readonly string[]).includes(opt) || holds === null) {
+      // Outside the lesson's window, or a word with no single-reference grid semantics
+      // (`between` needs two references) — either way the checker cannot own it, so it
+      // must not be offered. A distractor whose truth is unknown may in fact be TRUE.
       outOfWindow.push(opt);
-    } else if (positionHolds(opt, target, reference) === true) {
+    } else if (holds === true) {
       removed.push(opt); // ALSO defensible → the C3 trap
     } else {
       kept.push(opt);
@@ -209,10 +315,11 @@ export function enforceSingleDefensibleOption(
 
   // Backfill from the window with words that are FALSE for this geometry, so the
   // student still chooses between real alternatives (contract R7: >= 2 options).
+  // `!== false` (not `=== true`) so an unjudgeable word can never be backfilled either.
   const TARGET_OPTIONS = 4;
   for (const w of positionWindow) {
     if (kept.length >= TARGET_OPTIONS) break;
-    if (seen.has(w) || positionHolds(w, target, reference) === true) continue;
+    if (seen.has(w) || positionHolds(w, target, reference) !== false) continue;
     seen.add(w);
     kept.push(w);
   }
@@ -266,7 +373,7 @@ const prepositionScopeSchema: Schema = {
       maxItems: String(MAX_UNSUPPORTED),
       description:
         "Position/preposition words the text asks for that are NOT in the supported list "
-        + "(for example: in, between, in front of, behind, through, around, across). "
+        + "(for example: in front of, behind, through, around, across). "
         + "Empty array if there are none.",
       items: { type: Type.STRING, description: "One requested word not in the supported list." },
     },
@@ -297,8 +404,8 @@ ${scope.objectiveText ? `LEARNING OBJECTIVE: "${scope.objectiveText}"\n` : ''}${
 
 Report ONLY the position words the text above actually names. Do not infer, do not fill in a sensible default, do not add words that merely relate to the topic.
 
-- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of). If the text names NO particular position words, return an empty array.
-- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: in, inside, between, in front of, behind, through, around, across). Empty array if there are none.`;
+- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of, "inside"/"into" -> in, "in the middle of"/"in between" -> between). If the text names NO particular position words, return an empty array.
+- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: in front of, behind, through, around, across). Empty array if there are none.`;
 
     const result = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -339,22 +446,27 @@ Report ONLY the position words the text above actually names. Do not infer, do n
  * Grade-band default window — the behavior that shipped for the math K.G.1 consumer.
  * Contract R1: with no lesson request, K stays exactly {above, below, beside, next_to}.
  */
-export function bandDefaultPositions(gradeBand: "K" | "1"): SupportedPosition[] {
+export function bandDefaultPositions(gradeBand: "K" | "1"): RelativePosition[] {
   return gradeBand === "K"
     ? ["above", "below", "beside", "next_to"]
     : ["above", "below", "beside", "next_to", "left_of", "right_of"];
 }
 
 /**
- * Compose the window the generator may use: the band default WIDENED by whatever the
- * lesson explicitly asked for. Never narrows — a resolved request can only add.
+ * Compose the window the RELATIVE modes may use: the band default WIDENED by whatever
+ * the lesson explicitly asked for. Never narrows — a resolved request can only add.
+ *
+ * `in` and `between` are filtered out by construction: they are served by their own
+ * eval modes, not by widening this window (see MODE_POSITIONS). A lesson asking only
+ * for containment therefore leaves the relative window at its band default — the math
+ * K.G.1 guarantee (R1) survives a vocabulary the relative modes cannot judge.
  */
 export function composePositionWindow(
   gradeBand: "K" | "1",
   resolved: PrepositionScope | null,
-): SupportedPosition[] {
+): RelativePosition[] {
   const base = bandDefaultPositions(gradeBand);
   if (!resolved || resolved.requested.length === 0) return base;
-  const union = new Set<SupportedPosition>([...base, ...resolved.requested]);
-  return SUPPORTED_POSITIONS.filter((p) => union.has(p));
+  const union = new Set<string>([...base, ...resolved.requested]);
+  return RELATIVE_POSITIONS.filter((p) => union.has(p));
 }

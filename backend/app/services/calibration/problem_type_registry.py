@@ -373,8 +373,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "spatial-scene": {
         "identify":          PriorConfig(1.0, "Identify position word from multiple choice"),
+        "place_in":          PriorConfig(1.5, "Containment: put an object inside a container"),
         "place":             PriorConfig(2.0, "Place object at described position on grid"),
         "describe":          PriorConfig(3.0, "Select position word for shown arrangement"),
+        "place_between":     PriorConfig(3.5, "Place an object between two reference objects"),
         "follow_directions": PriorConfig(4.0, "Multi-step spatial placement"),
     },
     "shape-composer": {

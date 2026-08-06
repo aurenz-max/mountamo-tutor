@@ -18,27 +18,40 @@ Every closure strikes its row here AND updates the WORKSTREAMS row in the same s
 
 ## Queue
 
-> **2026-08-05 (late) — the user took item 2 first, as `/pm` recommended. It is CLOSED
-> (struck below).** Top is now **item 1**, and its own recommended split stands: `in` +
-> `between` are buildable now, the viewer-relative pair needs a design ruling first.
+> **2026-08-05 (latest) — item 1 taken and SPLIT as recommended: `in` + `between` are
+> CLOSED (struck below); the viewer-relative pair carries forward as item 1b.** Top is
+> now **item 1b** (a DESIGN ruling, not code) — `/pm` may prefer to pull item 2b or 4,
+> both of which are buildable without a ruling.
 
-### 1. `spatial-scene` containment + two-reference prepositions — `/add-eval-modes` + component
-**Demand: 4-5 subskills** (LA004-01-F "in", LA004-05-B "Put the pencil **in** the box",
-LA004-05-C "in front/behind", LA004-05-F "between").
-Contract `docs/contracts/spatial-scene.md` **C2 (OPEN)** names the whole class. The
-2026-08-05 slice shipped `on`/`under` and made the window intent-driven; these are the
-words a 3×3 static grid still cannot express:
-- **`in` (containment)** — needs same-cell occupancy + a nested render (object drawn
-  inside the container's cell). **Inverts contract R11** (`place` currently targets an
-  EMPTY cell, and `GridScene` only offers the tap affordance on empty cells) — read R11
-  before touching, this is the flagged edit.
-- **`between`** — needs TWO reference objects; the schema carries one
-  `referenceObjectName`. Schema + checker change.
-- **`in_front_of` / `behind`** — viewer-relative; ambiguous with above/below in a
-  top-down grid. Needs a design ruling (side-elevation view? depth cue?) before code.
-The resolver already reports all of these as `unsupported` and the generator logs the
-gap, so demand is measurable today — grep `[SpatialScene] Lesson asked for position
-words this 3x3 grid cannot express`.
+### ~~1. `spatial-scene` containment + two-reference prepositions~~ — **`in` + `between` CLOSED 2026-08-05 (late)**
+Both shipped as their own eval modes — **`place_in`** (β 1.5) and **`place_between`**
+(β 3.5) — **not** as a widening of the position window. The flagged R11 edit was taken as
+a **fork** (ladder rung 1, eval-mode split): `place` is untouched and R11 is now
+explicitly scoped, with `allowOccupiedTaps`/`nestPlaced` defaulting off so no existing
+mode changed. Both new modes derive `correctCell` in **code** (neither schema carries a
+cell) and reject rather than guess. R12 hardened so an unjudgeable word can never survive
+as a distractor (**R15**).
+**Demand converted at the routing layer:** LA004-05-B (*"Put the pencil in the box"*) now
+routes to `place_in` unprompted, LA004-01-F to a `place_in|place|place_between` blend.
+27/27 real-Gemini challenges clean incl. a math K.G.1 control; suite 49/49 (+15, 3-of-49
+revert-bite); NEW component drive 8/8 (2-of-8 revert-bite — the container cell was
+literally unclickable before); Vitest 1670/1670; tsc 803 = baseline.
+Also fixed en route: a curator **blend pin** was resolving to null and generating all six
+modes (a 17-challenge session). Report:
+`spatial-scene-containment-2026-08-05.md` · Contract: **R13/R14/R15, C2 partially resolved**.
+**Residual:** no real-browser look at the nested render → `qa/HUMAN-CHECKS.md`.
+
+### 1b. `in_front_of` / `behind` — **DESIGN RULING FIRST, then `/add-eval-modes`**
+**Demand: 1-2 subskills** (LA004-05-C "in front/behind").
+Deliberately left out of the 08-05 containment slice. Viewer-relative position is
+**ambiguous with above/below in a top-down 3×3 grid** — the same arrangement reads as
+"above" or "in front of" depending on an implied camera the grid never establishes. That
+is a rule-#1 hazard (a child marked wrong for a defensible answer), not a build task, so
+it needs a ruling before code: side-elevation view? an explicit depth cue (overlap,
+scale, shadow)? a different primitive entirely? The resolver still reports both as
+`unsupported` and the generator logs the gap, so the demand stays measurable —
+grep `[SpatialScene] Lesson asked for position words this 3x3 grid cannot express`.
+Contract **C2** stays OPEN for these.
 
 ### ~~2. `on`/`above` ambiguity in `identify`/`describe` — RULE-#1 RISK, small fix~~ — **CLOSED 2026-08-05 (late)**
 ~~Found 2026-08-05 (evening, `bd1c535`)~~ — **measured, fixed, promoted to contract R12.**
@@ -61,6 +74,11 @@ tracker **SS-5**). The `hint` poses the key as a leading yes/no question: key `a
 *"Is the flower right **above** it?"*. **2 of 3 identify hints leaked; 0 of 3 describe.**
 Pre-existing and independent of R12 — but it defeats the same skill R12 just made
 answerable, so it belongs to this primitive's next slice, not a future sweep.
+**2026-08-05 (latest) — RE-FRAMED by the containment slice: `hint` is a DEAD FIELD.**
+`SpatialScene.tsx` never renders `currentChallenge.hint` and `aiPrimitiveData` does not
+carry it, so today this leak reaches nobody. The item is therefore not "fix the leak"
+but **"decide whether hints should render at all"** — either wire them (and then the
+guard below is required) or stop generating them and drop the field. Do that first.
 `buildSharedContext` already asks for *"hints that guide without giving the answer"* and
 the LLM ignores it, so prose alone is not binding: state it as a hard per-mode constraint
 (the support-tier `hard` line already has the right wording — *"must NOT name the position
@@ -132,6 +150,16 @@ Do not force these into tap-primitives.
 
 ## Closed
 
+- **2026-08-05 (late) — `spatial-scene` containment + two-reference prepositions
+  (item 1, `in` + `between` half).** The flagged R11 edit, taken as a **fork**: `place_in`
+  (β 1.5) targets the cell the container OCCUPIES — R11 inverted — and `place_between`
+  (β 3.5) is judged from TWO references. Neither widens the position window, so R1 stays
+  byte-for-byte for math K.G.1 (**R15**). Both derive `correctCell` in code and reject
+  rather than guess. Curator now routes LA004-05-B → `place_in` and LA004-01-F →
+  `place_in|place|place_between` unprompted. 27/27 real-Gemini clean; suite 49/49
+  (3-of-49 bite); NEW jsdom component drive 8/8 (2-of-8 bite); Vitest 1670/1670; tsc 803.
+  En route: a curator **blend pin** was silently generating all six modes — fixed.
+  Report `spatial-scene-containment-2026-08-05.md` · Contract **R13/R14/R15, C2 partial**.
 - **2026-08-05 — `spatial-scene` intent-driven preposition window (7 subskills served).**
   The handoff's headline predicted BIRTH ("Preposition/Spatial Scene") was an
   **anti-duplication catch**: `spatial-scene` already existed at `catalog/math.ts:3743`,

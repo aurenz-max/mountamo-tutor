@@ -17,8 +17,10 @@ import {
   composePositionWindow,
   enforceSingleDefensibleOption,
   placeAnswerSlot,
+  resolveRequestedModes,
+  resolveBetweenCell,
   SUPPORTED_POSITION_SEMANTICS,
-  type SupportedPosition,
+  type RelativePosition,
 } from "./spatial-scene/resolvePrepositionScope";
 
 // ---------------------------------------------------------------------------
@@ -52,13 +54,34 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Provide 2-3 steps, each with instruction, target object, and correct cell.`,
     schemaDescription: "'follow_directions' (multi-step placement)",
   },
+  place_in: {
+    promptDoc:
+      `"place_in": CONTAINMENT. Student taps the cell the CONTAINER occupies to put an object `
+      + `INSIDE it: 'Put the pencil in the box'. Name a container already on the grid; the object `
+      + `goes in the container's own cell, not next to it.`,
+    schemaDescription: "'place_in' (put an object inside a container)",
+  },
+  place_between: {
+    promptDoc:
+      `"place_between": TWO-REFERENCE placement. Student taps the empty cell that sits between `
+      + `two named objects: 'Put the ball between the box and the tree'. The two references share `
+      + `a row or a column with exactly one empty cell separating them.`,
+    schemaDescription: "'place_between' (place an object between two objects)",
+  },
 };
 
 // ---------------------------------------------------------------------------
 // Support tiers (within-mode scaffolding withdrawal) — FIXED harness
 // ---------------------------------------------------------------------------
 
-type ChallengeType = "identify" | "place" | "describe" | "follow_directions";
+type ChallengeType =
+  | "identify" | "place" | "describe" | "follow_directions"
+  | "place_in" | "place_between";
+
+/** The four modes that shipped before the containment/two-reference fork. */
+const RELATIVE_CHALLENGE_TYPES: ChallengeType[] = [
+  "identify", "place", "describe", "follow_directions",
+];
 
 type SupportTier = "easy" | "medium" | "hard";
 
@@ -134,6 +157,24 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : "Hints confirm the relation word but let the student locate the cell.",
       );
       break;
+    case "place_in":
+      promptLines.push(
+        tier === "easy"
+          ? "The instruction names the container plainly ('Put the ball IN the box'); hints may say that 'in' means inside the container itself."
+          : tier === "hard"
+            ? "Hints must NOT say where 'in' maps on the grid and must NOT name the container; ask the student which object could HOLD the item."
+            : "Hints name the container but let the student work out that 'in' means the container's own square.",
+      );
+      break;
+    case "place_between":
+      promptLines.push(
+        tier === "easy"
+          ? "The instruction names both reference objects plainly ('Put the ball BETWEEN the box and the tree'); hints may say to look for the empty square with one object on each side."
+          : tier === "hard"
+            ? "Hints must NOT describe the empty square or name both references again; ask the student what 'between' means when there is an object on each side."
+            : "Hints restate the two reference objects but let the student find the square that has one on each side.",
+      );
+      break;
     case "follow_directions":
       promptLines.push(
         tier === "easy"
@@ -175,7 +216,7 @@ const SCENARIO_THEMES = [
  * that window get their grid semantics stated, so the LLM is never invited to emit a
  * relation the checker cannot judge.
  */
-function buildSharedContext(positionWindow: SupportedPosition[]): string {
+function buildSharedContext(positionWindow: RelativePosition[]): string {
   const semantics = positionWindow
     .map((p) => `  * ${SUPPORTED_POSITION_SEMANTICS[p]}`)
     .join("\n");
@@ -199,8 +240,32 @@ IMPORTANT SPATIAL RULES:
 `;
 }
 
+/**
+ * Containment vocabulary for `place_in`.
+ *
+ * The shared object list is chosen for RELATIVE position ("the cat is above the tree"),
+ * and most of it cannot hold anything — "put the ball in the star" teaches the wrong
+ * meaning of `in`, which is the whole content of the skill. The prompt offers this list
+ * and `NON_CONTAINERS` rejects the obvious violations the LLM still produces.
+ */
+const CONTAINER_OBJECTS: Array<[string, string]> = [
+  ["box", "\u{1F4E6}"], ["basket", "\u{1F9FA}"], ["backpack", "\u{1F392}"],
+  ["cup", "\u{1F964}"], ["bowl", "\u{1F963}"], ["house", "\u{1F3E0}"], ["car", "\u{1F697}"],
+];
+
+/** Objects nothing can be "in". A challenge naming one as the container is dropped. */
+const NON_CONTAINERS = new Set(["ball", "star", "flower", "cat", "dog", "tree", "chair"]);
+
 function clampGrid(value: number, gridSize: number): number {
   return Math.max(0, Math.min(gridSize - 1, Math.round(value)));
+}
+
+/** Resolve a scene object by name, tolerant of casing/whitespace drift from the LLM. */
+function findObject(objects: SceneObject[], name: unknown): SceneObject | undefined {
+  if (typeof name !== "string") return undefined;
+  const key = name.trim().toLowerCase();
+  if (!key) return undefined;
+  return objects.find((o) => o.name.trim().toLowerCase() === key);
 }
 
 function randomTheme(): string {
@@ -332,6 +397,62 @@ const placeSchema: Schema = {
   required: ["challenges"],
 };
 
+/**
+ * `place_in` — containment. NOTE what is absent: no correctCellRow/Col. The answer is
+ * the container's own cell, derived in code from `containerName`, so the LLM cannot
+ * emit a placement that contradicts the container it drew.
+ */
+const PLACE_IN_SLOTS = 4;
+const placeInSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    challenges: {
+      type: Type.ARRAY,
+      description: "3 progressive challenges",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          ...BASE_FIELDS,
+          ...sceneObjFields(PLACE_IN_SLOTS),
+          containerName: { type: Type.STRING, description: "Name of the container object already on the grid (must be one of the sceneObj slots)" },
+          targetName: { type: Type.STRING, description: "Name of the object the student puts INSIDE the container (must NOT be on the grid yet)" },
+          targetImage: { type: Type.STRING, description: "Target object emoji" },
+        },
+        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(PLACE_IN_SLOTS), "containerName", "targetName", "targetImage"],
+      },
+    },
+  },
+  required: ["challenges"],
+};
+
+/**
+ * `place_between` — two references. Also deliberately without correctCellRow/Col: the
+ * cell is derived from the two reference positions by `resolveBetweenCell`.
+ */
+const PLACE_BETWEEN_SLOTS = 4;
+const placeBetweenSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    challenges: {
+      type: Type.ARRAY,
+      description: "3 progressive challenges",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          ...BASE_FIELDS,
+          ...sceneObjFields(PLACE_BETWEEN_SLOTS),
+          referenceAName: { type: Type.STRING, description: "First reference object name (must be one of the sceneObj slots)" },
+          referenceBName: { type: Type.STRING, description: "Second reference object name (must be one of the sceneObj slots)" },
+          targetName: { type: Type.STRING, description: "Name of the object the student places between them (must NOT be on the grid yet)" },
+          targetImage: { type: Type.STRING, description: "Target object emoji" },
+        },
+        required: ["id", "instruction", "hint", ...sceneObjRequiredFields(PLACE_BETWEEN_SLOTS), "referenceAName", "referenceBName", "targetName", "targetImage"],
+      },
+    },
+  },
+  required: ["challenges"],
+};
+
 const followDirectionsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -374,7 +495,7 @@ const followDirectionsSchema: Schema = {
 
 async function generateIdentifyDescribe(
   topic: string, gradeLevel: string, theme: string, mode: "identify" | "describe",
-  tierSection: string, sharedContext: string, positionWindow: SupportedPosition[],
+  tierSection: string, sharedContext: string, positionWindow: RelativePosition[],
 ): Promise<SpatialSceneChallenge[]> {
   const modeLabel = mode === "identify"
     ? "identify — ask 'Where is X relative to Y?' with 4 position-word options"
@@ -585,6 +706,256 @@ CHALLENGE TYPE: place — student taps a grid cell to place an object.
   return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
 }
 
+/**
+ * `place_in` — containment enactment ("Put the pencil in the box").
+ *
+ * FORKED FROM `place`, NOT AN EDIT OF IT (contract R11 + the fork ladder). `place`
+ * requires `correctCell` to be an EMPTY cell and the component only offers a tap
+ * affordance on empty cells; containment inverts both — the answer is the cell the
+ * container OCCUPIES. Serving it inside `place` would have ablated the math K.G.1
+ * consumer's guarantee, so it became its own eval mode instead.
+ *
+ * The LLM draws the scene and names the container; CODE derives the answer cell from
+ * the container's position, so a challenge can never ship a cell that contradicts the
+ * container it drew.
+ */
+async function generatePlaceIn(
+  topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
+): Promise<SpatialSceneChallenge[]> {
+  // Entropy belongs in the PROMPT, and a shuffled MENU is not enough: offered the
+  // container list in a random order, flash-lite still returned box / house / car on
+  // 5 of 5 probed runs — it anchors on the shared object vocabulary, not on the order.
+  // So the code ASSIGNS the container per challenge and the LLM only writes the scene
+  // around it ([[llm-window-code-builds-structure]]).
+  const shuffled = [...CONTAINER_OBJECTS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const picks = shuffled.slice(0, 3);
+  const containerList = shuffled.map(([n, e]) => `${n}=${e}`).join(", ");
+  const assignment = picks
+    .map(([n, e], i) => `  - Challenge ${i + 1}: the container is the ${n} (${e}).`)
+    .join("\n");
+
+  const prompt = `
+Create 3 spatial reasoning "place_in" challenges for "${topic}" (${gradeLevel}).
+Theme: ${theme}.
+
+${sharedContext}
+${tierSection}
+CHALLENGE TYPE: place_in — CONTAINMENT. The student taps the container's own square to put an object INSIDE it.
+- ${SUPPORTED_POSITION_SEMANTICS.in}
+- Place 4 scene objects on a 3×3 grid. ONE of them is the CONTAINER.
+- ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
+- Each scene object must occupy a UNIQUE grid cell.
+- The container MUST be something that can actually hold an object. Containers you may use: ${containerList}.
+  NEVER use a ball, star, flower, tree, chair or an animal as the container — nothing goes INSIDE those.
+- USE EXACTLY THESE CONTAINERS, one per challenge — do not substitute your own:
+${assignment}
+  Put that container on the grid as one of the sceneObj slots (with the emoji shown above)
+  and set containerName to its name.
+- Set targetName/targetImage to a SMALL object that fits inside it, and use a DIFFERENT
+  small object in each challenge (crayon, block, apple, key, coin, sock, spoon, ball, star).
+  The target must NOT already be on the grid — the student is the one who puts it there.
+- The instruction must use the word "in": "Put the crayon IN the box". Write it in plain
+  words with no emoji.
+- Do NOT say where the container is on the grid, and do NOT tell the student which square
+  to tap — working out that "in" means the container's own square IS the skill.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: placeInSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges) return [];
+
+  const gridSize = 3;
+  const validChallenges = (data.challenges as FlatObj[]).map((flat) => {
+    const challengeId = String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`);
+    const sceneObjects = collectSceneObjects(flat, PLACE_IN_SLOTS, gridSize);
+
+    // SS-1: no empty grids.
+    if (sceneObjects.length === 0) {
+      console.warn("[SpatialScene] place_in: Rejected challenge with 0 scene objects");
+      return null;
+    }
+
+    // The container is the correctness anchor — no container, no answer.
+    const container = findObject(sceneObjects, flat.containerName);
+    if (!container) {
+      console.warn(
+        `[SpatialScene] place_in ${challengeId}: container "${String(flat.containerName)}" is not on `
+        + `the grid — rejected (the answer cell is the container's own cell).`,
+      );
+      return null;
+    }
+    if (NON_CONTAINERS.has(container.name.trim().toLowerCase())) {
+      console.warn(
+        `[SpatialScene] place_in ${challengeId}: "${container.name}" cannot hold anything — `
+        + `rejected rather than teach "in" with a container that isn't one.`,
+      );
+      return null;
+    }
+
+    const targetName = typeof flat.targetName === "string" ? flat.targetName.trim() : "";
+    if (!targetName || targetName.toLowerCase() === container.name.trim().toLowerCase()) {
+      console.warn(`[SpatialScene] place_in ${challengeId}: target is missing or IS the container — rejected.`);
+      return null;
+    }
+    // The student places the target, so it must not already be drawn on the grid.
+    const preplaced = findObject(sceneObjects, targetName);
+    const scene = preplaced ? sceneObjects.filter((o) => o !== preplaced) : sceneObjects;
+    if (preplaced) {
+      console.warn(
+        `[SpatialScene] place_in ${challengeId}: target "${targetName}" was already on the grid — `
+        + `removed so the student is the one who places it.`,
+      );
+    }
+
+    return {
+      id: challengeId,
+      type: "place_in" as const,
+      instruction: String(flat.instruction ?? `Put the ${targetName} in the ${container.name}!`),
+      hint: String(flat.hint ?? "Something can go INSIDE it — tap that square."),
+      sceneObjects: scene,
+      targetObject: {
+        name: targetName,
+        image: typeof flat.targetImage === "string" ? flat.targetImage : "\u{26BD}",
+        position: { row: 0, col: 0 }, // placeholder — the student places it
+      },
+      correctPosition: "in" as const,
+      referenceObjectName: container.name,
+      // CODE OWNS THE ANSWER: the container's own cell, never an LLM-emitted cell.
+      correctCell: { row: container.position.row, col: container.position.col },
+    };
+  });
+
+  return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
+}
+
+/**
+ * `place_between` — two-reference enactment ("Put the ball between the box and the tree").
+ *
+ * The half of contract C2 that a single-reference checker could not own: `between`
+ * needs TWO reference objects. The LLM draws the scene and names the pair; CODE derives
+ * the answer with `resolveBetweenCell`, so a pair that admits no unambiguous answer
+ * (not collinear, adjacent, or the gap already occupied) is REJECTED rather than
+ * shipped with a guess. Unlike `place_in` this honors R11 — the answer cell is empty.
+ */
+async function generatePlaceBetween(
+  topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
+): Promise<SpatialSceneChallenge[]> {
+  const prompt = `
+Create 3 spatial reasoning "place_between" challenges for "${topic}" (${gradeLevel}).
+Theme: ${theme}.
+
+${sharedContext}
+${tierSection}
+CHALLENGE TYPE: place_between — TWO REFERENCE OBJECTS. The student taps the empty square that has one named object on each side.
+- ${SUPPORTED_POSITION_SEMANTICS.between}
+- Place 4 scene objects on a 3×3 grid. TWO of them are the reference objects.
+- ALL 4 scene object slots (sceneObj0..sceneObj3) MUST be filled — no empty slots.
+- Each scene object must occupy a UNIQUE grid cell.
+- CRITICAL LAYOUT RULE: the two reference objects must share a row OR a column and be
+  EXACTLY TWO steps apart, so there is exactly ONE square between them.
+  Valid: reference A at row 1 col 0 and reference B at row 1 col 2 -> the square between is row 1 col 1.
+  Valid: reference A at row 0 col 2 and reference B at row 2 col 2 -> the square between is row 1 col 2.
+  Invalid: references that touch, sit diagonally, or are in different rows AND different columns.
+- THE SQUARE BETWEEN THEM MUST BE EMPTY — do not put a third object there.
+- Set referenceAName / referenceBName to those two objects' names (exactly as in their sceneObj slots).
+- Set targetName/targetImage to the object the student places. It must NOT already be on the grid.
+- The instruction must use the word "between" and name BOTH references: "Put the ball BETWEEN the box and the tree".
+- Do NOT say which square that is — the student has to work it out.
+`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: { responseMimeType: "application/json", responseSchema: placeBetweenSchema },
+  });
+
+  const data = result.text ? JSON.parse(result.text) : null;
+  if (!data?.challenges) return [];
+
+  const gridSize = 3;
+  const validChallenges = (data.challenges as FlatObj[]).map((flat) => {
+    const challengeId = String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`);
+    const sceneObjects = collectSceneObjects(flat, PLACE_BETWEEN_SLOTS, gridSize);
+
+    // SS-1: no empty grids.
+    if (sceneObjects.length === 0) {
+      console.warn("[SpatialScene] place_between: Rejected challenge with 0 scene objects");
+      return null;
+    }
+
+    const refA = findObject(sceneObjects, flat.referenceAName);
+    const refB = findObject(sceneObjects, flat.referenceBName);
+    if (!refA || !refB || refA === refB) {
+      console.warn(
+        `[SpatialScene] place_between ${challengeId}: needs TWO distinct references on the grid, got `
+        + `"${String(flat.referenceAName)}" / "${String(flat.referenceBName)}" — rejected.`,
+      );
+      return null;
+    }
+
+    // CODE OWNS THE ANSWER. A pair with no single cell between them has no defensible
+    // answer at all, so it is dropped rather than shipped with a guessed cell.
+    const correctCell = resolveBetweenCell(refA.position, refB.position);
+    if (!correctCell) {
+      console.warn(
+        `[SpatialScene] place_between ${challengeId}: ${refA.name}(${refA.position.row},${refA.position.col}) `
+        + `and ${refB.name}(${refB.position.row},${refB.position.col}) have no single cell between them — rejected.`,
+      );
+      return null;
+    }
+    // R11 holds for THIS mode: the tap target must be an empty cell.
+    const blocker = sceneObjects.find(
+      (o) => o.position.row === correctCell.row && o.position.col === correctCell.col,
+    );
+    if (blocker) {
+      console.warn(
+        `[SpatialScene] place_between ${challengeId}: the cell between ${refA.name} and ${refB.name} is `
+        + `occupied by "${blocker.name}" — rejected (nothing to place there).`,
+      );
+      return null;
+    }
+
+    const targetName = typeof flat.targetName === "string" ? flat.targetName.trim() : "";
+    if (!targetName || findObject(sceneObjects, targetName)) {
+      console.warn(
+        `[SpatialScene] place_between ${challengeId}: target "${targetName}" is missing or already on the `
+        + `grid — rejected (the student must be the one who places it).`,
+      );
+      return null;
+    }
+
+    return {
+      id: challengeId,
+      type: "place_between" as const,
+      instruction: String(
+        flat.instruction ?? `Put the ${targetName} between the ${refA.name} and the ${refB.name}!`,
+      ),
+      hint: String(flat.hint ?? "Look for the empty square with one object on each side."),
+      sceneObjects,
+      targetObject: {
+        name: targetName,
+        image: typeof flat.targetImage === "string" ? flat.targetImage : "\u{26BD}",
+        position: { row: 0, col: 0 }, // placeholder — the student places it
+      },
+      correctPosition: "between" as const,
+      referenceObjectName: refA.name,
+      referenceObjectName2: refB.name,
+      correctCell,
+    };
+  });
+
+  return validChallenges.filter((c): c is NonNullable<typeof c> => c !== null);
+}
+
 async function generateFollowDirections(
   topic: string, gradeLevel: string, theme: string, tierSection: string, sharedContext: string,
 ): Promise<SpatialSceneChallenge[]> {
@@ -702,6 +1073,38 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     // deliberately absent. Answer is not slot 0.
     options: ["beside", "next_to", "above", "below"],
   },
+  place_in: {
+    id: "c1", type: "place_in",
+    instruction: "Put the ball in the box!",
+    hint: "Which one of these could hold a ball inside it?",
+    sceneObjects: [
+      { name: "box", image: "\u{1F4E6}", position: { row: 1, col: 1 } },
+      { name: "tree", image: "\u{1F333}", position: { row: 0, col: 0 } },
+      { name: "cat", image: "\u{1F431}", position: { row: 2, col: 2 } },
+      { name: "flower", image: "\u{1F338}", position: { row: 0, col: 2 } },
+    ],
+    targetObject: { name: "ball", image: "\u{26BD}", position: { row: 0, col: 0 } },
+    correctPosition: "in",
+    referenceObjectName: "box",
+    // Containment: the answer is the cell the box OCCUPIES (contract R11 inverted).
+    correctCell: { row: 1, col: 1 },
+  },
+  place_between: {
+    id: "c1", type: "place_between",
+    instruction: "Put the ball between the box and the tree!",
+    hint: "Find the empty square with one thing on each side.",
+    sceneObjects: [
+      { name: "box", image: "\u{1F4E6}", position: { row: 1, col: 0 } },
+      { name: "tree", image: "\u{1F333}", position: { row: 1, col: 2 } },
+      { name: "house", image: "\u{1F3E0}", position: { row: 0, col: 0 } },
+      { name: "cat", image: "\u{1F431}", position: { row: 2, col: 2 } },
+    ],
+    targetObject: { name: "ball", image: "\u{26BD}", position: { row: 0, col: 0 } },
+    correctPosition: "between",
+    referenceObjectName: "box",
+    referenceObjectName2: "tree",
+    correctCell: { row: 1, col: 1 },
+  },
   follow_directions: {
     id: "c1", type: "follow_directions",
     instruction: "Follow the directions to set up the scene!",
@@ -738,34 +1141,28 @@ export const generateSpatialScene = async (
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as SpatialSceneConfig;
   // -- Resolve eval mode --
-  const evalConstraint = resolveEvalModeConstraint(
-    "spatial-scene",
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
-  logEvalModeResolution("SpatialScene", config?.targetEvalMode, evalConstraint);
-
-  const allowedTypes = evalConstraint?.allowedTypes
-    ?? ["identify", "place", "describe", "follow_directions"];
-
-  // -- Resolve support tier (drives application; pinnedType only shapes prompt tone) --
-  const supportTier = normalizeSupportTier(config?.difficulty);
-  const pinnedType =
-    evalConstraint?.allowedTypes.length === 1
-      ? (evalConstraint.allowedTypes[0] as ChallengeType)
-      : undefined;
-  const tierScaffold =
-    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
-  // Authoritative scope (topic + objective + intent) folded into the threaded
-  // tierSection so it reaches all sub-prompts with no signature change. The LLM
-  // authors the scene objects, so this binds the intent's theme/focus to what's
-  // shown. scope-context-contract wire; correctness is code-owned downstream.
-  const scopeSection = buildScopePromptSection(ctx.scope);
-  const tierSection = (tierScaffold
-    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT scene/relation change)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join("\n")}\n`
-    : "") + scopeSection;
-
-  const theme = randomTheme();
+  // The pin may be a BLEND ("place_in|place|place_between") — resolveLessonEvalModes
+  // emits that syntax and the published LA004-01-F objective measurably produces it.
+  // `resolveEvalModeConstraint` matches ONE key exactly, so a blend pin used to fall
+  // through to "generate every mode"; with six modes that is a 17-challenge session
+  // instead of the three the curator chose. Parsed here rather than in the shared
+  // helper, which ~60 other generators depend on.
+  const pin = config?.targetEvalMode?.trim();
+  const pinKeys = pin && pin !== "mixed" ? pin.split("|").map((k) => k.trim()).filter(Boolean) : [];
+  const pinConstraints = pinKeys
+    .map((k) => resolveEvalModeConstraint("spatial-scene", k, CHALLENGE_TYPE_DOCS))
+    .filter((c): c is NonNullable<typeof c> => c !== null);
+  const evalConstraint = pinConstraints.length === 1 ? pinConstraints[0] : null;
+  logEvalModeResolution("SpatialScene", pin, evalConstraint);
+  const pinnedTypes = pinConstraints.length
+    ? Array.from(new Set(pinConstraints.flatMap((c) => c.allowedTypes)))
+    : null;
+  if (pinConstraints.length > 1) {
+    console.log(
+      `[SpatialScene] evalMode blend: [${pinConstraints.map((c) => c.definition.evalMode).join(" + ")}] `
+      + `→ types [${pinnedTypes!.join(", ")}]`,
+    );
+  }
 
   // -- Determine gradeBand (needed BEFORE dispatch: it seeds the position window) --
   const gl = gradeLevel.toLowerCase();
@@ -785,12 +1182,42 @@ export const generateSpatialScene = async (
   }
   if (prepositionScope?.unsupported.length) {
     // Honest saturation, never silent truncation: say what we could not serve.
+    // `in` and `between` are no longer in this list — they route to their own modes.
     console.warn(
       `[SpatialScene] Lesson asked for position words this 3x3 grid cannot express: `
       + `[${prepositionScope.unsupported.join(", ")}] — served with the supported window instead. `
       + `See qa/la-k2-grammar/BACKLOG.md.`,
     );
   }
+
+  // `in` and `between` are challenge TYPES here, not window words: containment inverts
+  // R11 and `between` needs a second reference, so each forked into its own eval mode.
+  // In a BLENDED session (nothing pinned) a lesson that named them gets that mode; a
+  // lesson that did not — every math K.G.1 lesson — keeps exactly the four it had.
+  const requestedModes = resolveRequestedModes(prepositionScope);
+  const allowedTypes = pinnedTypes ?? [...RELATIVE_CHALLENGE_TYPES, ...requestedModes];
+  if (!pinnedTypes && requestedModes.length) {
+    console.log(`[SpatialScene] Lesson request adds mode(s) [${requestedModes.join(", ")}] to the blend`);
+  }
+
+  // -- Resolve support tier (drives application; pinnedType only shapes prompt tone) --
+  const supportTier = normalizeSupportTier(config?.difficulty);
+  const pinnedType =
+    evalConstraint?.allowedTypes.length === 1
+      ? (evalConstraint.allowedTypes[0] as ChallengeType)
+      : undefined;
+  const tierScaffold =
+    pinnedType && supportTier ? resolveSupportStructure(pinnedType, supportTier) : null;
+  // Authoritative scope (topic + objective + intent) folded into the threaded
+  // tierSection so it reaches all sub-prompts with no signature change. The LLM
+  // authors the scene objects, so this binds the intent's theme/focus to what's
+  // shown. scope-context-contract wire; correctness is code-owned downstream.
+  const scopeSection = buildScopePromptSection(ctx.scope);
+  const tierSection = (tierScaffold
+    ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT scene/relation change)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join("\n")}\n`
+    : "") + scopeSection;
+
+  const theme = randomTheme();
   const sharedContext = buildSharedContext(positionWindow);
 
   // -- Dispatch per-mode sub-generators in parallel --
@@ -818,6 +1245,18 @@ export const generateSpatialScene = async (
     generators.push(
       generateFollowDirections(topic, gradeLevel, theme, tierSection, sharedContext)
         .catch((e) => { console.error("[SpatialScene] follow_directions failed:", e); return []; }),
+    );
+  }
+  if (allowedTypes.includes("place_in")) {
+    generators.push(
+      generatePlaceIn(topic, gradeLevel, theme, tierSection, sharedContext)
+        .catch((e) => { console.error("[SpatialScene] place_in failed:", e); return []; }),
+    );
+  }
+  if (allowedTypes.includes("place_between")) {
+    generators.push(
+      generatePlaceBetween(topic, gradeLevel, theme, tierSection, sharedContext)
+        .catch((e) => { console.error("[SpatialScene] place_between failed:", e); return []; }),
     );
   }
 

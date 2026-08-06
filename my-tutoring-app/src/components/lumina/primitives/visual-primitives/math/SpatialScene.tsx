@@ -27,7 +27,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export type PositionWord =
   | 'above' | 'below' | 'beside' | 'left_of' | 'right_of'
-  | 'between' | 'on' | 'under' | 'next_to' | 'in_front_of' | 'behind';
+  | 'between' | 'on' | 'under' | 'next_to' | 'in_front_of' | 'behind' | 'in';
 
 export interface SceneObject {
   name: string;
@@ -37,7 +37,7 @@ export interface SceneObject {
 
 export interface SpatialSceneChallenge {
   id: string;
-  type: 'identify' | 'place' | 'describe' | 'follow_directions';
+  type: 'identify' | 'place' | 'describe' | 'follow_directions' | 'place_in' | 'place_between';
   instruction: string;
 
   // Scene layout
@@ -50,7 +50,17 @@ export interface SpatialSceneChallenge {
   options?: string[];
 
   // place — "Put the ball above the box" → student taps a grid cell
+  // place_in — "Put the ball IN the box" → the answer is the cell the CONTAINER
+  //   occupies (referenceObjectName is the container), so occupied cells are tappable
+  //   here and the placed object renders NESTED inside it. This inverts the empty-cell
+  //   rule `place` relies on, which is why it is a separate challenge type rather than
+  //   a flag on `place` (contract R11 + fork ladder).
+  // place_between — "Put the ball between the box and the tree" → an EMPTY cell with
+  //   one reference on each side; referenceObjectName + referenceObjectName2 name them.
   correctCell?: { row: number; col: number };
+
+  /** Second reference object — `place_between` only (the checker is still cell-based). */
+  referenceObjectName2?: string;
 
   // describe — select the right position word for the shown arrangement
   // (reuses correctPosition + options)
@@ -100,10 +110,15 @@ export interface SpatialSceneData {
 
 const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   identify: { label: 'Identify', icon: '🔍', accentColor: 'blue' },
+  place_in: { label: 'Put In', icon: '📥', accentColor: 'cyan' },
   place: { label: 'Place', icon: '📍', accentColor: 'purple' },
   describe: { label: 'Describe', icon: '💬', accentColor: 'emerald' },
+  place_between: { label: 'Between', icon: '↔️', accentColor: 'pink' },
   follow_directions: { label: 'Directions', icon: '🗺️', accentColor: 'orange' },
 };
+
+/** Cell-judged modes: the student taps a grid cell and `correctCell` is the answer. */
+const CELL_JUDGED_TYPES = new Set(['place', 'place_in', 'place_between']);
 
 const POSITION_LABELS: Record<PositionWord, string> = {
   above: 'Above',
@@ -117,6 +132,7 @@ const POSITION_LABELS: Record<PositionWord, string> = {
   next_to: 'Next to',
   in_front_of: 'In front of',
   behind: 'Behind',
+  in: 'In',
 };
 
 // ============================================================================
@@ -135,23 +151,46 @@ interface GridSceneProps {
   showGrid?: boolean;
   /** Object name labels under each emoji. Withdrawn at hard. */
   showLabels?: boolean;
+  /**
+   * CONTAINMENT (`place_in`): a placed object landing on an occupied cell renders
+   * INSIDE the object already there instead of replacing it. Off everywhere else, so
+   * the relative modes keep one-object-per-cell exactly as before.
+   */
+  nestPlaced?: boolean;
+  /**
+   * CONTAINMENT (`place_in`): the container's cell IS the answer, so occupied cells
+   * must offer the tap affordance. Every other mode taps empty cells only (contract R11).
+   */
+  allowOccupiedTaps?: boolean;
+}
+
+/** What a single grid cell renders: the object standing there, plus anything nested in it. */
+interface CellContents {
+  base?: SceneObject;
+  inside?: SceneObject;
 }
 
 const GridScene: React.FC<GridSceneProps> = ({
   gridSize, sceneObjects, placedObjects = [], highlightCell, targetHighlight, onCellClick, interactive,
-  showGrid = true, showLabels = true,
+  showGrid = true, showLabels = true, nestPlaced = false, allowOccupiedTaps = false,
 }) => {
   // Build a lookup map of what's in each cell
   const cellMap = useMemo(() => {
-    const map: Record<string, SceneObject> = {};
+    const map: Record<string, CellContents> = {};
     for (const obj of sceneObjects) {
-      map[`${obj.position.row}-${obj.position.col}`] = obj;
+      map[`${obj.position.row}-${obj.position.col}`] = { base: obj };
     }
     for (const p of placedObjects) {
-      map[`${p.row}-${p.col}`] = p.object;
+      const key = `${p.row}-${p.col}`;
+      const existing = map[key];
+      // Nesting only when a container is already there AND the mode asked for it;
+      // otherwise keep the historical behavior (the placed object takes the cell).
+      map[key] = nestPlaced && existing?.base
+        ? { base: existing.base, inside: p.object }
+        : { base: p.object };
     }
     return map;
-  }, [sceneObjects, placedObjects]);
+  }, [sceneObjects, placedObjects, nestPlaced]);
 
   return (
     <div
@@ -165,9 +204,12 @@ const GridScene: React.FC<GridSceneProps> = ({
         const row = Math.floor(i / gridSize);
         const col = i % gridSize;
         const key = `${row}-${col}`;
-        const obj = cellMap[key];
+        const cell = cellMap[key];
+        const obj = cell?.base;
+        const inside = cell?.inside;
         const isHighlighted = highlightCell?.row === row && highlightCell?.col === col;
         const isTarget = targetHighlight?.row === row && targetHighlight?.col === col;
+        const tappable = interactive && (allowOccupiedTaps || !obj);
 
         return (
           <button
@@ -185,16 +227,31 @@ const GridScene: React.FC<GridSceneProps> = ({
                 : obj
                 ? (showGrid ? 'border-white/15 bg-slate-800/40' : 'border-transparent bg-slate-800/30')
                 : (showGrid ? 'border-white/5 bg-slate-900/20' : 'border-transparent bg-transparent')}
-              ${interactive && !obj ? 'hover:border-white/30 hover:bg-slate-800/30 cursor-pointer' : ''}
+              ${tappable ? 'hover:border-white/30 hover:bg-slate-800/30 cursor-pointer' : ''}
               ${!interactive ? 'cursor-default' : ''}
             `}
           >
             {obj && (
               <>
-                <span className="text-2xl sm:text-3xl leading-none">{obj.image}</span>
+                <span className="relative inline-flex items-center justify-center text-2xl sm:text-3xl leading-none">
+                  {obj.image}
+                  {/* Containment: the placed object is drawn INSIDE the container,
+                      smaller and overlapping, so "in" reads as inside rather than
+                      as a second object sharing the square. */}
+                  {inside && (
+                    <span
+                      className="absolute inset-0 flex items-end justify-center pb-0.5"
+                      aria-label={`${inside.name} in ${obj.name}`}
+                    >
+                      <span className="text-sm sm:text-base leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                        {inside.image}
+                      </span>
+                    </span>
+                  )}
+                </span>
                 {showLabels && (
                   <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 leading-none truncate max-w-full px-1">
-                    {obj.name}
+                    {inside ? `${inside.name} in ${obj.name}` : obj.name}
                   </span>
                 )}
               </>
@@ -302,6 +359,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     instruction: currentChallenge?.instruction ?? '',
     correctPosition: currentChallenge?.correctPosition,
     referenceObjectName: currentChallenge?.referenceObjectName,
+    referenceObjectName2: currentChallenge?.referenceObjectName2,
     targetObjectName: currentChallenge?.targetObject?.name,
     attemptNumber: currentAttempts + 1,
     supportTier: currentChallenge?.supportTier,
@@ -385,6 +443,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     return correct;
   }, [currentChallenge, selectedOption, incrementAttempts, sendText, tutorRevealClause]);
 
+  /** Cell-judged modes: `place`, `place_in` (container's cell) and `place_between`. */
   const handleCheckPlace = useCallback(() => {
     if (!currentChallenge || !selectedCell) return false;
     incrementAttempts();
@@ -393,16 +452,32 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
 
     if (correct) {
       SoundManager.playCorrect();
-      setFeedback(`Perfect! You placed it in the right spot!`);
+      setFeedback(
+        currentChallenge.type === 'place_in'
+          ? `Perfect! The ${currentChallenge.targetObject.name} is in the ${currentChallenge.referenceObjectName}!`
+          : currentChallenge.type === 'place_between'
+          ? `Perfect! The ${currentChallenge.targetObject.name} is between the ${currentChallenge.referenceObjectName} and the ${currentChallenge.referenceObjectName2}!`
+          : `Perfect! You placed it in the right spot!`,
+      );
       setFeedbackType('success');
       sendText(`[ANSWER_CORRECT] Student placed ${currentChallenge.targetObject.name} correctly. Celebrate!`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      setFeedback(`That's not quite the right spot. Read the instruction again carefully!`);
+      setFeedback(
+        currentChallenge.type === 'place_in'
+          ? `Not quite. Which thing on the grid could hold it INSIDE?`
+          : currentChallenge.type === 'place_between'
+          ? `Not quite. Look for the empty square with one object on each side.`
+          : `That's not quite the right spot. Read the instruction again carefully!`,
+      );
       setFeedbackType('error');
       sendText(
         `[ANSWER_INCORRECT] Student placed object at (${selectedCell.row},${selectedCell.col}) but correct is (${target?.row},${target?.col}). `
-        + `Hint: "The instruction says '${currentChallenge.correctPosition}'. Think about where that means."`
+        + (currentChallenge.type === 'place_in'
+          ? `Hint: "'In' means inside the ${currentChallenge.referenceObjectName} itself — the same square it is on."`
+          : currentChallenge.type === 'place_between'
+          ? `Hint: "'Between' means one object on EACH side. Look at the ${currentChallenge.referenceObjectName} and the ${currentChallenge.referenceObjectName2}."`
+          : `Hint: "The instruction says '${currentChallenge.correctPosition}'. Think about where that means."`)
         + tutorRevealClause(),
         { silent: true },
       );
@@ -495,7 +570,9 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     let correct = false;
     switch (currentChallenge.type) {
       case 'identify': correct = handleCheckIdentify(); break;
-      case 'place': correct = handleCheckPlace(); break;
+      case 'place':
+      case 'place_in':
+      case 'place_between': correct = handleCheckPlace(); break;
       case 'describe': correct = handleCheckDescribe(); break;
       case 'follow_directions': return; // handled step-by-step
     }
@@ -585,7 +662,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     if (!currentChallenge) return false;
     switch (currentChallenge.type) {
       case 'identify': case 'describe': return !!selectedOption;
-      case 'place': return !!selectedCell;
+      case 'place': case 'place_in': case 'place_between': return !!selectedCell;
       case 'follow_directions': return false; // step-by-step
       default: return false;
     }
@@ -690,34 +767,58 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
     );
   };
 
+  /**
+   * The cell-judged modes: `place`, `place_in`, `place_between`.
+   *
+   * `place_in` is the fork of contract R11 — its answer is the cell the CONTAINER
+   * occupies, so occupied cells are tappable and the placed object renders nested
+   * inside the container. `place` keeps its original behavior byte-for-byte: empty
+   * cells only, highlight-on-correct, no nesting.
+   */
   const renderPlace = () => {
     if (!currentChallenge || !currentChallenge.targetObject) return null;
+    const isContainment = currentChallenge.type === 'place_in';
+
+    // Show the object actually sitting in its place once the student gets it right.
+    // Legacy `place` keeps the highlight-only feedback it shipped with.
+    const placed =
+      isCurrentChallengeCorrect && currentChallenge.correctCell && currentChallenge.type !== 'place'
+        ? [{
+            object: currentChallenge.targetObject,
+            row: currentChallenge.correctCell.row,
+            col: currentChallenge.correctCell.col,
+          }]
+        : [];
 
     return (
       <div className="space-y-4">
         <div className="text-center mb-2">
           <span className="text-2xl">{currentChallenge.targetObject.image}</span>
           <span className="text-slate-300 text-sm ml-2">{currentChallenge.targetObject.name}</span>
-          <p className="text-slate-500 text-xs mt-1">Tap a cell to place it</p>
+          <p className="text-slate-500 text-xs mt-1">
+            {isContainment ? 'Tap what it goes inside' : 'Tap a cell to place it'}
+          </p>
         </div>
         <GridScene
           gridSize={gridSize}
           sceneObjects={currentChallenge.sceneObjects}
+          placedObjects={placed}
+          nestPlaced={isContainment}
+          allowOccupiedTaps={isContainment}
           highlightCell={selectedCell}
           targetHighlight={isCurrentChallengeCorrect ? currentChallenge.correctCell : undefined}
           showGrid /* place: cells are the tap surface — keep the frame, only labels withdraw */
           showLabels={currentChallenge.showObjectLabels ?? true}
           onCellClick={(row, col) => {
-            if (!isCurrentChallengeCorrect) {
-              // Don't allow placing on existing objects
-              const occupied = currentChallenge.sceneObjects.some(
-                (o) => o.position.row === row && o.position.col === col,
-              );
-              if (!occupied) {
-                SoundManager.tap();
-                setSelectedCell({ row, col });
-              }
-            }
+            if (isCurrentChallengeCorrect) return;
+            // Containment: the container's own cell IS the answer, so an occupied cell
+            // must be selectable. Every other mode places into an empty cell (R11).
+            const occupied = currentChallenge.sceneObjects.some(
+              (o) => o.position.row === row && o.position.col === col,
+            );
+            if (occupied && !isContainment) return;
+            SoundManager.tap();
+            setSelectedCell({ row, col });
           }}
           interactive={!isCurrentChallengeCorrect}
         />
@@ -843,7 +944,7 @@ const SpatialScene: React.FC<SpatialSceneProps> = ({ data, className }) => {
             </div>
 
             {(currentChallenge.type === 'identify' || currentChallenge.type === 'describe') && renderIdentifyOrDescribe()}
-            {currentChallenge.type === 'place' && renderPlace()}
+            {CELL_JUDGED_TYPES.has(currentChallenge.type) && renderPlace()}
             {currentChallenge.type === 'follow_directions' && renderFollowDirections()}
 
             {/* Feedback */}

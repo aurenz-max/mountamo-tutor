@@ -4,7 +4,8 @@
 - **Component:** `primitives/visual-primitives/math/SpatialScene.tsx` ·
   **Generator:** `service/math/gemini-spatial-scene.ts` ·
   **Catalog:** `service/manifest/catalog/math.ts:3743`
-- **Status:** ACTIVE (C1 + C3 RESOLVED 2026-08-05; C2 open)
+- **Status:** ACTIVE (C1 + C3 RESOLVED 2026-08-05; C2 PARTIALLY resolved — `in`/`between`
+  served, `in_front_of`/`behind` + path words still open)
 
 ## Consumers (blast radius)
 
@@ -121,9 +122,10 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
   at K and all 3 challenges targeted an unoccupied cell (`(1,1)`, `(1,2)`, `(1,2)`).
   `qa/eval-reports/spatial-scene-2026-08-05.md`.
 - **Probe:** for each `place` challenge, `correctCell` ∉ `sceneObjects[].position`.
-  **Still the flagged edit for BACKLOG item 1** — a containment ("in") mode deliberately
-  targets an OCCUPIED cell, so it INVERTS this requirement and must fork rather than
-  edit in place.
+- **Scope (2026-08-05 late):** this requirement is scoped to `place`, `place_between`
+  and `follow_directions`. `place_in` deliberately INVERTS it (R13) and is a **separate
+  eval mode** precisely so this one stays unconditional for the math consumer. The
+  component enforces the split: `allowOccupiedTaps` is off for every mode but `place_in`.
 
 ### R12 — `identify`/`describe` options carry exactly ONE defensible answer · OBSERVED
 - **Property:** For the arrangement actually drawn, exactly one entry in `options` is
@@ -143,6 +145,50 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
   nobody enumerated (`beside` ⊂ `left_of`/`right_of`, live at Grade 1). It additionally
   makes R1 **code-enforced** for these two modes: an out-of-window option is dropped and
   an out-of-window key repaired, where R1 was previously prompt-observed only.
+
+### R13 — `place_in` targets the cell the CONTAINER occupies · OBSERVED
+- **Property:** For a `place_in` challenge, `correctCell` **equals** the grid position of
+  the object named by `referenceObjectName`, that object can actually hold something, and
+  the object being placed is NOT already drawn on the grid. The container's cell is
+  tappable (`allowOccupiedTaps`) and the placed object renders nested inside it
+  (`nestPlaced`), never replacing it.
+- **Demanded by:** K LA prepositions consumer (LA004-05-B *"Put the pencil in the box"*,
+  LA004-01-F).
+- **Why it is a separate mode:** it is R11 inverted. Folding it into `place` would make
+  R11 conditional on content the checker never sees. Fork ladder rung 1 (eval-mode split).
+- **Evidence:** `generatePlaceIn` derives `correctCell` from `containerName` — the schema
+  carries no cell at all; `NON_CONTAINERS` rejection; probe A **15/15** across 5 real
+  runs; component drive `SpatialScene.containment.test.tsx` 8/8 with a 2-of-8 revert-bite
+  (pre-fix the container cell was literally unclickable).
+  `qa/la-k2-grammar/spatial-scene-containment-2026-08-05.md`.
+- **Probe:** for each `place_in` challenge, `correctCell` === position of
+  `referenceObjectName`; container ∉ `NON_CONTAINERS`; `targetObject.name` ∉ `sceneObjects`.
+
+### R14 — `place_between` is judged from TWO references, and its cell is empty · OBSERVED
+- **Property:** `correctCell` lies strictly between `referenceObjectName` and
+  `referenceObjectName2` on a shared row or column, is **unoccupied** (R11 holds here),
+  and the instruction names both references. A reference pair with no single cell between
+  it is REJECTED, never shipped with a guessed answer.
+- **Demanded by:** K LA prepositions consumer (LA004-01-F, LA004-05-F).
+- **Why it is a separate mode:** `positionHolds` takes ONE reference; `between` needs two.
+  It is judged by `betweenHolds` / `resolveBetweenCell`, not by a position word.
+- **Evidence:** `generatePlaceBetween` derives `correctCell` in code (no cell in the
+  schema); probes B **9/9** and D **9/9**; component drive 8/8.
+- **Probe:** recompute `resolveBetweenCell(refA, refB)` from the shipped scene; it must
+  equal `correctCell`, and no scene object may sit there.
+
+### R15 — only a word the code can JUDGE may be an option or a window word · OBSERVED
+- **Property:** The relative position window (`composePositionWindow`) contains only
+  words `positionHolds` implements. `in`/`between` never enter it — they are served by
+  their own modes. An option whose truth is `null` is dropped, and is never backfilled.
+- **Demanded by:** both consumers — this is what keeps R1 true while the vocabulary grows,
+  and what stops R12 from being defeated by a word with no correctness owner (a
+  "distractor" whose truth is unknown may in fact be TRUE).
+- **Evidence:** `RELATIVE_POSITIONS` / `MODE_POSITIONS` split; the `holds === null` guard
+  and the `!== false` backfill in `enforceSingleDefensibleOption`; suite 49/49 with a
+  3-of-49 revert-bite; math control probe C 9/9, 0 out-of-window.
+- **Probe:** a containment-only request must leave `composePositionWindow('K', …)` equal
+  to `bandDefaultPositions('K')`.
 
 ## Conflicts
 
@@ -164,16 +210,29 @@ rejected: the task identity is unchanged (still place/identify/describe), and th
 is not the grade band — a Grade-1 math lesson and a Grade-1 LA lesson want different
 windows at the *same* band.
 
-### C2 — a 3×3 static grid cannot express part of the LA demand — **OPEN**
+### C2 — a 3×3 static grid cannot express part of the LA demand — **PARTIALLY RESOLVED 2026-08-05 (late) via rung 1 (eval-mode split)**
 
-`in` (containment — same cell, nested render), `between` (needs two reference objects;
-the schema carries one `referenceObjectName`), `in_front_of`/`behind` (viewer-relative;
-ambiguous with above/below in a top-down view), and `through`/`around`/`across` (path,
-not position) are all named by the published K LA curriculum and none are expressible
-today. The resolver reports them as `unsupported` and the generator **logs the gap
-rather than pretending it was served** (honest saturation, the di-sentence-reading
-precedent). Queued in `qa/la-k2-grammar/BACKLOG.md`. **Any edit adding these must
-re-read R11 first** — containment inverts it.
+`in` (containment — same cell, nested render), `between` (two reference objects),
+`in_front_of`/`behind` (viewer-relative; ambiguous with above/below in a top-down view),
+and `through`/`around`/`across` (path, not position) are all named by the published K LA
+curriculum. Originally none were expressible; the resolver reported them as `unsupported`
+and the generator logged the gap rather than pretending it was served.
+
+**`in` and `between` are now served** — each as its OWN eval mode (`place_in` R13,
+`place_between` R14), not by widening the relative window. That distinction is the
+resolution: containment inverts R11 and `between` needs a second reference, so both break
+an assumption the relative modes rely on. Rung 1 of the ladder (eval-mode split) rather
+than rung 3 (config axis), because unlike C1 the **task identity genuinely changes** —
+"tap the container" and "tap the gap between two things" are not the same skill as "tap
+the cell above the box". `composePositionWindow` filters them out of the window by
+construction, so a lesson asking only for containment leaves R1 byte-for-byte intact
+(R15). Measured: 27/27 real-Gemini challenges clean, math control unchanged, and the
+curator routes LA004-05-B → `place_in` unprompted.
+
+**STILL OPEN — `in_front_of` / `behind` and the path class.** The viewer-relative pair
+needs a design ruling before code (side-elevation view? depth cue?) — it was deliberately
+left out of the 08-05 slice, not forgotten. Path words are a different primitive
+(BACKLOG item 3). Both remain honestly reported as `unsupported`.
 
 ### C3 — `above`/`on` are not mutually exclusive — **RESOLVED 2026-08-05 (evening) → R12**
 
@@ -215,6 +274,27 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
+- **2026-08-05 (latest)** — **C2 PARTIALLY RESOLVED → R13/R14/R15.** Containment (`in`)
+  and two-reference (`between`) ship as eval modes **`place_in`** (β 1.5) and
+  **`place_between`** (β 3.5). The flagged R11 edit was taken as a **fork, not an edit**:
+  `place` is untouched and R11 is now explicitly scoped, with the component enforcing the
+  split (`allowOccupiedTaps` / `nestPlaced` default off). Both new modes derive
+  `correctCell` in CODE — neither schema carries a cell — and reject rather than guess
+  (non-container, unresolvable reference, non-collinear pair, occupied gap, pre-placed
+  target). R12 hardened: an unjudgeable option can no longer survive as a distractor.
+  Edit guard: **COMPATIBLE** — R1/R11 re-probed on a math K.G.1 control (9 challenges,
+  0 out-of-window, every `place` cell empty), R5–R10/R12 untouched for the relative modes.
+  27/27 real-Gemini challenges clean; suite 49/49 (+15) with a 3-of-49 revert-bite; a new
+  jsdom component drive 8/8 with a 2-of-8 revert-bite; full Vitest 1670/1670; tsc 803 =
+  baseline. Also fixed here: a **blend pin** (`place_in|place|place_between` — measured
+  from the live curator for LA004-01-F) was resolving to null and generating every mode,
+  a 17-challenge session; parsed locally now. Routing re-probed post-projection:
+  LA004-05-B → `place_in`, LA004-01-F → the 3-mode blend.
+  `qa/la-k2-grammar/spatial-scene-containment-2026-08-05.md`.
+  **Residual:** no real-browser look at the nested render (jsdom asserts the DOM, not the
+  visual) → `qa/HUMAN-CHECKS.md`. And `hint` is confirmed **never rendered** by the
+  component — which re-frames the queued SS-5 leak (item 2b) as a question about a dead
+  field.
 - **2026-08-05 (late)** — **C3 RESOLVED → R12.** `identify`+`describe` pinned at
   LA004-01-F (the mode combination the pilot never exercised) measured the ambiguity at
   **4/18**; a geometry-driven exclusivity guard took it to **0/36** with the math control
