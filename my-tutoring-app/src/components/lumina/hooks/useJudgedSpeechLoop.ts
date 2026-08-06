@@ -290,7 +290,16 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       peak: event.peak,
       duringTutorAudio: event.duringTutorAudio,
     };
+    // Deaf-loop detection. A turn only reaches this handler while the run is
+    // enabled (both turn paths are gated on it), so a REAL turn closing against
+    // an unarmed loop means the learner is speaking into a surface that cannot
+    // record them — and the reducer, correctly inert when disarmed (DI-3),
+    // leaves no trace of it. Read BEFORE dispatch, which is what would arm.
+    const wasArmed = loopStateRef.current.armed;
     dispatch(event.belowMinVoice ? { type: 'voice-blip', turn } : { type: 'voice-close', turn });
+    if (!wasArmed && !event.belowMinVoice) {
+      callbacksRef.current.onEmission?.({ kind: 'loop-deaf', turn });
+    }
     schedulePendingCue();
   }, [dispatch, flushJudgeText, schedulePendingCue]);
 
@@ -401,8 +410,26 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // deliberately NOT dropped: consumers queue their closing line ("run
   // complete") and then disable, and that line must still fire after the
   // verify audio settles. Consumers that stop abruptly call clearQueuedCue.
+  //
+  // FALLING EDGE ONLY — never "while disabled" (first lesson-integrated DI
+  // sitting, run 967e2399f310, 2026-08-06: the pack armed, then answered
+  // nothing for a whole run; 9 voice turns, `attempts: 0`).
+  //
+  // A pack arms inside its startRun, which calls `setRunning(true)` and `arm()`
+  // in one synchronous block — so the ref write lands BEFORE React commits
+  // `enabled: true`. This effect's other deps (`dispatch` → `schedulePendingCue`
+  // → `ctx`) change identity on EVERY render, and the lesson provider rebuilds
+  // its context value on every mic-level frame, so the effect re-runs constantly.
+  // Level-triggered, any of those passes that still carried the pre-run
+  // `enabled === false` — one racing the arm, or the previous render's deferred
+  // passive effects flushing late — wiped the arm, and nothing re-armed it. An
+  // unarmed loop returns `voice-close`, `transcript` and `tutor-text` untouched,
+  // so the child speaks, the tutor judges, and the surface never hears either.
+  const previousEnabledRef = useRef(enabled);
   useEffect(() => {
-    if (enabled) return;
+    const wasEnabled = previousEnabledRef.current;
+    previousEnabledRef.current = enabled;
+    if (enabled || !wasEnabled) return;
     dispatch({ type: 'disarm' });
     clearDeadCueWatch(true);
   }, [enabled, dispatch, clearDeadCueWatch]);

@@ -587,6 +587,15 @@ export const DiMathFacts: React.FC<DiMathFactsData> = (data) => {
           // warm; success converges on the 'session-resumed' branch above.
           noteSessionDead();
           return;
+        case 'loop-deaf':
+          // The child spoke and the engine had no armed loop to record it. This
+          // is OUR defect, not theirs (2026-08-06: a whole lesson run ran deaf
+          // and every counter read as silence), so recover rather than stall —
+          // re-arm so the NEXT thing they say is heard. Deliberately no re-cue:
+          // the tutor is mid-item and already asked; a second ask on top of it
+          // would talk over the child who is answering right now.
+          loopRef.current?.arm();
+          return;
         default:
           return;
       }

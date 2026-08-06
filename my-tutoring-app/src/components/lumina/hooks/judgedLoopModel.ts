@@ -269,6 +269,27 @@ export type LoopEmission =
       text: string;
     }
   | { kind: 'unanchored-verdict'; judgment: 'affirmed' | 'corrected' }
+  | {
+      /**
+       * A real voice turn closed while the run was LIVE but the loop was not
+       * armed. The learner is answering into a surface that cannot record
+       * attempts: no attempt opens, no verdict binds, and the pack sits on its
+       * item forever while the tutor keeps talking.
+       *
+       * Hook-produced, like 'session-resumed' and 'session-dead' — the reducer
+       * stays inert when disarmed (DI-3), and only the runtime knows whether a
+       * run is in progress or the loop is simply idle between runs.
+       *
+       * WHY IT EXISTS (2026-08-06). A whole lesson run failed exactly this way
+       * and left no trace: 9 voice turns above the bar, `attempts: 0`, and
+       * every counter in the run log reading precisely as if the child had
+       * never spoken. Consumers treat it as a defect signal, not a pedagogical
+       * event: log it and re-arm. It should never fire now that disabling
+       * disarms on the falling edge only — one in a run log is a bug to chase.
+       */
+      kind: 'loop-deaf';
+      turn: VoiceTurnRecord;
+    }
   | { kind: 'resync'; misses: number }
   | {
       /**
@@ -335,6 +356,8 @@ export function reduceJudgedLoop(
       return { state: { ...IDLE_JUDGED_LOOP, lastTutorQuietAt: state.lastTutorQuietAt }, emissions };
 
     case 'voice-close': {
+      // Inert when disarmed (DI-3) — the deaf-loop signal this state produces is
+      // raised by useJudgedSpeechLoop, which alone knows a run is live.
       if (!state.armed) return { state, emissions };
       const attempt: LoopAttempt = { turn: event.turn, transcript: null, transcriptAt: null };
       if (state.attempt) emissions.push({ kind: 'attempt-superseded', attempt: state.attempt });

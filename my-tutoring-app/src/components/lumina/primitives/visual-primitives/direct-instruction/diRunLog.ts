@@ -52,7 +52,8 @@ export type DiRunFlag =
   | 'move-on'          // correction cap hit — never once observed live before
   | 'retro'            // verdict rebuilt from an unanchored trace (turn detection is marginal)
   | 'session-dead'     // cues going out, tutor proven silent — the mid-run stall, caught live (item 5)
-  | 'session-resumed'; // transport resumed; the pack re-cues the item in flight
+  | 'session-resumed'  // transport resumed; the pack re-cues the item in flight
+  | 'loop-deaf';       // learner spoke into an UNARMED loop — our defect, reads as silence everywhere else
 
 export interface DiRunEvent {
   seq: number;
@@ -341,6 +342,20 @@ export function logDiEmission(emission: LoopEmission, ctx: DiRunItemContext = {}
         kind: emission.kind,
         text: `session dead: ${emission.deadCues} consecutive cues with no tutor audio or text`,
         flag: 'session-dead',
+      });
+      return;
+
+    case 'loop-deaf':
+      // The learner spoke and the loop was not armed to record it. OUR defect,
+      // and previously invisible: it produces no attempt, so every counter in
+      // this log reads exactly as if the child had stayed silent. One of these
+      // in a run means the surface could not hear them.
+      push({
+        ...base,
+        speaker: 'learner',
+        kind: emission.kind,
+        text: `voice turn closed into an UNARMED loop (${Math.round(emission.turn.durationMs)}ms) — answer not recorded`,
+        flag: 'loop-deaf',
       });
       return;
 
