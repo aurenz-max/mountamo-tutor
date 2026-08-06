@@ -189,6 +189,13 @@ const STATIC_CONTEXT_KEYS = new Set([
   'componentIntent',
 ]);
 
+// How close together two IDENTICAL cues must land to be treated as one.
+// StrictMode's double-invoke of a state updater is synchronous, so the copies
+// arrive in the same tick (a real session logged pairs 0-2ms apart). Anything a
+// student repeats on purpose — tapping 🔊 twice, re-asking — is an order of
+// magnitude slower and still goes through.
+const DUPLICATE_CUE_WINDOW_MS = 50;
+
 export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socketRef = useRef<WebSocket | null>(null);
   const audioServiceRef = useRef<AudioCaptureService | null>(null);
@@ -288,6 +295,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Signature of the last context update actually forwarded to Gemini. Used to
   // drop referentially-churned-but-value-identical updates (see updateContext).
   const lastContextSigRef = useRef<string>('');
+
+  // Twin of the guard above, for the cue channel (see sendText).
+  const lastCueRef = useRef<{ text: string; at: number }>({ text: '', at: 0 });
 
   // Metrics tracking
   const [aiMetrics, setAIMetrics] = useState<AIMetrics>({
@@ -901,6 +911,21 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('Cannot send text: not connected');
       return;
     }
+
+    // Dedup identical cues landing in the same tick — the cue-channel twin of
+    // updateContext's signature guard below. A cue is a side effect, and a
+    // primitive that fires one from inside a state updater emits it twice under
+    // StrictMode; the duplicate then barges in on the turn the first copy just
+    // started, clipping the tutor mid-sentence. A real session shipped every
+    // [ANSWER_CORRECT] twice this way (2026-08-06 review). Guarding here covers
+    // every primitive — several send from inside updaters today, and the next
+    // one written that way is fixed on arrival.
+    const now = Date.now();
+    if (text === lastCueRef.current.text && now - lastCueRef.current.at < DUPLICATE_CUE_WINDOW_MS) {
+      console.warn('[LuminaAI] Dropped duplicate cue within the same tick:', text.slice(0, 80));
+      return;
+    }
+    lastCueRef.current = { text, at: now };
 
     if (!options?.silent) {
       setAIMetrics(prev => ({

@@ -1,6 +1,7 @@
 import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { IntroBriefingData } from "../../types";
 import { ai } from "../geminiClient";
+import { HOOK_VISUAL_THEMES, emojiForHookTheme } from "../../utils/hookVisual";
 // Type-only — keeps the client-side auth stack out of this server module.
 import type { StudentPersona } from "../studentContext/types";
 
@@ -120,12 +121,13 @@ export const generateIntroBriefing = async (
             type: Type.STRING,
             description: 'Engaging opening that captures attention and connects to students\' lives, age-appropriate and curiosity-creating'
           },
-          visual: {
+          visualTheme: {
             type: Type.STRING,
-            description: 'A single emoji that represents the hook visually'
+            enum: [...HOOK_VISUAL_THEMES],
+            description: 'The menu theme that best matches the hook. Code attaches the emoji — never write a glyph or a free-form word here.'
           }
         },
-        required: ['type', 'content', 'visual']
+        required: ['type', 'content', 'visualTheme']
       },
 
       bigIdea: {
@@ -293,6 +295,8 @@ Choose the hook type that best fits the content and grade level:
 
 Younger students often respond better to scenarios and stories; older students engage with questions and surprising facts.
 
+For **visualTheme**, pick the single menu value closest to what the hook is ABOUT (a hook about counting marbles is \`counting\`, not \`game\`). It is a category label, not student-facing text — the interface renders an icon for it.
+
 ### Objective Writing
 - Start each objective with a measurable action verb
 - Keep objectives achievable within the estimated time
@@ -368,6 +372,14 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
 
     if (!result) {
       throw new Error('No data returned from Gemini API');
+    }
+
+    // Attach the hook's emoji code-side from the theme the model picked. The
+    // model never writes the glyph — asked for one directly it returns a word
+    // ("marbles"), which renders as giant text in the brief's text-5xl slot.
+    if (result.hook) {
+      result.hook.visual = emojiForHookTheme(result.hook.visualTheme, result.hook.type);
+      delete result.hook.visualTheme;
     }
 
     // Stamp the name deterministically (code-side) for the "Prepared for X"

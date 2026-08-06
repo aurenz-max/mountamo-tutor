@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
 import { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
+import { resolveHookVisual } from '../utils/hookVisual';
 import { useLuminaAI } from '../hooks/useLuminaAI';
 import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, LuminaReadAloud, type LuminaAccent } from '../ui';
 
@@ -263,7 +264,12 @@ export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) =
         <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-[80px] opacity-20 bg-amber-500" />
 
         <div className="flex items-start gap-4 relative z-10">
-          <span className="text-5xl">{briefingData.hook.visual}</span>
+          {/* Guarded: this slot is a glyph badge, so a word that leaked into
+              hook.visual degrades to the hook-type emoji instead of rendering
+              as 48px body copy. */}
+          <span className="text-5xl leading-none">
+            {resolveHookVisual(briefingData.hook.visual, briefingData.hook.type)}
+          </span>
           <div className="flex-1">
             <span className="text-[10px] uppercase tracking-widest text-amber-400 font-mono border border-amber-500/30 px-2 py-1 rounded bg-amber-500/10">
               {briefingData.hook.type === 'scenario' && 'Imagine this...'}
