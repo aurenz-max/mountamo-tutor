@@ -53,9 +53,20 @@ queue AND this file's "last touched" in the same slice.
 > self-inflicted barge-ins causes one on every long turn; the landed update then
 > hands Gemini the floor and, with nothing to answer, it reads the prompt out loud.
 > **Same class as item 11's original defect and its `(not set)` rider** — internal
-> machinery reaching the child's ears. **Fix the gate, NOT the prompt** (standing
-> ruling). **`/pm` reporting miss owned:** `ContextUpdateGate` was added in `d895bfb`
-> and described in neither the commit message nor the slice report.
+> machinery reaching the child's ears. **`/pm` reporting miss owned:**
+> `ContextUpdateGate` was added in `d895bfb` and described in neither the commit
+> message nor the slice report.
+> **REFRAMED SAME DAY BY USER RULING — severity MEDIUM, and the fix is DELETION.**
+> `/pm`'s first call (tune the gate's expiry) was treating the symptom. The user's
+> read: *"this feels like we just reminded the tutor to talk when this capability
+> wasn't actually necessary — can we make this more parsimonious?"* The code itself
+> concedes the point at `:1039-1042` — it forwards every slider tick over a transport
+> that **structurally cannot be silent**, then spends prompt budget telling the model
+> to **ignore** what was just sent. So: stop pushing state; hold it server-side and
+> prepend it to messages that already give the model the floor; make the struggle
+> exception an explicit cue rather than a hope that the model notices. That makes the
+> symptom unreachable, shrinks `ContextUpdateGate` toward deletion, and should retire
+> most of the **9-of-17 self-caused barge-ins** its own docstring measured.
 
 > **`/pm` 2026-08-06 — the portfolio is TRUTHFUL but UNSHIPPED.** Nothing has been
 > committed since `a695574` (12:43) and the working tree holds **four independent

@@ -116,8 +116,10 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
-13. **CTX-1 — the context-update gate force-fires mid-turn and the tutor
-    recites its own prompt aloud. REGRESSION IN `d895bfb` (same day).
+13. **CTX-1 — DELETE the real-time `[CONTEXT UPDATE]` push; attach state lazily
+    instead. MEDIUM.** *(Filed as a `d895bfb` gate regression; reframed by user
+    ruling the same day — the gate is scaffolding around a channel that should
+    not exist. See "SEVERITY DOWNGRADED + FIX REFRAMED" below.)*
     User-reported from a live session 2026-08-06 17:02.**
     **Symptom (what the child hears):** the tutor spoke a self-directed stage
     direction — *"Silence is the invitation to keep exploring, not a question
@@ -144,21 +146,50 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     prompt line at `:554`/`:645` ("STAY SILENT") which the model just demonstrably
     ignored. **Do NOT answer this by rewording `:563` or hardening "STAY SILENT"** —
     standing user ruling: a system prompt is not the fix for a coding failure.
-    **Recommended fix (option 3 of 3 considered):** keep the ceiling but make
-    expiry DISCRIMINATE. The ceiling exists for "model answered with silence and
-    no turn-end ever arrives"; it currently cannot tell that from "model is still
-    talking." Stamp a `last_model_output_at` on each `model_turn` part and release
-    on expiry ONLY if nothing has arrived for ~1.5s — otherwise re-arm. (Option 1,
-    raise `MAX_HOLD_S`, is fragile: any ceiling can be exceeded. Option 2, release
-    only on turn-end, risks stranding — though note a context update is STATE and
-    is superseded by the next one anyway, so stranding is cheap; worth weighing.)
-    **Defence in depth, decide separately:** should a model turn that begins
-    immediately after a context-update send, with no intervening student input, be
-    suppressed rather than played? That closes layer 2 regardless of timing.
-    **Verification:** `context-update-hold-expired` is already in the ledger, so
-    the before/after rate is measurable. Needs a unit test pinning "expiry during
-    active model output does NOT release", plus a live turn >8s with a slider
-    dragged mid-speech.
+    **SEVERITY DOWNGRADED + FIX REFRAMED 2026-08-06 (user ruling).** `/pm` first
+    filed this as a HIGH regression with a fix that made the gate's expiry
+    "discriminate" (stamp `last_model_output_at`, release only after ~1.5s of
+    quiet). The user's read is better and supersedes it: *"this feels like we just
+    reminded the tutor to talk when this capability wasn't actually necessary — can
+    we make this more parsimonious?"*
+    **The real defect is the CHANNEL, not the gate.** Look at what the code says it
+    is doing (`:1039-1042`): *"Forward state change to Gemini (silent — no response
+    expected)… the system prompt also says to IGNORE [CONTEXT UPDATE] unless the
+    student is clearly struggling."* We push every slider tick and option select
+    over a transport that **structurally cannot be silent** (`:204`), and then spend
+    prompt budget at `:554`/`:645` instructing the model to ignore what we just
+    pushed. `ContextUpdateGate` is scaffolding built to make an unnecessary channel
+    survivable. Tuning its ceiling is treating the symptom — the channel is the
+    symptom. ([[llm-window-code-builds-structure]] applies: state belongs in code
+    until something needs it spoken.)
+    **RECOMMENDED FIX — delete the push, attach state lazily.**
+    1. `update_context` stops sending to Gemini entirely. Keep a server-side
+       `latest_primitive_state` dict (+ the existing `context-update` ledger row).
+    2. Any message that genuinely gives the model the floor — a cue, hint request,
+       `switch_primitive`, `student_action` — prepends the CURRENT state block. The
+       model's state is then **fresher at the moment it matters** than today's push,
+       which lands early and gets buried under intervening audio.
+    3. The struggle exception becomes an explicit server-side trigger: on repeated
+       failed attempts, emit a real cue (`end_of_turn=True`). That is a *speaking*
+       action, so it should be a *speaking* message — today it is a hope that the
+       model notices state it was told to ignore.
+    **What this buys:** the self-inflicted barge-in class largely disappears (the
+    gate's own docstring measured **9 of 17 barge-ins caused by our own sends, four
+    by these supposedly-silent updates** — one clipped a celebration at *"Perf—"*);
+    CTX-1's symptom becomes unreachable (you cannot provoke a turn you never send);
+    `ContextUpdateGate` shrinks to near-nothing or goes away; and token spend drops.
+    **Honest risk to name:** the model stops passively "watching" exploration. But
+    the prompt already forbids it from reacting, so this deletes a capability that
+    was instructed off — the only genuine consumer is the struggle path, which
+    becomes explicit and more reliable. Confirm no other consumer depends on
+    mid-exploration state before deleting.
+    **Verification:** `context-update-hold-expired` and `context-update-held` are
+    already in the ledger, so the before/after barge-in rate is measurable. A live
+    session with a slider dragged across a >8s tutor turn must produce zero
+    self-caused barge-ins and no recited prompt text.
+    **Priority: MEDIUM, not HIGH.** It only fires when a state change coincides with
+    a turn longer than 8s. Worth doing because the fix DELETES code and a whole
+    failure class, not because the symptom is frequent.
     **Reporting miss recorded honestly:** `ContextUpdateGate` was ADDED in
     `d895bfb` but appears in neither that commit message nor
     `qa/tutor-reports/lesson-tutor-item11-2026-08-06.md` — `/pm` swept it into the
