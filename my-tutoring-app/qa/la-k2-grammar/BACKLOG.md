@@ -18,6 +18,10 @@ Every closure strikes its row here AND updates the WORKSTREAMS row in the same s
 
 ## Queue
 
+> **2026-08-05 (late) — the user took item 2 first, as `/pm` recommended. It is CLOSED
+> (struck below).** Top is now **item 1**, and its own recommended split stands: `in` +
+> `between` are buildable now, the viewer-relative pair needs a design ruling first.
+
 ### 1. `spatial-scene` containment + two-reference prepositions — `/add-eval-modes` + component
 **Demand: 4-5 subskills** (LA004-01-F "in", LA004-05-B "Put the pencil **in** the box",
 LA004-05-C "in front/behind", LA004-05-F "between").
@@ -36,24 +40,35 @@ The resolver already reports all of these as `unsupported` and the generator log
 gap, so demand is measurable today — grep `[SpatialScene] Lesson asked for position
 words this 3x3 grid cannot express`.
 
-### 2. `on`/`above` ambiguity in `identify`/`describe` — RULE-#1 RISK, small fix
-**Found 2026-08-06** re-probing routing after the catalog projection (the check that
-should have run in the 08-05 slice and didn't).
-`SUPPORTED_POSITION_SEMANTICS` makes `above` = "any vertical distance" and `on` =
-"touching; if there is a gap, the word is above". For an **adjacent same-column** pair
-both words are therefore defensible — the disambiguation is one-directional and
-incomplete. Harmless in `place`/`follow_directions` (cell-judged), but in
-`identify`/`describe` the options are position words with ONE key, so a child answering
-"above" on a touching pair is marked wrong for a correct answer. Same defect for
-`under`/`below`, and for `beside`/`next_to` (already synonymous pre-existing — check
-whether both can appear in one options list).
-**Live only when on/under are in the window**, i.e. LA lessons — every 08-05 on/under
-probe was `place` mode, so this is unverified territory, not a measured failure.
-Fix direction: make `above`/`below` exclusive of the adjacent case when `on`/`under`
-are in the same window, OR forbid the ambiguous pair from co-occurring in one options
-list. Then probe `identify` + `describe` pinned at a K LA preposition objective —
-the mode combination the 08-05 slice never exercised.
-Contract: add as R12 + a `describe`-mode probe; `--check` before editing.
+### ~~2. `on`/`above` ambiguity in `identify`/`describe` — RULE-#1 RISK, small fix~~ — **CLOSED 2026-08-05 (late)**
+~~Found 2026-08-05 (evening, `bd1c535`)~~ — **measured, fixed, promoted to contract R12.**
+Pinning `identify`+`describe` at LA004-01-F (the mode combination the pilot never
+exercised) found the ambiguity in **4 of 18** challenges, in both directions. Closed by a
+**geometry-driven** exclusivity guard (`positionHolds` +
+`enforceSingleDefensibleOption`), not a synonym table — so it also covers `beside` ⊂
+`left_of`/`right_of` at Grade 1. Re-probed **0/36**, math K.G.1 control unchanged.
+The probe also caught a second rule-#1 leak in the same options list: `correctPosition`
+was `options[0]` in **18/18** and the component renders array order — fixed with a
+seeded `placeAnswerSlot`. Suite 34/34 (+19) with a 2-of-34 revert-bite; full Vitest
+1,647/1,647; tsc 803 = baseline.
+Report: `spatial-scene-c3-exclusivity-2026-08-05.md` · Contract: **R12 OBSERVED, C3 RESOLVED**.
+**Residual (not blocking):** no browser drive of an `identify` challenge now that the
+answer sits at a varying index — carried to `qa/HUMAN-CHECKS.md` #66.
+
+### 2b. `spatial-scene` `identify`/`describe` HINT hands over the answer — `/eval-fix`
+**Found by the closing `/eval-test` of item 2** (`qa/eval-reports/spatial-scene-2026-08-05.md`,
+tracker **SS-5**). The `hint` poses the key as a leading yes/no question: key `above` →
+*"Is the flower right **above** it?"*. **2 of 3 identify hints leaked; 0 of 3 describe.**
+Pre-existing and independent of R12 — but it defeats the same skill R12 just made
+answerable, so it belongs to this primitive's next slice, not a future sweep.
+`buildSharedContext` already asks for *"hints that guide without giving the answer"* and
+the LLM ignores it, so prose alone is not binding: state it as a hard per-mode constraint
+(the support-tier `hard` line already has the right wording — *"must NOT name the position
+word"* — it just isn't applied at default/medium) **plus** a post-process check that
+rewrites or drops a hint containing the key word. Note c3 leaked *"next to"* for a key of
+`beside` — after R12 removed `next_to` from the options, so hint and option list now
+disagree in wording; the check must cover synonyms, not just the literal key.
+Probe: generate ≥9 identify + 9 describe hints, assert none contains a window word.
 
 ### 3. Directional/path prepositions — likely a genuine BIRTH
 **Demand: 2 subskills** (LA004-05-H "through, around, across" multi-step directional;
