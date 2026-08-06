@@ -116,6 +116,124 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
+11. **LESSON-MODE SESSION TUTOR: the script outranks the student (+ resume
+    continuity) — USER-PULLED 2026-08-05 late; ✅ MACHINE HALF DONE 2026-08-06
+    (same-day user pull "can you help me implement this?"). RESIDUAL = the
+    user's real-child acceptance drive (HUMAN-CHECKS #64(b)) — restart the dev
+    backend first, it ran pre-fix code throughout the slice.**
+    **What shipped (slice report `qa/tutor-reports/lesson-tutor-item11-2026-08-06.md`):**
+    Fix A carve-out in BOTH system builders (QUESTIONS FROM THE STUDENT
+    outranks scripted beats; "never give direct answers" rescoped to the
+    active challenge; + opinion-question line after the first post-fix run
+    showed praise-then-redirect surviving on "what do YOU think?" asks);
+    Fix B `[SESSION RESUMED]` steering (mid-turn → finish the thought, idle →
+    silent note; `resume-steering` ledger event); riders — "(not set)"
+    unreachable (unset keys omitted, unresolved script lines dropped whole),
+    `SwitchDebouncer` 2.5s trailing settle (`switch-announced` + `coalesced`),
+    `SessionCounters` (audio frames ≠ turns); `LUMINA_FAULT_DROP_S` companion
+    fault (shared `_fault_flag_allowed` guard, process-env only). Harness:
+    `Beat.forbid` + `Beat.judge` (gemini-flash temp-0 answer-vs-deflect judge —
+    the pre-fix run PROVED keyword anchors false-pass: the deflection itself
+    contained "building") + `require_events`, journeys `lesson-curiosity`
+    (child's turn-8 utterance verbatim) + `lesson-resume-continuity`.
+    **Gates, all real-Gemini on isolated :8003/:8004:** pre-fix judge caught
+    genuine deflections ≈50%/judged beat (non-vacuity); post-fix
+    `lesson-curiosity --runs 3` **PASS zero findings** (scene question answered
+    3/3 AND own-guess offered 3/3); resume probe **PASS non-vacuous** — ledger
+    shows `fault-drop-fired` mid-reply → reconnect **350ms** →
+    `resume-steering mid_turn=true` → continuation, no re-greet, coherence beat
+    held the thread ("I was just saying that this excavator…"). Units **22/22**
+    with revert-bite (reverting Fix A fails the prompt tests). py_compile
+    clean; fault-armed server stopped in-slice.
+    *(Original finding + design record below, kept as the trail. The #64 drive
+    should keep an ear on example-phrase parroting — post-fix answers leaned on
+    the prompt's "big home for lots of people" example in this scene.)*
+    **Evidence:** two real sessions 2026-08-05 (morning
+    `…140310…fc0e95518468.jsonl` + evening `…235650…57f1dc98f7d5.jsonl` in
+    `backend/logs/lumina-sessions/`), reviewed in
+    `qa/tutor-reports/lumina-session-review-2026-08-05.md`.
+    **Half A — the pedagogy bug (headline).** Mid-`machine-profile`, the child
+    asked a rich curiosity question ("What do you think they're making here? Are
+    they going to build a bunch of apartments? Can we go over there?") and the
+    tutor replied with a **verbatim recitation of the primitive's level1
+    scaffold line** ("What do you already know about an excavator? Have you ever
+    seen one?" — `catalog/engineering.ts:146`). Root cause is a three-layer
+    prompt-priority inversion, all fixable at ONE altitude:
+    (1) `build_lesson_system_instruction` (`lumina_tutor.py:394-397`) says
+    "Never give direct answers" + "Use Socratic questioning — ask guiding
+    questions instead of stating facts" UNSCOPED, so the model generalizes an
+    anti-answer-leak rule (written for graded challenges) to all student
+    questions — machine-profile is display-only, there was nothing to protect;
+    (2) the scaffold's own commonStruggles rule already says answer-then-redirect
+    (`engineering.ts:152`) but sits at the lowest prompt altitude and loses;
+    (3) scaffoldingLevels are hint-ladder lines but the model deploys level1 as
+    its default re-engagement move.
+    **Fix A (prompt carve-out, one place, no catalog changes):** add a
+    "QUESTIONS FROM THE STUDENT" block to `build_lesson_system_instruction` (and
+    the standalone twin above it if it shares the class): *a student's curiosity
+    question about the scene/topic/world ALWAYS gets a real, age-appropriate
+    answer FIRST — one sentence — then bridge back to the activity. "Never give
+    direct answers" applies ONLY to the active challenge's answer.* This is the
+    session-voice instance of [[feedback_tutor-illuminate-not-overbear]]: the
+    spontaneous question is the highest-value moment in the session, not noise
+    between script beats.
+    **Half B — transport recovery works; conversational continuity doesn't.**
+    7 Gemini-side connection deaths across the two sessions (1007 / 1011 / 5×
+    1008 + one clean GoAway); the resumption layer held 7/7, ≤500ms each,
+    pending mic audio requeued. But the child-visible episode (the 1011): cut
+    mid-sentence → ~17s dead air → **re-orientation greeting** instead of
+    continuing — the parent read it as "an error where it disconnected."
+    **Fix B:** on any resume, inject a short `[SESSION RESUMED]` steering text —
+    continue exactly where you left off; do NOT greet or re-orient; if mid-answer,
+    finish it. (Optional, small, frontend: a subtle "thinking…" affordance while
+    reconnecting so dead air doesn't read as broken. Preventing the Google-side
+    errors themselves is OUT of scope.)
+    **Riders (same file, same slice):**
+    - **"(not set)" spoken aloud** (morning 14:12:44 seq 584): missing
+      contextKeys render as `(not set)` (`lumina_tutor.py:204`) into outbound
+      text and the model read it out. Omit unset keys from scaffold/context
+      snapshots — the lesson-path version of the `/tutor-test` Tier-2 zero-`(not
+      set)` gate the DI packs already pass.
+    - **Switch-greeting debounce:** 7 switches in ~40s (child tab-flipping) each
+      injected "Greet the student briefly" → greetings for stale activities.
+      Only the LAST switch inside a ~3s settle window gets the greet
+      instruction; earlier ones send silent context.
+    - **Telemetry: every audio CHUNK increments
+      `conversation_turns`/`voice_interactions`** (`lumina_tutor.py:844-846`) —
+      evening `session-end` logged `turns: 3059` for a ~30-turn conversation.
+      Count model turn-starts / user transcript turns instead.
+    **AUTONOMOUS GATE (all machine, runs before the user re-drives):**
+    1. **New Tier-3 journey `lesson-curiosity`** in `run_tutor_live.py`
+       (JOURNEYS registry; copy the `build_lesson_refer_back_journey` shape):
+       lesson mode, `machine-profile` with the REAL catalog tutoring scaffold,
+       beats replaying the child's turn-8 utterance **verbatim** (the ~48s
+       run-on blob, repetitions included). Code-judged anchor check
+       (`grounds_in_prior`-style alternatives): the reply must engage the
+       question's content — any of build/making/apartment/house/home/"place to
+       live"/construction — and a reply that only re-asks the scaffold line
+       FAILS. `--runs 3`, pass = 3/3. **Non-vacuity is mandatory: run it BEFORE
+       the fix and it must FAIL (reproduces the deflection), or the journey is
+       vacuous.**
+    2. **Resume-continuity probe:** dev-gated fault injection in the
+       `LUMINA_FAULT_MUTE_S` pattern (process-env only, refuses persisted forms
+       — the fault-flag hygiene ruling above): e.g. `LUMINA_FAULT_DROP_CONN_N=1`
+       force-closes the Gemini session once mid-journey. Assert from the session
+       ledger + received transcripts: resume < 2s (existing behavior, pinned);
+       the first post-resume tutor turn contains NO greeting/re-orientation
+       anchors ("welcome", "which part do you want", "hi there") and continues
+       the in-flight thread; zero `(not set)` in any ai-transcript.
+    3. **Deterministic units (pytest):** session-end `turns` == turn-start
+       count; unset contextKeys never serialize `(not set)` into outbound text;
+       3 rapid switches → exactly 1 greet instruction.
+    4. **Human acceptance AFTER the machine gate:** the user's next real-child
+       drive = existing **HUMAN-CHECKS #64** (its criterion (b) — "ask the tutor
+       a question during a NON-DI section and get a spoken answer" — is the
+       exact failure). No new row.
+    **Watch-item, no action:** child-speech ASR language drift (Korean/French/
+    Spanish transcripts mid-session) — known Gemini Live weakness;
+    judge-over-transcript covers the DI half, conversational turns have no
+    mitigation on our side today.
+
 10. **di-math-facts `counting_next` to 120 — BLOCKED ON ONE ~30-MIN BENCH SITTING
     (standing gate 1). The probe is wired and waiting; the sitting is HUMAN-CHECKS
     #63.** *(opened 2026-08-05 from reader-fit 14g; user chose Option B — extend
@@ -765,6 +883,29 @@ ruling) · blends ❌ unbenched.
   Report: `qa/di-bench/run-2026-07-27-math-facts-answer-fact.md`.
 
 ## Done
+- **FAMILY-WIDE: the packs took the wrong PROP SHAPE and crashed on their first
+  real lesson (2026-08-06).** All four DI components were declared props-are-data
+  (`React.FC<DiXData> = (data) => …`), but every renderer mounts a registry
+  primitive as `<Component data={…} index={…} />` with the evaluation props
+  merged INTO `data`. The DI tester SPREADS the generated data across props, so
+  the bench, the probes, and every eval/tutor-test sitting rendered perfectly for
+  three weeks; the first time DI came up in a real lesson the pack got
+  `{data, index}` and died on `data.challenges.map` (generation itself was fine —
+  5 counting_next facts, tiers applied). Fixed at the signature, and the DI
+  tester + the two DiMathFacts vitest files now mount through the lesson shape so
+  the bench can never diverge from a lesson again.
+  **Channel closed, not just the symptom:** `PrimitiveConfig.component` was
+  `React.ComponentType<any>`, which is what let a non-conforming primitive
+  register silently. It is now `ComponentType<{ data: any; index?: number;
+  [key: string]: any }>` — that gate immediately caught **three more primitives
+  with the identical live defect** (calendar-explorer, timeline-builder,
+  equation-workspace), all fixed in the same slice. Components with extra props
+  (onRowClick / onTermClick / totalCards / index) must keep them OPTIONAL to
+  satisfy the contract; concept-card, generative-table and feature-exhibit were
+  relaxed accordingly. Gates: `typecheck:lumina` 0 errors, full tsc 0 lumina
+  errors, vitest 1670/1670. **Residual:** browser check that the DI pack now runs
+  end-to-end in a real lesson (mic + Live judging) — the crash is gone and the
+  render path is jsdom-exercised, but no lesson has been driven since.
 - **FAMILY-WIDE: stored misconceptions now change the next DI item draw
   (2026-08-04, queue item 2 struck).** Typed resolvers and deterministic,
   bounded selection landed across math facts, letter sounds, word reading, and
