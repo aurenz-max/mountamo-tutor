@@ -40,6 +40,22 @@ queue AND this file's "last touched" in the same slice.
 > the barge-in bar (0.0108) sits below this device's leakage while real speech peaked
 > 0.045–0.116, so 0.025–0.03 separates them cleanly. **Fix that before re-running.**
 > Report `qa/di-bench/run-2026-08-06-counting-120-probe.md`. #70/#71 also stay open.
+>
+> **⚠️ CTX-1 — SAME-DAY REGRESSION IN `d895bfb`, user-reported from a live session
+> 17:02 (DI BACKLOG item 13, now the lane's TOP pull).** The tutor spoke a
+> self-directed stage direction aloud to the child — *"Silence is the invitation to
+> keep exploring, not a question from the student. Wait for them to take the next
+> step…"* — a **verbatim recitation of the style rule at `lumina_tutor.py:563`**,
+> spliced with the new carve-out's vocabulary. Cause: `ContextUpdateGate`'s
+> `MAX_HOLD_S = 8.0` force-releases a parked context update **without checking
+> whether the tutor is still speaking**, and normal turns exceed 8s (item 11's own
+> live report logged 8.2 / 8.4 / 14.5 / **20.5**s). So the gate built to prevent
+> self-inflicted barge-ins causes one on every long turn; the landed update then
+> hands Gemini the floor and, with nothing to answer, it reads the prompt out loud.
+> **Same class as item 11's original defect and its `(not set)` rider** — internal
+> machinery reaching the child's ears. **Fix the gate, NOT the prompt** (standing
+> ruling). **`/pm` reporting miss owned:** `ContextUpdateGate` was added in `d895bfb`
+> and described in neither the commit message nor the slice report.
 
 > **`/pm` 2026-08-06 — the portfolio is TRUTHFUL but UNSHIPPED.** Nothing has been
 > committed since `a695574` (12:43) and the working tree holds **four independent

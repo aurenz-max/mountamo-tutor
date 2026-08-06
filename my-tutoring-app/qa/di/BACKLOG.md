@@ -116,6 +116,55 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
+13. **CTX-1 — the context-update gate force-fires mid-turn and the tutor
+    recites its own prompt aloud. REGRESSION IN `d895bfb` (same day).
+    User-reported from a live session 2026-08-06 17:02.**
+    **Symptom (what the child hears):** the tutor spoke a self-directed stage
+    direction — *"Silence is the invitation to keep exploring, not a question
+    from the student. Wait for them to take the next step in identifying the
+    truck parts."* Third person, imperative, about the student. It is a
+    **verbatim recitation of the style rule** at `lumina_tutor.py:563`/`:654`
+    (*"…observations end cleanly — silence is the invitation to keep exploring,
+    not 'What do you think?'"*), completed with vocabulary spliced from the new
+    QUESTIONS FROM THE STUDENT block (*"a question from the student"*).
+    **Same class as item 11's original defect** (prompt line recited as dialogue)
+    and as its own `(not set)` rider: internal machinery reaching the child's ears.
+    **Root cause — layer 1, the one to fix.** `ContextUpdateGate._release_later`
+    sleeps `MAX_HOLD_S = 8.0` then sets `_busy = False` and re-queues the parked
+    update **unconditionally**, with no check on whether the tutor is still
+    speaking. Normal tutor turns routinely exceed 8s — item 11's OWN live report
+    recorded 8.2s, 8.4s, 14.5s and 20.5s turns. So the gate built to PREVENT
+    self-inflicted barge-ins reliably CAUSES one on any turn longer than its
+    ceiling. The log matches exactly: send at `19.104` → `barge-in` at `19.161`
+    (57ms) → `AI turn finished` at `19.163`.
+    **Layer 2 (why it then talks).** `send_realtime_input(text=…)` always closes
+    the turn and hands Gemini the floor (documented at `:204`); `send_client_content`
+    is NOT an option — Gemini 3.1+ rejects it mid-session with 1007 (`:1140`). So a
+    landed update is an invitation to speak, and the only defence today is the
+    prompt line at `:554`/`:645` ("STAY SILENT") which the model just demonstrably
+    ignored. **Do NOT answer this by rewording `:563` or hardening "STAY SILENT"** —
+    standing user ruling: a system prompt is not the fix for a coding failure.
+    **Recommended fix (option 3 of 3 considered):** keep the ceiling but make
+    expiry DISCRIMINATE. The ceiling exists for "model answered with silence and
+    no turn-end ever arrives"; it currently cannot tell that from "model is still
+    talking." Stamp a `last_model_output_at` on each `model_turn` part and release
+    on expiry ONLY if nothing has arrived for ~1.5s — otherwise re-arm. (Option 1,
+    raise `MAX_HOLD_S`, is fragile: any ceiling can be exceeded. Option 2, release
+    only on turn-end, risks stranding — though note a context update is STATE and
+    is superseded by the next one anyway, so stranding is cheap; worth weighing.)
+    **Defence in depth, decide separately:** should a model turn that begins
+    immediately after a context-update send, with no intervening student input, be
+    suppressed rather than played? That closes layer 2 regardless of timing.
+    **Verification:** `context-update-hold-expired` is already in the ledger, so
+    the before/after rate is measurable. Needs a unit test pinning "expiry during
+    active model output does NOT release", plus a live turn >8s with a slider
+    dragged mid-speech.
+    **Reporting miss recorded honestly:** `ContextUpdateGate` was ADDED in
+    `d895bfb` but appears in neither that commit message nor
+    `qa/tutor-reports/lesson-tutor-item11-2026-08-06.md` — `/pm` swept it into the
+    item-11 slice without describing it. A future session reading either would not
+    know it exists.
+
 12. **DI-120-1 — noise-opened turns anchor empty attempts and burn items.
     OPENED 2026-08-06 from the #63 sitting. Fix BEFORE re-running #63.**
     Evidence: `qa/di-bench/run-2026-08-06-counting-120-probe.md`. `count-39` was
