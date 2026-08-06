@@ -103,7 +103,7 @@ describe('live-judged Direct Instruction bench model', () => {
 
   it('exposes the math-facts probe as a bench set with full number-word coverage', () => {
     expect(BENCH_SETS.map((set) => set.id)).toEqual([
-      'letter-sounds', 'word-reading', 'math-facts', 'counting-120', 'sentence-reading',
+      'letter-sounds', 'word-reading', 'math-facts', 'counting-120', 'shapes', 'sentence-reading',
     ]);
     const probe = BENCH_SETS.find((set) => set.id === 'math-facts')!.items;
     expect(probe).toBe(MATH_FACTS_PROBE_ITEMS);

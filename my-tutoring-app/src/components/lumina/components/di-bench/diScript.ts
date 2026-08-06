@@ -199,6 +199,37 @@ export const SENTENCE_READING_PROBE_ITEMS: DIItem[] = [
   { id: 'sent-red-hat', kind: 'sentence', display: 'The big pig had a red hat on.', spoken: 'the big pig had a red hat on', reference: 'The big pig had a red hat on.', asrAliases: ['the big pig had a red hat on'] },
 ];
 
+/**
+ * di-shapes bench probe (pack #5, born 2026-08-06). Spoken SHAPE NAMES sit
+ * inside the already-benched single-spoken-word class (the word-reading
+ * sitting's territory — one common word from a small closed set, judged from
+ * audio), so per standing gate 1 this probe folds into the pack's L0 live
+ * sitting rather than blocking the build (user build-ahead ruling, same day
+ * as counting-120's). What the sitting must stress is not the class but the
+ * two SHAPE-specific discrimination risks, which the item order sets up:
+ *  (a) square-vs-rectangle and circle-vs-oval — the near-NAME errors this
+ *      pack exists to correct; drive at least one deliberately wrong across
+ *      each pair (say "square" at the rectangle). An affirm there is the
+ *      finding.
+ *  (b) "diamond" for the rhombus — the K word, judged CORRECT on that item
+ *      (acceptAlso), so the sitting checks the judge honors a stated
+ *      alternate without loosening anything else.
+ * The bench stage shows a unicode glyph; the primitive draws real SVG.
+ * Nothing here ships hardcoded into a primitive.
+ */
+export const SHAPES_PROBE_ITEMS: DIItem[] = [
+  { id: 'shape-circle', kind: 'shape', display: '●', spoken: 'circle', reference: 'circle', asrAliases: ['circle', 'circles'] },
+  { id: 'shape-oval', kind: 'shape', display: '⬭', spoken: 'oval', reference: 'oval', asrAliases: ['oval', 'ovals'] },
+  { id: 'shape-square', kind: 'shape', display: '■', spoken: 'square', reference: 'square', asrAliases: ['square', 'squares'] },
+  { id: 'shape-rectangle', kind: 'shape', display: '▬', spoken: 'rectangle', reference: 'rectangle', asrAliases: ['rectangle', 'rectangles'] },
+  { id: 'shape-triangle', kind: 'shape', display: '▲', spoken: 'triangle', reference: 'triangle', asrAliases: ['triangle', 'triangles'] },
+  { id: 'shape-hexagon', kind: 'shape', display: '⬢', spoken: 'hexagon', reference: 'hexagon', asrAliases: ['hexagon', 'hexagons'] },
+  { id: 'shape-pentagon', kind: 'shape', display: '⬟', spoken: 'pentagon', reference: 'pentagon', asrAliases: ['pentagon', 'pentagons'] },
+  { id: 'shape-rhombus', kind: 'shape', display: '◆', spoken: 'rhombus', reference: 'rhombus', asrAliases: ['rhombus', 'diamond'], acceptAlso: ['diamond'] },
+  { id: 'shape-trapezoid', kind: 'shape', display: '⏢', spoken: 'trapezoid', reference: 'trapezoid', asrAliases: ['trapezoid', 'trapezoids'] },
+  { id: 'shape-square-2', kind: 'shape', display: '■', spoken: 'square', reference: 'square', asrAliases: ['square', 'squares'] },
+];
+
 /** Selectable bench probe sets. The bench swaps its live item list between
  *  these; each new DI response class benches here before a primitive wires it. */
 export interface BenchSet {
@@ -212,8 +243,12 @@ export const BENCH_SETS: BenchSet[] = [
   { id: 'word-reading', label: 'Word reading', items: WORD_READING_PROBE_ITEMS },
   { id: 'math-facts', label: 'Math facts', items: MATH_FACTS_PROBE_ITEMS },
   { id: 'counting-120', label: 'Counting to 120', items: COUNTING_SEQUENCE_PROBE_ITEMS },
+  { id: 'shapes', label: 'Shapes', items: SHAPES_PROBE_ITEMS },
   { id: 'sentence-reading', label: 'Sentence reading', items: SENTENCE_READING_PROBE_ITEMS },
 ];
+
+/** Indefinite article for a spoken shape name ("a square", "an oval"). */
+const aAn = (word: string): 'a' | 'an' => (/^[aeiou]/i.test(word) ? 'an' : 'a');
 
 const sentenceCase = (value: string | undefined) =>
   value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
@@ -236,6 +271,8 @@ const sentenceText = (it: DIItem) => it.display.replace(/\s+$/, '');
 export const modelLine = (it: DIItem) =>
   isNumberAnswer(it)
     ? `Listen: ${factProblem(it)} is ${it.spoken}.`
+    : it.kind === 'shape'
+      ? `Listen: this shape is ${aAn(it.spoken)} ${it.spoken}.`
     : it.kind === 'sentence'
       // No "as in"/restatement scaffold — the model IS the fluent reading.
       ? `Listen: ${sentenceText(it)}`
@@ -250,6 +287,8 @@ export const modelLine = (it: DIItem) =>
 export const guideLine = (it: DIItem) =>
   isNumberAnswer(it)
     ? `Together: ${factProblem(it)} is ${it.spoken}.`
+    : it.kind === 'shape'
+      ? `Together: this shape is ${aAn(it.spoken)} ${it.spoken}.`
     : it.kind === 'sentence'
       // Choral reading — the DISTAR guided step for connected text.
       ? `Together: ${sentenceText(it)}`
@@ -262,6 +301,8 @@ export const guideLine = (it: DIItem) =>
 export const testLine = (it: DIItem) =>
   isNumberAnswer(it)
     ? `Your turn. What is ${factProblem(it)}?`
+    : it.kind === 'shape'
+      ? 'Your turn. What shape is this?'
     : it.kind === 'sentence'
       ? 'Your turn. Read it.'
       : it.elicitation === 'keyword'
@@ -274,6 +315,8 @@ export const testLine = (it: DIItem) =>
 export const verifyLine = (it: DIItem) =>
   isNumberAnswer(it)
     ? `Yes, ${factProblem(it)} is ${it.spoken}.`
+    : it.kind === 'shape'
+      ? `Yes, this shape is ${aAn(it.spoken)} ${it.spoken}.`
     : it.kind === 'sentence'
       // Restates the correct production, like every other kind. Probe question
       // (c): a whole sentence doubles tutor talk-time — does it drag?
@@ -286,6 +329,8 @@ export const verifyLine = (it: DIItem) =>
 export const correctionLine = (it: DIItem) =>
   isNumberAnswer(it)
     ? `My turn: ${factProblem(it)} is ${it.spoken}. Your turn. What is ${factProblem(it)}?`
+    : it.kind === 'shape'
+      ? `My turn: this shape is ${aAn(it.spoken)} ${it.spoken}. Your turn. What shape is this?`
     : it.kind === 'sentence'
       // Whole-sentence re-model. Word-targeted correction ("that word is mat")
       // is the DISTAR ideal but needs the tutor to fill a variable the script
@@ -300,6 +345,8 @@ export const correctionLine = (it: DIItem) =>
 const targetDescription = (it: DIItem) =>
   it.kind === 'counting'
     ? `the spoken number "${it.spoken}", said in full, answering ${factProblem(it)}`
+    : it.kind === 'shape'
+      ? `the spoken shape name "${it.spoken}"`
     : it.kind === 'fact'
       ? `the spoken number word "${it.spoken}" answering ${factProblem(it)}`
         : it.kind === 'sentence'
@@ -328,7 +375,11 @@ const targetDescription = (it: DIItem) =>
  * the pack's shipped contract (`diMathFactsScript.judgingContract`) so the
  * bench measures the conditions the primitive would actually run under.
  */
-const judgingCriteria = (it: DIItem) => it.kind === 'sentence'
+const judgingCriteria = (it: DIItem) => it.kind === 'shape'
+  ? `- The learner said the shape name "${it.spoken}" — right away, with young-child pronunciation, or with or without "a" or "an": say exactly "${verifyLine(it)}" and stop.${it.acceptAlso && it.acceptAlso.length > 0 ? `\n- The learner may also call this shape ${it.acceptAlso.map((w) => `"${w}"`).join(' or ')} — that is correct too: use the same affirmation line.` : ''}
+- A DIFFERENT shape name, or no shape name at all (a color, "round", "big"): say exactly "${correctionLine(it)}" and stop, then wait again.
+A near shape name is a DIFFERENT answer, never a near-miss: a rectangle is not a square, a circle is not an oval, a hexagon is not a pentagon. The near-name is the error being practiced out, so judge the name you actually heard.`
+  : it.kind === 'sentence'
   ? `- Every word read correctly and in order — including after the learner catches and fixes their own slip — say exactly "${verifyLine(it)}" and stop.
 - ANY word skipped, added, or read as a different word and left uncorrected: say exactly "${correctionLine(it)}" and stop, then wait again.
 Slow, effortful sounding-out that lands on the right words is CORRECT — judge accuracy, never speed. Do not accept a near-miss word to be kind: a different word is a different word.`
@@ -416,6 +467,20 @@ export const DI_TUTORING: TutoringScaffold = {
         'its decade are different numbers however alike they sound: thirteen is not thirty, ' +
         'fourteen is not forty, seventeen is not seventy. Affirming one for the other is a wrong ' +
         'answer waved through, so judge the number you actually heard.',
+    },
+    {
+      // Scoped to SHAPE items only — the sets benched before this clause
+      // existed (letter sounds #41, words, facts #46, sentences) answer with
+      // sounds, words, numbers, or read text, so this cannot change the
+      // conditions those sittings validated.
+      title: 'SHAPE NAMES',
+      instruction:
+        'When the item is a SHAPE, the learner answers with its spoken name. Affirm the right name ' +
+        'whether it came instantly, with young-child pronunciation ("twiangle", "wectangle"), or with ' +
+        'or without "a" or "an". A DIFFERENT shape name is always wrong however close it is — a ' +
+        'rectangle is not a square, a circle is not an oval — unless the item\'s own rule names another ' +
+        'accepted word (like "diamond" for a rhombus). Never describe the shape\'s look beyond the ' +
+        'scripted lines: describing it would hand over the answer.',
     },
     {
       title: 'CONNECTED TEXT',

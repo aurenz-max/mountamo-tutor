@@ -451,6 +451,100 @@ export const DI_CATALOG: ComponentDefinition[] = [
     },
   },
   {
+    id: 'di-shapes',
+    description: 'Live-judged Direct Instruction SHAPE NAMING ("What shape is this?"): the tutor shows one drawn 2D shape, models its name aloud ("this shape is a triangle"), practices it together, then asks the child and judges the spoken shape name from the audio. The child SEES the drawn shape and SPEAKS its name aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification and naming for early learners.',
+    constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders), no side/corner counting tasks yet, and no composing or comparing shapes; use a geometry primitive with those modes when counting or composing IS the objective. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken name is the answer: the shape name never appears on screen (or in the title/description) before the child says it.',
+    // L0 — single core mode (birth discipline). The ladder queued on the birth
+    // cert: count_sides / count_corners (spoken number words — the #46-benched
+    // class) and shape_review, via /add-eval-modes. β mirrors backend
+    // problem_type_registry.py → "di-shapes".
+    evalModes: [
+      {
+        evalMode: 'name_shape',
+        label: 'Name the Shape',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['name_shape'],
+        description: 'See one drawn 2D shape at any rotation, say its name aloud — modeled and practiced together first, then answered alone.',
+      },
+    ],
+    supportsEvaluation: true,
+    // Misconception Loop gate 3 — family ruling, see the module docblock.
+    misconceptionScope: 'primitive',
+    // Same judged-loop engine, same transport need (see di-letter-sounds).
+    audioInput: { manual_activity: true },
+    // Tutoring block — hand-authored (DI "custom-made" rule), in the CATALOG at
+    // birth per the family lesson-mode wiring (di-sentence-reading precedent),
+    // so lesson mode works on day one. Sentinel discipline checked on every
+    // line: no scaffolding level, struggle response, or directive sentence
+    // begins with "Yes" or "My turn". RUNTIME STATE is deliberately minimal —
+    // the shape NAMES are the answers, so neither the current shape nor the
+    // session's shape list may enter contextKeys (the math-facts answer-side
+    // rule, stricter here because the name IS the whole answer).
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction shape-naming practice for a young learner '
+        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
+        + 'application message and judge each learner attempt from the audio you heard, using only '
+        + 'the two allowed reply branches.',
+      contextKeys: ['challengeType'],
+      scaffoldingLevels: {
+        level1: 'Repeat the question once, slowly.',
+        level2: 'Name the shape once more, then ask for one retry.',
+        level3: 'Accept the attempt warmly and continue as instructed.',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Names a close DIFFERENT shape — "rectangle" for a square, "circle" for an oval, "pentagon" for a hexagon',
+          response: 'A different shape name is a different shape: name theirs and contrast it with the right one, so they hear that their word was for another shape.',
+        },
+        {
+          pattern: 'Describes the shape instead of naming it — "it\'s round", "the pointy one", a color or size word',
+          response: 'Acknowledge the description in a word, then model the name and ask for the shape\'s name.',
+        },
+        {
+          pattern: 'Says the name with young-child pronunciation — "twiangle", "wectangle"',
+          response: 'That is the right name said the way young children say it — affirm it as correct.',
+        },
+        {
+          pattern: 'Stays silent after "Your turn"',
+          response: 'Say the shape name together once, then hand it back to them alone.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
+            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
+            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
+            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
+            + 'sentence with those words. Judge honestly from the audio: affirm the right shape name, correct '
+            + 'a wrong or missing one. EVERY correction re-models the name and begins with "My turn". Do not '
+            + 'praise to be kind. The application decides which shape comes next; never introduce one yourself.',
+        },
+        {
+          title: 'SHAPE NAMES',
+          instruction:
+            'The learner answers with a spoken shape name; affirm a correct name whether it came instantly, '
+            + 'with young-child pronunciation ("twiangle" for triangle, "wectangle" for rectangle), or with or '
+            + 'without "a" or "an" in front. A DIFFERENT shape name is always wrong and gets the correction '
+            + 'branch, however close: at this age a rectangle is not a square, a circle is not an oval, and a '
+            + 'hexagon is not a pentagon — the near-name is exactly the error this practice corrects. When an '
+            + 'item\'s quoted rule says another word is also correct (like "diamond" for a rhombus), accept it. '
+            + 'Judge the name you actually heard, never the name you expected.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat, and never describe the shape on screen beyond the '
+            + 'scripted lines — describing its look would hand over the answer.',
+        },
+      ],
+    },
+  },
+  {
     id: 'di-sentence-reading',
     description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the tutor models a printed short sentence read fluently ("Listen: The cat sat."), reads it together with the child, then asks the child to read it alone and judges the spoken audio WORD BY WORD — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
     constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for LONGER passages, words-per-minute tracking, or expression/dialogue practice with older readers — this pack owns judged accuracy on short sentences and produces graded evidence, which read-aloud-studio (student self-assessment only) does not. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues beyond the scripted model line.',

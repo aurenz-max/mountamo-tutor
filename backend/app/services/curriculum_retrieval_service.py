@@ -71,6 +71,7 @@ _DOMAIN_TO_SUBJECT: Dict[str, str] = {
 # 'di' domain default; math facts is MATHEMATICS), so primitive wins over domain.
 _PRIMITIVE_TO_SUBJECT: Dict[str, str] = {
     "di-math-facts": "MATHEMATICS",
+    "di-shapes": "MATHEMATICS",
 }
 
 # --- Abstain rule (default; calibration sweep deferred, see QA §11 open step) ---

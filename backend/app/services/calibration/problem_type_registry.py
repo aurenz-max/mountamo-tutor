@@ -555,6 +555,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "fact_review":      PriorConfig(2.5, "Review: answer taught facts from a wide cumulative mix"),
         "subtraction_fact": PriorConfig(3.0, "Production: answer a printed subtraction fact aloud with the number word"),
     },
+    # L0 (2026-08-06, pack #5). Single core mode at birth; the ladder
+    # (count_sides / count_corners — spoken number words, the benched class —
+    # and shape_review) joins at /add-eval-modes.
+    "di-shapes": {
+        "name_shape": PriorConfig(1.5, "Production: name a drawn 2D shape aloud, at any rotation"),
+    },
     # L1 ladder (2026-07-25). Connected text — every mode is the SAME response
     # class (a printed 3-8 word sentence read aloud), the class benched in the
     # standing-gate sitting, so the ladder needed no new sitting. A mode changes

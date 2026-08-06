@@ -9,6 +9,7 @@ describe('lesson voice turn close policy', () => {
 
   it('gives held phonemes the tightest close', () => {
     expect(resolveLessonVoiceTurnConfig('di-letter-sounds').silenceCloseMs).toBe(300);
+    expect(resolveLessonVoiceTurnConfig('di-shapes').silenceCloseMs).toBe(420);
   });
 
   it('keeps sentence reading looser than one-word production', () => {

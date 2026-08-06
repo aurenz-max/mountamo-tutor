@@ -1373,6 +1373,7 @@ export type ComponentId =
   | 'di-letter-sounds'          // Live-judged Direct Instruction: continuous letter sounds, spoken call-response (K)
   | 'di-word-reading'           // Live-judged Direct Instruction: read printed CVC + sight words aloud (K-G1)
   | 'di-math-facts'             // Live-judged Direct Instruction: spoken math fact fluency call-response (K-G2)
+  | 'di-shapes'                 // Live-judged Direct Instruction: name a drawn 2D shape aloud at any rotation (K-G1)
   | 'di-sentence-reading'       // Live-judged Direct Instruction: read a printed short sentence aloud, judged word-by-word (G1-2)
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)

@@ -7,6 +7,7 @@ import { ExhibitProvider } from '../contexts/ExhibitContext';
 import DiLetterSounds, { type DiLetterSoundsData } from '../primitives/visual-primitives/direct-instruction/DiLetterSounds';
 import DiWordReading, { type DiWordReadingData } from '../primitives/visual-primitives/direct-instruction/DiWordReading';
 import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
+import DiShapes, { type DiShapesData } from '../primitives/visual-primitives/direct-instruction/DiShapes';
 import DiSentenceReading, { type DiSentenceReadingData } from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
 
@@ -16,7 +17,7 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-sentence-reading';
+type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
@@ -68,6 +69,16 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
     ],
   },
   {
+    id: 'di-shapes',
+    label: 'Shapes',
+    subtitle: 'A drawn 2D shape, spoken shape-name answers ("What shape is this?").',
+    defaultTopic: 'naming basic shapes',
+    defaultGrade: 'kindergarten',
+    evalModes: [
+      { key: 'name_shape', label: 'Name the Shape' },
+    ],
+  },
+  {
     id: 'di-sentence-reading',
     label: 'Sentence Reading',
     subtitle: 'Read a printed 3-8 word sentence aloud, judged word by word.',
@@ -87,6 +98,7 @@ type DiData =
   | { id: 'di-letter-sounds'; data: DiLetterSoundsData }
   | { id: 'di-word-reading'; data: DiWordReadingData }
   | { id: 'di-math-facts'; data: DiMathFactsData }
+  | { id: 'di-shapes'; data: DiShapesData }
   | { id: 'di-sentence-reading'; data: DiSentenceReadingData };
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
@@ -189,6 +201,9 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       )}
       {generated?.id === 'di-math-facts' && (
         <DiMathFacts key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+      )}
+      {generated?.id === 'di-shapes' && (
+        <DiShapes key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
       )}
       {generated?.id === 'di-sentence-reading' && (
         <DiSentenceReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />

@@ -10,6 +10,7 @@ import { registerContextGenerator } from '../contentRegistry';
 import { generateDiLetterSounds } from '../../direct-instruction/gemini-di-letter-sounds';
 import { generateDiWordReading } from '../../direct-instruction/gemini-di-word-reading';
 import { generateDiMathFacts } from '../../direct-instruction/gemini-di-math-facts';
+import { generateDiShapes } from '../../direct-instruction/gemini-di-shapes';
 import { generateDiSentenceReading } from '../../direct-instruction/gemini-di-sentence-reading';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
@@ -38,6 +39,17 @@ registerContextGenerator('di-math-facts', async (ctx) => ({
   type: 'di-math-facts',
   instanceId: ctx.instanceId,
   data: await generateDiMathFacts(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
+}));
+
+// di-shapes — drawn 2D shapes, menu-scoped to the objective (named shapes win,
+// then the model's hint filtered to the grade menu, then the K.G.2 core five).
+registerContextGenerator('di-shapes', async (ctx) => ({
+  type: 'di-shapes',
+  instanceId: ctx.instanceId,
+  data: await generateDiShapes(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
   }),

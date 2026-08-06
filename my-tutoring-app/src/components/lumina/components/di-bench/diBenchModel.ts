@@ -8,7 +8,7 @@
  * sitting exists to detect. Keeping the kinds apart leaves the #46-benched
  * `fact` branch byte-untouched.
  */
-export type DIItemKind = 'sound' | 'word' | 'fact' | 'counting' | 'sentence';
+export type DIItemKind = 'sound' | 'word' | 'fact' | 'counting' | 'sentence' | 'shape';
 
 export interface DIItem {
   id: string;
@@ -30,6 +30,9 @@ export interface DIItem {
    *  verbatim" is a genuinely useful accuracy cross-check, and a disagreement
    *  with the Live judge is exactly the signal the probe is looking for. */
   asrAliases?: string[];
+  /** Names the judge must ALSO accept as correct for this item (stated in the
+   *  judging contract, e.g. "diamond" for a rhombus). Shape probe only. */
+  acceptAlso?: string[];
 }
 
 /**

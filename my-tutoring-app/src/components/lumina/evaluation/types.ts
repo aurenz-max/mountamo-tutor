@@ -3323,6 +3323,23 @@ export interface DiMathFactsMetrics extends BasePrimitiveMetrics {
   meanResponseMs: number | null;
 }
 
+export interface DiShapesMetrics extends BasePrimitiveMetrics {
+  type: 'di-shapes';
+  // L0 task identity — a drawn 2D shape named aloud. The ladder
+  // (count_sides / count_corners / shape_review) joins at /add-eval-modes.
+  challengeType: 'name_shape';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;          // total spoken attempts across all shapes (corrections + 1 each)
+  firstTryCount: number;          // shapes named correctly on the first attempt
+  hintsViewed: number;
+  overallAccuracy: number;        // 0-100, average per-challenge score
+  averageAttemptsPerChallenge: number;
+  /** Silent fluency signal (no-timer ruling): mean ms from tutor prompt to the
+   *  learner's spoken attempt across timed attempts; null when none were timed. */
+  meanResponseMs: number | null;
+}
+
 export interface DiSentenceReadingMetrics extends BasePrimitiveMetrics {
   type: 'di-sentence-reading';
   // L1 task identities — all the same response class (a printed 3-8 word
@@ -3552,6 +3569,7 @@ export type PrimitiveMetrics =
   | DiLetterSoundsMetrics
   | DiWordReadingMetrics
   | DiMathFactsMetrics
+  | DiShapesMetrics
   | DiSentenceReadingMetrics;
 
 // =============================================================================
