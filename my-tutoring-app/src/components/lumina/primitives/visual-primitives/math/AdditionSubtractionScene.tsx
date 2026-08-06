@@ -297,30 +297,46 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     ? SCENE_BACKGROUNDS[currentChallenge.scene] || SCENE_BACKGROUNDS.pond
     : SCENE_BACKGROUNDS.pond;
 
+  // Grade-1 act-out forks by OPERATION. A static picture can show a join (the change
+  // group arrives via groupedReveal) but it cannot show a departure: for subtraction
+  // the scene painted the START group and nothing ever left, so "act out" collapsed
+  // into counting objects that weren't the answer — the instruction said "tap 2 frogs
+  // to send them away" and the taps stamped count badges 1…6 when the answer was 4.
+  // Subtraction is therefore ENACTED at Grade 1 too. The answer channel is unchanged
+  // (R3 keeps the keyboard at Grade 1): the enactment MODELS the story, the typed
+  // numeral REPORTS it.
+  const isG1ActOutSubtraction = !!currentChallenge
+    && gradeBand !== 'K'
+    && currentChallenge.type === 'act-out'
+    && currentChallenge.operation === 'subtraction';
+
   // Build/manipulation scenes track object identity (add/remove a specific object):
-  // K create-story and K act-out. Everything else is count-driven (render 0…n).
+  // create-story, K act-out, and Grade-1 act-out subtraction. Everything else is
+  // count-driven (render 0…n).
   const isBuildScene = !!currentChallenge && (
     currentChallenge.type === 'create-story' ||
-    (gradeBand === 'K' && currentChallenge.type === 'act-out')
+    (gradeBand === 'K' && currentChallenge.type === 'act-out') ||
+    isG1ActOutSubtraction
   );
 
   // Compute visible objects based on phase & operation
   const totalVisible = useMemo(() => {
     if (!currentChallenge) return 0;
-    const { type, operation, startCount, resultCount } = currentChallenge;
+    const { type, resultCount } = currentChallenge;
     if (type === 'act-out') {
-      // K (direct manipulation, item 11): the scene shows exactly what the child
-      // has enacted (seeded at startCount; add/remove drives builtCount).
-      // Grade 1 (count-the-scene model): show the full start+change (add) or start (sub).
-      if (gradeBand === 'K') return builtCount;
-      return operation === 'addition' ? resultCount : startCount;
+      // Enacted scenes show exactly what the child has enacted — seeded at startCount,
+      // driven by add/remove: K at both operations, Grade 1 at subtraction.
+      if (gradeBand === 'K' || isG1ActOutSubtraction) return builtCount;
+      // Grade-1 addition keeps the count-the-scene model: start+change are both on
+      // screen and the change group animates in (groupedReveal), so the join is visible.
+      return resultCount;
     }
     // create-story (K build task): the scene shows exactly what the child has built.
     if (type === 'create-story') {
       return builtCount;
     }
     return resultCount;
-  }, [currentChallenge, builtCount, gradeBand]);
+  }, [currentChallenge, builtCount, gradeBand, isG1ActOutSubtraction]);
 
   // The max objects the scene will ever hold for this challenge. Positions are laid
   // out ONCE for this capacity (not per live count), so removing an object leaves its
@@ -349,6 +365,16 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     }
     return positions.map((pos, i) => ({ slotId: i, pos }));
   }, [isBuildScene, sceneSlots, positions]);
+
+  // Grade-1 subtraction enactment progress: how many objects the story still says to
+  // send away. While > 0 a tap REMOVES the object it lands on; at 0 the story has been
+  // enacted and taps fall through to the count aid, so the badges tag the SURVIVORS —
+  // the objects the answer is actually about (see handleObjectTap).
+  const removalsRemaining = useMemo(() => {
+    if (!currentChallenge || !isG1ActOutSubtraction) return 0;
+    const removed = Math.max(0, currentChallenge.startCount - builtCount);
+    return Math.max(0, currentChallenge.changeCount - removed);
+  }, [currentChallenge, isG1ActOutSubtraction, builtCount]);
 
   // Which objects are "start" vs "change" for animation grouping
   const startGroup = useMemo(() => {
@@ -436,13 +462,15 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
   //    addition adds changeCount up to resultCount, subtraction sends changeCount
   //    away down to resultCount. The count is DERIVED from what they build, never
   //    entered as a proxy number. Reset the two-step phase.
+  //  • act-out SUBTRACTION at Grade 1: same seeding — the departure has to be enacted
+  //    at every band (a static scene can't show it). Grade 1 then TYPES the count.
   useEffect(() => {
     const t = currentChallenge?.type;
     const seedSlots = (n: number) => setSceneSlots(Array.from({ length: n }, (_, i) => i));
     if (t === 'create-story') {
       seedSlots(currentChallenge!.operation === 'subtraction' ? currentChallenge!.startCount : 0);
       setBuildPhase('start');
-    } else if (t === 'act-out' && gradeBand === 'K') {
+    } else if (t === 'act-out' && (gradeBand === 'K' || currentChallenge!.operation === 'subtraction')) {
       seedSlots(currentChallenge!.startCount);
       setBuildPhase('start');
     }
@@ -653,10 +681,13 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
         { silent: true },
       );
     }
-    if (count === resultCount) {
+    // Grade-1 act-out REPORTS by typing the count (R3 keeps the keyboard at Grade 1):
+    // there the enactment models the story but is not the answer channel, so reaching
+    // resultCount must NOT auto-judge. K auto-judges on the enacted count.
+    if (count === resultCount && !isG1ActOutSubtraction) {
       completeBuildStory();
     }
-  }, [currentChallenge, buildPhase, sendText, completeBuildStory]);
+  }, [currentChallenge, buildPhase, sendText, completeBuildStory, isG1ActOutSubtraction]);
 
   const handleCheckAnswer = useCallback(() => {
     if (!currentChallenge) return;
@@ -770,7 +801,12 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     // the subtraction interaction: "tap the frogs to send them away").
     const isBuildTap =
       currentChallenge?.type === 'create-story' ||
-      (gradeBand === 'K' && currentChallenge?.type === 'act-out');
+      (gradeBand === 'K' && currentChallenge?.type === 'act-out') ||
+      // Grade-1 act-out subtraction: taps send objects away until the story's change
+      // has been enacted. After that the tap falls through to the count aid below, so
+      // the ordinal badges land on the survivors (the count that IS the answer)
+      // instead of rehearsing the start group.
+      (isG1ActOutSubtraction && removalsRemaining > 0);
     if (isBuildTap) {
       if (!sceneSlots.includes(index)) return;
       SoundManager.tap();
@@ -781,8 +817,9 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
       return;
     }
     // Counting aid (tap toggles a highlight + running ordinal badge, does NOT change
-    // the count). Two consumers:
-    //  • Grade-1 act-out (the count-the-scene model).
+    // the count). Consumers:
+    //  • Grade-1 act-out addition (the count-the-scene model).
+    //  • Grade-1 act-out subtraction AFTER the removals are enacted (count what's left).
     //  • K solve-story when the visible scene count IS the answer (unknownPosition
     //    'result'): the story says "count the bunnies", so tapping each one tags it
     //    1,2,3… (one-to-one correspondence, K.CC.4), then the child SELECTS the total
@@ -798,7 +835,7 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     setTappedObjects((prev) =>
       prev.includes(index) ? prev.filter((x) => x !== index) : [...prev, index],
     );
-  }, [currentChallenge?.type, currentChallenge?.unknownPosition, gradeBand, isCurrentChallengeComplete, sceneSlots, handleBuildProgress]);
+  }, [currentChallenge?.type, currentChallenge?.unknownPosition, gradeBand, isCurrentChallengeComplete, sceneSlots, handleBuildProgress, isG1ActOutSubtraction, removalsRemaining]);
 
   // Add one object to the enacted scene — K create-story (build the story) and
   // K act-out (bring the story's objects together, the addition interaction).
@@ -1026,7 +1063,11 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               {showTenFrameHelper ? 'Hide' : 'Show'} Ten Frame
             </LuminaButton>
             {showTenFrameHelper && (
-              <TenFrameHelper filled={currentChallenge.resultCount} max={maxNumber <= 5 ? 5 : 10} />
+              /* The ten frame mirrors what is ON SCREEN, never the stored resultCount:
+                 on any enacted scene (K act-out, K create-story, Grade-1 act-out
+                 subtraction) resultCount is the target the child is supposed to reach
+                 by enacting, so filling the frame with it handed over the answer. */
+              <TenFrameHelper filled={totalVisible} max={maxNumber <= 5 ? 5 : 10} />
             )}
           </div>
         )}
@@ -1058,18 +1099,30 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
               </span>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
-              <LuminaInput
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={maxNumber}
-                value={countAnswer}
-                onChange={(e) => setCountAnswer(e.target.value)}
-                className="w-16 text-center text-lg"
-                onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
-              />
+            <div className="flex flex-col items-center gap-2">
+              {/* Grade-1 subtraction is enacted on the scene first: the objects the
+                  story sends away are tapped away, THEN the survivors are counted and
+                  reported. Names changeCount only (already public in the story). */}
+              {isG1ActOutSubtraction && (
+                <span className="text-slate-500 text-xs">
+                  {removalsRemaining > 0
+                    ? `Tap ${removalsRemaining} ${getEmoji(currentChallenge.objectType)} to send ${removalsRemaining === 1 ? 'it' : 'them'} away`
+                    : `Now count the ${getEmoji(currentChallenge.objectType)} that are left`}
+                </span>
+              )}
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
+                <LuminaInput
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={maxNumber}
+                  value={countAnswer}
+                  onChange={(e) => setCountAnswer(e.target.value)}
+                  className="w-16 text-center text-lg"
+                  onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
+                />
+              </div>
             </div>
           )
         )}

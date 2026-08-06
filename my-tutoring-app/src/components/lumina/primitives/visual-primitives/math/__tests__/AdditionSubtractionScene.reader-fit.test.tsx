@@ -190,3 +190,96 @@ describe('AdditionSubtractionScene reader-fit (K band)', () => {
     expect((await screen.findByText(/next challenge/i)) as HTMLElement).toBeTruthy();
   });
 });
+
+/**
+ * Grade-1 act-out fork (browser-reported: "it had counting modality layered on top
+ * when you needed to be able to remove 2 frogs"). Subtraction is ENACTED at Grade 1
+ * too — a static scene cannot show a departure — while the answer channel stays the
+ * typed numeral (R3 keeps the keyboard at Grade 1). Addition keeps count-the-scene.
+ */
+describe('AdditionSubtractionScene act-out fork (Grade 1)', () => {
+  const g1 = (challenges: AddSubChallenge[]) => ({
+    ...baseData(challenges), gradeBand: '1' as const, maxNumber: 10, showTenFrame: true,
+  });
+
+  it('act-out subtraction at G1: taps SEND OBJECTS AWAY (not count badges) and the answer is still typed', () => {
+    render(<AdditionSubtractionScene data={g1([
+      ch({ id: 'g1', type: 'act-out', objectType: 'frogs', operation: 'subtraction', storyType: 'separate', startCount: 6, changeCount: 2, resultCount: 4, equation: '6 - 2 = 4' }),
+    ])} />);
+
+    // The scene seeds the story's START group, and the keyboard answer survives.
+    expect(sceneObjects().length).toBe(6);
+    expect(document.querySelector('input[type="number"]')).not.toBeNull();
+
+    // Two taps = the story's two frogs leaving. The regression: taps stamped ordinal
+    // badges on all 6 and the scene never changed.
+    fireEvent.click(sceneObjects()[0]);
+    expect(sceneObjects().length).toBe(5);
+    fireEvent.click(sceneObjects()[0]);
+    expect(sceneObjects().length).toBe(4);
+
+    // Enacting the whole story does NOT auto-judge at Grade 1 — the child reports it.
+    expect(screen.queryByText(/next challenge/i)).toBeNull();
+  });
+
+  it('act-out subtraction at G1: removal is capped at changeCount; further taps count the survivors', () => {
+    render(<AdditionSubtractionScene data={g1([
+      ch({ id: 'g2', type: 'act-out', objectType: 'frogs', operation: 'subtraction', storyType: 'separate', startCount: 6, changeCount: 2, resultCount: 4, equation: '6 - 2 = 4' }),
+    ])} />);
+
+    fireEvent.click(sceneObjects()[0]);
+    fireEvent.click(sceneObjects()[0]);
+    expect(sceneObjects().length).toBe(4);
+
+    // The story said 2 leave — a third tap must not empty the pond; it tags the
+    // survivor with the count badge instead (the count aid, now on the right group).
+    const circlesBefore = document.querySelectorAll('svg circle').length;
+    fireEvent.click(sceneObjects()[0]);
+    expect(sceneObjects().length).toBe(4);
+    expect(document.querySelectorAll('svg circle').length).toBeGreaterThan(circlesBefore);
+  });
+
+  it('act-out subtraction at G1: typing the count of what is left completes the challenge', async () => {
+    const user = userEvent.setup();
+    render(<AdditionSubtractionScene data={g1([
+      ch({ id: 'g3', type: 'act-out', objectType: 'frogs', operation: 'subtraction', storyType: 'separate', startCount: 6, changeCount: 2, resultCount: 4, equation: '6 - 2 = 4' }),
+      ch({ id: 'g4', type: 'act-out', objectType: 'frogs', operation: 'subtraction', storyType: 'separate', startCount: 5, changeCount: 1, resultCount: 4, equation: '5 - 1 = 4' }),
+    ])} />);
+
+    fireEvent.click(sceneObjects()[0]);
+    fireEvent.click(sceneObjects()[0]);
+    await user.type(document.querySelector('input[type="number"]') as HTMLElement, '4');
+    await user.click(screen.getByRole('button', { name: /^check/i }));
+    expect((await screen.findByText(/next challenge/i)) as HTMLElement).toBeTruthy();
+  });
+
+  it('act-out addition at G1 is unchanged: start+change are on screen and taps still count', () => {
+    render(<AdditionSubtractionScene data={g1([
+      ch({ id: 'g5', type: 'act-out', objectType: 'ducks', operation: 'addition', storyType: 'join', startCount: 4, changeCount: 3, resultCount: 7, equation: '4 + 3 = 7' }),
+    ])} />);
+
+    // Count-the-scene model: the whole result group is painted (groupedReveal animates
+    // the change group in), no Add control, and a tap is the counting aid.
+    expect(sceneObjects().length).toBe(7);
+    expect(screen.queryByRole('button', { name: /add one ducks/i })).toBeNull();
+    const circlesBefore = document.querySelectorAll('svg circle').length;
+    fireEvent.click(sceneObjects()[0]);
+    expect(sceneObjects().length).toBe(7);
+    expect(document.querySelectorAll('svg circle').length).toBeGreaterThan(circlesBefore);
+  });
+
+  it('the ten frame mirrors the scene, never the stored result (answer leak on enacted scenes)', async () => {
+    const user = userEvent.setup();
+    render(<AdditionSubtractionScene data={g1([
+      ch({ id: 'g6', type: 'act-out', objectType: 'frogs', operation: 'subtraction', storyType: 'separate', startCount: 6, changeCount: 2, resultCount: 4, equation: '6 - 2 = 4' }),
+    ])} />);
+
+    const filled = () => document.querySelectorAll('.bg-amber-400\\/60').length;
+    await user.click(screen.getByRole('button', { name: /show ten frame/i }));
+    // Before enacting, the frame shows the 6 on screen — NOT the 4 to be discovered.
+    expect(filled()).toBe(6);
+    fireEvent.click(sceneObjects()[0]);
+    fireEvent.click(sceneObjects()[0]);
+    expect(filled()).toBe(4);
+  });
+});

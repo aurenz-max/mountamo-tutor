@@ -355,7 +355,7 @@ const additionSubtractionSceneSchema: Schema = {
           type: {
             type: Type.STRING,
             enum: ["act-out", "build-equation", "solve-story", "create-story"],
-            description: "Challenge type: 'act-out' (drag objects to act out story), 'build-equation' (construct the equation from tiles), 'solve-story' (read story and find the answer), 'create-story' (given equation, write a story)"
+            description: "Challenge type: 'act-out' (tap objects in the scene to act the story out), 'build-equation' (construct the equation from tiles), 'solve-story' (read story and find the answer), 'create-story' (given equation, write a story)"
           },
           instruction: {
             type: Type.STRING,
@@ -773,21 +773,29 @@ Return the complete addition/subtraction scene configuration.
     }
   }
 
-  // ── Reader-fit item 11: tap-accurate act-out instruction at K ──
-  // At Kindergarten, act-out is DIRECT MANIPULATION — the child taps to bring
-  // objects in (addition) or taps objects to send them away (subtraction). The
-  // instruction is load-bearing for the tutor's spoken DISAMBIGUATE beat
-  // ({{instruction}} in the catalog READ-THE-STORY aiDirective), so we OWN it in
-  // code rather than trust the LLM: it must describe the TAP action (never "drag")
-  // and match the operation. Names only changeCount (already public in the story),
-  // never resultCount — the result is what the child discovers by enacting.
-  // Grade-1 act-out (count-the-scene model) keeps the LLM instruction.
-  if (data.gradeBand === 'K') {
-    for (const challenge of data.challenges as AddSubChallenge[]) {
-      if (challenge.type !== 'act-out') continue;
-      challenge.instruction = challenge.operation === 'addition'
+  // ── Act-out instructions are CODE-OWNED at every band ──
+  // {{instruction}} is load-bearing for the tutor's spoken DISAMBIGUATE beat (the
+  // catalog READ-THE-STORY aiDirective), and it must name the action the band
+  // actually implements. Left to the LLM it writes manipulation language for every
+  // band ("tap 2 frogs to send them away") — which was TRUE at K and a lie at
+  // Grade 1, where the child tapped frogs that never moved.
+  //  • Subtraction (K and Grade 1) → direct manipulation: a static scene cannot show
+  //    a departure, so the child taps the objects away. Grade 1 then counts + types.
+  //  • Addition at K → tap to bring the change group in.
+  //  • Addition at Grade 1 → count-the-scene (the join arrives via groupedReveal),
+  //    so the instruction names the COUNT, never a tap that does nothing.
+  // Names only changeCount (already public in the story), never resultCount — the
+  // result is what the child discovers by enacting and counting.
+  for (const challenge of data.challenges as AddSubChallenge[]) {
+    if (challenge.type !== 'act-out') continue;
+    if (challenge.operation === 'subtraction') {
+      challenge.instruction = data.gradeBand === 'K'
+        ? `Tap ${challenge.changeCount} ${challenge.objectType} to send them away!`
+        : `Tap ${challenge.changeCount} ${challenge.objectType} to send them away, then count what's left.`;
+    } else {
+      challenge.instruction = data.gradeBand === 'K'
         ? `Tap to bring ${challenge.changeCount} more ${challenge.objectType} in!`
-        : `Tap ${challenge.changeCount} ${challenge.objectType} to send them away!`;
+        : `Count all the ${challenge.objectType} to find how many there are now.`;
     }
   }
 
