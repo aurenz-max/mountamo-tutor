@@ -116,6 +116,35 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
+14. **di-shapes — PACK #5 BORN 2026-08-06 (`cabb3f0`, user modality call:
+    "this is a triangle — what is this?"). L0 live loop UNVERIFIED →
+    HUMAN-CHECKS #72 (folds into the same mic session as #63's re-run).**
+    DISTAR shape naming over the judged-loop engine: drawn SVG shape at a
+    generator-stamped rotation (K.G.2 "regardless of orientation"), spoken
+    shape-name answer, contrastive correction on near-names. Fork A menu
+    service: code-owned 9-shape menu (K core five: circle/triangle/square/
+    rectangle/hexagon; extended: oval/pentagon/rhombus/trapezoid), named
+    shapes in the objective win, wrapper leak-guard keeps names out of the
+    chrome. Geometry IS the rule-#1 guard (rectangle ≥1.6:1, oval clearly
+    non-circular — one defensible name per drawing); "diamond" = judged
+    alternate of rhombus, stated per-item. Answer-leak: contextKeys carry
+    `challengeType` ONLY (the name is the whole answer). Bench: `Shapes`
+    probe set + `shape` kind cue branches (adjacency stress + acceptAlso).
+    Registration complete incl. β (name_shape 1.5) + `di-shapes →
+    MATHEMATICS` in `_PRIMITIVE_TO_SUBJECT`. Gates: DI sweep 304/304, full
+    Vitest 1791/1791, typecheck:lumina 0, py_compile clean, real-pipeline
+    probes 3/3 (generic K = core five; named narrows; diamonds → rhombus).
+    Report/birth cert: `qa/eval-reports/di-shapes-birth.md`.
+    **Ladder (birth-cert follow-ups):** (1) `/curriculum-fit di-shapes`
+    (K.G.2 naming home near-certain but UNMEASURED — run the retrieval probe
+    with the backend up); (2) L1 `/add-eval-modes` — `count_sides` /
+    `count_corners` (spoken number words, the #46-benched class → no new
+    bench sitting) + `shape_review`; (3) L2 catalog contextKeys stay minimal
+    by design — revisit only with evidence; (4) L3 `/add-support-tiers`
+    (family script-composed fade: easy model+guide+test / medium model+test /
+    hard cold-name); (5) L4 structural = rotation magnitude + size variation
+    + non-prototypical exemplars (scalene/obtuse triangles); (6) L5 sound.
+
 13. **CTX-1 — DELETE the real-time `[CONTEXT UPDATE]` push; attach state lazily
     instead. MEDIUM.** *(Filed as a `d895bfb` gate regression; reframed by user
     ruling the same day — the gate is scaffolding around a channel that should
@@ -196,7 +225,25 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     item-11 slice without describing it. A future session reading either would not
     know it exists.
 
-12. **DI-120-1 — noise-opened turns anchor empty attempts and burn items.
+12. **DI-120-1 — ✅ FIXED 2026-08-06 (`3986f77`), same-day user-pulled slice.**
+    Fix = `MIN_BARGE_BAR 0.03` floor in `voiceTurnCalibration.deriveVoiceThresholds`
+    (both the calibrated and pre-calibration fallback paths): the 0.018 leakage
+    class can no longer open a turn while every measured real barge-in answer
+    (≥0.045 across all sittings) clears the bar with 33%+ headroom. The AMBIENT
+    bar is untouched — answering into silence stays sensitive for quiet children.
+    Unit pins replay the 08-06 device numbers (`voiceTurnCalibration.test.ts`,
+    2 new tests). **Design question SETTLED — AGAINST cap-skipping:** a
+    no-transcript correction still counts toward the miss/correction cap,
+    because transcript absence is not evidence of silence (DI-1's whole thesis:
+    ASR is a lossy annotation; the judge heard real audio — "Shh." for /s/,
+    "SeaWorld" for zero). A transcript-presence rule would also have
+    contradicted the pinned misconception-evidence behavior (untranscribed
+    misses are Tier-A evidence). The channel is closed where the turn OPENS,
+    not second-guessed at the cap. Residual, honest: 07-19 measured one echo
+    blip at 0.033 — above the new floor; if that class recurs, the escalation
+    stays threshold-above-residual → AEC workaround, never a cap rule.
+    *(Original entry below, kept as the trail.)*
+    **noise-opened turns anchor empty attempts and burn items.
     OPENED 2026-08-06 from the #63 sitting. Fix BEFORE re-running #63.**
     Evidence: `qa/di-bench/run-2026-08-06-counting-120-probe.md`. `count-39` was
     lost to two corrections and a move-on **without the user ever answering it**.
@@ -346,7 +393,39 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     judge-over-transcript covers the DI half, conversational turns have no
     mitigation on our side today.
 
-10. **di-math-facts `counting_next` to 120 — STILL BLOCKED (standing gate 1).
+10. **di-math-facts `counting_next` to 120 — ✅ IMPLEMENTATION SLICE BUILT +
+    COMMITTED 2026-08-06 (`3986f77`) on a USER RULING the same day ("i feel
+    like we can move forward directly now with DI primitives to 120") — the
+    gate's meaning flipped from build-gate to ACCEPTANCE: #63's re-run (now
+    unblocked by item 12's fix) drives the same three criteria against the
+    SHIPPED config.** What landed, per this item's own spec: `numberWordFor`
+    (code-owned 0..120 builder, bench-canonical forms, hard-throws out of
+    range) replacing every `NUMBER_WORDS[n]` lookup; aliases mirror the probe
+    set and never cross-alias teen/decade; `resolveTextScope` clamp 20 → 120
+    with per-type `benchedCeilingFor` (counting 120, every FACT identity still
+    20 — "119 − 3" is impossible by construction); `buildCountingPool` windowed
+    above twenty (decade transitions + near-ceiling window + teen anchors,
+    never rote-from-zero); counting-scoped judging clauses (teen/decade
+    strictness + compound completeness, ported from the bench criteria —
+    every fact mode's contract byte-identical); catalog NUMBER WORDS directive
+    gains the multi-word clause; pack-scoped `silenceCloseMs` 1000 on sessions
+    carrying compound answers (standalone; #63(b) confirms the number). L4
+    operand axis honestly out-of-scope above twenty (a transition-count rung
+    is /add-structural-difficulty territory). Gates: focused 96/96, full
+    Vitest 1778/1778, typecheck:lumina 0, real-pipeline probes 5/5
+    (census+hard reach 119; within-10/within-5 controls unchanged;
+    subtraction under a 120 ask stays ≤20). Report:
+    `qa/tutor-reports/di-math-facts-item10-2026-08-06.md`.
+    **Residuals:** (a) the #63 acceptance sitting (teen/decade break,
+    compound completeness, cue drag) — the judge's discrimination on
+    multi-word numerals is still UNPROVEN live; if (a) fails, the honest
+    rollback is dropping `benchedCeilingFor('counting_next')` back to 20 (one
+    constant); (b) LESSON-mode close timing still comes from
+    `lessonVoiceTurnPolicy` (420ms for di-math-facts) — content-aware policy
+    is queued, not built.
+    *(Original entry below, kept as the trail — its "do NOT start before the
+    sitting" clause was superseded by the user ruling above.)*
+    **STILL BLOCKED (standing gate 1).
     FIRST SITTING RUN 2026-08-06, verdict: none of #63's three criteria
     exercised.** Report: `qa/di-bench/run-2026-08-06-counting-120-probe.md`.
     The run drove 4 of 10 items, answered every one CORRECTLY, and stopped at

@@ -124,6 +124,30 @@ queue AND this file's "last touched" in the same slice.
 > `3986f77` shipped item 10 (`counting_next` to 120, user-ruled build-ahead) plus the DI-120-1
 > barge-bar floor, and an untracked `diShapesScript.ts` shows a new pack in flight. The
 > "PARKED to make room" decision in the prior snapshot was made before that work landed.
+> **COMPLETED same evening — both DI development slices are SHIPPED (the in-flight pack
+> landed as `cabb3f0`).** The user's authoring call ("DI shapes… and the primitive to 120,
+> we can move forward directly") became two committed slices:
+> **(a) item 10 BUILT** — code-owned `numberWordFor` 0..120, counting-windowed pool
+> (decade transitions + near-ceiling window + teen anchors, never rote-from-zero),
+> per-type benched ceilings (facts stay ≤20 by construction), teen/decade + compound-
+> completeness judging clauses, 1000ms compound close; gates 96/96 focused, full Vitest
+> 1778/1778, **real-pipeline probes 5/5** (census reaches 119; within-5/10 controls
+> unchanged; subtraction ≤20 under a 120 ask). **DI-120-1 FIXED** in the same slice
+> (`MIN_BARGE_BAR 0.03`; design question settled AGAINST cap-skipping — DI-1 doctrine,
+> the channel closed where the turn opens). Report
+> `qa/tutor-reports/di-math-facts-item10-2026-08-06.md`.
+> **(b) di-shapes L0 BORN (`cabb3f0`, pack #5)** — DISTAR shape naming ("this shape is a
+> triangle — what shape is this?"), SVG stage at generator-stamped rotation, Fork A
+> 9-shape menu, geometry-as-rule-#1-guard (rectangle ≥1.6:1 / oval non-circular),
+> "diamond" judged alternate of rhombus, full registration incl. β + `di-shapes →
+> MATHEMATICS`; bench `Shapes` probe set wired. Gates: DI sweep 304/304, full Vitest
+> **1791/1791**, typecheck:lumina 0, py_compile clean, **real-Gemini probes 3/3**.
+> Birth cert `qa/eval-reports/di-shapes-birth.md`; queue row = DI BACKLOG item 14.
+> **Human gate = ONE mic session: #63 re-run (now an ACCEPTANCE drive on the fixed bar,
+> unblocked) + NEW #72 (di-shapes L0 live loop + Shapes bench stress).** The DI lane's
+> "no unblocked top item / author with the user" state is RESOLVED — authored, built,
+> shipped; next lane pulls after the sitting = CTX-1 (item 13, the tutor-quality top)
+> and the di-shapes ladder (curriculum-fit probe → L1 count_sides).
 >
 > **6. Ship hygiene — `addition-subtraction-scene` item-12 is STILL uncommitted** (4 files,
 > browser-verified with a 10-check real-Chrome run, no commit) and now carries a modified

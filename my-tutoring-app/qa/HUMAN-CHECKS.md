@@ -52,6 +52,22 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > noise blips at peak 0.018 opened turns over tutor audio, anchored empty attempts
 > and burned `count-39`; fix the barge-in bar BEFORE re-running. Report:
 > `qa/di-bench/run-2026-08-06-counting-120-probe.md`.
+>
+> **2026-08-06 (night) — #63 UNBLOCKED for re-run, and its meaning shifted from
+> build-gate to ACCEPTANCE.** DI-120-1 is fixed (`3986f77`: MIN_BARGE_BAR 0.03 floor —
+> the 0.018 leakage class can no longer open turns while real speech ≥0.045 clears the
+> bar with margin) and, on a user ruling the same day ("we can move forward directly
+> now"), **item 10's 1–120 extension is BUILT and COMMITTED** (code-owned numeral
+> builder, counting-windowed pool, teen/decade + completeness judging clauses,
+> 1000ms compound-numeral close; real-pipeline probes 5/5, controls unchanged). The
+> re-run drives the SAME three criteria — (a) deliberate teen/decade break, (b)
+> compound completeness incl. a mid-numeral pause, (c) cue drag — now against the
+> shipped pack config. **#72 opened — di-shapes L0 live sitting** (pack #5 born
+> `cabb3f0`, the user's shape-naming modality call): drive the `Shapes` bench probe
+> set (stress square↔rectangle and circle↔oval deliberately wrong; say "diamond" at
+> the rhombus — must affirm) AND one DiShapes tester run (SVG stage, reward beat,
+> correction branch). #63's re-run and #72 fold into ONE mic session comfortably.
+> Next free ID = 73.
 
 ## Open (as of 2026-08-05, refreshed by `/pm` 2026-08-05)
 
