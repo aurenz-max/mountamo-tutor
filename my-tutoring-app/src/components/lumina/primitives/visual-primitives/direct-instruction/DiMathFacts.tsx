@@ -120,6 +120,18 @@ const MAX_CORRECTIONS_PER_ITEM = 2;
  *  responses — bench run-3 ruling). Passed at connect time. */
 const DI_AUDIO_INPUT = { manual_activity: true };
 
+/**
+ * Close timing for sessions carrying COMPOUND numerals (answers past twenty —
+ * the item-10 counting extension). "One hundred … seven" is ONE answer said in
+ * pieces; the family 500ms close would split a mid-numeral pause into two
+ * voice turns (the exact break di-sentence-reading hit on connected text — it
+ * raised pack-scoped to 1100ms). PACK-scoped, content-gated: single-word
+ * sessions keep the family default's snap. Standalone path only — in a lesson
+ * the provider owns close timing (lessonVoiceTurnPolicy). #63(b) is the
+ * acceptance check on this number.
+ */
+const COMPOUND_NUMERAL_SILENCE_CLOSE_MS = 1000;
+
 /** Floor for the completed-equation beat — a resolved fact stays on screen this
  *  long even if the tutor's audio ends early, so the child always sees their
  *  answer land. Ceiling releases the stage if the audio edge never arrives. */
@@ -431,6 +443,14 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
 
       const prevCorrections = correctionsRef.current.get(item.id) ?? 0;
 
+      // DI-120-1 design ruling (BACKLOG item 12): a no-transcript correction
+      // STILL counts toward the cap. Transcript absence is not evidence of
+      // silence — DI-1's whole thesis is that ASR is a lossy annotation while
+      // the judge heard real audio ("Shh." for /s/). The empty-attempt burn
+      // that opened the question was noise-opened turns under a miscalibrated
+      // barge bar, and the fix is the MIN_BARGE_BAR floor in
+      // voiceTurnCalibration — the channel is closed where the turn opens,
+      // not second-guessed here where a real lost-ASR answer would pay for it.
       if (judgment === 'corrected') {
         const used = prevCorrections + 1;
         correctionsRef.current.set(item.id, used);
@@ -610,8 +630,18 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
     [applyVerdict, commitAdvance, currentOf, noteSessionDead, noteSessionResumed],
   );
 
+  // Content-gated close timing: only sessions that can hear a compound
+  // numeral pay the slower close (see COMPOUND_NUMERAL_SILENCE_CLOSE_MS).
+  const hasCompoundAnswers = useMemo(
+    () => data.challenges.some((c) => c.answerNumeral > 20),
+    [data.challenges],
+  );
+
   const loop = useJudgedSpeechLoop({
     enabled: running,
+    voice: hasCompoundAnswers
+      ? { config: { silenceCloseMs: COMPOUND_NUMERAL_SILENCE_CLOSE_MS } }
+      : undefined,
     onEmission: handleEmission,
     // Diagnostics: the tutor's raw output transcription + mic turn telemetry.
     // The bench has wired both since the open-mic runs; the packs shipped with

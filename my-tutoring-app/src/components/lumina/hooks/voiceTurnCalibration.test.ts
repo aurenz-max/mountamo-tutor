@@ -44,4 +44,36 @@ describe('voice turn calibration', () => {
     expect(thresholds.echoOpen).toBeGreaterThan(0.05);
     expect(thresholds.echoOpen).toBeGreaterThan(thresholds.ambientOpen);
   });
+
+  it('DI-120-1: the barge-in bar can never sink under bursty leakage on a quiet device', () => {
+    // Replay of the 2026-08-06 counting-120 sitting's device: near-silent
+    // ambient (ambient bar clamps to its 0.008 minimum) and an echo median of
+    // ~0.0002 — the derived barge bar was 0.0108, and two leakage blips at
+    // peak 0.018 opened turns over tutor audio, anchored EMPTY attempts, and
+    // burned `count-39`. Real answers in the same run peaked 0.045–0.116.
+    let state = observe(new Array(8).fill(0.002));
+    state = new Array(16).fill(0.0002).reduce(
+      (next, level) => observeVoiceFloor(next, level, true),
+      state,
+    );
+    const thresholds = deriveVoiceThresholds(state, DEFAULT_VOICE_TURN_CONFIG);
+    expect(thresholds.echoReady).toBe(true);
+    // The floor: rejects the measured 0.018 leakage class…
+    expect(thresholds.echoOpen).toBeGreaterThan(0.018);
+    expect(thresholds.echoOpen).toBeGreaterThanOrEqual(0.03);
+    // …while every measured real barge-in answer still clears the bar.
+    expect(thresholds.echoOpen).toBeLessThan(0.045);
+    // The AMBIENT bar stays sensitive — answering into silence is untouched.
+    expect(thresholds.ambientOpen).toBeLessThanOrEqual(0.008);
+  });
+
+  it('DI-120-1: the pre-calibration fallback barge bar honours the same floor', () => {
+    const thresholds = deriveVoiceThresholds(EMPTY_VOICE_CALIBRATION, {
+      ...DEFAULT_VOICE_TURN_CONFIG,
+      silenceThreshold: 0.004,
+      bargeInMultiplier: 1.2,
+    });
+    expect(thresholds.echoReady).toBe(false);
+    expect(thresholds.echoOpen).toBeGreaterThanOrEqual(0.03);
+  });
 });

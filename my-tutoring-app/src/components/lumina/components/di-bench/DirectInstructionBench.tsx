@@ -103,6 +103,10 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
     const item = activeItemOf();
     if (!item) return;
 
+    // DI-120-1 ruling: a no-transcript correction still counts — transcript
+    // absence is not evidence of silence (DI-1). The noise-blip empty-attempt
+    // class that burned `count-39` on 08-06 is closed where the turn OPENS:
+    // MIN_BARGE_BAR in voiceTurnCalibration.
     let correctionsUsed = correctionsRef.current.get(item.id) ?? 0;
     if (judgment === 'corrected') {
       correctionsUsed += 1;

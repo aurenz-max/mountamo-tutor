@@ -304,8 +304,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-math-facts',
-    description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them (see a number, say the number that comes next). ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
-    constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only, plus the next-number counting step — NO multiplication, division, or multi-digit problems. Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence, counting past 10); this pack drills only the say-the-next-number step as fluency. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
+    description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a printed fact aloud ("two plus one is three"), practices it together, then asks the child and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
+    constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
     // L1 eval modes — task identities, all within the benched number-word
     // response class (the produced audio is a spoken number in every mode), so
     // the ladder needed no new bench sitting. β mirrors backend
@@ -433,7 +433,12 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'three), or after counting out loud to reach it. You are judging the SOUND you heard, so a '
             + 'word that sounds like the target number IS the target number ("won" is one, "too" is two, '
             + '"for" is four, "ate" is eight) — but a DIFFERENT number is always wrong and gets the '
-            + 'correction branch.',
+            + 'correction branch. Past twenty an answer may take several words: "fifty-one", "one hundred '
+            + 'seven" — read "39 →" aloud as "the number after thirty-nine". That is still ONE answer and '
+            + 'it only counts when the whole number arrives: "hundred seven" and a trailing-off "one '
+            + 'hundred" are incomplete, not close. A teen and its decade are different numbers however '
+            + 'alike they sound — thirteen is not thirty, fourteen is not forty, seventeen is not '
+            + 'seventy — so judge the number you actually heard.',
         },
         {
           title: 'BREVITY',

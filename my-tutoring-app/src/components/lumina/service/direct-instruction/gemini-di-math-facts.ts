@@ -154,19 +154,47 @@ const buildTierPromptSection = (tier: SupportTier | null): string => {
 // ── Number words + ASR aliases (code-owned) ─────────────────────────
 
 /**
- * Number words 0..20 — the full answer range this pack can ever speak, and a
- * BENCHED boundary rather than an arbitrary one: every entry is a single word,
- * i.e. the response class the #46 probe sitting validated. Extending past
- * twenty means compound numerals ("one hundred seven"), a NEW spoken response
- * class that DI standing gate 1 requires a bench sitting for before any wiring
- * (qa/di/BACKLOG.md item 10; probe set "Counting to 120" is wired and waiting).
- * Until that sitting passes, an above-twenty ask saturates here honestly.
+ * Number words 0..20 — the single-word answer range, the response class the
+ * #46 probe sitting validated. Still the ceiling for every ARITHMETIC mode
+ * (a fact's spoken answer never leaves it). The COUNTING extension past
+ * twenty produces compound numerals through `numberWordFor` below.
  */
 const NUMBER_WORDS = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
   'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
   'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
 ];
+
+const TENS_WORDS: Record<number, string> = {
+  20: 'twenty', 30: 'thirty', 40: 'forty', 50: 'fifty',
+  60: 'sixty', 70: 'seventy', 80: 'eighty', 90: 'ninety',
+};
+
+/**
+ * The code-owned numeral builder for 0..120 (DI BACKLOG item 10). Forms are
+ * the bench probe set's canonical ones (`COUNTING_SEQUENCE_PROBE_ITEMS`):
+ * hyphenated in-decade compounds ("fifty-one"), "one hundred" at the boundary,
+ * "one hundred seven" with no "and". 120 is the pack's hard ceiling — the
+ * counting pool saturates there, so out-of-range input is a programmer error
+ * surfaced loudly rather than an `undefined` spoken into a cue (the failure
+ * raising the old clamp without this builder would have produced).
+ *
+ * BUILD-AHEAD RULING (user, 2026-08-06): authored before bench sitting #63
+ * closes — the sitting is now the ACCEPTANCE drive for the multi-word class
+ * (teen/decade discrimination, compound completeness), not a build gate.
+ */
+export const numberWordFor = (n: number): string => {
+  if (!Number.isInteger(n) || n < 0 || n > 120) {
+    throw new Error(`numberWordFor: ${n} is outside the pack's 0..120 ceiling`);
+  }
+  if (n <= 20) return NUMBER_WORDS[n];
+  if (n < 100) {
+    const tens = Math.floor(n / 10) * 10;
+    const ones = n % 10;
+    return ones === 0 ? TENS_WORDS[tens] : `${TENS_WORDS[tens]}-${NUMBER_WORDS[ones]}`;
+  }
+  return n === 100 ? 'one hundred' : `one hundred ${numberWordFor(n - 100)}`;
+};
 
 /** Whole-token ASR homophones — passive cross-check only, never the judge. */
 const HOMOPHONES: Partial<Record<string, string[]>> = {
@@ -179,10 +207,26 @@ const HOMOPHONES: Partial<Record<string, string[]>> = {
   ten: ['tin'],
 };
 
-/** Aliases for answer n: the word, its digit string, and any homophones. */
+/**
+ * Aliases for answer n — passive judge-vs-transcript cross-check only.
+ * n ≤ 20 is byte-for-byte the #46-benched list (word, digit, homophones).
+ * Compound numerals mirror the bench probe's alias policy: the unhyphenated
+ * spelling, the digit string, the "fourty" misspelling, and "a hundred …" /
+ * "one hundred and …" variants. Deliberately NEVER cross-aliased — a teen
+ * never lists its decade sibling, because the alias check is the disagreement
+ * meter for exactly that confusion (diScript.ts, counting-120 probe note).
+ */
 const aliasesFor = (n: number): string[] => {
-  const word = NUMBER_WORDS[n];
-  return [word, String(n), ...(HOMOPHONES[word] ?? [])];
+  const word = numberWordFor(n);
+  if (n <= 20) return [word, String(n), ...(HOMOPHONES[word] ?? [])];
+  const aliases = [word, String(n)];
+  if (word.includes('-')) aliases.push(word.replace(/-/g, ' '));
+  if (word.includes('forty')) aliases.push(word.replace('forty', 'fourty'));
+  if (n >= 100) {
+    aliases.push(word.replace('one hundred', 'a hundred'));
+    if (n > 100) aliases.push(word.replace('one hundred ', 'one hundred and '));
+  }
+  return aliases;
 };
 
 // ── Fact scope resolution (code-enforced regex over the objective) ──
@@ -249,18 +293,28 @@ export const resolveTextScope = (text: string): FactScope | null => {
   // the model hint / grade default) rather than resolving to a truncated "202".
   const within = /(?:within|up\s+to|sums?\s+to|to)\s+(\d{1,3})\b/i.exec(text);
   if (within) {
-    // The clamp is the pack's BENCHED CEILING, not a knob: every mode's answer
-    // is a spoken number word from NUMBER_WORDS (0..20), the response class the
-    // #46 probe sitting validated. An ask above twenty therefore SATURATES at
-    // twenty — the di-sentence-reading precedent (its benched 8-word ceiling is
-    // a hard cap that saturates, never widens). Raising this ceiling means
-    // MULTI-WORD numerals ("one hundred seven"), an unbenched response class
-    // gated by DI standing gate 1 — see qa/di/BACKLOG.md item 10.
-    const maxSum = Math.min(20, Math.max(5, parseInt(within[1], 10)));
+    // The clamp is the pack's HARD CEILING, not a knob (the di-sentence-reading
+    // precedent: a cap that saturates, never widens). 120 is the counting
+    // extension's ceiling (DI item 10, user-ruled build-ahead 2026-08-06; bench
+    // sitting #63 = acceptance). The parse keeps the RAW ask up to 120 so the
+    // counting pool can serve it; every ARITHMETIC pool still applies its own
+    // benched single-word cap of twenty at build time (`benchedCeilingFor`) —
+    // raising this number widened COUNTING only, never the fact pools.
+    const maxSum = Math.min(120, Math.max(5, parseInt(within[1], 10)));
     return { kind: 'within', maxSum };
   }
   return null;
 };
+
+/**
+ * Per-task benched ceiling — where each identity's spoken response class ends.
+ * Counting reaches 120 (compound numerals — the item-10 extension; #63 is the
+ * acceptance sitting). Every fact identity stays within the #46-benched
+ * single-word 0..20: a "within 120" ask must never turn subtraction into
+ * "119 − 3" (multi-digit arithmetic, which the catalog forbids outright).
+ */
+const benchedCeilingFor = (type: DiMathFactsChallengeType): number =>
+  type === 'counting_next' ? 120 : 20;
 
 /** The model's factScope hint — used ONLY when the text pinned nothing. */
 const scopeFromModel = (s: string): FactScope | null =>
@@ -332,9 +386,31 @@ const buildSubtractionPool = (scope: FactScope, ceiling: number): FactPair[] => 
   return pool;
 };
 
-/** Counting-sequence pool: start at n, say n+1. `b` is fixed at 1 (the step). */
-const buildCountingPool = (ceiling: number): FactPair[] =>
-  Array.from({ length: ceiling }, (_, i) => ({ a: i, b: 1 }));
+/**
+ * Counting-sequence pool: start at n, say n+1. `b` is fixed at 1 (the step).
+ *
+ * Within twenty: every start, unchanged from L0. ABOVE twenty (the 1–120
+ * extension) the pool is WINDOWED near the ask's ceiling instead of rote from
+ * the bottom (the BACKLOG item-10 spec; the 14k focus-window idea): a "within
+ * 120" session drills where counting actually breaks —
+ *   - every DECADE TRANSITION in range (29→30 … 119→120), the skill's hard
+ *     cases and the teen/decade discrimination the #63 sitting stresses;
+ *   - the compound window just under the ceiling (96..119 for 120), so
+ *     in-decade compound numerals ("one hundred six → one hundred seven")
+ *     are drilled where the objective actually lives;
+ *   - teen anchors (12..17), keeping the confusability class in rotation
+ *     against its decade siblings.
+ * Starts below twelve are deliberately absent from an above-twenty session —
+ * they belong to the within-20 asks that already serve them.
+ */
+const buildCountingPool = (ceiling: number): FactPair[] => {
+  if (ceiling <= 20) return Array.from({ length: ceiling }, (_, i) => ({ a: i, b: 1 }));
+  const starts = new Set<number>();
+  for (let n = 29; n < ceiling; n += 10) starts.add(n);
+  for (let n = Math.max(21, ceiling - 24); n < ceiling; n++) starts.add(n);
+  for (const teen of [12, 13, 14, 15, 16, 17]) starts.add(teen);
+  return Array.from(starts).sort((x, y) => x - y).map((a) => ({ a, b: 1 }));
+};
 
 // ── Per-skill answer / identity / triviality ───────────────────────
 
@@ -622,14 +698,22 @@ const poolForType = (
 ): FactPair[] => {
   switch (type) {
     case 'counting_next':
-      return buildCountingPool(ceiling);
+      return buildCountingPool(Math.min(ceiling, benchedCeilingFor(type)));
     case 'subtraction_fact':
-      return buildSubtractionPool(scope, ceiling);
+      // The arithmetic cap, not the raw ceiling: a "within 120" COUNTING ask
+      // must never build "119 − 3" (multi-digit arithmetic — catalog-forbidden).
+      return buildSubtractionPool(scope, Math.min(ceiling, benchedCeilingFor(type)));
     case 'fact_review':
       return buildPool(gradeDefaultScope(gradeLevel));
     case 'answer_fact':
-    default:
-      return buildPool(scope.kind === 'named' ? gradeDefaultScope(gradeLevel) : scope);
+    default: {
+      if (scope.kind === 'named') return buildPool(gradeDefaultScope(gradeLevel));
+      // Same arithmetic cap for addition: sums stay in the benched 0..20.
+      const capped = scope.kind === 'within'
+        ? { ...scope, maxSum: Math.min(scope.maxSum, benchedCeilingFor(type)) }
+        : scope;
+      return buildPool(capped);
+    }
   }
 };
 
@@ -670,7 +754,9 @@ const buildChallenge = (
   const answer = answerFor(type, pair);
   const base = {
     challengeType: type,
-    answerWord: NUMBER_WORDS[answer],
+    // numberWordFor, never an array index: past twenty an index lookup was the
+    // `undefined`-into-a-cue failure the old clamp existed to prevent.
+    answerWord: numberWordFor(answer),
     answerNumeral: answer,
     asrAliases: aliasesFor(answer),
   };
@@ -681,7 +767,7 @@ const buildChallenge = (
       a: pair.a,
       b: 1,
       display: `${pair.a} →`,
-      problem: `the number after ${NUMBER_WORDS[pair.a]}`,
+      problem: `the number after ${numberWordFor(pair.a)}`,
       solvedDisplay: `${pair.a} → ${answer}`,
     };
   }
@@ -692,7 +778,7 @@ const buildChallenge = (
       a: pair.a,
       b: pair.b,
       display: `${pair.a} - ${pair.b}`,
-      problem: `${NUMBER_WORDS[pair.a]} minus ${NUMBER_WORDS[pair.b]}`,
+      problem: `${numberWordFor(pair.a)} minus ${numberWordFor(pair.b)}`,
       solvedDisplay: `${pair.a} - ${pair.b} = ${answer}`,
     };
   }
@@ -702,7 +788,7 @@ const buildChallenge = (
     a: pair.a,
     b: pair.b,
     display: `${pair.a} + ${pair.b}`,
-    problem: `${NUMBER_WORDS[pair.a]} plus ${NUMBER_WORDS[pair.b]}`,
+    problem: `${numberWordFor(pair.a)} plus ${numberWordFor(pair.b)}`,
     solvedDisplay: `${pair.a} + ${pair.b} = ${answer}`,
   };
 };
@@ -885,14 +971,25 @@ Return the wrapper JSON only.`;
   const ceiling = ceilingOf(scope, gradeLevel);
 
   /** Review is capped by the taught grade-wide pool; other identities inherit
-   * the objective's resolved ceiling. The tier can narrow, never widen, it. */
+   * the objective's resolved ceiling INTERSECTED with their own benched cap
+   * (counting 120, facts 20). The tier can narrow, never widen, it. */
   const poolCeilingFor = (type: DiMathFactsChallengeType): number =>
-    type === 'fact_review' ? gradeDefaultScope(gradeLevel).maxSum : ceiling;
+    type === 'fact_review'
+      ? gradeDefaultScope(gradeLevel).maxSum
+      : Math.min(ceiling, benchedCeilingFor(type));
 
   /** One skill's share of the session — its own scoped pool, own variance. */
   const buildFor = (type: DiMathFactsChallengeType, n: number): FactPair[] => {
     const pool = shuffle(poolForType(type, scope, gradeLevel, ceiling));
-    const shape = supportTier
+    // The L4 operand-boundary axis (within-5 / cross-5 / cross-10) is defined
+    // on the ≤20 fact space; applying it to a 1–120 counting pool would clamp
+    // every tier back under twenty and re-saturate the extension through the
+    // back door. Above twenty the WINDOWED pool owns structure; extending the
+    // axis there (transition-count rungs) is /add-structural-difficulty
+    // territory, not this slice. Support-tier DISTAR withdrawal still applies —
+    // it is stamped per-challenge below, independent of this shape.
+    const shapeApplies = !(type === 'counting_next' && poolCeilingFor(type) > 20);
+    const shape = supportTier && shapeApplies
       ? resolveProblemShape(type, supportTier, poolCeilingFor(type))
       : undefined;
     const seed = seedForType(type, scope, shape);
@@ -989,6 +1086,12 @@ Return the wrapper JSON only.`;
       `[DiMathFacts] Support tier "${supportTier}" applied per-challenge (${modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'}) — ${resolveSupportStructure(challenges[0]?.challengeType ?? 'answer_fact', supportTier).describe}`,
     );
     console.log('[DiMathFacts] Structural tier results:', challenges.map((ch) => {
+      // Mirrors the buildFor guard: the operand axis is not defined above the
+      // ≤20 fact space, so a 1–120 counting item reports that honestly instead
+      // of a fake within-20 saturation verdict.
+      if (ch.challengeType === 'counting_next' && poolCeilingFor(ch.challengeType) > 20) {
+        return { type: ch.challengeType, target: 'windowed-counting (operand axis n/a > 20)', actual: true, saturated: false };
+      }
       const shape = resolveProblemShape(
         ch.challengeType,
         supportTier,

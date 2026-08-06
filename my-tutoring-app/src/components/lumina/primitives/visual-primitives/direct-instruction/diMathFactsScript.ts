@@ -191,6 +191,25 @@ const countingDirection = (it: DiMathFactsChallenge): 'up' | 'back' =>
   it.challengeType === 'subtraction_fact' ? 'back' : 'up';
 
 /**
+ * COUNTING-SCOPED judging additions for the 1–120 extension (DI item 10).
+ * Ported from the bench probe's counting criteria (diScript.ts,
+ * `judgingCriteria` counting fork — the wording the #63 sitting drives), and
+ * gated on the counting task at teen-or-above answers so every fact mode's
+ * contract — and any within-twelve counting session — stays byte-for-byte the
+ * #46-benched text. Two rules the single-word range never needed:
+ *  - teen/decade discrimination: thirteen/thirty differ by an unstressed
+ *    syllable child speech flattens, and they are ADJACENT in this range —
+ *    affirming across the pair is the failure that would kill the extension;
+ *  - compound completeness: past twenty an answer is one number said as
+ *    several words, so a partial production is a miss that sounds like a hit.
+ */
+const countingJudgingClauses = (it: DiMathFactsChallenge): string =>
+  it.challengeType === 'counting_next' && it.answerNumeral >= 13
+    ? `\nA teen and its decade are DIFFERENT numbers, never near-misses: thirteen is not thirty, fourteen is not forty, sixteen is not sixty. They sound alike on purpose — listen for the ending and correct the one you actually heard.
+A number said as several words is ONE answer and must arrive whole: "twenty" is not "one hundred twenty", and "hundred seven" is not "one hundred seven". If the learner stops partway, that is the correction branch.`
+    : '';
+
+/**
  * The in-band judging contract for one item. The Live tutor hears the raw
  * audio and judges each attempt ITSELF; the engine reads which branch it took
  * from the output transcript (sentinel scan) and alone decides progression.
@@ -204,7 +223,7 @@ Each time the learner responds, judge the audio you heard against the answer "${
 - The learner said ${it.answerWord} — right away, with young-child pronunciation, or after counting ${countingDirection(it)} to it: say exactly "${verifyLine(it)}" and stop.
 - A DIFFERENT number: say exactly "${contrastCorrectionLine(it)}" and stop, then wait again. Replace ⟨what they said⟩ with the number word they actually said ("not one", "not five"). Never speak the ⟨ ⟩ marks, and change nothing else in the line. Naming their number is the point of this branch: it is the only way they hear that THEIR answer was the wrong quantity.
 - No number at all, or anything else: say exactly "${correctionLine(it)}" and stop, then wait again.
-A different number word is always wrong — never affirm a wrong quantity to be kind.
+A different number word is always wrong — never affirm a wrong quantity to be kind.${countingJudgingClauses(it)}
 A very common wrong answer is echoing a number straight out of the problem — "${it.problem}" answered with one of its own numbers. Contrast it like any other wrong quantity; do not treat it as close.
 If the learner gives the SAME wrong number again, use the contrast branch again — do not fall back to the plain re-model, and do not invent a third wording.
 Never begin any other sentence with the word "Yes" or the words "My turn".

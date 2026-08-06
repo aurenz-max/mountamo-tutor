@@ -1,5 +1,5 @@
 /**
- * Objective-scope parsing for di-math-facts — reader-fit 14g.
+ * Objective-scope parsing for di-math-facts — reader-fit 14g + DI item 10.
  *
  * The census finding: the published Grade-1 objective `NBT001-01-a` ("Identify
  * missing numbers when counting forward … within 120") produced `counting_next`
@@ -7,12 +7,14 @@
  * `resolveTextScope`, which read "within 120" as "within 12" — a three-digit ask
  * was mangled rather than saturated.
  *
- * These tests pin both halves of the fix:
- *  - the PARSE now reads the whole number (the non-vacuity gate: every
- *    `\d{1,3}` assertion below fails against the old `\d{1,2}` regex);
- *  - the CLAMP still saturates at twenty, the pack's benched single-number-word
- *    ceiling. Saturation is the honest degradation; widening it is an unbenched
- *    response class gated behind a bench sitting (qa/di/BACKLOG.md item 10).
+ * 14g fixed the parse and saturated at twenty; the ITEM-10 EXTENSION
+ * (user-ruled build-ahead 2026-08-06, #63 = the acceptance sitting) raised the
+ * COUNTING ceiling to 120 with a code-owned numeral builder. These tests pin
+ * the current contract:
+ *  - the PARSE reads the whole number (non-vacuity vs. the old `\d{1,2}`);
+ *  - the scope keeps the RAW ask up to the 120 hard cap;
+ *  - every ARITHMETIC pool still applies its own benched single-word cap of
+ *    twenty at build time — the raise widened counting only.
  */
 
 import { describe, expect, it, vi } from 'vitest';
@@ -24,27 +26,25 @@ vi.mock('../geminiClient', () => ({
   ai: { models: { generateContent: mocks.generateContent } },
 }));
 
-import { generateDiMathFacts, resolveTextScope } from './gemini-di-math-facts';
+import { generateDiMathFacts, numberWordFor, resolveTextScope } from './gemini-di-math-facts';
 
 /** The census objective, verbatim from `qa/topic-traces/g1-count-forward-to-120-2026-08-01.md`. */
 const CENSUS_OBJECTIVE =
   'Identify missing numbers when counting forward by ones within 120';
 
-describe('resolveTextScope — three-digit asks parse whole, then saturate', () => {
+describe('resolveTextScope — three-digit asks parse whole up to the 120 cap', () => {
   it('reads the census objective as 120, not 12 (the 14g defect)', () => {
     // Non-vacuity: the old `\d{1,2}` capture returned maxSum 12 here.
-    expect(resolveTextScope(CENSUS_OBJECTIVE)).toEqual({ kind: 'within', maxSum: 20 });
+    expect(resolveTextScope(CENSUS_OBJECTIVE)).toEqual({ kind: 'within', maxSum: 120 });
   });
 
-  it('saturates every above-ceiling ask at the benched twenty', () => {
-    for (const text of [
-      'counting forward within 120',
-      'count up to 100',
-      'add numbers to 50',
-      'sums to 30',
-    ]) {
-      expect(resolveTextScope(text)).toEqual({ kind: 'within', maxSum: 20 });
-    }
+  it('keeps the raw ask up to 120 and saturates above it', () => {
+    expect(resolveTextScope('counting forward within 120')).toEqual({ kind: 'within', maxSum: 120 });
+    expect(resolveTextScope('count up to 100')).toEqual({ kind: 'within', maxSum: 100 });
+    expect(resolveTextScope('add numbers to 50')).toEqual({ kind: 'within', maxSum: 50 });
+    expect(resolveTextScope('sums to 30')).toEqual({ kind: 'within', maxSum: 30 });
+    // 120 is a HARD CAP that saturates, never a knob.
+    expect(resolveTextScope('count to 500')).toEqual({ kind: 'within', maxSum: 120 });
   });
 
   it('leaves in-range asks exactly where they were', () => {
@@ -72,12 +72,10 @@ describe('resolveTextScope — three-digit asks parse whole, then saturate', () 
   });
 });
 
-describe('counting_next on the census objective', () => {
-  it('serves the whole benched sequence instead of stopping at twelve', async () => {
-    // The pool is shuffled per session, so the reachable CEILING is what this
-    // asserts: over repeated sessions the pack must produce starts above twelve.
-    // At HEAD (maxSum 12 → buildCountingPool(12) → a = 0..11) no run could.
-    let highestStart = 0;
+describe('counting_next on the census objective — the 1–120 extension', () => {
+  it('serves the full 120 range, windowed near the ceiling, never rote from zero', async () => {
+    let highestAnswer = 0;
+    let sawDecadeTransition = false;
     for (let run = 0; run < 10; run++) {
       const data = await generateDiMathFacts(CENSUS_OBJECTIVE, 'first grade', {
         intent: CENSUS_OBJECTIVE,
@@ -88,14 +86,64 @@ describe('counting_next on the census objective', () => {
       expect(data.challenges).toHaveLength(6);
       for (const challenge of data.challenges) {
         expect(challenge.challengeType).toBe('counting_next');
-        // Saturation is a CEILING, not a suggestion: nothing may leave the
-        // benched single-number-word range.
-        expect(challenge.answerNumeral).toBeLessThanOrEqual(20);
-        expect(challenge.answerWord).toBeTruthy();
+        // 120 is the hard ceiling; every spoken form comes from the builder.
+        expect(challenge.answerNumeral).toBeLessThanOrEqual(120);
+        expect(challenge.answerWord).toBe(numberWordFor(challenge.answerNumeral));
         expect(challenge.problem).not.toContain('undefined');
-        highestStart = Math.max(highestStart, challenge.a);
+        // Windowed pool: an above-twenty session never drills rote-from-the-
+        // bottom starts (they belong to within-20 asks).
+        expect(challenge.a).toBeGreaterThanOrEqual(12);
+        highestAnswer = Math.max(highestAnswer, challenge.answerNumeral);
+        if (challenge.a % 10 === 9) sawDecadeTransition = true;
       }
     }
-    expect(highestStart).toBeGreaterThan(12);
+    // Over 10 sessions the extension range and its decade transitions must be
+    // reachable — at HEAD-before-this-slice highestAnswer could never pass 20.
+    expect(highestAnswer).toBeGreaterThan(20);
+    expect(sawDecadeTransition).toBe(true);
+  });
+
+  it('keeps every ARITHMETIC pool inside the benched single-word twenty under a 120 ask', async () => {
+    for (const mode of ['answer_fact', 'subtraction_fact'] as const) {
+      const data = await generateDiMathFacts(CENSUS_OBJECTIVE, 'first grade', {
+        intent: CENSUS_OBJECTIVE,
+        objectiveText: CENSUS_OBJECTIVE,
+        targetEvalMode: mode,
+        challengeCount: 6,
+      });
+      for (const challenge of data.challenges) {
+        expect(challenge.challengeType).toBe(mode);
+        // No multi-digit arithmetic ever: "119 − 3" is the failure this pins.
+        expect(challenge.a).toBeLessThanOrEqual(20);
+        expect(challenge.answerNumeral).toBeLessThanOrEqual(20);
+      }
+    }
+  });
+});
+
+describe('numberWordFor — the code-owned numeral builder (bench-canonical forms)', () => {
+  it('builds every form class the probe set names', () => {
+    expect(numberWordFor(0)).toBe('zero');
+    expect(numberWordFor(13)).toBe('thirteen');
+    expect(numberWordFor(20)).toBe('twenty');
+    expect(numberWordFor(21)).toBe('twenty-one');
+    expect(numberWordFor(30)).toBe('thirty');
+    expect(numberWordFor(40)).toBe('forty');
+    expect(numberWordFor(51)).toBe('fifty-one');
+    expect(numberWordFor(77)).toBe('seventy-seven');
+    expect(numberWordFor(99)).toBe('ninety-nine');
+    expect(numberWordFor(100)).toBe('one hundred');
+    expect(numberWordFor(107)).toBe('one hundred seven');
+    expect(numberWordFor(115)).toBe('one hundred fifteen');
+    expect(numberWordFor(120)).toBe('one hundred twenty');
+  });
+
+  it('never emits undefined anywhere in 0..120 and refuses out-of-ceiling input', () => {
+    for (let n = 0; n <= 120; n++) {
+      expect(numberWordFor(n)).not.toContain('undefined');
+      expect(numberWordFor(n).length).toBeGreaterThan(0);
+    }
+    expect(() => numberWordFor(121)).toThrow();
+    expect(() => numberWordFor(-1)).toThrow();
   });
 });

@@ -27,6 +27,21 @@ export const VOICE_CALIBRATION_MIN_SAMPLES = 8;
 const MAX_SAMPLES = 72;
 const MIN_OPEN_BAR = 0.008;
 const MAX_OPEN_BAR = 0.2;
+/**
+ * Hard floor for the BARGE-IN bar only (DI-120-1, 2026-08-06 counting-120
+ * sitting): device speaker leakage peaked 0.018 while the calibrated barge bar
+ * sat at 0.0108 — two noise blips opened turns over tutor audio, anchored
+ * empty attempts, and burned an item the learner never answered. The echo
+ * calibration under-measures bursty leakage by construction (a median over
+ * mostly-quiet frames: it recorded 0.0002 against live 0.018), so the derived
+ * bar needs a floor that no measurement can undercut. Real barge-in speech has
+ * measured ≥0.045 on every sitting (0.045–0.116 on 08-06; ≥0.068 on 07-19), so
+ * 0.03 — the top of the run report's sanctioned 0.025–0.03 window — rejects
+ * every observed leakage class but 07-19's single 0.033 blip while keeping
+ * 33%+ headroom under the quietest real answer. The AMBIENT bar is deliberately
+ * untouched: answering into silence must stay sensitive for quiet children.
+ */
+const MIN_BARGE_BAR = 0.03;
 
 export const EMPTY_VOICE_CALIBRATION: VoiceCalibrationState = {
   ambientSamples: [],
@@ -72,8 +87,8 @@ export function deriveVoiceThresholds(
     : fallback.silenceThreshold;
   const fallbackEcho = fallback.silenceThreshold * fallback.bargeInMultiplier;
   const echoOpen = echoReady
-    ? clamp(Math.max(ambientOpen * 1.35, state.echoFloor * 1.8, state.echoFloor + 0.008))
-    : Math.max(ambientOpen * fallback.bargeInMultiplier, fallbackEcho);
+    ? clamp(Math.max(MIN_BARGE_BAR, ambientOpen * 1.35, state.echoFloor * 1.8, state.echoFloor + 0.008))
+    : Math.max(ambientOpen * fallback.bargeInMultiplier, fallbackEcho, MIN_BARGE_BAR);
   return { ambientOpen, echoOpen, ambientReady, echoReady };
 }
 
