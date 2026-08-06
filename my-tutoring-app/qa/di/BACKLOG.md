@@ -117,10 +117,20 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
 11. **LESSON-MODE SESSION TUTOR: the script outranks the student (+ resume
-    continuity) — USER-PULLED 2026-08-05 late; ✅ MACHINE HALF DONE 2026-08-06
-    (same-day user pull "can you help me implement this?"). RESIDUAL = the
-    user's real-child acceptance drive (HUMAN-CHECKS #64(b)) — restart the dev
-    backend first, it ran pre-fix code throughout the slice.**
+    continuity) — ✅✅ CLOSED END-TO-END 2026-08-06.** Machine half shipped
+    `d895bfb`; **human acceptance PASSED the same day — HUMAN-CHECKS #64 struck
+    including criterion (b), with the dev backend confirmed restarted onto the
+    fix first** (the slice report had flagged that the user's :8000 server ran
+    PRE-fix code throughout the build, so a drive against that would have proven
+    nothing). A curiosity question during a NON-DI section now gets a real spoken
+    answer instead of the primitive's level1 scaffold line recited back — the
+    exact failure observed with the user's son on 08-05. This also retires the
+    last residual of the voice-transport unification `9d08687` apart from #65.
+    **NOTE for whoever pulls next: #63 was NOT covered by that sitting** — it is a
+    separate ~30-min DI *bench* run on the `Counting to 120` probe set (are
+    multi-word numerals judgeable?), not a lesson drive, so **item 10 stays
+    BLOCKED**.
+    *(Original design record retained below as the trail.)*
     **What shipped (slice report `qa/tutor-reports/lesson-tutor-item11-2026-08-06.md`):**
     Fix A carve-out in BOTH system builders (QUESTIONS FROM THE STUDENT
     outranks scripted beats; "never give direct answers" rescoped to the

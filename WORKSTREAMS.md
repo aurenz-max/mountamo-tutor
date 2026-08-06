@@ -19,6 +19,18 @@ queue AND this file's "last touched" in the same slice.
 
 ## Current snapshot — reconciled 2026-08-06 (**ship reconcile — 4 clusters uncommitted**)
 
+> **`/pm` 2026-08-06 (evening) — EVERYTHING SHIPPED, AND THE TWO GATES CLOSED.** The
+> four clusters below are committed and pushed (`a695574..f391cca`), and the user drove
+> the browser in the same session: **HUMAN-CHECKS #69 struck** (the props-are-data repair
+> verified in the lesson path — the only place it ever failed) and **#64 struck including
+> criterion (b)**, with the dev backend confirmed restarted onto the fix first. That closes
+> **DI BACKLOG item 11 end-to-end** and retires the last residual of the voice-transport
+> unification `9d08687` apart from #65. **The DI lane's queue now has no unblocked top
+> item — its next pull is a development item to author with the user.**
+> **#63 was NOT covered** (a separate DI *bench* sitting on the `Counting to 120` probe
+> set, not a lesson drive), so **DI item 10 stays BLOCKED**; #70/#71 also stay open.
+> Confirmed with the user rather than inferred.
+
 > **`/pm` 2026-08-06 — the portfolio is TRUTHFUL but UNSHIPPED.** Nothing has been
 > committed since `a695574` (12:43) and the working tree holds **four independent
 > clusters, ~2,200 added lines across 55 files**. Three are fully evidenced and recorded
