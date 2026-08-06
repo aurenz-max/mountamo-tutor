@@ -1,10 +1,10 @@
 # Contract: spatial-scene
 
-- **Derived:** 2026-08-05 · evidence window: eval report 2026-04-04 → LA K-2 census 2026-08-05
+- **Derived:** 2026-08-05 · evidence window: eval report 2026-04-04 → C3 exclusivity probe 2026-08-05
 - **Component:** `primitives/visual-primitives/math/SpatialScene.tsx` ·
   **Generator:** `service/math/gemini-spatial-scene.ts` ·
   **Catalog:** `service/manifest/catalog/math.ts:3743`
-- **Status:** ACTIVE (C1 RESOLVED 2026-08-05 via the config-axis rung)
+- **Status:** ACTIVE (C1 + C3 RESOLVED 2026-08-05; C2 open)
 
 ## Consumers (blast radius)
 
@@ -82,7 +82,9 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
   `correctPosition`; all options are valid position words.
 - **Demanded by:** Math consumer.
 - **Evidence:** probes C/E — 4 options per challenge, correct always present.
-- **Probe:** probes C/E.
+  Probe G: still ≥2 and answer-present, but **4 is no longer guaranteed** — R12 removes
+  also-true options and a narrow window may leave only 3 false words to choose from.
+- **Probe:** probes C/E; probe G.
 
 ### R8 — support tier withdraws perception aids only · OBSERVED
 - **Property:** `difficulty` easy/medium/hard toggles `showGrid` / `showObjectLabels` /
@@ -109,16 +111,38 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
 - **Evidence:** `clampGrid` applied on every ingest path.
 - **Probe:** stub out-of-range rows → clamped, never rendered off-grid.
 
-### R11 — `place` targets an empty cell · INFERRED
+### R11 — `place` targets an empty cell · OBSERVED (upgraded 2026-08-05 from INFERRED)
 - **Property:** `correctCell` for a `place` challenge is a cell no scene object
   occupies. The component's affordance (`interactive && !obj`) only invites taps on
   empty cells.
 - **Demanded by:** Math consumer.
 - **Evidence:** prompt line "must be an EMPTY cell"; `GridScene` hover gating
-  (`SpatialScene.tsx:188`). Not independently probed.
+  (`SpatialScene.tsx:188`); **probed 2026-08-05** — the closing `/eval-test` ran `place`
+  at K and all 3 challenges targeted an unoccupied cell (`(1,1)`, `(1,2)`, `(1,2)`).
+  `qa/eval-reports/spatial-scene-2026-08-05.md`.
 - **Probe:** for each `place` challenge, `correctCell` ∉ `sceneObjects[].position`.
-  **Upgrade or delete on first challenge** — this becomes load-bearing the moment a
-  containment ("in") mode ships, which deliberately targets an OCCUPIED cell.
+  **Still the flagged edit for BACKLOG item 1** — a containment ("in") mode deliberately
+  targets an OCCUPIED cell, so it INVERTS this requirement and must fork rather than
+  edit in place.
+
+### R12 — `identify`/`describe` options carry exactly ONE defensible answer · OBSERVED
+- **Property:** For the arrangement actually drawn, exactly one entry in `options` is
+  true under R3's semantics; `correctPosition` is that entry and is inside the lesson's
+  window. A challenge whose arrangement no window word describes is **rejected**, not
+  shipped. The answer is not parked at `options[0]`.
+- **Demanded by:** both consumers (rule #1 — a child must not be marked wrong for a
+  defensible answer, and must not be able to solve by tapping the first button).
+- **Evidence:** `positionHolds` + `enforceSingleDefensibleOption` +
+  `placeAnswerSlot` (`resolvePrepositionScope.ts`); probe F pre-fix **4/18 ambiguous,
+  18/18 answers at slot 0**; probe G post-fix **0/36 ambiguous** across an LA and a math
+  control run, answer slots `{0:9, 1:10, 2:9, 3:8}`; suite 34/34 with a 2-of-34
+  revert-bite on the wiring. `qa/la-k2-grammar/spatial-scene-c3-exclusivity-2026-08-05.md`.
+- **Probe:** for each `identify`/`describe` challenge, recompute every option against the
+  target/reference geometry; exactly one must hold, and it must equal `correctPosition`.
+- **Note:** the rule is geometry-driven, not a synonym table — it also covers pairs
+  nobody enumerated (`beside` ⊂ `left_of`/`right_of`, live at Grade 1). It additionally
+  makes R1 **code-enforced** for these two modes: an out-of-window option is dropped and
+  an out-of-window key repaired, where R1 was previously prompt-observed only.
 
 ## Conflicts
 
@@ -151,7 +175,7 @@ rather than pretending it was served** (honest saturation, the di-sentence-readi
 precedent). Queued in `qa/la-k2-grammar/BACKLOG.md`. **Any edit adding these must
 re-read R11 first** — containment inverts it.
 
-### C3 — `above`/`on` are not mutually exclusive — **OPEN (found 2026-08-06)**
+### C3 — `above`/`on` are not mutually exclusive — **RESOLVED 2026-08-05 (evening) → R12**
 
 R3's semantics make `above` "any vertical distance" and `on` "touching; if there is a
 gap, the word is above". For an **adjacent same-column** pair both words are therefore
@@ -159,11 +183,18 @@ defensible, and the disambiguation is one-directional. Cell-judged modes (`place
 `follow_directions`) are immune; `identify`/`describe` are not — their options are
 position words with a single key, so a child answering "above" on a touching pair is
 marked wrong for a correct answer (rule-#1 adjacent). Same shape for `under`/`below`
-and the pre-existing `beside`/`next_to` synonym pair. **Live only when on/under are in
-the window (LA lessons); every 08-05 on/under probe was `place` mode, so this is
-unverified territory, not a measured failure.** Queued as
-`qa/la-k2-grammar/BACKLOG.md` item 2 — fix + an `identify`/`describe` probe promotes
-it to R12.
+and the pre-existing `beside`/`next_to` synonym pair.
+
+Opened as *"unverified territory, not a measured failure"* — every 08-05 on/under probe
+was `place` mode. Pinning `identify`+`describe` at LA004-01-F **measured it: 4 of 18
+challenges shipped two defensible options**, in both directions (key `on` beside option
+`above`, and key `above` beside option `on`). **Resolved without forking:** the conflict
+was never between consumers — both want a single answerable key — so no fork rung
+applied. It is a correctness gap, closed by making the geometry the judge (**R12**).
+Probe G: 0/36, with the math K.G.1 control unchanged.
+
+Not a fork, and not a narrowing of R2: the window still widens on request; R12 only
+decides which *one* of the window's words is the key for a given arrangement.
 
 ## Catalog projection
 
@@ -184,8 +215,21 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-08-06** — routing re-probed after the catalog projection (the check the 08-05
-  slice skipped: the projection landed AFTER the last routing probe, and `constraints`
+- **2026-08-05 (late)** — **C3 RESOLVED → R12.** `identify`+`describe` pinned at
+  LA004-01-F (the mode combination the pilot never exercised) measured the ambiguity at
+  **4/18**; a geometry-driven exclusivity guard took it to **0/36** with the math control
+  unchanged. Same pass fixed a second rule-#1 leak found by the probe: the answer was
+  `options[0]` in 18/18 challenges and the component renders array order. R1 is now
+  code-enforced for these two modes. Edit guard: **COMPATIBLE** — R1 re-probed (math
+  control, 0 out-of-band), R3 is the guard's own rule set, R5/R6 unchanged, R7 still
+  holds (≥2 options, answer present) though a narrow window can now yield 3 rather than
+  4. `qa/la-k2-grammar/spatial-scene-c3-exclusivity-2026-08-05.md`. Closing `/eval-test`
+  ran all 4 modes: **4/4 PASS**, R12 clean on all 6 `identify`/`describe` challenges, and
+  R11 upgraded to OBSERVED as a by-product. It also found **SS-5** — the `hint` names the
+  key word in 2 of 3 identify challenges. Pre-existing, independent of R12, queued as
+  BACKLOG item 2b for `/eval-fix`; it is the next thing this primitive owes.
+- **2026-08-05 (evening, `bd1c535`)** — routing re-probed after the catalog projection
+  (the check the midday slice skipped: the projection landed AFTER the last routing probe, and `constraints`
   now names words to keep OUT). **Routing held and tightened** — LA004-05-B still routes
   here and now claims TWO instances (`place` + `follow_directions`, was one), with the
   curator's intent shifted off `in` onto the supported window; LA004-01-F still routes

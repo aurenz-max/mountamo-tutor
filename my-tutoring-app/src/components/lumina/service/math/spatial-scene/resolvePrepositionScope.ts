@@ -86,6 +86,165 @@ export interface PrepositionScope {
   unsupported: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Grid truth — the executable form of SUPPORTED_POSITION_SEMANTICS (contract R12)
+// ---------------------------------------------------------------------------
+
+export interface GridCell {
+  row: number;
+  col: number;
+}
+
+/**
+ * Does `word` truthfully describe target-relative-to-reference on the grid?
+ *
+ * This is `SUPPORTED_POSITION_SEMANTICS` in executable form — the two MUST stay in
+ * lockstep, which is why they live side by side. The prose is what the LLM is told;
+ * this is what the code judges.
+ *
+ * @returns true / false for a supported word; **null** for a word with no grid
+ *          semantics at all (the checker cannot own it either way).
+ */
+export function positionHolds(
+  word: string,
+  target: GridCell,
+  reference: GridCell,
+): boolean | null {
+  const dr = target.row - reference.row;
+  const dc = target.col - reference.col;
+  switch (word) {
+    case "above": return dr < 0 && dc === 0;
+    case "below": return dr > 0 && dc === 0;
+    case "left_of": return dc < 0 && dr === 0;
+    case "right_of": return dc > 0 && dr === 0;
+    case "beside":
+    case "next_to": return dr === 0 && Math.abs(dc) === 1;
+    // CONTACT-scoped: adjacent only. `on` ⊂ `above`, `under` ⊂ `below` — that
+    // containment is exactly what makes C3 possible and why the guard below exists.
+    case "on": return dr === -1 && dc === 0;
+    case "under": return dr === 1 && dc === 0;
+    default: return null;
+  }
+}
+
+export interface ExclusiveOptions {
+  /** The key, repaired to the grid truth when the LLM's word was false for it. */
+  correctPosition: string;
+  /** Options with exactly ONE defensible entry; all others are false for this geometry. */
+  options: string[];
+  /** Options dropped because they were ALSO true — the C3 defect, per challenge. */
+  removed: string[];
+  /** Options dropped because they have no grid semantics / are outside the window. */
+  outOfWindow: string[];
+  /** The LLM's correctPosition was false for the geometry; the key was rewritten. */
+  repairedKey: boolean;
+  /** No window word is true of this geometry — there is no defensible answer at all. */
+  unjudgeable: boolean;
+}
+
+/**
+ * Contract R12 — an `identify`/`describe` options list may contain exactly ONE
+ * defensible answer.
+ *
+ * WHY (C3, measured 2026-08-05): `above`/`on`, `below`/`under` and `beside`/`next_to`
+ * are not mutually exclusive. `on` means "touching, directly above"; for an ADJACENT
+ * same-column pair both `on` and `above` are true, so a child answering "above" against
+ * a key of "on" is marked wrong for a correct answer. Cell-judged modes are immune;
+ * these two single-key modes are not. Probe F found this in 4 of 18 challenges.
+ *
+ * The rule is geometry-driven, not a hardcoded synonym table, so it also covers the
+ * pairs nobody listed — `beside` ⊂ `left_of`/`right_of` at Grade 1, for instance.
+ *
+ * Distractors are drawn from the lesson's own position window, so enforcing exclusivity
+ * can never introduce a word R1/R2 excluded.
+ */
+export function enforceSingleDefensibleOption(
+  correctPosition: string,
+  rawOptions: string[],
+  target: GridCell,
+  reference: GridCell,
+  positionWindow: SupportedPosition[],
+): ExclusiveOptions {
+  const trueInWindow = positionWindow.filter((w) => positionHolds(w, target, reference) === true);
+
+  // Nothing in the window describes this arrangement (e.g. a diagonal placement).
+  // There is no answer to defend, so the caller drops the challenge rather than
+  // shipping an unanswerable item.
+  if (trueInWindow.length === 0) {
+    return {
+      correctPosition, options: rawOptions, removed: [], outOfWindow: [],
+      repairedKey: false, unjudgeable: true,
+    };
+  }
+
+  // The grid is ground truth. If the LLM's key is false for the arrangement it drew —
+  // or true but outside the lesson's window (R1) — adopt a word that is both, preferring
+  // one it already offered as an option.
+  let key = correctPosition;
+  let repairedKey = false;
+  const keyValid = (positionWindow as readonly string[]).includes(key)
+    && positionHolds(key, target, reference) === true;
+  if (!keyValid) {
+    key = trueInWindow.find((w) => rawOptions.includes(w)) ?? trueInWindow[0];
+    repairedKey = true;
+  }
+
+  const removed: string[] = [];
+  const outOfWindow: string[] = [];
+  const kept: string[] = [key];
+  const seen = new Set<string>([key]);
+
+  for (const opt of rawOptions) {
+    if (seen.has(opt)) continue;
+    seen.add(opt);
+    if (!(positionWindow as readonly string[]).includes(opt)) {
+      // No grid semantics, or outside the lesson's window — the checker cannot own it.
+      outOfWindow.push(opt);
+    } else if (positionHolds(opt, target, reference) === true) {
+      removed.push(opt); // ALSO defensible → the C3 trap
+    } else {
+      kept.push(opt);
+    }
+  }
+
+  // Backfill from the window with words that are FALSE for this geometry, so the
+  // student still chooses between real alternatives (contract R7: >= 2 options).
+  const TARGET_OPTIONS = 4;
+  for (const w of positionWindow) {
+    if (kept.length >= TARGET_OPTIONS) break;
+    if (seen.has(w) || positionHolds(w, target, reference) === true) continue;
+    seen.add(w);
+    kept.push(w);
+  }
+
+  return { correctPosition: key, options: kept, removed, outOfWindow, repairedKey, unjudgeable: false };
+}
+
+/**
+ * Move the answer off slot 0.
+ *
+ * Measured alongside C3: the LLM emitted `correctPosition` as `option0` in 18 of 18
+ * probed challenges, and the component renders options in array order — so "always
+ * tap the first button" solved every item without reading the grid. Pedagogy rule #1:
+ * a challenge must not be trivially solvable from layout.
+ *
+ * Seeded by the challenge id so a given challenge always renders the same order
+ * (stable across re-reads, and testable — no Math.random in the content path).
+ */
+export function placeAnswerSlot(options: string[], key: string, seed: string): string[] {
+  if (options.length < 2) return options;
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const slot = Math.abs(h) % options.length;
+  const rest = options.filter((o) => o !== key);
+  const out = [...rest];
+  out.splice(slot, 0, key);
+  return out;
+}
+
 const prepositionScopeSchema: Schema = {
   type: Type.OBJECT,
   properties: {

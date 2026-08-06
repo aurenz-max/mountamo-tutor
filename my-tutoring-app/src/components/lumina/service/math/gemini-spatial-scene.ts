@@ -15,6 +15,8 @@ import {
 import {
   resolvePrepositionScope,
   composePositionWindow,
+  enforceSingleDefensibleOption,
+  placeAnswerSlot,
   SUPPORTED_POSITION_SEMANTICS,
   type SupportedPosition,
 } from "./spatial-scene/resolvePrepositionScope";
@@ -372,7 +374,7 @@ const followDirectionsSchema: Schema = {
 
 async function generateIdentifyDescribe(
   topic: string, gradeLevel: string, theme: string, mode: "identify" | "describe",
-  tierSection: string, sharedContext: string,
+  tierSection: string, sharedContext: string, positionWindow: SupportedPosition[],
 ): Promise<SpatialSceneChallenge[]> {
   const modeLabel = mode === "identify"
     ? "identify — ask 'Where is X relative to Y?' with 4 position-word options"
@@ -393,6 +395,11 @@ CHALLENGE TYPE: ${modeLabel}
 - Set referenceObjectName to the reference object (must also be one of the 4 sceneObj slots).
 - correctPosition MUST accurately match the grid positions.
 - option0..option3 = correctPosition + 3 distractors (all valid position words).
+- EXACTLY ONE option may be true of the arrangement. Every distractor must be FALSE for
+  where you actually put the objects. Watch the overlapping pairs: "on" is also "above",
+  "under" is also "below", and "beside" and "next_to" mean the same thing — never put two
+  words that are both true in the same option list.
+- Vary which option slot holds the answer; do NOT always make option0 correct.
 - Progress from easy to harder spatial relationships.
 `;
 
@@ -439,19 +446,69 @@ CHALLENGE TYPE: ${modeLabel}
       sceneObjects.push({ name: refName, image: "📦", position: refPos });
     }
 
-    const pos = typeof flat.correctPosition === "string" && VALID_POSITIONS.includes(flat.correctPosition)
+    let pos = typeof flat.correctPosition === "string" && VALID_POSITIONS.includes(flat.correctPosition)
       ? flat.correctPosition : "above";
 
-    const options: string[] = [];
+    let options: string[] = [];
     for (let i = 0; i < 4; i++) {
       const v = flat[`option${i}`];
-      if (typeof v === "string" && v.length > 0) options.push(v);
+      if (typeof v === "string" && v.trim().length > 0) options.push(v.trim().toLowerCase());
     }
-    if (options.length < 2) options.push(pos, "above", "below", "beside");
-    if (!options.includes(pos)) options[0] = pos;
+
+    const challengeId = String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`);
+
+    // R12 — EXACTLY ONE DEFENSIBLE OPTION. These two modes judge a single position
+    // word, and `on` ⊂ `above` / `under` ⊂ `below` / `beside` ≡ `next_to`, so an
+    // options list can otherwise carry two correct answers and mark a right answer
+    // wrong (contract C3, measured 4/18 pre-fix). The grid is ground truth: the code
+    // decides which words are defensible, the LLM only drew the scene.
+    const refPos = refName ? sceneObjects.find((o) => o.name === refName)?.position : undefined;
+    if (refPos) {
+      const t = targetObject.position;
+      const ex = enforceSingleDefensibleOption(pos, options, t, refPos, positionWindow);
+      if (ex.unjudgeable) {
+        console.warn(
+          `[SpatialScene] ${mode}: Rejected challenge ${challengeId} — no position word in `
+          + `[${positionWindow.join(", ")}] describes target(${t.row},${t.col}) vs `
+          + `${refName}(${refPos.row},${refPos.col}); nothing to defend.`,
+        );
+        return null;
+      }
+      if (ex.removed.length) {
+        console.warn(
+          `[SpatialScene] ${mode} ${challengeId}: dropped also-correct option(s) `
+          + `[${ex.removed.join(", ")}] against key "${ex.correctPosition}" (C3/R12).`,
+        );
+      }
+      if (ex.repairedKey) {
+        console.warn(
+          `[SpatialScene] ${mode} ${challengeId}: correctPosition "${pos}" is false for the `
+          + `arrangement it drew — repaired to "${ex.correctPosition}".`,
+        );
+      }
+      if (ex.outOfWindow.length) {
+        console.warn(
+          `[SpatialScene] ${mode} ${challengeId}: dropped out-of-window option(s) `
+          + `[${ex.outOfWindow.join(", ")}] (R1).`,
+        );
+      }
+      pos = ex.correctPosition;
+      options = ex.options;
+    } else {
+      // R6 guarantees a resolvable reference; if one is somehow missing the geometry
+      // cannot be judged, so degrade to the pre-R12 behavior rather than crash.
+      console.warn(`[SpatialScene] ${mode} ${challengeId}: reference "${refName}" unresolved — R12 guard skipped.`);
+      if (options.length < 2) options.push(pos, "above", "below", "beside");
+      if (!options.includes(pos)) options[0] = pos;
+    }
+
+    // The answer must not always be the first button: pre-fix, correctPosition was
+    // option0 in 18 of 18 probed challenges and the component renders array order,
+    // so "tap the first one" solved every item without reading the grid.
+    options = placeAnswerSlot(options, pos, `${mode}:${challengeId}:${pos}`);
 
     return {
-      id: String(flat.id ?? `c${Math.random().toString(36).slice(2, 6)}`),
+      id: challengeId,
       type: mode,
       instruction: String(flat.instruction ?? "Where is the object?"),
       hint: String(flat.hint ?? "Look at the grid!"),
@@ -611,7 +668,8 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     targetObject: { name: "cat", image: "\u{1F431}", position: { row: 0, col: 1 } },
     correctPosition: "above",
     referenceObjectName: "box",
-    options: ["above", "below", "beside", "next_to"],
+    // R12: exactly one option is true of the layout above, and it is not slot 0.
+    options: ["below", "above", "beside", "next_to"],
   },
   place: {
     id: "c1", type: "place",
@@ -640,7 +698,9 @@ const FALLBACKS: Record<string, SpatialSceneChallenge> = {
     targetObject: { name: "star", image: "\u{2B50}", position: { row: 0, col: 1 } },
     correctPosition: "above",
     referenceObjectName: "tree",
-    options: ["above", "below", "beside", "next_to"],
+    // R12: star(0,1) is adjacent-above tree(1,1) — `on` would ALSO be true, so it is
+    // deliberately absent. Answer is not slot 0.
+    options: ["beside", "next_to", "above", "below"],
   },
   follow_directions: {
     id: "c1", type: "follow_directions",
@@ -738,13 +798,13 @@ export const generateSpatialScene = async (
 
   if (allowedTypes.includes("identify")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "identify", tierSection, sharedContext)
+      generateIdentifyDescribe(topic, gradeLevel, theme, "identify", tierSection, sharedContext, positionWindow)
         .catch((e) => { console.error("[SpatialScene] identify failed:", e); return []; }),
     );
   }
   if (allowedTypes.includes("describe")) {
     generators.push(
-      generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection, sharedContext)
+      generateIdentifyDescribe(topic, gradeLevel, theme, "describe", tierSection, sharedContext, positionWindow)
         .catch((e) => { console.error("[SpatialScene] describe failed:", e); return []; }),
     );
   }
