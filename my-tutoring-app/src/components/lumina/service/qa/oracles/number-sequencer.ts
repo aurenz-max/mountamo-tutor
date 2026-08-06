@@ -59,14 +59,19 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    is reachable without drawing the whole grade span (reader-fit 14h contract R4).
  *  - clustering        : answer sets spread across challenges (no "every card has the
  *    same answers"), and no exact-duplicate card (same type + sequence + answers).
+ *  - answer-leak       : order-cards ONLY — the presented pool must be genuinely
+ *    shuffled. A sorted pool, or a ROTATION of one (every card already beside its
+ *    neighbour except at a single seam), lets the student assemble the answer from
+ *    layout without reading a number.
  *  - schema            : sequence non-trivial (≥2 terms and ≥1 blank for null-fill;
  *    ≥2 cards for order-cards; ≥2 continuation values for count-from), integer terms,
  *    non-negative integer answers, ≥3 challenges (mastery-over-demo).
  *
- * Deliberately NOT checked: answer-leak. The manipulative IS the sequence made
- * visible — the surrounding terms are shown by design (they are how the student
- * reasons to the blank), and count-from states startNumber. A leak test would fire
- * on the intended stimulus, worse than an honest gap. Leak/pedagogy stays with /eval-test.
+ * Scope of the leak check: for the null-fill types and count-from the manipulative IS
+ * the sequence made visible — the surrounding terms are shown by design (they are how
+ * the student reasons to the blank), and count-from states startNumber. A leak test
+ * there would fire on the intended stimulus, so those stay with /eval-test. order-cards
+ * is the exception: there the ARRANGEMENT of the pool is the task, not the stimulus.
  */
 
 const KNOWN_TYPES = new Set(['fill-missing', 'before-after', 'order-cards', 'count-from', 'decade-fill']);
@@ -295,6 +300,43 @@ export const numberSequencerOracle: ContentOracle = {
               check: 'answer-key-desync',
               where: id,
               detail: `correctAnswers ${JSON.stringify(ans)} is not the ascending order of ${JSON.stringify(pool)} (expected ${JSON.stringify(expected)}) — a student ordering ascending is marked wrong`,
+            });
+          }
+        }
+
+        // answer-leak (order-cards only): the pool AS PRESENTED is the whole task.
+        // Sorted, or a rotation of sorted, leaves every card already beside its
+        // neighbour — the student reads the answer off the layout.
+        if (pool.length >= 3) {
+          const sortedPool = [...pool].sort((x, y) => x - y);
+          const rank = new Map<number, number>();
+          sortedPool.forEach((v, k) => { if (!rank.has(v)) rank.set(v, k); });
+          let placed = 0;
+          for (let k = 0; k < pool.length; k++) if (pool[k] === sortedPool[k]) placed++;
+          let longestRun = 1;
+          let run = 1;
+          for (let k = 1; k < pool.length; k++) {
+            const prev = rank.get(pool[k - 1]);
+            const cur = rank.get(pool[k]);
+            // Either direction: a fully reversed pool reads as easily as a sorted one.
+            if (prev !== undefined && cur !== undefined && Math.abs(cur - prev) === 1) {
+              run++;
+              if (run > longestRun) longestRun = run;
+            } else {
+              run = 1;
+            }
+          }
+          if (longestRun >= pool.length - 1) {
+            violations.push({
+              check: 'answer-leak',
+              where: id,
+              detail: `card pool ${JSON.stringify(pool)} is already in solved order apart from one seam (${longestRun} of ${pool.length} cards consecutively in place) — the student can order it from layout without reading the numbers`,
+            });
+          } else if (placed > Math.floor(pool.length / 2)) {
+            violations.push({
+              check: 'answer-leak',
+              where: id,
+              detail: `${placed} of ${pool.length} cards in ${JSON.stringify(pool)} already sit in their answer position — the pool is barely shuffled`,
             });
           }
         }

@@ -361,6 +361,103 @@ Return hasExplicitRange=true ONLY when the lesson content itself names or clearl
   }
 }
 
+// ---------------------------------------------------------------------------
+// order-cards presentation: the pool must actually be OUT of order
+// ---------------------------------------------------------------------------
+// For order-cards the presented pool IS the whole task. If it arrives sorted —
+// or as a ROTATION of sorted, where every card is already beside its neighbour
+// except at one seam — the student solves it from layout instead of number
+// sense, and the render reads as a bug ("the first number is stuck at the end").
+// Neither the LLM's own shuffle nor a fixed rotation can be trusted, so code
+// owns the presentation deterministically.
+
+/** FNV-1a over the card values plus a salt — same cards always shuffle the same way. */
+function hashPool(values: number[], salt: number): number {
+  let h = (0x811c9dc5 ^ salt) >>> 0;
+  for (const v of values) {
+    h = (h ^ (v + 0x9e3779b9)) >>> 0;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t = (t ^ (t + Math.imul(t ^ (t >>> 7), t | 61))) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * How solved does this presentation already look?
+ * `fixed`      — cards already sitting in their answer position (0 = derangement).
+ * `longestRun` — longest stretch of cards that are already consecutive AND adjacent,
+ *                in EITHER direction (a rotation of a sorted set scores n-1 here;
+ *                sorted or fully reversed scores n — reversed reads just as easily).
+ */
+function presentationDisorder(pool: number[], sorted: number[]): { fixed: number; longestRun: number } {
+  const rank = new Map<number, number>();
+  sorted.forEach((v, i) => { if (!rank.has(v)) rank.set(v, i); });
+
+  let fixed = 0;
+  for (let i = 0; i < pool.length; i++) if (pool[i] === sorted[i]) fixed++;
+
+  let longestRun = pool.length > 0 ? 1 : 0;
+  let run = 1;
+  for (let i = 1; i < pool.length; i++) {
+    const prev = rank.get(pool[i - 1]);
+    const cur = rank.get(pool[i]);
+    if (prev !== undefined && cur !== undefined && Math.abs(cur - prev) === 1) {
+      run += 1;
+      if (run > longestRun) longestRun = run;
+    } else {
+      run = 1;
+    }
+  }
+  return { fixed, longestRun };
+}
+
+/** A presentation is acceptable only if nothing is pre-placed and no 3+ cards are already in a row. */
+function isWellShuffled(pool: number[], sorted: number[]): boolean {
+  if (pool.length < 3) return pool.join(',') !== sorted.join(',');
+  const { fixed, longestRun } = presentationDisorder(pool, sorted);
+  return fixed === 0 && longestRun <= 2;
+}
+
+/**
+ * Deterministic shuffle of an ascending card set into a presentable pool.
+ * Searches salted Fisher-Yates candidates for a derangement with no 3-card run;
+ * falls back to the least-solved candidate seen if the bar is unreachable.
+ */
+function shuffleOrderCards(sorted: number[]): number[] {
+  if (sorted.length < 2) return [...sorted];
+  if (sorted.length === 2) return [sorted[1], sorted[0]];
+
+  let best: number[] = [...sorted];
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (let salt = 0; salt < 48; salt++) {
+    const rnd = mulberry32(hashPool(sorted, salt));
+    const candidate = [...sorted];
+    for (let i = candidate.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [candidate[i], candidate[j]] = [candidate[j], candidate[i]];
+    }
+    if (isWellShuffled(candidate, sorted)) return candidate;
+    const { fixed, longestRun } = presentationDisorder(candidate, sorted);
+    const score = fixed * 10 + longestRun;
+    if (score < bestScore) {
+      bestScore = score;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 function buildFallbackChallenge(
   type: ChallengeType,
   range: { min: number; max: number },
@@ -384,8 +481,7 @@ function buildFallbackChallenge(
       return { id, type, instruction: `What number comes after ${lo}?`, sequence: [lo, null], correctAnswers: [lo + 1], rangeMin: lo, rangeMax: lo + 1 };
     case 'order-cards': {
       const sorted = values.slice(0, Math.max(2, Math.min(4, values.length)));
-      const rotation = 1 + (ordinal % Math.max(1, sorted.length - 1));
-      const shuffled = [...sorted.slice(rotation), ...sorted.slice(0, rotation)];
+      const shuffled = shuffleOrderCards(sorted);
       return { id, type, instruction: 'Put these numbers in order!', sequence: shuffled, correctAnswers: sorted, rangeMin: sorted[0], rangeMax: sorted[sorted.length - 1] };
     }
     case 'decade-fill':
@@ -738,8 +834,9 @@ Return the complete number sequencer configuration.
             while (set.length < target) set.push(set[set.length - 1] + step);
           }
           ch.correctAnswers = [...set];
-          // Re-shuffle the same values for the card pool (deterministic rotation).
-          ch.sequence = [...set.slice(1), set[0]];
+          // Re-shuffle the same values for the card pool. Deterministic, but a real
+          // shuffle — a rotation would leave every card but one already in place.
+          ch.sequence = shuffleOrderCards(set);
         }
       } else if (ch.type === 'fill-missing' || ch.type === 'decade-fill') {
         // Re-derive a complete value list (fill the existing nulls with the answers
@@ -836,6 +933,26 @@ Return the complete number sequencer configuration.
     if (signatures.has(signature)) continue;
     signatures.add(signature);
     data.challenges.push(candidate);
+  }
+
+  // ── order-cards presentation guard (runs on EVERY path: LLM, tiered, fallback) ──
+  // The key is always the ascending sort of the pool the student can tap, and the
+  // pool must arrive genuinely out of order. An already-sorted or rotated pool is
+  // solvable from layout alone, which fails the no-trivial-solve rule.
+  for (const challenge of data.challenges as NumberSequencerChallenge[]) {
+    if (challenge.type !== 'order-cards') continue;
+    const pool = challenge.sequence.filter((n): n is number => typeof n === 'number');
+    if (pool.length < 2) continue;
+    const sorted = [...pool].sort((a, b) => a - b);
+    challenge.correctAnswers = sorted;
+    if (!isWellShuffled(pool, sorted)) {
+      const reshuffled = shuffleOrderCards(sorted);
+      console.log(
+        `[NumberSequencer] order-cards "${challenge.id}" arrived near-solved `
+        + `([${pool.join(', ')}]) → reshuffled to [${reshuffled.join(', ')}]`,
+      );
+      challenge.sequence = reshuffled;
+    }
   }
 
   // Derive the render/input window from the values the child actually sees or

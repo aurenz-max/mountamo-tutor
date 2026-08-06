@@ -8,10 +8,18 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * stored answer can genuinely disagree with them (the vocabulary-explorer class:
  * a correct answer marked wrong).
  *
- * How the COMPONENT judges correctness (BaseTenBlocks.tsx):
- *  - checkAnswer (:403-408): the student TYPES a number; correct =
- *    Math.abs(parseFloat(typedAnswer) - currentChallenge.targetNumber) < 0.01.
- *    So for EVERY challenge type, `targetNumber` IS the answer the student types.
+ * How the COMPONENT judges correctness (BaseTenBlocks.tsx) — TWO channels (BT-4),
+ * but ONE answer key: `targetNumber` is the answer in both.
+ *  - checkAnswer: read_blocks / add_with_blocks / subtract_with_blocks — the
+ *    student TYPES a number; correct = |parseFloat(typedAnswer) − targetNumber|
+ *    < 0.01. These are the modes whose answer is NOT on screen (it must be read
+ *    off the blocks or computed), so a keypad is a real assertion of knowledge.
+ *  - checkBlocks: build_number / regroup — no keypad. build_number is correct
+ *    only when the student's columns equal decomposeNumber(targetNumber) exactly
+ *    (STANDARD form: 12 unit cubes totals 12 but is judged 'nonstandard' and sent
+ *    to the trade button); regroup is correct when ≥1 trade happened AND the
+ *    total still equals targetNumber. Both are still a pure function of
+ *    targetNumber, so the oracle's answer key is unchanged by the split.
  *  - The place-value blocks the student reads are NOT a stored decomposition —
  *    for read_blocks/regroup the component PRE-PLACES them via
  *    decomposeNumber(targetNumber, activePlaces) (:183-184, :490-491, :96-105),
@@ -87,7 +95,7 @@ const BARE_TARGET_TYPES = new Set(['build_number', 'read_blocks', 'regroup']);
 const INTRINSIC_BY_BAND: Record<string, number> = { 'K-1': 20, '2-3': 999, '4-5': 9999 };
 const DEFAULT_INTRINSIC = 999;
 
-// Component grading tolerance (BaseTenBlocks.tsx:408).
+// Component grading tolerance (BaseTenBlocks.tsx checkAnswer/checkBlocks).
 const TOL = 0.01;
 
 /** Pull the numeric operands out of an operate instruction ("Add 347 + 285 …"). */
@@ -139,7 +147,7 @@ export const baseTenBlocksOracle: ContentOracle = {
         violations.push({
           check: 'answer-key-desync',
           where,
-          detail: `targetNumber ${JSON.stringify(target)} is not a positive ${decimalMode ? 'number' : 'integer'} — the correct answer is unreachable (the calculator forbids negatives)`,
+          detail: `targetNumber ${JSON.stringify(target)} is not a positive ${decimalMode ? 'number' : 'integer'} — the correct answer is unreachable (neither the blocks nor the keypad can produce a negative)`,
         });
         continue;
       }

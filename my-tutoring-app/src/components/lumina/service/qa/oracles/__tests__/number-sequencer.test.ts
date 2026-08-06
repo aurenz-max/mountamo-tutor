@@ -133,6 +133,27 @@ describe('number-sequencer oracle', () => {
     const v = numberSequencerOracle.verify(data, nsCtx).violations;
     expect(v.some((x) => x.check === 'answer-key-desync' && x.where === 'o1')).toBe(true);
   });
+  it('flags answer-leak — order-cards pool is the sorted set rotated by one (field regression 2026-08-06)', () => {
+    const data = { ...orderClean, challenges: orderClean.challenges.map((c) => c.id === 'o2'
+      ? { ...c, sequence: [13, 14, 17, 20, 11], correctAnswers: [11, 13, 14, 17, 20] }
+      : c) };
+    const v = numberSequencerOracle.verify(data, nsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'o2')).toBe(true);
+  });
+  it('flags answer-leak — order-cards pool shipped already sorted', () => {
+    const data = { ...orderClean, challenges: orderClean.challenges.map((c) => c.id === 'o1'
+      ? { ...c, sequence: [1, 2, 5, 8] }
+      : c) };
+    const v = numberSequencerOracle.verify(data, nsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'o1')).toBe(true);
+  });
+  it('flags answer-leak — most order-cards already sit in their answer position', () => {
+    const data = { ...orderClean, challenges: orderClean.challenges.map((c) => c.id === 'o3'
+      ? { ...c, sequence: [41, 42, 45, 49, 47], correctAnswers: [41, 42, 45, 47, 49] }
+      : c) };
+    const v = numberSequencerOracle.verify(data, nsCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'o3')).toBe(true);
+  });
   it('flags answer-key-desync — count-from run does not start from startNumber', () => {
     const data = { ...countClean, challenges: countClean.challenges.map((c) => c.id === 'c1' ? { ...c, correctAnswers: [7, 8, 9] } : c) };
     const v = numberSequencerOracle.verify(data, nsCtx).violations;

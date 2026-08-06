@@ -34,6 +34,12 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       `"build_number": Student builds a given number from scratch using blocks. `
       + `Set targetNumber to the value they must construct. `
       + `Use encouraging language ("Build the number 247 with blocks!"). `
+      + `CRITICAL: the student answers by PLACING BLOCKS (there is no keypad), and the build is `
+      + `only correct in STANDARD form — each column holding that digit. So the DECOMPOSITION is `
+      + `the work: name the number and nothing else. Do NOT tell them how many of each block to `
+      + `place — no "place one ten-rod and the correct number of unit cubes", no "use 2 hundreds `
+      + `and 4 tens". "Build the number 12 with blocks." is right; "Build 12 with one ten-rod and `
+      + `some ones." hands over the answer. Put place-value language in the HINT, not the instruction. `
       + `K-1: numbers 1-20, maxPlace 'tens'. Grades 2-3: numbers 1-999, maxPlace 'hundreds'. `
       + `Grades 4-5: numbers up to 9999, maxPlace 'thousands'. Full scaffolding — concrete manipulative.`,
     schemaDescription: "'build_number' (construct number from blocks)",
@@ -538,6 +544,58 @@ const baseTenBlocksSchema: Schema = {
 };
 
 // ---------------------------------------------------------------------------
+// BT-5: build_number instruction integrity (leak + target desync)
+// ---------------------------------------------------------------------------
+// The student answers build_number by PLACING BLOCKS (BaseTenBlocks.checkBlocks —
+// this mode has no keypad), and the build counts only in STANDARD form. That makes
+// the instruction the sole statement of the target, and two things break it:
+//  (a) LEAK — Gemini spells the decomposition out ("place one ten-rod and the
+//      correct number of unit cubes"). A correct build IS the decomposition, so
+//      that text hands over the answer the blocks exist to teach.
+//  (b) DESYNC — the structural axis re-selects targetNumber via buildZeroGapNumber
+//      but (unlike the operate branch) never rewrites the instruction, so
+//      "Build the number 247" can ship with targetNumber 205: the student builds
+//      exactly what they were asked and is marked wrong.
+// Both fixes are the same — re-emit a bare instruction naming the FINAL target.
+// regroup is deliberately exempt: its instruction names the starting arrangement
+// as the STIMULUS, and it is judged on the trade, not on the value.
+
+const BUILD_NUMBER_LEAK_PATTERNS = [
+  /\b\d+\s+(hundreds?|tens?|ones?|thousands?)\b/i,                        // "2 hundreds", "4 tens"
+  /\b(a|an|one|two|three|four|five|six|seven|eight|nine|ten)\s+(hundred|ten|one|thousand)s?\b/i,
+  /\b(ten[-\s]?rods?|tens?[-\s]?sticks?|unit[-\s]?cubes?|ones?[-\s]?cubes?|hundreds?[-\s]?flats?|flats?|rods?|longs?)\b/i,
+];
+
+const BUILD_NUMBER_INSTRUCTIONS: Array<(n: number) => string> = [
+  (n) => `Build the number ${n} with blocks.`,
+  (n) => `Use the blocks to show ${n}.`,
+  (n) => `Make ${n} with the blocks.`,
+];
+
+/**
+ * Rewrite any build_number instruction that leaks the decomposition or names a
+ * stale target. Mutates in place (matching the tier passes) and returns how many
+ * were rewritten.
+ */
+export function normalizeBuildNumberInstructions(challenges: BaseTenBlocksChallenge[]): number {
+  let rewritten = 0;
+  challenges.forEach((c, idx) => {
+    if (c.type !== 'build_number') return;
+    const instr = c.instruction ?? '';
+    const target = c.targetNumber;
+    // Standalone-number match (no lookbehind — this generator runs in the browser).
+    const namesTarget = new RegExp(`(^|[^0-9])${target}([^0-9]|$)`).test(instr);
+    const leaks = BUILD_NUMBER_LEAK_PATTERNS.some((re) => re.test(instr));
+    if (namesTarget && !leaks) return;
+    rewritten++;
+    c.instruction = BUILD_NUMBER_INSTRUCTIONS[idx % BUILD_NUMBER_INSTRUCTIONS.length](target);
+    // A hint that named the OLD target is now a lie — replace it on desync only.
+    if (!namesTarget) c.hint = `Which place values make ${target}? Start with the biggest.`;
+  });
+  return rewritten;
+}
+
+// ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
@@ -873,6 +931,12 @@ Return the complete base-ten blocks data structure.`;
     });
     data.supportTier = supportTier; // mirror onto data so the tutor matches the screen
     console.log(`[BaseTenBlocks] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended/operate'})`);
+  }
+
+  // ── BT-5: build_number instruction integrity (leak + target desync) ──
+  const buildRewriteCount = normalizeBuildNumberInstructions(data.challenges as BaseTenBlocksChallenge[]);
+  if (buildRewriteCount > 0) {
+    console.warn(`[BaseTenBlocks] BT-5 safety net: rewrote ${buildRewriteCount} build_number instruction(s) that leaked the decomposition or named a stale target`);
   }
 
   // Final summary log

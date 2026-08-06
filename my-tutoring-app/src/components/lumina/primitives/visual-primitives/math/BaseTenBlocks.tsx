@@ -127,12 +127,85 @@ function tutorRevealClause(
   }
 }
 
+/**
+ * Tells the tutor HOW the student answers this challenge, so it never coaches a
+ * keypad that isn't on screen (build/regroup) or block-placing on a mode where
+ * the blocks are only the stimulus (read_blocks).
+ */
+function answerChannelClause(challengeType?: string): string {
+  switch (challengeType) {
+    case 'build_number':
+      return ` [CHANNEL] There is NO number keypad — the student answers by placing blocks and pressing "Check My Blocks". The build must be in STANDARD form (each column shows that digit), so 12 unit cubes is not a finished answer for 12. Coach block placement and trading, never typing.`;
+    case 'regroup':
+      return ` [CHANNEL] There is NO number keypad — the student answers by making the trade and pressing "Check My Trade". Coach the trade itself, never typing a number.`;
+    case 'read_blocks':
+      return ` [CHANNEL] The blocks are fixed; the student types the number they read on a keypad. Coach counting each place, never state the number.`;
+    default:
+      return ` [CHANNEL] The student works the operation with blocks, then types the result on a keypad. Coach the column-by-column work, never state the result.`;
+  }
+}
+
 function computeTotal(columns: Record<PlaceValue, number>, places: PlaceValue[]): number {
   let total = 0;
   for (const place of places) {
     total += (columns[place] || 0) * PLACE_CONFIG[place].value;
   }
   return Math.round(total * 100) / 100;
+}
+
+// ---------------------------------------------------------------------------
+// Answer channel (BT-4)
+// ---------------------------------------------------------------------------
+// The blocks ARE the answer whenever the target value is already stated on
+// screen — typing it into a keypad is transcription, not place value:
+//   build_number — the instruction names the target ("Build the number 12").
+//   regroup      — trading conserves the value, so the number never changes.
+// The keypad survives only where the student must produce a number the screen
+// does NOT state: read_blocks (blocks are the stimulus, the value is unknown)
+// and the operate modes (the sum/difference must be computed).
+const BLOCK_JUDGED_TYPES = new Set(['build_number', 'regroup']);
+
+type BuildVerdict = 'match' | 'nonstandard' | 'value-off';
+
+/**
+ * Judge a built number against the target's STANDARD form. `nonstandard` is the
+ * pedagogically live case: 12 unit cubes total 12 but never show the ten, which
+ * is the whole point of the manipulative — the student is sent to the trade
+ * button rather than marked correct.
+ */
+function judgeBuild(
+  columns: Record<PlaceValue, number>,
+  target: number,
+  places: PlaceValue[],
+): BuildVerdict {
+  const want = decomposeNumber(target, places);
+  if (places.every(p => (columns[p] || 0) === (want[p] || 0))) return 'match';
+  return Math.abs(computeTotal(columns, places) - target) < 0.01 ? 'nonstandard' : 'value-off';
+}
+
+/** "1 ten and 2 ones" — the occupied places of a decomposition, largest first. */
+function describeDecomposition(columns: Record<PlaceValue, number>, places: PlaceValue[]): string {
+  const parts = places
+    .filter(p => (columns[p] || 0) > 0)
+    .map(p => {
+      const n = columns[p] || 0;
+      const label = PLACE_CONFIG[p].label.toLowerCase();
+      return `${n} ${n === 1 ? label.replace(/s$/, '') : label}`;
+    });
+  if (parts.length === 0) return 'no blocks';
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+/** Lowest place holding 10+ blocks — the trade the student still owes. */
+function findTradeablePlace(
+  columns: Record<PlaceValue, number>,
+  places: PlaceValue[],
+): PlaceValue | null {
+  for (let i = places.length - 1; i > 0; i--) {
+    if ((columns[places[i]] || 0) >= 10) return places[i];
+  }
+  return null;
 }
 
 // ============================================================================
@@ -247,6 +320,9 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   const showColumnCounts = isReadBlocks ? false : (currentChallenge?.showColumnCounts ?? true);
   const showBlocksTotal = isReadBlocks ? false : (currentChallenge?.showBlocksTotal ?? true);
 
+  // BT-4: which channel carries the answer for this challenge (see BLOCK_JUDGED_TYPES).
+  const isBlockJudged = !!currentChallenge && BLOCK_JUDGED_TYPES.has(currentChallenge.type);
+
   // -------------------------------------------------------------------------
   // Evaluation Hook
   // -------------------------------------------------------------------------
@@ -304,7 +380,8 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
       + `Number: ${numberValue}. ${challengesWithIds.length} challenges. `
       + `Introduce warmly: "Let's explore place value with our blocks!" `
       + `${currentChallenge ? `First challenge: "${currentChallenge.instruction}" ` : ''}`
-      + tutorRevealClause(supportTier, currentChallenge?.type),
+      + tutorRevealClause(supportTier, currentChallenge?.type)
+      + answerChannelClause(currentChallenge?.type),
       { silent: true }
     );
   }, [isConnected, interactionMode, gradeBand, numberValue, challengesWithIds.length, currentChallenge, supportTier, sendText]);
@@ -400,44 +477,124 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Challenge Checking
   // -------------------------------------------------------------------------
+  /** Shared success path for both answer channels. */
+  const markCorrect = useCallback((message: string, tutorLine: string) => {
+    if (!currentChallenge) return;
+    SoundManager.playCorrect();
+    setFeedback(message);
+    setFeedbackType('success');
+    recordResult({
+      challengeId: currentChallenge.id,
+      correct: true,
+      attempts: currentAttempts + 1,
+      regroupsUsed: regroupCount,
+    });
+    sendText(tutorLine, { silent: true });
+  }, [currentChallenge, currentAttempts, regroupCount, recordResult, sendText]);
+
+  const markWrong = useCallback((message: string, tutorLine: string) => {
+    SoundManager.playIncorrect();
+    setFeedback(message);
+    setFeedbackType('error');
+    sendText(tutorLine, { silent: true });
+  }, [sendText]);
+
+  // ── Channel A: the blocks are the answer (build_number, regroup) ──
+  const checkBlocks = useCallback(() => {
+    if (!currentChallenge) return;
+    const target = currentChallenge.targetNumber;
+    incrementAttempts();
+
+    // regroup: the value is conserved and already named, so the TRADE is the answer.
+    if (currentChallenge.type === 'regroup') {
+      const conserved = Math.abs(currentTotal - target) < 0.01;
+      if (regroupCount > 0 && conserved) {
+        markCorrect(
+          `Nice trade! The blocks look different, but they still make ${target}.`,
+          `[TRADE_CORRECT] Student made ${regroupCount} trade(s); the value stayed ${target}. `
+          + `Celebrate the conservation idea in one line.`,
+        );
+      } else if (regroupCount === 0) {
+        markWrong(
+          `No trade yet — use a trade button under a column to swap blocks between places.`,
+          `[TRADE_MISSING] Student checked without trading. Attempt ${currentAttempts + 1}. `
+          + `Point them to the trade the instruction asks for; do not make it for them. `
+          + tutorRevealClause(supportTier, currentChallenge.type),
+        );
+      } else {
+        markWrong(
+          `Trading never changes the value — you have too ${currentTotal > target ? 'many' : 'few'} blocks now. Try Reset.`,
+          `[TRADE_VALUE_CHANGED] Student traded but the total drifted off ${target} (blocks were added/removed). `
+          + `Attempt ${currentAttempts + 1}. Remind them a trade swaps blocks, it never adds or removes value. `
+          + tutorRevealClause(supportTier, currentChallenge.type),
+        );
+      }
+      return;
+    }
+
+    // build_number: the columns must match the target's STANDARD form.
+    const verdict = judgeBuild(columns, target, activePlaces);
+    if (verdict === 'match') {
+      markCorrect(
+        `Yes! ${target} is ${describeDecomposition(columns, activePlaces)}.`,
+        `[BUILD_CORRECT] Student built ${target} in standard form (${describeDecomposition(columns, activePlaces)}). `
+        + `${regroupCount > 0 ? `Used ${regroupCount} trade(s). ` : ''}Celebrate briefly.`,
+      );
+    } else if (verdict === 'nonstandard') {
+      const tradeable = findTradeablePlace(columns, activePlaces);
+      const nextPlace = tradeable ? activePlaces[activePlaces.indexOf(tradeable) - 1] : null;
+      markWrong(
+        tradeable && nextPlace
+          ? `Those blocks make ${target}, but not with the fewest blocks — trade 10 ${PLACE_CONFIG[tradeable].label.toLowerCase()} for 1 ${PLACE_CONFIG[nextPlace].label.toLowerCase().slice(0, -1)}.`
+          : `Those blocks make ${target}, but not with the fewest blocks. Try trading up to a bigger place.`,
+        `[BUILD_NONSTANDARD] Student's blocks total ${target} but are NOT in standard form `
+        + `(${describeDecomposition(columns, activePlaces)}). Attempt ${currentAttempts + 1}. `
+        + `Guide the trade that makes each column show the matching digit. `
+        + tutorRevealClause(supportTier, currentChallenge.type),
+      );
+    } else {
+      markWrong(
+        showBlocksTotal
+          ? `Your blocks make ${currentTotal}. You need ${target} — keep going.`
+          : `Not ${target} yet — count each column again.`,
+        `[BUILD_INCORRECT] Student's blocks make ${currentTotal} but the target is ${target}. `
+        + `Attempt ${currentAttempts + 1}. `
+        + `Help: "Which place still needs blocks — ${currentTotal < target ? 'add' : 'take away'} from which column?" `
+        + tutorRevealClause(supportTier, currentChallenge.type),
+      );
+    }
+  }, [currentChallenge, columns, activePlaces, currentTotal, currentAttempts, regroupCount, showBlocksTotal, supportTier, incrementAttempts, markCorrect, markWrong]);
+
+  // ── Channel B: the student types a number the screen does not state
+  //    (read_blocks, add_with_blocks, subtract_with_blocks) ──
   const checkAnswer = useCallback(() => {
     if (!currentChallenge) return;
     const target = currentChallenge.targetNumber;
     const parsed = parseFloat(typedAnswer);
     if (isNaN(parsed)) return;
-    const correct = Math.abs(parsed - target) < 0.01;
     incrementAttempts();
 
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Correct! ${parsed} is right!`);
-      setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        regroupsUsed: regroupCount,
-      });
-      sendText(
+    if (Math.abs(parsed - target) < 0.01) {
+      markCorrect(
+        `Correct! ${parsed} is right!`,
         `[ANSWER_CORRECT] Student answered ${parsed} correctly! `
         + `${regroupCount > 0 ? `Used ${regroupCount} regroups. ` : ''}`
         + `Celebrate briefly.`,
-        { silent: true }
       );
     } else {
-      SoundManager.playIncorrect();
-      setFeedback(`You entered ${parsed}, but the answer is ${target}. Try again!`);
-      setFeedbackType('error');
+      // Never name the target here — unlike build_number, the answer is NOT on
+      // screen for read_blocks/operate, so stating it hands over the next attempt.
       setTypedAnswer('');
-      sendText(
+      markWrong(
+        `${parsed} isn't it — check each column and try again.`,
         `[ANSWER_INCORRECT] Student entered ${parsed} but target is ${target}. `
         + `Attempt ${currentAttempts + 1}. `
         + `Help: "Look at each column. How many ${parsed < target ? 'more' : 'fewer'} do you need?" `
+        + `Do NOT state the answer. `
         + tutorRevealClause(supportTier, currentChallenge?.type),
-        { silent: true }
       );
     }
-  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, supportTier, incrementAttempts, recordResult, sendText]);
+  }, [currentChallenge, typedAnswer, currentAttempts, regroupCount, supportTier, incrementAttempts, markCorrect, markWrong]);
 
   // Auto-submit evaluation when all challenges complete
   useEffect(() => {
@@ -496,10 +653,12 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
     }
 
     sendText(
-      `[NEXT_ITEM] Challenge ${nextIdx + 1} of ${challengesWithIds.length}: "${next.instruction}". Introduce it.`,
+      `[NEXT_ITEM] Challenge ${nextIdx + 1} of ${challengesWithIds.length}: "${next.instruction}". Introduce it.`
+      + tutorRevealClause(supportTier, next.type)
+      + answerChannelClause(next.type),
       { silent: true }
     );
-  }, [advanceProgress, currentChallengeIndex, challengesWithIds, activePlaces, sendText]);
+  }, [advanceProgress, currentChallengeIndex, challengesWithIds, activePlaces, supportTier, sendText]);
 
   const isCurrentComplete = currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id)
@@ -698,18 +857,33 @@ const BaseTenBlocks: React.FC<BaseTenBlocksProps> = ({ data, className }) => {
           </LuminaPanel>
         )}
 
-        {/* Calculator Input for answer submission */}
+        {/* Answer submission — BT-4: the channel follows the challenge type.
+            build_number / regroup are judged from the blocks (the target value is
+            already on screen, so a keypad would just be transcription); only
+            read_blocks and the operate modes ask for a typed number. */}
         {challengesWithIds.length > 0 && !allChallengesComplete && (
-          <CalculatorInput
-            label="Your Answer"
-            value={typedAnswer}
-            onChange={setTypedAnswer}
-            onSubmit={!isCurrentComplete ? checkAnswer : undefined}
-            allowDecimal={decimalMode}
-            allowNegative={false}
-            disabled={hasSubmittedEvaluation || isCurrentComplete}
-            showSubmitButton={!isCurrentComplete}
-          />
+          isBlockJudged ? (
+            <div className="flex justify-center">
+              <LuminaActionButton
+                action="check"
+                onClick={checkBlocks}
+                disabled={hasSubmittedEvaluation || isCurrentComplete}
+              >
+                {currentChallenge?.type === 'regroup' ? 'Check My Trade' : 'Check My Blocks'}
+              </LuminaActionButton>
+            </div>
+          ) : (
+            <CalculatorInput
+              label="Your Answer"
+              value={typedAnswer}
+              onChange={setTypedAnswer}
+              onSubmit={!isCurrentComplete ? checkAnswer : undefined}
+              allowDecimal={decimalMode}
+              allowNegative={false}
+              disabled={hasSubmittedEvaluation || isCurrentComplete}
+              showSubmitButton={!isCurrentComplete}
+            />
+          )
         )}
 
         {/* Feedback */}

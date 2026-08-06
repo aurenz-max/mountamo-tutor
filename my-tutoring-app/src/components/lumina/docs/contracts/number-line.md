@@ -74,11 +74,12 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `qa/EVAL_TRACKER.md:556,743` (NL-1); `qa/eval-reports/number-line-2026-04-03.md:14-17`.
 - **Probe:** eval-test `evalMode=plot&topic=numbers to 1000&grade=4` → max(target)−min(target) ≤ 25.
 
-### R9 — Pool distinctness across a session · OBSERVED
-- **Property:** per mode, the generated challenge set has no duplicate targets/tuples/sets/pairs (in-code selection, not LLM); counts per mode: plot 5, jump 4, order 4, between 4.
+### R9 — Pool distinctness across a session · OBSERVED (violated by the structural re-selectors until 2026-08-06)
+- **Property:** per mode, the generated challenge set has no duplicate targets/tuples/sets/pairs (in-code selection, not LLM); counts per mode: plot 5, jump 4, order 4, between 4. **This holds at every support tier** — a structural lever (R7) reshapes values but must never collapse the session onto one repeated set.
 - **Demanded by:** multi-challenge session shape (all consumers).
-- **Evidence:** `qa/eval-reports/number-line-2026-05-19.md:16`; counts `gemini-number-line.ts:77-95`.
-- **Probe:** any eval-test run → assert distinctness per mode.
+- **Evidence:** `qa/eval-reports/number-line-2026-05-19.md:16`; counts `gemini-number-line.ts:77-95`; the tier violation + its regression pin: `gemini-number-line.session-distinctness.test.ts`.
+- **Probe:** any eval-test run → assert distinctness per mode. Tier probe: `vitest run gemini-number-line.session-distinctness` (order/between × easy|medium|hard, 20 runs each).
+- **Known residual (open):** at easy tier the `wide` profile is capped by the pool window, not the range — `createSubRangePool` narrows to 20-40% of the domain even when the domain is already legible (0-20 → a 6-9 value window), so easy sets can carry min-adjacent-gap 1 and read like hard ones. Distinctness holds; the easy/hard *contrast* saturates. Fixing it means letting R8's sub-window collapse to the full range whenever the span is already ≤ 25.
 
 ### R10 — Theme/interest neutrality · OBSERVED
 - **Property:** number-line content does not absorb persona/interest themes even when sibling primitives in the same lesson do.
@@ -122,3 +123,4 @@ or 3-5 behavior.
 - 2026-08-03 — derived (initial), as contract-first step of reader-fit 14m. 12 requirements (10 OBSERVED, 2 INFERRED), 1 OPEN conflict (C1 → 14k). Channel [4] unavailable (auth).
 - 2026-08-03 — R2 edit (14m pilot): canonical-grade-first band resolution shipped (`numberLineGradeBandFromGrade` + threading, prose fallback kept at all 5 sites). `--check` **COMPATIBLE** — R1/R3-R9 probes hold; 3-5 band reachable at runtime for the first time on the ctx path (grade=4 → 3-5/decimal). C1 remains OPEN (14k replay: band fixed, range/window/accept residuals confirmed live). Report: `qa/primitive-contracts/number-line-check-2026-08-03.md`.
 - 2026-08-04 — reader-fit 14k fork shipped: explicit Grade-1 ranges may reach 120, focus-aware local pooling binds the requested 90-110 window, and exact missing-number `between` challenges use adjacent bounds plus additive `exactTargetValue`. Legacy clamp and any-interior semantics remain covered. C1 RESOLVED; `--check` COMPATIBLE. Report: `qa/primitive-contracts/number-line-check-2026-08-04.md`.
+- 2026-08-06 — R9 repair (user-reported: an easy-tier G1 "Counting within 20" order session rendered **12, 15, 17 four times**). `reshapeOrderSet`/`reshapeBetweenPair` scored the POOL and returned the single best-scoring set/pair, never reading their per-challenge argument — both are pure functions of (pool, perSet), so every challenge got identical values. Replaced with `reshapeOrderSets`/`reshapeBetweenPairs`: rank ALL combinations by the profile, shuffle equal-score buckets, take `count` distinct best-bucket-first, top up from the default-sampled sets if the pool saturates. R5/R6/R7 levers unchanged (easy still spreads, hard still clusters/narrows; the between answerability floor is now a candidate filter rather than a post-check). Regression pin added — fails 4/7 against the pre-fix generator. R9 gains an explicit at-every-tier clause plus one open residual (easy-tier `wide` capped by the R8 sub-window).

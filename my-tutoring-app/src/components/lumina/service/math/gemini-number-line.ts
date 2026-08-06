@@ -439,73 +439,101 @@ function reshapePlotTarget(
 }
 
 /**
- * order_values: reshape a set of DISTINCT in-range values to the tier's gap
- * profile. 'wide' → maximise the minimum adjacent gap (spread across the range);
- * 'clustered' → minimise it (a tight contiguous-ish run). Returns `perSet`
- * DISTINCT values inside [min,max]; if the pool is too small to satisfy the
- * profile it falls back to the widest distinct set it can (never < perSet, never
- * duplicates — the floor). numberType/range never change.
+ * Cap an enumeration input so the combination walk below stays cheap regardless
+ * of how wide a future fallback pool gets. Thins by even sampling (keeps the
+ * endpoints, so the 'wide'/'clustered' extremes survive the thinning).
  */
-function reshapeOrderSet(
-  pool: number[],
-  perSet: number,
-  gap: ProblemShape['orderGap'],
-): number[] | null {
-  const sorted = Array.from(new Set(pool.filter(Number.isFinite))).sort((a, b) => a - b);
-  if (sorted.length < perSet) return null;
-  if (!gap || gap === 'mixed') return null; // medium = default sampling (no reshape)
-
-  if (gap === 'clustered') {
-    // Tightest window of perSet consecutive-in-pool values (smallest span).
-    let best = sorted.slice(0, perSet);
-    let bestSpan = best[best.length - 1] - best[0];
-    for (let i = 0; i + perSet <= sorted.length; i++) {
-      const win = sorted.slice(i, i + perSet);
-      const span = win[win.length - 1] - win[0];
-      if (span < bestSpan) { best = win; bestSpan = span; }
-    }
-    // Randomise WHICH tight window among ties so parallel sessions differ.
-    const ties: number[][] = [];
-    for (let i = 0; i + perSet <= sorted.length; i++) {
-      const win = sorted.slice(i, i + perSet);
-      if (win[win.length - 1] - win[0] === bestSpan) ties.push(win);
-    }
-    return ties.length ? ties[Math.floor(Math.random() * ties.length)] : best;
-  }
-
-  // 'wide' — maximise the minimum adjacent gap via even spread across the pool.
+function thinPoolForEnumeration(sorted: number[], maxLen: number): number[] {
+  if (sorted.length <= maxLen) return sorted;
   const out: number[] = [];
-  for (let k = 0; k < perSet; k++) {
-    const idx = Math.round((k * (sorted.length - 1)) / (perSet - 1));
-    out.push(sorted[idx]);
+  for (let k = 0; k < maxLen; k++) {
+    out.push(sorted[Math.round((k * (sorted.length - 1)) / (maxLen - 1))]);
   }
-  // De-dup collisions (can happen on a tiny pool) by nudging to the next free slot.
-  const seen = new Set<number>();
-  const used = new Set(out);
-  const result: number[] = [];
-  for (const v of out) {
-    if (!seen.has(v)) { seen.add(v); result.push(v); continue; }
-    const alt = sorted.find(s => !used.has(s) && !seen.has(s));
-    if (alt == null) return null; // cannot make perSet distinct → caller keeps original
-    seen.add(alt); used.add(alt); result.push(alt);
-  }
-  return result.length === perSet ? result : null;
+  return Array.from(new Set(out));
 }
 
 /**
- * find_between: reshape a [lo,hi] bound pair to the tier's bound-gap width,
- * measured in LABEL-interval units. 'narrow' → bounds one labelIv apart (exactly
- * one strictly-between value at this numberType); 'wide' → bounds maximally far
- * apart in the pool. The floor (>=1 representable value strictly between) is
- * ASSERTED: a 'narrow' pair is only accepted if a snap-representable value lies
- * strictly between it, else it widens by one step. Bounds stay in [min,max].
+ * order_values: choose `count` DISTINCT sets of `perSet` distinct in-range values
+ * matching the tier's gap profile. 'wide' → maximise the minimum adjacent gap
+ * (spread across the pool); 'clustered' → minimise the set's span (a tight run).
+ *
+ * Ranked-BUCKET selection, never a single optimum. The profile is a pure function
+ * of (pool, perSet), so a picker that returns "the" best set hands every challenge
+ * in the session the SAME values — the R9 pool-distinctness violation that made an
+ * easy-tier 0-20 order session render 12, 15, 17 four times. Here every
+ * perSet-combination is scored, equal-score buckets are shuffled, and the best
+ * `count` DISTINCT sets are taken best-bucket-first: all as close to the profile as
+ * the pool allows, and all different from one another.
+ *
+ * Returns null when the pool cannot supply `perSet` distinct values, so the caller
+ * keeps its default-sampled sets (the band saturates honestly).
  */
-function reshapeBetweenPair(
-  pair: [number, number],
+function reshapeOrderSets(
   pool: number[],
+  perSet: number,
+  count: number,
+  gap: ProblemShape['orderGap'],
+): number[][] | null {
+  const unique = Array.from(new Set(pool.filter(Number.isFinite))).sort((a, b) => a - b);
+  if (unique.length < perSet) return null;
+  if (!gap || gap === 'mixed') return null; // medium = default sampling (no reshape)
+
+  // Pool is a sub-window (R8 maxSpan 25) ⇒ ≤ C(26,4) ≈ 15k combinations.
+  const sorted = thinPoolForEnumeration(unique, 26);
+  const combos: number[][] = [];
+  const build = (start: number, acc: number[]) => {
+    if (acc.length === perSet) { combos.push([...acc]); return; }
+    for (let i = start; i < sorted.length; i++) {
+      acc.push(sorted[i]);
+      build(i + 1, acc);
+      acc.pop();
+    }
+  };
+  build(0, []);
+  if (combos.length === 0) return null;
+
+  // 'wide' maximises the smallest adjacent gap; 'clustered' minimises the span.
+  const score = (s: number[]): number => {
+    if (gap === 'clustered') return -(s[s.length - 1] - s[0]);
+    let minGap = Infinity;
+    for (let i = 1; i < s.length; i++) minGap = Math.min(minGap, s[i] - s[i - 1]);
+    return minGap;
+  };
+
+  const buckets = new Map<number, number[][]>();
+  for (const c of combos) {
+    const k = score(c);
+    const b = buckets.get(k);
+    if (b) b.push(c); else buckets.set(k, [c]);
+  }
+  const out: number[][] = [];
+  for (const k of Array.from(buckets.keys()).sort((a, b) => b - a)) {
+    for (const c of shuffleInPlace(buckets.get(k)!)) {
+      out.push(c);
+      if (out.length >= count) return out;
+    }
+  }
+  return out.length ? out : null;
+}
+
+/**
+ * find_between: choose `count` DISTINCT [lo,hi] bound pairs matching the tier's
+ * bound-gap width, measured in LABEL-interval units. 'narrow' → bounds ~one labelIv
+ * apart (about one strictly-between value at this numberType); 'wide' → bounds as
+ * far apart as the pool allows. The floor (>=1 representable value strictly
+ * between) is ASSERTED — an unanswerable pair is never a candidate. Bounds come
+ * from the pool, so they stay in [min,max].
+ *
+ * Same ranked-bucket selection as reshapeOrderSets, for the same reason: the
+ * widest pair in a pool is usually unique, so a single-optimum picker gave every
+ * challenge in a 'wide' session identical bounds (R9).
+ */
+function reshapeBetweenPairs(
+  pool: number[],
+  count: number,
   width: ProblemShape['boundGap'],
   geom: { labelIv: number; precision: number },
-): [number, number] | null {
+): Array<[number, number]> | null {
   if (!width || width === 'moderate') return null; // medium = default builder
   const sorted = Array.from(new Set(pool.filter(Number.isFinite))).sort((a, b) => a - b);
   if (sorted.length < 2) return null;
@@ -519,46 +547,33 @@ function reshapeBetweenPair(
     return firstInside > a + 1e-9 && firstInside < b - 1e-9;
   };
 
-  if (width === 'narrow') {
-    // Prefer bounds exactly one labelIv apart with a value between; among such
-    // pairs choose randomly. Fall back to the smallest gap that still has a
-    // between-value (floor) — never collapse to no in-between value.
-    const oneApart: Array<[number, number]> = [];
-    const anyValid: Array<[number, number]> = [];
-    for (let i = 0; i < sorted.length; i++) {
-      for (let j = i + 1; j < sorted.length; j++) {
-        const a = sorted[i], b = sorted[j];
-        if (!hasBetween(a, b)) continue;
-        anyValid.push([a, b]);
-        if (Math.abs((b - a) - labelIv) < 1e-6) oneApart.push([a, b]);
-      }
+  const valid: Array<[number, number]> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (hasBetween(sorted[i], sorted[j])) valid.push([sorted[i], sorted[j]]);
     }
-    const fromOne = oneApart.length ? oneApart : null;
-    const pickFrom = fromOne ?? (anyValid.length
-      ? anyValid.filter(([a, b]) => (b - a) === Math.min(...anyValid.map(([x, y]) => y - x)))
-      : null);
-    if (!pickFrom || pickFrom.length === 0) return null;
-    return pickFrom[Math.floor(Math.random() * pickFrom.length)];
   }
+  if (valid.length === 0) return null;
 
-  // 'wide' — the largest-gap pair (most in-between ticks); random among ties.
-  let maxGap = -Infinity;
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      const g = sorted[j] - sorted[i];
-      if (hasBetween(sorted[i], sorted[j]) && g > maxGap) maxGap = g;
+  // 'wide' ranks by the widest gap; 'narrow' by closeness to ONE label interval
+  // (an exactly-labelIv pair outranks any other, then the least-deviating gap).
+  const score = ([a, b]: [number, number]): number =>
+    width === 'wide' ? (b - a) : -Math.abs((b - a) - labelIv);
+
+  const buckets = new Map<number, Array<[number, number]>>();
+  for (const p of valid) {
+    const k = score(p);
+    const bkt = buckets.get(k);
+    if (bkt) bkt.push(p); else buckets.set(k, [p]);
+  }
+  const out: Array<[number, number]> = [];
+  for (const k of Array.from(buckets.keys()).sort((a, b) => b - a)) {
+    for (const p of shuffleInPlace(buckets.get(k)!)) {
+      out.push(p);
+      if (out.length >= count) return out;
     }
   }
-  if (!Number.isFinite(maxGap)) return null;
-  const widest: Array<[number, number]> = [];
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      if (hasBetween(sorted[i], sorted[j]) && sorted[j] - sorted[i] === maxGap) {
-        widest.push([sorted[i], sorted[j]]);
-      }
-    }
-  }
-  return widest.length ? widest[Math.floor(Math.random() * widest.length)] : null;
+  return out.length ? out : null;
 }
 
 /**
@@ -1212,14 +1227,30 @@ async function generateOrderValuesChallenges(
 
   const tier = normalizeSupportTier(config?.difficulty);
 
-  // STRUCTURAL difficulty: reshape each set's adjacent-value gap profile (wide
-  // spread → clustered). Values stay DISTINCT and inside `range` (floor); on a
-  // pool too small to satisfy the profile the original (already-distinct) set is
-  // kept — the band saturates honestly.
+  // STRUCTURAL difficulty: reshape the session's adjacent-value gap profile (wide
+  // spread → clustered). Values stay DISTINCT and inside `range` (floor), and the
+  // SETS stay distinct from each other (R9) — reshapeOrderSets ranks all
+  // combinations and hands back `count` different on-profile sets rather than one
+  // optimum repeated per challenge. Too small a pool → the default-sampled sets
+  // stand (the band saturates honestly).
   if (tier) {
     const gap = resolveProblemShape('order_values', tier).orderGap;
     if (gap && gap !== 'mixed') {
-      sets = sets.map((s) => reshapeOrderSet(poolNumbers, perSet, gap) ?? s);
+      const reshaped = reshapeOrderSets(poolNumbers, perSet, sets.length, gap);
+      if (reshaped?.length) {
+        // Top up from the default-sampled sets when the pool could not supply as
+        // many on-profile sets as the session plans — never fewer challenges.
+        const keyOf = (s: number[]) => [...s].sort((a, b) => a - b).join('|');
+        const used = new Set(reshaped.map(keyOf));
+        const filled = [...reshaped];
+        for (const s of sets) {
+          if (filled.length >= sets.length) break;
+          if (used.has(keyOf(s))) continue;
+          used.add(keyOf(s));
+          filled.push(s);
+        }
+        sets = filled;
+      }
     }
   }
 
@@ -1293,8 +1324,8 @@ async function generateFindBetweenChallenges(
 
   // STRUCTURAL difficulty: reshape the bound-gap width (wide → narrow/adjacent).
   // The FLOOR (at least one snap-representable value strictly between the bounds)
-  // is asserted inside reshapeBetweenPair — a 'narrow' pair is only accepted if it
-  // remains answerable, else the band saturates at the smallest valid gap.
+  // is asserted inside reshapeBetweenPairs — an unanswerable pair is never a
+  // candidate — and the returned pairs are distinct from each other (R9).
   if (tier && !useExactMissing) {
     const width = resolveProblemShape('find_between', tier).boundGap;
     if (width && width !== 'moderate') {
@@ -1303,7 +1334,21 @@ async function generateFindBetweenChallenges(
       const tickInterval = defaultTickIntervalFor(numberType, span);
       const labelIv = effectiveLabelInterval(numberType, tickInterval, span);
       const geom = { labelIv, precision: snapPrecisionFor(numberType) };
-      pairs = pairs.map((p) => reshapeBetweenPair(p, poolNumbers, width, geom) ?? p);
+      const reshaped = reshapeBetweenPairs(poolNumbers, pairs.length, width, geom);
+      if (reshaped?.length) {
+        // Top up from the default-built pairs when the pool could not supply as
+        // many on-profile pairs as the session plans — never fewer challenges.
+        const keyOf = ([a, b]: [number, number]) => `${a}|${b}`;
+        const used = new Set(reshaped.map(keyOf));
+        const filled: Array<[number, number]> = [...reshaped];
+        for (const p of pairs) {
+          if (filled.length >= pairs.length) break;
+          if (used.has(keyOf(p))) continue;
+          used.add(keyOf(p));
+          filled.push(p);
+        }
+        pairs = filled;
+      }
     }
   }
 

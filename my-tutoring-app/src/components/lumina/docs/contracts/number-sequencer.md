@@ -51,7 +51,7 @@ record is `qa/topic-traces/g1-count-forward-to-120-2026-08-01.md`.
 
 - `count-from`: continue uniformly from `startNumber` in the named direction.
 - `before-after`: one adjacent missing value.
-- `order-cards`: visible pool is shuffled; answer is the same set ascending.
+- `order-cards`: visible pool is shuffled (see R9); answer is the same set ascending.
 - `fill-missing`: nulls and answers align left-to-right under one arithmetic rule.
 - `decade-fill`: missing values cross a decade boundary and every answer lies in
   the rendered local window.
@@ -73,6 +73,19 @@ unknown difficulty remains a no-op.
 The current challenge type, instruction, sequence, answers, direction, range,
 start number, attempt count, grade band, and support tier reach `useLuminaAI`.
 
+### R9 — order-cards presentation is genuinely unsolved · REQUIRED
+
+For `order-cards` the ARRANGEMENT of the pool is the task, not the stimulus, so the
+shipped `sequence` must not be assemblable from layout: no card sits in its answer
+position, and no 3+ cards are already consecutive and adjacent in either direction.
+Sorted pools and rotations of sorted pools (which leave every card but one already
+beside its neighbour) are forbidden on every path — model output, support-tier
+reshape, and the deterministic fallback. Code owns this presentation; the shuffle is
+seeded from the card values so the same set always renders the same way. Enforced in
+`gemini-number-sequencer.ts` (`shuffleOrderCards` + the post-generation guard) and
+checked by the oracle's `answer-leak` rule, which is scoped to `order-cards` alone —
+for the null-fill modes and `count-from` the visible terms ARE the intended stimulus.
+
 ## Conflict resolved by 14h
 
 The prior catalog/generator ceiling (Grade 1 ≤100) was valid for generic practice
@@ -92,3 +105,9 @@ while retaining the generic ≤100 default and the five existing mode identities
 - 2026-08-04 — `--check` COMPATIBLE after implementation: R1–R8 verified;
   focused 24/24, full Vitest 1406/1406, Lumina typecheck 0, tsc 803 baseline,
   all five modes + blend + scope/intent discrimination PASS live.
+- 2026-08-06 — R9 added after a field report: every hard-tier `order-cards` pool
+  rendered as the sorted set rotated left by one (`[12,13,14,15,16,11]`). The
+  support-tier reshaper rebuilt the pool as `[...set.slice(1), set[0]]`, so the
+  task was solvable from layout and read as a rendering bug. Replaced with a
+  seeded derangement search applied on every path; the oracle gained the
+  `answer-leak` rule that would have caught it. Full Vitest 1709/1709.
