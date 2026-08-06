@@ -35,6 +35,59 @@ except the DI-owned `di-math-facts counting_next` half of 14g**~~ **FULLY DRAINE
 response-class fork now owned by DI BACKLOG item 10, gated on bench sitting #63). **This queue
 has no EMERGING census pull left — the next item here is a fresh priority call, not a
 carried-over pointer.**
+
+> **PRIORITY CALL MADE — `/pm` 2026-08-06.** The user asked whether this lane had been
+> abandoned mid-stream and should resume. It had not: it **drained**. Recording the
+> resume condition and the honest yield estimate so the next session does not have to
+> re-derive them.
+>
+> **⚠️ CORRECTED SAME RUN by user push-back — the first version of this note was WRONG,
+> and the error is worth recording because it is a reusable trap.** `/pm` first wrote that
+> this lane was "worked out" at PRE/EMERGING and proposed the G2 census as a low-yield
+> continuation. The user pushed back: *"we have over 100 primitives — explaining to me we
+> did 14/14 is missing so many other K-selectable primitives that aren't designed for
+> non-readers. If you say only 14 primitives are relevant to K, this is a lack of scope."*
+> **Correct.** `/pm` had read **"the queue drained" as "the band is covered."** It is not
+> the same claim. This queue was seeded from **demand SAMPLES** — 6 K subskills
+> (2026-07-14) and 6 G1 subskills (2026-08-01), then whatever routed in those 12 traces.
+> Any primitive that did not surface in those traces was never audited, however selectable
+> it is at K. **Sampling demand ≠ covering supply.**
+>
+> **Coverage measured against the live catalog 2026-08-06 (the number that was missing):**
+>
+> | | Count |
+> |---|---|
+> | Catalog primitive entries | **196** |
+> | **K-selectable** — catalog text permits K, no `BAND FLOOR` / "Grade 1+ ONLY" / "not appropriate for younger" | **107** |
+> | Primitives with ANY reader-fit evidence (report or `*.reader-fit.test.tsx`) | **~38** |
+> | **K-selectable and NEVER reader-fit audited** | **≈69** |
+>
+> **The unaudited set contains near-certain PRE failures, not just unknowns.** Selectable
+> at K today: `stoichiometry-lab`, `gas-laws-simulator`, `orbit-mechanics-lab`,
+> `telescope-simulator`, `blueprint-canvas`, `digital-skills-sim`, `two-way-table`,
+> `story-planner`, `machine-profile`, `bio-compare-contrast`. These are text-heavy adult
+> primitives whose catalog descriptions advertise a K-inclusive range, so the manifest
+> curator may route them into a Kindergarten lesson where a non-reader cannot start.
+>
+> **RE-SEED SHAPE — supply-side sweep, NOT another demand census.** The next queue here is
+> not a G2 band census (that remains legitimate and never-run, but it is the smaller
+> prize). It is: enumerate the 107 K-selectable entries → subtract the ~38 audited →
+> triage the ~69 remainder by risk (text-primary interaction, no read-aloud
+> `aiDirectives`, no band gate in the component, adult vocabulary in `constraints`) →
+> work them with `/reader-fit [--fix]`, highest-risk first. The cheapest fixes are
+> catalog-level **band floors** (the `word-sorter` `match_pairs` / `protein-folder`
+> pattern) for primitives that simply should not be offered at K at all — those need no
+> component work and remove the failure by making the primitive unselectable.
+>
+> **Honest caveat on the 107.** It is a text-based proxy over catalog description +
+> constraints, so it over-counts entries that mention a K-inclusive range incidentally,
+> and it cannot tell whether the curator *would* pick a given entry for a real K
+> objective. The triage step must verify per primitive. Discount it heavily and the gap
+> is still dozens, not zero.
+>
+> **The G2/DEVELOPING census remains genuinely never-run** (`qa/topic-traces/` holds `k-*`
+> and `g1-*` and nothing at G2; FLUENT 3+ is out of scope by the skill's own table). Keep
+> it queued BELOW the supply-side sweep.
 14g's `di-word-reading` half closed 2026-08-03 (WRONG-PRIMITIVE); 14c rides the 14m sweep;
 14d is archived with the rest of the coin-counter tail.
 *Why 14m jumped:* 14c and 14i were each queued as one-off generator bugs, but they are the same

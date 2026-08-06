@@ -14,10 +14,10 @@
 | GAP-004 | MEDIUM | MATHEMATICS_G1 | 3 (PTRN001-04-a/b/c) | `hundreds-chart` | MEDIUM | CLOSED |
 | GAP-005 | HIGH | MATHEMATICS (K) | 5 (MEAS001-03-a/b/c, 04-a, 04-d) | `analog-clock` | MEDIUM | CLOSED |
 | GAP-006 | HIGH | MATHEMATICS (K) | 4 (MEAS001-01-a/b, 02-a/b) | `length-lab` | MEDIUM | CLOSED |
-| GAP-007 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-07-a, 07-c) | `coin-counter` | SMALL-MEDIUM | OPEN |
-| GAP-008 | HIGH | LANGUAGE_ARTS (K) | 4 (LA001-07-a/b, LA005-08-a + future) | `sight-word-trainer` | SMALL-MEDIUM | OPEN |
+| GAP-007 | MEDIUM | MATHEMATICS (K) | 2 (MEAS001-07-a, 07-c) | `coin-counter` | SMALL-MEDIUM | CLOSED — verified built 2026-08-06 |
+| GAP-008 | HIGH | LANGUAGE_ARTS (K) | 4 (LA001-07-a/b, LA005-08-a + future) | `sight-word-trainer` | SMALL-MEDIUM | **CLOSED-BY-EXTEND 2026-08-06** — do not build; see fit check |
 | GAP-009 | MEDIUM | LANGUAGE_ARTS (K) | 4 (Letter Formation Groups 1-4) | `letter-tracer` | MEDIUM | OPEN |
-| GAP-010 | HIGH | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | ~20 (LA004, LA005, LA006 sorting/categorization subskills) | `word-sorter` | SMALL | OPEN |
+| GAP-010 | HIGH | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | ~20 (LA004, LA005, LA006 sorting/categorization subskills) | `word-sorter` | SMALL | CLOSED — verified built 2026-08-06 |
 | GAP-011 | MEDIUM | LANGUAGE_ARTS (K) | 7 (LA006-06 Text Features A-G) | `book-explorer` | SMALL | OPEN |
 | GAP-012 | MEDIUM | LANGUAGE_ARTS (K), LANGUAGE_ARTS_G1 | 3 (LA004-01-G/K, LA004-02-C) | `sentence-builder` | MEDIUM | CLOSED |
 | GAP-013 | LOW | SCIENCE (K) | 1 (SCI001-02-D) | `material-properties-tester` | MEDIUM | CLOSED — assigned `matter-explorer` |
@@ -28,7 +28,10 @@
 | GAP-018 | HIGH | SCIENCE (G2) | 2 (SCI003-02-a/b) | `landform-mapper` | MEDIUM | OPEN — scaffold authored |
 | GAP-019 | MEDIUM | SCIENCE (G2) | 2 (SCI003-03-a/b) | `earth-changes-timeline` | SMALL-MEDIUM | OPEN — scaffold authored |
 
-**Totals:** 19 gaps | 7 HIGH, 8 MEDIUM, 4 LOW | ~73 subskills affected | 10 CLOSED (GAP-001, GAP-002, GAP-004, GAP-005, GAP-006, GAP-012, GAP-013, GAP-014, GAP-015 + GAP-003 backlog) | 9 OPEN
+**Totals (re-verified against the live catalog 2026-08-06):** 19 gaps | **12 CLOSED**
+(GAP-001, -002, -004, -005, -006, **-007**, -010, -012, -013, -014, -015 + GAP-003 backlog)
+| **7 OPEN** — GAP-008, -009, -011, -016, -017, -018, -019 (~23 subskills).
+GAP-007 and GAP-010 were recorded OPEN but are built; see the staleness sweep below.
 
 > **Grade 2 Earth Sciences (SCI003)** is authored as a deferred SCAFFOLD: the unit is held PENDING (excluded from publish) and its 7 subskills point at the three proposed primitives below (GAP-017/018/019). Build them with `/primitive`, then accept + publish SCI003 to bring Grade 2 Earth Science live.
 
@@ -993,12 +996,102 @@ Visual: glass-style containers with animated liquid levels. Containers can be di
 
 ### Remaining Open Gaps (priority order)
 
-1. **GAP-010 (`word-sorter`):** HIGH — ~20 literacy subskills blocked across grammar, vocabulary, and comprehension. SMALL build (same interaction as sorting-station). Highest ROI remaining gap.
-2. **GAP-008 (`sight-word-trainer`):** HIGH — 4 K subskills blocked; highest ROI K-1 literacy build; cross-grade value up to G2. SMALL-MEDIUM build.
-3. **GAP-007 (`coin-counter`):** MEDIUM — 2 K subskills blocked, SMALL-MEDIUM build
+> **STALENESS SWEEP 2026-08-06 (`/pm`).** This section had not been touched since
+> 2026-04-01 and its **#1 and #3 priorities were both already built**. Every gap below was
+> re-verified against the LIVE catalog (`service/manifest/catalog/*.ts`) this run, not
+> against the dashboard rows. Corrections applied:
+> - **GAP-010 `word-sorter` → CLOSED.** `catalog/literacy.ts` + `WordSorter.tsx` +
+>   `gemini-word-sorter.ts` + tests. It is picture-primary at K with read-aloud
+>   `aiDirectives` already; the LA K-2 lane's open item against it is an *eval-mode add*
+>   (`match_pairs` picture-pair @ K), not a build.
+> - **GAP-007 `coin-counter` → CLOSED.** `catalog/math.ts` + `CoinCounter.tsx` +
+>   `gemini-coin-counter.ts` + a derived contract (`docs/contracts/coin-counter.md`) +
+>   reader-fit tests. It has since consumed multiple build slices (14b, 14c).
+>
+> Verified-still-missing as of 2026-08-06: `sight-word-trainer`, `letter-tracer`,
+> `book-explorer`, `capacity-lab`, `erosion-explorer`, `landform-mapper`,
+> `earth-changes-timeline`, `bar-graph-builder`.
+
+1. ~~**GAP-008 (`sight-word-trainer`)**~~ **CLOSED-BY-EXTEND 2026-08-06 — the fit check
+   killed the build.** Opened as an ACTIVE build stream by `/pm` on 2026-08-06 and closed
+   the same day by `/curriculum-fit` run pre-birth per the LA lane's standing *fit before
+   birth* rule. Verdict: **BIRTH → EXTEND. Do not build.** `fast-fact` (`catalog/core.ts`)
+   already occupies the space and its description names the use case verbatim ("Use for:
+   math facts, **sight words**, vocabulary … ESSENTIAL for building fluency and
+   automaticity"), carrying `targetResponseTime`/`averageTime` — the automaticity signal
+   GAP-008 was written to introduce. Three of its four proposed modes already ship
+   (`flash` + `sentence_context` → `fast-fact`, whose 2026-08-06 FF-1/FF-2 closure
+   specifically converted the LA sight-word drill to clean sentence-completion items;
+   `production` → `cvc-speller`); only `find_it` is genuinely missing. **And its core
+   premise was overtaken by a standing ruling:** GAP-008 justifies the birth as *"speed is
+   the entire point"* with 1s/0.5s/0.25s `displayDuration` tiers — the platform has since
+   ruled **no visible timers, measure latency silently**
+   ([[feedback_no-timer-on-fact-fluency]]), which `fast-fact` already implements.
+   **Honest conversion path for LA001-07-a/b + LA005-08-a:** `/add-eval-modes` on
+   `fast-fact` (closes **FF-4** — it is `supportsEvaluation: true` with zero `evalModes`,
+   so sight-word demand cannot be adaptively routed today), optionally add `find_it`, then
+   re-run the fit check against the real catalog entry. Two mechanics would still justify a
+   fork later and are **not** claimed closed: per-*word* mastery state with spaced
+   repetition (`fast-fact` tracks per-session, not per-word) and voice-judged spoken
+   recognition (`/add-spoken-judge` is the cheaper rung). Report
+   `qa/curriculum-fit/sight-word-trainer-2026-08-06.md`. **This is the second time in two
+   days that fit-before-birth prevented a duplicate build** — the LA lane's `spatial-scene`
+   catch was the first.
+2. **GAP-017/018/019 (G2 Earth Science cluster):** HIGH — 3 primitives that together
+   unblock an entire authored-but-held curriculum unit (SCI003, 7 subskills).
+   **Verify the "held PENDING" claim against the live draft before building** — that
+   status line is from 2026-04-01 and this sweep found two same-vintage rows wrong.
+3. **GAP-011 (`book-explorer`):** MEDIUM — 7 LA006-06 text features subskills blocked, SMALL build
 4. **GAP-016 (`capacity-lab`):** MEDIUM — 2 K subskills blocked, MEDIUM build
-5. **GAP-011 (`book-explorer`):** MEDIUM — 7 LA006-06 text features subskills blocked, SMALL build
-6. **GAP-009 (`letter-tracer`):** MEDIUM — 4 letter formation subskills blocked, MEDIUM build (canvas stroke detection)
+5. **GAP-009 (`letter-tracer`):** MEDIUM — 4 letter formation subskills blocked, MEDIUM build (canvas stroke detection)
+
+### Not a gap — a DEPTH deficit (recorded here 2026-08-06 because no other register owns it)
+
+Measured this run against the live catalog. These primitives are **built and generating
+content**, but carry `supportsEvaluation: true` with **no `evalModes` block**, so the
+adaptive engine cannot route them by difficulty — they are content the IRT selector
+cannot see. Per CLAUDE.md the density frontier is exactly this.
+
+**Counts re-measured 2026-08-06 (2nd pass) as `supportsEvaluation: true` vs `evalModes:`
+blocks per catalog file** — the first pass counted total primitives per file, which
+overstated the deficit. Corrected:
+
+| Domain | `supportsEvaluation: true` | `evalModes` blocks | At L0 |
+|---|---|---|---|
+| biology | 14 | **0** | **14 — the entire domain** |
+| engineering | 23 | 5 | ~18 |
+| astronomy | 10 | 3 | ~7 |
+| core | 10 | 7 | ~3 (incl. `fast-fact`/FF-4) |
+| **clean** | math 61/61 · literacy 32/31 · chemistry 14/14 · di 4/4 · calendar 2/2 | | — |
+
+**≈42 primitives total at L0.** Biology is the sharpest case: 14 primitives, zero eval
+modes, and the 2026-06-28 science sweep already fixed 11 of their generators for
+topic/intent fidelity — so they honor a lesson objective and produce good content that
+cannot be adaptively selected. Executor: `/add-eval-modes` (then `/eval-test` per the
+lifecycle ladder). Tracker row **BIO-2**.
+
+**Demand caveat, measured not guessed (2026-08-06):** biology splits roughly in half by
+grade reach. Elementary-capable — `organism-card` (K-8), `classification-sorter` (K-8),
+`life-cycle-sequencer`, `habitat-diorama`, `bio-compare-contrast`,
+`adaptation-investigator` (2-8), `body-system-explorer` (2-8), `bio-process-animator`
+(2-8). Secondary-only by their own `constraints` — `protein-folder` (7-8 "NOT appropriate
+for younger grades"), `inheritance-lab` (6-8), `energy-cycle-engine` (5-8),
+`evolution-timeline` (4-8), `cell-builder` (4-8), `microscope-viewer` (3-8). So K-5 demand
+is thinner than 14 suggests; run a routing/demand check before committing the domain.
+
+> **⚠️ The depth deficit is not the only thing hiding in these domains — there is a
+> measured, month-old, un-queued PEDAGOGY defect too.** `/oracle-test` coverage of biology
+> began 2026-07-09 with a `dna-explorer` pilot and **stopped after one primitive**. That
+> pilot measured **6 of 10 real generations shipping an answer leak** (the build
+> challenge's `givenStrand` equals the displayed `templateStrand`, so the answer is
+> readable off the Explore tab). It was recorded only in a session memory note; `/pm`
+> found **no tracker row and no fix in the tree** on 2026-08-06 — now filed as **DNA-1**.
+> The other **13 evaluable biology primitives have never been oracle-tested or
+> eval-tested at all** (**BIO-1**). Precedent for expected yield: the only two leak
+> investigations that ran to completion — FF-1 (`fast-fact`) and DNA-1 — **both** found
+> the leak was domain-wide rather than local. This is CLAUDE.md priority **#1**
+> (pedagogy), and it outranks the density work above; the two share the same generator
+> per primitive, so they should be worked in the same slice.
 
 ### Maintenance tasks
 7. **Phantom primitive audit:** `/curriculum-lumina-audit audit LANGUAGE_ARTS_G1` and `SOCIAL_STUDIES_G1` to find more phantom assignments

@@ -17,7 +17,181 @@ queue AND this file's "last touched" in the same slice.
 | PARKED | intentionally idle; queue trusted only as of the noted date |
 | BLOCKED | waiting on a named dependency |
 
-## Current snapshot — reconciled 2026-08-06 (**ship reconcile — 4 clusters uncommitted**)
+## Current snapshot — reconciled 2026-08-06 (**RE-PRIORITIZATION — the build pivot died on its own fit check**)
+
+> **`/pm` 2026-08-06 (latest) — the user's read: *"feels like we don't have high impact work
+> other than DI… feels like we were going through `/reader-fit` but then stopped, this may be
+> higher value?"* Both halves tested against ground truth. The first is right for a reason
+> nobody had recorded; the second is right about the VALUE and wrong about the CAUSE.**
+>
+> **1. The build stream `/pm` opened yesterday is DEAD — killed by its own fit check.**
+> `sight-word-trainer` (GAP-008) was pulled as the new ACTIVE stream; `/curriculum-fit`, run
+> pre-birth per the LA lane's standing *fit-before-birth* rule, returned **BIRTH → EXTEND, do
+> not build.** `fast-fact` already occupies the space and names sight words in its catalog
+> description verbatim; 3 of the 4 proposed modes already ship; and GAP-008's central mechanic
+> (1s/0.5s/0.25s flash tiers — *"speed is the entire point"*) **violates a standing ruling**
+> ([[feedback_no-timer-on-fact-fluency]]) that `fast-fact` already implements correctly. Its
+> honest conversion is `/add-eval-modes` on `fast-fact` — which is **FF-4**, already open.
+> GAP-008 marked **CLOSED-BY-EXTEND**. Report `qa/curriculum-fit/sight-word-trainer-2026-08-06.md`.
+> **Second fit-before-birth save in two days** (the `spatial-scene` catch was the first) — the
+> rule is paying for itself, but it also means the portfolio has now spent two consecutive
+> `/pm` runs opening build streams that dissolved on contact with the catalog.
+>
+> **2. `/reader-fit` did not stop — it DRAINED, and its own queue says so.** Items 14a–14m are
+> all closed (last: 14l, 2026-08-05), and `qa/reader-fit/BACKLOG.md` states outright: *"This
+> queue has no EMERGING census pull left — the next item here is a fresh priority call, not a
+> carried-over pointer."* Nothing was abandoned mid-stream. **But the user's instinct about its
+> VALUE is correct and worth acting on** — reader-fit produced the highest-severity findings of
+> the last month (rule-#1 answer leaks, bands that were structurally unreachable, hardcoded caps
+> silently overriding lesson intent), none of which tsc, unit tests, or contracts can see.
+>
+> **3. ⚠️ `/pm` GOT THIS WRONG AND THE USER CAUGHT IT — recorded because the trap is
+> reusable.** The first version of this snapshot argued reader-fit was "worked out" at
+> PRE/EMERGING and that resuming it meant pulling its weakest band. The user's push-back:
+> *"we have over 100 primitives — explaining to me we did 14/14 is missing so many other
+> K-selectable primitives that aren't designed for non-readers. If you say only 14
+> primitives are relevant to K, this is a lack of scope."* **Correct, and the error is
+> precise: `/pm` read "the queue drained" as "the band is covered."** Those are different
+> claims. The reader-fit queue was seeded from **demand SAMPLES** — 6 K subskills
+> (2026-07-14), 6 G1 subskills (2026-08-01), then whatever routed in those 12 traces. A
+> primitive that never surfaced in the sample was never audited, however selectable it is
+> at K. **Sampling demand ≠ covering supply.**
+>
+> **Coverage measured against the live catalog this run — the number that was missing:**
+> **196** catalog entries · **107 K-selectable** (text permits K, no `BAND FLOOR` /
+> "Grade 1+ ONLY" / "not appropriate for younger grades") · **~38** with any reader-fit
+> evidence → **≈69 K-selectable primitives never reader-fit audited.** The unaudited set
+> holds near-certain PRE failures, not just unknowns: `stoichiometry-lab`,
+> `gas-laws-simulator`, `orbit-mechanics-lab`, `telescope-simulator`, `blueprint-canvas`,
+> `digital-skills-sim`, `two-way-table`, `story-planner`, `machine-profile` are all
+> routable into a Kindergarten lesson today. Caveat kept honest: the 107 is a text proxy
+> over description + constraints and over-counts incidental K-inclusive ranges, so triage
+> verifies per primitive — but discount it heavily and the gap is still dozens.
+>
+> **Re-seed shape = a SUPPLY-SIDE sweep, not another demand census:** enumerate the 107 →
+> subtract the ~38 → triage the ~69 by risk (text-primary interaction, no read-aloud
+> `aiDirectives`, no component band gate, adult vocabulary in `constraints`) → `/reader-fit
+> [--fix]` highest-risk first. The cheapest class of fix is a catalog **band floor** (the
+> `word-sorter` `match_pairs` pattern) — no component work, and it removes the failure by
+> making the primitive unselectable at K. The G2/DEVELOPING census stays genuinely
+> never-run and legitimately queued, but BELOW this.
+>
+> **4. The transferable part of reader-fit — and where it has never been pointed.** What made
+> it valuable was not the band rubric; it was that reader-fit was the only **demand-side census
+> driven through the REAL pipeline** (published objective → manifest → generator → judged
+> output). That method has been run on **K and G1 across LA / Math / SS**. It has **never been
+> run on Science** — and Science is exactly where this run found two independent problems
+> stacked on the same primitives:
+>
+> - **PEDAGOGY (CLAUDE.md #1) — a measured, month-old, un-queued answer leak.** `/oracle-test`
+>   coverage of biology started 2026-07-09, ran **one** primitive, and stopped. That pilot
+>   measured **6 of 10 real generations leaking the answer** in `dna-explorer` (the build
+>   challenge's `givenStrand` equals the displayed `templateStrand`). It lived only in a memory
+>   note saying "route to `/eval-fix`" — `/pm` verified this run that there is **no tracker row
+>   and no fix in the tree**: `gemini-dna-explorer.ts` still has no constraint separating the
+>   two. Now filed **DNA-1**. The other **13 evaluable biology primitives have never been
+>   oracle- or eval-tested at all** (**BIO-1**). Expected yield is high on precedent: both leak
+>   investigations that ran to completion — FF-1 (`fast-fact`) and DNA-1 — found the leak was
+>   **domain-wide, not local**; `fast-fact` measured Math 6 / LA 24 / Science 15 violations once
+>   someone actually looked.
+> - **DENSITY (CLAUDE.md #3) — ≈42 primitives invisible to the IRT selector.** Re-measured
+>   properly this run as `supportsEvaluation: true` vs `evalModes:` per catalog file (the first
+>   pass counted total primitives and overstated it): **biology 14/0 — the entire domain**,
+>   engineering 23/5, astronomy 10/3, core 10/7. Math (61/61), literacy (32/31), chemistry
+>   (14/14), di (4/4) are clean. Filed **BIO-2**. **Demand caveat, measured not guessed:**
+>   biology splits about half elementary (organism-card, classification-sorter,
+>   life-cycle-sequencer, habitat-diorama, bio-compare-contrast, adaptation-investigator,
+>   body-system-explorer, bio-process-animator) and half secondary-only (protein-folder 7-8,
+>   inheritance-lab 6-8, energy-cycle-engine 5-8, evolution-timeline 4-8, cell-builder 4-8,
+>   microscope-viewer 3-8) — so run a demand check before committing the domain.
+>
+> **These two share the same generator per primitive, so they are one slice, not two.**
+>
+> **RECOMMENDATION REVISED after the §3 correction — reader-fit supply-side sweep takes the
+> ACTIVE slot; Science depth drops to second.** With the real coverage number in hand the
+> ranking inverts, on three grounds: **(a) size** — ≈69 unaudited K-selectable primitives vs
+> ≈42 at L0; **(b) priority** — a non-reader who cannot start is CLAUDE.md #1 (pedagogy),
+> while an unrouteable primitive is #3 (density: it still teaches, it just isn't
+> adaptively selected); **(c) severity** — the L0 failure mode is *sub-optimal routing*,
+> the reader-fit failure mode is *a Kindergartener handed `stoichiometry-lab`*. The user's
+> original instinct ("we were going through `/reader-fit`… this may be higher value") was
+> right, and `/pm`'s first answer talked them out of it on a bad premise.
+> **Science depth (DNA-1 / BIO-1 / BIO-2) stays fully queued and un-deleted** — the
+> dna-explorer leak is measured, month-old and un-fixed, so it should ride as the
+> opportunistic +1 or take the slot the moment the sweep's triage is authored.
+>
+> **5. DI is genuinely in progress and stays ACTIVE — the parking note below is superseded.**
+> `3986f77` shipped item 10 (`counting_next` to 120, user-ruled build-ahead) plus the DI-120-1
+> barge-bar floor, and an untracked `diShapesScript.ts` shows a new pack in flight. The
+> "PARKED to make room" decision in the prior snapshot was made before that work landed.
+>
+> **6. Ship hygiene — `addition-subtraction-scene` item-12 is STILL uncommitted** (4 files,
+> browser-verified with a 10-check real-Chrome run, no commit) and now carries a modified
+> contract + reader-fit test alongside. It is a clean standalone slice; ship it before starting
+> anything new.
+
+## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
+
+> **`/pm` 2026-08-06 (late) — the portfolio was starved of BUILDABLE work, and that was
+> structural, not a discipline failure.** The user's read — *"we've been doing lots of eval
+> tests, contract work etc, but we need to make some real progress on real primitives"* — is
+> confirmed by the queue tops: **LA K-2 Grammar's top was a DESIGN RULING** (item 1b,
+> viewer-relative prepositions), **the DI lane's own row said "no unblocked top item — next
+> pull is a development item to author with the user"**, and the opportunistic lane was
+> **evidence closure**. Three streams, zero buildable tops. `/pm` opened a build stream.
+>
+> **NEW ACTIVE: K-1 Literacy Fluency — `sight-word-trainer` BIRTH (GAP-008), user-pulled.**
+> Executor `/primitive` (L0), then the lifecycle ladder. Rationale: the gap tracker calls it
+> *"the widest curriculum ROI of any unbuilt primitive in the K-1 literacy stack"* — sight-word
+> automaticity is a prerequisite for fluent reading of any connected text, so every
+> `decodable-reader` and read-aloud session is enhanced by it. **The decisive argument is
+> capability timing:** this primitive needed a speak-and-be-judged loop the platform did NOT
+> have when GAP-008 was written (2026-04) and now DOES — `useSpokenWordCapture` (Azure
+> dual-signal → flash-latest), `LuminaMicListener`, and session-wide open mic from the
+> `9d08687` voice-transport unification. Automaticity is measured in response latency on a
+> spoken word; it no longer has to ship as a tap-only proxy. Serves LA001-07-a/b + LA005-08-a
+> at K with cross-grade reach to G2.
+>
+> **WIP kept at 2+1 — the DI / voice lane is PARKED to make room.** It is the right one to
+> park: its queue top is unauthored, and its live residuals (**HUMAN-CHECKS #63 bench sitting,
+> #64(b) real-child drive, #65 calibration spread, #70, #71**) are all **user-only** gates that
+> a Claude session cannot close anyway. Parked as of 2026-08-06 — **CTX-1 (item 13) landed
+> first** (`a55c674`, `b87dd8b`, `aab8260`: the three recitable maxims the tutor read aloud to
+> a child were deleted outright, per the user ruling to delete the channel rather than tune the
+> gate). Resume condition: the user runs a mic session, or authors the next development item.
+>
+> **STALENESS SWEEP — `qa/PRIMITIVE_GAPS.md` had not been touched since 2026-04-01 and its own
+> #1 and #3 priorities were ALREADY BUILT.** Re-verified every gap against the LIVE catalog
+> (`service/manifest/catalog/*.ts`) rather than the dashboard: **GAP-010 `word-sorter` CLOSED**
+> (catalog + component + generator + tests; the LA lane's open item against it is an eval-mode
+> add, not a build) and **GAP-007 `coin-counter` CLOSED** (catalog + component + generator +
+> a derived contract; it has since consumed multiple build slices). Totals corrected to
+> **12 CLOSED / 7 OPEN**. Verified-still-missing: `sight-word-trainer`, `letter-tracer`,
+> `book-explorer`, `capacity-lab`, `erosion-explorer`, `landform-mapper`,
+> `earth-changes-timeline`, `bar-graph-builder` (the G2 Earth Science trio has **zero
+> references anywhere in the repo** — genuinely unbuilt and unwired).
+>
+> **NEW FINDING, no register owned it — a DEPTH deficit larger than the gap list.** Measured
+> against the live catalog: primitives carrying `supportsEvaluation: true` with **no
+> `evalModes` block** are built and generating content but **invisible to the IRT selector**.
+> **biology: 17 primitives, 0 eval modes — the entire domain at L0**; engineering ~19 at L0;
+> astronomy ~8; core ~12. Biology is the sharpest case because the 2026-06-28 science sweep
+> already fixed 11 of those generators for topic/intent fidelity — they honor an objective and
+> produce good content that cannot be adaptively routed. This is CLAUDE.md's priority #3
+> verbatim. **Recorded in `qa/PRIMITIVE_GAPS.md` under "Not a gap — a DEPTH deficit."**
+> Executor `/add-eval-modes`, serial, pilot-then-sweep. **Honest caveat carried:** biology
+> skews secondary (`protein-folder`, `dna-explorer`, `evolution-timeline`), so K-5 demand is
+> likely thinner than 17 suggests — run a demand check before committing the domain.
+> Offered to the user this run and **not** chosen; it is the standing next candidate.
+>
+> **UNSHIPPED, flagged: the `addition-subtraction-scene` item-12 work** (4 files, ~200 lines)
+> is browser-verified with a 10-check real-Chrome run and has **no commit**. G1 `act_out`
+> forked by operation — subtraction becomes an enacted scene, and the ten-frame answer leak
+> (it mirrored stored `resultCount` on enacted scenes) is closed. Ship it as its own slice;
+> it does not collide with the sight-word build, which lands new files plus a `literacy.ts`
+> catalog entry.
+
+## Prior snapshot — reconciled 2026-08-06 (**ship reconcile — 4 clusters uncommitted**)
 
 > **`/pm` 2026-08-06 (evening) — EVERYTHING SHIPPED, AND THE TWO GATES CLOSED.** The
 > four clusters below are committed and pushed (`a695574..f391cca`), and the user drove
