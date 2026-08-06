@@ -114,9 +114,18 @@ read the diff to find it. Four independent fixes:
 defaulting to `[]` (an empty default would pass every distinctness assertion vacuously).
 That file's 7/7 still pass.
 
-**Honest gaps, all QUEUED not fixed:** (a) **no runtime verification of item 1** — the
-repair is verified by `tsc` and jsdom, and the failure mode is *lesson-path only*, which is
-precisely what neither covers → **HUMAN-CHECKS #69**; (b) **no regression pin for the
+**✅ ITEM 1 RUNTIME-VERIFIED 2026-08-06 (evening) — HUMAN-CHECKS #69 STRUCK.** The user
+drove ~15 minutes in the browser: *"worked great, DI worked great, each lumina primitive
+worked great."* The DI half is the strongest evidence — those packs must mount, receive
+content AND drive the judged mic loop, which a silently-undefined `data` could not have
+survived. `ac2d342` moves from "machine-verified, needs a browser check" to **verified**.
+Lesson recorded as [[tester-green-lesson-broken]]. **#70 and #71 stay OPEN** — neither was
+named in the drive, and a general "the lesson worked" is not evidence for base-ten-blocks'
+nonstandard-build rejection (you must deliberately build 12 as twelve unit cubes) or for
+the curator-brief hook badge being a glyph rather than a word.
+
+**Honest gaps, all QUEUED not fixed:** (a) ~~no runtime verification of item 1~~ **CLOSED
+above 2026-08-06**; (b) **no regression pin for the
 platform contract itself** — nothing fails if the next primitive is written props-are-data
 and registered through an `any` escape hatch; executor `/primitive` (checklist) or a
 registry-shape test; (c) base-ten-blocks keypad removal is a real UI change never clicked →
