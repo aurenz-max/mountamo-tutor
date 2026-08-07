@@ -107,9 +107,44 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   *Residuals:* no live audio run → HUMAN-CHECKS #73; rule 3 only PARTIAL (item
   cards are words — `imagePrompt` exists but no image pipeline is wired for this
   primitive); 0 eval modes.
-  → **NEXT: S10 `day-night-seasons`** → S11 `solar-system-explorer` →
-  S12 `scale-comparator` → S13 `life-cycle-sequencer` → S14 `habitat-diorama` →
-  S15 `organism-card`.
+  ~~**S10 `day-night-seasons`**~~ **S10 CLOSED 2026-08-06 — READY at PRE; the
+  queued verdict was INCOMPLETE again (2nd time in a row).** Triage: SCAFFOLD-GAP
+  ("rotate the Earth, watch the light"). Reality: the only assessment at K was a
+  **free-text `<input placeholder="Type your answer...">`** — PRE rule 6 — and it
+  **scored any non-empty string as correct**, so a K child who cannot type scored
+  0 and a child who typed "aaa" scored 100. Three defects closed:
+  (1) **SCAFFOLD-GAP** — catalog block (9 contextKeys, 3 levels, 5 struggles,
+  3 aiDirectives) + 4 moments. Struggles lead with BOTH misconceptions the
+  primitive exists to correct ("the Sun moves", "seasons come from distance"),
+  plus a `THE TILT, NOT THE DISTANCE` directive forbidding "closer"/"farther" as
+  a cause *even as a thing to reject in passing*. (2) **PRIMITIVE-GAP, unqueued**
+  — typing removed at K-1 (questions become a spoken 🔊 prompt), `<select>` →
+  tappable emoji place buttons, degree readout + hours card gated; **scoring moved
+  to the INSTRUMENT** (spun / played / observed ≥2 places), which is *stricter* at
+  K than what it replaced. (3) **Prose-grade, predicted + probe-confirmed** — the
+  worst astronomy offender (13 char-compares, 0 reads of `ctx.grade`); probe at
+  `grade=K` returned `'3'` + `showTiltAxis:true` + 4 markers + 3 objectives +
+  `timeSpeed:5`, i.e. **every K rung violated**. Fixed via exported
+  `dayNightGradeFromGrade()`, no floor.
+  **Deliberately NOT shipped:** a `[EARTH_DAY_NIGHT_FLIP]` narration beat — the
+  lit/unlit test depends on terminator angle conventions that could not be
+  confirmed visually this session, and a tutor saying "now it's night in New York"
+  over a daylit screen is worse than silence. `isDaytimeAtMarker` is instead
+  derived from the SAME expressions the renderer uses (so it cannot drift from the
+  drawn shadow) and reported on the verifiable `[EARTH_LOCATION_SELECTED]` moment.
+  **`tutor-test` caught the resulting dead directive tag** — rewritten.
+  Gates: 12 + 13 tests, **revert-bite 12/25**, src-scoped tsc **803 = baseline,
+  zero new**, typecheck:lumina 0, full vitest **1878/1878**, tutor-test Tier 1
+  `pass`. Report `qa/reader-fit/day-night-seasons-PRE-2026-08-06.md`.
+  *Residuals:* the day/night reading needs ONE visual confirmation (HUMAN-CHECKS
+  #73 — if inverted the fix is one `!`); no live audio run; 0 eval modes.
+  → **NEXT: S11 `solar-system-explorer`** → S12 `scale-comparator` →
+  S13 `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
+  **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
+  triage label has understated the work every time.** S9 was drag-only, S10 had
+  typing at K. Budget each remaining slice for a component band-gate pass, not
+  just a catalog block — and run Audit C properly rather than trusting the triage
+  line.
   **⚠️ TWO DIFFERENT grade-blindness mechanisms are now confirmed in this queue.**
   Astronomy (S10/S11/S12) uses the S8 shape: regex `/grade\s*(\d|K)/` over prose
   `ctx.gradeContext` (day-night-seasons 13 char-compares, scale-comparator 7,

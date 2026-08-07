@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DayNightSeasonsMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -823,6 +825,18 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
   const svgRef = useRef<SVGSVGElement>(null);
   const animationFrameRef = useRef<number>();
   const lastUpdateRef = useRef<number>(Date.now());
+  // Every place that has been on screen this attempt, seeded with the one shown
+  // at mount. Accumulates because selection replaces `selectedLocation`.
+  const observedPlacesRef = useRef<Set<string>>(
+    new Set(markerLatitudes.length > 0 ? [markerLatitudes[0].id] : []),
+  );
+
+  // Stable across renders — an inline `id || \`prefix-${Date.now()}\`` produces a
+  // new string every render and restarts the AI connect effect in a loop.
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `day-night-seasons-${Date.now()}`,
+    [instanceId],
+  );
 
   // Evaluation hook
   const {
@@ -831,13 +845,22 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     resetAttempt,
   } = usePrimitiveEvaluation<DayNightSeasonsMetrics>({
     primitiveType: 'day-night-seasons',
-    instanceId: instanceId || `day-night-seasons-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit,
   });
+
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-1 nothing here can be decoded: the location <select>, the degree
+  // readout, the daylight-hours card and — worst — a free-text answer box are
+  // all unusable. Pictures, the spinning Earth and the tutor's voice are the
+  // whole channel (reader-fit PRE contract rules 1, 2, 6, 7).
+  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
 
   // Calculate Earth position in orbit
   const earthOrbitX = useMemo(() => {
@@ -1258,6 +1281,112 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     [earthOrbitPosition]
   );
 
+  // ============================================================================
+  // Is it day or night at the place the student is watching?
+  // ============================================================================
+  // Deliberately built from the SAME two expressions the D3 terminator uses
+  // (`angleToSun`, `terminatorAngle`) and the SAME projection the markers use,
+  // in the same rotated frame — so this cannot drift away from the shadow that
+  // is actually drawn. Null when no terminator is shown, because then there is
+  // no day/night boundary on screen for the tutor to talk about.
+  const isDaytimeAtMarker = useMemo<boolean | null>(() => {
+    if (!showTerminator || !selectedLocationData) return null;
+    const projected = project3DTo2D(
+      selectedLocationData.latitude,
+      selectedLocationData.longitude,
+      earthRotation,
+      0,
+      0,
+      EARTH_RADIUS
+    );
+    const angleToSun = Math.atan2(sunY - earthOrbitY, sunX - earthOrbitX) * (180 / Math.PI);
+    const terminatorAngle = angleToSun - earthRotation - EARTH_TILT_DEGREES;
+    const markerAngle = Math.atan2(projected.y, projected.x) * (180 / Math.PI);
+    // The night shadow spans [terminatorAngle, terminatorAngle + 180].
+    const relative = (((markerAngle - terminatorAngle) % 360) + 360) % 360;
+    return relative > 180;
+  }, [
+    showTerminator, selectedLocationData, earthRotation,
+    sunX, sunY, earthOrbitX, earthOrbitY,
+  ]);
+
+  const timeOfDayAtMarker =
+    isDaytimeAtMarker === null ? 'not shown' : isDaytimeAtMarker ? 'daytime' : 'night';
+
+  // ============================================================================
+  // AI tutoring
+  // ============================================================================
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    focusMode,
+    viewPerspective,
+    gradeLevel,
+    primaryLocation: selectedLocationData?.name ?? 'no place chosen yet',
+    timeOfDayAtMarker,
+    orbitalPosition: dynamicAnnotation.title,
+    animationState: isAnimating ? 'playing' : 'paused',
+    // Never voiced to a pre-reader — the directive forbids reading hours aloud.
+    daylightHours: Math.round(daylightHours),
+  }), [
+    title, focusMode, viewPerspective, gradeLevel, selectedLocationData,
+    timeOfDayAtMarker, dynamicAnnotation.title, isAnimating, daylightHours,
+  ]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'day-night-seasons',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[EARTH_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[EARTH_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : `grade ${gradeLevel}`} student `
+      + `just opened an Earth model. Focus: ${focusMode}. `
+      + `They spin the Earth with their finger and watch the dark part move across it. `
+      + `Tell them what to do in child words, warmly. Do not ask them to read anything`
+      + `${isPreReader ? ' and do not say any number of hours' : ''}.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, gradeLevel, focusMode]);
+
+  // The student chose a place to watch. One short sentence about what is
+  // happening there — the tutor's only routine per-interaction line.
+  const handleLocationSelect = useCallback((locationId: string) => {
+    SoundManager.select();
+    setSelectedLocation(locationId);
+    observedPlacesRef.current.add(locationId);
+    setUserAnswers((prev) => ({ ...prev, [`explored_${locationId}`]: 'yes' }));
+    const loc = markerLatitudes.find((m) => m.id === locationId);
+    if (!loc) return;
+    sendText(
+      `[EARTH_LOCATION_SELECTED] The student is now watching ${loc.name}. `
+      + `${isDaytimeAtMarker === null
+        ? 'Say the place name warmly in one short sentence.'
+        : `On screen it is ${isDaytimeAtMarker ? 'DAYTIME' : 'NIGHT'} there right now — say that in one short sentence `
+          + `("Right now it is ${isDaytimeAtMarker ? 'daytime' : 'night-time'} in ${loc.name}"). `
+          + `Describe what they can SEE; never read a number of hours to a young child.`} `
+      + `Do not ask a question and do not add a fact.`,
+      { silent: true },
+    );
+  }, [markerLatitudes, isDaytimeAtMarker, sendText]);
+
   // Evaluation handlers
   const handleCheckUnderstanding = () => {
     if (hasSubmitted) return;
@@ -1265,7 +1394,28 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     let correctAnswers = 0;
     let totalQuestions = 0;
 
-    if (learningObjectives && learningObjectives.length > 0) {
+    if (isPreReader) {
+      // PRE has no typed quiz to score (rule 6), so the INSTRUMENT is the
+      // measurement (rule 8): did they actually drive the phenomenon? Three
+      // observable behaviours — spun the Earth, ran the animation, and looked at
+      // more than one place. Note the old path scored *any non-empty string* as
+      // correct, so this is a stricter measure at K, not a softer one.
+      const spunEarth = userAnswers['spun_earth'] === 'yes';
+      const watchedAnimation = isAnimating || userAnswers['viewed_animation'] === 'yes';
+      // Every place the student has actually had on screen, including the one
+      // shown at mount — which is WATCHED without ever being tapped, so a
+      // tap-only count would make "visit a second place" unreachable in the
+      // common 2-marker K layout. Selection replaces `selectedLocation`, so this
+      // has to accumulate rather than be derived from the current value.
+      // Deliberately NOT folded into the `locationsExplored` metric below, which
+      // stays tap-only so a passive student is not credited with an exploration.
+      const placesObserved = observedPlacesRef.current.size;
+      totalQuestions = 3;
+      if (spunEarth) correctAnswers++;
+      if (watchedAnimation) correctAnswers++;
+      // Comparing two places is the point at K ("day here, night there").
+      if (placesObserved >= Math.min(2, markerLatitudes.length)) correctAnswers++;
+    } else if (learningObjectives && learningObjectives.length > 0) {
       totalQuestions = learningObjectives.length;
       learningObjectives.forEach((_, index) => {
         if (userAnswers[`q${index}`] && userAnswers[`q${index}`].trim().length > 0) {
@@ -1295,6 +1445,14 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     submitResult(success, score, metrics, {
       studentWork: { answers: userAnswers },
     });
+
+    sendText(
+      `[EARTH_ALL_COMPLETE] Student finished exploring. Focus was ${focusMode}. `
+      + `They looked at ${metrics.locationsExplored} place(s). Score ${Math.round(score)}%. `
+      + `Celebrate warmly in child words and say one true thing they saw happen`
+      + `${focusMode === 'day-night' ? ' about why we get day and night' : ''}.`,
+      { silent: true },
+    );
   };
 
   const handleReset = () => {
@@ -1307,13 +1465,11 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
     });
     setIsAnimating(false);
     setShowExplanation(false);
+    // Clear the per-attempt instrument latch, or a retry starts pre-credited.
+    observedPlacesRef.current = new Set(
+      markerLatitudes.length > 0 ? [markerLatitudes[0].id] : [],
+    );
     resetAttempt();
-  };
-
-  const handleLocationSelect = (locationId: string) => {
-    SoundManager.select();
-    setSelectedLocation(locationId);
-    setUserAnswers((prev) => ({ ...prev, [`explored_${locationId}`]: 'yes' }));
   };
 
   return (
@@ -1321,7 +1477,18 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-slate-300">{description}</p>
+        <div className="flex items-start gap-3">
+          <p className="text-slate-300 flex-1">{description}</p>
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read this to me"
+            className="flex-shrink-0"
+            onClick={() => readAloud(`${title}. ${description}`)}
+          />
+        </div>
       </div>
 
       {/* D3 Visualization */}
@@ -1366,7 +1533,7 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
         <div className="bg-slate-800 rounded-lg p-4">
           <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
             <span>🎬</span>
-            <span>Animation Controls</span>
+            {!isPreReader && <span>Animation Controls</span>}
           </h4>
           <div className="space-y-3">
             <button
@@ -1375,19 +1542,25 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
                 setIsAnimating(!isAnimating);
                 setUserAnswers((prev) => ({ ...prev, viewed_animation: 'yes' }));
               }}
-              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+              aria-label={isAnimating ? 'Pause' : 'Play'}
+              className={`w-full rounded-lg font-medium transition-colors ${
+                isPreReader ? 'px-4 py-4 text-3xl leading-none' : 'px-4 py-2'
+              } ${
                 isAnimating
                   ? 'bg-red-600 hover:bg-red-700 text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
             >
-              {isAnimating ? '⏸️ Pause' : '▶️ Play'} Animation
+              {isAnimating ? '⏸️' : '▶️'}
+              {!isPreReader && <> {isAnimating ? 'Pause' : 'Play'} Animation</>}
             </button>
 
             {(focusMode === 'day-night' || focusMode === 'both') && (
               <div>
                 <label className="text-slate-300 text-sm mb-2 block">
-                  Earth Rotation: {Math.round(earthRotation)}°
+                  {isPreReader
+                    ? <span className="text-2xl" aria-label="Slide to spin the Earth">🌍 ↻</span>
+                    : <>Earth Rotation: {Math.round(earthRotation)}°</>}
                 </label>
                 <input
                   type="range"
@@ -1395,7 +1568,15 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
                   max="360"
                   step="1"
                   value={earthRotation}
-                  onChange={(e) => setEarthRotation(Number(e.target.value))}
+                  aria-label="Spin the Earth"
+                  onChange={(e) => {
+                    setEarthRotation(Number(e.target.value));
+                    // Instrument signal: at PRE this is what "they did the task"
+                    // means, since there is no typed quiz to score.
+                    setUserAnswers((prev) => (prev['spun_earth'] === 'yes'
+                      ? prev
+                      : { ...prev, spun_earth: 'yes' }));
+                  }}
                   className="w-full"
                   disabled={isAnimating && (animationMode === 'rotation' || animationMode === 'both')}
                 />
@@ -1437,27 +1618,55 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
           <div className="bg-slate-800 rounded-lg p-4">
             <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
               <span>📍</span>
-              <span>Location Data</span>
+              {!isPreReader && <span>Location Data</span>}
             </h4>
             <div className="space-y-3">
               <div>
-                <label className="text-slate-300 text-sm mb-2 block">Select Location</label>
-                <select
-                  value={selectedLocation || ''}
-                  onChange={(e) => handleLocationSelect(e.target.value)}
-                  className="w-full bg-slate-700 text-white border border-slate-600 rounded px-3 py-2 text-sm"
-                >
-                  {markerLatitudes.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.emoji} {location.name} ({location.latitude}°{location.latitude >= 0 ? 'N' : 'S'})
-                    </option>
-                  ))}
-                </select>
+                {!isPreReader && (
+                  <label className="text-slate-300 text-sm mb-2 block">Select Location</label>
+                )}
+                {isPreReader ? (
+                  /* A <select> is not a control a five-year-old can operate, and
+                     "🗽 New York (40°N)" is unreadable to them. Big tappable
+                     place buttons instead — tap = choose (PRE rule 2), with the
+                     name kept as the accessible label and spoken by the tutor. */
+                  <div className="flex flex-wrap gap-3">
+                    {markerLatitudes.map((location) => (
+                      <button
+                        key={location.id}
+                        type="button"
+                        onClick={() => handleLocationSelect(location.id)}
+                        aria-label={location.name}
+                        className={`px-5 py-4 rounded-xl text-3xl leading-none transition-transform hover:scale-[1.03] active:scale-95 border-2 ${
+                          selectedLocation === location.id
+                            ? 'bg-blue-600 border-blue-300'
+                            : 'bg-slate-700 border-transparent hover:bg-slate-600'
+                        }`}
+                      >
+                        {location.emoji || '📍'}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <select
+                    value={selectedLocation || ''}
+                    onChange={(e) => handleLocationSelect(e.target.value)}
+                    className="w-full bg-slate-700 text-white border border-slate-600 rounded px-3 py-2 text-sm"
+                  >
+                    {markerLatitudes.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.emoji} {location.name} ({location.latitude}°{location.latitude >= 0 ? 'N' : 'S'})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {selectedLocationData && (
                 <div className="space-y-2">
-                  {showDaylightHours && (
+                  {/* An hours readout is a number a pre-reader cannot use, and the
+                      scaffold explicitly forbids speaking it to them. */}
+                  {showDaylightHours && !isPreReader && (
                     <div className="bg-slate-700 rounded-lg p-3">
                       <div className="text-slate-400 text-xs mb-1">☀️ Daylight Hours</div>
                       <div className="text-white text-2xl font-bold">
@@ -1575,28 +1784,47 @@ const DayNightSeasons: React.FC<DayNightSeasonsProps> = ({ data, className }) =>
         </div>
       )}
 
-      {/* Learning Questions */}
+      {/* Learning Questions.
+          At PRE these are questions to be ASKED ALOUD, never a text box: typing
+          fails PRE contract rule 6 outright, and the old scoring credited any
+          non-empty string, so it measured nothing anyway. At K-1 the questions
+          become a spoken prompt (🔊) and the SCORE comes from the instrument
+          instead — did they spin the Earth, run it, and visit more than one
+          place (rule 8, assessment hides in the mechanics). */}
       {!hasSubmitted && learningObjectives && learningObjectives.length > 0 && (
         <div className="bg-slate-800 rounded-lg p-4 mb-4">
-          <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-            <span>✏️</span>
-            <span>Check Your Understanding</span>
+          <h4 className="text-white font-semibold mb-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span>✏️</span>
+              <span>{isPreReader ? 'Think About It' : 'Check Your Understanding'}</span>
+            </span>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read these questions to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(learningObjectives.join('. '))}
+            />
           </h4>
           <div className="space-y-3">
             {learningObjectives.map((objective, index) => (
               <div key={index}>
                 <label className="text-slate-300 text-sm mb-2 block">
-                  {index + 1}. {objective}
+                  {isPreReader ? objective : `${index + 1}. ${objective}`}
                 </label>
-                <input
-                  type="text"
-                  value={userAnswers[`q${index}`] || ''}
-                  onChange={(e) =>
-                    setUserAnswers((prev) => ({ ...prev, [`q${index}`]: e.target.value }))
-                  }
-                  className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Type your answer..."
-                />
+                {!isPreReader && (
+                  <input
+                    type="text"
+                    value={userAnswers[`q${index}`] || ''}
+                    onChange={(e) =>
+                      setUserAnswers((prev) => ({ ...prev, [`q${index}`]: e.target.value }))
+                    }
+                    className="w-full bg-slate-700 text-white border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your answer..."
+                  />
+                )}
               </div>
             ))}
           </div>

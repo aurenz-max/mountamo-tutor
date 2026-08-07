@@ -249,6 +249,54 @@ const GRADE_CONFIGURATIONS: Record<string, Partial<DayNightSeasonsData>> = {
 };
 
 // ============================================================================
+// GRADE RESOLUTION
+// ============================================================================
+
+export type DayNightGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Canonical grade → structural rung.
+ *
+ * Closes the 2026-08-04 `14m` prose-grade class on the worst offender in the
+ * astronomy domain (13 single-char comparisons against a prose string). The
+ * rung came from regexing `ctx.gradeContext` — PROSE ("kindergarten students -
+ * Use age-appropriate…") — for /grade\s*(\d|K)/. Kindergarten prose has no
+ * "grade N", so the match failed and the expression fell through to the literal
+ * default `'3'`. Verified by probe at `grade=K` BEFORE the fix: `gradeLevel:'3'`
+ * with `showTiltAxis: true`, 4 location markers and 3 objectives — against a
+ * catalog K rung reading "no tilt axis shown, 2-3 familiar locations, 1-2 simple
+ * questions". `generationContext.ts` states the contract: never parse grade out
+ * of `gradeContext`; read `ctx.grade`.
+ *
+ * NO floor. day-night-seasons is genuinely K-fit — spin the Earth, watch the
+ * light move — so K must reach its own rung.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const dayNightGradeFromGrade = (grade?: string): DayNightGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const dayNightGradeFromProse = (prose?: string): DayNightGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
+// ============================================================================
 // GENERATOR FUNCTION
 // ============================================================================
 
@@ -266,7 +314,13 @@ export const generateDayNightSeasons = async (
 
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and every learning objective/question foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
-  const gradeLevel = config?.gradeLevel || (gradeContext.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as 'K' | '1' | '2' | '3' | '4' | '5';
+  // Canonical-first, prose as fallback. An explicit config override still wins.
+  // `gradeContext` remains what the PROMPT says out loud (audience voice);
+  // `gradeLevel` is the structural rung all 13 comparisons below key off.
+  const gradeLevel: DayNightGrade =
+    (config?.gradeLevel as DayNightGrade | undefined)
+    ?? dayNightGradeFromGrade(ctx.grade)
+    ?? dayNightGradeFromProse(gradeContext);
   const gradeConfig = GRADE_CONFIGURATIONS[gradeLevel] || GRADE_CONFIGURATIONS['3'];
 
   // Determine focus from topic and grade

@@ -313,8 +313,44 @@ queue AND this file's "last touched" in the same slice.
 > `typecheck:lumina` had been run before the jsdom test file was added, so a `/u`-flag regex
 > error in it went unseen; fixed in this slice.)*
 >
-> **Next pull: S10 `day-night-seasons`** (astronomy shape, 13 char-compares — the worst of the
-> remaining), then S11 → S15. 15A (S2–S7) remains queued below.
+> **S10 `day-night-seasons` CLOSED — READY at PRE.** Report
+> `qa/reader-fit/day-night-seasons-PRE-2026-08-06.md`. **The queued verdict was incomplete for
+> the second slice running.** Triage said SCAFFOLD-GAP ("rotate the Earth, watch the light").
+> What was actually on a Kindergarten screen: a **free-text `<input placeholder="Type your
+> answer..."/>`** — PRE rule 6 — and it was the *entire* assessment, **scoring any non-empty
+> string as correct**. A K child who cannot type scored 0; a child who typed "aaa" scored 100.
+> It measured nothing at either end. Fixed: typing removed at K-1 (the questions survive as a
+> spoken 🔊 prompt), `<select>` → tappable emoji place buttons, degree/hours readouts gated,
+> and **scoring moved to the instrument** — spun the Earth, ran it, observed ≥2 places — which
+> is *stricter* at K than what it replaced. Plus the catalog scaffold (9 contextKeys, 5
+> struggles leading with BOTH misconceptions the primitive exists to correct, and a
+> `THE TILT, NOT THE DISTANCE` directive that forbids "closer"/"farther" as a cause *even as a
+> thing to reject in passing* — a young child keeps the phrase and loses the correction).
+> Third defect, predicted and probe-confirmed: the worst prose-grade offender in astronomy
+> (13 char-compares, 0 reads of `ctx.grade`) served **every K rung wrong** — `'3'`,
+> `showTiltAxis:true`, 4 markers, 3 objectives, `timeSpeed:5`.
+> Gates: 12 + 13 tests, **revert-bite 12/25**, src-scoped tsc **803 = baseline zero new**,
+> typecheck:lumina 0, full vitest **1878/1878**, tutor-test Tier 1 `pass`.
+>
+> **A thing NOT shipped, on purpose.** The catalog first carried a `[EARTH_DAY_NIGHT_FLIP]`
+> beat — narrate when the watched place crosses into night. Whether a marker is lit depends on
+> angle conventions in the D3 terminator math that I could not confirm visually this session,
+> and a tutor confidently saying *"now it's night in New York"* over a daylit screen is worse
+> than silence. So `isDaytimeAtMarker` is derived from the SAME expressions the renderer uses
+> for the terminator (it cannot drift from the drawn shadow) and reported only on the
+> jsdom-verifiable `[EARTH_LOCATION_SELECTED]` moment. **`tutor-test` then caught the dead
+> directive tag I had left behind** (`directive-tag-never-emitted`) — rewritten to the tag
+> actually emitted. The reading itself is queued for one pair of eyes at HUMAN-CHECKS #73; if
+> it is inverted the fix is a single `!`.
+>
+> **⚠️ PATTERN, 3 slices for 3: the triage's "SCAFFOLD-GAP — interaction is fine, only the
+> voice is missing" label has understated the work EVERY time.** S8 sat on a grade-blind
+> generator, S9 was drag-only, S10 had typing at Kindergarten. The Class-B risk scores
+> (3–8) were a text-proxy read of the catalog, not an Audit C. **Budget the remaining slices
+> (S11–S15) for a component band-gate pass, not just a catalog block, and run Audit C rather
+> than trusting the triage line.**
+>
+> **Next pull: S11 `solar-system-explorer`**, then S12 → S15. 15A (S2–S7) remains queued below.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

@@ -22,7 +22,79 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   {
     id: 'day-night-seasons',
     description: 'Interactive Earth model showing how rotation creates day/night and how tilted orbit creates seasons. Critical for correcting the common misconception that seasons come from distance to Sun. Students spin Earth to see day/night terminator move, position Earth at different orbital points (equinoxes, solstices), observe how 23.5° tilt affects sunlight angle, place markers at different latitudes, track hours of daylight, and view from multiple perspectives (space north, space side, surface, sun view). Features real-time daylight hour calculations for any latitude, animated rotation and orbital motion, temperature zone visualization (tropical, temperate, polar), and parallel sun ray display. Progressive learning from K (day happens when we spin toward Sun) to Grade 5 (Arctic 24-hour daylight, latitude effects on seasons). D3-powered smooth animations with adjustable time speed. Includes guided questions to check understanding and correct misconceptions. ESSENTIAL for NGSS space science standards, addressing day/night cycle and seasonal patterns.',
-    constraints: 'Best for grades K-5 with distinct learning progressions. K: Focus on day/night only, 2-3 familiar locations, simple questions ("When is it daytime?"), fast animation (8x speed), no tilt axis shown. Grade 1: Day/night emphasis, "Sun doesn\'t move—we do!", 2-3 locations, 7x speed. Grade 2: Introduce both concepts, show tilt axis, 3 locations including equator, both rotation and orbit animation. Grade 3: Seasons focus, emphasize TILT not distance, show hemisphere differences, 3-4 locations with varied latitudes, orbital animation. Grade 4: Both day/night and seasons, equinox vs solstice, temperature zones, 4-5 locations including polar region, complex questions. Grade 5: Advanced concepts (Arctic phenomena, latitude effects), all visual elements enabled, scientific questions. Set focusMode: "day-night" for K-1, "seasons" for 3, "both" for 2,4-5. Use viewPerspective: "space_side" (best for showing tilt). Enable showTiltAxis for grades 2+. Enable showTemperatureZones for grades 4-5 only. Always include markerLatitudes with VARIED latitudes (equator, mid-latitude, polar for 4-5). Initial position should match current season or learning focus. Essential for teaching that seasons are caused by tilt, NOT distance from Sun.'
+    constraints: 'Best for grades K-5 with distinct learning progressions. K: Focus on day/night only, 2-3 familiar locations, simple questions ("When is it daytime?"), fast animation (8x speed), no tilt axis shown. Grade 1: Day/night emphasis, "Sun doesn\'t move—we do!", 2-3 locations, 7x speed. Grade 2: Introduce both concepts, show tilt axis, 3 locations including equator, both rotation and orbit animation. Grade 3: Seasons focus, emphasize TILT not distance, show hemisphere differences, 3-4 locations with varied latitudes, orbital animation. Grade 4: Both day/night and seasons, equinox vs solstice, temperature zones, 4-5 locations including polar region, complex questions. Grade 5: Advanced concepts (Arctic phenomena, latitude effects), all visual elements enabled, scientific questions. Set focusMode: "day-night" for K-1, "seasons" for 3, "both" for 2,4-5. Use viewPerspective: "space_side" (best for showing tilt). Enable showTiltAxis for grades 2+. Enable showTemperatureZones for grades 4-5 only. Always include markerLatitudes with VARIED latitudes (equator, mid-latitude, polar for 4-5). Initial position should match current season or learning focus. Essential for teaching that seasons are caused by tilt, NOT distance from Sun.',
+    tutoring: {
+      taskDescription:
+        'Student is exploring "{{title}}" — an Earth model that shows why we have day and night, and why we have seasons. '
+        + 'Focus: {{focusMode}}. View: {{viewPerspective}}. It is currently {{timeOfDayAtMarker}} at {{primaryLocation}}. '
+        + 'Earth is at {{orbitalPosition}} in its orbit. Animation: {{animationState}}. '
+        + 'They spin Earth with their finger, move it around its orbit, and watch the lit half change.',
+      contextKeys: [
+        'title',
+        'focusMode',
+        'viewPerspective',
+        'gradeLevel',
+        'primaryLocation',
+        'timeOfDayAtMarker',
+        'orbitalPosition',
+        'animationState',
+        'daylightHours',
+      ],
+      scaffoldingLevels: {
+        level1: '"Spin the Earth with your finger and watch the dark part move. What happens to {{primaryLocation}}?"',
+        level2: '"Look at {{primaryLocation}} right now — it is {{timeOfDayAtMarker}} there. Keep spinning and watch it move into the light, then back into the dark."',
+        level3: '"The Sun shines on only one half of Earth at a time, like a flashlight on a ball. The half facing the Sun has day; the half facing away has night. Earth spins all the way around once every day, so every place takes a turn in the light."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student says the Sun moves across the sky / goes down at night',
+          response: '"It really looks that way! But watch the Sun on the screen — it stays still. It is the Earth that is spinning. We are the ones moving, and that is what makes the Sun look like it goes up and down."',
+        },
+        {
+          pattern: 'Student says seasons happen because Earth gets closer to the Sun',
+          response: '"That is the most common idea, and it is not what happens. Look at the orbit — Earth stays about the same distance the whole way around. It is the TILT that matters: the tilted half leaning toward the Sun gets more direct light, and that is summer."',
+        },
+        {
+          pattern: 'Student thinks the whole Earth is dark at night',
+          response: '"Look at the whole ball. Half of it is always lit and half is always dark — at the same time. When it is night where you are, it is daytime for someone on the other side."',
+        },
+        {
+          pattern: 'Student spins the Earth fast without watching what changes',
+          response: '"Stop it right there for a second. Look at {{primaryLocation}}. Is it in the light or in the dark right now?"',
+        },
+        {
+          pattern: 'A pre-reader cannot read the location names, the hour readouts, or the labels',
+          response: '"Never ask them to read. Say the place name for them, and describe what they see in child words — \'it is dark where they live now\', \'now they are turning into the sunshine\'. They spin the Earth with a finger."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the title, the location names, the hour readouts, or any label on this screen. Your voice is the only channel. '
+            + 'When you receive [EARTH_ORIENT], say in one or two warm child-sized sentences that they can spin the Earth with their finger and watch the dark part move. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [EARTH_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, warmly and slowly, then wait. '
+            + 'Never read a number of hours to a pre-reader — say "a long time" or "just a little while" instead.',
+        },
+        {
+          title: 'PLACE NARRATION (stay quiet while they explore)',
+          instruction:
+            'When you receive [EARTH_LOCATION_SELECTED], the student has chosen a place to watch. '
+            + 'The message tells you whether it is DAYTIME or NIGHT there on screen right now. '
+            + 'Say ONE short sentence naming the place and which it is ("Right now it is night-time in New York"). '
+            + 'Do NOT ask a question, do NOT add a fact, and do NOT speak again until another moment fires. '
+            + 'Nothing fires while they are spinning the Earth, so never narrate a moving Earth.',
+        },
+        {
+          title: 'THE TILT, NOT THE DISTANCE',
+          instruction:
+            'This primitive exists largely to correct one misconception: that seasons come from Earth being closer to or further from the Sun. '
+            + 'Whenever seasons come up, anchor on the TILT. Never say "closer" or "farther" as a cause, even loosely, even as a thing to reject in passing — '
+            + 'a young child remembers the phrase and loses the correction.',
+        },
+      ],
+    },
   },
   {
     id: 'moon-phases-lab',
