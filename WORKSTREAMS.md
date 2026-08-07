@@ -17,7 +17,81 @@ queue AND this file's "last touched" in the same slice.
 | PARKED | intentionally idle; queue trusted only as of the noted date |
 | BLOCKED | waiting on a named dependency |
 
-## Current snapshot — reconciled 2026-08-06 (**RE-PRIORITIZATION — the build pivot died on its own fit check**)
+## Current snapshot — reconciled 2026-08-07 (**a clean-tree reconcile: no drift in the queues, real drift in the two INDEXES**)
+
+| Lane | State | Pull now | Trusted as of |
+|---|---|---|---|
+| **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | ~~15A S4 `story-planner`~~ **CLOSED 2026-08-07, READY at PRE** (report `qa/reader-fit/story-planner-PRE-2026-08-07.md`). Next: **15A S5 `bio-compare-contrast`** (the defect is at the CALL SITE — a parameter defaulting to `'3-5'`; import `service/biology/gradeBand.ts`, do not write a fifth copy) → S6 `species-profile` → S7 `mission-planner`. **⚠️ S4's scope lesson: the "generator already canonical" prediction was RIGHT, but "component + scaffold only" was WRONG — at K the primitive had nothing to CHOOSE from, and only the generator can close a content gap.** Check what the child would actually DO before scoping a slice. Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
+| **Direct Instruction family** | **ACTIVE** | Machine side: the di-shapes ladder (`/curriculum-fit` probe → L1 `count_sides`) and **CTX-1** (item 13, the tutor-quality top). Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (now ACCEPTANCE, unblocked) + #72 (di-shapes L0)**. | 2026-08-06 |
+| Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, **serial, one primitive per slice**, appending the report + striking per item. | 2026-08-04 |
+| **LA K-2 Grammar density** | **PARKED 2026-08-07 (was ACTIVE) — blocked on a user DESIGN RULING, not on code** | Its queue top is item **1b `in_front_of`/`behind`**, which the lane itself records as *"a DESIGN RULING, not code"* — viewer-relative is ambiguous with above/below in a top-down grid, a rule-#1 hazard. Nothing machine-gated sits above it. **If resumed, the buildable pulls are item 2b** (the `identify` hint hands over the answer, 2 of 3 hints — tracker SS-5) **or item 4** (`word-sorter` K picture-pair, 3 subskills). | 2026-08-05 |
+| Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Confirmed this run: all three are real rows in `qa/EVAL_TRACKER.md` (`:530-532`), not memory-only. DNA-1 is a **measured, month-old, unfixed answer leak** (6/10 generations). Rides as the +1 the moment support-tiers closes or the sweep pauses. | 2026-08-07 |
+| Delegated lane | NONE | — | 2026-08-07 |
+
+> **Ground truth: the working tree is CLEAN.** Nothing uncommitted, so there is no
+> `/ship` slicing to propose — the last three slices (`1ad319f`, `6dc3160` and the
+> handoff `1eaff23`) each shipped with their own report and their own queue strike.
+> That is the discipline working; the 08-06 snapshot's item-12 ship-hygiene warning
+> is fully retired.
+>
+> **The queues were TRUTHFUL — I found no recorded-open-but-actually-done and no
+> inverse.** `qa/reader-fit/BACKLOG.md` had already struck S2 and S3, named S4 as
+> next, and recorded the two corrections those slices produced. That is worth
+> stating plainly because it is the failure mode `/pm` exists to catch, and this
+> run did not catch it.
+>
+> **Drift #1 — `HUMAN-CHECKS.md` #73 was scoped to 3 primitives while 10 slices
+> pointed at it. FIXED this run.** Every one of the eight 15B slices plus 15A's S2
+> and S3 recorded "no Tier-3 live audio run → HUMAN-CHECKS #73". The row itself was
+> written after S10 and still named only `moon-phases-lab`, `classification-sorter`
+> and `day-night-seasons`. **The consequence was concrete, not cosmetic:** a user
+> walking the list would have driven three primitives, struck the row, and silently
+> discarded the live-audio debt for five more — and the whole point of these ten
+> slices was giving mute primitives a voice, so the *only* evidence that matters is
+> someone hearing them. #73 now covers all eight 15B slices; **#74 is new** for the
+> 15A pair, kept separate because its open questions are visual rather than audible
+> (chiefly: `orbit-mechanics-lab`'s 🐢 "too slow" outcome draws an arc of ~51 km,
+> **under one pixel** at this scale, so a K child may not be able to tell it apart
+> from nothing happening). Next free ID = 75.
+>
+> **Drift #2 — the reader-fit stream was being WORKED while the `## ACTIVE` body
+> still labelled it "PARKED — queue DRAINED". FIXED this run.** The 08-06 and 08-07
+> snapshots above correctly describe the supply-side sweep as ACTIVE and top-slot,
+> but a cold reader who scrolled past the narrative into `## ACTIVE` found LA K-2
+> Grammar in slot 1 and reader-fit marked parked-and-drained — the exact defect this
+> file called out on 2026-08-05 for the grammar lane, recurring in the other
+> direction. **Snapshot prose is not the index.** A stream is ACTIVE in the `##
+> ACTIVE` body or it is not ACTIVE.
+>
+> **WIP was at 3 ACTIVE + 1; now back to 2 + 1.** Reader-fit (08-07) and DI (08-06)
+> are both genuinely moving. **LA K-2 Grammar is PARKED** — not for staleness, but
+> because its top item is a design ruling the user has to make, so it is *blocked*
+> rather than merely idle, and parking it is honest about that. Its two buildable
+> alternates are named above so resuming costs nothing.
+>
+> **One portfolio decision is owed and cannot be resolved by a slice.** Three of the
+> eight 15B primitives — `solar-system-explorer`, `scale-comparator`, `organism-card`
+> — have **no evaluation hook at all**. They are pure instruments, so band-contract
+> rule 8 is N/A rather than passing. Either they get `/add-eval-modes`, or they are
+> declared exploration-only **so the manifest stops routing assessment demand at
+> them**. Leaving it undecided is the bad outcome: today they can be selected to
+> carry an objective they structurally cannot measure.
+>
+> **Recorded for the executor, from the 08-07 slices — three findings that change
+> how the remaining sweep is worked:**
+> **(a) Probe the NEIGHBOURING grade, not just K.** S2's generator was clean at K on
+> the happy path and returned **Grade 3 content for a Grade 1 ask**. A K-only probe
+> would have declared it clean.
+> **(b) Drive the generator, not its helpers.** S3's first three revert-bites did not
+> bite, because the tests only covered the exported pure helpers and not the
+> generator's *use* of them. Stub `../geminiClient` and drive the real generator with
+> a reply that OMITS every grade-shaped field — the only way to cover a degrade path,
+> and both S3 and S11 had defects that live *only* there.
+> **(c) Do NOT generalise S2's lexical-compare bug without biting it.** S3's ordinal
+> rewrite was first framed as the same defect by analogy; it was not, and the
+> revert-bite proved it (0 failures). `'K' > '3'` is what made S2 different.
+
+## Prior snapshot — reconciled 2026-08-06 (**RE-PRIORITIZATION — the build pivot died on its own fit check**)
 
 > **`/pm` 2026-08-06 (latest) — the user's read: *"feels like we don't have high impact work
 > other than DI… feels like we were going through `/reader-fit` but then stopped, this may be
@@ -859,7 +933,99 @@ than its as-of date carries unfolded browser debt.
 
 ## ACTIVE
 
-### 1. LA K-2 Grammar density — TOP SLOT (user-pulled 2026-08-05) — last touched **2026-08-05**
+### 1. Reader-fit supply-side sweep (item 15) — TOP SLOT — last touched **2026-08-07**
+
+*Section authored by `/pm` 2026-08-07. **This lane had been running for two days
+with no entry in the `## ACTIVE` body at all** — it existed only in the snapshot
+narrative, while the body below still showed it as "PARKED — queue DRAINED". Same
+defect the grammar lane hit on 08-05, in the opposite direction. A cold reader
+starting at `## ACTIVE` was being sent to the wrong stream.*
+
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` **item 15** (top = next).
+  **Handoff of record:** `qa/HANDOFF-reader-fit-2026-08-07.md` — a fresh session can
+  take S4 from that file alone. The **08-06 handoff's anchors are STALE**: 15B's
+  tutoring blocks shifted every catalog id, and the 08-07 handoff re-derived them.
+- **Executor skills:** `/reader-fit [--fix]`, then `/add-tutoring-scaffold` where the
+  channel is missing. **Not** `/add-eval-modes` — that is a different lifecycle layer
+  and is explicitly out of scope for a reader-fit slice.
+- **What this lane is.** Not a demand census. A **supply-side** enumeration of the
+  live catalog: **196 entries → 118 K-selectable → 28 audited → 90 never audited**.
+  The top risk band collapsed from "90 audits" to ONE verified class — **26
+  K-claiming primitives can reach a non-reader through NO channel at all** (no
+  catalog `tutoring` block, no component `useLuminaAI`/`sendText`), so the tutor is
+  handed the literal string *"No specific scaffolding instructions for this primitive
+  type."* (`lumina_tutor.py:385`). PRE contract rule #1 fails before a single string
+  is read. **11 of the 26 are already owned** by
+  `qa/engineering-tutoring-scaffold/BACKLOG.md` Phase A — confirmed, not re-filed.
+  The unowned 15 are item 15.
+- **Progress: 10 of 15 CLOSED.** 15B is **complete, 8/8, all READY at PRE**
+  (S8–S15). 15A is at **S3 of 7** (S1 `telescope-simulator`, S2
+  `orbit-mechanics-lab`, S3 `rocket-builder`). Every slice shipped with its own
+  report under `qa/reader-fit/` and its own commit.
+- **NEXT = 15A S4 `story-planner`.** Its generator is **already canonical — do NOT
+  "fix" it**; audit the component and scaffold only. Then S5 `bio-compare-contrast`
+  (whose defect is at the **call site** — a function parameter defaulting to
+  `'3-5'`, a fourth grade-blindness shape) → S6 `species-profile` → S7
+  `mission-planner`. **After 15A:** audit `planetary-explorer` +
+  `constellation-builder` — they are not in item 15 because they each *have* a
+  channel, but S1's floor and 15B's fixes pushed K astronomy demand squarely onto
+  them, so they are the most likely site of the next real K failure.
+- **⚠️ STRATEGY RULING (user, 2026-08-07, mid-S2) — band floors are a LAST RESORT.**
+  *"i dont like band floor method, like if lumina routes to a certain primitive, its
+  okay to use it and we should make it age friendly?"* A floor removes a K failure by
+  removing the primitive, which shrinks supply at the band with the **least content**
+  (CLAUDE.md #3). The fix for a band failure is a component pass that makes the
+  primitive work at that band. WRONG-BAND is legitimate only when the core act cannot
+  exist at the band at all AND another primitive already covers the objective — and
+  even then, design the band-appropriate interaction first and say what it would be.
+  Corroborated live, not merely accepted: a real `topic-trace` on *"Things that go
+  around and around in space"* @ K **selected `orbit-mechanics-lab`**, so a floor
+  would have deleted a card the curator actively wanted.
+  **S1's Grade-2 floor shipped under the old theory and is now a REVISIT CANDIDATE,
+  not a precedent.** Recorded as [[feedback_make-age-friendly-not-band-floor]].
+- **⚠️ The triage label has understated the work 10 times out of 10.** "SCAFFOLD-GAP
+  — the interaction is fine, only the voice is missing" was true of the *core
+  mechanic* every time and false about the *screen* every time. **Every one of the 8
+  15B slices also sat on a grade-resolution defect**, which means the queued scaffold
+  fix alone would have shipped **inert** in all of them: the component band-gates on
+  `data.gradeLevel`, so a generator that can never emit `'K'` makes `isPreReader`
+  dead code and yields a green report over an unchanged child experience.
+  **Budget every remaining slice for a component pass and probe at the band before
+  writing anything.** A supply-side triage read from catalog text cannot see chrome,
+  protocol, or a grade-blind generator.
+- **⚠️ Two different grade-blindness mechanisms, and they do NOT share a grep.**
+  Astronomy uses regex `/grade\s*(\d|K)/` over prose `ctx.gradeContext`; biology uses
+  `gradeBandMap[ctx.gradeContext]`, a map keyed on grade tokens but indexed with
+  prose. Identical signature, different code. `bio-compare-contrast` (S5) has a third
+  shape at the call site. Probe each primitive at `grade=K` first.
+- **⚠️ Do NOT gate on the absolute `tsc` count in this lane.** It read 805 → 806 →
+  807 on an unchanged tree: `.next/types/app/**` is in the tsc program and the dev
+  server these probes require regenerates it. **Gate on the `src/`-scoped error SET
+  diff** (`comm -13 baseline current`).
+- **Open across the lane:** no Tier-3 live audio run on any of the 10 → **HUMAN-CHECKS
+  #73** (the eight 15B slices) + **#74** (the 15A pair, opened `/pm` 2026-08-07).
+  **All 10 still have 0 eval modes.** And the portfolio decision named in the
+  snapshot: `solar-system-explorer`, `scale-comparator` and `organism-card` have **no
+  evaluation hook at all** — decide `/add-eval-modes` vs. declared exploration-only,
+  because today the manifest can route assessment demand at instruments that cannot
+  measure it.
+- **Scope fence — do not creep.** Don't re-run the census. Don't re-file engineering
+  Phase A's 11. Don't add eval modes inside a reader-fit slice. Don't fix
+  `planetary-explorer`/`constellation-builder` inside a 15A slice — audit them as
+  their own items. Don't "fix" `story-planner`'s grade resolution; it is correct.
+  The other ~64 unaudited K-selectable entries have at least one channel and are
+  deliberately NOT queued ([[feedback_qa-is-a-gate-not-a-census]]).
+- Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).
+
+### (PARKED 2026-08-07 by `/pm` — BLOCKED on a user design ruling, not idle; queue trusted as of 2026-08-05) LA K-2 Grammar density — was TOP SLOT (user-pulled 2026-08-05) — last touched **2026-08-05**
+
+*Parked because its queue top — item 1b `in_front_of`/`behind` — is a **DESIGN
+RULING, not code** (viewer-relative is ambiguous with above/below in a top-down
+grid, a rule-#1 hazard), and nothing machine-gated sits above it. This is a block,
+not neglect. **Resuming costs nothing:** the buildable alternates are item **2b**
+(the `identify` hint hands over the answer in 2 of 3 hints — tracker SS-5) and item
+**4** (`word-sorter` K picture-pair, 3 subskills). Everything below is unchanged and
+trustworthy as of 08-05.*
 
 *Section authored by `/pm` 2026-08-05 (2nd pass). The lane was opened, seeded, piloted and
 re-probed all on 08-05 but existed only as a snapshot-table row — a cold reader following the
@@ -950,7 +1116,7 @@ re-probed all on 08-05 but existed only as a snapshot-table row — a cold reade
   If the ruling isn't wanted now, the buildable pulls are **item 2b** (hint/dead-field
   decision, small, same primitive) or **item 4** (`word-sorter` K picture-pair, 3 subskills).
 
-### (PARKED 2026-08-05 — queue DRAINED; kept in place as the history record, not an ACTIVE pull) Reader-fit K → EMERGING queue — last touched **2026-08-05** (**§14l CLOSED 2026-08-05 — flashcard-deck final-assessment scope/count binding.** The requested count and the taught-concept scope both lived in **intent prose**; `config.cardCount` is stamped by no manifest producer anywhere in the repo, so a "10 simple review cards" ask fell through to `defaultCount` 15 while the prompt's own rules invited expansion and the `cards` schema array was unbounded. New `service/flashcard-deck/resolveDeckRequest.ts` applies the 14h resolver template to a non-numeric axis — one temperature-0 structured call yielding `{requestedCount, isReview, taughtConcepts[]}`, never a regex. Binding is a **constraint-presence fork** (14j's shape, contract C1) so generic open-study decks stay byte-identical at 15; under a review scope the two expansion-inviting rules invert and a TAUGHT CONCEPTS block forbids new vocabulary, with code comparing count-vs-concepts so surplus cards revisit angles rather than pad. Schema array bound to the resolved count + post-parse slice; `buildGradeLine(ctx.grade)` threads canonical grade. **Contract C2 ruled: the K 6-card cap wins over a requested count at PRE** — a developmental load rule, deliberately narrow, with R8 still forbidding new caps elsewhere. Live: G1 census replay **exactly 10** cards with zero untaught vocabulary (no patent/prototype/Internet/medicine); the **K community-helpers census instance closed as a rider**; G5 generic control unchanged at 15; K PRE control 6 cards / 6 distinct emojis; tutor probe 0 findings. Contract derived same slice (9 R, 2 conflicts, **zero authored-map consumers — every consumer is manifest-emergent, mostly the finalAssessment slot**), `--check` **COMPATIBLE**; catalog `constraints` padding invitation removed. Focused 20/20 with revert-bite (10 fail pre-fix), full Vitest **1,589/1,589**, typecheck:lumina 0, tsc 803 baseline. Anchor correction recorded: the generator is `gemini-flashcard.ts`, not the `gemini-flashcard-deck.ts` the queue and both censuses name. Reports `qa/reader-fit/flashcard-deck-14l-2026-08-05.md` + `qa/primitive-contracts/flashcard-deck-check-2026-08-05.md`. **NEXT = re-read the §14 pull order; the EMERGING census is drained except 14g's DI-owned half.** Prior day: **§14m CLOSED 2026-08-04 — the FULL SWEEP shipped in one slice: 20 generators** (hundreds-chart/14i's hard `?? '2'` + the six K-2/elementary prose resolvers + coin-counter/14c per contract gap G2 + 12 chemistry incl. `matter-explorer`, an inline-resolver census under-count found in-flight) **now resolve canonical-first** — exported per-generator mapper over `ctx.grade`, legacy prose/default fallback kept everywhere, explicit `config.gradeBand` pins still outrank. **The chemistry "may not bite" guess was WRONG in the published band**: safety-lab sent K to 6-8 off the '6' in the kindergarten prose "(ages 5-6)"; states-of-matter/reaction-lab sent published G1/G2 to 3-5 — verified, fixed, probed (K→K-2, G1→K-2, G2→K-2). Where the LLM stamped `gradeBand` via schema (fraction-circles + 6 chemistry) code now stamps the band when a canonical grade exists. Headline probe wins: fraction-circles G1 dens ≤4 (was ≤12), timeline-builder G2/G4/G7 reach 2-3/4-5/6-8 (all previously unreachable), coin-counter G2 drew a **half-dollar** (`MEAS002-05` pool live for the first time), hundreds-chart G4 → [3,4,6,7,8]. Gates: 43 new tests / 7 suites with revert-bite per generator, typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400, 21 real-Gemini probes. Reports `qa/reader-fit/14m-sweep-2026-08-04.md` + `qa/reader-fit/hundreds-chart-14i-2026-08-04.md`. 14i's intent-focus half measured IN-DESIGN (6/7 on named intervals); its 120-grid capability half stays open (fork territory). NEXT by pull order = **14h number-sequencer** → 14j → 14k/14l. Prior day: **§14m PILOT DONE 2026-08-03 (evening): number-line ships the canonical-grade-first template — contract-first (`docs/contracts/number-line.md` derived, 12 R, C1 OPEN → 14k), `--check` COMPATIBLE, focused wiring tests 7/7 with revert-bite, typecheck:lumina 0 / tsc 803-baseline / full vitest 1327/1327, 10 real-Gemini eval-test probes incl. `grade=4 → 3-5/decimal` — the FIRST runtime 3-5 render on the ctx path — and `grade=1 → K-2` for all 8 authored G1 consumers. PREMISE CORRECTION recorded for the sweep: production passes grade-context PROSE and every production sentence matched the old K-2 substring test ("grades 1-5" has a `1`, "thinking" has a `k`), so the live defect was EVERYTHING-lands-K-2 / 3-5 unreachable — not G1→3-5; verify each sweep target's actual input string before predicting direction. 14k replay measured honestly: band fixed, 14k STAYS OPEN with mechanism pinned into contract C1 (K-2 ≤30 clamp vs authored ≤120 + uniform pool-window placement + any-interior accept — fork required). **Committed `dcfaac7`** (slice-only; the concurrent DI session's in-flight files left for its own commit). Report `qa/reader-fit/number-line-14m-2026-08-03.md`; check report `qa/primitive-contracts/number-line-check-2026-08-03.md`. NEXT = the 14m SWEEP: hundreds-chart (14i, the `?? '2'` shape) → sorting-station / number-tracer / fraction-circles / shape-composer / net-folder / timeline-builder → coin-counter (14c rides) → 11 chemistry last (verify the defect bites first). Earlier same day: §14f DONE & SHIPPED `7ba48ba`.** Pilot swapped off coin-counter by user ruling 08-03: the first version named coin-counter because its contract already documented the defect as gap G2 — i.e. it was the *cheapest* pull, not the highest-leverage one. That is the trap the user named — a heavily-worked primitive keeps winning pulls because prior work makes each next item cheap, regardless of demand (coin-counter routes **3** across both censuses yet had consumed 2 build slices + 2 contract checks + 2 human-check rows). number-line carries real census demand via **14k** and its defect is confirmed at `gemini-number-line.ts:890` — `elementary` prose contains no 'k'/'1'/'2', so a Grade-1 objective lands on the `3-5` band and the range resolver then falls back to grade-band defaults. Cost accepted honestly: number-line has no contract, so contract-first adds work coin-counter would not have needed — paying it once is the point. See [[feedback_worked-primitives-self-select]])
+### (PARKED 2026-08-05 — queue DRAINED; kept in place as the history record, not an ACTIVE pull. **⚠️ `/pm` 2026-08-07: this is NOT the active reader-fit lane — see stream 1 above.** This row is the *demand-side* K → EMERGING census queue, §14a–14m, which genuinely drained on 08-05. The ACTIVE lane is the *supply-side* sweep, BACKLOG item 15, seeded from a live-catalog enumeration rather than a demand sample. Two different queues in the same file; reading "reader-fit is parked" off this heading is the mistake that made `/pm` under-scope the band on 08-06.) Reader-fit K → EMERGING queue — last touched **2026-08-05** (**§14l CLOSED 2026-08-05 — flashcard-deck final-assessment scope/count binding.** The requested count and the taught-concept scope both lived in **intent prose**; `config.cardCount` is stamped by no manifest producer anywhere in the repo, so a "10 simple review cards" ask fell through to `defaultCount` 15 while the prompt's own rules invited expansion and the `cards` schema array was unbounded. New `service/flashcard-deck/resolveDeckRequest.ts` applies the 14h resolver template to a non-numeric axis — one temperature-0 structured call yielding `{requestedCount, isReview, taughtConcepts[]}`, never a regex. Binding is a **constraint-presence fork** (14j's shape, contract C1) so generic open-study decks stay byte-identical at 15; under a review scope the two expansion-inviting rules invert and a TAUGHT CONCEPTS block forbids new vocabulary, with code comparing count-vs-concepts so surplus cards revisit angles rather than pad. Schema array bound to the resolved count + post-parse slice; `buildGradeLine(ctx.grade)` threads canonical grade. **Contract C2 ruled: the K 6-card cap wins over a requested count at PRE** — a developmental load rule, deliberately narrow, with R8 still forbidding new caps elsewhere. Live: G1 census replay **exactly 10** cards with zero untaught vocabulary (no patent/prototype/Internet/medicine); the **K community-helpers census instance closed as a rider**; G5 generic control unchanged at 15; K PRE control 6 cards / 6 distinct emojis; tutor probe 0 findings. Contract derived same slice (9 R, 2 conflicts, **zero authored-map consumers — every consumer is manifest-emergent, mostly the finalAssessment slot**), `--check` **COMPATIBLE**; catalog `constraints` padding invitation removed. Focused 20/20 with revert-bite (10 fail pre-fix), full Vitest **1,589/1,589**, typecheck:lumina 0, tsc 803 baseline. Anchor correction recorded: the generator is `gemini-flashcard.ts`, not the `gemini-flashcard-deck.ts` the queue and both censuses name. Reports `qa/reader-fit/flashcard-deck-14l-2026-08-05.md` + `qa/primitive-contracts/flashcard-deck-check-2026-08-05.md`. **NEXT = re-read the §14 pull order; the EMERGING census is drained except 14g's DI-owned half.** Prior day: **§14m CLOSED 2026-08-04 — the FULL SWEEP shipped in one slice: 20 generators** (hundreds-chart/14i's hard `?? '2'` + the six K-2/elementary prose resolvers + coin-counter/14c per contract gap G2 + 12 chemistry incl. `matter-explorer`, an inline-resolver census under-count found in-flight) **now resolve canonical-first** — exported per-generator mapper over `ctx.grade`, legacy prose/default fallback kept everywhere, explicit `config.gradeBand` pins still outrank. **The chemistry "may not bite" guess was WRONG in the published band**: safety-lab sent K to 6-8 off the '6' in the kindergarten prose "(ages 5-6)"; states-of-matter/reaction-lab sent published G1/G2 to 3-5 — verified, fixed, probed (K→K-2, G1→K-2, G2→K-2). Where the LLM stamped `gradeBand` via schema (fraction-circles + 6 chemistry) code now stamps the band when a canonical grade exists. Headline probe wins: fraction-circles G1 dens ≤4 (was ≤12), timeline-builder G2/G4/G7 reach 2-3/4-5/6-8 (all previously unreachable), coin-counter G2 drew a **half-dollar** (`MEAS002-05` pool live for the first time), hundreds-chart G4 → [3,4,6,7,8]. Gates: 43 new tests / 7 suites with revert-bite per generator, typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400, 21 real-Gemini probes. Reports `qa/reader-fit/14m-sweep-2026-08-04.md` + `qa/reader-fit/hundreds-chart-14i-2026-08-04.md`. 14i's intent-focus half measured IN-DESIGN (6/7 on named intervals); its 120-grid capability half stays open (fork territory). NEXT by pull order = **14h number-sequencer** → 14j → 14k/14l. Prior day: **§14m PILOT DONE 2026-08-03 (evening): number-line ships the canonical-grade-first template — contract-first (`docs/contracts/number-line.md` derived, 12 R, C1 OPEN → 14k), `--check` COMPATIBLE, focused wiring tests 7/7 with revert-bite, typecheck:lumina 0 / tsc 803-baseline / full vitest 1327/1327, 10 real-Gemini eval-test probes incl. `grade=4 → 3-5/decimal` — the FIRST runtime 3-5 render on the ctx path — and `grade=1 → K-2` for all 8 authored G1 consumers. PREMISE CORRECTION recorded for the sweep: production passes grade-context PROSE and every production sentence matched the old K-2 substring test ("grades 1-5" has a `1`, "thinking" has a `k`), so the live defect was EVERYTHING-lands-K-2 / 3-5 unreachable — not G1→3-5; verify each sweep target's actual input string before predicting direction. 14k replay measured honestly: band fixed, 14k STAYS OPEN with mechanism pinned into contract C1 (K-2 ≤30 clamp vs authored ≤120 + uniform pool-window placement + any-interior accept — fork required). **Committed `dcfaac7`** (slice-only; the concurrent DI session's in-flight files left for its own commit). Report `qa/reader-fit/number-line-14m-2026-08-03.md`; check report `qa/primitive-contracts/number-line-check-2026-08-03.md`. NEXT = the 14m SWEEP: hundreds-chart (14i, the `?? '2'` shape) → sorting-station / number-tracer / fraction-circles / shape-composer / net-folder / timeline-builder → coin-counter (14c rides) → 11 chemistry last (verify the defect bites first). Earlier same day: §14f DONE & SHIPPED `7ba48ba`.** Pilot swapped off coin-counter by user ruling 08-03: the first version named coin-counter because its contract already documented the defect as gap G2 — i.e. it was the *cheapest* pull, not the highest-leverage one. That is the trap the user named — a heavily-worked primitive keeps winning pulls because prior work makes each next item cheap, regardless of demand (coin-counter routes **3** across both censuses yet had consumed 2 build slices + 2 contract checks + 2 human-check rows). number-line carries real census demand via **14k** and its defect is confirmed at `gemini-number-line.ts:890` — `elementary` prose contains no 'k'/'1'/'2', so a Grade-1 objective lands on the `3-5` band and the range resolver then falls back to grade-band defaults. Cost accepted honestly: number-line has no contract, so contract-first adds work coin-counter would not have needed — paying it once is the point. See [[feedback_worked-primitives-self-select]])
 - **14h CLOSED 2026-08-04:** number-sequencer blend + scoped Grade-1 120 fidelity is
   contract-first and runtime-verified; generic ≤100 preserved; all five modes PASS;
   full Vitest 1406/1406. Report `qa/reader-fit/number-sequencer-14h-2026-08-04.md`.

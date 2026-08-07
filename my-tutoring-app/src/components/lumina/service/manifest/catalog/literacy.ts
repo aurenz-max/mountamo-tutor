@@ -1656,6 +1656,98 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'theme_craft', label: 'Theme & Craft (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['theme_craft'], description: 'Weave theme, dialogue, and craft into the plan.' },
     ],
     supportsEvaluation: true,
+    tutoring: {
+      taskDescription:
+        'Student is planning a story called "{{title}}". The story idea is: {{writingPrompt}}. '
+        + 'They are on the {{plannerPhase}} step. Their plan so far: {{chosenSummary}}. '
+        + 'The parts of the story are: {{arcLabels}} ({{arcFilledCount}} of {{arcSlotCount}} filled in). '
+        + 'At grade band {{gradeBand}}. At K-1 they cannot read or type: they are asked one question at a '
+        + 'time ("{{currentQuestion}}") and tap one of three pictures ({{currentChoiceLabels}}), then tap '
+        + 'event pictures ({{arcTrayLabels}}) into numbered slots to put the story in order. '
+        + 'At grade 2 and up they type their own plan into cards and then the story arc.',
+      contextKeys: [
+        'title',
+        'writingPrompt',
+        'gradeBand',
+        'plannerPhase',
+        'currentQuestion',
+        'currentChoiceLabels',
+        'chosenSummary',
+        'arcLabels',
+        'arcTrayLabels',
+        'arcFilledCount',
+        'arcSlotCount',
+      ],
+      scaffoldingLevels: {
+        level1: '"This is your story — you get to decide. What do you think happens?"',
+        level2: '"Think about the story idea: {{writingPrompt}}. Which of these feels like it belongs in YOUR story?"',
+        level3: '"Let us go one piece at a time. I will say each picture out loud, and you pick the one you like. Then we will think about which one happens first."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student stalls at the first question because they think there is a right answer',
+          response: '"There is no right answer here — this is your story, so any of them works. Pick the one that sounds most fun to you."',
+        },
+        {
+          pattern: 'Student taps event pictures into slots at random without thinking about order',
+          response: '"Think about which one could only happen at the very start — before anything else has happened yet. Put that one first."',
+        },
+        {
+          pattern: 'Student puts the ending first because it is the picture they like best',
+          response: '"That is a great one to end with! Something has to happen before it, though. What would happen first, to get there?"',
+        },
+        {
+          pattern: 'Student cannot remember what the pictures are because they cannot read the words',
+          response: '"Let me say them again for you." Then describe each picture out loud, slowly, one at a time. Never ask them to read.',
+        },
+        {
+          pattern: 'A grade 2+ student writes one or two words into a planning card and moves on',
+          response: '"Tell me more about that. What do they look like, or how do they feel? Add that to your card so your reader can picture it too."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'At {{gradeBand}} K-1 the student CANNOT read the story idea, the question, the picture captions, or the '
+            + 'slot labels. Your voice is the only channel that carries them. '
+            + 'When you receive [STORY_ELEMENT_ASKED], first read the story idea aloud word for word if the message '
+            + 'gives it to you, then ask the question, then say each of the three picture choices out loud so they '
+            + 'know what they can pick. Reading and saying these IS your greeting — this OVERRIDES any instruction '
+            + 'to keep it to one sentence or to be brief. '
+            + 'When you receive [STORY_PLAN_READ_ALOUD], read aloud, word for word, exactly the text the message '
+            + 'gives you, then wait. '
+            + 'When you receive [STORY_ARC_STARTED], describe each event picture out loud so a non-reader knows what '
+            + 'they are holding. '
+            + 'Never ask a K-1 student to read anything, to type, or to spell. Never say a number of points, a score, '
+            + 'or how many they have left.',
+        },
+        {
+          title: 'THE STORY IS THEIRS — NEVER PLAN IT FOR THEM',
+          instruction:
+            'Picking a character or a place has NO right answer, so never steer, never praise one option over '
+            + 'another, and never say "good choice" in a way that implies the others were worse. '
+            + 'When you receive [STORY_ELEMENT_CHOSEN], say their pick back warmly in a few words and stop — do not '
+            + 'add a follow-up question, and do not start narrating the story on their behalf. '
+            + 'When you receive [STORY_PLAN_ORIENT] (grade 2 and up), welcome them and point them at the first card; '
+            + 'do not suggest what to write in it. '
+            + 'When you receive [STORY_PLAN_COMPLETE], tell their story back to them using ONLY the pieces they '
+            + 'actually chose, then celebrate. Do not add plot they did not pick, and do not correct anything.',
+        },
+        {
+          title: 'ORDER IS THE ANSWER — NEVER GIVE IT AWAY',
+          instruction:
+            'Putting the event pictures in story order is the thing being assessed. The correct order is NOT in your '
+            + 'context and you must never guess it aloud. '
+            + 'Do not say which picture goes first, last, or in any numbered slot; do not say a slot is empty in a way '
+            + 'that names what belongs there; and do not rule options out, because eliminating is the same as telling. '
+            + 'When you receive [STORY_EVENT_PLACED], name what they placed and where they put it, and STOP — never '
+            + 'say whether it is right or wrong, and never react differently to a right one than a wrong one. '
+            + 'To help, ask what could only happen before anything else, or what could only happen at the very end. '
+            + 'Questions about the story are always allowed; statements about the order are not.',
+        },
+      ],
+    },
   },
   {
     id: 'opinion-builder',

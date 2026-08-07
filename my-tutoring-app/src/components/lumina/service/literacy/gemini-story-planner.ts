@@ -9,6 +9,10 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import {
+  STORY_PLANNER_PICTURE_BAND,
+  STORY_PLANNER_MAX_CHOICES,
+} from './storyPlannerBand';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -70,11 +74,21 @@ const storyPlannerSchema: Schema = {
           label: { type: Type.STRING, description: "Element name: Character, Setting, Problem, Solution, Theme, etc." },
           prompt: { type: Type.STRING, description: "Student-facing question/prompt for this element" },
           required: { type: Type.BOOLEAN },
+          choices: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "GRADES K-1 ONLY. Exactly 3 picture-choice options a non-reader can pick between. Each MUST begin with one emoji, then a space, then 2-4 plain words. There is no right answer — all 3 are valid story choices. Omit entirely for grade 2 and above.",
+          },
         },
         required: ["elementId", "label", "prompt", "required"]
       }
     },
     storyArcLabels: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Labels for the story arc phases" },
+    arcEvents: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "GRADES K-1 ONLY. One short event per storyArcLabels entry, IN STORY ORDER (same length and order as storyArcLabels). Each MUST begin with one emoji, then a space, then 3-8 plain words. These are shuffled before the student sees them and re-ordered by them, so the events must only make sense in this one order. Omit entirely for grade 2 and above.",
+    },
     conflictTypes: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Conflict type options for grades 4+" },
     dialoguePrompt: { type: Type.STRING, description: "Dialogue writing guidance for grades 3+" },
   },
@@ -122,6 +136,13 @@ export const generateStoryPlanner = async (
     gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '3';
   }
 
+  // K-1 is the picture band: the student can neither read the prompts nor type
+  // an answer, so the plan is assembled by TAPPING pictures. That needs pickable
+  // content, which only the generator can supply — a component-only fix would
+  // leave a non-reader staring at empty compose fields. Grade 2+ is untouched:
+  // no `choices`, no `arcEvents`, the original free-text planner.
+  const isPictureBand = STORY_PLANNER_PICTURE_BAND.includes(gradeLevelKey);
+
   const gradeNotes: Record<string, string> = {
     'K': 'K: 2 elements (Character, What Happened). 2-arc (Beginning, End). No conflict types. No dialogue.',
     '1': 'Grade 1: 3 elements (Character, Setting, What Happened). 3-arc (Beginning, Middle, End). No conflict types.',
@@ -144,6 +165,12 @@ Generate:
 4. ${parseInt(gradeLevelKey) >= 4 ? 'Include 3-4 conflictTypes' : 'No conflictTypes needed unless the focus is conflict_resolution'}
 5. ${parseInt(gradeLevelKey) >= 3 ? 'Include a dialoguePrompt' : 'No dialoguePrompt needed unless the focus is theme_craft'}
 ${evalConstraint ? `6. Set planningFocus to "${evalConstraint.allowedTypes[0]}" and make the required elements, prompts, arc labels, conflictTypes, and dialoguePrompt reflect that focus — without ever stating the answer or naming the eval mode to the student.` : '6. Keep the scaffold balanced across all narrative elements for the grade level.'}
+${isPictureBand ? `
+7. PICTURE-CHOICE MODE (grade ${gradeLevelKey}). This student CANNOT READ AND CANNOT TYPE. They plan by tapping pictures, so every open question needs pickable options:
+   - Give EVERY element a "choices" array of exactly 3 options. Each option is one emoji, a space, then 2-4 plain words a five-year-old knows (e.g. "🐶 A puppy", "👧 A girl named Mia", "🦆 A duck at the pond"). All 3 must be equally valid — this is a creative choice, never a quiz, so no option may be "the right one".
+   - Give "arcEvents" exactly one entry per storyArcLabels entry (${gradeLevelKey === 'K' ? '2' : '3'} of them), in story order, each one emoji, a space, then 3-8 plain words. The student re-orders these, so ONLY the given order may make sense: put something that can only start the story first and something that can only finish it last, and make them fit the character and place options above.
+   - Keep every "prompt" to ONE short spoken question ("Who is in your story?") — the tutor reads it aloud.
+   - No option and no event may contain a number, a measurement, or a word longer than three syllables.` : ''}
 
 Never reveal a "correct" plan in any prompt, label, or placeholder — the prompts only ask open questions that the student answers in their own words.`;
 
@@ -170,11 +197,53 @@ Never reveal a "correct" plan in any prompt, label, or placeholder — the promp
       finalData.planningFocus = evalConstraint.allowedTypes[0] as StoryPlannerData['planningFocus'];
     }
 
+    // STAMP the resolved rung. `gradeLevel` is `required` in the schema, so what
+    // came back is Gemini's ECHO of the grade — right on the happy path, but not
+    // something a band gate may key off. The component's picture band reads this
+    // field, so it must carry the value the resolver above computed. An explicit
+    // config pin still wins (testers set it deliberately).
+    if (configRest.gradeLevel === undefined) {
+      finalData.gradeLevel = gradeLevelKey;
+    }
+
+    // Bound the K-1 picture content, and strip it outright above the band so
+    // grade 2+ output is byte-identical to before this change.
+    finalData.elements = (finalData.elements ?? []).map((el) => {
+      const { choices: raw, ...bare } = el;
+      if (!isPictureBand) return bare;
+      const choices = (raw ?? [])
+        .map((c) => (typeof c === 'string' ? c.trim() : ''))
+        .filter(Boolean)
+        .slice(0, STORY_PLANNER_MAX_CHOICES);
+      // One option is not a choice — drop back to the free-text card rather
+      // than render a single tappable "pick this" that decides nothing.
+      return choices.length > 1 ? { ...bare, choices } : bare;
+    });
+
+    if (!isPictureBand) {
+      delete finalData.arcEvents;
+    } else {
+      const events = (finalData.arcEvents ?? [])
+        .map((e) => (typeof e === 'string' ? e.trim() : ''))
+        .filter(Boolean)
+        .slice(0, finalData.storyArcLabels?.length ?? 0);
+      // A partial arc cannot be ordered — an all-or-nothing field keeps the
+      // component's fallback (free text) reachable instead of half-built.
+      if (events.length === (finalData.storyArcLabels?.length ?? 0) && events.length > 1) {
+        finalData.arcEvents = events;
+      } else {
+        delete finalData.arcEvents;
+      }
+    }
+
     console.log('Story Planner Generated:', {
       title: finalData.title,
       gradeLevel: finalData.gradeLevel,
       planningFocus: finalData.planningFocus ?? 'mixed',
       elementCount: finalData.elements?.length || 0,
+      pictureBand: isPictureBand,
+      elementsWithChoices: finalData.elements?.filter((e) => (e.choices?.length ?? 0) > 1).length ?? 0,
+      arcEvents: finalData.arcEvents?.length ?? 0,
     });
 
     return finalData;

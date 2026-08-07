@@ -178,8 +178,80 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   this slice fixed is genuinely reachable); no Tier-3 live audio → HUMAN-CHECKS
   #73; 0 eval modes; the `GRADE {n}` badge is dev chrome at every grade but was
   gated only at K-1.
-  → **NEXT: S4 `story-planner`** (generator already canonical — do NOT "fix" it;
-  audit the component/scaffold only) → S5 `bio-compare-contrast` →
+  ~~**S4 `story-planner`**~~ **S4 CLOSED 2026-08-07 — READY at PRE.**
+  **The "generator is already canonical" prediction was RIGHT and is now a
+  regression test** — it reads `ctx.grade` first with a contract comment and
+  probed correct at K *and* G1 on the happy path *and* the degrade path. It is
+  the only generator in the sweep that needed no grade-resolution work.
+  **But "audit component + scaffold only" could not have produced a K-fit
+  primitive, and the slice deliberately went past it.** At K the screen was two
+  open questions with **nothing to choose from** — the interaction was free-text
+  composition in `<textarea>`s (rule 6). Band-gating the chrome and adding
+  read-aloud would have left a five-year-old listening to a well-spoken question
+  in front of two empty text boxes, and recorded it as READY. So the generator
+  gained **two additive, band-scoped fields** — `elements[].choices` (3
+  emoji-prefixed picture options each) and `arcEvents` (one event per arc slot,
+  in story order) — with grade 2+ output byte-identical (G3 control + 2 tests).
+  The K act is now **pick your character → pick what happens → put the events in
+  order**, which is what K narrative planning *is* (CCSS W.K.3 is "drawing,
+  dictating, and writing", not writing) and makes `story_structure` a real
+  assessed identity for the first time.
+  **Four defects closed:** (1) **SCAFFOLD-GAP** — it was one of the 26 mute
+  primitives; catalog block (11 contextKeys, 3 levels, 5 struggles, 3
+  aiDirectives incl. PRE-READER READ-ALOUD with the cap-override clause and an
+  `ORDER IS THE ANSWER` rule that forbids elimination) + `useLuminaAI` with
+  **7 moments**; `[STORY_ELEMENT_ASKED]` is load-bearing because **the tutor's
+  voice IS the option captions** for a non-reader. (2) **PRIMITIVE-GAP** — 0
+  textareas at K-1, one question per screen, emoji-primary cards, tap = choose
+  *and* advance, arc ordering by one tap into the next empty slot (the S13
+  shape), and 5 chrome classes gated (grade badge, phase ribbon, "Writing
+  Prompt:" panel, required `*`, story-mountain chart) — plus the generated arc
+  LABELS replaced by numerals, since at G1 they are whole sentences.
+  (3) **Rule 8 — the worst finding, and unqueued:** the score was
+  `trim().length > 5` plus an 18-word adjective regex, so **a K child who cannot
+  type scored 0 and `"aaaaaa"` scored full marks** — the S10 defect, second
+  appearance. Now plan-complete (40%) + events-in-story-order (60%), stricter
+  than what it replaced. (4) **The rung was never STAMPED** (S2/S3 defect #3,
+  third appearance) — `gradeLevel` was Gemini's echo, right on both probes but
+  not something a band gate may key off, so every new gate would have been dead
+  on arrival. *Not the forbidden grade-resolution fix: the resolution was already
+  right, it just never reached the component.*
+  **Band list extracted to `service/literacy/storyPlannerBand.ts`** and imported
+  by both sides (S13's shared-resolver precedent) rather than hand-copied.
+  **Answer-leak discipline, three guards:** `arcEvents` arrives in correct order,
+  so the component shuffles by a content-seeded rotation that is a **guaranteed
+  derangement**, the ordered array is **kept out of `aiPrimitiveData`**, and the
+  `[STORY_EVENT_PLACED]` beat is **proved identical for a right and a wrong
+  placement** by diffing the two messages — not by grepping for "correct", which
+  was the first (bad) version of that test and failed on the prohibition's own
+  wording.
+  ⚠️ **`Math.random` would have been wrong twice** — it reshuffles on every
+  render AND cannot be tested. Seeded rotation does both jobs.
+  ⚠️ **Flash-lite handled a nested array under an emoji ask, first try, K and
+  G1** — `choices` sits inside the `elements` object array, the shape
+  [[feedback_flash-lite-drops-nested-array-under-emoji-ask]] warns about. Keeping
+  the emoji **inside the string** (`"🐶 A happy puppy"`) rather than asking for
+  an `{label, emoji}` object appears to be why. Reusable.
+  Gates: 20 + 28 tests, **revert-bite 11 bites / 11 bite (2/1/2/1/1/3/18/2/1/3/5)**,
+  src-scoped tsc **803 vs a stashed 803 baseline — set-identical**,
+  typecheck:lumina 0, full vitest **2154/2154**, tutor-test Tier 1 `pass` +
+  Tier 2 **22/22 `component`**, zero `(not set)`.
+  **Driven end-to-end in real Chrome at K** with the real draw (2 picture screens
+  → arc board → Finish → ✅ per slot), zero console errors, and the tray visibly
+  rendering the answer OUT of order. **G3 control byte-identical.**
+  Report `qa/reader-fit/story-planner-PRE-2026-08-07.md`.
+  *Residuals:* rule 4 PARTIAL (6 tap targets on element screen 2 — the ⬅️ back
+  arrow); two read-aloud pills on the K plan screen; title still text at K;
+  **degraded generation still falls back to textareas at K** (all-or-nothing
+  guards prevent partial content but not empty); no Tier-3 live audio →
+  HUMAN-CHECKS #73; **`arcEvents` quality unverified beyond 2 draws** — the whole
+  ordering assessment assumes exactly one sensible order, so a draw with two
+  interchangeable middles would mark a defensible answer wrong (`/oracle-test`
+  contract if this gets real K traffic); the 3 grade-2-6 eval modes have no band
+  floor.
+  → **NEXT: S5 `bio-compare-contrast`** (fourth grade-shape: `gradeBand` is a
+  **function parameter defaulting to `'3-5'`** — check the CALL SITE, not the
+  body; import `service/biology/gradeBand.ts`, do not write a fifth copy) →
   S6 `species-profile` → S7 `mission-planner`.
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
@@ -491,12 +563,18 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** ~~15A S2~~ ~~S3~~ **BOTH CLOSED 2026-08-07** → **15A S4
-`story-planner`** → S5 → S6 → S7 (**skip S4 `story-planner`'s generator — already canonical**;
-~~it may still need a band floor~~ **band floors are now a last resort — if it
-fails at K, make it K-fit**) → then audit `planetary-explorer` +
+**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ **ALL THREE CLOSED 2026-08-07** →
+**15A S5 `bio-compare-contrast`** → S6 → S7 → then audit `planetary-explorer` +
 `constellation-builder`, which now carry the K astronomy demand that S1's floor
 and 15B's fixes redirected onto them.
+**⚠️ S4 taught the sharpest scope lesson in the sweep.** The queue said
+"generator already canonical — audit component + scaffold only". The *prediction*
+was right (and is now a regression test), but the *scope* was wrong: at K the
+primitive had **nothing to choose from**, so no amount of chrome-gating and
+read-aloud could make it completable. **A band failure can be a CONTENT gap, not
+just a chrome or voice gap — and only the generator can close a content gap.**
+Check what the child would actually DO before scoping a slice as catalog- or
+component-only.
 **⚠️ The 15A "catalog-only, no component work" estimate is dead** — S2 needed a
 generator fix, a catalog block AND a full component pass. Budget every remaining
 15A slice like a 15B slice.
