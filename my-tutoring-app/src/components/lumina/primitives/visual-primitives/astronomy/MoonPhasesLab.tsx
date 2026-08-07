@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MoonPhasesLabMetrics } from '../../../evaluation/types';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -324,6 +326,13 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
   const animationFrameRef = useRef<number>();
   const lastUpdateRef = useRef<number>(Date.now());
 
+  // Stable across renders — `id || \`prefix-${Date.now()}\`` inline regenerates
+  // every render, which restarts the AI connect effect in a loop.
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `moon-phases-lab-${Date.now()}`,
+    [instanceId],
+  );
+
   // Evaluation hook
   const {
     submitResult,
@@ -331,7 +340,7 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     resetAttempt,
   } = usePrimitiveEvaluation<MoonPhasesLabMetrics>({
     primitiveType: 'moon-phases-lab',
-    instanceId: instanceId || `moon-phases-lab-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -349,6 +358,99 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     const phaseKey = getPhaseKey(currentPhase.name);
     setPhasesExplored(prev => new Set(prev).add(phaseKey));
   }, [currentPhase.name]);
+
+  // ── Reading band ─────────────────────────────────────────────────
+  // At K-1 nothing on screen can be decoded: the phase names, the degree
+  // readout and the stat panel are all adult chrome. Pictures + the tutor's
+  // voice are the whole channel (reader-fit PRE contract rules 1, 3, 7).
+  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
+
+  const challengePhaseLabel = useMemo(
+    () => (challengePhase
+      ? challengePhase.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      : null),
+    [challengePhase],
+  );
+
+  // ── AI tutoring ──────────────────────────────────────────────────
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    viewMode,
+    gradeLevel,
+    currentPhaseName: currentPhase.name,
+    currentPhaseEmoji: currentPhase.emoji,
+    currentPhaseDescription: currentPhase.description,
+    phasesExplored: phasesExplored.size,
+    totalPhases: MOON_PHASES.length,
+    challengeTask: challengePhaseLabel
+      ? `find the ${challengePhaseLabel}`
+      : 'free exploration — no challenge set',
+    isAnimating,
+    illumination,
+  }), [
+    title, viewMode, gradeLevel, currentPhase, phasesExplored.size,
+    challengePhaseLabel, isAnimating, illumination,
+  ]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'moon-phases-lab',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel,
+  });
+
+  // Read-aloud: silent like every other system trigger. `silent` suppresses only
+  // the chat-transcript entry — the socket payload is identical, so the tutor
+  // still takes a turn and speaks (LuminaAIContext.sendText). Sending it
+  // non-silently would post this machine-written prompt into the conversation as
+  // if the child had typed it. Phase descriptions and the explanation carry no
+  // answer key, so reading them verbatim is always safe.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[MOON_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once on mount so a non-reader is told what to do without
+  // having to ask. Silent: it is a system trigger, not student chat.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[MOON_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : `grade ${gradeLevel}`} student just opened `
+      + `the Moon phases model. ${challengePhaseLabel
+        ? `Their job: find the ${challengePhaseLabel} — describe how it LOOKS, never where it is.`
+        : 'Their job: move the Moon around Earth and notice how the bright part changes.'} `
+      + `Tell them what to do in child words, warmly. Do not ask them to read anything.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, gradeLevel, challengePhaseLabel]);
+
+  // Narrate only once the student SETTLES on a phase — dragging sweeps through
+  // every phase in a second, and the animation moves it continuously. Quiet by
+  // default; one short sentence when they stop and look.
+  const lastAnnouncedPhaseRef = useRef<string>(getPhaseFromAngle(initialMoonPosition).name);
+  useEffect(() => {
+    if (isAnimating) return;
+    if (currentPhase.name === lastAnnouncedPhaseRef.current) return;
+
+    const timer = setTimeout(() => {
+      lastAnnouncedPhaseRef.current = currentPhase.name;
+      sendText(
+        `[MOON_PHASE_SETTLED] Student stopped with the Moon showing ${currentPhase.name} `
+        + `(${currentPhase.emoji}, ${illumination}% lit). One short sentence naming it and `
+        + `describing how it looks. No question, no extra fact.`,
+        { silent: true },
+      );
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [currentPhase, isAnimating, illumination, sendText]);
 
   // Animation loop
   useEffect(() => {
@@ -635,11 +737,19 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     currentPhase,
   ]);
 
-  // Handle phase selection for challenge mode
+  // Handle phase selection for challenge mode.
+  // Deliberately says NOTHING about right/wrong — the student has not submitted
+  // yet, and naming the verdict here would hand them the answer.
   const handlePhaseSelect = (phase: MoonPhase) => {
     SoundManager.select();
     setSelectedPhase(phase);
     setUserAnswers(prev => ({ ...prev, selected_phase: phase }));
+    sendText(
+      `[MOON_CHALLENGE_PICK] Student picked a phase for the challenge. Acknowledge in `
+      + `one short warm sentence and invite them to move the Moon until it looks that way. `
+      + `Do NOT say whether the pick is right or wrong and do NOT name the correct phase.`,
+      { silent: true },
+    );
   };
 
   // Jump to a specific phase
@@ -693,6 +803,15 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
         answers: userAnswers,
       },
     });
+
+    sendText(
+      `[MOON_ALL_COMPLETE] Student finished. They explored ${phasesExplored.size} of `
+      + `${MOON_PHASES.length} phases${challengePhaseLabel
+        ? ` and ${selectedPhase === challengePhase ? 'found' : 'did not find'} the ${challengePhaseLabel}`
+        : ''}. Score ${finalScore}%. Celebrate warmly in child words and say one true `
+      + `thing they discovered about why the Moon looks different.`,
+      { silent: true },
+    );
   };
 
   const handleReset = () => {
@@ -702,6 +821,9 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
     setUserAnswers({});
     setPhasesExplored(new Set());
     setShowExplanation(false);
+    // Clear the per-attempt narration latch, or the first phase they land on
+    // after a retry is silently swallowed.
+    lastAnnouncedPhaseRef.current = getPhaseFromAngle(initialMoonPosition).name;
     resetAttempt();
   };
 
@@ -710,7 +832,18 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-slate-300">{description}</p>
+        <div className="flex items-start gap-3">
+          <p className="text-slate-300 flex-1">{description}</p>
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read this to me"
+            className="flex-shrink-0"
+            onClick={() => readAloud(`${title}. ${description}`)}
+          />
+        </div>
       </div>
 
       {/* Main Content */}
@@ -742,38 +875,50 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
               <span>View from Earth</span>
             </h4>
             <div className="flex flex-col items-center gap-4">
-              <EarthViewMoon moonAngle={moonPosition} size={150} />
+              <EarthViewMoon moonAngle={moonPosition} size={isPreReader ? 190 : 150} />
               <div className="text-center">
                 <div className="text-3xl mb-2">{currentPhase.emoji}</div>
                 <div className="text-xl font-bold text-white">{currentPhase.name}</div>
                 <div className="text-slate-400 text-sm mt-1">{currentPhase.description}</div>
+                <LuminaReadAloud
+                  size={isPreReader ? 'lg' : 'sm'}
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  label="Tell me about this Moon"
+                  className="mt-3"
+                  onClick={() => readAloud(`${currentPhase.name}. ${currentPhase.description}`)}
+                />
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Phase Information Panel */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Illumination</div>
-          <div className="text-2xl font-bold text-white">{illumination}%</div>
+      {/* Phase Information Panel — percentages, a 29.5-day counter and a score
+          ledger are adult chrome a K-1 child cannot read and does not need
+          (reader-fit PRE contract rule 7). The Moon picture carries the state. */}
+      {!isPreReader && (
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-800 rounded-lg p-4 text-center">
+            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Illumination</div>
+            <div className="text-2xl font-bold text-white">{illumination}%</div>
+          </div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center">
+            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Day in Cycle</div>
+            <div className="text-2xl font-bold text-white">{dayInCycle} / 29.5</div>
+          </div>
+          <div className="bg-slate-800 rounded-lg p-4 text-center">
+            <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Phases Explored</div>
+            <div className="text-2xl font-bold text-white">{phasesExplored.size} / 8</div>
+          </div>
         </div>
-        <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Day in Cycle</div>
-          <div className="text-2xl font-bold text-white">{dayInCycle} / 29.5</div>
-        </div>
-        <div className="bg-slate-800 rounded-lg p-4 text-center">
-          <div className="text-slate-400 text-xs uppercase tracking-wider mb-1">Phases Explored</div>
-          <div className="text-2xl font-bold text-white">{phasesExplored.size} / 8</div>
-        </div>
-      </div>
+      )}
 
       {/* Controls */}
       <div className="mt-6 bg-slate-800 rounded-lg p-4">
         <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
           <span>🎮</span>
-          <span>Controls</span>
+          {!isPreReader && <span>Controls</span>}
         </h4>
 
         <div className="space-y-4">
@@ -781,7 +926,9 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
           {interactivePosition && (
             <div>
               <label className="text-slate-300 text-sm mb-2 block">
-                Moon Position: {Math.round(moonPosition)}°
+                {isPreReader
+                  ? <span className="text-2xl" aria-label="Slide to move the Moon">🌍 · · 🌙</span>
+                  : <>Moon Position: {Math.round(moonPosition)}°</>}
               </label>
               <input
                 type="range"
@@ -814,29 +961,39 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
               >
-                {isAnimating ? '⏸️ Pause' : '▶️ Play'} Animation
+                {isAnimating ? '⏸️' : '▶️'}{!isPreReader && ' '}
+                {!isPreReader && (isAnimating ? 'Pause Animation' : 'Play Animation')}
               </button>
-              <span className="text-slate-400 text-sm">
-                Speed: {cycleSpeed} days/sec
-              </span>
+              {!isPreReader && (
+                <span className="text-slate-400 text-sm">
+                  Speed: {cycleSpeed} days/sec
+                </span>
+              )}
             </div>
           )}
 
-          {/* Quick jump to phases */}
+          {/* Quick jump to phases — picture-primary at K-1, where the phase
+              NAMES are undecodable and the Moon picture is the whole answer
+              surface (reader-fit PRE contract rule 3). */}
           <div>
-            <label className="text-slate-300 text-sm mb-2 block">Jump to Phase:</label>
+            {!isPreReader && (
+              <label className="text-slate-300 text-sm mb-2 block">Jump to Phase:</label>
+            )}
             <div className="flex flex-wrap gap-2">
               {MOON_PHASES.map(phase => (
                 <button
                   key={phase.name}
                   onClick={() => jumpToPhase(phase)}
-                  className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                  aria-label={phase.name}
+                  className={`rounded-lg transition-colors ${
+                    isPreReader ? 'px-4 py-3 text-3xl leading-none' : 'px-3 py-1 text-sm'
+                  } ${
                     currentPhase.name === phase.name
                       ? 'bg-blue-600 text-white'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }`}
                 >
-                  {phase.emoji} {gradeLevel === 'K' || gradeLevel === '1' ? phase.emoji : phase.name}
+                  {isPreReader ? phase.emoji : `${phase.emoji} ${phase.name}`}
                 </button>
               ))}
             </div>
@@ -849,23 +1006,40 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
         <div className="mt-6 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-700/50 rounded-lg p-4">
           <h4 className="text-purple-300 font-semibold mb-3 flex items-center gap-2">
             <span>🎯</span>
-            <span>Challenge: Find the {challengePhase.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+            <span>Challenge: Find the {challengePhaseLabel}</span>
           </h4>
-          <p className="text-slate-300 text-sm mb-3">
-            Move the Moon to show what a {challengePhase.replace('_', ' ')} looks like.
-          </p>
+          <div className="flex items-start gap-3 mb-3">
+            <p className="text-slate-300 text-sm flex-1">
+              Move the Moon to show what a {challengePhaseLabel?.toLowerCase()} looks like.
+            </p>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the challenge to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(
+                `Here is your challenge. Find the ${challengePhaseLabel}. `
+                + `Move the Moon to show what a ${challengePhaseLabel?.toLowerCase()} looks like.`,
+              )}
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             {MOON_PHASES.map(phase => (
               <button
                 key={phase.name}
                 onClick={() => handlePhaseSelect(getPhaseKey(phase.name))}
-                className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                aria-label={phase.name}
+                className={`rounded-lg transition-colors ${
+                  isPreReader ? 'px-4 py-3 text-3xl leading-none' : 'px-3 py-2 text-sm'
+                } ${
                   selectedPhase === getPhaseKey(phase.name)
                     ? 'bg-purple-600 text-white ring-2 ring-purple-400'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
               >
-                {phase.emoji} {phase.name}
+                {isPreReader ? phase.emoji : `${phase.emoji} ${phase.name}`}
               </button>
             ))}
           </div>
@@ -890,9 +1064,20 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
       {/* Learning Questions */}
       {!hasSubmitted && learningObjectives && learningObjectives.length > 0 && (
         <div className="mt-6 bg-slate-800 rounded-lg p-4">
-          <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-            <span>✏️</span>
-            <span>Think About It</span>
+          <h4 className="text-white font-semibold mb-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span>✏️</span>
+              <span>Think About It</span>
+            </span>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read these questions to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(`Think about it. ${learningObjectives.join('. ')}`)}
+            />
           </h4>
           <div className="space-y-3">
             {learningObjectives.map((objective, index) => (
@@ -935,9 +1120,25 @@ const MoonPhasesLab: React.FC<MoonPhasesLabProps> = ({ data, className }) => {
       {/* Explanation Panel */}
       {showExplanation && (
         <div className="mt-4 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-700/50 rounded-lg p-4">
-          <h5 className="text-white font-semibold mb-3 flex items-center gap-2">
-            <span>💡</span>
-            <span>Why Does the Moon Change Shape?</span>
+          <h5 className="text-white font-semibold mb-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span>💡</span>
+              <span>Why Does the Moon Change Shape?</span>
+            </span>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the explanation to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(
+                'Why does the Moon change shape? The Moon does not actually change shape. '
+                + 'What changes is how much of the lit side we can see from Earth. '
+                + 'The Sun always lights up half of the Moon, just like it lights up half of Earth. '
+                + 'As the Moon goes around Earth, we see different amounts of that lit half.',
+              )}
+            />
           </h5>
           <div className="text-slate-200 text-sm space-y-3">
             <p>

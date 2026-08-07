@@ -203,6 +203,52 @@ const GRADE_CONFIGURATIONS: Record<string, Partial<MoonPhasesLabData>> = {
 };
 
 // ============================================================================
+// GRADE RESOLUTION
+// ============================================================================
+
+export type MoonPhasesGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Canonical grade → structural rung.
+ *
+ * Closes the 2026-08-04 `14m` prose-grade class here. The generator used to
+ * derive its rung by regexing `ctx.gradeContext` — which is PROSE
+ * ("kindergarten students - Use age-appropriate…") — for /grade\s*(\d|K)/.
+ * Kindergarten prose contains no "grade N", so the match failed and the whole
+ * expression fell through to the literal default `'3'`: a K student was served
+ * Grade 3 content with `viewMode: 'split_view'`, directly contradicting the
+ * catalog's K rung ("from_earth view only"). `generationContext.ts` states the
+ * contract outright — never parse grade out of `gradeContext`; read `ctx.grade`.
+ *
+ * NO floor is applied. Unlike telescope-simulator, moon-phases-lab is genuinely
+ * K-fit: tap/drag the Moon and watch it change. K must reach its own rung.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const moonPhasesGradeFromGrade = (grade?: string): MoonPhasesGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const moonPhasesGradeFromProse = (prose?: string): MoonPhasesGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
+// ============================================================================
 // GENERATOR FUNCTION
 // ============================================================================
 
@@ -220,7 +266,13 @@ export const generateMoonPhasesLab = async (
 
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and every learning objective/question foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
-  const gradeLevel = config?.gradeLevel || (gradeContext.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as 'K' | '1' | '2' | '3' | '4' | '5';
+  // Canonical-first, prose as fallback. An explicit config override still wins.
+  // `gradeContext` remains what the PROMPT says out loud (audience voice);
+  // `gradeLevel` is the structural rung every default below keys off.
+  const gradeLevel: MoonPhasesGrade =
+    (config?.gradeLevel as MoonPhasesGrade | undefined)
+    ?? moonPhasesGradeFromGrade(ctx.grade)
+    ?? moonPhasesGradeFromProse(gradeContext);
   const gradeConfig = GRADE_CONFIGURATIONS[gradeLevel] || GRADE_CONFIGURATIONS['3'];
 
   // Determine initial moon position based on topic

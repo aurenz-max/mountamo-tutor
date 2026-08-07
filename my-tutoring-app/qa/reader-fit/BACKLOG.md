@@ -58,9 +58,33 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   S6 `species-profile` → S7 `mission-planner`.
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
-  S8 `moon-phases-lab` → S9 `classification-sorter` → S10 `day-night-seasons` →
+  ~~**S8 `moon-phases-lab`**~~ **S8 CLOSED 2026-08-06 — READY at PRE.** Catalog
+  `tutoring` block (11 contextKeys, 3 levels, 5 struggles led by the primitive's
+  own *"phases are Earth's shadow"* misconception, 3 aiDirectives incl. a
+  PRE-READER READ-ALOUD that overrides the lesson one-sentence cap) + component
+  `useLuminaAI` with 5 moments + 4 read-aloud surfaces + K-1 band gating (stat
+  panel, degree readout, days/sec and text phase labels off; emoji-primary
+  options). **Second defect fixed in the same slice, found by the probe and NOT
+  queued:** the generator regexed PROSE `ctx.gradeContext` for `/grade\s*(\d|K)/`
+  and fell through to a literal `'3'`, so **K was served Grade 3 content with
+  `split_view`** — which also made the new `isPreReader` gate dead code at K.
+  Now canonical-first via exported `moonPhasesGradeFromGrade()`, prose kept as
+  fallback, **no floor** (unlike S1 — this primitive really is K-fit). Gates:
+  12 focused + 15 jsdom tests, **revert-bite 5/12 and 4/15**, tsc **805 =
+  baseline**, typecheck:lumina 0, full vitest **1813/1813**, tutor-test Tier 1
+  `pass` + Tier 2 probe all `resolvedBy: component`. **Runtime A/B @ K: pre-fix
+  `gradeLevel:'3' / split_view / "Grade 3 Space Explorer"`; post-fix
+  `'K' / from_earth / "Peek-a-Boo Moon"` — with G3 unchanged as control.**
+  Report `qa/reader-fit/moon-phases-lab-PRE-2026-08-06.md`.
+  *Residual (NOT closed):* no Tier-3 live audio run → HUMAN-CHECKS; still 0 eval
+  modes → `/add-eval-modes`.
+  → **NEXT: S9 `classification-sorter`** → S10 `day-night-seasons` →
   S11 `solar-system-explorer` → S12 `scale-comparator` → S13
   `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
+  **Assume the prose-grade defect on S10/S11/S12 too** (handoff table:
+  day-night-seasons 13 char-compares, scale-comparator 7, solar-system-explorer
+  1, all reading `ctx.grade` zero times) — S8 proves the scaffold fix ships
+  inert without it. Probe, don't grep.
 
 **📋 HANDOFF (paste-able, line-exact anchors verified):
 `qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`** — carries the S1 fix template,

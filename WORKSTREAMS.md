@@ -215,12 +215,65 @@ queue AND this file's "last touched" in the same slice.
 > telescope-simulator carried; the sweep is surfacing it domain-wide, exactly as the FF-1 and
 > DNA-1 leak investigations did.
 >
-> **Next pull: S2 `orbit-mechanics-lab`** (same shape). Two follow-ons deliberately left OPEN
-> rather than silently closed: telescope-simulator still has **no tutoring block and 0 eval
-> modes at the grades it DOES serve** (`/add-tutoring-scaffold`, `/add-eval-modes`).
+> Two follow-ons deliberately left OPEN rather than silently closed:
+> telescope-simulator still has **no tutoring block and 0 eval modes at the grades it DOES
+> serve** (`/add-tutoring-scaffold`, `/add-eval-modes`).
 > **Signal worth acting on:** the post-fix K manifest routed to `planetary-explorer` and
 > `constellation-builder` — both flagged in the triage as *no read-aloud, no band gate*. K
 > astronomy demand now lands squarely on the Class-B queue, which **raises** S8–S12's priority.
+
+## EXECUTED 2026-08-06 (same day, later) — 15B taken (user-pulled), **S8 CLOSED**
+
+> The user pulled **15B — SCAFFOLD-GAP (8)** directly: *"tap-and-watch primitives that are
+> genuinely K-fit and just have no voice."* This is the interleave the handoff recommended
+> (option **b**) and the priority raise the S1 routing signal argued for, so the queue was
+> entered at 15B rather than draining 15A first. Serial, one primitive per slice.
+>
+> **S8 `moon-phases-lab` CLOSED — READY at PRE.** Report
+> `qa/reader-fit/moon-phases-lab-PRE-2026-08-06.md`. Pre-fix failure reproduced at the
+> mechanism first: `tutor-test` returned `{"status":"no-scaffold"}`. Fix = catalog `tutoring`
+> block (11 contextKeys, 3 levels, 5 struggles **led by the primitive's own stated critical
+> misconception — "phases are Earth's shadow" — which its explanation panel names but nothing
+> had ever spoken**, 3 aiDirectives incl. a PRE-READER READ-ALOUD carrying the *"this OVERRIDES
+> any one-sentence cap"* clause so it survives the lesson `[PRIMITIVE SWITCH]`) + component
+> `useLuminaAI` with 5 moments + 4 read-aloud surfaces + K-1 band gating.
+>
+> **The slice's real finding: the queued fix would have shipped INERT.** The Tier-2 probe was
+> requested at `grade=K` and came back **"Sunlight and the Moon: Grade 3 Space Explorer",
+> `gradeLevel:'3'`, `viewMode:'split_view'`** — the `14m` prose-grade class the handoff had
+> *measured* on this generator (10 char-compares, 0 reads of `ctx.grade`) but not queued.
+> `gemini-moon-phases-lab.ts:223` regexed PROSE `ctx.gradeContext` for `/grade\s*(\d|K)/`;
+> kindergarten prose has no "grade N", so it fell through to a literal `'3'`. Because the new
+> component band gate keys off `data.gradeLevel`, **a generator that can never emit `'K'` makes
+> `isPreReader` dead code** — a green scaffold report over an unchanged child experience. Fixed
+> with the S1 template (exported `moonPhasesGradeFromGrade()`, prose kept as fallback) but
+> **with NO floor** — unlike S1, this primitive genuinely is K-fit, so K must reach its own rung.
+>
+> Incidental bug fixed en route: the K/1 jump-to-phase branch rendered the emoji **twice**
+> (`🌑 🌑`). Now one large glyph at K-1, `emoji + name` at 2+, locked by a test.
+>
+> Gates: 12 focused + 15 jsdom tests, **revert-bite 5/12 and 4/15** (both proven by restoring
+> the pre-fix logic and watching it fail), tsc **805 = baseline**, typecheck:lumina 0, full
+> vitest **1813/1813**, tutor-test Tier 1 `pass` + Tier 2 probe **every var
+> `resolvedBy: component`, zero `(not set)`**.
+> **Runtime A/B @ K (the gate that decides it): pre-fix `'3' / split_view / "Grade 3 Space
+> Explorer"` → post-fix `'K' / from_earth / cycleSpeed 8 / "Peek-a-Boo Moon"`, with G3
+> unchanged as the control proving the ladder was not flattened.**
+>
+> **Cross-queue finding, filed not fixed:** Tier 1 flagged `tagged-sendtext-not-silent` on the
+> read-aloud. Checked at the mechanism (`LuminaAIContext.tsx:930-953`) — `silent` suppresses
+> only the chat-transcript entry; the socket payload is identical, so a silent send still
+> speaks. Engineering Phase A's `readBlockAloud` pattern sends read-alouds **non-silent** and
+> evades the static check only by interpolating the tag (`` `${tag} …` ``) instead of a literal
+> `[TAG]`, so it posts machine prompts into the conversation as if the child typed them. That
+> belongs to `qa/engineering-tutoring-scaffold/BACKLOG.md`, not here.
+>
+> **Residuals (open):** no Tier-3 live audio run on S8 → HUMAN-CHECKS; still 0 eval modes →
+> `/add-eval-modes`.
+> **Next pull: S9 `classification-sorter`**, then S10–S15. **Assume the prose-grade defect on
+> S10/S11/S12 as well** (day-night-seasons 13 char-compares, scale-comparator 7,
+> solar-system-explorer 1 — all reading `ctx.grade` zero times); S8 is the proof that skipping
+> it makes the scaffold fix cosmetic. 15A (S2–S7) remains queued below.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

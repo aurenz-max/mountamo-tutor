@@ -28,6 +28,79 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     id: 'moon-phases-lab',
     description: 'Interactive Earth-Moon-Sun model that explains why the Moon appears to change shape through the lunar cycle. Students position Moon in orbit around Earth, view from Earth\'s surface (how Moon looks in the sky), view from space (orbital geometry showing why phases occur), match phase to orbital position, predict next phase in sequence, track full 29.5-day cycle with animation, and understand tidal locking (why same side always faces us). Features dual-view mode (Earth view + space view), smooth D3 animations of lunar orbit, interactive dragging to explore phases, illumination percentage display, day-in-cycle counter, and challenge mode to identify specific phases. Corrects common misconception that phases are caused by Earth\'s shadow (that\'s eclipses, not phases!). Progressive learning from K (Moon looks different) to Grade 5 (tidal locking, eclipse geometry). ESSENTIAL for NGSS space science standards on Moon phases and lunar cycles.',
     constraints: 'Best for grades K-5 with distinct learning progressions. K: from_earth view only, focus on "Moon looks different on different nights", no orbital diagram, fast animation (8x speed), 1-2 simple questions. Grade 1: from_earth view, introduce phase names and sequence, show phase emojis as labels. Grade 2: split_view to show Moon orbits Earth, introduce orbital path, explain ~1 month cycle. Grade 3: split_view, show sun direction arrows, emphasize geometry NOT Earth\'s shadow, match phase to position. Grade 4: split_view with all features, predict phases, introduce tidal locking concept, calculate illumination percentage. Grade 5: All features enabled, tidal locking explanation, eclipse geometry hints, scientific vocabulary. Set viewMode: "from_earth" for K-1, "split_view" for 2-5. Enable showSunDirection for grades 2+. Enable showTidalLocking for grades 4-5 only. Enable phaseLabels for all grades (use emojis for K-1, text for 2-5). Always enable interactivePosition for hands-on exploration. Use animateOrbit with cycleSpeed 8 for K-1, 5 for 2-3, 3-4 for 4-5. Optional challengePhase for assessment (ask student to find specific phase). Critical teaching point: Phases are NOT caused by Earth\'s shadow!',
+    tutoring: {
+      taskDescription:
+        'Student is exploring why the Moon looks different on different nights, using an Earth-Moon-Sun model ("{{title}}"). '
+        + 'View: {{viewMode}}. The Moon is right now showing {{currentPhaseName}} ({{currentPhaseEmoji}}) — {{currentPhaseDescription}}. '
+        + 'They have found {{phasesExplored}} of {{totalPhases}} phases. Challenge: {{challengeTask}}. '
+        + 'They move the Moon by dragging it, sliding the position control, or tapping a phase button, and can play the orbit animation.',
+      contextKeys: [
+        'title',
+        'viewMode',
+        'gradeLevel',
+        'currentPhaseName',
+        'currentPhaseEmoji',
+        'currentPhaseDescription',
+        'phasesExplored',
+        'totalPhases',
+        'challengeTask',
+        'isAnimating',
+        'illumination',
+      ],
+      scaffoldingLevels: {
+        level1: '"Move the Moon around Earth and watch the Moon picture change. What do you notice about how much of it is bright?"',
+        level2: '"Right now the Moon looks like {{currentPhaseEmoji}} — that is called {{currentPhaseName}}. Keep moving it slowly and watch the bright part grow and shrink."',
+        level3: '"The Sun always lights up one half of the Moon. What changes is how much of that bright half we can see from Earth. Move the Moon slowly all the way around and watch the bright part go from none, to half, to all, and back again."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student says the phases are caused by Earth\'s shadow falling on the Moon',
+          response: '"That is what a lot of people think, but look closely — the Moon is not in Earth\'s shadow. The Sun lights up half the Moon all the time. We just see that bright half from different sides as the Moon goes around us. Earth\'s shadow on the Moon is something different, called an eclipse."',
+        },
+        {
+          pattern: 'Student thinks the Moon actually changes shape or gets eaten',
+          response: '"The Moon never changes shape — it is always a big round ball of rock. Watch the bright part and the dark part as you move it. The whole Moon is always there; we just cannot see the dark part."',
+        },
+        {
+          pattern: 'Student drags the Moon fast and never stops to look at what changed',
+          response: '"Stop right there for a second. Look at the Moon picture. How much of it is bright right now — none, a sliver, half, or all of it?"',
+        },
+        {
+          pattern: 'Student cannot find the phase the challenge asked for',
+          response: '"Do not worry about the name. Just think about the picture: how much of the Moon should be bright for that one? Move the Moon slowly and stop when it looks that way."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the phase names or the labels on screen',
+          response: '"Never ask them to read. Say the phase name for them, describe the picture in child words (\'almost none of it is bright\', \'half bright, half dark\'), and tell them to move the Moon with their finger."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read anything on this screen — not the title, not the phase names, not the challenge. Pictures and your voice are the only channels. '
+            + 'When you receive [MOON_ORIENT], say what to do in one or two warm child-sized sentences: they can move the Moon with their finger and watch how it changes. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [MOON_READ_ALOUD], READ ALOUD, word for word, exactly the text the message gives you, warmly and slowly, then wait. Do not summarize it and do not add a quiz. '
+            + 'Never tell them which position or which button to tap — describe what the Moon should LOOK like instead.',
+        },
+        {
+          title: 'PHASE NARRATION (stay quiet while they explore)',
+          instruction:
+            'When you receive [MOON_PHASE_SETTLED], the student has stopped moving the Moon and is looking at it. '
+            + 'Say ONE short sentence: name the phase and describe the picture in child words (for example "That is a first quarter — half bright, half dark"). '
+            + 'Do NOT ask a question, do NOT add a fact, and do NOT speak again until another moment fires. '
+            + 'This message does not fire while the animation is playing, so never narrate a moving Moon.',
+        },
+        {
+          title: 'CHALLENGE ANSWER DISCIPLINE',
+          instruction:
+            'When a challenge is active, the target phase is the QUESTION and you may say it out loud so a non-reader knows the task. '
+            + 'You must NEVER say the orbit position, the degree number, or which phase button produces it. '
+            + 'Describe the target by how it LOOKS ("half of it bright") so the student still has to find it by looking.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {
