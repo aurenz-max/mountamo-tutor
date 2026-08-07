@@ -202,9 +202,39 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   8 are pure instruments with no measurement path; worth a portfolio call:
   `/add-eval-modes` or declare them exploration-only so the manifest stops
   routing assessment demand at them); 0 eval modes.
-  → **NEXT: S13 `life-cycle-sequencer`** → S14 `habitat-diorama` →
-  S15 `organism-card` — **all three biology, all sharing the S9 prose-keyed-map
-  shape** (`gradeBandMap[ctx.gradeContext]`). Probe each at `grade=K` first.
+  ~~**S13 `life-cycle-sequencer`**~~ **S13 CLOSED 2026-08-06 — READY at PRE.**
+  Lowest triage risk in the class (3) and it *still* needed a component band-gate
+  pass — 5 of 6 slices now. (1) **SCAFFOLD-GAP** — catalog block + 3 moments.
+  Answer discipline is unusually tight here because **the ANSWER IS AN ORDER**:
+  naming even one position gives away a piece of it, so the `ORDER IS THE ANSWER`
+  directive forbids stating the sequence or confirming a placement pre-check, and
+  draws the line explicitly — *describing what is happening IN a picture is the
+  stimulus and is free; saying where it goes is the answer and is not*.
+  (2) **PRIMITIVE-GAP, unqueued** — `imagePrompt` rendered as visible card text
+  (removed at ALL grades, same as S9), select-then-target replaced at K-2 by
+  **one tap places into the next empty slot** (the constellation-builder
+  `guided_trace` shape, not a new invention; untouched at 3-5+), plus the band
+  badge, scaleContext prose, "Available Cards (N)" tally and "Drop stage here"
+  slot text all gated. (3) **Prose-keyed map** — probe @ K returned `'3-5'`.
+  **Fixed by EXTRACTING the resolver to `service/biology/gradeBand.ts`
+  (`biologyBandFromGrade`/`biologyBandFromProse`/`resolveBiologyBand`) rather
+  than writing S9's a third time; S9 re-pointed at it via aliases so its names
+  and tests are unchanged.** Four biology generators had independently written
+  the same wrong lookup — correct behaviour is now obtained by import, and S14/S15
+  get it for free.
+  Gates: 13 (shared resolver) + 11 (jsdom) tests, S9's 13 still green through the
+  refactor, **revert-bite 10/24**, src-scoped tsc **803 = baseline zero new**,
+  typecheck:lumina 0, full vitest **1953/1953**, tutor-test Tier 1 `pass`.
+  Report `qa/reader-fit/life-cycle-sequencer-PRE-2026-08-06.md`.
+  **Runtime A/B is the clearest yet — the REGISTER changed:** K went from *"The
+  female butterfly lays a tiny egg on a milkweed leaf. The egg contains…"* to
+  *"A mama butterfly lays a tiny egg on a leaf. It is so small you can barely…"*.
+  *Residuals:* no live audio run; rule 3 only PARTIAL (cards are a Sparkles glyph
+  + word label — no image pipeline wired; same as S9, and wiring images for both
+  biology sorters together would be one slice); 0 eval modes.
+  → **NEXT: S14 `habitat-diorama`** → S15 `organism-card`. Both still carry the
+  prose-keyed map and should now **import `./gradeBand`** rather than add a
+  fourth and fifth copy. Probe each at `grade=K` first.
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

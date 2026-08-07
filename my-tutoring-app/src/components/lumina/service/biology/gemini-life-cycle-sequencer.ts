@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveBiologyBand } from './gradeBand';
 
 // Import the data type from the component (single source of truth)
 import { LifeCycleSequencerData } from "../../primitives/visual-primitives/biology/LifeCycleSequencer";
@@ -119,22 +120,11 @@ export const generateLifeCycleSequencer = async (
   const config = ctx.raw as Partial<LifeCycleSequencerData>;
 
   // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
+  // Canonical-first band resolution. The map this replaces was keyed on bare
+  // grade tokens but indexed with `ctx.gradeContext`, which is PROSE, so it
+  // missed at every grade and the '3-5' default always won — verified by probe
+  // at `grade=K`, which returned `gradeBand:'3-5'`. See ./gradeBand.
+  const gradeBand = resolveBiologyBand(config.gradeBand, ctx.grade, ctx.gradeContext);
 
   // Per-primitive intent: the specific objective the manifest assigned to THIS sequencer.
   // The cycle (topic) stays fixed; intent biases which stages/transitions get the spotlight.

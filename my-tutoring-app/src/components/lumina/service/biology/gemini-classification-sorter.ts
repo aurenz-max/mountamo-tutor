@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { type BiologyBand, biologyBandFromGrade, biologyBandFromProse } from './gradeBand';
 
 // Import the data type from the component (single source of truth)
 import { ClassificationSorterData } from "../../primitives/visual-primitives/biology/ClassificationSorter";
@@ -127,43 +128,15 @@ const classificationSorterSchema: Schema = {
  * @returns ClassificationSorterData with categorization activity
  */
 
-export type ClassificationBand = 'K-2' | '3-5' | '6-8';
-
 /**
- * Canonical curriculum grade → complexity band.
- *
- * Closes the biology flavour of the 2026-08-04 `14m` prose-grade class. The
- * band was previously `gradeBandMap[ctx.gradeContext] || '3-5'`, where the map
- * was keyed on bare grade tokens ('K', '1', … '8') but `ctx.gradeContext` is
- * PROSE ("kindergarten students - Use age-appropriate…"). The lookup therefore
- * missed on EVERY input and every grade silently got the '3-5' default —
- * verified by probe at `grade=K`, which returned `gradeBand: '3-5'` with THREE
- * categories against a catalog K-2 rung that says "Binary sorts only (2
- * categories)". `generationContext.ts` states the contract: never parse grade
- * out of `gradeContext`; read `ctx.grade`.
- *
- * Returns null when there is no canonical grade, so the prose fallback stands.
+ * The band resolution now lives in one shared module — four biology generators
+ * had independently written the same broken `gradeBandMap[ctx.gradeContext]`
+ * lookup (S9/S13/S14/S15 of the reader-fit sweep), so the fix is shared rather
+ * than copied. These aliases keep this generator's original names.
  */
-export const classificationBandFromGrade = (grade?: string): ClassificationBand | null => {
-  const g = (grade ?? '').toString().trim().toUpperCase();
-  if (!g) return null;
-  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K-2';
-  if (g === 'K-2' || g === '3-5' || g === '6-8') return g as ClassificationBand;
-  const n = parseInt(g, 10);
-  if (isNaN(n)) return null;
-  if (n <= 2) return 'K-2';
-  if (n <= 5) return '3-5';
-  return '6-8';
-};
-
-/** Legacy prose fallback — kept as the second resolver, never the first. */
-export const classificationBandFromProse = (prose?: string): ClassificationBand => {
-  const p = (prose ?? '').toLowerCase();
-  if (/\b(kindergarten|preschool|grade 1|1st grade|grade 2|2nd grade)\b/.test(p)) return 'K-2';
-  if (/\b(grade [345]|[345](rd|th) grade)\b/.test(p)) return '3-5';
-  if (/\b(grade [678]|[678]th grade|middle school)\b/.test(p)) return '6-8';
-  return '3-5';
-};
+export type ClassificationBand = BiologyBand;
+export const classificationBandFromGrade = biologyBandFromGrade;
+export const classificationBandFromProse = biologyBandFromProse;
 export const generateClassificationSorter = async (
   ctx: GenerationContext
 ): Promise<ClassificationSorterData> => {

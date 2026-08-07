@@ -92,6 +92,69 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     id: 'life-cycle-sequencer',
     description: 'Interactive temporal sequencing activity where students arrange stages of a biological process in correct temporal order. The CORE "what happens next?" primitive for biology. Covers organismal life cycles (butterfly metamorphosis, frog development, plant growth, human lifecycle), cellular processes (mitosis phases, meiosis, cell cycle), and ecological cycles (water cycle, carbon cycle, nitrogen cycle, rock cycle). PERFECT for teaching temporal relationships, transformation, developmental sequences, and understanding change over time. Features drag-and-drop stage cards with visual placeholders, descriptions, durations, and transition explanations. Linear layout for developmental sequences (embryo → adult), circular layout for repeating cycles (water cycle, seasons). Shows connecting arrows with transition explanations when correct. Includes misconception traps to address common errors. ESSENTIAL for K-8 biology whenever students need to understand sequences, life stages, cycles, or temporal processes.',
     constraints: 'Use for K-8 students learning life cycles, developmental sequences, or cyclical processes. K-2: Simple linear sequences (4-6 stages, basic vocabulary, observable changes like "seed grows into plant"). 3-5: More complex linear or circular cycles (5-7 stages, scientific terms introduced, mechanisms explained like "tadpole loses tail and grows legs"). 6-8: Complex cycles with molecular details (6-8 stages, cellular/molecular mechanisms, precise scientific terminology like "chromatin condenses into chromosomes"). Linear for one-direction processes (embryo to adult), circular for repeating cycles (water cycle, cell division). Always include stage durations, transition explanations, and one common misconception with correction. Perfect for any temporal biology topic: metamorphosis, germination, human development, cellular processes, biogeochemical cycles, seasonal changes, etc.',
+    tutoring: {
+      taskDescription:
+        'Student is putting the stages of {{title}} in the order they really happen. '
+        + 'Cycle shape: {{cycleType}}. Stages to place: {{stageLabels}}. '
+        + 'They have placed {{placedCount}} of {{totalStages}}. Currently holding: {{selectedStageLabel}}. '
+        + 'At K-2 they tap the pictures in order; older students drag cards into numbered slots.',
+      contextKeys: [
+        'title',
+        'cycleType',
+        'stageLabels',
+        'placedCount',
+        'totalStages',
+        'selectedStageLabel',
+        'gradeBand',
+        'checked',
+      ],
+      scaffoldingLevels: {
+        level1: '"Which one do you think happens FIRST — right at the very beginning?"',
+        level2: '"You have placed {{placedCount}} so far. Think about what has to happen before the next one can happen."',
+        level3: '"Start at the very beginning of the life and work forwards. For each picture ask: could this happen before the one I just put down, or after it?"',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student orders the stages by size instead of by time',
+          response: '"Bigger does not always mean later — think about WHEN each one happens, not how big it is."',
+        },
+        {
+          pattern: 'Student places stages in the order the cards happen to be shown',
+          response: '"The pictures are all mixed up on purpose. Do not go left to right — look at each picture and think about what happens first in real life."',
+        },
+        {
+          pattern: 'Student gets stuck on which of two middle stages comes first',
+          response: '"Take just those two. What has to be true before each one can start? The one that needs the other to happen first goes second."',
+        },
+        {
+          pattern: 'Student finishes a circular cycle and thinks it has an end',
+          response: '"This one is a circle — when you get to the last one it starts all over again. That is what makes it a cycle."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the stage names or the descriptions',
+          response: '"Never ask them to read. Name each picture aloud as they look at it and describe what is happening in child words. They tap the pictures in order — the words are yours to speak."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
+          instruction:
+            'A pre-reader CANNOT read the stage names, the descriptions, the slot numbers or the instructions. Your voice is the only channel. '
+            + 'When you receive [CYCLE_ORIENT], say in one or two warm child-sized sentences that these pictures are mixed up and they should tap them in the order they really happen, starting with the very first one. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [CYCLE_STAGE_PLACED], SAY the name of the picture they just placed and what is happening in it, in one short sentence. Do NOT say whether it is in the right place. '
+            + 'When you receive [CYCLE_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+        },
+        {
+          title: 'ORDER IS THE ANSWER',
+          instruction:
+            'The correct ORDER is the answer to this task. Never state the sequence, never say "the egg comes first", and never confirm or deny a placement before the student checks their work — '
+            + 'naming even one position gives away a piece of the answer. '
+            + 'Describe what is happening IN a picture freely; that is the stimulus, not the answer. '
+            + 'After they check and something is wrong, ask what has to happen before what — do not reorder it for them.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

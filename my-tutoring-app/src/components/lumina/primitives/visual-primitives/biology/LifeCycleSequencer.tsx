@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LifeCycleSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import { LuminaDropZone, type DropZoneState } from '../../../ui';
+import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, RefreshCw, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
 
 /**
@@ -129,19 +130,85 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     onEvaluationSubmit,
   } = data;
 
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `life-cycle-sequencer-${Date.now()}`,
+    [instanceId],
+  );
+
   const {
     submitResult,
     hasSubmitted,
     resetAttempt,
   } = usePrimitiveEvaluation<LifeCycleSequencerMetrics>({
     primitiveType: 'life-cycle-sequencer',
-    instanceId: instanceId || `life-cycle-sequencer-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
     onSubmit: onEvaluationSubmit,
   });
+
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-2 the stage names, the descriptions, the slot numbers and the "Drop
+  // stage here" prompts are all undecodable, and a select-then-target protocol
+  // is two acts. The ordering itself is genuinely K-fit — the fix is to make
+  // tapping a picture place it in the next empty slot, so ordering becomes one
+  // tap per card (reader-fit PRE contract rules 1, 2, 7).
+  const isPreReader = data.gradeBand === 'K-2';
+
+  const placedCount = timelineStages.filter(Boolean).length;
+
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    cycleType: data.cycleType,
+    stageLabels: data.stages.map(s => s.label).join(', '),
+    placedCount,
+    totalStages: data.stages.length,
+    selectedStageLabel: selectedStage?.label ?? 'nothing',
+    gradeBand: data.gradeBand,
+    checked: isChecked,
+  }), [
+    data.title, data.cycleType, data.stages, data.gradeBand,
+    placedCount, selectedStage, isChecked,
+  ]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'life-cycle-sequencer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[CYCLE_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[CYCLE_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a life-cycle ordering task: ${data.title}. The pictures are deliberately shuffled. `
+      + `${isPreReader
+        ? 'They tap the pictures in the order things really happen, starting with the very first.'
+        : 'They drag cards into numbered slots in the order things really happen.'} `
+      + `Tell them what to do in child words. NEVER say which one comes first — the order is the answer.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.title]);
 
   // Dismiss tutorial after 5 seconds
   useEffect(() => {
@@ -172,9 +239,42 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     });
   };
 
+  /**
+   * Place a stage into the first empty slot. This is the PRE protocol: tapping
+   * a picture IS the placement, so ordering costs one tap per card instead of
+   * select-then-target. Deliberately says nothing about correctness — the order
+   * is the answer and the student has not checked yet.
+   */
+  const placeInNextEmptySlot = (stage: LifeCycleStage) => {
+    const index = timelineStages.findIndex(s => s === null);
+    if (index === -1) return;
+
+    SoundManager.snap();
+    const newTimeline = [...timelineStages];
+    newTimeline[index] = stage;
+    setTimelineStages(newTimeline);
+    setShuffledStages(prev => prev.filter(s => s.id !== stage.id));
+    setSelectedStage(null);
+    setIsChecked(false);
+    setStageResults(new Map());
+
+    sendText(
+      `[CYCLE_STAGE_PLACED] The student placed "${stage.label}". `
+      + `Say its name and what is happening in that picture, in ONE short sentence. `
+      + `Do NOT say whether it is in the right place and do NOT hint at the order.`,
+      { silent: true },
+    );
+  };
+
   // Touch/Click to select and place
   const handleStageClick = (stage: LifeCycleStage, fromTimeline: boolean = false) => {
     if (hasSubmitted) return;
+
+    // PRE: one tap = placed. No selection state to understand or undo-target.
+    if (isPreReader && !fromTimeline) {
+      placeInNextEmptySlot(stage);
+      return;
+    }
 
     if (fromTimeline) {
       // Remove from timeline and return to shuffled pool
@@ -402,12 +502,12 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
           </div>
         )}
 
-        {/* Image Preview */}
+        {/* Image Preview — `imagePrompt` is an image-GENERATION instruction
+            ("a female butterfly laying an egg on a leaf"), not student copy.
+            Rendering it put prompt-engineering in the child's field at every
+            grade, and at K-2 it is the densest text on the card. */}
         <div className="h-24 bg-slate-700/30 rounded-t-lg flex items-center justify-center border-b border-slate-700/50 relative overflow-hidden">
-          <Sparkles className="w-6 h-6 text-slate-500 absolute" />
-          <span className="text-xs text-slate-500 text-center px-4 relative z-10">
-            {stage.imagePrompt}
-          </span>
+          <Sparkles className={`text-slate-500 ${isPreReader ? 'w-10 h-10' : 'w-6 h-6'}`} />
         </div>
 
         {/* Card Content */}
@@ -488,9 +588,14 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-400/10">
               <span className="text-lg font-bold text-slate-500">{index + 1}</span>
             </div>
-            <p className="text-center text-xs text-slate-500">
-              {selectedStage ? 'Tap or drop to place' : 'Drop stage here'}
-            </p>
+            {/* At PRE the slot number alone is the affordance — tapping a
+                picture fills the next empty slot, so there is no protocol to
+                explain and no text to fail to read. */}
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {selectedStage ? 'Tap or drop to place' : 'Drop stage here'}
+              </p>
+            )}
           </div>
         )}
         onClick={() => handleDropZoneClick(index)}
@@ -597,20 +702,38 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-slate-100 mb-2">{data.title}</h3>
-        <p className="text-slate-400 mb-2">{data.instructions}</p>
+        <div className="flex items-start gap-3 mb-2">
+          <p className="text-slate-400 flex-1">{data.instructions}</p>
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read the instructions to me"
+            className="flex-shrink-0"
+            onClick={() => readAloud(`${data.title}. ${data.instructions}`)}
+          />
+        </div>
         <div className="flex items-center gap-4 text-sm text-slate-500">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            <span>{data.scaleContext}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-1 rounded-full text-xs font-medium" style={{
-              backgroundColor: `rgba(${colors.rgb}, 0.2)`,
-              color: colors.primary
-            }}>
-              {data.gradeBand}
-            </span>
-          </div>
+          {/* scaleContext is prose ("about 4 weeks from egg to butterfly") and
+              the band badge is a developer readout — neither belongs in a
+              five-year-old's field (PRE rule 7). */}
+          {!isPreReader && (
+            <>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span>{data.scaleContext}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 rounded-full text-xs font-medium" style={{
+                  backgroundColor: `rgba(${colors.rgb}, 0.2)`,
+                  color: colors.primary
+                }}>
+                  {data.gradeBand}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -619,8 +742,10 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
         {/* Left Column - Scrambled Cards */}
         <div>
           <div className="flex items-center justify-between mb-3">
+            {/* A heading in uppercase tracking with a live tally is chrome; the
+                shrinking pile already shows how many are left. */}
             <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-              Available Cards ({shuffledStages.length})
+              {isPreReader ? '' : `Available Cards (${shuffledStages.length})`}
             </h4>
             {!isChecked && shuffledStages.length > 0 && (
               <button
