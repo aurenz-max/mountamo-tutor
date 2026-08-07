@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveBiologyBand } from './gradeBand';
 import { buildScopePromptSection } from '../scopeContext';
 
 // Import the data type from the component (single source of truth)
@@ -202,22 +203,14 @@ export const generateHabitatDiorama = async (
   const config = ctx.raw as Partial<HabitatDioramaData>;
 
   // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
+  // Canonical-first band resolution. The map this replaces was keyed on bare
+  // grade tokens but indexed with `ctx.gradeContext`, which is PROSE, so it
+  // missed at every grade and '3-5' always won — verified by probe at
+  // `grade=K`, which returned `gradeBand:'3-5'` with 7 organisms and a
+  // disruption scenario against a K-2 rung reading "4-5 organisms … NO
+  // disruption scenario (too complex)". This ALSO left the component's own
+  // `gradeBand !== 'K-2'` gates dead code. See ./gradeBand.
+  const gradeBand = resolveBiologyBand(config.gradeBand, ctx.grade, ctx.gradeContext);
 
   // Grade-specific complexity and content instructions
   const gradeContext = {

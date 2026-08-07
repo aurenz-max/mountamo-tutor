@@ -232,9 +232,45 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   *Residuals:* no live audio run; rule 3 only PARTIAL (cards are a Sparkles glyph
   + word label — no image pipeline wired; same as S9, and wiring images for both
   biology sorters together would be one slice); 0 eval modes.
-  → **NEXT: S14 `habitat-diorama`** → S15 `organism-card`. Both still carry the
-  prose-keyed map and should now **import `./gradeBand`** rather than add a
-  fourth and fifth copy. Probe each at `grade=K` first.
+  ~~**S14 `habitat-diorama`**~~ **S14 CLOSED 2026-08-06 — READY at PRE, and the
+  most instructive shape in the set: the component was ALREADY written band-aware
+  and its gates had NEVER RUN.** `HabitatDiorama.tsx` carries five
+  `gradeBand !== 'K-2'` conditions (disruption scenario, relationship overlay,
+  relationships panel, 6-8 descriptions, legend descriptions) — all dead, because
+  the generator's prose-keyed map never emitted `'K-2'`. Probe @ K pre-fix:
+  `'3-5'`, **7 organisms / 4 relationships / disruption present** against a K-2
+  rung reading "4-5 organisms, basic predator-prey only, NO disruption scenario".
+  Fixed by importing the shared `resolveBiologyBand` from S13 — **most of this
+  slice's PRE improvement came from deleting one broken lookup, not from new
+  gates.** ⚠️ **Read the rest of the backlog accordingly: a component containing
+  band-gating code is NOT evidence that band-gating happens. Only a probe at the
+  band is.**
+  Also (2) **SCAFFOLD-GAP** — catalog block + 3 moments, with a **no-jargon rule**
+  at PRE (forbids producer/consumer/decomposer/herbivore/carnivore and supplies
+  the replacement register) dropped at 3-5 where that vocabulary IS the objective,
+  plus a `NOTHING HERE IS THE VILLAIN` directive (young children reliably read
+  predators as mean). (3) **PRIMITIVE-GAP, unqueued** — the roles legend was
+  gated **backwards**: at K-2 it hid each role's DESCRIPTION but kept the five
+  TERMS, i.e. undecodable jargon with its explanation removed. Whole legend now
+  hidden at K-2, shown WITH descriptions at 3-5. And the organism buttons had
+  **no accessible name at all** (emoji-only scene, no `aria-label`) — added for
+  organisms and features; an a11y fix at every grade.
+  **tutor-test finding worth reusing:** the first run WARNed
+  `context-key-unresolvable` on every key with "(bag has dynamic keys — verify at
+  runtime)" because `aiPrimitiveData` was assembled behind a local statement in
+  the `useMemo`. Flattened to a literal → 7/7 resolve. **A bag built behind
+  statements turns a real check into a shrug.**
+  Gates: 13 jsdom tests, **revert-bite 4/13**, src-scoped tsc **803 = baseline
+  zero new**, typecheck:lumina 0, full vitest **1966/1966**, tutor-test Tier 1
+  `pass`. Report `qa/reader-fit/habitat-diorama-PRE-2026-08-06.md`.
+  *Residuals:* no live audio run; rule 8 only PARTIAL (submits on organisms
+  VIEWED — exposure, not understanding); **organism emoji are chosen by
+  string-matching `imagePrompt`**, so a scene whose prompts lack those substrings
+  renders 🐰 for everything — a content-fidelity bug worth its own item if
+  biology scenes get more use; 0 eval modes.
+  → **NEXT: S15 `organism-card`** — the LAST item in 15B. Still carries the
+  prose-keyed map; **import `./gradeBand`** rather than add a fifth copy. Probe
+  at `grade=K` first.
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

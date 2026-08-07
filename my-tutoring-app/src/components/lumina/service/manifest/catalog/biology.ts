@@ -166,6 +166,68 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     id: 'habitat-diorama',
     description: 'A scene-based interactive ecosystem explorer presenting a habitat with clickable organisms and environmental features. The PRIMARY ecosystem primitive for biology. Students explore relationships (who eats whom, where things live, how they interact). Bridges observation (K-2: "What animals live here?") into ecology concepts (3-5: food chains) and ecosystem dynamics (6-8: trophic cascades). PERFECT for teaching food webs, ecological relationships (predation, symbiosis, competition), producer-consumer roles, and systems thinking. Features interactive organisms with detailed info cards, relationship visualization showing food web connections, environmental features (water, sunlight, shelter), and optional disruption scenarios for critical thinking. Connection mode draws arrows between organisms showing relationships. ESSENTIAL for K-8 ecology, environmental science, and habitats units. Students click organisms to learn about adaptations and roles, toggle relationships to see food webs, explore environmental features, and predict cascade effects from ecosystem disruptions.',
     constraints: 'Use for K-8 students learning about ecosystems, habitats, food chains/webs, ecological relationships, or environmental science. K-2: Simple observation with 4-5 recognizable organisms (rabbit, owl, plants), basic predator-prey relationships only, 2-3 environmental features, NO disruption scenario (too complex). Focus on "What lives here? What do they eat?" 3-5: More complex with 6-8 organisms showing full food chain (producers → primary consumers → secondary consumers), introduce symbiotic relationships (mutualism, commensalism), 3-4 environmental features, INCLUDE simple disruption scenario with 3-4 predictable effects. Students trace energy through food chain. 6-8: Complex food webs with 8-10 organisms across ALL trophic levels including decomposers, full range of relationships (predation, mutualism, commensalism, parasitism, competition), 4-5 environmental features showing abiotic-biotic interactions, REQUIRED complex disruption scenario with 4-5 cascade effects demonstrating systems thinking (trophic cascade, competitive release, population dynamics). Perfect for any ecosystem/habitat: coral reef, rainforest, desert, tundra, grassland, forest, wetland, ocean, pond. Use for teaching producers/consumers/decomposers, food chains/webs, energy flow, ecological niches, adaptations, interdependence, keystone species, and ecosystem disruption.',
+    tutoring: {
+      taskDescription:
+        'Student is exploring a {{habitatName}} habitat scene. Living things in it: {{organismNames}} '
+        + '({{organismCount}} of them). They are looking at: {{selectedOrganismName}}. '
+        + 'Relationships shown: {{relationshipMode}}. '
+        + 'They tap animals and plants in the scene to find out who lives here and who eats whom.',
+      contextKeys: [
+        'habitatName',
+        'organismNames',
+        'organismCount',
+        'selectedOrganismName',
+        'selectedOrganismRole',
+        'relationshipMode',
+        'gradeBand',
+      ],
+      scaffoldingLevels: {
+        level1: '"Tap one of the animals or plants in the picture. Who do you think lives here?"',
+        level2: '"You found {{selectedOrganismName}}. Think about what it might eat, and what might try to eat IT."',
+        level3: '"Every living thing here needs food. Plants make their own from sunlight. Animals have to eat something else. Tap two of them and think about which one might be a meal for the other."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student thinks every animal eats every other animal',
+          response: '"Not everyone eats everyone. Look closely at this one — is it big enough to catch that? Some of these only eat plants."',
+        },
+        {
+          pattern: 'Student does not count plants as living things in the habitat',
+          response: '"Plants are alive too, and they are the most important part — almost everything else here depends on them for food."',
+        },
+        {
+          pattern: 'Student thinks predators are bad or mean',
+          response: '"Nothing here is mean — every animal is just finding its food. If the hunters all disappeared there would be too many of the other animals and not enough plants for them."',
+        },
+        {
+          pattern: 'Student taps rapidly through organisms without looking at any',
+          response: '"Stay with this one a moment. Where in the picture does it live — up in the trees, on the ground, or in the water?"',
+        },
+        {
+          pattern: 'A pre-reader cannot read the organism names, roles, or the fact cards',
+          response: '"Never ask them to read. Say the animal\'s name aloud when they tap it and describe it in child words — what it eats, where it lives. Never use words like producer, consumer or decomposer with a young child."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
+          instruction:
+            'A pre-reader CANNOT read the organism names, the role labels, or the information cards. Your voice is the only channel. '
+            + 'When you receive [HABITAT_ORIENT], say in one or two warm child-sized sentences that this is a habitat and they can tap the animals and plants to find out about them. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [HABITAT_ORGANISM_SELECTED], SAY the name of what they tapped and one short child-sized thing about it — what it eats or where it lives. '
+            + 'When you receive [HABITAT_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'NEVER use the words producer, consumer, decomposer, herbivore, carnivore or trophic with a pre-reader. Say "it makes its own food from sunshine", "it eats plants", "it hunts other animals".',
+        },
+        {
+          title: 'NOTHING HERE IS THE VILLAIN',
+          instruction:
+            'Young children reliably read predators as mean and prey as victims. Never reinforce that framing, even playfully. '
+            + 'Every organism is finding its food; the scene is a system, not a fight. '
+            + 'If a child says an animal is bad or scary, acknowledge the feeling and reframe to what the animal needs.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

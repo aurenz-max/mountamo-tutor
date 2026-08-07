@@ -14,10 +14,12 @@
  * - Grade-appropriate complexity (K-2: observation, 3-5: food chains, 6-8: ecosystem dynamics)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Info, Zap, Eye, Link2 } from 'lucide-react';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -104,23 +106,105 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
   const [studentPredictions, setStudentPredictions] = useState<string[]>([]);
   const [showDisruption, setShowDisruption] = useState(false);
 
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `habitat-diorama-${Date.now()}`,
+    [instanceId],
+  );
+
   // Evaluation hook for tracking progress
   const { submitResult, hasSubmitted } = usePrimitiveEvaluation({
     primitiveType: 'habitat-diorama',
-    instanceId: instanceId || `habitat-diorama-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     exhibitId,
   });
 
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // NOTE: this component was already written band-aware — it carries five
+  // `gradeBand !== 'K-2'` gates. Every one of them was DEAD CODE, because the
+  // generator resolved its band from a map keyed on grade tokens but indexed
+  // with prose, so 'K-2' was never emitted. Fixing the generator is what turns
+  // the author's original intent back on; this slice adds only what was missing.
+  const isPreReader = data.gradeBand === 'K-2';
+
+  const selectedForAI = useMemo(
+    () => data.organisms.find(o => o.id === selectedOrganism) ?? null,
+    [data.organisms, selectedOrganism],
+  );
+
+  // Kept as a flat object literal so `/tutor-test`'s static analyzer can see the
+  // keys — a bag assembled behind local statements reports every contextKey as
+  // "dynamic, verify at runtime", which turns a real check into a shrug.
+  const aiPrimitiveData = useMemo(() => ({
+    habitatName: data.habitat?.name ?? 'this habitat',
+    organismNames: data.organisms.map(o => o.commonName).join(', '),
+    organismCount: data.organisms.length,
+    selectedOrganismName: selectedForAI?.commonName ?? 'nothing yet',
+    selectedOrganismRole: selectedForAI?.role ?? 'none',
+    relationshipMode: showRelationships ? 'shown' : 'hidden',
+    gradeBand: data.gradeBand,
+  }), [data.habitat, data.organisms, data.gradeBand, selectedForAI, showRelationships]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'habitat-diorama',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[HABITAT_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[HABITAT_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a ${data.habitat?.name ?? 'habitat'} scene with these living things: `
+      + `${data.organisms.map(o => o.commonName).join(', ')}. `
+      + `They tap an animal or plant to find out about it. Tell them what to do in child words.`
+      + `${isPreReader
+        ? ' NEVER use the words producer, consumer, decomposer, herbivore or carnivore with them.'
+        : ''}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.habitat, data.organisms]);
+
   // Handle organism click
   const handleOrganismClick = (organismId: string) => {
     SoundManager.tap();
-    setSelectedOrganism(organismId === selectedOrganism ? null : organismId);
+    const isOpening = organismId !== selectedOrganism;
+    setSelectedOrganism(isOpening ? organismId : null);
     setSelectedFeature(null);
 
     const newViewed = new Set(viewedOrganisms);
     newViewed.add(organismId);
     setViewedOrganisms(newViewed);
+
+    // The tutor's voice IS the info card for a non-reader.
+    const organism = data.organisms.find(o => o.id === organismId);
+    if (organism && isOpening) {
+      sendText(
+        `[HABITAT_ORGANISM_SELECTED] The student tapped ${organism.commonName}. `
+        + `Say its name and ONE short child-sized thing about it — what it eats or where it lives. `
+        + `No question, no extra fact.`
+        + `${isPreReader ? ' Never say producer, consumer, decomposer, herbivore or carnivore.' : ''}`,
+        { silent: true },
+      );
+    }
 
     const interaction = {
       type: 'organism_viewed',
@@ -297,6 +381,11 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
           <button
             key={organism.id}
             onClick={() => handleOrganismClick(organism.id)}
+            // The scene is emoji-only by design (picture-primary, which is right
+            // at PRE) — but that left these buttons with NO accessible name at
+            // all, so assistive tech announced nothing. The name belongs here,
+            // not on screen.
+            aria-label={organism.commonName}
             className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all ${
               selectedOrganism === organism.id
                 ? 'scale-110 z-20'
@@ -327,6 +416,7 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
           <button
             key={feature.id}
             onClick={() => handleFeatureClick(feature.id)}
+            aria-label={feature.name}
             className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all ${
               selectedFeature === feature.id
                 ? 'scale-110 z-20'
@@ -357,10 +447,27 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
                   <h4 className="text-xl font-bold text-white mb-1">
                     {selectedOrganismData.commonName}
                   </h4>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(selectedOrganismData.role)}`}>
-                    {selectedOrganismData.role.replace('-', ' ')}
-                  </span>
+                  {/* "primary consumer" / "decomposer" is technical vocabulary a
+                      K-2 child cannot read or use — the scaffold forbids the
+                      tutor from saying these words, so the screen should not
+                      show them either (PRE rule 7). */}
+                  {!isPreReader && (
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(selectedOrganismData.role)}`}>
+                      {selectedOrganismData.role.replace('-', ' ')}
+                    </span>
+                  )}
                 </div>
+                <LuminaReadAloud
+                  iconOnly
+                  size={isPreReader ? 'lg' : 'sm'}
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label={`Tell me about the ${selectedOrganismData.commonName}`}
+                  className="flex-shrink-0"
+                  onClick={() => readAloud(
+                    `${selectedOrganismData.commonName}. ${selectedOrganismData.description}`,
+                  )}
+                />
               </div>
 
               <p className="text-slate-300 mb-4 leading-relaxed">
@@ -466,7 +573,12 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
         </div>
       )}
 
-      {/* Legend */}
+      {/* Legend — the existing K-2 gate hid each role's DESCRIPTION but left the
+          five technical terms standing, which is strictly worse: undecodable
+          vocabulary (Producer, Primary Consumer, Decomposer…) with its
+          explanation removed. At K-2 the whole legend goes; the tutor names what
+          each creature eats in child words instead (PRE rule 7). */}
+      {!isPreReader && (
       <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700 rounded-xl p-4">
         <h5 className="text-sm font-semibold text-slate-400 mb-3">Organism Roles:</h5>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -481,14 +593,13 @@ const HabitatDiorama: React.FC<HabitatDioramaProps> = ({
               <div className={`w-3 h-3 rounded-full border flex-shrink-0 mt-1 ${getRoleColor(item.role as Organism['role'])}`} />
               <div>
                 <div className="text-xs font-medium text-white">{item.label}</div>
-                {data.gradeBand !== 'K-2' && (
-                  <div className="text-xs text-slate-400">{item.desc}</div>
-                )}
+                <div className="text-xs text-slate-400">{item.desc}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 };
