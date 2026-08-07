@@ -138,8 +138,38 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   `pass`. Report `qa/reader-fit/day-night-seasons-PRE-2026-08-06.md`.
   *Residuals:* the day/night reading needs ONE visual confirmation (HUMAN-CHECKS
   #73 — if inverted the fix is one `!`); no live audio run; 0 eval modes.
-  → **NEXT: S11 `solar-system-explorer`** → S12 `scale-comparator` →
-  S13 `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
+  ~~**S11 `solar-system-explorer`**~~ **S11 CLOSED 2026-08-06 — READY at PRE.**
+  First slice where the generator's HAPPY path was already right at K (probe:
+  `gradeLevel:'K'`, `initialZoom:'inner'`, 5 bodies) — the prompt carries the
+  audience in prose, which is the one place prose belongs. Three findings:
+  (1) **SCAFFOLD-GAP** — catalog block (8 contextKeys, 3 levels, 5 struggles,
+  2 aiDirectives) + 3 moments. Two notable rules: a hard **no-measurements**
+  directive at PRE (the detail card is six numeric cells — AU/km/days/hrs/°C/moons
+  — and the tutor is given the replacement register: "the biggest one", "really
+  really hot"), dropped at 3-5 where numbers are the point; and a **SCALE
+  HONESTY** directive, since 2 of the 5 struggles are misconceptions *the layout
+  itself invites* (planets look lined up, look close together).
+  (2) **Degrade-path grade blindness** — `getDefaultBodies(gradeLevel)` was fed
+  PROSE, and its only branch is `=== 'K' || '1' || '2'`, so the K-2 branch was
+  **UNREACHABLE** and a Kindergartener fell back to all 8 planets instead of the
+  inner 4 — firing only when Gemini returned no bodies, i.e. when the lesson was
+  already degraded. **This is the `matter-explorer` inline-resolver shape: no
+  named resolver to grep, and no happy-path probe can reach it.** Fixed via
+  `solarSystemGradeFromGrade()` + a canonical `gradeRung`; prose stays in the
+  prompt. (3) **PRIMITIVE-GAP, unqueued** — 6 categories of adult chrome around
+  the tap (3-clause 12px protocol text, 3 checkboxes, scale `<select>`, raw speed
+  multiplier, calendar date, 6-cell stat grid), all gated at K-1, all kept at 3-5.
+  **Lesson worth carrying: the first gating attempt used Tailwind `hidden` and the
+  jsdom test failed it correctly — CSS-hidden is NOT gone** (text stays in the DOM
+  and reachable by AT). Use conditional render.
+  Gates: 12 + 13 tests, **revert-bite 5/13**, src-scoped tsc **803 = baseline
+  zero new**, typecheck:lumina 0, full vitest **1903/1903**, tutor-test Tier 1
+  `pass`. Report `qa/reader-fit/solar-system-explorer-PRE-2026-08-06.md`.
+  *Residuals:* no live audio run; **no evaluation hook at all** (pure explorer —
+  rule 8 is N/A, not passing; `planetary-explorer` is the measured cousin);
+  0 eval modes; `instanceId` newly typed on the data interface.
+  → **NEXT: S12 `scale-comparator`** → S13 `life-cycle-sequencer` →
+  S14 `habitat-diorama` → S15 `organism-card`.
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

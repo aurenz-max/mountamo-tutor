@@ -163,11 +163,57 @@ const solarSystemExplorerSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns SolarSystemExplorerData with complete configuration
  */
+export type SolarSystemGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Canonical grade → structural rung.
+ *
+ * This generator's prose-grade defect is narrower than its astronomy siblings
+ * but sharper: `ctx.gradeContext` (PROSE) was passed straight into
+ * `getDefaultBodies(gradeLevel)`, whose only branch is
+ * `gradeLevel === 'K' || === '1' || === '2'`. Prose never equals 'K', so the
+ * K-2 branch was UNREACHABLE and the fallback handed a Kindergartener all eight
+ * planets instead of the inner four.
+ *
+ * It bites only on the DEGRADE path (Gemini returned no bodies) — which is
+ * exactly when the lesson is already fragile and least able to absorb it. The
+ * happy path was fine because the prompt carries the audience in prose, which
+ * is the one place prose belongs.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const solarSystemGradeFromGrade = (grade?: string): SolarSystemGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const solarSystemGradeFromProse = (prose?: string): SolarSystemGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
 export const generateSolarSystemExplorer = async (
   ctx: GenerationContext,
 ): Promise<SolarSystemExplorerData> => {
   const { topic } = ctx;
+  // PROSE — correct for the prompt's audience voice, and used ONLY there.
   const gradeLevel = ctx.gradeContext;
+  // Canonical rung — the value every structural decision must key off.
+  const gradeRung: SolarSystemGrade =
+    solarSystemGradeFromGrade(ctx.grade) ?? solarSystemGradeFromProse(ctx.gradeContext);
   const config = ctx.raw as Partial<SolarSystemExplorerData>;
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The subject (topic) stays broad; intent foregrounds it in student-facing text.
@@ -486,7 +532,8 @@ Return a complete Solar System Explorer configuration appropriate for the grade 
   // Validation: ensure bodies array exists and includes Sun
   if (!data.bodies || data.bodies.length === 0) {
     console.warn('No bodies provided. Setting default solar system.');
-    data.bodies = getDefaultBodies(gradeLevel);
+    // gradeRung, NOT the prose gradeLevel — see solarSystemGradeFromGrade.
+    data.bodies = getDefaultBodies(gradeRung);
   }
 
   const hasSun = data.bodies.some((b: CelestialBody) => b.id === 'sun');

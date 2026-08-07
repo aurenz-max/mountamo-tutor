@@ -350,7 +350,34 @@ queue AND this file's "last touched" in the same slice.
 > (S11–S15) for a component band-gate pass, not just a catalog block, and run Audit C rather
 > than trusting the triage line.**
 >
-> **Next pull: S11 `solar-system-explorer`**, then S12 → S15. 15A (S2–S7) remains queued below.
+> **S11 `solar-system-explorer` CLOSED — READY at PRE.** Report
+> `qa/reader-fit/solar-system-explorer-PRE-2026-08-06.md`. First slice where the generator's
+> **happy path was already correct at K** (probe: `gradeLevel:'K'`, `initialZoom:'inner'`, 5
+> bodies) — the prompt carries the audience in prose, which is the one place prose belongs.
+> The defect was on the **degrade path**: `getDefaultBodies(gradeLevel)` was handed PROSE and
+> its only branch is `=== 'K' || '1' || '2'`, so the K-2 branch was **unreachable** and a
+> Kindergartener fell back to all 8 planets instead of the inner 4 — firing only when Gemini
+> returned no bodies, i.e. exactly when the lesson was already degraded. **This is the
+> `matter-explorer` inline-resolver shape ([[feedback_value-origin-not-code-touch]]): there is
+> no named resolver to grep, AND no happy-path probe can reach it** — it is covered by the
+> focused test instead, and that asymmetry is the finding rather than a gap in the evidence.
+> Scaffold notes: a hard **no-measurements** directive at PRE (the detail card is six numeric
+> cells — AU/km/days/hrs/°C/moons — with the replacement register supplied: "the biggest one",
+> "really really hot"), dropped at 3-5 where the numbers are the point; plus a **SCALE
+> HONESTY** directive, because 2 of the 5 struggles are misconceptions *the layout itself
+> invites* (planets look lined up, look close together). Six categories of adult chrome gated
+> at K-1, all kept at 3-5.
+> **Reusable lesson: the first gating attempt used Tailwind `hidden` and the jsdom test failed
+> it — correctly. CSS-hidden is NOT gone**; the text stays in the DOM and reachable by
+> assistive tech. Conditional render is the only thing that satisfies rule 7.
+> Gates: 12 + 13 tests, **revert-bite 5/13**, src-scoped tsc **803 = baseline zero new**,
+> typecheck:lumina 0, full vitest **1903/1903**, tutor-test Tier 1 `pass`.
+> *Residual worth knowing:* this primitive has **no evaluation hook at all** — pure explorer,
+> so band-contract rule 8 is N/A rather than passing. `planetary-explorer` is the measured
+> cousin if K astronomy ever needs a scored solar-system activity.
+>
+> **Next pull: S12 `scale-comparator`**, then S13 → S15 (the three biology ones, all sharing
+> the S9 prose-keyed-map shape). 15A (S2–S7) remains queued below.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

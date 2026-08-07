@@ -11,6 +11,69 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     id: 'solar-system-explorer',
     description: 'Interactive solar system model with accurate orbital mechanics, zoom controls, and planet details. Students explore planetary motion, compare sizes and distances, watch orbits in real-time, and discover facts about each celestial body. Features dynamic zoom from full system view down to individual planets, adjustable time scale to speed up orbital motion, and multiple scale modes (size-accurate, distance-accurate, hybrid) to teach the challenge of representing space at scale. Shows the habitable zone (Goldilocks zone) for astrobiology concepts. Includes all 8 planets plus optional dwarf planets (Pluto, Ceres, Eris) for advanced grades. Perfect for K-5 astronomy, NGSS space science standards, and next-generation science education. ESSENTIAL for teaching solar system structure, planetary motion, and scale of space.',
     constraints: 'Best for grades K-5. Learning progression: K (planet names, order, Earth), 1 (inner vs outer, sizes), 2 (orbits, day/year), 3 (moons, rings, AU), 4 (orbital periods, distances), 5 (Kepler\'s laws, gravity, habitable zone). K-2: Show inner planets only or use hybrid scale mode for visibility. 3-5: Include all 8 planets, dwarf planets optional for grade 5. Use initialZoom to control starting view: "inner" for K-1, "system" for 2-5. Enable showDistances and showHabitableZone for grades 3+. Increase timeScale for younger grades (faster = more engaging). Supports both free exploration and guided inquiry about planetary characteristics.',
+    tutoring: {
+      taskDescription:
+        'Student is exploring a live model of the solar system ("{{title}}"). '
+        + 'View: {{initialZoom}}. Bodies on screen: {{bodyNames}}. '
+        + 'They are looking at: {{selectedBodyName}}. Motion is {{motionState}}. '
+        + 'They tap a planet to learn about it, and can zoom and pan around the Sun.',
+      contextKeys: [
+        'title',
+        'initialZoom',
+        'gradeLevel',
+        'bodyNames',
+        'bodyCount',
+        'selectedBodyName',
+        'selectedBodyDescription',
+        'motionState',
+      ],
+      scaffoldingLevels: {
+        level1: '"Tap one of the planets going around the Sun. Which one looks most interesting to you?"',
+        level2: '"You are looking at {{selectedBodyName}}. Watch how it travels around the Sun — the ones close in go around fast, and the far ones take a long time."',
+        level3: '"Everything here goes around the Sun in the middle. The Sun is the biggest thing by far. Tap each planet one at a time and I will tell you about it — start with the one closest to the Sun and work your way out."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student thinks the planets are lined up in a row in real life',
+          response: '"Good noticing! On the screen they look lined up because it is easier to see. In real space they are spread all around the Sun, each on its own path, and they are almost never in a line."',
+        },
+        {
+          pattern: 'Student thinks the planets are as close together as they look here',
+          response: '"Space is much emptier than this picture. We squeeze the planets closer so they fit on the screen. If we drew it truly, the planets would be tiny specks miles apart."',
+        },
+        {
+          pattern: 'Student taps rapidly through planets without looking at any',
+          response: '"Stay on this one for a moment. Look at its colour and its size next to the others. What do you notice about it?"',
+        },
+        {
+          pattern: 'Student asks which planet is best or biggest without exploring',
+          response: '"Let us find out together instead of me telling you. Tap two of them and compare — which one looks bigger on screen?"',
+        },
+        {
+          pattern: 'A pre-reader cannot read the planet names, the fact card, or any of the numbers',
+          response: '"Never ask them to read. Say the planet name aloud when they tap it, and describe it in child words — \'this one is the biggest\', \'this one is the red one\'. Never read out kilometres, degrees, or AU to a young child."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the planet names, the description card, the fun fact, or any of the numbers on this screen. Your voice is the only channel. '
+            + 'When you receive [SOLAR_ORIENT], say in one or two warm child-sized sentences that these are the planets going around our Sun, and that they can tap one to hear about it. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [SOLAR_BODY_SELECTED], SAY the name of the body they tapped and one short child-sized thing about it. '
+            + 'When you receive [SOLAR_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'NEVER speak a measurement to a pre-reader — no kilometres, no AU, no degrees Celsius, no orbital periods in days. Say "the biggest one", "really really hot", "it takes a long time to go around" instead.',
+        },
+        {
+          title: 'SCALE HONESTY',
+          instruction:
+            'This model cannot show size and distance truthfully at the same time — that is a real teaching point, not a flaw to hide. '
+            + 'If a student draws a conclusion from how things LOOK on screen (how close together the planets are, how big they are next to each other), '
+            + 'gently name the trade-off in child words rather than letting the misconception stand.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

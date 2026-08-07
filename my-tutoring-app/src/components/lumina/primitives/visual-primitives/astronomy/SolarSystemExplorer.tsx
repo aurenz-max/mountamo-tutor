@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 
 // Export data interface - single source of truth
 export interface CelestialBody {
@@ -35,6 +37,9 @@ export interface SolarSystemExplorerData {
   showDistances?: boolean;
   compareMode?: boolean;
   gradeLevel?: 'K' | '1' | '2' | '3' | '4' | '5';
+
+  /** Auto-injected by ManifestOrderRenderer; scopes the tutor session. */
+  instanceId?: string;
 }
 
 interface SolarSystemExplorerProps {
@@ -70,6 +75,84 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
 
   // Base scale: 1 AU = pixels
   const AU_TO_PIXELS = 180;
+
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-1 the instrument panel (three toggles, a scale <select>, a speed
+  // slider, a calendar date) and the six-cell stat grid (AU, km, days, hours,
+  // °C, moon count) are all undecodable adult chrome. The interaction that IS
+  // K-fit — tap a planet, watch it go round — survives on its own
+  // (reader-fit PRE contract rules 1, 4, 7).
+  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
+
+  const resolvedInstanceId = useMemo(
+    () => data.instanceId || `solar-system-explorer-${Date.now()}`,
+    [data.instanceId],
+  );
+
+  const selectedBodyForAI = useMemo(
+    () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
+    [data.bodies, selectedBodyId],
+  );
+
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    initialZoom: data.initialZoom ?? 'system',
+    gradeLevel: data.gradeLevel ?? 'unspecified',
+    bodyNames: data.bodies.map((b) => b.name).join(', '),
+    bodyCount: data.bodies.length,
+    selectedBodyName: selectedBodyForAI?.name ?? 'nothing yet',
+    selectedBodyDescription: selectedBodyForAI?.description ?? '',
+    motionState: paused ? 'paused' : 'orbiting',
+  }), [data.title, data.initialZoom, data.gradeLevel, data.bodies, selectedBodyForAI, paused]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'solar-system-explorer',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: data.gradeLevel,
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[SOLAR_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[SOLAR_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a solar system model showing: ${data.bodies.map((b) => b.name).join(', ')}. `
+      + `They tap a planet to learn about it. Tell them what to do in child words, warmly.`
+      + `${isPreReader ? ' Never speak a measurement to them — no kilometres, AU, degrees or day counts.' : ''}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.bodies]);
+
+  // The tutor's voice IS the planet card for a non-reader. Fires when the
+  // selection changes, not on every render.
+  const lastAnnouncedBodyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedBodyForAI) return;
+    if (lastAnnouncedBodyRef.current === selectedBodyForAI.id) return;
+    lastAnnouncedBodyRef.current = selectedBodyForAI.id;
+    sendText(
+      `[SOLAR_BODY_SELECTED] The student tapped ${selectedBodyForAI.name}. `
+      + `Say its name and ONE short child-sized thing about it. `
+      + `Do not ask a question and do not list numbers.`,
+      { silent: true },
+    );
+  }, [selectedBodyForAI, sendText]);
 
   // Window resize listener (more performant than ResizeObserver for this case)
   useEffect(() => {
@@ -384,10 +467,14 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                 </defs>
               </svg>
 
-              {/* Help Text */}
-              <div className="absolute top-4 right-4 glass-panel backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs text-slate-300 pointer-events-none">
-                Scroll to Zoom • Drag to Pan • Click Planets
-              </div>
+              {/* Help Text — a three-clause protocol instruction in 12px is the
+                  one string a non-reader most needs and least can read. At K-1
+                  the tutor's ORIENT beat carries it instead. */}
+              {!isPreReader && (
+                <div className="absolute top-4 right-4 glass-panel backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs text-slate-300 pointer-events-none">
+                  Scroll to Zoom • Drag to Pan • Click Planets
+                </div>
+              )}
             </div>
 
             {/* Controls Overlay */}
@@ -397,60 +484,75 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPaused(!paused)}
-                    className="px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 text-white rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
+                    aria-label={paused ? 'Play' : 'Pause'}
+                    className={`bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
+                      isPreReader ? 'px-4 py-3 text-2xl leading-none' : 'px-3 py-1.5 text-sm'
+                    }`}
                   >
-                    {paused ? '▶ Play' : '⏸ Pause'}
+                    {isPreReader ? (paused ? '▶' : '⏸') : (paused ? '▶ Play' : '⏸ Pause')}
                   </button>
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
-                    <span className="font-mono">Speed:</span>
-                    <input
-                      type="range"
-                      min="100"
-                      max="20000"
-                      step="100"
-                      value={timeScale}
-                      onChange={(e) => setTimeScale(Number(e.target.value))}
-                      className="w-24"
-                    />
-                  </div>
+                  {/* A raw speed multiplier is a number a five-year-old cannot use. */}
+                  {!isPreReader && (
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <span className="font-mono">Speed:</span>
+                      <input
+                        type="range"
+                        min="100"
+                        max="20000"
+                        step="100"
+                        value={timeScale}
+                        onChange={(e) => setTimeScale(Number(e.target.value))}
+                        className="w-24"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-3 text-xs">
-                  <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                    <input type="checkbox" checked={showOrbits} onChange={(e) => setShowOrbits(e.target.checked)} className="rounded" />
-                    Orbits
-                  </label>
-                  <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                    <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} className="rounded" />
-                    Labels
-                  </label>
-                  <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
-                    <input type="checkbox" checked={showDistances} onChange={(e) => setShowDistances(e.target.checked)} className="rounded" />
-                    Distances
-                  </label>
-                </div>
+                {/* Three display toggles and a scale mode selector are exactly the
+                    "adult chrome in the child's field" rule 7 forbids — and at K
+                    the generator already picks the right defaults for all four. */}
+                {!isPreReader && (
+                  <>
+                    <div className="flex items-center gap-3 text-xs">
+                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                        <input type="checkbox" checked={showOrbits} onChange={(e) => setShowOrbits(e.target.checked)} className="rounded" />
+                        Orbits
+                      </label>
+                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                        <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} className="rounded" />
+                        Labels
+                      </label>
+                      <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer hover:text-white transition-colors">
+                        <input type="checkbox" checked={showDistances} onChange={(e) => setShowDistances(e.target.checked)} className="rounded" />
+                        Distances
+                      </label>
+                    </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <span className="font-mono">Scale:</span>
-                  <select
-                    value={scaleMode}
-                    onChange={(e) => setScaleMode(e.target.value as any)}
-                    className="bg-white/5 hover:bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/20 transition-colors"
-                  >
-                    <option value="hybrid">Hybrid</option>
-                    <option value="size_accurate">Size Accurate</option>
-                    <option value="distance_accurate">Distance Accurate</option>
-                  </select>
-                </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-300">
+                      <span className="font-mono">Scale:</span>
+                      <select
+                        value={scaleMode}
+                        onChange={(e) => setScaleMode(e.target.value as any)}
+                        className="bg-white/5 hover:bg-white/10 text-white rounded-lg px-2 py-1 text-xs border border-white/20 transition-colors"
+                      >
+                        <option value="hybrid">Hybrid</option>
+                        <option value="size_accurate">Size Accurate</option>
+                        <option value="distance_accurate">Distance Accurate</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Date Display */}
-              <div
-                ref={dateDisplayRef}
-                className="glass-panel backdrop-blur-md rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-300 font-mono"
-              >
-                {displayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-              </div>
+              {/* Date Display — a calendar date carries no meaning at K-1. */}
+              {!isPreReader && (
+                <div
+                  ref={dateDisplayRef}
+                  className="glass-panel backdrop-blur-md rounded-xl border border-white/20 px-4 py-2 text-sm text-slate-300 font-mono"
+                >
+                  {displayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -479,7 +581,21 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                   </button>
                 </div>
 
-                <p className="text-slate-300 mb-4 leading-relaxed">{selectedBody.description}</p>
+                <div className="flex items-start gap-3 mb-4">
+                  <p className="text-slate-300 leading-relaxed flex-1">{selectedBody.description}</p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size={isPreReader ? 'lg' : 'sm'}
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    aria-label={`Tell me about ${selectedBody.name}`}
+                    className="flex-shrink-0"
+                    onClick={() => readAloud(
+                      `${selectedBody.name}. ${selectedBody.description}`
+                      + `${selectedBody.funFact ? ` Here is a fun fact. ${selectedBody.funFact}` : ''}`,
+                    )}
+                  />
+                </div>
 
                 {selectedBody.funFact && (
                   <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
@@ -488,6 +604,13 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                   </div>
                 )}
 
+                {/* Six numeric stats — AU, kilometres, orbital days, rotation
+                    hours, °C and a moon count — are the densest adult chrome in
+                    this primitive and mean nothing to a K-1 child. The scaffold
+                    forbids the tutor from speaking them too. NOT rendered rather
+                    than CSS-hidden: `hidden` leaves the text in the DOM and
+                    reachable by assistive tech, which is not "gone". */}
+                {!isPreReader && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {selectedBody.distanceAu > 0 && (
                     <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300">
@@ -518,6 +641,7 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                     <div className="text-white font-light text-lg">{selectedBody.moons}</div>
                   </div>
                 </div>
+                )}
               </div>
             </div>
           )}
