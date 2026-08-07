@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ClassificationSorterMetrics } from '../../../evaluation/types';
 import { Lightbulb, CheckCircle2, XCircle, RotateCcw, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LuminaDropZone, type DropZoneState } from '../../../ui';
+import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 
 /**
@@ -106,6 +107,8 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   const [attemptCounts, setAttemptCounts] = useState<Map<string, number>>(new Map());
   // Transient grading flash on the zone that just received a drop (pop/shake).
   const [dropFlash, setDropFlash] = useState<{ categoryId: string; ok: boolean } | null>(null);
+  // Last placement outcome, surfaced to the tutor as runtime state.
+  const [lastPlacementCorrect, setLastPlacementCorrect] = useState<boolean | null>(null);
   const dropFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -124,6 +127,13 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     onEvaluationSubmit,
   } = data;
 
+  // Stable across renders — an inline `id || \`prefix-${Date.now()}\`` produces a
+  // new string every render and restarts the AI connect effect in a loop.
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `classification-sorter-${Date.now()}`,
+    [instanceId],
+  );
+
   // Initialize evaluation hook
   const {
     submitResult,
@@ -131,7 +141,7 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     resetAttempt,
   } = usePrimitiveEvaluation<ClassificationSorterMetrics>({
     primitiveType: 'classification-sorter',
-    instanceId: instanceId || `classification-sorter-${Date.now()}`,
+    instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
@@ -140,6 +150,101 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   });
 
   const colors = GRADE_BAND_COLORS[data.gradeBand] || GRADE_BAND_COLORS['3-5'];
+
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-2 the item labels, the group names, the rule badge and the instructions
+  // are all undecodable, and HTML5 drag-and-drop is not a protocol a five-year-old
+  // can execute. The fix follows the WordSorter PRE precedent: stage ONE item at
+  // a time so the two-part drag collapses to tap-a-group = choose (PRE contract
+  // rules 2 and 4), and let the tutor's voice carry every word.
+  const isPreReader = data.gradeBand === 'K-2';
+
+  const categoryLabels = useMemo(
+    () => data.categories.map(c => c.label).join(', '),
+    [data.categories],
+  );
+
+  // Items still needing a correct home, in stable order.
+  const unplacedItems = useMemo(
+    () => data.items.filter(item => !placements.get(item.id)?.isCorrect),
+    [data.items, placements],
+  );
+  // At PRE exactly one item is on stage; older bands see the whole pool.
+  const stagedItem = isPreReader ? (unplacedItems[0] ?? null) : null;
+
+  const correctCount = useMemo(
+    () => Array.from(placements.values()).filter(p => p.isCorrect).length,
+    [placements],
+  );
+
+  // ============================================================================
+  // AI tutoring
+  // ============================================================================
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    sortingRule: data.sortingRule,
+    categoryLabels,
+    currentItemLabel: stagedItem?.label ?? (unplacedItems[0]?.label ?? 'all sorted'),
+    correctCount,
+    totalItems: data.items.length,
+    gradeBand: data.gradeBand,
+    lastPlacementCorrect,
+  }), [
+    data.title, data.sortingRule, data.gradeBand, data.items.length,
+    categoryLabels, stagedItem, unplacedItems, correctCount, lastPlacementCorrect,
+  ]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'classification-sorter',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry, the socket payload is unchanged, so the tutor still
+  // speaks. The rule and the group names are the QUESTION, never the answer.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[SORT_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[SORT_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a sorting activity. The rule is: "${data.sortingRule}". The groups are: ${categoryLabels}. `
+      + `${isPreReader
+        ? 'One thing at a time appears on stage and they TAP a group to put it there.'
+        : 'They drag each item into a group.'} `
+      + `Say the rule and the group names in child words. Never say where any item belongs.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.sortingRule, categoryLabels]);
+
+  // PRE only: the tutor's voice IS the item card, since the child cannot read it.
+  // One utterance per staged item — the instruction channel, not chatter.
+  const lastStagedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isPreReader || !stagedItem) return;
+    if (lastStagedRef.current === stagedItem.id) return;
+    lastStagedRef.current = stagedItem.id;
+    sendText(
+      `[SORT_ITEM_STAGED] The next card on stage is "${stagedItem.label}". `
+      + `Say ONLY this name aloud, clearly. Do NOT say which group it belongs in.`,
+      { silent: true },
+    );
+  }, [isPreReader, stagedItem, sendText]);
 
   // ============================================================================
   // Drag and Drop Handlers
@@ -165,37 +270,52 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     setHoveredCategory(null);
   };
 
-  const handleDrop = (e: React.DragEvent, categoryId: string) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
+  /**
+   * The one placement path. Drag-and-drop (grades 3-8) and tap-a-group (K-2)
+   * both land here, so scoring, feedback and the tutor moment cannot drift
+   * apart between the two protocols.
+   */
+  const placeItem = useCallback((item: ClassificationItem, categoryId: string) => {
     SoundManager.snap();
 
     const currentTime = Date.now() - startTime;
-    const isCorrect = draggedItem.correctCategoryId === categoryId;
-    const currentAttempts = attemptCounts.get(draggedItem.id) || 0;
+    const isCorrect = item.correctCategoryId === categoryId;
+    const currentAttempts = attemptCounts.get(item.id) || 0;
     const newAttemptNumber = currentAttempts + 1;
 
-    // Update placements
     const newPlacement: ItemPlacement = {
-      itemId: draggedItem.id,
+      itemId: item.id,
       categoryId,
       isCorrect,
       attemptNumber: newAttemptNumber,
       timeMs: currentTime,
     };
 
-    setPlacements(prev => new Map(prev).set(draggedItem.id, newPlacement));
-    setAttemptCounts(prev => new Map(prev).set(draggedItem.id, newAttemptNumber));
+    setPlacements(prev => new Map(prev).set(item.id, newPlacement));
+    setAttemptCounts(prev => new Map(prev).set(item.id, newAttemptNumber));
+    setLastPlacementCorrect(isCorrect);
+
+    const categoryLabel = data.categories.find(c => c.id === categoryId)?.label ?? categoryId;
 
     // Show hint if incorrect
     if (!isCorrect) {
       SoundManager.invalid();
-      setShowHint(draggedItem.id);
+      setShowHint(item.id);
       setTimeout(() => setShowHint(null), 3000); // Hide hint after 3 seconds
+      // The hint text is a nudge the tutor may PARAPHRASE, never the answer —
+      // correctCategoryId is deliberately withheld from this message.
+      sendText(
+        `[SORT_INCORRECT] Student put "${item.label}" in "${categoryLabel}" and that is not right. `
+        + `Attempt ${newAttemptNumber}. The rule is "${data.sortingRule}". `
+        + `Ask what they notice about "${item.label}". Do NOT name the correct group and do NOT `
+        + `narrow it down by eliminating groups.`,
+        { silent: true },
+      );
     } else {
       SoundManager.playCorrect();
       setShowHint(null);
+      // Quiet on a routine correct placement — the sound and the zone flash carry
+      // it. The tutor speaks at the staged-item and completion beats instead.
     }
 
     // Flash the receiving zone (correct pops, incorrect shakes), then settle.
@@ -205,7 +325,19 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
 
     setDraggedItem(null);
     setHoveredCategory(null);
+  }, [startTime, attemptCounts, data.categories, data.sortingRule, sendText]);
+
+  const handleDrop = (e: React.DragEvent, categoryId: string) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+    placeItem(draggedItem, categoryId);
   };
+
+  /** PRE protocol: the staged item is implicit, so tapping a group IS the answer. */
+  const handleCategoryTap = useCallback((categoryId: string) => {
+    if (!isPreReader || hasSubmitted || !stagedItem) return;
+    placeItem(stagedItem, categoryId);
+  }, [isPreReader, hasSubmitted, stagedItem, placeItem]);
 
   // ============================================================================
   // Evaluation Logic
@@ -261,12 +393,23 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
     submitResult(allCorrect, score, metrics, {
       studentWork: { placements: Array.from(placements.entries()) },
     });
+
+    sendText(
+      `[SORT_ALL_COMPLETE] Student finished the sort: ${totalCorrect} of ${totalItems} correct, `
+      + `${correctFirstAttempt} on the first try. The rule was "${data.sortingRule}". `
+      + `Celebrate warmly in child words and say one true thing the rule taught them.`,
+      { silent: true },
+    );
   };
 
   const handleReset = () => {
     setPlacements(new Map());
     setAttemptCounts(new Map());
     setShowHint(null);
+    setLastPlacementCorrect(null);
+    // Clear the per-attempt narration latch, or the first item staged after a
+    // retry is silently swallowed.
+    lastStagedRef.current = null;
     resetAttempt();
   };
 
@@ -292,9 +435,7 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
   // Render Helpers
   // ============================================================================
 
-  const getUnplacedItems = (): ClassificationItem[] => {
-    return data.items.filter(item => !placements.has(item.id) || !placements.get(item.id)?.isCorrect);
-  };
+  const getUnplacedItems = (): ClassificationItem[] => unplacedItems;
 
   const getItemsInCategory = (categoryId: string): ClassificationItem[] => {
     return data.items.filter(item => {
@@ -335,11 +476,9 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
             <div className="text-sm font-medium text-slate-200">
               {item.label}
             </div>
-            {item.imagePrompt && (
-              <div className="text-xs text-slate-500 mt-1 italic">
-                {item.imagePrompt}
-              </div>
-            )}
+            {/* `imagePrompt` is an image-GENERATION instruction ("a spotted frog
+                on a lily pad"), not student copy. Rendering it as italic body
+                text put prompt-engineering in the child's field at every grade. */}
           </div>
         </div>
 
@@ -378,16 +517,43 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         onDragOver={(e) => handleDragOver(e, category.id)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, category.id)}
-        className="min-h-[200px] backdrop-blur-xl bg-slate-900/40 border-white/10"
+        // PRE: the whole card is the answer button — tap = choose, since the
+        // staged item is already implicit. No drag, no two-tap protocol.
+        {...(isPreReader && !hasSubmitted && stagedItem
+          ? {
+            role: 'button' as const,
+            tabIndex: 0,
+            'aria-label': `Put it in ${category.label}`,
+            onClick: () => handleCategoryTap(category.id),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleCategoryTap(category.id);
+              }
+            },
+          }
+          : {})}
+        className={`min-h-[200px] backdrop-blur-xl bg-slate-900/40 border-white/10 ${
+          isPreReader && !hasSubmitted && stagedItem
+            ? 'cursor-pointer transition-transform hover:scale-[1.02] active:scale-95'
+            : ''
+        }`}
       >
         <CardHeader className="pb-3">
-          <CardTitle className="text-slate-200">{category.label}</CardTitle>
-          <CardDescription className="text-slate-400">{category.description}</CardDescription>
+          <CardTitle className={`text-slate-200 ${isPreReader ? 'text-2xl' : ''}`}>
+            {category.label}
+          </CardTitle>
+          {/* The group description is a sentence of scientific prose. It helps a
+              reader and is noise to a non-reader, who gets the group names by
+              voice instead. */}
+          {!isPreReader && (
+            <CardDescription className="text-slate-400">{category.description}</CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <LuminaDropZone
             state={zoneState}
-            emptyPrompt="Drop items here"
+            emptyPrompt={isPreReader ? undefined : 'Drop items here'}
             className="min-h-[128px] flex-col items-stretch"
           >
             {itemsInCategory.map(item => renderItem(item, true))}
@@ -414,12 +580,30 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
       {/* Header */}
       <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl mb-8">
         <CardHeader>
-          <CardTitle className="text-slate-100">{data.title}</CardTitle>
-          <CardDescription className="text-slate-400">{data.instructions}</CardDescription>
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <CardTitle className="text-slate-100">{data.title}</CardTitle>
+              <CardDescription className="text-slate-400">{data.instructions}</CardDescription>
+            </div>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the instructions to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(
+                `${data.title}. ${data.instructions} Here is the rule: ${data.sortingRule}.`,
+              )}
+            />
+          </div>
 
-          {/* Sorting Rule Badge */}
+          {/* Sorting Rule Badge — the RULE is the question, so it stays at every
+              band; at PRE it is carried by voice as well, never by text alone. */}
           <div className="flex items-center gap-2 pt-2">
-            <Badge className="bg-slate-800/50 border-slate-700/50 text-orange-300">
+            <Badge className={`bg-slate-800/50 border-slate-700/50 text-orange-300 ${
+              isPreReader ? 'text-base py-1' : ''
+            }`}>
               <Sparkles className="w-3 h-3 mr-1" style={{ color: colors.primary }} />
               {data.sortingRule}
             </Badge>
@@ -427,8 +611,42 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         </CardHeader>
       </Card>
 
-      {/* Progress Bar */}
-      {!hasSubmitted && (
+      {/* PRE stage: ONE item at a time. This is what collapses the two-part drag
+          into tap-a-group = choose, and it keeps the screen to one thing to do
+          (PRE contract rules 2 and 4). Tap the card to hear its name again. */}
+      {isPreReader && !hasSubmitted && stagedItem && (
+        <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 mb-6">
+          <CardContent className="py-6 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                SoundManager.tap();
+                sendText(
+                  `[SORT_ITEM_TAP] The student tapped the card to hear it again: "${stagedItem.label}". `
+                  + `Say ONLY this name aloud, clearly. Do NOT say which group it belongs in.`,
+                  { silent: true },
+                );
+              }}
+              aria-label={`Hear ${stagedItem.label} again`}
+              className="px-8 py-6 rounded-2xl bg-slate-800/60 border-2 border-white/15 text-3xl font-semibold text-slate-100 transition-transform hover:scale-[1.03] active:scale-95"
+            >
+              {stagedItem.label}
+            </button>
+            <LuminaReadAloud
+              size="lg"
+              accent="cyan"
+              speaking={isAudioPlaying}
+              label="Say it again"
+              onClick={() => readAloud(stagedItem.label)}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Progress Bar — a fraction, a percentage and a progress meter are adult
+          chrome a K-2 child cannot read (PRE contract rule 7). The emptying
+          stage and the filling groups already show progress. */}
+      {!hasSubmitted && !isPreReader && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-slate-400">
@@ -459,8 +677,9 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         {data.categories.map(category => renderCategory(category))}
       </div>
 
-      {/* Unplaced Items */}
-      {!hasSubmitted && getUnplacedItems().length > 0 && (
+      {/* Unplaced Items — at PRE the pool is replaced by the single staged card
+          above, so this whole pile (and its "(N remaining)" counter) is gone. */}
+      {!hasSubmitted && !isPreReader && getUnplacedItems().length > 0 && (
         <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 mb-6">
           <CardHeader>
             <CardTitle className="text-sm font-mono text-slate-400 uppercase tracking-wider">
@@ -508,10 +727,13 @@ const ClassificationSorter: React.FC<ClassificationSorterProps> = ({ data, class
         )}
       </div>
 
-      {/* Grade Band Indicator (for debugging) */}
-      <div className="mt-6 text-xs font-mono text-slate-600 uppercase tracking-wider">
-        Grade Band: {data.gradeBand}
-      </div>
+      {/* Grade Band Indicator (for debugging) — a debug readout has no business
+          in any student's field, least of all a five-year-old's. Dev only. */}
+      {process.env.NODE_ENV !== 'production' && !isPreReader && (
+        <div className="mt-6 text-xs font-mono text-slate-600 uppercase tracking-wider">
+          Grade Band: {data.gradeBand}
+        </div>
+      )}
     </div>
   );
 };

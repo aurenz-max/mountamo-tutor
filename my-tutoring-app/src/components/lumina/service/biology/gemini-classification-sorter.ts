@@ -126,6 +126,44 @@ const classificationSorterSchema: Schema = {
  * @param config - Optional partial configuration to override generated values
  * @returns ClassificationSorterData with categorization activity
  */
+
+export type ClassificationBand = 'K-2' | '3-5' | '6-8';
+
+/**
+ * Canonical curriculum grade → complexity band.
+ *
+ * Closes the biology flavour of the 2026-08-04 `14m` prose-grade class. The
+ * band was previously `gradeBandMap[ctx.gradeContext] || '3-5'`, where the map
+ * was keyed on bare grade tokens ('K', '1', … '8') but `ctx.gradeContext` is
+ * PROSE ("kindergarten students - Use age-appropriate…"). The lookup therefore
+ * missed on EVERY input and every grade silently got the '3-5' default —
+ * verified by probe at `grade=K`, which returned `gradeBand: '3-5'` with THREE
+ * categories against a catalog K-2 rung that says "Binary sorts only (2
+ * categories)". `generationContext.ts` states the contract: never parse grade
+ * out of `gradeContext`; read `ctx.grade`.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const classificationBandFromGrade = (grade?: string): ClassificationBand | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K-2';
+  if (g === 'K-2' || g === '3-5' || g === '6-8') return g as ClassificationBand;
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 2) return 'K-2';
+  if (n <= 5) return '3-5';
+  return '6-8';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+export const classificationBandFromProse = (prose?: string): ClassificationBand => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool|grade 1|1st grade|grade 2|2nd grade)\b/.test(p)) return 'K-2';
+  if (/\b(grade [345]|[345](rd|th) grade)\b/.test(p)) return '3-5';
+  if (/\b(grade [678]|[678]th grade|middle school)\b/.test(p)) return '6-8';
+  return '3-5';
+};
 export const generateClassificationSorter = async (
   ctx: GenerationContext
 ): Promise<ClassificationSorterData> => {
@@ -133,23 +171,14 @@ export const generateClassificationSorter = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<ClassificationSorterData>;
 
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
-
-  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
+  // Canonical-first, prose as fallback. See classificationBandFromGrade — the
+  // band used to be looked up with `gradeBandMap[ctx.gradeContext]`, and
+  // `gradeContext` is PROSE, so the lookup missed on every input and fell
+  // through to '3-5' at every grade including Kindergarten.
+  const gradeBand: ClassificationBand =
+    (config.gradeBand as ClassificationBand | undefined)
+    ?? classificationBandFromGrade(ctx.grade)
+    ?? classificationBandFromProse(ctx.gradeContext);
 
   // Grade-specific complexity and content guidance
   const gradeContext = {

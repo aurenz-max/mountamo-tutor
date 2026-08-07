@@ -78,13 +78,50 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   Report `qa/reader-fit/moon-phases-lab-PRE-2026-08-06.md`.
   *Residual (NOT closed):* no Tier-3 live audio run → HUMAN-CHECKS; still 0 eval
   modes → `/add-eval-modes`.
-  → **NEXT: S9 `classification-sorter`** → S10 `day-night-seasons` →
-  S11 `solar-system-explorer` → S12 `scale-comparator` → S13
-  `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
-  **Assume the prose-grade defect on S10/S11/S12 too** (handoff table:
-  day-night-seasons 13 char-compares, scale-comparator 7, solar-system-explorer
-  1, all reading `ctx.grade` zero times) — S8 proves the scaffold fix ships
-  inert without it. Probe, don't grep.
+  ~~**S9 `classification-sorter`**~~ **S9 CLOSED 2026-08-06 — READY at PRE, and
+  the queued verdict was INCOMPLETE.** Triage called this SCAFFOLD-GAP ("tap/drag
+  creatures into groups") — the voice was indeed missing, but the interaction was
+  **not** fine: placement was HTML5 drag-and-drop ONLY, a two-part act a
+  five-year-old cannot execute (PRE rules 2 + 4). Three defects closed:
+  (1) **SCAFFOLD-GAP** — catalog block (8 contextKeys, 3 levels, 5 struggles,
+  2 aiDirectives) + 6 component moments. The answer/question split is the
+  load-bearing part: the RULE and GROUP NAMES are the question (spoken freely and
+  often), the correct group is the answer — forbidden outright *including by
+  elimination*, and `[SORT_INCORRECT]` deliberately never interpolates
+  `correctCategoryId`. (2) **PRIMITIVE-GAP, unqueued** — fixed with the
+  **WordSorter PRE precedent**: at K-2 ONE item is staged and the group cards
+  become answer buttons, collapsing drag to tap = choose; drag untouched at 3-5+;
+  both protocols funnel through one `placeItem()`. (3) **Prose-band lookup,
+  unqueued** — `gradeBandMap[ctx.gradeContext] || '3-5'` keyed the map on bare
+  tokens but indexed it with PROSE, so it missed at EVERY grade and `'3-5'`
+  always won; probe at `grade=K` returned `gradeBand:'3-5'` with THREE categories
+  against a K-2 rung reading "Binary sorts only (2 categories)". **Different
+  mechanism from S8's regex — grepping for the S8 pattern would have missed it.**
+  Also removed `item.imagePrompt` from the render: an image-GENERATION
+  instruction was printed as student copy **at every grade**. Gates: 13 + 12 tests,
+  **revert-bite 5/13 and 6/12**, src-scoped tsc **803 vs 804 baseline (one fewer,
+  zero new)**, typecheck:lumina 0, full vitest **1853/1853**, tutor-test Tier 1
+  `pass` + Tier 2 **14/14 vars `resolvedBy: component`**. **Runtime A/B @ K:
+  `'3-5'`/3 categories → `'K-2'`/2 categories, G4 control unchanged.**
+  Report `qa/reader-fit/classification-sorter-PRE-2026-08-06.md`.
+  *Residuals:* no live audio run → HUMAN-CHECKS #73; rule 3 only PARTIAL (item
+  cards are words — `imagePrompt` exists but no image pipeline is wired for this
+  primitive); 0 eval modes.
+  → **NEXT: S10 `day-night-seasons`** → S11 `solar-system-explorer` →
+  S12 `scale-comparator` → S13 `life-cycle-sequencer` → S14 `habitat-diorama` →
+  S15 `organism-card`.
+  **⚠️ TWO DIFFERENT grade-blindness mechanisms are now confirmed in this queue.**
+  Astronomy (S10/S11/S12) uses the S8 shape: regex `/grade\s*(\d|K)/` over prose
+  `ctx.gradeContext` (day-night-seasons 13 char-compares, scale-comparator 7,
+  solar-system-explorer 1, all reading `ctx.grade` zero times). Biology
+  (S13/S14/S15) uses the S9 shape: `gradeBandMap[ctx.gradeContext]`, a map keyed
+  on grade tokens but indexed with prose. **Probe each at `grade=K` before
+  writing anything** — S8 and S9 both prove the scaffold fix ships inert without
+  it, and the two shapes do not share a grep.
+  **⚠️ Do NOT gate on the absolute tsc count.** It drifted 805→806→807 on an
+  unchanged tree this session: `.next/types/app/**` is in the tsc program and the
+  dev server (required for these probes) regenerates it. Gate on the `src/`-scoped
+  error SET diff.
 
 **📋 HANDOFF (paste-able, line-exact anchors verified):
 `qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`** — carries the S1 fix template,

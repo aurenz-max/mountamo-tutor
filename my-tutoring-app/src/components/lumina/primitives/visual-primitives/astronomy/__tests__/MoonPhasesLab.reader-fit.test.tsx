@@ -184,7 +184,9 @@ describe('MoonPhasesLab reader-fit — band contract at PRE (K-1)', () => {
   it('never renders the doubled emoji the K branch used to produce ("🌑 🌑")', () => {
     render(<MoonPhasesLab data={kData()} />);
     screen.getAllByRole('button').forEach((b) => {
-      expect(b.textContent).not.toMatch(/(🌑|🌒|🌓|🌔|🌕|🌖|🌗|🌘)\s*\1/u);
+      // No /u flag: the Lumina typecheck targets below es6. The group captures
+      // the full surrogate pair, so the backreference still works without it.
+      expect(b.textContent).not.toMatch(/(🌑|🌒|🌓|🌔|🌕|🌖|🌗|🌘)\s*\1/);
     });
   });
 
