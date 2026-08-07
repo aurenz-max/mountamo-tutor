@@ -1,0 +1,154 @@
+{
+  "primitive": "di-shapes",
+  "domain": "di",
+  "subject": "MATHEMATICS",
+  "query_text": "Live-judged Direct Instruction SHAPE NAMING (\"What shape is this?\"): the tutor shows one drawn 2D shape, models its name aloud (\"this shape is a triangle\"), practices it together, then asks the child and judges the spoken shape name from the audio. The child SEES the drawn shape and SPEAKS its name aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them. ESSENTIAL for K/G1 MATHEMATICS geometry \u2014 2D shape identification and naming for early learners.",
+  "grades_probed": [
+    "K",
+    "1"
+  ],
+  "results": [
+    {
+      "subject": "MATHEMATICS",
+      "grade": [
+        "Kindergarten"
+      ],
+      "grade_requested": "K",
+      "n_candidates": 166,
+      "best_cosine": 0.7947,
+      "coherent": 5,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.7947,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Identify and describe shapes",
+          "subskill_id": "GEOM001-01-A",
+          "subskill_description": "Match and name basic 2D shapes (circles, squares, triangles, rectangles) regardless of size, color, or orientation",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.7864,
+          "skill_id": "GEOM001-02",
+          "skill_description": "Analyze, compare, create, and compose shapes",
+          "subskill_id": "GEOM001-02-A",
+          "subskill_description": "Identify and name basic 2D shapes based on their attributes (sides and vertices)",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7739,
+          "skill_id": "GEOM001-02",
+          "skill_description": "Analyze, compare, create, and compose shapes",
+          "subskill_id": "GEOM001-02-C",
+          "subskill_description": "Recognize and match shapes in different orientations and sizes, including shapes in real-world objects",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.768,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Identify and describe shapes",
+          "subskill_id": "GEOM001-01-B",
+          "subskill_description": "Identify and describe shapes in real-world environments using geometric vocabulary (sides, corners) and basic attributes (curved vs. straight sides)",
+          "grade": "Kindergarten"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7675,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Identify and describe shapes",
+          "subskill_id": "GEOM001-01-E",
+          "subskill_description": "Draw and trace basic shapes using templates and verbal descriptions of their properties",
+          "grade": "Kindergarten"
+        }
+      ],
+      "verdict": "match",
+      "abstain_reason": null,
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "Kindergarten",
+          "best_cosine": 0.7947,
+          "coherent": 5,
+          "coherent_skill": 3,
+          "reason": null
+        }
+      ],
+      "coherent_skill": 3
+    },
+    {
+      "subject": "MATHEMATICS",
+      "grade": [
+        "1"
+      ],
+      "grade_requested": "1",
+      "n_candidates": 111,
+      "best_cosine": 0.7978,
+      "coherent": 5,
+      "top_k": [
+        {
+          "rank": 1,
+          "cosine": 0.7978,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Defining Attributes of 2D Shapes",
+          "subskill_id": "GEOM001-01-c",
+          "subskill_description": "Distinguish between defining attributes like side count and non-defining attributes like color or orientation. Focus: Filtering irrelevant visual properties to focus on geometric identity. Examples: a red triangle vs. a blue triangle, an upright rectangle vs. a tilted rectangle, a small square vs. a large square, a green hexagon vs. an orange hexagon, a long rectangle vs. a wide rectangle, a tilted trapezoid vs. an upright trapezoid. Constraints: Keep the number of sides and vertices constant for comparisons; vary color, size, and rotation significantly.",
+          "grade": "1"
+        },
+        {
+          "rank": 2,
+          "cosine": 0.7923,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Defining Attributes of 2D Shapes",
+          "subskill_id": "GEOM001-01-a",
+          "subskill_description": "Identify whether a shape is open or closed by inspecting the continuity of its boundary. Focus: Recognizing that closed shapes create an enclosed area while open shapes have gaps. Examples: triangle, open circle, square with a missing side, closed rectangle, open polygon, closed hexagon, open line segment, closed trapezoid. Constraints: Use simple line-based shapes; clearly differentiate between connected and disconnected endpoints.",
+          "grade": "1"
+        },
+        {
+          "rank": 3,
+          "cosine": 0.7853,
+          "skill_id": "GEOM001-01",
+          "skill_description": "Defining Attributes of 2D Shapes",
+          "subskill_id": "GEOM001-01-b",
+          "subskill_description": "Count the number of sides and vertices of various 2D shapes to confirm their classification. Focus: Establishing the relationship between side count and vertex count in polygons. Examples: triangle (3 sides, 3 vertices), square (4 sides, 4 vertices), rectangle (4 sides, 4 vertices), trapezoid (4 sides, 4 vertices), hexagon (6 sides, 6 vertices), circle (0 sides, 0 vertices), pentagon (5 sides, 5 vertices), rhombus (4 sides, 4 vertices). Constraints: Limit shapes to common geometric figures; focus on side/vertex counting.",
+          "grade": "1"
+        },
+        {
+          "rank": 4,
+          "cosine": 0.7705,
+          "skill_id": "GEOM001-02",
+          "skill_description": "Defining Attributes of 3D Shapes",
+          "subskill_id": "GEOM001-02-a",
+          "subskill_description": "Identify common 3D shapes by visually selecting them from a group of geometric solids. Focus: Naming and recognizing basic 3D shapes. Examples: cube, rectangular prism, cone, cylinder, sphere, pyramid. Constraints: Use clear 3D renderings; ensure standard orientations.",
+          "grade": "1"
+        },
+        {
+          "rank": 5,
+          "cosine": 0.7694,
+          "skill_id": "GEOM001-03",
+          "skill_description": "Composing 2D Shapes",
+          "subskill_id": "GEOM001-03-c",
+          "subskill_description": "Select and position pattern blocks to create a specific target composite shape. Focus: Practicing spatial manipulation and problem-solving with shapes. Examples: building a large diamond from triangles, creating a hexagon from smaller shapes, arranging squares into a rectangle, filling a larger triangular shape with smaller ones. Constraints: Offer a limited palette of blocks; require precise alignment.",
+          "grade": "1"
+        }
+      ],
+      "verdict": "match",
+      "abstain_reason": null,
+      "tau": 0.6,
+      "min_coherent": 3,
+      "per_grade": [
+        {
+          "grade": "1",
+          "best_cosine": 0.7978,
+          "coherent": 5,
+          "coherent_skill": 3,
+          "reason": null
+        }
+      ],
+      "coherent_skill": 3
+    }
+  ]
+}

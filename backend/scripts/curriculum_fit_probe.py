@@ -82,7 +82,13 @@ async def main():
     with contextlib.redirect_stdout(sys.stderr):
         cs = await get_curriculum_service()
         matcher = CurriculumRetrievalMatcher(cs)
-        subject = matcher.subject_for_domain(args.domain)
+        # Primitive-first, exactly like the live path (submission_service ->
+        # CurriculumMappingService.resolve_by_retrieval): the DI family spans
+        # subjects, so _PRIMITIVE_TO_SUBJECT (di-shapes/di-math-facts ->
+        # MATHEMATICS) must win over the 'di' -> LANGUAGE_ARTS domain default.
+        # Probing by domain alone scoped di-shapes against phonics skills — the
+        # misattribution class /curriculum-fit exists to catch.
+        subject = matcher.subject_for_primitive(args.primitive, args.domain)
 
         if subject:
             if args.grades.strip().lower() in ("auto", ""):

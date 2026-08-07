@@ -85,11 +85,20 @@ async def main():
         subject = matcher.subject_for_domain(args.domain)
         if subject:
             grades = await discover_grades(cs, subject) or ["Kindergarten"]
+            # Subject is resolved PER PRIMITIVE, primitive-first, like the live
+            # path — a domain default would mis-scope the per-primitive overrides
+            # in _PRIMITIVE_TO_SUBJECT (a `di` sweep must send di-shapes and
+            # di-math-facts to MATHEMATICS, not the domain's LANGUAGE_ARTS).
+            grades_by_subject = {subject: grades}
             for pid, desc in prims:
+                p_subject = matcher.subject_for_primitive(pid, args.domain) or subject
+                if p_subject not in grades_by_subject:
+                    grades_by_subject[p_subject] = await discover_grades(cs, p_subject) or ["Kindergarten"]
+                p_grades = grades_by_subject[p_subject]
                 query = CurriculumMappingService._build_retrieval_query(desc, "", "", "", pid)
                 per_grade = []
-                for grade in grades:
-                    p = await matcher.probe(subject=subject, grade_level=grade,
+                for grade in p_grades:
+                    p = await matcher.probe(subject=p_subject, grade_level=grade,
                                             query_text=query, primitive_type=pid)
                     p.pop("mapping", None)
                     top1 = p["top_k"][0] if p.get("top_k") else {}
@@ -106,8 +115,8 @@ async def main():
                 matches = [g for g in per_grade if g["verdict"] == "match"]
                 chosen = (max(matches, key=lambda g: g["best"]) if matches
                           else max(per_grade, key=lambda g: (g["best"] or 0)))
-                rows.append({"primitive": pid, "chosen": chosen, "per_grade": per_grade,
-                             "query_head": query[:90]})
+                rows.append({"primitive": pid, "subject": p_subject, "chosen": chosen,
+                             "per_grade": per_grade, "query_head": query[:90]})
 
     if not subject:
         print(f"domain '{args.domain}' has no curriculum subject — sweep N/A.")

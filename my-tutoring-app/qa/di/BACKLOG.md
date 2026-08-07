@@ -135,9 +135,36 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     Vitest 1791/1791, typecheck:lumina 0, py_compile clean, real-pipeline
     probes 3/3 (generic K = core five; named narrows; diamonds → rhombus).
     Report/birth cert: `qa/eval-reports/di-shapes-birth.md`.
-    **Ladder (birth-cert follow-ups):** (1) `/curriculum-fit di-shapes`
-    (K.G.2 naming home near-certain but UNMEASURED — run the retrieval probe
-    with the backend up); (2) L1 `/add-eval-modes` — `count_sides` /
+    **Ladder (birth-cert follow-ups):** ~~(1) `/curriculum-fit di-shapes`~~
+    **✅ RUNG 1 CLOSED 2026-08-07 — MATCH at BOTH K and G1, 5/5 coherent
+    (K 0.795 `GEOM001-01-A` "Match and name basic 2D shapes… regardless of
+    size, color, or orientation"; G1 0.798 `GEOM001-01-c` defining vs
+    non-defining attributes). K.G.2 orientation-independence is now MEASURED —
+    the curriculum's own top-1 wording carries it.** Report
+    `qa/curriculum-fit/di-shapes-2026-08-07.md` (+ `.json` artifact).
+    **Two things rung 2 must carry:** (a) `count_sides`/`count_corners` have an
+    exact home at BOTH grades, not just G1 — G1 `GEOM001-01-b` @ 0.785 *"Count
+    the number of sides and vertices of various 2D shapes"* (its own examples
+    enumerate 8 of the 9 Fork A shapes with the same counts) and K
+    `GEOM001-02-A` @ 0.786 *"…based on their attributes (sides and vertices)"*;
+    (b) **BLOCKER — `catalog/di.ts:456` `constraints` says "no side/corner
+    counting tasks yet… use a geometry primitive with those modes when counting
+    IS the objective". That clause is manifest-visible steering: ship the modes
+    without lifting it and they are born UNREACHABLE.** Keep the 3D-solids and
+    composing exclusions — G1 ranks 4/5 are 3D solids (0.770) and pattern-block
+    composing (0.769), both above τ, so those fences are load-bearing.
+    **Probe defect found + fixed in the same slice:**
+    `curriculum_fit_probe.py:85` scoped by `subject_for_domain`, not the live
+    path's `subject_for_primitive` — pre-fix di-shapes scoped to LANGUAGE_ARTS
+    and ABSTAINed diffuse against **Rhyme Recognition / Onset-Rime / Phoneme
+    Isolation** (the exact misattribution class the skill exists to catch; it
+    would have filed a false K-geometry curriculum gap). The 07-24 di-math-facts
+    report had masked it with a deliberately-wrong `--domain math`.
+    `curriculum_fit_sweep.py` had the same defect plus a hoisted subject/grades
+    loop; both fixed, controls clean. `verify_retrieval_matcher.py:49` +
+    `curriculum_fit_knowledge_check.py:149` still resolve by domain only — not
+    wrong today (no DI fixture row), one row away from being wrong.
+    **(2) ← NEXT: L1 `/add-eval-modes`** — `count_sides` /
     `count_corners` (spoken number words, the #46-benched class → no new
     bench sitting) + `shape_review`; (3) L2 catalog contextKeys stay minimal
     by design — revisit only with evidence; (4) L3 `/add-support-tiers`
