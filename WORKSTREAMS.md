@@ -463,9 +463,28 @@ queue AND this file's "last touched" in the same slice.
 > 8 is N/A rather than passing — either `/add-eval-modes` or declare them exploration-only so
 > the manifest stops routing assessment demand at them. **All 8 still have 0 eval modes.**
 >
-> **Next pull: 15A (S2–S7)** — `orbit-mechanics-lab` → `rocket-builder` → `story-planner` →
-> `bio-compare-contrast` → `species-profile` → `mission-planner`. Cheaper per slice (catalog
-> band floor, no component work by design) but read the warning above before assuming that.
+> **📋 HANDOFF WRITTEN — `qa/HANDOFF-reader-fit-2026-08-07.md`** (the 08-06 one is marked
+> SUPERSEDED in-file; its anchors went stale when 15B's tutoring blocks shifted every catalog
+> id). The successor carries re-derived anchors, a per-item prediction of which
+> grade-blindness shape each remaining generator has, the proven per-slice recipe, the
+> corrected tsc gate, the seven traps, and the ranked frontier beyond item 15. A fresh session
+> can take S2 from that file alone.
+>
+> **Two findings in it worth surfacing here, because both contradict "assume the pattern":**
+> **`story-planner` (S4) is already CLEAN** — it reads `ctx.grade` canonically with an explicit
+> contract comment, so a blanket "assume the defect" heuristic would have produced a pointless
+> diff. And **`bio-compare-contrast` (S5) has a FOURTH shape**: `gradeBand` is a function
+> parameter defaulting to `'3-5'`, so the defect (if any) lives at the **call site** and a grep
+> for the other three misses it entirely. Predict from the code, confirm by probe, fix only
+> what the probe shows.
+>
+> **Next pull: 15A S2 `orbit-mechanics-lab`** → S3 → S5 → S6 → S7 (S4's generator needs no
+> fix; its band-floor question is catalog-only). Nominally cheaper per slice — catalog band
+> floor, no component work by design — but that is the same shape of claim 15B disproved 8/8,
+> so verify per primitive.
+> **Then audit `planetary-explorer` + `constellation-builder`**, which are NOT in item 15
+> (they have a channel) but now carry the K astronomy demand that S1's floor and 15B's fixes
+> redirected onto them — the most likely site of the next real K failure.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

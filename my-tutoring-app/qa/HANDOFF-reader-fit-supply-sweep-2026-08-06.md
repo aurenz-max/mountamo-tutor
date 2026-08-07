@@ -1,3 +1,19 @@
+> ## ⚠️ SUPERSEDED 2026-08-07 — see `qa/HANDOFF-reader-fit-2026-08-07.md`
+>
+> **15B (S8–S15) is CLOSED 8/8.** This file's origin story — the enumeration, the
+> two-channel test, the S1 band-floor template — is still accurate and worth
+> reading once. **Everything else here is stale:**
+> - its **line-exact catalog anchors are wrong** (15B added large `tutoring`
+>   blocks to `astronomy.ts` and `biology.ts`, shifting every id below them);
+> - its **tsc baseline of 806 is not a usable gate** (`.next/types` churns while
+>   the dev server runs — gate on the `src/`-scoped error SET diff, baseline 803);
+> - its **"15B = interaction is fine, only the voice is missing" framing was
+>   wrong 8 times out of 8** — every slice also needed a component pass, and every
+>   slice sat on a grade-resolution defect.
+>
+> The successor carries re-derived anchors, the proven per-slice recipe, and the
+> traps. Start there.
+
 # HANDOFF — reader-fit SUPPLY-SIDE SWEEP: work queue item 15 (S2 → S15)
 
 Written 2026-08-06 after S1 shipped (`96c3eb6`). Owning queue:

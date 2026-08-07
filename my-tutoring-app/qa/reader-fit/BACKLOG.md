@@ -353,18 +353,27 @@ eval modes.**
   dev server (required for these probes) regenerates it. Gate on the `src/`-scoped
   error SET diff.
 
-**📋 HANDOFF (paste-able, line-exact anchors verified):
-`qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`** — carries the S1 fix template,
-the per-slice gates incl. the **curator A/B recipe** (the only thing that actually
-tests a band floor), and a MEASURED un-queued finding: the astronomy domain violates
-`generationContext.ts:68` **10/10** (prose `ctx.gradeContext` parsed as a grade — the
-`14m` class), with the bite confirmed on S2. It also argues for **interleaving 15B
-after S2/S3** rather than draining 15A first, because each floor pushes K traffic onto
-primitives that still cannot speak.
+**📋 CURRENT HANDOFF (anchors re-derived 2026-08-07):
+`qa/HANDOFF-reader-fit-2026-08-07.md`** — written after 15B closed 8/8. Carries
+the **re-verified 15A anchors** (the 08-06 ones are STALE — 15B's tutoring blocks
+shifted every catalog id), a per-item **prediction of which grade-blindness shape
+each remaining generator has** (including that **`story-planner` is already clean
+— do not "fix" it**, and that `bio-compare-contrast` has a *fourth* shape: a
+function parameter defaulting to `'3-5'`, so the defect is at the CALL SITE), the
+proven per-slice recipe, the corrected tsc gate, the seven traps 15B cost real
+time on, and the ranked frontier beyond item 15.
 
-**Pull order:** S1 pilot (top risk, explicit K promise, establishes the astronomy
-band-floor template S2/S3 reuse) → rest of 15A → 15B under pilot-then-sweep.
+*(The 08-06 handoff is retained for its origin story — enumeration, two-channel
+test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
+
+**Pull order now:** **15A S2 `orbit-mechanics-lab`** → S3 → S5 → S6 → S7
+(**skip S4 `story-planner`'s generator — already canonical**; it may still need a
+band floor, which is a catalog-only question) → then audit `planetary-explorer` +
+`constellation-builder`, which now carry the K astronomy demand that S1's floor
+and 15B's fixes redirected onto them.
 Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).
+**Budget each slice for a component pass** — 15B's "catalog-only" cousin label was
+wrong 8/8.
 
 *Two corrections to the `/pm` estimate, recorded so they are not re-raised:*
 `stoichiometry-lab`/`gas-laws-simulator` are **not** top-band (their constraints
