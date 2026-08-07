@@ -19,10 +19,20 @@
  * (diShapesScript). Separate content pack — the four sibling packs are frozen
  * and untouched.
  *
- * ANSWER-LEAK RULE: the stage draws the SHAPE ONLY — its name never appears
- * before the child says it. The labeled shape ("triangle" under the drawing)
- * renders only AFTER an affirmed answer (reward) and in the completion recap
- * for affirmed items; missed shapes recap without their names.
+ * L1 (2026-08-07) added three more task identities on the same stage:
+ * `shape_review` (cumulative naming over a wide draw) and the two
+ * attribute-counting skills `count_sides` / `count_corners`, whose answer is a
+ * spoken NUMBER WORD. A session may blend them, so everything kid-facing —
+ * the cue, the prompt line, the stage caption, the reward, the recap — reads
+ * from the CURRENT challenge's `challengeType`, never the session-level one
+ * (which is representative metadata on a blended session).
+ *
+ * ANSWER-LEAK RULE: the stage draws the SHAPE ONLY — the answer never appears
+ * before the child says it. Under a counting mode the shape's NAME is also
+ * withheld, because it hands the count to any child who knows it
+ * (triangle → three). The labeled reward ("triangle", or "three sides")
+ * renders only AFTER an affirmed answer and in the completion recap for
+ * affirmed items; missed items recap unlabeled.
  *
  * GEOMETRY IS THE PEDAGOGY GUARD: rectangles draw clearly elongated (≥1.6:1)
  * and ovals clearly non-circular, so square-vs-rectangle and circle-vs-oval
@@ -65,7 +75,10 @@ import {
 } from './diRunLog';
 import { mintRunId, setClientRunId } from '../../../service/clientRunId';
 import {
+  answerWordFor,
   completeCue,
+  countNoun,
+  isCountingType,
   itemCue,
   moveOnCue,
   type DiShapesChallenge,
@@ -130,14 +143,41 @@ const scoreForCorrections = (corrections: number): number =>
   corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
 /** Misconception Loop S1 naming — task identity inside the summary so a
- *  primitive-scoped diagnosis stays self-limiting (family pattern). */
+ *  primitive-scoped diagnosis stays self-limiting (family pattern). The two
+ *  classes are named distinctly so a diagnosis can never generalise a counting
+ *  error into a naming claim, or the reverse. */
 const challengeSummaryFor = (item: DiShapesChallenge): string =>
-  'Direct Instruction shape naming — a flat 2D shape was DRAWN on screen '
-  + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked what shape it is. `
-  + 'The learner answers by SPEAKING the shape name; the tutor judges the audio.';
+  isCountingType(item.challengeType)
+    ? `Direct Instruction shape attributes — a flat 2D shape was DRAWN on screen `
+      + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked how many `
+      + `${countNoun(item.challengeType)} it has. `
+      + 'The learner answers by SPEAKING a number word; the tutor judges the audio.'
+    : 'Direct Instruction shape naming — a flat 2D shape was DRAWN on screen '
+      + `(${item.shape}, rotated ${item.rotationDeg}°) and the tutor asked what shape it is. `
+      + 'The learner answers by SPEAKING the shape name; the tutor judges the audio.';
 
 const expectedFor = (item: DiShapesChallenge): string =>
-  `Say the shape name "${item.shapeWord}".`;
+  isCountingType(item.challengeType)
+    ? `Say how many ${countNoun(item.challengeType)}: "${item.countWord ?? ''}".`
+    : `Say the shape name "${item.shapeWord}".`;
+
+/** Kid-facing prompts, per task identity. The ASK never contains the answer. */
+const askLabelFor = (item: DiShapesChallenge | null): string =>
+  item && isCountingType(item.challengeType)
+    ? `say how many ${countNoun(item.challengeType)}`
+    : 'say the shape';
+
+const listenLineFor = (item: DiShapesChallenge | null): string =>
+  item && isCountingType(item.challengeType)
+    ? `Listen, then ${askLabelFor(item)}.`
+    : 'Listen, then say the shape.';
+
+/** POST-affirmation only. Mirrors what the tutor just said, so the reward the
+ *  child reads is the answer they just produced — "triangle", or "three sides". */
+const rewardLabelFor = (item: DiShapesChallenge): string =>
+  isCountingType(item.challengeType)
+    ? `${answerWordFor(item)} ${countNoun(item.challengeType)}`
+    : answerWordFor(item);
 
 // ── The drawn-shape stage (code-owned geometry) ─────────────────────
 // One 200×200 viewBox, shape centered at (100,100). The aspect ratios ARE
@@ -270,9 +310,11 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     idxRef.current = Math.min(idxRef.current + 1, data.challenges.length - 1);
     setReward(null);
     setPhase('listening');
-    setStatusLine('Listen, then say the shape.');
+    // The prompt follows the NEXT item's task identity — a blended session can
+    // move from "say the shape" to "say how many sides" between items.
+    setStatusLine(listenLineFor(data.challenges[idxRef.current] ?? null));
     advance();
-  }, [advance, clearAdvanceTimer, data.challenges.length]);
+  }, [advance, clearAdvanceTimer, data.challenges]);
 
   const scheduleAdvance = useCallback(() => {
     pendingAdvanceRef.current = true;
@@ -416,11 +458,13 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
       recordResult({ challengeId: item.id, correct: true, attempts, score });
       lastResponseMsRef.current = null;
       setPhase('affirmed');
-      // Post-answer reward only — the name never precedes the answer.
-      setReward({ shape: item.shape, rotationDeg: item.rotationDeg, label: item.shapeWord });
+      // Post-answer reward only — the answer never precedes the answer.
+      setReward({ shape: item.shape, rotationDeg: item.rotationDeg, label: rewardLabelFor(item) });
       const next = data.challenges[idxRef.current + 1] ?? null;
       if (next) {
-        setStatusLine('Yes! You know your shapes.');
+        setStatusLine(
+          isCountingType(item.challengeType) ? 'Yes! Nice counting.' : 'Yes! You know your shapes.',
+        );
         loop.queueCue(itemCue(next));
         scheduleAdvance();
       } else {
@@ -457,7 +501,12 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
           return;
         case 'verdict':
           if (emission.judgment === 'no-verdict') {
-            setStatusLine('One more time—what shape is it?');
+            const item = currentOf();
+            setStatusLine(
+              item && isCountingType(item.challengeType)
+                ? `One more time—how many ${countNoun(item.challengeType)}?`
+                : 'One more time—what shape is it?',
+            );
             return;
           }
           applyVerdict(emission.judgment, emission.verdictText);
@@ -526,11 +575,12 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
           primitive_type: 'di-shapes',
           instance_id: resolvedInstanceId,
           primitive_data: {
-            activity: 'live direct instruction shape naming',
+            activity: 'live direct instruction shape practice',
             challengeType: data.challengeType,
-            // Stimulus side only — the shape NAMES are the answers, so no
-            // list of them ever enters RUNTIME STATE (answer-leak rule; the
-            // target reaches the tutor inside each [DI_ITEM] contract).
+            // Stimulus side only — the answers (shape NAMES under a naming
+            // mode, side/corner COUNTS under a counting mode) never enter
+            // RUNTIME STATE; each target reaches the tutor inside its own
+            // [DI_ITEM] contract (answer-leak rule).
             shapeCount: String(data.challenges.length),
           },
           grade_level: data.gradeLevel || 'kindergarten',
@@ -559,16 +609,19 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, data.challenges, data.challengeType, data.gradeLevel, preparing, resolvedInstanceId]);
 
-  // RUNTIME STATE stays stimulus-side: the task identity only. The current
-  // shape's NAME is the answer and never enters the context bag.
+  // RUNTIME STATE stays stimulus-side: the task identity only, and the CURRENT
+  // item's — a blended session changes identity between items, so the
+  // session-level `data.challengeType` would go stale mid-run. The identity
+  // names the ASK ("count_sides"), never the answer: neither the shape's name
+  // nor its count ever enters the context bag.
   useEffect(() => {
     if (!ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
-      challengeType: data.challengeType,
+      challengeType: currentChallenge.challengeType,
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx.isConnected, currentChallenge, data.challengeType]);
+  }, [ctx.isConnected, currentChallenge]);
 
   const startRun = useCallback(() => {
     const first = data.challenges[0];
@@ -594,7 +647,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     });
     setRunning(true);
     setPhase('listening');
-    setStatusLine('Listen, then say the shape.');
+    setStatusLine(listenLineFor(first));
     loop.sendCueNow(itemCue(first, true));
     loop.arm();
     logDiStage('run-start', `armed with ${data.challenges.length} items`, {
@@ -673,7 +726,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
               </div>
             )}
             <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
-              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? 'say the shape' : 'get ready'}
+              {phase === 'judging' ? 'listening' : phase === 'affirmed' ? 'yes!' : phase === 'listening' ? askLabelFor(currentChallenge) : 'get ready'}
             </div>
           </div>
         )}
@@ -704,7 +757,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                         {SHAPE_SVG[ch.shape]}
                       </g>
                     </svg>
-                    {ok && <span className="text-sm font-semibold text-white">{ch.shapeWord}</span>}
+                    {ok && <span className="text-sm font-semibold text-white">{rewardLabelFor(ch)}</span>}
                     <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
                   </div>
                 );

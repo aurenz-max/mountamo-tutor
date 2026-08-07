@@ -9,6 +9,24 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 ## Open (as of 2026-08-07, refreshed by `/pm` 2026-08-07)
 
+> **2026-08-07 (later) — #72 EXTENDED, deliberately not a new row.** di-shapes went
+> **L0 → L1** the same day (`/add-eval-modes`: `shape_review`, `count_sides`,
+> `count_corners`; report `qa/eval-reports/di-shapes-eval-modes-2026-08-07.md`), so the
+> pack now has a **second spoken response class** — a NUMBER WORD in 3..6 — that #72's
+> naming-only criteria do not touch. Extending #72 rather than opening #75 because it is
+> the same primitive in the same mic session, and a separate row would just be one more
+> thing to forget; but the extension is stated explicitly here so the row cannot be
+> struck on the naming half alone. **#72 criterion (c), NEW — the counting judging
+> contract:** on a `count_sides` or `count_corners` run, (i) count aloud slowly
+> ("one… two… three") and confirm the tutor **waits and judges only the number you land
+> on** rather than correcting mid-count; (ii) answer **off by one** (say "four" at a
+> triangle) and confirm it takes the CONTRAST branch with your own number said back
+> ("My turn: not four — this shape has three sides") and does **not** accept close as
+> correct; (iii) confirm the tutor **never counts the sides aloud itself** outside a
+> quoted line — doing the counting for the child replaces the thing being measured.
+> Everything machine-checkable already passed (7/7 real-pipeline probes, tutor-test T2
+> zero `(not set)`); this is the Tier-3 half only. Next free ID = **75** (unchanged).
+>
 > **2026-08-07 refresh — the drift this run corrected was SCOPE, not dates.** Ten
 > reader-fit slices closed across 08-06/08-07 and every one of them routed its
 > "no Tier-3 live audio run" residual to **#73** — but #73 was written when only

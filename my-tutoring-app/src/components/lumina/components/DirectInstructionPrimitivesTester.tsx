@@ -71,11 +71,15 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
   {
     id: 'di-shapes',
     label: 'Shapes',
-    subtitle: 'A drawn 2D shape, spoken shape-name answers ("What shape is this?").',
+    subtitle: 'A drawn 2D shape, spoken answers — its name, or how many sides/corners.',
     defaultTopic: 'naming basic shapes',
     defaultGrade: 'kindergarten',
     evalModes: [
       { key: 'name_shape', label: 'Name the Shape' },
+      { key: 'shape_review', label: 'Shape Review (mixed set)' },
+      { key: 'count_sides', label: 'How Many Sides' },
+      { key: 'count_corners', label: 'How Many Corners' },
+      { key: 'mixed', label: 'Mixed (all modes)' },
     ],
   },
   {

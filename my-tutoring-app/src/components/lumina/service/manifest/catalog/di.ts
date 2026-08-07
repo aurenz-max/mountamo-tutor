@@ -452,12 +452,28 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-shapes',
-    description: 'Live-judged Direct Instruction SHAPE NAMING ("What shape is this?"): the tutor shows one drawn 2D shape, models its name aloud ("this shape is a triangle"), practices it together, then asks the child and judges the spoken shape name from the audio. The child SEES the drawn shape and SPEAKS its name aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification and naming for early learners.',
-    constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders), no side/corner counting tasks yet, and no composing or comparing shapes; use a geometry primitive with those modes when counting or composing IS the objective. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken name is the answer: the shape name never appears on screen (or in the title/description) before the child says it.',
-    // L0 — single core mode (birth discipline). The ladder queued on the birth
-    // cert: count_sides / count_corners (spoken number words — the #46-benched
-    // class) and shape_review, via /add-eval-modes. β mirrors backend
-    // problem_type_registry.py → "di-shapes".
+    description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, models the answer aloud ("this shape is a triangle" / "this shape has three sides"), practices it together, then asks the child and judges the spoken answer from the audio. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
+    constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective. Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
+    // L1 ladder (2026-08-07, /add-eval-modes). Four task identities over ONE
+    // stage. Two response classes, BOTH already benched, so no new sitting was
+    // owed under standing gate 1: naming is the single-spoken-word class, and
+    // the counting answer is a number word in 3..6 — the #46 class, and short
+    // of the multi-word numerals that gated item 10 (the menu tops out at a
+    // hexagon). β mirrors backend problem_type_registry.py → "di-shapes".
+    //
+    // ORDERING RATIONALE (β, easiest → hardest): naming one shape is a single
+    // recall (1.5); reviewing names over a wide cumulative draw is the same act
+    // with an unpredictable pool (2.5 — the β both sibling packs' review modes
+    // use); counting sides is a NEW act — attend to an attribute, enumerate,
+    // speak a number (3.0); counting corners is harder than counting sides
+    // because a vertex is a point-percept, easier to skip or double-count than
+    // a whole traceable edge (3.5).
+    //
+    // Curriculum homes MEASURED, not assumed — /curriculum-fit 2026-08-07:
+    // naming → K GEOM001-01-A "Match and name basic 2D shapes … regardless of
+    // size, color, or orientation" (0.795); counting → G1 GEOM001-01-b "Count
+    // the number of sides and vertices of various 2D shapes" (0.785) and
+    // K GEOM001-02-A "…based on their attributes (sides and vertices)" (0.786).
     evalModes: [
       {
         evalMode: 'name_shape',
@@ -466,6 +482,30 @@ export const DI_CATALOG: ComponentDefinition[] = [
         scaffoldingMode: 1,
         challengeTypes: ['name_shape'],
         description: 'See one drawn 2D shape at any rotation, say its name aloud — modeled and practiced together first, then answered alone.',
+      },
+      {
+        evalMode: 'shape_review',
+        label: 'Shape Review (Mixed Set)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['shape_review'],
+        description: 'Cumulative / spaced review of shape naming — the same act, but the shapes are drawn as a WIDE mix across everything taught at this grade rather than the objective\'s one focused set.',
+      },
+      {
+        evalMode: 'count_sides',
+        label: 'How Many Sides',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['count_sides'],
+        description: 'See one drawn 2D shape, say how many SIDES it has as a number word. An attribute skill rather than a naming one; counting aloud and landing on the right number is a correct route. Straight-sided shapes only.',
+      },
+      {
+        evalMode: 'count_corners',
+        label: 'How Many Corners',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['count_corners'],
+        description: 'See one drawn 2D shape, say how many CORNERS (vertices) it has as a number word. Harder than sides — a corner is a point, easier to skip or double-count than a whole edge. Straight-sided shapes only.',
       },
     ],
     supportsEvaluation: true,
@@ -478,19 +518,23 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // so lesson mode works on day one. Sentinel discipline checked on every
     // line: no scaffolding level, struggle response, or directive sentence
     // begins with "Yes" or "My turn". RUNTIME STATE is deliberately minimal —
-    // the shape NAMES are the answers, so neither the current shape nor the
-    // session's shape list may enter contextKeys (the math-facts answer-side
-    // rule, stricter here because the name IS the whole answer).
+    // the ANSWERS are the shape names (naming modes) and the side/corner counts
+    // (counting modes), so neither the current shape, the session's shape list,
+    // nor any count may enter contextKeys (the math-facts answer-side rule,
+    // stricter here because the answer is a single word). `challengeType` names
+    // only the ASK, and the COMPONENT sends the CURRENT item's identity so a
+    // blended session never leaves it stale.
     tutoring: {
       taskDescription:
-        'Live-judged Direct Instruction shape-naming practice for a young learner '
-        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
+        'Live-judged Direct Instruction shape practice for a young learner '
+        + '(current task: {{challengeType}} — either naming a drawn shape or counting its sides or '
+        + 'corners). You speak the exact scripted lines from each bracketed '
         + 'application message and judge each learner attempt from the audio you heard, using only '
         + 'the two allowed reply branches.',
       contextKeys: ['challengeType'],
       scaffoldingLevels: {
         level1: 'Repeat the question once, slowly.',
-        level2: 'Name the shape once more, then ask for one retry.',
+        level2: 'Say the answer once more the way the script did, then ask for one retry.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       commonStruggles: [
@@ -508,7 +552,19 @@ export const DI_CATALOG: ComponentDefinition[] = [
         },
         {
           pattern: 'Stays silent after "Your turn"',
-          response: 'Say the shape name together once, then hand it back to them alone.',
+          response: 'Say the answer together once, then hand it back to them alone.',
+        },
+        {
+          pattern: 'Counting task — gives a number that is off by one, usually from double-counting a corner or skipping the side they started on',
+          response: 'Off by one is still the wrong count: say their number back, contrast it with the right one, and re-ask. Do not treat "close" as correct.',
+        },
+        {
+          pattern: 'Counting task — answers with the shape NAME instead of a number ("triangle" when asked how many sides)',
+          response: 'They answered a different question. Acknowledge nothing, re-model the count, and ask again for how many — the count is what this item measures.',
+        },
+        {
+          pattern: 'Counting task — counts aloud ("one, two, three") instead of stating the total',
+          response: 'Counting out loud is exactly right at this age. Wait for them to stop and judge only the number they finish on; if it is right, affirm it as correct.',
         },
       ],
       aiDirectives: [
@@ -519,9 +575,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
             + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
             + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words. Judge honestly from the audio: affirm the right shape name, correct '
-            + 'a wrong or missing one. EVERY correction re-models the name and begins with "My turn". Do not '
-            + 'praise to be kind. The application decides which shape comes next; never introduce one yourself.',
+            + 'sentence with those words. Judge honestly from the audio: affirm the right answer, correct '
+            + 'a wrong or missing one. EVERY correction re-models the answer and begins with "My turn". Do not '
+            + 'praise to be kind. The application decides which shape and which question come next; never '
+            + 'introduce either yourself.',
         },
         {
           title: 'SHAPE NAMES',
@@ -533,6 +590,18 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'hexagon is not a pentagon — the near-name is exactly the error this practice corrects. When an '
             + 'item\'s quoted rule says another word is also correct (like "diamond" for a rhombus), accept it. '
             + 'Judge the name you actually heard, never the name you expected.',
+        },
+        {
+          title: 'SIDE AND CORNER COUNTS',
+          instruction:
+            'On a counting item the learner answers with a NUMBER, not a shape name. Counting out loud is a '
+            + 'correct route at this age, not hesitation: wait until they stop and judge only the number they '
+            + 'finish on. A different number is wrong even by one — an off-by-one from double-counting a corner '
+            + 'is precisely the error this practice corrects, so it gets the correction branch with their own '
+            + 'number said back to them. A shape name, "lots", "many", or a colour is not a count and gets the '
+            + 'plain re-model. Never count the sides or corners aloud yourself except inside a quoted scripted '
+            + 'line — doing the counting for them replaces the thing being measured. Judge the number you '
+            + 'actually heard, never the number you expected.',
         },
         {
           title: 'BREVITY',

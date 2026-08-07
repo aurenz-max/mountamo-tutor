@@ -22,7 +22,7 @@ queue AND this file's "last touched" in the same slice.
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
 | **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | ~~15A S4 `story-planner`~~ **CLOSED 2026-08-07, READY at PRE** (report `qa/reader-fit/story-planner-PRE-2026-08-07.md`). Next: **15A S5 `bio-compare-contrast`** (the defect is at the CALL SITE — a parameter defaulting to `'3-5'`; import `service/biology/gradeBand.ts`, do not write a fifth copy) → S6 `species-profile` → S7 `mission-planner`. **⚠️ S4's scope lesson: the "generator already canonical" prediction was RIGHT, but "component + scaffold only" was WRONG — at K the primitive had nothing to CHOOSE from, and only the generator can close a content gap.** Check what the child would actually DO before scoping a slice. Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
-| **Direct Instruction family** | **ACTIVE** | Machine side: the di-shapes ladder (`/curriculum-fit` probe → L1 `count_sides`) and **CTX-1** (item 13, the tutor-quality top). Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (now ACCEPTANCE, unblocked) + #72 (di-shapes L0)**. | 2026-08-06 |
+| **Direct Instruction family** | **ACTIVE** | **di-shapes ladder rungs 1+2 CLOSED 2026-08-07 — the pack is L1.** Next machine pull = **CTX-1** (item 13, the tutor-quality top; it DELETES a channel + a failure class), then the di-shapes L3/L4 rungs. Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (ACCEPTANCE) + #72 (di-shapes — now L0 naming **and** the NEW L1 counting contract, criterion (c))**. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, **serial, one primitive per slice**, appending the report + striking per item. | 2026-08-04 |
 | **LA K-2 Grammar density** | **PARKED 2026-08-07 (was ACTIVE) — blocked on a user DESIGN RULING, not on code** | Its queue top is item **1b `in_front_of`/`behind`**, which the lane itself records as *"a DESIGN RULING, not code"* — viewer-relative is ambiguous with above/below in a top-down grid, a rule-#1 hazard. Nothing machine-gated sits above it. **If resumed, the buildable pulls are item 2b** (the `identify` hint hands over the answer, 2 of 3 hints — tracker SS-5) **or item 4** (`word-sorter` K picture-pair, 3 subskills). | 2026-08-05 |
 | Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Confirmed this run: all three are real rows in `qa/EVAL_TRACKER.md` (`:530-532`), not memory-only. DNA-1 is a **measured, month-old, unfixed answer leak** (6/10 generations). Rides as the +1 the moment support-tiers closes or the sweep pauses. | 2026-08-07 |
@@ -228,6 +228,92 @@ queue AND this file's "last touched" in the same slice.
 > contract + reader-fit test alongside. It is a clean standalone slice; ship it before starting
 > anything new. **STALE as of the 08-06 sweep session — `git status` shows a clean tree apart
 > from that session's own files; item-12 landed in `56b5dda`.**
+
+## EXECUTED 2026-08-07 (later) — DI machine side: **di-shapes ladder rungs 1+2 CLOSED; the pack is L1**
+
+> Lane: **Direct Instruction family**, ACTIVE. Queue of record `qa/di/BACKLOG.md` item 14
+> (the di-shapes birth-cert ladder). User pull: *"DI machine side — di-shapes ladder
+> (/curriculum-fit probe → L1 count_sides) or CTX-1"*. Both rungs shipped, in order,
+> because a fit verdict can redirect what the modes should be — and it did.
+>
+> **RUNG 1 — `/curriculum-fit di-shapes`: MATCH at BOTH grades, 5/5 coherent** (K 0.795
+> `GEOM001-01-A` *"Match and name basic 2D shapes… regardless of size, color, or
+> orientation"*; G1 0.798 `GEOM001-01-c`). The birth cert's K.G.2 orientation-independence
+> claim is now **measured** — the curriculum's own top-1 wording carries it, rather than
+> our assertion. Report `qa/curriculum-fit/di-shapes-2026-08-07.md` (+ `.json`).
+>
+> **⚠️ The probe that answers this question was itself mis-scoped, and the failure was
+> reproduced before it was fixed.** `curriculum_fit_probe.py:85` resolved the subject with
+> `subject_for_domain`, while the live path (`submission_service.py:461`) uses
+> `subject_for_primitive`, which consults `_PRIMITIVE_TO_SUBJECT` FIRST — and di-shapes /
+> di-math-facts are exactly the two DI packs that override to MATHEMATICS. Pre-fix,
+> di-shapes scoped to **LANGUAGE_ARTS** and ABSTAINed diffuse, ranking a geometry primitive
+> against **Rhyme Recognition, Onset-Rime Blending and Phoneme Isolation** — verbatim the
+> misattribution class `/curriculum-fit` was built to catch. A session trusting that output
+> would have filed a **false K-geometry curriculum gap**. The gap was *masked, not absent*:
+> the 07-24 di-math-facts report forced the right scope with a deliberately wrong
+> `--domain math`, a workaround recorded in the report and never in the script — so it
+> depended on the operator already knowing. `curriculum_fit_sweep.py` had the same defect
+> **plus** a hoisted subject/grades loop that would have swept every DI pack under one
+> subject. Both fixed; controls clean. Shipped `6e43315`.
+>
+> **RUNG 2 — L1 `/add-eval-modes`: `shape_review` 2.5 · `count_sides` 3.0 ·
+> `count_corners` 3.5** alongside L0's `name_shape` 1.5, β mirrored into
+> `problem_type_registry.py`. This closes the second half of the founding modality call —
+> *"this is a triangle, what is this, **how many sides does it have**"*. Report
+> `qa/eval-reports/di-shapes-eval-modes-2026-08-07.md`.
+>
+> **Rung 1 paid for rung 2 twice over, which is the argument for running fit BEFORE the
+> build:** (a) it measured an exact home for the counting modes at BOTH grades, not just
+> G1 — G1 `GEOM001-01-b` *"Count the number of sides and vertices"* @ 0.785, whose own
+> example list enumerates **eight of the nine Fork A shapes with the same counts this pack
+> judges**, and K `GEOM001-02-A` @ 0.786; and (b) it caught a **blocker**: `constraints`
+> read *"no side/corner counting tasks yet"*, which is manifest-visible steering, so the
+> new modes would have been **born unreachable**. Lifted (description too). The 3D-solids
+> and composing exclusions were KEPT — rung 1 measured those neighbours at 0.770 / 0.769,
+> above τ, so the fences are load-bearing.
+>
+> **Standing gate 1 (bench-first) cleared without a sitting, and the reason matters:** the
+> counting answer is a number word in **3..6** — the #46-benched class — and the menu tops
+> out at a hexagon, so **no multi-word numeral can arise**. That is precisely what keeps
+> item 10 blocked behind #63; the gate does not reach this rung.
+>
+> **Two pedagogical rulings, recorded so they are not re-litigated.** (a) **Counting items
+> are POLYGON-ONLY.** A curved shape carries `sides: null` — not-applicable, not zero — and
+> *"how many sides does a circle have?"* has TWO arguable answers for a five-year-old (0
+> straight sides, or 1 continuous curved edge), failing the pack's *one drawing, one
+> defensible answer* birth discipline. A curves-only scope WIDENS rather than emitting an
+> unanswerable item. This is a deliberate, stated coverage gap against `GEOM001-01-b`
+> (which does list circle as 0,0) — the zero/none contrast is a real DISTAR move, but a
+> different item shape and response class, so it is **queued, not smuggled in**.
+> (b) Under a counting mode the shape's **NAME is withheld too** — it hands the count to
+> any child who knows it (triangle → three).
+>
+> **Two defects found and fixed in-slice, each by a different instrument.**
+> `shape_review`'s wide cumulative draw would have **overridden shapes the objective
+> NAMED**, breaking the pack's own scope doctrine — caught by **revert-bite, not
+> inspection** (it failed the pre-existing L0 test). And a **live probe** shipped chrome
+> reading *"Curve Safari! … look at some smooth outlines"* over five polygons, because the
+> wrapper is written from the objective before the pools are built; now reverts to neutral
+> defaults on the widen path, with a non-widening control proving the guard is scoped.
+>
+> Gates: focused **28/28**, **6 revert-bites all bit** (3/2/2/1/2/1), full Vitest
+> **2169/2169**, typecheck:lumina **0**, src-scoped tsc **803 = baseline exactly** with
+> zero errors in any touched file, py_compile clean, tutor-test T1 `warn` = the **family
+> baseline** (identical two WARNs on all three untouched sibling packs — DI cues via
+> `queueCue`, never `sendText`) and T2 **zero `(not set)`**, cleaner than di-math-facts.
+> **Real-pipeline probes 7/7** (real Gemini, real registry): `mixed` produced **all four
+> identities in one 5-item session** (SP-21 holds live), and `count_sides` on *"Count the
+> sides of circles and ovals"* produced **zero curved shapes** — rule #1 against an
+> adversarial ask.
+>
+> **Residuals, stated rather than buried:** (i) **no Tier-3 live audio on the counting
+> contract** — that the tutor waits out a child counting aloud, refuses an off-by-one, and
+> never counts aloud itself is UNPROVEN; **#72 was EXTENDED with criterion (c)** rather
+> than opening a new row, and the extension is written out so #72 cannot be struck on the
+> naming half alone. (ii) the zero/none contrast. (iii) **cross-queue, filed not fixed:**
+> di-math-facts' Tier-2 probe resolves `supportTier: unresolved` and renders one
+> `(not set)` into the assembled prompt — its L3 rung, not this one.
 
 ## EXECUTED 2026-08-07 — 15A entered at S2; **the BAND-FLOOR strategy was OVERTURNED by user ruling**
 

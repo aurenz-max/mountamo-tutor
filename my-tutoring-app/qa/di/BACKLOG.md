@@ -164,9 +164,49 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     loop; both fixed, controls clean. `verify_retrieval_matcher.py:49` +
     `curriculum_fit_knowledge_check.py:149` still resolve by domain only — not
     wrong today (no DI fixture row), one row away from being wrong.
-    **(2) ← NEXT: L1 `/add-eval-modes`** — `count_sides` /
-    `count_corners` (spoken number words, the #46-benched class → no new
-    bench sitting) + `shape_review`; (3) L2 catalog contextKeys stay minimal
+    ~~**(2) L1 `/add-eval-modes`**~~ **✅ RUNG 2 CLOSED 2026-08-07 — di-shapes
+    is L1. Four identities: `name_shape` 1.5 · `shape_review` 2.5 ·
+    `count_sides` 3.0 · `count_corners` 3.5** (β mirrored into
+    `problem_type_registry.py`). The "how many sides does it have" half of the
+    founding modality call is now shipped. Report
+    `qa/eval-reports/di-shapes-eval-modes-2026-08-07.md`.
+    **Standing gate 1 cleared without a sitting, and the reason is
+    load-bearing:** the counting answer is a number word in **3..6** — the #46
+    class — and the menu tops out at a hexagon, so **no multi-word numeral can
+    arise**. That is exactly what blocks item 10 behind #63; the gate does not
+    reach this rung. The catalog fence rung 1 flagged is LIFTED (constraints +
+    description both now name the counting ask, or the modes ship unreachable);
+    the 3D-solids and composing exclusions are KEPT — rung 1 measured them at
+    0.770 / 0.769, above τ.
+    **Two pedagogical rulings, recorded so they are not re-litigated:**
+    (a) **counting items are POLYGON-ONLY** — a curved shape carries
+    `sides: null` (not-applicable, not zero) and "how many sides does a circle
+    have?" has TWO arguable answers for a five-year-old (0 straight sides, or 1
+    curved edge), so it fails the pack's *one drawing, one defensible answer*
+    birth discipline; a curves-only scope WIDENS rather than emitting an
+    unanswerable item. (b) under a counting mode the shape's **NAME is withheld
+    too** — it hands the count to a child who knows it (triangle → three).
+    **Two defects found and fixed in-slice:** `shape_review`'s wide draw would
+    have overridden shapes the objective NAMED (caught by revert-bite, not
+    inspection — it failed the pre-existing L0 scope test); and a live probe
+    shipped chrome reading *"Curve Safari! … smooth outlines"* over five
+    polygons, because the wrapper is written before the pools are built.
+    Gates: focused 28/28, **6 revert-bites all bit**, full Vitest **2169/2169**,
+    typecheck:lumina 0, src-scoped tsc **803 = baseline** with zero errors in
+    any touched file, py_compile clean, tutor-test T2 zero `(not set)`,
+    **real-pipeline probes 7/7** — incl. `mixed` producing all four identities
+    in one session (SP-21 live) and `count_sides` on *"circles and ovals"*
+    producing **zero curved shapes**.
+    **Residuals:** (i) **no Tier-3 live audio on the counting contract** — that
+    the tutor waits out a child counting aloud, refuses an off-by-one, and never
+    counts aloud itself is UNPROVEN; folds into the same mic session as #63/#72.
+    (ii) the **zero/none contrast** ("a circle has no straight sides") is the one
+    part of `GEOM001-01-b` this rung deliberately does not cover — its own item
+    shape + a bench check on "zero"/"none" as a spoken answer.
+    (iii) **Cross-queue, filed not fixed:** di-math-facts' Tier-2 probe resolves
+    `supportTier: unresolved` and renders ONE `(not set)` into the assembled
+    prompt — the L3 support-tier contextKey, a different rung.
+    **NEXT on this ladder = (3)/(4).** (3) L2 catalog contextKeys stay minimal
     by design — revisit only with evidence; (4) L3 `/add-support-tiers`
     (family script-composed fade: easy model+guide+test / medium model+test /
     hard cold-name); (5) L4 structural = rotation magnitude + size variation

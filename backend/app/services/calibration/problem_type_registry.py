@@ -555,11 +555,20 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "fact_review":      PriorConfig(2.5, "Review: answer taught facts from a wide cumulative mix"),
         "subtraction_fact": PriorConfig(3.0, "Production: answer a printed subtraction fact aloud with the number word"),
     },
-    # L0 (2026-08-06, pack #5). Single core mode at birth; the ladder
-    # (count_sides / count_corners — spoken number words, the benched class —
-    # and shape_review) joins at /add-eval-modes.
+    # L1 ladder (2026-08-07). Four identities on ONE drawn-shape stage, across
+    # two ALREADY-BENCHED response classes: naming is the single-spoken-word
+    # class, and a count is a number word in 3..6 (the #46 class; the menu tops
+    # out at a hexagon, so no multi-word numeral arises and item 10's compound
+    # gate does not apply). Ordering: one recall (name) < the same act over a
+    # wide cumulative draw (review) < a new attribute act (sides) < the same act
+    # on point-percepts, which are easier to skip or double-count (corners).
+    # Counting items are POLYGON-ONLY — a curved shape has no defensible side
+    # count for a young child (0 straight sides vs 1 curved edge).
     "di-shapes": {
-        "name_shape": PriorConfig(1.5, "Production: name a drawn 2D shape aloud, at any rotation"),
+        "name_shape":    PriorConfig(1.5, "Production: name a drawn 2D shape aloud, at any rotation"),
+        "shape_review":  PriorConfig(2.5, "Review: name shapes drawn from a wide cumulative mix rather than one focused set"),
+        "count_sides":   PriorConfig(3.0, "Attribute: say how many sides a drawn 2D shape has, as a number word"),
+        "count_corners": PriorConfig(3.5, "Attribute: say how many corners (vertices) a drawn 2D shape has, as a number word"),
     },
     # L1 ladder (2026-07-25). Connected text — every mode is the SAME response
     # class (a printed 3-8 word sentence read aloud), the class benched in the
