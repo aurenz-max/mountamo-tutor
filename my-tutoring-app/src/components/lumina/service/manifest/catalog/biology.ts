@@ -11,7 +11,60 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
     id: 'organism-card',
     description: 'Foundational organism information card with key biological attributes - the essential "unit" of biology content. Scales from K-2 (simple attributes with icons: habitat, diet, size, locomotion) to 6-8 (full taxonomy, cellular characteristics, evolutionary context). PERFECT for classification activities, organism comparison lessons, habitat studies, and building foundational biology knowledge. Features grade-appropriate vocabulary, visual image prompts, fun facts, and configurable complexity. Use this for introducing organisms before diving deeper with species-profile. ESSENTIAL for K-8 life sciences when you need quick, accessible organism reference cards that students can compare side-by-side.',
-    constraints: 'Use for K-8 students. Automatically adapts complexity based on grade level: K-2 shows only basic attributes with simple language; 3-5 adds body temperature, reproduction, and adaptations; 6-8 includes full taxonomic classification. Perfect for comparison activities, classification lessons, ecosystem studies, and building biology vocabulary. Use multiple organism-cards together for compare/contrast activities.'
+    constraints: 'Use for K-8 students. Automatically adapts complexity based on grade level: K-2 shows only basic attributes with simple language; 3-5 adds body temperature, reproduction, and adaptations; 6-8 includes full taxonomic classification. Perfect for comparison activities, classification lessons, ecosystem studies, and building biology vocabulary. Use multiple organism-cards together for compare/contrast activities.',
+    tutoring: {
+      taskDescription:
+        'Student is looking at an information card about {{organismName}}. '
+        + 'Facts on the card: {{attributeLabels}} ({{attributeCount}} of them). '
+        + 'They tap a fact to open it, and there is a fun fact at the bottom.',
+      contextKeys: [
+        'organismName',
+        'attributeLabels',
+        'attributeCount',
+        'openAttributeLabel',
+        'funFact',
+        'gradeBand',
+      ],
+      scaffoldingLevels: {
+        level1: '"Look at {{organismName}}. What do you notice about it first?"',
+        level2: '"Tap one of the facts to find out more about {{organismName}} — where it lives, or what it eats."',
+        level3: '"Go through the facts one at a time and I will read each one to you. Then see if you can tell me one thing you learned about {{organismName}}."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student looks at the picture and skips every fact',
+          response: '"The picture is a great start. Now tap one of the little boxes — each one tells you something else about it."',
+        },
+        {
+          pattern: 'Student assumes an animal is dangerous because it is large or has teeth',
+          response: '"Big does not mean dangerous. Look at what this one eats — that tells you much more about it than its size does."',
+        },
+        {
+          pattern: 'Student cannot connect the organism to anything they know',
+          response: '"Think of an animal you have seen before. Is this one bigger or smaller? Does it live somewhere like where that one lives?"',
+        },
+        {
+          pattern: 'Student rushes to the fun fact and ignores the attributes',
+          response: '"That fun fact is great! Now go back to the boxes — one of them explains WHY that is true."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the organism name, the fact labels, or the fun fact',
+          response: '"Never ask them to read. Say the animal\'s name, read each fact aloud when they tap it, and describe the picture. Never say the scientific name to a young child."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
+          instruction:
+            'A pre-reader CANNOT read the organism name, the attribute labels, the values, or the fun fact. Your voice is the only channel. '
+            + 'When you receive [ORGANISM_ORIENT], say the animal or plant\'s name warmly and invite them to tap the little boxes to learn about it. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [ORGANISM_FACT_OPENED], read that ONE fact aloud in child words — the label and what it says. '
+            + 'When you receive [ORGANISM_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'NEVER say the scientific name (the Latin one) to a pre-reader, and never read out a measurement in kilograms or centimetres — say "about as big as you" or "heavier than a car" instead.',
+        },
+      ],
+    },
   },
   {
     id: 'species-profile',

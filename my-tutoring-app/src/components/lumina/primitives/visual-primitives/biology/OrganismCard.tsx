@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Leaf, MapPin, Utensils, HeartPulse, Scale, Ruler, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LuminaReadAloud } from '../../../ui';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 /**
  * Organism Card - Foundational biology primitive for presenting living things
@@ -58,6 +60,9 @@ export interface OrganismCardData {
   gradeBand: 'K-2' | '3-5' | '6-8';
   visibleFields: string[]; // Controls which attributes render at this grade band
   themeColor?: string; // Optional accent color
+
+  /** Auto-injected by ManifestOrderRenderer; scopes the tutor session. */
+  instanceId?: string;
 }
 
 // ============================================================================
@@ -138,6 +143,64 @@ const OrganismCard: React.FC<OrganismCardProps> = ({ data, className = '' }) => 
   const colors = getColorScheme(data.organism.kingdom, data.themeColor);
   const { organism, attributes, funFact, gradeBand, visibleFields } = data;
 
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-2 the card's Latin binomial, its kingdom badge, the "Grade Band: 3-5"
+  // developer readout and the attribute VALUES are all undecodable. The card is
+  // still the right shape for K — a picture plus a few facts — it just has to be
+  // read TO them (reader-fit PRE contract rules 1, 7).
+  const isPreReader = gradeBand === 'K-2';
+
+  const attributeLabels = [
+    'Habitat', 'Diet', 'Size', 'Locomotion', 'Lifespan',
+    ...(attributes.bodyTemperature ? ['Body Temperature'] : []),
+    ...(attributes.reproduction ? ['Reproduction'] : []),
+  ];
+
+  const aiPrimitiveData = useMemo(() => ({
+    organismName: organism.commonName,
+    attributeLabels: attributeLabels.join(', '),
+    attributeCount: attributeLabels.length,
+    openAttributeLabel: 'none',
+    funFact,
+    gradeBand,
+  }), [organism.commonName, attributeLabels.join(','), funFact, gradeBand]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'organism-card',
+    instanceId: data.instanceId || `organism-card-${organism.commonName}`,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[ORGANISM_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[ORGANISM_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `an information card about ${organism.commonName}. They tap the little fact boxes to learn about it. `
+      + `Say its name warmly and invite them to explore.`
+      + `${isPreReader
+        ? ' NEVER say the scientific name to them, and never read out a measurement — say "about as big as you" instead.'
+        : ''}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, organism.commonName]);
+
   // Handle on-demand image generation
   const handleGenerateImage = async () => {
     if (!organism.imagePrompt || isLoadingImage || generatedImageUrl) return;
@@ -187,16 +250,42 @@ const OrganismCard: React.FC<OrganismCardProps> = ({ data, className = '' }) => 
   ) => {
     if (!isFieldVisible(field, visibleFields) || !value) return null;
 
-    return (
-      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 hover:border-slate-600/70 hover:bg-slate-800/50 transition-all">
+    const body = (
+      <>
         <div className={`mt-0.5 ${colors.text}`}>{icon}</div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 text-left">
           <div className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1">
             {label}
           </div>
           <div className="text-sm text-slate-200">{value}</div>
         </div>
-      </div>
+      </>
+    );
+
+    const shell = 'flex items-start gap-3 p-3 rounded-lg bg-slate-800/30 border border-slate-700/50 hover:border-slate-600/70 hover:bg-slate-800/50 transition-all';
+
+    // At K-2 each fact is a line of text with no spoken twin of its own — the
+    // header read-aloud covers habitat, diet and the fun fact, but not size or
+    // locomotion. Making each box tappable gives every fact its own voice, and
+    // is what makes the scaffold's "tap the little boxes" true rather than
+    // aspirational (it was: these were static divs).
+    if (!isPreReader) {
+      return <div className={shell}>{body}</div>;
+    }
+
+    return (
+      <button
+        type="button"
+        aria-label={`Hear about ${label}`}
+        onClick={() => sendText(
+          `[ORGANISM_FACT_OPENED] The student tapped the "${label}" fact for ${organism.commonName}. `
+          + `Read it aloud in child words: ${label} — ${value}. One short sentence, then wait.`,
+          { silent: true },
+        )}
+        className={`${shell} w-full text-left cursor-pointer active:scale-95`}
+      >
+        {body}
+      </button>
     );
   };
 
@@ -297,19 +386,38 @@ const OrganismCard: React.FC<OrganismCardProps> = ({ data, className = '' }) => 
             <CardTitle className="text-2xl text-slate-100 mb-1">
               {organism.commonName}
             </CardTitle>
-            {organism.scientificName && (
+            {/* A Latin binomial is undecodable at K-2 and the scaffold forbids
+                the tutor from saying it — the screen should not print it either. */}
+            {organism.scientificName && !isPreReader && (
               <CardDescription className="text-sm font-serif italic text-slate-400">
                 {organism.scientificName}
               </CardDescription>
             )}
           </div>
-          <Badge className={`ml-4 bg-slate-800/50 border-slate-700/50 ${colors.text}`}>
-            {organism.kingdom}
-          </Badge>
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label={`Tell me about the ${organism.commonName}`}
+            className="ml-3 flex-shrink-0"
+            onClick={() => readAloud(
+              `${organism.commonName}. It lives in ${attributes.habitat}. It eats ${attributes.diet}. `
+              + `Here is a fun fact. ${funFact}`,
+            )}
+          />
+          {!isPreReader && (
+            <Badge className={`ml-4 bg-slate-800/50 border-slate-700/50 ${colors.text}`}>
+              {organism.kingdom}
+            </Badge>
+          )}
         </div>
-        <div className="text-xs font-mono text-slate-600 uppercase tracking-wider">
-          Grade Band: {gradeBand}
-        </div>
+        {/* A developer band readout has no business in any student's field. */}
+        {!isPreReader && (
+          <div className="text-xs font-mono text-slate-600 uppercase tracking-wider">
+            Grade Band: {gradeBand}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -427,9 +535,20 @@ const OrganismCard: React.FC<OrganismCardProps> = ({ data, className = '' }) => 
                 <div className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-2">
                   Fun Fact
                 </div>
-                <p className="text-sm text-slate-200 leading-relaxed">
-                  {funFact}
-                </p>
+                <div className="flex items-start gap-3">
+                  <p className="text-sm text-slate-200 leading-relaxed flex-1">
+                    {funFact}
+                  </p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size={isPreReader ? 'lg' : 'sm'}
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    aria-label="Read the fun fact to me"
+                    className="flex-shrink-0"
+                    onClick={() => readAloud(`Here is a fun fact about the ${organism.commonName}. ${funFact}`)}
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -268,9 +268,73 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   string-matching `imagePrompt`**, so a scene whose prompts lack those substrings
   renders 🐰 for everything — a content-fidelity bug worth its own item if
   biology scenes get more use; 0 eval modes.
-  → **NEXT: S15 `organism-card`** — the LAST item in 15B. Still carries the
-  prose-keyed map; **import `./gradeBand`** rather than add a fifth copy. Probe
-  at `grade=K` first.
+  ~~**S15 `organism-card`**~~ **S15 CLOSED 2026-08-06 — READY at PRE.**
+  (1) **SCAFFOLD-GAP** — catalog block + 3 moments; the PRE directive forbids the
+  **scientific name** and **measurements**, supplying replacements ("about as big
+  as you"). (2) **The scaffold promised an interaction that did not exist** —
+  the first draft said "tap a fact to open it" and carried
+  `[ORGANISM_FACT_OPENED]`; `tutor-test` returned `directive-tag-never-emitted`
+  because the fact boxes were **static divs**. Resolved by making it TRUE rather
+  than deleting the promise, because the audit needed it: at K-2 the card is five
+  facts and the header read-aloud covers only name/habitat/diet/funFact — *size*
+  and *locomotion* had no spoken twin. Each fact box is now a button at K-2 that
+  reads its own label and value; plain divs at 3-5. **Second time in the sweep
+  the dead-tag check caught a scaffold describing a primitive that didn't exist
+  (S10 was first) — that check is earning its place.** (3) **Prose-keyed map,
+  fifth and last copy** — probe @ K returned `'3-5'` with 8 attributes against a
+  K-2 rung reading "only basic attributes"; fixed by importing the shared
+  resolver, **no fifth copy written**. (4) **PRIMITIVE-GAP** — Latin binomial,
+  kingdom badge and a `Grade Band:` developer readout all gated at K-2.
+  Gates: 12 jsdom tests, **revert-bite 5/12**, src-scoped tsc **803 = baseline
+  zero new**, typecheck:lumina 0, full vitest **1978/1978**, tutor-test Tier 1
+  `pass`. Report `qa/reader-fit/organism-card-PRE-2026-08-06.md`.
+  *Residuals:* no live audio run; no evaluation hook (reference card by design —
+  N/A, not a gap, but don't route assessment demand at it); the on-demand image
+  button is still text-labelled at K-2; 0 eval modes.
+
+**✅ 15B IS COMPLETE — 8/8 CLOSED, all READY at PRE.** Every slice is committed
+with its own report. What the class actually turned out to be:
+
+| | queued as | also found |
+|---|---|---|
+| S8 moon-phases-lab | SCAFFOLD-GAP | grade-blind generator (K served Grade 3) |
+| S9 classification-sorter | SCAFFOLD-GAP | **drag-only** + prose-keyed band |
+| S10 day-night-seasons | SCAFFOLD-GAP | **typing at K**, scored any non-empty string |
+| S11 solar-system-explorer | SCAFFOLD-GAP | degrade-path grade blindness + 6 chrome classes |
+| S12 scale-comparator | SCAFFOLD-GAP | **prose crossed into the component via an `as` cast** |
+| S13 life-cycle-sequencer | SCAFFOLD-GAP | two-act ordering + `imagePrompt` leak |
+| S14 habitat-diorama | SCAFFOLD-GAP | **5 correct band gates that had never run** |
+| S15 organism-card | SCAFFOLD-GAP | scaffold promised a non-existent interaction |
+
+**The triage label understated the work 8 times out of 8.** "Interaction is
+K-fit, only the voice is missing" was true of the *core mechanic* every time and
+false about the *screen* every time. A supply-side triage from catalog text
+cannot see chrome, protocol or a grade-blind generator — only an Audit C and a
+probe at the band can. **Do not trust a Class-B style label for 15A or any
+future sweep; budget every slice for a component pass.**
+
+**Every one of the 8 sat on a grade-resolution defect** (7 outright + S11's
+degrade path). The scaffold fix alone would have shipped inert in all of them.
+
+**Cross-cutting lessons now recorded in the reports:**
+- CSS `hidden` is NOT gone (S11) — text stays in the DOM and reachable by AT.
+- A component containing band-gating code is NOT evidence that gating happens (S14).
+- An `as` cast at a module boundary can propagate a contract violation into a
+  second file where nothing looks wrong (S12).
+- A `primitiveData` bag assembled behind local statements makes `tutor-test`
+  report every key as "dynamic — verify at runtime", turning a real check into a
+  shrug (S14). Keep it a flat literal.
+- Don't set a flag inside a `setState` updater and read it after (S12).
+- The absolute `tsc` count is unusable while the dev server runs (`.next/types`
+  churn) — gate on the `src/`-scoped error SET diff.
+
+**Open across the class:** no Tier-3 live audio run on any of the 8 →
+**HUMAN-CHECKS #73** (one sitting covers them all; the day/night reading in S10
+is the only genuinely open question in it). **Three of the eight — S11, S12, S15
+— have no evaluation hook at all**, so band-contract rule 8 is N/A rather than
+passing; either they get `/add-eval-modes` or they are declared exploration-only
+so the manifest stops routing assessment demand to them. **All 8 still have 0
+eval modes.**
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

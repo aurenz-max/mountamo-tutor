@@ -410,8 +410,62 @@ queue AND this file's "last touched" in the same slice.
 > the eight 15B primitives cannot measure anything. Either they get `/add-eval-modes` or they
 > should be declared exploration-only so the manifest stops routing assessment demand to them.
 >
-> **Next pull: S13 `life-cycle-sequencer`**, then S14 → S15 — all three biology, all sharing
-> the S9 prose-keyed-map shape (`gradeBandMap[ctx.gradeContext]`). 15A (S2–S7) queued below.
+> **S13 / S14 / S15 CLOSED — and with them 15B is COMPLETE, 8/8.** Reports:
+> `qa/reader-fit/{life-cycle-sequencer,habitat-diorama,organism-card}-PRE-2026-08-06.md`.
+> - **S13 `life-cycle-sequencer`** — lowest triage risk in the class (3) and still needed a
+>   component pass. The answer is an ORDER, so the scaffold forbids naming any position or
+>   confirming a placement pre-check, and draws the line explicitly (describing what happens IN
+>   a picture is stimulus and free; saying where it goes is the answer). Select-then-target
+>   collapsed to **one tap places** at K-2. `imagePrompt` removed as student copy at every
+>   grade. **The band resolver was EXTRACTED to `service/biology/gradeBand.ts`** rather than
+>   copied a third time, with S9 re-pointed at it. Runtime A/B changed the *register*: K went
+>   from *"The female butterfly lays a tiny egg on a milkweed leaf…"* to *"A mama butterfly
+>   lays a tiny egg on a leaf. It is so small you can barely…"*.
+> - **S14 `habitat-diorama`** — the most instructive shape: the component was **already written
+>   band-aware, with five `gradeBand !== 'K-2'` gates that had never run**, because the
+>   generator never emitted `'K-2'`. Most of the PRE improvement came from deleting one broken
+>   lookup. Also: the roles legend was gated **backwards** (hid each role's description, kept
+>   the five technical terms — jargon with its explanation removed), and the organism buttons
+>   had **no accessible name at all**.
+> - **S15 `organism-card`** — the scaffold's first draft promised "tap a fact to open it" and
+>   `tutor-test` caught the tag as dead, because the fact boxes were static divs. Made it TRUE
+>   rather than deleting it, since *size* and *locomotion* otherwise had no spoken twin. Fifth
+>   and last copy of the prose-keyed map removed — **no fifth resolver written**.
+>
+> **What 15B actually was.** The triage label — *"interaction is K-fit, only the voice is
+> missing"* — **understated the work 8 times out of 8**. It was true of the core mechanic every
+> time and false about the screen every time: S9 was drag-only, S10 had **typing at
+> Kindergarten** scored by any non-empty string, S11 had six classes of chrome around the tap,
+> S12 printed kilometres and ratios, S13 was a two-act ordering protocol, S14's own gates were
+> dead, S15 had no way to hear any of its five facts. **And every one of the eight sat on a
+> grade-resolution defect** (seven outright, plus S11's degrade path) — the scaffold fix alone
+> would have shipped inert in all of them. A supply-side triage read from catalog text cannot
+> see chrome, protocol, or a grade-blind generator; only an Audit C plus a probe at the band
+> can. **Do not trust a Class-B style label for 15A or any future sweep — budget every slice
+> for a component pass.**
+>
+> **Reusable lessons, now in the reports:** CSS `hidden` is not gone (text stays in the DOM and
+> reachable by AT); a component containing band-gating code is not evidence that gating
+> happens; an `as` cast at a module boundary propagates a contract violation into a second file
+> where nothing looks wrong; a `primitiveData` bag assembled behind local statements makes
+> `tutor-test` report every key as "dynamic — verify at runtime", turning a real check into a
+> shrug; never set a flag inside a `setState` updater and read it after; and the absolute `tsc`
+> count is unusable while the dev server runs (`.next/types` churn) — gate on the `src/`-scoped
+> error SET diff.
+>
+> Cumulative gates across the 8 slices: **1978/1978 vitest** (up from 1801 at S1), src-scoped
+> tsc **803 vs the 804 baseline**, typecheck:lumina 0, tutor-test Tier 1 `pass` on all eight,
+> and a runtime K-vs-control A/B on every one.
+>
+> **Open across the class:** no Tier-3 live audio run on any of the 8 → **HUMAN-CHECKS #73**
+> (one sitting covers all three primitives listed there; the S10 day/night reading is the only
+> genuinely open question in it). **S11, S12 and S15 have no evaluation hook at all**, so rule
+> 8 is N/A rather than passing — either `/add-eval-modes` or declare them exploration-only so
+> the manifest stops routing assessment demand at them. **All 8 still have 0 eval modes.**
+>
+> **Next pull: 15A (S2–S7)** — `orbit-mechanics-lab` → `rocket-builder` → `story-planner` →
+> `bio-compare-contrast` → `species-profile` → `mission-planner`. Cheaper per slice (catalog
+> band floor, no component work by design) but read the warning above before assuming that.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 
