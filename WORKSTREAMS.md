@@ -152,7 +152,62 @@ queue AND this file's "last touched" in the same slice.
 > **6. Ship hygiene — `addition-subtraction-scene` item-12 is STILL uncommitted** (4 files,
 > browser-verified with a 10-check real-Chrome run, no commit) and now carries a modified
 > contract + reader-fit test alongside. It is a clean standalone slice; ship it before starting
-> anything new.
+> anything new. **STALE as of the 08-06 sweep session — `git status` shows a clean tree apart
+> from that session's own files; item-12 landed in `56b5dda`.**
+
+## EXECUTED 2026-08-06 (same day) — reader-fit supply-side sweep TAKEN as ACTIVE, S1 CLOSED
+
+> The re-prioritization above was acted on immediately. Lane state: **ACTIVE**, queue of
+> record `qa/reader-fit/BACKLOG.md` **item 15**, triage
+> `qa/reader-fit/supply-sweep-triage-2026-08-06.md`.
+>
+> **The ≈69 estimate was replaced with a real enumeration** (vitest harness importing
+> `UNIVERSAL_CATALOG`, then deleted — not a grep): **196 entries · 118 K-selectable · 28
+> audited → 90 never audited.** *Higher* than the estimate, not lower; the gap is 18 entries
+> that state no grade at all, which the text proxy could not see.
+>
+> **The top risk band collapsed from "90 audits" to ONE verified class.** A primitive reaches
+> a non-reader only via a catalog `tutoring` block or component `useLuminaAI`/`sendText`.
+> **26 K-claiming primitives have NEITHER** — the tutor is handed the literal string *"No
+> specific scaffolding instructions for this primitive type."* (`lumina_tutor.py:385`). PRE
+> contract rule #1 fails before a single string is read. 20 of the 26 make an explicit
+> `"K: …"` promise in `constraints`. **11 are ALREADY OWNED** by
+> `qa/engineering-tutoring-scaffold/BACKLOG.md` Phase A (which found the same defect from the
+> read-aloud side on 07-21) — confirmed, not re-filed. **The unowned 15 are item 15**, split
+> WRONG-BAND (floor it) vs SCAFFOLD-GAP (give it a voice). All but one also carry 0 eval
+> modes, so each is **one slice shared with the queued BIO-2 density deficit**.
+>
+> **Two `/pm` estimate corrections, recorded so they are not re-raised:**
+> `stoichiometry-lab`/`gas-laws-simulator` are **not** top-band — their constraints say
+> *"Best for grades 8-12"*; they matched only on a *"K-8 → HS gap"* boast. And `story-talk`
+> was a **false positive** — it is the PRE reference model, driving read-aloud from component
+> `sendText`; it became the negative control that proved the channel test discriminates.
+>
+> **S1 `telescope-simulator` CLOSED — WRONG-BAND, floored to Grade 2, A/B-verified against
+> the real curator.** Report `qa/reader-fit/telescope-simulator-PRE-2026-08-06.md`.
+> Audit A: every load-bearing string UNCOVERED (the task instruction is 12px text behind a
+> "Show hints" toggle). Audit B: FAIL structurally — `tutor-test` returns HTTP 400
+> `no-scaffold`. Audit C: **17+ simultaneous interactive elements vs the contract's ≤5**, plus
+> an `AZ 225.0° · ALT 35.0° · 3×` readout in a five-year-old's field; `gradeLevel` is
+> destructured at `TelescopeSimulator.tsx:265` and **never read again**, so K and Grade 5
+> render an identical panel. Fix = catalog `BAND FLOOR: Grade 2+ ONLY` (states why + names the
+> K-1 alternatives) + generator backstop (schema enum `["2".."5"]`, K/G1 rungs deleted).
+> **Second defect fixed in the same slice:** the generator read PROSE `ctx.gradeContext` into
+> `=== 'K'` / `<= '2'` comparisons that could never match — the **`14m` class, unwired here** —
+> now canonical-first via exported `telescopeGradeFromGrade()`, prose resolver kept as fallback.
+> Gates: 10 focused tests with **revert-bite 3/10**, tsc **805 vs 806 baseline** (one fewer,
+> zero new), typecheck:lumina 0, full vitest **1801/1801**.
+> **Runtime (Verification Doctrine): eval-test K→2, G1→2, G3→3 unchanged (control), and a
+> curator A/B on "Looking at the night sky with telescopes" @ K — PRE-FIX the real pipeline
+> selected `telescope-simulator`; POST-FIX it does not.** The predicted failure was reproduced
+> live before it was fixed.
+>
+> **Next pull: S2 `orbit-mechanics-lab`** (same shape). Two follow-ons deliberately left OPEN
+> rather than silently closed: telescope-simulator still has **no tutoring block and 0 eval
+> modes at the grades it DOES serve** (`/add-tutoring-scaffold`, `/add-eval-modes`).
+> **Signal worth acting on:** the post-fix K manifest routed to `planetary-explorer` and
+> `constellation-builder` — both flagged in the triage as *no read-aloud, no band gate*. K
+> astronomy demand now lands squarely on the Class-B queue, which **raises** S8–S12's priority.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

@@ -9,7 +9,75 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 14. EMERGING (Grade 1) band — **RE-SEEDED / TOP QUEUE** (census 2026-08-01)
+### 15. SUPPLY-SIDE SWEEP — the never-audited K-selectable set — **TOP QUEUE** (2026-08-06)
+
+**Seeded from a real enumeration, not a demand sample.** Full method, corrections
+to the `/pm` estimate, and the ranked table:
+`qa/reader-fit/supply-sweep-triage-2026-08-06.md`.
+
+**Live catalog = 196 entries → 118 K-selectable → 28 audited → 90 never audited**
+(higher than the ≈69 estimate; the gap is 18 entries stating no grade at all,
+which the earlier text grep could not see).
+
+**The top risk band is ONE verified class, not 90 audits.** A primitive can only
+reach a non-reader through (a) a catalog `tutoring` block or (b) component
+`useLuminaAI`/`sendText`. **26 K-claiming primitives have NEITHER** — the tutor
+receives the literal string *"No specific scaffolding instructions for this
+primitive type."* (`backend/app/api/endpoints/lumina_tutor.py:385`). PRE band
+contract rule #1 fails before any string is read, at every eval mode. 20 of the
+26 make an explicit `"K: …"` progression promise in `constraints`.
+
+**11 of the 26 are ALREADY OWNED — do not re-file them.**
+`qa/engineering-tutoring-scaffold/BACKLOG.md` **Phase A** reached the same defect
+from the read-aloud side on 2026-07-21 and names `/add-tutoring-scaffold` as
+executor. This sweep confirms that queue and adds nothing to it.
+
+**The 15 unowned ones are this item.** All but `story-planner` also carry 0 eval
+modes, so each is one slice shared with the queued **BIO-2** density deficit —
+same primitive, same catalog file, both CLAUDE.md #1 and #3.
+
+- **15A — WRONG-BAND, fix = catalog `BAND FLOOR`** (cheapest; no component work,
+  and it makes the primitive unselectable at K rather than merely quieter):
+  ~~**S1 `telescope-simulator`**~~ **S1 CLOSED 2026-08-06 — WRONG-BAND, floored to
+  Grade 2, A/B-verified against the real curator.** Catalog `BAND FLOOR: Grade 2+
+  ONLY` (states why + names the K-1 alternatives) + generator backstop (schema
+  enum `["2".."5"]`, K/G1 rungs deleted). **Second defect fixed in the same
+  slice:** the generator read PROSE `ctx.gradeContext` into `=== 'K'` / `<= '2'`
+  comparisons that could never match — the `14m` class, unwired here — now
+  canonical-first via exported `telescopeGradeFromGrade()` with the prose
+  resolver kept as fallback. Gates: 10 focused tests with **revert-bite 3/10**,
+  tsc **805 vs 806 baseline** (one fewer), typecheck:lumina 0, full vitest
+  **1801/1801**, eval-test probes K→2 / G1→2 / **G3→3 unchanged (control)**.
+  **Curator A/B on "Looking at the night sky with telescopes" @ K: PRE-FIX
+  selected `telescope-simulator`; POST-FIX does not.** Report
+  `qa/reader-fit/telescope-simulator-PRE-2026-08-06.md`.
+  *Follow-on (NOT closed):* it still has no tutoring block and 0 eval modes at
+  the grades it DOES serve → `/add-tutoring-scaffold` + `/add-eval-modes`.
+  → **NEXT: S2 `orbit-mechanics-lab`** (same shape: claims K, no channel) →
+  S3 `rocket-builder` → S4 `story-planner` → S5 `bio-compare-contrast` →
+  S6 `species-profile` → S7 `mission-planner`.
+- **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
+  (interaction is genuinely K-fit; only the voice is missing):
+  S8 `moon-phases-lab` → S9 `classification-sorter` → S10 `day-night-seasons` →
+  S11 `solar-system-explorer` → S12 `scale-comparator` → S13
+  `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
+
+**Pull order:** S1 pilot (top risk, explicit K promise, establishes the astronomy
+band-floor template S2/S3 reuse) → rest of 15A → 15B under pilot-then-sweep.
+Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).
+
+*Two corrections to the `/pm` estimate, recorded so they are not re-raised:*
+`stoichiometry-lab`/`gas-laws-simulator` are **not** top-band (their constraints
+say "Best for grades 8-12"; they matched only on a "K-8 → HS gap" boast), and
+`story-talk` is a **false positive** — it is the PRE reference model and drives
+read-aloud from component `sendText`. It was the negative control for the channel
+test.
+
+*The other ~64 unaudited K-selectable entries have at least one channel and are
+deliberately NOT queued — QA is a gate, not a census ([[feedback_qa-is-a-gate-not-a-census]]).
+The ranked table is in the report if a session wants to pull from it.*
+
+### 14. EMERGING (Grade 1) band — ~~RE-SEEDED / TOP QUEUE~~ **DRAINED 2026-08-05; superseded as top by item 15** (census 2026-08-01)
 
 **Census of record:** six published Grade-1 subskills, two each from LA / Math / SS, run through the
 real `/topic-trace` brief → manifest → generator pipeline. Reports:

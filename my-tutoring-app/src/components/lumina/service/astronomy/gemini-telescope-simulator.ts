@@ -101,13 +101,19 @@ const telescopeSimulatorSchema: Schema = {
     },
     gradeLevel: {
       type: Type.STRING,
-      enum: ["K", "1", "2", "3", "4", "5"],
-      description: "Target grade level"
+      // BAND FLOOR (reader-fit 2026-08-06): Grade 2+ only. The instrument panel
+      // (magnification slider, telescope/view-mode buttons, toggles, AZ/ALT
+      // readout) is permanently on screen with no spoken twin, and the primitive
+      // has no tutoring scaffold, so a pre-/emerging reader cannot learn the
+      // task. K-1 astronomy routes to solar-system-explorer / day-night-seasons
+      // / moon-phases-lab instead. Report: qa/reader-fit/telescope-simulator-PRE-2026-08-06.md
+      enum: ["2", "3", "4", "5"],
+      description: "Target grade level (Grade 2-5 only — this primitive has a Grade-2 band floor)"
     },
     celestialObjects: {
       type: Type.ARRAY,
       items: celestialTargetSchema,
-      description: "Celestial objects visible in the sky. ALWAYS include Venus as a suggested object. K: 3-4 bright objects. 1-2: 5-6 objects. 3-4: 7-8 objects. 5: 8-10 objects including faint ones."
+      description: "Celestial objects visible in the sky. ALWAYS include Venus as a suggested object. Grade 2: 6 objects. 3-4: 7-8 objects. 5: 8-10 objects including faint ones."
     },
     starFieldSeed: {
       type: Type.NUMBER,
@@ -115,43 +121,43 @@ const telescopeSimulatorSchema: Schema = {
     },
     starCount: {
       type: Type.NUMBER,
-      description: "Number of background stars. K: 200. 1-2: 300. 3-4: 400. 5: 500."
+      description: "Number of background stars. Grade 2: 300. 3-4: 400. 5: 500."
     },
     telescopeType: {
       type: Type.STRING,
       enum: ["binoculars", "small", "large", "space"],
-      description: "Starting telescope type. K-1: binoculars. 2-3: small. 4-5: large."
+      description: "Starting telescope type. Grades 2-3: small. 4-5: large."
     },
     initialMagnification: {
       type: Type.NUMBER,
-      description: "Starting magnification. K: 3. 1-2: 5. 3-4: 10. 5: 15."
+      description: "Starting magnification. Grade 2: 5. 3-4: 10. 5: 15."
     },
     viewMode: {
       type: Type.STRING,
       enum: ["visible", "infrared", "radio"],
-      description: "Starting view mode. K-2: visible only. 3+: visible (can switch)."
+      description: "Starting view mode. Grade 2: visible only. 3+: visible (can switch)."
     },
     showLabels: {
       type: Type.BOOLEAN,
-      description: "Show object labels by default. K-2: true. 3+: true (can toggle)."
+      description: "Show object labels by default. Grade 2: true. 3+: true (can toggle)."
     },
     showGrid: {
       type: Type.BOOLEAN,
-      description: "Show coordinate grid by default. K-2: false. 3-4: false. 5: true."
+      description: "Show coordinate grid by default. Grades 2-4: false. 5: true."
     },
     targetObjects: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "IDs of objects student must find. ALWAYS include 'venus'. K: 1-2 targets. 1-2: 2-3 targets. 3-4: 3-4 targets. 5: 4-5 targets."
+      description: "IDs of objects student must find. ALWAYS include 'venus'. Grade 2: 3-4 targets. 3-4: 3-4 targets. 5: 4-5 targets."
     },
     journalMode: {
       type: Type.BOOLEAN,
-      description: "Enable observation journal. K-2: false. 3+: true."
+      description: "Enable observation journal. Grade 2: false. 3+: true."
     },
     focusMode: {
       type: Type.STRING,
       enum: ["auto", "manual"],
-      description: "Focus control mode. K-2: auto (easy). 3-4: auto (with manual toggle). 5: manual (hard)."
+      description: "Focus control mode. Grade 2: auto (easy). 3-4: auto (with manual toggle). 5: manual (hard)."
     },
     learningFocus: {
       type: Type.STRING,
@@ -179,9 +185,8 @@ const telescopeSimulatorSchema: Schema = {
 /**
  * Generate Telescope Simulator data for visualization
  *
- * Creates virtual telescope experiences appropriate for K-5 astronomy education:
- * - K: We can see space with telescopes
- * - 1: Moon craters, planets are disks
+ * Creates virtual telescope experiences for Grade 2-5 astronomy education.
+ * BAND FLOOR: Grade 2+ — K-1 cannot read the instrument panel (reader-fit 2026-08-06).
  * - 2: Finding things in the sky
  * - 3: Different telescopes see different things
  * - 4: Systematic observation, logging
@@ -194,11 +199,60 @@ const telescopeSimulatorSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns TelescopeSimulatorData with complete configuration
  */
+/**
+ * Resolve the telescope's working grade rung ('2'|'3'|'4'|'5') from the canonical
+ * curriculum grade, applying the primitive's BAND FLOOR.
+ *
+ * Two defects are closed here, both verified 2026-08-06:
+ *
+ * 1. **Band floor (reader-fit).** This primitive claimed K-5 but is unusable
+ *    below Grade 2 — permanent instrument panel, every control a text label,
+ *    zero spoken twins, and no tutoring scaffold at all (the backend hands the
+ *    tutor "No specific scaffolding instructions for this primitive type").
+ *    Anything below '2' clamps to '2'.
+ *
+ * 2. **Prose-vs-canonical grade (the 2026-08-04 `14m` sweep class).** The
+ *    generator read `ctx.gradeContext` — PROSE ("kindergarten students …") —
+ *    into `gradeLevel === 'K'` / `gradeLevel <= '2'` comparisons that could
+ *    never match, so every structural default silently fell to its last branch.
+ *    `ctx.grade` is canonical ('K'|'1'..'12') and is authoritative; the prose
+ *    band remains the fallback, never deleted.
+ *
+ * Returns null when there is no canonical grade AND no prose match, so the
+ * caller's own default stands.
+ */
+export const telescopeGradeFromGrade = (
+  grade?: string,
+): '2' | '3' | '4' | '5' | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K') return '2';                       // floored
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 2) return '2';                          // grades 1-2 → the floor
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const telescopeGradeFromProse = (prose?: string): '2' | '3' | '4' | '5' => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool|grade 1|1st grade|grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '2';
+};
+
 export const generateTelescopeSimulator = async (
   ctx: GenerationContext,
 ): Promise<TelescopeSimulatorData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
+  // Canonical-first, prose as fallback, floored at Grade 2. `gradeContext` is
+  // still what the PROMPT says out loud (audience voice); `gradeLevel` is the
+  // structural rung every default below keys off.
+  const gradeLevel: '2' | '3' | '4' | '5' =
+    telescopeGradeFromGrade(ctx.grade) ?? telescopeGradeFromProse(ctx.gradeContext);
   const config = ctx.raw as Partial<TelescopeSimulatorData>;
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The subject (topic) stays broad; intent foregrounds it in student-facing text.
@@ -211,7 +265,7 @@ ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specific
   const prompt = `
 Create an educational Telescope Simulator experience for teaching "${topic}" to ${gradeLevel} students.
 
-CONTEXT - VIRTUAL TELESCOPE FOR K-5:
+CONTEXT - VIRTUAL TELESCOPE FOR GRADES 2-5:
 The Telescope Simulator is a virtual telescope experience where students explore the night sky,
 find celestial objects, and understand how astronomers work. It uses D3 to render an interactive
 sky view through a circular telescope eyepiece.
@@ -232,31 +286,15 @@ Orion Nebula: { id: "orion-nebula", type: "nebula", azimuth: 170, altitude: 42, 
 Pleiades: { id: "pleiades", type: "cluster", azimuth: 250, altitude: 60, magnitude: 1.6, angularSize: 110, color: "#87CEEB", visibleNaked: true, bestTelescope: "binoculars" }
 Andromeda: { id: "andromeda", type: "galaxy", azimuth: 30, altitude: 65, magnitude: 3.4, angularSize: 190, color: "#DDA0DD", visibleNaked: false, bestTelescope: "large" }
 
+BAND FLOOR — GRADE 2 IS THE LOWEST RUNG:
+This primitive does NOT serve Kindergarten or Grade 1. Its controls are text-labelled
+and always on screen, so a child who cannot read cannot work it. Even if the topic or
+audience sounds younger, generate GRADE 2 content and set gradeLevel: "2" — never "K"
+or "1". Write hints as short, plainly-worded single sentences.
+
 KEY CONCEPTS (age-appropriate):
 
-KINDERGARTEN (ages 5-6):
-"We can see space with telescopes!"
-- Focus: Telescopes let us see far-away things
-- 3-4 bright objects (Moon, Venus, Jupiter)
-- No labels toggle, no grid, auto-focus
-- Language: "Point the telescope and find the bright things in the sky!"
-- telescopeType: "binoculars" (max 12×), viewMode: "visible", focusMode: "auto"
-- targetObjects: ["venus", "moon"] (2 easy targets)
-- journalMode: false
-- Hints: "Venus is the brightest point of light! Can you find it?", "Drag to move the telescope!"
-
-GRADE 1 (ages 6-7):
-"The Moon has bumps and planets look like circles!"
-- Focus: Moon craters, planets are disks at magnification
-- 5 objects (Moon, Venus, Mars, Jupiter, Sirius)
-- showLabels: true, auto-focus
-- Language: "Zoom in on the Moon to see its craters!"
-- telescopeType: "binoculars" (max 12×), initialMagnification: 5, focusMode: "auto"
-- targetObjects: ["venus", "moon", "jupiter"] (3 targets)
-- journalMode: false
-- Hints: "Venus is super bright! Look for it in the west!", "Zoom in with the slider to see more detail!"
-
-GRADE 2 (ages 7-8):
+GRADE 2 (ages 7-8) — THE FLOOR:
 "There's so much to find in the sky!"
 - Focus: Finding specific objects, sky is full of things
 - 6 objects including stars and a cluster
@@ -316,8 +354,6 @@ Moon detail levels:
 - space: "Incredible resolution shows tiny features, boulders, and even traces of Apollo landing sites."
 
 FUN FACTS BY GRADE:
-K: "Telescopes are like super-powered eyes that can see really far away!"
-1: "The first telescope was made over 400 years ago by a person named Hans Lippershey!"
 2: "Venus is sometimes called Earth's twin because it's almost the same size!"
 3: "The Hubble Space Telescope is as big as a school bus and orbits Earth!"
 4: "Venus spins backwards compared to most planets - the Sun rises in the west on Venus!"
@@ -412,14 +448,17 @@ REMEMBER: Venus MUST be included in celestialObjects and targetObjects!
   // Feature defaults by grade
   // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
   if (data.starFieldSeed === undefined) data.starFieldSeed = Math.floor(Math.random() * 10000);
+  // `gradeLevel` is now the canonical rung '2'..'5' (never prose), so these
+  // comparisons actually bite — before the 2026-08-06 fix they read prose and
+  // every one of them fell through to its last branch.
   if (data.starCount === undefined) {
-    data.starCount = gradeLevel === 'K' ? 200 : gradeLevel <= '2' ? 300 : gradeLevel <= '4' ? 400 : 500;
+    data.starCount = gradeLevel <= '2' ? 300 : gradeLevel <= '4' ? 400 : 500;
   }
   if (!data.telescopeType) {
-    data.telescopeType = gradeLevel <= '1' ? 'binoculars' : gradeLevel <= '3' ? 'small' : 'large';
+    data.telescopeType = gradeLevel <= '3' ? 'small' : 'large';
   }
   if (data.initialMagnification === undefined) {
-    data.initialMagnification = gradeLevel === 'K' ? 3 : gradeLevel <= '2' ? 5 : gradeLevel <= '4' ? 10 : 15;
+    data.initialMagnification = gradeLevel <= '2' ? 5 : gradeLevel <= '4' ? 10 : 15;
   }
   if (!data.viewMode) data.viewMode = 'visible';
   if (data.showLabels === undefined) data.showLabels = true;
@@ -593,9 +632,7 @@ function getDefaultCelestialObjects(gradeLevel: string): CelestialTarget[] {
     },
   };
 
-  // Build object list by grade
-  if (gradeLevel === 'K') return [venus, moon, jupiter];
-  if (gradeLevel === '1') return [venus, moon, jupiter, mars, sirius];
+  // Build object list by grade. No 'K'/'1' rungs — Grade 2 is the band floor.
   if (gradeLevel === '2') return [venus, moon, jupiter, mars, sirius, pleiades];
   if (gradeLevel === '3') return [venus, moon, jupiter, mars, sirius, pleiades, orionNebula];
   if (gradeLevel === '4') return [venus, moon, jupiter, mars, sirius, pleiades, orionNebula, andromeda];
@@ -635,17 +672,8 @@ function getDefaultCelestialObjects(gradeLevel: string): CelestialTarget[] {
  * Helper: Get default hints based on grade level
  */
 function getDefaultHints(gradeLevel: string): string[] {
+  // No 'K'/'1' rungs — Grade 2 is this primitive's band floor (reader-fit 2026-08-06).
   const hintsByGrade: Record<string, string[]> = {
-    'K': [
-      "Venus is the brightest light in the sky! Can you find it?",
-      "Drag to move your telescope around!",
-      "Use the slider to zoom in and see things bigger!"
-    ],
-    '1': [
-      "Venus is super bright! Look for it in the west!",
-      "Zoom in on the Moon to see its craters!",
-      "Jupiter looks like a tiny disk with dots nearby!"
-    ],
     '2': [
       "Venus shines with a warm yellow glow!",
       "Try different telescopes to see more!",
@@ -671,5 +699,5 @@ function getDefaultHints(gradeLevel: string): string[] {
       "Use the coordinate grid for systematic sky surveys!"
     ],
   };
-  return hintsByGrade[gradeLevel] || hintsByGrade['3'];
+  return hintsByGrade[gradeLevel] || hintsByGrade['2'];
 }
