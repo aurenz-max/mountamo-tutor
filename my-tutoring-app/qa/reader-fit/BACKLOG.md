@@ -62,6 +62,15 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   S11 `solar-system-explorer` → S12 `scale-comparator` → S13
   `life-cycle-sequencer` → S14 `habitat-diorama` → S15 `organism-card`.
 
+**📋 HANDOFF (paste-able, line-exact anchors verified):
+`qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`** — carries the S1 fix template,
+the per-slice gates incl. the **curator A/B recipe** (the only thing that actually
+tests a band floor), and a MEASURED un-queued finding: the astronomy domain violates
+`generationContext.ts:68` **10/10** (prose `ctx.gradeContext` parsed as a grade — the
+`14m` class), with the bite confirmed on S2. It also argues for **interleaving 15B
+after S2/S3** rather than draining 15A first, because each floor pushes K traffic onto
+primitives that still cannot speak.
+
 **Pull order:** S1 pilot (top risk, explicit K promise, establishes the astronomy
 band-floor template S2/S3 reuse) → rest of 15A → 15B under pilot-then-sweep.
 Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).

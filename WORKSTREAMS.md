@@ -202,6 +202,19 @@ queue AND this file's "last touched" in the same slice.
 > selected `telescope-simulator`; POST-FIX it does not.** The predicted failure was reproduced
 > live before it was fixed.
 >
+> **📋 HANDOFF WRITTEN — `qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`** (paste-able
+> prompt, line-exact anchors for all 15 queue rows, the S1 fix template, per-slice gates
+> incl. the **curator A/B recipe**, and the scope fence). A fresh session can take S2 from
+> that file alone. **It also carries a MEASURED, un-queued finding:** the astronomy domain
+> violates `generationContext.ts:68` (*"NEVER parse grade out of `gradeContext` prose"*)
+> **10 generators out of 10** — day-night-seasons 13 dead comparisons, moon-phases-lab 10,
+> mission-planner 7, scale-comparator 7, orbit-mechanics-lab 4. Confirmed bite on S2:
+> `gemini-orbit-mechanics-lab.ts:554/556` use `gradeLevel >= '3'` against prose, and
+> `'e' > '3'` lexically, so **orbital burns and gravity field lines are ON at Kindergarten
+> today** while `showOrbitalPeriod` (`:551`) is unreachable at every grade. Same `14m` class
+> telescope-simulator carried; the sweep is surfacing it domain-wide, exactly as the FF-1 and
+> DNA-1 leak investigations did.
+>
 > **Next pull: S2 `orbit-mechanics-lab`** (same shape). Two follow-ons deliberately left OPEN
 > rather than silently closed: telescope-simulator still has **no tutoring block and 0 eval
 > modes at the grades it DOES serve** (`/add-tutoring-scaffold`, `/add-eval-modes`).
