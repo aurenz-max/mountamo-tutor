@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 
 // ============================================================================
 // DATA INTERFACES (Single Source of Truth)
@@ -61,6 +63,9 @@ export interface ScaleComparatorData {
 
   // Grade level
   gradeLevel: 'K' | '1' | '2' | '3' | '4' | '5';
+
+  /** Auto-injected by ManifestOrderRenderer; scopes the tutor session. */
+  instanceId?: string;
 }
 
 interface ScaleComparatorProps {
@@ -127,6 +132,73 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
   const selectedObjects = selectedObjectIds
     .map(id => data.objects.find(obj => obj.id === id))
     .filter((obj): obj is CelestialObject => obj !== undefined);
+
+  // ============================================================================
+  // Reading band
+  // ============================================================================
+  // At K-1 every number on this screen is undecodable — "12,742 km" under each
+  // object, a log-scale checkbox whose label is a sentence of adult prose, a
+  // "2 selected" counter, and a ratio panel reading "3.7× larger". The visual
+  // comparison itself (two circles side by side) is exactly right for K
+  // (reader-fit PRE contract rules 1, 3, 7).
+  //
+  // NOTE: until this slice `data.gradeLevel` arrived as PROSE (the generator
+  // force-cast ctx.gradeContext into it), so this gate — and the existing
+  // `formatNumber` K branch — could never have fired. See
+  // scaleComparatorGradeFromGrade in the generator.
+  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
+
+  const resolvedInstanceId = useMemo(
+    () => data.instanceId || `scale-comparator-${Date.now()}`,
+    [data.instanceId],
+  );
+
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    compareType: data.compareType,
+    gradeLevel: data.gradeLevel,
+    availableObjects: data.objects.map(o => o.name).join(', '),
+    comparedObjects: selectedObjects.map(o => o.name).join(' and ') || 'nothing yet',
+    comparedCount: selectedObjects.length,
+    biggestObject: selectedObjects.length
+      ? selectedObjects.reduce((a, b) => (a.diameterKm >= b.diameterKm ? a : b)).name
+      : 'none',
+  }), [data.title, data.compareType, data.gradeLevel, data.objects, selectedObjects]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'scale-comparator',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: data.gradeLevel,
+  });
+
+  // Read-aloud: silent like every system trigger — `silent` suppresses only the
+  // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[SCALE_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[SCALE_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text or numbers' : 'student'} `
+      + `just opened a size comparison. Objects available: ${data.objects.map(o => o.name).join(', ')}. `
+      + `They tap objects to put them side by side and see which is bigger. `
+      + `Tell them what to do in child words, warmly.`
+      + `${isPreReader
+        ? ' Compare with words like "much bigger" and "tiny next to it" — NEVER kilometres, and never a "times bigger" number.'
+        : ''}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.objects]);
 
   // Calculate visual sizes and positions using logarithmic or linear scale
   // (Must be before useEffect that depends on it)
@@ -292,6 +364,12 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
 
   // Toggle object selection
   const toggleObjectSelection = (objectId: string) => {
+    // Decided from THIS render's state, not from a flag set inside the updater
+    // below — React runs functional updaters during render processing, so a
+    // flag assigned in there is not reliably readable here (and firing a cue
+    // from inside an updater double-emits it; see LuminaAIContext's cue dedup).
+    const isAdding = !selectedObjectIds.includes(objectId);
+
     setSelectedObjectIds(prev => {
       if (prev.includes(objectId)) {
         // Don't allow deselecting if it's the last one
@@ -300,6 +378,17 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
         return [...prev, objectId];
       }
     });
+
+    const obj = data.objects.find(o => o.id === objectId);
+    if (obj && isAdding) {
+      sendText(
+        `[SCALE_OBJECT_ADDED] The student added ${obj.name} to the comparison. `
+        + `Say its name and how it LOOKS next to what is already there — "much bigger", `
+        + `"tiny next to it". One short sentence, no question.`
+        + `${isPreReader ? ' Never say kilometres or a "times bigger" number.' : ''}`,
+        { silent: true },
+      );
+    }
   };
 
   // Reset zoom - fit all objects in view
@@ -348,15 +437,30 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
       {/* Title and Description */}
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-2">{data.title}</h2>
-        <p className="text-slate-300">{data.description}</p>
+        <div className="flex items-start gap-3">
+          <p className="text-slate-300 flex-1">{data.description}</p>
+          <LuminaReadAloud
+            iconOnly
+            size={isPreReader ? 'lg' : 'sm'}
+            accent="cyan"
+            speaking={isAudioPlaying}
+            aria-label="Read this to me"
+            className="flex-shrink-0"
+            onClick={() => readAloud(`${data.title}. ${data.description}`)}
+          />
+        </div>
       </div>
 
       {/* Card-based Object Selector */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white">Select Objects to Compare</h3>
-          <span className="text-sm text-slate-400">{selectedObjectIds.length} selected</span>
-        </div>
+        {/* A heading and a "N selected" tally are adult chrome; the tutor's
+            ORIENT beat states the task instead (PRE rule 7). */}
+        {!isPreReader && (
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-white">Select Objects to Compare</h3>
+            <span className="text-sm text-slate-400">{selectedObjectIds.length} selected</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {data.objects.map((obj) => {
             const isSelected = selectedObjectIds.includes(obj.id);
@@ -393,12 +497,17 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
                   />
                 </div>
 
-                {/* Name and size */}
+                {/* Name and size — the kilometre figure is a number a K-1 child
+                    cannot read and does not need; the circles carry the size. */}
                 <div className="text-center">
-                  <p className="font-semibold text-white text-sm mb-1">{obj.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {formatNumber(obj.diameterKm, data.gradeLevel)} km
+                  <p className={`font-semibold text-white mb-1 ${isPreReader ? 'text-base' : 'text-sm'}`}>
+                    {obj.name}
                   </p>
+                  {!isPreReader && (
+                    <p className="text-xs text-slate-400">
+                      {formatNumber(obj.diameterKm, data.gradeLevel)} km
+                    </p>
+                  )}
                 </div>
               </button>
             );
@@ -406,8 +515,10 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
         </div>
       </div>
 
-      {/* Scale Toggle */}
-      {(data.compareType === 'size' || data.compareType === 'distance') && (
+      {/* Scale Toggle — "Use logarithmic scale (better for huge size
+          differences)" is a sentence of adult prose controlling a concept that
+          does not exist at K-1. The generator picks the right default. */}
+      {!isPreReader && (data.compareType === 'size' || data.compareType === 'distance') && (
         <div className="mb-4 flex items-center gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -427,9 +538,14 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
       <div className="flex gap-2 flex-wrap mb-6">
         <button
           onClick={handleResetZoom}
-          className="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg font-medium hover:bg-slate-600 transition-all"
+          aria-label="Reset zoom"
+          className={`bg-slate-700 text-slate-300 rounded-lg font-medium hover:bg-slate-600 transition-all ${
+            isPreReader ? 'px-4 py-3 text-2xl leading-none' : 'px-4 py-2'
+          }`}
         >
-          Reset Zoom
+          {/* Kept at every band — it is the recovery affordance after a child
+              pinches the view into nonsense — but as a glyph at K-1. */}
+          {isPreReader ? '🔄' : 'Reset Zoom'}
         </button>
       </div>
 
@@ -589,25 +705,33 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
                   {obj.name}
                 </text>
 
-                {/* Distance or Size label */}
-                <text
-                  y={radius + 42}
-                  textAnchor="middle"
-                  fill="#94A3B8"
-                  fontSize="13"
-                >
-                  {data.compareType === 'distance' && obj.distanceFromSunAu !== undefined
-                    ? `${formatNumber(obj.distanceFromSunAu, data.gradeLevel)} AU`
-                    : `${formatNumber(obj.diameterKm, data.gradeLevel)} km`}
-                </text>
+                {/* Distance or Size label — suppressed at K-1, where the two
+                    circles side by side ARE the comparison and a figure in km
+                    or AU is noise the child cannot decode. */}
+                {!isPreReader && (
+                  <text
+                    y={radius + 42}
+                    textAnchor="middle"
+                    fill="#94A3B8"
+                    fontSize="13"
+                  >
+                    {data.compareType === 'distance' && obj.distanceFromSunAu !== undefined
+                      ? `${formatNumber(obj.distanceFromSunAu, data.gradeLevel)} AU`
+                      : `${formatNumber(obj.diameterKm, data.gradeLevel)} km`}
+                  </text>
+                )}
               </g>
             ))}
           </g>
         </svg>
       </div>
 
-      {/* Info Panel - Show comparison ratios */}
-      {selectedObjects.length >= 2 && data.showRatios && (
+      {/* Info Panel - Show comparison ratios.
+          The catalog rule is explicit: "showRatios should be false for K-1".
+          Enforced here as well as in the generator — a ratio panel reading
+          "3.7× larger" is exactly the load a pre-reader cannot carry, and the
+          component owning its own band contract is the point of Tier 2. */}
+      {!isPreReader && selectedObjects.length >= 2 && data.showRatios && (
         <div className="mt-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg font-bold text-white mb-4">
             {data.compareType === 'distance' ? 'Distance Comparisons' : 'Size Comparisons'}
@@ -654,10 +778,23 @@ const ScaleComparator: React.FC<ScaleComparatorProps> = ({ data, className }) =>
       {/* Fun Facts */}
       {selectedObjects.length > 0 && selectedObjects[0].funFact && (
         <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-          <p className="text-sm text-slate-300">
-            <span className="text-yellow-400 mr-2">✨</span>
-            {selectedObjects[0].funFact}
-          </p>
+          <div className="flex items-start gap-3">
+            <p className="text-sm text-slate-300 flex-1">
+              <span className="text-yellow-400 mr-2">✨</span>
+              {selectedObjects[0].funFact}
+            </p>
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the fun fact to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(
+                `Here is a fun fact about ${selectedObjects[0].name}. ${selectedObjects[0].funFact}`,
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

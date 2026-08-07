@@ -168,8 +168,43 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   *Residuals:* no live audio run; **no evaluation hook at all** (pure explorer —
   rule 8 is N/A, not passing; `planetary-explorer` is the measured cousin);
   0 eval modes; `instanceId` newly typed on the data interface.
-  → **NEXT: S12 `scale-comparator`** → S13 `life-cycle-sequencer` →
-  S14 `habitat-diorama` → S15 `organism-card`.
+  ~~**S12 `scale-comparator`**~~ **S12 CLOSED 2026-08-06 — READY at PRE. Carried
+  the MOST COMPLETE prose-grade instance in the sweep — the only one where prose
+  escaped the generator and reached the component.** `gradeLevel = ctx.gradeContext`
+  then `gradeLevel: gradeLevel as 'K'|'1'|…|'5'` — **an `as` cast that silenced
+  the compiler at exactly the boundary being violated.** Probe @ K returned
+  `gradeLevel: "kindergarten students (ages 5-6) - Use clear language…"` and
+  `showRatios: true` (catalog: "false for K-1"). Four live consequences:
+  `getGradeConfig`'s `switch` never matched so every grade got the default rung;
+  the prompt's audience line rendered as *"Grade kindergarten students (ages 5-6)
+  - Use clear…"*; all six per-grade prompt blocks were unreachable; and **the
+  component's own pre-existing `formatNumber` K branch was dead**, because the
+  field it tests held a sentence — so any band gate added there would have been
+  dead on arrival too. Fixed via `scaleComparatorGradeFromGrade()`, both casts
+  deleted, `audienceProse` passed to the prompt separately.
+  Plus (2) **SCAFFOLD-GAP** — catalog block + 3 moments, whose real job is
+  supplying a **non-numeric comparison register** ("much bigger", "tiny next to
+  it") since the entire primitive is about magnitude; a second directive,
+  `COMPARISON IS THE ANSWER, NOT THE NUMBER`, applies at every grade. (3)
+  **PRIMITIVE-GAP, unqueued** — five categories of numeric chrome gated at K-1
+  (km on cards, km on the diagram, "N selected" tally, log-scale checkbox with a
+  prose label, and the "3.7× larger" ratio panel — the last gated in the
+  COMPONENT as well as the generator, and tested by passing `showRatios:true` at
+  K and asserting it still does not render).
+  **React footgun caught by the test:** `[SCALE_OBJECT_ADDED]` decided
+  add-vs-remove with a flag set INSIDE the `setState` updater and read right
+  after — React runs updaters during render processing, so it was always false
+  and the cue never fired. Decide from the current render's state instead.
+  Gates: 13 + 13 tests, **revert-bite 11/26**, src-scoped tsc **803 = baseline
+  zero new**, typecheck:lumina 0, full vitest **1929/1929**, tutor-test Tier 1
+  `pass`. Report `qa/reader-fit/scale-comparator-PRE-2026-08-06.md`.
+  *Residuals:* no live audio run; **no evaluation hook** (same as S11 — 2 of the
+  8 are pure instruments with no measurement path; worth a portfolio call:
+  `/add-eval-modes` or declare them exploration-only so the manifest stops
+  routing assessment demand at them); 0 eval modes.
+  → **NEXT: S13 `life-cycle-sequencer`** → S14 `habitat-diorama` →
+  S15 `organism-card` — **all three biology, all sharing the S9 prose-keyed-map
+  shape** (`gradeBandMap[ctx.gradeContext]`). Probe each at `grade=K` first.
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

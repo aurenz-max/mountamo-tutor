@@ -80,6 +80,69 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     id: 'scale-comparator',
     description: 'Interactive scale comparison tool for celestial objects that helps students grasp mind-bending cosmic scales through familiar references. Students compare sizes, distances, masses, and light-travel times side-by-side, overlay familiar objects (basketball, car, football field) for context, and create scale models with "if Sun were basketball..." scenarios. Features progressive difficulty from K (Earth vs Moon) to Grade 5 (light-year calculations). Includes D3 zoom controls to explore extreme size ratios, reference object library with everyday items for visceral understanding, and dynamic ratio calculations showing "Jupiter is 11× wider than Earth". Scale model builder (Grades 4-5) enables hands-on calculation practice with interactive placement. Walk-through mode (Grades 3-5) visualizes distances with speed controls from walking to light speed. ESSENTIAL for developing spatial reasoning and scale comprehension across astronomy curriculum.',
     constraints: 'Best for grades K-5 with distinct learning progressions. K: 2-3 objects (Earth, Moon), size only, no ratios, everyday references (balls). Grade 1: 3-4 planets, size comparisons, sport ball equivalents. Grade 2: Sun emphasis, integer ratios, "Sun is 109× Earth!". Grade 3: 5-6 planets, add distance mode, walk-through feature, football field references. Grade 4: All 8 planets, scale model builder, AU units, complex calculations. Grade 5: 8+ objects including Voyager/stars, light-travel time mode, scientific notation, geographic references. Use compareType to focus learning: "size" for K-2, "distance" for 3-4, "time" for 5. Enable interactiveWalk for grades 3+. Scale model builder for grades 4-5 only. showRatios should be false for K-1, true for 2+. Always enable showFamiliarEquivalent for all grades. Reference objects auto-filtered by grade appropriateness.',
+    tutoring: {
+      taskDescription:
+        'Student is comparing how big things are in space ("{{title}}"). Comparing by: {{compareType}}. '
+        + 'Objects they can pick from: {{availableObjects}}. Side by side right now: {{comparedObjects}} '
+        + '({{comparedCount}} of them). The biggest one on screen is {{biggestObject}}. '
+        + 'They tap objects to add them to the comparison and see the sizes drawn next to each other.',
+      contextKeys: [
+        'title',
+        'compareType',
+        'gradeLevel',
+        'availableObjects',
+        'comparedObjects',
+        'comparedCount',
+        'biggestObject',
+      ],
+      scaffoldingLevels: {
+        level1: '"Tap two things to put them next to each other. Which one do you think will be bigger?"',
+        level2: '"You are looking at {{comparedObjects}}. Look at the two circles — which one takes up more room?"',
+        level3: '"Put them side by side and look at the picture, not the words. The bigger circle is the bigger object. {{biggestObject}} is the biggest one you have on screen right now."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student thinks the object drawn bigger on screen is closer, not larger',
+          response: '"Here the bigger circle means it really IS bigger — not closer. This picture is about size only."',
+        },
+        {
+          pattern: 'Student is surprised the Sun dwarfs everything and thinks it is a mistake',
+          response: '"It is not a mistake — the Sun really is that much bigger than everything else. That is one of the most surprising things about space."',
+        },
+        {
+          pattern: 'Student picks many objects at once and the small ones become invisible',
+          response: '"When something huge is on screen, the little ones get very tiny. Try taking the big one off and comparing just the two small ones."',
+        },
+        {
+          pattern: 'Student guesses without looking at the drawing',
+          response: '"Do not guess — look at the two circles. Point to the one that takes up more room on the screen."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the object names or any of the numbers',
+          response: '"Never ask them to read. Say the object names aloud, and compare with words a child owns — \'much bigger\', \'tiny next to it\', \'about the same\'. Never say kilometres or a times-bigger number."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the object names, the size figures, or the fun fact. Your voice is the only channel. '
+            + 'When you receive [SCALE_ORIENT], say in one or two warm child-sized sentences that they can tap things to put them side by side and see which is bigger. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [SCALE_OBJECT_ADDED], say the object name and how it LOOKS next to what is already there, in ONE short sentence. '
+            + 'When you receive [SCALE_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'NEVER give a pre-reader a measurement or a ratio — no kilometres, no AU, no "eleven times bigger". '
+            + 'Compare with words they own: "much bigger", "tiny next to it", "about the same".',
+        },
+        {
+          title: 'COMPARISON IS THE ANSWER, NOT THE NUMBER',
+          instruction:
+            'The learning here is the visual comparison, so let the picture do the work. '
+            + 'If a student asks which is bigger, turn it back to the drawing ("look at the two circles — which takes up more room?") before confirming. '
+            + 'Never lead with a ratio or a figure at any grade; name it only after the student has seen the difference.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

@@ -376,8 +376,42 @@ queue AND this file's "last touched" in the same slice.
 > so band-contract rule 8 is N/A rather than passing. `planetary-explorer` is the measured
 > cousin if K astronomy ever needs a scored solar-system activity.
 >
-> **Next pull: S12 `scale-comparator`**, then S13 → S15 (the three biology ones, all sharing
-> the S9 prose-keyed-map shape). 15A (S2–S7) remains queued below.
+> **S12 `scale-comparator` CLOSED — READY at PRE, and it carried the most complete
+> prose-grade instance in the whole sweep.** Report
+> `qa/reader-fit/scale-comparator-PRE-2026-08-06.md`. This is the only one where the prose
+> **escaped the generator and reached the component**, via
+> `gradeLevel: gradeLevel as 'K'|'1'|…|'5'` — **a type assertion that silenced the compiler at
+> exactly the boundary being violated.** Probe @ K returned
+> `gradeLevel: "kindergarten students (ages 5-6) - Use clear language…"` alongside
+> `showRatios: true` against a catalog rule reading *"showRatios should be false for K-1"*.
+> Four live consequences: `getGradeConfig`'s `switch` never matched (every grade got the
+> default rung); the prompt's audience line rendered as *"…for Grade kindergarten students
+> (ages 5-6) - Use clear… students"*; all six per-grade prompt blocks were unreachable; and
+> **the component's own pre-existing `formatNumber` K branch had never once run**, because the
+> field it compares against held a sentence — meaning any band gate I added there would have
+> been dead on arrival. That is the transferable lesson: **an `as` cast at a module boundary
+> can propagate a contract violation into a second file where nothing looks wrong.**
+> Also: catalog scaffold whose real job is a **non-numeric comparison register** ("much
+> bigger", "tiny next to it") since the whole primitive is about magnitude a pre-reader cannot
+> read; five categories of numeric chrome gated at K-1, with the "3.7× larger" ratio panel
+> gated in the COMPONENT as well as the generator (tested by passing `showRatios:true` at K
+> and asserting it still does not render).
+> **A React footgun the test caught:** the object-added cue decided add-vs-remove with a flag
+> assigned INSIDE the `setState` updater and read immediately after — React runs functional
+> updaters during render processing, so it was always `false` and the cue never fired. Decide
+> from the current render's state.
+> Gates: 13 + 13 tests, **revert-bite 11/26**, src-scoped tsc **803 = baseline zero new**,
+> typecheck:lumina 0, full vitest **1929/1929**, tutor-test Tier 1 `pass`. Runtime A/B @ K:
+> prose → `'K'`, `showRatios` true → false, G4 control unchanged (and gains `interactiveWalk`
+> + 5 objects).
+>
+> **Portfolio note worth a decision:** S11 and S12 both turned out to have **no evaluation
+> hook at all** — pure instruments, so band-contract rule 8 is N/A rather than passing. Two of
+> the eight 15B primitives cannot measure anything. Either they get `/add-eval-modes` or they
+> should be declared exploration-only so the manifest stops routing assessment demand to them.
+>
+> **Next pull: S13 `life-cycle-sequencer`**, then S14 → S15 — all three biology, all sharing
+> the S9 prose-keyed-map shape (`gradeBandMap[ctx.gradeContext]`). 15A (S2–S7) queued below.
 
 ## Prior snapshot — reconciled 2026-08-06 (**BUILD PIVOT — user-pulled; stream since CLOSED-BY-EXTEND, see above**)
 

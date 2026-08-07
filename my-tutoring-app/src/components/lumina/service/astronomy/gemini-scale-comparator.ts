@@ -279,11 +279,70 @@ function validateAndEnrichObject(obj: CelestialObject): CelestialObject {
 // MAIN GENERATOR FUNCTION
 // ============================================================================
 
+export type ScaleComparatorGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Canonical grade → structural rung.
+ *
+ * This generator carried the most complete instance of the 2026-08-04 `14m`
+ * prose-grade class found in the sweep, because the prose escaped the generator
+ * entirely:
+ *
+ *   const gradeLevel = ctx.gradeContext;                     // PROSE
+ *   const gradeConfig = getGradeConfig(gradeLevel);          // switch → default
+ *   `… for ${gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`} …`
+ *   gradeLevel: gradeLevel as 'K' | '1' | … | '5',           // a LIE cast
+ *
+ * Consequences, all verified by probe at `grade=K`:
+ *  - `getGradeConfig`'s `switch` never matched, so every grade got the default
+ *    rung — K shipped `showRatios: true` against a catalog rule reading
+ *    "showRatios should be false for K-1".
+ *  - The prompt's audience line rendered as the literal string
+ *    "Grade kindergarten students (ages 5-6) - Use clear language, relat…".
+ *  - All six per-grade prompt blocks (`gradeLevel === 'K'` … `=== '5'`) were
+ *    unreachable, so none of the grade guidance ever reached Gemini.
+ *  - Worst: the `as` cast forced prose into `data.gradeLevel`, a field typed
+ *    'K'|'1'|…|'5'. The COMPONENT then compares that field against 'K' in
+ *    `formatNumber`, so number formatting for young readers was dead too — the
+ *    defect crossed the generator/component boundary through an assertion that
+ *    silenced the compiler.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const scaleComparatorGradeFromGrade = (grade?: string): ScaleComparatorGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const scaleComparatorGradeFromProse = (prose?: string): ScaleComparatorGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
 export const generateScaleComparator = async (
   ctx: GenerationContext,
 ): Promise<ScaleComparatorData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
+  // Canonical rung — every structural decision, prompt branch and the emitted
+  // `gradeLevel` field key off THIS, never off the prose.
+  const gradeLevel: ScaleComparatorGrade =
+    scaleComparatorGradeFromGrade(ctx.grade)
+    ?? scaleComparatorGradeFromProse(ctx.gradeContext);
+  // Prose stays available for the prompt's audience voice, and is used only there.
+  const audienceProse = ctx.gradeContext;
   const config = ctx.raw as Partial<ScaleComparatorData>;
   const gradeConfig = getGradeConfig(gradeLevel);
 
@@ -298,7 +357,7 @@ ACTIVITY FOCUS: The broad subject is "${topic}", but THIS comparison must specif
 
   // Build the prompt for Gemini to generate appropriate objects
   const prompt = `
-You are an astronomy education expert creating a scale comparison activity for ${gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`} students.
+You are an astronomy education expert creating a scale comparison activity for ${gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`} students (${audienceProse}).
 
 **Topic**: ${topic}
 
@@ -415,7 +474,7 @@ Generate an engaging comparison that will help students understand the incredibl
       defaultComparison: validatedObjects.length >= 2
         ? { object1: validatedObjects[0].id, object2: validatedObjects[1].id }
         : undefined,
-      gradeLevel: gradeLevel as 'K' | '1' | '2' | '3' | '4' | '5',
+      gradeLevel,
     };
 
     // Apply config overrides
@@ -432,7 +491,7 @@ Generate an engaging comparison that will help students understand the incredibl
 // Fallback function if Gemini fails
 function generateFallbackData(
   topic: string,
-  gradeLevel: string,
+  gradeLevel: ScaleComparatorGrade,
   gradeConfig: ReturnType<typeof getGradeConfig>,
   config?: Partial<ScaleComparatorData>
 ): ScaleComparatorData {
@@ -508,7 +567,7 @@ function generateFallbackData(
     units: 'km',
     useLogarithmicScale: true,
     defaultComparison: { object1: objects[0].id, object2: objects[1]?.id || objects[0].id },
-    gradeLevel: gradeLevel as 'K' | '1' | '2' | '3' | '4' | '5',
+    gradeLevel,
     ...config,
   };
 }
