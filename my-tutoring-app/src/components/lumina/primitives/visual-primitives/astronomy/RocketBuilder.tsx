@@ -5,6 +5,8 @@ import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RocketBuilderMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { LuminaReadAloud } from '../../../ui';
 
 // =============================================================================
 // Type Definitions - Single Source of Truth
@@ -103,6 +105,35 @@ const GRAVITY = 9.81; // m/s^2
 const KARMAN_LINE_KM = 100; // Edge of space
 const LEO_ALTITUDE_KM = 200; // Low Earth Orbit
 const ORBITAL_VELOCITY_MS = 7800; // Approximate LEO orbital velocity
+
+/**
+ * Picture-primary part glyphs for K-1.
+ *
+ * At those grades the part cards carried the ONLY information a child could use
+ * to choose — and it was "500 kg • 50 kN thrust • 100 kg fuel". A five-year-old
+ * cannot read any of that, so the card became a coin flip. The glyph makes the
+ * part recognisable without reading (PRE contract rule 3).
+ */
+const COMPONENT_EMOJI: Record<string, string> = {
+  capsule: '🧑‍🚀',
+  fuel_tank: '🛢️',
+  engine: '🔥',
+  booster: '🚀',
+  fins: '🔻',
+  fairing: '🔺',
+  payload: '📦',
+};
+
+/** Child-sized names for the part groups; the raw type slugs are dev vocabulary. */
+const COMPONENT_TYPE_LABEL: Record<string, string> = {
+  capsule: 'Where you sit',
+  fuel_tank: 'Fuel',
+  engine: 'Pushers',
+  booster: 'Extra push',
+  fins: 'Fins',
+  fairing: 'Nose cone',
+  payload: 'Cargo',
+};
 
 // Component visual colors
 const COMPONENT_COLORS: Record<string, string> = {
@@ -211,6 +242,113 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
 
   const budgetRemaining = data.budget ? data.budget - rocketStats.totalCost : null;
   const overBudget = budgetRemaining !== null && budgetRemaining < 0;
+
+  // ===========================================================================
+  // PRE / EMERGING band gate
+  // ===========================================================================
+
+  /**
+   * At K-1 the interaction underneath is genuinely K-fit — tap a part, it lands
+   * on the rocket, press launch, watch — but the screen around it was not:
+   * every part card carried "500 kg • 50 kN thrust", the stats panel showed
+   * total mass and thrust unconditionally, the header printed a literal
+   * "GRADE K" developer badge, and a failed launch explained itself as
+   * "(TWR: 0.85)". `data.gradeLevel` was read in exactly ONE place in this
+   * entire file: to render that badge.
+   */
+  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
+
+  const resolvedInstanceId = useMemo(
+    () => instanceId || `rocket-builder-${Date.now()}`,
+    [instanceId],
+  );
+
+  const builtPartNames = useMemo(
+    () => stages
+      .flatMap(s => s.components)
+      .map(id => componentMap.get(id)?.name)
+      .filter(Boolean)
+      .join(', ') || 'nothing yet',
+    [stages, componentMap],
+  );
+
+  /** What a child can SEE the last flight do, in words the tutor may repeat. */
+  const flightOutcome = useMemo(() => {
+    if (isLaunching) return 'launching right now';
+    if (!launchResult) return 'has not launched yet';
+    if (launchResult.success) return 'flew all the way up and made it';
+    if (launchResult.maxAltitudeKm <= 0) return 'did not lift off the ground';
+    return 'went up but came back down before the goal';
+  }, [isLaunching, launchResult]);
+
+  // Flat object literal on purpose: assembled behind local statements,
+  // `tutor-test` reports every contextKey as "dynamic — verify at runtime".
+  const aiPrimitiveData = useMemo(() => ({
+    title: data.title,
+    gradeLevel: data.gradeLevel ?? 'unspecified',
+    partNames: (data.availableComponents || []).map(c => c.name).join(', '),
+    builtParts: builtPartNames,
+    partCount: rocketStats.componentCount,
+    missionGoal: data.targetOrbit ? 'reach orbit' : `reach ${data.targetAltitudeKm} km up`,
+    launchCount: attemptCount,
+    flightOutcome,
+    learningFocus: data.learningFocus ?? '',
+  }), [
+    data.title, data.gradeLevel, data.availableComponents, data.targetOrbit,
+    data.targetAltitudeKm, data.learningFocus,
+    builtPartNames, rocketStats.componentCount, attemptCount, flightOutcome,
+  ]);
+
+  const { sendText, isAudioPlaying } = useLuminaAI({
+    primitiveType: 'rocket-builder',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: data.gradeLevel,
+  });
+
+  // `silent` suppresses only the chat-transcript entry; the socket payload is
+  // unchanged, so the tutor still speaks. A non-silent post would read as if the
+  // child had typed the machine prompt.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[ROCKET_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without asking.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[ROCKET_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a rocket builder. Parts available: ${(data.availableComponents || []).map(c => c.name).join(', ')}. `
+      + `${isPreReader
+        ? 'They tap a part picture ONCE to add it to their rocket, then press the big launch button. '
+          + 'Tell them what to do in child words, warmly. Do NOT list which parts they need yet, and never speak a number or a measurement.'
+        : 'They pick components, stack stages, then launch. Tell them what to do.'}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.availableComponents]);
+
+  // FEEDBACK — one beat per settled flight, so the child hears what happened.
+  const lastReportedLaunchRef = useRef<number>(-1);
+  useEffect(() => {
+    if (!launchResult || isLaunching) return;
+    if (lastReportedLaunchRef.current === attemptCount) return;
+    lastReportedLaunchRef.current = attemptCount;
+
+    sendText(
+      `[ROCKET_LAUNCH_RESULT] The rocket ${flightOutcome}. `
+      + `Say in ONE short sentence what it did, using only what they can see. `
+      + `Do not name the exact part they are missing while they still have tries left. `
+      + `Invite them to change one thing and launch again.`,
+      { silent: true },
+    );
+  }, [launchResult, isLaunching, attemptCount, flightOutcome, sendText]);
 
   // =============================================================================
   // Component Library by Category
@@ -428,6 +566,16 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
       };
       return newStages;
     });
+
+    // The tutor's voice IS the part label for a non-reader. Fired here rather
+    // than from an effect on `stages`, so it cannot double-emit — and NOT from
+    // inside the setState updater above, which React runs during render.
+    sendText(
+      `[ROCKET_PART_ADDED] The student added the "${comp.name}" to their rocket. `
+      + `Say its name and ONE short child-sized thing it does. `
+      + `Do not list numbers, do not say whether the rocket is ready, and do not ask a question.`,
+      { silent: true },
+    );
   };
 
   const removeComponentFromStage = (componentIndex: number, stageIndex: number) => {
@@ -915,90 +1063,142 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] opacity-10 bg-blue-500" />
 
         <div className="relative z-10">
-          {/* Header */}
+          {/* Header — the mono badges and the literal GRADE readout are
+              developer chrome, and "GRADE K" was the ONLY use of gradeLevel in
+              this component before the band pass. */}
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Spaceflight:</span>
-              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-orange-500/20 text-orange-300 border-orange-500/30">
-                BUILD & LAUNCH
-              </span>
-              <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
-                GRADE {data.gradeLevel}
-              </span>
+            {!isPreReader && (
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Spaceflight:</span>
+                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-orange-500/20 text-orange-300 border-orange-500/30">
+                  BUILD & LAUNCH
+                </span>
+                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
+                  GRADE {data.gradeLevel}
+                </span>
+              </div>
+            )}
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h3 className={`font-light text-white mb-2 ${isPreReader ? 'text-4xl' : 'text-3xl'}`}>{data.title}</h3>
+                <p className="text-slate-300 leading-relaxed">{data.description}</p>
+              </div>
+              {isPreReader && (
+                <LuminaReadAloud
+                  iconOnly
+                  size="lg"
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read this to me"
+                  className="flex-shrink-0"
+                  onClick={() => readAloud(`${data.title}. ${data.description}`)}
+                />
+              )}
             </div>
-            <h3 className="text-3xl font-light text-white mb-2">{data.title}</h3>
-            <p className="text-slate-300 leading-relaxed">{data.description}</p>
           </div>
 
-          {/* Mission Objective */}
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🎯</span>
-              <div>
-                <div className="text-sm font-medium text-blue-300 uppercase tracking-wide">Mission Objective</div>
-                <div className="text-white">
-                  {data.targetOrbit
-                    ? `Reach orbit at ${LEO_ALTITUDE_KM} km altitude`
-                    : `Reach ${data.targetAltitudeKm} km altitude`}
+          {/* Mission Objective — an altitude in km is unreadable at K-1, and the
+              goal is carried by the tutor's voice there instead. */}
+          {!isPreReader && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎯</span>
+                <div>
+                  <div className="text-sm font-medium text-blue-300 uppercase tracking-wide">Mission Objective</div>
+                  <div className="text-white">
+                    {data.targetOrbit
+                      ? `Reach orbit at ${LEO_ALTITUDE_KM} km altitude`
+                      : `Reach ${data.targetAltitudeKm} km altitude`}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Main Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Component Library */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                Component Library
-              </div>
+              {!isPreReader && (
+                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
+                  Component Library
+                </div>
+              )}
 
               {Object.entries(componentsByType).map(([type, components]) => (
                 <div key={type} className="glass-panel rounded-xl border border-white/10 p-3">
                   <div className="text-xs font-medium text-slate-400 uppercase mb-2 flex items-center gap-2">
                     <span className="w-3 h-3 rounded" style={{ backgroundColor: COMPONENT_COLORS[type] }} />
-                    {type.replace('_', ' ')}s
+                    {isPreReader ? (COMPONENT_TYPE_LABEL[type] ?? type.replace('_', ' ')) : `${type.replace('_', ' ')}s`}
                   </div>
-                  <div className="space-y-2">
+                  <div className={isPreReader ? 'flex flex-wrap gap-2' : 'space-y-2'}>
                     {components.map(comp => (
                       <button
                         key={comp.id}
                         onClick={() => addComponentToStage(comp.id, stages.length - 1)}
                         disabled={isLaunching || (budgetRemaining !== null && comp.cost != null && budgetRemaining < comp.cost)}
-                        className={`w-full text-left p-2 rounded-lg border transition-all ${
-                          selectedComponent === comp.id
-                            ? 'border-blue-500 bg-blue-500/20'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        aria-label={comp.name}
+                        className={isPreReader
+                          ? 'flex flex-col items-center justify-center gap-1 w-24 h-24 rounded-2xl border-2 bg-white/5 hover:bg-white/15 active:scale-95 border-white/20 transition-all disabled:opacity-50'
+                          : `w-full text-left p-2 rounded-lg border transition-all ${
+                              selectedComponent === comp.id
+                                ? 'border-blue-500 bg-blue-500/20'
+                                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-white">{comp.name}</span>
-                          {comp.cost && (
-                            <span className="text-xs text-amber-400">${comp.cost}</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          {comp.massKg.toLocaleString()} kg
-                          {comp.thrustKN && ` • ${comp.thrustKN} kN thrust`}
-                          {comp.propellantMassKg && ` • ${comp.propellantMassKg} kg fuel`}
-                        </div>
+                        {isPreReader ? (
+                          <>
+                            <span className="text-4xl leading-none" aria-hidden="true">
+                              {COMPONENT_EMOJI[comp.type] ?? '🔧'}
+                            </span>
+                            <span className="text-[11px] text-slate-200 leading-tight text-center px-1">
+                              {comp.name}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-white">{comp.name}</span>
+                              {comp.cost && (
+                                <span className="text-xs text-amber-400">${comp.cost}</span>
+                              )}
+                            </div>
+                            {/* Masses, thrusts and fuel figures: grade 2+ only. */}
+                            <div className="text-xs text-slate-400 mt-1">
+                              {comp.massKg.toLocaleString()} kg
+                              {comp.thrustKN && ` • ${comp.thrustKN} kN thrust`}
+                              {comp.propellantMassKg && ` • ${comp.propellantMassKg} kg fuel`}
+                            </div>
+                          </>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
 
-              {/* Hints */}
+              {/* Hints — a disclosure to READ at grade 2+, a thing you HEAR below it */}
               {data.guidedMode && data.hints.length > 0 && (
-                <button
-                  onClick={nextHint}
-                  className="w-full p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm hover:bg-amber-500/20 transition-colors"
-                >
-                  💡 Need a hint?
-                </button>
+                isPreReader ? (
+                  <LuminaReadAloud
+                    size="lg"
+                    accent="cyan"
+                    speaking={isAudioPlaying}
+                    label="Tell me what to do"
+                    className="w-full"
+                    onClick={() => readAloud(data.hints.join(' '))}
+                  />
+                ) : (
+                  <button
+                    onClick={nextHint}
+                    className="w-full p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm hover:bg-amber-500/20 transition-colors"
+                  >
+                    💡 Need a hint?
+                  </button>
+                )
               )}
 
-              {showHint && (
+              {!isPreReader && showHint && (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <div className="text-amber-300 text-sm">{data.hints[currentHint]}</div>
                 </div>
@@ -1007,30 +1207,39 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
 
             {/* Rocket Builder */}
             <div className="lg:col-span-1">
-              <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                Your Rocket
-              </div>
+              {!isPreReader && (
+                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
+                  Your Rocket
+                </div>
+              )}
 
-              {/* Stage Controls */}
-              <div className="flex items-center gap-2 mb-3">
-                <button
-                  onClick={addStage}
-                  disabled={stages.length >= data.maxStages || isLaunching}
-                  className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-sm hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  + Add Stage
-                </button>
-                <span className="text-xs text-slate-400">
-                  {stages.length}/{data.maxStages} stages
-                </span>
-              </div>
+              {/* Stage Controls — "staging" is grade 3+ vocabulary and the K rung
+                  is maxStages: 1, so the control and its N/M counter are pure
+                  chrome for a pre-reader. */}
+              {!isPreReader && (
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={addStage}
+                    disabled={stages.length >= data.maxStages || isLaunching}
+                    className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-sm hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    + Add Stage
+                  </button>
+                  <span className="text-xs text-slate-400">
+                    {stages.length}/{data.maxStages} stages
+                  </span>
+                </div>
+              )}
 
               {/* Rocket SVG */}
               <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
                 <svg ref={svgRef} width={300} height={400} className="w-full" />
               </div>
 
-              {/* Stats Panel */}
+              {/* Stats Panel — kg, kN, a ratio and a dollar budget. None of it is
+                  readable at K-1, and Total Mass / Total Thrust rendered
+                  unconditionally, so `showTWR: false` never hid the panel. */}
+              {!isPreReader && (
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-xs text-slate-400">Total Mass</div>
@@ -1079,6 +1288,7 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
                   </div>
                 )}
               </div>
+              )}
 
               {/* Launch Button */}
               <div className="mt-4 flex gap-2">
@@ -1094,27 +1304,31 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
                   {isLaunching ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="animate-pulse">🚀</span>
-                      Launching... {Math.round(flightProgress * 100)}%
+                      {/* A percentage readout is a number in the child's field. */}
+                      {!isPreReader && `Launching... ${Math.round(flightProgress * 100)}%`}
                     </span>
                   ) : (
-                    '🚀 Launch!'
+                    isPreReader ? <span className="text-3xl leading-none">🚀</span> : '🚀 Launch!'
                   )}
                 </button>
                 <button
                   onClick={handleReset}
                   disabled={isLaunching}
+                  aria-label={isPreReader ? 'Start over' : undefined}
                   className="px-4 py-3 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-700 transition-colors disabled:opacity-50"
                 >
-                  Reset
+                  {isPreReader ? <span className="text-3xl leading-none" aria-hidden="true">↺</span> : 'Reset'}
                 </button>
               </div>
             </div>
 
             {/* Results Panel */}
             <div className="lg:col-span-1">
-              <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                Flight Results
-              </div>
+              {!isPreReader && (
+                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
+                  Flight Results
+                </div>
+              )}
 
               {launchResult ? (
                 <div className="space-y-4">
@@ -1134,66 +1348,86 @@ const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) =
                         }`}>
                           {launchResult.success ? 'Mission Success!' : 'Mission Failed'}
                         </div>
-                        <div className="text-sm text-slate-300">
-                          Max Altitude: {launchResult.maxAltitudeKm.toFixed(1)} km
-                        </div>
+                        {!isPreReader && (
+                          <div className="text-sm text-slate-300">
+                            Max Altitude: {launchResult.maxAltitudeKm.toFixed(1)} km
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {launchResult.failureReason && (
+                    {/* The failure prose carries a raw TWR figure and kilometre
+                        readings ("Reached 12.3 km but target is 15 km").
+                        At K-1 the tutor says what happened instead. */}
+                    {!isPreReader && launchResult.failureReason && (
                       <div className="mt-3 text-sm text-slate-300 bg-black/20 p-2 rounded-lg">
                         {launchResult.failureReason}
                       </div>
                     )}
                   </div>
 
-                  {/* Flight Profile Graph */}
-                  <div className="glass-panel rounded-xl border border-white/10 p-3">
-                    <div className="text-xs font-medium text-slate-400 uppercase mb-2">
-                      Flight Profile
+                  {/* Flight Profile Graph — a labelled altitude/time plot; a
+                      chart with axes is grade 2+ reading. */}
+                  {!isPreReader && (
+                    <div className="glass-panel rounded-xl border border-white/10 p-3">
+                      <div className="text-xs font-medium text-slate-400 uppercase mb-2">
+                        Flight Profile
+                      </div>
+                      <svg ref={flightSvgRef} width={400} height={200} className="w-full" />
                     </div>
-                    <svg ref={flightSvgRef} width={400} height={200} className="w-full" />
-                  </div>
+                  )}
 
-                  {/* Flight Statistics */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="text-xs text-slate-400">Staging Events</div>
-                      <div className="text-lg font-light text-white">
-                        {launchResult.stagingEvents.length}
+                  {/* Flight Statistics — "Staging Events" is grade 3+ vocabulary
+                      and a score ledger is explicitly out at PRE (rule 7). */}
+                  {!isPreReader && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className="text-xs text-slate-400">Staging Events</div>
+                        <div className="text-lg font-light text-white">
+                          {launchResult.stagingEvents.length}
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className="text-xs text-slate-400">Orbit Achieved</div>
+                        <div className={`text-lg font-light ${launchResult.reachedOrbit ? 'text-green-400' : 'text-slate-400'}`}>
+                          {launchResult.reachedOrbit ? 'Yes! 🛰️' : 'No'}
+                        </div>
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="text-xs text-slate-400">Orbit Achieved</div>
-                      <div className={`text-lg font-light ${launchResult.reachedOrbit ? 'text-green-400' : 'text-slate-400'}`}>
-                        {launchResult.reachedOrbit ? 'Yes! 🛰️' : 'No'}
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Attempt Counter */}
-                  <div className="text-center text-sm text-slate-400">
-                    Attempt #{attemptCount}
-                  </div>
+                  {!isPreReader && (
+                    <div className="text-center text-sm text-slate-400">
+                      Attempt #{attemptCount}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="glass-panel rounded-xl border border-white/10 p-8 text-center">
                   <div className="text-4xl mb-4">🚀</div>
-                  <div className="text-slate-300 mb-2">Build your rocket and launch!</div>
-                  <div className="text-sm text-slate-400">
-                    Add components from the library, then click Launch to see how high you can go.
-                  </div>
+                  {!isPreReader && (
+                    <>
+                      <div className="text-slate-300 mb-2">Build your rocket and launch!</div>
+                      <div className="text-sm text-slate-400">
+                        Add components from the library, then click Launch to see how high you can go.
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* Learning Focus */}
-              <div className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                <div className="text-xs font-medium text-purple-300 uppercase mb-2">
-                  Learning Focus
+              {/* Learning Focus — teacher-facing prose ("Students will discover
+                  that…"), written about the child rather than to them. */}
+              {!isPreReader && (
+                <div className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                  <div className="text-xs font-medium text-purple-300 uppercase mb-2">
+                    Learning Focus
+                  </div>
+                  <div className="text-sm text-slate-300">
+                    {data.learningFocus}
+                  </div>
                 </div>
-                <div className="text-sm text-slate-300">
-                  {data.learningFocus}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

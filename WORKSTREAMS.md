@@ -211,7 +211,37 @@ queue AND this file's "last touched" in the same slice.
 > ~25% base rate); selection is not what this slice changed, so it is a supply sanity check,
 > not the decisive evidence.
 >
-> **NEXT: 15A S3 `rocket-builder`**, budgeted as a full component slice.
+> **S3 `rocket-builder` CLOSED the same day — READY at PRE.** Report
+> `qa/reader-fit/rocket-builder-PRE-2026-08-07.md`. **First slice where rule 2
+> already passed** — tapping a part already added it, so the K-fit core act needed
+> no protocol surgery; the failures were the screen and the voice.
+> `data.gradeLevel` was read in **exactly ONE place in 1,205 lines**: to print a
+> literal `GRADE K` badge at the child. Prose grade bit on the **degrade path
+> only** (happy path was correct at BOTH K and G1 — *a happy-path probe would have
+> passed this generator*), plus the missing rung stamp, the missing channel, and
+> 13 chrome classes gated. Gates: 26 + 31 tests, tsc **803 = baseline**,
+> typecheck:lumina 0, vitest **2106/2106**, tutor-test T1 `pass` + T2 clean,
+> runtime ladder K → G1 → G3 monotone.
+>
+> **Two things from S3 that change how later slices should be worked:**
+> **(a) HONEST CORRECTION —** the ordinal budget-rung rewrite was first framed as
+> "a second bug that survives the resolver", generalising from S2. **It is not**:
+> once the rung is canonical, `includes()` and `rung >= 3` are equivalent, and the
+> revert-bite proved it (0 failures). S2's `>= '3'` was different only because
+> `'K' > '3'` lexically. **Do not generalise S2's second bug without biting it.**
+> **(b) TESTING TECHNIQUE —** the first three bites did NOT bite, because the
+> generator tests only covered the exported pure helpers, not the generator's own
+> USE of them. Fixed by stubbing `../geminiClient` and driving the real generator
+> with a reply that OMITS every grade-shaped field — the only way to cover a
+> degrade path. Should be the default for this class.
+>
+> S3 residuals: **rule 4 still PARTIAL at K** (6 controls with 3 parts; the lever
+> is a generator part-cap, a Tier-3 change not bundled) and a **live flash-lite
+> truncation 1-in-4 on G1** (`availableComponents` unbounded) — which means the
+> degrade path this slice fixed is genuinely reachable in production.
+>
+> **NEXT: 15A S4 `story-planner`** — its generator is already canonical
+> (**do NOT "fix" it**); audit the component and scaffold only.
 > Residuals: no Tier-3 live audio (→ HUMAN-CHECKS #73); 0 eval modes;
 > `gravityVisualization`/`initialOrbit` still declared-but-unread; the 🐢 "too slow" arc is
 > ~51 km ≈ **under 1 px**, so that outcome reads only from the 💥 + spoken beat.

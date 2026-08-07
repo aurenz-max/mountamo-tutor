@@ -174,12 +174,70 @@ const rocketBuilderSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns RocketBuilderData with complete configuration
  */
+export type RocketBuilderGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Resolve the structural rung from the CANONICAL grade.
+ *
+ * `gradeLevel` used to be `ctx.gradeContext` — PROSE ("kindergarten students
+ * (ages 5-6) - Use clear language…"). Unlike orbit-mechanics-lab this
+ * generator's HAPPY path was already correct at K and G1 (probed live), because
+ * the prose reaches Gemini through the prompt and steers it well. The defect is
+ * on the DEGRADE path: `getDefaultComponents(prose)`, `getDefaultHints(prose)`
+ * and `getDefaultLearningFocus(prose)` all miss their maps and fall through to
+ * the **Grade 3** rung, and `['3','4','5'].includes(prose)` is never true. Those
+ * fire exactly when Gemini omitted a field — i.e. when the lesson is already
+ * degraded and the child can least afford it. This is the solar-system-explorer
+ * shape: no happy-path probe can reach it.
+ *
+ * `generationContext.ts` states the contract: never parse grade out of
+ * `gradeContext`; read `ctx.grade`.
+ *
+ * NO floor — rocket-builder is genuinely K-fit ("rockets have parts", tap a part
+ * to add it), so K must reach its own rung.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const rocketBuilderGradeFromGrade = (grade?: string): RocketBuilderGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const rocketBuilderGradeFromProse = (prose?: string): RocketBuilderGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
+/** Ordinal position of a rung. K is 0 — BELOW grade 1, which is the whole point. */
+export const rocketRungIndex = (gradeLevel: RocketBuilderGrade): number =>
+  gradeLevel === 'K' ? 0 : parseInt(gradeLevel, 10);
+
 export const generateRocketBuilder = async (
   ctx: GenerationContext,
 ): Promise<RocketBuilderData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<RocketBuilderData>;
+  // Canonical-first, prose as fallback. An explicit config override still wins.
+  // `audienceProse` stays what the PROMPT says out loud (audience voice — the one
+  // place prose belongs); `gradeLevel` is the structural rung.
+  const audienceProse = ctx.gradeContext;
+  const gradeLevel: RocketBuilderGrade =
+    (config?.gradeLevel as RocketBuilderGrade | undefined)
+    ?? rocketBuilderGradeFromGrade(ctx.grade)
+    ?? rocketBuilderGradeFromProse(audienceProse);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The subject (topic) stays broad; intent foregrounds it in student-facing text.
   const intent = ctx.intent || "";
@@ -189,7 +247,11 @@ export const generateRocketBuilder = async (
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, learningFocus, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
   const prompt = `
-Create an educational Rocket Builder configuration for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Rocket Builder configuration for teaching "${topic}" to ${audienceProse} students.
+
+TARGET GRADE RUNG: ${gradeLevel}. Use the "${gradeLevel}" configuration block below verbatim and set gradeLevel: "${gradeLevel}" in your response.
+
+KINDERGARTEN AND GRADE 1 PRESENTATION — IMPORTANT: at these two grades the student sees each part as a PICTURE with a short name; no masses, thrusts, fuel figures, ratios or altitudes are shown on screen, and the tutor narrates by voice. So at K and 1 keep every component name to one or two plain words a five-year-old would recognise ("Engine", "Fuel Tank", "Nose Cone"), and keep hints about TAPPING PARTS, never about numbers, gauges or ratios.
 
 CONTEXT - ROCKET BUILDER PRIMITIVE:
 The Rocket Builder is a comprehensive rocket design and simulation tool where students:
@@ -408,6 +470,11 @@ Return a complete Rocket Builder configuration appropriate for the grade level a
     throw new Error('No valid Rocket Builder data returned from Gemini API');
   }
 
+  // The RESOLVED rung overwrites whatever Gemini echoed. Load-bearing: the
+  // component band-gates on `data.gradeLevel`, so trusting the echo would leave
+  // every K-1 gate dead on arrival.
+  data.gradeLevel = gradeLevel;
+
   // Validation: ensure components array exists and has required types
   if (!data.availableComponents || data.availableComponents.length === 0) {
     console.warn('No components provided. Setting default components.');
@@ -526,8 +593,15 @@ function getDefaultComponents(gradeLevel: string): RocketComponent[] {
     },
   ];
 
-  // Add cost for grades 3+
-  if (['3', '4', '5'].includes(gradeLevel)) {
+  // Add cost for grades 3+.
+  //
+  // Pre-fix this read `['3','4','5'].includes(gradeLevel)` against PROSE, so it
+  // was never true at ANY grade and the budget rung silently never armed on the
+  // degrade path. The RESOLVER is what fixes that; once `gradeLevel` is a
+  // canonical rung the membership test would work again, so this ordinal form is
+  // defensive clarity rather than a second bug fix — unlike orbit-mechanics-lab,
+  // where `>= '3'` stayed broken for 'K' even after the rung resolved.
+  if (rocketRungIndex(gradeLevel as RocketBuilderGrade) >= 3) {
     basicComponents.forEach((c, i) => {
       c.cost = [1000, 500, 1500, 800, 2000][i];
     });

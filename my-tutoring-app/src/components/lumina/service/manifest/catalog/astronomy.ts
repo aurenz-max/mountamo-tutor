@@ -304,7 +304,81 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   {
     id: 'rocket-builder',
     description: 'Comprehensive rocket design and simulation tool where students assemble rockets from components, balance thrust and weight, and launch to see if their designs reach space. The flagship spaceflight primitive. Students select rocket stages and components (capsules, fuel tanks, engines, boosters, fins), stack stages vertically, choose engine types and fuel amounts, adjust payload, check thrust-to-weight ratio, launch and watch flight profile with real-time D3 animation, see staging events during flight, and analyze why designs succeed or fail. Features progressive difficulty from K (rockets have parts) to Grade 5 (delta-v budgets and orbit insertion). Includes budget constraints for resource management, guided mode with hints, multiple atmosphere models, and detailed flight profile graphs showing altitude, velocity, and staging events. ESSENTIAL for NGSS engineering design standards and spaceflight education.',
-    constraints: 'Best for grades K-5 with distinct learning progressions. K: 1 stage, 3-5 simple components, no TWR/budget, target 10-20 km, focus on "rockets have parts". Grade 1: 1-2 stages, 5-7 components, show fuel gauge, target 20-50 km, focus on "engines use fuel". Grade 2: 2 stages, 7-10 components with mass variation, show TWR, target 50-100 km, focus on "heavy rockets need more thrust". Grade 3: 2-3 stages, 10-12 components, show forces, optional budget, target 100 km (space!), focus on staging. Grade 4: 3-4 stages, 12-15 components with Isp stats, realistic atmosphere, budget required, target 150-200 km, focus on efficiency. Grade 5: 3-5 stages, 15+ components, targetOrbit: true, full budget constraints, target orbit (200 km + velocity), focus on delta-v and orbital mechanics. Use maxStages to control complexity. Enable showTWR for grades 2+. Enable showForces for grades 3+. Use atmosphereModel: "simple" for K-3, "realistic" for 4-5. Enable guidedMode for K-3, optional for 4-5. Include budget for grades 3+ to teach resource management.',
+    constraints: 'Best for grades K-5 with distinct learning progressions. K and Grade 1 are fully supported and MAY be routed here: at those grades each part is shown as a PICTURE with a short name and is added by a single tap, and no masses, thrusts, fuel figures, ratios, budgets or altitudes appear on screen — the tutor narrates outcomes by voice. K: 1 stage, 3-5 simple components, no TWR/budget, target 10-20 km, focus on "rockets have parts". Grade 1: 1-2 stages, 5-7 components, show fuel gauge, target 20-50 km, focus on "engines use fuel". Grade 2: 2 stages, 7-10 components with mass variation, show TWR, target 50-100 km, focus on "heavy rockets need more thrust". Grade 3: 2-3 stages, 10-12 components, show forces, optional budget, target 100 km (space!), focus on staging. Grade 4: 3-4 stages, 12-15 components with Isp stats, realistic atmosphere, budget required, target 150-200 km, focus on efficiency. Grade 5: 3-5 stages, 15+ components, targetOrbit: true, full budget constraints, target orbit (200 km + velocity), focus on delta-v and orbital mechanics. Use maxStages to control complexity. Enable showTWR for grades 2+. Enable showForces for grades 3+. Use atmosphereModel: "simple" for K-3, "realistic" for 4-5. Enable guidedMode for K-3, optional for 4-5. Include budget for grades 3+ to teach resource management.',
+    tutoring: {
+      taskDescription:
+        'Student is building a rocket out of parts and launching it ("{{title}}"). '
+        + 'Parts they can choose from: {{partNames}}. On the rocket so far: {{builtParts}} '
+        + '({{partCount}} parts). Goal: {{missionGoal}}. Launches so far: {{launchCount}}. '
+        + 'Last flight: {{flightOutcome}}. At kindergarten and grade 1 each part is a picture '
+        + 'they tap once to add; from grade 2 they also see mass, thrust and ratios.',
+      contextKeys: [
+        'title',
+        'gradeLevel',
+        'partNames',
+        'builtParts',
+        'partCount',
+        'missionGoal',
+        'launchCount',
+        'flightOutcome',
+        'learningFocus',
+      ],
+      scaffoldingLevels: {
+        level1: '"Tap a part to put it on your rocket. What do you think a rocket needs?"',
+        level2: '"You have {{partCount}} parts on so far. A rocket needs something to sit in, something to burn, and something to push. Is anything missing?"',
+        level3: '"Every rocket needs three things: a place for the astronaut, a tank to hold the fuel, and an engine to push it up. Tap one of each, then press the big launch button and watch what happens."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student adds only an engine, or only a fuel tank, and the rocket will not fly',
+          response: '"An engine on its own has nothing to burn. Fuel on its own has nothing to push it. They work as a team — see if you can find the other one."',
+        },
+        {
+          pattern: 'Student piles on many heavy parts and the rocket cannot lift off',
+          response: '"That is a really heavy rocket! Heavy things are hard to push up. What could you take off to make it lighter, or what could you add to push harder?"',
+        },
+        {
+          pattern: 'Student thinks the rocket failed because they did something wrong',
+          response: '"Nothing went wrong — you just found out what that rocket does. Real rocket builders test lots of rockets. Change one thing and launch it again."',
+        },
+        {
+          pattern: 'Student launches repeatedly without changing the rocket',
+          response: '"That rocket will do the same thing every time. Add a part or take one off first, then launch and see what is different."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the part names, the mission goal, or any of the numbers',
+          response: '"Never ask them to read. Name each part out loud when they tap it and say what it is for in child words — \'that is the engine, it pushes\'. Never speak a kilogram, a kilonewton, a ratio or an altitude to a young child; say \'heavy\', \'a big push\', \'really high up\' instead."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the title, the part names, the mission goal, or any number on this screen. Your voice is the only channel. '
+            + 'When you receive [ROCKET_ORIENT], say in one or two warm child-sized sentences that these are rocket parts and they can tap one to add it, then launch. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [ROCKET_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'When you receive [ROCKET_PART_ADDED], SAY the name of the part they just added and ONE short thing it does. Do not list numbers and do not ask a question. '
+            + 'When you receive [ROCKET_LAUNCH_RESULT], say in ONE short sentence what the rocket did, using only what they can see: "it flew way up!", "it did not lift off", "it went up and came back down". '
+            + 'NEVER speak a measurement to a pre-reader — no kilograms, no kilonewtons, no thrust-to-weight, no kilometres, no dollars. '
+            + 'NEVER say the words thrust, mass, ratio, altitude, payload, staging or delta-v to a pre-reader. Say "push", "heavy", "how high", "the top part" instead.',
+        },
+        {
+          title: 'WHAT A ROCKET NEEDS IS THE ANSWER — LEAD THEM TO IT',
+          instruction:
+            'At kindergarten and grade 1 the task is discovering that a rocket needs a capsule, a fuel tank and an engine together. That combination is the ANSWER. '
+            + 'You may say the goal freely — "let us make it fly all the way up" — because the goal is the QUESTION. '
+            + 'Do NOT list the three required parts as a checklist on the first ask, and do not name the exact part they are missing while they still have tries left. '
+            + 'Ask what they think is missing first, let them launch and see, and only spell out all three at scaffolding level 3 after they have tried and asked for help.',
+        },
+        {
+          title: 'A ROCKET THAT DOES NOT FLY IS DATA, NOT FAILURE',
+          instruction:
+            'Rockets that fail to lift off or fall short are the primitive working — the whole point is testing designs. '
+            + 'Never use disappointed language, never call a build wrong, and never say "you failed". Name what the rocket did, then invite one change and another launch.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

@@ -1,5 +1,55 @@
 # HANDOFF — reader-fit supply-side sweep, after 15B closed 8/8
 
+> ## ⛔ CORRECTED 2026-08-07 (later, after S2 closed) — READ THIS BEFORE THE REST
+>
+> **1. The 15A BAND-FLOOR theory below is OVERTURNED by user ruling.** Do not
+> write a band floor. The ruling:
+> *"i dont like band floor method, like if lumina routes to a certain primitive,
+> its okay to use it and we should make it age friendly?"*
+> A floor removes a K failure by removing the primitive, shrinking supply at the
+> band with the least content. **The fix is a component pass that makes the
+> primitive work at that band** — band-gate the chrome, collapse continuous or
+> numeric controls to picture-primary `tap = choose`, add the scaffold and
+> read-aloud. WRONG-BAND is now a **last resort**, legitimate only when the core
+> act cannot exist at the band at all AND another primitive already covers the
+> objective — and even then, design the band-fit interaction first and say what
+> it would be. → [[feedback_make-age-friendly-not-band-floor]].
+> Corroborated live: a K `topic-trace` **did select** `orbit-mechanics-lab`.
+> **`telescope-simulator` (S1, `96c3eb6`) shipped a floor under the old theory —
+> revisit candidate, NOT a precedent to copy.**
+>
+> **2. S2 `orbit-mechanics-lab` is CLOSED** (`1ad319f`, report
+> `qa/reader-fit/orbit-mechanics-lab-PRE-2026-08-07.md`). **Next = S3
+> `rocket-builder`.**
+>
+> **3. PROBE THE NEIGHBOURING GRADE, NOT JUST K.** S2's generator was *clean at K
+> on the happy path* and returned **Grade 3 content for a Grade 1 ask**. A K-only
+> probe would have passed it. Probe K **and** G1.
+>
+> **4. A correct grade resolver is not the whole grade fix.** S2 carried THREE
+> distinct grade bugs: prose `ctx.gradeContext`; `gradeLevel >= '3'` being **TRUE
+> for `'K'`** (lexical compare — survives a correct resolver, and a grep for the
+> resolver misses it); and the resolved rung **never being stamped onto the
+> output**, which would have left every new band gate dead on arrival. Check all
+> three per slice.
+>
+> **5. Check for declared-but-unread flags.** S2's `showOrbitPath` was declared,
+> generated at every grade, and read by NOBODY — and it was the catalog's entire K
+> rung. `grep` the component for each display flag the generator sets.
+>
+> **6. Anchors below are re-derived AGAIN (S2 added a tutoring block to
+> `catalog/astronomy.ts`).** Current: `rocket-builder:305` (unchanged),
+> `orbit-mechanics-lab:311`, **`mission-planner:391`** (was 317),
+> **`telescope-simulator:397`** (was 323), `light-shadow-lab:403`,
+> `constellation-builder:457`, `planetary-explorer:511`.
+>
+> **7. The "catalog-only, no component work" estimate for 15A is DEAD.** S2 needed
+> a generator fix, a catalog block AND a full component pass. Budget every
+> remaining 15A slice like a 15B slice.
+>
+> Queue of record — authority over this file — is `qa/reader-fit/BACKLOG.md`
+> item 15A, which carries the full corrected story.
+
 Written 2026-08-07. Supersedes `qa/HANDOFF-reader-fit-supply-sweep-2026-08-06.md`
 for everything except its origin story (the enumeration and the two-channel test
 — still accurate, still worth reading once).

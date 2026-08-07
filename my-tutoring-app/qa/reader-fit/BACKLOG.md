@@ -126,7 +126,60 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   features, fidelity not band); the 🐢 "too slow" arc is ~51 km ≈ **under 1 px** at
   this visual scale, so that outcome is legible only from the 💥 and the spoken
   beat — a K-specific zoom would be its own slice.
-  → **NEXT: S3 `rocket-builder`** → S4 `story-planner` → S5 `bio-compare-contrast` →
+  ~~**S3 `rocket-builder`**~~ **S3 CLOSED 2026-08-07 — READY at PRE.**
+  **First slice in the sweep where rule 2 already PASSED** — tapping a part
+  already added it, so the K-fit core act ("rockets have parts") needed no
+  protocol surgery. Everything that failed was the screen around it, plus the
+  voice. `data.gradeLevel` was read in **exactly ONE place in 1,205 lines**: to
+  print a literal `GRADE K` badge at the child.
+  (1) **Prose grade on the DEGRADE PATH ONLY** — probed live pre-fix, the happy
+  path was correct at **both K and G1**, so *a happy-path probe would have
+  declared this generator clean*. `getDefaultComponents/Hints/LearningFocus(prose)`
+  all miss their maps and fall through to the **Grade 3** rung, firing exactly
+  when Gemini omits a field. The solar-system-explorer shape. (2) **Rung never
+  stamped** onto the output (same as S2). (3) **SCAFFOLD-GAP** — catalog block
+  (9 contextKeys, 3 levels, 5 struggles, 3 aiDirectives incl. PRE-READER
+  READ-ALOUD banning kg/kN/thrust/staging/delta-v with replacements supplied, and
+  a `LEAD THEM TO IT` rule that forbids handing over the three required parts as
+  a checklist on the first ask) + `useLuminaAI` with **4 moments** —
+  `[ROCKET_PART_ADDED]` is load-bearing, since the tutor's voice IS the part
+  label for a non-reader. (4) **PRIMITIVE-GAP** — part cards became
+  picture-primary (the `500 kg • 50 kN thrust` spec line removed at K-1), group
+  headers use child words instead of the `fuel_tank` slug, and **13 chrome
+  classes** conditionally rendered away (GRADE badge, mass/thrust/TWR/budget
+  panels, staging control + counter, mission altitude, flight-profile chart,
+  staging ledger, attempt ledger, teacher-facing Learning Focus, the TWR failure
+  prose and the km readouts).
+  **⚠️ HONEST CORRECTION carried in the report:** the ordinal budget-rung rewrite
+  was first framed as "a second bug that survives the resolver", by analogy with
+  S2. **It is NOT** — once the rung is canonical, `['3','4','5'].includes()` and
+  `rung >= 3` are equivalent, and the revert-bite proved it (0 failures). S2's
+  `>= '3'` was different because `'K' > '3'` lexically. **Do not generalise S2's
+  second bug to other generators without biting it.**
+  **⚠️ TESTING TECHNIQUE worth reusing:** the first three bites did NOT bite,
+  because the generator tests only exercised the exported pure helpers, not the
+  generator's own USE of them. Fixed by stubbing `../geminiClient` and driving the
+  real `generateRocketBuilder` with a reply that OMITS every grade-shaped field —
+  which is the only way to cover a degrade path. **Make this the default for this
+  class.**
+  Gates: 26 + 31 tests, **revert-bite 7/3/0/18/1/1 across seven bites — six bite,
+  the seventh reported as a documented no-op rather than dropped**; src-scoped tsc
+  **803 = baseline zero new**, typecheck:lumina 0, full vitest **2106/2106**,
+  tutor-test Tier 1 `pass` + Tier 2 `findings: []`, `dataBagDynamic: false`, 9/9
+  contextKeys `component`, 4/4 tags, zero `(not set)`.
+  **Runtime ladder intact and monotone: K (all off, 3 parts, 1 stage) → G1 (fuel
+  gauge on, 5 parts) → G3 (TWR + forces + budget 7500 + 3 stages, 8 parts).**
+  Report `qa/reader-fit/rocket-builder-PRE-2026-08-07.md`.
+  *Residuals:* **rule 4 still PARTIAL at K** (6 visible controls with 3 parts, 8 at
+  G1 — the lever is a generator part-cap at K-1, a Tier-3 change deliberately not
+  bundled); **flash-lite truncation observed live 1-in-4 on G1**
+  (`availableComponents` is an unbounded array — pre-existing
+  [[project_flash-lite-truncation-template]] class, and it means the degrade path
+  this slice fixed is genuinely reachable); no Tier-3 live audio → HUMAN-CHECKS
+  #73; 0 eval modes; the `GRADE {n}` badge is dev chrome at every grade but was
+  gated only at K-1.
+  → **NEXT: S4 `story-planner`** (generator already canonical — do NOT "fix" it;
+  audit the component/scaffold only) → S5 `bio-compare-contrast` →
   S6 `species-profile` → S7 `mission-planner`.
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
@@ -438,8 +491,8 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** ~~15A S2~~ **CLOSED 2026-08-07** → **15A S3 `rocket-builder`**
-→ S5 → S6 → S7 (**skip S4 `story-planner`'s generator — already canonical**;
+**Pull order now:** ~~15A S2~~ ~~S3~~ **BOTH CLOSED 2026-08-07** → **15A S4
+`story-planner`** → S5 → S6 → S7 (**skip S4 `story-planner`'s generator — already canonical**;
 ~~it may still need a band floor~~ **band floors are now a last resort — if it
 fails at K, make it K-fit**) → then audit `planetary-explorer` +
 `constellation-builder`, which now carry the K astronomy demand that S1's floor
