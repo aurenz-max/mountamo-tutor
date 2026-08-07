@@ -228,6 +228,51 @@ const orbitMechanicsLabSchema: Schema = {
   required: ["title", "description", "gradeLevel", "centralBody", "centralBodyRadius", "rocket", "thrustOptions", "showOrbitPath", "showVelocityVector", "showApogeePerigee", "showOrbitalPeriod", "showTWR", "showFuelGauge", "gravityVisualization", "allowLaunch", "allowBurns", "burnMode", "hints"]
 };
 
+export type OrbitMechanicsGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Resolve the structural rung from the CANONICAL grade.
+ *
+ * Every structural default below (`showTWR`, `allowBurns`, the rocket rung, the
+ * hint set) used to key off `ctx.gradeContext`, which is PROSE — "kindergarten
+ * students (ages 5-6) - Use clear language…". None of the `=== 'K'` comparisons
+ * could ever match it, and `gradeLevel >= '3'` was true for prose at EVERY
+ * grade because 'k' sorts after '3', so a Kindergartener fell through to the
+ * Grade-3 rung: burns on, gravity field lines on, TWR readout on. Probed live
+ * at grade=1 pre-fix and the generator returned "Grade 3 Orbit Mechanics Lab".
+ *
+ * `generationContext.ts` states the contract: never parse grade out of
+ * `gradeContext`; read `ctx.grade`.
+ *
+ * NO floor. orbit-mechanics-lab IS reachable at K — the component now offers
+ * three tappable speed choices instead of two numeric sliders — so K must reach
+ * its own rung rather than being routed away from the primitive.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const orbitMechanicsGradeFromGrade = (grade?: string): OrbitMechanicsGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+const orbitMechanicsGradeFromProse = (prose?: string): OrbitMechanicsGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
 /**
  * Generate Orbit Mechanics Lab data for visualization
  *
@@ -248,8 +293,16 @@ export const generateOrbitMechanicsLab = async (
   ctx: GenerationContext,
 ): Promise<OrbitMechanicsLabData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<OrbitMechanicsLabData>;
+  // Canonical-first, prose as fallback. An explicit config override still wins.
+  // `audienceProse` stays what the PROMPT says out loud (audience voice — the
+  // one place prose belongs); `gradeLevel` is the structural rung every default
+  // below keys off.
+  const audienceProse = ctx.gradeContext;
+  const gradeLevel: OrbitMechanicsGrade =
+    (config?.gradeLevel as OrbitMechanicsGrade | undefined)
+    ?? orbitMechanicsGradeFromGrade(ctx.grade)
+    ?? orbitMechanicsGradeFromProse(audienceProse);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The subject (topic) stays broad; intent foregrounds it in student-facing text.
   const intent = ctx.intent || "";
@@ -259,7 +312,9 @@ export const generateOrbitMechanicsLab = async (
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, challenge description, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
   const prompt = `
-Create an educational Orbit Mechanics Lab visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Orbit Mechanics Lab visualization for teaching "${topic}" to ${audienceProse} students.
+
+TARGET GRADE RUNG: ${gradeLevel}. Use the "${gradeLevel}" configuration block below verbatim and set gradeLevel: "${gradeLevel}" in your response.
 
 CONTEXT - ORBITAL MECHANICS FOR K-5:
 The Orbit Mechanics Lab is an interactive orbital mechanics sandbox where students learn:
@@ -279,7 +334,8 @@ KINDERGARTEN (ages 5-6):
 - Language: "The rocket goes around and around the Earth!"
 - Challenge: None or just "Watch the rocket go around!"
 - Features: showOrbitPath: true, everything else: false/none
-- Hints: "Press launch and watch it go around!", "The rocket doesn't fall because it's going sideways too!"
+- Controls: THREE TAPPABLE PICTURES, no slider and no launch button
+- Hints: "Tap a picture to send your rocket!", "Watch where your rocket goes!"
 
 GRADE 1 (ages 6-7):
 "Satellites don't fall because they're moving so fast sideways!"
@@ -288,7 +344,9 @@ GRADE 1 (ages 6-7):
 - Language: "Go too slow and you fall! Go just right and you orbit!"
 - Challenge: reach_altitude (simple - just get into orbit)
 - Features: showOrbitPath: true, allowLaunch: true
-- Hints: "Try different speeds!", "Not too slow, not too fast!"
+- Controls: THREE TAPPABLE PICTURES, no slider and no launch button
+- Hints: "Tap a picture to choose how fast your rocket goes!", "Some rockets come back down and some fly far away."
+- NEVER hint which of the three speeds is the right one; discovering that IS the task
 
 GRADE 2 (ages 7-8):
 "Different orbits: some are high, some are low, some are round, some are stretched!"
@@ -479,8 +537,10 @@ ${config.challenge ? `- Challenge type: ${config.challenge.type}` : ''}
 
 HINT EXAMPLES BY GRADE:
 
-K: ["Press the big Launch button!", "Watch your rocket fly around Earth!"]
-1: ["Try different speeds with the slider!", "Too slow means crash, just right means orbit!"]
+K: ["Tap a picture to send your rocket!", "Watch where your rocket goes!"]
+1: ["Tap a picture to choose how fast your rocket goes!", "Some rockets come back down and some fly far away."]
+
+KINDERGARTEN AND GRADE 1 INTERACTION — IMPORTANT: at these two grades the student does NOT get a thrust slider, an angle slider or a Launch button. They tap ONE of three pictures (a turtle, a rocket, a lightning bolt) and it flies. So hints at K and 1 must talk about TAPPING A PICTURE, never about sliders, buttons, thrust or numbers. Finding which picture keeps the rocket going around IS the task, so hints must NEVER say which picture is correct, and must not rule any of them out.
 2: ["The green arrow shows which way you're going", "High point and low point - can you spot them?"]
 3: ["Gravity pulls everything toward the center", "Round orbits are called circular!", "Stretched orbits are called elliptical!"]
 4: ["Burn prograde (forward) to go higher", "Burn retrograde (backward) to go lower", "Time your burns at the lowest point!"]
@@ -545,19 +605,7 @@ Return a complete Orbit Mechanics Lab configuration appropriate for the grade le
 
   // Display options
   // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
-  if (data.showOrbitPath === undefined) data.showOrbitPath = true;
-  if (data.showVelocityVector === undefined) data.showVelocityVector = gradeLevel !== 'K' && gradeLevel !== '1';
-  if (data.showApogeePerigee === undefined) data.showApogeePerigee = gradeLevel !== 'K' && gradeLevel !== '1';
-  if (data.showOrbitalPeriod === undefined) data.showOrbitalPeriod = gradeLevel === '4' || gradeLevel === '5';
-  if (data.showTWR === undefined) data.showTWR = gradeLevel !== 'K' && gradeLevel !== '1';
-  if (data.showFuelGauge === undefined) data.showFuelGauge = gradeLevel !== 'K' && gradeLevel !== '1';
-  if (!data.gravityVisualization) data.gravityVisualization = gradeLevel >= '3' ? 'field_lines' : 'none';
-  if (data.allowLaunch === undefined) data.allowLaunch = true;
-  if (data.allowBurns === undefined) data.allowBurns = gradeLevel >= '3';
-  if (!data.burnMode) data.burnMode = gradeLevel === '5' ? 'prograde_retrograde' : 'direction_picker';
-  if (!data.hints || data.hints.length === 0) {
-    data.hints = getDefaultHints(gradeLevel);
-  }
+  applyOrbitDisplayDefaults(data, gradeLevel);
 
   // Apply config overrides
   if (config) {
@@ -585,20 +633,67 @@ Return a complete Orbit Mechanics Lab configuration appropriate for the grade le
   return data;
 };
 
+/** Ordinal position of a rung. K is 0 — BELOW grade 1, which is the whole point. */
+export const orbitRungIndex = (gradeLevel: OrbitMechanicsGrade): number =>
+  gradeLevel === 'K' ? 0 : parseInt(gradeLevel, 10);
+
+/**
+ * Apply the grade-bound structural defaults for any field Gemini omitted.
+ *
+ * Exported and pure so it can be tested directly. It has to be: these
+ * comparisons carried the SECOND half of the grade bug, which survives a
+ * correct rung. They used to read `gradeLevel >= '3'`, and lexically `'K'` is
+ * greater than `'3'` — so a Kindergartener got burns and gravity field lines
+ * even once `gradeLevel` itself resolved to 'K'. Compare ordinals, never grade
+ * strings.
+ *
+ * Mutates in place and returns the same object, matching how the generator used
+ * to patch `data` inline.
+ */
+export const applyOrbitDisplayDefaults = (
+  data: Partial<OrbitMechanicsLabData>,
+  gradeLevel: OrbitMechanicsGrade,
+): Partial<OrbitMechanicsLabData> => {
+  const rung = orbitRungIndex(gradeLevel);
+
+  // The RESOLVED rung overwrites whatever Gemini echoed. Load-bearing: the
+  // component band-gates on `data.gradeLevel`, and a live probe at grade=1
+  // pre-fix returned "Grade 3 Orbit Mechanics Lab", which would have left every
+  // K-1 gate dead on arrival.
+  data.gradeLevel = gradeLevel;
+
+  if (data.showOrbitPath === undefined) data.showOrbitPath = true;
+  if (data.showVelocityVector === undefined) data.showVelocityVector = rung >= 2;
+  if (data.showApogeePerigee === undefined) data.showApogeePerigee = rung >= 2;
+  if (data.showOrbitalPeriod === undefined) data.showOrbitalPeriod = rung >= 4;
+  if (data.showTWR === undefined) data.showTWR = rung >= 2;
+  if (data.showFuelGauge === undefined) data.showFuelGauge = rung >= 2;
+  if (!data.gravityVisualization) data.gravityVisualization = rung >= 3 ? 'field_lines' : 'none';
+  if (data.allowLaunch === undefined) data.allowLaunch = true;
+  if (data.allowBurns === undefined) data.allowBurns = rung >= 3;
+  if (!data.burnMode) data.burnMode = gradeLevel === '5' ? 'prograde_retrograde' : 'direction_picker';
+  if (!data.hints || data.hints.length === 0) data.hints = getDefaultHints(gradeLevel);
+
+  return data;
+};
+
 /**
  * Helper: Get default hints based on grade level
  */
 function getDefaultHints(gradeLevel: string): string[] {
   const hintsByGrade: Record<string, string[]> = {
+    // K-1 tap three pictures; they have no slider and no Launch button, and a
+    // hint naming the winning picture would hand over the answer the whole
+    // task is built on.
     'K': [
-      "Press the big Launch button!",
-      "Watch your rocket fly around Earth!",
-      "See how it goes around and around!"
+      "Tap a picture to send your rocket!",
+      "Watch where your rocket goes!",
+      "You can try all of them."
     ],
     '1': [
-      "Try different speeds with the slider!",
-      "Too slow and you'll crash, just right and you orbit!",
-      "The rocket falls toward Earth but keeps missing it!"
+      "Tap a picture to choose how fast your rocket goes!",
+      "Some rockets come back down and some fly far away.",
+      "Try another picture and watch what changes!"
     ],
     '2': [
       "The green arrow shows which way you're moving",

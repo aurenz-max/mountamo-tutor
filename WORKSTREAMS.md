@@ -155,6 +155,67 @@ queue AND this file's "last touched" in the same slice.
 > anything new. **STALE as of the 08-06 sweep session — `git status` shows a clean tree apart
 > from that session's own files; item-12 landed in `56b5dda`.**
 
+## EXECUTED 2026-08-07 — 15A entered at S2; **the BAND-FLOOR strategy was OVERTURNED by user ruling**
+
+> Lane: **reader-fit supply-side sweep**, still ACTIVE. Queue of record
+> `qa/reader-fit/BACKLOG.md` item **15A**. Entered from
+> `qa/HANDOFF-reader-fit-2026-08-07.md` (written after 15B closed 8/8).
+>
+> **⚠️ STRATEGY CHANGE — this is the durable outcome of the session, bigger than the slice.**
+> 15A's stated theory was *"these primitives cannot serve K by design, so the fix is a catalog
+> BAND FLOOR, no component work"*, with S1 `telescope-simulator` as the shipped precedent.
+> Mid-slice the user ruled: *"i dont like band floor method, like if lumina routes to a certain
+> primitive, its okay to use it and we should make it age friendly?"* **A floor removes a K
+> failure by removing the primitive — it shrinks supply at exactly the band with the least
+> content** (CLAUDE.md priority #3: the adaptive engine only works when there is enough content
+> to route through). **WRONG-BAND is now a last resort**, legitimate only when the core act
+> cannot exist at the band at all AND another primitive already covers the objective.
+> Recorded as [[feedback_make-age-friendly-not-band-floor]]; BACKLOG 15A rewritten; **S1's
+> Grade-2 floor is now a REVISIT CANDIDATE, not a precedent.**
+>
+> The ruling was corroborated live, not just accepted: a real `topic-trace` on *"Things that go
+> around and around in space"* @ K **selected `orbit-mechanics-lab`**, so a floor would have
+> deleted a card the curator actively wanted.
+>
+> **S2 `orbit-mechanics-lab` CLOSED — READY at PRE.** Verdict **SCAFFOLD-GAP +
+> PRIMITIVE-GAP**, not WRONG-BAND. Report `qa/reader-fit/orbit-mechanics-lab-PRE-2026-08-07.md`.
+> Four defects: prose grade (`:251`); a **second** bug that survives a correct resolver —
+> `gradeLevel >= '3'` is TRUE for `'K'`, so burns/field-lines stayed on at K (a grep for the
+> resolver finds only the first); the resolved rung was **never stamped onto the output**, so
+> every new gate would have been dead on arrival (the S14 shape); and the missing channel
+> (no catalog block, no `useLuminaAI`). Both numeric sliders (kN, degrees) replaced at K-1 by
+> **three tappable pictures**, one tap sets thrust+angle and flies.
+>
+> **Correction to the handoff's own prediction, worth carrying:** it expected the prose-grade
+> defect to bite at K. **It did not** — the K happy path was already correct. It bit at **G1**
+> (*"Rocket to Orbit! - **Grade 3** Orbit Mechanics Lab"* with the full adult instrument) and on
+> the degrade path. **A K-only probe would have passed this generator clean. Probe the
+> neighbouring grade too.**
+>
+> Also found: **`showOrbitPath` was declared, generated at every grade, and read by NOBODY** —
+> and it is the catalog's entire K rung (*"showOrbitPath only"*). Now implemented.
+> `showApogeePerigee` was equally dead. Physics extracted to a pure
+> `service/astronomy/orbitPhysics.ts` so the three speed presets are **proved against the same
+> integrator the child's rocket flies on** (TWR 0.90 crash / 1.02 orbit on-screen / 2.50 flung
+> off-screen) rather than asserted. **Answer leak caught in-flight:** the winning choice was
+> labelled *"Just right"* — which names the answer, and the tutor reads labels aloud to a child
+> who cannot read them. Relabelled "Medium", test-locked.
+>
+> Gates: 35 + 34 tests, **six revert-bites (1/2/4/2/20/1) — two did NOT bite at first** (the
+> rung stamp, `showOrbitPath`) because the code was unreachable from a test, and were
+> **restructured rather than left as decoration**; src-scoped tsc **803 = baseline zero new**,
+> typecheck:lumina 0, full vitest **2049/2049**, tutor-test Tier 1 `pass` + Tier 2
+> `findings: []` / `dataBagDynamic: false` / 9-of-9 keys `component` / zero `(not set)`.
+> **Runtime A/B @ G1: `'3'` + full instrument → `'1'` + all off; G3 control unchanged.**
+> Curator A/B reported as **no measurable change** (1/4 pre vs 0/4 post — inside noise at a
+> ~25% base rate); selection is not what this slice changed, so it is a supply sanity check,
+> not the decisive evidence.
+>
+> **NEXT: 15A S3 `rocket-builder`**, budgeted as a full component slice.
+> Residuals: no Tier-3 live audio (→ HUMAN-CHECKS #73); 0 eval modes;
+> `gravityVisualization`/`initialOrbit` still declared-but-unread; the 🐢 "too slow" arc is
+> ~51 km ≈ **under 1 px**, so that outcome reads only from the 💥 + spoken beat.
+
 ## EXECUTED 2026-08-06 (same day) — reader-fit supply-side sweep TAKEN as ACTIVE, S1 CLOSED
 
 > The re-prioritization above was acted on immediately. Lane state: **ACTIVE**, queue of

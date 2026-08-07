@@ -310,7 +310,81 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   {
     id: 'orbit-mechanics-lab',
     description: 'Interactive orbital mechanics sandbox where students discover that orbiting is falling while moving sideways, and learn how to change orbits with carefully timed burns. Students launch objects at different speeds and angles, observe resulting orbits (or crashes!), add velocity at different points to see how burns change orbit shape, raise/lower orbits with prograde/retrograde burns, and plan transfers between orbits. Features real-time physics simulation with D3 animation, velocity vector display, gravity field visualization, apogee/perigee markers, and orbital period tracking. Progressive difficulty from K (things go around and around) to Grade 5 (Hohmann transfers and orbital rendezvous). Includes challenge modes for goal-oriented learning: reach specific altitudes, circularize orbits, change to target orbits, or rendezvous with other spacecraft. Burn controls adapt by grade from simple direction pickers to prograde/retrograde maneuver planning. ESSENTIAL for teaching orbital mechanics, gravity, and spaceflight concepts.',
-    constraints: 'Best for grades K-5 with distinct learning progressions. K: Focus on "things go around and around", circular motion only, no burns, no orbital vocabulary, showOrbitPath only. Grade 1: Focus on "satellites don\'t fall because they\'re fast", speed determines orbit vs crash, reach_altitude challenge, allowLaunch: true. Grade 2: High vs low orbits, circular vs elliptical shapes, showVelocityVector and showApogeePerigee enabled, reach_altitude challenge with specific height. Grade 3: Speed-orbit relationship, introduce eccentricity concept, gravityVisualization: "field_lines", allowBurns with direction_picker, circularize challenge. Grade 4: Orbital maneuvers vocabulary (prograde/retrograde), burnMode: "prograde_retrograde", showOrbitalPeriod, change_orbit challenge with maxBurns. Grade 5: Hohmann transfers, efficient orbit changes, burnMode: "prograde_retrograde" or "manual", rendezvous challenges, maxBurns constraints (3-5). Use centralBody: "earth" for K-3, add "moon" and "mars" options for 4-5. Enable gravityVisualization for grades 3+. Burn controls are critical: direction_picker for 3, prograde_retrograde for 4-5. Challenge modes provide goal-oriented learning with age-appropriate targets.',
+    constraints: 'Best for grades K-5 with distinct learning progressions. K and Grade 1 are fully supported and MAY be routed here: at those grades the launch controls are not sliders but three tappable picture buttons for how fast to go, so the whole task is one tap with no reading, no typing and no numbers on screen, and the tutor narrates by voice. Discovering which speed keeps the rocket going around is the K-1 task, so never state which choice is correct in generated text. K: Focus on "things go around and around", circular motion only, no burns, no orbital vocabulary, showOrbitPath only. Grade 1: Focus on "satellites don\'t fall because they\'re fast", speed determines orbit vs crash, reach_altitude challenge, allowLaunch: true. Grade 2: High vs low orbits, circular vs elliptical shapes, showVelocityVector and showApogeePerigee enabled, reach_altitude challenge with specific height. Grade 3: Speed-orbit relationship, introduce eccentricity concept, gravityVisualization: "field_lines", allowBurns with direction_picker, circularize challenge. Grade 4: Orbital maneuvers vocabulary (prograde/retrograde), burnMode: "prograde_retrograde", showOrbitalPeriod, change_orbit challenge with maxBurns. Grade 5: Hohmann transfers, efficient orbit changes, burnMode: "prograde_retrograde" or "manual", rendezvous challenges, maxBurns constraints (3-5). Use centralBody: "earth" for K-3, add "moon" and "mars" options for 4-5. Enable gravityVisualization for grades 3+. Burn controls are critical: direction_picker for 3, prograde_retrograde for 4-5. Challenge modes provide goal-oriented learning with age-appropriate targets.',
+    tutoring: {
+      taskDescription:
+        'Student is flying a rocket around a planet ("{{title}}"). They are orbiting {{centralBodyName}}. '
+        + 'At kindergarten and grade 1 they choose how fast to go by tapping one of three picture buttons '
+        + '({{speedChoiceNames}}) and the rocket launches; at grade 2 and up they set thrust and angle with sliders. '
+        + 'They picked: {{chosenSpeed}}. The rocket is {{flightState}}. Tries so far: {{attemptCount}}. '
+        + 'Goal on screen: {{challengeText}}.',
+      contextKeys: [
+        'title',
+        'gradeLevel',
+        'centralBodyName',
+        'speedChoiceNames',
+        'chosenSpeed',
+        'flightState',
+        'attemptCount',
+        'challengeText',
+        'funFact',
+      ],
+      scaffoldingLevels: {
+        level1: '"Pick one of the pictures and watch what your rocket does. You can try them all."',
+        level2: '"Look at what happened that time — did your rocket keep going around, or did it come back down? Try a different picture and watch the difference."',
+        level3: '"A rocket stays up by going sideways really fast, so it keeps missing the ground as it falls. Too slow and it comes straight back down. Way too fast and it shoots off far away. Try each picture and watch which one keeps going around and around."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student thinks the rocket stays up because there is no gravity in space',
+          response: '"Gravity is still pulling on it up there — that is the surprising part! It keeps falling toward the planet the whole time, but it is moving sideways so fast that it keeps missing. That is what going around means."',
+        },
+        {
+          pattern: 'Student thinks going faster always makes a better orbit',
+          response: '"Try the fastest one and watch where it goes. Did it stay where you could see it? There is such a thing as too fast — it shoots away instead of going around."',
+        },
+        {
+          pattern: 'Student is discouraged after the rocket falls back down',
+          response: '"That is exactly what a too-slow rocket does, and finding that out is the whole job. Real rocket engineers crash a lot of them. Pick a different picture and watch what changes."',
+        },
+        {
+          pattern: 'Student taps every button quickly without watching the flight',
+          response: '"Stay with this one and watch it for a moment. Where does your rocket go after it stops pushing? Watch the line it draws."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the button words, the flight numbers, or the goal text',
+          response: '"Never ask them to read. Name the pictures out loud — the turtle, the rocket, the lightning bolt — and say what happened in child words: \'it came back down\', \'it is going around and around\', \'it flew way off\'. Never speak a kilometre, a speed, or a thrust number to a young child."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the title, the button words, the goal banner, or any number on this screen. Your voice is the only channel. '
+            + 'When you receive [ORBIT_ORIENT], say in one or two warm child-sized sentences that this is their rocket and they can tap a picture to choose how fast it goes, then watch what happens. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [ORBIT_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'When you receive [ORBIT_FLIGHT_RESULT], say in ONE short sentence what the rocket did, using only what a child can see: "it came back down", "it is going around and around!", "it flew way off past the edge". '
+            + 'NEVER speak a measurement to a pre-reader — no kilometres, no kilonewtons, no degrees, no thrust-to-weight, no minutes per orbit. '
+            + 'NEVER say the words orbit, altitude, apogee, perigee, eccentricity, prograde or retrograde to a pre-reader. Say "going around and around", "how high", "the far part", "the close part" instead.',
+        },
+        {
+          title: 'WHICH SPEED IS THE ANSWER — NEVER SAY IT',
+          instruction:
+            'At kindergarten and grade 1 the student\'s whole task is discovering WHICH of the three speed pictures keeps the rocket going around. That choice is the ANSWER. '
+            + 'You may say the goal out loud as often as you like — "we want it to keep going around and around without falling" — because the goal is the QUESTION. '
+            + 'You must NEVER name the correct picture, NEVER say "the middle one", NEVER rule pictures out by elimination, and NEVER say a thrust number. '
+            + 'If they ask you which to pick, turn it back: "I want to see what YOU think — try one and we will watch together." '
+            + 'After a wrong pick, describe what happened and invite another try; do not steer them to the right one.',
+        },
+        {
+          title: 'FALLING IS NOT FAILING',
+          instruction:
+            'A rocket that comes back down or shoots away is the primitive working, not the student failing — both outcomes are the lesson. '
+            + 'Never use disappointed language for a crash and never call it wrong. Treat every launch as an experiment that produced information, and say what it showed.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

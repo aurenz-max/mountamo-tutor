@@ -36,8 +36,23 @@ executor. This sweep confirms that queue and adds nothing to it.
 modes, so each is one slice shared with the queued **BIO-2** density deficit —
 same primitive, same catalog file, both CLAUDE.md #1 and #3.
 
-- **15A — WRONG-BAND, fix = catalog `BAND FLOOR`** (cheapest; no component work,
-  and it makes the primitive unselectable at K rather than merely quieter):
+- **15A — ~~WRONG-BAND, fix = catalog `BAND FLOOR`~~ → THEORY OVERTURNED 2026-08-07.**
+  **USER RULING (S2, mid-slice):** *"i dont like band floor method, like if lumina
+  routes to a certain primitive, its okay to use it and we should make it age
+  friendly?"* A band floor removes a K failure by removing the primitive, which
+  shrinks supply at the band with the least content. **The fix for a band failure
+  is a component pass that makes the primitive work at that band** — band-gate the
+  chrome, collapse continuous/numeric controls to picture-primary `tap = choose`,
+  add the scaffold and read-aloud. **WRONG-BAND is now a last resort**, legitimate
+  only when the primitive's core act cannot exist at the band at all AND an
+  existing primitive already covers the objective — and even then, design the
+  band-appropriate interaction first and say what it would be.
+  Recorded as [[feedback_make-age-friendly-not-band-floor]]. This supersedes the
+  "catalog-only, no component work" framing for **S3, S5, S6, S7** — budget each
+  for a component pass, which is what 15B found empirically 8/8 anyway.
+  **S1 `telescope-simulator` shipped a Grade-2 floor under the old theory
+  (`96c3eb6`) — it is now a REVISIT CANDIDATE, not a precedent to copy.**
+  Original (superseded) framing follows:
   ~~**S1 `telescope-simulator`**~~ **S1 CLOSED 2026-08-06 — WRONG-BAND, floored to
   Grade 2, A/B-verified against the real curator.** Catalog `BAND FLOOR: Grade 2+
   ONLY` (states why + names the K-1 alternatives) + generator backstop (schema
@@ -53,8 +68,65 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   `qa/reader-fit/telescope-simulator-PRE-2026-08-06.md`.
   *Follow-on (NOT closed):* it still has no tutoring block and 0 eval modes at
   the grades it DOES serve → `/add-tutoring-scaffold` + `/add-eval-modes`.
-  → **NEXT: S2 `orbit-mechanics-lab`** (same shape: claims K, no channel) →
-  S3 `rocket-builder` → S4 `story-planner` → S5 `bio-compare-contrast` →
+  ~~**S2 `orbit-mechanics-lab`**~~ **S2 CLOSED 2026-08-07 — READY at PRE, and the
+  15A WRONG-BAND label was WRONG.** Verdict is **SCAFFOLD-GAP + PRIMITIVE-GAP**,
+  fixed by making the primitive K-fit rather than flooring it (see the ruling
+  above). Two pieces of live evidence backed the ruling: a real `topic-trace` on
+  *"Things that go around and around in space"* @ K **did select this primitive**
+  (a floor would have deleted a card the curator wanted), and the K interaction
+  turned out to be fixable — the blocker was two numeric sliders (kN, degrees),
+  not the physics. **Four defects closed:**
+  (1) **Prose grade**, `gradeLevel = ctx.gradeContext` @ `:251`. **The handoff
+  predicted this would bite at K; it did NOT** — kindergarten prose steers Gemini
+  well enough that the K happy path was already correct. It bit at **G1**
+  (probe pre-fix: *"Rocket to Orbit! - **Grade 3** Orbit Mechanics Lab"*, TWR +
+  fuel + burns + field_lines all on) and on the **degrade path at every grade**.
+  ⚠️ **A happy-path probe at K alone would have declared this generator clean —
+  probe the neighbouring grade too.** (2) **Lexical rung compare, a SECOND bug
+  that survives a correct resolver:** `gradeLevel >= '3'` is TRUE for `'K'`, so
+  burns and field lines stayed on at K even after the rung resolved. A grep for
+  the resolver finds only the first. Now ordinal via `orbitRungIndex()` (K = 0).
+  (3) **The rung was never STAMPED onto the output** — the component band-gates on
+  `data.gradeLevel` and the generator returned Gemini's echo (`'3'` at G1), so
+  every new gate would have been **dead on arrival** (the S14 shape). *Untested
+  until a revert-bite proved the omission was silent.* (4) **SCAFFOLD-GAP +
+  PRIMITIVE-GAP** — catalog block (9 contextKeys, 3 levels, 5 struggles, 3
+  aiDirectives incl. PRE-READER READ-ALOUD with the cap-override clause and a
+  `WHICH SPEED IS THE ANSWER — NEVER SAY IT` rule forbidding elimination) +
+  `useLuminaAI` with 3 moments + `LuminaReadAloud`; **both sliders replaced at K-1
+  by three tappable pictures** (one tap sets thrust+angle AND flies), all chrome
+  conditionally rendered away, and the TWR gate deliberately bypassed on that path
+  so *"too slow"* visibly falls back instead of hitting a disabled
+  **"Need More Thrust!"** text dead end.
+  **Also: `showOrbitPath` was declared, generated at every grade, and read by
+  NOBODY** — the catalog's K rung is *"showOrbitPath only"*, i.e. the one feature K
+  is promised did not exist. Now implemented from the same orbital elements the
+  flight panel uses. `showApogeePerigee` was equally dead; also honoured.
+  **The physics was extracted to `service/astronomy/orbitPhysics.ts`** (pure, and
+  the component calls it) so the three speed presets are *proved* against the same
+  integrator the child's rocket flies on, not asserted from a comment: TWR 0.90 →
+  crash, 1.02 → orbit e=0.11 apogee 1,668 km (on screen), 2.50 → orbit apogee
+  33,162 km (far off screen). Exactly one choice orbits AND stays visible.
+  **Answer-leak caught in-flight:** the winning choice was first labelled
+  **"Just right"** — naming the answer, and the tutor reads labels aloud to the
+  child who cannot read them. Relabelled "Medium"; test-locked (CLAUDE.md #1).
+  Gates: 35 + 34 tests, **revert-bite 1/2/4/2/20/1 across six bites — two of which
+  did NOT bite at first** (the rung stamp and `showOrbitPath`, both unreachable
+  from a test) **and were restructured rather than left as decoration**; src-scoped
+  tsc **803 = baseline zero new**, typecheck:lumina 0, full vitest **2049/2049**,
+  tutor-test Tier 1 `pass` + Tier 2 probe `findings: []`, `dataBagDynamic: false`,
+  9/9 contextKeys `component`, zero `(not set)`.
+  **Runtime A/B @ G1: `'3'` + full adult instrument → `'1'` + all of it off, with
+  G3 unchanged as control.** Curator A/B reported honestly as **NO measurable
+  change** (1/4 pre-fix vs 0/4 post-fix draws — inside noise at a ~25% base rate;
+  selection is not what this slice changed).
+  Report `qa/reader-fit/orbit-mechanics-lab-PRE-2026-08-07.md`.
+  *Residuals:* no Tier-3 live audio run → HUMAN-CHECKS #73; 0 eval modes;
+  `gravityVisualization` + `initialOrbit` still declared-but-unread (grade 3+
+  features, fidelity not band); the 🐢 "too slow" arc is ~51 km ≈ **under 1 px** at
+  this visual scale, so that outcome is legible only from the 💥 and the spoken
+  beat — a K-specific zoom would be its own slice.
+  → **NEXT: S3 `rocket-builder`** → S4 `story-planner` → S5 `bio-compare-contrast` →
   S6 `species-profile` → S7 `mission-planner`.
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
@@ -366,11 +438,18 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** **15A S2 `orbit-mechanics-lab`** → S3 → S5 → S6 → S7
-(**skip S4 `story-planner`'s generator — already canonical**; it may still need a
-band floor, which is a catalog-only question) → then audit `planetary-explorer` +
+**Pull order now:** ~~15A S2~~ **CLOSED 2026-08-07** → **15A S3 `rocket-builder`**
+→ S5 → S6 → S7 (**skip S4 `story-planner`'s generator — already canonical**;
+~~it may still need a band floor~~ **band floors are now a last resort — if it
+fails at K, make it K-fit**) → then audit `planetary-explorer` +
 `constellation-builder`, which now carry the K astronomy demand that S1's floor
 and 15B's fixes redirected onto them.
+**⚠️ The 15A "catalog-only, no component work" estimate is dead** — S2 needed a
+generator fix, a catalog block AND a full component pass. Budget every remaining
+15A slice like a 15B slice.
+**⚠️ Probe the NEIGHBOURING grade, not just K.** S2's generator was clean at K on
+the happy path and returned **Grade 3 content for a Grade 1 ask**. A K-only probe
+would have passed it.
 Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).
 **Budget each slice for a component pass** — 15B's "catalog-only" cousin label was
 wrong 8/8.
