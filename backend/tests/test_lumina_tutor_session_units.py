@@ -4,12 +4,11 @@ honest session counters. Each test names the live failure it pins.
 
 Live evidence: qa/tutor-reports/lumina-session-review-2026-08-05.md.
 """
-import asyncio
-
 from app.api.endpoints.lumina_tutor import (
+    FloorGate,
     PrimitiveState,
     SessionCounters,
-    SwitchDebouncer,
+    TextQueueEntry,
     build_lesson_system_instruction,
     build_lumina_system_instruction,
     get_primitive_specific_instructions,
@@ -125,66 +124,161 @@ def test_interpolate_line_strict():
 
 
 # ---------------------------------------------------------------------------
-# Switch debounce — 7 switches in ~40s each triggered a greeting for a section
-# the child had already left (morning session 0:32–1:14).
+# The floor gate (2026-08-08) — every cue source used to send the instant it
+# fired. Live evidence, logs/lumina-sessions/2026-08-08-125623-…-8e5ef21b96fc:
+# five sends inside 3.1s (13:01:29.5→32.7) of which only the last was spoken;
+# three turns killed by our own text 40-55ms after it landed; and the switch
+# announcement arriving 2.1s AFTER the activity it announced had spoken.
 # ---------------------------------------------------------------------------
 
-def _run(coro):
-    return asyncio.run(coro)
+def test_floor_starts_free():
+    """Nothing has spoken yet — the opening greeting must not wait on anyone."""
+    assert not FloorGate().busy
 
 
-def test_rapid_switches_announce_only_the_last():
-    async def scenario():
-        announced = []
-
-        async def announce(sw):
-            announced.append(sw["primitive_type"])
-
-        d = SwitchDebouncer(announce, settle_s=0.05)
-        d.push({"primitive_type": "a"})
-        await asyncio.sleep(0.01)
-        d.push({"primitive_type": "b"})
-        await asyncio.sleep(0.01)
-        d.push({"primitive_type": "c"})
-        await asyncio.sleep(0.2)
-        return announced, d.coalesced
-
-    announced, coalesced = _run(scenario())
-    assert announced == ["c"]
-    assert coalesced == 2
+def test_floor_is_taken_at_send_and_freed_at_turn_end():
+    g = FloorGate()
+    g.take()
+    assert g.busy
+    g.release()
+    assert not g.busy
 
 
-def test_settled_switches_each_announce():
-    async def scenario():
-        announced = []
-
-        async def announce(sw):
-            announced.append(sw["primitive_type"])
-
-        d = SwitchDebouncer(announce, settle_s=0.03)
-        d.push({"primitive_type": "a"})
-        await asyncio.sleep(0.1)
-        d.push({"primitive_type": "b"})
-        await asyncio.sleep(0.1)
-        return announced
-
-    assert _run(scenario()) == ["a", "b"]
+def test_the_watchdog_sits_far_above_any_real_utterance():
+    """A read-aloud block ran 41s of audio. If the watchdog is anywhere near
+    that, it becomes the policy timer this design removed."""
+    from app.api.endpoints.lumina_tutor import FLOOR_WATCHDOG_S
+    assert FLOOR_WATCHDOG_S >= 60
 
 
-def test_aclose_cancels_pending_announce():
-    async def scenario():
-        announced = []
+# --- who may cut in is DECLARED, never inferred -------------------------------
 
-        async def announce(sw):
-            announced.append(sw["primitive_type"])
+def _interrupting(batch):
+    """The gate's step 1 predicate."""
+    return any(e.interrupt for e in batch)
 
-        d = SwitchDebouncer(announce, settle_s=0.05)
-        d.push({"primitive_type": "a"})
-        await d.aclose()
-        await asyncio.sleep(0.1)
-        return announced
 
-    assert _run(scenario()) == []
+def test_a_cue_waits_by_default():
+    """Silence is recoverable; a severed sentence is what the child hears."""
+    assert TextQueueEntry(text="[ANSWER_CORRECT] nice one").interrupt is False
+    assert not _interrupting([TextQueueEntry(text="[CURRENT STATE] streak: 2")])
+
+
+def test_one_interrupting_cue_carries_the_whole_batch_in():
+    """A cue that piled up behind an interrupting one goes out WITH it —
+    otherwise it would land on the reply it just provoked, which is the
+    original stampede wearing a different hat."""
+    batch = [
+        TextQueueEntry(text="[CURRENT STATE] streak: 2"),
+        TextQueueEntry(text="[PRIMITIVE SWITCH]", interrupt=True),
+        TextQueueEntry(text="[ACTIVITY_START] sorting-station"),
+    ]
+    assert _interrupting(batch)
+    assert len(batch) == 3          # nothing is dropped to buy the interrupt
+
+
+# --- supersession: what collapses, and what must NOT -------------------------
+
+def _collapse(entries):
+    """The gate's step 3, exactly as handle_text_to_gemini runs it:
+    delete-then-reinsert on an insertion-ordered dict moves the survivor to
+    the end, so the newest claim speaks in its arrival position."""
+    kept, superseded = {}, 0
+    for index, item in enumerate(entries):
+        key = item.supersedes_key(index)
+        if key in kept:
+            superseded += 1
+            del kept[key]
+        kept[key] = item
+    return [e.text for e in kept.values()], superseded
+
+
+def _switch(label):
+    return TextQueueEntry(text="[PRIMITIVE SWITCH]", render=lambda: label)
+
+
+def test_four_taps_are_one_switch():
+    """The one drop the live evidence justifies: a child flipping tabs fires a
+    switch per tap, and the tutor greeted activities they had already left."""
+    texts, superseded = _collapse([_switch(x) for x in "abcd"])
+    assert len(texts) == 1
+    assert superseded == 3
+
+
+def test_repeated_state_cues_ride_out_together_rather_than_being_dropped():
+    """Two [CURRENT STATE]s a second apart are the pair where the second killed
+    the reply to the first (13:05:16.289). Batching is what fixes that — they
+    now leave as ONE turn. Dropping the older one is not required, and a rule
+    broad enough to do it would also eat [ANSWER_CORRECT]."""
+    texts, superseded = _collapse([
+        TextQueueEntry(text="[CURRENT STATE] streak: 1"),
+        TextQueueEntry(text="[CURRENT STATE] streak: 2"),
+    ])
+    assert texts == ["[CURRENT STATE] streak: 1", "[CURRENT STATE] streak: 2"]
+    assert superseded == 0
+
+
+def test_different_cues_all_survive_as_one_turn():
+    """SCOPE FENCE. Batching is not deduplication: "[ANSWER_CORRECT] then
+    [NEXT_ITEM]" is one coherent thing to say. If these collapse, the tutor
+    stops celebrating right answers."""
+    texts, superseded = _collapse([
+        TextQueueEntry(text="[ANSWER_CORRECT] Hopper, first try."),
+        TextQueueEntry(text="[NEXT_ITEM] Challenge 2 of 10."),
+    ])
+    assert texts == ["[ANSWER_CORRECT] Hopper, first try.",
+                     "[NEXT_ITEM] Challenge 2 of 10."]
+    assert superseded == 0
+
+
+def test_the_connect_burst_of_activity_starts_survives_intact():
+    """REGRESSION GATE. A lesson fires one [ACTIVITY_START] per activity at
+    connect (four of them at 12:56:23.760). Same tag, different activities —
+    collapsing by tag alone would have silently eaten three scaffolds."""
+    starts = [TextQueueEntry(text=f"[ACTIVITY_START] activity {i}") for i in range(4)]
+    texts, superseded = _collapse(starts)
+    assert len(texts) == 4
+    assert superseded == 0
+
+
+def test_student_text_never_collapses():
+    """A child who types twice said two things."""
+    texts, superseded = _collapse([
+        TextQueueEntry(text="why is it called a hopper"),
+        TextQueueEntry(text="is it heavy"),
+    ])
+    assert texts == ["why is it called a hopper", "is it heavy"]
+    assert superseded == 0
+
+
+def test_a_superseded_switch_leaves_no_trace():
+    """Rendering happens at SEND time. Three of four taps are never rendered,
+    so they never move `announced_primitive` — 'Previous activity' names where
+    the student came from, not a screen they crossed in 300ms."""
+    announced = {"value": "curator-brief"}
+    rendered = []
+
+    def make(target):
+        def render():
+            frm = announced["value"]
+            announced["value"] = target
+            rendered.append(target)
+            return f"[PRIMITIVE SWITCH] {frm} -> {target}"
+        return render
+
+    entries = [TextQueueEntry(text="[PRIMITIVE SWITCH]", render=make(t))
+               for t in ("a", "b", "c")]
+    kept = {}
+    for i, e in enumerate(entries):
+        k = e.supersedes_key(i)
+        if k in kept:
+            del kept[k]
+        kept[k] = e
+    out = [e.render() for e in kept.values()]
+
+    assert rendered == ["c"]                       # a and b were never said
+    assert out == ["[PRIMITIVE SWITCH] curator-brief -> c"]
+    assert announced["value"] == "c"
 
 
 # ---------------------------------------------------------------------------
@@ -193,20 +287,20 @@ def test_aclose_cancels_pending_announce():
 # ---------------------------------------------------------------------------
 
 def _lesson_prompt() -> str:
-    return _run(build_lesson_system_instruction(
+    return build_lesson_system_instruction(
         {"topic": "Excavators", "grade_level": "Kindergarten",
          "objectives": [], "ordered_components": []},
         {},
-    ))
+    )
 
 
 def _standalone_prompt() -> str:
-    return _run(build_lumina_system_instruction(
+    return build_lumina_system_instruction(
         "machine-profile", {"machineName": "Excavator"},
         {"topic": "Excavators", "grade_level": "Kindergarten",
          "objectives": [], "ordered_components": []},
         {}, tutoring_scaffold=None,
-    ))
+    )
 
 
 def test_lesson_prompt_carries_curiosity_carveout():
@@ -273,7 +367,23 @@ def test_the_cue_tag_survives_attachment():
     s.merge({"problem": "3 + 4"})
     original = "[DI_ITEM] Judge this."
     assert classify_cue(original) == "[DI_ITEM]"
-    assert classify_cue(s.attach(original)) == "text"   # why order matters
+    # why order matters: attaching state buries the real tag behind a new one
+    assert classify_cue(s.attach(original)) == "[CURRENT STATE]"
+
+
+def test_any_bracket_tag_is_a_cue():
+    """The roster used to be six hardcoded tags, so the 40+ others the client
+    actually fires — the whole [ANSWER_CORRECT]/[NEXT_ITEM]/[READ_SECTION]
+    family — were classified as student text and coalesced by position
+    instead of by kind."""
+    for tag in ("[READ_SECTION]", "[ANSWER_CORRECT]", "[NEXT_ITEM]",
+                "[CONCEPT_SELECTED]", "[ACTIVITY_START]", "[PRIMITIVE SWITCH]"):
+        assert classify_cue(f"{tag} body text") == tag
+
+
+def test_student_text_is_not_a_cue():
+    assert classify_cue("why is it called a hopper?") == "text"
+    assert classify_cue("[lowercase] is not a tag") == "text"
 
 
 def test_twenty_slider_positions_collapse_to_one_state():

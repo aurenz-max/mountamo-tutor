@@ -14,6 +14,7 @@ machine; it does not replace it.
 
 import json
 import logging
+import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -25,25 +26,24 @@ logger = logging.getLogger(__name__)
 # app/services/session_ledger.py -> backend/
 LEDGER_DIR = Path(__file__).resolve().parents[2] / "logs" / "lumina-sessions"
 
-# Bracket tags whose prefix classifies a text-to-Gemini send. Order matters only
-# for readability; prefixes are disjoint.
-_CUE_TAGS = (
-    "[DI_ITEM]",
-    "[DI_MOVE_ON]",
-    "[DI_COMPLETE]",
-    "[CONTEXT UPDATE]",
-    "[PRIMITIVE SWITCH]",
-    "[STUDENT ACTION]",
-)
+# ANY leading [TAG] marks a message as a system cue rather than something the
+# student wrote. This was a hardcoded roster of six tags until 2026-08-08. The
+# client fires 40+ distinct tags from 1,100+ call sites — [READ_SECTION],
+# [ANSWER_CORRECT], [NEXT_ITEM], [CONCEPT_SELECTED], [ACTIVITY_START] — and
+# every tag outside the roster classified as student text, which left both the
+# ledger and the floor gate blind to most of the traffic they exist to govern.
+_CUE_RE = re.compile(r"^\[([A-Z0-9_][A-Z0-9_ ]*)\]")
 
 
 def classify_cue(text: str) -> str:
-    """Name the kind of text being sent to Gemini by its bracket-tag prefix."""
-    stripped = text.lstrip()
-    for tag in _CUE_TAGS:
-        if stripped.startswith(tag):
-            return tag
-    return "text"
+    """Name the kind of text being sent to Gemini by its bracket-tag prefix.
+
+    Returns the tag itself (e.g. "[NEXT_ITEM]") for a system cue, or "text"
+    for anything the student authored. The tag is also the coalescing identity
+    in the floor gate: two cues of the same kind in one batch are one cue.
+    """
+    match = _CUE_RE.match(text.lstrip())
+    return f"[{match.group(1)}]" if match else "text"
 
 
 class SessionLedger:

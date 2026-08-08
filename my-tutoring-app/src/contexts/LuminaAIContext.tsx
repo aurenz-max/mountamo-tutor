@@ -135,7 +135,7 @@ interface LuminaAIContextType {
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
   sendVoice: (audioData: string) => void;
-  sendText: (text: string, options?: { silent?: boolean }) => void;
+  sendText: (text: string, options?: { silent?: boolean; interrupt?: boolean }) => void;
   updateContext: (newState: any, progress?: any) => void;
 
   // State
@@ -195,6 +195,17 @@ const STATIC_CONTEXT_KEYS = new Set([
 // student repeats on purpose — tapping 🔊 twice, re-asking — is an order of
 // magnitude slower and still goes through.
 const DUPLICATE_CUE_WINDOW_MS = 50;
+
+// Hint requests are composed HERE, not on the server: the client owns the
+// business logic and the server's wire protocol stays minimal (a hint is just
+// words for the model, so it travels as `text`). The system prompt's HINT
+// PROGRESSION SYSTEM section teaches the model what each level means; this is
+// the per-request ask.
+const HINT_GUIDANCE: Record<1 | 2 | 3, string> = {
+  1: 'Give a gentle nudge - ask a thought-provoking question or point them in the right direction.',
+  2: 'Give specific guidance - break down the problem into smaller steps they can tackle.',
+  3: 'Give a detailed walkthrough - guide them step-by-step without revealing the answer directly.',
+};
 
 export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socketRef = useRef<WebSocket | null>(null);
@@ -409,12 +420,6 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               isAudio: true,
             },
           ]);
-        } else if (messageType === 'metrics_update') {
-          setAIMetrics(prev => ({
-            ...prev,
-            hintsGiven: message.hintsGiven || prev.hintsGiven,
-            totalInteractions: message.totalInteractions || prev.totalInteractions,
-          }));
         } else if (messageType === 'ai_turn_end') {
           setIsAIResponding(false);
           resetForNextTurn();
@@ -776,8 +781,14 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [connect, connectLesson]);
 
-  // Switch the active primitive within a lesson session (no new WebSocket)
-  const switchPrimitive = useCallback((primitiveContext: PrimitiveContext) => {
+  // Switch the active primitive within a lesson session (no new WebSocket).
+  // Interrupts by default: the student has left the screen the tutor is
+  // describing, so finishing that sentence is worth nothing to them. Pass
+  // interrupt: false for a navigation where the current thought still applies.
+  const switchPrimitive = useCallback((
+    primitiveContext: PrimitiveContext,
+    options?: { interrupt?: boolean },
+  ) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn('Cannot switch primitive: not connected');
       return;
@@ -796,6 +807,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     socketRef.current.send(JSON.stringify({
       type: 'switch_primitive',
+      interrupt: options?.interrupt ?? true,
       primitive_context: {
         primitive_type: primitiveContext.primitive_type,
         instance_id: primitiveContext.instance_id,
@@ -878,10 +890,18 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       },
     ]);
 
+    const state = currentState || currentPrimitiveRef.current?.primitive_data;
+    let content = `The student is requesting a Level ${level} hint. ${HINT_GUIDANCE[level]}`;
+    if (state && Object.keys(state).length > 0) {
+      content += `\n\nCurrent state: ${JSON.stringify(state)}`;
+    }
+
     socketRef.current.send(JSON.stringify({
-      type: 'request_hint',
-      hint_level: level,
-      current_state: currentState || currentPrimitiveRef.current?.primitive_data,
+      type: 'text',
+      content,
+      // The student pressed a button and is waiting on the answer — that
+      // outranks finishing the sentence in progress.
+      interrupt: true,
     }));
   }, []);
 
@@ -906,7 +926,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
   }, []);
 
-  const sendText = useCallback((text: string, options?: { silent?: boolean }) => {
+  // `interrupt` says whether this message may cut the tutor off mid-sentence.
+  // The server never guesses: by default a cue waits for the current turn to
+  // end and rides out with whatever else piled up. Pass interrupt: true only
+  // when finishing the sentence is worth nothing to the student — they left
+  // the screen it describes, or they pressed something and are waiting on it.
+  const sendText = useCallback((text: string, options?: { silent?: boolean; interrupt?: boolean }) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn('Cannot send text: not connected');
       return;
@@ -950,6 +975,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     socketRef.current.send(JSON.stringify({
       type: 'text',
       content: text,
+      interrupt: options?.interrupt ?? false,
     }));
   }, []);
 
