@@ -741,6 +741,20 @@ test, S1 band-floor + curator A/B template — and is marked superseded in-file.
 (2026-08-07)** → **NEXT = audit
 `planetary-explorer` + `constellation-builder`, which now carry the K astronomy
 demand that S1's floor and 15B's fixes redirected onto them.
+**📋 HANDOFF WRITTEN — `qa/HANDOFF-reader-fit-frontier-2026-08-07.md`** (anchors
+re-derived at `98e4928`, since S7 shifted every id in `astronomy.ts` again).
+**The defect is REPRODUCED, not predicted:** both generators use the S8 regex over
+prose (`gemini-planetary-explorer.ts:630/636`, `gemini-constellation-builder.ts:335/341`),
+read `ctx.grade` **zero** times, and **both return `gradeLevel: "3"` for a `grade=K`
+request** — so K gets the Grade 3 config, the Grade 3 prompt and a Grade 3 rung.
+Unlike 15A the rung IS stamped, just resolved wrong. **Neither is mute** (both have
+real catalog blocks) but **neither has a single `aiDirective`**, so neither has a
+PRE-READER READ-ALOUD or the cap-override clause; neither component has one band
+gate or one read-aloud. `planetary-explorer` additionally has a voice already
+(18 `useLuminaAI` hits, 8+ moments) whose scaffold is written **for a reader** —
+`level1: "Look at the stats panel — one of those numbers will help you."`
+**Take `constellation-builder` first** (smaller, no component channel, and its
+`guided_trace` mode is the very shape S13 borrowed for its K tap-to-place fix).
 **⚠️ S6 added a third: the PREDICTED SHAPE has now been wrong or incomplete twice
 running.** S5's "fourth shape" was really S9's map relocated to the call site;
 S6's predicted prose-grade was real but was **not the defect** — there were no
