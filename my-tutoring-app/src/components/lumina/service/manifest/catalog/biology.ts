@@ -69,7 +69,77 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
     id: 'species-profile',
     description: 'Comprehensive species profile with detailed information including physical characteristics (height, weight, length with real-world comparisons), diet and behavior, habitat and geographic/temporal distribution, complete taxonomic classification, ecological niche, fascinating facts, and discovery history. PERFECT for dinosaur lessons, animal studies, extinct species, modern wildlife, and comparative biology. Includes AI-generated species images in natural habitats. ESSENTIAL for K-5 biology, paleontology, zoology, and natural history topics. Students love learning about T-Rex, Velociraptors, Triceratops, and other fascinating creatures with this engaging format.',
-    constraints: 'Best for K-8 students learning about animals, dinosaurs, plants, or any biological species. Use for life sciences, paleontology, zoology, botany, ecology, and natural history. Ideal for teaching classification systems, adaptations, food chains, habitats, and evolutionary concepts. Works great for extinct and living species.'
+    constraints: 'Best for K-8 students learning about animals, dinosaurs, plants, or any biological species. Use for life sciences, paleontology, zoology, botany, ecology, and natural history. Ideal for teaching classification systems, adaptations, food chains, habitats, and evolutionary concepts. Works great for extinct and living species. K-2: sizes are given as child-scale COMPARISONS rather than numbers, the scientific name, the taxonomy ranks and the discovery history are withheld, and every fact can be tapped to hear it read aloud — this is a listen-and-look card, not a reference table. 3-5 and 6-8: full taxonomy, measurements and discovery history are shown, because that vocabulary is the objective.',
+    tutoring: {
+      taskDescription:
+        'Student is exploring a species card about the {{commonName}} ({{category}}). Grade band: {{gradeBand}}. '
+        + 'What it eats: {{dietType}}. Where it lives: {{environment}}. Its role: {{biologicalNiche}}. '
+        + 'It carries {{factCount}} facts: {{factTitles}}. '
+        + 'This is a reference card, not a quiz — there is no right answer to withhold. At K-2 the child cannot read any of it and taps to hear it.',
+      contextKeys: [
+        'commonName',
+        'category',
+        'gradeBand',
+        'dietType',
+        'environment',
+        'factCount',
+        'factTitles',
+        'biologicalNiche',
+      ],
+      scaffoldingLevels: {
+        level1: '"What do you notice about the {{commonName}}? Tell me one thing you can see."',
+        level2: '"Look at its body. What do you think it uses that for — moving, eating, or staying safe?"',
+        level3: '"Let us look together. It lives where {{environment}} is, and it eats like a {{dietType}}. What does its body have that helps it do that?"',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student asks a question the card does not answer',
+          response: '"That is a great question. This card does not say — but here is what it DOES tell us…" Never invent a fact to fill the gap.',
+        },
+        {
+          pattern: 'Student is frightened by a predator or thinks the animal is bad',
+          response: '"It is not mean — it just has to eat, the same as you do. Every animal is looking after itself and its babies."',
+        },
+        {
+          pattern: 'Student cannot connect the size comparison to anything real',
+          response: '"Think about something in this room. Is it bigger than the door? Bigger than you? That is how big it is."',
+        },
+        {
+          pattern: 'Student wants to know if it is still alive',
+          response: 'Answer honestly and simply from the card — some of these lived long ago and some are alive right now. Do not say "extinct" to a young child without saying what it means: "there are none left anywhere".',
+        },
+        {
+          pattern: 'A pre-reader cannot read the name, the facts, or any label',
+          response: '"Never ask them to read. Say the name aloud, describe the picture, and read each fact when they tap it. The words are yours to speak."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
+          instruction:
+            'A pre-reader CANNOT read the name, the facts, the labels or the size comparisons. Your voice is the only channel. '
+            + 'When you receive [SPECIES_ORIENT], say the animal\'s name warmly, say one thing about it they can picture, and invite them to tap a fact to hear it. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [SPECIES_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+        },
+        {
+          title: 'NO MEASUREMENTS AND NO LATIN AT K-2 — SUPPLY THE CHILD WORD',
+          instruction:
+            'At grade band K-2 NEVER say the scientific name, and never say a number with a unit — no metres, kilograms, feet, pounds, tons, or millions of years. '
+            + 'The card deliberately withholds all of those at this band, so saying them puts back exactly what was taken out. '
+            + 'Say "as tall as a door", "heavier than all of you put together", "a very very long time ago". '
+            + 'Also avoid species, taxonomy, kingdom, classification, adaptation, predator, prey, carnivore, herbivore, ecosystem and niche — say "kind of animal", "what it eats", "meat eater", "plant eater", "where it lives". '
+            + 'At 3-5 and 6-8 none of this applies: the scientific name, the measurements and the taxonomy ARE the objective, so use them and explain them.',
+        },
+        {
+          title: 'A CARD IS NOT A QUIZ — AND NOT A LECTURE',
+          instruction:
+            'There is no answer to withhold here; everything on the card is stimulus and you may say all of it. '
+            + 'But do not read the whole card unprompted. Say one thing, then stop and let them look or tap. '
+            + 'If they ask something the card does not cover, say so plainly rather than inventing it — an invented fact in a reference card is worse than "I do not know".',
+        },
+      ],
+    },
   },
   {
     id: 'classification-sorter',

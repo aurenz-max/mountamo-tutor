@@ -6,6 +6,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SoundManager } from '../../utils/SoundManager';
+import { LuminaReadAloud } from '../../ui';
+import { useLuminaAI } from '../../hooks/useLuminaAI';
 
 // Species characteristic data structure
 export interface PhysicalStats {
@@ -70,6 +72,13 @@ export interface SpeciesProfileData {
   interestingFacts?: InterestingFact[];
   discoveryInfo?: string;     // "First discovered in Montana in 1902"
 
+  // Band rung, STAMPED by the generator from ctx.grade (never Gemini's echo).
+  // Without it every gate below would be dead on arrival.
+  gradeBand?: 'K-2' | '3-5' | '6-8';
+
+  // Evaluation / identity passthrough
+  instanceId?: string;
+
   // Styling
   themeColor?: string;        // Accent color based on category
   category?: 'dinosaur' | 'mammal' | 'reptile' | 'bird' | 'fish' | 'invertebrate' | 'plant';
@@ -105,6 +114,54 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
 
   const category = data.category || 'dinosaur';
   const colors = CATEGORY_COLORS[category];
+
+  // K-2 cannot read the Latin binomial, the taxonomy ranks, the discovery
+  // citation or any of the fact prose. reader-fit 15A/S6.
+  const isPreReader = data.gradeBand === 'K-2';
+
+  const aiPrimitiveData = React.useMemo(() => ({
+    commonName: data.commonName,
+    category,
+    gradeBand: data.gradeBand ?? 'unset',
+    dietType: data.diet?.type ?? 'unknown',
+    environment: data.habitat?.environment ?? 'unknown',
+    factCount: data.interestingFacts?.length ?? 0,
+    factTitles: (data.interestingFacts ?? []).map(f => f.title).join(', '),
+    biologicalNiche: data.biologicalNiche ?? 'unknown',
+  }), [data.commonName, category, data.gradeBand, data.diet, data.habitat,
+       data.interestingFacts, data.biologicalNiche]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'species-profile',
+    instanceId: data.instanceId || `species-profile-${data.commonName}`,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
+  const readAloud = React.useCallback((text: string) => {
+    if (!text) return;
+    SoundManager.tap();
+    sendText(
+      `[SPECIES_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  const hasOrientedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[SPECIES_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a card about the ${data.commonName}. `
+      + `${isPreReader
+        ? 'Say its name warmly, say one thing about it they can picture, and invite them to tap a picture or a fact to hear more.'
+        : 'Introduce it briefly and invite them to explore the sections.'}`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, data.commonName]);
 
   // Handle on-demand image generation
   const handleGenerateImage = async () => {
@@ -162,23 +219,37 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
 
           <div className="relative flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg`}>
+              <CardTitle className={`text-4xl font-bold ${colors.text} mb-2 drop-shadow-lg flex items-center gap-3`}>
                 {data.commonName}
+                {isPreReader && (
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    aria-label={`Hear the name ${data.commonName}`}
+                    onClick={() => readAloud(data.commonName)}
+                  />
+                )}
               </CardTitle>
-              <CardDescription className="text-slate-300 italic text-lg mb-1">
-                {data.scientificName}
-              </CardDescription>
-              {data.nameMeaning && (
+              {/* The Latin binomial and its etymology are undecodable at K-2 and
+                  carry no task information there (organism-card/S15 precedent). */}
+              {!isPreReader && (
+                <CardDescription className="text-slate-300 italic text-lg mb-1">
+                  {data.scientificName}
+                </CardDescription>
+              )}
+              {!isPreReader && data.nameMeaning && (
                 <p className="text-slate-400 text-sm">
                   <span className="font-semibold">Name Meaning:</span> {data.nameMeaning}
                 </p>
               )}
             </div>
-            <Badge className="bg-white/5 backdrop-blur-sm border-white/20">
-              <span className={`text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                {category}
-              </span>
-            </Badge>
+            {!isPreReader && (
+              <Badge className="bg-white/5 backdrop-blur-sm border-white/20">
+                <span className={`text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  {category}
+                </span>
+              </Badge>
+            )}
           </div>
         </CardHeader>
 
@@ -196,11 +267,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                     style={{ color: colors.accent }}
                   />
                   <p className={`${colors.text} font-medium mb-2`}>Generating species visualization...</p>
-                  {data.imagePrompt && (
-                    <p className="text-xs text-slate-500 text-center italic max-w-md">
-                      "{data.imagePrompt}"
-                    </p>
-                  )}
+
                 </div>
               </SpotlightCard>
             ) : (data.imageUrl || generatedImageUrl) && !imageError ? (
@@ -213,13 +280,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                     onError={() => setImageError(true)}
                     loading="lazy"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent p-4">
-                    {data.imagePrompt && (
-                      <p className="text-xs text-slate-400 italic">
-                        {data.imagePrompt}
-                      </p>
-                    )}
-                  </div>
+
                 </div>
               </SpotlightCard>
             ) : data.imagePrompt ? (
@@ -227,7 +288,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <div className="glass-panel p-8 border border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center min-h-[300px]">
                   <Skull className={`w-16 h-16 ${colors.text} mb-4`} />
                   <p className="text-slate-300 text-center text-sm mb-4">
-                    {data.imagePrompt}
+                    {data.commonName}
                   </p>
                   {!imageError && (
                     <Button
@@ -290,9 +351,11 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                               </div>
                               <div>
                                 <p className="text-slate-200 font-semibold text-sm">Height</p>
-                                <p className="text-slate-300 text-sm">{data.physicalStats.height}</p>
+                                {!isPreReader && (
+                                  <p className="text-slate-300 text-sm">{data.physicalStats.height}</p>
+                                )}
                                 {data.physicalStats.heightComparison && (
-                                  <p className="text-slate-400 text-xs italic">{data.physicalStats.heightComparison}</p>
+                                  <p className={isPreReader ? 'text-slate-200 text-base' : 'text-slate-400 text-xs italic'}>{data.physicalStats.heightComparison}</p>
                                 )}
                               </div>
                             </div>
@@ -315,9 +378,11 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                               </div>
                               <div>
                                 <p className="text-slate-200 font-semibold text-sm">Weight</p>
-                                <p className="text-slate-300 text-sm">{data.physicalStats.weight}</p>
+                                {!isPreReader && (
+                                  <p className="text-slate-300 text-sm">{data.physicalStats.weight}</p>
+                                )}
                                 {data.physicalStats.weightComparison && (
-                                  <p className="text-slate-400 text-xs italic">{data.physicalStats.weightComparison}</p>
+                                  <p className={isPreReader ? 'text-slate-200 text-base' : 'text-slate-400 text-xs italic'}>{data.physicalStats.weightComparison}</p>
                                 )}
                               </div>
                             </div>
@@ -424,7 +489,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
               )}
 
               {/* Taxonomy Section */}
-              {data.taxonomy && (
+              {data.taxonomy && !isPreReader && (
                 <AccordionItem value="taxonomy" className="border-white/10">
                   <SpotlightCard color={colors.rgb}>
                     <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
@@ -501,8 +566,16 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
                 <SpotlightCard key={idx} color={colors.rgb}>
                   <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10">
                     <CardHeader className="pb-3">
-                      <CardTitle className={`text-sm font-bold ${colors.text}`}>
+                      <CardTitle className={`text-sm font-bold ${colors.text} flex items-center gap-2`}>
                         {fact.title}
+                        {isPreReader && (
+                          <LuminaReadAloud
+                            iconOnly
+                            size="sm"
+                            aria-label={`Read the fact ${fact.title} aloud`}
+                            onClick={() => readAloud(`${fact.title}. ${fact.description}`)}
+                          />
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -518,7 +591,7 @@ const SpeciesProfile: React.FC<SpeciesProfileProps> = ({ data, className = '' })
         )}
 
         {/* Discovery Info Footer */}
-        {data.discoveryInfo && (
+        {data.discoveryInfo && !isPreReader && (
           <div className="border-t border-white/10 px-6 py-3 bg-black/20">
             <p className="text-slate-400 text-xs">
               <span className="font-semibold">Discovery:</span> {data.discoveryInfo}

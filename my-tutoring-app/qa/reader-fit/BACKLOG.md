@@ -319,8 +319,63 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   `side-by-side`**, so the assessed K path is rarely routed while
   `supportsEvaluation: true` still attracts assessment demand to a viewer;
   0 eval modes.
-  → **NEXT: S6 `species-profile`** (predicted `= ctx.gradeContext` @ `:241`;
-  **probe it — S5 shows the predicted shape can be wrong**) → S7 `mission-planner`.
+  ~~**S6 `species-profile`**~~ **S6 CLOSED 2026-08-07 — READY at PRE.**
+  Verdict **SCAFFOLD-GAP + PRIMITIVE-GAP + CONTENT-GAP**. The predicted
+  `= ctx.gradeContext` @ `:241` was real, but **prose-into-the-prompt is not the
+  defect here** — there were no dead char-compares to fix. Two other things were.
+  **(1) NO RUNG WAS EVER STAMPED — 4th appearance.** `SpeciesProfileData` had no
+  band field at all, so K and G4 payloads were structurally identical and the
+  component had nothing to gate on. Every gate would have been dead on arrival.
+  **(2) THE CONTENT WAS THE LOAD, not the chrome.** One prompt bullet ("for
+  younger students, use simpler language") against **eight mandatory REQUIREMENTS
+  sections** demanding complete taxonomy, accurate measurements and discovery
+  history. Probe @ K returned `Ursus maritimus`, Kingdom `Animalia` / Phylum
+  `Chordata`, *"300 to 600 kilograms"*, *"1.3 to 1.6 meters tall"* and
+  ***"Formally described … in 1774 by the Constantine John Phipps"***.
+  **Band-gating the component alone would have hidden the Latin name and left
+  "300 to 600 kilograms" in the size row** — S4's lesson restated. Requirements
+  1/4/7 are now band-SCOPED (K-2: comparisons only + "NEVER write a number with a
+  unit"; taxonomy = broad everyday group, other ranks empty; `discoveryInfo`
+  empty; a named jargon ban list with replacements). Belt-and-braces: at K-2 the
+  generator writes comparisons into the RAW size fields too, so a missed gate
+  still cannot leak a number.
+  **(3) SCAFFOLD-GAP** — it was one of the 26 mute primitives; catalog block
+  (8 contextKeys, 3 levels, 5 struggles, 3 aiDirectives) + `useLuminaAI` with 2
+  moments and a read-aloud on the name and on **every fact** (the S15 precedent —
+  the facts are the card's entire content and a non-reader had no way to hear
+  them). **This primitive has no answer to protect**, so the directives guard the
+  opposite risks instead: never read the whole card unprompted, never invent a
+  fact the card lacks, and never put back the Latin/measurements the card
+  deliberately withheld — the last explicitly lifted at 3-5/6-8.
+  **(4) PRIMITIVE-GAP** — Latin binomial, Name Meaning, the whole taxonomy
+  accordion, the discovery footer, the category badge and the raw metric values
+  all gated at K-2 (the child-scale `*Comparison` string becomes the value);
+  `imagePrompt` removed at EVERY grade (**4th appearance** of the S9/S13/S5 leak).
+  Gates: 29 tests, **12 revert-bites / 12 bite** (4/7/1/1/1/1/9/2/1/1/1/1 — one
+  needed re-anchoring for a harness escaping issue, not a test gap); src-scoped
+  tsc **803 = baseline set-identical**, typecheck:lumina 0, full vitest
+  **2248/2248**, tutor-test T1 `pass` + T2 `findings: []`, `dataBagDynamic:false`,
+  8/8 keys, zero `(not set)`.
+  **Runtime A/B @ K: `gradeBand` undefined→`K-2`, "300 to 600 kilograms"→"heavier
+  than twenty kids put together in a big pile", discovery citation GONE; G4
+  control keeps all of it.** **Driven in real Chrome:** K-2 shows no Latin, no
+  taxonomy, no discovery, no badge, **no kilograms or metres anywhere**, 4
+  read-aloud buttons, 0 nested buttons, zero console errors; 3-5 keeps everything.
+  Report `qa/reader-fit/species-profile-PRE-2026-08-07.md`.
+  *Residuals:* no Tier-3 live audio; **rule 8 is N/A not passing — no evaluation
+  hook at all**, which makes **4 primitives in this sweep** (S11, S12, S15, S6)
+  awaiting the same portfolio decision — `/add-eval-modes` or declare
+  exploration-only so the manifest stops routing assessment demand at them;
+  **rule 3 PARTIAL — the image is on-demand behind a text button at every grade**,
+  and turning images ON at K-2 the way S5 did is the single biggest remaining PRE
+  win here (a registry change with a latency cost, deliberately not bundled);
+  `scientificName` is still generated at K-2 (required schema field) though never
+  shown or spoken; one pre-fix G4 draw returned a malformed `taxonomy.species`
+  with ranks stuffed in as literal `\n key: value` text — did not recur, worth an
+  `/oracle-test` contract if this gets real traffic.
+  → **NEXT: S7 `mission-planner`** (predicted `= ctx.gradeContext` @ `:252`,
+  astronomy — **probe it; the predicted shape has now been wrong or incomplete in
+  both S5 and S6**).
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
   ~~**S8 `moon-phases-lab`**~~ **S8 CLOSED 2026-08-06 — READY at PRE.** Catalog
@@ -631,10 +686,17 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ **ALL FOUR CLOSED 2026-08-07** →
-**15A S6 `species-profile`** → S7 `mission-planner` → then audit
+**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ ~~S6~~ **ALL FIVE CLOSED 2026-08-07** →
+**15A S7 `mission-planner`** (the last 15A item) → then audit
 `planetary-explorer` + `constellation-builder`, which now carry the K astronomy
 demand that S1's floor and 15B's fixes redirected onto them.
+**⚠️ S6 added a third: the PREDICTED SHAPE has now been wrong or incomplete twice
+running.** S5's "fourth shape" was really S9's map relocated to the call site;
+S6's predicted prose-grade was real but was **not the defect** — there were no
+dead char-compares, and the actual causes were an unstamped rung plus a prompt
+whose eight mandatory sections outvoted its one "younger students" bullet.
+**Probe before scoping; treat the handoff's per-item prediction as a hint, not a
+finding.**
 **⚠️ S5 added two rules to the method.** (a) **A generator with a clean body can
 still be grade-blind if its band arrives as an ARGUMENT** — check the call site
 even when the generator greps clean; the "fourth shape" prediction was right about

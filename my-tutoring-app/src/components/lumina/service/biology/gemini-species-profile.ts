@@ -1,6 +1,7 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveBiologyBand, type BiologyBand } from "./gradeBand";
 
 // Import the data type from the component (single source of truth)
 import { SpeciesProfileData } from "../../primitives/biology-primitives/SpeciesProfile";
@@ -250,22 +251,75 @@ Keep every section scientifically accurate and complete, but lead with and expan
 facts, adaptations, and details most relevant to this focus (e.g. a diet focus means
 richer diet/hunting content; a habitat focus means richer habitat/niche content).`
     : "";
-  const educationalContext = `
+  // Canonical band. `gradeLevel` above is PROSE and belongs only in the prompt;
+  // the rung the component band-gates on has to be resolved from `ctx.grade`.
+  //
+  // reader-fit 15A/S6: this generator had no band gate at all, and its eight
+  // mandatory REQUIREMENTS sections outweighed the single "for younger students"
+  // bullet below. Probed at grade=K it returned the scientific name
+  // "Ursus maritimus", a kingdom/phylum taxonomy, "300 to 600 kilograms", and
+  // "Formally described and named by scientific standards in 1774 by the
+  // Constantine John Phipps" — to a five-year-old who cannot read any of it.
+  const gradeBand: BiologyBand = resolveBiologyBand(
+    (config as { gradeBand?: string }).gradeBand,
+    ctx.grade,
+    ctx.gradeContext,
+  );
+  const isPreReader = gradeBand === 'K-2';
+
+  const educationalContext = isPreReader
+    ? `
+Educational Context: This is for KINDERGARTEN to GRADE 2 students. Most of them CANNOT READ.
+An adult or the tutor will read every word of this aloud, so write words that sound right SPOKEN.
+- Short, plain sentences. No clause stacking.
+- NEVER use these words: species, taxonomy, kingdom, phylum, classification, adaptation,
+  habitat, predator, prey, carnivore, herbivore, ecosystem, niche, organism, mammal, reptile.
+  Say "kind of animal", "where it lives", "what it eats", "animals that eat meat", "plant eater".
+- Sizes are COMPARISONS, never numbers. Never write metres, kilograms, feet or pounds.
+  Write "as tall as a door", "heavier than ten kids", "as long as a school bus".
+- Do NOT include who discovered or named it, or when — a date in the 1700s means nothing here.
+- Do NOT include the Latin/scientific name in any description text.
+- Facts must be things a child can picture: what it looks like, what it does, what it eats.
+`
+    : `
 Educational Context: This is for ${gradeLevel} students.
 - Use age-appropriate vocabulary and explanations
 - Include comparisons to familiar objects and animals
 - Focus on fascinating facts that capture imagination
 - Explain scientific concepts in accessible ways
-- For younger students (K-2), use simpler language and more vivid descriptions
 - For older students (3-5), include more scientific detail and taxonomic information
+- For 6-8, use precise scientific terminology and evolutionary context
 `;
+
+  // At K-2 the adult sections are not "simplified" — they are dropped. Leaving
+  // them mandatory is what produced Phipps-in-1774 at Kindergarten.
+  const taxonomyRequirement = isPreReader
+    ? `4. **Taxonomy**: Give ONLY the broad everyday group in \`kingdom\` (for example "Animals" or "Plants").
+   Leave phylum, class, order, family and genus EMPTY. Name 2-3 familiar look-alike animals in relatedSpecies.`
+    : `4. **Taxonomy**: Complete classification
+   - Kingdom through species
+   - List 2-4 closely related species by name`;
+
+  const discoveryRequirement = isPreReader
+    ? `7. **Discovery**: Leave \`discoveryInfo\` EMPTY. Discovery dates and the names of scientists are
+   not meaningful at this age.`
+    : `7. **Discovery**: Historical context
+   - When and where first discovered/described
+   - Notable fossil finds or scientific milestones (for extinct species)`;
+
+  const statsRequirement = isPreReader
+    ? `1. **Physical Stats**: Put a CHILD-SIZED COMPARISON in every size field — heightComparison,
+   weightComparison — and put a comparison (not a number) in height, length and weight too.
+   Example: height "about as tall as a grown-up", weight "heavier than ten kids put together".
+   NEVER write a number with a unit.`
+    : `1. **Physical Stats**: Provide accurate measurements with real-world comparisons
+   - For dinosaurs: height, length, weight with comparisons to modern animals or objects
+   - For other species: relevant size metrics appropriate to the organism`;
 
   const generationPrompt = `Create a comprehensive species profile for: "${speciesName}".
 
 REQUIREMENTS:
-1. **Physical Stats**: Provide accurate measurements with real-world comparisons
-   - For dinosaurs: height, length, weight with comparisons to modern animals or objects
-   - For other species: relevant size metrics appropriate to the organism
+${statsRequirement}
 
 2. **Diet & Behavior**: Detailed information about feeding and survival
    - Classification (carnivore, herbivore, etc.)
@@ -278,9 +332,7 @@ REQUIREMENTS:
    - Geographic location
    - Environmental conditions and preferred habitat
 
-4. **Taxonomy**: Complete classification
-   - Kingdom through species
-   - List 2-4 closely related species by name
+${taxonomyRequirement}
 
 5. **Biological Niche**: Ecological role and significance
    - Position in food chain
@@ -293,9 +345,7 @@ REQUIREMENTS:
    - Surprising discoveries or behaviors
    - Scientific significance
 
-7. **Discovery**: Historical context
-   - When and where first discovered/described
-   - Notable fossil finds or scientific milestones (for extinct species)
+${discoveryRequirement}
 
 8. **Image Prompt**: Create a vivid, detailed prompt for AI image generation
    - Show the species in its natural habitat
@@ -359,6 +409,10 @@ Generate similarly detailed and accurate information for "${speciesName}".`;
     const finalData: SpeciesProfileData = {
       ...result,
       ...config,
+      // STAMP the resolved rung. Gemini never emits this (it is not in the
+      // schema) and `ctx.gradeContext` is prose, so without this line the
+      // component's band gates would be dead on arrival — the S2/S3/S4 defect.
+      gradeBand,
       imageUrl: config?.imageUrl ?? null, // Always null in phase 1
     };
 
@@ -366,6 +420,7 @@ Generate similarly detailed and accurate information for "${speciesName}".`;
       commonName: finalData.commonName,
       scientificName: finalData.scientificName,
       category: finalData.category,
+      gradeBand: finalData.gradeBand,
       facts: finalData.interestingFacts?.length || 0,
       hasImagePrompt: !!finalData.imagePrompt
     });
