@@ -25,6 +25,7 @@ import MyProgressPanel from './MyProgressPanel';
 import CalibrationSimulator from './CalibrationSimulator';
 import AtomRegistry from './AtomRegistry';
 import SoundLab from './SoundLab';
+import PipLab from './PipLab';
 import BlendJudgeLab from './BlendJudgeLab';
 import DirectInstructionBench from './di-bench/DirectInstructionBench';
 import DirectInstructionPrimitivesTester from './DirectInstructionPrimitivesTester';
@@ -60,6 +61,7 @@ const PANELS: Record<string, ComponentType<DevPanelProps>> = {
   'distribution-explorer-tester': DistributionExplorerTester,
   'calibration-simulator': CalibrationSimulator,
   'sound-lab': SoundLab,
+  'pip-lab': PipLab,
   'blend-judge-lab': BlendJudgeLab,
   'di-bench': DirectInstructionBench,
   'direct-instruction-tester': DirectInstructionPrimitivesTester,
