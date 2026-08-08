@@ -9,7 +9,51 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 15. SUPPLY-SIDE SWEEP — the never-audited K-selectable set — **TOP QUEUE** (2026-08-06)
+### 16. FRONTIER — `constellation-builder` + `planetary-explorer` — **TOP QUEUE** (filed `/pm` 2026-08-07)
+
+*Filed as its own numbered item because **item 15 closed 15/15** and its successor
+was living as prose inside a completed item. A queue's top must be an item, not a
+sentence in a Done block.*
+
+**Handoff of record: `qa/HANDOFF-reader-fit-frontier-2026-08-07.md`** — anchors
+re-derived at `98e4928` (S7 shifted every id in `astronomy.ts` again).
+Executor: `/reader-fit --fix`, then `/add-tutoring-scaffold` for the missing
+`aiDirectives`. Serial, one primitive per slice.
+
+**Why these two, and why now.** They are not in item 15 (each *has* a channel, so
+they failed the two-channel mute test), but **S1's band floor and 15B's fixes
+redirected K astronomy demand squarely onto them** — they are the most likely site
+of the next real K failure. They are also **the last two astronomy generators still
+on the prose-grade contract violation**: the 08-06 handoff measured the domain at
+10/10 violating *"never parse grade out of `gradeContext`"*; S1, S2, S3, S7, S8,
+S10, S11 and S12 are done.
+
+**The defect is REPRODUCED, not predicted — probe to EXTEND it, not to confirm it.**
+Both use the S8 regex over prose (`gemini-planetary-explorer.ts:630/636`,
+`gemini-constellation-builder.ts:335/341`), read `ctx.grade` **zero** times, and both
+return **`gradeLevel: "3"` for a `grade=K` request** — so K gets the Grade 3 config,
+the Grade 3 prompt and a Grade 3 rung. **One difference from 15A: the rung IS
+stamped, just resolved wrong** — no stamping fix needed, make the resolver
+canonical-first (S8/S1 `moonPhasesGradeFromGrade` template, prose regex demoted to
+second resolver, **exported so it is testable**).
+
+**Neither is mute, but neither has a single `aiDirective`** — so neither has a
+PRE-READER READ-ALOUD moment or the cap-override clause, and neither component has
+one band gate or one read-aloud. `planetary-explorer` additionally has a voice
+already (18 `useLuminaAI` hits, 8+ moments) **written for a reader** —
+`level1: "Look at the stats panel — one of those numbers will help you."`
+
+**Take `constellation-builder` first** — smaller, no component channel, and its
+`guided_trace` mode is the very shape S13 borrowed for its K tap-to-place fix.
+
+**Carry item 15's method rulings into every slice** (they are stated in full under
+item 15 and are not repeated here): probe the NEIGHBOURING grade as well as K; the
+predicted shape has been wrong or incomplete twice running, so probe before scoping;
+a band failure can be a CONTENT gap only the generator can close; drive one real
+browser render per slice (jsdom mocks `useLuminaAI` and cannot see a missing
+provider); gate on the `src/`-scoped tsc error SET, never the absolute count.
+
+### 15. SUPPLY-SIDE SWEEP — the never-audited K-selectable set — ✅ **CLOSED 15/15 (2026-08-07)** (seeded 2026-08-06)
 
 **Seeded from a real enumeration, not a demand sample.** Full method, corrections
 to the `/pm` estimate, and the ranked table:
@@ -738,7 +782,9 @@ time on, and the ranked frontier beyond item 15.
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
 **Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ ~~S6~~ ~~S7~~ **15A COMPLETE 7/7
-(2026-08-07)** → **NEXT = audit
+(2026-08-07) — ITEM 15 IS CLOSED 15/15.** → **NEXT = ITEM 16 above** (`/pm`
+2026-08-07 promoted the frontier out of this block and into its own queue item;
+everything below is retained as method, not as the pointer):
 `planetary-explorer` + `constellation-builder`, which now carry the K astronomy
 demand that S1's floor and 15B's fixes redirected onto them.
 **📋 HANDOFF WRITTEN — `qa/HANDOFF-reader-fit-frontier-2026-08-07.md`** (anchors
