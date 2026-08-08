@@ -1267,23 +1267,43 @@ than its as-of date carries unfolded browser debt.
 
 ### 0. Science depth — the biology answer-leak class — **PROMOTED TO ACTIVE `/pm` 2026-08-08** — last touched **2026-08-08**
 
-- **Queue:** `my-tutoring-app/qa/EVAL_TRACKER.md` (rows DNA-1 ✅ / **CB-1** / LCS-1 /
-  CS-1 / PA-1 / DNA-2 / BIO-1 / BIO-2). **Executors:** `/eval-fix` for CB-1,
-  `/oracle-test` then `/eval-fix` for the three unmeasured rows.
+- **Queue:** `my-tutoring-app/qa/EVAL_TRACKER.md` (rows DNA-1 ✅ / CB-1 ✅ /
+  **CELL-1** / LCS-1 / CS-1 / PA-1 / DNA-2 / BIO-1 / BIO-2). **Executors:**
+  `/primitive-contract` then `/eval-fix` for CELL-1, `/oracle-test` then `/eval-fix`
+  for the three unmeasured rows.
 - **Why it took the slot.** It was carried as "QUEUED, rides as the +1" for two
   days. Then DNA-1 was actually pulled (08-08) and the fix's own domain scan found
   **four more**, one of which `/pm` verified in code this run and which is worse
   than the original.
-- **➡️ TOP = CB-1 `cell-builder`, CRITICAL, verified this run.**
-  `CellBuilder.tsx:980-984` renders `Zone: {ZONE_LABELS[organelle.correctZone]}` on
-  every **unplaced** organelle in the drag palette — "Zone: Center", "Zone: Near
-  Nucleus", "Zone: Cell Edge" — and the diagram's drop zones carry those same
-  names. Grading is `isInZone(pos, o.correctZone)`. **There is no gate: not
-  `hasSubmitted`, not a support tier, not a grade band.** The student reads the
-  destination off the card and drags it there, so the placement task is a copy task
-  at 100% of generations. CLAUDE.md priority #1 verbatim. **COMPONENT layer — no
-  generator change can close it.** Likely intent was a scaffold; if so it belongs
-  behind the `hard`/`medium` tier or a post-submit reveal, not the default render.
+- **✅ CB-1 `cell-builder` CLOSED 2026-08-08 — component-only, as filed.** The palette
+  row renders the organelle name alone; the correct zone now appears on the *placed*
+  organelle behind `placeChecked && !zoneCorrect` (the corrective reveal — where it
+  should have gone), matching the gate the quantity-reasoning block already used at
+  `:1022`. Swept the rest of the component for the same class — phase 1's
+  `fb.explanation` is post-check and wrong-only, phase 3 uses `shuffledFunctions`,
+  quantity feedback is `placeChecked`-gated — **CB-1 was the only leak.**
+  **One correction to the filing:** the diagram's drop zones do *not* carry zone
+  names. `getZoneFromPosition` is submit-metrics-only (`:520`) and the cell is a
+  single unlabelled `LuminaDropZone`, so the palette label was the **only** zone
+  vocabulary on screen — hence a corrective reveal rather than a plain delete.
+  `npm run typecheck:lumina` 0 errors; full `tsc` 806 = baseline. **Not
+  browser-driven** (render-path change → needs a look at the Place phase).
+  **⚠️ UNCOMMITTED.**
+- **➡️ TOP = CELL-1 `cell-builder`, HIGH — the mechanism the leak was hiding.**
+  Found while fixing CB-1 and **measured over a 101×101 grid**, not asserted:
+  `ZONE_BOUNDS` (`:114-121`) overlap so heavily that **one drop point at (45, 25)
+  satisfies 5 of the 6 zones**, failing only `membrane-associated`. `peripheral` and
+  `scattered` are **byte-identical** (10–90 both axes, 64.3% of the cell), and
+  `center` ⊆ `large-central` ⊆ `peripheral` ≡ `scattered`. Net: drag everything to
+  the upper-middle and score **100% on every organelle whose zone isn't
+  `membrane-associated`**. **That is why CB-1 sat unnoticed for so long — the answer
+  was printed, but the answer also hardly mattered.** Phase 2 feeds
+  `zonePlacementAccuracy` (`:530`) into IRT evidence, so the selector is being fed a
+  near-free score. **Deliberately not fixed in the CB-1 slice:** re-tuning the bounds
+  changes grading semantics for every skill routing to cell-builder and re-scores
+  existing evidence — a fork-vs-edit call with no `docs/contracts/cell-builder.md` to
+  check against. **Executors: `/primitive-contract` to derive the contract, then
+  `/eval-fix`.** Row filed at `qa/EVAL_TRACKER.md`.
 - **✅ DNA-1 CLOSED 2026-08-08** — and **the old row under-counted it**. The 6/10
   figure counted only exact `givenStrand === templateStrand`; the dominant form was
   **PARTIAL overlap** (a 4-base given inside an 8-base displayed strand), so the

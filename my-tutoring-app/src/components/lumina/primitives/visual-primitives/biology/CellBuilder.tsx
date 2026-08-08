@@ -930,6 +930,17 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                           {organelle.name}
                         </div>
                       )}
+                      {/* Corrective reveal: where it SHOULD have gone. Only after the
+                          student commits a placement, and only when it was wrong. */}
+                      {placeChecked && !zoneCorrect && organelle.correctZone && (
+                        <div
+                          className={`absolute left-1/2 transform -translate-x-1/2 text-[10px] text-amber-300 whitespace-nowrap bg-slate-900/90 px-1.5 py-0.5 rounded ${
+                            showLabels ? 'top-[calc(100%+1.375rem)]' : 'top-full mt-1'
+                          }`}
+                        >
+                          → {ZONE_LABELS[organelle.correctZone]}
+                        </div>
+                      )}
                       {placeChecked && (
                         <div className="absolute -top-1 -right-1">
                           {zoneCorrect
@@ -976,12 +987,12 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                           style={{ backgroundColor: `${color}66`, border: `2px solid ${color}` }}
                         />
                         <div className="flex-1 min-w-0">
+                          {/* Name only. `correctZone` is the answer key for this phase —
+                              grading is isInZone(pos, o.correctZone) — so it must never
+                              appear on an unplaced organelle. Revealed after Check
+                              Placement, on the placed organelle, when the student got it
+                              wrong. */}
                           <div className="text-xs text-slate-200 font-medium truncate">{organelle.name}</div>
-                          {organelle.correctZone && (
-                            <div className="text-[10px] text-slate-500 truncate">
-                              Zone: {ZONE_LABELS[organelle.correctZone]}
-                            </div>
-                          )}
                         </div>
                       </div>
                     );

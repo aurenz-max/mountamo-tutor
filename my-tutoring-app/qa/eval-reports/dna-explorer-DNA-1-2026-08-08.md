@@ -222,6 +222,15 @@ This is worse than DNA-1 — it is the answer in the default UI state, CLAUDE.md
 verbatim — and it is a **component-layer** defect, so no generator change can close it.
 Severity CRITICAL. Confirmed by reading an unconditional JSX block; not yet browser-driven.
 
+> **CLOSED 2026-08-08.** Palette renders the name only; the zone is revealed on the *placed*
+> organelle behind `placeChecked && !zoneCorrect`. Two corrections to the filing above:
+> (a) the diagram's drop zones do **not** carry zone names — `getZoneFromPosition` is
+> submit-metrics-only (`:520`) and the cell is one unlabelled `LuminaDropZone`, so the palette
+> label was the only zone vocabulary on screen (hence a corrective reveal, not a plain delete);
+> (b) the leak was real but *cheap*, because `ZONE_BOUNDS` barely discriminate — one point at
+> (45, 25) satisfies 5 of 6 zones and `peripheral` ≡ `scattered` exactly. That is filed
+> separately as **CELL-1** (HIGH), executor `/primitive-contract` then `/eval-fix`.
+
 ### SUSPECTED — filed for measurement, not asserted
 
 | candidate | answer field | displayed field that may give it away | evidence |
