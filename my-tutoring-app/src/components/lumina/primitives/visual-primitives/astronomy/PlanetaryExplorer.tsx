@@ -9,6 +9,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PlanetaryExplorerMetrics } from '../../../evaluation/types';
+import { LuminaReadAloud } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
@@ -150,6 +151,13 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
   const hasQuiz = quizQuestions.length > 0;
 
+  // reader-fit: this primitive already had a voice (14 moment tags) — what it
+  // did not have was a voice sized for THIS child. The planet description, the
+  // stat cards, the fun fact, the question and every answer option are silent
+  // text at K-1, and the scaffold spoke to a reader ("Look at the stats panel —
+  // one of those numbers will help you").
+  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
+
   // ── Stable refs ──
   const stableInstanceIdRef = useRef(instanceId || `planetary-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -286,11 +294,22 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     planetsVisited: planets.slice(0, currentPlanetIndex).map((p) => p.planetId),
     planetsRemaining: planets.slice(currentPlanetIndex + 1).map((p) => p.planetId),
     questionText: viewMode === 'quiz' ? currentQuizQuestion?.question : currentFlatQuestion?.question.question,
+    // These three were declared in the catalog contextKeys and never resolved,
+    // so the scaffold printed "(not set)" for them. `correctAnswer` was the
+    // fourth and is deliberately NOT here — see the catalog note; parking the
+    // answer key in the prompt for the whole question is a standing leak.
+    studentAnswer: selectedOption === null
+      ? 'nothing yet'
+      : (viewMode === 'quiz'
+          ? currentQuizQuestion?.options[selectedOption]
+          : currentFlatQuestion?.question.options[selectedOption]) ?? 'nothing yet',
+    currentScore: challengeResults.filter((r) => r.correct).length,
+    attemptNumber: currentAttempts + 1,
     gradeLevel,
     // Support tier rides to the live tutor so its reveal policy can match the
     // on-screen scaffold level. Omitted entirely when no tier is present.
     ...(supportTier ? { supportTier } : {}),
-  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode, supportTier]);
+  }), [currentPlanet, currentPlanetIndex, planets, currentFlatQuestion, currentQuizQuestion, gradeLevel, viewMode, supportTier, selectedOption, challengeResults, currentAttempts]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'planetary-explorer',
@@ -301,6 +320,16 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
   // ── Handlers ──
 
+  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[PLANET_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
   const handleStartJourney = useCallback(() => {
     setViewMode('planet-info');
     setCurrentPlanetIndex(0);
@@ -308,11 +337,26 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     sendText(`[PLANET_ARRIVE] Arriving at ${planets[0]?.planetId}. Focus: ${planets[0]?.focusTheme}. Introduce this planet.`, { silent: true });
   }, [planets, title, sendText]);
 
+  // Reading a question aloud only helps if something tells the tutor a question
+  // has appeared. Nothing did: [PLANET_ARRIVE] fires on the planet, and
+  // [NEXT_ITEM] only ever said "question 2 of 3" — the text and the options were
+  // never voiced, so at K the question and every answer were silent text.
+  const speakQuestion = useCallback((q: { question: string; options: string[] } | undefined, lead: string) => {
+    if (!q) return;
+    sendText(
+      `[QUESTION_SHOWN] ${lead} Read this question aloud, then read EVERY choice aloud in order so they can pick one they cannot read. `
+      + `Question: "${q.question}". Choices: ${q.options.map((o, i) => `${i + 1}) ${o}`).join('  ')}. `
+      + `Do NOT say which one is right.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
   const handleStartQuestions = useCallback(() => {
     setViewMode('planet-questions');
     setSelectedOption(null);
     setShowFeedback(false);
-  }, []);
+    speakQuestion(currentFlatQuestion?.question, 'The questions are starting.');
+  }, [speakQuestion, currentFlatQuestion]);
 
   const handleSelectOption = useCallback((optionIndex: number) => {
     if (showFeedback) return;
@@ -352,12 +396,18 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         questionType: q.questionType,
         difficulty: q.difficulty,
       });
-      sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}" for "${q.question}". Give a clear explanation.`, { silent: true });
+      sendText(`[ANSWER_INCORRECT] FINAL ATTEMPT — the reveal is now correct pedagogy. Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}" for "${q.question}". Say the right answer plainly and give a clear explanation.`, { silent: true });
     } else {
       // First incorrect attempt — hint (L3: withdrawn at the hard tier — silent
-      // retry; the 2-attempt allowance itself is unchanged)
+      // retry; the 2-attempt allowance itself is unchanged).
+      //
+      // The correct option is deliberately NOT interpolated here. It used to be,
+      // paired with "give a hint without revealing the answer" — handing the
+      // model the answer and relying on an instruction not to say it, while the
+      // student still had a try left. The tutor can steer from the focus theme
+      // and the stats it already has in its context bag.
       if (supportTier !== 'hard') {
-        sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" but correct is "${q.options[q.correctIndex]}". Give a hint without revealing the answer.`, { silent: true });
+        sendText(`[ANSWER_INCORRECT] Student chose "${q.options[selectedOption]}" for "${q.question}" and it is wrong, but they have ONE more try. You are NOT being told the right answer. Point them at the thing on screen that decides it. Do not eliminate options for them.`, { silent: true });
       }
       setSelectedOption(null);
     }
@@ -371,7 +421,10 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
     const nextQIndex = currentPlanetQuestionIndex + 1;
     if (nextQIndex < currentPlanetQuestions.length) {
       advanceQuestion();
-      sendText(`[NEXT_ITEM] Moving to question ${nextQIndex + 1} of ${currentPlanetQuestions.length} for ${currentPlanet?.planetId}.`, { silent: true });
+      speakQuestion(
+        currentPlanetQuestions[nextQIndex]?.question,
+        `Moving to question ${nextQIndex + 1} of ${currentPlanetQuestions.length} for ${currentPlanet?.planetId}.`,
+      );
     } else {
       // Done with this planet's questions
       advanceQuestion();
@@ -394,7 +447,7 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
         setViewMode('summary');
       }
     }
-  }, [currentPlanetQuestionIndex, currentPlanetQuestions, advanceQuestion, currentPlanet, currentPlanetIndex, planets, hasQuiz, sendText]);
+  }, [currentPlanetQuestionIndex, currentPlanetQuestions, advanceQuestion, currentPlanet, currentPlanetIndex, planets, hasQuiz, sendText, speakQuestion]);
 
   const handleNextPlanet = useCallback(() => {
     const nextIndex = currentPlanetIndex + 1;
@@ -721,7 +774,19 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Description */}
-            <p className="text-slate-300 leading-relaxed text-sm">{currentPlanet.description}</p>
+            <div className="flex items-center gap-3">
+              <p className={`flex-1 text-slate-300 leading-relaxed ${isPreReader ? 'text-base' : 'text-sm'}`}>
+                {currentPlanet.description}
+              </p>
+              {isPreReader && (
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  aria-label="Hear about this planet"
+                  onClick={() => readAloud(`${planetName}. ${currentPlanet.description}`)}
+                />
+              )}
+            </div>
 
             {/* Key Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -755,8 +820,18 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
 
             {/* Fun Fact */}
             <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-400/20">
-              <div className="text-indigo-300 text-xs font-medium mb-1">Fun Fact</div>
-              <p className="text-slate-300 text-sm">{currentPlanet.funFact}</p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 text-indigo-300 text-xs font-medium mb-1">Fun Fact</div>
+                {isPreReader && (
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    aria-label="Hear the fun fact"
+                    onClick={() => readAloud(currentPlanet.funFact)}
+                  />
+                )}
+              </div>
+              <p className={`text-slate-300 ${isPreReader ? 'text-base' : 'text-sm'}`}>{currentPlanet.funFact}</p>
             </div>
 
             <Button
@@ -793,14 +868,34 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                 />
                 <span className="text-slate-300 text-sm">{planetName}</span>
               </div>
-              <Badge variant="outline" className="border-white/20 text-slate-400 bg-white/5">
-                Q{questionNum}/{totalForPlanet}
-              </Badge>
+              {/* Band contract rule 7: "Q1/2" is a score-ledger counter a
+                  pre-reader cannot use. Conditional render, never Tailwind
+                  `hidden`, which would leave it in the a11y tree. */}
+              {!isPreReader && (
+                <Badge variant="outline" className="border-white/20 text-slate-400 bg-white/5">
+                  Q{questionNum}/{totalForPlanet}
+                </Badge>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Question */}
-            <p className="text-slate-100 text-base font-medium leading-relaxed">{q.question}</p>
+            <div className="flex items-center gap-3">
+              <p className={`flex-1 text-slate-100 font-medium leading-relaxed ${isPreReader ? 'text-lg' : 'text-base'}`}>
+                {q.question}
+              </p>
+              {/* The [QUESTION_SHOWN] beat already reads the question and every
+                  option once; this is the replay a non-reader needs to hear the
+                  choices again before picking. */}
+              {isPreReader && (
+                <LuminaReadAloud
+                  iconOnly
+                  size="sm"
+                  aria-label="Hear the question and choices"
+                  onClick={() => speakQuestion(q, 'They asked to hear it again.')}
+                />
+              )}
+            </div>
 
             {/* Options */}
             <div className="space-y-2">
@@ -823,9 +918,16 @@ const PlanetaryExplorer: React.FC<PlanetaryExplorerProps> = ({ data, className }
                     key={i}
                     onClick={() => handleSelectOption(i)}
                     disabled={showFeedback}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${optionStyle}`}
+                    className={`w-full text-left rounded-lg border transition-all ${optionStyle} ${
+                      isPreReader ? 'p-4 text-lg' : 'p-3'
+                    }`}
                   >
-                    <span className="text-slate-500 mr-2 text-sm">{String.fromCharCode(65 + i)}.</span>
+                    {/* The "A." / "B." letter prefix is a reading cue that only
+                        helps someone who can already read; at K-1 it is one more
+                        glyph between the child and the choice. */}
+                    {!isPreReader && (
+                      <span className="text-slate-500 mr-2 text-sm">{String.fromCharCode(65 + i)}.</span>
+                    )}
                     {option}
                   </button>
                 );

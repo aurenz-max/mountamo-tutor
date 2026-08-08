@@ -9,32 +9,45 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 16. FRONTIER — ~~`constellation-builder`~~ + `planetary-explorer` — **TOP QUEUE, 1/2 DONE** (filed `/pm` 2026-08-07)
+### 16. FRONTIER — ~~`constellation-builder`~~ + ~~`planetary-explorer`~~ — ✅ **CLOSED 2/2 (2026-08-08)**
 
-> **✅ SLICE 1 CLOSED 2026-08-07 — `constellation-builder` is READY at PRE.**
-> Report: `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`.
-> **NEXT PULL = `planetary-explorer`** (slice 2, the harder one — it already has 18
-> `useLuminaAI` hits and 8+ moments, so that job is *auditing an existing voice for
-> band-fitness*, not adding one).
+> **S1 `constellation-builder` (`ea5f60b`) · S2 `planetary-explorer`** — both READY
+> at PRE. Reports: `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`,
+> `qa/reader-fit/planetary-explorer-PRE-2026-08-08.md`.
 >
-> **Two findings from slice 1 that change how slice 2 should be scoped:**
-> 1. **The prose-grade defect is not K-only — it bit Grade 1 the same way.**
->    `"first grade students"` contains no `"grade 1"`, so the regex missed and the
->    literal `'3'` won at BOTH rungs. Probe `planetary-explorer` at **K, 1 and a
->    high control**; the spelled-out band is where it hides. (The prose fallback
->    needs `first|second|third|…`, not just `grade N`.)
-> 2. **"Has a tutoring block" ≠ "reaches the tutor".** constellation-builder was
->    NOT mute by the two-channel test and still delivered its scaffold **empty** —
->    `sendTextTags: []`, 0/7 contextKeys resolved by the component, ~10 `(not set)`
->    in the live prompt. **Run `tutor-test?probe=1` on `planetary-explorer` before
->    scoping it**: its 18 hits prove a channel exists, not that its keys resolve.
+> **The prose-grade class is now CLOSED across astronomy — 10/10.** These were the
+> last two. The defect bit **K and Grade 1 identically in both**: the regex only
+> ever matched prose that literally spelled *"grade N"*, so the entire spelled-out
+> band ("kindergarten students", "first grade students") fell to the literal `'3'`.
+> Prose fallbacks now carry `first|second|third|…`. planetary-explorer additionally
+> clamps at **8**, not 5 — it is the one K-8 ladder in the domain.
 >
-> Two traps the gates caught, worth carrying: a pre-existing jsdom suite that does
-> not mock `useLuminaAI` **crashes** once the component gains the hook (S5 trap,
-> hit again — 21 tests); and a `sendText` with an unstable identity turns an
-> unlatched completion effect into a render loop that **OOM-kills a vitest worker
-> and reports as a PASSING run with tests silently missing**. Check the file/test
-> totals, not just the pass line.
+> **The three findings worth carrying out of item 16:**
+> 1. **"Has a tutoring block" ≠ "reaches the tutor", and "has 14 moment tags" ≠
+>    "says the right things".** S1 shipped a full catalog block that arrived EMPTY
+>    (`sendTextTags: []`, 0/7 keys). S2 had a live channel that had **never once
+>    voiced the question or its options** — `handleStartQuestions` fired no moment
+>    and `[NEXT_ITEM]` carried only "question 2 of 3". Only `tutor-test?probe=1`
+>    sees either. **Probe the channel before scoping any slice.**
+> 2. **A band failure can be a CONTENT gap** (S4's lesson, third confirmation). At
+>    K, S2 asked *"What is the length of a day on Jupiter?"* → 9.9 / 24 / 365 / 48
+>    hours. Reading that aloud rescues nothing. The component cannot shorten a
+>    sentence the generator already wrote.
+> 3. **A handoff's answer-leak "clean" bill is a claim, not a finding.** The 08-07
+>    handoff recorded S2 as leak-free; its first-attempt hint interpolated the
+>    correct option while the student still had a try left. Re-derive leak checks.
+>
+> Two gate traps, both real: a pre-existing jsdom suite that does not mock
+> `useLuminaAI` **crashes** once a component gains the hook (21 tests, S1); and a
+> crashed vitest worker **reports as a PASSING run with tests silently missing** —
+> check file/test TOTALS, not the pass line. Also hit for real: **three dev servers
+> sharing one `.next` make port 3000 404 its own CSS chunks**, which looks exactly
+> like a component crash in the browser while the API probes stay green.
+>
+> **Open, not owned by this item:** planetary-explorer fails band-contract rule 8
+> by design (read-then-quiz; assessment cannot hide in its mechanics) and rule 3
+> partially (word options, not pictures). Both are REBUILD-shaped, not fixes — file
+> as a reimagining if K astronomy demand keeps landing there.
 
 *Filed as its own numbered item because **item 15 closed 15/15** and its successor
 was living as prose inside a completed item. A queue's top must be an item, not a

@@ -219,13 +219,23 @@ describe('planetary-explorer tier · L3: first-miss tutor hint', () => {
   beforeEach(() => sendText.mockClear());
   afterEach(cleanup);
 
+  // reader-fit (item 16/S2) re-worded both branches: the first-miss hint no
+  // longer interpolates the correct option (it used to hand the model the answer
+  // and ask it not to say it). The TIER contract below is unchanged — legacy
+  // hints, hard stays silent — so these now match on the branch marker rather
+  // than on the prose, which is what the tier is actually about.
+  const FIRST_MISS = 'ONE more try';
+  const FINAL_REVEAL = 'FINAL ATTEMPT';
+
   it('legacy sends the first-miss hint on a per-planet question', () => {
     render(<PlanetaryExplorer data={makeData()} />);
     begin();
     toQuestions();
     clickOption('0'); // wrong
     check();
-    expect(callsContaining('Give a hint without revealing the answer')).toHaveLength(1);
+    expect(callsContaining(FIRST_MISS)).toHaveLength(1);
+    // …and that hint must NOT contain the answer.
+    expect(callsContaining('correct is')).toHaveLength(0);
   });
 
   it('hard skips the hint — silent retry, but the 2-attempt allowance and explanation channel are UNCHANGED', () => {
@@ -234,12 +244,12 @@ describe('planetary-explorer tier · L3: first-miss tutor hint', () => {
     toQuestions();
     clickOption('0'); // wrong, attempt 1
     check();
-    expect(callsContaining('Give a hint without revealing the answer')).toHaveLength(0);
+    expect(callsContaining(FIRST_MISS)).toHaveLength(0);
     // retry still allowed: no feedback shown, Check Answer still on screen
     expect(screen.getByRole('button', { name: 'Check Answer' })).toBeTruthy();
     clickOption('0'); // wrong, attempt 2 — locks in
     check();
-    expect(callsContaining('Give a clear explanation')).toHaveLength(1); // post-answer channel intact
+    expect(callsContaining(FINAL_REVEAL)).toHaveLength(1); // post-answer channel intact
     expect(screen.getByText('It has exactly one moon.')).toBeTruthy();   // explanation still shown
   });
 

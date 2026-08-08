@@ -69,6 +69,59 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // GRADE-APPROPRIATE CONFIGURATION
 // ============================================================================
 
+// ============================================================================
+// GRADE RESOLUTION
+// ============================================================================
+
+export type PlanetaryGrade = 'K' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8';
+
+/**
+ * Canonical grade → structural rung. Closes the prose-grade class here — the
+ * LAST astronomy generator on it (constellation-builder was the other, `ea5f60b`).
+ *
+ * The generator derived its rung by regexing `ctx.gradeContext` — which is PROSE
+ * — for /grade\s*(\d|K)/, falling through to the literal `'3'`. `ctx.grade` was
+ * read ZERO times. Probed at `ea5f60b`, it missed at BOTH ends of the K
+ * neighbourhood, exactly as constellation-builder did:
+ *
+ *   grade=K → gradeLevel '3'   ("kindergarten students" has no "grade N")
+ *   grade=1 → gradeLevel '3'   ("first grade students" has no "grade 1")
+ *
+ * `resolvedGrade` drives GRADE_CONFIGURATIONS (numPlanets + guidance), the
+ * prompt's "**Grade Level:**" line, the age-appropriateness rule, `buildFallback`
+ * on all five degrade paths, and the stamp on the output — which is what the
+ * tutor prompt prints, so the scaffold said "Grade Level: 3" at Kindergarten too.
+ *
+ * Unlike the K-5 primitives this ladder runs to grade 8, so the clamp is 8.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const planetaryGradeFromGrade = (grade?: string): PlanetaryGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 8) return '8';                          // 9+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4' | '5' | '6' | '7';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+export const planetaryGradeFromProse = (prose?: string): PlanetaryGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade|first grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade|second grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade|third grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade|fourth grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|fifth grade)\b/.test(p)) return '5';
+  if (/\b(grade 6|6th grade|sixth grade)\b/.test(p)) return '6';
+  if (/\b(grade 7|7th grade|seventh grade)\b/.test(p)) return '7';
+  if (/\b(grade 8|8th grade|eighth grade|middle|high school)\b/.test(p)) return '8';
+  return '3';
+};
+
 const GRADE_CONFIGURATIONS: Record<string, { numPlanets: number; guidance: string }> = {
   K: {
     numPlanets: 3,
@@ -633,8 +686,35 @@ export const generatePlanetaryExplorer = async (
   //    Resolved in code, stamped post-parse on EVERY exit path via applyTier.
   //    Gated ONLY on the tier being non-null — never on eval-mode resolution. ──
   const supportTier = normalizeSupportTier(config?.difficulty);
-  const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as string;
+  // Canonical-first, prose as the second resolver. `gradeLevel` (prose) stays
+  // what the PROMPT says out loud; `resolvedGrade` is the structural rung every
+  // default, the fallback builder, and the output stamp key off.
+  const resolvedGrade: PlanetaryGrade =
+    planetaryGradeFromGrade(ctx.grade)
+    ?? planetaryGradeFromProse(gradeLevel);
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];
+
+  // ── Reader-fit: at K-1 this primitive's whole task shape is the risk. The
+  //    stat cards ARE the answer surface, and probed at `ea5f60b` a Kindergarten
+  //    request produced "What is the length of a day on Jupiter?" with options
+  //    9.9 / 24 / 365 / 48 hours. A five-year-old cannot read that, and reading
+  //    it ALOUD does not help either — discriminating 9.9 from 48 hours is not a
+  //    K task. So the questions must be about properties a child can SEE, and
+  //    only the generator can decide that. ──
+  const isPreReaderRung = resolvedGrade === 'K' || resolvedGrade === '1';
+  const readerFitSection = isPreReaderRung
+    ? `
+**PRE-READER RULES (grade rung ${resolvedGrade}) — THESE OVERRIDE THE GUIDANCE ABOVE:**
+This child CANNOT READ. Every string is spoken aloud by a tutor, so it must work as SPEECH, and the answer must be something they can SEE or already know.
+- Ask ONLY about properties a child can see or picture: colour, big vs small, rings vs no rings, hot vs cold, how many moons (0-2 only), rocky vs "made of gas".
+- NEVER ask about: length of a day or year, distance, mass, gravity, temperature in degrees, or ANY question whose answer is a number with a unit or a decimal.
+- Each option: AT MOST 3 words. GOOD: "Red", "Blue", "Two moons", "It has rings". BAD: "It is made of gas with no solid surface".
+- true-false sentences: AT MOST 8 words, one idea. GOOD: "Mars is red." BAD: "Earth is the only known planet that supports life."
+- "description": at most 2 short sentences a 5-year-old would understand. No "atmosphere", "orbit", "surface", "supports life", "solar system" as NEW words.
+- "funFact": ONE short sentence, picture-able. GOOD: "Jupiter is so big that all the other planets could fit inside it."
+- Stats: choose the ones a child can picture and keep values PLAIN — "Moons: 2", "Colour: Red", "Size: Very big". No decimals, no scientific units.
+`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -680,6 +760,7 @@ ${scopeSection}
 
 **Grade Level:** ${resolvedGrade}
 **Grade Guidance:** ${gradeConfig.guidance}
+${readerFitSection}
 
 **Journey Structure:**
 - Pick ${gradeConfig.numPlanets} planets from our solar system that are MOST RELEVANT to the topic "${topic}".

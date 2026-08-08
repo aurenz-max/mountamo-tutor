@@ -722,16 +722,57 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     ],
     tutoring: {
       taskDescription: 'Student is on a guided journey through the solar system, currently exploring {{currentPlanet}}. Focus theme: {{focusTheme}}. They are answering questions about planetary properties, comparisons, and reasoning.',
-      contextKeys: ['currentPlanet', 'focusTheme', 'questionText', 'studentAnswer', 'correctAnswer', 'planetsVisited', 'planetsRemaining', 'currentScore', 'attemptNumber'],
+      // `correctAnswer` was declared here but never resolved, and resolving it
+      // would have parked the answer key in the tutor's prompt for the WHOLE
+      // question — a standing leak. The component already hands over the correct
+      // option at the one moment it is pedagogically right (the final attempt),
+      // via [ANSWER_INCORRECT]. Removed rather than wired.
+      contextKeys: ['currentPlanet', 'focusTheme', 'questionText', 'studentAnswer', 'planetsVisited', 'planetsRemaining', 'currentScore', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"Look at the stats panel — one of those numbers will help you."',
-        level2: '"The question is about {{focusTheme}}. Check the relevant stat value for {{currentPlanet}}."',
-        level3: '"Look at {{currentPlanet}}\'s stats carefully. Compare the values you see to what the question is asking about."',
+        // These ENACT the question rather than narrating the screen. The old set
+        // ("Look at the stats panel — one of those numbers will help you") only
+        // worked for a student who could already read the panel, which is the
+        // whole reader-fit failure at K-1.
+        level1: '"{{questionText}}" — what do you think? Everything you need to decide is right here on {{currentPlanet}}.',
+        level2: '"{{questionText}}" This one is about {{focusTheme}}. What do you already know about {{currentPlanet}} that could help?',
+        level3: 'Say the question again, then describe {{currentPlanet}}\'s {{focusTheme}} out loud in plain words and ask them which choice matches what they just heard. Do not say which choice is right.',
       },
       commonStruggles: [
         { pattern: 'Student taps answer without reading planet stats', response: '"Hold on! Before you answer, tap the stats panel for {{currentPlanet}}. The answer is hiding in those numbers."' },
         { pattern: 'Student confuses properties between planets already visited', response: '"You have visited {{planetsVisited}} so far. Each planet has different numbers. Go back and check {{currentPlanet}}\'s stats — do not mix them up with the last planet!"' },
         { pattern: 'Student struggles with comparison questions across planets', response: '"For comparison questions, think about one property at a time. Look at {{focusTheme}} for each planet you visited. Which one had the biggest or smallest value?"' },
+        {
+          pattern: 'A pre-reader cannot read the planet description, the stat cards or the answer options',
+          response: '"Never ask them to read anything. Say the planet\'s name, tell them what it looks like, then speak the question aloud followed by every choice in order. Invite them to tap a glowing card and say what it means in child words."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the planet description, the stat cards, the fun fact, the question, or the answer options. Your voice is the only channel. '
+            + 'On [JOURNEY_START] and [PLANET_ARRIVE], say where they are and what the planet looks like in one or two warm child-sized sentences. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'On [QUESTION_SHOWN] and [QUIZ_START], READ THE QUESTION ALOUD and then read EVERY option aloud in order, so a choice they cannot read is still a choice they can make. '
+            + 'On [PLANET_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
+            + 'On [STAT_TAPPED], say what that stat means in child words — they tapped a card they cannot read. '
+            + 'On [TRANSITION] and [PLANET_COMPLETE], say what is happening; the screen just changed and they cannot see why.',
+        },
+        {
+          title: 'NEVER SAY THE ANSWER BEFORE THEIR LAST TRY',
+          instruction:
+            'On the FIRST wrong attempt you are told what they picked but NOT what is right — steer them to the stat or the picture that decides it, and never eliminate options down to one. '
+            + 'Only [ANSWER_INCORRECT] messages that explicitly give you the correct option are final-attempt reveals: there, say it plainly and explain why. '
+            + 'On [QUIZ_HINT] describe the planet without naming it. Never read the correct option in a different tone, and never say "are you sure?" about a right answer.',
+        },
+        {
+          title: 'NO NUMBERS OR UNITS AT K-1 — SAY WHAT THEY CAN SEE',
+          instruction:
+            'At grade rung K and 1 do NOT say kilometres, miles, degrees, hours, days, years, gravity, mass, or any decimal. The screen deliberately keeps the numbers plain at K, so reciting them puts back what was taken out. '
+            + 'Say "really really big", "the red one", "so cold your nose would freeze", "it has rings around it", "it has two little moons". '
+            + 'Do NOT tell a K-1 child to "look at the stats panel" or "check the numbers" — they cannot read it. Say "tap one of the glowing circles and I will tell you what it says". '
+            + 'From grade 2 up the numbers and the Earth comparisons ARE the objective — say them, and help the student compare them.',
+        },
       ],
     },
     supportsEvaluation: true,
