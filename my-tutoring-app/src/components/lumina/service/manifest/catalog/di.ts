@@ -523,7 +523,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // nor any count may enter contextKeys (the math-facts answer-side rule,
     // stricter here because the answer is a single word). `challengeType` names
     // only the ASK, and the COMPONENT sends the CURRENT item's identity so a
-    // blended session never leaves it stale.
+    // blended session never leaves it stale. `supportTier` (L3) is the tier the
+    // cue is composed at — not an answer, and load-bearing: at `hard` the script
+    // hands the tutor nothing to say before the ask, so the tier is what tells
+    // it that the silence is deliberate rather than a missing line.
     tutoring: {
       taskDescription:
         'Live-judged Direct Instruction shape practice for a young learner '
@@ -531,10 +534,15 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'corners). You speak the exact scripted lines from each bracketed '
         + 'application message and judge each learner attempt from the audio you heard, using only '
         + 'the two allowed reply branches.',
-      contextKeys: ['challengeType'],
+      contextKeys: ['challengeType', 'supportTier'],
+      // These are POST-attempt remediation, so a support tier does NOT withdraw
+      // them (standing gate 3 — DISTAR always re-models on an error; remediation
+      // is not scaffolding). level2 says "model the answer" rather than "the way
+      // the script did": at the `hard` tier the script models nothing before the
+      // ask, so a back-reference to a model line would point at silence.
       scaffoldingLevels: {
         level1: 'Repeat the question once, slowly.',
-        level2: 'Say the answer once more the way the script did, then ask for one retry.',
+        level2: 'Model the answer once yourself, then ask for one retry.',
         level3: 'Accept the attempt warmly and continue as instructed.',
       },
       commonStruggles: [
@@ -578,7 +586,10 @@ export const DI_CATALOG: ComponentDefinition[] = [
             + 'sentence with those words. Judge honestly from the audio: affirm the right answer, correct '
             + 'a wrong or missing one. EVERY correction re-models the answer and begins with "My turn". Do not '
             + 'praise to be kind. The application decides which shape and which question come next; never '
-            + 'introduce either yourself.',
+            + 'introduce either yourself. Some items deliberately give you nothing to say before the '
+            + 'question — when the quoted text is only the "Your turn" ask, the learner is answering cold '
+            + 'on purpose: never name the shape, state its count, or describe the drawing before they have '
+            + 'answered.',
         },
         {
           title: 'SHAPE NAMES',

@@ -22,7 +22,7 @@ queue AND this file's "last touched" in the same slice.
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
 | **Reader-fit sweep** | **ACTIVE — item 16 is 1/2 DONE** | **✅ `constellation-builder` CLOSED, READY at PRE (2026-08-07)** — report `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`. **NEXT = `planetary-explorer`**, item 16 slice 2, the last astronomy generator on the prose-grade violation. **Two slice-1 findings that re-scope it:** (a) the defect bit **Grade 1 as well as K** — `"first grade students"` has no `"grade 1"`, so the spelled-out band fell to the literal `'3'` too; probe K, 1 **and** a high control. (b) **"has a tutoring block" ≠ "reaches the tutor"** — constellation-builder passed the two-channel mute test and still shipped its scaffold EMPTY (`sendTextTags: []`, 0/7 contextKeys resolved, ~10 `(not set)` live); `planetary-explorer`'s 18 `useLuminaAI` hits prove a channel exists, not that its keys resolve, so run `tutor-test?probe=1` **before** scoping. Handoff `qa/HANDOFF-reader-fit-frontier-2026-08-07.md` (its anchors still hold; its "gap is aiDirectives" framing understated slice 1). | 2026-08-07 |
-| **Direct Instruction family** | **ACTIVE** | **CTX-1 CLOSED and di-shapes is L1.** Next machine pull = **di-shapes L3 `/add-support-tiers`** (`qa/di/BACKLOG.md` item 14), then L4 structural. **⚠️ CTX-1 is UNCOMMITTED — ship it first** (3 modified files + 2 untracked reports, one stream, one clean slice). Human side stays opportunistic: ONE mic session = **#63** + **#72** + **#76**. | 2026-08-07 |
+| **Direct Instruction family** | **ACTIVE** | **CTX-1 CLOSED and di-shapes is now L3** (rung 3 shipped 2026-08-07 — family script-composed fade, 8/8 revert-bites, real-pipeline 6/6; report `qa/eval-reports/di-shapes-support-tiers-2026-08-07.md`). Next machine pull = **di-shapes L4 `/add-structural-difficulty`** (rotation magnitude + size variation + non-prototypical exemplars — L3 deliberately left shape SELECTION alone, so the axis is clean). **⚠️ TWO slices UNCOMMITTED — CTX-1 first, then rung 3.** Rung 3 also **re-diagnosed cross-queue residual (iii)**: `supportTier: unresolved` is a family-wide `/tutor-test` blind spot (`analyzeHookSite` can't parse `ctx.connect({ primitive_data })` — all 5 DI packs report `data-bag-unparsed`), not a di-math-facts defect → filed to the tutor-test harness queue. Human side stays opportunistic: ONE mic session = **#63** + **#72** + **#76**, now also carrying the `hard`-tier cold-ask ear. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, serial, one primitive per slice. | 2026-08-04 |
 | LA K-2 Grammar density | PARKED — BLOCKED on a user design ruling | Queue top (item 1b `in_front_of`/`behind`) is a design ruling, not code. Buildable alternates if resumed: item 2b (tracker SS-5) or item 4. | 2026-08-05 |
 | Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Real rows in `qa/EVAL_TRACKER.md:530-532`. DNA-1 is a measured, month-old, unfixed answer leak (6/10 generations). Rides as the +1. | 2026-08-07 |
@@ -1624,11 +1624,31 @@ re-probed all on 08-05 but existed only as a snapshot-table row — a cold reade
 
 **CURRENT STATE (`/pm` 2026-08-07 night — read this block, not the 08-05 header
 paragraph below it, which is history).**
-- **Next machine pull = di-shapes L3 `/add-support-tiers`** (family script-composed
-  fade: easy model+guide+test / medium model+test / hard cold-name), then L4
-  structural (rotation magnitude, size variation, non-prototypical exemplars —
-  scalene/obtuse triangles). Queue of record `qa/di/BACKLOG.md` **item 14**.
-- **di-shapes is L1** as of 2026-08-07: rung 1 `/curriculum-fit` returned **MATCH at
+- **di-shapes L3 SHIPPED 2026-08-07** (rung 3, fourth use of the family
+  script-composed fade). Gates: focused 55/55, **8/8 revert-bites**, full Vitest
+  2349/2349, typecheck:lumina 0, src-scoped tsc 803 = baseline, **real-pipeline
+  6/6** incl. `mixed`@hard producing all four identities all tiered. Two findings
+  worth carrying: (a) the fade needed **no per-mode carve-out** because the
+  stimulus is DRAWN (di-letter-sounds needed an inversion guard because its onset
+  ask must keep SPEAKING the stimulus) — pinned as a test; (b) **a cold COUNT
+  withholds two tokens** — the shape's name hands over the count (triangle →
+  three). Report `qa/eval-reports/di-shapes-support-tiers-2026-08-07.md`.
+  **Residual: the `hard` cold ask has no live audio yet** → folds into #72.
+- **Next machine pull = di-shapes L4 `/add-structural-difficulty`** (rotation
+  magnitude, size variation, non-prototypical exemplars — scalene/obtuse
+  triangles). L3 deliberately left shape SELECTION untouched, so the structural
+  axis is unclaimed. Queue of record `qa/di/BACKLOG.md` **item 14**.
+- **Cross-queue re-diagnosis from rung 3, worth not re-deriving:** the
+  `supportTier: unresolved` / one `(not set)` that item 14 filed against
+  di-math-facts is a **family-wide `/tutor-test` harness blind spot**, not a pack
+  defect — `scaffoldAudit.analyzeHookSite` parses `useLuminaAI({ primitiveData })`
+  hook sites while every DI pack passes its bag through
+  `ctx.connect({ primitive_data })`, so **all five packs report
+  `data-bag-unparsed`** (measured across letter-sounds / math-facts /
+  sentence-reading). Its preview is therefore not evidence about the shipped
+  prompt. di-shapes closes the claim by executing the component instead
+  (`DiShapes.support-tier-context.test.tsx`). Fix belongs to the tutor-test queue.
+- **di-shapes was L1** as of 2026-08-07: rung 1 `/curriculum-fit` returned **MATCH at
   both K and G1**, rung 2 shipped `shape_review` 2.5 / `count_sides` 3.0 /
   `count_corners` 3.5 alongside L0's `name_shape` 1.5. Rung 1 paid for rung 2 twice:
   it found the exact curriculum home for the counting modes at BOTH grades, and it

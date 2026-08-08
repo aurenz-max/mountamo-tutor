@@ -35,6 +35,37 @@
  * and ovals clearly non-circular — one drawing, one defensible name. The
  * "diamond" word belongs to rhombus as a judged alternate, never a menu entry.
  *
+ * SUPPORT TIERS (L3, 2026-08-07). `config.difficulty` stamps a per-challenge
+ * `supportTier` that the SCRIPT composes the cue from — easy = model + guide +
+ * test, medium = model + test, hard = the ask alone. It is applied at the very
+ * END, per challenge, from each challenge's OWN mode, and gated only on a tier
+ * being present so a blended/mixed session gets it too.
+ *
+ * STRUCTURAL DIFFICULTY (L4, 2026-08-07). The SAME `config.difficulty` dial also
+ * changes the PROBLEM, not just the help — because L3 alone left easy/medium/hard
+ * drawing byte-identical pictures with only the spoken scaffold toggled, so a
+ * child who had mastered the mode had nowhere left to climb. The lever is
+ * EXEMPLAR TYPICALITY: how far the drawn instance sits from the prototype the
+ * child has memorised, across three sub-dials that are one lever —
+ *   exemplar   prototype (the textbook picture) → variant (scalene obtuse
+ *              triangle, irregular hexagon, portrait rectangle)
+ *   rotation   near-upright → up to the shape's rule-#1 safe ceiling
+ *   scale      fixed → varied
+ * A child who only ever meets the prototype learns the PICTURE, not the shape.
+ * Separating defining attributes (three straight sides, three corners) from
+ * non-defining ones (which way up, how regular, how big) IS the skill — it is
+ * the literal wording of both curriculum homes /curriculum-fit measured for this
+ * pack (K `GEOM001-01-A` "…regardless of size, color, or orientation";
+ * G1 `GEOM001-01-c` "defining versus non-defining attributes").
+ *
+ * THE GUARDRAIL, stated truthfully: a tier changes how each selected shape is
+ * DRAWN. It never changes the ANSWER (a scalene triangle is still "triangle",
+ * still three sides), never changes which shapes are SELECTED (that is the
+ * objective's business, not the student's level), never changes the counts, the
+ * item count, or the mode identity. The rotation ceiling is a rule-#1 guard, not
+ * a knob: a square at 45° reads as a DIAMOND, which is a judged alternate for
+ * rhombus, so it would be an item with two right answers. See SAFE_ROTATION_DEG.
+ *
  * ANSWER-LEAK RULE: the wrapper (title/description) must never contain a
  * shape name — the child produces the answers; they never read or hear them
  * from the chrome first. This binds under the counting modes too: the shape's
@@ -50,8 +81,289 @@ import {
   type DiShapesChallenge,
   type DiShapesChallengeType,
   type DiShapeName,
+  type DiShapesSupportTier,
+  type ShapeExemplar,
 } from "../../primitives/visual-primitives/direct-instruction/diShapesScript";
+import {
+  hasVariantDrawing,
+  SAFE_ROTATION_DEG,
+} from "../../primitives/visual-primitives/direct-instruction/diShapesGeometry";
 import type { DiShapesData } from "../../primitives/visual-primitives/direct-instruction/DiShapes";
+
+// ── Support tier harness (L3) ───────────────────────────────────────
+
+type SupportTier = DiShapesSupportTier;
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+
+/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
+ *  Unknown/absent → null (no tier applied; the L0/L1 easy shape stands). */
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/**
+ * How much of the DISTAR sequence precedes the child's answer.
+ *
+ * The withdrawal is IDENTICAL across all four eval modes, and that is correct
+ * rather than lazy: every mode is the same act (look at the drawing, produce
+ * the answer aloud), so the same three sub-steps precede it. What a MODE
+ * changes is which shapes are drawn and how the cue is phrased (the script owns
+ * that); what a TIER changes is how much of the sequence is handed over. Kept
+ * per-type-capable so a future mode can diverge.
+ *
+ * This is axis ONE of the tier. It moves only the SPOKEN scaffold; how the shape
+ * is DRAWN is axis two (resolveProblemShape, L4). Neither axis changes which
+ * shapes are selected, the counts, or the item count — see TIER_GUARDRAIL.
+ */
+const resolveSupportStructure = (
+  _type: DiShapesChallengeType,
+  tier: SupportTier,
+): { tier: SupportTier; describe: string } => ({
+  tier,
+  describe:
+    tier === 'hard'
+      ? 'cold answer — no model, no choral practice; the child retrieves it unaided'
+      : tier === 'medium'
+        ? 'modeled once, then answered alone — the choral "Together" step is withdrawn'
+        : 'modeled and practiced together first — the full DISTAR sequence',
+});
+
+// ── Structural difficulty (L4) ──────────────────────────────────────
+
+/**
+ * TIER_GUARDRAIL — what a tier may and may not change, stated once so the two
+ * axes cannot drift apart.
+ *
+ * MAY change (structure — the percept the child must resolve):
+ *   the DRAWING (prototype vs non-prototypical variant), how far it is rotated
+ *   within the shape's own cap, how large it is drawn, and the ORDER items
+ *   appear in (whether confusable neighbours sit side by side).
+ * MAY NOT change (magnitude / identity):
+ *   WHICH shapes are drawn (the objective's scope wins — named shapes above
+ *   all), the grade menu, the item count, the counts themselves, or the eval
+ *   mode. And never the rule-#1 guards: a rectangle stays ≥1.6:1, an oval
+ *   stays clearly non-circular, a counting item stays a polygon, and a shape's
+ *   rotation cap is never RAISED (a 45° square reads as a diamond — a
+ *   different percept, not a harder one).
+ *
+ * The answer is untouched at every tier, by construction: a scalene triangle is
+ * still "triangle" and still has three sides. That is what makes this a
+ * difficulty axis rather than a different question.
+ */
+const TIER_GUARDRAIL =
+  'structure changes (which drawing, how rotated, how large, what sits next to what); '
+  + 'the shapes, their counts, and the mode identity do not';
+
+/** The two error classes the catalog itself names: "a rectangle is not a
+ *  square, a circle is not an oval, and a hexagon is not a pentagon". At `hard`
+ *  these are deliberately placed side by side — the near-neighbour made real
+ *  for a pack that has no multiple-choice distractors to tighten. */
+const CONFUSABLE_NAME_PAIRS: ReadonlyArray<readonly [DiShapeName, DiShapeName]> = [
+  ['square', 'rectangle'],
+  ['circle', 'oval'],
+  ['hexagon', 'pentagon'],
+];
+
+interface ProblemShape {
+  /** Which drawing to use. `variant` = non-prototypical where one exists. */
+  exemplar: ShapeExemplar;
+  /**
+   * WHICH ceiling this tier rotates within — never a fraction of the safe one.
+   *
+   * A fraction of the SAFE ceiling was the first design and it was wrong at
+   * runtime, in a way no stubbed test could see. Shapes have wildly different
+   * safe ceilings (square 15°, triangle 180°), so "25% of safe" means ±4° for a
+   * square and ±45° for a triangle — and a live `easy` probe duly handed a
+   * Kindergartener a triangle at −36° and a `medium` one at −91°, nearly on its
+   * side. The tier's own promise ("easy = near-upright") was true only relative
+   * to each shape, which is not what a five-year-old experiences.
+   *
+   * So the ladder interpolates between the two ceilings the pack already has:
+   *   half-gentle  half the untiered default — unambiguously upright, every shape
+   *   gentle       the untiered L0 default (triangle 25°) — today's shipped feel
+   *   safe         the rule-#1 ceiling (triangle 180°) — the real climb
+   * `medium` therefore reproduces the pre-L4 drawing exactly, which makes the
+   * tier ladder a superset of what shipped rather than a re-tuning of it.
+   */
+  rotationBase: 'half-gentle' | 'gentle' | 'safe';
+  /** Inclusive draw-size band, as a percentage of the canonical stage size. */
+  scaleRange: readonly [number, number];
+  /** How the session orders confusable neighbours. */
+  adjacency: 'separate' | 'natural' | 'confusable';
+  describe: string;
+}
+
+/**
+ * The structural shape of one item at one tier — the second dial of the single
+ * `config.difficulty` enum (axis 1 is resolveSupportStructure above).
+ *
+ * FORK A MAKES THIS AXIS PURELY CODE-ENFORCED, and that is worth stating rather
+ * than assuming. The reference implementations (regrouping-workbench, bar-model)
+ * split the lever across two places — a prompt line that DESCRIBES the harder
+ * shape to the LLM, then a post-process that ENFORCES the exact value, because
+ * the LLM authors the item content and drifts. Here the LLM authors no item
+ * content at all: the shape menu, the geometry, the rotations, the counts and
+ * the ordering are all code-owned, and Gemini writes only the title and
+ * description. So there is no prompt half to keep in sync and nothing to
+ * validate an LLM against — `resolveProblemShape` is consumed by the enforcer
+ * alone. One dial, one place, no drift possible.
+ *
+ * The lever is identical across all four eval modes because the percept is the
+ * same act in every one (resolve the drawing, then either name it or enumerate
+ * it). What differs per mode is only what "confusable" MEANS — a near NAME for
+ * the naming modes, a near COUNT for the counting ones — and that lives in
+ * `confusableWith` below.
+ */
+/**
+ * The rotation ceiling one tier draws within, in DEGREES — resolved per shape,
+ * because the two shapes at the extremes (circle 0°, triangle 180°) cannot share
+ * one number and cannot share one fraction either. See `rotationBase`.
+ *
+ * `gentle` is the menu's own `maxRotationDeg`, the value the pack shipped with
+ * before there were tiers, so `medium` reproduces the pre-L4 drawing exactly.
+ * `safe` is the rule-#1 ceiling and is never exceeded at any tier.
+ */
+const rotationCeilingFor = (
+  shape: DiShapeName,
+  base: ProblemShape['rotationBase'],
+): number => {
+  const gentle = SHAPE_MENU[shape].maxRotationDeg;
+  if (base === 'safe') return SAFE_ROTATION_DEG[shape];
+  if (base === 'gentle') return gentle;
+  return Math.round(gentle / 2);
+};
+
+const resolveProblemShape = (
+  _type: DiShapesChallengeType,
+  tier: SupportTier,
+): ProblemShape => {
+  switch (tier) {
+    case 'hard':
+      return {
+        exemplar: 'variant',
+        rotationBase: 'safe',
+        scaleRange: [62, 100],
+        adjacency: 'confusable',
+        describe:
+          'non-prototypical drawings (scalene/obtuse triangle, irregular hexagon, portrait '
+          + 'rectangle) at the full rotation cap and varied size, with confusable neighbours '
+          + 'placed side by side',
+      };
+    case 'medium':
+      return {
+        exemplar: 'prototype',
+        rotationBase: 'gentle',
+        scaleRange: [85, 100],
+        adjacency: 'natural',
+        describe: 'textbook drawings, moderately rotated, mild size variation',
+      };
+    case 'easy':
+    default:
+      return {
+        exemplar: 'prototype',
+        rotationBase: 'half-gentle',
+        scaleRange: [100, 100],
+        adjacency: 'separate',
+        describe:
+          'textbook drawings, near-upright, full size, with confusable neighbours kept apart',
+      };
+  }
+};
+
+/**
+ * Are these two items near neighbours — the pair a child is most likely to
+ * confuse? Mode-aware, because the answer classes differ:
+ *  - naming vs naming: a near NAME (square/rectangle, circle/oval, hexagon/pentagon).
+ *  - counting vs counting: a near COUNT — exactly one apart, which is the
+ *    off-by-one that side/corner counting exists to correct.
+ *  - across the two classes: not comparable, so never "confusable".
+ */
+const confusableWith = (a: DiShapesChallenge, b: DiShapesChallenge): boolean => {
+  const aCount = isCountingType(a.challengeType);
+  const bCount = isCountingType(b.challengeType);
+  if (aCount !== bCount) return false;
+  if (aCount) {
+    return a.countNumeral != null && b.countNumeral != null
+      && Math.abs(a.countNumeral - b.countNumeral) === 1;
+  }
+  return CONFUSABLE_NAME_PAIRS.some(
+    ([x, y]) => (a.shape === x && b.shape === y) || (a.shape === y && b.shape === x),
+  );
+};
+
+/**
+ * Re-order a session so confusable neighbours sit together (`confusable`) or
+ * stay apart (`separate`). Greedy from the existing order, which preserves what
+ * buildShapeSequence already guaranteed — every selected shape appears before
+ * any repeat — while adding the adjacency preference on top.
+ *
+ * INVARIANT PRESERVED: the same shape never runs back-to-back (the pack's
+ * variance rule), so the reordering can never collapse a session into a run of
+ * one shape. It is a permutation only: no item is added, dropped, or altered.
+ */
+const applyAdjacency = (
+  challenges: DiShapesChallenge[],
+  adjacency: ProblemShape['adjacency'],
+): DiShapesChallenge[] => {
+  if (adjacency === 'natural' || challenges.length < 3) return challenges;
+  const want = adjacency === 'confusable';
+  const remaining = [...challenges];
+  // (Seeding the walk from an item that HAS a confusable partner was tried and
+  // MEASURED: 1.54 → 1.46 mean adjacencies over 200 sessions, i.e. nothing. The
+  // binding constraint is pool composition, not the starting item, so the extra
+  // branch was reverted rather than kept on a plausible-sounding argument.)
+  const out: DiShapesChallenge[] = [remaining.shift()!];
+  while (remaining.length > 0) {
+    const prev = out[out.length - 1];
+    const legal = remaining.filter((c) => c.shape !== prev.shape);
+    const pool = legal.length > 0 ? legal : remaining;
+    // Prefer a neighbour that matches the tier's intent; fall back to the next
+    // legal item when the pool offers no such pairing (honest saturation — a
+    // session of five triangles has no confusable pair to place).
+    const preferred = pool.find((c) => confusableWith(prev, c) === want) ?? pool[0];
+    out.push(preferred);
+    remaining.splice(remaining.indexOf(preferred), 1);
+  }
+  return repairBackToBack(out);
+};
+
+/**
+ * A greedy walk can paint itself into a corner: pulling the confusable pairs
+ * forward can strand the session's two triangles side by side at the tail, and
+ * the same shape twice in a row is the ONE ordering rule this pack already had
+ * (buildShapeSequence's variance guarantee) — a tier must not cost it.
+ *
+ * Repair by swapping a clashing item with any position where BOTH resulting
+ * neighbourhoods come out clean. A session with no legal arrangement at all
+ * (five triangles from a single-shape objective) is left as it is — that case
+ * is genuinely unfixable and buildShapeSequence tolerates it for the same
+ * reason.
+ */
+const repairBackToBack = (items: DiShapesChallenge[]): DiShapesChallenge[] => {
+  const clean = (arr: DiShapesChallenge[], i: number): boolean =>
+    (i === 0 || arr[i - 1].shape !== arr[i].shape)
+    && (i === arr.length - 1 || arr[i + 1].shape !== arr[i].shape);
+  let out = items;
+  for (let i = 1; i < out.length; i++) {
+    if (out[i].shape !== out[i - 1].shape) continue;
+    for (let j = 0; j < out.length; j++) {
+      if (j === i || j === i - 1) continue;
+      const trial = [...out];
+      [trial[i], trial[j]] = [trial[j], trial[i]];
+      if (clean(trial, i) && clean(trial, j)) { out = trial; break; }
+    }
+  }
+  return out;
+};
+
+/** How many adjacent pairs in this session are near neighbours. The measurable
+ *  the tier is actually moving — logged, and asserted in the tests. */
+export const countConfusableAdjacencies = (challenges: DiShapesChallenge[]): number =>
+  challenges.reduce(
+    (n, ch, i) => (i > 0 && confusableWith(challenges[i - 1], ch) ? n + 1 : n),
+    0,
+  );
 
 // ── The code-owned shape menu ───────────────────────────────────────
 
@@ -291,6 +603,17 @@ export const generateDiShapes = async (
     challengeCount?: number;
     /** Eval mode pinned by the tester/curator. Wins over intent, no LLM call. */
     targetEvalMode?: string;
+    /**
+     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
+     * Second field of the two-field contract: targetEvalMode = which shape
+     * skill, difficulty = how hard it is WITHIN that skill. ONE enum driving
+     * both within-mode dials — how much of the DISTAR sequence precedes the
+     * answer (L3) and how far the drawn instance sits from the prototype the
+     * child has memorised (L4: exemplar, rotation, scale, and what sits next to
+     * what). It never changes WHICH shapes are drawn, the counts, the item
+     * count, or the mode identity — see TIER_GUARDRAIL.
+     */
+    difficulty?: string;
     [key: string]: unknown;
   },
 ): Promise<DiShapesData> => {
@@ -315,6 +638,7 @@ export const generateDiShapes = async (
   );
   const modeTypes: DiShapesChallengeType[] =
     (resolution?.allowedTypes as DiShapesChallengeType[] | undefined) ?? ALL_TYPES; // mixed = all four
+  const supportTier = normalizeSupportTier(config?.difficulty);
 
   let title = DEFAULT_TITLE;
   let description = DEFAULT_DESCRIPTION;
@@ -442,6 +766,72 @@ Return the wrapper JSON only.`;
     description = DEFAULT_DESCRIPTION;
   }
 
+  // ── Both tier axes, applied deterministically at the END ───────────
+  // Gated ONLY on a tier being present, and resolved from each challenge's OWN
+  // mode — difficulty is a STUDENT property, so a blended/mixed session must get
+  // it too (gating on a single pinned mode is the silent no-op this layer exists
+  // to kill). It runs after every structural fixup above, so nothing downstream
+  // can re-open a fade the tier just closed. The no-tier path is untouched:
+  // every field written here is optional and absent without a tier.
+  //
+  // One enum, two dials: resolveSupportStructure (L3 — how much of the DISTAR
+  // sequence precedes the answer) and resolveProblemShape (L4 — which drawing,
+  // how rotated, how large, what sits next to what). See TIER_GUARDRAIL.
+  if (supportTier) {
+    let saturatedExemplars = 0;
+    for (const ch of challenges) {
+      ch.supportTier = resolveSupportStructure(ch.challengeType, supportTier).tier;
+
+      const shape = resolveProblemShape(ch.challengeType, supportTier);
+
+      // Exemplar. A circle and a square have no non-prototypical drawing, so
+      // they saturate at the prototype — counted and logged rather than
+      // silently pretending the lever moved.
+      const wantsVariant = shape.exemplar === 'variant';
+      const exemplar: ShapeExemplar =
+        wantsVariant && hasVariantDrawing(ch.shape) ? 'variant' : 'prototype';
+      if (wantsVariant && exemplar === 'prototype') saturatedExemplars += 1;
+      ch.exemplar = exemplar;
+
+      // Rotation: a FRACTION of this shape's SAFE ceiling, re-rolled so the tier
+      // owns the value. The ceiling is the rule-#1 guard (past it a drawing
+      // gains a second defensible answer — a 45° square is a diamond) and is
+      // never raised; the tier only chooses how much of it to use.
+      //
+      // The safe ceiling is deliberately NOT the menu's `maxRotationDeg`. That
+      // one is a gentle untiered default (triangle 25°), and a triangle that
+      // never leaves 25° means this pack has never actually tested the thing
+      // K.G.2 asks for — "name shapes regardless of their orientations". A
+      // point-down triangle at 180° is the single best item in the menu for
+      // that standard, and `hard` is where it belongs.
+      const ceiling = rotationCeilingFor(ch.shape, shape.rotationBase);
+      ch.rotationDeg = ceiling === 0 ? 0 : Math.round((Math.random() * 2 - 1) * ceiling);
+
+      // Size. "Regardless of size" is half of K.G.2's own wording.
+      const [lo, hi] = shape.scaleRange;
+      ch.scalePct = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
+    }
+
+    // Ordering is a session-level lever, so it runs once over the whole set.
+    challenges = applyAdjacency(
+      challenges,
+      resolveProblemShape(challenges[0]?.challengeType ?? 'name_shape', supportTier).adjacency,
+    );
+
+    const shape = resolveProblemShape(challenges[0]?.challengeType ?? 'name_shape', supportTier);
+    console.log(
+      `[DiShapes] Tier "${supportTier}" applied per-challenge (${
+        modeTypes.length === 1 ? `single-mode ${modeTypes[0]}` : 'blended'
+      }) — support: ${resolveSupportStructure(challenges[0]?.challengeType ?? 'name_shape', supportTier).describe}`
+      + `; structure: ${shape.describe}`
+      + `; confusable adjacencies ${countConfusableAdjacencies(challenges)}/${challenges.length - 1}`
+      + (saturatedExemplars > 0
+        ? ` (${saturatedExemplars} exemplar${saturatedExemplars === 1 ? '' : 's'} saturated — circle/square have no variant drawing)`
+        : '')
+      + `. Guardrail: ${TIER_GUARDRAIL}.`,
+    );
+  }
+
   // Session identity = the first item's skill (a pinned mode → that mode). On a
   // blended/mixed session this is representative metadata ONLY — the component
   // renders and cues from each challenge's own challengeType.
@@ -461,6 +851,7 @@ Return the wrapper JSON only.`;
       ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})`
       : 'mixed',
     types: modeTypes.join(', '),
+    tier: supportTier ?? 'none (easy shape)',
     scope: `${selected.join('+')} [${scopeSource}]`,
     items: challenges.map((c) => `${c.challengeType}:${c.shape}@${c.rotationDeg}°${
       c.countWord ? `→${c.countWord}` : ''

@@ -206,11 +206,93 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     (iii) **Cross-queue, filed not fixed:** di-math-facts' Tier-2 probe resolves
     `supportTier: unresolved` and renders ONE `(not set)` into the assembled
     prompt — the L3 support-tier contextKey, a different rung.
-    **NEXT on this ladder = (3)/(4).** (3) L2 catalog contextKeys stay minimal
-    by design — revisit only with evidence; (4) L3 `/add-support-tiers`
-    (family script-composed fade: easy model+guide+test / medium model+test /
-    hard cold-name); (5) L4 structural = rotation magnitude + size variation
-    + non-prototypical exemplars (scalene/obtuse triangles); (6) L5 sound.
+    ~~**(3)/(4)**~~ (3) L2 catalog contextKeys stay minimal by design — revisit
+    only with evidence *(rung 3 added exactly one, `supportTier`, on evidence:
+    at `hard` the script hands the tutor nothing to say before the ask, so the
+    tier is what tells it the silence is deliberate)*.
+    ~~(4) L3 `/add-support-tiers`~~ **✅ RUNG 3 CLOSED 2026-08-07 — di-shapes is
+    L3.** Fourth use of the family script-composed fade (easy model+guide+test /
+    medium model+test / hard cold-answer), verified on real generated data.
+    Report `qa/eval-reports/di-shapes-support-tiers-2026-08-07.md`.
+    **Two pack-specific findings worth carrying forward:** (a) the fade needed
+    **no per-mode carve-out**, and that is a PROPERTY not luck — the stimulus
+    here is DRAWN (already on screen at every tier) and `ask()` is answer-free by
+    construction, where di-letter-sounds had to keep SPEAKING its stimulus at
+    hard and needed an inversion guard. Pinned as a test so a future mode that
+    breaks it fails loudly. (b) **A cold COUNT withholds two tokens, not one:**
+    the shape's name is not the answer but hands it over (triangle → three), so
+    the counting guard names the count, the name, AND describing/counting the
+    drawing aloud. Also reworded catalog `scaffoldingLevels.level2` — it said
+    "say the answer once more *the way the script did*", a back-reference that
+    points at silence once `hard` models nothing.
+    Gates: focused 55/55, **8 revert-bites all bit** (incl. the classic
+    gate-on-pinned-mode no-op), full Vitest **2349/2349**, typecheck:lumina 0,
+    src-scoped tsc **803 = baseline** with zero errors in any touched file,
+    real-pipeline probes **6/6** (incl. `mixed`@hard producing all four
+    identities all tiered, and an untiered control byte-identical to easy).
+    **Residual: no live audio on the `hard` tier** — that the tutor honours a
+    cold ask (never names the shape, never counts the drawing aloud) is UNPROVEN
+    live; folds into the same mic session as #63/#72.
+    **↑ This ALSO diagnoses cross-queue residual (iii) above, and the diagnosis
+    changes it.** The `supportTier: unresolved` / one `(not set)` that item 14
+    filed against di-math-facts is **not a math-facts defect** — it is a
+    family-wide harness blind spot: `scaffoldAudit.analyzeHookSite` parses
+    `useLuminaAI({ primitiveData })` hook sites, but every DI pack passes its bag
+    through `ctx.connect({ primitive_data })`, so **all five packs report
+    `data-bag-unparsed` with `dataBagKeys: null`** (measured on
+    di-letter-sounds / di-math-facts / di-sentence-reading, not assumed). The
+    probe never sees the component key space, so its preview is not evidence
+    about the shipped prompt. di-shapes closes the claim by EXECUTING the
+    component instead (`DiShapes.support-tier-context.test.tsx`, jsdom). **Filed
+    for the tutor-test harness queue: teach `analyzeHookSite` the
+    `ctx.connect({ primitive_data })` shape**, or every DI pack's contextKeys
+    stay audited blind.
+    ~~(5) L4 structural~~ **✅ RUNG 4 CLOSED 2026-08-07 — di-shapes is L4.**
+    Shipped in the same slice as rung 3, because L3 alone left easy/medium/hard
+    drawing BYTE-IDENTICAL pictures with only the spoken scaffold toggled — the
+    weak outcome the skill warns about, and a ceiling a child who had mastered
+    the mode could not climb past. Lever = **exemplar typicality**: prototype →
+    non-prototypical drawing (scalene obtuse triangle, irregular hexagon/
+    pentagon, portrait rectangle, right trapezoid, tall oval), rotation ¼ →
+    full safe ceiling, scale 100% → 62–100%, and confusable neighbours kept
+    apart → placed side by side (adjacent COUNTS under a counting mode).
+    **Three findings worth not re-deriving:**
+    (a) **The rotation cap was hiding the standard.** The menu's
+    `maxRotationDeg` capped a triangle at 25°, so a pack whose curriculum home
+    is literally *"regardless of orientation"* had NEVER tested orientation.
+    `SAFE_ROTATION_DEG` (in `diShapesGeometry.ts`) separates the gentle untiered
+    default from the rule-#1 ceiling; a hard triangle now reaches point-down.
+    Per-shape and principled: square 15° (45° = a DIAMOND, a judged alternate
+    for rhombus → two right answers), hexagon 30° / pentagon 36° (rotational
+    symmetry — beyond it you redraw a picture already seen), triangle and
+    trapezoid the full 180°.
+    (b) **Geometry became DATA (`diShapesGeometry.ts`) and the oracle earned it
+    immediately** — every polygon's point count must equal the menu's `corners`,
+    or a five-point "irregular hexagon" asks how many sides and then marks the
+    child's correct answer WRONG. Plus rect ≥1.6:1 in both exemplars, oval
+    non-circular, rhombus four equal sides, triangle variant provably scalene
+    AND obtuse.
+    (c) **Fork A makes this axis purely code-enforced** — the reference impls
+    split the lever between a describing prompt and an enforcing post-process
+    because the LLM drifts; here the LLM authors no item content at all, so
+    there is one dial in one place and no drift is possible.
+    **Two bugs the rung produced and caught:** a REAL one — the greedy adjacency
+    walk could strand two of the same shape side by side, breaking the pack's
+    pre-existing back-to-back variance rule (fixed, `repairBackToBack`); and a
+    FLAKY TEST, which is worse than no test — the first adjacency assertion sat
+    exactly on easy's measured mean and failed ~1/3 of runs. Rewritten against a
+    measured 300-session distribution (easy 0.42 / medium 0.85 / hard 1.46) at
+    ≥3σ, then hammered 12× green. **One change reverted ON MEASUREMENT:** seeding
+    the greedy from an item with a partner sounded right, moved the mean 1.54 →
+    1.46 (nothing), reverted rather than kept on a plausible argument.
+    Gates: di-shapes suites **173/173**, **17/17 revert-bites** across both
+    rungs, flake hammer 12/12, typecheck + tsc zero errors in any di-shapes
+    file, real-pipeline probes **11/11**.
+    **Residual: the hard drawings have not been seen by a human on screen** —
+    geometry and render path are both asserted, but nobody has confirmed a
+    62%-scale irregular hexagon at 30° still READS to a five-year-old. Folds
+    into #72 with the cold-ask ear.
+    **NEXT on this ladder = (6) L5 `/add-sound`.**
 
 13. **CTX-1 — ✅ FIXED 2026-08-07. The `[CONTEXT UPDATE]` push is deleted; the
     state is kept and now rides out on messages that already asked for a turn.**

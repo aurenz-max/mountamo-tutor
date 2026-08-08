@@ -12,7 +12,8 @@
  * TESTS ("Your turn. What shape is this?") and judges the spoken answer from the
  * audio it heard. The cue skeleton is the bench-proven family shape (model →
  * guide → test, verify opens "Yes", correction opens "My turn") — the same lines
- * every sitting has validated across four packs.
+ * every sitting has validated across four packs. L3 (2026-08-07) makes how much
+ * of that sequence is spoken a per-item SUPPORT TIER — see DiShapesSupportTier.
  *
  * TWO RESPONSE CLASSES, both already benched (standing gate 1 satisfied without
  * a new sitting):
@@ -72,6 +73,58 @@ export type DiShapesChallengeType =
   | 'count_sides'
   | 'count_corners';
 
+/**
+ * The within-mode SUPPORT tier (L3, 2026-08-07). Second field of the two-field
+ * contract: `challengeType` = WHICH shape skill, `supportTier` = HOW MUCH of the
+ * DISTAR sequence the child is handed before they answer. Fourth use of the DI
+ * L3 template (di-sentence-reading 07-25 the original, di-math-facts and
+ * di-letter-sounds 08-01):
+ *
+ *   easy   MODEL + GUIDE + TEST   hear the answer twice, then say it alone
+ *   medium MODEL + TEST           hear it once, then say it alone
+ *   hard   TEST only              answer COLD, never having heard it
+ *
+ * Why `hard` matters here: the model line SPEAKS the very answer the child is
+ * about to produce — the echo route. Withdrawing it turns the item into a
+ * genuine retrieval probe (see this drawing, retrieve its name / enumerate its
+ * sides) and makes the silent `responseMs` true retrieval time rather than
+ * partly an echo delay.
+ *
+ * ONE PACK-SPECIFIC SIMPLIFICATION, worth stating because the sibling packs
+ * needed carve-outs and this one does not: the STIMULUS here is DRAWN, never
+ * spoken. di-letter-sounds had to keep speaking the stimulus word at `hard`
+ * (an onset ask has no printed grapheme), so its fade needed a per-mode
+ * inversion guard. Here the stimulus is already on screen at every tier, and
+ * `ask()` is answer-free by construction under all four identities — so `hard`
+ * reduces to exactly `testLine(it)` with no carve-out on any mode.
+ *
+ * NEVER withdrawn at any tier:
+ *  - the drawn shape (it IS the task — withdrawing it changes the identity);
+ *  - the CORRECTION's re-model, plain OR contrastive (standing gate 3 — DISTAR
+ *    always re-models on an error; remediation is not scaffolding);
+ *  - the restating AFFIRM (it models the answer where it is most useful);
+ *  - the judging contract (a tier changes how much help precedes the attempt,
+ *    never how it is judged — else tiers stop being comparable evidence).
+ */
+export type DiShapesSupportTier = 'easy' | 'medium' | 'hard';
+
+/**
+ * Which DRAWING of a shape an item puts on screen — the L4 structural axis
+ * (2026-08-07). `prototype` is the textbook picture (upright isoceles triangle,
+ * regular hexagon, landscape rectangle); `variant` is the same shape by its
+ * DEFINING attributes drawn against that prototype (scalene obtuse triangle,
+ * irregular hexagon, portrait rectangle).
+ *
+ * This is the pack's structural lever precisely because the ANSWER is unchanged:
+ * a scalene triangle is still "triangle" and still has three sides. What gets
+ * harder is the percept — a child who learned the picture rather than the shape
+ * fails the variant, which is the G1 defining-vs-non-defining-attributes skill
+ * (`GEOM001-01-c`) and the "regardless of size, color, or orientation" half of
+ * K's `GEOM001-01-A`. The geometry itself, and the guards on it, live in
+ * `diShapesGeometry.ts`.
+ */
+export type ShapeExemplar = 'prototype' | 'variant';
+
 /** Shapes the pack can draw. CORE = the K.G.2 five; the rest are the
  *  generator's extended menu (G1+, or named by the objective). */
 export type DiShapeName =
@@ -89,6 +142,10 @@ export type DiShapeName =
 export interface DiShapesChallenge {
   id: string;
   challengeType: DiShapesChallengeType;
+  /** How much of the DISTAR sequence precedes the child's answer. Absent =
+   *  easy (the L0/L1 shape), so a session generated before L3 behaves exactly
+   *  as it did. */
+  supportTier?: DiShapesSupportTier;
   /** Which shape the component draws — geometry is code-owned per name. */
   shape: DiShapeName;
   /** The shape's name, e.g. "triangle". Under a NAMING mode this is the spoken
@@ -107,8 +164,16 @@ export interface DiShapesChallenge {
   countNumeral?: number;
   countWord?: string;
   /** Generator-stamped rotation (degrees) so "regardless of orientation"
-   *  (K.G.2) is real and the render is deterministic from data. */
+   *  (K.G.2) is real and the render is deterministic from data. The L4 tier
+   *  scales the FRACTION of each shape's own cap used here; it never raises the
+   *  cap (a 45° square reads as a diamond — a different percept, not a harder
+   *  one). */
   rotationDeg: number;
+  /** Which drawing to render (L4). Absent = `prototype`, the pre-L4 shape. */
+  exemplar?: ShapeExemplar;
+  /** Draw size as a percentage of the canonical stage size (L4). Absent = 100.
+   *  "Regardless of SIZE" is the other half of K.G.2's orientation clause. */
+  scalePct?: number;
   /** Whole-token ASR aliases for THIS item's answer — passive cross-check
    *  only, never the judge. Shape-name aliases under a naming mode, number-word
    *  aliases under a counting mode. */
@@ -221,23 +286,61 @@ If the learner gives the SAME wrong name again, use the contrast branch again �
 Never begin any other sentence with the word "Yes" or the words "My turn".
 Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
 
-/** Present one item: model, guide, test, then judge in-band until told
- *  otherwise. (L1 ships the full DISTAR sequence on every mode; the tier fade
- *  is the /add-support-tiers rung, following the family's script-composed
- *  template.) */
+/**
+ * The spoken lead-in for one item, composed from its SUPPORT TIER. This is the
+ * whole L3 ladder: `easy` hands over model + guide, `medium` only the model,
+ * `hard` nothing at all. Absent tier = `easy`, the L0/L1 shape — at which the
+ * composed block is byte-for-byte the "${model} ${guide} ${test}" string the
+ * L0/L1 runs validated.
+ */
+const leadInFor = (it: DiShapesChallenge): string => {
+  switch (it.supportTier) {
+    case 'hard':   return '';
+    case 'medium': return `${modelLine(it)} `;
+    case 'easy':
+    default:       return `${modelLine(it)} ${guideLine(it)} `;
+  }
+};
+
+/**
+ * At `hard` the tutor must not hand over the answer before the learner speaks
+ * it — that is the entire point of the tier. The omitted lines already withhold
+ * it (the tutor may only speak what "Speak exactly" quotes), but this makes the
+ * intent explicit per item rather than relying on the omission alone: the
+ * catalog's scaffolding levels and struggle responses are a second channel that
+ * could otherwise volunteer it (the tier gotcha — a tier withheld by the script
+ * but revealed by the tutor is only half applied).
+ *
+ * Under a COUNTING mode the guard names TWO things, and that is the
+ * pack-specific part: the count is the answer, and the shape's NAME hands the
+ * count to any child who knows it (triangle → three). Same L1 answer-leak rule,
+ * restated where the tutor is most likely to improvise. Describing the drawing
+ * ("it has three points") is the same leak by another route, so it is named too.
+ * The CORRECTION branch still re-models at every tier; this guards the
+ * pre-attempt window only.
+ */
+const coldAnswerGuard = (it: DiShapesChallenge): string => {
+  if (it.supportTier !== 'hard') return '';
+  return isCountingType(it.challengeType)
+    ? `\nThe learner is answering this one cold on purpose: before they answer, do NOT say the count, do NOT say the shape's name (it gives the count away), and do NOT describe or count the drawing aloud.`
+    : `\nThe learner is answering this one cold on purpose: before they answer, do NOT say the shape's name and do NOT describe the drawing.`;
+};
+
+/** Present one item: the tier's lead-in, then the test, then judge in-band
+ *  until told otherwise. */
 export const itemCue = (it: DiShapesChallenge, opening = false) => `[DI_ITEM]${opening
   ? ' You are running a short, brisk shape practice for a young learner. Never say, reproduce, or invent text inside square brackets; those labels are private application metadata.'
   : ''}
 Speak exactly:
-"${modelLine(it)} ${guideLine(it)} ${testLine(it)}"
+"${leadInFor(it)}${testLine(it)}"${coldAnswerGuard(it)}
 ${judgingContract(it)}`;
 
 /** Corrections cap reached: acknowledge neutrally and move the lesson forward.
  *  A hard shape resurfaces through distributed review, not by drilling a
- *  frustrated five-year-old in place. */
+ *  frustrated five-year-old in place. The NEXT item presents at ITS tier. */
 export const moveOnCue = (it: DiShapesChallenge, next?: DiShapesChallenge) => next
   ? `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
-"Good try. We will practice more later. ${modelLine(next)} ${guideLine(next)} ${testLine(next)}"
+"Good try. We will practice more later. ${leadInFor(next)}${testLine(next)}"${coldAnswerGuard(next)}
 ${judgingContract(next)}`
   : `[DI_MOVE_ON] Stop correcting "${it.id}". Speak exactly:
 "Good try. We will practice more later. That's the end of our shape practice."`;

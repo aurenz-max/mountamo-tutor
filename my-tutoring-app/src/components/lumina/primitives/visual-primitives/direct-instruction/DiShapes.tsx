@@ -84,7 +84,9 @@ import {
   type DiShapesChallenge,
   type DiShapesChallengeType,
   type DiShapeName,
+  type ShapeExemplar,
 } from './diShapesScript';
+import { geometryFor, pointsAttr } from './diShapesGeometry';
 import {
   buildDiDiagnosisEvidence,
   completeLatestJudgeFeedback,
@@ -95,7 +97,12 @@ import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
 
-export type { DiShapesChallenge, DiShapesChallengeType, DiShapeName } from './diShapesScript';
+export type {
+  DiShapesChallenge,
+  DiShapesChallengeType,
+  DiShapeName,
+  DiShapesSupportTier,
+} from './diShapesScript';
 
 export interface DiShapesData {
   title: string;
@@ -180,34 +187,53 @@ const rewardLabelFor = (item: DiShapesChallenge): string =>
     : answerWordFor(item);
 
 // ── The drawn-shape stage (code-owned geometry) ─────────────────────
-// One 200×200 viewBox, shape centered at (100,100). The aspect ratios ARE
-// pedagogy: rectangle ≥1.6:1 and oval clearly non-circular, so the near-name
-// is never defensible for the drawing on screen.
-const SHAPE_SVG: Record<DiShapeName, React.ReactNode> = {
-  circle: <circle cx={100} cy={100} r={70} />,
-  oval: <ellipse cx={100} cy={100} rx={85} ry={50} />,
-  triangle: <polygon points="100,28 32,140 168,140" />,
-  square: <rect x={40} y={40} width={120} height={120} />,
-  rectangle: <rect x={20} y={56} width={160} height={88} />,
-  hexagon: <polygon points="172,100 136,162 64,162 28,100 64,38 136,38" />,
-  pentagon: <polygon points="100,25 171,77 144,161 56,161 29,77" />,
-  rhombus: <polygon points="100,30 165,100 100,170 35,100" />,
-  trapezoid: <polygon points="55,60 145,60 175,140 25,140" />,
+// One 200×200 viewBox, shape centered at (100,100). The geometry — and the
+// pedagogy guards on it (rectangle ≥1.6:1, oval clearly non-circular, every
+// polygon's point count equal to its menu side/corner count) — lives as DATA in
+// diShapesGeometry.ts so it can be asserted; see diShapesGeometry.test.ts.
+//
+// L4 (2026-08-07): each shape has TWO drawings. `prototype` is the textbook
+// picture; `variant` is the same shape drawn against that prototype (scalene
+// obtuse triangle, irregular hexagon, portrait rectangle). Rotation and scale
+// arrive stamped per challenge. Withdrawing none of it changes the ANSWER —
+// that is exactly why it is the structural axis rather than a support tier.
+const ShapeDrawing: React.FC<{ shape: DiShapeName; exemplar?: ShapeExemplar }> = ({
+  shape, exemplar,
+}) => {
+  const g = geometryFor(shape, exemplar ?? 'prototype');
+  if (g.kind === 'circle') return <circle cx={100} cy={100} r={g.r} />;
+  if (g.kind === 'ellipse') return <ellipse cx={100} cy={100} rx={g.rx} ry={g.ry} />;
+  return <polygon points={pointsAttr(g.points)} />;
 };
 
-const ShapeStage: React.FC<{ shape: DiShapeName; rotationDeg: number }> = ({ shape, rotationDeg }) => (
-  <svg viewBox="0 0 200 200" className="h-44 w-44" role="img" aria-label="shape to name">
-    <g
-      transform={`rotate(${rotationDeg} 100 100)`}
-      fill="rgba(34,211,238,0.14)"
-      stroke="#67e8f9"
-      strokeWidth={6}
-      strokeLinejoin="round"
-    >
-      {SHAPE_SVG[shape]}
-    </g>
-  </svg>
-);
+const ShapeStage: React.FC<{
+  shape: DiShapeName;
+  rotationDeg: number;
+  exemplar?: ShapeExemplar;
+  scalePct?: number;
+  className?: string;
+  strokeWidth?: number;
+}> = ({ shape, rotationDeg, exemplar, scalePct, className = 'h-44 w-44', strokeWidth = 6 }) => {
+  const scale = (scalePct ?? 100) / 100;
+  return (
+    <svg viewBox="0 0 200 200" className={className} role="img" aria-label="shape to name">
+      <g
+        // Rotate AND scale about the stage centre, so a small shape is still
+        // centred and a rotated one never clips out of the box.
+        transform={`rotate(${rotationDeg} 100 100) translate(100 100) scale(${scale}) translate(-100 -100)`}
+        fill="rgba(34,211,238,0.14)"
+        stroke="#67e8f9"
+        // Keep the outline visually constant as the shape shrinks — a thicker
+        // relative stroke on a small shape would blur the corners a child is
+        // being asked to count.
+        strokeWidth={strokeWidth / scale}
+        strokeLinejoin="round"
+      >
+        <ShapeDrawing shape={shape} exemplar={exemplar} />
+      </g>
+    </svg>
+  );
+};
 
 /** PLATFORM PROP CONTRACT: every renderer mounts a registry primitive as
  *  `<Component data={…} index={…} />` (the 2026-08-06 props-are-data class is
@@ -253,7 +279,13 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
   /** The shape JUST affirmed, VALUE-CAPTURED at verdict time (never derived
    *  from currentChallenge — the sibling pack's answer-leak lesson). During
    *  the reward beat it replaces the unnamed shape with the labeled one. */
-  const [reward, setReward] = useState<{ shape: DiShapeName; rotationDeg: number; label: string } | null>(null);
+  const [reward, setReward] = useState<{
+    shape: DiShapeName;
+    rotationDeg: number;
+    exemplar?: ShapeExemplar;
+    scalePct?: number;
+    label: string;
+  } | null>(null);
 
   const idxRef = useRef(0);
   idxRef.current = currentIndex;
@@ -459,7 +491,16 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
       lastResponseMsRef.current = null;
       setPhase('affirmed');
       // Post-answer reward only — the answer never precedes the answer.
-      setReward({ shape: item.shape, rotationDeg: item.rotationDeg, label: rewardLabelFor(item) });
+      // The reward must show the SAME drawing the child just solved — including
+      // its variant and size. Re-rendering the prototype here would quietly
+      // teach that the textbook picture is the "real" one.
+      setReward({
+        shape: item.shape,
+        rotationDeg: item.rotationDeg,
+        exemplar: item.exemplar,
+        scalePct: item.scalePct,
+        label: rewardLabelFor(item),
+      });
       const next = data.challenges[idxRef.current + 1] ?? null;
       if (next) {
         setStatusLine(
@@ -571,6 +612,7 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     try {
       if (!connectedRef.current && ctx.sessionMode === 'idle') {
         weConnectedRef.current = true;
+        const first = data.challenges[0];
         await ctx.connect({
           primitive_type: 'di-shapes',
           instance_id: resolvedInstanceId,
@@ -582,6 +624,11 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
             // RUNTIME STATE; each target reaches the tutor inside its own
             // [DI_ITEM] contract (answer-leak rule).
             shapeCount: String(data.challenges.length),
+            // The support tier the cue is composed at (L3), so the tutor's own
+            // scaffolding channel cannot volunteer an answer a `hard` item
+            // deliberately withheld before the attempt. Never absent — an
+            // untiered session reports the shape it actually runs, `easy`.
+            supportTier: first?.supportTier ?? 'easy',
           },
           grade_level: data.gradeLevel || 'kindergarten',
           audio_input: DI_AUDIO_INPUT,
@@ -609,15 +656,17 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, data.challenges, data.challengeType, data.gradeLevel, preparing, resolvedInstanceId]);
 
-  // RUNTIME STATE stays stimulus-side: the task identity only, and the CURRENT
-  // item's — a blended session changes identity between items, so the
-  // session-level `data.challengeType` would go stale mid-run. The identity
-  // names the ASK ("count_sides"), never the answer: neither the shape's name
-  // nor its count ever enters the context bag.
+  // RUNTIME STATE stays stimulus-side: the task identity and the support tier,
+  // both the CURRENT item's — a blended session changes identity between items
+  // (and a tier rides per challenge), so the session-level `data.challengeType`
+  // would go stale mid-run. The identity names the ASK ("count_sides") and the
+  // tier names how much help preceded it; neither the shape's name nor its
+  // count ever enters the context bag.
   useEffect(() => {
     if (!ctx.isConnected || !currentChallenge) return;
     ctx.updateContext({
       challengeType: currentChallenge.challengeType,
+      supportTier: currentChallenge.supportTier ?? 'easy',
     });
     // Context methods are stable; keyed on the current item + connection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -638,10 +687,15 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
     setReward(null);
     resetStall();
     loop.reset();
+    // Fresh diagnostics timeline for this run (diagnostics only). supportTier
+    // is pinned because at `hard` the tutor must never say the answer
+    // pre-attempt — a cold ask that leaks is only readable against the tier the
+    // run actually used.
     startDiRunLog({
       primitiveId: 'di-shapes',
       challengeType: data.challengeType,
       gradeLevel: data.gradeLevel,
+      supportTier: first.supportTier ?? 'easy',
       totalItems: data.challenges.length,
       silenceCloseMs: loop.voiceTurns.config.silenceCloseMs,
     });
@@ -715,14 +769,24 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                 key={`solved-${reward.shape}`}
                 className={`flex flex-col items-center rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 ${motion.pop}`}
               >
-                <ShapeStage shape={reward.shape} rotationDeg={reward.rotationDeg} />
+                <ShapeStage
+                  shape={reward.shape}
+                  rotationDeg={reward.rotationDeg}
+                  exemplar={reward.exemplar}
+                  scalePct={reward.scalePct}
+                />
                 <div className="mt-1 text-3xl font-bold tracking-wide text-emerald-300">
                   {reward.label}
                 </div>
               </div>
             ) : (
               <div key={`shape-${currentChallenge.id}`} className={motion.reveal}>
-                <ShapeStage shape={currentChallenge.shape} rotationDeg={currentChallenge.rotationDeg} />
+                <ShapeStage
+                  shape={currentChallenge.shape}
+                  rotationDeg={currentChallenge.rotationDeg}
+                  exemplar={currentChallenge.exemplar}
+                  scalePct={currentChallenge.scalePct}
+                />
               </div>
             )}
             <div className="mt-3 text-xs uppercase tracking-[0.25em] text-cyan-300">
@@ -746,17 +810,17 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
                     key={ch.id}
                     className={`flex flex-col items-center rounded-xl border px-3 py-2 ${ok ? 'border-emerald-400/40 bg-emerald-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}
                   >
-                    <svg viewBox="0 0 200 200" className="h-14 w-14" aria-hidden="true">
-                      <g
-                        transform={`rotate(${ch.rotationDeg} 100 100)`}
-                        fill="rgba(34,211,238,0.14)"
-                        stroke="#67e8f9"
-                        strokeWidth={8}
-                        strokeLinejoin="round"
-                      >
-                        {SHAPE_SVG[ch.shape]}
-                      </g>
-                    </svg>
+                    {/* The recap replays each item AS IT WAS DRAWN — same
+                        variant, rotation and size — so a child looking back
+                        recognises the shape they actually met. */}
+                    <ShapeStage
+                      shape={ch.shape}
+                      rotationDeg={ch.rotationDeg}
+                      exemplar={ch.exemplar}
+                      scalePct={ch.scalePct}
+                      className="h-14 w-14"
+                      strokeWidth={8}
+                    />
                     {ok && <span className="text-sm font-semibold text-white">{rewardLabelFor(ch)}</span>}
                     <span className="text-lg" aria-hidden="true">{ok ? '✅' : '🔁'}</span>
                   </div>

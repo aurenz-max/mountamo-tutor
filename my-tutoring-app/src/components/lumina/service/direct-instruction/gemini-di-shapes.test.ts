@@ -20,11 +20,16 @@ vi.mock('../geminiClient', () => ({
 
 import {
   buildShapeSequence,
+  countConfusableAdjacencies,
   generateDiShapes,
   isPolygon,
   parseNamedShapes,
   SHAPE_MENU,
 } from './gemini-di-shapes';
+import {
+  hasVariantDrawing,
+  SAFE_ROTATION_DEG,
+} from '../../primitives/visual-primitives/direct-instruction/diShapesGeometry';
 
 describe('parseNamedShapes — objective text wins', () => {
   it('reads singular, plural, and the K "diamond" word', () => {
@@ -250,6 +255,273 @@ describe('generateDiShapes — L1 eval modes', () => {
     for (const c of data.challenges) {
       expect(chrome).not.toContain(c.countWord!);
       expect(chrome).not.toContain(String(c.countNumeral));
+    }
+  });
+});
+
+describe('generateDiShapes — L3 support tier', () => {
+  it('stamps the tier on every challenge, whatever the mode', async () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      const data = await generateDiShapes('naming basic shapes', 'kindergarten', {
+        targetEvalMode: 'name_shape',
+        challengeCount: 5,
+        difficulty: tier,
+      });
+      expect(data.challenges).toHaveLength(5);
+      for (const c of data.challenges) expect(c.supportTier).toBe(tier);
+    }
+  });
+
+  it('a BLENDED session gets the tier too — difficulty is a STUDENT property', async () => {
+    // The no-op this layer exists to kill: gating application on a single
+    // pinned mode silently drops difficulty for every blended/mixed session.
+    const data = await generateDiShapes('shapes', 'first grade', {
+      targetEvalMode: 'mixed',
+      challengeCount: 6,
+      difficulty: 'hard',
+    });
+    expect(new Set(data.challenges.map((c) => c.challengeType)).size).toBeGreaterThan(1);
+    for (const c of data.challenges) expect(c.supportTier).toBe('hard');
+  });
+
+  it('an absent or unknown difficulty applies NO tier (the L0/L1 shape stands)', async () => {
+    for (const difficulty of [undefined, '', 'medium-hard', 'level 3', '2']) {
+      const data = await generateDiShapes('naming basic shapes', 'kindergarten', {
+        targetEvalMode: 'name_shape',
+        challengeCount: 4,
+        ...(difficulty === undefined ? {} : { difficulty }),
+      });
+      for (const c of data.challenges) expect(c.supportTier).toBeUndefined();
+    }
+  });
+
+  it('the tier changes SUPPORT, never which shapes or what they answer', async () => {
+    // The L3 guardrail, restated truthfully now that L4 exists: a tier may not
+    // re-select shapes, change the item count, or change an answer. It MAY
+    // re-draw a shape (rotation/exemplar/scale) — that is the L4 axis, and its
+    // own bound (the rule-#1 safe ceiling) is asserted in the L4 block below.
+    // This test originally pinned rotation to the menu cap; L4 makes that
+    // deliberately false, so pinning it here would forbid the next rung.
+    const of = async (difficulty?: string) => generateDiShapes('counting sides of triangles and squares', 'first grade', {
+      targetEvalMode: 'count_sides',
+      challengeCount: 6,
+      ...(difficulty ? { difficulty } : {}),
+    });
+    const base = await of();
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      const tiered = await of(tier);
+      expect(tiered.challenges).toHaveLength(base.challenges.length);
+      expect(new Set(tiered.challenges.map((c) => c.shape)))
+        .toEqual(new Set(base.challenges.map((c) => c.shape)));
+      for (const c of tiered.challenges) {
+        expect(c.countNumeral).toBe(SHAPE_MENU[c.shape].sides);
+        expect(Math.abs(c.rotationDeg)).toBeLessThanOrEqual(SAFE_ROTATION_DEG[c.shape]);
+      }
+    }
+  });
+
+  it('a tiered counting session still refuses curved shapes (rule #1 survives L3)', async () => {
+    const data = await generateDiShapes('circles and ovals', 'kindergarten', {
+      targetEvalMode: 'count_corners',
+      challengeCount: 5,
+      difficulty: 'hard',
+    });
+    for (const c of data.challenges) {
+      expect(isPolygon(c.shape)).toBe(true);
+      expect(c.supportTier).toBe('hard');
+    }
+  });
+});
+
+describe('generateDiShapes — L4 structural difficulty', () => {
+  const naming = (difficulty?: string, count = 6) => generateDiShapes(
+    'naming triangles rectangles hexagons and pentagons', 'first grade',
+    { targetEvalMode: 'name_shape', challengeCount: count, ...(difficulty ? { difficulty } : {}) },
+  );
+
+  it('hard draws NON-PROTOTYPICAL exemplars; easy and medium draw the textbook one', async () => {
+    // The headline lever, and the G1 curriculum skill itself: defining vs
+    // non-defining attributes. A child who learned the picture fails the variant.
+    for (const tier of ['easy', 'medium'] as const) {
+      const d = await naming(tier);
+      for (const c of d.challenges) expect(c.exemplar).toBe('prototype');
+    }
+    const hard = await naming('hard');
+    for (const c of hard.challenges) {
+      // circle/square saturate to the prototype — they have no variant drawing.
+      expect(c.exemplar).toBe(hasVariantDrawing(c.shape) ? 'variant' : 'prototype');
+    }
+    expect(hard.challenges.some((c) => c.exemplar === 'variant')).toBe(true);
+  });
+
+  it('rotation climbs toward the SAFE ceiling with the tier, and never past it', async () => {
+    const maxOf = async (tier: string) => {
+      let worst = 0;
+      for (let run = 0; run < 8; run++) {
+        const d = await naming(tier);
+        for (const c of d.challenges) {
+          // The invariant: never past this shape's rule-#1 ceiling, ever.
+          expect(Math.abs(c.rotationDeg), `${c.shape} past its safe ceiling at ${tier}`)
+            .toBeLessThanOrEqual(SAFE_ROTATION_DEG[c.shape]);
+          // In ABSOLUTE degrees, not as a share of the ceiling. A share is what
+          // the first version asserted and it hid a real defect: 25% of the
+          // triangle's 180° ceiling is ±45°, so `easy` passed this test while a
+          // live probe drew a K child a triangle at −36° and `medium` one at
+          // −91°. What a five-year-old experiences is degrees, not fractions.
+          worst = Math.max(worst, Math.abs(c.rotationDeg));
+        }
+      }
+      return worst;
+    };
+    // The ladder interpolates between the two ceilings the pack already has:
+    // half the untiered default → the untiered default → the rule-#1 ceiling.
+    // `medium` therefore reproduces exactly what shipped before L4.
+    const MENU_SHAPES = Object.keys(SHAPE_MENU) as Array<keyof typeof SHAPE_MENU>;
+    const gentlest = Math.min(...MENU_SHAPES.map((s) => SHAPE_MENU[s].maxRotationDeg));
+    expect(gentlest).toBeGreaterThanOrEqual(0); // menu sanity
+
+    // Easy is near-upright for EVERY shape, in absolute terms — the whole point.
+    expect(await maxOf('easy')).toBeLessThanOrEqual(
+      Math.max(...MENU_SHAPES.map((s) => Math.round(SHAPE_MENU[s].maxRotationDeg / 2))),
+    );
+    expect(await maxOf('easy')).toBeLessThanOrEqual(13);
+    // Medium never exceeds the untiered default (the pre-L4 feel).
+    expect(await maxOf('medium')).toBeLessThanOrEqual(
+      Math.max(...MENU_SHAPES.map((s) => SHAPE_MENU[s].maxRotationDeg)),
+    );
+    // Hard genuinely climbs past what medium can reach.
+    expect(await maxOf('hard')).toBeGreaterThan(
+      Math.max(...MENU_SHAPES.map((s) => SHAPE_MENU[s].maxRotationDeg)),
+    );
+  });
+
+  it('a hard triangle can actually reach point-down (the K.G.2 item that did not exist)', async () => {
+    // Pre-L4 the triangle was capped at the menu's gentle 25°, so "regardless
+    // of orientation" was never once exercised. This is the rung existing.
+    let steepest = 0;
+    for (let run = 0; run < 12; run++) {
+      const d = await generateDiShapes('naming triangles', 'kindergarten', {
+        targetEvalMode: 'name_shape', challengeCount: 6, difficulty: 'hard',
+      });
+      for (const c of d.challenges) {
+        if (c.shape === 'triangle') steepest = Math.max(steepest, Math.abs(c.rotationDeg));
+      }
+    }
+    expect(steepest, 'no hard triangle ever rotated far').toBeGreaterThan(90);
+  });
+
+  it('size varies at hard and is left canonical at easy ("regardless of size")', async () => {
+    const easy = await naming('easy');
+    for (const c of easy.challenges) expect(c.scalePct).toBe(100);
+    const sizes = new Set<number>();
+    for (let run = 0; run < 6; run++) {
+      for (const c of (await naming('hard')).challenges) {
+        sizes.add(c.scalePct!);
+        expect(c.scalePct!).toBeGreaterThanOrEqual(62);
+        expect(c.scalePct!).toBeLessThanOrEqual(100);
+      }
+    }
+    expect(sizes.size, 'hard never varied the size').toBeGreaterThan(3);
+  });
+
+  it('hard places CONFUSABLE NAMES side by side; easy keeps them apart', async () => {
+    // The near-distractor made real for a pack with no multiple choice: the
+    // three pairs the catalog itself names as the error class.
+    //
+    // THRESHOLDS ARE MEASURED, NOT GUESSED. Over 300 sessions on this pool:
+    //   easy   mean 0.42  min 0  hist {0:226, 1:36, 2:23, 3:15}
+    //   medium mean 0.85  min 0  (natural order — no reordering at all)
+    //   hard   mean 1.46  min 1  hist {1:210, 2:43, 3:47}
+    // The first version of this test asserted `easyRate < 0.5` on 10 samples —
+    // sitting exactly on easy's own mean, so it failed about a third of the
+    // time. A flaky gate is worse than no gate: it trains the next session to
+    // re-run until green. The assertions below are ≥3σ on 60 samples.
+    const RUNS = 60;
+    const sample = async (tier: string) => {
+      const counts: number[] = [];
+      for (let run = 0; run < RUNS; run++) {
+        counts.push(countConfusableAdjacencies((await naming(tier)).challenges));
+      }
+      return {
+        mean: counts.reduce((a, b) => a + b, 0) / counts.length,
+        withPair: counts.filter((c) => c >= 1).length,
+      };
+    };
+    const easy = await sample('easy');
+    const hard = await sample('hard');
+
+    // The separation is the claim: ~1.0 apart, σ of the difference ≈ 0.145.
+    expect(hard.mean - easy.mean, `hard ${hard.mean} vs easy ${easy.mean}`)
+      .toBeGreaterThan(0.5);
+    // And a hard session essentially always lands at least one pair, where an
+    // easy session usually lands none. (Pool-conditional: it holds because both
+    // hexagon and pentagon are drawn here. A pool with no confusable pair at all
+    // saturates at zero, which applyAdjacency handles rather than forcing.)
+    expect(hard.withPair, 'hard sessions with ≥1 confusable pair')
+      .toBeGreaterThanOrEqual(Math.floor(RUNS * 0.95));
+    expect(easy.withPair, 'easy sessions with ≥1 confusable pair')
+      .toBeLessThan(Math.floor(RUNS * 0.5));
+  });
+
+  it('hard places ADJACENT COUNTS together under a counting mode', async () => {
+    // The counting analog: an off-by-one is the error side/corner counting
+    // exists to correct, so hard makes five-then-six a real risk.
+    let total = 0;
+    for (let run = 0; run < 10; run++) {
+      const d = await generateDiShapes('counting sides of triangles squares pentagons and hexagons', 'first grade', {
+        targetEvalMode: 'count_sides', challengeCount: 6, difficulty: 'hard',
+      });
+      total += countConfusableAdjacencies(d.challenges);
+    }
+    expect(total / 10, 'hard counting sessions never paired adjacent counts').toBeGreaterThan(1);
+  });
+
+  it('THE GUARDRAIL — the tier never changes which shapes, how many, or the counts', async () => {
+    // Structure moves; magnitude and identity do not. Compare the DISTINCT set
+    // rather than the multiset: buildShapeSequence shuffles, so when the item
+    // count exceeds the pool size WHICH shapes repeat differs per generation —
+    // that is pre-existing variance, not something the tier introduced.
+    const set = (d: Awaited<ReturnType<typeof naming>>) =>
+      Array.from(new Set(d.challenges.map((c) => c.shape))).sort().join(',');
+    const base = await naming(undefined);
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      const t = await naming(tier);
+      expect(t.challenges).toHaveLength(base.challenges.length);
+      expect(set(t), `${tier} drew a different set of shapes`).toBe(set(base));
+      for (const c of t.challenges) expect(c.challengeType).toBe('name_shape');
+    }
+    // And a counting session's answers stay derived from the menu at every tier.
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      const d = await generateDiShapes('counting sides', 'first grade', {
+        targetEvalMode: 'count_sides', challengeCount: 6, difficulty: tier,
+      });
+      for (const c of d.challenges) {
+        expect(c.countNumeral).toBe(SHAPE_MENU[c.shape].sides);
+        expect(isPolygon(c.shape)).toBe(true);
+      }
+    }
+  });
+
+  it('the NO-TIER path is untouched — no structural field is stamped', async () => {
+    const d = await naming(undefined);
+    for (const c of d.challenges) {
+      expect(c.exemplar).toBeUndefined();
+      expect(c.scalePct).toBeUndefined();
+      expect(c.supportTier).toBeUndefined();
+      // The untiered rotation still comes from the menu's gentle default.
+      expect(Math.abs(c.rotationDeg)).toBeLessThanOrEqual(SHAPE_MENU[c.shape].maxRotationDeg);
+    }
+  });
+
+  it('adjacency never breaks the variance rule (no shape back-to-back)', async () => {
+    for (const tier of ['easy', 'medium', 'hard'] as const) {
+      for (let run = 0; run < 10; run++) {
+        const d = await naming(tier);
+        for (let i = 1; i < d.challenges.length; i++) {
+          expect(d.challenges[i].shape, `back-to-back at ${tier}`)
+            .not.toBe(d.challenges[i - 1].shape);
+        }
+      }
     }
   });
 });
