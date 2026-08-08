@@ -21,25 +21,29 @@ queue AND this file's "last touched" in the same slice.
 
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
-| **Reader-fit sweep** | **ACTIVE — item 16 IN FLIGHT in a concurrent session, do not double-pull** | **Item 15 CLOSED 15/15** (15B 8/8 + 15A 7/7; S5 `f5b89dc`, S6 `a1b21ad`, S7 `98e4928` all landed 22:18–22:48). **NEXT = the newly-filed item 16: `constellation-builder` first, then `planetary-explorer`** — the last two astronomy generators on the prose-grade contract violation, and the two now carrying the K astronomy demand S1's floor and 15B's fixes redirected onto them. **The defect is REPRODUCED, not predicted** (both return `gradeLevel:"3"` for `grade=K`; both read `ctx.grade` zero times), so probe to EXTEND it. Handoff `qa/HANDOFF-reader-fit-frontier-2026-08-07.md`. | 2026-08-07 |
+| **Reader-fit sweep** | **ACTIVE — item 16 is 1/2 DONE** | **✅ `constellation-builder` CLOSED, READY at PRE (2026-08-07)** — report `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`. **NEXT = `planetary-explorer`**, item 16 slice 2, the last astronomy generator on the prose-grade violation. **Two slice-1 findings that re-scope it:** (a) the defect bit **Grade 1 as well as K** — `"first grade students"` has no `"grade 1"`, so the spelled-out band fell to the literal `'3'` too; probe K, 1 **and** a high control. (b) **"has a tutoring block" ≠ "reaches the tutor"** — constellation-builder passed the two-channel mute test and still shipped its scaffold EMPTY (`sendTextTags: []`, 0/7 contextKeys resolved, ~10 `(not set)` live); `planetary-explorer`'s 18 `useLuminaAI` hits prove a channel exists, not that its keys resolve, so run `tutor-test?probe=1` **before** scoping. Handoff `qa/HANDOFF-reader-fit-frontier-2026-08-07.md` (its anchors still hold; its "gap is aiDirectives" framing understated slice 1). | 2026-08-07 |
 | **Direct Instruction family** | **ACTIVE** | **CTX-1 CLOSED and di-shapes is L1.** Next machine pull = **di-shapes L3 `/add-support-tiers`** (`qa/di/BACKLOG.md` item 14), then L4 structural. **⚠️ CTX-1 is UNCOMMITTED — ship it first** (3 modified files + 2 untracked reports, one stream, one clean slice). Human side stays opportunistic: ONE mic session = **#63** + **#72** + **#76**. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, serial, one primitive per slice. | 2026-08-04 |
 | LA K-2 Grammar density | PARKED — BLOCKED on a user design ruling | Queue top (item 1b `in_front_of`/`behind`) is a design ruling, not code. Buildable alternates if resumed: item 2b (tracker SS-5) or item 4. | 2026-08-05 |
 | Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Real rows in `qa/EVAL_TRACKER.md:530-532`. DNA-1 is a measured, month-old, unfixed answer leak (6/10 generations). Rides as the +1. | 2026-08-07 |
 | Delegated lane | NONE | — | 2026-08-07 |
 
-> **⚠️ CONCURRENT SESSION — `constellation-builder` (item 16's top pull) is IN
-> FLIGHT as of this reconcile.** Three files appeared in the working tree *during*
-> this run: `gemini-constellation-builder.ts` (+85), `ConstellationBuilder.tsx`
-> (+158), `catalog/astronomy.ts` (+30). The generator diff is the S8/S1 template
-> executed correctly — an exported `constellationGradeFromGrade` canonical-first,
-> the prose regex demoted to a second resolver returning `null` so the fallback
-> stands, **no band floor** (*"constellation-builder is genuinely K-fit: `guided_trace`
-> pulses a ring around the one star to tap next"*), and it records that the defect
-> missed at **both** K and Grade 1. **So do not pull item 16 as a new task** — it is
-> being worked. `qa/reader-fit/BACKLOG.md` is a shared file: the closing session
-> strikes item 16 there, and this reconcile has already edited it, so re-read before
-> writing.
+> **✅ RESOLVED — the concurrent `constellation-builder` slice SHIPPED (2026-08-07).**
+> This reconcile caught it mid-flight and read the diff correctly; it closed as
+> READY at PRE, and item 16 is struck to 1/2 in `qa/reader-fit/BACKLOG.md`. What
+> the mid-flight read could not see, and what the probes then showed:
+> the prose-grade defect bit **Grade 1 as well as K** (`"first grade"` is not
+> `"grade 1"`), and the primitive was **orphaned from the tutor** — a full catalog
+> tutoring block delivered EMPTY (`sendTextTags: []`, 0/7 contextKeys resolved by
+> the component, ~10 `(not set)` in the live prompt). That second finding is the
+> severe one and is invisible to a source read.
+>
+> **⚠️ Now the OTHER direction: a concurrent DI session is live in this tree.**
+> `DiShapes.tsx`, `diShapesScript.ts`, `gemini-di-shapes.{ts,test.ts}` modified plus
+> two untracked test files. Its `DiShapes.support-tier-context.test.tsx` currently
+> adds **2 errors to `typecheck:lumina`**, so that gate is red on the tree while
+> being green on the reader-fit slice alone. Do not attribute those to reader-fit,
+> and do not `/ship` them together — they are separate streams.
 >
 > **Ground truth: the tree is NOT clean — the CTX-1 slice is unshipped.**
 > `backend/app/api/endpoints/lumina_tutor.py`, `backend/tests/test_lumina_tutor_session_units.py`,

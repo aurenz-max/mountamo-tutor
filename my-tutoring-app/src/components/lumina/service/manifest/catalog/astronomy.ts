@@ -648,6 +648,36 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student taps random stars without looking for the pattern', response: '"Slow down! Constellations are like connect-the-dots in the sky. Look for a shape — does any group of bright stars look like a dipper or a person?"' },
         { pattern: 'Student connects wrong stars', response: '"Good try! That star is close, but look for a slightly brighter one nearby. The stars in {{constellationName}} are some of the brightest in this part of the sky."' },
         { pattern: 'Student completes constellation and does not explore mythology', response: '"You found {{constellationName}}! Did you know ancient people told stories about this star pattern? {{mythologyFact}}"' },
+        {
+          pattern: 'A pre-reader cannot read the instruction line, the star numbers or the Star Lore card',
+          response: '"Never ask them to read anything. Say the instruction aloud each time the picture changes, and read the star story to them when they finish. The words are yours to speak."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the instruction line, the constellation name, the Star Lore card or the buttons. Your voice is the only channel. '
+            + 'When you receive [CONSTELLATION_ORIENT], say what to do in one or two warm child-sized sentences — they are tapping stars to draw a picture in the sky. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [CONSTELLATION_CHALLENGE_CHANGED], SAY the new instruction aloud in child words: the sky just changed to a new pattern and they cannot read what it now says. '
+            + 'When you receive [CONSTELLATION_COMPLETE], celebrate warmly by name and then read the star story aloud — it is on screen as text they cannot read. '
+            + 'When you receive [CONSTELLATION_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+        },
+        {
+          title: 'NEVER SAY WHICH STAR IS NEXT — THE SCREEN ALREADY POINTS',
+          instruction:
+            'In guided trace the answer IS the order, and the screen already pulses a ring around the one star to tap next. Naming it, or saying where it sits ("the one up on the left"), hands over the whole task. '
+            + 'On [CONSTELLATION_WRONG_STAR] say only that it was a different star and send them back to the twinkling ring — "look for the star with the sparkly circle around it". '
+            + 'Only at scaffolding level 3, after several misses, may you describe where the ringed star is. In free connect, never name the pair to join; say "look for a bright one close to the last one you tapped".',
+        },
+        {
+          title: 'NO STAR NUMBERS OR MAGNITUDES AT K-1 — SAY WHAT THEY CAN SEE',
+          instruction:
+            'At grade rung K and 1 do NOT say a star count, a step number ("star 3 of 5"), a magnitude, a compass direction, or a season name as if they knew it. The screen deliberately hides those at K, so saying them puts back what was taken out. '
+            + 'Say "the twinkling one", "the bright one right next to it", "you have a few more to go", "almost done". '
+            + 'From grade 2 up the counts and the brightness ARE part of the objective — say them, and help the student use brightness to tell constellation stars from the dim ones behind them.',
+        },
       ],
     },
     supportsEvaluation: true,

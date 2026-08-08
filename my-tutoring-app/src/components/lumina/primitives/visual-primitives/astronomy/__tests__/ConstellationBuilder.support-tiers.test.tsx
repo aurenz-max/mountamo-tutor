@@ -44,6 +44,18 @@ vi.mock('../../../../utils/SoundManager', () => ({
   SoundManager: new Proxy({}, { get: () => vi.fn() }),
 }));
 
+// reader-fit: the component now opens a tutor channel. `useLuminaAI` reads a
+// React context and THROWS outside a `LuminaAIProvider`, so an unmocked hook
+// crashes every render in this file — nothing to do with support tiers. The
+// tutor beats are asserted in ConstellationBuilder.reader-fit.test.tsx.
+// The stub MUST be hoisted: returning a fresh `vi.fn()` per call gives
+// `sendText` a new identity every render, which re-fires any effect that depends
+// on it. The real hook returns a `useCallback`, so this keeps the stub honest.
+const sendTextStub = vi.fn();
+vi.mock('../../../../hooks/useLuminaAI', () => ({
+  useLuminaAI: () => ({ sendText: sendTextStub, isAudioPlaying: false, isConnected: true }),
+}));
+
 // The real panel fires confetti/celebration timers; here it is only the score
 // sink — the attempt-cost lever (L2) is observable through its overallScore prop.
 vi.mock('../../../../components/PhaseSummaryPanel', () => ({

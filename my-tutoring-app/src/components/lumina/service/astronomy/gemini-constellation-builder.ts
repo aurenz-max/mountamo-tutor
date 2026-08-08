@@ -225,6 +225,62 @@ const GRADE_CONFIGURATIONS: Record<string, { numChallenges: number; guidance: st
 };
 
 // ============================================================================
+// GRADE RESOLUTION
+// ============================================================================
+
+export type ConstellationGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+/**
+ * Canonical grade → structural rung.
+ *
+ * Closes the prose-grade class here (the last astronomy generator on it, with
+ * `planetary-explorer`). The generator used to derive its rung by regexing
+ * `ctx.gradeContext` — which is PROSE ("kindergarten students (ages 5-6) - Use
+ * clear, simple language") — for /grade\s*(\d|K)/, then falling through to the
+ * literal `'3'`.
+ *
+ * Probed at `98e4928` this missed at BOTH ends of the K neighbourhood:
+ *   grade=K → gradeLevel '3'   ("Trace these sequential stars to reveal the
+ *                                proud celestial lion patrolling the spring skies")
+ *   grade=1 → gradeLevel '3'   (prose "first grade students" has no "grade 1")
+ * So Kindergarten AND Grade 1 both got the Grade 3 configuration, the Grade 3
+ * prompt, and a Grade 3 rung stamped on the output — and, because `gradeLevel`
+ * is what the tutor prompt prints, `Grade Level: 3` in the scaffold too.
+ *
+ * `generationContext.ts` states the contract outright — never parse grade out
+ * of `gradeContext`; read `ctx.grade`.
+ *
+ * NO floor is applied. constellation-builder is genuinely K-fit: `guided_trace`
+ * pulses a ring around the one star to tap next, so the task is "tap the
+ * twinkling star" — no reading required once the tutor speaks. K must reach its
+ * own rung.
+ *
+ * Returns null when there is no canonical grade, so the prose fallback stands.
+ */
+export const constellationGradeFromGrade = (grade?: string): ConstellationGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  if (n >= 5) return '5';                          // 6+ tops out at the ceiling
+  return String(n) as '1' | '2' | '3' | '4';
+};
+
+/** Legacy prose fallback — kept as the second resolver, never the first. */
+export const constellationGradeFromProse = (prose?: string): ConstellationGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  if (/\b(grade 1|1st grade|first grade)\b/.test(p)) return '1';
+  if (/\b(grade 2|2nd grade|second grade)\b/.test(p)) return '2';
+  if (/\b(grade 3|3rd grade|third grade)\b/.test(p)) return '3';
+  if (/\b(grade 4|4th grade|fourth grade)\b/.test(p)) return '4';
+  if (/\b(grade 5|5th grade|fifth grade|middle|high school)\b/.test(p)) return '5';
+  return '3';
+};
+
+// ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
 
@@ -338,9 +394,33 @@ export const generateConstellationBuilder = async (
   //    post-parse on EVERY exit path below. Gated ONLY on the tier itself —
   //    never on eval-mode resolution (the batch-1 silent-no-op trap). ──
   const supportTier = normalizeSupportTier(config?.difficulty);
-  const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as
-    'K' | '1' | '2' | '3' | '4' | '5';
+  // Canonical-first, prose as the second resolver. `gradeLevel` (prose) stays
+  // what the PROMPT says out loud (audience voice); `resolvedGrade` is the
+  // structural rung every default below — and the stamp on the output — keys off.
+  const resolvedGrade: ConstellationGrade =
+    constellationGradeFromGrade(ctx.grade)
+    ?? constellationGradeFromProse(gradeLevel);
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];
+
+  // ── Reader-fit: at K-1 every on-screen string is silent text the tutor has to
+  //    SPEAK. Grade 3 instruction prose ("Trace these sequential stars to reveal
+  //    the proud celestial lion patrolling the spring skies") is not sayable to a
+  //    five-year-old even when read aloud, so the language is bounded HERE — the
+  //    component cannot shorten a sentence the generator already wrote. ──
+  const isPreReaderRung = resolvedGrade === 'K' || resolvedGrade === '1';
+  const readerFitSection = isPreReaderRung
+    ? `
+**PRE-READER LANGUAGE RULES (grade rung ${resolvedGrade}) — THESE OVERRIDE THE TONE GUIDANCE ABOVE:**
+This child CANNOT READ. Every string you write will be spoken aloud by a tutor, so write words a 5-year-old hears and understands.
+- "instruction": AT MOST 8 words. Plain, concrete, spoken-sounding. Name the constellation plainly.
+  GOOD: "Tap the twinkling stars to make the Big Dipper."  GOOD: "Follow the stars to draw Orion."
+  BAD: "Trace these sequential stars to reveal the proud celestial lion patrolling the spring skies."
+- "mythologyFact": AT MOST 15 words, one idea, picture-able. GOOD: "The Big Dipper looks like a big soup spoon in the sky."
+  BAD: any sentence with "asterism", "constellation Ursa Major", "magnitude", "Latin", or a star's proper name.
+- "title" and "description": short and warm. No words like "celestial", "asterism", "sequential", "patrolling", "legendary".
+- NEVER use star magnitudes, numbers of light-years, or compass directions in any student-facing string.
+`
+    : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
   const evalConstraint = resolveEvalModeConstraint(
@@ -369,6 +449,7 @@ ${scopeSection}
 
 **Grade Level:** ${resolvedGrade}
 **Grade Guidance:** ${gradeConfig.guidance}
+${readerFitSection}
 
 **Core Concepts:**
 - Constellations are patterns of stars that ancient cultures named after animals, heroes, and objects

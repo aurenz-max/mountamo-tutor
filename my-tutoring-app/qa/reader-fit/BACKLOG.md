@@ -9,7 +9,32 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 16. FRONTIER — `constellation-builder` + `planetary-explorer` — **TOP QUEUE** (filed `/pm` 2026-08-07)
+### 16. FRONTIER — ~~`constellation-builder`~~ + `planetary-explorer` — **TOP QUEUE, 1/2 DONE** (filed `/pm` 2026-08-07)
+
+> **✅ SLICE 1 CLOSED 2026-08-07 — `constellation-builder` is READY at PRE.**
+> Report: `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`.
+> **NEXT PULL = `planetary-explorer`** (slice 2, the harder one — it already has 18
+> `useLuminaAI` hits and 8+ moments, so that job is *auditing an existing voice for
+> band-fitness*, not adding one).
+>
+> **Two findings from slice 1 that change how slice 2 should be scoped:**
+> 1. **The prose-grade defect is not K-only — it bit Grade 1 the same way.**
+>    `"first grade students"` contains no `"grade 1"`, so the regex missed and the
+>    literal `'3'` won at BOTH rungs. Probe `planetary-explorer` at **K, 1 and a
+>    high control**; the spelled-out band is where it hides. (The prose fallback
+>    needs `first|second|third|…`, not just `grade N`.)
+> 2. **"Has a tutoring block" ≠ "reaches the tutor".** constellation-builder was
+>    NOT mute by the two-channel test and still delivered its scaffold **empty** —
+>    `sendTextTags: []`, 0/7 contextKeys resolved by the component, ~10 `(not set)`
+>    in the live prompt. **Run `tutor-test?probe=1` on `planetary-explorer` before
+>    scoping it**: its 18 hits prove a channel exists, not that its keys resolve.
+>
+> Two traps the gates caught, worth carrying: a pre-existing jsdom suite that does
+> not mock `useLuminaAI` **crashes** once the component gains the hook (S5 trap,
+> hit again — 21 tests); and a `sendText` with an unstable identity turns an
+> unlatched completion effect into a render loop that **OOM-kills a vitest worker
+> and reports as a PASSING run with tests silently missing**. Check the file/test
+> totals, not just the pass line.
 
 *Filed as its own numbered item because **item 15 closed 15/15** and its successor
 was living as prose inside a completed item. A queue's top must be an item, not a

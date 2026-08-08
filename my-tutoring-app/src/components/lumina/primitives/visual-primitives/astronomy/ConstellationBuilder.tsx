@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { ConstellationBuilderMetrics } from '../../../evaluation/types';
+import { LuminaReadAloud } from '../../../ui';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -129,6 +131,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
   const {
     title,
     description,
+    gradeLevel,
     stars,
     challenges,
     instanceId,
@@ -137,6 +140,13 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     objectiveId,
     exhibitId,
   } = data;
+
+  // reader-fit: the instruction line, the constellation names, the "Tap star 3
+  // of 5" counter and the Star Lore card are all text a K-1 child cannot read,
+  // and this primitive had NO channel to the tutor at all — the catalog
+  // tutoring block reached the backend with every contextKey "(not set)" and
+  // zero moments wired, so the tutor went silent after the greeting.
+  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
 
   // Evaluation hook
   const resolvedInstanceId = instanceId ?? 'constellation-builder-default';
@@ -186,6 +196,8 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
   const [drawnConnections, setDrawnConnections] = useState<ConnectionLine[]>([]);
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [guidedStep, setGuidedStep] = useState(0); // for guided_trace: which star in order
+  /** Last star the student touched — a catalog contextKey the tutor reads. */
+  const [lastStarTapped, setLastStarTapped] = useState<string>('none yet');
   const [showMythology, setShowMythology] = useState(false);
   const [identifyAnswer, setIdentifyAnswer] = useState<string | null>(null);
   const [seasonalSelections, setSeasonalSelections] = useState<string[]>([]);
@@ -200,6 +212,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     setDrawnConnections([]);
     setSelectedStarId(null);
     setGuidedStep(0);
+    setLastStarTapped('none yet');
     setShowMythology(false);
     setIdentifyAnswer(null);
     setSeasonalSelections([]);
@@ -217,6 +230,81 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     return ids;
   }, [currentChallenge]);
 
+  // ---------------------------------------------------------------------------
+  // Tutor channel (reader-fit)
+  // ---------------------------------------------------------------------------
+
+  /** How many stars of the target pattern the student has placed so far. */
+  const connectedCount = currentChallenge?.type === 'guided_trace'
+    ? guidedStep
+    : drawnConnections.length;
+  /** Stars in the target pattern — starOrder when present, else derived from the lines. */
+  const totalStars = currentChallenge
+    ? (currentChallenge.starOrder.length || currentChallenge.correctConnections.length + 1)
+    : 0;
+
+  // Flat object literal — a bag assembled behind statements makes tutor-test
+  // report every contextKey as "dynamic, verify at runtime".
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    gradeLevel,
+    constellationName: currentChallenge?.constellationName ?? 'a star pattern',
+    connectedCount,
+    totalStars,
+    evalMode: currentChallenge?.type ?? 'guided_trace',
+    season: currentChallenge?.season ?? 'year-round',
+    lastStarTapped,
+    mythologyFact: currentChallenge?.mythologyFact ?? '',
+    instruction: currentChallenge?.instruction ?? '',
+  }), [title, gradeLevel, currentChallenge, connectedCount, totalStars, lastStarTapped]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'constellation-builder',
+    instanceId: resolvedInstanceId,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[CONSTELLATION_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without having to ask.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current || !currentChallenge) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[CONSTELLATION_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a star-pattern activity: "${title}". The screen reads: "${currentChallenge.instruction}". `
+      + `Say that aloud in child words — they tap stars in the sky to draw ${currentChallenge.constellationName}. `
+      + `Do NOT say which star to tap; the screen already rings it.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, title, currentChallenge]);
+
+  // The instruction line and the whole sky change when the challenge does, and a
+  // non-reader cannot see that the words changed. Skips the first run — ORIENT
+  // already covered it.
+  const lastChallengeIdRef = useRef(currentChallenge?.id);
+  useEffect(() => {
+    if (!currentChallenge) return;
+    if (lastChallengeIdRef.current === currentChallenge.id) return;
+    lastChallengeIdRef.current = currentChallenge.id;
+    sendText(
+      `[CONSTELLATION_CHALLENGE_CHANGED] The sky just changed to a new pattern, ${currentChallenge.constellationName}, `
+      + `and the screen now reads: "${currentChallenge.instruction}". SAY that aloud in child words. `
+      + `Do not tell them which star to tap.`,
+      { silent: true },
+    );
+  }, [sendText, currentChallenge]);
+
   // Check if current connections match the target
   const isConstellationComplete = useMemo(() => {
     if (!currentChallenge) return false;
@@ -232,15 +320,36 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
     );
   }, [currentChallenge, drawnConnections]);
 
-  // Auto-complete detection for trace/connect modes
+  // Auto-complete detection for trace/connect modes.
+  //
+  // Latched per challenge id. `isConstellationComplete` STAYS true once the
+  // pattern is traced, so without the latch this body re-runs on every change to
+  // any dep — re-firing SoundManager, re-setting `feedback` to a fresh object
+  // (which itself re-renders), and re-sending the celebration beat, so the tutor
+  // would read the star story again and again. It also makes the effect immune
+  // to a `sendText` whose identity is not stable: an unstable one turned this
+  // into a render loop that OOM-killed a vitest worker.
+  const completedChallengeIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!currentChallenge) return;
     if (currentChallenge.type !== 'guided_trace' && currentChallenge.type !== 'free_connect') return;
     if (!isConstellationComplete) return;
+    if (completedChallengeIdRef.current === currentChallenge.id) return;
+    completedChallengeIdRef.current = currentChallenge.id;
 
     SoundManager.playCorrect();
     setShowMythology(true);
     setFeedback({ type: 'correct', message: `You traced ${currentChallenge.constellationName}!` });
+
+    // The Star Lore card that just appeared is silent text at K-1. This is the
+    // STIMULUS beat: the fact only reaches a non-reader if the tutor reads it.
+    sendText(
+      `[CONSTELLATION_COMPLETE] They finished ${currentChallenge.constellationName}! Celebrate warmly by name, `
+      + `then read this star story aloud, word for word — it is on screen as text they cannot read: `
+      + `"${currentChallenge.mythologyFact}"`
+      + `${isPreReader ? ' Finish by telling them to tap the big button to go on — they cannot read its label either.' : ''}`,
+      { silent: true },
+    );
 
     const score = Math.max(0, 100 - (currentAttempts * 10));
     recordResult({
@@ -249,13 +358,15 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
       attempts: currentAttempts + 1,
       score,
     });
-  }, [isConstellationComplete, currentChallenge, currentAttempts, recordResult]);
+  }, [isConstellationComplete, currentChallenge, currentAttempts, recordResult, sendText, isPreReader]);
 
   // ----- Interaction handlers -----
 
   const handleStarClick = useCallback((starId: string) => {
     if (!currentChallenge) return;
     if (currentChallenge.type === 'identify' || currentChallenge.type === 'seasonal') return;
+
+    setLastStarTapped(starId);
 
     // Guided trace: stars must be tapped in order
     if (currentChallenge.type === 'guided_trace') {
@@ -275,7 +386,26 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
         SoundManager.invalid();
         incrementAttempts();
         // L3: specific directive hint at easy/legacy, generic (never silent) at medium/hard
-        setFeedback({ type: 'hint', message: tierWithdrawn ? GENERIC_HINT : 'Look for the numbered star!' });
+        // At K-1 the step counter is gone and the only affordance is the pulsing
+        // ring, so "the numbered star" names something that is not on screen —
+        // and it is the line an adult sitting alongside would read out. Match the
+        // register the tutor uses in [CONSTELLATION_WRONG_STAR].
+        setFeedback({
+          type: 'hint',
+          message: tierWithdrawn
+            ? GENERIC_HINT
+            : isPreReader
+              ? 'Look for the star with the sparkly circle!'
+              : 'Look for the numbered star!',
+        });
+        // The correction above is text a non-reader cannot read, and the sound
+        // alone does not say what to do instead.
+        sendText(
+          `[CONSTELLATION_WRONG_STAR] They tapped a star that is not the next one in `
+          + `${currentChallenge.constellationName}. Send them back to the star with the pulsing ring — `
+          + `say "look for the star with the sparkly circle around it". Do NOT name it or say where it is.`,
+          { silent: true },
+        );
       }
       return;
     }
@@ -286,6 +416,12 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
         incrementAttempts();
         // L3: the discriminating-feature hint ("brighter") is easy/legacy support
         setFeedback({ type: 'wrong', message: tierWithdrawn ? GENERIC_HINT : 'That star isn\'t part of this constellation. Try a brighter one!' });
+        sendText(
+          `[CONSTELLATION_WRONG_STAR] They tapped a dim background star that is not part of `
+          + `${currentChallenge.constellationName}. Tell them warmly to look for a brighter one. `
+          + `Do NOT name the star or say where it is.`,
+          { silent: true },
+        );
         setSelectedStarId(null);
         return;
       }
@@ -323,7 +459,7 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
       }
       setSelectedStarId(null);
     }
-  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, incrementAttempts, tierWithdrawn]);
+  }, [currentChallenge, guidedStep, selectedStarId, constellationStarIds, drawnConnections, incrementAttempts, tierWithdrawn, sendText, isPreReader]);
 
   // Handle identify mode answer
   const handleIdentifyAnswer = useCallback((answer: string) => {
@@ -480,7 +616,11 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
             <CardTitle className="text-slate-100">{title}</CardTitle>
             <CardDescription className="text-slate-400">{description}</CardDescription>
           </div>
-          {challenges.length > 1 && (
+          {/* Band contract rule 7: a score-ledger counter is adult chrome in the
+              child's field, and "2 / 4" is a progress claim a pre-reader cannot
+              use. Hidden by conditional render at K-1 (never Tailwind `hidden`,
+              which leaves it in the a11y tree). */}
+          {challenges.length > 1 && !isPreReader && (
             <Badge variant="outline" className="border-white/20 text-slate-300">
               {Math.min(currentChallengeIndex + 1, challenges.length)} / {challenges.length}
             </Badge>
@@ -505,8 +645,23 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
         {currentChallenge && !allChallengesComplete && (
           <>
             <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-              {currentChallenge.type === 'guided_trace' && currentChallenge.starOrder.length > 0 && (
+              <div className="flex items-center gap-3">
+                <p className={`flex-1 text-slate-200 font-medium ${isPreReader ? 'text-base' : 'text-sm'}`}>
+                  {currentChallenge.instruction}
+                </p>
+                {isPreReader && (
+                  <LuminaReadAloud
+                    iconOnly
+                    size="sm"
+                    aria-label="Hear what to do"
+                    onClick={() => readAloud(currentChallenge.instruction)}
+                  />
+                )}
+              </div>
+              {/* "Tap star 3 of 5" is a step counter — adult chrome at K-1, and the
+                  pulsing ring on the SVG already says which star is next without
+                  a word. Kept from grade 2, where the count is part of the task. */}
+              {currentChallenge.type === 'guided_trace' && currentChallenge.starOrder.length > 0 && !isPreReader && (
                 <p className="text-slate-400 text-xs mt-1">
                   Tap star {guidedStep + 1} of {currentChallenge.starOrder.length}
                 </p>
@@ -723,7 +878,21 @@ const ConstellationBuilder: React.FC<ConstellationBuilderProps> = ({ data, class
             {/* Mythology card */}
             {showMythology && currentChallenge.mythologyFact && (
               <div className="bg-indigo-500/10 border border-indigo-400/20 rounded-lg px-4 py-3">
-                <p className="text-indigo-200 text-xs font-medium mb-1">Star Lore</p>
+                <div className="flex items-center gap-3">
+                  <p className="flex-1 text-indigo-200 text-xs font-medium mb-1">
+                    {isPreReader ? '✨ Star Lore' : 'Star Lore'}
+                  </p>
+                  {/* The [CONSTELLATION_COMPLETE] beat already reads this aloud once;
+                      the button is the replay a non-reader needs to hear it again. */}
+                  {isPreReader && (
+                    <LuminaReadAloud
+                      iconOnly
+                      size="sm"
+                      aria-label="Hear the star story"
+                      onClick={() => readAloud(currentChallenge.mythologyFact)}
+                    />
+                  )}
+                </div>
                 <p className="text-slate-300 text-sm">{currentChallenge.mythologyFact}</p>
               </div>
             )}
