@@ -22,6 +22,15 @@ import { asRecordArray, checkAnswerVariety, containsWord } from './helpers';
  *   templateStrand (or whose correctAnswer is the visible complementaryStrand)
  *   lets the student read the answer straight off the Explore tab; the task text
  *   must not spell out the answer.
+ *
+ *   EQUALITY IS NOT THE WHOLE LEAK. Measured 2026-08-08 over 20 real
+ *   generations: the exact-equality form fired once, but a PARTIAL overlap
+ *   fired 13 times — `givenStrand: "ATCG"` against a displayed template of
+ *   "ATCGGATA", whose complement "TAGCCTAT" is printed directly underneath it.
+ *   The student reads the first four characters. This oracle therefore flags
+ *   any shared run of 4+ bases, in either reading direction, and that check is
+ *   written from the pairing rules here rather than shared with the generator's
+ *   guard, so a bug in the guard still fails the oracle.
  * - clustering: correctAnswers across the challenge set must vary.
  * - schema: bases must be A/T/C/G; strand lengths must match; ≥2 challenges.
  *
@@ -36,6 +45,30 @@ const PURINES = new Set(['A', 'G']);
 function norm(s: unknown): string {
   return String(s ?? '').toUpperCase().replace(/\s/g, '');
 }
+
+/**
+ * Longest run of bases `a` and `b` have in common, counting `b` read forwards
+ * and backwards. Deliberately a brute-force scan written from scratch: the
+ * generator's guard must not be able to certify itself.
+ */
+function longestSharedRun(a: string, b: string): { length: number; run: string } {
+  let best = { length: 0, run: '' };
+  if (!a || !b) return best;
+  const haystacks = [b, b.split('').reverse().join('')];
+  for (let start = 0; start < a.length; start++) {
+    for (let end = a.length; end > start + best.length; end--) {
+      const slice = a.slice(start, end);
+      if (haystacks.some((h) => h.includes(slice))) {
+        best = { length: slice.length, run: slice };
+        break;
+      }
+    }
+  }
+  return best;
+}
+
+/** Runs shorter than this collide by chance across a 4-letter alphabet. */
+const LEAK_RUN = 4;
 
 export const dnaExplorerOracle: ContentOracle = {
   componentId: 'dna-explorer',
@@ -145,11 +178,23 @@ export const dnaExplorerOracle: ContentOracle = {
           detail: `oracle complements "${given}" to "${expected}" but shipped correctAnswer="${answer}"`,
         });
       }
-      // Leak: the answer is visible on the Explore tab if this challenge reuses the sequence strands.
+      // Leak: the answer is visible on the Explore tab if this challenge reuses
+      // the sequence strands — wholly OR in part.
       if (given && given === template) {
         violations.push({ check: 'answer-leak', where, detail: `givenStrand equals the Explore-tab templateStrand — its answer is displayed as complementaryStrand` });
       } else if (answer && answer === complementary) {
         violations.push({ check: 'answer-leak', where, detail: `correctAnswer equals the visible complementaryStrand — readable off the Explore tab` });
+      } else {
+        const sharedGiven = longestSharedRun(given, template);
+        const sharedAnswer = longestSharedRun(answer, complementary);
+        const shared = sharedGiven.length >= sharedAnswer.length ? sharedGiven : sharedAnswer;
+        if (shared.length >= LEAK_RUN) {
+          violations.push({
+            check: 'answer-leak',
+            where,
+            detail: `shares a ${shared.length}-base run "${shared.run}" with the displayed Explore-tab sequence (template "${template}") — the student reads ${shared.length} answer bases off the complementary strand instead of pairing them`,
+          });
+        }
       }
       // Leak: the task text must not spell out the answer.
       const task = String(c.task ?? '');

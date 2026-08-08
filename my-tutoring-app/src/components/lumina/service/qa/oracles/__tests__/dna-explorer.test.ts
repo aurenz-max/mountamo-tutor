@@ -16,6 +16,13 @@ const ctx = {
 };
 
 // Real generation: templateStrand ATGCGT ↔ TACGCA; both challenges correctly paired.
+//
+// Challenge #2 was `GCATGC` when this fixture was captured, and the oracle
+// called it clean — `GCATGC` is not EQUAL to `ATGCGT`, which was the whole
+// leak test at the time. It shares the run `ATGC` with it, so four of its six
+// answer bases were printed on the Explore tab. Re-pointed at `TTAACG` (2026-08-08,
+// DNA-1) once the oracle learned to see partial overlap; the leak it used to
+// carry is now its own regression case below.
 const clean = {
   title: 'The DNA Puzzle: Matching the Bases',
   description: 'Explore how DNA acts like a twisted ladder.',
@@ -42,7 +49,7 @@ const clean = {
   centralDogmaStep: 'none',
   buildChallenges: [
     { givenStrand: 'AATTCC', task: 'Complete the complementary strand.', correctAnswer: 'TTAAGG' },
-    { givenStrand: 'GCATGC', task: 'Match each base with its partner.', correctAnswer: 'CGTACG' },
+    { givenStrand: 'TTAACG', task: 'Match each base with its partner.', correctAnswer: 'AATTGC' },
   ],
   gradeBand: '5-6',
 };
@@ -55,12 +62,12 @@ describe('dna-explorer oracle', () => {
   });
 
   it('flags answer-key-desync — a build challenge correctAnswer is not the true complement', () => {
-    // GCATGC complements to CGTACG; ship the wrong key (one base off).
+    // TTAACG complements to AATTGC; ship the wrong key (one base off).
     const data = {
       ...clean,
       buildChallenges: [
         clean.buildChallenges[0],
-        { givenStrand: 'GCATGC', task: 'Match each base.', correctAnswer: 'CGTACA' },
+        { givenStrand: 'TTAACG', task: 'Match each base.', correctAnswer: 'AATTGA' },
       ],
     };
     const v = dnaExplorerOracle.verify(data, ctx).violations;
@@ -101,6 +108,45 @@ describe('dna-explorer oracle', () => {
     };
     const v = dnaExplorerOracle.verify(data, ctx).violations;
     expect(v.some((x) => x.check === 'answer-leak' && x.where === 'buildChallenge#1')).toBe(true);
+  });
+
+  it('flags answer-leak — a challenge shares a 4-base run with the displayed template', () => {
+    // The form that actually shipped: 19 of 20 generations probed 2026-08-08.
+    // `ATCG` against a displayed `ATCGGATA` is not equality, so the pre-DNA-1
+    // oracle passed it while the answer sat on screen.
+    const data = {
+      ...clean,
+      buildChallenges: [
+        { givenStrand: 'GCATGC', task: 'Complete the strand.', correctAnswer: 'CGTACG' }, // ATGC ⊂ ATGCGT
+        clean.buildChallenges[0],
+      ],
+    };
+    const v = dnaExplorerOracle.verify(data, ctx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'buildChallenge#1')).toBe(true);
+  });
+
+  it('flags answer-leak — a shared run read backwards off the display', () => {
+    const data = {
+      ...clean,
+      buildChallenges: [
+        { givenStrand: 'CGTAAA', task: 'Complete the strand.', correctAnswer: 'GCATTT' }, // CGTA = ATGC reversed
+        clean.buildChallenges[0],
+      ],
+    };
+    const v = dnaExplorerOracle.verify(data, ctx).violations;
+    expect(v.some((x) => x.check === 'answer-leak' && x.where === 'buildChallenge#1')).toBe(true);
+  });
+
+  it('does not fire on a 3-base coincidence — chance, not a leak', () => {
+    const data = {
+      ...clean,
+      buildChallenges: [
+        { givenStrand: 'ATGAAA', task: 'Complete the strand.', correctAnswer: 'TACTTT' }, // shares ATG only
+        clean.buildChallenges[1],
+      ],
+    };
+    const v = dnaExplorerOracle.verify(data, ctx).violations;
+    expect(v.filter((x) => x.check === 'answer-leak')).toEqual([]);
   });
 
   it('flags answer-leak — the task text spells out the answer', () => {
