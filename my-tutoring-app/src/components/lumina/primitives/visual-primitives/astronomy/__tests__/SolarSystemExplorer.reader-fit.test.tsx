@@ -19,6 +19,16 @@ const sendTextSpy = vi.fn();
 vi.mock('../../../../hooks/useLuminaAI', () => ({
   useLuminaAI: () => ({ sendText: sendTextSpy, isAudioPlaying: false, isConnected: true }),
 }));
+// The primitive gained an evaluation surface, so the real module now pulls
+// Firebase in at import time and the suite cannot even load without this.
+vi.mock('../../../../evaluation', () => ({
+  usePrimitiveEvaluation: () => ({
+    submitResult: vi.fn(),
+    hasSubmitted: false,
+    resetAttempt: vi.fn(),
+    elapsedMs: 0,
+  }),
+}));
 
 import SolarSystemExplorer, { type SolarSystemExplorerData } from '../SolarSystemExplorer';
 

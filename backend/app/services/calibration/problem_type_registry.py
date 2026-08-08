@@ -810,6 +810,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "identify":     PriorConfig(4.5, "Lines drawn — select correct constellation name"),
         "seasonal":     PriorConfig(6.0, "Identify constellations visible in a given season"),
     },
+    "solar-system-explorer": {
+        "identify":          PriorConfig(1.5, "Tap the named body in the live orbiting model"),
+        "order_from_sun":    PriorConfig(2.5, "Tap by position out from the Sun — closest/farthest/Nth"),
+        "classify":          PriorConfig(3.5, "Tap any member of a category — rocky, gas giant, dwarf"),
+        "compare_attribute": PriorConfig(5.0, "Tap the extreme on an attribute — biggest, hottest, most moons"),
+        "orbital_reasoning": PriorConfig(8.0, "Tap by orbital period — distance-to-year relationship"),
+    },
     "planetary-explorer": {
         "explore":  PriorConfig(1.5, "Basic recall after reading planet info"),
         "identify": PriorConfig(3.0, "Identify planets from descriptions"),

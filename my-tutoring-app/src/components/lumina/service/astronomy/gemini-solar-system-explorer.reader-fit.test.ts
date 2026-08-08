@@ -103,7 +103,16 @@ describe('solar-system-explorer — reader-fit scaffold + fallback grade rung', 
       const directiveText = (entry.tutoring!.aiDirectives ?? [])
         .map((d) => `${d.title} ${d.instruction}`).join(' ');
       const referenced = Array.from(directiveText.matchAll(/\[([A-Z_]+)\]/g)).map((m) => m[1]);
-      const emitted = ['SOLAR_ORIENT', 'SOLAR_BODY_SELECTED', 'SOLAR_READ_ALOUD'];
+      // Must stay in sync with every sendText() tag in SolarSystemExplorer.tsx —
+      // a directive naming a tag the component never sends is a rule the tutor
+      // can never apply, and it fails silently.
+      const emitted = [
+        'SOLAR_ORIENT', 'SOLAR_BODY_SELECTED', 'SOLAR_READ_ALOUD',
+        // The eval-mode surface (tap-to-answer):
+        'SOLAR_CHALLENGE', 'SOLAR_BODY_INSPECTED', 'SOLAR_ANSWER_CORRECT',
+        'SOLAR_ANSWER_WRONG', 'SOLAR_ANSWER_REVEAL', 'SOLAR_NEXT',
+        'SOLAR_ALL_COMPLETE',
+      ];
       for (const tag of referenced) expect(emitted).toContain(tag);
     });
 

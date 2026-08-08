@@ -232,7 +232,10 @@ describe('planetary-explorer — catalog scaffold reaches a non-reader', () => {
     // ("what the question is asking"). The old level1 was the line the 08-07
     // handoff quoted as the proof this scaffold was written for a reader:
     // "Look at the stats panel — one of those numbers will help you."
-    const levels = entry?.tutoring?.scaffoldingLevels ?? {};
+    // `?? {}` widened this to `Levels | {}`, on which `.level1` does not exist —
+    // 3 errors that had the Lumina gate red on HEAD. The entry is asserted
+    // present by every other case in this file, so assert it here too.
+    const levels = entry!.tutoring!.scaffoldingLevels;
     const blob = Object.values(levels).join(' ');
     expect(blob).not.toMatch(/Look at the stats panel/i);
     expect(blob).not.toMatch(/what the question is asking/i);

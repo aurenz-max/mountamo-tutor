@@ -4,6 +4,12 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { LuminaReadAloud } from '../../../ui';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
+import type { SolarSystemExplorerMetrics } from '../../../evaluation/types';
+import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 
 // Export data interface - single source of truth
 export interface CelestialBody {
@@ -22,6 +28,41 @@ export interface CelestialBody {
   funFact?: string;
 }
 
+// ============================================================================
+// Evaluation surface
+// ============================================================================
+// Until now this primitive had NO evaluation hook at all: it produced a model
+// and nothing else, while `supportsEvaluation: true` let the manifest route
+// assessment demand at it. The measurable act here is the one the explorer is
+// already built around — TAP A BODY — so a challenge asks a question whose
+// answer IS a body, and the student answers by touching it in the live model
+// rather than by picking a lettered option next to it
+// ([[feedback_direct-manipulation-first]]).
+//
+// The five types are SKILLS, not difficulty steps (see the catalog `evalModes`).
+// The answer key is a SET (`answerBodyIds`) because `classify` genuinely has
+// several right answers — "tap a gas giant" is satisfied by any of four.
+
+export type SolarChallengeType =
+  | 'identify'
+  | 'order_from_sun'
+  | 'classify'
+  | 'compare_attribute'
+  | 'orbital_reasoning';
+
+export interface SolarChallenge {
+  id: string;
+  type: SolarChallengeType;
+  /** Student-facing question. NEVER names a body that answers it. */
+  prompt: string;
+  /** Every body that satisfies the prompt. Length > 1 for `classify`. */
+  answerBodyIds: string[];
+  /** Shown after a miss. Teaches the STRATEGY; never narrows to the answer. */
+  hint?: string;
+  /** Shown once the answer is settled. May name the body — it is over by then. */
+  explanation?: string;
+}
+
 export interface SolarSystemExplorerData {
   title: string;
   description: string;
@@ -38,8 +79,19 @@ export interface SolarSystemExplorerData {
   compareMode?: boolean;
   gradeLevel?: 'K' | '1' | '2' | '3' | '4' | '5';
 
+  /** Graded tap-the-body questions. Absent/empty → pure exploration, as before. */
+  challenges?: SolarChallenge[];
+
+  /** Within-mode support tier — present only when the manifest emitted difficulty. */
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   /** Auto-injected by ManifestOrderRenderer; scopes the tutor session. */
   instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SolarSystemExplorerMetrics>) => void;
 }
 
 interface SolarSystemExplorerProps {
@@ -47,12 +99,32 @@ interface SolarSystemExplorerProps {
   className?: string;
 }
 
+const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
+  identify:          { label: 'Name It',  icon: '🔎', accentColor: 'blue' },
+  order_from_sun:    { label: 'In Order', icon: '🔢', accentColor: 'cyan' },
+  classify:          { label: 'Sort It',  icon: '🗂️', accentColor: 'purple' },
+  compare_attribute: { label: 'Compare',  icon: '⚖️', accentColor: 'emerald' },
+  orbital_reasoning: { label: 'Orbits',   icon: '🌀', accentColor: 'amber' },
+};
+
+/** Attempts allowed before the answer is revealed and the item scored wrong. */
+const MAX_ATTEMPTS = 3;
+
 const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [transform, setTransform] = useState({ k: 1, x: 0, y: 0 });
-  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(data.focusBody || null);
+
+  const challenges = useMemo(() => data.challenges ?? [], [data.challenges]);
+  const hasChallenges = challenges.length > 0;
+
+  // In challenge mode nothing starts selected. `focusBody` is a curator hint for
+  // free exploration, and pre-selecting it would hand over question 1's answer
+  // whenever the two happen to coincide.
+  const [selectedBodyId, setSelectedBodyId] = useState<string | null>(
+    hasChallenges ? null : (data.focusBody || null),
+  );
   const [hoveredBodyId, setHoveredBodyId] = useState<string | null>(null);
   const [timeScale, setTimeScale] = useState(data.timeScale || 5000);
   const [showOrbits, setShowOrbits] = useState(data.showOrbits !== false);
@@ -62,8 +134,6 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
     data.scaleMode || 'hybrid'
   );
   const [paused, setPaused] = useState(false);
-  const [compareBody1, setCompareBody1] = useState<string | null>(null);
-  const [compareBody2, setCompareBody2] = useState<string | null>(null);
 
   // Animation state - use refs to avoid re-renders during animation
   const simulationDateRef = useRef(data.dateTime ? new Date(data.dateTime) : new Date());
@@ -91,6 +161,56 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
     [data.instanceId],
   );
 
+  // ── Evaluation ────────────────────────────────────────────────────
+  const { submitResult, elapsedMs } = usePrimitiveEvaluation<SolarSystemExplorerMetrics>({
+    primitiveType: 'solar-system-explorer',
+    instanceId: resolvedInstanceId,
+    skillId: data.skillId,
+    subskillId: data.subskillId,
+    objectiveId: data.objectiveId,
+    exhibitId: data.exhibitId,
+  });
+
+  // ── Challenge progress ────────────────────────────────────────────
+  const {
+    currentIndex,
+    currentAttempts,
+    results: challengeResults,
+    isComplete,
+    recordResult,
+    incrementAttempts,
+    advance: advanceProgress,
+  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+
+  const allChallengesComplete = hasChallenges && isComplete;
+  const currentChallenge = hasChallenges
+    ? challenges[Math.min(currentIndex, challenges.length - 1)]
+    : null;
+  // Session score, set once at submit. The challenge strip lives until THIS is
+  // set — NOT until `allChallengesComplete`, which the hook flips the instant
+  // the last result is recorded, i.e. before the student has read the final
+  // feedback or pressed Finish. Gating on that would unmount the Finish button
+  // and the session would never be submitted at all.
+  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
+  const isChallengeActive = hasChallenges && submittedScore === null;
+
+  const phaseResults = usePhaseResults({
+    challenges,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    getChallengeType: (ch) => ch.type,
+    phaseConfig: PHASE_TYPE_CONFIG,
+  });
+
+  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
+  const [revealedAnswerId, setRevealedAnswerId] = useState<string | null>(null);
+  const exploredBodiesRef = useRef<Set<string>>(new Set());
+  const challengeStartRef = useRef<number>(Date.now());
+
+  // The item is SETTLED once it is right, or once the tries are gone. A wrong
+  // answer with tries left is not settled — the student keeps working on it.
+  const isSettled = Boolean(feedback?.correct) || revealedAnswerId !== null;
+
   const selectedBodyForAI = useMemo(
     () => data.bodies.find((b) => b.id === selectedBodyId) ?? null,
     [data.bodies, selectedBodyId],
@@ -105,7 +225,17 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
     selectedBodyName: selectedBodyForAI?.name ?? 'nothing yet',
     selectedBodyDescription: selectedBodyForAI?.description ?? '',
     motionState: paused ? 'paused' : 'orbiting',
-  }), [data.title, data.initialZoom, data.gradeLevel, data.bodies, selectedBodyForAI, paused]);
+    // The question text is safe to send — it never names its own answer. The
+    // answer key itself is deliberately NOT in this payload.
+    challengePrompt: isChallengeActive ? (currentChallenge?.prompt ?? '') : '',
+    challengeNumber: hasChallenges ? Math.min(currentIndex + 1, challenges.length) : 0,
+    challengeCount: challenges.length,
+    ...(data.supportTier ? { supportTier: data.supportTier } : {}),
+  }), [
+    data.title, data.initialZoom, data.gradeLevel, data.bodies, data.supportTier,
+    selectedBodyForAI, paused, isChallengeActive, currentChallenge, currentIndex,
+    challenges.length, hasChallenges,
+  ]);
 
   const { sendText, isAudioPlaying } = useLuminaAI({
     primitiveType: 'solar-system-explorer',
@@ -133,26 +263,69 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
     sendText(
       `[SOLAR_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
       + `a solar system model showing: ${data.bodies.map((b) => b.name).join(', ')}. `
-      + `They tap a planet to learn about it. Tell them what to do in child words, warmly.`
+      + (hasChallenges
+        ? `They will be asked questions they answer by TAPPING a planet and then pressing the big tick button. `
+          + `Tell them that in child words, warmly. Do not ask the first question yourself — it is coming.`
+        : `They tap a planet to learn about it. Tell them what to do in child words, warmly.`)
       + `${isPreReader ? ' Never speak a measurement to them — no kilometres, AU, degrees or day counts.' : ''}`,
       { silent: true },
     );
-  }, [sendText, isPreReader, data.bodies]);
+  }, [sendText, isPreReader, data.bodies, hasChallenges]);
 
-  // The tutor's voice IS the planet card for a non-reader. Fires when the
-  // selection changes, not on every render.
+  // The tutor speaks each question, because at K the student cannot read it.
+  const spokenPromptRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isChallengeActive || !currentChallenge) return;
+    if (spokenPromptRef.current === currentChallenge.id) return;
+    spokenPromptRef.current = currentChallenge.id;
+    sendText(
+      `[SOLAR_CHALLENGE] Question ${currentIndex + 1} of ${challenges.length}. `
+      + `Say this aloud in warm child words, then wait: "${currentChallenge.prompt}". `
+      + `You do NOT know which planet is correct and you must never name it, point at it, `
+      + `or rule any planet out — not even to be encouraging.`,
+      { silent: true },
+    );
+  }, [isChallengeActive, currentChallenge, currentIndex, challenges.length, sendText]);
+
+  // Tapping a body. During a question this is INSPECTION, so the tutor names it
+  // and stops — volunteering "it's the biggest one" here would answer a
+  // compare_attribute question outright.
   const lastAnnouncedBodyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selectedBodyForAI) return;
     if (lastAnnouncedBodyRef.current === selectedBodyForAI.id) return;
     lastAnnouncedBodyRef.current = selectedBodyForAI.id;
+    exploredBodiesRef.current.add(selectedBodyForAI.id);
+
+    if (isChallengeActive) {
+      sendText(
+        `[SOLAR_BODY_INSPECTED] While working on the question, the student is looking at `
+        + `${selectedBodyForAI.name}. Say ONLY its name, warmly and briefly. `
+        + `Say NOTHING about it and give NO sign of whether it answers the question.`,
+        { silent: true },
+      );
+      return;
+    }
+
     sendText(
       `[SOLAR_BODY_SELECTED] The student tapped ${selectedBodyForAI.name}. `
       + `Say its name and ONE short child-sized thing about it. `
       + `Do not ask a question and do not list numbers.`,
       { silent: true },
     );
-  }, [selectedBodyForAI, sendText]);
+  }, [selectedBodyForAI, sendText, isChallengeActive]);
+
+  // Per-challenge reset. Every per-challenge latch is cleared HERE, including
+  // `lastAnnouncedBodyRef` — otherwise re-inspecting the same planet on the next
+  // question is silent ([[feedback_spoken-auto-advance-footguns]]).
+  useEffect(() => {
+    if (!hasChallenges) return;
+    setSelectedBodyId(null);
+    setFeedback(null);
+    setRevealedAnswerId(null);
+    lastAnnouncedBodyRef.current = null;
+    challengeStartRef.current = Date.now();
+  }, [currentIndex, hasChallenges]);
 
   // Window resize listener (more performant than ResizeObserver for this case)
   useEffect(() => {
@@ -291,6 +464,143 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
   const habitableZoneInner = 0.95 * AU_TO_PIXELS;
   const habitableZoneOuter = 1.37 * AU_TO_PIXELS;
 
+  // ── Answer handling ───────────────────────────────────────────────
+  // A tap SELECTS; a second, deliberate press ANSWERS. Two steps because these
+  // targets are small circles in continuous orbital motion — a tap-is-the-answer
+  // loop would score mis-taps on a moving object as misconceptions.
+  const handleBodyTap = useCallback((bodyId: string) => {
+    if (isSettled) return; // locked once the item is over, until Next
+    setSelectedBodyId(bodyId);
+    // A new pick retires the previous miss's hint, which also brings the
+    // confirm button back — that IS the retry affordance.
+    setFeedback(null);
+  }, [isSettled]);
+
+  const handleConfirmAnswer = useCallback(() => {
+    if (!currentChallenge || !selectedBodyId || isSettled) return;
+
+    incrementAttempts();
+    const attempts = currentAttempts + 1;
+    const correct = currentChallenge.answerBodyIds.includes(selectedBodyId);
+    const chosen = data.bodies.find((b) => b.id === selectedBodyId);
+
+    if (correct) {
+      SoundManager.playCorrect();
+      setFeedback({
+        correct: true,
+        message: currentChallenge.explanation ?? `Yes — ${chosen?.name ?? 'that one'}!`,
+      });
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts,
+        timeMs: Date.now() - challengeStartRef.current,
+      });
+      sendText(
+        `[SOLAR_ANSWER_CORRECT] The student answered "${currentChallenge.prompt}" with `
+        + `${chosen?.name} on attempt ${attempts} — that is RIGHT. Say so warmly in one short `
+        + `sentence and give ONE child-sized reason why it is right.`,
+        { silent: true },
+      );
+      return;
+    }
+
+    SoundManager.playIncorrect();
+
+    if (attempts >= MAX_ATTEMPTS) {
+      const answer = data.bodies.find((b) => b.id === currentChallenge.answerBodyIds[0]);
+      setRevealedAnswerId(answer?.id ?? null);
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: false,
+        attempts,
+        timeMs: Date.now() - challengeStartRef.current,
+      });
+      setFeedback({
+        correct: false,
+        message: currentChallenge.explanation ?? `The answer was ${answer?.name ?? 'another one'}.`,
+      });
+      sendText(
+        `[SOLAR_ANSWER_REVEAL] The student ran out of tries on "${currentChallenge.prompt}". `
+        + `The answer is ${answer?.name}. Tell them kindly, show them how to see it for `
+        + `themselves in the picture, and keep it short. Do not make them feel bad.`,
+        { silent: true },
+      );
+      return;
+    }
+
+    // Wrong, with tries left. The item stays open: `revealedAnswerId` is left
+    // null, so `isSettled` is false and the next tap clears this hint.
+    setFeedback({
+      correct: false,
+      message: currentChallenge.hint ?? 'Not that one — have another look and try again.',
+    });
+    sendText(
+      `[SOLAR_ANSWER_WRONG] The student picked ${chosen?.name} for "${currentChallenge.prompt}" `
+      + `and it is NOT right. Attempt ${attempts} of ${MAX_ATTEMPTS}. Encourage them to look again `
+      + `and give a way to LOOK, not the answer. Never name the correct planet and never rule one out.`,
+      { silent: true },
+    );
+  }, [
+    currentChallenge, selectedBodyId, isSettled, currentAttempts, data.bodies,
+    incrementAttempts, recordResult, sendText,
+  ]);
+
+  const handleNext = useCallback(() => {
+    if (!currentChallenge) return;
+    const advanced = advanceProgress();
+    if (advanced) {
+      sendText(
+        `[SOLAR_NEXT] Moving to question ${currentIndex + 2} of ${challenges.length}.`,
+        { silent: true },
+      );
+      return;
+    }
+
+    // Last item — score the session.
+    const total = challenges.length;
+    const correctCount = challengeResults.filter((r) => r.correct).length;
+    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+    // One session = one skill in the pinned case, so the dominant type is the
+    // eval mode the evidence belongs to.
+    const typeCounts = challenges.reduce<Record<string, number>>((acc, ch) => {
+      acc[ch.type] = (acc[ch.type] ?? 0) + 1;
+      return acc;
+    }, {});
+    const dominantMode = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    const metrics: SolarSystemExplorerMetrics = {
+      type: 'solar-system-explorer',
+      evalMode: dominantMode,
+      totalChallenges: total,
+      correctChallenges: correctCount,
+      totalAttempts,
+      accuracy,
+      bodiesExplored: exploredBodiesRef.current.size,
+      durationMs: elapsedMs,
+    };
+
+    submitResult(accuracy >= 70, accuracy, metrics);
+    setSubmittedScore(accuracy);
+    SoundManager.playStreak();
+
+    const phaseScoreStr = phaseResults.map((p) => `${p.label} ${p.score}%`).join(', ');
+    sendText(
+      `[SOLAR_ALL_COMPLETE] The student finished all ${total} questions. `
+      + `${phaseScoreStr || `Overall ${accuracy}%`}. Overall ${accuracy}%. `
+      + `Celebrate briefly and name one thing they now know about the solar system.`,
+      { silent: true },
+    );
+  }, [
+    currentChallenge, advanceProgress, sendText, currentIndex, challenges,
+    challengeResults, elapsedMs, submitResult, phaseResults,
+  ]);
+
+  const selectedName = selectedBody?.name ?? '';
+  const promptTextClass = isPreReader ? 'text-2xl' : 'text-lg';
+
   return (
     <div className={`w-full ${className}`}>
       <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
@@ -304,12 +614,126 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
             <div className="flex items-center gap-3 mb-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Astronomy:</span>
               <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
-                EXPLORE
+                {hasChallenges ? 'CHALLENGE' : 'EXPLORE'}
               </span>
             </div>
             <h3 className="text-3xl font-light text-white mb-2">{data.title}</h3>
             <p className="text-slate-300 leading-relaxed">{data.description}</p>
           </div>
+
+          {/* Challenge strip — the question, the confirm, the feedback */}
+          {isChallengeActive && currentChallenge && (
+            <div className="mb-4 glass-panel rounded-2xl border border-white/10 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                {challenges.map((ch, i) => {
+                  const done = challengeResults.find((r) => r.challengeId === ch.id);
+                  return (
+                    <span
+                      key={ch.id}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        i === currentIndex ? 'w-8 bg-blue-400'
+                          : done?.correct ? 'w-2.5 bg-emerald-400'
+                          : done ? 'w-2.5 bg-rose-400/70'
+                          : 'w-2.5 bg-white/20'
+                      }`}
+                    />
+                  );
+                })}
+                {!isPreReader && (
+                  <span className="ml-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">
+                    {currentIndex + 1} / {challenges.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-start gap-3">
+                <p className={`text-white font-light leading-snug flex-1 ${promptTextClass}`}>
+                  {currentChallenge.prompt}
+                </p>
+                <LuminaReadAloud
+                  iconOnly
+                  size={isPreReader ? 'lg' : 'sm'}
+                  accent="cyan"
+                  speaking={isAudioPlaying}
+                  aria-label="Read the question to me"
+                  className="flex-shrink-0"
+                  onClick={() => readAloud(currentChallenge.prompt)}
+                />
+              </div>
+
+              {/* Answer commit. Never shown until something is selected, so the
+                  strip cannot hint at what to pick. */}
+              {!feedback && (
+                <div className="mt-4 flex items-center gap-3">
+                  {selectedBody ? (
+                    <button
+                      onClick={handleConfirmAnswer}
+                      className={`flex items-center gap-3 rounded-xl font-medium text-white transition-all duration-300 hover:scale-105 bg-emerald-500/30 hover:bg-emerald-500/40 border border-emerald-400/40 ${
+                        isPreReader ? 'px-6 py-4 text-xl' : 'px-5 py-2.5 text-sm'
+                      }`}
+                    >
+                      <span
+                        className="inline-block rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: selectedBody.color,
+                          width: isPreReader ? 22 : 16,
+                          height: isPreReader ? 22 : 16,
+                        }}
+                      />
+                      <span>{isPreReader ? `✓ ${selectedName}!` : `Answer: ${selectedName}`}</span>
+                    </button>
+                  ) : (
+                    <p className={`text-slate-400 ${isPreReader ? 'text-lg' : 'text-sm'}`}>
+                      {isPreReader ? 'Tap a planet 👆' : 'Tap a body in the model to choose it.'}
+                    </p>
+                  )}
+                  {currentAttempts > 0 && !isPreReader && (
+                    <span className="text-xs text-slate-500 font-mono">
+                      try {currentAttempts + 1} of {MAX_ATTEMPTS}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {feedback && (
+                <div
+                  className={`mt-4 rounded-xl border p-4 flex items-start gap-3 ${
+                    feedback.correct
+                      ? 'bg-emerald-500/15 border-emerald-400/30'
+                      : 'bg-amber-500/15 border-amber-400/30'
+                  }`}
+                >
+                  <span className={isPreReader ? 'text-3xl' : 'text-xl'}>
+                    {feedback.correct ? '🎉' : '🤔'}
+                  </span>
+                  <p className={`flex-1 text-white font-light ${isPreReader ? 'text-xl' : 'text-base'}`}>
+                    {feedback.message}
+                  </p>
+                  <LuminaReadAloud
+                    iconOnly
+                    size={isPreReader ? 'lg' : 'sm'}
+                    accent="emerald"
+                    speaking={isAudioPlaying}
+                    aria-label="Read this to me"
+                    className="flex-shrink-0"
+                    onClick={() => readAloud(feedback.message)}
+                  />
+                  {/* Settled = correct, or out of tries. A wrong answer with
+                      tries left clears itself on the next tap instead. */}
+                  {(feedback.correct || revealedAnswerId) && (
+                    <button
+                      onClick={handleNext}
+                      className={`flex-shrink-0 rounded-xl font-medium text-white bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 transition-all duration-300 hover:scale-105 ${
+                        isPreReader ? 'px-6 py-4 text-xl' : 'px-5 py-2.5 text-sm'
+                      }`}
+                    >
+                      {currentIndex + 1 >= challenges.length ? (isPreReader ? '🏁' : 'Finish') : (isPreReader ? '▶' : 'Next')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Main Viewer */}
           <div className="relative glass-panel rounded-2xl border border-white/10 overflow-hidden" style={{ height: '600px' }}>
@@ -350,16 +774,17 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                     const r = getVisualRadius(body);
                     const isSelected = selectedBodyId === body.id;
                     const isHovered = hoveredBodyId === body.id;
-                    const isCompare = compareBody1 === body.id || compareBody2 === body.id;
+                    const isRevealed = revealedAnswerId === body.id;
 
                     return (
                       <g
                         key={body.id}
+                        data-body-id={body.id}
                         ref={(el) => setBodyRef(body.id, el)}
                         transform={`translate(${pos.x}, ${pos.y})`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedBodyId(body.id);
+                          handleBodyTap(body.id);
                         }}
                         onMouseEnter={() => setHoveredBodyId(body.id)}
                         onMouseLeave={() => setHoveredBodyId(null)}
@@ -367,6 +792,12 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                       >
                         {/* Glow for Sun */}
                         {body.type === 'star' && <circle r={r * 3} fill="url(#sunGlow)" opacity={0.6} />}
+
+                        {/* Transparent hit target — the drawn planet can be a
+                            handful of pixels at system zoom, and it is moving.
+                            Without this, tapping is a dexterity test rather than
+                            an astronomy one. */}
+                        <circle r={Math.max(r * 2.2, 14 / transform.k)} fill="transparent" />
 
                         {/* Hover Glow */}
                         {isHovered && !isSelected && (
@@ -395,13 +826,14 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                           </>
                         )}
 
-                        {/* Compare Indicator */}
-                        {isCompare && (
+                        {/* Revealed answer — only ever set AFTER the item is
+                            scored wrong, never before. */}
+                        {isRevealed && (
                           <circle
-                            r={r * 1.5 + 8}
+                            r={r * 1.5 + 9}
                             fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth={2 / transform.k}
+                            stroke="#34d399"
+                            strokeWidth={3 / transform.k}
                           />
                         )}
 
@@ -556,6 +988,17 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
             </div>
           </div>
 
+          {/* Session results */}
+          {allChallengesComplete && submittedScore !== null && (
+            <PhaseSummaryPanel
+              className="mt-6"
+              phases={phaseResults}
+              overallScore={submittedScore}
+              durationMs={elapsedMs}
+              heading="Your Space Journey"
+            />
+          )}
+
           {/* Detail Panel */}
           {selectedBody && (
             <div className="mt-6 glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden">
@@ -609,7 +1052,10 @@ const SolarSystemExplorer: React.FC<SolarSystemExplorerProps> = ({ data, classNa
                     this primitive and mean nothing to a K-1 child. The scaffold
                     forbids the tutor from speaking them too. NOT rendered rather
                     than CSS-hidden: `hidden` leaves the text in the DOM and
-                    reachable by assistive tech, which is not "gone". */}
+                    reachable by assistive tech, which is not "gone".
+                    This panel is ALSO the research instrument for the
+                    compare_attribute and orbital_reasoning modes, which is why
+                    the generator never builds those items on hidden data at K-1. */}
                 {!isPreReader && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {selectedBody.distanceAu > 0 && (

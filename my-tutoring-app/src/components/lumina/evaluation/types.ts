@@ -1392,6 +1392,17 @@ export interface ConstellationBuilderMetrics extends BasePrimitiveMetrics {
   durationMs: number;
 }
 
+export interface SolarSystemExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'solar-system-explorer';
+  totalChallenges: number;
+  correctChallenges: number;
+  totalAttempts: number;
+  accuracy: number;
+  /** Distinct bodies the student tapped open during the session (research effort). */
+  bodiesExplored: number;
+  durationMs: number;
+}
+
 export interface PlanetaryExplorerMetrics extends BasePrimitiveMetrics {
   type: 'planetary-explorer';
   totalQuestions: number;
@@ -3492,6 +3503,7 @@ export type PrimitiveMetrics =
   | TelescopeSimulatorMetrics
   | LightShadowLabMetrics
   | ConstellationBuilderMetrics
+  | SolarSystemExplorerMetrics
   | PlanetaryExplorerMetrics
   // Physics
   | MotionDiagramMetrics

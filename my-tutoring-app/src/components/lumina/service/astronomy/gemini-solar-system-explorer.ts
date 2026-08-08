@@ -1,11 +1,14 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 
 // Import types from the component - single source of truth
 import type {
   SolarSystemExplorerData,
   CelestialBody,
+  SolarChallenge,
+  SolarChallengeType,
 } from '../../primitives/visual-primitives/astronomy/SolarSystemExplorer';
 
 // Re-export for convenience if needed elsewhere
@@ -193,7 +196,11 @@ export const solarSystemGradeFromGrade = (grade?: string): SolarSystemGrade | nu
   return String(n) as '1' | '2' | '3' | '4';
 };
 
-/** Legacy prose fallback — kept as the second resolver, never the first. */
+/** Type guard for a rung that arrived as untyped JSON (Gemini's own stamp). */
+const isSolarSystemGrade = (v: unknown): v is SolarSystemGrade =>
+  typeof v === 'string' && ['K', '1', '2', '3', '4', '5'].includes(v);
+
+/** Legacy prose fallback — kept as the last resolver, never the first. */
 const solarSystemGradeFromProse = (prose?: string): SolarSystemGrade => {
   const p = (prose ?? '').toLowerCase();
   if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
@@ -204,6 +211,398 @@ const solarSystemGradeFromProse = (prose?: string): SolarSystemGrade => {
   if (/\b(grade 5|5th grade|middle|high school)\b/.test(p)) return '5';
   return '3';
 };
+
+// ============================================================================
+// EVAL MODES — the five skills this model can actually measure
+// ============================================================================
+
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  identify: {
+    promptDoc:
+      '"identify": the student is asked for a body BY NAME and taps it in the live model. '
+      + 'Tests name↔body recognition — the Kindergarten objective.',
+    schemaDescription: "'identify' (tap the named body)",
+  },
+  order_from_sun: {
+    promptDoc:
+      '"order_from_sun": the student taps a planet by its POSITION in the sequence out from the Sun '
+      + '(closest, farthest, or the Nth). Tests solar-system order.',
+    schemaDescription: "'order_from_sun' (tap by position from the Sun)",
+  },
+  classify: {
+    promptDoc:
+      '"classify": the student taps ANY member of a category — rocky planet, gas giant, dwarf planet. '
+      + 'Tests the category rule rather than one memorised fact.',
+    schemaDescription: "'classify' (tap any member of a category)",
+  },
+  compare_attribute: {
+    promptDoc:
+      '"compare_attribute": the student taps the extreme on one attribute — biggest, smallest, '
+      + 'most moons, hottest. Requires comparing across bodies, not recalling one.',
+    schemaDescription: "'compare_attribute' (tap the extreme on an attribute)",
+  },
+  orbital_reasoning: {
+    promptDoc:
+      '"orbital_reasoning": the student taps by ORBITAL PERIOD — longest year, fastest mover. '
+      + 'Tests the distance↔period relationship (Kepler\'s third law, informally).',
+    schemaDescription: "'orbital_reasoning' (tap by orbital period)",
+  },
+};
+
+// ============================================================================
+// CHALLENGE CONSTRUCTION — Fork A: code builds the items AND the answer key
+// ============================================================================
+// Gemini emits the MODEL (the bodies and their real data); code derives every
+// question and every answer from that same array
+// ([[feedback_llm-window-code-builds-structure]]). Two reasons that is not
+// negotiable here:
+//
+//   1. Answer integrity. An LLM-written key can contradict the data on screen —
+//      "Jupiter has the most moons" while the bodies array says Saturn 146.
+//      A key computed FROM the array cannot disagree with the array.
+//   2. Answer leak. There is no round trip in which a prompt string can name
+//      its own answer, because the prompt is generated from the answer.
+//
+// This is the SP-21 Fork A shape, so the unconstrained ("mixed") path is built
+// explicitly — by rotating every in-band kind — rather than letting one tier
+// stand in for a mix.
+
+const TIER_ORDER: SolarChallengeType[] = [
+  'identify', 'order_from_sun', 'classify', 'compare_attribute', 'orbital_reasoning',
+];
+
+/**
+ * Which kinds a MIXED session draws from, per rung. This is a band floor on the
+ * unpinned path only — an explicit `targetEvalMode` is always honoured, because
+ * a pin is a curriculum decision and a cap below lesson intent is a bug
+ * ([[feedback_trust-intent-over-hardcoded-caps]]).
+ */
+const MIXED_POOL_BY_RUNG: Record<SolarSystemGrade, SolarChallengeType[]> = {
+  K:   ['identify', 'order_from_sun', 'classify'],
+  '1': ['identify', 'order_from_sun', 'classify'],
+  '2': ['identify', 'order_from_sun', 'classify', 'compare_attribute'],
+  '3': TIER_ORDER,
+  '4': TIER_ORDER,
+  '5': TIER_ORDER,
+};
+
+/** Enough items to measure, not just to demo ([[feedback_mastery-over-demo]]). */
+const CHALLENGE_COUNT_BY_RUNG: Record<SolarSystemGrade, number> = {
+  K: 4, '1': 5, '2': 5, '3': 6, '4': 6, '5': 6,
+};
+
+const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth'];
+
+/**
+ * Colour-and-appearance cues for the `identify` items at K-1.
+ *
+ * A pre-reader cannot read the name labels under the planets, so "Tap Mars" has
+ * no channel at all unless the body is also described by how it LOOKS. Cues are
+ * deliberately colour-only: no "biggest", no "nearest the Sun", because those
+ * would answer a compare_attribute or order_from_sun item elsewhere in the
+ * same session.
+ */
+const APPEARANCE_CUE: Record<string, string> = {
+  mercury: 'the small grey one',
+  venus:   'the pale yellow one',
+  earth:   'the blue one, our home',
+  mars:    'the red one',
+  jupiter: 'the one with orange stripes',
+  saturn:  'the pale gold one with rings',
+  uranus:  'the light blue-green one',
+  neptune: 'the deep blue one',
+  pluto:   'the small brown one',
+};
+
+interface ChallengeCandidate {
+  type: SolarChallengeType;
+  /** Canonical identity for de-duplication within a session. */
+  key: string;
+  prompt: string;
+  answerBodyIds: string[];
+  hint: string;
+  explanation: string;
+  /** In-kind ordering, easy → hard. */
+  rank: number;
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * The single body that wins on `value`, or null when the top two TIE.
+ * A tie makes the item unanswerable — two defensible taps, one scored wrong —
+ * so the variant is dropped rather than shipped as a coin flip.
+ */
+function strictExtreme(
+  bodies: CelestialBody[],
+  value: (b: CelestialBody) => number,
+  dir: 'max' | 'min',
+): CelestialBody | null {
+  if (bodies.length < 2) return null;
+  const sorted = [...bodies].sort((a, b) => (dir === 'max' ? value(b) - value(a) : value(a) - value(b)));
+  if (value(sorted[0]) === value(sorted[1])) return null;
+  return sorted[0];
+}
+
+function collectCandidates(
+  bodies: CelestialBody[],
+  rung: SolarSystemGrade,
+): ChallengeCandidate[] {
+  const isPreReader = rung === 'K' || rung === '1';
+  // The six-cell stat grid is NOT RENDERED at K-1, so any item whose evidence
+  // lives only in that grid (moon counts, temperatures) has no channel there.
+  const statsHidden = isPreReader;
+
+  const planets = bodies
+    .filter((b) => b.type === 'planet')
+    .sort((a, b) => a.distanceAu - b.distanceAu);
+  const out: ChallengeCandidate[] = [];
+  if (planets.length < 2) return out;
+
+  // ── identify ───────────────────────────────────────────────────
+  planets.forEach((p, i) => {
+    const cue = isPreReader ? APPEARANCE_CUE[p.id] : undefined;
+    out.push({
+      type: 'identify',
+      key: `identify:${p.id}`,
+      prompt: cue ? `Tap ${p.name} — ${cue}.` : `Tap ${p.name}.`,
+      answerBodyIds: [p.id],
+      hint: isPreReader
+        ? 'Look at the colours. Ask me to say it again if you need to.'
+        : 'Each body has its name written just below it.',
+      explanation: `That's ${p.name}.`,
+      rank: i,
+    });
+  });
+
+  // ── order_from_sun ─────────────────────────────────────────────
+  const orderHint = 'Start at the Sun in the middle and move outwards, one ring at a time.';
+  out.push({
+    type: 'order_from_sun',
+    key: 'order:closest',
+    prompt: 'Tap the planet closest to the Sun.',
+    answerBodyIds: [planets[0].id],
+    hint: orderHint,
+    explanation: `${planets[0].name} orbits closest to the Sun.`,
+    rank: 0,
+  });
+  const outermost = planets[planets.length - 1];
+  out.push({
+    type: 'order_from_sun',
+    key: 'order:farthest',
+    prompt: 'Tap the planet farthest from the Sun.',
+    answerBodyIds: [outermost.id],
+    hint: orderHint,
+    explanation: `${outermost.name} is the farthest planet from the Sun here.`,
+    rank: 1,
+  });
+  // Ordinal positions ask the student to COUNT a sequence — not a K-1 move.
+  if (!isPreReader) {
+    planets.slice(1, -1).forEach((p, idx) => {
+      const position = idx + 1; // slice starts at index 1
+      out.push({
+        type: 'order_from_sun',
+        key: `order:${position}`,
+        prompt: `Tap the ${ORDINALS[position]} planet from the Sun.`,
+        answerBodyIds: [p.id],
+        hint: orderHint,
+        explanation: `${p.name} is the ${ORDINALS[position]} planet from the Sun.`,
+        rank: 2 + idx,
+      });
+    });
+  }
+
+  // ── classify ───────────────────────────────────────────────────
+  const classifyHint = 'Think about what the whole group has in common — how big they are and what they are made of.';
+  const rocky = planets.filter((p) => p.radiusKm < 20000 && p.distanceAu < 3);
+  const giants = planets.filter((p) => p.radiusKm >= 20000);
+  const dwarfs = bodies.filter((b) => b.type === 'dwarf-planet');
+
+  if (rocky.length > 0 && rocky.length < planets.length) {
+    out.push({
+      type: 'classify',
+      key: 'classify:rocky',
+      prompt: isPreReader || rung === '2'
+        ? 'Tap a rocky planet. Rocky planets are the smaller ones made of rock.'
+        : 'Tap one of the rocky planets.',
+      answerBodyIds: rocky.map((p) => p.id),
+      hint: classifyHint,
+      explanation: `The rocky planets are ${rocky.map((p) => p.name).join(', ')}.`,
+      rank: 0,
+    });
+  }
+  if (giants.length > 0 && giants.length < planets.length) {
+    out.push({
+      type: 'classify',
+      key: 'classify:giant',
+      prompt: isPreReader || rung === '2'
+        ? 'Tap a gas giant. Gas giants are the huge ones made of gas.'
+        : 'Tap one of the gas giants.',
+      answerBodyIds: giants.map((p) => p.id),
+      hint: classifyHint,
+      explanation: `The gas giants are ${giants.map((p) => p.name).join(', ')}.`,
+      rank: 1,
+    });
+  }
+  if (dwarfs.length > 0) {
+    out.push({
+      type: 'classify',
+      key: 'classify:dwarf',
+      prompt: 'Tap a dwarf planet.',
+      answerBodyIds: dwarfs.map((b) => b.id),
+      hint: 'A dwarf planet is much smaller than a planet, and it shares its orbit with other things.',
+      explanation: `${dwarfs.map((b) => b.name).join(', ')} ${dwarfs.length > 1 ? 'are' : 'is a'} dwarf planet${dwarfs.length > 1 ? 's' : ''}.`,
+      rank: 2,
+    });
+  }
+
+  // ── compare_attribute ──────────────────────────────────────────
+  const biggest = strictExtreme(planets, (b) => b.radiusKm, 'max');
+  if (biggest) {
+    out.push({
+      type: 'compare_attribute',
+      key: 'compare:biggest',
+      prompt: 'Tap the biggest planet.',
+      answerBodyIds: [biggest.id],
+      hint: 'Look at how much room each circle takes up next to the others.',
+      explanation: `${biggest.name} is the biggest planet here.`,
+      rank: 0,
+    });
+  }
+  const smallest = strictExtreme(planets, (b) => b.radiusKm, 'min');
+  if (smallest) {
+    out.push({
+      type: 'compare_attribute',
+      key: 'compare:smallest',
+      prompt: 'Tap the smallest planet.',
+      answerBodyIds: [smallest.id],
+      hint: 'Look at how much room each circle takes up next to the others.',
+      explanation: `${smallest.name} is the smallest planet here.`,
+      rank: 1,
+    });
+  }
+  if (!statsHidden) {
+    const mostMoons = strictExtreme(planets, (b) => b.moons, 'max');
+    if (mostMoons && mostMoons.moons > 0) {
+      out.push({
+        type: 'compare_attribute',
+        key: 'compare:moons',
+        prompt: 'Tap the planet with the most moons.',
+        answerBodyIds: [mostMoons.id],
+        hint: 'Tap the planets one at a time and read the moon count on each card.',
+        explanation: `${mostMoons.name} has ${mostMoons.moons} known moons — more than any other planet here.`,
+        rank: 2,
+      });
+    }
+    const hottest = strictExtreme(planets, (b) => b.temperatureC, 'max');
+    if (hottest) {
+      out.push({
+        type: 'compare_attribute',
+        key: 'compare:hottest',
+        prompt: 'Tap the hottest planet.',
+        answerBodyIds: [hottest.id],
+        // The trap is worth naming: the closest planet is NOT the hottest.
+        hint: 'Check the temperature on each planet\'s card. It may not be the one you expect.',
+        explanation: `${hottest.name} is the hottest planet at about ${hottest.temperatureC}°C.`,
+        rank: 3,
+      });
+    }
+  }
+
+  // ── orbital_reasoning ──────────────────────────────────────────
+  const orbitHint = 'Watch them move. The ones far out crawl around; the ones close in race.';
+  const orbiting = planets.filter((p) => p.orbitalPeriodDays > 0);
+  const slowest = strictExtreme(orbiting, (b) => b.orbitalPeriodDays, 'max');
+  if (slowest) {
+    out.push({
+      type: 'orbital_reasoning',
+      key: 'orbit:slowest',
+      prompt: isPreReader
+        ? 'Tap the planet that goes around the Sun the slowest.'
+        : 'Tap the planet with the longest year — the one that takes longest to travel all the way around the Sun.',
+      answerBodyIds: [slowest.id],
+      hint: orbitHint,
+      explanation: isPreReader
+        ? `${slowest.name} is the slowest — it is very far away, so its trip round the Sun is huge.`
+        : `${slowest.name} takes about ${Math.round(slowest.orbitalPeriodDays)} Earth days for one orbit. The farther out a planet is, the longer its year.`,
+      rank: 0,
+    });
+  }
+  const fastest = strictExtreme(orbiting, (b) => b.orbitalPeriodDays, 'min');
+  if (fastest) {
+    out.push({
+      type: 'orbital_reasoning',
+      key: 'orbit:fastest',
+      prompt: isPreReader
+        ? 'Tap the planet that races around the Sun the fastest.'
+        : 'Tap the planet with the shortest year — the fastest one around the Sun.',
+      answerBodyIds: [fastest.id],
+      hint: orbitHint,
+      explanation: isPreReader
+        ? `${fastest.name} is the quickest — it is closest in, so it has the shortest way to go.`
+        : `${fastest.name} completes an orbit in about ${Math.round(fastest.orbitalPeriodDays)} Earth days.`,
+      rank: 1,
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Build the session's items by rotating the allowed kinds, so a five-item
+ * mixed session never collapses into five of the easiest thing. Ordered easy →
+ * hard by tier, then by in-kind rank.
+ */
+export function buildSolarChallenges(
+  bodies: CelestialBody[],
+  rung: SolarSystemGrade,
+  allowedKinds: SolarChallengeType[],
+  count: number,
+): SolarChallenge[] {
+  const kinds = TIER_ORDER.filter((k) => allowedKinds.includes(k));
+  if (kinds.length === 0) return [];
+
+  const all = collectCandidates(bodies, rung);
+  const pools = new Map<SolarChallengeType, ChallengeCandidate[]>(
+    kinds.map((k) => [k, shuffled(all.filter((c) => c.type === k))]),
+  );
+
+  const picked: ChallengeCandidate[] = [];
+  const seen = new Set<string>();
+  let progressed = true;
+  while (picked.length < count && progressed) {
+    progressed = false;
+    for (const k of kinds) {
+      if (picked.length >= count) break;
+      const next = pools.get(k)!.shift();
+      if (!next) continue;
+      progressed = true;
+      if (seen.has(next.key)) continue;
+      seen.add(next.key);
+      picked.push(next);
+    }
+  }
+
+  picked.sort(
+    (a, b) => (TIER_ORDER.indexOf(a.type) - TIER_ORDER.indexOf(b.type)) || (a.rank - b.rank),
+  );
+
+  return picked.map((c, i) => ({
+    id: `ssc-${i + 1}`,
+    type: c.type,
+    prompt: c.prompt,
+    answerBodyIds: c.answerBodyIds,
+    hint: c.hint,
+    explanation: c.explanation,
+  }));
+}
 
 export const generateSolarSystemExplorer = async (
   ctx: GenerationContext,
@@ -223,6 +622,32 @@ export const generateSolarSystemExplorer = async (
 
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, and each body's description/funFact foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
+
+  // Which SKILL this card assesses. Resolved before the model call so the prose
+  // can support the skill — the items themselves are built in code below.
+  const resolution = await resolveEvalModes(
+    'solar-system-explorer',
+    {
+      targetEvalMode: ctx.targetEvalMode,
+      intent: ctx.intent,
+      objectiveText: ctx.objective?.text,
+    },
+    CHALLENGE_TYPE_DOCS,
+  );
+
+  // The title and the top-level description are on screen from the first second,
+  // before anything is answered. Per-body descriptions are NOT covered by this
+  // rule — those sit behind a tap, which makes reading them research rather than
+  // a leak, and researching across bodies is the compare_attribute skill itself.
+  const skillFocus = `
+
+ASSESSED SKILL FOCUS: after this model is built, the student will be asked to ${
+    resolution
+      ? resolution.modes.map((m) => m.description.toLowerCase()).join('; and to ')
+      : 'name bodies, put them in order from the Sun, sort them into categories, compare them, and reason about their orbits'
+  }.
+ANSWER DISCIPLINE — the title and the top-level description must NOT say which body is the biggest, the smallest, the hottest, the closest, the farthest, the slowest, or has the most moons. Those are the questions.`;
+
   const prompt = `
 Create an educational Solar System Explorer visualization for teaching "${topic}" to ${gradeLevel} students.
 
@@ -483,7 +908,7 @@ VALIDATION REQUIREMENTS:
 6. Ensure textureGradient is a valid CSS gradient string
 7. descriptions and funFacts must be age-appropriate and scientifically accurate
 8. timeScale should be higher for younger grades (faster = more engaging)
-${intentFocus}
+${intentFocus}${skillFocus}
 
 Return a complete Solar System Explorer configuration appropriate for the grade level and topic.
 `;
@@ -583,6 +1008,41 @@ Return a complete Solar System Explorer configuration appropriate for the grade 
   if (data.showLabels === undefined) data.showLabels = true;
   if (data.scaleMode === undefined) data.scaleMode = 'hybrid';
   if (data.initialZoom === undefined) data.initialZoom = 'system';
+
+  // ── Band rung ───────────────────────────────────────────────────
+  // `data.gradeLevel` is what the COMPONENT reads to decide `isPreReader`, and
+  // it is also what the item builder must band on — if the two disagree, a K
+  // session gets K-banded questions on a screen still wearing adult chrome.
+  // Resolver order matters: the canonical grade wins, but Gemini's own stamp is
+  // the SECOND resolver, not the last. It read the same audience prose and at K
+  // it is usually right; demoting it below the prose resolver would let that
+  // resolver's literal `'3'` default switch the pre-reader gates OFF on
+  // free-form lessons that currently have them on.
+  const bandRung: SolarSystemGrade =
+    solarSystemGradeFromGrade(ctx.grade)
+    ?? (isSolarSystemGrade(data.gradeLevel) ? data.gradeLevel : null)
+    ?? solarSystemGradeFromProse(ctx.gradeContext);
+  data.gradeLevel = bandRung;
+
+  // ── Build the graded items ──────────────────────────────────────
+  // LAST, deliberately: `data.bodies` is only final here, after the Sun
+  // backfill and the config overrides. Deriving the answer key any earlier
+  // could key it to an array the student never sees.
+  const allowedKinds: SolarChallengeType[] = resolution
+    ? (resolution.allowedTypes as SolarChallengeType[])
+    : MIXED_POOL_BY_RUNG[bandRung];
+  data.challenges = buildSolarChallenges(
+    data.bodies,
+    bandRung,
+    allowedKinds,
+    CHALLENGE_COUNT_BY_RUNG[bandRung],
+  );
+
+  console.log(
+    `[SolarSystemExplorer] modes: ${
+      resolution ? `${resolution.modes.map((m) => m.evalMode).join('+')} (${resolution.source})` : 'mixed'
+    } → kinds [${allowedKinds.join(', ')}] → ${data.challenges.length} items @ rung ${bandRung}`,
+  );
 
   return data;
 };

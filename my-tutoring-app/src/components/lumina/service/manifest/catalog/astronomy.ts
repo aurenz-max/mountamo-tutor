@@ -10,13 +10,58 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   {
     id: 'solar-system-explorer',
     description: 'Interactive solar system model with accurate orbital mechanics, zoom controls, and planet details. Students explore planetary motion, compare sizes and distances, watch orbits in real-time, and discover facts about each celestial body. Features dynamic zoom from full system view down to individual planets, adjustable time scale to speed up orbital motion, and multiple scale modes (size-accurate, distance-accurate, hybrid) to teach the challenge of representing space at scale. Shows the habitable zone (Goldilocks zone) for astrobiology concepts. Includes all 8 planets plus optional dwarf planets (Pluto, Ceres, Eris) for advanced grades. Perfect for K-5 astronomy, NGSS space science standards, and next-generation science education. ESSENTIAL for teaching solar system structure, planetary motion, and scale of space.',
-    constraints: 'Best for grades K-5. Learning progression: K (planet names, order, Earth), 1 (inner vs outer, sizes), 2 (orbits, day/year), 3 (moons, rings, AU), 4 (orbital periods, distances), 5 (Kepler\'s laws, gravity, habitable zone). K-2: Show inner planets only or use hybrid scale mode for visibility. 3-5: Include all 8 planets, dwarf planets optional for grade 5. Use initialZoom to control starting view: "inner" for K-1, "system" for 2-5. Enable showDistances and showHabitableZone for grades 3+. Increase timeScale for younger grades (faster = more engaging). Supports both free exploration and guided inquiry about planetary characteristics.',
+    constraints: 'Best for grades K-5. Learning progression: K (planet names, order, Earth), 1 (inner vs outer, sizes), 2 (orbits, day/year), 3 (moons, rings, AU), 4 (orbital periods, distances), 5 (Kepler\'s laws, gravity, habitable zone). K-2: Show inner planets only or use hybrid scale mode for visibility. 3-5: Include all 8 planets, dwarf planets optional for grade 5. Use initialZoom to control starting view: "inner" for K-1, "system" for 2-5. Enable showDistances and showHabitableZone for grades 3+. Increase timeScale for younger grades (faster = more engaging). Assessment is by DIRECT MANIPULATION: the student answers each question by tapping the body in the live model, so every eval mode measures the same act the explorer is built around.',
+    evalModes: [
+      {
+        evalMode: 'identify',
+        label: 'Name It (Tier 1)',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['identify'],
+        description: 'tap a body when it is named — planet-name recognition',
+      },
+      {
+        evalMode: 'order_from_sun',
+        label: 'Order from the Sun (Tier 2)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['order_from_sun'],
+        description: 'tap a planet by its position out from the Sun — closest, farthest, or the Nth',
+      },
+      {
+        evalMode: 'classify',
+        label: 'Sort the Planets (Tier 3)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['classify'],
+        description: 'tap any member of a category — rocky planet, gas giant, dwarf planet',
+      },
+      {
+        evalMode: 'compare_attribute',
+        label: 'Compare Planets (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['compare_attribute'],
+        description: 'tap the extreme on one attribute — biggest, smallest, hottest, most moons',
+      },
+      {
+        evalMode: 'orbital_reasoning',
+        label: 'Orbits & Years (Tier 5)',
+        beta: 8.0,
+        scaffoldingMode: 6,
+        challengeTypes: ['orbital_reasoning'],
+        description: 'tap a planet by its orbital period — the longest year, or the fastest mover',
+      },
+    ],
     tutoring: {
       taskDescription:
         'Student is exploring a live model of the solar system ("{{title}}"). '
         + 'View: {{initialZoom}}. Bodies on screen: {{bodyNames}}. '
         + 'They are looking at: {{selectedBodyName}}. Motion is {{motionState}}. '
-        + 'They tap a planet to learn about it, and can zoom and pan around the Sun.',
+        + 'They tap a planet to learn about it, and can zoom and pan around the Sun. '
+        + 'Question {{challengeNumber}} of {{challengeCount}} on screen now: "{{challengePrompt}}" '
+        + '(both zero and an empty question mean this is free exploration with nothing to answer). '
+        + 'They answer by tapping a body and then pressing the confirm button — YOU are never told which body is correct.',
       contextKeys: [
         'title',
         'initialZoom',
@@ -26,6 +71,9 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
         'selectedBodyName',
         'selectedBodyDescription',
         'motionState',
+        'challengePrompt',
+        'challengeNumber',
+        'challengeCount',
       ],
       scaffoldingLevels: {
         level1: '"Tap one of the planets going around the Sun. Which one looks most interesting to you?"',
@@ -71,6 +119,18 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
             'This model cannot show size and distance truthfully at the same time — that is a real teaching point, not a flaw to hide. '
             + 'If a student draws a conclusion from how things LOOK on screen (how close together the planets are, how big they are next to each other), '
             + 'gently name the trade-off in child words rather than letting the misconception stand.',
+        },
+        {
+          title: 'ANSWER DISCIPLINE — YOU DO NOT KNOW THE ANSWER, AND YOU MUST NOT ACT AS IF YOU DO',
+          instruction:
+            'When a question is on screen, the correct body is deliberately withheld from you. Do not guess it, do not name it, '
+            + 'do not rule any body out ("it is not one of the small ones" is a hint you may not give), and do not react to a body '
+            + 'the student is merely looking at as though it were their answer. '
+            + 'On [SOLAR_CHALLENGE] say the question aloud in child words and stop. '
+            + 'On [SOLAR_BODY_INSPECTED] say ONLY the body\'s name — no facts, because "this is the biggest one" answers the question outright. '
+            + 'On [SOLAR_ANSWER_WRONG] give them a way to LOOK (watch which one moves slowest, compare the circle sizes, check the cards) and never narrow the field. '
+            + 'Only on [SOLAR_ANSWER_CORRECT] and [SOLAR_ANSWER_REVEAL] are you told the answer, and only then may you say it. '
+            + 'Outside a question, when nothing is being asked, you are free to talk about any body the student taps.',
         },
       ],
     },
