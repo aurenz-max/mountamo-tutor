@@ -245,12 +245,61 @@ const missionPlannerSchema: Schema = {
  * @param config - Optional configuration hints from the manifest
  * @returns MissionPlannerData with complete configuration
  */
+export type MissionGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+
+const MISSION_GRADES: MissionGrade[] = ['K', '1', '2', '3', '4', '5'];
+
+/**
+ * Canonical grade -> mission-planner rung. Reads `ctx.grade`, never prose.
+ *
+ * reader-fit 15A/S7. `generationContext.ts` states the contract outright: never
+ * parse grade out of `gradeContext`. This generator did exactly that and then
+ * fed the prose into a dozen comparisons.
+ */
+export const missionPlannerGradeFromGrade = (grade?: string): MissionGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN' || g === 'PRESCHOOL') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return null;
+  if (n <= 0) return 'K';
+  return (String(Math.min(n, 5)) as MissionGrade);
+};
+
+/** Prose fallback — the SECOND resolver, never the first. */
+export const missionPlannerGradeFromProse = (prose?: string): MissionGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  const m = p.match(/\bgrade\s*([1-9])\b/) || p.match(/\b([1-9])(?:st|nd|rd|th)\s*grade\b/);
+  if (m) return (String(Math.min(parseInt(m[1], 10), 5)) as MissionGrade);
+  return '3';
+};
+
+/**
+ * ORDINAL rung index. The second half of the fix, and it survives a correct
+ * resolver: every toggle below used string comparison, and `'K' >= '2'` is TRUE
+ * because 'K' (0x4B) sorts above '2' (0x32). So simply making the resolver
+ * canonical would have turned the supply calculator and a crewed mission ON at
+ * Kindergarten. A grep for the resolver finds only the first bug. (This is the
+ * S2 orbit-mechanics-lab defect, confirmed real here by revert-bite — unlike S3,
+ * where the same rewrite turned out to be a documented no-op.)
+ */
+export const missionRungIndex = (g: string): number => {
+  const i = MISSION_GRADES.indexOf(g as MissionGrade);
+  return i === -1 ? 3 : i;
+};
+
 export const generateMissionPlanner = async (
   ctx: GenerationContext,
 ): Promise<MissionPlannerData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
+  // PROSE — for the prompt's audience line only. Never compared against.
+  const audienceProse = ctx.gradeContext;
   const config = ctx.raw as Partial<MissionPlannerData>;
+  // The rung every toggle below keys off, and the value STAMPED onto the output.
+  const gradeLevel: MissionGrade =
+    missionPlannerGradeFromGrade(ctx.grade) ?? missionPlannerGradeFromProse(ctx.gradeContext);
+  const rung = missionRungIndex(gradeLevel);
   // Per-primitive intent: the specific objective the manifest assigned to THIS card.
   // The subject (topic) stays broad; intent foregrounds it in student-facing text.
   const intent = ctx.intent || "";
@@ -260,7 +309,7 @@ export const generateMissionPlanner = async (
 ACTIVITY FOCUS: The broad subject is "${topic}", but THIS activity must specifically target: "${intent}". Make the title, description, learningFocus, hints, and any question text foreground this objective. Do not reveal the answer to any challenge the student will be asked.`
     : "";
   const prompt = `
-Create an educational Mission Planner visualization for teaching "${topic}" to ${gradeLevel} students.
+Create an educational Mission Planner visualization for teaching "${topic}" to ${audienceProse} students (grade ${gradeLevel}).
 
 CONTEXT - MISSION PLANNING FOR K-5:
 The Mission Planner is a simplified mission design tool where students plan trips to the Moon, Mars, and beyond.
@@ -417,14 +466,14 @@ Return a complete Mission Planner configuration appropriate for the grade level 
 
   // Feature toggles by grade
   // TODO: intent steers prompt text only; structural toggles remain grade-bound (Tier-2).
-  if (data.showTrajectory === undefined) data.showTrajectory = gradeLevel !== 'K';
-  if (data.supplyCalculator === undefined) data.supplyCalculator = gradeLevel >= '2';
-  if (data.showLaunchWindows === undefined) data.showLaunchWindows = gradeLevel >= '3';
-  if (data.gravityAssistOption === undefined) data.gravityAssistOption = gradeLevel >= '4';
-  if (data.missionClock === undefined) data.missionClock = gradeLevel !== 'K';
-  if (data.crewed === undefined) data.crewed = gradeLevel >= '2';
-  if (!data.missionType) data.missionType = gradeLevel <= '1' ? 'flyby' : gradeLevel <= '3' ? 'landing' : 'return';
-  if (!data.fuelConstraint) data.fuelConstraint = gradeLevel <= '2' ? 100 : gradeLevel <= '4' ? 50 : 30;
+  if (data.showTrajectory === undefined) data.showTrajectory = rung >= 1;
+  if (data.supplyCalculator === undefined) data.supplyCalculator = rung >= 2;
+  if (data.showLaunchWindows === undefined) data.showLaunchWindows = rung >= 3;
+  if (data.gravityAssistOption === undefined) data.gravityAssistOption = rung >= 4;
+  if (data.missionClock === undefined) data.missionClock = rung >= 1;
+  if (data.crewed === undefined) data.crewed = rung >= 2;
+  if (!data.missionType) data.missionType = rung <= 1 ? 'flyby' : rung <= 3 ? 'landing' : 'return';
+  if (!data.fuelConstraint) data.fuelConstraint = rung <= 2 ? 100 : rung <= 4 ? 50 : 30;
 
   // Supplies defaults
   if (data.supplyCalculator && (!data.supplies || data.supplies.length === 0)) {
@@ -456,6 +505,16 @@ Return a complete Mission Planner configuration appropriate for the grade level 
     if (config.hints) data.hints = config.hints;
     if (config.funFact) data.funFact = config.funFact;
   }
+
+  // STAMP the resolved rung, overriding Gemini's echo.
+  //
+  // `gradeLevel` is in the response schema, so Gemini fills it — and it gets it
+  // wrong: probed pre-fix, a **grade 4** request came back `gradeLevel: '1'`.
+  // `MissionPlanner.tsx` band-gates on `data.gradeLevel` in a dozen places
+  // (PHASE_INSTRUCTIONS[phase][gradeLevel], the K destination copy, travel-time
+  // formatting), so an echoed rung means a Grade 4 student is served the Grade 1
+  // screen. Config still wins, for a manifest that deliberately overrides.
+  data.gradeLevel = (config?.gradeLevel as MissionGrade | undefined) ?? gradeLevel;
 
   return data;
 };
@@ -532,7 +591,7 @@ function getDefaultLaunchWindows(gradeLevel: string): LaunchWindow[] {
     { id: 'optimal', label: 'July 2026', description: 'Planets are closest - best time!', optimal: true, fuelMultiplier: 1.0, travelTimeMultiplier: 1.0 },
     { id: 'good', label: 'September 2026', description: 'Still a good window', optimal: false, fuelMultiplier: 1.2, travelTimeMultiplier: 1.15 },
     { id: 'poor', label: 'January 2027', description: 'Planets are far apart - uses more fuel', optimal: false, fuelMultiplier: 1.8, travelTimeMultiplier: 1.5 },
-    ...(gradeLevel >= '4' ? [
+    ...(missionRungIndex(gradeLevel) >= 4 ? [
       { id: 'bad', label: 'March 2027', description: 'Worst timing - opposite sides of the Sun!', optimal: false, fuelMultiplier: 2.0, travelTimeMultiplier: 1.8 }
     ] : []),
   ];

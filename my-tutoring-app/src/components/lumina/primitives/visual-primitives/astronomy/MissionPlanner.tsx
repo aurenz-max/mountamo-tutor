@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import * as d3 from 'd3';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MissionPlannerMetrics } from '../../../evaluation/types';
+import { LuminaReadAloud } from '../../../ui';
+import { useLuminaAI } from '../../../hooks/useLuminaAI';
 
 // =============================================================================
 // Type Definitions - Single Source of Truth
@@ -663,6 +665,12 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
     return phases;
   }, [gradeLevel, supplyCalculator]);
 
+  // reader-fit 15A/S7: the instruction line, the destination names and the
+  // travel times are all text a K-1 child cannot read, and this primitive had
+  // NO channel to the tutor at all — the backend was handed the literal string
+  // "No specific scaffolding instructions for this primitive type."
+  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
+
   // State
   const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
   const [completedPhases, setCompletedPhases] = useState<Set<LearningPhase>>(new Set());
@@ -678,6 +686,67 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
   const [currentHint, setCurrentHint] = useState(0);
 
   const missionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Tutor channel (reader-fit 15A/S7)
+  // ---------------------------------------------------------------------------
+  const phaseInstruction = PHASE_INSTRUCTIONS[currentPhase]?.[gradeLevel] ?? '';
+
+  // Flat object literal — a bag assembled behind statements makes tutor-test
+  // report every contextKey as "dynamic, verify at runtime".
+  const aiPrimitiveData = useMemo(() => ({
+    title,
+    gradeLevel,
+    currentPhase,
+    destinationNames: destinations.map(d => d.name).join(', '),
+    selectedDestination: destinations.find(d => d.id === selectedDestination)?.name ?? 'nothing yet',
+    missionType,
+    phaseInstruction,
+    destinationCount: destinations.length,
+  }), [title, gradeLevel, currentPhase, destinations, selectedDestination, missionType, phaseInstruction]);
+
+  const { sendText } = useLuminaAI({
+    primitiveType: 'mission-planner',
+    instanceId: instanceId || `mission-planner-${title}`,
+    primitiveData: aiPrimitiveData,
+    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+  });
+
+  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
+  const readAloud = useCallback((text: string) => {
+    if (!text) return;
+    sendText(
+      `[MISSION_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
+      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
+      { silent: true },
+    );
+  }, [sendText]);
+
+  // ORIENT — fires once so a non-reader learns the task without having to ask.
+  const hasOrientedRef = useRef(false);
+  useEffect(() => {
+    if (hasOrientedRef.current) return;
+    hasOrientedRef.current = true;
+    sendText(
+      `[MISSION_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
+      + `a space mission planner: "${title}". They choose a place in space to fly to. `
+      + `Tell them what to do in child words. There is NO wrong destination — never imply one is correct.`,
+      { silent: true },
+    );
+  }, [sendText, isPreReader, title]);
+
+  // The instruction line changes when the phase does, and a non-reader cannot
+  // see that it changed. Skips the first run — ORIENT already covered it.
+  const lastPhaseRef = useRef(currentPhase);
+  useEffect(() => {
+    if (lastPhaseRef.current === currentPhase) return;
+    lastPhaseRef.current = currentPhase;
+    sendText(
+      `[MISSION_PHASE_CHANGED] The screen just moved to the "${currentPhase}" step and now reads: `
+      + `"${phaseInstruction}". SAY that aloud in child words. Do not tell them what to choose.`,
+      { silent: true },
+    );
+  }, [sendText, currentPhase, phaseInstruction]);
 
   // Evaluation
   const {
@@ -867,10 +936,18 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
         />
 
         {/* Phase Instruction */}
-        <div className="mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-          <p className="text-sm text-blue-300">
-            {PHASE_INSTRUCTIONS[currentPhase][gradeLevel]}
+        <div className="mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 flex items-center gap-3">
+          <p className={`flex-1 text-blue-300 ${isPreReader ? 'text-base' : 'text-sm'}`}>
+            {phaseInstruction}
           </p>
+          {isPreReader && (
+            <LuminaReadAloud
+              iconOnly
+              size="sm"
+              aria-label="Hear what to do"
+              onClick={() => readAloud(phaseInstruction)}
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -907,7 +984,15 @@ const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
                   {destinations.map((dest) => (
                     <button
                       key={dest.id}
-                      onClick={() => setSelectedDestination(dest.id)}
+                      onClick={() => {
+                        setSelectedDestination(dest.id);
+                        sendText(
+                          `[MISSION_DESTINATION_SELECTED] The student chose "${dest.name}". `
+                          + `Say its name and ONE thing about it they can picture. `
+                          + `Never suggest a different one would have been better.`,
+                          { silent: true },
+                        );
+                      }}
                       className={`w-full text-left p-3 rounded-lg transition-all ${
                         selectedDestination === dest.id
                           ? 'bg-blue-600/30 border-blue-500/50 border'

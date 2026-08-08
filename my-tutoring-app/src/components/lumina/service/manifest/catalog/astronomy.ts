@@ -465,6 +465,77 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
     id: 'mission-planner',
     description: 'Simplified mission design tool where students plan trips to the Moon, Mars, and beyond. Students select destinations on an interactive D3 solar system map, choose launch windows based on planetary alignment, plan trajectories (direct route vs gravity assist via other planets), pack supplies for crew (food, water, oxygen), estimate travel time, calculate fuel requirements, and monitor animated mission progress. Features progressive learning phases: explore destinations, plan route and timing, prepare supplies, and launch with real-time progress tracking. Includes interactive supply calculator for food/water/oxygen planning, launch window selection showing optimal planetary alignment, gravity assist trajectory visualization, mission clock with elapsed time, and destination info panels with fun facts. D3 solar system visualization shows orbital paths, planet positions, trajectory lines, and animated spacecraft icon. Progressive difficulty from K (pick a destination!) to Grade 5 (optimize fuel vs payload trade-offs with gravity assists and tight fuel constraints). ESSENTIAL for teaching space travel concepts, mission planning, supply logistics, and interplanetary navigation for K-5 astronomy.',
     constraints: 'Best for grades K-5 with distinct learning progressions. K: 2-3 destinations (Moon, Mars), flyby mission, no trajectory/supplies/launch windows shown, focus on "we can visit other places in space". Grade 1: 3 destinations, showTrajectory enabled, missionClock enabled, focus on "different places take different times to reach". Grade 2: 3 destinations, supplyCalculator enabled with 3 items (food, water, oxygen), crewed: true, focus on "astronauts need food, water, and air". Grade 3: 4 destinations, showLaunchWindows with 3-4 options (one optimal), supplyCalculator with 4 items, focus on "can\'t launch anytime - planets move!". Grade 4: 4-5 destinations, gravityAssistOption enabled, all features active, missionType: "return", focus on "gravity assists give speed boosts from planets". Grade 5: All 5 destinations, tight fuelConstraint (30 tons), 5 supply types including science equipment, missionType: "return", focus on "trade-offs: speed vs fuel vs payload". Always provide age-appropriate hints and fun facts per destination.',
+    tutoring: {
+      taskDescription:
+        'Student is planning a space mission — "{{title}}". Grade rung: {{gradeLevel}}. '
+        + 'They are in the {{currentPhase}} phase. Places they can choose from: {{destinationNames}}. '
+        + 'Chosen so far: {{selectedDestination}}. Mission type: {{missionType}}. '
+        + 'The instruction currently on screen reads: "{{phaseInstruction}}". '
+        + 'At K-1 the whole task is choosing a place and watching the ship fly; supplies, launch windows and gravity assists are switched off.',
+      contextKeys: [
+        'title',
+        'gradeLevel',
+        'currentPhase',
+        'destinationNames',
+        'selectedDestination',
+        'missionType',
+        'phaseInstruction',
+        'destinationCount',
+      ],
+      scaffoldingLevels: {
+        level1: '"Where in space would you like to go? Any of them is a good choice."',
+        level2: '"Some places are close to us and some are very far away. Which one do you want to see?"',
+        level3: '"Let me tell you a little about each place, and then you pick the one you like best."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student is waiting to be told the right destination',
+          response: '"There is no wrong one here — this is YOUR mission. Pick the place you most want to see."',
+        },
+        {
+          pattern: 'Student thinks the trip is instant, like in a cartoon',
+          response: '"Real space trips take a long time. The Moon takes a few days. Mars takes months and months — longer than a whole school year."',
+        },
+        {
+          pattern: 'Student thinks the spaceship flies in a straight line to a planet',
+          response: '"The planets keep moving around the Sun, so the ship has to aim at where the planet is GOING to be, not where it is right now."',
+        },
+        {
+          pattern: 'Student wants to fly to the Sun or somewhere impossible',
+          response: 'Take the idea seriously and say warmly what would really happen, then steer to a place they can actually plan a trip to.',
+        },
+        {
+          pattern: 'A pre-reader cannot read the instruction line or the destination names',
+          response: '"Never ask them to read. Say the instruction aloud every time the phase changes, and name each place as they look at it. The words are yours to speak."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
+          instruction:
+            'A pre-reader CANNOT read the instruction line, the destination names, the travel times or the buttons. Your voice is the only channel. '
+            + 'When you receive [MISSION_ORIENT], say what to do in one or two warm child-sized sentences — they are choosing a place in space to fly to. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [MISSION_PHASE_CHANGED], SAY the new instruction aloud in child words: the screen just changed and they cannot read what it now says. '
+            + 'When you receive [MISSION_DESTINATION_SELECTED], say the name of the place they picked and one thing about it they can picture. '
+            + 'When you receive [MISSION_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+        },
+        {
+          title: 'THERE IS NO WRONG DESTINATION — DO NOT MANUFACTURE ONE',
+          instruction:
+            'Choosing where to go is a CHOICE, not an answer. Never imply one destination is the correct one, never ask "are you sure?" about a valid pick, and never steer them to the Moon because it is the easy trip. '
+            + 'The real learning is that different places are different distances away, so once they choose, talk about how long THAT trip takes. '
+            + 'Where a later phase does have a right answer — which launch window uses least fuel, at grade 3 and up — that one IS the answer: do not state it, and do not narrow it by elimination.',
+        },
+        {
+          title: 'NO NUMBERS AT K-1 — SAY HOW LONG IT FEELS',
+          instruction:
+            'At grade rung K and 1 do NOT say kilometres, miles, tons, AU, or a count of days. The screen deliberately hides travel times at K, so saying them puts back what was taken out. '
+            + 'Say "a few sleeps", "longer than the summer holidays", "really really far away". '
+            + 'From grade 2 up the numbers ARE the objective — say them, and help the student compare them.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

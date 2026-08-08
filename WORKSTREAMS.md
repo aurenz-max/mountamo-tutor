@@ -21,8 +21,8 @@ queue AND this file's "last touched" in the same slice.
 
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
-| **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | ~~15A S5 `bio-compare-contrast`~~ ~~S6 `species-profile`~~ **BOTH CLOSED 2026-08-07, READY at PRE** (reports `qa/reader-fit/bio-compare-contrast-PRE-2026-08-07.md`, `qa/reader-fit/species-profile-PRE-2026-08-07.md`). Next: **15A S7 `mission-planner`** — the last 15A item. **⚠️ S6's lesson: the handoff's predicted grade-shape has now been wrong or incomplete twice running** — S6's predicted prose-grade was real but was NOT the defect (no dead char-compares); the causes were an unstamped rung and a prompt whose eight mandatory sections outvoted its one "younger students" bullet. Probe before scoping. **A portfolio decision is now owed on FOUR primitives** (S11, S12, S15, S6) that have no evaluation hook at all: `/add-eval-modes` or declare exploration-only so the manifest stops routing assessment demand at them. **⚠️ S5's two method lessons: (a) a generator with a CLEAN BODY can still be grade-blind if its band arrives as an argument — the defect was S9's map relocated to the registry call site, so probe rather than trust the predicted shape; (b) a jsdom suite that mocks `useLuminaAI` cannot see a missing `LuminaAIProvider` — the hook THROWS, and four already-shipped 15B primitives have been crashing the biology tester since they landed. Drive one real browser render per slice.** Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
-| **Direct Instruction family** | **ACTIVE** | **di-shapes ladder rungs 1+2 CLOSED 2026-08-07 — the pack is L1.** Next machine pull = **CTX-1** (item 13, the tutor-quality top). **⚠️ RE-SCOPED by user ruling 2026-08-07 — read the SCOPE FENCE at the top of the entry before touching code:** it removes the *notification* on within-primitive state change (slider moved, option selected), **NOT context-awareness**. `[PRIMITIVE SWITCH]` — the separate `switch_primitive` channel that tells the tutor the student navigated to a different primitive — **stays untouched**; deleting that, or replacing it with a feed-everything-at-session-start dump, would be the wrong channel and would blind the tutor to where the student is. Then the di-shapes L3/L4 rungs. Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (ACCEPTANCE) + #72 (di-shapes — now L0 naming **and** the NEW L1 counting contract, criterion (c))**. | 2026-08-07 |
+| **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | **✅ 15A COMPLETE 7/7 (2026-08-07) — item 15 is now 15/15.** ~~S5 `bio-compare-contrast`~~ ~~S6 `species-profile`~~ ~~S7 `mission-planner`~~ all CLOSED, READY at PRE (reports `qa/reader-fit/{bio-compare-contrast,species-profile,mission-planner}-PRE-2026-08-07.md`). **NEXT = `planetary-explorer` + `constellation-builder`** — the ranked frontier item, and the last two astronomy generators still on the prose-grade contract violation; both now carry the K astronomy demand S1's floor and 15B's fixes redirected onto them. **⚠️ S7's lesson: the defect bit at GRADE 4, not K** — a `grade=4` request returned `gradeLevel:'1'`, so a Grade 4 student got the Grade 1 screen while K was already fine. Probe the band ABOVE as well as below. Prior state: ~~S5~~ ~~S6~~ **CLOSED, READY at PRE** (reports `qa/reader-fit/bio-compare-contrast-PRE-2026-08-07.md`, `qa/reader-fit/species-profile-PRE-2026-08-07.md`). Next: **15A S7 `mission-planner`** — the last 15A item. **⚠️ S6's lesson: the handoff's predicted grade-shape has now been wrong or incomplete twice running** — S6's predicted prose-grade was real but was NOT the defect (no dead char-compares); the causes were an unstamped rung and a prompt whose eight mandatory sections outvoted its one "younger students" bullet. Probe before scoping. **A portfolio decision is now owed on FOUR primitives** (S11, S12, S15, S6) that have no evaluation hook at all: `/add-eval-modes` or declare exploration-only so the manifest stops routing assessment demand at them. **⚠️ S5's two method lessons: (a) a generator with a CLEAN BODY can still be grade-blind if its band arrives as an argument — the defect was S9's map relocated to the registry call site, so probe rather than trust the predicted shape; (b) a jsdom suite that mocks `useLuminaAI` cannot see a missing `LuminaAIProvider` — the hook THROWS, and four already-shipped 15B primitives have been crashing the biology tester since they landed. Drive one real browser render per slice.** Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
+| **Direct Instruction family** | **ACTIVE** | **di-shapes rungs 1+2 CLOSED, and ~~CTX-1~~ CLOSED 2026-08-07 — the `[CONTEXT UPDATE]` push and `ContextUpdateGate` are deleted; state is kept server-side and attached to messages that already asked for a turn.** Verified at runtime on the live backend + real Gemini: slider moves produced 0 sends / 0 barge-ins, and the **fence held** — `[PRIMITIVE SWITCH]` still fires, is still debounced, and the tutor still answers about the right primitive (`lesson-refer-back` journey). Two findings worth carrying: **classify the cue tag BEFORE attaching state** (a prepended block otherwise reclassifies `[DI_ITEM]` to `"text"`), and **plan step 3 was correctly NOT built** — `student_action` has zero senders repo-wide, and struggle already ships as explicit client cues. Next machine pull = **di-shapes L3 `/add-support-tiers`** (family script-composed fade), then L4 structural. Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (ACCEPTANCE) + #72 (di-shapes — now L0 naming **and** the NEW L1 counting contract, criterion (c))**; CTX-1's residual (i) — one real ear on a >8s turn — folds into it. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, **serial, one primitive per slice**, appending the report + striking per item. | 2026-08-04 |
 | **LA K-2 Grammar density** | **PARKED 2026-08-07 (was ACTIVE) — blocked on a user DESIGN RULING, not on code** | Its queue top is item **1b `in_front_of`/`behind`**, which the lane itself records as *"a DESIGN RULING, not code"* — viewer-relative is ambiguous with above/below in a top-down grid, a rule-#1 hazard. Nothing machine-gated sits above it. **If resumed, the buildable pulls are item 2b** (the `identify` hint hands over the answer, 2 of 3 hints — tracker SS-5) **or item 4** (`word-sorter` K picture-pair, 3 subskills). | 2026-08-05 |
 | Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Confirmed this run: all three are real rows in `qa/EVAL_TRACKER.md` (`:530-532`), not memory-only. DNA-1 is a **measured, month-old, unfixed answer leak** (6/10 generations). Rides as the +1 the moment support-tiers closes or the sweep pauses. | 2026-08-07 |
@@ -229,7 +229,58 @@ queue AND this file's "last touched" in the same slice.
 > anything new. **STALE as of the 08-06 sweep session — `git status` shows a clean tree apart
 > from that session's own files; item-12 landed in `56b5dda`.**
 
-## EXECUTED 2026-08-07 (latest) — reader-fit **15A S5 `bio-compare-contrast` CLOSED, READY at PRE**
+## EXECUTED 2026-08-07 (latest) — DI lane: **CTX-1 CLOSED — the tutor is no longer notified when a child moves a slider**
+
+> Lane: **Direct Instruction family**, ACTIVE. Queue of record `qa/di/BACKLOG.md` item 13.
+> User pull, with the scope fence authored the same session. Reports
+> `qa/tutor-reports/states-of-matter-live-2026-08-07.md`,
+> `qa/tutor-reports/lesson-refer-back-live-lesson-2026-08-07.md`.
+>
+> **A whole failure class deleted, not a symptom patched.** Every within-primitive
+> state change used to be pushed at Gemini as a nominally-silent `[CONTEXT UPDATE]`.
+> This transport has no silent mode — every realtime text send closes the turn and
+> registers as user activity — so `ContextUpdateGate` existed to park those updates,
+> and its 8s ceiling force-released them into turns that routinely run longer, which
+> is how a tutor came to read a prompt line aloud to a child mid-exploration. The
+> push is gone, the gate (89 lines) is gone, the prompt budget spent telling the
+> model to ignore what we had just pushed is gone. **The state is kept** in a
+> server-side `PrimitiveState` and attached to the next message that already asked
+> for a turn — fresher than the old push, which landed early and got buried.
+>
+> **The fence held, and it was checked, not assumed.** `[PRIMITIVE SWITCH]` is a
+> different `elif` ~45 lines away in the same chain; it is untouched. Proven live:
+> both switches announced, debounce intact at 2.5s, tutor acknowledged each new
+> activity and then referred back to the **right** primitives.
+>
+> **Runtime evidence (real backend + real Gemini Live, not a type check).**
+> `states-of-matter` 11 beats all correct — the three-slider `silent_slider_wiggle`
+> beat produced **zero audio and zero sends**; ledger shows **6 `context-update`
+> rows → 0 pushes → 0 barge-ins**, with `state_attached` climbing 1→2→3 across the
+> phase-change cues then holding at 3 (live de-dupe). Units 28/28 (13 new replace 9
+> gate tests); backend suite **26F/105P vs. a measured 26F/101P baseline**.
+>
+> **Two findings the plan could not have known.** (1) **Classify the cue tag BEFORE
+> attaching state** — `classify_cue` reads the leading bracket, so prepending a
+> state block silently reclassifies `[DI_ITEM]` to `"text"` and corrupts both the
+> ledger and fault-injection arming. Pinned by a test. (2) **Plan step 3 (a
+> server-side struggle trigger) was correctly NOT built:** `student_action` has
+> **zero senders repo-wide** — the handler is dead code — and struggle already
+> arrives as explicit client cues (`[ANSWER_INCORRECT]`, `[RHYME_MISS]`). The
+> capability the plan wanted already exists in the shape it wanted.
+>
+> **Consumer check found a real one and preserved it:** the five DI packs push a
+> contextKey bag to keep the tutor's runtime state truthful as facts advance, and
+> catalog `{{key}}`s only resolve at switch/connect — so post-switch that push was
+> the tutor's only source of the current item. It now rides on the `[DI_ITEM]` that
+> asks for the judgment. No frontend change needed.
+>
+> **Residual:** voice-only exploration — audio bypasses the text queue, so a student
+> who drags a slider then asks *aloud* has a tutor that was not handed the new
+> state. And one human ear on a >8s turn, which folds into the standing mic session.
+>
+> **NEXT on this lane: di-shapes L3 `/add-support-tiers`.**
+
+## EXECUTED 2026-08-07 (earlier) — reader-fit **15A S5 `bio-compare-contrast` CLOSED, READY at PRE**
 
 > Lane: **reader-fit supply-side sweep**, ACTIVE. Queue of record
 > `qa/reader-fit/BACKLOG.md` item 15A. Report

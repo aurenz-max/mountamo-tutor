@@ -373,9 +373,60 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   shown or spoken; one pre-fix G4 draw returned a malformed `taxonomy.species`
   with ranks stuffed in as literal `\n key: value` text — did not recur, worth an
   `/oracle-test` contract if this gets real traffic.
-  → **NEXT: S7 `mission-planner`** (predicted `= ctx.gradeContext` @ `:252`,
-  astronomy — **probe it; the predicted shape has now been wrong or incomplete in
-  both S5 and S6**).
+  ~~**S7 `mission-planner`**~~ **S7 CLOSED 2026-08-07 — READY at PRE. 15A IS COMPLETE, 7/7.**
+  Verdict **SCAFFOLD-GAP + GRADE-BLINDNESS**. **The predicted `= ctx.gradeContext`
+  @ `:252` was RIGHT this time** — the first of the three predictions to land
+  cleanly — but the damage was not where the sweep usually looks.
+  **⚠️ THE DEFECT BIT AT GRADE 4, NOT AT K.** Probe pre-fix: a `grade=4` request
+  returned **`gradeLevel: '1'`**, and the component band-gates on `data.gradeLevel`
+  in a dozen places, so **a Grade 4 student was served the Grade 1 screen**. The
+  whole G4 rung the catalog promises was missing: `missionType` flyby (not
+  return), supplyCalculator/showLaunchWindows/gravityAssistOption/crewed **all
+  false**, 3 destinations not 4. K was already correct and unchanged — so a
+  K-only probe would have passed this generator clean, and so would the sweep's
+  usual "probe the neighbour" heuristic if the neighbour checked were G1.
+  **The S2 TRIPLE, all three present:** (1) prose grade at `:252`; (2) the
+  **lexical compare that survives a correct resolver** — `gradeLevel >= '2'` is
+  TRUE for `'K'`, so fixing only the resolver would have switched the supply
+  calculator and a crewed mission **ON at Kindergarten** (now ordinal via
+  `missionRungIndex()`, K = 0; **revert-bitten, so genuinely the S2 case and not
+  the S3 one**); (3) the rung **never stamped** — `gradeLevel` is in the response
+  schema so Gemini filled it and got it wrong.
+  **⚠️ HONEST CORRECTION (the S3 tradition):** the same rewrite touched
+  `showTrajectory`/`missionClock`'s `gradeLevel !== 'K'`. **Those were NOT bugs** —
+  once the rung is canonical, `!== 'K'` and `rung >= 1` are equivalent, and the
+  revert-bite proved it (0 failures). Only the `>=`/`<=` comparisons were broken.
+  **(4) SCAFFOLD-GAP** — catalog block (8 contextKeys, 3 levels, 5 struggles, 3
+  aiDirectives) + `useLuminaAI` with 4 moments. `[MISSION_PHASE_CHANGED]` is the
+  load-bearing one: the instruction line is the entire task statement and **a
+  non-reader cannot see that it changed** when a phase advances.
+  **The answer discipline is INVERTED here and had to be written both ways:**
+  choosing a destination is a CHOICE, so the directive forbids implying one is
+  correct or steering to the Moon — but the launch-window phase at grade 3+ DOES
+  have a right answer, protected explicitly including against elimination.
+  **First 15A slice where Audit C was mostly clean pre-fix** — the component was
+  already band-aware and its gates were actually running at K (unlike S14, where
+  they never ran). They were failing silently at G4 instead.
+  Gates: 30 tests, **11 revert-bites / 10 bite + 1 documented no-op**; src-scoped
+  tsc **803 = baseline set-identical**, typecheck:lumina 0, full vitest
+  **2278/2278**, tutor-test T1 `pass` + T2 `findings: []`, `dataBagDynamic:false`,
+  8/8 keys, 4 tags, zero `(not set)`.
+  **Driven in real Chrome:** K shows the K instruction + 1 read-aloud + 2
+  destinations + no travel-time leak + 0 nested buttons and the tap works; G4
+  shows the G4 instruction, no read-aloud, travel times and 4 destinations.
+  Zero console errors.
+  Report `qa/reader-fit/mission-planner-PRE-2026-08-07.md`.
+  *Residuals:* no Tier-3 live audio (the `[MISSION_PHASE_CHANGED]` beat most needs
+  hearing); **rule 3 PARTIAL** — destination cards are text beside a D3 map, no
+  per-destination image; `funFact`/`hints` are in the bag but deliberately
+  unvoiced at K (quiet-tutor doctrine).
+
+**✅ 15A IS COMPLETE — 7/7.** S1 shipped a band FLOOR under the theory the user
+later overturned and is a **REVISIT CANDIDATE**; S2–S7 were all made K-fit
+instead, and **all six were SCAFFOLD-GAP + something the triage could not see**.
+Every one of the seven sat on a grade-resolution defect. Combined with 15B's 8/8,
+**item 15 is 15/15 with the same finding every time: the catalog-text triage
+never once predicted the real scope.**
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
   ~~**S8 `moon-phases-lab`**~~ **S8 CLOSED 2026-08-06 — READY at PRE.** Catalog
@@ -686,8 +737,8 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ ~~S6~~ **ALL FIVE CLOSED 2026-08-07** →
-**15A S7 `mission-planner`** (the last 15A item) → then audit
+**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ ~~S6~~ ~~S7~~ **15A COMPLETE 7/7
+(2026-08-07)** → **NEXT = audit
 `planetary-explorer` + `constellation-builder`, which now carry the K astronomy
 demand that S1's floor and 15B's fixes redirected onto them.
 **⚠️ S6 added a third: the PREDICTED SHAPE has now been wrong or incomplete twice
