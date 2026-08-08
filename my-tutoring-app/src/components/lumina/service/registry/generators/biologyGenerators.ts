@@ -13,6 +13,7 @@
  */
 
 import { registerContextGenerator } from '../contentRegistry';
+import { resolveBiologyBand } from '../../biology/gradeBand';
 
 // ============================================================================
 // Biology Component Imports (from dedicated service files)
@@ -241,23 +242,32 @@ registerContextGenerator('bio-compare-contrast', async (ctx) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const config = ctx.raw as Record<string, any>;
 
-  // Map grade context to grade band
-  const gradeBandMap: Record<string, 'K-2' | '3-5' | '6-8'> = {
-    'K': 'K-2',
-    '1': 'K-2',
-    '2': 'K-2',
-    '3': '3-5',
-    '4': '3-5',
-    '5': '3-5',
-    '6': '6-8',
-    '7': '6-8',
-    '8': '6-8',
-    'K-2': 'K-2',
-    '3-5': '3-5',
-    '6-8': '6-8',
-  };
+  // Band resolution: canonical `ctx.grade` first, prose only as a fallback.
+  //
+  // This is the FIFTH copy of the biology prose-keyed band defect (reader-fit
+  // 15A/S5), and the only one that lived at the CALL SITE rather than inside a
+  // generator — `gemini-compare-contrast.ts` takes `gradeBand` as a parameter
+  // defaulting to '3-5', so a grep over `service/biology/*.ts` for the other
+  // four missed it entirely. The old code was:
+  //
+  //   const gradeBandMap = { 'K': 'K-2', '1': 'K-2', … };
+  //   config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5'
+  //
+  // keyed on bare grade TOKENS but indexed with `ctx.gradeContext`, which is
+  // PROSE. It therefore missed at every grade and '3-5' always won — probed
+  // pre-fix at K, G1 AND G4, all three returning gradeBand '3-5' with the same
+  // "Mammalian Predators … vertebrate mammals … evolved as social pack runners"
+  // draw, against a catalog K-2 rung reading "4-6 attributes, simple observable
+  // characteristics". Now obtained by import so the five copies cannot drift.
+  const gradeBand = resolveBiologyBand(config.gradeBand, ctx.grade, ctx.gradeContext);
 
-  const gradeBand = config.gradeBand || gradeBandMap[ctx.gradeContext] || '3-5';
+  // At K-2 the entity IMAGE is the answer surface — a pre-reader chooses between
+  // two pictures, not two words (PRE contract rule 3). This primitive already
+  // has an image pipeline, so the pictures are turned ON for the band that
+  // cannot read the names, rather than left behind a "Generate Visual" button
+  // the child would have to read to find. Explicit config still wins either way.
+  const generateImages = config.generateImages === true
+    || (config.generateImages !== false && gradeBand === 'K-2');
 
   // Determine mode from config, then fall back to intent inference.
   // The manifest generator knows about modes but doesn't always set config.mode,
@@ -265,9 +275,6 @@ registerContextGenerator('bio-compare-contrast', async (ctx) => {
   const intentLower = (ctx.intent || '').toLowerCase();
   const mode: 'side-by-side' | 'venn-interactive' = config.mode ||
     (intentLower.includes('venn') || intentLower.includes('drag') ? 'venn-interactive' : 'side-by-side');
-
-  // Check if images should be generated
-  const generateImages = config.generateImages === true;
 
   // Check for "vs" pattern in topic first, then fall back to item.title.
   // The exhibit-level topic ("Photosynthesis") rarely contains "vs"; the

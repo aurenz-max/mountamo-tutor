@@ -21,8 +21,8 @@ queue AND this file's "last touched" in the same slice.
 
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
-| **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | ~~15A S4 `story-planner`~~ **CLOSED 2026-08-07, READY at PRE** (report `qa/reader-fit/story-planner-PRE-2026-08-07.md`). Next: **15A S5 `bio-compare-contrast`** (the defect is at the CALL SITE — a parameter defaulting to `'3-5'`; import `service/biology/gradeBand.ts`, do not write a fifth copy) → S6 `species-profile` → S7 `mission-planner`. **⚠️ S4's scope lesson: the "generator already canonical" prediction was RIGHT, but "component + scaffold only" was WRONG — at K the primitive had nothing to CHOOSE from, and only the generator can close a content gap.** Check what the child would actually DO before scoping a slice. Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
-| **Direct Instruction family** | **ACTIVE** | **di-shapes ladder rungs 1+2 CLOSED 2026-08-07 — the pack is L1.** Next machine pull = **CTX-1** (item 13, the tutor-quality top; it DELETES a channel + a failure class), then the di-shapes L3/L4 rungs. Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (ACCEPTANCE) + #72 (di-shapes — now L0 naming **and** the NEW L1 counting contract, criterion (c))**. | 2026-08-07 |
+| **Reader-fit supply-side sweep** (item 15) | **ACTIVE — top slot** | ~~15A S5 `bio-compare-contrast`~~ **CLOSED 2026-08-07, READY at PRE** (report `qa/reader-fit/bio-compare-contrast-PRE-2026-08-07.md`). Next: **15A S6 `species-profile`** → S7 `mission-planner`. **⚠️ S5's two method lessons: (a) a generator with a CLEAN BODY can still be grade-blind if its band arrives as an argument — the defect was S9's map relocated to the registry call site, so probe rather than trust the predicted shape; (b) a jsdom suite that mocks `useLuminaAI` cannot see a missing `LuminaAIProvider` — the hook THROWS, and four already-shipped 15B primitives have been crashing the biology tester since they landed. Drive one real browser render per slice.** Handoff `qa/HANDOFF-reader-fit-2026-08-07.md` carries re-derived anchors + per-item predictions. | 2026-08-07 |
+| **Direct Instruction family** | **ACTIVE** | **di-shapes ladder rungs 1+2 CLOSED 2026-08-07 — the pack is L1.** Next machine pull = **CTX-1** (item 13, the tutor-quality top). **⚠️ RE-SCOPED by user ruling 2026-08-07 — read the SCOPE FENCE at the top of the entry before touching code:** it removes the *notification* on within-primitive state change (slider moved, option selected), **NOT context-awareness**. `[PRIMITIVE SWITCH]` — the separate `switch_primitive` channel that tells the tutor the student navigated to a different primitive — **stays untouched**; deleting that, or replacing it with a feed-everything-at-session-start dump, would be the wrong channel and would blind the tutor to where the student is. Then the di-shapes L3/L4 rungs. Human side is opportunistic and must never block it: **ONE mic session = #63 re-run (ACCEPTANCE) + #72 (di-shapes — now L0 naming **and** the NEW L1 counting contract, criterion (c))**. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, **serial, one primitive per slice**, appending the report + striking per item. | 2026-08-04 |
 | **LA K-2 Grammar density** | **PARKED 2026-08-07 (was ACTIVE) — blocked on a user DESIGN RULING, not on code** | Its queue top is item **1b `in_front_of`/`behind`**, which the lane itself records as *"a DESIGN RULING, not code"* — viewer-relative is ambiguous with above/below in a top-down grid, a rule-#1 hazard. Nothing machine-gated sits above it. **If resumed, the buildable pulls are item 2b** (the `identify` hint hands over the answer, 2 of 3 hints — tracker SS-5) **or item 4** (`word-sorter` K picture-pair, 3 subskills). | 2026-08-05 |
 | Science depth — DNA-1 / BIO-1 / BIO-2 | QUEUED (verified filed) | Confirmed this run: all three are real rows in `qa/EVAL_TRACKER.md` (`:530-532`), not memory-only. DNA-1 is a **measured, month-old, unfixed answer leak** (6/10 generations). Rides as the +1 the moment support-tiers closes or the sweep pauses. | 2026-08-07 |
@@ -228,6 +228,60 @@ queue AND this file's "last touched" in the same slice.
 > contract + reader-fit test alongside. It is a clean standalone slice; ship it before starting
 > anything new. **STALE as of the 08-06 sweep session — `git status` shows a clean tree apart
 > from that session's own files; item-12 landed in `56b5dda`.**
+
+## EXECUTED 2026-08-07 (latest) — reader-fit **15A S5 `bio-compare-contrast` CLOSED, READY at PRE**
+
+> Lane: **reader-fit supply-side sweep**, ACTIVE. Queue of record
+> `qa/reader-fit/BACKLOG.md` item 15A. Report
+> `qa/reader-fit/bio-compare-contrast-PRE-2026-08-07.md`.
+> Verdict **SCAFFOLD-GAP + PRIMITIVE-GAP**, not WRONG-BAND.
+>
+> **The handoff's "fourth grade-shape" prediction was right about the LOCATION and
+> wrong about the SHAPE.** `gemini-compare-contrast.ts` genuinely is clean — it
+> takes `gradeBand` as a parameter — but the registry call site held a **verbatim
+> fifth copy of the S9 biology map** (`gradeBandMap[ctx.gradeContext] || '3-5'`).
+> **Probed pre-fix, K, G1 AND G4 all returned `'3-5'`.** Fixed by importing S13's
+> shared `resolveBiologyBand`; no fifth copy written. **Generalisable rule: a
+> generator with a clean body can still be grade-blind if its band arrives as an
+> argument — check the call site even when the generator greps clean.**
+>
+> **The biggest find was not the band.** Two answer-key defects at EVERY grade,
+> unqueued, both CLAUDE.md #1: (a) the **B-only Venn region was structurally
+> unreachable** — entity B was filtered by "category not already in entity A"
+> while the generator prompt *demands* parallel categories, measuring **0 B-only
+> cards at K, G1 and G4**; (b) the key **could contradict itself**, capping a
+> perfect player at **60%** on the generator's own K-2 example, and it hides on
+> long prose so **it fires hardest at the youngest band**.
+>
+> **A shipped 15B regression surfaced here:** `BiologyPrimitivesTester` has no
+> `LuminaAIProvider`, and `useLuminaAI` **throws** rather than degrading — so
+> `classification-sorter`, `life-cycle-sequencer`, `habitat-diorama` and
+> `organism-card` **crash the biology tester today**. Missed because all four 15B
+> biology slices verified in jsdom, **which mocks the hook**, and none drove a
+> browser. Fixed in this slice.
+>
+> Gates: **50 tests, 12 revert-bites / 12 bite** — four did not bite at first and
+> were restructured, and one of those was a **harness bug not a test gap** (the
+> cap-override clause appears 5× in `biology.ts`, so the bite hit the wrong
+> entry). src-scoped tsc **803 = baseline set-identical**, typecheck:lumina 0,
+> full vitest **2219/2219**, tutor-test T1 `pass` + T2 `findings: []`,
+> `dataBagDynamic: false`, zero `(not set)`.
+> **Runtime A/B: K and G1 `3-5`→`K-2` with the register changing (*"Mammalian
+> Predators… evolved as social pack runners"* → *"Comparing Our Furry Friends…
+> furry pets that live in our homes"*); G4 control unchanged.**
+> **Driven end-to-end in real Chrome** — 8 taps to completion, three picture
+> targets, zero console errors — which **caught a bug jsdom rendered silently**
+> (a `LuminaReadAloud` button nested inside a full-row button).
+>
+> Residuals: no Tier-3 live audio; rule 4 PARTIAL (6 elements); **rule 3 PARTIAL on
+> the stimulus** — no per-attribute image exists in the schema, the biggest further
+> PRE win; **the generator hard-THROWS when it cannot find two entities**
+> (pre-existing, every grade, worth its own item); **`mode` is almost always
+> `side-by-side`**, so the assessed K path is rarely routed while
+> `supportsEvaluation: true` still attracts assessment demand to a viewer.
+>
+> **NEXT: S6 `species-profile`** — predicted `= ctx.gradeContext` @ `:241`, but
+> **probe it**: S5 shows the predicted shape can be wrong.
 
 ## EXECUTED 2026-08-07 (later) — DI machine side: **di-shapes ladder rungs 1+2 CLOSED; the pack is L1**
 
@@ -1044,15 +1098,17 @@ starting at `## ACTIVE` was being sent to the wrong stream.*
   is read. **11 of the 26 are already owned** by
   `qa/engineering-tutoring-scaffold/BACKLOG.md` Phase A — confirmed, not re-filed.
   The unowned 15 are item 15.
-- **Progress: 10 of 15 CLOSED.** 15B is **complete, 8/8, all READY at PRE**
-  (S8–S15). 15A is at **S3 of 7** (S1 `telescope-simulator`, S2
-  `orbit-mechanics-lab`, S3 `rocket-builder`). Every slice shipped with its own
-  report under `qa/reader-fit/` and its own commit.
-- **NEXT = 15A S4 `story-planner`.** Its generator is **already canonical — do NOT
-  "fix" it**; audit the component and scaffold only. Then S5 `bio-compare-contrast`
-  (whose defect is at the **call site** — a function parameter defaulting to
-  `'3-5'`, a fourth grade-blindness shape) → S6 `species-profile` → S7
-  `mission-planner`. **After 15A:** audit `planetary-explorer` +
+- **Progress: 11 of 15 CLOSED** *(updated `/pm` 2026-08-07 late — this bullet had
+  lagged one slice behind the snapshot table while S4 shipped)*. 15B is **complete,
+  8/8, all READY at PRE** (S8–S15). 15A is at **S4 of 7** (S1 `telescope-simulator`,
+  S2 `orbit-mechanics-lab`, S3 `rocket-builder`, S4 `story-planner`). Every slice
+  shipped with its own report under `qa/reader-fit/` and its own commit.
+- **NEXT = 15A S5 `bio-compare-contrast`.** **Fourth grade-blindness shape:
+  `gradeBand` is a function PARAMETER defaulting to `'3-5'`, so the defect is at the
+  CALL SITE, not in the body** — a grep of the function reads clean. Import
+  `service/biology/gradeBand.ts` (S13's extraction); do not write a fifth copy.
+  Then S6 `species-profile` → S7 `mission-planner`. **After 15A:** audit
+  `planetary-explorer` +
   `constellation-builder` — they are not in item 15 because they each *have* a
   channel, but S1's floor and 15B's fixes pushed K astronomy demand squarely onto
   them, so they are the most likely site of the next real K failure.
@@ -1069,7 +1125,7 @@ starting at `## ACTIVE` was being sent to the wrong stream.*
   would have deleted a card the curator actively wanted.
   **S1's Grade-2 floor shipped under the old theory and is now a REVISIT CANDIDATE,
   not a precedent.** Recorded as [[feedback_make-age-friendly-not-band-floor]].
-- **⚠️ The triage label has understated the work 10 times out of 10.** "SCAFFOLD-GAP
+- **⚠️ The queued label has understated the work 11 times out of 11.** "SCAFFOLD-GAP
   — the interaction is fine, only the voice is missing" was true of the *core
   mechanic* every time and false about the *screen* every time. **Every one of the 8
   15B slices also sat on a grade-resolution defect**, which means the queued scaffold
@@ -1079,22 +1135,41 @@ starting at `## ACTIVE` was being sent to the wrong stream.*
   **Budget every remaining slice for a component pass and probe at the band before
   writing anything.** A supply-side triage read from catalog text cannot see chrome,
   protocol, or a grade-blind generator.
-- **⚠️ Two different grade-blindness mechanisms, and they do NOT share a grep.**
-  Astronomy uses regex `/grade\s*(\d|K)/` over prose `ctx.gradeContext`; biology uses
-  `gradeBandMap[ctx.gradeContext]`, a map keyed on grade tokens but indexed with
-  prose. Identical signature, different code. `bio-compare-contrast` (S5) has a third
-  shape at the call site. Probe each primitive at `grade=K` first.
+  **⚠️ S4 extended this in a NEW direction and it is the sharpest scope lesson in the
+  sweep.** Its queue line said *"generator already canonical — audit component and
+  scaffold only"*. The **prediction was right** (it is now a regression test — the one
+  generator in the sweep needing no grade work), but the **scope was wrong**: at K the
+  screen was two open questions with **nothing to choose from**, so chrome-gating plus
+  read-aloud would have left a five-year-old listening to a well-spoken question in
+  front of two empty text boxes — and recorded it READY. **A band failure can be a
+  CONTENT gap, and only the generator can close a content gap.** Check what the child
+  would actually DO before scoping any slice as catalog- or component-only.
+- **⚠️ FOUR grade-blindness mechanisms are now confirmed, and they do NOT share a
+  grep.** (1) **astronomy** — regex `/grade\s*(\d|K)/` over prose `ctx.gradeContext`,
+  falling through to a literal `'3'`; (2) **biology** — `gradeBandMap[ctx.gradeContext]`,
+  a map keyed on grade TOKENS but indexed with PROSE, so it missed at every grade and
+  the `'3-5'` default always won; (3) **inline** (S11) — prose passed straight into
+  `getDefaultBodies(gradeLevel)` whose only branch is `=== 'K'`, unreachable and only
+  on the DEGRADE path; (4) **call-site** (S5, next up) — `gradeBand` is a function
+  PARAMETER defaulting to `'3-5'`, so the body greps clean and the defect is at the
+  caller. Identical signature, four different codes. **Probe each primitive at
+  `grade=K` — and at the NEIGHBOURING grade — before writing anything.**
 - **⚠️ Do NOT gate on the absolute `tsc` count in this lane.** It read 805 → 806 →
   807 on an unchanged tree: `.next/types/app/**` is in the tsc program and the dev
   server these probes require regenerates it. **Gate on the `src/`-scoped error SET
   diff** (`comm -13 baseline current`).
-- **Open across the lane:** no Tier-3 live audio run on any of the 10 → **HUMAN-CHECKS
-  #73** (the eight 15B slices) + **#74** (the 15A pair, opened `/pm` 2026-08-07).
-  **All 10 still have 0 eval modes.** And the portfolio decision named in the
-  snapshot: `solar-system-explorer`, `scale-comparator` and `organism-card` have **no
-  evaluation hook at all** — decide `/add-eval-modes` vs. declared exploration-only,
-  because today the manifest can route assessment demand at instruments that cannot
-  measure it.
+- **Open across the lane:** no Tier-3 live audio run on any of the 11 → **HUMAN-CHECKS
+  #73** (the eight 15B slices) + **#74** (S2/S3); **S4's live-audio residual also
+  routes to #73**. **10 of the 11 still have 0 eval modes** — `story-planner` is the
+  exception (it already had 3, all grade 2-6, and they now have no band floor, which
+  is its own residual). And the portfolio decision named in the snapshot:
+  `solar-system-explorer`, `scale-comparator` and `organism-card` have **no evaluation
+  hook at all** — decide `/add-eval-modes` vs. declared exploration-only, because today
+  the manifest can route assessment demand at instruments that cannot measure it.
+  **One S4 residual worth its own eye:** the arc-ordering assessment assumes exactly
+  ONE sensible order, so a draw with two interchangeable middle events would mark a
+  defensible answer wrong — a rule-#1-adjacent risk that only shows up under real K
+  traffic. `/oracle-test` contract if this primitive starts getting used.
 - **Scope fence — do not creep.** Don't re-run the census. Don't re-file engineering
   Phase A's 11. Don't add eval modes inside a reader-fit slice. Don't fix
   `planetary-explorer`/`constellation-builder` inside a 15A slice — audit them as

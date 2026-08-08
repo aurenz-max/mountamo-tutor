@@ -249,10 +249,78 @@ same primitive, same catalog file, both CLAUDE.md #1 and #3.
   interchangeable middles would mark a defensible answer wrong (`/oracle-test`
   contract if this gets real K traffic); the 3 grade-2-6 eval modes have no band
   floor.
-  → **NEXT: S5 `bio-compare-contrast`** (fourth grade-shape: `gradeBand` is a
-  **function parameter defaulting to `'3-5'`** — check the CALL SITE, not the
-  body; import `service/biology/gradeBand.ts`, do not write a fifth copy) →
-  S6 `species-profile` → S7 `mission-planner`.
+  ~~**S5 `bio-compare-contrast`**~~ **S5 CLOSED 2026-08-07 — READY at PRE.**
+  Verdict **SCAFFOLD-GAP + PRIMITIVE-GAP**, not WRONG-BAND.
+  **The "fourth grade-shape" prediction was right about the LOCATION and wrong
+  about the SHAPE.** The call site (`registry/generators/biologyGenerators.ts:260`)
+  held a verbatim **fifth copy of the S9 map** — `gradeBandMap[ctx.gradeContext]
+  || '3-5'`. `gemini-compare-contrast.ts` really is clean, which is exactly why a
+  grep over `service/biology/*.ts` missed it. **Generalisable: a generator with a
+  clean body can still be grade-blind if its band arrives as an argument.** Fixed
+  by importing S13's `resolveBiologyBand` — no fifth copy written.
+  **Probe pre-fix: K, G1 AND G4 all returned `'3-5'`** with the same *"Mammalian
+  Predators … vertebrate mammals … evolved as social pack runners"* draw against
+  a K-2 rung reading "4-6 attributes, simple observable characteristics".
+  **(1) SCAFFOLD-GAP** — catalog block (9 contextKeys, 3 levels, 5 struggles, 3
+  aiDirectives incl. PRE-READER READ-ALOUD with the cap-override clause, a
+  `WHICH SIDE IT BELONGS ON IS THE ANSWER` rule forbidding elimination, and a
+  `NO JARGON AT K-2` register rule dropped at 3-5) + `useLuminaAI` with 5 moments;
+  `[COMPARE_ATTRIBUTE_SHOWN]` is load-bearing — **the tutor's voice IS the
+  characteristic card** for a non-reader.
+  **(2) PRIMITIVE-GAP** — venn was HTML5 **drag-only**, ~17 text cards, a
+  multi-clause written protocol and a deferred "Check My Work". Replaced at K-2 by
+  the **S9 WordSorter precedent**: one characteristic staged, three picture
+  targets (A / BOTH / B), tap = choose = commit = advance, dots not counters.
+  Drag untouched at 3-5+. 5 chrome classes gated; `imagePrompt` (S9/S13 leak,
+  **third appearance**) and the `A-only` dev slug removed at EVERY grade.
+  **(3) TWO ANSWER-KEY DEFECTS AT EVERY GRADE, UNQUEUED — the real find.**
+  (a) **The B-only Venn region was structurally unreachable**: entity B was
+  filtered by "category not already in entity A" while the generator prompt
+  *demands* parallel categories. Measured **0 B-only cards at K, G1 AND G4**, so
+  one of three regions was never correct for anything. (b) **The key could
+  contradict itself** — a shared attribute emitted as both `'A-only'` and
+  `'shared'` under one placement key; run the generator's **own K-2 example**
+  through the old builder and a perfect player caps at **60%**. It hid on live
+  draws only because Gemini wrote longer distinct prose for shared entries —
+  **so it fires hardest at the youngest band**. Both fixed in one exported
+  `buildComparisonItems`; `isShared` deliberately NOT trusted as a region signal
+  (its value is often entity-specific prose).
+  **(4) A SHIPPED 15B REGRESSION, found here:** `BiologyPrimitivesTester` had **no
+  `LuminaAIProvider`**, and `useLuminaAI` THROWS rather than degrading — so
+  `classification-sorter`, `life-cycle-sequencer`, `habitat-diorama` and
+  `organism-card` **crash the biology tester today**. Missed because all four 15B
+  biology slices verified in **jsdom, which mocks the hook**, and none drove a
+  browser. Fixed (astronomy tester already had it).
+  ⚠️ **A jsdom suite that mocks `useLuminaAI` cannot see a missing provider.**
+  Gates: **50 tests, 12 revert-bites / 12 bite** (7/1/2/1/16/3/1/1/1/1/1/1) —
+  **four did not bite at first and were restructured**, and one of those four was a
+  **HARNESS bug not a test gap** (the cap-override clause appears 5× in
+  `biology.ts`, so the bite hit the wrong entry). src-scoped tsc **803 = baseline
+  set-identical**, typecheck:lumina 0, full vitest **2219/2219**, tutor-test Tier 1
+  `pass` + Tier 2 `findings: []`, `dataBagDynamic: false`, 9/9 `component`, zero
+  `(not set)`.
+  **Runtime A/B: K `3-5`→`K-2` (7/7→5/5 attrs, images on, register *"Mammalian
+  Predators"*→*"Comparing Our Furry Friends"*), G1 likewise, G4 control unchanged.**
+  A second K draw on a different topic proves the register is real, not the
+  few-shot example parroted.
+  **Driven end-to-end in real Chrome** on real generated K data + real generated
+  images: 0 draggables, targets `Tree only | Both of them | Flower only`, **8 taps
+  to completion + celebration**, no chrome, zero console errors; 3-5 control keeps
+  everything. ⚠️ **Chrome caught a bug jsdom rendered silently** — a
+  `LuminaReadAloud` button nested inside a full-row button
+  (`validateDOMNesting`); fixed by making the row *be* the kit component, locked
+  with a `button button` structural guard.
+  Report `qa/reader-fit/bio-compare-contrast-PRE-2026-08-07.md`.
+  *Residuals:* no Tier-3 live audio; **rule 4 PARTIAL** (6 elements); **rule 3
+  PARTIAL on the stimulus** — no per-attribute image exists in the schema, and
+  adding one is the single biggest further PRE win; **the generator hard-THROWS
+  when it cannot find two entities** (`topic="general practice", title="undefined"`
+  — pre-existing, every grade, worth its own item); **`mode` is almost always
+  `side-by-side`**, so the assessed K path is rarely routed while
+  `supportsEvaluation: true` still attracts assessment demand to a viewer;
+  0 eval modes.
+  → **NEXT: S6 `species-profile`** (predicted `= ctx.gradeContext` @ `:241`;
+  **probe it — S5 shows the predicted shape can be wrong**) → S7 `mission-planner`.
 - **15B — SCAFFOLD-GAP, fix = `/add-tutoring-scaffold` then `/reader-fit --fix`**
   (interaction is genuinely K-fit; only the voice is missing):
   ~~**S8 `moon-phases-lab`**~~ **S8 CLOSED 2026-08-06 — READY at PRE.** Catalog
@@ -563,10 +631,18 @@ time on, and the ranked frontier beyond item 15.
 *(The 08-06 handoff is retained for its origin story — enumeration, two-channel
 test, S1 band-floor + curator A/B template — and is marked superseded in-file.)*
 
-**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ **ALL THREE CLOSED 2026-08-07** →
-**15A S5 `bio-compare-contrast`** → S6 → S7 → then audit `planetary-explorer` +
-`constellation-builder`, which now carry the K astronomy demand that S1's floor
-and 15B's fixes redirected onto them.
+**Pull order now:** ~~15A S2~~ ~~S3~~ ~~S4~~ ~~S5~~ **ALL FOUR CLOSED 2026-08-07** →
+**15A S6 `species-profile`** → S7 `mission-planner` → then audit
+`planetary-explorer` + `constellation-builder`, which now carry the K astronomy
+demand that S1's floor and 15B's fixes redirected onto them.
+**⚠️ S5 added two rules to the method.** (a) **A generator with a clean body can
+still be grade-blind if its band arrives as an ARGUMENT** — check the call site
+even when the generator greps clean; the "fourth shape" prediction was right about
+the location and wrong about the shape (it was S9's map, relocated). (b) **A jsdom
+suite that mocks `useLuminaAI` cannot see a missing `LuminaAIProvider`** — the hook
+THROWS, and four 15B primitives had been crashing the biology tester since they
+shipped. **Drive one browser render per slice**; S5's only browser-caught bug
+(nested `<button>`) was also invisible to jsdom.
 **⚠️ S4 taught the sharpest scope lesson in the sweep.** The queue said
 "generator already canonical — audit component + scaffold only". The *prediction*
 was right (and is now a regression test), but the *scope* was wrong: at K the

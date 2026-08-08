@@ -21,6 +21,7 @@ import {
   EvaluationProvider,
   useEvaluationContext,
 } from '../evaluation';
+import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
 
 interface BiologyPrimitivesTesterProps {
   onBack: () => void;
@@ -615,12 +616,23 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
   );
 };
 
-// Wrapper with EvaluationProvider
+// Wrapper with LuminaAIProvider + EvaluationProvider
+//
+// `LuminaAIProvider` is NOT optional: `useLuminaAI` throws
+// "useLuminaAIContext must be used within a LuminaAIProvider" outright. Five
+// biology primitives now call it — classification-sorter, life-cycle-sequencer,
+// habitat-diorama, organism-card (15B) and bio-compare-contrast (15A/S5) — so
+// without this wrapper the tester crashes on all five. Four of them shipped
+// that way in 15B and it went unnoticed because those slices verified in jsdom
+// (which mocks the hook) and never drove the tester in a browser. The astronomy
+// tester already carries this wrapper; this is the same fix.
 const BiologyPrimitivesTester: React.FC<BiologyPrimitivesTesterProps> = (props) => {
   return (
-    <EvaluationProvider>
-      <BiologyPrimitivesTesterContent {...props} />
-    </EvaluationProvider>
+    <LuminaAIProvider>
+      <EvaluationProvider>
+        <BiologyPrimitivesTesterContent {...props} />
+      </EvaluationProvider>
+    </LuminaAIProvider>
   );
 };
 

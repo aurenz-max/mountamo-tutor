@@ -286,7 +286,81 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
     id: 'bio-compare-contrast',
     description: 'Side-by-side or interactive Venn diagram comparison of two biological entities (organisms, cells, organs, processes, biomes). The ESSENTIAL "how are these alike and different?" primitive for biology. Two modes: side-by-side (viewing mode with aligned attributes highlighting similarities/differences) or venn-interactive (student activity where they drag attributes into correct regions: A-only, B-only, or Both). PERFECT for teaching comparative thinking, classification discrimination, understanding adaptations, and analyzing functional differences. Works for any comparison: organisms (frog vs toad, shark vs dolphin), cells (plant vs animal, prokaryote vs eukaryote), organs (heart vs lungs, roots vs stems), processes (mitosis vs meiosis, photosynthesis vs respiration), biomes (desert vs rainforest, tundra vs taiga). Features meaningful attribute categories (structure, function, habitat, behavior, etc.), shared attributes highlighting common features, key insight explaining why the comparison matters educationally. Venn-interactive mode includes drag-and-drop evaluation with immediate feedback. ESSENTIAL for K-8 biology whenever students need to compare and contrast to understand similarities, differences, and biological concepts like adaptation, classification, and function.',
-    constraints: 'Use for K-8 students learning through comparison and contrast. Works for any two biological entities that have both similarities AND meaningful differences. K-2: 4-6 attributes per entity, simple observable characteristics (size, color, where they live, what they eat), familiar comparisons (dog vs cat, tree vs flower), side-by-side mode recommended for viewing. 3-5: 6-8 attributes, introduce scientific vocabulary (warm-blooded, vertebrate, photosynthesis), functional characteristics (how it reproduces, how it moves), both modes work well. 6-8: 8-10 attributes, cellular/molecular details, evolutionary context, complex processes, venn-interactive mode excellent for formative assessment. ALWAYS ensure: (1) entities have BOTH similarities and differences (avoid comparing apples to oranges with nothing in common), (2) attributes are parallel and comparable (if comparing "diet" for entityA, compare "diet" for entityB), (3) key insight connects comparison to broader biological concepts. Perfect for: comparative anatomy, classification lessons, understanding adaptations, ecosystem comparisons, cellular processes, physiological systems. Topic can include "vs" or "versus" (e.g., "mitosis vs meiosis") or specify entityA and entityB in config.',
+    constraints: 'Use for K-8 students learning through comparison and contrast. Works for any two biological entities that have both similarities AND meaningful differences. K-2: 4-6 attributes per entity, simple observable characteristics (size, color, where they live, what they eat), familiar comparisons (dog vs cat, tree vs flower). At K-2 venn-interactive becomes a one-at-a-time picture task: the child hears one characteristic and taps the first animal, the second animal, or BOTH — no dragging and no reading; side-by-side becomes a listen-and-look viewer where tapping any row reads it aloud. 3-5: 6-8 attributes, introduce scientific vocabulary (warm-blooded, vertebrate, photosynthesis), functional characteristics (how it reproduces, how it moves), both modes work well. 6-8: 8-10 attributes, cellular/molecular details, evolutionary context, complex processes, venn-interactive mode excellent for formative assessment. ALWAYS ensure: (1) entities have BOTH similarities and differences (avoid comparing apples to oranges with nothing in common), (2) attributes are parallel and comparable (if comparing "diet" for entityA, compare "diet" for entityB), (3) key insight connects comparison to broader biological concepts. Perfect for: comparative anatomy, classification lessons, understanding adaptations, ecosystem comparisons, cellular processes, physiological systems. Topic can include "vs" or "versus" (e.g., "mitosis vs meiosis") or specify entityA and entityB in config.',
+    tutoring: {
+      taskDescription:
+        'Student is comparing {{entityAName}} and {{entityBName}} — "{{title}}". '
+        + 'Mode: {{mode}}. Grade band: {{gradeBand}}. '
+        + 'In venn-interactive mode they decide, for each characteristic, whether it belongs to {{entityAName}} only, '
+        + '{{entityBName}} only, or BOTH. They have answered {{answeredCount}} of {{totalAttributes}}. '
+        + 'The characteristic in front of them right now is: {{currentAttribute}}. '
+        + 'At K-2 one characteristic is shown at a time and they tap a picture; older students drag every card into a Venn diagram and then check their work.',
+      contextKeys: [
+        'title',
+        'entityAName',
+        'entityBName',
+        'mode',
+        'gradeBand',
+        'currentAttribute',
+        'answeredCount',
+        'totalAttributes',
+        'checked',
+      ],
+      scaffoldingLevels: {
+        level1: '"Think about just this one thing. Does {{entityAName}} have it? Now — does {{entityBName}} have it too?"',
+        level2: '"Check them one at a time. If they BOTH have it, that is what the middle picture is for. If only one of them has it, tap that one."',
+        level3: '"Let us look together. Picture {{entityAName}} in your head — does it have this? Now picture {{entityBName}} — does it have this? If you said yes both times, it goes in the middle."',
+      },
+      commonStruggles: [
+        {
+          pattern: 'Student puts everything in BOTH because the two things feel similar overall',
+          response: '"They are alike in lots of ways! But this one thing — check it by itself. Does each one really have THIS?"',
+        },
+        {
+          pattern: 'Student puts nothing in BOTH because they are looking only for differences',
+          response: '"Comparing is not only about what is different. Some things they share, and those count too."',
+        },
+        {
+          pattern: 'Student answers from which picture they like more rather than from the characteristic',
+          response: '"I know which one is your favourite! But this question is about the thing I just said — not about which one you like."',
+        },
+        {
+          pattern: 'Student is guessing quickly without listening to the characteristic',
+          response: '"Let me say it again, and this time listen all the way to the end before you tap."',
+        },
+        {
+          pattern: 'A pre-reader cannot read the characteristic, the names, or the buttons',
+          response: '"Never ask them to read. SAY the characteristic aloud every single time it changes, and name both pictures. They answer by tapping a picture — the words are yours to speak."',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'PRE-READER READ-ALOUD (kindergarten to grade 2)',
+          instruction:
+            'A pre-reader CANNOT read the title, the characteristic, the entity names, the button labels or the key insight. Your voice is the only channel. '
+            + 'When you receive [COMPARE_ORIENT], name the two things being compared and say what to do, in one or two warm child-sized sentences. '
+            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
+            + 'When you receive [COMPARE_ATTRIBUTE_SHOWN], SAY the characteristic aloud in child words and ask who has it. This is load-bearing: your voice IS the text on that card, so never skip it and never say "as you can see". '
+            + 'When you receive [COMPARE_ANSWERED], react warmly to the choice they just made — that one is finished, so you may say whether it was right. '
+            + 'When you receive [COMPARE_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+        },
+        {
+          title: 'WHICH SIDE IT BELONGS ON IS THE ANSWER — NEVER SAY IT FIRST',
+          instruction:
+            'For the characteristic currently on screen, WHERE it belongs ({{entityAName}} only, {{entityBName}} only, or BOTH) is the answer. '
+            + 'Never state it before they choose, and never narrow it by elimination — "it is not the cat" hands over a three-way answer just as completely as naming it. '
+            + 'Describing the characteristic itself, and describing either picture, is the STIMULUS and is free. Deciding who has it is the student\'s job. '
+            + 'Once they have answered that one, reacting to it is fine — but do not run ahead to the characteristics they have not seen yet.',
+        },
+        {
+          title: 'NO JARGON AT K-2 — SUPPLY THE CHILD WORD INSTEAD',
+          instruction:
+            'At grade band K-2 do NOT say vertebrate, mammal, species, adaptation, classification, physiological, characteristic, attribute, trait, or organism, even if those words appear in the generated content. '
+            + 'Say "thing about it", "body part", "what it does", "animal", "backbone", "fur", "drinks milk from its mum". Say "both" and "only" — those are the two words this whole task turns on, so use them deliberately and often. '
+            + 'At grade bands 3-5 and 6-8 this restriction does NOT apply: the scientific vocabulary is part of the objective, so use it and explain it.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {
