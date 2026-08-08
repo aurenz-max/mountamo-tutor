@@ -7,7 +7,7 @@ Live evidence: qa/tutor-reports/lumina-session-review-2026-08-05.md.
 import asyncio
 
 from app.api.endpoints.lumina_tutor import (
-    ContextUpdateGate,
+    PrimitiveState,
     SessionCounters,
     SwitchDebouncer,
     build_lesson_system_instruction,
@@ -16,6 +16,7 @@ from app.api.endpoints.lumina_tutor import (
     interpolate_line,
     interpolate_template,
 )
+from app.services.session_ledger import classify_cue
 
 
 # ---------------------------------------------------------------------------
@@ -230,145 +231,143 @@ def test_prompts_document_session_resumed_tag():
 
 
 # ---------------------------------------------------------------------------
-# ContextUpdateGate — end_of_turn=False was a lie: handle_text_to_gemini logged
-# the field and then sent every text the same way, so "silent" state updates
-# interrupted the tutor. In the 2026-08-06 lesson, 9 of 17 barge-ins were the
-# server interrupting itself; four were [CONTEXT UPDATE]s, one clipping a
-# celebration at its first word.
+# PrimitiveState (CTX-1, 2026-08-07) — the tutor is no longer NOTIFIED when the
+# student moves something inside a primitive. It was pushed as a "silent"
+# [CONTEXT UPDATE], but this transport has no silent mode: every realtime text
+# send closes the turn and registers as user activity. In the 2026-08-06 lesson
+# 9 of 17 barge-ins were the server interrupting itself, four of them these
+# updates — one clipped a celebration at its first word — and on a turn longer
+# than the gate's 8s ceiling the model took the floor with nothing to answer and
+# read a prompt line aloud to a child.
+#
+# The state itself is kept and rides out on the next message that genuinely
+# asks the model for a turn. These tests pin BOTH halves: the push is gone, and
+# the model is still informed.
 # Live evidence: logs/lumina-sessions/2026-08-06-113439-lumina-tutor-9afd09131cde.jsonl
 # ---------------------------------------------------------------------------
 
-class _Ledger:
-    """Stand-in for SessionLedger — records events, never throws."""
-
-    def __init__(self):
-        self.events = []
-
-    def write(self, event, **fields):
-        self.events.append((event, fields))
+def test_state_is_never_a_message_of_its_own():
+    """The deleted channel. Merging state produces nothing to send — the only
+    way it reaches Gemini is riding on a message that already wanted a turn."""
+    s = PrimitiveState()
+    s.merge({"slider": 3})
+    assert s.attached == 0
 
 
-def _gate(hold_s=None):
-    sent = []
-
-    async def requeue(text):
-        sent.append(text)
-
-    ledger = _Ledger()
-    g = ContextUpdateGate(requeue, ledger)
-    if hold_s is not None:
-        g.MAX_HOLD_S = hold_s
-    return g, sent, ledger
+def test_state_rides_out_on_the_next_message_that_asks_for_a_turn():
+    s = PrimitiveState()
+    s.merge({"problem": "3 + 4"})
+    out = s.attach("[DI_ITEM] Judge the student's spoken answer.")
+    assert "[CURRENT STATE]" in out
+    assert "problem: 3 + 4" in out
+    # the ask stays LAST so it is the most recent thing in the model's context
+    assert out.rstrip().endswith("Judge the student's spoken answer.")
+    assert s.attached == 1
 
 
-def test_context_update_passes_straight_through_when_tutor_is_idle():
-    async def scenario():
-        g, sent, _ = _gate()
-        assert await g.admit("[CONTEXT UPDATE] slider: 3") is True
-        return sent, g.held
-
-    sent, held = _run(scenario())
-    assert sent == []      # caller sends it itself; nothing was parked
-    assert held == 0
-
-
-def test_context_update_is_parked_while_the_tutor_holds_the_floor():
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        admitted = await g.admit("[CONTEXT UPDATE] slider: 3")
-        return admitted, sent, g.held
-
-    admitted, sent, held = _run(scenario())
-    assert admitted is False   # this is the barge-in that no longer happens
-    assert sent == []          # still parked — the turn is still running
-    assert held == 1
+def test_the_cue_tag_survives_attachment():
+    """classify_cue reads the leading bracket tag. handle_text_to_gemini
+    classifies BEFORE attaching, so [DI_ITEM] stays [DI_ITEM] in the ledger and
+    for fault-injection arming even though the sent text now leads with state."""
+    s = PrimitiveState()
+    s.merge({"problem": "3 + 4"})
+    original = "[DI_ITEM] Judge this."
+    assert classify_cue(original) == "[DI_ITEM]"
+    assert classify_cue(s.attach(original)) == "text"   # why order matters
 
 
-def test_parked_update_is_requeued_when_the_turn_ends():
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        await g.admit("[CONTEXT UPDATE] slider: 3")
-        await g.floor_released()
-        return sent
-
-    assert _run(scenario()) == ["[CONTEXT UPDATE] slider: 3"]
-
-
-def test_only_the_newest_parked_update_survives():
-    """A slider dragged across twenty positions is one state, not twenty."""
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        for i in range(20):
-            await g.admit(f"[CONTEXT UPDATE] slider: {i}")
-        await g.floor_released()
-        return sent, g.held, g.coalesced
-
-    sent, held, coalesced = _run(scenario())
-    assert sent == ["[CONTEXT UPDATE] slider: 19"]
-    assert held == 1
-    assert coalesced == 19
+def test_twenty_slider_positions_collapse_to_one_state():
+    """A slider dragged across twenty positions is one state, not twenty — and
+    costs one attachment, not twenty interruptions."""
+    s = PrimitiveState()
+    for i in range(20):
+        s.merge({"slider": i})
+    out = s.attach("The student asked a question.")
+    assert "slider: 19" in out
+    assert "slider: 18" not in out
+    assert s.attached == 1
 
 
-def test_turn_end_is_idempotent():
-    """Turn ends arrive twice — turn_complete flag AND iterator end."""
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        await g.admit("[CONTEXT UPDATE] slider: 3")
-        await g.floor_released()
-        await g.floor_released()
-        return sent
-
-    assert _run(scenario()) == ["[CONTEXT UPDATE] slider: 3"]
+def test_unchanged_state_is_not_resent():
+    s = PrimitiveState()
+    s.merge({"slider": 3})
+    first = s.attach("cue one")
+    second = s.attach("cue two")
+    assert "[CURRENT STATE]" in first
+    assert second == "cue two"      # nothing changed; nothing to say
+    assert s.attached == 1
 
 
-def test_cue_that_wants_a_response_is_never_gated():
-    """Only end_of_turn=False traffic is held; a [PROBLEM_SHOWN] must cut in."""
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        # handle_text_to_gemini only consults the gate for end_of_turn=False,
-        # so an answer/problem cue never reaches admit() at all.
-        return await g.admit("[CONTEXT UPDATE] x: 1")
-
-    assert _run(scenario()) is False
+def test_a_later_change_is_sent_again():
+    s = PrimitiveState()
+    s.merge({"slider": 3})
+    s.attach("cue one")
+    s.merge({"slider": 9})
+    assert "slider: 9" in s.attach("cue two")
+    assert s.attached == 2
 
 
-def test_hold_expires_so_a_silent_model_cannot_strand_the_update():
-    """The model may answer a cue with silence; no turn end ever arrives."""
-    async def scenario():
-        g, sent, ledger = _gate(hold_s=0.05)
-        g.floor_taken()
-        await g.admit("[CONTEXT UPDATE] slider: 3")
-        await asyncio.sleep(0.2)
-        return sent, [e for e, _ in ledger.events]
-
-    sent, events = _run(scenario())
-    assert sent == ["[CONTEXT UPDATE] slider: 3"]
-    assert "context-update-hold-expired" in events
+def test_merge_is_a_delta_not_a_replacement():
+    """Primitives push partial bags; a DI pack updating `problem` must not
+    erase the `challengeType` the tutor still needs."""
+    s = PrimitiveState()
+    s.merge({"challengeType": "addition", "problem": "3 + 4"})
+    s.merge({"problem": "5 + 2"})
+    out = s.attach("cue")
+    assert "challengeType: addition" in out
+    assert "problem: 5 + 2" in out
 
 
-def test_reconnect_releases_anything_parked_mid_drop():
-    async def scenario():
-        g, sent, _ = _gate()
-        g.floor_taken()
-        await g.admit("[CONTEXT UPDATE] slider: 3")
-        await g.reset()          # new Gemini connection
-        return sent
-
-    assert _run(scenario()) == ["[CONTEXT UPDATE] slider: 3"]
+def test_empty_state_attaches_nothing():
+    s = PrimitiveState()
+    assert s.attach("cue") == "cue"
+    assert s.attached == 0
 
 
-def test_aclose_cancels_the_hold_timer():
-    async def scenario():
-        g, sent, _ = _gate(hold_s=0.05)
-        g.floor_taken()
-        await g.admit("[CONTEXT UPDATE] slider: 3")
-        await g.aclose()
-        await asyncio.sleep(0.2)
-        return sent
+def test_switch_replaces_state_and_counts_as_already_conveyed():
+    """REGRESSION GATE for the CTX-1 scope fence. A new primitive's data
+    replaces the old — the last activity's state must never be described as
+    this one's — and the [PRIMITIVE SWITCH] announcement already carries it in
+    the scaffold, so it is not attached a second time."""
+    s = PrimitiveState()
+    s.merge({"slider": 3})
+    s.reset({"word": "cat"})
+    assert s.attach("cue") == "cue"          # scaffold already said it
+    s.merge({"word": "dog"})
+    out = s.attach("cue two")
+    assert "word: dog" in out
+    assert "slider" not in out               # the old activity is gone
 
-    assert _run(scenario()) == []
+
+def test_unserializable_state_still_attaches():
+    """The signature is only a change-detector. A primitive pushing something
+    JSON can't take must not kill the tutor's state channel."""
+    class Opaque:
+        def __repr__(self):
+            return "<opaque>"
+
+    s = PrimitiveState()
+    s.merge({"thing": Opaque()})
+    assert "[CURRENT STATE]" in s.attach("cue")
+    assert s.attach("cue two") == "cue two"   # and still de-dupes
+
+
+# --- the prompt no longer advertises a channel that does not exist ----------
+
+def test_prompts_do_not_mention_the_deleted_context_update_channel():
+    for p in (_lesson_prompt(), _standalone_prompt()):
+        assert "[CONTEXT UPDATE]" not in p
+
+
+def test_prompts_document_the_current_state_block():
+    for p in (_lesson_prompt(), _standalone_prompt()):
+        assert "[CURRENT STATE]" in p
+
+
+def test_lesson_prompt_still_announces_the_primitive_switch_channel():
+    """SCOPE FENCE: navigation and within-primitive state are different
+    channels. CTX-1 deletes only the second. If the model stops being told it
+    will hear about activity changes, the wrong channel was deleted."""
+    p = _lesson_prompt()
+    assert "[PRIMITIVE SWITCH]" in p
+    assert "briefly acknowledge the new activity" in p

@@ -212,11 +212,126 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     hard cold-name); (5) L4 structural = rotation magnitude + size variation
     + non-prototypical exemplars (scalene/obtuse triangles); (6) L5 sound.
 
-13. **CTX-1 — DELETE the real-time `[CONTEXT UPDATE]` push; attach state lazily
-    instead. MEDIUM.** *(Filed as a `d895bfb` gate regression; reframed by user
-    ruling the same day — the gate is scaffolding around a channel that should
-    not exist. See "SEVERITY DOWNGRADED + FIX REFRAMED" below.)*
+13. **CTX-1 — ✅ FIXED 2026-08-07. The `[CONTEXT UPDATE]` push is deleted; the
+    state is kept and now rides out on messages that already asked for a turn.**
+    *(Filed as a `d895bfb` gate regression; reframed twice by user ruling — first
+    "the gate is scaffolding around a channel that shouldn't exist", then
+    **re-scoped 2026-08-07** because the first reframe was read as deleting more
+    than it should. See "SCOPE FENCE" immediately below, then "SEVERITY
+    DOWNGRADED + FIX REFRAMED".)*
     User-reported from a live session 2026-08-06 17:02.**
+
+    **WHAT SHIPPED.** `ContextUpdateGate` (89 lines) is **deleted outright**, and
+    with it every `floor_taken`/`floor_released`/`reset`/`aclose` call site — the
+    8s hold ceiling that force-released a parked update into a still-speaking
+    tutor no longer exists because there is nothing left to park. `update_context`
+    now merges into a server-side `PrimitiveState` and **queues nothing**: the
+    `context-update` ledger row is unchanged, the state is retained in full, and
+    the notification is gone. The state rides out on the next message that
+    genuinely gives the model the floor, prepended so the ask stays last, and
+    **only when it changed** since the model last saw it. The `[CONTEXT UPDATE]`
+    prompt bullets at `:552`/`:641` and the advertisement at `:597-598` are
+    deleted; the `[PRIMITIVE SWITCH]` half of `:597-598` and the transition
+    handling at `:616` are untouched. Net **−1 class, −41 lines** in one file.
+
+    **⚠️ ONE CODE FACT THE PLAN DID NOT KNOW, and it changes an instruction.**
+    The plan said *prepend* the state block. Prepending naively **breaks cue
+    classification**: `classify_cue` matches the LEADING bracket tag, so a state
+    block in front of `[DI_ITEM] …` reclassifies it to `"text"` — corrupting the
+    ledger's `kind` field and the fault-injection arming that keys off it. Fixed
+    by classifying **before** attaching; pinned by
+    `test_the_cue_tag_survives_attachment`. Any future session moving this
+    attachment point must keep that ordering.
+
+    **STEP 3 OF THE PLAN WAS NOT BUILT, and should not be — it is already done.**
+    The plan asked for a server-side struggle trigger firing a real cue on
+    repeated failed attempts. There is **no input signal to build it on**:
+    `student_action` has **zero senders in the entire repo** (the handler at
+    `:1052` is dead code), so the server cannot observe a failed attempt.
+    Struggle already arrives as explicit `end_of_turn=True` cues the primitives
+    send themselves — `[ANSWER_INCORRECT]`, `[RHYME_MISS]`, `[DI_ITEM]` — which
+    is exactly the "speaking action should be a speaking message" shape step 3
+    wanted. It was implemented client-side years before this item existed.
+
+    **CONSUMER CHECK — the plan's "confirm no other consumer" clause found one,
+    and it is preserved.** The five DI packs (`DiMathFacts`, `DiWordReading`,
+    `DiSentenceReading`, `DiLetterSounds`, `DiShapes`) push a contextKey bag
+    through `updateContext` to *"keep the tutor's RUNTIME STATE truthful as facts
+    advance"*. Catalog `{{key}}`s resolve **server-side at switch/connect time**
+    only, so post-switch that push WAS the tutor's only source of the current
+    item. Under the fix it is strictly better: the bag now arrives **attached to
+    the `[DI_ITEM]` that asks for the judgment**, instead of landing early and
+    being buried under intervening audio. No frontend change was needed — clients
+    keep sending `update_context` exactly as before.
+
+    **VERIFICATION — driven at runtime against the live backend + real Gemini
+    Live, both gates the item named.**
+    (a) **`states-of-matter` full journey, 11 beats, all correct.** The
+    `silent_slider_wiggle` beat — three slider moves — produced **zero audio and
+    zero sends**. Ledger: **6 `context-update` rows** (state kept) → **0
+    `[CONTEXT UPDATE]` sends** → **0 barge-ins**. `state_attached` climbed 1→2→3
+    across the three phase-change cues and then **stayed at 3** for the next five
+    messages: the de-dupe works live, not just in unit tests.
+    (b) **REGRESSION GATE PASSED — `lesson-refer-back --lesson`, 6 beats.** Both
+    switches announced (`switch-primitive` + `switch-announced` rows, debounce
+    intact at 2.5s), the tutor acknowledged each new activity in one sentence
+    (*"Now let's figure out how those parts move with hydraulics"*), and on
+    `refer_back_to_section_1` it answered about the **right** primitives (boom /
+    stick / bucket, then the cylinders). `state_attached` stayed **0** all
+    session — switch resets the bag and marks it conveyed, so the announcement's
+    own scaffold is not duplicated. 0 barge-ins.
+    (c) Unit: **28 passed**; 13 new `PrimitiveState` tests replace the 9 gate
+    tests, incl. the fence gate `test_lesson_prompt_still_announces_the_primitive_switch_channel`.
+    Backend suite **26 failed / 105 passed vs. a measured 26 / 101 baseline** —
+    same pre-existing failures (`test_planning_service`,
+    `test_ai_recommendations_integration`, `test_assessment_feedback_integration`,
+    none importing `lumina_tutor`; `test_dag_analysis` fails collection on a
+    missing `app.models.diagnostic`). py_compile clean.
+
+    **RESIDUALS.**
+    (i) **No real-mic session.** The reported defect needed a state change to
+    land *during* a >8s turn; the harness sends beat-synchronously, so that exact
+    timing was not reproduced. The argument that it cannot recur is **structural,
+    not statistical** — `update_context` no longer has any path to `text_queue`,
+    so there is nothing to land at any timing. Still worth one human ear.
+    (ii) **Voice-only exploration is the one place state can go stale.** Audio
+    bypasses `text_queue`, so a student who drags a slider and then asks *aloud*
+    gets a tutor that has not been handed the new state. Text/cue paths are
+    covered. Cheap fix if it ever bites: attach on the transcription boundary.
+    (iii) `[CONTEXT UPDATE]` is **deliberately left in `_CUE_TAGS`** so historical
+    ledgers still classify correctly. Nothing can emit it.
+
+    ---
+    *Original filing below, kept for the reasoning and the fence.*
+
+    **⚠️ SCOPE FENCE — USER RULING 2026-08-07. READ THIS BEFORE THE FIX SECTION.**
+    *"the fix is not remove context update, its to not notify the LLM, this is
+    just one of those parsimony items we can outright remove."*
+    **What must survive:** the tutor must still know **which primitive the student
+    is currently on**. Do NOT replace per-navigation awareness with a
+    feed-everything-at-session-start dump — a static manifest of all primitives
+    cannot tell the model that the student just scrolled to a different one, and
+    the tutor's whole job depends on knowing where they are.
+    **What is deleted:** the *notification* — the act of pushing within-primitive
+    state at the model as a message. Outright removal, not a gate, not a delay,
+    not a reworded prompt.
+    **VERIFIED AT THE CODE, so the executor does not have to trust this
+    framing:** navigation and state are **two different message types**, and only
+    one of them is in scope.
+    - `switch_primitive` → `[PRIMITIVE SWITCH]` (`lumina_tutor.py:1068`, announced
+      at `:900`) is the **navigation** channel — *"the student has moved to a new
+      activity"* — and it is already **debounced so only the primitive they SETTLE
+      on is announced** (`:1087-1089`). **This channel is NOT part of CTX-1 and
+      must be left exactly as it is.** It is what answers "where is the student".
+    - `update_context` → `[CONTEXT UPDATE]` (`:1023`) carries only **state WITHIN
+      the current primitive** — the prompt defines it at `:552`/`:641` as *"silent
+      state change (slider moved, option selected)"*. **This is the only thing
+      CTX-1 removes.**
+    So the scroll/navigation signal is not at risk from this fix — but the fence
+    is written here as a hard constraint anyway, because the two channels sit ~45
+    lines apart in the same `elif` chain and a session working fast could delete
+    the wrong one. **If a change would make the model stop learning that the
+    student switched activities, it is out of scope and wrong.**
     **Symptom (what the child hears):** the tutor spoke a self-directed stage
     direction — *"Silence is the invitation to keep exploring, not a question
     from the student. Wait for them to take the next step in identifying the
@@ -227,6 +342,18 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     QUESTIONS FROM THE STUDENT block (*"a question from the student"*).
     **Same class as item 11's original defect** (prompt line recited as dialogue)
     and as its own `(not set)` rider: internal machinery reaching the child's ears.
+    **STATUS NOTE (verified 2026-08-07): the SYMPTOM STRING is already gone; the
+    MECHANISM is not.** The three recitable maxims — including this exact
+    "silence is the invitation to keep exploring" line — were deleted outright on
+    2026-08-06 (`a55c674`, `b87dd8b`, `aab8260`), and a grep of
+    `lumina_tutor.py` now returns **no match** for it. So the tutor cannot say
+    *that sentence* again. **This item is still open and still worth doing**,
+    because nothing about the channel changed: a state push still lands mid-turn,
+    still hands Gemini the floor (`:204`), and still invites an unbidden turn — it
+    will simply recite *different* prompt text next time. Deleting the recited
+    strings was closing the symptom; CTX-1 is closing the channel (CLAUDE.md
+    Verification Doctrine: *"close the channel, not the symptom"*). **Do not read
+    the missing string as evidence this is fixed.**
     **Root cause — layer 1, the one to fix.** `ContextUpdateGate._release_later`
     sleeps `MAX_HOLD_S = 8.0` then sets `_busy = False` and re-queues the parked
     update **unconditionally**, with no check on whether the tutor is still
@@ -258,17 +385,34 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     survivable. Tuning its ceiling is treating the symptom — the channel is the
     symptom. ([[llm-window-code-builds-structure]] applies: state belongs in code
     until something needs it spoken.)
-    **RECOMMENDED FIX — delete the push, attach state lazily.**
-    1. `update_context` stops sending to Gemini entirely. Keep a server-side
-       `latest_primitive_state` dict (+ the existing `context-update` ledger row).
+    **RECOMMENDED FIX — remove the notification. Keep the state.**
+    *(Re-scoped 2026-08-07 per the fence above. The previous wording — "delete the
+    push, attach state lazily" — described the same three steps but led with
+    "delete", which reads as deleting context-awareness itself. It is not: step 1
+    keeps the state, step 2 keeps the model informed, and `[PRIMITIVE SWITCH]` is
+    untouched throughout.)*
+    1. **`update_context` stops SENDING to Gemini** (`:1035-1050`). It keeps doing
+       everything else: keep a server-side `latest_primitive_state` dict and the
+       existing `context-update` ledger row. **The state is retained; only the
+       notification goes.** This is the parsimony item — remove it outright rather
+       than gating, delaying, or re-wording it.
     2. Any message that genuinely gives the model the floor — a cue, hint request,
-       `switch_primitive`, `student_action` — prepends the CURRENT state block. The
-       model's state is then **fresher at the moment it matters** than today's push,
-       which lands early and gets buried under intervening audio.
+       `switch_primitive`, `student_action` — prepends the CURRENT state block, so
+       the model is **still fully informed about the primitive the student is on,
+       and fresher at the moment it matters** than today's push, which lands early
+       and gets buried under intervening audio. Nothing the model can act on is
+       lost; what is lost is the *interruption*.
     3. The struggle exception becomes an explicit server-side trigger: on repeated
        failed attempts, emit a real cue (`end_of_turn=True`). That is a *speaking*
        action, so it should be a *speaking* message — today it is a hope that the
        model notices state it was told to ignore.
+    4. **Delete the now-dead prompt budget**: the `[CONTEXT UPDATE]` bullets at
+       `:552`/`:641` exist only to instruct the model to ignore a channel that will
+       no longer exist, and `:597-598` advertises it to the model. Remove those.
+       **Leave the `[PRIMITIVE SWITCH]` half of `:597-598` and the transition
+       handling at `:616` intact** — that channel stays.
+    5. `ContextUpdateGate` (added silently in `d895bfb`) is deleted with it. It has
+       no purpose once nothing is pushed.
     **What this buys:** the self-inflicted barge-in class largely disappears (the
     gate's own docstring measured **9 of 17 barge-ins caused by our own sends, four
     by these supposedly-silent updates** — one clipped a celebration at *"Perf—"*);
@@ -279,10 +423,21 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     was instructed off — the only genuine consumer is the struggle path, which
     becomes explicit and more reliable. Confirm no other consumer depends on
     mid-exploration state before deleting.
-    **Verification:** `context-update-hold-expired` and `context-update-held` are
-    already in the ledger, so the before/after barge-in rate is measurable. A live
-    session with a slider dragged across a >8s tutor turn must produce zero
-    self-caused barge-ins and no recited prompt text.
+    **Verification.** `context-update-hold-expired` and `context-update-held` are
+    already in the ledger, so the before/after barge-in rate is measurable.
+    (a) A live session with a slider dragged across a >8s tutor turn must produce
+    **zero self-caused barge-ins and no recited prompt text** — that is the
+    reported defect, reproduced then killed.
+    (b) **REGRESSION GATE for the fence, and it is not optional:** in the same
+    session, navigate to a different primitive and confirm the tutor still
+    **acknowledges the new activity** — `[PRIMITIVE SWITCH]` fires, the
+    `switch-primitive` ledger row is written, and the scaffold + one-sentence
+    greeting still land. Then ask it something about the primitive you are on and
+    confirm it answers about the RIGHT one. If either regresses, the wrong channel
+    was deleted.
+    (c) Confirm the model can still be *asked* about current state (step 2's
+    prepend) — the information must remain reachable on demand; only the unsolicited
+    push is gone.
     **Priority: MEDIUM, not HIGH.** It only fires when a state change coincides with
     a turn longer than 8s. Worth doing because the fix DELETES code and a whole
     failure class, not because the symptom is frequent.
