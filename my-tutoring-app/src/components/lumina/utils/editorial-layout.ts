@@ -39,6 +39,35 @@ export const EDITORIAL_FONT = '16px Inter, Helvetica, Arial, sans-serif';
 export const EDITORIAL_LINE_HEIGHT = 26; // px — slightly more generous than 24 for readability
 export const PARAGRAPH_GAP = 16; // px between paragraphs
 
+/**
+ * Px shaved off every width we hand to the measurement engine.
+ *
+ * Pretext measures each segment on a canvas and SUMS the advances; the browser
+ * shapes the whole run at once, so kerning across segment boundaries and
+ * sub-pixel accumulation drift apart by ~1-3px over a 400-700px line (worse at
+ * fractional device-pixel ratios). Renderers place each line at a fixed `y`, so
+ * a line that measured as fitting but does NOT fit in the DOM does not push the
+ * next line down — it re-wraps inside its own box and paints ON TOP of the
+ * following line. Measuring against a slightly narrower width keeps every line
+ * clear of the real edge; `white-space: nowrap` on the rendered line is the
+ * hard backstop.
+ */
+export const MEASURE_SAFETY_MARGIN = 4;
+
+/**
+ * Run `cb` once the document's webfonts have settled, then again never.
+ *
+ * Line breaks computed against fallback metrics are wrong the moment the real
+ * face swaps in, and absolutely-positioned lines can't self-correct. Returns a
+ * cancel fn for effect cleanup. No-op outside the browser.
+ */
+export function onFontsReady(cb: () => void): () => void {
+  if (typeof document === 'undefined' || !document.fonts) return () => {};
+  let cancelled = false;
+  void document.fonts.ready.then(() => { if (!cancelled) cb(); });
+  return () => { cancelled = true; };
+}
+
 // ── Prepare cache ───────────────────────────────────────────────────
 
 const prepareCache = new Map<string, PreparedTextWithSegments>();
@@ -126,7 +155,7 @@ export function layoutParagraphsAroundFigure(
         : containerWidth;
 
       // Safety: if maxWidth is too small, use full width (figure will overlap but text won't vanish)
-      const effectiveWidth = maxWidth > 40 ? maxWidth : containerWidth;
+      const effectiveWidth = (maxWidth > 40 ? maxWidth : containerWidth) - MEASURE_SAFETY_MARGIN;
 
       const line: LayoutLine | null = layoutNextLine(prepared, cursor, effectiveWidth);
       if (!line) break;
@@ -235,9 +264,12 @@ export function layoutBalancedColumns(
   paragraphGap: number = PARAGRAPH_GAP,
 ): ColumnLayout {
   const columnWidth = (containerWidth - columnGap * (numColumns - 1)) / numColumns;
+  // Every measurement runs against the inset width so a line can never land
+  // flush with the column edge — see MEASURE_SAFETY_MARGIN.
+  const textWidth = Math.max(40, columnWidth - MEASURE_SAFETY_MARGIN);
 
   // Join all text for total height prediction
-  const totalHeight = predictParagraphsHeight(paragraphs, font, columnWidth, lineHeight, paragraphGap);
+  const totalHeight = predictParagraphsHeight(paragraphs, font, textWidth, lineHeight, paragraphGap);
 
   // Target height per column — start with equal split
   const targetHeight = totalHeight / numColumns;
@@ -250,7 +282,7 @@ export function layoutBalancedColumns(
   for (const para of paragraphs) {
     if (!para || para.trim().length === 0) continue;
 
-    const paraHeight = predictParagraphHeight(para, font, columnWidth, lineHeight).height;
+    const paraHeight = predictParagraphHeight(para, font, textWidth, lineHeight).height;
 
     // Move to next column if this paragraph would exceed target
     // (but don't move past the last column)
@@ -281,7 +313,7 @@ export function layoutBalancedColumns(
       if (!para || para.trim().length === 0) continue;
 
       const prepared = prepareText(para, font);
-      const result: LayoutLinesResult = layoutWithLines(prepared, columnWidth, lineHeight);
+      const result: LayoutLinesResult = layoutWithLines(prepared, textWidth, lineHeight);
 
       for (const line of result.lines) {
         colLines.push({ text: line.text, x: colX, y, width: line.width });
@@ -345,7 +377,7 @@ export function layoutMasonryCards(
   lineHeight: number = EDITORIAL_LINE_HEIGHT,
 ): MasonryLayout {
   const columnWidth = (containerWidth - columnGap * (numColumns - 1)) / numColumns;
-  const textWidth = columnWidth - cardPadding * 2; // inner text area
+  const textWidth = columnWidth - cardPadding * 2 - MEASURE_SAFETY_MARGIN; // inner text area
 
   // Track the bottom edge of each column
   const columnHeights = new Array(numColumns).fill(0);

@@ -8,6 +8,7 @@ import {
   layoutBalancedColumns,
   layoutMasonryCards,
   clearPrepareCache,
+  onFontsReady,
   EDITORIAL_FONT,
   EDITORIAL_LINE_HEIGHT,
   PARAGRAPH_GAP,
@@ -129,6 +130,14 @@ const PositionedLines: React.FC<PositionedLinesProps> = ({
             left: line.x,
             top: line.y,
             lineHeight: `${lineHeight}px`,
+            // The layout engine already decided this line's break — the DOM must
+            // not decide a second one. An absolutely-positioned span shrink-to-
+            // fits against the container, so a line the engine measured as
+            // fitting but that the browser shapes 1px wider re-wraps INSIDE the
+            // span, and the orphaned tail paints on top of the next line's span
+            // (its `top` is fixed). nowrap trades a hair of overflow into the
+            // gutter for the guarantee that lines never collide.
+            whiteSpace: 'nowrap',
             ...FONT_STYLE,
             ...getLineStyle(i),
           }}
@@ -181,7 +190,13 @@ const FigureRenderer: React.FC<FigureRendererProps> = ({ paragraphs, figure, rev
     doLayout();
     const observer = new ResizeObserver(() => doLayout());
     if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    // Breaks measured against fallback metrics are wrong once the real face
+    // swaps in, and fixed-position lines can't reflow themselves.
+    const cancelFonts = onFontsReady(doLayout);
+    return () => {
+      observer.disconnect();
+      cancelFonts();
+    };
   }, [doLayout]);
 
   const totalHeight = lines.length > 0
@@ -264,7 +279,13 @@ const InsetFactsRenderer: React.FC<InsetFactsRendererProps> = ({ paragraphs, ins
     doLayout();
     const observer = new ResizeObserver(() => doLayout());
     if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    // Breaks measured against fallback metrics are wrong once the real face
+    // swaps in, and fixed-position lines can't reflow themselves.
+    const cancelFonts = onFontsReady(doLayout);
+    return () => {
+      observer.disconnect();
+      cancelFonts();
+    };
   }, [doLayout]);
 
   // Signal readiness after first paint so layout recalculates with real dimensions
@@ -343,7 +364,13 @@ const ColumnRenderer: React.FC<ColumnRendererProps> = ({ paragraphs, reveal }) =
     doLayout();
     const observer = new ResizeObserver(() => doLayout());
     if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    // Breaks measured against fallback metrics are wrong once the real face
+    // swaps in, and fixed-position lines can't reflow themselves.
+    const cancelFonts = onFontsReady(doLayout);
+    return () => {
+      observer.disconnect();
+      cancelFonts();
+    };
   }, [doLayout]);
 
   const allLines = columnLayout?.columns.flat() ?? [];
@@ -399,7 +426,13 @@ const MasonryRenderer: React.FC<MasonryRendererProps> = ({ paragraphs, reveal })
     doLayout();
     const observer = new ResizeObserver(() => doLayout());
     if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    // Breaks measured against fallback metrics are wrong once the real face
+    // swaps in, and fixed-position lines can't reflow themselves.
+    const cancelFonts = onFontsReady(doLayout);
+    return () => {
+      observer.disconnect();
+      cancelFonts();
+    };
   }, [doLayout]);
 
   const { revealRef, getLineStyle } = useRevealAnimation(reveal);
