@@ -22,10 +22,11 @@ queue AND this file's "last touched" in the same slice.
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
 | **SHIP THE TREE** | **✅ DONE 2026-08-08 — six commits on `ship/2026-08-08-five-slices`** | `1cf72ae` CTX-2 floor gate · `b37e931` DNA-1 + biology scan · `2220ac1` solar-system-explorer L1 · `997c875` Pip · `f749af6` deep-dive prose overlap · this reconcile. Gates: `typecheck:lumina` **0**, vitest **194 files / 2475 passing**, backend **26F/122P = documented baseline**. **DESCOPED deliberately: `scaffoldAudit.ts` + `interpolateTemplate.ts`** — they appeared mid-`/ship` from a **concurrent session** working the tutor-test harness item (`analyzeHookSite` learning the `ctx.connect({ primitive_data })` shape; `(not set)` → `''`). Not ours to ship; still uncommitted and still that session's. *(Historical note, kept because it is the pattern: **five slices, ~2,450 insertions, spanning five streams, had piled up with nothing shipped since `01cebd7` at 00:24.**)* They share almost no files, so this is a clean `/ship` slicing job, not a merge problem: **(1)** CTX-2 floor gate — backend only (`lumina_tutor.py` +452, `session_ledger.py`, its unit tests, `LuminaAIContext.tsx`); **(2)** DNA-1 fix + the biology domain scan (`gemini-dna-explorer.ts`, the oracle + its tests, the new answer-leak test, EVAL_TRACKER, the report); **(3)** `solar-system-explorer` L1 eval modes (component, generator, catalog, `evaluation/types.ts`, `problem_type_registry.py`, 2 new test files, the reader-fit BACKLOG strike); **(4)** **Pip** — the Curator's character (see below); **(5)** the deep-dive prose-overlap fix (`editorial-layout.ts` + `ProseBlock.tsx`). Plus CLAUDE.md's "Build over ceremony" section and this file. **`typecheck:lumina` is GREEN at 0 on the whole stack** (verified this run), so nothing is blocked on the gate — only on someone slicing it. | 2026-08-08 |
+| **Lesson ordering & primitive selection** | **🆕 SCOPED 2026-08-08 (user call) — takes an ACTIVE slot. Layer A shipped + measured; B′ and C specified, not started. ⚠️ ALL UNCOMMITTED.** | **Queue of record: `qa/topic-traces/HANDOFF-primitive-selection-2026-08-08.md` §5.** Began as a live K bug — a "counting to 10" lesson opened `hundreds-chart` on the full 1–100 board telling the child to *"count by 5s… all the way to 100"*, because three hardcoded `100`s and a skip pool with no `1` made "count in order" **inexpressible at any grade**. Chasing it surfaced the real question: was that even the right first activity, and is the lesson ordered sensibly? **✅ Layer A (objective ordering) DONE and measured: 83% → 100% Bloom-ordered, 4 inversions → 0.** All four were one shape — a conceptual `explain` appended after `apply` — because the prompt said "progress from lower to higher Bloom's *when appropriate*" and then listed the verbs **out of Bloom order with no level numbers** (`create`(6) third, `apply`(3) sixth). The model was told to rank by a scale the prompt never gave it. **➡️ TOP = B′, and it is the cheapest high-yield item on the whole board:** after `resolveLessonEvalModes`, sort each objective block's components ascending by the resolved mode's `scaffoldingMode` — **~15 lines, no LLM call, no authoring, data already on all 541 modes**, and it enforces what the manifest schema already asks for in prose but *cannot* enforce because the curator picks order before modes exist. Success criterion is pre-measured: **19 of 72 scorable blocks inverted (51% of those that can invert) → 0**, with the 35 flat blocks untouched. Then **C**: pass the objective verb into mode resolution — `ten-frame` currently resolves `build` under **all four verbs** (identify/explain/apply/compare), i.e. the mode picker ignores what the objective asks for. | 2026-08-08 |
 | **Pip — the Curator's embodied character** | **🆕 SHIPPED `997c875`, still UNFILED — no queue, no report, and it is the one lane on the board with NO machine gate that can judge it** | **The largest single thing found this run.** `PipCharacter.tsx` (21KB, new) extracts the Curator's face into a standalone creature: mic-RMS-driven halo off the lesson's open mic, pointer-tracked pupils on a spring, poke-to-squash with an earcon, per-side brow poses across six moods, ground shadow phase-locked to the float — every loop gated on `useReducedMotion()`. `PipLab.tsx` (new) is its audition surface, explicitly modelled on Sound Lab and for the same reason: *"Pip only appears inside a live lesson behind auth + an open Gemini session, which makes 'does the new listening pose read right?' an expensive question."* Plus `usePerchAnchor.ts` (+ test), `CuratorCompanion.tsx` rewritten (645 lines changed), and wiring into `IdleScreen` + `DevPanelRouter`. **This is a product surface a five-year-old looks at, and it is 100% pixels — there is no machine gate that can pass it.** It needs (a) an owning queue, (b) a human row, (c) a decision on whether it is a stream or a one-off. **`/pm` did not file it as a lane: that is the user's call, not a reconcile's.** | 2026-08-08 |
-| **Direct Instruction family** | **ACTIVE** | **⚠️ The 08-07 snapshot's "next = di-shapes L4" is STALE — L4 CLOSED in `bd21cef`, same commit as L3.** `qa/di/BACKLOG.md` records it correctly at item 14 §(5); the index lagged. L4's lever was **exemplar typicality** (non-prototypical drawings, 62–100% scale, full-safe-ceiling rotation) — shipped with L3 precisely because L3 alone left the pictures byte-identical, which is CLAUDE.md's "a single ladder rung can be structurally low-yield" in the wild. **Next = CTX-2 (item 15, FILED this run): finish the floor gate that is already built in the tree.** It is unreported and its before/after number is unmeasured — the pre-fix figure (33 sends in 9 min, 3 turns killed by our own text 40–55ms after landing) is measured, so the post-fix one is a gate, not an opinion. | 2026-08-08 |
+| **Direct Instruction family** | **OPPORTUNISTIC (+1) — demoted 2026-08-08 to make room for primitive selection** | *Only CLOSEOUT remains, not new reach: CTX-2 shipped and is live-signed-off, so what is left is its report, its post-fix ledger number, and the `wedged` watchdog check. Worth finishing while the session is fresh, but it does not need an ACTIVE slot.* **⚠️ The 08-07 snapshot's "next = di-shapes L4" is STALE — L4 CLOSED in `bd21cef`, same commit as L3.** `qa/di/BACKLOG.md` records it correctly at item 14 §(5); the index lagged. L4's lever was **exemplar typicality** (non-prototypical drawings, 62–100% scale, full-safe-ceiling rotation) — shipped with L3 precisely because L3 alone left the pictures byte-identical, which is CLAUDE.md's "a single ladder rung can be structurally low-yield" in the wild. **Next = CTX-2 (item 15, FILED this run): finish the floor gate that is already built in the tree.** It is unreported and its before/after number is unmeasured — the pre-fix figure (33 sends in 9 min, 3 turns killed by our own text 40–55ms after landing) is measured, so the post-fix one is a gate, not an opinion. | 2026-08-08 |
 | **Science depth — DNA-1 ✅ / CB-1 / LCS-1 / CS-1 / PA-1 / BIO-1 / BIO-2** | **PROMOTE TO ACTIVE — it has a CRITICAL row and a verified one** | **DNA-1 is FIXED** (19/20 leaking generations → 0/20; the old 6/10 row *under-counted* it — the dominant form was PARTIAL overlap, and the shipped oracle had the same blind spot, certifying 7 leaking generations as `pass`). **The domain scan it triggered filed four new rows, and `/pm` verified the worst one in code this run: CB-1 is real.** `CellBuilder.tsx:980-984` renders `Zone: {ZONE_LABELS[organelle.correctZone]}` on every **unplaced** organelle in the drag palette — the drop zones carry those same names, grading is `isInZone(pos, o.correctZone)`, and there is **no gate**: not `hasSubmitted`, not a support tier, not a band. The placement task is a copy task at 100% of generations. That is CLAUDE.md priority #1 verbatim ("never reveal answers in … default UI state") and it is a **COMPONENT** fix, so no generator change can close it. LCS-1 / CS-1 / PA-1 are structural, filed with predicates, and need `/oracle-test` before their severity is asserted. | 2026-08-08 |
-| **Reader-fit sweep** | **ITEM 17 FILED (this run) — but read what it is before pulling** | Items 15 (15/15) and 16 (2/2) are both CLOSED and the astronomy prose-grade class is closed 10/10. **The queue had NO TOP again** — the successor was living as prose inside a closed item, the same hygiene defect `/pm` fixed on 08-07. **Item 17 is now filed: the owed portfolio decision, down from 4 primitives to 3** (`scale-comparator`, `organism-card`, `species-profile` — no evaluation hook at all, while the manifest can still route assessment at them). **⚠️ Its executor is `/add-eval-modes`, not `/reader-fit`** — this lane found them; only the lifecycle ladder can close them. `solar-system-explorer` was resolved in the ADD direction 08-08 and left a reusable template (build the answer surface; derive items AND key in code from what the component renders, so the key cannot contradict the screen). **Drive HUMAN-CHECKS #77 before copying that template three more times.** | 2026-08-08 |
+| **Reader-fit sweep** | **PARKED 2026-08-08 — item 17 is filed but GATED ON A HUMAN CHECK** | *Parked the same day it was demoted, and honestly: its top item (#17) is `/add-eval-modes` work whose template is unproven until HUMAN-CHECKS **#77** is driven. Pulling it before #77 risks copying a hit-layer bug three times. Nothing machine-gated sits above that. Resume the moment #77 is struck.* | Items 15 (15/15) and 16 (2/2) are both CLOSED and the astronomy prose-grade class is closed 10/10. **The queue had NO TOP again** — the successor was living as prose inside a closed item, the same hygiene defect `/pm` fixed on 08-07. **Item 17 is now filed: the owed portfolio decision, down from 4 primitives to 3** (`scale-comparator`, `organism-card`, `species-profile` — no evaluation hook at all, while the manifest can still route assessment at them). **⚠️ Its executor is `/add-eval-modes`, not `/reader-fit`** — this lane found them; only the lifecycle ladder can close them. `solar-system-explorer` was resolved in the ADD direction 08-08 and left a reusable template (build the answer surface; derive items AND key in code from what the component renders, so the key cannot contradict the screen). **Drive HUMAN-CHECKS #77 before copying that template three more times.** | 2026-08-08 |
 | Support tiers (non-math) | PARKED (was OPPORTUNISTIC) | Untouched since 08-04 and now behind three lanes with live findings. Batch-3 evidence closure via `/eval-test`, serial. | 2026-08-04 |
 | LA K-2 Grammar density | PARKED — BLOCKED on a user design ruling | Queue top (item 1b `in_front_of`/`behind`) is a design ruling, not code. Buildable alternates if resumed: item 2b (tracker SS-5) or item 4. | 2026-08-05 |
 | Delegated lane | NONE | — | 2026-08-08 |
@@ -73,10 +74,17 @@ queue AND this file's "last touched" in the same slice.
 > discipline problem from the last three runs, and it points at the same moment: **close
 > time**.
 >
-> **WIP.** Two ACTIVE (DI, Science depth) + reader-fit as the opportunistic +1, with
-> support-tiers moved to PARKED — it has not moved since 08-04 and was being carried as
-> "+1" while three other lanes had live findings. Pip is deliberately **unstated** rather
-> than parked, because nobody has said what it is yet.
+> **WIP — RESHUFFLED 2026-08-08 (late) when the user scoped primitive selection.**
+> Two ACTIVE = **Science depth** (top: CELL-1) + **Lesson ordering & primitive
+> selection** (top: B′). **DI drops to the opportunistic +1** — an honest demotion, not
+> a park: CTX-2 shipped and is signed off, so only closeout remains. **Reader-fit is
+> PARKED**, because item 17's template is unproven until HUMAN-CHECKS #77 is driven and
+> pulling it first risks copying a hit-layer bug three times; resume the moment #77 is
+> struck. Support-tiers stays PARKED. Pip is deliberately **unstated** rather than
+> parked, because nobody has said what it is yet.
+>
+> *(Earlier this run, pre-reshuffle: two ACTIVE were DI + Science depth, with reader-fit
+> as the +1 and support-tiers newly parked after four idle days.)*
 
 ## Prior snapshot — reconciled 2026-08-07 (night) (**the queues were truthful again; the INDEXES lagged again — and one human gate had no row at all**)
 
@@ -1265,6 +1273,85 @@ than its as-of date carries unfolded browser debt.
 
 ## ACTIVE
 
+### 00. Lesson ordering & primitive selection — **SCOPED ACTIVE 2026-08-08 (user call)** — last touched **2026-08-08**
+
+- **Queue of record:** `my-tutoring-app/qa/topic-traces/HANDOFF-primitive-selection-2026-08-08.md`
+  — §5 IS the queue (B′ → C → three smaller residuals), §4 is the do-not-rebuild
+  list, §6 the instruments, §7 the gotchas. **Everything is UNCOMMITTED.**
+- **Why it exists.** A Kindergarten "counting to 10" lesson opened `hundreds-chart`
+  on the full 1–100 board instructing *"Count by 5s and tap every number you land
+  on, all the way to 100"* — while the card's own title said *"highlighting the
+  first ten numbers in order"*. **The LLM prose honored the lesson; the
+  deterministic builder underneath did not.** Three hardcoded `100`s plus a skip
+  pool containing no `1` made "count in order" inexpressible at any grade — the
+  generator's entire output space was skip-counting to 100. Fixed
+  (`resolveChartWindow` + `resolveLessonEvalModes`-fed `gridMax`), and the chase
+  opened the real question.
+- **✅ Layer A — objective ORDERING. Done and measured: 20/24 → 24/24 ordered, 4
+  inversions → 0.** Objectives are taught in emitted order, so an inversion means
+  the lesson applies a skill before teaching the concept it rests on. All four
+  baseline inversions were **one shape** — conceptual `explain` appended after
+  `apply` — and the cause is worth carrying: the prompt asked to *"progress from
+  lower to higher Bloom's levels when appropriate"* and then listed verbs in
+  **non-Bloom order carrying no level numbers**. **The model was asked to rank by
+  a scale the prompt never gave it.** Fix: verbs re-listed lowest→highest with
+  explicit `(n)`, the trailing-`explain` trap named, and a PREREQUISITE OVERRIDE
+  for same-level pairs. Confirmed on the origin lesson — cardinality moved from
+  3rd to 2nd, ahead of the counting objective that depends on it.
+- **➡️ TOP = B′ (deterministic within-block sort).** After `resolveLessonEvalModes`
+  (`gemini-manifest.ts:484`), sort each objective block's components ascending by
+  the resolved mode's `scaffoldingMode`. **~15 lines, no LLM call, no authoring
+  campaign, and the data is already on all 541 modes** — it enforces what the
+  manifest schema asks for in prose (*"start with introduction/explanation, then
+  practice/application"*) and structurally cannot enforce today, because **the
+  curator picks order before modes exist**. **Success criterion is already
+  measured: 19 of 72 scorable blocks inverted → 0**, with the 35 flat blocks
+  untouched. One open design point: components with no `evalModes`
+  (`scaffoldingMode: null`) need a documented placement rule — the handoff
+  suggests **hold position** rather than defaulting to 0, so an
+  `annotated-example` or `foundation-explorer` intro isn't shuffled behind
+  practice.
+- **Then C — the objective verb into mode resolution.** `ten-frame` resolves
+  `build` under **all four verbs** (6× explain, 6× apply, 5× identify, 2×
+  compare); `sorting-station` resolves `sort_one` under 7 identify / 2 explain /
+  2 apply, including under counting objectives its own `count_compare` mode
+  serves directly. **The mode picker ignores the objective verb.** The fix is a
+  prompt change plus threading two fields — `resolveLessonEvalModes` already loads
+  the catalog and already receives the objectives — **not a data-model change**.
+- **⚠️ §4 — REJECTED, do not rebuild. Both were proposed and then killed, one by a
+  user ruling and one by measurement.**
+  **(a) Sorting components by IRT `beta`.** β is a psychometric difficulty prior;
+  Bloom is a cognitive-demand class. **Orthogonal** — `decompose` and
+  `compare_groups` are both β 1.5, identical difficulty, different cognitive acts
+  serving different objectives. Sorting by β yields an easy→hard lesson, not a
+  pedagogically ordered one. *(User ruling: "learning objective should drive
+  this.")*
+  **(b) Tagging 192 primitives / 541 eval modes with Bloom levels.** Killed by
+  measurement, and the reasoning generalises: it **would not have fixed either
+  observed finding** (`number-bond`/`decompose` under a cardinality objective is a
+  *conceptual content* error, not a cognitive-level one — Bloom tags let it
+  through); components already sit under a block carrying `objectiveVerb`, so a
+  per-primitive level re-encodes what the parent declares; and both real findings
+  are fixable from data that **already exists**. The campaign would have added a
+  third signal on top of `beta` and `scaffoldingMode` and touched neither finding.
+  **(c) A content-fit `serves:` catalog clause is DEFERRED, not rejected** —
+  validate with the §6 harnesses before anyone authors 541 rows. The cheap version
+  of that channel is already proven: a **2-line edit** to hundreds-chart's
+  `description` measurably moved the curator (it began emitting "small 1-10 grid").
+  **Fix named offenders empirically before generalizing.**
+- **Instruments (§6) — capture a fresh baseline before changing B′ or C, because
+  §3.2's numbers predate them.** `npm run audit:bloom-order -- <port> <label> 3`
+  and `npm run audit:block-ramp -- <port> 4`. **Repeats matter**: objective COUNT
+  varies run to run (2–3 at K-2) and the inversion only appears on the
+  3-objective shape, so one pass under-samples.
+- **Gotchas (§7), each already paid for:** dev-server **port drift** (ports climb
+  when 3000-3004 are taken — read `Local:` from the log); **warm the route first**
+  or a trace fired during recompile returns HTML 404 and silently shrinks the
+  sample; `generatorInput.config` **does not exist**, the path is
+  `generatorInput.item.config` (cost an hour and a false bug report); and
+  **`typecheck:lumina` does not cover `src/app/api/`**, where the trace endpoint
+  lives — exercise it at runtime.
+
 ### 0. Science depth — the biology answer-leak class — **PROMOTED TO ACTIVE `/pm` 2026-08-08** — last touched **2026-08-08**
 
 - **Queue:** `my-tutoring-app/qa/EVAL_TRACKER.md` (rows DNA-1 ✅ / CB-1 ✅ /
@@ -1335,14 +1422,17 @@ than its as-of date carries unfolded browser debt.
   was reverted. BIO-2 (~42 primitives with no eval modes) is a density campaign,
   not this lane; it needs a demand check first.
 
-### 1. Reader-fit supply-side sweep — items 15 + 16 CLOSED → **item 17, and it is a different KIND of item** — **OPPORTUNISTIC (+1)** — last touched **2026-08-08**
+### 1. Reader-fit supply-side sweep — items 15 + 16 CLOSED → **item 17, gated on a human check** — **PARKED 2026-08-08** — last touched **2026-08-08**
 
-*Demoted from TOP SLOT by `/pm` 2026-08-08 — not for staleness (it moved twice in
-the last 24h) but because its band-audit queue is genuinely drained and its filed
-top is `/add-eval-modes` work, which belongs to the lifecycle ladder. The lane's
-own scope fence forbids eval-mode work inside a reader-fit slice, and that fence
-still stands; item 17 is the thing this lane kept surfacing and could never close
-from inside a slice.*
+*Demoted from TOP SLOT and then PARKED the same day (`/pm` 2026-08-08). Not for
+staleness — it moved twice in 24h. Two reasons, in order: its band-audit queue is
+genuinely drained, and its filed top is `/add-eval-modes` work belonging to the
+lifecycle ladder rather than to this lane. Then the parking reason on top of that:
+**item 17's template is unproven until HUMAN-CHECKS #77 is driven**, and pulling
+it first risks copying a hit-layer bug into three more primitives. **Resume the
+moment #77 is struck** — nothing else gates it. The lane's own scope fence
+(no eval-mode work inside a reader-fit slice) still stands; item 17 is the thing
+this lane kept surfacing and could never close from inside a slice.*
 
 - **✅ Item 16 CLOSED 2/2 (2026-08-08)** — `constellation-builder` (`ea5f60b`) and
   `planetary-explorer` (`01cebd7`), both READY at PRE. **The astronomy prose-grade
@@ -1793,7 +1883,14 @@ re-probed all on 08-05 but existed only as a snapshot-table row — a cold reade
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-08-08**
+### 2. Direct Instruction primitive family (graduated from bench) — **OPPORTUNISTIC (+1) as of 2026-08-08** — last touched **2026-08-08**
+
+*Demoted from ACTIVE by `/pm` 2026-08-08 to make room for the primitive-selection
+lane, and it is an honest demotion rather than a park: **only CLOSEOUT remains.**
+CTX-2 shipped (`1cf72ae`) and is live-signed-off, so what is left is its report,
+its post-fix ledger number, and the `wedged` watchdog check — worth finishing
+while the session is fresh, but not work that needs a slot. The human side (#63 /
+#72 / #76) was always opportunistic and never blocked the machine lane.*
 
 **CURRENT STATE (`/pm` 2026-08-08 — read this block, not the 08-05 header
 paragraph below it, which is history).**
