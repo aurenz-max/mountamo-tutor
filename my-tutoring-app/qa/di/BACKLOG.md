@@ -116,6 +116,73 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > the ONLY code frozen on a sitting is the contrastive-correction port to
 > di-letter-sounds/di-word-reading (#55, family rule; leave it last).)*
 
+15. **CTX-2 — WHO HOLDS THE FLOOR. ✅ SHIPPED `1cf72ae` 2026-08-08 and SIGNED OFF
+    LIVE by the user; still UNREPORTED and its number is still unmeasured.**
+    *(Ship note: `1cf72ae` also carries the client half — `LuminaAIContext.tsx`
+    gains the per-message `interrupt` option on `sendText`.)*
+    *(Filed by `/pm` 2026-08-08 for work that already existed in the tree with no
+    queue entry, then shipped the same session. It is the next layer after item
+    13 and should not be read as part of it.)*
+    **✅ RUNTIME GATE MET (user, 2026-08-08):** a real lesson driven with the
+    Lumina tutor on — *"it worked great, honestly feels a little smoother"*. That
+    is the acceptance half, and it is genuine evidence: the defect class this
+    closes is *a child hearing a sentence cut in half*, which is heard, not
+    typed. Backend units 38/38; full backend 26F/122P against a documented 26F
+    baseline.
+    **⚠️ STILL OPEN, and do not let the sign-off close it:** (i) **the post-fix
+    ledger NUMBER.** The pre-fix rate is measured (33 sends / 9 min, five inside
+    3.1s, three turns killed by our own text 40–55ms after landing), the ledger
+    rows already exist, so the after is a *gate*, not an opinion — and "felt
+    smoother" cannot distinguish 33 sends from 6. (ii) **a report** in
+    `qa/tutor-reports/`; the design rationale still lives only in source
+    docstrings. (iii) **the `wedged` watchdog** — a turn that never reports an
+    end. Confirm it fires and that a wedged gate cannot silence the tutor
+    permanently. **That is a failure mode a floor gate ADDS, and one smooth
+    lesson is exactly the evidence that would not reveal it.**
+    **What item 13 left open.** CTX-1 deleted the `[CONTEXT UPDATE]` push, which
+    removed one *sender*. It did not arbitrate the senders that remain, and the
+    transport is unchanged: `send_realtime_input(text=…)` always closes the turn,
+    so the Live API has exactly **one floor** and every cue we forward cancels
+    whatever the tutor is mid-way through saying. **The 2026-08-08 lesson session
+    measured what that costs: 33 sends in 9 minutes, five of them inside 3.1s
+    (13:01:29.5 → 13:01:32.7) of which only the last was ever spoken, and three
+    turns killed outright by our own text 40–55ms after it landed.** Item 13's own
+    8s hold ceiling is named in the new code as having made it worse, not better:
+    it *"just interrupted 41s read-alouds 8 seconds late."*
+    **The shape built.** (a) A `FloorGate` tracking whether the model is
+    mid-utterance, held **outside** any one Gemini connection so a transparent
+    resume cannot leave it believing a dead turn still holds the floor; a single
+    sender waits for quiet. (b) **Batching** — five cues become one turn instead
+    of four cancellations. (c) **Supersession**, deliberately narrow: only
+    entries carrying a `render` callback collapse, and only against their own cue
+    tag; anything with literal text always survives, because a drop rule wide
+    enough to also eat `[ANSWER_CORRECT]` or the four `[ACTIVITY_START]`s a lesson
+    fires at connect would lose things the tutor needs. (d) **Render at SEND
+    time, not enqueue time** — a message whose wording depends on session state
+    ("Previous activity: X") must not be frozen while it waits, and if it is
+    superseded it was never said and must leave no trace in that state.
+    (e) **`interrupt` is declared BY THE CLIENT, per message** — only the thing
+    that fired it knows whether cutting in is worth it (a student tapping away to
+    a new activity has left the screen being described; a slider tick on the
+    current screen is not worth a severed sentence). One fallback, `False`, not
+    one per handler branch: *"a per-type default is the same guess wearing a
+    protocol's clothes."* Counters on the gate: `yielded` / `superseded` /
+    `merged` / `interrupted` / `wedged`.
+    **What this row still owes, and it is the whole verification story.**
+    (i) **A report.** The evidence above lives only in source docstrings.
+    (ii) **The before/after number.** The ledger already carries the rows, and
+    the pre-fix figure is measured (33 sends / 9 min, 3 self-killed turns) — so
+    the post-fix rate is measurable and has not been measured. That is the gate.
+    (iii) **A live ear**, which is not the same thing: the defect class is *a
+    child hearing a sentence cut in half*. Fold into the standing mic session
+    (#63/#72/#76) rather than opening a fourth row — **but do not strike #76 for
+    it**; #76 is CTX-1's acceptance and this is a different mechanism.
+    (iv) **The `wedged` watchdog** — a turn that never reports an end. Confirm it
+    fires and that a wedged gate cannot silence the tutor permanently; that is
+    the failure mode a floor gate adds that no previous design had.
+    **Do not ship this in the same slice as anything else** — it is backend +
+    context transport and shares no file with the four other uncommitted slices.
+
 14. **di-shapes — PACK #5 BORN 2026-08-06 (`cabb3f0`, user modality call:
     "this is a triangle — what is this?"). L0 live loop UNVERIFIED →
     HUMAN-CHECKS #72 (folds into the same mic session as #63's re-run).**

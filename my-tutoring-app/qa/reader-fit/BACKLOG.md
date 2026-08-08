@@ -9,7 +9,52 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
-### 16. FRONTIER — ~~`constellation-builder`~~ + ~~`planetary-explorer`~~ — ✅ **CLOSED 2/2 (2026-08-08)**
+### 17. THE OWED PORTFOLIO DECISION — 3 primitives the manifest can send assessment demand to that **cannot measure anything** — filed `/pm` 2026-08-08
+
+> **Filed because this queue had NO TOP.** Items 15 and 16 both closed, and the
+> successor was living as prose inside them again — the exact hygiene defect `/pm`
+> corrected on 08-07 when it filed item 16 out of item 15's body. A cold session
+> reading this file top-down would have hit a closed item first.
+>
+> **⚠️ This item is NOT a band audit, and it changes what this lane is.** Its
+> executor is **`/add-eval-modes`**, which the lane's own scope fence forbids
+> *inside a reader-fit slice* — and that fence still stands for band work. This is
+> the separate thing the sweep kept surfacing and could never fix from inside a
+> slice: **`/reader-fit` found these primitives; only the lifecycle ladder can
+> close them.** If the lane is pulled again for band work instead, that is a fresh
+> priority call, not a carried-over pointer.
+>
+> **The set — 3 remaining of the original 4.** `scale-comparator` (15B/S12),
+> `organism-card` (15B/S15), `species-profile` (15A/S6). Each has **no evaluation
+> hook at all**, so PRE band-contract rule 8 is N/A rather than passing, while the
+> catalog still lets the manifest route an objective at them. Today one of them can
+> be selected to carry an objective it structurally cannot measure.
+>
+> **~~`solar-system-explorer` (15B/S11)~~ — ✅ RESOLVED 2026-08-08 (user-pulled
+> `/add-eval-modes`), and it answered the decision in the ADD direction with a
+> reusable template.** It had no challenge enum to constrain, so the rung **BUILT**
+> the answer surface instead of wiring one: the answer is a tap on a body in the
+> live model ([[feedback_direct-manipulation-first]]), and the items **and the key**
+> are derived in CODE from the same `bodies` array the component renders (Fork A /
+> SP-21, [[feedback_llm-window-code-builds-structure]]). That last choice is the
+> load-bearing one — **a derived key cannot contradict the screen, and a prompt
+> generated FROM its answer cannot leak it**, which is the failure mode that made
+> DNA-1 and CB-1. 5 modes β 1.5→8.0, catalog + backend priors + 24 tests.
+> **Its own residual is now HUMAN-CHECKS #77 and it gates the rung:** jsdom cannot
+> see whether a moving `<g>` is hittable, and this repo has already shipped an
+> unclickable `<g>` that every jsdom test passed
+> ([[feedback_svg-g-unclickable-jsdom-blind]]). **Drive #77 before copying the
+> template three more times** — if the taps don't land, the template needs a hit
+> layer, and copying it first means fixing it four times.
+>
+> **Pull order, if pulled:** `organism-card` first (K-8, elementary demand, per-fact
+> read-aloud already shipped — the cheapest), then `species-profile`, then
+> `scale-comparator` (its comparison IS a ratio, so the K-band mode needs designing,
+> not just wiring). **The alternative verdict is legitimate and must be stated per
+> primitive:** declare it exploration-only and drop `supportsEvaluation` so the
+> manifest stops routing assessment at it. Leaving it undecided is the bad outcome.
+
+### ~~16.~~ FRONTIER — ~~`constellation-builder`~~ + ~~`planetary-explorer`~~ — ✅ **CLOSED 2/2 (2026-08-08)**
 
 > **S1 `constellation-builder` (`ea5f60b`) · S2 `planetary-explorer`** — both READY
 > at PRE. Reports: `qa/reader-fit/constellation-builder-PRE-2026-08-07.md`,
@@ -783,11 +828,24 @@ degrade path). The scaffold fix alone would have shipped inert in all of them.
 
 **Open across the class:** no Tier-3 live audio run on any of the 8 →
 **HUMAN-CHECKS #73** (one sitting covers them all; the day/night reading in S10
-is the only genuinely open question in it). **Three of the eight — S11, S12, S15
-— have no evaluation hook at all**, so band-contract rule 8 is N/A rather than
-passing; either they get `/add-eval-modes` or they are declared exploration-only
-so the manifest stops routing assessment demand to them. **All 8 still have 0
-eval modes.**
+is the only genuinely open question in it). ~~**Three of the eight — S11, S12, S15
+— have no evaluation hook at all**~~ **→ S11 RESOLVED 2026-08-08 via `/add-eval-modes`.
+TWO REMAIN: S12 `scale-comparator`, S15 `organism-card` (+ `species-profile`/S6
+from 15A = 3 open).** Band-contract rule 8 is still N/A for those; each needs
+`/add-eval-modes` or an explicit exploration-only declaration so the manifest
+stops routing assessment demand to them.
+
+  **S11 `solar-system-explorer` — the shape the other three can copy.** It had
+  no challenge enum to constrain, so the L0→L1 rung had to BUILD the surface,
+  not wire one: the answer is a tap on a body in the live model
+  ([[feedback_direct-manipulation-first]]), and the items + answer key are built
+  in CODE from the same `bodies` array the component renders (Fork A / SP-21,
+  [[feedback_llm-window-code-builds-structure]]). That last choice is the load-
+  bearing one — a derived key cannot contradict the screen, and a prompt
+  generated FROM its answer cannot leak it. 5 modes β 1.5→8.0
+  (identify / order_from_sun / classify / compare_attribute / orbital_reasoning),
+  catalog + backend priors + 24 tests. **Still owed: a real browser drive** —
+  jsdom cannot see whether the moving `<g>` targets are hittable.
   **Pattern to expect (3 for 3 now): the "SCAFFOLD-GAP, interaction is fine"
   triage label has understated the work every time.** S9 was drag-only, S10 had
   typing at K. Budget each remaining slice for a component band-gate pass, not

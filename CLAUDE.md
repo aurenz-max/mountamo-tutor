@@ -38,6 +38,15 @@ over memory and over stale reports. Mechanics + registers: `/pm`.
 
 ## Development Workflow
 
+### Build over ceremony
+
+**The measure of a slice is what reaches the student, and the user reads the diff log.** Reports, queue entries, birth certificates and memories exist to make the *next* slice cheaper — when they outweigh the slice itself, overhead is being counted as output.
+
+- **Check the ratio before writing the report.** If comments + tests + report dwarf production code, say so plainly rather than letting a well-documented small move read as a large one. (Real example: a `/add-support-tiers` rung shipped 66 lines of production code under 187 lines of comments, 449 of tests and a 132-line report.)
+- **This is not anti-testing and does not touch the Verification Doctrine below** — gates still run per slice, and rationale docblocks still earn their space. It re-orders where the *remaining* effort goes: the next lever, not a fifth paragraph about this one.
+- **If your own residual names the next executor skill and it is in scope, run it in the same push.** Naming a gap in a report is not closing it. Queue it only when it genuinely needs a separate decision, new data, or a user ruling.
+- **A single ladder rung can be structurally low-yield.** Where `/add-support-tiers` only toggles help text and the problems stay byte-identical, the visible change is `/add-structural-difficulty` — pair them rather than shipping the rung alone.
+
 ### Verification Doctrine
 
 A change is "fixed" or "done" only after the affected flow has been **exercised at runtime** — driven in the running app, an `/eval-test` run, or a probe with real inputs. A type check is never verification of behavior.

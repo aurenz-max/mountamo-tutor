@@ -17,11 +17,72 @@ queue AND this file's "last touched" in the same slice.
 | PARKED | intentionally idle; queue trusted only as of the noted date |
 | BLOCKED | waiting on a named dependency |
 
-## Current snapshot — reconciled 2026-08-07 (night) (**the queues were truthful again; the INDEXES lagged again — and one human gate had no row at all**)
+## Current snapshot — reconciled 2026-08-08 (midday) (**FIVE slices in the tree, ZERO committed — and one of them is a whole stream nobody has filed**)
 
 | Lane | State | Pull now | Trusted as of |
 |---|---|---|---|
-| **Reader-fit sweep** | **ITEM 16 CLOSED 2/2 — needs a NEXT PULL** | **✅ `constellation-builder` (`ea5f60b`) + `planetary-explorer` both READY at PRE.** Reports in `qa/reader-fit/`. **The prose-grade class is now closed across astronomy, 10/10** — these were the last two, and the defect bit **K and Grade 1 identically in both** (the regex only matched prose literally spelling "grade N", so the whole spelled-out band fell to `'3'`). **No item 17 is filed** — `qa/reader-fit/BACKLOG.md` needs a new top before this lane can be pulled again; candidates already named in it: `telescope-simulator`'s Grade-2 band floor is a REVISIT under [[feedback_make-age-friendly-not-band-floor]], and the **four primitives with no evaluation hook at all** (solar-system-explorer, scale-comparator, organism-card, species-profile) still need the `/add-eval-modes`-or-declare-exploration-only decision. **Carry forward:** probe the tutor channel with `tutor-test?probe=1` BEFORE scoping (a full catalog block can arrive empty; 14 live moment tags can still never voice the question); a band failure can be a CONTENT gap only the generator closes; and a handoff's answer-leak "clean" bill is a claim to re-derive, not a finding (S2's first-attempt hint was leaking). | 2026-08-08 |
+| **SHIP THE TREE** | **✅ DONE 2026-08-08 — six commits on `ship/2026-08-08-five-slices`** | `1cf72ae` CTX-2 floor gate · `b37e931` DNA-1 + biology scan · `2220ac1` solar-system-explorer L1 · `997c875` Pip · `f749af6` deep-dive prose overlap · this reconcile. Gates: `typecheck:lumina` **0**, vitest **194 files / 2475 passing**, backend **26F/122P = documented baseline**. **DESCOPED deliberately: `scaffoldAudit.ts` + `interpolateTemplate.ts`** — they appeared mid-`/ship` from a **concurrent session** working the tutor-test harness item (`analyzeHookSite` learning the `ctx.connect({ primitive_data })` shape; `(not set)` → `''`). Not ours to ship; still uncommitted and still that session's. *(Historical note, kept because it is the pattern: **five slices, ~2,450 insertions, spanning five streams, had piled up with nothing shipped since `01cebd7` at 00:24.**)* They share almost no files, so this is a clean `/ship` slicing job, not a merge problem: **(1)** CTX-2 floor gate — backend only (`lumina_tutor.py` +452, `session_ledger.py`, its unit tests, `LuminaAIContext.tsx`); **(2)** DNA-1 fix + the biology domain scan (`gemini-dna-explorer.ts`, the oracle + its tests, the new answer-leak test, EVAL_TRACKER, the report); **(3)** `solar-system-explorer` L1 eval modes (component, generator, catalog, `evaluation/types.ts`, `problem_type_registry.py`, 2 new test files, the reader-fit BACKLOG strike); **(4)** **Pip** — the Curator's character (see below); **(5)** the deep-dive prose-overlap fix (`editorial-layout.ts` + `ProseBlock.tsx`). Plus CLAUDE.md's "Build over ceremony" section and this file. **`typecheck:lumina` is GREEN at 0 on the whole stack** (verified this run), so nothing is blocked on the gate — only on someone slicing it. | 2026-08-08 |
+| **Pip — the Curator's embodied character** | **🆕 SHIPPED `997c875`, still UNFILED — no queue, no report, and it is the one lane on the board with NO machine gate that can judge it** | **The largest single thing found this run.** `PipCharacter.tsx` (21KB, new) extracts the Curator's face into a standalone creature: mic-RMS-driven halo off the lesson's open mic, pointer-tracked pupils on a spring, poke-to-squash with an earcon, per-side brow poses across six moods, ground shadow phase-locked to the float — every loop gated on `useReducedMotion()`. `PipLab.tsx` (new) is its audition surface, explicitly modelled on Sound Lab and for the same reason: *"Pip only appears inside a live lesson behind auth + an open Gemini session, which makes 'does the new listening pose read right?' an expensive question."* Plus `usePerchAnchor.ts` (+ test), `CuratorCompanion.tsx` rewritten (645 lines changed), and wiring into `IdleScreen` + `DevPanelRouter`. **This is a product surface a five-year-old looks at, and it is 100% pixels — there is no machine gate that can pass it.** It needs (a) an owning queue, (b) a human row, (c) a decision on whether it is a stream or a one-off. **`/pm` did not file it as a lane: that is the user's call, not a reconcile's.** | 2026-08-08 |
+| **Direct Instruction family** | **ACTIVE** | **⚠️ The 08-07 snapshot's "next = di-shapes L4" is STALE — L4 CLOSED in `bd21cef`, same commit as L3.** `qa/di/BACKLOG.md` records it correctly at item 14 §(5); the index lagged. L4's lever was **exemplar typicality** (non-prototypical drawings, 62–100% scale, full-safe-ceiling rotation) — shipped with L3 precisely because L3 alone left the pictures byte-identical, which is CLAUDE.md's "a single ladder rung can be structurally low-yield" in the wild. **Next = CTX-2 (item 15, FILED this run): finish the floor gate that is already built in the tree.** It is unreported and its before/after number is unmeasured — the pre-fix figure (33 sends in 9 min, 3 turns killed by our own text 40–55ms after landing) is measured, so the post-fix one is a gate, not an opinion. | 2026-08-08 |
+| **Science depth — DNA-1 ✅ / CB-1 / LCS-1 / CS-1 / PA-1 / BIO-1 / BIO-2** | **PROMOTE TO ACTIVE — it has a CRITICAL row and a verified one** | **DNA-1 is FIXED** (19/20 leaking generations → 0/20; the old 6/10 row *under-counted* it — the dominant form was PARTIAL overlap, and the shipped oracle had the same blind spot, certifying 7 leaking generations as `pass`). **The domain scan it triggered filed four new rows, and `/pm` verified the worst one in code this run: CB-1 is real.** `CellBuilder.tsx:980-984` renders `Zone: {ZONE_LABELS[organelle.correctZone]}` on every **unplaced** organelle in the drag palette — the drop zones carry those same names, grading is `isInZone(pos, o.correctZone)`, and there is **no gate**: not `hasSubmitted`, not a support tier, not a band. The placement task is a copy task at 100% of generations. That is CLAUDE.md priority #1 verbatim ("never reveal answers in … default UI state") and it is a **COMPONENT** fix, so no generator change can close it. LCS-1 / CS-1 / PA-1 are structural, filed with predicates, and need `/oracle-test` before their severity is asserted. | 2026-08-08 |
+| **Reader-fit sweep** | **ITEM 17 FILED (this run) — but read what it is before pulling** | Items 15 (15/15) and 16 (2/2) are both CLOSED and the astronomy prose-grade class is closed 10/10. **The queue had NO TOP again** — the successor was living as prose inside a closed item, the same hygiene defect `/pm` fixed on 08-07. **Item 17 is now filed: the owed portfolio decision, down from 4 primitives to 3** (`scale-comparator`, `organism-card`, `species-profile` — no evaluation hook at all, while the manifest can still route assessment at them). **⚠️ Its executor is `/add-eval-modes`, not `/reader-fit`** — this lane found them; only the lifecycle ladder can close them. `solar-system-explorer` was resolved in the ADD direction 08-08 and left a reusable template (build the answer surface; derive items AND key in code from what the component renders, so the key cannot contradict the screen). **Drive HUMAN-CHECKS #77 before copying that template three more times.** | 2026-08-08 |
+| Support tiers (non-math) | PARKED (was OPPORTUNISTIC) | Untouched since 08-04 and now behind three lanes with live findings. Batch-3 evidence closure via `/eval-test`, serial. | 2026-08-04 |
+| LA K-2 Grammar density | PARKED — BLOCKED on a user design ruling | Queue top (item 1b `in_front_of`/`behind`) is a design ruling, not code. Buildable alternates if resumed: item 2b (tracker SS-5) or item 4. | 2026-08-05 |
+| Delegated lane | NONE | — | 2026-08-08 |
+
+> **Drift #1 — the tree, and it is the biggest one this run.** The previous snapshot's
+> headline warned about *two* uncommitted slices. There are now **five**, from a session
+> that ran 09:43–10:01 this morning and shipped none of them. They span backend
+> transport, a biology answer-leak fix, an astronomy eval-mode rung, a new character
+> component, and a prose-layout bug fix. **The gate is green** (`typecheck:lumina` 0,
+> verified this run), so the only thing standing between this work and the student is
+> five commits. Ship hygiene is now the top item on the board.
+>
+> **Drift #2 — a whole stream with no paperwork.** Pip is ~1,000 lines of new,
+> carefully-reasoned character code plus a lab surface to audition it, and it appears in
+> **no queue, no report, no human-check row, and nowhere in this file.** Every other lane
+> on the board can be resumed by a cold session from its queue; this one exists only as
+> files. It is also the one piece of work on the board with **no machine gate at all** —
+> it is pixels and motion for a five-year-old, so jsdom and tsc can say nothing about
+> whether it lands. `/pm` filed nothing for it deliberately: whether it is a stream or a
+> one-off is a product call.
+>
+> **Drift #3 — three slices closed after the last HUMAN-CHECKS write, and two of them
+> carry debt they name themselves. #77 / #78 / #79 opened, #72 EXTENDED (e).** #77 is the
+> one to drive first: `solar-system-explorer`'s new eval modes make the answer *a tap on a
+> body in a moving orbital model*, and jsdom cannot see whether a moving `<g>` is hittable
+> — a class this repo has already been bitten by. If the taps don't land, five eval modes
+> and 24 green tests are worth nothing, and three more primitives are queued to copy that
+> template. **#72 (e)** covers L4's drawings, which nobody has seen; without it the row
+> could have been struck on its voice half while a 62%-scale irregular hexagon at 30° went
+> unlooked-at. Next free ID = **80**.
+>
+> **Drift #4 — CTX-2 was built and left unfiled. Now `qa/di/BACKLOG.md` item 15.** A
+> `FloorGate` with batching, narrow supersession, send-time rendering and a
+> client-declared `interrupt` flag is sitting in `lumina_tutor.py` with its entire
+> evidence base in source docstrings and no report. It is the layer *after* CTX-1 — CTX-1
+> removed one sender, CTX-2 arbitrates the ones that remain — and reading it as part of
+> item 13 would lose the distinction and let #76 be struck for the wrong thing.
+>
+> **What did NOT drift, and it is worth saying:** every queue that was written to was
+> truthful. `qa/di/BACKLOG.md` had already recorded L4 closed; `EVAL_TRACKER.md` had
+> already struck DNA-1 and filed its four successors with real predicates;
+> `qa/reader-fit/BACKLOG.md` had already struck S11. **The failure mode this run is not
+> stale queues — it is work that never reached a queue at all** (Pip, CTX-2, the prose
+> fix) and work that never reached a commit (all five slices). That is a different
+> discipline problem from the last three runs, and it points at the same moment: **close
+> time**.
+>
+> **WIP.** Two ACTIVE (DI, Science depth) + reader-fit as the opportunistic +1, with
+> support-tiers moved to PARKED — it has not moved since 08-04 and was being carried as
+> "+1" while three other lanes had live findings. Pip is deliberately **unstated** rather
+> than parked, because nobody has said what it is yet.
+
+## Prior snapshot — reconciled 2026-08-07 (night) (**the queues were truthful again; the INDEXES lagged again — and one human gate had no row at all**)
+
+| Lane | State | Pull now | Trusted as of |
+|---|---|---|---|
+| **Reader-fit sweep** | **ITEM 16 CLOSED 2/2 — needs a NEXT PULL** | **✅ `constellation-builder` (`ea5f60b`) + `planetary-explorer` both READY at PRE.** Reports in `qa/reader-fit/`. **The prose-grade class is now closed across astronomy, 10/10** — these were the last two, and the defect bit **K and Grade 1 identically in both** (the regex only matched prose literally spelling "grade N", so the whole spelled-out band fell to `'3'`). **No item 17 is filed** — `qa/reader-fit/BACKLOG.md` needs a new top before this lane can be pulled again; candidates already named in it: `telescope-simulator`'s Grade-2 band floor is a REVISIT under [[feedback_make-age-friendly-not-band-floor]], and the ~~four~~ **THREE remaining primitives with no evaluation hook at all** (~~solar-system-explorer~~, scale-comparator, organism-card, species-profile) still need the `/add-eval-modes`-or-declare-exploration-only decision. **✅ `solar-system-explorer` CLOSED 2026-08-08 (user-pulled `/add-eval-modes`) — the portfolio decision is answered in the ADD direction for the first of the four, and it came with a reusable shape: where there is no challenge enum to constrain, the rung BUILDS the surface — tap-a-body answers in the live model, with the items AND the key derived in code from the rendered `bodies` array (Fork A/SP-21), so the key cannot contradict the screen and a prompt cannot leak its own answer. 5 modes β 1.5→8.0, backend priors matched, 24 tests, Lumina gate now GREEN at 0 (it was red on HEAD with 3 errors from the `01cebd7` slice — fixed here). Residual: needs a browser drive; jsdom cannot see whether the moving `<g>` targets are hittable.** **Carry forward:** probe the tutor channel with `tutor-test?probe=1` BEFORE scoping (a full catalog block can arrive empty; 14 live moment tags can still never voice the question); a band failure can be a CONTENT gap only the generator closes; and a handoff's answer-leak "clean" bill is a claim to re-derive, not a finding (S2's first-attempt hint was leaking). | 2026-08-08 |
 | **Direct Instruction family** | **ACTIVE** | **CTX-1 CLOSED and di-shapes is now L3** (rung 3 shipped 2026-08-07 — family script-composed fade, 8/8 revert-bites, real-pipeline 6/6; report `qa/eval-reports/di-shapes-support-tiers-2026-08-07.md`). Next machine pull = **di-shapes L4 `/add-structural-difficulty`** (rotation magnitude + size variation + non-prototypical exemplars — L3 deliberately left shape SELECTION alone, so the axis is clean). **⚠️ TWO slices UNCOMMITTED — CTX-1 first, then rung 3.** Rung 3 also **re-diagnosed cross-queue residual (iii)**: `supportTier: unresolved` is a family-wide `/tutor-test` blind spot (`analyzeHookSite` can't parse `ctx.connect({ primitive_data })` — all 5 DI packs report `data-bag-unparsed`), not a di-math-facts defect → filed to the tutor-test harness queue. Human side stays opportunistic: ONE mic session = **#63** + **#72** + **#76**, now also carrying the `hard`-tier cold-ask ear. | 2026-08-07 |
 | Support tiers (non-math) | OPPORTUNISTIC (+1) | Batch-3 evidence closure via `/eval-test`, serial, one primitive per slice. | 2026-08-04 |
 | LA K-2 Grammar density | PARKED — BLOCKED on a user design ruling | Queue top (item 1b `in_front_of`/`behind`) is a design ruling, not code. Buildable alternates if resumed: item 2b (tracker SS-5) or item 4. | 2026-08-05 |
@@ -1204,7 +1265,99 @@ than its as-of date carries unfolded browser debt.
 
 ## ACTIVE
 
-### 1. Reader-fit supply-side sweep (item 15 CLOSED 15/15 → **item 16, the frontier**) — TOP SLOT — last touched **2026-08-07**
+### 0. Science depth — the biology answer-leak class — **PROMOTED TO ACTIVE `/pm` 2026-08-08** — last touched **2026-08-08**
+
+- **Queue:** `my-tutoring-app/qa/EVAL_TRACKER.md` (rows DNA-1 ✅ / **CB-1** / LCS-1 /
+  CS-1 / PA-1 / DNA-2 / BIO-1 / BIO-2). **Executors:** `/eval-fix` for CB-1,
+  `/oracle-test` then `/eval-fix` for the three unmeasured rows.
+- **Why it took the slot.** It was carried as "QUEUED, rides as the +1" for two
+  days. Then DNA-1 was actually pulled (08-08) and the fix's own domain scan found
+  **four more**, one of which `/pm` verified in code this run and which is worse
+  than the original.
+- **➡️ TOP = CB-1 `cell-builder`, CRITICAL, verified this run.**
+  `CellBuilder.tsx:980-984` renders `Zone: {ZONE_LABELS[organelle.correctZone]}` on
+  every **unplaced** organelle in the drag palette — "Zone: Center", "Zone: Near
+  Nucleus", "Zone: Cell Edge" — and the diagram's drop zones carry those same
+  names. Grading is `isInZone(pos, o.correctZone)`. **There is no gate: not
+  `hasSubmitted`, not a support tier, not a grade band.** The student reads the
+  destination off the card and drags it there, so the placement task is a copy task
+  at 100% of generations. CLAUDE.md priority #1 verbatim. **COMPONENT layer — no
+  generator change can close it.** Likely intent was a scaffold; if so it belongs
+  behind the `hard`/`medium` tier or a post-submit reveal, not the default render.
+- **✅ DNA-1 CLOSED 2026-08-08** — and **the old row under-counted it**. The 6/10
+  figure counted only exact `givenStrand === templateStrand`; the dominant form was
+  **PARTIAL overlap** (a 4-base given inside an 8-base displayed strand), so the
+  true pre-fix rate was **19/20 generations, 22/44 challenges**. **The shipped
+  oracle had the same blind spot** — it returned `pass, 0 violations` over 10
+  generations of which 7 were leaking, and its own "clean" fixture was itself
+  leaking. Fixed at the **code** layer (no JSON schema expresses a cross-field
+  constraint, and prose did not bind FF-1 either): `validateDnaExplorerData` runs
+  post-config-merge, recomputes the complement, minimum-edit-repairs any
+  shared-4-base-run given, and **derives** every `correctAnswer`. Oracle
+  strengthened independently so the guard cannot certify itself. Post-fix **0/20**.
+  **Residual → HUMAN-CHECKS #78** (the repair rewrites content at render time and
+  nobody has opened the Build tab). Report
+  `qa/eval-reports/dna-explorer-DNA-1-2026-08-08.md`. **⚠️ UNCOMMITTED.**
+- **The generalisable finding, and it is the one to carry:** *a guard written by
+  the same understanding that missed the defect will certify the defect.* The
+  oracle and the leak shared a blind spot for eleven months. When fixing a leak,
+  re-derive the detector **from scratch**, and re-measure the OLD number before
+  trusting it — DNA-1's headline was wrong by 3×.
+- **Three unmeasured rows, filed with predicates so the probe is cheap:** LCS-1
+  (`life-cycle-sequencer` — does stage *i*'s `description` name stage *i±1*'s
+  label?), CS-1 (`classification-sorter` — does the retry hint name the target
+  category? the SS-5 pattern, already measured at 2/3 on spatial-scene), PA-1
+  (`bio-process-animator` — is the correct option a verbatim span of the preceding
+  narration, and does one slot hold >70% of keys?). **Measure before asserting
+  severity.**
+- **Scope fence.** DNA-2 (variety) is LOW and explicitly **do not spend on it** —
+  same shape as SST-1, where a prompt-entropy lever A/B-proved only MODERATE and
+  was reverted. BIO-2 (~42 primitives with no eval modes) is a density campaign,
+  not this lane; it needs a demand check first.
+
+### 1. Reader-fit supply-side sweep — items 15 + 16 CLOSED → **item 17, and it is a different KIND of item** — **OPPORTUNISTIC (+1)** — last touched **2026-08-08**
+
+*Demoted from TOP SLOT by `/pm` 2026-08-08 — not for staleness (it moved twice in
+the last 24h) but because its band-audit queue is genuinely drained and its filed
+top is `/add-eval-modes` work, which belongs to the lifecycle ladder. The lane's
+own scope fence forbids eval-mode work inside a reader-fit slice, and that fence
+still stands; item 17 is the thing this lane kept surfacing and could never close
+from inside a slice.*
+
+- **✅ Item 16 CLOSED 2/2 (2026-08-08)** — `constellation-builder` (`ea5f60b`) and
+  `planetary-explorer` (`01cebd7`), both READY at PRE. **The astronomy prose-grade
+  class is closed 10/10.** The defect bit **K and Grade 1 identically in both**:
+  the regex only matched prose literally spelling *"grade N"*, so the whole
+  spelled-out band ("kindergarten students", "first grade students") fell to the
+  literal `'3'`.
+- **Three findings from item 16 worth carrying into any lane:**
+  **(a) "Has a tutoring block" ≠ "reaches the tutor", and "has 14 moment tags" ≠
+  "says the right things."** S1 shipped a full catalog block that arrived **EMPTY**
+  (`sendTextTags: []`, 0/7 keys resolved). S2 had a live 14-tag channel that had
+  **never once voiced the question or its options**. Only `tutor-test?probe=1`
+  showed either. **Probe the tutor channel BEFORE scoping.**
+  **(b) A band failure can be a CONTENT gap**, and only the generator closes one.
+  **(c) A handoff's answer-leak "clean" bill is a claim to re-derive, not a
+  finding** — S2's first-attempt hint was leaking.
+- **➡️ TOP = item 17** (`qa/reader-fit/BACKLOG.md`, filed this run because the
+  queue had no top and the successor was living as prose inside a closed item —
+  the same hygiene defect corrected on 08-07). **The owed portfolio decision, now
+  3 primitives not 4:** `scale-comparator`, `organism-card`, `species-profile` have
+  **no evaluation hook at all**, so the manifest can route an objective at an
+  instrument that cannot measure it. Each needs `/add-eval-modes` **or** an explicit
+  exploration-only declaration that drops `supportsEvaluation`.
+- **`solar-system-explorer` answered the decision in the ADD direction (08-08,
+  user-pulled) and left a template.** No challenge enum existed to constrain, so
+  the rung **BUILT** the answer surface: the answer is a tap on a body in the live
+  model, and the items **and the key** are derived in CODE from the same `bodies`
+  array the component renders. **That is the load-bearing choice — a derived key
+  cannot contradict the screen, and a prompt generated FROM its answer cannot leak
+  it**, which is precisely the failure that made DNA-1 and CB-1. 5 modes β 1.5→8.0,
+  catalog + backend priors + 24 tests. **⚠️ UNCOMMITTED, and gated on HUMAN-CHECKS
+  #77: drive the taps before copying this template three more times.**
+- **Everything below this line is item 15/16 history and remains accurate.**
+
+### 1a. Reader-fit — item 15 detail (CLOSED 15/15) — history
 
 *Section authored by `/pm` 2026-08-07. **This lane had been running for two days
 with no entry in the `## ACTIVE` body at all** — it existed only in the snapshot
@@ -1620,11 +1773,53 @@ re-probed all on 08-05 but existed only as a snapshot-table row — a cold reade
   grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
   (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.
 
-### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-08-07**
+### 2. Direct Instruction primitive family (graduated from bench) — last touched **2026-08-08**
 
-**CURRENT STATE (`/pm` 2026-08-07 night — read this block, not the 08-05 header
+**CURRENT STATE (`/pm` 2026-08-08 — read this block, not the 08-05 header
 paragraph below it, which is history).**
-- **di-shapes L3 SHIPPED 2026-08-07** (rung 3, fourth use of the family
+- **✅ di-shapes is L4. Rungs 3 AND 4 shipped together in `bd21cef`** (2026-08-08
+  00:15). *(Corrected `/pm` 2026-08-08: the bullet below said "next machine pull =
+  di-shapes L4" and L4 had already closed in the same commit as L3.
+  `qa/di/BACKLOG.md` item 14 §(5) had it right; this index lagged — the fourth
+  consecutive run correcting a divergence in the same direction.)*
+  **They shipped together deliberately, and the reason is now doctrine:** L3 alone
+  left `easy`/`medium`/`hard` drawing **byte-identical pictures** with only the
+  spoken scaffold toggled — a ceiling a child who had mastered the mode could not
+  climb past, and exactly the low-yield rung CLAUDE.md's "Build over ceremony"
+  section warns about. L4's lever is **exemplar typicality**: prototype →
+  non-prototypical drawing (scalene obtuse triangle, irregular hexagon/pentagon,
+  portrait rectangle, right trapezoid), rotation ¼ → full safe ceiling, scale
+  100% → 62–100%, confusable neighbours placed side by side. **The rotation cap
+  was hiding the standard** — `maxRotationDeg` capped a triangle at 25°, so a pack
+  whose curriculum home is literally *"regardless of orientation"* had never tested
+  orientation; `SAFE_ROTATION_DEG` is now per-shape and principled (square 15°,
+  because 45° is a DIAMOND and that is a judged alternate — two right answers).
+  Geometry became **data** (`diShapesGeometry.ts`) and the oracle earned it
+  immediately. Gates: 173/173, **17/17 revert-bites**, real-pipeline 11/11.
+  **Residual: nobody has SEEN a `hard` drawing** → HUMAN-CHECKS **#72 (e)**,
+  extended this run so the row cannot be struck on its voice half alone.
+- **➡️ CTX-2 — `qa/di/BACKLOG.md` item 15 (filed AND shipped `1cf72ae`, 2026-08-08).
+  ✅ SIGNED OFF LIVE by the user** (*"tested a lesson with lumina tutor on, it
+  worked great, honestly feels a little smoother"*) — the acceptance half is met,
+  and for a defect class that is *heard* rather than measured, that is real
+  evidence. **But three things stay open and the sign-off does not close them:
+  the post-fix ledger NUMBER** (the pre-fix rate is measured, so the after is a
+  gate — "felt smoother" cannot tell 33 sends from 6), **a report**, and **the
+  `wedged` watchdog**, which is the failure mode a floor gate ADDS and the one
+  thing a smooth lesson would not reveal. A `FloorGate` in `lumina_tutor.py`
+  (+452) with batching, narrow supersession, send-time rendering and a
+  **client-declared `interrupt` flag**. It is the layer *after* CTX-1: CTX-1
+  removed one sender, CTX-2 arbitrates the ones that remain, because the transport
+  has exactly one floor and every text send closes the turn. Pre-fix measurement
+  from the 08-08 lesson session: **33 sends in 9 minutes, five inside 3.1s of which
+  only the last was ever spoken, three turns killed by our own text 40–55ms after
+  it landed** — and item 13's 8s hold ceiling *"just interrupted 41s read-alouds 8
+  seconds late"*. **What it owes: a report, the post-fix ledger number (the pre-fix
+  one is measured, so this is a gate not an opinion), a live ear, and proof the
+  `wedged` watchdog cannot silence the tutor permanently** — that last one is a
+  failure mode a floor gate ADDS. Do not strike #76 for it; #76 is CTX-1's.
+- ~~**di-shapes L3 SHIPPED 2026-08-07**~~ *(superseded by the L3+L4 bullet above;
+  kept for its two carried findings)* (rung 3, fourth use of the family
   script-composed fade). Gates: focused 55/55, **8/8 revert-bites**, full Vitest
   2349/2349, typecheck:lumina 0, src-scoped tsc 803 = baseline, **real-pipeline
   6/6** incl. `mixed`@hard producing all four identities all tiered. Two findings
@@ -1634,10 +1829,11 @@ paragraph below it, which is history).**
   withholds two tokens** — the shape's name hands over the count (triangle →
   three). Report `qa/eval-reports/di-shapes-support-tiers-2026-08-07.md`.
   **Residual: the `hard` cold ask has no live audio yet** → folds into #72.
-- **Next machine pull = di-shapes L4 `/add-structural-difficulty`** (rotation
-  magnitude, size variation, non-prototypical exemplars — scalene/obtuse
-  triangles). L3 deliberately left shape SELECTION untouched, so the structural
-  axis is unclaimed. Queue of record `qa/di/BACKLOG.md` **item 14**.
+- ~~**Next machine pull = di-shapes L4 `/add-structural-difficulty`**~~ **✅ DONE
+  `bd21cef` — see the L3+L4 bullet at the top of this block. The prediction was
+  right about the levers (rotation magnitude, size variation, non-prototypical
+  exemplars) and wrong about the timing: it shipped in the SAME commit as L3, not
+  after it.** Queue of record `qa/di/BACKLOG.md` **item 14**.
 - **Cross-queue re-diagnosis from rung 3, worth not re-deriving:** the
   `supportTier: unresolved` / one `(not set)` that item 14 filed against
   di-math-facts is a **family-wide `/tutor-test` harness blind spot**, not a pack
@@ -2278,7 +2474,13 @@ paragraph below it, which is history).**
 PARKED — see PARKED table. WIP = **2 ACTIVE + 0 DELEGATED** (reader-fit TOP-PRIORITY + DI family),
 within the 2+1 limit as re-verified 2026-07-24; DI is the only lane with activity since 07-21.)*
 
-### 3. Support-tiers campaign (non-math) — **OPPORTUNISTIC (+1)** — last touched **2026-08-04**
+### 3. Support-tiers campaign (non-math) — **PARKED 2026-08-08 (was OPPORTUNISTIC +1)** — last touched **2026-08-04**
+
+*Parked by `/pm` 2026-08-08. Not stale-by-neglect and nothing is wrong with it: it
+was being carried as the opportunistic +1 while three other lanes had live findings
+and it had not moved in four days. Its queue is trusted as of 2026-08-04. Resume
+cost is zero — batch-3 evidence closure via `/eval-test`, serial, one primitive per
+slice. **The +1 slot now belongs to reader-fit item 17.***
 - **Queue:** `my-tutoring-app/qa/support-tiers/BACKLOG.md` — **RECONCILED `/pm` 2026-08-04**.
   Batch-3 implementation already shipped in `effc7a6`; the top task is its missing
   `/eval-test` evidence/report closure, not another implementation pass. After that, five eligible
