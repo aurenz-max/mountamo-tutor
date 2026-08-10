@@ -214,7 +214,7 @@ function buildTierPromptSection(mode: ChallengeType, tier: SupportTier): string 
 // claims about cells, so it stays LLM-generated.
 // ---------------------------------------------------------------------------
 
-function buildHundredsChartSchema(count: number): Schema {
+function buildHundredsChartSchema(count: number, legalSkips: number[]): Schema {
   return {
   type: Type.OBJECT,
   properties: {
@@ -238,7 +238,7 @@ function buildHundredsChartSchema(count: number): Schema {
           },
           skipValue: {
             type: Type.INTEGER,
-            description: "Skip interval (2, 3, 4, 5, or 10). Use a DIFFERENT value per challenge.",
+            description: `Skip interval — MUST be one of: ${legalSkips.join(', ')}${legalSkips.includes(1) ? ' (1 = count in order, no skipping)' : ''}. Prefer a DIFFERENT value per challenge.`,
           },
           hint: {
             type: Type.STRING,
@@ -258,9 +258,9 @@ function buildHundredsChartSchema(count: number): Schema {
 // by the LLM. Eliminates SP-17 (instruction-data desync) by construction.
 // ---------------------------------------------------------------------------
 
-function buildSequence(skipValue: number, startNumber: number): number[] {
+function buildSequence(skipValue: number, startNumber: number, gridMax: number): number[] {
   const seq: number[] = [];
-  for (let n = startNumber; n <= 100; n += skipValue) {
+  for (let n = startNumber; n <= gridMax; n += skipValue) {
     seq.push(n);
   }
   return seq;
@@ -273,23 +273,43 @@ function buildSequence(skipValue: number, startNumber: number): number[] {
  * mode — the shape IS the answer, so its instruction never gains a strategy
  * name at any tier. `givenCount` keeps the prose honest about how many cells are
  * pre-filled (which the tier changes). `tier == null` → byte-identical default.
+ *
+ * `gridMax` keeps the prose honest about where the chart actually ENDS. It used
+ * to be the literal "100" while the grid was always 1-100; once the lesson
+ * window became resolvable (a "counting to 10" lesson renders a 1-10 chart) a
+ * hardcoded 100 told the student to walk off the end of the board.
+ *
+ * Two skip=1 carve-outs, both live only inside a resolved sub-100 window:
+ *   • "Count by 1s" is not a skip-counting strategy — it is just counting, so
+ *     the by-1s instruction is written in counting language.
+ *   • "the ones digits repeat in a pattern" is a 10-wide-grid observation. On a
+ *     single-row (gridMax ≤ 10) chart there is no second row to repeat into, so
+ *     the tip is withheld rather than stated falsely.
  */
 function buildInstruction(
   type: string,
   skipValue: number,
   givenCount: number,
   tier: SupportTier | null,
+  gridMax: number,
 ): string {
   const namesStrategy = tier === 'easy';
+  // The ones-digit pattern only exists once the grid wraps to a second row.
+  const onesDigitTip = gridMax > 10 ? ' Tip: the ones digits repeat in a pattern.' : '';
   switch (type) {
     case 'highlight_sequence':
+      if (skipValue === 1) {
+        return namesStrategy
+          ? `Tap the numbers in order, one at a time, all the way to ${gridMax}. Tip: say each number out loud as you tap it.`
+          : `Tap every number in order, all the way to ${gridMax}.`;
+      }
       return namesStrategy
-        ? `Count by ${skipValue}s and tap every number you land on, all the way to 100. Tip: the ones digits repeat in a pattern.`
-        : `Tap every number in the skip-counting-by-${skipValue}s pattern, all the way to 100.`;
+        ? `Count by ${skipValue}s and tap every number you land on, all the way to ${gridMax}.${onesDigitTip}`
+        : `Tap every number in the skip-counting-by-${skipValue}s pattern, all the way to ${gridMax}.`;
     case 'complete_sequence':
       return namesStrategy
-        ? `The first ${givenCount} numbers are highlighted. Keep adding ${skipValue} each time — tap all the remaining numbers in the pattern up to 100.`
-        : `The first ${givenCount} numbers are highlighted. Tap all the remaining numbers in the pattern up to 100.`;
+        ? `The first ${givenCount} numbers are highlighted. Keep adding ${skipValue} each time — tap all the remaining numbers in the pattern up to ${gridMax}.`
+        : `The first ${givenCount} numbers are highlighted. Tap all the remaining numbers in the pattern up to ${gridMax}.`;
     case 'identify_pattern':
       // Recognition: never name the shape, any tier.
       return `Look at the highlighted cells. Which description best matches the visual pattern on the grid?`;
@@ -302,6 +322,9 @@ function buildInstruction(
 
 /** Correct visual pattern descriptions for each skip value on a 10×10 grid */
 const PATTERN_DESCRIPTIONS: Record<number, { correct: string; distractors: string[] }> = {
+  // skip=1 only becomes reachable inside a resolved sub-100 window (see
+  // resolveLegalSkips) — counting in order fills the board solid.
+  1:  { correct: 'They fill every row completely',         distractors: ['Every other cell in each row', 'A single diagonal line', 'They are scattered randomly'] },
   2:  { correct: 'Every other cell in each row',           distractors: ['A checkerboard pattern', 'They fill every row completely', 'They are scattered randomly'] },
   3:  { correct: 'A repeating diagonal pattern',           distractors: ['Every other cell in each row', 'They fill two columns', 'A zigzag going left and right'] },
   4:  { correct: 'Columns that shift across rows',         distractors: ['Every other cell in each row', 'A single diagonal line', 'They fill every other row'] },
@@ -315,6 +338,7 @@ const PATTERN_DESCRIPTIONS: Record<number, { correct: string; distractors: strin
 
 /** Skip-value distractor options for find_skip_value */
 const SKIP_VALUE_DISTRACTORS: Record<number, number[]> = {
+  1:  [2, 3, 5],
   2:  [3, 5, 10],
   3:  [2, 4, 5],
   4:  [2, 3, 5],
@@ -333,6 +357,108 @@ const GRADE_SKIP_VALUES: Record<string, number[]> = {
   '3': [2, 3, 4, 5],
   '4': [3, 4, 6, 7, 8, 9],
 };
+
+// ---------------------------------------------------------------------------
+// NUMERIC WINDOW — the chart's ceiling comes from the lesson, not from the
+// primitive's name.
+//
+// The defect this closes: buildSequence/buildInstruction/gridMax all hardcoded
+// 100, and the objective section mined `intent` for a skip INTERVAL only. So a
+// Kindergarten "counting to 10" lesson whose manifest intent read "Introduce the
+// numbers 1-10 in order ... use the highlight mode for numbers 1 to 10" rendered
+// the full 1-100 board and asked the student to "Count by 5s and tap every
+// number you land on, all the way to 100" — the window was structurally
+// invisible, and no grade pool contained 1, so "count in order" was unreachable
+// at any grade. Template: gemini-number-sequencer's resolveNumberSequencerRange
+// (one temperature-0 Flash Lite call, explicit-bound-only).
+//
+// The chart always starts at 1 (that is what makes it a hundreds chart), so
+// only the ceiling is resolved. Absent an explicit lesson bound the legacy
+// 1-100 board stands byte-for-byte.
+// ---------------------------------------------------------------------------
+
+/** Below 10 it stops being a chart; above 100 it stops being a hundreds chart. */
+const CHART_WINDOW_MIN = 10;
+const CHART_WINDOW_MAX = 100;
+
+const chartWindowSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    hasExplicitRange: {
+      type: Type.BOOLEAN,
+      description: 'True ONLY when the lesson itself names or clearly implies a highest number.',
+    },
+    max: {
+      type: Type.INTEGER,
+      description: 'The highest number the lesson works with (10-100). 100 when unbounded.',
+    },
+  },
+  required: ['hasExplicitRange', 'max'],
+};
+
+/**
+ * Resolve the chart's ceiling from the lesson's own words. Returns null for
+ * every unbounded lesson, which leaves the legacy 1-100 board untouched.
+ */
+async function resolveChartWindow(
+  topic: string,
+  objectiveText: string | undefined,
+  intent: string | undefined,
+): Promise<number | null> {
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Resolve the numeric ceiling for ONE hundreds-chart activity.
+
+TOPIC: "${topic}"
+${objectiveText ? `LEARNING OBJECTIVE: "${objectiveText}"\n` : ''}${intent ? `COMPONENT INTENT: "${intent}"\n` : ''}
+A hundreds chart is a grid of 1..max, 10 numbers per row. Return the highest number the LESSON works with.
+
+Return hasExplicitRange=true ONLY when the lesson content itself names or clearly implies a highest number.
+Examples: "counting to 10" -> 10; "numbers 1 to 20 in order" -> 20; "skip count within 50" -> 50; "count to 100" -> 100.
+- Do NOT treat grade names ("Grade 1"), challenge counts, dates, IDs, or generic "number practice"/"skip counting patterns" as a ceiling.
+- Clamp max to at least ${CHART_WINDOW_MIN} and at most ${CHART_WINDOW_MAX}.
+- If the lesson names no ceiling, return hasExplicitRange=false, max=${CHART_WINDOW_MAX}.`,
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+        responseSchema: chartWindowSchema,
+      },
+    });
+    if (!result.text) return null;
+    const parsed = JSON.parse(result.text) as { hasExplicitRange?: unknown; max?: unknown };
+    if (parsed.hasExplicitRange !== true) return null;
+    const max = Math.round(Number(parsed.max));
+    if (!Number.isFinite(max)) return null;
+    return Math.min(CHART_WINDOW_MAX, Math.max(CHART_WINDOW_MIN, max));
+  } catch (error) {
+    console.warn('[HundredsChart] window resolution failed:', error);
+    return null;
+  }
+}
+
+/** A sequence shorter than this is not a pattern the student can read. */
+const MIN_SEQUENCE_CELLS = 4;
+
+/**
+ * Intersect the grade's skip pool with what the resolved window can actually
+ * hold. On the default 1-100 board every grade pool survives untouched, so this
+ * is a no-op for unbounded lessons.
+ *
+ * Two things happen once the window shrinks:
+ *   • skips too coarse to draw a pattern drop out (by-10s on a 1-10 board is
+ *     one cell, not a sequence), and
+ *   • counting by ONES enters the pool at windows ≤20 — at that scale "say the
+ *     numbers in order" IS the skill, and it is the one interval no grade pool
+ *     ever offered. Without it a "counting to 10" lesson has no legal move.
+ *
+ * Never returns empty: a window that starves the whole pool still yields by-1s.
+ */
+export function resolveLegalSkips(gradeSkips: number[], gridMax: number): number[] {
+  const fits = gradeSkips.filter((sv) => Math.floor(gridMax / sv) >= MIN_SEQUENCE_CELLS);
+  if (gridMax <= 20) return [1, ...fits];
+  return fits.length > 0 ? fits : [gradeSkips[0]];
+}
 
 /** Obviously-wrong "far" pattern distractors (used at the easy tier). The
  *  per-sv `distractors` above are the plausible "current"/"near" pool. */
@@ -425,9 +551,10 @@ function buildChallenge(
   skipValue: number,
   hint: string,
   tier: SupportTier | null = null,
+  gridMax: number = 100,
 ): HundredsChartChallenge {
-  const startNumber = skipValue; // tidy multiples
-  const fullSeq = buildSequence(skipValue, startNumber);
+  const startNumber = skipValue; // tidy multiples (by-1s starts at 1)
+  const fullSeq = buildSequence(skipValue, startNumber, gridMax);
   const shape = tier ? resolveProblemShape(type as ChallengeType, tier) : null;
 
   let givenCells: number[] = [];
@@ -473,7 +600,7 @@ function buildChallenge(
   return {
     id: `c${index + 1}`,
     type: type as HundredsChartChallenge['type'],
-    instruction: buildInstruction(type, skipValue, givenCells.length, tier),
+    instruction: buildInstruction(type, skipValue, givenCells.length, tier, gridMax),
     skipValue,
     startNumber,
     givenCells,
@@ -495,6 +622,8 @@ type HundredsChartConfig = {
   challengeTypes?: string[];
   targetEvalMode?: string;
   intent?: string;
+  /** Explicit chart ceiling from the manifest. Outranks the resolved window. */
+  gridMax?: number;
   /**
    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
    * Second axis of the two-field contract: targetEvalMode = which skill,
@@ -546,6 +675,21 @@ export const generateHundredsChart = async (
   const gradeBand = config?.gradeBand ?? hundredsChartGradeBandFromGrade(ctx.grade) ?? '2';
   const gradeSkips = GRADE_SKIP_VALUES[gradeBand] ?? GRADE_SKIP_VALUES['2'];
 
+  // ── Resolve the chart's ceiling from the lesson (explicit config pin wins).
+  // Unbounded lessons keep the 1-100 board and the untouched grade pool. ──
+  const pinnedMax = config?.gridMax != null
+    ? Math.min(CHART_WINDOW_MAX, Math.max(CHART_WINDOW_MIN, Math.round(config.gridMax)))
+    : null;
+  const gridMax = pinnedMax
+    ?? (await resolveChartWindow(topic, ctx.objective?.text, intent))
+    ?? CHART_WINDOW_MAX;
+  const legalSkips = resolveLegalSkips(gradeSkips, gridMax);
+  console.log(
+    `[HundredsChart] numeric window: 1-${gridMax} `
+    + `(source=${pinnedMax ? 'config' : gridMax === CHART_WINDOW_MAX ? 'default' : 'topic-intent'}) `
+    + `→ legal skips [${legalSkips.join(', ')}]`,
+  );
+
   // ── Resolve per-mode instance count (only meaningful when an eval mode is pinned) ──
   const singleMode = effectiveChallengeTypes && effectiveChallengeTypes.length === 1
     ? (effectiveChallengeTypes[0] as ChallengeType)
@@ -569,8 +713,13 @@ export const generateHundredsChart = async (
     ? `\n## PRIMARY OBJECTIVE FOR THIS ACTIVITY\n${intent}\n`
       + `- This is the specific focus the lesson assigned for this activity. If it names a particular `
       + `skip-counting interval (e.g. "by 5s", "counting by 10"), make MOST challenges use THAT interval — `
-      + `it must be one of the grade-legal values [${gradeSkips.join(', ')}]; include at most one or two `
+      + `it must be one of the legal values [${legalSkips.join(', ')}]; include at most one or two `
       + `other intervals for contrast. If it names no specific interval, vary across the pool per the rule below.\n`
+      + (legalSkips.includes(1)
+        ? `- skipValue=1 is legal here and means COUNTING IN ORDER (1, 2, 3, ...). When the objective is `
+          + `about naming/identifying/ordering the numbers themselves rather than about skip-counting, `
+          + `skipValue=1 is the right choice for MOST challenges.\n`
+        : '')
     : '';
 
   // ── Build prompt — Gemini only picks types/skips and writes hints + topic flavor ──
@@ -579,7 +728,7 @@ export const generateHundredsChart = async (
   const prompt = `
 Create a hundreds-chart activity for "${topic}" for ${gradeLevel} students.
 
-A hundreds chart is a 10×10 grid (numbers 1-100). Students explore skip-counting patterns.
+A hundreds chart is a grid of 10 numbers per row. THIS chart runs 1 through ${gridMax} — every sequence stops at ${gridMax}. Students explore counting and skip-counting patterns on it.
 ${objectiveSection}
 ${challengeTypeSection}
 ${tierSection}
@@ -593,7 +742,8 @@ PROGRESSION (use this order when no eval mode is specified):
 
 RULES:
 - Generate exactly ${count} challenges.
-- Unless the PRIMARY OBJECTIVE above directs you to focus on a specific interval, vary skipValue across challenges (choose from: ${gradeSkips.join(', ')}). Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
+- skipValue MUST come from this pool: ${legalSkips.join(', ')}. Any other value is rejected.
+- Unless the PRIMARY OBJECTIVE above directs you to focus on a specific interval, vary skipValue across challenges. Each skipValue from the pool should appear at least once before any repeats; if there are more challenges than skip values, you may reuse a skipValue but pair it with a different challenge type so the activity still feels varied.
 ${config?.skipValue ? `- At least one challenge must use skipValue=${config.skipValue}.` : ''}
 ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChallengeTypes.join(' or ')}.` : ''}
 - Hints should guide thinking without giving away the answer or the skip value. Keep them short (one sentence).
@@ -607,7 +757,7 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: buildHundredsChartSchema(count),
+      responseSchema: buildHundredsChartSchema(count, legalSkips),
     },
   });
 
@@ -628,9 +778,15 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     .slice(0, Math.min(count, rawChallenges.length))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((c: any, i: number) => {
+      // The window is code-enforced, not trusted to the LLM: a skip the resolved
+      // board cannot hold (by-10s on a 1-10 chart) collapses the sequence to a
+      // single cell, so it falls back to a pool value rather than rendering.
       let sv: number = c.skipValue;
-      if (!sv || sv <= 0 || sv > 10) {
-        sv = config?.skipValue ?? gradeSkips[i % gradeSkips.length];
+      if (!sv || !legalSkips.includes(sv)) {
+        const pinned = config?.skipValue;
+        sv = pinned && legalSkips.includes(pinned)
+          ? pinned
+          : legalSkips[i % legalSkips.length];
       }
       return buildChallenge(
         i,
@@ -638,18 +794,25 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
         sv,
         c.hint ?? `Look at the pattern — what do the ones digits have in common?`,
         supportTier, // structural levers code-enforced per challenge from its OWN mode
+        gridMax,
       );
     });
 
   // Fallback if Gemini returned nothing usable
   if (challenges.length === 0) {
-    const sv = config?.skipValue ?? 5;
+    const pinned = config?.skipValue;
+    const sv = pinned && legalSkips.includes(pinned)
+      ? pinned
+      : legalSkips.includes(5) ? 5 : legalSkips[0];
     challenges.push(buildChallenge(
       0,
       effectiveChallengeTypes?.[0] ?? 'highlight_sequence',
       sv,
-      `Start at ${sv} and keep adding ${sv}. Click each number you land on.`,
+      sv === 1
+        ? `Start at 1 and say each number as you click it.`
+        : `Start at ${sv} and keep adding ${sv}. Click each number you land on.`,
       supportTier,
+      gridMax,
     ));
     console.log('[HundredsChart] No valid challenges from Gemini — using fallback');
   }
@@ -671,7 +834,7 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     title: raw.title ?? `Hundreds Chart — ${topic}`,
     description: raw.description ?? '',
     challenges,
-    gridMax: 100,
+    gridMax,
     gradeBand: gradeBand as '1' | '2' | '3' | '4',
   };
 };
