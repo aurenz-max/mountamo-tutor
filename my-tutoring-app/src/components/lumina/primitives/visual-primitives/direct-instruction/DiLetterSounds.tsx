@@ -480,6 +480,9 @@ export const DiLetterSounds: React.FC<{ data: DiLetterSoundsData; index?: number
         weConnectedRef.current = true;
         const first = data.challenges[0];
         await ctx.connect({
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
           primitive_type: 'di-letter-sounds',
           instance_id: resolvedInstanceId,
           primitive_data: {

@@ -14,6 +14,7 @@ from app.api.endpoints.lumina_tutor import (
     get_primitive_specific_instructions,
     interpolate_line,
     interpolate_template,
+    should_queue_greeting,
 )
 from app.services.session_ledger import classify_cue
 
@@ -481,3 +482,42 @@ def test_lesson_prompt_still_announces_the_primitive_switch_channel():
     p = _lesson_prompt()
     assert "[PRIMITIVE SWITCH]" in p
     assert "briefly acknowledge the new activity" in p
+
+
+# ---------------------------------------------------------------------------
+# DI-GREET-1 — the improvised greeting turn vs. a pack that scripts its opener.
+#
+# Found live 2026-08-10 (word-flip, session 5269fc87d6da). The greeting is
+# queued with end_of_turn=True, so Gemini takes a turn AT CONNECT — while the
+# client is still waiting for the microphone and has not sent a cue. On a DI
+# pack the turn arrives ~15s before the scripted opener and, in the observed
+# run, ended with the tutor asking its OWN question; the child answered that,
+# which barged in over the real ask, and item 1 ran with no question at all.
+#
+# This is also the true root of residual SWAP-1 — an earlier fix deleted the
+# CATALOG directive that asked the same turn to compose a how-to-play, which
+# took one job off the turn but could not remove the turn.
+# ---------------------------------------------------------------------------
+
+def test_a_pack_that_owns_its_opening_is_not_told_to_greet():
+    """The whole point: a DI pack must be SILENT until its first cue."""
+    assert should_queue_greeting(owns_opening=True, resumption_handle=None) is False
+
+
+def test_owns_opening_beats_a_warm_resume_too():
+    """Belt and braces — neither reason to stay quiet may cancel the other."""
+    assert should_queue_greeting(owns_opening=True, resumption_handle="h-1") is False
+
+
+def test_a_warm_reconnect_still_skips_the_greeting():
+    """Pre-existing behaviour, pinned so the DI change cannot regress it:
+    Gemini restored the conversation, so a greeting would be a duplicate."""
+    assert should_queue_greeting(owns_opening=False, resumption_handle="h-1") is False
+
+
+def test_an_ordinary_surface_on_a_fresh_connect_STILL_GREETS():
+    """SCOPE FENCE, and the one that matters most. curator-brief and every
+    ordinary tutoring surface open with a warm greeting BY DESIGN and it reads
+    well live ("Hey there! I'm ready to help you explore these big machines.").
+    DI-GREET-1 removes that turn only where a script replaces it."""
+    assert should_queue_greeting(owns_opening=False, resumption_handle=None) is True

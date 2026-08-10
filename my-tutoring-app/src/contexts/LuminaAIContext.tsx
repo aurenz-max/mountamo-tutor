@@ -44,6 +44,23 @@ interface PrimitiveContext {
    *  when omitted, the connect paths fall back to the catalog entry's
    *  `audioInput` declaration (see AudioInputConfig in lumina/types). */
   audio_input?: AudioInputConfig | null;
+  /**
+   * THIS PRIMITIVE OWNS ITS OPENING LINE — the tutor must be SILENT until the
+   * primitive's own first cue. Set by every pack whose first spoken words are a
+   * hand-authored script (the Direct Instruction family and the DI-ported
+   * literacy primitives); omit everywhere else.
+   *
+   * WHY IT EXISTS (DI-GREET-1, found live 2026-08-10 on word-flip). The backend
+   * queues "Greet the student warmly…" with `end_of_turn: true` on every fresh
+   * connect, so Gemini takes a turn immediately — while the client is still
+   * waiting for the microphone and has not sent a cue yet. On word-flip that
+   * produced 15s of improvised tutoring that ended with the tutor asking its
+   * OWN question; the child answered it, which barged in over the scripted ask,
+   * and item 1 ran with no question at all. It is the true root of residual
+   * SWAP-1: removing the catalog's "compose a how-to-play" directive took one
+   * job off that turn but could not remove the turn.
+   */
+  owns_opening?: boolean;
 }
 
 // Lesson context built from exhibit data
@@ -620,6 +637,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               primitive_data: primitiveContext.primitive_data,
               tutoring: primitiveContext.tutoring ?? componentDef?.tutoring ?? null,
               audio_input: primitiveContext.audio_input ?? componentDef?.audioInput ?? null,
+              // DI-GREET-1: suppresses the backend's improvised greeting turn so
+              // the pack's own scripted cue is the first thing the child hears.
+              owns_opening: primitiveContext.owns_opening ?? false,
             },
             lesson_context: lessonContext,
             student_progress: {

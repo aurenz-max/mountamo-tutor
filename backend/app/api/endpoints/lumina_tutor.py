@@ -331,6 +331,45 @@ FLOOR_SETTLE_MAX_S = 2.5    # a steady drip of cues still has to ship eventually
 FLOOR_WATCHDOG_S = 90.0
 
 
+def should_queue_greeting(
+    *,
+    owns_opening: bool,
+    resumption_handle: Optional[str],
+) -> bool:
+    """Does this fresh session need the improvised "greet the student" turn?
+
+    Two reasons it must NOT be queued, and they are different in kind:
+
+    1. ``resumption_handle`` — a WARM RECONNECT. Gemini restores the prior
+       conversation, so a greeting would duplicate one the child already heard.
+
+    2. ``owns_opening`` — THE PACK OWNS ITS OPENING LINE (DI-GREET-1, found live
+       2026-08-10 on word-flip, session ``5269fc87d6da``). The greeting is queued
+       with ``end_of_turn=True``, so Gemini takes a turn the instant it connects
+       — while the client is still waiting for the microphone and has not sent a
+       cue yet. A Direct Instruction pack's first spoken words are a
+       hand-authored script that arrives seconds later, and the greeting turn
+       beats it there. Observed consequence: 15s of improvised tutoring that
+       ended with the tutor asking its OWN question, which the child answered,
+       which barged in over the real scripted ask — so item 1 ran with no
+       question at all.
+
+       This is the true root of residual SWAP-1 (``qa/di/BACKLOG.md`` item 16).
+       An earlier fix deleted the catalog directive that asked the same turn to
+       compose a how-to-play; that removed one job from the turn but could not
+       remove the turn, because THIS is what asks for it.
+
+    Kept as a module-level predicate rather than an inline ``if`` so it can be
+    asserted without standing up a WebSocket — the inline version was untestable,
+    which is part of why it went unnoticed through two live runs.
+    """
+    if owns_opening:
+        return False
+    if resumption_handle:
+        return False
+    return True
+
+
 def format_objectives(objectives: List[Dict]) -> str:
     """Format learning objectives for system prompt."""
     if not objectives:
@@ -771,6 +810,12 @@ async def lumina_tutor_session(websocket: WebSocket):
         # detection. Generic transport: any surface may send it; values are
         # clamped here and unknown keys ignored.
         audio_input = primitive_context.get("audio_input") or {}
+        # THE PACK OWNS ITS OPENING LINE (DI-GREET-1, found live 2026-08-10).
+        # Set by any primitive whose first spoken words are a hand-authored
+        # script — every Direct Instruction pack and every DI-ported literacy
+        # primitive. When true we do NOT queue the improvised greeting below.
+        # Default False: an ordinary tutoring surface still greets.
+        owns_opening = bool(primitive_context.get("owns_opening"))
 
         # Client-side correlation key: the diRunLog runId minted by the DI run
         # log (or any future client run recorder). Joins this ledger to the
@@ -787,6 +832,7 @@ async def lumina_tutor_session(websocket: WebSocket):
             client_run_id=client_run_id,
             warm_resume=bool(initial_resumption_handle),
             audio_input=audio_input or None,
+            owns_opening=owns_opening,
         )
 
         # Send authentication success (safe: no concurrency yet)
@@ -968,8 +1014,33 @@ async def lumina_tutor_session(websocket: WebSocket):
         # Queue initial greeting based on session mode.
         # Skip it entirely on a warm client reconnect (handle supplied): Gemini
         # restores the prior conversation, so a fresh greeting would duplicate.
-        if initial_resumption_handle:
-            logger.info("Resumption handle supplied on connect — skipping greeting (warm resume)")
+        #
+        # ⚠️ ALSO SKIP IT WHEN THE PACK OWNS ITS OPENING LINE (DI-GREET-1, found
+        # live 2026-08-10 on word-flip, session 5269fc87d6da). This block sends
+        # "Greet the student warmly…" with end_of_turn=True, so Gemini TAKES A
+        # TURN the moment it connects. For a Direct Instruction pack the first
+        # spoken words are a hand-authored script sent seconds later (the client
+        # is still waiting on the mic), and the greeting turn gets there first:
+        #   - word-flip: 15s of improvised tutoring that ended with the tutor's
+        #     OWN question ("What do you see on the 'many' side?"). The child
+        #     answered THAT, which barged in over the real scripted ask, so item
+        #     1 ran with no question — only the model half was ever spoken.
+        #   - sound-swap (a964bccc5ca2): the greeting turn absorbed the catalog's
+        #     how-to-play directive too, then improvised its own ask.
+        # This is the true root of residual SWAP-1. Deleting the catalog's
+        # "compose a how-to-play" directive removed one job from that turn; it
+        # could not remove the turn, because the backend is what asks for it.
+        # A DI pack must be SILENT until its first cue.
+        if not should_queue_greeting(
+            owns_opening=owns_opening,
+            resumption_handle=initial_resumption_handle,
+        ):
+            logger.info(
+                "Skipping greeting (owns_opening=%s, warm_resume=%s) for %s",
+                owns_opening,
+                bool(initial_resumption_handle),
+                primitive_type,
+            )
         else:
             if session_mode == "lesson":
                 # Lead with the first primitive's scaffold so the greeting

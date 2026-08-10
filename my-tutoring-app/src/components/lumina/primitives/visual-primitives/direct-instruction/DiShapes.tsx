@@ -632,6 +632,9 @@ export const DiShapes: React.FC<{ data: DiShapesData; index?: number }> = ({ dat
           },
           grade_level: data.gradeLevel || 'kindergarten',
           audio_input: DI_AUDIO_INPUT,
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
         });
         const started = performance.now();
         while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);

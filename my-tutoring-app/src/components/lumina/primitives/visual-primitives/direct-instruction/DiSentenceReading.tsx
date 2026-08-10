@@ -684,6 +684,9 @@ export const DiSentenceReading: React.FC<{ data: DiSentenceReadingData; index?: 
           },
           grade_level: data.gradeLevel || 'first grade',
           audio_input: DI_AUDIO_INPUT,
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
         });
         const started = performance.now();
         while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
