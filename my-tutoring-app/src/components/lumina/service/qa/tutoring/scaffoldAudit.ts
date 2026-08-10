@@ -7,11 +7,13 @@
  *   → WebSocket auth (LuminaAIContext sends componentDef.tutoring verbatim)
  *   → backend interpolate_template({{key}} ← primitive_data) → system prompt
  *
- * The backend fails SILENTLY: an unresolvable {{key}} renders as '(not set)'
- * with no error or log, so a broken scaffold degrades invisibly into a confused
- * tutor. Every link except "does Gemini behave" is decidable from source + the
- * catalog, which is what this module checks. Code-judged, free, CI-able —
- * the tutoring-layer sibling of service/qa/oracles.
+ * The backend fails SILENTLY: an unresolvable {{key}} is dropped from prose,
+ * an unset contextKey vanishes from RUNTIME STATE, and a script line
+ * (scaffolding level / struggle response) with any unresolved placeholder is
+ * dropped whole — no error or log, so a broken scaffold degrades invisibly
+ * into a confused tutor. Every link except "does Gemini behave" is decidable
+ * from source + the catalog, which is what this module checks. Code-judged,
+ * free, CI-able — the tutoring-layer sibling of service/qa/oracles.
  *
  * SERVER-ONLY: reads component sources from disk (fs). Import from API routes
  * (/api/lumina/tutor-test), never from client code.
@@ -531,7 +533,7 @@ export function auditScaffold(entry: ComponentDefinition, index: SourceIndex): S
           severity: dataBagDynamic ? 'WARN' : 'HIGH',
           message:
             `contextKey '${key}' is not in the component's primitiveData bag — `
-            + `the RUNTIME STATE line will read "${key}: (not set)".`
+            + `its RUNTIME STATE line will be silently omitted at runtime.`
             + (dataBagDynamic ? ' (bag has dynamic keys — verify at runtime)' : ''),
         });
       }
@@ -549,7 +551,8 @@ export function auditScaffold(entry: ComponentDefinition, index: SourceIndex): S
           severity: dataBagDynamic ? 'WARN' : 'HIGH',
           message:
             `{{${v}}} is not in the component's primitiveData bag — `
-            + `it will interpolate as the literal string '(not set)' in the system prompt.`
+            + `it interpolates as '' in prose, and a scaffolding level or `
+            + `struggle response containing it is dropped whole.`
             + (dataBagDynamic ? ' (bag has dynamic keys — verify at runtime)' : ''),
         });
       }
@@ -742,7 +745,7 @@ export function auditAllScaffolds(catalog: ComponentDefinition[], index: SourceI
 // get_primitive_specific_instructions (lumina_tutor.py). Keep in sync.
 // ---------------------------------------------------------------------------
 
-import { interpolateTemplate } from '../../../utils/interpolateTemplate';
+import { interpolateLine, interpolateTemplate } from '../../../utils/interpolateTemplate';
 
 export function buildScaffoldPromptPreview(
   primitiveType: string,
@@ -755,25 +758,35 @@ export function buildScaffoldPromptPreview(
 
   const taskDesc = interpolateTemplate(scaffold.taskDescription ?? '', primitiveData);
 
+  // Unset contextKeys are OMITTED at runtime — never a filler marker.
   let contextSection: string;
   if (scaffold.contextKeys && scaffold.contextKeys.length > 0) {
-    contextSection = scaffold.contextKeys
-      .map((key) => `  ${key}: ${primitiveData[key] ?? '(not set)'}`)
-      .join('\n');
+    const lines = scaffold.contextKeys
+      .filter((key) => primitiveData[key] !== undefined && primitiveData[key] !== null)
+      .map((key) => `  ${key}: ${primitiveData[key]}`);
+    contextSection = lines.length > 0 ? lines.join('\n') : '  (no state reported yet)';
   } else {
     contextSection = Object.entries(primitiveData)
       .map(([k, v]) => `  ${k}: ${v}`)
       .join('\n');
   }
 
+  // Script lines are STRICT: any unresolved placeholder drops the whole line.
   const levels = scaffold.scaffoldingLevels ?? { level1: '', level2: '', level3: '' };
-  const level1 = interpolateTemplate(levels.level1 ?? '', primitiveData);
-  const level2 = interpolateTemplate(levels.level2 ?? '', primitiveData);
-  const level3 = interpolateTemplate(levels.level3 ?? '', primitiveData);
+  const levelLines = (['level1', 'level2', 'level3'] as const)
+    .map((key, i) => {
+      const line = interpolateLine(levels[key] ?? '', primitiveData);
+      return line ? `Level ${i + 1}: ${line}` : null;
+    })
+    .filter((l): l is string => l !== null);
+  const scaffoldingSection = levelLines.length > 0 ? levelLines.join('\n') : 'None specified';
 
-  const struggleLines = (scaffold.commonStruggles ?? []).map(
-    (s) => `- ${s.pattern} → "${interpolateTemplate(s.response ?? '', primitiveData)}"`,
-  );
+  const struggleLines = (scaffold.commonStruggles ?? [])
+    .map((s) => {
+      const response = interpolateLine(s.response ?? '', primitiveData);
+      return response ? `- ${s.pattern} → "${response}"` : null;
+    })
+    .filter((l): l is string => l !== null);
   const strugglesSection = struggleLines.length > 0 ? struggleLines.join('\n') : 'None specified';
 
   let directivesSection = '';
@@ -788,9 +801,7 @@ export function buildScaffoldPromptPreview(
 ${contextSection}
 
 **SCAFFOLDING STRATEGY:**
-Level 1: ${level1}
-Level 2: ${level2}
-Level 3: ${level3}
+${scaffoldingSection}
 
 **COMMON STRUGGLES:**
 ${strugglesSection}
