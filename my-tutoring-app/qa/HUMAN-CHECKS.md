@@ -7,8 +7,317 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open (as of 2026-08-08, refreshed by `/pm` 2026-08-08)
+## Open (as of 2026-08-10, refreshed by `/pm` 2026-08-10)
 
+> **2026-08-10 — the judged-loop family. SIX rows open (#82–#87): four literacy ports plus
+> the two judged-script-runner ports (`counting-board` #86, `push-pull-arena` #87) that
+> landed after the driving card was written. Every one of them is undriven or half-driven
+> on the same half: the SPOKEN judge refusing a wrong answer. Plus #88 (pilot signup
+> deep-link — gates invite #1). Next free ID = 89.**
+>
+> **📄 DRIVING CARD: `qa/HANDOFF-di-mic-sitting-2026-08-10.md`** — covers **#82–#85** with
+> the exact wrong answers to say and the shared first-10-seconds check. **#86/#87 are the
+> same sitting, same rules** (scripted opener first — DI-GREET-1 — and answer wrong on
+> purpose); their full criteria are in the rows below.
+>
+> **⚠️ THE CORRECTION BRANCH HAS NOW FIRED — ONCE, AND ON THE BUILD JUDGE ONLY.** The #85
+> sitting-B drive (2026-08-10) saw `dog` corrected once and `bug` corrected twice then
+> capped and moved on — so the loop's correction mechanics, wording, and move-on cap are
+> observed working, and the build judge is discriminating. **The SPOKEN judge — the
+> contract #82/#83/#84, #85 sitting A, #86 and #87 all run on — has still never heard a
+> deliberately wrong answer.** #83 ran 9/9 first try; #84 ran 5/5 first try; every spoken
+> affirmation so far is compatible with a permissive judge — the exact trap #63 fell into.
+> **A drive that answers everything correctly does not advance these rows.** The single
+> instruction that matters: **answer deliberately WRONG at least twice per sitting.**
+> ~90 seconds each.
+>
+> **What the 2026-08-10 word-flip drive DID close:** the tutor-owned clock, the answer-leak
+> gates, and DI-1 twice more (`'trunks'`→*"Yes, trucks."*, `'Herz'`→*"Yes, hats."* — judged
+> from audio, right where the transcript was wrong).
+>
+> **What it OPENED — DI-GREET-1, now fixed and needing a re-drive.** The backend was
+> queuing *"Greet the student warmly…"* with `end_of_turn=True` on every fresh connect, so
+> the tutor took a 15s improvised turn **before any DI cue existed**, ended it with its own
+> question, and the child's answer to THAT barged in over the real scripted ask. This is the
+> true root of residual SWAP-1, which had been attributed to a catalog directive; that
+> directive was one job on the turn, and the backend was the turn. Fixed via `owns_opening`
+> across all eight scripted-opener packs. **Criterion #84 (f) is the check for it, and it is
+> the same first-10-seconds check on #82 and #83.**
+
+### #88 — pilot onboarding, invite deep-link signup: form → account → first lesson at the INVITED grade? · OPEN, GATES INVITE #1
+- **Slice 1 shipped + probed 2026-08-10 (probe 6/6 against the live backend), but the probe
+  drives the API, not the form.** This browser pass is owed before the invite link goes to
+  the pilot family. Queue record: `qa/pilot-onboarding/BACKLOG.md`.
+- Mint a code (`backend/scripts/mint_invite.py --grade K --name "Ava"`), open
+  `/login?mode=signup&invite=CODE` in a fresh browser profile:
+  - (a) The form greets the child by name and the grade is locked to the invite's grade —
+    the dropdown must not offer a way to override it.
+  - (b) Sign up → account lands signed in with no visible Firebase error path.
+  - (c) `/login?mode=signup` with NO code refuses with a readable message, not a silent 403.
+  - (d) Re-using the redeemed code on a second signup fails (single-use).
+  - (e) Start a lesson as the new student: it plans at the INVITED grade — a K invite must
+    not open Grade-1 material. ⭐ This is the exact bug slice 1 fixed server-side
+    (`students/{id}.grade_level` was never written; first-doc-wins scanned to Grade 1), and
+    the probe proved the doc write, not the lesson.
+- **Route the result to:** `qa/pilot-onboarding/BACKLOG.md`; strike there AND here.
+
+### #87 — push-pull-arena, judged-script runner: can the tutor judge a physics answer, and does the reveal-at-commit land? · OPEN, NEVER DRIVEN
+- **First SCIENCE consumer of `useJudgedScriptRunner` (2026-08-10), and the first pack whose
+  answers are computed from a live simulation.** Machine-green (typecheck 0, script suite
+  10/10, §1 greps clean); nothing below the generator has been driven. ~2 minutes.
+- **`observe`, mic on.** First words = the scripted opener, no greeting before it (DI-GREET-1).
+  - (a) Tap **Go**, watch a PUSH item, say **"pull"**. → **CORRECTED**, and the correction
+    must name the evidence (*"it moved away — that is a push"*), then re-elicit.
+  - (b) Say **"push"** on the next one. → **AFFIRMED** ("Yes, push.").
+  - (c) Say **"it went that way"** — describing the motion without the force word. → the
+    tutor re-elicits; it must NOT affirm a description.
+- **`predict`.** The sim must NOT run before you answer; the moment your answer commits,
+  the simulation fires — the reveal should land while the tutor is judging.
+  - (d) On a clearly-stays item (heavy object, rough surface) say **"moves"**. → **CORRECTED**
+    with the physics idea, and the on-screen sim shows the object staying put.
+- **`compare`.** (e) Say the HEAVIER object's name. → **CORRECTED** ⭐ — heavier-moves-more is
+  the signature misconception, fluent and wrong, and no run has ever heard it refused.
+  (f) Say just the head noun of the lighter one ("ball" for Tennis Ball). → **AFFIRMED**
+  (stated alternate, not judge improvisation).
+- **No button anywhere may advance the lesson; Go only re-runs the experiment.**
+
+### #86 — counting-board, judged-script runner: is a spoken count judged, and is the pre-numeric hand item number-free? · OPEN, NEVER DRIVEN
+- **First MATH consumer of `useJudgedScriptRunner` (2026-08-10) — the first judged loop
+  outside literacy/DI, and the runner's second gesture caller.** Machine-green (typecheck 0,
+  script suite 29/29, §1 grep clean); nothing below the generator has been driven. ~2 minutes.
+- **`count_all`, Grade K, mic on.** First words = the scripted opener with the how-to-play
+  inside it, no greeting before it (DI-GREET-1).
+  - (a) Tap-count the objects, then say the WRONG number (one off). → **CORRECTED**, and at
+    ten-or-below the correction counts the walk aloud and lands on the answer.
+  - (b) Count ALOUD ending on the right number ("one, two, three, four, five") without
+    restating it. → **AFFIRMED** ⭐ — cardinality: the last number said tells the total. This
+    is the contract clause no other pack has, and it has never been heard.
+  - (c) Say nothing for ~15s mid-count. → tutor **WAITS**; it must never count along or
+    prompt mid-count.
+  - (d) The running tally shows only YOUR count — never "/ total" — and no number chip
+    appears before the affirmation.
+- **`subitize` (K).** (e) The objects flash then hide; answer from memory. A wrong answer's
+  correction names the count; **"Show again" re-shows the objects, never the answer.**
+- **`subitize_perceptual` (Pre-K) — the gesture anchor's second production caller.**
+  - (f) Tap the WRONG hand. → **CORRECTED with zero number words** ⭐ — the whole item is
+    pre-numeric; a single spoken digit or number word anywhere in the tutor's mouth fails
+    the row. Tap the right hand → *"Yes! That hand matches."*, still number-free.
+  - (g) Talk while choosing ("hmm, this one?") → the tutor stays silent; the tapped hand
+    still gets judged.
+- **If a correction fails to fire, the fix is a WORDING fix in `countingBoardScript.ts`;
+  the loop mechanics are the runner's and are unit-covered.**
+
+### #85 — cvc-speller, DI modality: does the tutor refuse the whole word said back, and does a BUILD get judged at all? · OPEN, SITTING B DONE
+- **✅ SITTING B (`spell_word`) DRIVEN 2026-08-10 AND IT CLOSED THE LANE'S BIGGEST DEBT.** Five
+  items, 3m47s: cat 100% (1 attempt) · hen 100% (1) · pig 100% (1) · **dog 67% (2 attempts)** ·
+  **bug 33% (3 attempts)**. User: *"the program worked great after that even on errors."*
+  **(g) MET** — every advance was a spoken verdict on the third letter landing, no Check button,
+  no timer: the gesture anchor works in production. **(h) MET** — `dog` took one correction and
+  `bug` took two and then hit the cap and moved on. **After four ports and two live runs that
+  produced 9/9 and 5/5 first-try and not one correction, the correction branch is finally
+  observed working — the judge is discriminating, not permissive.** That is the question #82/#83/
+  #84 were opened for, answered on this surface. **(i) EXERCISED AND IT FOUND A BUG** — see below.
+- **⚠️ (i) surfaced a shared-ENGINE defect that had been live for four ports, now fixed.** Saying
+  a word aloud mid-build jammed the lesson permanently: `verdictTimeoutMs` was dead whenever the
+  mic was open, because the tick effect was bound to `dispatch` and `LuminaAIContext` rebuilds its
+  (unmemoized) value on every audio frame — a 1000ms interval recreated every ~10-40ms never
+  fires. The stray voice attempt could never close, and `schedulePendingCue` blocks every queued
+  cue while an attempt is open. Fixed + regression-tested + revert-bitten; full diagnosis in
+  `qa/di/BACKLOG.md` item 16. **Residual: a stray utterance mid-build still costs up to 8s** (the
+  jam self-heals now, but the cue waits out the timeout) — filed, not fixed.
+- **➡️ SITTING A IS THE ONLY THING STILL OPEN, and it is ~90 seconds.** The SPOKEN modes have not
+  been driven at all: the whole word said back, a letter NAME instead of a sound, a wrong-position
+  sound. **Answer deliberately wrong** — that is still the instruction that matters, and the
+  spoken judge is a different contract from the build judge that just passed.
+- Queue record: `qa/di/BACKLOG.md` item 16. Machine gates: real-pipeline probes 6/6.
+- **Sitting A — a spoken mode (`fill_vowel` or `word_sort`), Grade K, mic on.** The first
+  words you should hear are the scripted line, no greeting before it (DI-GREET-1, shared with
+  #82/#83/#84): *"We are listening for the sound in the middle of a word. I say a word, and
+  you say just the middle sound out loud! Listen: cat. Your turn. Say the middle sound."*
+  - (a) Say **"cat"** — the whole word back. → **CORRECTED.** ⭐ This is the row's reason to
+    exist and the signature error of isolation: it is fluent, confident, and *exactly what
+    the tutor just said itself*, which makes it the answer most likely to be wrongly
+    affirmed. Same shape as sound-swap's starting-word-back and word-flip's bare singular,
+    and neither of those has ever been heard either.
+  - (b) Say the letter NAME — **"ay"** for the sound in *cat*. → **CORRECTED**, and the
+    correction should name the sound, not scold. This is the exact distinction the mode
+    teaches, and it is also the reason letter names are a blocked answer class here: if the
+    judge cannot separate "ay" from "aaa" by ear, that is a BENCH finding, not a script fix.
+  - (c) Say **"/k/"** or **"/t/"** — a real sound from the word, wrong position. → **CORRECTED.**
+  - (d) Say **"aaa"** correctly, and once say it inside a phrase (*"it's aaa"*) and once
+    held long (*"aaaaa"*). → **AFFIRMED**, all three. Holding a vowel is what a child does
+    when they are sure; correcting it would correct a child who was right.
+  - (e) Say nothing for ~15s. → tutor **WAITS** — no re-ask, no filling the pause, no saying
+    the sound for them.
+  - (f) Tap **Hear It** three times. → the word, twice, each time, and **nothing else**. It
+    must never stretch, segment, or isolate the middle sound. Until this port that control
+    escalated on its third tap into speaking the answer outright, with no attempt required.
+  - Also: the blank in the `c _ t` frame must be empty until the tutor affirms; on
+    `word_sort` no vowel column may exist before the first affirmed answer.
+- **Sitting B — `spell_word`, and this is the FIRST live look at the gesture anchor.** Nothing
+  in the engine's manipulation path has ever run in production.
+  - (g) Fill all three boxes **correctly**. → the tutor speaks *"Yes, sat."* **with no Check
+    button pressed and no timer** — the third letter landing is the commit. If the verdict
+    never arrives, the anchor does not work live and that is the finding.
+  - (h) Fill them **wrong in the middle** (e.g. `s e t` for *sat*). → **CORRECTED**, naming
+    the sound at the middle box and handing it back; the correct boxes stay filled and only
+    the wrong one clears.
+  - (i) **Talk to yourself while building** ("hmm… ssss… where's the a…"). → the tutor stays
+    **SILENT** and the build still gets judged when the third letter lands. ⭐ This is the
+    integration risk the port handled blind: a stray voice turn opens an attempt the tutor
+    was told not to answer, and the recovery path (ignore `no-verdict`/`resync` on a build,
+    accept an `unanchored-verdict`) is reasoned-about, not observed.
+  - (j) The tutor must never name a letter, spell the word, or sound it out while you build.
+- **If a correction fails to fire on a wrong answer, the fix is a WORDING fix in
+  `cvcSpellerScript.ts`, not a component fix** — and the same judging shape is now copied
+  four times, so check whether it is this pack's wording or the family's.
+
+### #84 — word-flip, DI modality: does the tutor refuse the singular said back? · OPEN, HALF-DRIVEN
+- **⚠️ DRIVEN 2026-08-10 (session `5269fc87d6da`) AND DELIBERATELY NOT STRUCK.** 5/5, 1m24s,
+  every advance an affirmation, `superseded: 0`, `wedged: false`, no leaked plural.
+  **(c), (d) and (e) are MET, and (c) is met twice over** — the ASR read `'trunks'` and the
+  tutor said *"Yes, trucks."*; it read `'Herz'` and the tutor said *"Yes, hats."* Judged
+  from the audio, right where the transcript was wrong.
+  **(a) and (b) are UNTOUCHED — all 5 items were correct on the first attempt, so the
+  correction branch never fired.** That is the third consecutive DI run to exercise only
+  the half that cannot fail, and it makes the two affirmations above ambiguous: a
+  discriminating judge and a permissive one both say "Yes" to everything until something
+  wrong is said. **(f) FAILED — see below; the fix has landed and needs re-driving.**
+- **Why it exists.** Port 3 of `qa/di/BACKLOG.md` item 16, shipped 2026-08-09. Machine
+  gates are green (typecheck:lumina 0 · tsc 803 = baseline · vitest 199 files / 2568 ·
+  both §1 greps · 3/3 template keys resolve · 2 revert-bites bit), and none of them can
+  hear a tutor judge audio.
+- **➡️ RE-DRIVE THIS ONE, and it is now the cheapest high-value mic time on the page.**
+  Two things changed since it was driven: **DI-GREET-1 is fixed** (the backend no longer
+  asks a DI pack's session to improvise a greeting turn), so (f) is testing something new;
+  and (a)/(b) still need one deliberately wrong answer each — about 90 seconds of mic time.
+- **Drive:** a Grade-K or Grade-1 GRAMMAR / plurals lesson that routes to `word-flip`, mic
+  on. **Answer deliberately wrong on at least two items.**
+- **Criteria — (a) is the one this row exists for:**
+  - **(a) SAYING THE SINGULAR BACK IS REFUSED.** Asked *"Listen: one dog. Now there are
+    three. Your turn. Three what?"*, answer **"dog"** — clearly, confidently, unchanged.
+    This is the signature error of this skill and the one most likely to be affirmed: it is
+    a real word, fluently said, and the tutor just said it itself. If it is affirmed, the
+    contract's `saying "<singular>" back with no ending added` branch is not biting and it
+    is a `wordFlipScript.ts` wording fix.
+  - **(b) THE OVER-REGULARIZED FORM IS CORRECTED.** Say **"dogses"**. It is a real
+    Kindergarten error (the rule applied twice), and it must take the correction branch,
+    warmly. Watch that the correction says the pair *"one dog, three dogs"* and then
+    **re-asks** rather than ending on the answer.
+  - **(c) THE PLURAL IS HEARD AT ALL.** This is the port's honest residual: the answer
+    differs from the stimulus by a single word-final /s/ or /z/, which ASR drops routinely.
+    Say **"dogs"** normally and confirm it is affirmed. **Watch the transcript vs the
+    verdict** — if the transcript reads "dog" and the tutor still affirms, that is DI-1
+    working exactly as it did on #83's "sept"/"sit", and it is the strongest evidence this
+    lane can produce. If the tutor CORRECTS a correct plural, the judge is reading the
+    transcript rather than the audio and that is an engine finding, not a script fix.
+  - **(d) A PHRASE ANSWER IS AFFIRMED.** Say **"three dogs"**. The contract allows it on
+    purpose — the ending is what is measured, not whether the word arrived alone.
+  - **(e) The affirmation IS the advance**, with no button and no perceptible fixed delay,
+    and the plural appears on screen only AFTER it.
+  - **(f) THE OPENING TURN SPEAKS THE SCRIPT AND NOTHING ELSE.** ❌ **FAILED on the
+    2026-08-10 drive, and it found a bigger defect than the one it was written for.**
+    What happened: at 0.8s the backend queued *"Greet the student warmly…"* with
+    `end_of_turn=True`, so the tutor took a turn **at connect** — 15 seconds of improvised
+    tutoring that ended with **its own question** (*"What do you see on the 'many' side?"*).
+    The scripted opener only went out at 16.4s, because the client was still waiting on the
+    microphone. The child answered the tutor's improvised question, that answer barged in
+    1.2s into the scripted line, and **only the model half — "One cup, two cups" — was ever
+    spoken. Item 1 ran with no question at all.**
+    **This is the true root of residual SWAP-1**, which was previously attributed to the
+    catalog's "compose a how-to-play" directive. Removing that directive took one job off
+    the opening turn; it could not remove the turn, because the BACKEND is what asks for
+    it. Fixed 2026-08-10 as **DI-GREET-1** (`owns_opening` on the connect payload; the
+    eight packs that script their opener now suppress the greeting).
+    **On the re-drive the FIRST thing you hear should be, verbatim:** *"One hat, two hats —
+    when there is more than one, you say the new word. Listen: one dog. Now there are three.
+    Your turn. Three what?"* — one turn, no greeting before it, and **the model noun must
+    not be any noun the session goes on to ask about**. *(That last part already works: the
+    driven session's items were truck/star/cloud/bird/**hat**, and `pickModelNoun` correctly
+    modelled on "cup".)*
+- **Also watch:** nothing on screen names the plural before you say it (the many-side shows
+  `___` until the affirmation, and there are no tap chips at all — that deletion is what
+  this port is FOR); tapping the picture card speaks the SINGULAR and never the plural.
+  *(Confirmed on the 2026-08-10 drive: no leak across 5 items.)*
+- **Route the result to:** `qa/di/BACKLOG.md` item 16.
+
+### #83 — sound-swap, DI modality: does the tutor refuse an unchanged word? · OPEN, HALF-DRIVEN
+- **⚠️ DRIVEN 2026-08-09 (session `a964bccc5ca2`) AND DELIBERATELY NOT STRUCK.** The run was
+  clean — 9/9 first try, 2m34s, every advance an affirmation, no leaked answer, and DI-1
+  confirmed live (ASR read "sept", the tutor affirmed "Yes, sit." from the audio). **But all
+  9 items were ADDITION and all 9 were correct, so the correction branch never fired.**
+  Criteria (d) and (e) are MET. **(a), (b) and (c) — the entire discriminating half — are
+  untouched, and they are why this row exists.** Affirmations being affirmed cannot
+  distinguish a discriminating judge from a permissive one; that is the trap #63 fell into.
+  The run also produced the walk-deletion ruling and two off-script residuals (SWAP-1,
+  SWAP-2 in `qa/di/BACKLOG.md` item 16).
+- **Why it exists.** Port 2 of `qa/di/BACKLOG.md` item 16, shipped 2026-08-09. Machine
+  gates are green (typecheck 0 · tsc 803 = baseline · vitest 198/2534 · both §1 greps ·
+  2 revert-bites bit), and none of them can hear a tutor judge audio.
+- **Drive:** a Grade-K or Grade-1 phonemic-awareness lesson that routes to `sound-swap`,
+  mic on. **Pick a DELETION or SUBSTITUTION lesson this time** — the addition mode is the
+  one already exercised — **and deliberately answer wrong.**
+- **Criteria — (a) is the one this row exists for:**
+  - **(a) SAYING THE STARTING WORD BACK IS REFUSED.** Asked *"Listen: cat. Take away /k/.
+    What word?"*, answer **"cat"** — clearly, confidently, unchanged. This is the signature
+    error of phoneme manipulation and the one most likely to be affirmed, because it is a
+    real word, fluently said, and it is the word the tutor just said itself. If it is
+    affirmed, the contract's `saying "<word>" back unchanged` branch is not biting and it
+    is a `soundSwapScript.ts` wording fix.
+  - **(b) A DELETION ANSWER IS HEARD AT ALL.** Deletion results are VC words — "at", "in",
+    "up" — **shorter than anything the bench has measured**. Say one normally and confirm
+    it is affirmed. This is the port's honest standing-gate-1 residual: the response CLASS
+    is benched, that LENGTH is not. If short answers are systematically missed, that is a
+    bench finding, not a script fix.
+  - **(c) A near neighbour is CORRECTED.** For "change /k/ in cat to /b/", say **"cap"** —
+    a different, equally plausible one-sound change. It must take the correction branch.
+  - **(d) The affirmation IS the advance**, with no button and no perceptible fixed delay.
+  - **(e) The tutor WAITS** after "What word?" — a long silence is a child holding a word
+    in their head, which is the activity.
+- **Also watch:** nothing on screen names the new word before you say it (no result word,
+  no result picture text — both are post-affirmation); tapping a sound speaks that SOUND
+  and never a word; at K the how-to-play arrives by voice.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16. If (a) fails, fix the wording BEFORE
+  porting a third primitive — the same contract shape is about to be copied again.
+
+### #82 — phonics-blender, DI modality: does the verbal loop actually teach? · OPEN, BLOCKING
+- **Why it exists.** The pilot for `qa/di/BACKLOG.md` item 16. One live K run happened
+  *mid-port* and is what produced the "purely verbal" ruling — it proved the loop connects,
+  the tutor models from the script, the mic captures and speech transcribes. **The task as
+  now shipped has not been driven.** Everything below is a claim no test can make.
+- **Drive:** a Grade-K phonics/CVC lesson that routes to `phonics-blender`, mic on.
+- **Criteria — all four, and (c) is the one most likely to fail:**
+  - **(a) The tutor WAITS.** After *"Your turn. What word?"* it says nothing until the child
+    answers. No re-asking, no filling the pause, no sounding the word out again unprompted.
+    A long silence is a child working; the catalog has a WAIT directive for exactly this.
+  - **(b) A sound-out that lands on the word is AFFIRMED.** "cuh-a-tuh… cat" is correct —
+    blending aloud IS the skill at this age. If the tutor corrects that, the contract's
+    wording is wrong and it is teaching a child their right answer was wrong.
+  - **(c) A near neighbour is CORRECTED.** Say "cap" for "cat" deliberately. The contract is
+    written strict; over-affirmation is this response class's known failure mode.
+  - **(d) The affirmation IS the advance.** The next word opens on the tutor's own
+    utterance, with no button and no perceptible fixed delay.
+- **Also watch:** nothing on screen names the word before you say it (no printed whole word,
+  no emoji — both leaked in the pre-port build and only the live run caught them); tapping a
+  letter speaks that SOUND and never the word; the pre-reader how-to-play arrives by voice
+  at K.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16. If (a)–(d) hold, unblock
+  `sound-swap`. If (b) or (c) fails, it is a `phonicsBlenderScript.ts` judging-contract
+  wording fix, not a component fix — and it must be fixed BEFORE the template is copied.
+
+> **2026-08-09 — `/pm` reconcile. ONE row opened (#81), none struck. Next free ID = 82.**
+> The lesson-ordering lane closed overnight and its production fix is a K render
+> change nobody has looked at — **#81**, the `hundreds-chart` board that started the
+> lane. It is deliberately small: the component already parameterized its grid
+> length, so only the generator moved, and the real-pipeline trace confirms the
+> data. What it cannot confirm is that ten cells in a "ten per row" grid still look
+> like a chart to a five-year-old.
+> **⚠️ The four rows below this one are all still open and #77 is still the one to
+> drive first** — it gates whether `solar-system-explorer`'s L1 rung is real, and
+> reader-fit item 17 is parked behind it precisely so the template is not copied
+> three more times before anyone knows if the taps land. A day has passed with no
+> mic/browser sitting; #63 + #72 + #76 remain foldable into a single session.
+>
 > **2026-08-08 (midday) — `/pm` reconcile. FIVE slices closed between 00:13 and 10:01
 > and NONE of them are committed; three carry human debt with nowhere to route.**
 > **#77, #78, #79 opened; #72 EXTENDED with criterion (e).** Next free ID = **80.**
@@ -223,6 +532,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 
 | # | Surface | What to check | How to reach it | Source report |
 |---|---|---|---|---|
+| 81 | **`hundreds-chart` at K — the board that started the whole ordering lane. It now sizes itself to the lesson; has anyone SEEN a 1-10 board?** | *(Opened `/pm` 2026-08-09. Low risk, high symbolism — this is the exact screen the user reported.)* The origin defect was a K "counting to 10" lesson rendering the full 1-100 grid and saying *"count by 5s… all the way to 100"*. Fixed in the GENERATOR (`gridMax` + legal skips + instruction prose) and the catalog text; the component was always capable — `HundredsChart.tsx:237` builds `Array.from({length: gridMax})`, so no component change was needed and none was made. The real-pipeline trace confirms the DATA (`gridMax: 10`, cells `[1..10]`, skip pool `[1,2]`), but **data is not pixels**. **(a)** Does a 10-cell board — one row of ten in a grid whose rule is "10 per row" — still read as a *chart* a child can count across, or does it look like a broken/empty 100-grid? **(b)** Does the `skip=1` instruction ("Tap the numbers in order, one at a time, all the way to 10") actually drive a tappable in-order sequence? That skip value did not exist before this fix — `1` was absent from the pool, which is why "count in order" was inexpressible at any grade. **(c)** Glance at a 1-20 board too; the catalog now advertises both K sizes. | `npm run dev` → dev tools → **math**-primitives-tester → `hundreds-chart`, or trace the topic "Counting to 10" at K | `qa/topic-traces/counting-to-10-2026-08-08.md` |
 | 80 | **`cell-builder` Place phase — the answer used to be printed on the card; confirm it isn't, and that the correction still teaches** | *(Opened 2026-08-08 with the CB-1 fix. Render-path change, not browser-driven.)* CB-1 was CRITICAL: every **unplaced** organelle in the drag palette carried `Zone: Center` / `Zone: Near Nucleus` / `Zone: Cell Edge` — the answer key, ungated, in the default UI state. The palette now renders the **name only**, and the zone appears on the *placed* organelle behind `placeChecked && !zoneCorrect`. **(a)** Before checking, confirm no zone vocabulary appears anywhere on screen — palette cards, tooltips, or the cell itself. **(b)** Place one organelle wrong and Check: you should get `→ <Zone>` on that organelle, and nothing on the ones you got right. **(c)** Judge the pedagogy, which is the real question: the student can now drag to the revealed zone and re-check for full marks, since the score is computed from final positions. Is a corrective reveal that can be acted on still teaching, or should the first attempt be what scores? **That question is not cell-builder-specific** — it applies to every retryable primitive, and CS-1 is filed for the same shape on `classification-sorter`. Report what it feels like rather than filing a bug. **(d)** Related but separate: while placing, notice how *forgiving* the zones feel — that is **CELL-1**, measured (one point satisfies 5 of 6 zones), already filed, and not fixed here. | `npm run dev` → dev tools → **biology**-primitives-tester → `cell-builder` → Place phase | `qa/EVAL_TRACKER.md` CB-1 (closed) + CELL-1 (open); `qa/eval-reports/dna-explorer-DNA-1-2026-08-08.md` |
 | 77 | **`solar-system-explorer` — the new eval modes are TAPS ON A MOVING BODY. Do they land?** | *(Opened `/pm` 2026-08-08. **Drive this one first** — it gates whether a whole L1 rung is real.)* The L0→L1 rung had no challenge enum to constrain, so it BUILT the answer surface: the student answers by tapping a planet/moon in the live orbital model, and the items **and the key** are derived in code from the same `bodies` array the component renders. jsdom asserted the handlers; it cannot assert hit-testing. **(a) THE ROW'S REASON — tap targets.** Drive all five modes (`identify`, `order_from_sun`, `classify`, `compare_attribute`, `orbital_reasoning`) and confirm a tap on each body actually registers **while the orbits are animating**, including the small outer bodies and any moon. This project has already shipped an unclickable SVG `<g>` that every jsdom test passed ([[feedback_svg-g-unclickable-jsdom-blind]]); if targets are missed, the fix is a transparent hit `<circle>`, not a test. **(b) The key cannot contradict the screen — check that it doesn't anyway.** Answer each mode *correctly* and confirm it scores correct; the whole design claim is that a derived key matches the render. One wrong-scoring correct answer is a rule-#1 defect. **(c) At K it must still be the explorer it was.** S11's band work (no AU/km/°C/orbital-period chrome, tutor says "the biggest one", not a measurement) must survive the eval-mode add — confirm no number came back with the challenges. **(d) Does an assessment mode read as a task at all** to a non-reader, or does the screen still read as free exploration? | `npm run dev` → dev tools → **astronomy**-primitives-tester → `solar-system-explorer` → each of the five modes @ K, then one @ grade 3-5 | `qa/reader-fit/BACKLOG.md` item 15 §S11 (the rung's record; the slice is uncommitted at the time of writing) |
 | 78 | **`dna-explorer` Build tab — the leak repair rewrites content at render time** | *(Opened `/pm` 2026-08-08; the report files this debt itself: "should work — needs a browser check on the Build tab".)* DNA-1 is FIXED at the code layer — `validateDnaExplorerData` runs post-config-merge, recomputes `complementaryStrand` from the template, repairs any `givenStrand` that shares a 4-base run with the displayed sequence, and **derives** every `correctAnswer` rather than trusting the model. Measured 19/20 leaking generations → **0/20**. But the repair path mutates data on the way to the screen and **nobody has looked at the result**. **(a)** Generate 2–3 DNA lessons and open the **Build** challenge: the strand you are asked to complete must not be readable off the Explore tab — check for PARTIAL overlap, which was the dominant form (a 4-base `givenStrand` printed inside an 8-base displayed strand), not just an exact match. **(b)** Complete one build correctly and confirm it scores correct — the key is now derived, so a mismatch means the repair and the grader disagree. **(c)** Confirm no `'_'` blank characters appear in any challenge (a prompt/schema contradiction asked for blanks the component cannot grade; fixed in the same slice). **(d)** Glance at variety across the runs — DNA-2 is filed LOW for this and is NOT to be fixed here, just judged: do the templates feel repetitive? | `npm run dev` → dev tools → **biology**-primitives-tester → `dna-explorer` → Explore tab, then Build tab, ×2-3 generations | `qa/eval-reports/dna-explorer-DNA-1-2026-08-08.md` §Residuals; `qa/EVAL_TRACKER.md` DNA-1 / DNA-2 |

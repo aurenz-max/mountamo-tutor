@@ -35,7 +35,7 @@ in per-stream Done entries, because only the user can close those rows.
 | `qa/topic-traces/` + `qa/topic-fidelity/` | scope/intent fidelity per generator | `/topic-trace`, `/topic-fidelity`, `/eval-fix` | census reports seed the other queues |
 | `qa/primitive-contracts/BACKLOG.md` + `docs/contracts/` | per-primitive requirements contracts | `/primitive-contract [--check\|--census]` | derivations move queue items to Done; every `--check` appends the contract changelog; `derived_at` older than newest census = stale |
 | `qa/HUMAN-CHECKS.md` | human-only browser/pixel checks | the USER (only they can close these) | strike here + in owning report |
-| Lifecycle follow-up queues (birth certificates) | layer raises per primitive | `/add-eval-modes`, `/add-support-tiers`, `/add-structural-difficulty`, `/add-tutoring-scaffold`, `/add-sound`, `/add-spoken-judge`, `/add-voice-control`, `/migrate-primitive` | `PRIMITIVE_LIFECYCLE.md` ladder |
+| Lifecycle follow-up queues (birth certificates) | layer raises per primitive | `/add-eval-modes`, `/add-support-tiers`, `/add-structural-difficulty`, `/add-tutoring-scaffold`, `/add-sound`, `/add-voice-control`, `/migrate-primitive` | `PRIMITIVE_LIFECYCLE.md` ladder |
 | `WORKSTREAMS.md` (repo root) | the portfolio itself | `/pm` | every closing session updates "last touched" |
 
 ### Discovery routing

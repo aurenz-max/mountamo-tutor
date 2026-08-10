@@ -54,6 +54,578 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
+### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); next = the MIC SITTING (#82-#87), then `phoneme-explorer` (portfolio call first) — literacy ports 5+ now cost a script + a stage, not a loop wiring.**
+
+> **✅ THE GENERALIZED RUNNER (2026-08-10, user directive: "lets not retrofit but instead
+> build the general schema and capability, try it on 2-3 subjects").** Two new modules in
+> `lumina/hooks/`, DERIVED from the diff of the 8 consumers (5 DI packs + 4 ports), zero
+> of which were migrated — the no-retrofit ruling is explicit; existing consumers move
+> opportunistically only when a real reason touches them, because migration cost is
+> denominated in mic sittings, not lines.
+> - **`judgedScriptContract.ts`** — the pack contract + THE STANDING GATES AS CODE:
+>   a benched RESPONSE-CLASS registry (gate 1 — `letter_name` and `open_set_word` are
+>   BLOCKED in data, refused by the validator with the ruling pointer; counts 21-30
+>   honestly declare the build-ahead `number_word_to_120` class, #63 owed), a
+>   sentinel-collision validator (gate 2, mechanical — it runs over every cue a pack can
+>   emit, replacing per-pack authorship discipline), template-key checks, and
+>   `validateJudgedScriptPack` which every pack's test asserts `toEqual([])` and the
+>   runner console.errors in dev. **It caught its own first bug: the pre-numeric hand
+>   correction said "look ONE more time" — a number word inside the number-free
+>   contract.**
+> - **`useJudgedScriptRunner.ts`** — the component half every port repeated: run
+>   lifecycle (connect w/ `owns_opening` → mic → opening cue → arm, SWAP-1 order),
+>   verdict→progression (corrections cap 2 → move on), the cvc gesture rules
+>   (no-verdict/resync ignored mid-build; unanchored-verdict adopted only while a build
+>   awaits), resync re-cues, `loop-deaf` re-arm, Tier-A diagnosis assembly, context
+>   sync, tap-to-hear. Wording stays 100% pack-authored — the runner carries NO cue
+>   template, exactly per this item's own extraction finding.
+> - **Pilot A `counting-board` (math, Pre-K–G1):** the Check button was measuring
+>   EXHAUSTIVE TAPPING, not counting — tap every object once and pass with no number
+>   word; cardinality was a rhetorical tutor aside. Now the child tap-counts (the
+>   manipulative survives) and SAYS how many; subitize flashes then judges the spoken
+>   count; `subitize_perceptual` is the gesture anchor's SECOND production caller with a
+>   fully number-free contract; the tally's "/ total" (the answer, printed) and the −/+
+>   steppers died. Generator got an answer-leak guard (instruction naming the target →
+>   code template). `CountingBoard.reader-fit.test.tsx` rewritten onto the new surface
+>   (flash discipline preserved).
+> - **Pilot B `push-pull-arena` (science, K-5):** the MCQ chips printed the answer
+>   (word-flip's chips in a physics costume) and observe's own instruction + labeled
+>   Push/Pull buttons NAMED it. Now every answer is CODE-COMPUTED from the sim's physics
+>   (observe=pushDirection, predict=static-friction check w/ decisive margins,
+>   compare=lighter object, design=needed-force threshold), spoken, judged in-band;
+>   predict/compare auto-run the sim AT ANSWER COMMIT so the physics reveals the truth
+>   while the tutor judges. `correctAnswer`/distractors/hint retired from schema+type.
+>   Predict's menu is "moves/stays" NOT yes/no — an ask ending "Yes, or no?" collides
+>   with the affirm sentinel in our own cue. Also its Lumina-kit migration (was raw
+>   shadcn).
+> - **Gates:** typecheck:lumina **0** · all 6 slice test files **71/71** (contract 13,
+>   runner 16, counting script 19, counting render 8, arena script 10, reader-fit 3) ·
+>   §1 greps clean on both components · full vitest suite green post-fix (the 3
+>   reader-fit failures were the OLD stepper surface; rewritten). **NOT driven live —
+>   HUMAN-CHECKS #86 (counting-board) + #87 (push-pull-arena), and the runner itself
+>   has never carried a real mic session; #82-#85 remain the lane's blocking debt.**
+> - **Deliberately NOT done:** a literacy pilot (a concurrent session was actively
+>   editing `literacy/` + `catalog/literacy.ts` mid-slice — `picture-vocabulary` is the
+>   named next literacy conversion); design-mode goal predicates beyond big/little; any
+>   migration of the 8 existing consumers; `/add-di-loop` as a SKILL (the runner is its
+>   stronger form — write the thin skill wrapper after the mic sittings prove the
+>   template, per this item's own queue note).
+
+> **📄 THE BRIEF IS `qa/HANDOFF-di-literacy-modality-2026-08-09.md` (rev 4).** It carries the
+> frame, the re-measured census, the step-by-step port procedure extracted from the pilot,
+> and the recommended order for the remaining 30. This entry is the queue record; that is
+> the brief. **Rev 1 of that handoff was deleted — its ROUTE/CONVERT/LEAVE bucketing was
+> rejected by the user and must not be re-derived.**
+
+> **The observation, in the user's words:** *"DI really pushed the boundary of using AI live
+> tutor integrated into our primitives. I did a phonics lesson and noticed many language
+> arts primitives still use a modality where the student needs to click the screen to
+> continue etc. The DI modality fixes that."* **This outranks everything below it, including
+> DI closeout.**
+>
+> **THE FRAME (two rulings, 2026-08-09 — do not re-litigate).**
+> 1. *"if the existing primitive asks the student to click the mic, then answer, the existing
+>    primitive is wrong. these instructions will result in worse pedagogy."* — Every literacy
+>    primitive should run a tutor-owned loop. **A primitive is never exempted from the
+>    modality because its interaction is manipulative**, and never left broken because a DI
+>    pack could absorb its demand (routing around a defect preserves it). The per-primitive
+>    question is only what the answer is MADE of — spoken, or a gesture.
+> 2. *"the exercise should be purely verbal using the DI capability, not a combination of
+>    clicking on tiles and speaking."* — **Where the skill is verbal, the whole task is
+>    verbal.** The test: *can a child who cannot do the skill still perform this action
+>    correctly?* Arranging `c a t` tiles is sequencing, not blending — a costume. Delete it.
+>
+> **✅ PILOT DONE — `phonics-blender` is the worked example.** The child sees the letters,
+> taps any one to hear that sound, and SAYS the word; the Live tutor models, waits, judges
+> the audio in-band and its own affirmation is the advance. Deleted: the push-to-talk mic,
+> `Ready to Build!` / `Check` / `Blend!` / `Next Word` / `Clear`, the three-phase stepper,
+> the tile build, and the `setTimeout` between phases. Files:
+> `PhonicsBlender.tsx`, `phonicsBlenderScript.ts` (new, hand-authored DISTAR),
+> `catalog/literacy.ts` (`audioInput` + DI tutoring block + contextKeys 9→4), both
+> `__tests__/PhonicsBlender.*` rewritten, `docs/contracts/phonics-blender.md` (R4 re-based,
+> R8 scoped, C3 + C4 filed).
+> Gates: typecheck:lumina 0 · full tsc **803 = baseline** · vitest **195 files / 2487**.
+>
+> **⚠ THE PILOT IS NOT LIVE-VERIFIED, AND THIS BLOCKS THE SECOND PORT.** One live K run
+> happened mid-port and produced ruling #2 (it proved the loop connects, the tutor models
+> from the script, the mic captures and speech transcribes). The verbal task as shipped has
+> NOT been driven: that the tutor waits, affirms a sound-out that lands on the word, refuses
+> a near neighbour (`cap` for `cat`), and advances on its own affirmation is unproven.
+> **Drive it before porting a second primitive** — a template verified once is worth more
+> than three ports built on an assumption. → HUMAN-CHECKS **#82**.
+>
+> **ENGINE (generic, landed with the pilot):** `useJudgedSpeechLoop` could only anchor an
+> attempt on a closed voice turn (DI-1), which is *why* rev 1 mistook an engine limit for
+> pedagogy. `LoopAttempt.source` + `gesture-close` + `submitGestureAttempt` widen it, so a
+> primitive whose answer is a manipulation can also have a tutor-owned clock. The cue is
+> sent BEFORE the attempt opens (an attempt opened at commit time blocks the cue meant to
+> provoke its verdict). **⚠ ZERO production callers today** — the verbal ruling removed the
+> pilot's use of it. Its first real customer is `word-sorter` / `sentence-builder` /
+> `story-map` / `cvc-speller`'s `spell_word`. **If the next two ports are also verbal,
+> propose deleting it** rather than carrying unexercised capability.
+>
+> **✅ PORT 2 SHIPPED — `sound-swap`, 2026-08-09 (user-pulled).** The child sees the
+> STARTING word and its sounds, taps any sound to hear it, and SAYS THE NEW WORD; the
+> tutor states the word, names the one sound to add / take away / change, waits, judges
+> the audio in-band and its own affirmation is the advance. Deleted: `Start Activity`, the
+> 3-5 phoneme ANSWER BUTTONS, the deletion tile-tap, `Next Challenge` / `Finish` /
+> `Skip →`, the `useSpokenWordCapture` push-to-talk say-it-again beat, and the 1400ms
+> auto-advance `setTimeout`. Files: `SoundSwap.tsx` (whole-file), `soundSwapScript.ts`
+> (new, hand-authored DISTAR), `catalog/literacy.ts` (`audioInput` + DI tutoring block +
+> contextKeys **12 → 4**), `gemini-sound-swap.ts` (tier levers re-based, below), and two
+> new test files (`SoundSwap.di-script.test.ts` 22 · `SoundSwap.di.test.tsx` 15).
+> Gates: typecheck:lumina **0** · full tsc **803 = baseline**, zero errors in any touched
+> file · vitest **197 files / 2524 passing** · both §1 greps clean · **4/4 template keys
+> resolve** (every `{{key}}` in the block is pushed by the component at connect AND on
+> every advance) · **2 revert-bites, both bit** (6 failures across both files).
+>
+> **⚠️ THE COSTUME WAS DEEPER HERE THAN THE PILOT'S, and that is the finding.** Both
+> defects the census names were present (a 1400ms stopwatch AND a PTT mic), but under them
+> the ANSWER itself was a costume: the child tapped a tile or picked one of 3-5 sound
+> buttons and the SCREEN computed the new word. A child who cannot manipulate phonemes can
+> still tap the highlighted tile; a child who can, can mis-tap. Holding a word in your head
+> and changing one sound in it is an oral act end to end, so the whole answer is oral.
+>
+> **⚠️ ONE TIER LEVER HAD TO BE RE-BASED, and it is a ruling, not a rename.**
+> `nameTargetSound: false` (the `hard` tier) meant *"the instruction does not name the
+> sound to change"* — survivable only because 3-5 answer buttons made the answer
+> determinate anyway. With the buttons gone, an unnamed target makes the ask **ambiguous**:
+> *"change one sound in cat"* is answered correctly by cap, cot, bat, hat and a dozen more,
+> and the judging contract would then correct a child who was right. **An ambiguous ask is
+> not a harder task, it is a broken one** (di-shapes' *one drawing, one defensible answer*
+> birth discipline, arriving from the other direction). So the tutor now names the change
+> at EVERY tier, and the field governs the other scaffold the tier was reaching for:
+> whether the tutor **segments the starting word aloud** before the ask — which is this
+> primitive's own documented struggle (*"cannot hold the original word in memory"*). The
+> structural axis (WHERE the sound sits: beginning → end → middle) is untouched and is
+> still the primary lever. `optionCount` is now DEAD and is asserted dead, not ignored.
+> Rationale lives in `soundSwapScript.ts`'s header, the component's, and the generator's,
+> so it cannot be re-litigated by someone reading only one of them.
+>
+> **✅ DRIVEN LIVE THE SAME EVENING — session `a964bccc5ca2`, 9/9 first try, 2m34s, and it
+> produced one user ruling plus three findings.** Ledger: 9 `[DI_SWAP_ITEM]` + 1
+> `[DI_SWAP_COMPLETE]`, `superseded: 0` · `waited_ms: 0` after the opener · `wedged: false` ·
+> `state_attached` 1→9. **The tutor-owned clock is now PROVEN, not argued:** every advance
+> was an affirmation, no button, no timer. The ask never leaked the answer across 9 items,
+> and the pre-reader how-to-play arrived by voice.
+>
+> **⚠️ RULING — THE SOUND-BY-SOUND WALK IS DELETED (user, from the run).** The shipped ask
+> was *"Listen: an. /æ/ … /n/. Add /p/…"* and **the tutor's voice cannot say `/æ/`**:
+> *"she does sound funny during that part, i think not necessary — the 'an… Add /p/' works
+> great and the student can clearly hear the instructions, but the gibberish comes across as
+> a distraction."* **The first fix attempted was the wrong one** (make the walk *sayable*);
+> the ruling is to delete it. The ask is now three beats — starting word, the change,
+> "What word?" — identical at every tier. **This kills the last axis-1 lever:**
+> `nameTargetSound` is now DEAD alongside `optionCount`, so within-mode difficulty here is
+> carried entirely by the STRUCTURAL axis (where the sound sits) plus the two on-screen
+> perception levers. That is an honest outcome, not a gap.
+>
+> **↳ The glyph class is BROADER than the walk, so it got a shared fix:**
+> `phonemeVoice.ts` (new, + 9 tests) renders a phoneme for the VOICE while the screen keeps
+> what the generator wrote. Non-Latin glyphs map to **di-letter-sounds' own spellings**
+> (`/æ/`→"aaa", `/ʃ/`→"shh") — that pack never put IPA in a spoken line, and this is the same
+> move for generator-authored phonemes. **Latin-letter phonemes pass through untouched**
+> (`/k/`, `/p/` read correctly live, and rewriting `/j/` would mean guessing whether a
+> generation meant "yes" or "jump"). Applied to the two places a phoneme cannot be dropped:
+> the ask itself (`Change /ɪ/ to /æ/` → *"Change iii to aaa"*) and **tap-to-hear on BOTH
+> ports** — that channel had the identical defect and had never had a live run.
+> **phonics-blender KEEPS its walk** (running sounds together is the skill there, not a
+> scaffold) but now speaks it through the same renderer; its tests pass unchanged because
+> its fixtures are ASCII. One behaviour change worth knowing: a CVCE word carries
+> `sound: "//"` for silent-e, which is unsayable, so those words now drop the walk and the
+> tutor models the whole word — the degrade is deliberate (`speakableWalk` → null).
+>
+> **✅ RESIDUAL SWAP-1 — FIXED 2026-08-09 in all three ports, and the diagnosis was the
+> interesting part.** The run's opener gave the greeting and how-to-play, then emitted
+> **`[DI_SWAP_ITEM]`** into its own speech, then said *"Now, let's try one. Start with 'at'.
+> Add /k/ to the beginning. What word?"* — not the scripted line — and only reached
+> *"Listen: at."* after a barge-in. Item 1 ran without its model. **The anti-echo warning was
+> already in the opening cue and it did not hold, because the warning was never the problem:
+> the CATALOG was asking the opening turn to do two jobs** — compose a how-to-play, then
+> recite a scripted line — and the model did the first and improvised the second.
+> **The fix is to delete the composing job, not to strengthen the warning:** the how-to-play
+> is now TEXT INSIDE the quoted line (`HOW_TO_PLAY` in each script; `itemCue(item, {opening,
+> howToPlay})`), so the opening turn's only job is the one every other turn has — speak this
+> exactly. The catalog directive is retitled *"THE OPENING LINE ALREADY SAYS HOW TO PLAY"*
+> and now only forbids adding to it. Landed in `phonicsBlenderScript.ts`,
+> `soundSwapScript.ts`, `wordFlipScript.ts`, both earlier components, and all three catalog
+> blocks; 8 new script assertions across the two earlier test files.
+> **Band gating differs by port and it is deliberate:** on ports 1-2 the how-to-play is a
+> Grade-K PROTOCOL statement (readers have it printed on screen) so it is passed only at K;
+> on word-flip the opening line is the DI MODEL of the rule, so every child hears it.
+> **⚠️ NOT yet heard live** — the fix ships into HUMAN-CHECKS #82/#83/#84, and #84 (f) is
+> the criterion written for it.
+>
+> **➡️ RESIDUAL SWAP-2 — an off-task utterance drew an off-script reply.** The child said
+> *"I'm going to go to the store."* and the tutor answered *"Alright, have fun and games!"*
+> before continuing correctly. **Progression was NOT corrupted** — the reply carries no
+> sentinel, so the reducer read no verdict, no correction was counted, and the next item went
+> out (this is the `no-verdict` path behaving exactly as designed, observed live). The defect
+> is only that the script says *speak nothing beyond these exact lines* and it chatted. Low
+> severity; fold into the same wording pass as SWAP-1.
+>
+> **✅ DI-1 CONFIRMED LIVE, and this is the best evidence the doctrine has.** Final item, the
+> ASR transcript reads **"sept"** and the tutor said **"Yes, sit."** — Live judged the AUDIO
+> in-band and was RIGHT where the transcript was wrong. *Word-matching is the reporting
+> channel, not the judge*, demonstrated in production rather than argued.
+>
+> **➡️ ITS MIC SITTING IS HUMAN-CHECKS #83, STILL OPEN — the run exercised the half that
+> cannot fail.** All 9 items were ADDITION and all 9 correct on the first attempt, so **the
+> correction branch never fired once.** Affirmations being affirmed cannot distinguish a
+> discriminating judge from a permissive one — the same trap #63 fell into. What is still
+> unproven is exactly what the row was opened for.
+> Two things no test can reach: (a) that the tutor refuses **the starting word said back**
+> — the signature error of this skill, and the one most likely to be mistaken for success
+> because it is fluent, confident and completely unchanged; (b) deletion answers are VC
+> words (`at`, `in`, `up`), **shorter than anything the bench has measured**. That is the
+> one honest standing-gate-1 residual on this port: the response CLASS is benched (one
+> short spoken word) but not at that length.
+>
+> **✅ PORT 3 SHIPPED — `word-flip`, 2026-08-09 (user-pulled).** The child sees the
+> counted-picture frame (one 🐕 "dog" → three 🐕🐕🐕 `___`), may tap the picture card to hear
+> the ONE-THING word, and SAYS THE PLURAL; the tutor models the rule on a noun this session
+> never asks about, names the one thing, says how many there are now, waits, judges the audio
+> in-band and its own affirmation is the advance. Deleted: **the three tap chips**, the whole
+> tap path, the `Start with Voice` / `Start tap-only` fork, the `voiceMode` toggle, `Next` /
+> `Finish`, and the 1600ms auto-advance `setTimeout`. Files: `WordFlip.tsx` (whole-file),
+> `wordFlipScript.ts` (new, hand-authored DISTAR), `catalog/literacy.ts` (`audioInput` + DI
+> tutoring block + contextKeys **5 → 3**), `gemini-word-flip.ts` (chips + the now-unrendered
+> `description` removed from the schema), `WordFlip.reader-fit.test.tsx` (rewritten onto the
+> new surface; it now carries the port's render gates too) and `__tests__/WordFlip.di-script.test.ts`
+> (new, 23). Gates: typecheck:lumina **0** · full tsc **803 = baseline**, zero errors in any
+> touched file · vitest **199 files / 2568 passing** · both §1 greps clean · **3/3 template
+> keys resolve** · **2 revert-bites, both bit** (6 failures).
+>
+> **⚠️ THE COSTUME AND THE LEAK WERE THE SAME OBJECT, and that is this port's finding.**
+> Ports 1 and 2 each had a costume *under* their defects; here one deletion closed both
+> gates at once. The chips were *"the answer, the bare singular, and the over-regularized
+> form"*: tapping "dogs" out of three printed words is READING (a child who cannot form a
+> plural taps it correctly every time) **and** the chip PRINTED THE ANSWER on screen. The
+> catalog defended them by noting a pre-reader cannot read them — **Grade 1 can**, and the
+> band gate was doing the work a leak gate should have been doing. Both error shapes survive
+> where they belong: named in the judging contract as answers that look right and are not.
+>
+> **⚠️ A THIRD CUE SHAPE, and it confirms the split rather than a template.** phonics-blender
+> models the answer; sound-swap models nothing before the ask; **word-flip models the RULE on
+> a different noun** — *"One hat, two hats — when there is more than one, you say the new
+> word"* — chosen in code (`pickModelNoun`) so it is never a word the session goes on to ask
+> about. A rule shown on a different word is taught, not given away.
+> **The hand-over also had to change, and this is the load-bearing wording decision:** the
+> family's *"Your turn. What word?"* is AMBIGUOUS here — after *"Now there are three"* a
+> child can answer *"dog"*, name the picture, and be technically right. It is
+> `nameTargetSound`'s ruling arriving a second time (*an ambiguous ask is not a harder task,
+> it is a broken one*), so the ask ends *"Your turn. Three what?"*, which has exactly one
+> correct English completion.
+>
+> **✅ PORT 3 DRIVEN LIVE — session `5269fc87d6da`, 2026-08-10, 5/5 first try, 1m24s — and
+> it found the defect the whole lane had mis-attributed.** Ledger: 5 `[DI_FLIP_ITEM]` + 1
+> `[DI_FLIP_COMPLETE]`, `superseded: 0`, `wedged: false`, `state_attached` 1→5, every
+> advance an affirmation, no leaked plural across 5 items.
+> **DI-1 got two more data points, both strong:** ASR read `'trunks'` → *"Yes, trucks."*;
+> ASR read `'Herz'` → *"Yes, hats."* Judged from the audio, right where the transcript was
+> wrong. **A phrase answer was affirmed** (`'four stars'` → *"Yes, stars."*), which is the
+> contract behaving as written. **`pickModelNoun` earned its existence live:** the session's
+> items were truck/star/cloud/bird/**hat**, and the opener correctly modelled on *"One cup,
+> two cups"* — a hardcoded example noun would have modelled the exact word item 5 asks about.
+> **SWAP-2 did not reproduce** (an off-task utterance drew no chatter this time).
+>
+> **⚠️ DI-GREET-1 — THE TRUE ROOT OF SWAP-1, AND THE EARLIER FIX ADDRESSED HALF OF IT.**
+> The scripted opener held on its own terms — no bracket tag was spoken, and the tutor did
+> begin the exact scripted line. It still failed, for a cause upstream of anything in the
+> script or the catalog:
+> `lumina_tutor.py` queues **"Greet the student warmly…" with `end_of_turn=True` on every
+> fresh connect**, so Gemini takes a turn the instant the socket opens. A DI pack's first
+> cue arrives seconds LATER — the client is still waiting on the microphone (`prepareLive`
+> awaits connect, then the mic, then calls `startRun`). Measured on this run: greeting turn
+> at **0.8s → 15.7s**, scripted opener sent at **16.4s**. Worse, the improvised turn ended
+> with **the tutor's own question** (*"What do you see on the 'many' side?"*); the child
+> answered THAT at 18.7s, which barged in 1.2s into the scripted line, so **only the model
+> half — "One cup, two cups" — was ever spoken and item 1 ran with no question at all.**
+> Re-reading sound-swap's run confirms the same mechanism one primitive earlier: its first
+> turn was *"Hi there! I'm so excited to play some word games with you… I'll say a word
+> and…"* — the greeting turn absorbing the catalog's how-to-play directive.
+> **So SWAP-1's diagnosis was half right.** Deleting the "compose a how-to-play" directive
+> removed one JOB from that turn; it could not remove the TURN, because the backend is what
+> asks for it. *A prompt-level fix cannot close a transport-level defect.*
+> **FIX (shipped 2026-08-10): `owns_opening` on the connect payload.** Backend:
+> `should_queue_greeting(owns_opening, resumption_handle)` — extracted as a module-level
+> predicate precisely because the inline `if` was untestable, which is part of why this
+> survived two live runs. Client: `PrimitiveContext.owns_opening`, forwarded in the
+> standalone authenticate payload and set by **all eight packs that script their opener** —
+> `phonics-blender`, `sound-swap`, `word-flip`, `di-letter-sounds`, `di-word-reading`,
+> `di-shapes`, `di-math-facts`, `di-sentence-reading`. **Scope fence, deliberately narrow:**
+> `curator-brief` and every ordinary tutoring surface still greet, and they read well live
+> (*"Hey there! I'm ready to help you explore these big machines."*) — 4 new backend units,
+> one of which exists only to pin that. Gates: backend **26F/126P** (documented baseline
+> 26F/122P + the 4 new) · typecheck:lumina **0** · tsc **803 = baseline**, 0 in any touched
+> file · vitest **199 files / 2568** · 1 revert-bite, bit.
+>
+> **✅ PORT 4 SHIPPED — `cvc-speller`, 2026-08-10 (user-pulled), and it is the first port whose
+> finding is a LEAK rather than a clock.** Deleted: the push-to-talk spoken-capture beat, the
+> 1400ms auto-advance timer, the 500ms say-the-word timer, `Check Spelling`, `Next Word` /
+> `Finish` / `Skip →`, `MAX_ATTEMPTS` and the attempt-counted scaffolding ladder, the two vowel
+> option buttons and the two sort buckets. Files: `CvcSpeller.tsx` (whole-file),
+> `cvcSpellerScript.ts` (new, hand-authored DISTAR), `catalog/literacy.ts` (`audioInput` + DI
+> tutoring block + contextKeys **12 → 3** + description/constraints/evalMode labels rewritten),
+> `gemini-cvc-speller.ts` (three dead schema fields retired), `__tests__/CvcSpeller.di-script.test.ts`
+> (new, 34) and `__tests__/CvcSpeller.reader-fit.test.tsx` (rewritten onto the new surface, 11),
+> plus `problem_type_registry.py` β-descriptions and the authoring-app catalog snapshot.
+> Gates: typecheck:lumina **0** · full tsc **803 = baseline**, zero errors in any touched file ·
+> vitest **200 files / 2609 passing** · both §1 greps clean · **3/3 template keys resolve** ·
+> **5 revert-bites, all bit** · **real-pipeline probes 5/5**.
+>
+> **⚠️ TWO OF THE THREE MODES DIED BY THE ANSWER-LEAK GATE, NOT BY THE TIMER, and that is this
+> port's contribution.** The census had this primitive filed under "stopwatch + push-to-talk", and
+> both were real — but underneath, `fill_vowel` offered two vowel buttons ("a · apple" / "e · egg")
+> and `word_sort` offered two buckets with the same captions. **In both, ONE OF THE TWO PRINTED
+> OPTIONS IS THE ANSWER**, captioned with its keyword, and a Grade 1 child can read it: word-flip's
+> chips, a second time, in a primitive nobody had flagged for it. It also made the task
+> recognition — a child who cannot isolate the middle sound of "cat" taps correctly half the time.
+> Both answers are now SPOKEN (the middle sound). **Worth checking on every remaining port: an
+> option pair is a chip list with two entries.**
+>
+> **⚠️ `spell_word` STAYS IN THE HANDS, and refusing to voice-ify it is the other half of the
+> ruling.** Three ordered slots out of a distractor-populated bank is ~1-in-60, so it is not a
+> costume; and ENCODING (sound → letter) is the whole reason this primitive is not a duplicate of
+> phonics-blender — porting it to speech would have deleted its own curriculum home. So the
+> deletion went to the CHECK BUTTON and the stopwatch instead: **the third letter landing is the
+> commit**, `submitGestureAttempt` carries what was built, and the tutor's verdict is the advance.
+> **The gesture anchor therefore has its first production caller, and the KEEP ruling is now
+> earned rather than argued.** Two integration facts the first caller found, both handled and
+> commented in `CvcSpeller.tsx`: (a) a stray voice turn while the child builds opens an attempt the
+> tutor was told not to answer, so `no-verdict` and `resync` are IGNORED on a build item — never
+> re-ask over a board a child is still filling; (b) if that stray attempt times out before the
+> build cue is sent, the verdict lands as **`unanchored-verdict`**, not `verdict`, and dropping it
+> would wedge the lesson on a board that cannot be committed twice — so it is applied when, and
+> only when, a build is awaiting judgment.
+>
+> **⚠️ THE "HEAR IT" BUTTON WAS AN ANSWER LEAK ON DEMAND, and it had shipped for months.** Its tap
+> ladder escalated hear → stretch → **`[ISOLATE_VOWEL]`** — *"Listen to just the middle sound: /a/…
+> That's the /a/ sound, like in apple."* On `fill_vowel` and `word_sort` that IS the answer, spoken,
+> on request, with no attempt required. Tap-to-hear now says the word and stops; segmentation lives
+> only in the correction, where it is earned. `[CONFIRM_SOUND]` went the same way — it made the
+> tutor the answer-checker (place a letter, hear its sound, compare) during the child's own
+> working time.
+>
+> **A FOURTH CUE SHAPE — and it is sound-swap's, which is the useful part.** The model is the
+> stimulus only; the move is modeled in the correction. So the three shapes seen so far are not
+> per-port: they answer *"is the answer reproduction?"*, and two packs can share an answer. What is
+> genuinely new is **a SILENCE contract** — a `spell-word` item cue carries no judging contract at
+> all, because there is nothing to judge, and instead spells out the four things a helpful model
+> with an open mic and three visible boxes would otherwise do (repeat the word, name a letter,
+> spell it, narrate). Two other per-skill decisions: the hand-over is **"Say the middle sound."**
+> (`"What word?"` after `"Listen: cat"` is answered honestly with *"cat"* — the ambiguous-ask
+> ruling, third use), and the correction **FADES** across its two allowed uses (sound only, then
+> sound + letter) rather than repeating, which is what makes a second attempt worth having.
+>
+> **⚠️ THE HOW-TO-PLAY IS SPOKEN AT EVERY GRADE HERE, diverging from ports 1-2 deliberately.** They
+> band-gate it to K because a reader sees the protocol printed on screen. This primitive has THREE
+> actions and a blended session interleaves them (probe 5 drew all three in one session), so "what
+> to do" is not static: it is re-spoken whenever the ACTION changes. A Grade 1 child who has been
+> saying sounds for three items and is then handed letter boxes has no other channel.
+>
+> **⚠️ THE CONSTANT-ANSWER DEFECT — FILED, THEN USER-CORRECTED THE SAME DAY, AND THE REAL CAUSE
+> WAS A FORKED LETTER-GROUP PROGRESSION.** The port made visible that `fill_vowel` pinned every
+> word to one vowel, so the spoken answer was identical every item. I filed it as defensible DISTAR
+> massed practice. **The user saw a real draw — `sat, pat, mat, map` — and rejected the framing:**
+> *"vowel focus feels too narrow… i feel like in my curriculum service you will be able to find
+> examples of letter groups, i would borrow from that instead."* That was right, and the diagnosis
+> underneath it is the more valuable finding.
+>
+> **`cvc-speller` had FORKED the shared phonics progression, and the fork was invisible until the
+> answer became audible.** `PRD_KINDERGARTEN_PHONICS_AND_ALPHABET.md` defines a four-group
+> cumulative progression and names `letter-spotter`, `letter-sound-link`, `letter-tracing` **and
+> `cvc-speller`** as its consumers. The first three ship identical copies (group 1 = `s a t i p n`,
+> which **carries two vowels**). cvc-speller's private `LETTER_GROUP_SETS` was **consonant-only** —
+> group 1 = `s t m p`, with `m` pulled forward out of group 2 and `n` missing — and it re-added
+> exactly one vowel through `vowelFocus`, which **defaulted to `short-a` on any topic that did not
+> literally match `/short[ -]?[aeiou]/`**. Those two together left a group-1 lesson a legal word
+> space of roughly nine words. **The pool was exhausted by design, not by chance**, which is why
+> three of four words shared a rime.
+>
+> **The curriculum settles the scoping question, and it does not ask for a vowel cap.**
+> `backend/data/detailed_objectives_language-arts.csv`: `LA001-03-B` names all five short vowels
+> outright (*"Match short vowel sounds (a, e, i, o, u)…"*), and *"Spell simple CVC words"* carries
+> no vowel scoping at all — its one named narrowing is **WORD FAMILY** (*"-at: cat, hat"*), a
+> different axis. So a DEFAULT single-vowel focus was a cap below stated lesson intent
+> ([[feedback_trust-intent-over-hardcoded-caps]]), and the draw that exposed it was an accidental
+> word-family set produced by starvation rather than by intent.
+>
+> **FIX (2026-08-10, same slice).** New `service/literacy/letterGroups.ts` holds the canonical
+> progression. Scope is now **letterGroup = the ceiling** (cumulative, carries its own vowels) and
+> **vowelFocus = a narrowing applied only when the objective names a vowel**; `resolveCvcVowelFocus`
+> returns null instead of short-a and now reads `intent` as well as `topic`; `resolveCvcLetterGroup`
+> defaults to group 3 (all five short vowels, per LA001-03-B) and **a named vowel can only RAISE the
+> group, never lower it**. `vowelFocus` is optional on `CvcSpellerData` and `CvcSpellerMetrics`, and
+> the vowel badge renders only when one was actually named. word_sort's contrast vowel is drawn from
+> the group's own vowels (group 1 contrasts a/i — exactly what the progression introduces it for).
+> **`enforceCvcScopeAndVariety` enforces scope + rime variety in CODE**, because the prompt asked for
+> both and the model drifted anyway: a live probe caught `jam` (j outside group 3), `fox` (x), and
+> **`pat` sitting next to `sat`** — the reported defect, reproduced and caught. It can only remove,
+> and it refuses to cut below 3 items, warning instead of silently truncating.
+> Gates: typecheck:lumina **0** · tsc **803 = baseline** · vitest **203 files / 2659** ·
+> **7 revert-bites, all bit** · **real-pipeline probes 6/6**, with the fix visible in the words:
+> unscoped `fill_vowel` went `sat pat mat map` → **`cat hen pig dog bug`**; group 1 yields
+> `sat pin pan sit`; a focused *"short a"* set is still massed but now `cat map bag fan`; and a
+> group-1 lesson asking for *"short o"* correctly RAISED itself to group 3.
+>
+> **This also re-bases the β story honestly.** `word_sort` (β 3.5) is harder than `fill_vowel`
+> (β 1.5) because its pool deliberately mixes two vowels *against a focus*, not because one used
+> buckets and the other used buttons; `problem_type_registry.py` descriptions say so, βs unchanged.
+>
+> **➡️ TWO ITEMS FILED OUT OF THIS.** (a) **Re-point `gemini-letter-spotter.ts` and
+> `gemini-letter-sound-link.ts` at `letterGroups.ts`** — they still hold private copies, differing
+> from each other only in group 4's tail (`q` vs `qu`). Pure dedupe, but a sweep across two
+> primitives with their own live tests, so pilot-then-sweep says not in this slice. A test in
+> `cvcSpellerScope.test.ts` pins the shared values against their copies so drift fails loudly.
+> (b) **WORD FAMILY as a real narrowing axis** — the curriculum names it and we do not implement it;
+> it is the coherence a set should get instead of accidental starvation.
+>
+> **DEAD LEVERS, asserted dead not ignored.** `vowelOptions` (fill_vowel's printed pair),
+> `sortBucketLabel` (columns are read off the word's own middle letter at affirmation, so a
+> generated label could only ever desync) and `commonErrors` (correction wording is hand-authored)
+> are gone from the generator schema. **`fill_vowel` also loses its axis-2 lever entirely** — a
+> decoy only exists where a child picks between printed options — exactly as sound-swap lost
+> `nameTargetSound`. Its within-mode difficulty now rides on axis 1 alone (at `easy` the tutor
+> repeats the word with its vowel held, *"caaat"*). `word_sort` keeps axis 2 and it now governs the
+> POOL rather than a label, which is where it was always doing the real work; `spell_word` keeps
+> both axes intact (probe: 1 distractor at `easy` → 5 at `hard`).
+>
+> **✅✅ DRIVEN LIVE 2026-08-10, AND IT CLOSED THE LANE'S BIGGEST DEBT: THE CORRECTION BRANCH FIRED.**
+> A full 5-item `spell_word` session, 3m47s: **cat 100% (1 attempt) · hen 100% (1) · pig 100% (1) ·
+> dog 67% (2 attempts) · bug 33% (3 attempts)**. User: *"the program worked great after that even
+> on errors."*
+> **`dog` took one correction and `bug` took two and then hit the cap and moved on** — so after
+> four ports and two prior live runs that produced 9/9 and 5/5 first-try and NOT ONE correction,
+> the correction branch, the correction wording, and `MAX_CORRECTIONS_PER_CHALLENGE` + `moveOnCue`
+> are all now observed working. **The judge is discriminating, not permissive** — the question
+> #82/#83/#84 were opened for, answered on port 4's surface.
+> **The gesture anchor is PROVEN in production:** every advance was a spoken verdict on the third
+> letter landing, with no Check button and no timer. Its deletion clock is now moot twice over.
+> **The letter-group fix held live too** — the session drew `cat hen pig dog bug`, five different
+> vowels, where the same lesson had previously produced `sat pat mat map`.
+>
+> **⚠️ AND IT FOUND A SHARED-ENGINE BUG THAT HAD BEEN LIVE FOR FOUR PORTS — `verdictTimeoutMs` was
+> DEAD whenever the microphone was open.** Reported as *"if i say the word or spell the word, it
+> doesnt move forward even after i click the tiles"*, with a backend log that named the mechanism:
+> item 1 affirmed and advanced normally; on item 2 the child said **"h e n"** aloud; from then on
+> **no `[DI_CVC_BUILD]` cue was ever sent**, while `[SAY_WORD]` kept flowing.
+> **Diagnosis.** `[SAY_WORD]` is a direct `ctx.sendText`; the build cue goes through the loop's cue
+> queue, and `schedulePendingCue` refuses to send while an attempt is open. The child's stray
+> utterance opened a voice attempt, and the ONLY thing that can close an attempt the tutor never
+> answers is the verdict-timeout tick — which was bound to `dispatch`:
+> `}, [enabled, dispatch]);` with `TICK_MS` = 1000. `dispatch` → `schedulePendingCue` → `ctx`, and
+> **`LuminaAIContext` builds its value as a plain object literal with no `useMemo` while
+> `setMicLevel` fires on every audio frame**, so the provider re-renders every ~10-40ms, the effect
+> re-ran every time, and a 1000-millisecond interval was torn down and recreated faster than it
+> could ever fire. Not once, for a whole run. One word said aloud mid-build jammed the lesson
+> permanently.
+> **Why four ports missed it:** in every earlier pack the tutor ALWAYS speaks, so verdicts arrive
+> through `tutor-text` and off-script through `tutor-quiet` — the tick is the one path they never
+> need. `spell_word` is the first shape where the tutor is deliberately SILENT, so it is the first
+> place the tick was load-bearing. **A shape change, not a code change, is what exposed it.**
+> **Fix:** the tick effect depends on `enabled` alone and calls through `dispatchRef` (which is
+> reassigned every render), so it is created once per run and never rebound to an identity that
+> churns. `useJudgedSpeechLoop.tick.test.tsx` (new) reproduces it — it renders 40 times, as one
+> second of mic frames would, and asserts the interval is created ONCE; **revert-bitten with the
+> original `[enabled, dispatch]` deps and it bites.** Every existing test rendered once, which is
+> precisely why nothing caught this.
+>
+> **➡️ RESIDUAL (filed, not fixed): a stray utterance mid-build now costs up to 8s.** With the tick
+> alive the jam self-heals, but the build cue still waits out `verdictTimeoutMs` behind an attempt
+> the tutor was told to ignore. The principled fix is for `submitGestureAttempt` to ABANDON an open
+> voice attempt — on a build item a committed manipulation IS the answer, and the reducer's
+> "a gesture never supersedes an attempt" rule was written for packs where speech is the answer.
+> Deliberately not shipped in the same slice as the root fix: the drive that found this ran clean
+> afterwards, so the extra change would be an unverified engine-semantics edit riding on a verified
+> one. Do it with a bench or a second drive.
+>
+> **➡️ WHAT #85 STILL OWES.** The drive exercised `spell_word` end to end (and (i), talk-while-
+> building, is what found the bug). Untouched: the SPOKEN modes' deliberate-wrong answers — the
+> whole word said back, a letter NAME instead of a sound, a wrong-position sound. Those are ~90
+> seconds and they are now the only unproven half.
+>
+> **⚠️ FAMILY-WIDE DEBT FOUND, NOT INTRODUCED: the tutor-live harness knows nothing about the DI
+> modality.** `run_tutor_live.py` contains **zero** `DI_*` tags; `build_cvc_speller_journey`,
+> `build_phonics_blender_journey` and friends still replay the click-era `sendText` messages and
+> push 12-13-key context bags against 3-4-key catalogs. All four ports shipped with their journeys
+> untouched, so a green run there is evidence about a prompt that no longer exists. The
+> cvc-speller journey is now banner-marked STALE in its own docstring rather than silently
+> false-greening; **teaching the harness a judged-loop journey shape is one job for all four packs,
+> queued against the tutor-live harness — not a per-port fix.** Separately,
+> `curriculum-designer-app/scripts/extract-catalog.ts` is ~70 primitives out of date AND mis-parses
+> at least one entry (it emitted `"id": "In 1903, two brothers from Ohio…"`), so the cvc-speller
+> row was hand-patched instead of regenerated; the extractor defect is filed here.
+>
+> **📄 MIC DRIVING CARD: `qa/HANDOFF-di-mic-sitting-2026-08-10.md`** — #82/#83/#84 in order,
+> the exact wrong answers to say, and the shared DI-GREET-1 first-10-seconds check. Handed
+> to the user 2026-08-10 to drive separately while port 4 is built.
+>
+> **➡️ THE CORRECTION BRANCH IS STILL UNHEARD AFTER THREE RUNS, AND THAT IS NOW THE LANE'S
+> BIGGEST DEBT.** #83 ran 9/9 first try; #84 ran 5/5 first try; #82 undriven. Every
+> affirmation so far is compatible with a permissive judge — including the two DI-1 wins
+> above, which is uncomfortable but true. **The next sitting must answer deliberately wrong**
+> (the singular said back; a near neighbour; "dogses"). ~90 seconds per row.
+>
+> **➡️ NEXT = `cvc-speller` (port 4).** It ends the gesture-anchor question (`spell_word`'s
+> Elkonin boxes are its first real customer), and it still carries a PTT mic + 7 advance
+> affordances. Letter NAMES must not become the answer (blocked class — `fill_vowel` is
+> spoken, `spell_word` is a placement). It is the biggest and riskiest port left, so the
+> honest read is that **the mic sitting is now the higher-value move**: three ports are
+> shipped and the correction branch of the template has still never been heard.
+> `phoneme-explorer` owes a portfolio call on `isolate`; `rhyme-studio` stays behind a bench
+> sitting (production is open-set). Full order + blocked set: handoff §5.
+>
+> **ENGINE — the deletion clock on `submitGestureAttempt` has now run BOTH its ports, and
+> the answer is KEEP.** The handoff's rule was *"if the next two ports are also verbal,
+> propose deleting it"*; ports 2 and 3 were both verbal, so the clock has expired — and it
+> was measuring the wrong thing. Every remaining gesture customer is still queued and
+> unported (`cvc-speller`'s `spell_word` Elkonin boxes, `syllable-clapper`, `word-sorter`,
+> `sentence-builder`, `story-map`), so **the count reflects port ORDER, not demand**, and
+> port 4 is the customer. It stays, with its one non-obvious rule intact: the cue is sent
+> BEFORE the attempt opens, because `schedulePendingCue` refuses to send while an attempt is
+> open — an attempt opened at commit time would block the very cue meant to provoke its
+> verdict. `submitGestureAttempt` handles the ordering; do not hand-roll it.
+>
+> **CENSUS, updated after port 3:** tutor-driven **3** (`phonics-blender`, `sound-swap`,
+> `word-flip`) · stopwatch **5** (`cvc-speller`, `letter-sound-link`, `rhyme-studio`,
+> `picture-vocabulary`, `phoneme-explorer`) · click-to-advance **3** · no voice **20**.
+> Separately, **4 primitives still make the child press a mic button before answering**
+> (`cvc-speller`, `interactive-book`, `letter-sound-link`, `rhyme-studio`) — an axis rev 1's
+> census never measured, and already a violation of the standing open-mic ruling. 3 of 31
+> down; the three ported are the only three with no advance timer anywhere.
+>
+> **✅ SUCCESS GATES, both checkable per port (handoff §1):** (a) no advance timer, no PTT
+> hook, no next/check button anywhere in the ported path; (b) nothing names the answer
+> before the child gives it. The pilot shipped a printed target word AND a picture of it,
+> and only the live run caught them.
+>
+> **➡️ `/add-di-loop` IS NOW EXTRACTABLE, and three ports have measured exactly where the
+> seam is.** Handoff §3's five steps held verbatim on all three; **everything that varied
+> was inside step 1, the SCRIPT**, and the variation is a genuine per-skill question, not
+> style: in phonics-blender the model IS the answer (blending is reproduction), in
+> sound-swap it must NOT be (the answer is a word the child builds), and in word-flip the
+> RULE is modeled on a different noun while the answer is withheld. Three ports, three cue
+> shapes. A skill carrying any one of them as a template would have shipped the answer
+> inside the ask on the other two. **So the skill carries: the component skeleton (port 3's
+> component is port 2's with the nouns changed), the catalog checklist, the contextKey trim,
+> the two §1 gates, and the scripted-opener rule from SWAP-1 — plus a CHECKLIST OF QUESTIONS
+> for the script, never a cue template.** Questions the three ports actually answered: may
+> the model contain the answer? what looks like an answer and is not, for THIS skill? is the
+> hand-over unambiguous, or does the stimulus itself answer it? Queue: write it after the
+> mic sitting, so the checklist ships a verified template rather than an assumed one.
+>
+> **`letter-spotter` stays BLOCKED regardless** — letter NAMES are an unbenched homophonic
+> class ([[project_letterspotter-voice-blocked]]). `decodable-reader` / `read-aloud-studio`
+> are blocked on passage-length fluency having no judge.
+>
+> **Doctrine that must survive the port** (all previously ruled): open mic over turn windows;
+> the mic is never gated on tutor-busy; the tutor is quiet by default; cue on the FIRST audio
+> frame; no visible timers; Live judges the AUDIO in-band — word-matching is the reporting
+> channel, not the judge. `/add-voice-control` survives as the interim non-DI rung;
+> `/add-spoken-judge` was RETIRED 2026-08-09 and its doctrine lives in
+> `docs/SPOKEN_INTERACTION_DOCTRINE.md`.
+
 > **ORDERING RULING (user, 2026-08-01): PUSH DEVELOPMENT — supersedes the 07-27
 > pull order below.** After two weeks of testing-heavy DI iteration the user
 > wants sessions spending tokens on PLATFORM CAPABILITY, favoring work that does
@@ -182,6 +754,15 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
     the failure mode a floor gate adds that no previous design had.
     **Do not ship this in the same slice as anything else** — it is backend +
     context transport and shares no file with the four other uncommitted slices.
+    **➡️ EVIDENCE UPDATE (filed by `/pm` 2026-08-10):** the real-lesson run
+    `qa/tutor-reports/lesson-live-2026-08-10-excavators.md` (16m50s, 8 primitives)
+    already carries post-fix floor-gate numbers — **27 batches, `wedged 0 /
+    superseded 0`, one 8,650-char attachment batched cleanly, tutor silent through
+    53% of student turns on a hot mic** — against the measured pre-fix 33 sends /
+    9 min with 3 self-killed turns. Owed items (i) and (iii) can cite that run;
+    what remains genuinely unproven is **(iv) the `wedged` WATCHDOG** — a
+    `wedged: 0` run is exactly the evidence that cannot show it fires. The
+    closeout is now a documentation slice plus one watchdog probe.
 
 14. **di-shapes — PACK #5 BORN 2026-08-06 (`cabb3f0`, user modality call:
     "this is a triangle — what is this?"). L0 live loop UNVERIFIED →

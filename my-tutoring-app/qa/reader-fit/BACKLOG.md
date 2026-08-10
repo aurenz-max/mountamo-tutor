@@ -9,6 +9,49 @@ LA/Math/SS shape (reports in `qa/topic-traces/g1-*-2026-08-01.md`).
 
 ## Queue
 
+### 18. PRE-READER PRIMITIVE SELECTION — the manifest opens phonics/sight-word lessons on the wrong KIND of primitive — filed `/pm` 2026-08-09 from the ordering lane
+
+> **This is a HANDOFF, not a discovery.** The lesson-ordering lane measured it,
+> named this lane's executor, and closed — but nobody ever wrote it into a queue.
+> It existed only inside `qa/topic-traces/order-audit-2026-08-08.md`. Filing it
+> here so it survives; the ordering lane is closed and will not carry it.
+>
+> **The measurement.** After the objective-ordering fix (which lifted math
+> 2.67 → 3.93/5), **phonics stayed at 3.22/5 with a 56% wrong-opening-activity
+> rate** — the worst domain on the board, and it did not move, because it is not
+> an ordering defect. The named case: **`vocabulary-explorer` opens a sight-word
+> lesson on definitions and etymology, for pre-readers.** The right order over the
+> wrong primitives is still the wrong lesson. Present in the baseline too, so this
+> is not a regression from the ordering fix.
+>
+> **Two topics fail at 2/5 under BOTH arms of the manifest A/B, every run** — they
+> are the same class and are the concrete pull (`manifest-modality-ab-2026-08-08.md`
+> § "What is actually left"):
+> - `reading sentences with sight words` (A: 3,2,3)
+> - `place value to 100` (A: 2,2,3)
+>
+> **⚠️ Do NOT reopen ordering for these.** Both downstream ordering arms were
+> measured and rejected, and the report says explicitly that changing the order
+> here is churn. This is a *selection* question: which primitive should carry a
+> pre-reader sight-word objective at all.
+>
+> **Executor: `/topic-fidelity` on `vocabulary-explorer` first** (does it honor a
+> sight-word intent for a non-reader, or does it always produce a dictionary
+> entry?), then `/reader-fit` if the defect turns out to be band rather than
+> intent. Probe before scoping — this lane's own carried lesson is that a band
+> failure can be a CONTENT gap only the generator closes.
+>
+> **Known judge noise, budget for it:** part of the 56% is judge ambiguity — it
+> named `phoneme-explorer → di-letter-sounds` and the exact inverse in different
+> runs. Treat the 2/5 topics as the signal, not the aggregate rate. **And the
+> `dependency violations` metric (58%, barely moved) is UNEXAMINED** — it may be a
+> maximalist judge rather than a defect. Look before treating it as a target.
+>
+> **⚠️ The instrument is gone.** `npm run audit:order` was deleted 2026-08-09 with
+> the rest of the A/B machinery (user call). The numbers above are preserved in the
+> reports, but re-measuring means rebuilding a judge. Prefer per-topic
+> `/topic-trace` + `/topic-fidelity` evidence over trying to move an aggregate.
+
 ### 17. THE OWED PORTFOLIO DECISION — 3 primitives the manifest can send assessment demand to that **cannot measure anything** — filed `/pm` 2026-08-08
 
 > **Filed because this queue had NO TOP.** Items 15 and 16 both closed, and the
