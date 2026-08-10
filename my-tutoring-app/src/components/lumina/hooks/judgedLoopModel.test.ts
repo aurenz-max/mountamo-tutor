@@ -63,6 +63,67 @@ describe('scanForSentinel', () => {
   });
 });
 
+describe('reduceJudgedLoop — gesture-anchored attempts', () => {
+  // The anchor that unlocks the tutor-owned clock for primitives whose answer
+  // is a MANIPULATION (phonics-blender's tile build, sorts, placements). Until
+  // this existed, only speech could open an attempt, so every such primitive
+  // was stuck with a Check button and a `setTimeout`.
+
+  it('opens an attempt a verdict binds to, exactly like a voice turn', () => {
+    const { state, emissions } = drive([
+      { type: 'arm' },
+      { type: 'gesture-close', at: 4000 },
+      { type: 'tutor-text', text: "Yes, that's cat. What word?", at: 4500 },
+    ]);
+    expect(emissions[0].kind).toBe('attempt-open');
+    expect(emissions[0]).toMatchObject({ attempt: { source: 'gesture' } });
+    const verdict = emissions.find(e => e.kind === 'verdict');
+    expect(verdict).toMatchObject({ judgment: 'affirmed', attempt: { source: 'gesture' } });
+    expect(state.attempt).toBeNull();
+  });
+
+  it('carries a synthetic turn so the verdict timeout still runs off the commit instant', () => {
+    const { emissions } = drive([
+      { type: 'arm' },
+      { type: 'gesture-close', at: 4000 },
+      { type: 'tick', at: 4000 + config.verdictTimeoutMs + 1 },
+    ]);
+    expect(emissions.find(e => e.kind === 'verdict')).toMatchObject({ judgment: 'no-verdict' });
+  });
+
+  it('is inert while disarmed (DI-3 holds for hands as well as voice)', () => {
+    const { state, emissions } = drive([{ type: 'gesture-close', at: 4000 }]);
+    expect(emissions).toEqual([]);
+    expect(state.attempt).toBeNull();
+  });
+
+  it('NEVER supersedes an open voice attempt — fiddling with tiles mid-verdict must not strand it', () => {
+    // A voice attempt is awaiting judgment; the child keeps touching tiles. If
+    // the gesture replaced the attempt, the tutor's verdict would land on the
+    // wrong anchor and the answer they actually spoke would be lost.
+    const { state, emissions } = drive([
+      { type: 'arm' },
+      { type: 'voice-close', turn: turn() },
+      { type: 'gesture-close', at: 3000 },
+    ]);
+    expect(emissions.filter(e => e.kind === 'attempt-open')).toHaveLength(1);
+    expect(emissions.some(e => e.kind === 'attempt-superseded')).toBe(false);
+    expect(state.attempt?.source).toBe('voice');
+  });
+
+  it('a corrected build reports the correction branch, leaving progression to the consumer', () => {
+    const { emissions } = drive([
+      { type: 'arm' },
+      { type: 'gesture-close', at: 4000 },
+      { type: 'tutor-text', text: 'My turn: not /a/ … /k/ … /t/ — listen.', at: 4500 },
+    ]);
+    expect(emissions.find(e => e.kind === 'verdict')).toMatchObject({
+      judgment: 'corrected',
+      attempt: { source: 'gesture' },
+    });
+  });
+});
+
 describe('reduceJudgedLoop', () => {
   it('DI-1: a verdict binds to the voice-anchored attempt even when the transcript never arrives', () => {
     // Probe run 2026-07-19 n47–n49: /sss/ spoken over tutor audio, judged and
@@ -74,11 +135,11 @@ describe('reduceJudgedLoop', () => {
       { type: 'tutor-text', text: 'Yes, sss.', at: 3000 },
     ]);
     expect(emissions).toEqual([
-      { kind: 'attempt-open', attempt: { turn: turn({ duringTutorAudio: true }), transcript: null, transcriptAt: null } },
+      { kind: 'attempt-open', attempt: { source: 'voice', turn: turn({ duringTutorAudio: true }), transcript: null, transcriptAt: null } },
       {
         kind: 'verdict',
         judgment: 'affirmed',
-        attempt: { turn: turn({ duringTutorAudio: true }), transcript: null, transcriptAt: null },
+        attempt: { source: 'voice', turn: turn({ duringTutorAudio: true }), transcript: null, transcriptAt: null },
         misses: 0,
         verdictText: 'Yes, sss.',
       },

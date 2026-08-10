@@ -1,6 +1,56 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * CvcSpeller — DI modality. The Live tutor owns the clock in all three modes.
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - `fill-vowel` / `word-sort`: they hear the word and SAY THE MIDDLE SOUND
+ *    ALOUD into an open mic. The tutor says the word, waits, judges the audio
+ *    in-band, corrects contrastively, and its own affirmation is the advance.
+ *  - `spell-word`: they hear the word and PUT A LETTER IN EACH BOX. The third
+ *    letter landing is the commit; the tutor is told what they built, speaks
+ *    the verdict, and that verdict is the advance.
+ *
+ * WHAT CHANGED (qa/di/BACKLOG.md item 16, fourth literacy port after
+ * phonics-blender, sound-swap and word-flip). Deleted: the push-to-talk
+ * spoken-capture beat, the 1400ms auto-advance timer, the 500ms say-the-word
+ * timer, `Check Spelling`, `Next Word` / `Finish` / `Skip →`, the
+ * attempt-counted scaffolding ladder, `MAX_ATTEMPTS`, the two vowel option
+ * buttons and the two sort buckets. There is no advance timer anywhere in
+ * this file, and the §1 gate greps this header too — so the deleted hook and
+ * the deleted timer are named in prose rather than spelled out as tokens.
+ *
+ * ⚠️ THE COSTUME AND THE LEAK WERE THE SAME OBJECT ON TWO OF THREE MODES.
+ * `fill-vowel`'s two vowel buttons and `word-sort`'s two buckets each printed
+ * ONE OF TWO OPTIONS THAT INCLUDED THE ANSWER, captioned with its keyword
+ * ("a · apple"). That is word-flip's chips exactly: it makes the task
+ * recognition (a child who cannot isolate the middle sound taps correctly half
+ * the time) and it prints the answer for anyone who can read. Isolating a
+ * sound inside a spoken word is an oral act, so both answers are now oral.
+ *
+ * ⚠️ `spell-word` STAYS IN THE HANDS, and it is the gesture anchor's first
+ * production caller. Three ordered slots out of a distractor-populated bank is
+ * not guessable, and it is ENCODING — the thing that makes this primitive not
+ * a duplicate of phonics-blender. Porting it to speech would have deleted its
+ * own curriculum home. What went was the Check button and the stopwatch.
+ *
+ * ANSWER-LEAK RULE. The word, its picture and (in `spell-word`) the empty
+ * boxes are the stimulus and are shown. The middle sound and the spelling are
+ * the answer: nothing prints, offers or speaks them until the tutor has
+ * affirmed. `word-sort`'s two vowel columns are built out of answers ALREADY
+ * GIVEN — a column is labelled at the moment its first word is affirmed, never
+ * before. Tap-to-hear says the WORD and stops (the control it replaces
+ * escalated into isolating the middle sound on demand, which on two modes is
+ * the answer).
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines);
+ * no visible timers; tap-to-hear is never withdrawn; adult chrome is hidden
+ * for pre-readers.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -8,8 +58,7 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaPanel,
-  LuminaActionButton,
-  LuminaFeedbackCard,
+  LuminaChallengeCounter,
   LuminaMicListener,
   dropZoneStateClass,
   motion,
@@ -21,12 +70,22 @@ import {
 } from '../../../evaluation';
 import type { CvcSpellerMetrics } from '../../../evaluation/types';
 import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
+import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import {
+  buildVerdictCue,
+  completeCue,
+  itemCue,
+  moveOnCue,
+  pronounceCue,
+  spokenVowel,
+  vowelKeyword,
+  type CvcItem,
+  type CvcTask,
+} from './cvcSpellerScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -34,7 +93,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface CvcSpellerChallenge {
   id: string;
-  taskType: 'fill-vowel' | 'spell-word' | 'word-sort';
+  taskType: CvcTask;
   targetWord: string;
   /** Private generator trace; never rendered as student-visible copy. */
   remediationMove?: 'contrast_vowel' | 'phoneme_slots' | 'minimal_pair_sort';
@@ -43,27 +102,33 @@ export interface CvcSpellerChallenge {
   emoji: string;
   imageDescription: string;
   distractorLetters: string[];
-  /** Support-tier lever (spell-word + word-sort): show emoji/image self-check cue.
-   *  Withdrawn at the hard tier so the student decodes purely from the heard sounds.
-   *  Undefined (no tier) = treated as shown (default behavior preserved). */
+  /** Support-tier lever (spell-word + word-sort): show the emoji self-check cue.
+   *  Withdrawn at the hard tier so the student works purely from the heard
+   *  word. Undefined (no tier) = treated as shown. */
   showPictureCue?: boolean;
-  vowelOptions?: string[];     // fill-vowel: exactly 2 vowels
-  sortBucketLabel?: string;    // word-sort: which bucket (e.g. 'short-a')
-  commonErrors?: Array<{
-    errorSpelling: string;
-    feedback: string;
-  }>;
 }
 
 export interface CvcSpellerData {
   title: string;
-  vowelFocus: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
+  /**
+   * OPTIONAL narrowing, present only when the objective actually names a vowel.
+   * Absent means the session spans whatever vowels the cumulative letter group
+   * carries — which is the normal case, because the K curriculum's own CVC
+   * spelling objective carries no vowel scoping and its letter-sound objective
+   * names all five. It used to be required and defaulted to `short-a`, which
+   * made every unscoped lesson a short-a lesson and gave a spoken "which sound
+   * is in the middle?" task the same answer every item. See `letterGroups.ts`.
+   */
+  vowelFocus?: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
+  /** Cumulative letter group (1-4) — the scope CEILING, and it carries vowels. */
   letterGroup: 1 | 2 | 3 | 4;
   availableLetters: string[];
   challenges: CvcSpellerChallenge[];
+  gradeLevel?: string;
 
-  /** Within-mode support tier ('easy'|'medium'|'hard') — set by the generator from
-   *  config.difficulty. Tunes the live tutor's reveal policy; never changes the words. */
+  /** Within-mode support tier ('easy'|'medium'|'hard') — set by the generator
+   *  from config.difficulty. At `easy` the tutor repeats the word with its
+   *  vowel HELD before handing over; it never changes the words. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -75,14 +140,19 @@ export interface CvcSpellerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<CvcSpellerMetrics>) => void;
 }
 
+interface CvcSpellerProps {
+  data: CvcSpellerData;
+  className?: string;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
-// Child-facing labels: no phoneme slash-notation in the child's field (reader-fit
-// PRE contract); the tutor SPEAKS the sounds instead.
+// Child-facing labels: no phoneme slash-notation in the child's field
+// (reader-fit PRE contract); the tutor SPEAKS the sounds instead.
 const VOWEL_LABELS: Record<string, string> = {
   'short-a': 'Short A',
   'short-e': 'Short E',
@@ -91,23 +161,38 @@ const VOWEL_LABELS: Record<string, string> = {
   'short-u': 'Short U',
 };
 
-const VOWEL_KEYWORDS: Record<string, string> = {
-  a: 'apple', e: 'egg', i: 'itch', o: 'octopus', u: 'up',
+const TASK_BADGE: Record<CvcTask, string> = {
+  'fill-vowel': '🔤 Middle Sound',
+  'spell-word': '📝 Spell It',
+  'word-sort': '📥 Sound Groups',
 };
 
-const TASK_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
-  'fill-vowel': { label: 'Fill the Vowel', icon: '🔤' },
-  'spell-word': { label: 'Spell It', icon: '📝' },
-  'word-sort': { label: 'Sort by Sound', icon: '📥' },
-};
+/** Corrections the tutor may run on one item before the lesson moves on anyway.
+ *  A hard word resurfaces through distributed review, not by drilling a
+ *  frustrated five-year-old in place. */
+const MAX_CORRECTIONS_PER_CHALLENGE = 2;
 
-const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  'fill-vowel': { label: 'Fill the Vowel', accentColor: 'purple' },
-  'spell-word': { label: 'Spell It', accentColor: 'emerald' },
-  'word-sort': { label: 'Sort by Sound', accentColor: 'amber' },
-};
+/** Manual voice-activity mode: our amplitude detector brackets every learner
+ *  turn. Gemini's speech-likeness VAD is unusable for short spoken responses
+ *  (DI bench run-3 ruling). Also declared on the catalog entry so the lesson
+ *  path opens the shared session the same way. */
+const CVC_AUDIO_INPUT = { manual_activity: true };
 
-const MAX_ATTEMPTS = 3;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+type Stage = 'idle' | 'asking' | 'judging' | 'affirmed' | 'done';
+
+interface ChallengeOutcome {
+  id: string;
+  task: CvcTask;
+  solved: boolean;
+  corrections: number;
+  score: number;
+  seconds: number | null;
+}
+
+const scoreForCorrections = (corrections: number): number =>
+  corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
 // ============================================================================
 // Speaker Icon SVG
@@ -122,21 +207,13 @@ const SpeakerIcon: React.FC<{ className?: string; size?: string }> = ({ classNam
     strokeLinecap="round"
     strokeLinejoin="round"
     className={`${size} ${className}`}
+    aria-hidden
   >
     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity={0.3} />
     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
     <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
   </svg>
 );
-
-// ============================================================================
-// Props
-// ============================================================================
-
-interface CvcSpellerProps {
-  data: CvcSpellerData;
-  className?: string;
-}
 
 // ============================================================================
 // Component
@@ -146,7 +223,6 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   const {
     title,
     vowelFocus,
-    letterGroup,
     availableLetters = [],
     challenges = [],
     supportTier,
@@ -158,95 +234,76 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // -------------------------------------------------------------------------
-  // Challenge progress (shared hook)
-  // -------------------------------------------------------------------------
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  const gradeLevel = data.gradeLevel ?? 'K';
+  const ctx = useLuminaAIContext();
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.taskType,
-    phaseConfig: PHASE_CONFIG,
-  });
+  // ── State ────────────────────────────────────────────────────────
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [stage, setStage] = useState<Stage>('idle');
+  const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
+  const [running, setRunning] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [wordTapped, setWordTapped] = useState(false);
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
-
-  // -------------------------------------------------------------------------
-  // Domain-specific state
-  // -------------------------------------------------------------------------
-  // spell-word mode
+  // spell-word board
   const [slots, setSlots] = useState<(string | null)[]>([null, null, null]);
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(0);
+  const [boardFlash, setBoardFlash] = useState<'correct' | 'incorrect' | null>(null);
 
-  // fill-vowel mode
-  const [selectedVowel, setSelectedVowel] = useState<string | null>(null);
+  /** The middle LETTER just earned — post-answer only (answer-leak rule),
+   *  cleared the moment the next item opens. */
+  const [reward, setReward] = useState<string | null>(null);
 
-  // word-sort mode
-  const [sortedBucket, setSortedBucket] = useState<string | null>(null);
+  /** word-sort: the columns, built ONLY out of affirmed answers. */
+  const [sorted, setSorted] = useState<Array<{ id: string; word: string; emoji: string; vowel: string }>>([]);
 
-  // Shared UI state
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [spellFlash, setSpellFlash] = useState<'correct' | 'incorrect' | null>(null);
-  const spellFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [wordComplete, setWordComplete] = useState(false);
+  // Visual-only timer. It does NOT advance anything — it clears a highlight.
+  // Progression here has exactly one cause: a tutor verdict.
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Tracking
-  const [vowelErrors, setVowelErrors] = useState(0);
-  const [vowelCorrect, setVowelCorrect] = useState(0);
-  const [consonantErrors, setConsonantErrors] = useState(0);
-  const [consonantCorrect, setConsonantCorrect] = useState(0);
-  const [stretchUsedCount, setStretchUsedCount] = useState(0);
-  const [errorPatterns, setErrorPatterns] = useState<string[]>([]);
+  const stableInstanceIdRef = useRef(instanceId || `cvc-speller-${Math.round(performance.now())}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  const currentChallenge = challenges[currentIndex];
+  const isPreReader = isPreReaderGrade(gradeLevel);
+
+  // Progression authority is React state; mirror into refs so the emission
+  // handler (which fires inside the loop's dispatch) reads it live.
+  const idxRef = useRef(0);
+  idxRef.current = currentIndex;
+  const slotsRef = useRef<(string | null)[]>([null, null, null]);
+
+  const correctionsRef = useRef(new Map<string, number>());
+  const outcomesRef = useRef<ChallengeOutcome[]>([]);
+  const challengeStartRef = useRef<number | null>(null);
+  const submittedRef = useRef(false);
+  const weConnectedRef = useRef(false);
+  const connectedRef = useRef(ctx.isConnected);
+  const listeningRef = useRef(ctx.isListening);
+  connectedRef.current = ctx.isConnected;
+  listeningRef.current = ctx.isListening;
+
+  /** A build has been committed and its verdict has not landed. Locks the
+   *  board and gates the auto-commit so one placement can never fire twice. */
+  const awaitingBuildRef = useRef(false);
+
+  /** What the child SAID — DATA only, never rendered (a stray write to a status
+   *  line in this family gets spoken aloud). */
+  const lastHeardRef = useRef<string | null>(null);
+
+  /** Sound-level accuracy, accumulated from what was actually judged. */
+  const soundStatsRef = useRef({ vowelOk: 0, vowelTried: 0, consonantOk: 0, consonantTried: 0 });
+  const errorPatternsRef = useRef<string[]>([]);
+  const hearTapsRef = useRef(0);
   const diagnosisObservationsRef = useRef<Array<{
     challenge: string;
     expected: string;
     observed: string;
     judgeFeedback?: string;
   }>>([]);
-  // Words the student said ALOUD (judge-confirmed) — the culminating production beat
-  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
 
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `cvc-speller-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  useEffect(
-    () => () => {
-      if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
-    },
-    [],
-  );
-
-  // Mic availability, read inside sendText callbacks defined before spokenCapture
-  const micSupportedRef = useRef(false);
-  // Single audio control: tap 1 = hear the word, taps 2+ = progressive stretch
-  const audioTapsRef = useRef(0);
-
-  // -------------------------------------------------------------------------
-  // Evaluation hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<CvcSpellerMetrics>({
+  const evaluation = usePrimitiveEvaluation<CvcSpellerMetrics>({
     primitiveType: 'cvc-speller',
     instanceId: resolvedInstanceId,
     skillId,
@@ -256,933 +313,560 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Build letter bank for spell-word mode
-  const letterBank = useMemo(() => {
-    if (!currentChallenge || currentChallenge.taskType !== 'spell-word') return [];
-    // Bank = targets + generator-tiered distractors only; availableLetters just
-    // tops up to a floor of 5 so the support-tier distractor cap (clean/some/full)
-    // actually controls how cluttered the bank is — unioning ALL availableLetters
-    // defeated the tier lever and inflated the PRE screen to 13-16 elements.
-    const allLetters = new Set<string>();
-    currentChallenge.targetLetters.forEach(l => allLetters.add(l.toLowerCase()));
-    currentChallenge.distractorLetters.forEach(l => allLetters.add(l.toLowerCase()));
-    for (const l of availableLetters) {
-      if (allLetters.size >= 5) break;
-      allLetters.add(l.toLowerCase());
-    }
+  // ── Items ────────────────────────────────────────────────────────
+  const itemOf = useCallback(
+    (index: number): CvcItem | null => {
+      const challenge = challenges[index];
+      if (!challenge) return null;
+      const letters = (challenge.targetLetters?.length === 3
+        ? challenge.targetLetters
+        : challenge.targetWord.split(''))
+        .map((l) => (l ?? '').toLowerCase());
+      return {
+        id: challenge.id,
+        task: challenge.taskType,
+        word: challenge.targetWord,
+        letters,
+        phonemes: challenge.targetPhonemes ?? [],
+        vowelLetter: letters[1] ?? '',
+        emoji: challenge.emoji,
+      };
+    },
+    [challenges],
+  );
+  const currentItem = useCallback(() => itemOf(idxRef.current), [itemOf]);
 
-    const letters = Array.from(allLetters);
+  /**
+   * Cue options for the item at `index`. The how-to-play is spoken on the first
+   * item AND whenever the ACTION changes — a blended session interleaves three
+   * different actions, so it is not a static protocol statement anybody can
+   * look up on screen (see the script header for why this is not band-gated
+   * the way ports 1-2 are).
+   */
+  const cueOptsFor = useCallback(
+    (index: number) => {
+      const item = itemOf(index);
+      const previous = index > 0 ? itemOf(index - 1) : null;
+      return {
+        howToPlay: !!item && (!previous || previous.task !== item.task),
+        stretch: supportTier === 'easy',
+      };
+    },
+    [itemOf, supportTier],
+  );
+
+  // Letter bank for spell-word. Bank = targets + generator-tiered distractors
+  // only; availableLetters just tops up to a floor of 5 so the support-tier
+  // distractor cap (clean/some/full) actually controls how cluttered the bank
+  // is — unioning ALL availableLetters defeated the tier lever and inflated the
+  // PRE screen to 13-16 elements.
+  const letterBank = useMemo(() => {
+    const challenge = challenges[currentIndex];
+    if (!challenge || challenge.taskType !== 'spell-word') return [];
+    const all = new Set<string>();
+    (challenge.targetLetters ?? challenge.targetWord.split('')).forEach((l) => all.add(l.toLowerCase()));
+    (challenge.distractorLetters ?? []).forEach((l) => all.add(l.toLowerCase()));
+    for (const l of availableLetters) {
+      if (all.size >= 5) break;
+      all.add(l.toLowerCase());
+    }
+    const letters = Array.from(all);
     for (let i = letters.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [letters[i], letters[j]] = [letters[j], letters[i]];
     }
     return letters;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallengeIndex]);
+  }, [currentIndex]);
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    vowelFocus,
-    letterGroup,
-    taskType: currentChallenge?.taskType ?? '',
-    targetWord: currentChallenge?.targetWord ?? '',
-    targetPhonemes: currentChallenge?.targetPhonemes?.join(' ') ?? '',
-    targetLetters: currentChallenge?.targetLetters?.join(', ') ?? '',
-    placedLetters: slots.map(s => s || '_').join(', '),
-    currentChallenge: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    firstPhoneme: currentChallenge?.targetPhonemes?.[0] ?? '',
-    middlePhoneme: currentChallenge?.targetPhonemes?.[1] ?? '',
-    supportTier: supportTier ?? '',
-    tutorRevealPolicy:
-      supportTier === 'easy'
-        ? 'EASY tier: you MAY name the strategy — tell the student to listen for the 3 sounds (or stretch the vowel), and walk them through the segmentation before they answer.'
-        : supportTier === 'hard'
-          ? 'HARD tier: do NOT name the segmentation strategy or pre-stretch unprompted. Say the word, then ask what sounds the student hears and let them work unaided. Only scaffold if they ask or after a wrong attempt. Never reveal the answer.'
-          : supportTier === 'medium'
-            ? 'MEDIUM tier: nudge execution only — say the word clearly and let the student work; offer a stretch only if they hesitate or miss.'
-            : 'No support tier set — use the default progressive scaffolding.',
-  }), [
-    vowelFocus, letterGroup, currentChallenge, slots,
-    currentChallengeIndex, challenges.length, currentAttempts, supportTier,
-  ]);
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return challenges.map((challenge) => {
+      const outcome = outcomesRef.current.find((o) => o.id === challenge.id);
+      return {
+        label: challenge.targetWord,
+        icon: challenge.emoji || '🔤',
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, challenges]);
 
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'cvc-speller',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-  });
+  // ── Submit ───────────────────────────────────────────────────────
+  const finishAndSubmit = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const outcomes = outcomesRef.current;
+    const solved = outcomes.filter((o) => o.solved).length;
+    const attemptsCount = outcomes.reduce((s, o) => s + 1 + o.corrections, 0);
+    const accuracy = outcomes.length
+      ? Math.round(outcomes.reduce((s, o) => s + o.score, 0) / outcomes.length)
+      : 0;
+    const stats = soundStatsRef.current;
 
-  // -------------------------------------------------------------------------
-  // Activity introduction
-  // -------------------------------------------------------------------------
-  const hasIntroducedRef = useRef(false);
+    const metrics: CvcSpellerMetrics = {
+      type: 'cvc-speller',
+      vowelFocus,
+      taskType: challenges[0]?.taskType ?? 'spell-word',
+      wordsSpelledCorrectly: solved,
+      wordsTotal: challenges.length,
+      vowelAccuracy: stats.vowelTried > 0 ? Math.round((stats.vowelOk / stats.vowelTried) * 100) : 100,
+      consonantAccuracy: stats.consonantTried > 0
+        ? Math.round((stats.consonantOk / stats.consonantTried) * 100)
+        : 100,
+      commonErrors: Array.from(new Set(errorPatternsRef.current)),
+      // The three-tap stretch ladder is deleted (it isolated the middle sound
+      // on demand, which is the answer on two of three modes). Tap-to-hear —
+      // the support that replaced it — rides in details, not in this field.
+      stretchUsed: 0,
+      attemptsCount,
+    };
 
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
+    const observations = diagnosisObservationsRef.current;
+    const latest = observations[observations.length - 1];
+    const judgeBacked = [...observations].reverse().find((item) => item.judgeFeedback);
+    const source = judgeBacked || latest;
+    const diagnosisEvidence: DiagnosisEvidence | undefined = accuracy < 60 && source
+      ? {
+          challengeSummary: source.challenge,
+          expected: source.expected,
+          observed: source.observed,
+          judgeFeedback: judgeBacked?.judgeFeedback,
+          priorAttempts: observations
+            .filter((item) => item !== source)
+            .slice(-4)
+            .map((item) => ({ challenge: item.challenge, observed: item.observed })),
+        }
+      : undefined;
 
-    const vowelLabel = VOWEL_LABELS[vowelFocus] || vowelFocus;
-    const taskLabel = TASK_TYPE_CONFIG[currentChallenge.taskType]?.label || currentChallenge.taskType;
-    const tierPosture =
-      supportTier === 'easy'
-        ? ' SUPPORT POSTURE (easy): name the listening strategy up front — tell the student to listen for the 3 sounds and stretch the vowel before answering.'
-        : supportTier === 'hard'
-          ? ' SUPPORT POSTURE (hard): do NOT name the segmentation strategy or pre-stretch. Say the word, then let the student work unaided; ask what sounds they hear rather than telling them. Never reveal the answer.'
-          : supportTier === 'medium'
-            ? ' SUPPORT POSTURE (medium): say the word clearly and let the student try; offer a stretch only if they hesitate.'
-            : '';
-    sendText(
-      `[ACTIVITY_START] This is a CVC spelling activity focusing on ${vowelLabel}. `
-      + `There are ${challenges.length} challenges. First up: ${taskLabel}. `
-      + `Introduce the activity warmly, then say the first word "${currentChallenge.targetWord}" clearly. `
-      + `Keep it brief — 2-3 sentences.${tierPosture}`,
-      { silent: true }
+    evaluation.submitResult(
+      accuracy >= 60,
+      accuracy,
+      metrics,
+      { outcomes, hearTaps: hearTapsRef.current },
+      undefined,
+      diagnosisEvidence,
     );
-  }, [isConnected, currentChallenge, vowelFocus, challenges.length, supportTier, sendText]);
+    setRunning(false);
+    setStage('done');
+    setStatusLine('Great listening today!');
+  }, [challenges, evaluation, vowelFocus]);
 
-  // -------------------------------------------------------------------------
-  // Auto-play word on challenge load (all modes)
-  // -------------------------------------------------------------------------
-  const lastAutoPlayedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge || wordComplete) return;
-    if (lastAutoPlayedRef.current === currentChallenge.id) return;
-    // Skip for the first challenge — the intro already says the word
-    if (currentChallengeIndex === 0 && hasIntroducedRef.current) {
-      lastAutoPlayedRef.current = currentChallenge.id;
-      return;
-    }
+  // ── The loop ─────────────────────────────────────────────────────
+  const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
 
-    lastAutoPlayedRef.current = currentChallenge.id;
-    const timer = setTimeout(() => {
-      sendText(
-        `[SAY_WORD] Say the word "${currentChallenge.targetWord}" clearly. Just the word, said twice with a pause.`,
-        { silent: true },
-      );
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [isConnected, currentChallenge, wordComplete, currentChallengeIndex, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Reset domain state for next challenge
-  // -------------------------------------------------------------------------
-  const resetDomainState = useCallback(() => {
-    audioTapsRef.current = 0;
-    setSlots([null, null, null]);
-    setActiveSlotIndex(0);
-    setSelectedVowel(null);
-    setSortedBucket(null);
-    setFeedback('');
-    setFeedbackType('');
-    setWordComplete(false);
-    setIsShaking(false);
-    setIsCelebrating(false);
-    setSpellFlash(null);
-    if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
+  const closeChallenge = useCallback((item: CvcItem, solved: boolean) => {
+    const corrections = correctionsRef.current.get(item.id) ?? 0;
+    outcomesRef.current.push({
+      id: item.id,
+      task: item.task,
+      solved,
+      corrections,
+      score: solved ? scoreForCorrections(corrections) : 0,
+      seconds: challengeStartRef.current == null
+        ? null
+        : Math.round(((performance.now() - challengeStartRef.current) / 1000) * 10) / 10,
+    });
+    if (solved) setSolvedIds((prev) => new Set(Array.from(prev).concat(item.id)));
   }, []);
 
-  // -------------------------------------------------------------------------
-  // Hear Again / Stretch handlers (shared)
-  // -------------------------------------------------------------------------
-  const handleHearAgain = useCallback(() => {
-    if (!currentChallenge) return;
-    sendText(
-      `[REPEAT_WORD] Say: "The word is... ${currentChallenge.targetWord}." Say it slowly and clearly. Then say it once more.`,
-      { silent: true }
-    );
-  }, [currentChallenge, sendText]);
+  const resetBoard = useCallback(() => {
+    slotsRef.current = [null, null, null];
+    setSlots([null, null, null]);
+    setActiveSlotIndex(0);
+    setBoardFlash(null);
+    awaitingBuildRef.current = false;
+  }, []);
 
-  const handleStretch = useCallback(() => {
-    if (!currentChallenge) return;
-    setStretchUsedCount(prev => prev + 1);
-    const stretched = currentChallenge.targetPhonemes.join('... ');
+  /** Move the surface to the next item. The CUE for it is queued by the caller
+   *  first: the tutor's line is what actually advances the lesson, this only
+   *  re-points the screen at what that line is about. */
+  const openNext = useCallback(() => {
+    const nextIndex = idxRef.current + 1;
+    if (!itemOf(nextIndex)) return false;
+    setCurrentIndex(nextIndex);
+    idxRef.current = nextIndex;
+    setReward(null);
+    setWordTapped(false);
+    resetBoard();
+    challengeStartRef.current = performance.now();
+    return true;
+  }, [itemOf, resetBoard]);
 
-    // Progressive stretching based on attempts
-    if (currentAttempts === 0) {
-      // Level 1: stretch the whole word
-      sendText(
-        `[STRETCH_WORD] Say the word "${currentChallenge.targetWord}" stretched out slowly: "${stretched}". Pause between each sound.`,
-        { silent: true }
-      );
-    } else if (currentAttempts === 1) {
-      // Level 2: emphasize the vowel
-      const vowelPhoneme = currentChallenge.targetPhonemes[1] || '';
-      const vowelLetter = currentChallenge.targetLetters[1] || '';
-      const keyword = VOWEL_KEYWORDS[vowelLetter] || '';
-      sendText(
-        `[STRETCH_VOWEL] Stretch the word "${currentChallenge.targetWord}" and EMPHASIZE the middle vowel sound: `
-        + `"${currentChallenge.targetPhonemes[0]}... ${vowelPhoneme}${vowelPhoneme}${vowelPhoneme}... ${currentChallenge.targetPhonemes[2]}". `
-        + `Then say: "Hear that middle sound? It's ${vowelPhoneme}, like in ${keyword}."`,
-        { silent: true }
-      );
-    } else {
-      // Level 3: isolate the vowel
-      const vowelPhoneme = currentChallenge.targetPhonemes[1] || '';
-      const vowelLetter = currentChallenge.targetLetters[1] || '';
-      const keyword = VOWEL_KEYWORDS[vowelLetter] || '';
-      sendText(
-        `[ISOLATE_VOWEL] Say: "Listen to just the middle sound: ${vowelPhoneme}... ${vowelPhoneme}. `
-        + `That's the ${vowelPhoneme} sound, like in ${keyword}. The letter is ${vowelLetter.toUpperCase()}."`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, currentAttempts, sendText]);
+  const applyVerdict = useCallback(
+    (judgment: 'affirmed' | 'corrected') => {
+      const item = currentItem();
+      const loop = loopRef.current;
+      if (!item || !loop) return;
 
-  // One audio affordance for a pre-reader: first tap replays the word, further
-  // taps walk the existing progressive stretch ladder (which self-limits by
-  // attempts, so a zero-attempt tapper only ever gets the level-1 stretch).
-  const handleAudioTap = useCallback(() => {
-    audioTapsRef.current += 1;
-    if (audioTapsRef.current === 1) {
-      handleHearAgain();
-    } else {
-      handleStretch();
-    }
-  }, [handleHearAgain, handleStretch]);
+      if (judgment === 'corrected') {
+        const used = (correctionsRef.current.get(item.id) ?? 0) + 1;
+        correctionsRef.current.set(item.id, used);
+        SoundManager.playIncorrect();
 
-  // =========================================================================
-  // FILL-VOWEL MODE HANDLER
-  // =========================================================================
-  const handleFillVowelSelect = useCallback((vowel: string) => {
-    if (!currentChallenge || wordComplete || hasSubmittedEvaluation) return;
+        if (used <= MAX_CORRECTIONS_PER_CHALLENGE) {
+          // The tutor's correction line already re-modeled and re-asked in-band.
+          if (item.task === 'spell-word') {
+            // Keep what was right, clear only what was wrong — the Elkonin
+            // discipline, and it makes the re-elicit tractable for a
+            // five-year-old instead of starting the whole word over.
+            const cleared = slotsRef.current.map((letter, i) =>
+              (letter ?? '').toLowerCase() === item.letters[i] ? letter : null);
+            slotsRef.current = cleared;
+            setSlots(cleared);
+            const firstEmpty = cleared.findIndex((s) => s === null);
+            setActiveSlotIndex(firstEmpty === -1 ? 0 : firstEmpty);
+            setBoardFlash('incorrect');
+            awaitingBuildRef.current = false;
+            setStage('asking');
+            setStatusLine('Have another go — fill in the boxes.');
+          } else {
+            setStage('asking');
+            setStatusLine('Have another go — say the middle sound.');
+          }
+          return;
+        }
 
-    setSelectedVowel(vowel);
-    incrementAttempts();
-    const attempt = currentAttempts + 1;
+        // Capped: acknowledge and move the lesson forward.
+        closeChallenge(item, false);
+        const nextIndex = idxRef.current + 1;
+        const next = itemOf(nextIndex);
+        loop.queueCue(moveOnCue(item, next, cueOptsFor(nextIndex)));
+        if (openNext()) {
+          setStage('asking');
+          setStatusLine('Good try — here comes the next one.');
+        } else {
+          finishAndSubmit();
+        }
+        return;
+      }
 
-    const correctVowel = currentChallenge.targetLetters[1]?.toLowerCase();
-    const isCorrect = vowel.toLowerCase() === correctVowel;
-
-    if (isCorrect) {
+      // Affirmed — the answer is theirs, and this is the first moment it may
+      // appear on screen.
       SoundManager.playCorrect();
-      setVowelCorrect(prev => prev + 1);
-      setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${vowel} sound in the middle!`);
-      setFeedbackType('success');
-      setWordComplete(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: attempt,
-        taskType: currentChallenge.taskType,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly picked "${vowel}" for "${currentChallenge.targetWord}"! `
-        + `${attempt === 1 ? 'First try!' : `After ${attempt} attempts.`} `
-        + `Say the word and emphasize the vowel: "${currentChallenge.targetWord}... yes, ${currentChallenge.targetPhonemes[1]}!" Celebrate briefly.`
-        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setVowelErrors(prev => prev + 1);
-      setSelectedVowel(null);
-      const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
-      const wrongKeyword = VOWEL_KEYWORDS[vowel] || '';
-      diagnosisObservationsRef.current.push({
-        challenge: `Hear "${currentChallenge.targetWord}" and choose its middle vowel.`,
-        expected: `Choose ${correctVowel}, matching the middle phoneme ${currentChallenge.targetPhonemes[1]}.`,
-        observed: `Chose ${vowel} instead of ${correctVowel}.`,
-      });
-
-      setFeedback('Listen again — which vowel sound is in the middle?');
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      // Progressive AI scaffolding
-      if (attempt === 1) {
-        // Level 1: say the word naturally, ask to listen
-        sendText(
-          `[FILL_VOWEL_WRONG] Student chose "${vowel}" but correct is "${correctVowel}" in "${currentChallenge.targetWord}". `
-          + `Attempt ${attempt}. Say the word again clearly: "${currentChallenge.targetWord}." `
-          + `Ask: "Listen to the middle sound... is it /${vowel}/ like ${wrongKeyword}, or /${correctVowel}/ like ${correctKeyword}?"`,
-          { silent: true }
-        );
-      } else if (attempt === 2) {
-        // Level 2: stretch the vowel
-        sendText(
-          `[FILL_VOWEL_STRETCH] Student still struggling. Stretch the word with emphasis on the vowel: `
-          + `"${currentChallenge.targetPhonemes[0]}... ${currentChallenge.targetPhonemes[1]}${currentChallenge.targetPhonemes[1]}${currentChallenge.targetPhonemes[1]}... ${currentChallenge.targetPhonemes[2]}". `
-          + `"Hear that long sound in the middle? That's /${correctVowel}/ like ${correctKeyword}!"`,
-          { silent: true }
-        );
+      closeChallenge(item, true);
+      if (item.task === 'spell-word') {
+        setBoardFlash('correct');
+        awaitingBuildRef.current = false;
+      } else {
+        setReward(item.vowelLetter);
       }
-
-      if (attempt >= MAX_ATTEMPTS) {
-        setFeedback(`The word "${currentChallenge.targetWord}" has the letter "${correctVowel}" in the middle — /${correctVowel}/ like ${correctKeyword}.`);
-        setFeedbackType('error');
-        setWordComplete(true);
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: attempt,
-          taskType: currentChallenge.taskType,
-        });
-        sendText(
-          `[FILL_VOWEL_REVEAL] Student couldn't get it. Say: "${currentChallenge.targetWord} has the /${correctVowel}/ sound, `
-          + `like in ${correctKeyword}. The letter is ${correctVowel.toUpperCase()}." Say the word one more time. Keep encouraging.`,
-          { silent: true }
-        );
+      if (item.task === 'word-sort') {
+        setSorted((prev) => prev.concat({
+          id: item.id, word: item.word, emoji: item.emoji, vowel: item.vowelLetter,
+        }));
       }
-    }
-  }, [currentChallenge, wordComplete, hasSubmittedEvaluation, currentAttempts, incrementAttempts, recordResult, sendText]);
+      setStage('affirmed');
 
-  // =========================================================================
-  // SPELL-WORD MODE HANDLERS (existing Elkonin box logic)
-  // =========================================================================
-  const handleSelectLetter = useCallback((letter: string) => {
-    if (hasSubmittedEvaluation || wordComplete || activeSlotIndex === null) return;
-
-    SoundManager.tap();
-    setSlots(prev => {
-      const next = [...prev];
-      next[activeSlotIndex] = letter;
-      return next;
-    });
-
-    sendText(
-      `[CONFIRM_SOUND] The student placed "${letter}". Say just the sound that "${letter}" makes — a clean phoneme, nothing else.`,
-      { silent: true }
-    );
-
-    setActiveSlotIndex(prev => {
-      if (prev === null) return null;
-      const newSlots = [...slots];
-      newSlots[prev] = letter;
-      for (let i = 0; i < 3; i++) {
-        const nextIdx = (prev + 1 + i) % 3;
-        if (newSlots[nextIdx] === null) return nextIdx;
+      const nextIndex = idxRef.current + 1;
+      const next = itemOf(nextIndex);
+      if (next) {
+        setStatusLine('Yes! You got it.');
+        loop.queueCue(itemCue(next, cueOptsFor(nextIndex)));
+        openNext();
+      } else {
+        setStatusLine('You did it!');
+        loop.queueCue(completeCue());
+        finishAndSubmit();
       }
-      return null;
-    });
+    },
+    [closeChallenge, cueOptsFor, currentItem, finishAndSubmit, itemOf, openNext],
+  );
 
-    setFeedback('');
-    setFeedbackType('');
-  }, [hasSubmittedEvaluation, wordComplete, activeSlotIndex, slots, sendText]);
+  const handleEmission = useCallback(
+    (emission: LoopEmission) => {
+      const item = currentItem();
+      switch (emission.kind) {
+        case 'attempt-open':
+          lastHeardRef.current = null;
+          if (emission.attempt.source === 'voice') setStatusLine('Listening…');
+          return;
+        case 'attempt-transcript':
+          lastHeardRef.current = emission.text;
+          return;
+        case 'verdict':
+          if (emission.judgment === 'off-script') return;
+          if (emission.judgment === 'no-verdict') {
+            // On a BUILD item this is routinely the child talking while they
+            // work: a stray voice turn opened an attempt the tutor was
+            // explicitly told not to answer. Never re-ask over a board the
+            // child is still filling.
+            if (item?.task !== 'spell-word') setStatusLine('One more time — say the middle sound.');
+            return;
+          }
+          if (emission.judgment === 'corrected' && item) {
+            diagnosisObservationsRef.current.push(
+              item.task === 'spell-word'
+                ? {
+                    challenge: `Hear "${item.word}" and put a letter in each box for its sounds.`,
+                    expected: `Spell ${item.letters.join('')}.`,
+                    observed: `Built "${slotsRef.current.map((l) => l ?? '_').join('')}".`,
+                  }
+                : {
+                    challenge: `Hear "${item.word}" and say its middle sound.`,
+                    expected: `Say the middle sound of ${item.word} (${spokenVowel(item)}).`,
+                    observed: lastHeardRef.current
+                      ? `Heard "${lastHeardRef.current}".`
+                      : 'The tutor judged the answer wrong from the audio.',
+                  },
+            );
+          }
+          applyVerdict(emission.judgment);
+          return;
+        case 'verdict-text': {
+          // The tutor's finished correction NAMES the error, which is Tier-A
+          // misconception evidence rather than something we have to infer.
+          if (emission.judgment !== 'corrected') return;
+          const observations = diagnosisObservationsRef.current;
+          const last = observations[observations.length - 1];
+          if (last && !last.judgeFeedback) last.judgeFeedback = emission.text;
+          return;
+        }
+        case 'unanchored-verdict': {
+          // A build verdict that arrived with nothing anchored — the child
+          // spoke while building, that voice attempt timed out, and the
+          // gesture attempt never opened behind it. The judgment is still
+          // about the build we just submitted, and dropping it would wedge the
+          // lesson on a board that can no longer be committed again.
+          if (!awaitingBuildRef.current) return;
+          applyVerdict(emission.judgment);
+          return;
+        }
+        case 'session-resumed':
+        case 'resync': {
+          // The session survived but the item in flight did not. Re-ask it
+          // verbatim rather than leaving the child answering into something
+          // that will never judge them — except mid-build, where the board is
+          // still on screen and re-asking would talk over a child working.
+          const loop = loopRef.current;
+          if (!item || !loop) return;
+          if (emission.kind === 'resync' && item.task === 'spell-word') return;
+          setStage('asking');
+          setStatusLine('Let’s take that one again.');
+          loop.queueCue(itemCue(item, cueOptsFor(idxRef.current)));
+          return;
+        }
+        case 'session-dead':
+          // Visible state, never a silent "Listening…".
+          setStatusLine('The tutor went quiet — tap the microphone to pick things back up.');
+          return;
+        default:
+          return;
+      }
+    },
+    [applyVerdict, cueOptsFor, currentItem],
+  );
 
-  const handleSlotTap = useCallback((index: number) => {
-    if (hasSubmittedEvaluation || wordComplete) return;
-    if (slots[index] !== null) {
-      setSlots(prev => { const next = [...prev]; next[index] = null; return next; });
-      setActiveSlotIndex(index);
-    } else {
-      setActiveSlotIndex(index);
-    }
-    setFeedback('');
-    setFeedbackType('');
-  }, [hasSubmittedEvaluation, wordComplete, slots]);
+  const loop = useJudgedSpeechLoop({
+    enabled: running,
+    onEmission: handleEmission,
+  });
+  loopRef.current = loop;
 
-  const handleCheckSpelling = useCallback(() => {
-    if (!currentChallenge) return;
+  // ── The BUILD commit (spell-word) — the third letter IS the commit ────
+  // No Check button: nothing on screen may carry the child forward, and a
+  // 3-slot placement is an answer the moment it is complete. The cue goes out
+  // through `submitGestureAttempt`, which opens the attempt when the cue is
+  // actually SENT — an attempt opened at commit time would block the very cue
+  // meant to provoke its verdict.
+  const commitBuild = useCallback(
+    (placed: (string | null)[]) => {
+      const item = currentItem();
+      const activeLoop = loopRef.current;
+      if (!item || !activeLoop || item.task !== 'spell-word') return;
+      if (awaitingBuildRef.current) return;
 
-    incrementAttempts();
-    const attempt = currentAttempts + 1;
+      const wrongIndex = placed.findIndex((letter, i) => (letter ?? '').toLowerCase() !== item.letters[i]);
+      const correct = wrongIndex === -1;
 
-    const target = currentChallenge.targetLetters.map(l => l.toLowerCase());
-    const placed = slots.map(s => (s || '').toLowerCase());
-    const isCorrect = placed.length === target.length && placed.every((l, i) => l === target[i]);
-
-    if (spellFlashTimer.current) clearTimeout(spellFlashTimer.current);
-    setSpellFlash(isCorrect ? 'correct' : 'incorrect');
-    spellFlashTimer.current = setTimeout(() => setSpellFlash(null), 900);
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      target.forEach((letter) => {
-        if (VOWELS.has(letter)) setVowelCorrect(prev => prev + 1);
-        else setConsonantCorrect(prev => prev + 1);
-      });
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: attempt,
-        taskType: currentChallenge.taskType,
-        firstTry: attempt === 1,
-      });
-
-      setFeedback(`You spelled "${currentChallenge.targetWord}"!`);
-      setFeedbackType('success');
-      setWordComplete(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      sendText(
-        `[SPELLING_CORRECT] Student correctly spelled "${currentChallenge.targetWord}"${attempt === 1 ? ' on the first try!' : ` after ${attempt} attempts.`} `
-        + `Say "You spelled ${currentChallenge.targetWord}! Great job!" and say the word.`
-        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const wrongPositions: string[] = [];
-      target.forEach((letter, i) => {
-        if (placed[i] !== letter) {
-          wrongPositions.push(i === 0 ? 'beginning' : i === 1 ? 'middle' : 'end');
-          if (VOWELS.has(letter)) setVowelErrors(prev => prev + 1);
-          else setConsonantErrors(prev => prev + 1);
+      const stats = soundStatsRef.current;
+      placed.forEach((letter, i) => {
+        const ok = (letter ?? '').toLowerCase() === item.letters[i];
+        if (i === 1) {
+          stats.vowelTried += 1;
+          if (ok) stats.vowelOk += 1;
+        } else {
+          stats.consonantTried += 1;
+          if (ok) stats.consonantOk += 1;
         }
       });
-
-      const isVowelConfusion = placed[1] !== target[1] && VOWELS.has(target[1]) && VOWELS.has(placed[1]);
-      const placedStr = placed.join('');
-      diagnosisObservationsRef.current.push({
-        challenge: `Hear "${currentChallenge.targetWord}" and spell all three phonemes in order.`,
-        expected: `Spell ${target.join('')} from ${currentChallenge.targetPhonemes.join(' ')}.`,
-        observed: `Spelled ${placedStr || '(blank)'}.`,
-      });
-      const matchedError = currentChallenge.commonErrors?.find(e => e.errorSpelling.toLowerCase() === placedStr);
-
-      if (matchedError) {
-        setErrorPatterns(prev => [...prev, matchedError.errorSpelling]);
-        setFeedback(matchedError.feedback);
-      } else {
-        setFeedback(`Not quite! Check the ${wrongPositions.join(' and ')} sound${wrongPositions.length > 1 ? 's' : ''}.`);
-      }
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      // Progressive AI scaffolding for spell-word
-      if (isVowelConfusion) {
-        const correctVowel = target[1];
-        const wrongVowel = placed[1];
-        const correctKeyword = VOWEL_KEYWORDS[correctVowel] || correctVowel;
-        const wrongKeyword = VOWEL_KEYWORDS[wrongVowel] || wrongVowel;
-
-        sendText(
-          `[VOWEL_CONFUSION] Student placed "${wrongVowel}" instead of "${correctVowel}" in "${currentChallenge.targetWord}". `
-          + `Attempt ${attempt}. Say: "Listen to the middle sound — it's /${correctVowel}/ like ${correctKeyword}, not /${wrongVowel}/ like ${wrongKeyword}." `
-          + `Say both sounds.`,
-          { silent: true }
-        );
-      } else if (attempt === 1) {
-        // Level 1: say word naturally
-        sendText(
-          `[SPELLING_HINT_L1] Student tried "${placedStr}" for "${currentChallenge.targetWord}". Wrong position: ${wrongPositions.join(', ')}. `
-          + `Attempt ${attempt}. Say the word again: "${currentChallenge.targetWord}." Ask about the ${wrongPositions[0]} sound.`,
-          { silent: true }
-        );
-      } else {
-        // Level 2: segment
-        sendText(
-          `[SPELLING_HINT_L2] Student still struggling with "${currentChallenge.targetWord}" (tried "${placedStr}"). `
-          + `Segment it: "${currentChallenge.targetPhonemes.join('... ')}". Point to each sound.`,
-          { silent: true }
-        );
-      }
-    }
-  }, [currentChallenge, slots, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // =========================================================================
-  // WORD-SORT MODE HANDLER
-  // =========================================================================
-  const handleWordSort = useCallback((bucketLabel: string) => {
-    if (!currentChallenge || wordComplete || hasSubmittedEvaluation) return;
-
-    setSortedBucket(bucketLabel);
-    incrementAttempts();
-    const attempt = currentAttempts + 1;
-
-    const correctBucket = currentChallenge.sortBucketLabel || vowelFocus;
-    const isCorrect = bucketLabel === correctBucket;
-    // Child-facing + spoken strings use the vowel and its keyword, never the
-    // `short-a` dev slug (reader-fit RF-4 — the tutor was reading the slug aloud).
-    const correctVowel = correctBucket.replace('short-', '');
-    const correctKeyword = VOWEL_KEYWORDS[correctVowel] || '';
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setVowelCorrect(prev => prev + 1);
-      setFeedback(`Yes! "${currentChallenge.targetWord}" has the ${correctVowel} sound!`);
-      setFeedbackType('success');
-      setWordComplete(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: attempt,
-        taskType: currentChallenge.taskType,
-      });
-
-      sendText(
-        `[SORT_CORRECT] Student correctly sorted "${currentChallenge.targetWord}" into the /${correctVowel}/ bucket (like ${correctKeyword})! `
-        + `${attempt === 1 ? 'First try!' : `After ${attempt} attempts.`} `
-        + `Say the word and confirm the vowel sound. Brief celebration.`
-        + (micSupportedRef.current ? ' Then warmly invite the student to say the whole word out loud themselves.' : ''),
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setVowelErrors(prev => prev + 1);
-      setSortedBucket(null);
-
-      setFeedback('Listen to the middle sound again — which vowel is it?');
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      const wrongVowel = bucketLabel.replace('short-', '');
-      const wrongKeyword = VOWEL_KEYWORDS[wrongVowel] || '';
-      diagnosisObservationsRef.current.push({
-        challenge: `Sort "${currentChallenge.targetWord}" by its middle vowel sound.`,
-        expected: `Sort into ${correctBucket}.`,
-        observed: `Sorted into ${bucketLabel}.`,
-      });
-
-      if (attempt === 1) {
-        // Level 1: say word naturally, contrast
-        sendText(
-          `[SORT_WRONG_L1] Student sorted "${currentChallenge.targetWord}" into the /${wrongVowel}/ bucket but it belongs in /${correctVowel}/. `
-          + `Say the word again: "${currentChallenge.targetWord}." Then contrast: `
-          + `"Is the middle sound /${wrongVowel}/ like ${wrongKeyword}... or /${correctVowel}/ like ${correctKeyword}?"`,
-          { silent: true }
-        );
-      } else {
-        // Level 2: stretch and isolate
-        sendText(
-          `[SORT_WRONG_L2] Student still wrong. Stretch: "${currentChallenge.targetPhonemes.join('... ')}". `
-          + `Emphasize: "Hear that middle sound? It's /${correctVowel}/ like ${correctKeyword}!"`,
-          { silent: true }
-        );
+      if (!correct) {
+        errorPatternsRef.current.push(placed.map((l) => l ?? '_').join(''));
       }
 
-      if (attempt >= MAX_ATTEMPTS) {
-        setFeedback(`"${currentChallenge.targetWord}" has the /${correctVowel}/ sound — like ${correctKeyword}!`);
-        setFeedbackType('error');
-        setWordComplete(true);
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: attempt,
-          taskType: currentChallenge.taskType,
-        });
-        sendText(
-          `[SORT_REVEAL] Reveal: "${currentChallenge.targetWord}" has /${correctVowel}/ like ${correctKeyword}. It goes in the /${correctVowel}/ bucket. Keep encouraging.`,
-          { silent: true }
-        );
-      }
-    }
-  }, [currentChallenge, wordComplete, hasSubmittedEvaluation, currentAttempts, vowelFocus, incrementAttempts, recordResult, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Spoken production beat — once the word is solved and displayed, the student
-  // says the WHOLE word aloud; the judge ladder (Azure dual-signal → Gemini,
-  // utils/spokenWordJudge.ts) confirms it. Purely additive: the mic never
-  // bypasses the decoding challenge (it appears only after wordComplete), the
-  // Next Word button is always available, and 'no-match' is never penalized.
-  //   'match'   → celebrate + track (bonus production credit)
-  //   'no-match'→ tutor models the word by voice, NO penalty
-  //   'unclear' → invite a retry, silently
-  // -------------------------------------------------------------------------
-  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
-    if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
-    if (result.outcome === 'match') {
-      SoundManager.playCorrect();
-      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
-      sendText(
-        `[STUDENT_SAID_WORD] The student said "${currentChallenge.targetWord}" out loud all by themselves! Celebrate enthusiastically that they SAID the whole word (one sentence).`,
-        { silent: true }
-      );
-    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
-      diagnosisObservationsRef.current.push({
-        challenge: `Say the whole CVC word after decoding it.`,
-        expected: `Produce all phonemes in "${currentChallenge.targetWord}" in order.`,
-        observed: `Judge heard "${result.verdict.heard}".`,
-        judgeFeedback: result.verdict.misconception
-          || `The spoken-word judge heard "${result.verdict.heard}" instead of the decoded target and rated the mismatch high confidence.`,
-      });
-      sendText(
-        `[SPOKEN_MISS] The student tried to say "${currentChallenge.targetWord}" aloud but it sounded like "${result.verdict.heard}". Gently model it — stretch the sounds "${currentChallenge.targetPhonemes.join('... ')}", then say the whole word — and invite one more try. Warm, never scolding. Two short sentences max.`,
-        { silent: true }
-      );
-    } else {
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to say "${currentChallenge.targetWord}" again a little louder, or just tap Next Word.`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, spokenWords, sendText]);
-
-  const spokenCapture = useSpokenWordCapture({
-    targetWord: currentChallenge?.targetWord ?? '',
-    gradeLevel: 'K',
-    onResult: handleSpokenResult,
-    onNoSpeech: () => {
-      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say "${currentChallenge.targetWord}" again a little louder, or just tap Next Word.`,
-        { silent: true }
-      );
+      awaitingBuildRef.current = true;
+      setBoardFlash(null);
+      setStage('judging');
+      setStatusLine('Let’s see…');
+      activeLoop.submitGestureAttempt(buildVerdictCue(item, {
+        placed,
+        correct,
+        wrongIndex: correct ? undefined : wrongIndex,
+        correction: (correctionsRef.current.get(item.id) ?? 0) + 1,
+      }));
     },
-  });
-  micSupportedRef.current = spokenCapture.isSupported;
+    [currentItem],
+  );
 
-  // -------------------------------------------------------------------------
-  // Move to next word or submit evaluation
-  // -------------------------------------------------------------------------
-  const handleNextWord = useCallback(() => {
-    spokenCapture.cancel(); // never carry a live mic across challenges
-    const advanced = advanceProgress();
+  const handleSelectLetter = useCallback(
+    (letter: string) => {
+      if (!running || awaitingBuildRef.current) return;
+      const item = currentItem();
+      if (!item || item.task !== 'spell-word') return;
+      const target = activeSlotIndex ?? slotsRef.current.findIndex((s) => s === null);
+      if (target < 0) return;
 
-    if (!advanced) {
-      if (!hasSubmittedEvaluation) {
-        const totalWords = challenges.length;
-        const wordsCorrect = challengeResults.filter(r => r.correct).length;
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const totalVowelAttempts = vowelCorrect + vowelErrors;
-        const totalConsonantAttempts = consonantCorrect + consonantErrors;
-        const vowelAcc = totalVowelAttempts > 0 ? Math.round((vowelCorrect / totalVowelAttempts) * 100) : 100;
-        const consonantAcc = totalConsonantAttempts > 0 ? Math.round((consonantCorrect / totalConsonantAttempts) * 100) : 100;
-        const overallAcc = totalWords > 0 ? Math.round((wordsCorrect / totalWords) * 100) : 0;
+      SoundManager.tap();
+      const next = [...slotsRef.current];
+      next[target] = letter;
+      slotsRef.current = next;
+      setSlots(next);
+      setBoardFlash(null);
 
-        const metrics: CvcSpellerMetrics = {
-          type: 'cvc-speller',
-          vowelFocus,
-          taskType: challenges[0]?.taskType || 'spell-word',
-          wordsSpelledCorrectly: wordsCorrect,
-          wordsTotal: totalWords,
-          vowelAccuracy: vowelAcc,
-          consonantAccuracy: consonantAcc,
-          commonErrors: Array.from(new Set(errorPatterns)),
-          stretchUsed: stretchUsedCount,
-          attemptsCount: totalAttempts,
-        };
+      const nextEmpty = next.findIndex((s) => s === null);
+      setActiveSlotIndex(nextEmpty === -1 ? null : nextEmpty);
+      if (nextEmpty === -1) commitBuild(next);
+    },
+    [activeSlotIndex, commitBuild, currentItem, running],
+  );
 
-        const observations = diagnosisObservationsRef.current;
-        const latest = observations[observations.length - 1];
-        const judgeBacked = [...observations].reverse().find(item => item.judgeFeedback);
-        const evidenceSource = judgeBacked || latest;
-        const diagnosisEvidence: DiagnosisEvidence | undefined = overallAcc < 60 && evidenceSource
-          ? {
-              challengeSummary: evidenceSource.challenge,
-              expected: evidenceSource.expected,
-              observed: evidenceSource.observed,
-              judgeFeedback: judgeBacked?.judgeFeedback,
-              priorAttempts: observations
-                .filter(item => item !== evidenceSource)
-                .slice(-4)
-                .map(item => ({ challenge: item.challenge, observed: item.observed })),
-            }
-          : undefined;
+  const handleSlotTap = useCallback(
+    (index: number) => {
+      if (!running || awaitingBuildRef.current) return;
+      const next = [...slotsRef.current];
+      next[index] = null;
+      slotsRef.current = next;
+      setSlots(next);
+      setActiveSlotIndex(index);
+      setBoardFlash(null);
+    },
+    [running],
+  );
 
-        submitEvaluation(overallAcc >= 60, overallAcc, metrics, {
-          challengeResults,
-          spokenWords: Array.from(spokenWords),
-        }, undefined, diagnosisEvidence);
-
-        const phaseStr = phaseResults.length > 0
-          ? phaseResults.map(p => `${p.label} ${p.score}%`).join(', ')
-          : `${wordsCorrect}/${totalWords} correct`;
-        sendText(
-          `[ALL_COMPLETE] Student finished! ${phaseStr}. Overall: ${overallAcc}%. `
-          + `Vowel accuracy: ${vowelAcc}%. Give encouraging, specific feedback.`,
-          { silent: true }
-        );
-      }
-      return;
-    }
-
-    resetDomainState();
-  }, [
-    advanceProgress, challenges, challengeResults, hasSubmittedEvaluation,
-    vowelCorrect, vowelErrors, consonantCorrect, consonantErrors,
-    errorPatterns, stretchUsedCount, vowelFocus, phaseResults, spokenWords,
-    submitEvaluation, sendText, resetDomainState, spokenCapture,
-  ]);
-
-  // Keep a live ref so the auto-advance timer always calls the latest handler.
-  const handleNextWordRef = useRef(handleNextWord);
-  handleNextWordRef.current = handleNextWord;
-
-  // Strong-flow UX: once the student says the word aloud (judge-confirmed), glide
-  // to the next challenge on their behalf — no extra click. The mic itself stays
-  // tap-to-start (push-to-talk is the echo gate against the tutor's voice), but
-  // everything after a successful production advances automatically.
+  // ── Keep the tutor's RUNTIME STATE truthful as items advance ──────
   useEffect(() => {
-    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
-    const t = setTimeout(() => handleNextWordRef.current(), 1400);
-    return () => clearTimeout(t);
-  }, [spokenWords, currentChallenge]);
+    if (!ctx.isConnected || !currentChallenge) return;
+    const item = itemOf(currentIndex);
+    if (!item) return;
+    ctx.updateContext({
+      task: item.task,
+      word: item.word,
+      middleSound: spokenVowel(item),
+    });
+    // Context methods are stable; keyed on the current challenge + connection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected, currentChallenge, currentIndex]);
 
-  // -------------------------------------------------------------------------
-  // Session end. NOT allChallengesComplete: that flips the moment the LAST
-  // result is recorded, which used to hide the feedback card, the spoken-
-  // production beat, and the Finish button on the final word — making
-  // handleNextWord (the only submitEvaluation call site) unreachable, so the
-  // evaluation never submitted. The session ends when the student taps
-  // Finish/skip (or says the word) and the submission has gone out.
-  // -------------------------------------------------------------------------
-  const sessionDone = hasSubmittedEvaluation;
+  // ── Tap-to-hear — never withdrawn by band or tier ─────────────────
+  // Says the WORD and stops. It never segments and never isolates the middle
+  // sound: on two of the three modes that IS the answer.
+  const handleHearWord = useCallback(() => {
+    const item = currentItem();
+    if (!item) return;
+    SoundManager.tap();
+    hearTapsRef.current += 1;
+    setWordTapped(true);
+    ctx.sendText(pronounceCue(item.word), { silent: true });
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => setWordTapped(false), 1200);
+  }, [ctx, currentItem]);
 
-  // -------------------------------------------------------------------------
-  // Overall score
-  // -------------------------------------------------------------------------
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+  // ── Start: one gesture, because a browser will not open a mic without one ─
+  const startRun = useCallback(() => {
+    const first = itemOf(0);
+    const activeLoop = loopRef.current;
+    if (!first || !activeLoop) return;
+    correctionsRef.current.clear();
+    outcomesRef.current = [];
+    errorPatternsRef.current = [];
+    diagnosisObservationsRef.current = [];
+    soundStatsRef.current = { vowelOk: 0, vowelTried: 0, consonantOk: 0, consonantTried: 0 };
+    lastHeardRef.current = null;
+    hearTapsRef.current = 0;
+    submittedRef.current = false;
+    setSolvedIds(new Set());
+    setSorted([]);
+    setCurrentIndex(0);
+    idxRef.current = 0;
+    setReward(null);
+    setWordTapped(false);
+    resetBoard();
+    activeLoop.reset();
+    setRunning(true);
+    setStage('asking');
+    setStatusLine(first.task === 'spell-word' ? 'Listen, then fill in the boxes.' : 'Listen, then say the middle sound.');
+    challengeStartRef.current = performance.now();
+    // ONE cue with ONE job: speak this. The how-to-play is inside the quoted
+    // line rather than a directive telling the tutor to compose one — residual
+    // SWAP-1, where a two-job opening turn improvised its own ask and item 1
+    // ran without its model.
+    activeLoop.sendCueNow(itemCue(first, { ...cueOptsFor(0), opening: true, howToPlay: true }));
+    activeLoop.arm();
+  }, [cueOptsFor, itemOf, resetBoard]);
 
-  // =========================================================================
-  // Render: Fill-Vowel Mode
-  // =========================================================================
-  const renderFillVowel = () => {
-    if (!currentChallenge) return null;
-    const letters = currentChallenge.targetLetters;
-    const vowelOpts = currentChallenge.vowelOptions || [];
+  const startRunRef = useRef(startRun);
+  startRunRef.current = startRun;
 
-    return (
-      <div className="space-y-6">
-        {/* Consonant frame with blank */}
-        <div className="flex items-center justify-center gap-2">
-          {/* First consonant */}
-          <div className="w-20 h-20 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 flex items-center justify-center text-3xl font-bold uppercase text-blue-300">
-            {letters[0]}
-          </div>
-          {/* dropzone-triage: answer display, not a selection-to-place target. */}
-          {/* Vowel slot — blank or selected */}
-          <div className={`
-            w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center text-3xl font-bold uppercase transition-all
-            ${wordComplete && selectedVowel
-              ? 'bg-emerald-500/30 border-emerald-400/60 text-emerald-200'
-              : selectedVowel
-                ? 'bg-red-500/15 border-red-500/30 text-red-300'
-                : 'bg-slate-800/40 border-slate-500/40 text-slate-500 animate-pulse'
-            }
-            ${isShaking ? 'animate-shake' : ''}
-            ${isCelebrating ? 'animate-bounce' : ''}
-          `}>
-            {selectedVowel || '?'}
-          </div>
-          {/* Last consonant */}
-          <div className="w-20 h-20 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 flex items-center justify-center text-3xl font-bold uppercase text-blue-300">
-            {letters[2]}
-          </div>
-        </div>
+  const prepareLive = useCallback(async () => {
+    if (preparing) return;
+    setPreparing(true);
+    setStatusLine('Getting ready…');
+    try {
+      if (!connectedRef.current && ctx.sessionMode === 'idle') {
+        weConnectedRef.current = true;
+        const first = itemOf(0);
+        await ctx.connect({
+          primitive_type: 'cvc-speller',
+          instance_id: resolvedInstanceId,
+          primitive_data: {
+            activity: 'live direct instruction CVC sounds-and-letters practice',
+            task: first?.task ?? '',
+            word: first?.word ?? '',
+            middleSound: first ? spokenVowel(first) : '',
+          },
+          grade_level: gradeLevel || 'kindergarten',
+          exhibit_id: exhibitId,
+          audio_input: CVC_AUDIO_INPUT,
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
+        });
+        const started = performance.now();
+        while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
+        if (!connectedRef.current) throw new Error('The tutor did not connect.');
+      }
 
-        <p className="text-center text-slate-400 text-sm">
-          Which vowel sound do you hear in the middle?
-        </p>
+      ctx.startListening();
+      const micStarted = performance.now();
+      while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
+      if (!listeningRef.current) throw new Error('The microphone did not open.');
 
-        {/* Two vowel options — big, chunky, color-coded */}
-        <div className="flex items-center justify-center gap-6 sm:gap-10">
-          {vowelOpts.map((vowel, idx) => {
-            const keyword = VOWEL_KEYWORDS[vowel] || '';
-            const isSelected = selectedVowel === vowel;
-            const showCorrect = wordComplete && vowel === letters[1]?.toLowerCase();
-            const showWrong = isSelected && feedbackType === 'error';
+      startRunRef.current();
+    } catch (error) {
+      setStatusLine(error instanceof Error ? error.message : 'Could not start.');
+      setStage('idle');
+    } finally {
+      setPreparing(false);
+    }
+  }, [ctx, exhibitId, gradeLevel, itemOf, preparing, resolvedInstanceId]);
 
-            return (
-              <button
-                key={idx}
-                onClick={() => handleFillVowelSelect(vowel)}
-                disabled={wordComplete}
-                className={`
-                  flex flex-col items-center justify-center gap-1
-                  w-24 h-24 sm:w-28 sm:h-28 rounded-2xl
-                  border-2 transition-all duration-300 cursor-pointer
-                  ${showCorrect
-                    ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
-                    : showWrong
-                      ? 'bg-red-500/20 border-red-500/40 scale-95'
-                      : 'bg-red-500/10 border-red-400/30 hover:bg-red-500/20 hover:scale-105'
-                  }
-                  disabled:cursor-default
-                `}
-              >
-                <span className="text-4xl font-bold text-red-300 uppercase">{vowel}</span>
-                <span className="text-[10px] text-slate-500">{keyword}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // =========================================================================
-  // Render: Spell-Word Mode (Elkonin boxes)
-  // =========================================================================
-  const renderSpellWord = () => {
-    if (!currentChallenge) return null;
-    return (
-      <div className="space-y-5">
-        {/* Picture self-check cue — emoji only (withdrawn at hard tier). The
-            imageDescription sentence is unreadable at PRE; keep it for a11y only. */}
-        {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
-          <LuminaPanel className="flex items-center justify-center px-5 py-3">
-            <span
-              className="text-4xl"
-              role="img"
-              aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}
-            >
-              {currentChallenge.emoji}
-            </span>
-          </LuminaPanel>
-        )}
-
-        {/* Elkonin box slots */}
-        <div className="flex items-center justify-center gap-3">
-          {slots.map((letter, index) => {
-            const isActive = activeSlotIndex === index;
-            const isFilled = letter !== null;
-            const isVowelSlot = index === 1;
-            const slotState: DropZoneState = spellFlash
-              ?? (isFilled ? 'filled' : isActive ? 'dragOver' : 'idle');
-
-            return (
-              <button
-                key={index}
-                onClick={() => handleSlotTap(index)}
-                disabled={sessionDone}
-                className={`
-                  relative w-20 h-20 rounded-xl border-2 flex items-center justify-center
-                  text-3xl font-bold uppercase transition-all duration-200 cursor-pointer select-none
-                  ${dropZoneStateClass(slotState)}
-                  ${slotState === 'correct' ? motion.pop : ''}
-                  ${slotState === 'incorrect' ? motion.shake : ''}
-                  ${isVowelSlot && isFilled && !spellFlash ? 'text-red-300' : ''}
-                `}
-              >
-                {letter ? <span>{letter}</span> : <span className="text-lg">?</span>}
-                <span className="absolute -bottom-5 text-[10px] text-slate-600">
-                  {index === 0 ? 'begin' : index === 1 ? 'middle' : 'end'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Letter Bank */}
-        {!wordComplete && (
-          <LuminaPanel className="p-4">
-            <div className="flex flex-wrap gap-2 justify-center">
-              {letterBank.map((letter, index) => {
-                const isVowel = VOWELS.has(letter);
-                return (
-                  <button
-                    key={`${letter}-${index}`}
-                    onClick={() => handleSelectLetter(letter)}
-                    disabled={hasSubmittedEvaluation || wordComplete || activeSlotIndex === null}
-                    className={`
-                      w-12 h-12 rounded-lg border-2 flex items-center justify-center
-                      text-xl font-bold uppercase transition-all duration-150
-                      cursor-pointer select-none hover:scale-110
-                      ${isVowel
-                        ? 'bg-red-500/15 border-red-500/30 text-red-300 hover:bg-red-500/25'
-                        : 'bg-blue-500/15 border-blue-500/30 text-blue-300 hover:bg-blue-500/25'
-                      }
-                      ${(hasSubmittedEvaluation || wordComplete || activeSlotIndex === null) ? 'opacity-40 cursor-not-allowed hover:scale-100' : ''}
-                    `}
-                  >
-                    {letter}
-                  </button>
-                );
-              })}
-            </div>
-          </LuminaPanel>
-        )}
-
-        {/* Check — explicit confirm stays: a 3-slot construction is not an atomic
-            selection. (Clear removed at PRE — tapping a filled box clears it.) */}
-        {!wordComplete && (
-          <div className="flex items-center justify-center">
-            <LuminaActionButton
-              action="check"
-              onClick={handleCheckSpelling}
-              disabled={slots.some(s => s === null)}
-            >
-              Check Spelling
-            </LuminaActionButton>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // =========================================================================
-  // Render: Word-Sort Mode
-  // =========================================================================
-  const renderWordSort = () => {
-    if (!currentChallenge) return null;
-
-    // Determine the two bucket labels from the challenge data
-    const targetVowelLetter = vowelFocus.replace('short-', '');
-    const confusableVowels: Record<string, string> = { a: 'e', e: 'i', i: 'e', o: 'u', u: 'o' };
-    const confusableVowel = confusableVowels[targetVowelLetter] || 'e';
-    const bucket1 = vowelFocus;
-    const bucket2 = `short-${confusableVowel}`;
-
-    const correctBucket = currentChallenge.sortBucketLabel || vowelFocus;
-
-    return (
-      <div className="space-y-6">
-        {/* Word to sort — emoji picture cue (withdrawn at hard tier); the shared
-            Hear It control above is the single audio affordance */}
-        {currentChallenge.showPictureCue !== false && currentChallenge.emoji && (
-          <div className="flex justify-center">
-            <span className="text-5xl">{currentChallenge.emoji}</span>
-          </div>
-        )}
-
-        <p className="text-center text-slate-400 text-sm">
-          Which vowel sound do you hear? Sort into the right bucket!
-        </p>
-
-        {/* Two sort buckets */}
-        <div className="flex items-center justify-center gap-4 sm:gap-6">
-          {[bucket1, bucket2].map((bucket) => {
-            const bucketVowel = bucket.replace('short-', '');
-            const keyword = VOWEL_KEYWORDS[bucketVowel] || '';
-            const isSelected = sortedBucket === bucket;
-            const showCorrect = wordComplete && bucket === correctBucket;
-            const showWrong = isSelected && feedbackType === 'error';
-
-            return (
-              <button
-                key={bucket}
-                onClick={() => handleWordSort(bucket)}
-                disabled={wordComplete}
-                className={`
-                  flex flex-col items-center justify-center gap-2
-                  w-32 h-32 sm:w-36 sm:h-36 rounded-2xl
-                  border-2 transition-all duration-300 cursor-pointer
-                  ${showCorrect
-                    ? 'bg-emerald-500/30 border-emerald-400/60 scale-110'
-                    : showWrong
-                      ? 'bg-red-500/20 border-red-500/40 scale-95'
-                      : 'bg-purple-500/10 border-purple-400/30 hover:bg-purple-500/20 hover:scale-105'
-                  }
-                  ${isShaking && isSelected ? 'animate-shake' : ''}
-                  disabled:cursor-default
-                `}
-              >
-                <span className="text-3xl font-bold text-purple-300 uppercase">{bucketVowel}</span>
-                <span className="text-xs text-slate-400">like {keyword}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  // Unmount: never leave Live holding the mic, never leave a timer running.
+  useEffect(() => () => {
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (weConnectedRef.current) {
+      ctx.stopListening();
+      ctx.disconnect();
+    }
+    // Context methods are stable; unmount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
-  // Main Render
+  // Render
   // ============================================================================
 
-  if (!currentChallenge && !allChallengesComplete) {
+  if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -1192,157 +876,250 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
     );
   }
 
+  const item = itemOf(currentIndex)!;
+  const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const showPicture = currentChallenge.showPictureCue !== false && !!currentChallenge.emoji;
+  const stageWord = stage === 'affirmed'
+    ? 'yes!'
+    : stage === 'judging'
+      ? 'let’s see…'
+      : stage === 'asking'
+        ? (item.task === 'spell-word' ? 'fill the boxes' : 'middle sound?')
+        : 'get ready';
+
+  // ── fill-vowel: the consonant frame. The blank stays a blank until the
+  //    tutor has affirmed; the letter arriving IS the reward, and it is the
+  //    only place the sound→letter link is ever shown.
+  const renderFillVowel = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-center gap-2">
+        <div className="w-20 h-20 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 flex items-center justify-center text-3xl font-bold uppercase text-blue-300">
+          {item.letters[0]}
+        </div>
+        <div
+          className={`w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center text-3xl font-bold uppercase transition-all ${
+            reward && stage === 'affirmed'
+              ? 'bg-emerald-500/30 border-emerald-400/60 text-emerald-200 animate-bounce'
+              : 'bg-slate-800/40 border-slate-500/40 text-slate-500 animate-pulse'
+          }`}
+        >
+          {reward && stage === 'affirmed' ? reward : '?'}
+        </div>
+        <div className="w-20 h-20 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 flex items-center justify-center text-3xl font-bold uppercase text-blue-300">
+          {item.letters[2]}
+        </div>
+      </div>
+      {reward && stage === 'affirmed' && (
+        <p className="text-center text-emerald-300 text-sm">
+          {vowelKeyword(reward) ? `like ${vowelKeyword(reward)}` : ''}
+        </p>
+      )}
+    </div>
+  );
+
+  // ── spell-word: Elkonin boxes + letter bank. The third letter landing is
+  //    the commit; the board locks while the tutor judges.
+  const renderSpellWord = () => (
+    <div className="space-y-5">
+      {showPicture && (
+        <LuminaPanel className="flex items-center justify-center px-5 py-3">
+          <span
+            className="text-4xl"
+            role="img"
+            aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}
+          >
+            {currentChallenge.emoji}
+          </span>
+        </LuminaPanel>
+      )}
+
+      <div className="flex items-center justify-center gap-3">
+        {slots.map((letter, index) => {
+          const isActive = activeSlotIndex === index && !awaitingBuildRef.current;
+          const slotState: DropZoneState = boardFlash
+            ?? (letter !== null ? 'filled' : isActive ? 'dragOver' : 'idle');
+          return (
+            <button
+              key={index}
+              onClick={() => handleSlotTap(index)}
+              disabled={!running || stage === 'judging'}
+              aria-label={`box ${index + 1}`}
+              className={`
+                relative w-20 h-20 rounded-xl border-2 flex items-center justify-center
+                text-3xl font-bold uppercase transition-all duration-200 cursor-pointer select-none
+                ${dropZoneStateClass(slotState)}
+                ${slotState === 'correct' ? motion.pop : ''}
+                ${slotState === 'incorrect' ? motion.shake : ''}
+              `}
+            >
+              {letter ? <span>{letter}</span> : <span className="text-lg">?</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <LuminaPanel className="p-4">
+        <div className="flex flex-wrap gap-2 justify-center">
+          {letterBank.map((letter, index) => (
+            <button
+              key={`${letter}-${index}`}
+              onClick={() => handleSelectLetter(letter)}
+              disabled={!running || stage === 'judging' || activeSlotIndex === null}
+              className={`
+                w-12 h-12 rounded-lg border-2 flex items-center justify-center
+                text-xl font-bold uppercase transition-all duration-150
+                cursor-pointer select-none hover:scale-110
+                ${VOWELS.has(letter)
+                  ? 'bg-red-500/15 border-red-500/30 text-red-300 hover:bg-red-500/25'
+                  : 'bg-blue-500/15 border-blue-500/30 text-blue-300 hover:bg-blue-500/25'
+                }
+                ${(!running || stage === 'judging' || activeSlotIndex === null)
+                  ? 'opacity-40 cursor-not-allowed hover:scale-100'
+                  : ''}
+              `}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+      </LuminaPanel>
+    </div>
+  );
+
+  // ── word-sort: the current word's picture, plus the columns built out of
+  //    answers ALREADY GIVEN. A column is labelled the moment its first word
+  //    is affirmed — never before, so nothing on screen names the answer.
+  const renderWordSort = () => {
+    const columns = Array.from(new Set(sorted.map((s) => s.vowel)));
+    return (
+      <div className="space-y-5">
+        {showPicture && (
+          <div className="flex justify-center">
+            <span className="text-5xl" role="img" aria-label={currentChallenge.imageDescription || currentChallenge.targetWord}>
+              {currentChallenge.emoji}
+            </span>
+          </div>
+        )}
+        {reward && stage === 'affirmed' && (
+          <p className="text-center text-emerald-300 text-lg font-black">
+            {reward.toUpperCase()}
+            {vowelKeyword(reward) ? <span className="text-sm font-normal text-emerald-300/80"> — like {vowelKeyword(reward)}</span> : null}
+          </p>
+        )}
+        {columns.length > 0 && (
+          <div className="flex items-start justify-center gap-4">
+            {columns.map((vowel) => (
+              <div key={vowel} className="rounded-2xl bg-white/5 border-2 border-white/10 px-4 py-3 min-w-[110px]">
+                <div className="text-center text-2xl font-black text-emerald-300 uppercase">{vowel}</div>
+                <div className="text-center text-[10px] text-slate-500 mb-2">like {vowelKeyword(vowel)}</div>
+                <div className="flex flex-col items-center gap-1">
+                  {sorted.filter((s) => s.vowel === vowel).map((s) => (
+                    <span key={s.id} className="text-2xl" role="img" aria-label={s.word}>{s.emoji || '•'}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">
-                {VOWEL_LABELS[vowelFocus] || vowelFocus}
-              </LuminaBadge>
-              {currentChallenge && (
-                <LuminaBadge
-                  className="text-xs"
-                  accent={
-                    currentChallenge.taskType === 'fill-vowel'
-                      ? 'purple'
-                      : currentChallenge.taskType === 'word-sort'
-                        ? 'amber'
-                        : 'emerald'
-                  }
-                >
-                  {TASK_TYPE_CONFIG[currentChallenge.taskType]?.label || currentChallenge.taskType}
-                </LuminaBadge>
-              )}
-            </div>
+            {/* Grade / mode badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                {/* The vowel badge appears only when the objective NAMED a vowel.
+                    An unscoped session spans the letter group's vowels, and
+                    labelling it "Short A" would be both wrong and a hint. */}
+                {vowelFocus && (
+                  <LuminaBadge className="text-xs">{VOWEL_LABELS[vowelFocus] || vowelFocus}</LuminaBadge>
+                )}
+                <LuminaBadge accent="emerald" className="text-xs">{TASK_BADGE[item.task]}</LuminaBadge>
+              </div>
+            )}
           </div>
-          {!sessionDone && (
-            <LuminaBadge accent="blue" className="text-xs">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </LuminaBadge>
-          )}
+          <LuminaBadge accent="cyan" className="text-xs">
+            {item.task === 'spell-word' ? 'Build it' : 'Say it out loud'}
+          </LuminaBadge>
         </div>
       </LuminaCardHeader>
 
-      <LuminaCardContent className="space-y-5">
-        {/* Progress dots */}
-        {!sessionDone && (
-          <div className="flex items-center justify-center gap-1.5">
-            {challenges.map((ch, i) => (
-              <div
-                key={ch.id}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i < currentChallengeIndex
-                    ? 'bg-emerald-500/60'
-                    : i === currentChallengeIndex
-                      ? 'bg-blue-400 scale-125'
-                      : 'bg-slate-600/40'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* One audio affordance (all modes): tap to hear the word; keep tapping
-            and it stretches — Hear It + Stretch It collapsed for the PRE band */}
-        {!sessionDone && (
-          <div className="flex items-center justify-center">
-            <button
-              onClick={handleAudioTap}
-              className="flex items-center rounded-full px-5 py-2.5 text-sm font-medium bg-amber-500/15 border-2 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 text-amber-300 transition-all cursor-pointer"
-            >
-              <SpeakerIcon className="text-amber-300 mr-1.5" size="w-5 h-5" /> Hear It
-            </button>
-          </div>
-        )}
-
-        {/* Task-specific content */}
-        {!sessionDone && currentChallenge && (
+      <LuminaCardContent className="space-y-4">
+        {!evaluation.hasSubmitted && (
           <>
-            {currentChallenge.taskType === 'fill-vowel' && renderFillVowel()}
-            {currentChallenge.taskType === 'spell-word' && renderSpellWord()}
-            {currentChallenge.taskType === 'word-sort' && renderWordSort()}
+            {!isPreReader && challenges.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <LuminaChallengeCounter current={currentIndex + 1} total={challenges.length} variant="dots" />
+              </div>
+            )}
+
+            {/* One audio affordance, all modes: hear the word again. It never
+                stretches and never isolates a sound — that is the answer. */}
+            <div className="flex items-center justify-center">
+              <button
+                onClick={handleHearWord}
+                aria-label="hear the word"
+                className={`
+                  flex items-center rounded-full px-5 py-2.5 text-sm font-medium border-2 transition-all cursor-pointer
+                  ${wordTapped
+                    ? 'bg-amber-500/25 border-amber-400/60 text-amber-200 scale-105'
+                    : 'bg-amber-500/15 border-amber-500/30 hover:bg-amber-500/25 hover:scale-105 text-amber-300'}
+                `}
+              >
+                <SpeakerIcon className="text-amber-300 mr-1.5" size="w-5 h-5" /> Hear It
+              </button>
+            </div>
+
+            {item.task === 'fill-vowel' && renderFillVowel()}
+            {item.task === 'spell-word' && renderSpellWord()}
+            {item.task === 'word-sort' && renderWordSort()}
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {item.task === 'spell-word'
+                  ? 'Tap “Hear It” for the word, then put a letter in each box.'
+                  : 'Tap “Hear It” for the word, then say the middle sound.'}
+              </p>
+            )}
+
+            {/* The mic. ONE tap, at the start, because a browser will not open a
+                microphone without a gesture — never per answer, and never a
+                push-to-talk button the child has to find mid-challenge. It stays
+                open through `spell-word` too: the doctrine is one open mic per
+                session, not one per spoken mode. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={micState}
+                level={ctx.micLevel}
+                isSupported={isSupported}
+                onStart={() => void prepareLive()}
+                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{statusLine}</p>
+            </div>
           </>
         )}
 
-        {/* Feedback */}
-        {feedback && !sessionDone && (
-          <LuminaFeedbackCard
-            status={
-              feedbackType === 'success'
-                ? 'correct'
-                : feedbackType === 'error'
-                  ? 'incorrect'
-                  : 'insight'
-            }
-            className="p-4"
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Culminating production beat — say the whole word aloud. Once solved,
-            this IS the next step: a single prominent mic CTA, and a successful
-            spoken word auto-advances (no click). Next Word is a quiet skip. */}
-        {wordComplete && !sessionDone && currentChallenge && (
-          <div className="flex flex-col items-center gap-3">
-            {spokenWords.has(currentChallenge.id) ? (
-              // Said it → celebrate, then auto-glide to the next challenge (effect above)
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-emerald-300 text-base font-semibold">
-                  {'🎉'} You said “{currentChallenge.targetWord}” out loud!
-                </span>
-                <span className="text-slate-500 text-xs">Next word coming up…</span>
-              </div>
-            ) : spokenCapture.isSupported ? (
-              // Mic available → the say-it beat is the PRIMARY next step
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-slate-300 text-sm font-medium">Your turn — say the word!</p>
-                <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
-                  <LuminaMicListener
-                    state={spokenCapture.state}
-                    level={spokenCapture.level}
-                    isSupported={spokenCapture.isSupported}
-                    onStart={() => void spokenCapture.start()}
-                    onCancel={spokenCapture.cancel}
-                    size="sm"
-                    idleLabel={`Say “${currentChallenge.targetWord}”!`}
-                    listeningLabel={`Say “${currentChallenge.targetWord}”!`}
-                  />
-                </div>
-                {/* Quiet skip — never traps a student who can't or won't speak */}
-                {spokenCapture.state === 'idle' && (
-                  <button
-                    onClick={handleNextWord}
-                    className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
-                  >
-                    {currentChallengeIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              // No mic → original prominent Next / Finish
-              <LuminaActionButton
-                action="next"
-                onClick={handleNextWord}
-              >
-                {currentChallengeIndex < challenges.length - 1 ? 'Next Word' : 'Finish'}
-              </LuminaActionButton>
-            )}
-          </div>
-        )}
-
-        {/* Phase Summary */}
-        {sessionDone && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Spelling Complete!"
-            celebrationMessage={`You got ${challengeResults.filter(r => r.correct).length} out of ${challenges.length} correct!${spokenWords.size > 0 ? ` You said ${spokenWords.size} out loud — amazing!` : ''}`}
-            className="mt-4"
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
+            heading="Sounds and Letters Complete!"
+            celebrationMessage={`You got ${solvedIds.size} word${solvedIds.size === 1 ? '' : 's'}!`}
           />
         )}
       </LuminaCardContent>

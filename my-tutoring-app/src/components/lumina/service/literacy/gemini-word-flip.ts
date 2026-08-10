@@ -10,19 +10,27 @@ import type {
 // WORD FLIP generator (L0 birth: plural_s only).
 //
 // K-1 spoken grammar transformations. The child sees a counted-picture frame
-// ("One dog 🐕 · Three ___?") and SAYS the regular -s plural ("dogs"); tap
-// chips are the receptive fallback.
+// ("One dog 🐕 · Three ___?") and SAYS the regular -s plural ("dogs") to a live
+// Direct Instruction tutor, which judges the audio in-band.
 //
 // DESIGN SPLIT (the load-bearing decision): Gemini authors ONLY the noun pool
 // — { word, emoji } pairs themed to the topic. Code derives EVERYTHING else
-// deterministically: answer = word + 's', the 3 chips (answer / bare singular /
-// over-regularized "-ses"), and the many-side count. The transformation rule
-// IS the answer key, so stimulus and answer can never desync. This mirrors the
-// "LLM emits scope-bound content, code builds structure + answer" doctrine.
+// deterministically: answer = word + 's', and the many-side count. The
+// transformation rule IS the answer key, so stimulus and answer can never
+// desync. This mirrors the "LLM emits scope-bound content, code builds
+// structure + answer" doctrine.
+//
+// ⚠️ THE CHIPS ARE GONE (DI port, qa/di/BACKLOG.md item 16). This generator
+// used to build 3 tap chips per challenge — the answer, the bare singular, and
+// the over-regularized "-ses" form. Tapping the right one out of three printed
+// words is READING, which a child who cannot form a plural does correctly every
+// time, and the chip PRINTED THE ANSWER on screen. Both error shapes survive
+// where they belong: named inside the judging contract in `wordFlipScript.ts`,
+// as things that look like an answer and are not.
 //
 // L0 NOTE: no resolveEvalModes / constrainChallengeTypeEnum here — the single
-// mode is 'plural_s'. /add-eval-modes widens the ladder (plural_es,
-// article_choice, verb_past, irregulars) later.
+// mode is 'plural_s'. /add-eval-modes widens the ladder (plural_es, verb_past,
+// irregulars) later. `article_choice` is off that ladder: it was tap-only.
 // ---------------------------------------------------------------------------
 
 const MODEL = 'gemini-flash-lite-latest';
@@ -82,8 +90,11 @@ const IRREGULARS = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
-// Schema — tiny, flat, bounded: { title, description, nouns: [{word, emoji}] }.
-// No answers, no distractors, no counts — code derives all of those.
+// Schema — tiny, flat, bounded: { title, nouns: [{word, emoji}] }.
+// No answers, no distractors, no counts — code derives all of those. There is
+// no `description` any more: the start screen that rendered it went with the
+// DI port, and how to play now arrives by VOICE from a hand-authored line
+// (`wordFlipScript.ts`), never from a generated sentence.
 // ---------------------------------------------------------------------------
 
 const buildNounPoolSchema = (): Schema => ({
@@ -92,10 +103,6 @@ const buildNounPoolSchema = (): Schema => ({
     title: {
       type: Type.STRING,
       description: "Engaging, kid-friendly session title including the topic (e.g., 'One and Many at the Farm!').",
-    },
-    description: {
-      type: Type.STRING,
-      description: "One friendly sentence telling a Kindergartner what they'll do (see one thing, then more — say the new word). NO answer words.",
     },
     nouns: {
       type: Type.ARRAY,
@@ -116,7 +123,7 @@ const buildNounPoolSchema = (): Schema => ({
       description: "12-16 distinct concrete, picturable Kindergarten nouns whose plural is formed by JUST ADDING -s.",
     },
   },
-  required: ["title", "description", "nouns"],
+  required: ["title", "nouns"],
 });
 
 // ---------------------------------------------------------------------------
@@ -130,7 +137,6 @@ interface RawNoun {
 
 interface RawNounPool {
   title?: string;
-  description?: string;
   nouns?: RawNoun[];
 }
 
@@ -250,8 +256,7 @@ HARD RULES for every word (any violation makes the word unusable):
 Good candidates if they fit the topic (feel free to use others that fit better): ${seedHint}.
 
 Also provide:
-- title: a fun, kid-friendly session title including the topic.
-- description: one friendly sentence telling the child what they'll do (see one thing, then more — say the new word).`;
+- title: a fun, kid-friendly session title including the topic.`;
 
 // ---------------------------------------------------------------------------
 // Orchestrator
@@ -292,13 +297,12 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
     }
 
     const title = raw.title?.trim() || '';
-    const description = raw.description?.trim() || '';
 
     if (pool.length < 5) {
       throw new Error(`[WordFlip] Noun pool too small after retry: ${pool.length}/5 usable nouns`);
     }
-    if (!title || !description) {
-      throw new Error('[WordFlip] Gemini pool missing title/description');
+    if (!title) {
+      throw new Error('[WordFlip] Gemini pool missing title');
     }
 
     // Counts 2-5 with guaranteed variety: one of each, plus one random repeat,
@@ -309,9 +313,10 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
       COUNT_CHOICES[Math.floor(Math.random() * COUNT_CHOICES.length)],
     ]);
 
-    // Assemble 5 challenges — code derives answer + chips from the rule.
-    // Chips: the answer, the bare singular (no plural marking), and the
-    // over-regularized "-ses" form — the two authentic K error shapes.
+    // Assemble 5 challenges — code derives the answer from the rule. The two
+    // authentic K error shapes (the bare singular and the over-regularized
+    // "-ses" form) are no longer built as chips; they are named in the judging
+    // contract as answers that look right and are not.
     const selected = shuffle(pool).slice(0, 5);
     const challenges: WordFlipChallenge[] = selected.map((n, i) => ({
       id: `word-flip-${i + 1}`,
@@ -320,12 +325,10 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
       answer: `${n.word}s`,
       emoji: n.emoji,
       count: counts[i],
-      options: shuffle([`${n.word}s`, n.word, `${n.word}ses`]),
     }));
 
     const data: WordFlipData = {
       title,
-      description,
       challengeType: 'plural_s',
       challenges,
       gradeLevel: ctx.gradeContext,

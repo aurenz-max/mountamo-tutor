@@ -1,28 +1,48 @@
 // @vitest-environment jsdom
 /**
  * Reader-fit behavioral verification for phonics-blender @ PRE
- * (qa/reader-fit/phonics-blender-PRE-2026-07-15.md). The PRE (Kindergarten)
- * contract this locks in:
- *  1. Adult chrome is hidden at gradeLevel 'K': the phase stepper (Listen/Build/
- *     Blend), the "Word N of M / N completed" counter, the Grade/pattern badges,
- *     and the phase-description badge.
- *  2. Phoneme tiles are LETTER-primary (a pre-reader cannot read /k/ slash
- *     notation); the sound is still spoken on tap via [PRONOUNCE_SOUND].
- *  3. Unreadable instruction labels are gone ("Tap each sound to hear it:",
- *     "Arrange the sounds…", "Sound Bank:", "Blended together:").
- *  4. Arranging the sounds is a multi-part construction, so the Check confirm
- *     stays (rule 2); the Clear affordance is dropped to cut chrome.
- *  5. Reader grades (control, Grade 1) keep the full text UI + /k/ notation.
+ * (qa/reader-fit/phonics-blender-PRE-2026-07-15.md), re-based 2026-08-09 onto
+ * the DI modality and its purely-verbal task. The PRE (Kindergarten) contract
+ * this locks in:
+ *  1. Adult chrome is hidden at gradeLevel 'K': the word counter, the
+ *     Grade/pattern badges, and the reader instruction line.
+ *  2. The word's LETTERS are the stimulus and are shown at every grade — a
+ *     pre-reader is learning to decode them, so they are never hidden.
+ *  3. Tapping a letter speaks that SOUND via [PRONOUNCE_SOUND] (R2), and never
+ *     the whole word — the word is the answer.
+ *  4. ANSWER-LEAK: nothing that names the word may appear before the child says
+ *     it — no printed whole word, no picture. R8's emoji is a post-answer
+ *     reward now; see the contract's C4.
+ *  5. R4 RE-BASED — no button carries the child forward at any grade. The tutor
+ *     owns every transition.
  *
- * External hooks (live tutor, evaluation, audio, spoken judge) are mocked.
+ * External hooks (live tutor context, evaluation, audio) are mocked.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 const sendText = vi.hoisted(() => vi.fn());
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText, isConnected: true }),
+const ctxState = vi.hoisted(() => ({
+  isConnected: true,
+  isListening: false,
+  isAudioPlaying: false,
+  micLevel: 0,
+  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionResumeCount: 0,
+  conversation: [] as Array<{ role: string; content: string }>,
+}));
+vi.mock('@/contexts/LuminaAIContext', () => ({
+  useLuminaAIContext: () => ({
+    ...ctxState,
+    sendText,
+    connect: vi.fn(async () => {}),
+    disconnect: vi.fn(),
+    reconnect: vi.fn(),
+    startListening: vi.fn(() => { ctxState.isListening = true; }),
+    stopListening: vi.fn(),
+    updateContext: vi.fn(),
+  }),
 }));
 
 vi.mock('../../../../evaluation', () => ({
@@ -37,13 +57,6 @@ vi.mock('../../../../evaluation', () => ({
 
 vi.mock('../../../../utils/SoundManager', () => ({
   SoundManager: new Proxy({}, { get: () => vi.fn() }),
-}));
-
-vi.mock('../../../../hooks/useSpokenWordCapture', () => ({
-  useSpokenWordCapture: () => ({
-    state: 'idle', level: 0, isSupported: false,
-    start: vi.fn(), cancel: vi.fn(),
-  }),
 }));
 
 import PhonicsBlender, { type PhonicsBlenderData } from '../PhonicsBlender';
@@ -74,45 +87,58 @@ describe('PhonicsBlender @ PRE (gradeLevel K)', () => {
   beforeEach(() => sendText.mockClear());
   afterEach(cleanup);
 
-  it('hides adult chrome (phase stepper, word counter, badges)', () => {
+  it('hides adult chrome (word counter, badges, reader instruction line)', () => {
     render(<PhonicsBlender data={makeData('K')} />);
-    expect(screen.queryByText(/Word 1 of 1/)).toBeNull();       // counter
-    expect(screen.queryByText(/completed/)).toBeNull();
-    expect(screen.queryByText('Grade K')).toBeNull();           // badge
-    expect(screen.queryByText('CVC Words')).toBeNull();         // pattern badge
-    expect(screen.queryByText('Listen')).toBeNull();            // stepper label
-    expect(screen.queryByText('Build')).toBeNull();
-    expect(screen.queryByText('Blend')).toBeNull();
+    expect(screen.queryByText('Grade K')).toBeNull();
+    expect(screen.queryByText('CVC Words')).toBeNull();
+    expect(screen.queryByText(/Tap a letter to hear its sound/)).toBeNull();
   });
 
-  it('hides unreadable instruction labels; the word emoji still shows', () => {
+  it('SHOWS the word’s letters — they are the stimulus a pre-reader is learning to decode', () => {
     render(<PhonicsBlender data={makeData('K')} />);
-    expect(screen.queryByText('Tap each sound to hear it:')).toBeNull();
-    expect(screen.queryByText('Blended together:')).toBeNull();
-    expect(screen.getByText('🐱')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'sound /k/' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'sound /a/' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'sound /t/' })).toBeTruthy();
+    expect(screen.getByText('c')).toBeTruthy();
   });
 
-  it('phoneme tiles are LETTER-primary — no /k/ slash notation visible', () => {
-    render(<PhonicsBlender data={makeData('K')} />);
-    expect(screen.queryByText('/k/')).toBeNull();
-    expect(screen.queryByText('/t/')).toBeNull();
-    // the letter is the tile face (appears on the tile and the blend breakdown)
-    expect(screen.getAllByText('c').length).toBeGreaterThan(0);
-  });
-
-  it('tapping a sound tile speaks it via [PRONOUNCE_SOUND] (stimulus is voiced)', () => {
+  it('tapping a letter speaks its SOUND via [PRONOUNCE_SOUND] (R2)', () => {
     render(<PhonicsBlender data={makeData('K')} />);
     fireEvent.click(screen.getByRole('button', { name: 'sound /k/' }));
-    expect(tagged('[PRONOUNCE_SOUND]')).toHaveLength(1);
+    const spoken = tagged('[PRONOUNCE_SOUND]');
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0]).toContain('/k/');
   });
 
-  it('build phase keeps the Check confirm but drops the Clear affordance', () => {
+  it('tapping a letter never speaks the WORD — the word is the answer', () => {
     render(<PhonicsBlender data={makeData('K')} />);
-    fireEvent.click(screen.getByRole('button', { name: /Ready to Build/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'sound /k/' }));
+    fireEvent.click(screen.getByRole('button', { name: 'sound /a/' }));
+    fireEvent.click(screen.getByRole('button', { name: 'sound /t/' }));
+    expect(tagged('[PRONOUNCE_SOUND]')).toHaveLength(3);
+    expect(sendText.mock.calls.some(c => /\bcat\b/i.test(String(c[0])))).toBe(false);
+  });
+
+  it('ANSWER-LEAK — the picture is not shown before the child has blended the word', () => {
+    render(<PhonicsBlender data={makeData('K')} />);
+    expect(screen.queryByText('🐱')).toBeNull();
+  });
+
+  it('ANSWER-LEAK — the whole word is never printed as a word before the answer', () => {
+    render(<PhonicsBlender data={makeData('K')} />);
+    // The letters render individually; nothing renders the joined string.
+    expect(screen.queryByText('cat')).toBeNull();
+    expect(screen.queryByText('→')).toBeNull();
+  });
+
+  it('R4 RE-BASED — no button may carry the child forward', () => {
+    render(<PhonicsBlender data={makeData('K')} />);
+    expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Ready to Build/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Blend!/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Next Word/ })).toBeNull();
     expect(screen.queryByText('Clear')).toBeNull();
     expect(screen.queryByText('Sound Bank:')).toBeNull();
-    expect(screen.queryByText(/Arrange the sounds/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
   });
 });
 
@@ -120,18 +146,18 @@ describe('PhonicsBlender @ reader grade (control, Grade 1)', () => {
   beforeEach(() => sendText.mockClear());
   afterEach(cleanup);
 
-  it('keeps the full text UI: counter, badges, /k/ notation, instruction labels', () => {
+  it('keeps the adult chrome the K band hides', () => {
     render(<PhonicsBlender data={makeData('1')} />);
-    expect(screen.getByText(/Word 1 of 1/)).toBeTruthy();
     expect(screen.getByText('Grade 1')).toBeTruthy();
-    expect(screen.getByText('Tap each sound to hear it:')).toBeTruthy();
-    expect(screen.getAllByText('/k/').length).toBeGreaterThan(0);
+    expect(screen.getByText('CVC Words')).toBeTruthy();
+    expect(screen.getByText(/Tap a letter to hear its sound/)).toBeTruthy();
   });
 
-  it('build phase keeps the Clear button at reader grade', () => {
+  it('the modality is not band-gated: no advance button and no leaked answer at Grade 1 either', () => {
     render(<PhonicsBlender data={makeData('1')} />);
-    fireEvent.click(screen.getByRole('button', { name: /Ready to Build/ }));
-    expect(screen.getByText('Clear')).toBeTruthy();
-    expect(screen.getByText('Sound Bank:')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Ready to Build/ })).toBeNull();
+    expect(screen.queryByText('🐱')).toBeNull();
+    expect(screen.queryByText('cat')).toBeNull();
   });
 });

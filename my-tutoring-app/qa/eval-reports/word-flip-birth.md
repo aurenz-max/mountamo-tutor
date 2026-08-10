@@ -1,5 +1,31 @@
 # Birth Certificate — word-flip (2026-07-10)
 
+> **⚠️ SUPERSEDED IN PART, 2026-08-09 — the DI modality port (port 3 of `qa/di/BACKLOG.md`
+> item 16) replaced this primitive's interaction. Everything below is the record of the
+> BIRTH and stays as written; three of its claims are no longer true of the shipped
+> primitive, and they are worth reading precisely because they were reasonable at the time.**
+>
+> 1. **The chips are DELETED, and the "accepted tradeoff" below is the thing the port
+>    overturned.** The birth audit reasoned: *"chips include the answer as the receptive
+>    support net — the same accepted tradeoff PictureVocabulary ships"*, and the Phase-2
+>    design gate passed answer-leak on that basis. Two rulings later it does not hold:
+>    tapping "dogs" out of three printed words is READING (a child who cannot form a plural
+>    does it correctly every time), and the chip prints the answer on screen. The support
+>    net WAS the answer key. Both error shapes it encoded (the bare singular, the
+>    over-regularized "dogses") now live in the judging contract instead, as answers that
+>    look right and are not.
+> 2. **Row 3 (`/add-support-tiers`) is void as written** — its first lever was "the chip
+>    count (3 → hide chips → no chips)", and there are no chips. Re-derive from what the
+>    port left withdrawable: the printed singular word, and the count-word label.
+> 3. **Row 1's `article_choice` is off the ladder** — it was TAP-ONLY by design, and tapping
+>    is gone. The rest of the ladder (`plural_es`, `pronoun_swap`, `verb_past`, `irregulars`)
+>    is unaffected and `irregulars` is now a *better* fit, not worse.
+>
+> Row 0's Voice Studio question was answered differently than it assumed: the plural-final-s
+> class is judged **in-band from the audio by the Live tutor**, not by a word-matcher, so no
+> bench is owed — but the one-phoneme difference is exactly why HUMAN-CHECKS **#84 (c)**
+> watches transcript-vs-verdict. Current record: `wordFlipScript.ts`, and item 16.
+
 **Lifecycle layer: L0 (born)** — pedagogically sound, measurable, single core mode, generic tutor.
 **One deliberate L5 pull-forward:** the spoken-production beat (`useVoiceAnswer` open mic, PictureVocabulary archetype) ships at birth — spoken production IS this primitive's thesis ("grammar as single spoken words", K Spoken-First slate POC-2), so it is the core interaction, not polish. `/add-spoken-judge`'s row below is therefore already satisfied; what remains at L5 is `/add-sound` and a Voice Studio bench for the plural-final-s content class.
 

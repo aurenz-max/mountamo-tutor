@@ -1,20 +1,49 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * PhonicsBlender — DI modality, purely verbal. The Live tutor owns the clock.
+ *
+ * WHAT THE CHILD DOES. They see the word's letters laid out as separate cards
+ * (c a t), they may tap any card to hear that sound, and they SAY THE WORD
+ * ALOUD into an open mic. The Live tutor models it, waits, judges the audio
+ * in-band, corrects contrastively, and its own affirmation is the advance.
+ *
+ * WHAT CHANGED, IN TWO RULINGS (both 2026-08-09).
+ *  1. The loop was click-driven with a spoken judge bolted onto the answer — a
+ *     push-to-talk mic, "Ready to Build!", "Check", "Blend!", "Next Word", and
+ *     a `setTimeout` between phases. A pre-reader cannot read any of those, and
+ *     a stopwatch rushes the slow child while holding back the fast one. Every
+ *     transition is now the tutor's. There is no advance timer in this file.
+ *  2. The first port kept the tile-arranging step as a judged gesture, so a
+ *     word took two answers. Driven live, the tutor said "put the sounds in
+ *     order" and the child answered by SAYING "k-a-t" — the right response to a
+ *     blending task and not the one the screen wanted. Blending is a VERBAL
+ *     skill; arranging tiles is sequencing practice wearing a blending costume.
+ *     One word, one spoken answer.
+ *
+ * ANSWER-LEAK RULE (di-word-reading's, and it bit this primitive live). The
+ * letters ARE the stimulus and are always shown. What must NOT appear before
+ * the child speaks: the whole word printed as a word, and the picture — 🐱
+ * hands a five-year-old "cat" without a sound being blended. The emoji is a
+ * post-affirmation reward. This SUPERSEDES contract R8's "always visible"
+ * reading; see docs/contracts/phonics-blender.md.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines); no
+ * visible timers; tap-to-hear is never withdrawn (R2); the K band-gate
+ * presentation is kept (R3).
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaPanel,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaFeedbackCard,
-  LuminaDropZone,
+  LuminaChallengeCounter,
   LuminaMicListener,
-  type DropZoneState,
-  type LuminaAccent,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -22,11 +51,18 @@ import {
   type DiagnosisEvidence,
 } from '../../../evaluation';
 import type { PhonicsBlenderMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
+import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
+import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import {
+  completeCue,
+  itemCue,
+  moveOnCue,
+  pronounceCue,
+  type BlendItem,
+} from './phonicsBlenderScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -37,35 +73,38 @@ export interface PhonicsBlenderData {
   gradeLevel: string;
   patternType: 'cvc' | 'cvce' | 'blend' | 'digraph' | 'r-controlled' | 'diphthong';
 
-  // Words to blend
   words: Array<{
     id: string;
-    targetWord: string;               // The full word (e.g., "cat")
+    targetWord: string;
     phonemes: Array<{
       id: string;
-      sound: string;                  // The phoneme display (e.g., "/k/", "/æ/", "/t/")
-      letters: string;                // The letter(s) this phoneme maps to (e.g., "c", "a", "t")
+      sound: string;                  // The phoneme, e.g. "/k/" — spoken on tap
+      letters: string;                // The letters it maps to, e.g. "c" — SHOWN
     }>;
-    emoji?: string;                    // Single emoji visual hint for the word (e.g., "🐱" for cat)
-    imageDescription?: string;         // Description of the target word for visual context
+    /** POST-affirmation reward picture only. Never shown before the blend. */
+    emoji?: string;
+    imageDescription?: string;
   }>;
 
-  // ── Within-mode support tier scaffolds (stamped in code by the generator from
-  //    ctx.supportTier). Presentation / instruction ONLY — they never change the
-  //    words, the phonemes, the tile set, or the answer. ALL OPTIONAL: absent ⇒
-  //    the legacy full-help render, byte for byte. Never withdrawn at any tier:
-  //    tap-to-hear audio (R2), the K how-to-play protocol (R1), letter-primary K
-  //    tiles (R3), the Check confirm (R4), the emoji (R8), the Blend! fallback. ──
+  // ── Within-mode support tier (stamped in code by the generator from
+  //    ctx.supportTier). Presentation / instruction ONLY — never the words, the
+  //    sounds, or the answer. ALL OPTIONAL: absent ⇒ full help. ──
   /** Threaded to the tutor so its reveal latitude matches the on-screen tier. */
   supportTier?: 'easy' | 'medium' | 'hard';
-  /** Listen-phase preview row: 'full' = "c · a · t → cat", 'word' = the word only, 'none' = hidden. Default 'full'. */
+  /**
+   * How much SEGMENTATION help the letter row gives:
+   *   'full'  — separated letter cards with dots between (c · a · t)
+   *   'word'  — separated letter cards, no dots
+   *   'none'  — the letters joined as one solid word; the child segments it
+   * The stimulus itself is never withdrawn, only the help reading it.
+   */
   showBlendPreview?: 'full' | 'word' | 'none';
-  /** Build area: exact-phoneme-count "?" slots (true) vs. one open drop zone (false). Default true. Check stays length-based either way. */
-  showSlotCount?: boolean;
-  /** Reader-grade tiles: the letters sub-label under the /k/ notation. Default true. NO-OP at K (tiles are letter-primary there). */
-  showTileLetters?: boolean;
-  /** Tutor: enumerate the word's sounds when introducing it. Default true. */
+  /** Tutor: enumerate the word's sounds when it models. Default true. */
   nameTargetPhonemes?: boolean;
+  /** @deprecated No surface since the verbal port — there are no build slots. */
+  showSlotCount?: boolean;
+  /** @deprecated No surface since the verbal port — the letters ARE the tile. */
+  showTileLetters?: boolean;
 
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
@@ -73,12 +112,10 @@ export interface PhonicsBlenderData {
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
+  componentIntent?: string;
+  objectiveText?: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PhonicsBlenderMetrics>) => void;
 }
-
-// ============================================================================
-// Props Interface
-// ============================================================================
 
 interface PhonicsBlenderProps {
   data: PhonicsBlenderData;
@@ -89,20 +126,6 @@ interface PhonicsBlenderProps {
 // Constants
 // ============================================================================
 
-type LearningPhase = 'listen' | 'build' | 'blend';
-
-const PHASE_CONFIG: Record<LearningPhase, { label: string; description: string; icon: string }> = {
-  listen: { label: 'Listen', description: 'Hear each sound', icon: '🔊' },
-  build: { label: 'Build', description: 'Arrange the sounds', icon: '🧩' },
-  blend: { label: 'Blend', description: 'Blend the word', icon: '✨' },
-};
-
-const PHASE_ACCENT: Record<LearningPhase, LuminaAccent> = {
-  listen: 'blue',
-  build: 'amber',
-  blend: 'emerald',
-};
-
 const PATTERN_LABELS: Record<string, string> = {
   'cvc': 'CVC Words',
   'cvce': 'Silent-E Words',
@@ -112,36 +135,31 @@ const PATTERN_LABELS: Record<string, string> = {
   'diphthong': 'Diphthongs',
 };
 
-/**
- * Tutor reveal policy keyed to the within-mode support tier. The tutor is a SECOND
- * scaffold channel, so its latitude must match the on-screen tier — otherwise a cue
- * the tier just withdrew from the screen leaks straight back in by voice.
- *   easy   → may say the sounds in order and walk the build step by step.
- *   medium → confirm a single sound if asked; never recite the whole order.
- *   hard   → the screen no longer shows the letter chain OR how many tiles are
- *            needed, so the tutor must not enumerate the sounds, their count, or
- *            their order either; it guides by questioning.
- * NEVER gated by tier: pronouncing a tapped sound or word ([PRONOUNCE_SOUND]) — that
- * on-demand audio IS the primitive (contract R2) — and the Grade-K how-to-play
- * protocol (contract R1), which is protocol, not answer.
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  isPreReader: boolean,
-): string {
-  if (!tier) return '';
-  const protocol = isPreReader
-    ? ' The Grade-K how-to-play protocol is NOT withdrawn — still tell the child how to play in kid words.'
-    : '';
-  const audio = ' Always pronounce any sound or word the student taps.';
-  if (tier === 'easy') {
-    return `[SUPPORT_TIER easy] Full scaffolding: you may say the word's sounds in order and walk the student through building it step by step.${audio}${protocol}`;
-  }
-  if (tier === 'medium') {
-    return `[SUPPORT_TIER medium] Light scaffolding: confirm one sound if the student asks, but do not recite the whole sound sequence or the tile order unprompted.${audio}${protocol}`;
-  }
-  return `[SUPPORT_TIER hard] Minimal scaffolding: the screen no longer shows the sound-by-sound preview or how many tiles are needed, so do NOT list the word's sounds, say how many there are, or give their order. Ask what they hear and which sound comes first — guide by questioning.${audio}${protocol}`;
+/** Corrections the tutor may run on one word before the lesson moves on anyway.
+ *  A hard word resurfaces through distributed review, not by drilling a
+ *  frustrated five-year-old in place. */
+const MAX_CORRECTIONS_PER_WORD = 2;
+
+/** Manual voice-activity mode: our amplitude detector brackets every learner
+ *  turn. Gemini's speech-likeness VAD is unusable for short spoken responses
+ *  (DI bench run-3 ruling). Also declared on the catalog entry so the lesson
+ *  path opens the shared session the same way. */
+const BLEND_AUDIO_INPUT = { manual_activity: true };
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+type Stage = 'idle' | 'reading' | 'affirmed' | 'done';
+
+interface WordOutcome {
+  id: string;
+  blended: boolean;
+  corrections: number;
+  score: number;
+  seconds: number | null;
 }
+
+const scoreForCorrections = (corrections: number): number =>
+  corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
 // ============================================================================
 // Component
@@ -155,461 +173,127 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     words = [],
     supportTier,
     showBlendPreview,
-    showSlotCount,
-    showTileLetters,
     nameTargetPhonemes,
     instanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
     onEvaluationSubmit,
   } = data;
 
-  // State
+  const ctx = useLuminaAIContext();
+
+  // ── State ────────────────────────────────────────────────────────
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('listen');
-  const [placedPhonemeIds, setPlacedPhonemeIds] = useState<string[]>([]);
+  const [stage, setStage] = useState<Stage>('idle');
   const [activeSoundId, setActiveSoundId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-  const [isCelebrating, setIsCelebrating] = useState(false);
+  const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
+  const [running, setRunning] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
-  const [isBlended, setIsBlended] = useState(false);
-  const [slotFlash, setSlotFlash] = useState<'correct' | 'incorrect' | null>(null);
-  const slotFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Words the student blended ALOUD (judge-confirmed) — the production beat
-  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
+  /** Reward picture for the word JUST blended — post-answer only (answer-leak
+   *  rule), cleared the moment the next word opens. */
+  const [rewardEmoji, setRewardEmoji] = useState<string | null>(null);
 
-  // Tracking
-  const [attemptsPerWord, setAttemptsPerWord] = useState<Record<string, number>>({});
-  const [correctOnFirstTry, setCorrectOnFirstTry] = useState<Set<string>>(new Set());
-  const [listenedSounds, setListenedSounds] = useState<Set<string>>(new Set());
-  const [startTimes, setStartTimes] = useState<Record<string, number>>({});
-  const [blendTimes, setBlendTimes] = useState<Record<string, number>>({});
+  // Visual-only timers. NONE advance anything — they clear a highlight. The
+  // lane's gate ("no setTimeout-to-advance survives") is about progression, and
+  // progression here has exactly one cause: a tutor verdict.
+  const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Stable fallback instance ID — must not change across renders
-  const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Date.now()}`);
+  const stableInstanceIdRef = useRef(instanceId || `phonics-blender-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  useEffect(
-    () => () => {
-      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
-    },
-    [],
-  );
+  const currentWord = words[currentWordIndex];
 
-  // ── Misconception Loop S1 — Tier-A (judge-backed) failed-verdict log ────────
-  // Confident no-match verdicts from the spoken blend judge, bounded to the
-  // most recent 8. DATA only, never student-visible — on a failed session the
-  // latest becomes the DiagnosisEvidence packet at submit time.
+  // Progression authority is React state; mirror into refs so the emission
+  // handler (which fires inside the loop's dispatch) reads it live.
+  const idxRef = useRef(0);
+  idxRef.current = currentWordIndex;
+
+  const correctionsRef = useRef(new Map<string, number>());
+  const outcomesRef = useRef<WordOutcome[]>([]);
+  const wordStartRef = useRef<number | null>(null);
+  const submittedRef = useRef(false);
+  const weConnectedRef = useRef(false);
+  const connectedRef = useRef(ctx.isConnected);
+  const listeningRef = useRef(ctx.isListening);
+  connectedRef.current = ctx.isConnected;
+  listeningRef.current = ctx.isListening;
+
+  /** What the child SAID, and what the tutor said back. Misconception Loop S1
+   *  Tier-A evidence — DATA only, never rendered (a stray write to a status
+   *  line in this family gets spoken aloud). */
+  const lastHeardRef = useRef<string | null>(null);
   const failedVerdictsRef = useRef<Array<{ word: string; heard: string; judgeFeedback: string }>>([]);
 
-  // Evaluation hook
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<PhonicsBlenderMetrics>({
+  const isPreReader = isPreReaderGrade(gradeLevel);
+
+  // ── Support tier: read-with-full-help-default ────────────────────
+  const segmentation: 'full' | 'word' | 'none' =
+    showBlendPreview === 'none' ? 'none' : showBlendPreview === 'word' ? 'word' : 'full';
+  /** The tier lever that reaches the TUTOR: at `hard` the screen shows the word
+   *  unsegmented, so the tutor must not read the sounds out either. */
+  const phonemesNamed = nameTargetPhonemes !== false;
+
+  const evaluation = usePrimitiveEvaluation<PhonicsBlenderMetrics>({
     primitiveType: 'phonics-blender',
     instanceId: resolvedInstanceId,
     skillId,
     subskillId,
     objectiveId,
     exhibitId,
+    componentIntent,
+    objectiveText,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const currentWord = words[currentWordIndex];
+  const itemOf = useCallback(
+    (index: number): BlendItem | null => {
+      const word = words[index];
+      if (!word) return null;
+      return {
+        id: word.id,
+        targetWord: word.targetWord,
+        phonemes: word.phonemes,
+        emoji: word.emoji,
+      };
+    },
+    [words],
+  );
+  const currentItem = useCallback(() => itemOf(idxRef.current), [itemOf]);
 
-  // Pre-reader (Kindergarten) band-gate. At PRE the tutor's VOICE is the only
-  // instruction channel: on-screen chrome (phase stepper, word counter, badges,
-  // text labels, the Clear button) is hidden, phoneme tiles show the LETTER as
-  // the primary mark (not slash-notation the child cannot read), and the tap →
-  // hear stimulus is spoken via [PRONOUNCE_SOUND]. Reader grades keep the full UI.
-  const isPreReader = isPreReaderGrade(gradeLevel);
-
-  // ── Within-mode support tier: resolved ONCE, read-with-legacy-default so an
-  //    untiered payload renders exactly as it always did. Band supports win — the
-  //    K letter-primary tiles (R3), tap-to-hear audio (R2), the Check confirm (R4)
-  //    and the emoji (R8) are outside every lever below. ──
-  const blendPreview: 'full' | 'word' | 'none' =
-    showBlendPreview === 'none' ? 'none' : showBlendPreview === 'word' ? 'word' : 'full';
-  const slotCountShown = showSlotCount !== false;
-  const tileLettersShown = showTileLetters !== false;
-  const phonemesNamed = nameTargetPhonemes !== false;
-  const revealPolicy = tutorRevealPolicy(supportTier, isPreReader);
-
-  // Per-word rows for the shared PhaseSummaryPanel (manual PhaseResult[] —
-  // words are the natural breakdown, same pattern as DoubleNumberLine).
   const wordResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmittedEvaluation) return [];
+    if (!evaluation.hasSubmitted) return [];
     return words.map(word => {
-      const attempts = attemptsPerWord[word.id] || 1;
-      const firstTry = correctOnFirstTry.has(word.id);
-      const completed = completedWords.has(word.id);
+      const outcome = outcomesRef.current.find(o => o.id === word.id);
       return {
         label: word.targetWord,
         icon: word.emoji || '🔤',
-        score: completed ? (firstTry ? 100 : Math.max(50, 100 - (attempts - 1) * 25)) : 0,
-        attempts,
-        firstTry,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.blended && (outcome?.corrections ?? 0) === 0,
       };
     });
-  }, [hasSubmittedEvaluation, words, attemptsPerWord, correctOnFirstTry, completedWords]);
+  }, [evaluation.hasSubmitted, words]);
 
-  // ---------------------------------------------------------------------------
-  // AI Tutoring Integration — the AI tutor is the voice of this primitive.
-  // All pronunciation (phoneme sounds, blended words) goes through Gemini Live
-  // via sendText, replacing 20+ individual TTS calls with one persistent session.
-  // ---------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    patternType,
-    gradeLevel,
-    totalWords: words.length,
-    currentWord: currentWord?.targetWord ?? '',
-    currentPhase,
-    targetPhonemes: currentWord?.phonemes.map(p => p.sound).join(' + ') ?? '',
-    placedPhonemes: placedPhonemeIds
-      .map(id => currentWord?.phonemes.find(p => p.id === id)?.sound)
-      .filter(Boolean)
-      .join(' + '),
-    completedWords: completedWords.size,
-    attempts: attemptsPerWord[currentWord?.id || ''] || 0,
-    // The tutor must know the on-screen support level so its own reveal latitude
-    // matches it (see tutorRevealPolicy + the catalog SUPPORT TIER directive).
-    supportTier: supportTier ?? null,
-  }), [
-    patternType, gradeLevel, words.length,
-    currentWord, currentPhase, placedPhonemeIds,
-    completedWords, attemptsPerWord, supportTier,
-  ]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'phonics-blender',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // ---------------------------------------------------------------------------
-  // Activity introduction — fire once when the AI tutor connects
-  // ---------------------------------------------------------------------------
-  const hasIntroducedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentWord) return;
-    hasIntroducedRef.current = true;
-
-    const patternLabel = PATTERN_LABELS[patternType] || patternType;
-    const phonemeList = currentWord.phonemes.map(p => p.sound).join(', ');
-
-    sendText(
-      `[ACTIVITY_START] This is a phonics blending activity for Grade ${gradeLevel} (${patternLabel}). `
-      + `There are ${words.length} words to blend. `
-      + `Introduce the activity warmly: mention we're practicing phonics and blending sounds into words. `
-      // Instruction lever: at hard the tutor names the word but does NOT enumerate
-      // its sounds or their count (the screen withdrew both). The Grade-K how-to-play
-      // protocol is untouched at every tier — it is protocol, not answer (R1).
-      + (phonemesNamed
-        ? `Then introduce the first word: "${currentWord.targetWord}" which has ${currentWord.phonemes.length} sounds (${phonemeList}). `
-        : `Then introduce the first word: "${currentWord.targetWord}" — do NOT list its sounds or say how many there are; the student discovers them by tapping. `)
-      + `Encourage the student to tap each sound tile to hear it. Keep it brief and enthusiastic — 2-3 sentences max.`
-      + (revealPolicy ? ` ${revealPolicy}` : ''),
-      { silent: true }
-    );
-  }, [isConnected, currentWord, gradeLevel, patternType, words.length, sendText, phonemesNamed, revealPolicy]);
-
-  // Shuffled phonemes for the bank (build phase)
-  const shuffledPhonemes = useMemo(() => {
-    if (!currentWord) return [];
-    const phonemes = [...currentWord.phonemes];
-    for (let i = phonemes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [phonemes[i], phonemes[j]] = [phonemes[j], phonemes[i]];
-    }
-    return phonemes;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWordIndex]);
-
-  // Available phonemes in the bank (not yet placed)
-  const availablePhonemes = useMemo(() => {
-    if (!currentWord) return [];
-    return shuffledPhonemes.filter(p => !placedPhonemeIds.includes(p.id));
-  }, [currentWord, shuffledPhonemes, placedPhonemeIds]);
-
-  // ---------------------------------------------------------------------------
-  // Audio via AI Tutor — pronounce phonemes and words through Gemini Live
-  // ---------------------------------------------------------------------------
-
-  // Play a single phoneme sound via the AI tutor
-  const handlePlaySound = useCallback((phonemeId: string) => {
-    const phoneme = currentWord?.phonemes.find(p => p.id === phonemeId);
-    if (!phoneme) return;
-
-    setActiveSoundId(phonemeId);
-    setListenedSounds(prev => new Set(Array.from(prev).concat(phonemeId)));
-
-    // Ask the AI tutor to pronounce this sound — embed in a sentence so Gemini always speaks
-    sendText(`[PRONOUNCE_SOUND] This sound is ${phoneme.sound}. ${phoneme.sound}.`, { silent: true });
-
-    // Visual feedback timeout (AI audio playback is handled by the context provider)
-    setTimeout(() => setActiveSoundId(null), 1200);
-  }, [currentWord, sendText]);
-
-  // Play the full blended word via the AI tutor
-  const handlePlayBlendedWord = useCallback(() => {
-    if (!currentWord) return;
-
-    setActiveSoundId('blended');
-
-    // Ask the AI tutor to say the whole word — embed in a sentence so Gemini always speaks
-    sendText(`[PRONOUNCE_SOUND] The word is "${currentWord.targetWord}". ${currentWord.targetWord}.`, { silent: true });
-
-    // Visual feedback timeout
-    setTimeout(() => setActiveSoundId(null), 1500);
-  }, [currentWord, sendText]);
-
-  // Add phoneme to build area
-  const handlePlacePhoneme = useCallback((phonemeId: string) => {
-    if (hasSubmittedEvaluation || currentPhase !== 'build') return;
-    SoundManager.tap();
-    setPlacedPhonemeIds(prev => [...prev, phonemeId]);
-    setFeedback('');
-    setFeedbackType('');
-
-    // Record start time on first placement
-    if (!currentWord) return;
-    if (!startTimes[currentWord.id]) {
-      setStartTimes(prev => ({ ...prev, [currentWord.id]: Date.now() }));
-    }
-  }, [hasSubmittedEvaluation, currentPhase, currentWord, startTimes]);
-
-  // Remove phoneme from build area
-  const handleRemovePhoneme = useCallback((phonemeId: string) => {
-    if (hasSubmittedEvaluation || currentPhase !== 'build') return;
-    setPlacedPhonemeIds(prev => prev.filter(id => id !== phonemeId));
-    setFeedback('');
-    setFeedbackType('');
-  }, [hasSubmittedEvaluation, currentPhase]);
-
-  // Clear all placed phonemes
-  const handleClearAll = useCallback(() => {
-    setPlacedPhonemeIds([]);
-    setFeedback('');
-    setFeedbackType('');
-  }, []);
-
-  // Check the build order
-  const handleCheckBuild = useCallback(() => {
-    if (!currentWord) return;
-
-    const wordId = currentWord.id;
-    setAttemptsPerWord(prev => ({ ...prev, [wordId]: (prev[wordId] || 0) + 1 }));
-
-    const correctOrder = currentWord.phonemes.map(p => p.id);
-    const isCorrect =
-      placedPhonemeIds.length === correctOrder.length &&
-      placedPhonemeIds.every((id, i) => id === correctOrder[i]);
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      // Track first-try success
-      if ((attemptsPerWord[wordId] || 0) === 0) {
-        setCorrectOnFirstTry(prev => new Set(Array.from(prev).concat(wordId)));
-      }
-      // Record blend time
-      if (startTimes[wordId]) {
-        setBlendTimes(prev => ({
-          ...prev,
-          [wordId]: (Date.now() - startTimes[wordId]) / 1000,
-        }));
-      }
-
-      setFeedback('Perfect! You built the word correctly!');
-      setFeedbackType('success');
-      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
-      setSlotFlash('correct');
-      slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      // Tell the AI the student built the word correctly
-      sendText(
-        `[BUILD_CORRECT] The student arranged the sounds for "${currentWord.targetWord}" in the correct order${(attemptsPerWord[wordId] || 0) === 0 ? ' on the first try!' : ` after ${(attemptsPerWord[wordId] || 0) + 1} attempts.`} Congratulate briefly and tell them to click the word to hear it blended together.`,
-        { silent: true }
-      );
-
-      // Move to blend phase
-      setTimeout(() => {
-        setCurrentPhase('blend');
-        setFeedback('');
-        setFeedbackType('');
-      }, 1000);
-    } else {
-      SoundManager.playIncorrect();
-      const placedSounds = placedPhonemeIds
-        .map(id => currentWord.phonemes.find(p => p.id === id)?.sound)
-        .filter(Boolean)
-        .join(' + ');
-      setFeedback('Not quite! Try rearranging the sounds.');
-      setFeedbackType('error');
-      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
-      setSlotFlash('incorrect');
-      slotFlashTimer.current = setTimeout(() => setSlotFlash(null), 900);
-      // Tell the AI the student got it wrong so it can help
-      // At hard the correct order is withheld from the tutor's hint payload too —
-      // it leans the catalog's level-1 hint style ("which sound comes FIRST?")
-      // instead of being handed the answer it must not say.
-      sendText(
-        `[BUILD_INCORRECT] The student tried to build "${currentWord.targetWord}" but placed the sounds as: ${placedSounds}. `
-        + (phonemesNamed
-          ? `The correct order is: ${currentWord.phonemes.map(p => p.sound).join(' + ')}. `
-          : `Do NOT state the correct order or list the sounds — use your level-1 hint style and ask which sound they hear FIRST in the word. `)
-        + `This is attempt ${(attemptsPerWord[wordId] || 0) + 1}. Give a brief hint without giving the answer.`,
-        { silent: true }
-      );
-    }
-  }, [currentWord, placedPhonemeIds, attemptsPerWord, startTimes, sendText, phonemesNamed]);
-
-  // Complete blending for current word
-  const handleBlendComplete = useCallback((spokenAloud = false) => {
-    if (!currentWord) return;
-    setIsBlended(true);
-    setCompletedWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
-    setIsCelebrating(true);
-    setTimeout(() => setIsCelebrating(false), 1500);
-
-    // Tell the AI the student blended successfully — triggers a spoken response
-    sendText(
-      spokenAloud
-        ? `[STUDENT_BLENDED_ALOUD] The student said "${currentWord.targetWord}" out loud and blended it correctly! Celebrate enthusiastically that they SAID it themselves (one sentence).`
-        : `[STUDENT_BLENDED] The student successfully blended the word "${currentWord.targetWord}"! Celebrate briefly (one sentence).`,
-      { silent: true }
-    );
-  }, [currentWord, sendText]);
-
-  // ---------------------------------------------------------------------------
-  // Spoken production beat — the student says the word aloud; the judge ladder
-  // (Azure dual-signal → Gemini, utils/spokenWordJudge.ts) confirms it.
-  // Asymmetric by design: 'match' awards the blend; 'no-match' becomes tutor
-  // coaching with NO penalty; 'unclear' invites a retry or the Blend button.
-  // ---------------------------------------------------------------------------
-  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
-    if (!currentWord || isBlended) return;
-    // Misconception Loop S1 — Tier-A capture: log the judge's no-match verdicts
-    // (data only, never student-visible) for the end-of-session evidence packet.
-    if (result.verdict && !result.verdict.isMatch) {
-      const { heard, reasoning, misconception } = result.verdict;
-      failedVerdictsRef.current = [
-        ...failedVerdictsRef.current,
-        {
-          word: currentWord.targetWord,
-          heard,
-          judgeFeedback: `${reasoning}${misconception ? ` Misconception: ${misconception}` : ''}`,
-        },
-      ].slice(-8);
-    }
-    if (result.outcome === 'match') {
-      SoundManager.playCorrect();
-      setSpokenWords(prev => new Set(Array.from(prev).concat(currentWord.id)));
-      handleBlendComplete(true);
-    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
-      sendText(
-        `[SPOKEN_BLEND_MISS] The student tried to say "${currentWord.targetWord}" aloud but said "${result.verdict.heard}". Gently model the correct blend — each sound slowly, then the whole word — and invite one more try. Warm, never scolding. Two short sentences max.`,
-        { silent: true }
-      );
-    } else {
-      sendText(
-        `[SPOKEN_BLEND_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to try saying "${currentWord.targetWord}" again a little louder, or tap the Blend button instead.`,
-        { silent: true }
-      );
-    }
-  }, [currentWord, isBlended, handleBlendComplete, sendText]);
-
-  const spokenCapture = useSpokenWordCapture({
-    targetWord: currentWord?.targetWord ?? '',
-    gradeLevel,
-    onResult: handleSpokenResult,
-    onNoSpeech: () => {
-      if (!currentWord || isBlended) return;
-      sendText(
-        `[SPOKEN_BLEND_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to try saying "${currentWord.targetWord}" again a little louder, or tap the Blend button instead.`,
-        { silent: true }
-      );
-    },
-  });
-
-  // Move to next word
-  const handleNextWord = useCallback(() => {
-    spokenCapture.cancel(); // never carry a live mic across words
-    if (currentWordIndex < words.length - 1) {
-      const nextWord = words[currentWordIndex + 1];
-      setCurrentWordIndex(prev => prev + 1);
-      setCurrentPhase('listen');
-      setPlacedPhonemeIds([]);
-      setFeedback('');
-      setFeedbackType('');
-      setIsBlended(false);
-      setIsCelebrating(false);
-      setSlotFlash(null);
-      if (slotFlashTimer.current) clearTimeout(slotFlashTimer.current);
-
-      // Tell the AI about the new word — triggers a spoken introduction
-      if (nextWord) {
-        const phonemeList = nextWord.phonemes.map(p => p.sound).join(' + ');
-        sendText(
-          `[NEXT_WORD] The student is moving to word ${currentWordIndex + 2} of ${words.length}: "${nextWord.targetWord}"`
-          + (phonemesNamed ? ` (${phonemeList}).` : ` — do NOT list its sounds.`)
-          + ` Briefly introduce the new word and encourage them to tap each sound.`
-          + (revealPolicy ? ` ${revealPolicy}` : ''),
-          { silent: true }
-        );
-      }
-    } else {
-      // All words done - submit evaluation
-      submitFinalEvaluation();
-    }
-  }, [currentWordIndex, words, sendText, spokenCapture, phonemesNamed, revealPolicy]);
-
-  // Advance from listen to build phase
-  const handleStartBuild = useCallback(() => {
-    setCurrentPhase('build');
-    setFeedback('');
-    setFeedbackType('');
-
-    // Tell the AI tutor we're moving to the build phase
-    if (currentWord) {
-      const phonemeList = currentWord.phonemes.map(p => p.sound).join(', ');
-      // The "arrange the tiles in order" instruction is the PLAY PROTOCOL and is
-      // voiced at every tier (and is the K band's only instruction channel, R1);
-      // only the enumeration of the sounds is withdrawn at hard.
-      sendText(
-        `[PHASE_TO_BUILD] The student finished listening and is now in the Build phase for "${currentWord.targetWord}". `
-        + (phonemesNamed
-          ? `The sounds are: ${phonemeList}. `
-          : `Do NOT list the sounds — the student must recall them from tapping. `)
-        + `Briefly tell them to arrange the sound tiles in the right order to build the word. One sentence.`
-        + (revealPolicy ? ` ${revealPolicy}` : ''),
-        { silent: true }
-      );
-    }
-  }, [currentWord, sendText, phonemesNamed, revealPolicy]);
-
-  // Submit final evaluation
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const wordsBlended = completedWords.size + (currentWord && !completedWords.has(currentWord.id) ? 1 : 0);
+  // ── Submit ───────────────────────────────────────────────────────
+  const finishAndSubmit = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const outcomes = outcomesRef.current;
+    const wordsBlended = outcomes.filter(o => o.blended).length;
     const wordsTotal = words.length;
     const totalSounds = words.reduce((sum, w) => sum + w.phonemes.length, 0);
-    const soundsCorrectFirst = correctOnFirstTry.size;
-    const totalAttempts = Object.values(attemptsPerWord).reduce((s, v) => s + v, 0);
-    const avgBlendTime = Object.values(blendTimes).length > 0
-      ? Object.values(blendTimes).reduce((s, v) => s + v, 0) / Object.values(blendTimes).length
+    const firstTry = outcomes.filter(o => o.blended && o.corrections === 0).length;
+    const attemptsCount = outcomes.reduce((s, o) => s + 1 + o.corrections, 0);
+    const timed = outcomes.map(o => o.seconds).filter((s): s is number => s != null);
+    const avgSeconds = timed.length ? timed.reduce((s, v) => s + v, 0) / timed.length : 0;
+    const accuracy = outcomes.length
+      ? Math.round(outcomes.reduce((s, o) => s + o.score, 0) / outcomes.length)
       : 0;
-    const accuracy = wordsTotal > 0 ? Math.round((wordsBlended / wordsTotal) * 100) : 0;
 
     const metrics: PhonicsBlenderMetrics = {
       type: 'phonics-blender',
@@ -618,464 +302,277 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
       wordsBlended,
       wordsTotal,
       phonemeAccuracy: accuracy,
-      averageBlendingSpeed: Math.round(avgBlendTime * 10) / 10,
-      soundsCorrectOnFirstTry: soundsCorrectFirst,
+      averageBlendingSpeed: Math.round(avgSeconds * 10) / 10,
+      soundsCorrectOnFirstTry: firstTry,
       soundsTotal: totalSounds,
-      attemptsCount: totalAttempts,
+      attemptsCount,
     };
 
-    const success = accuracy >= 60;
-
-    // Misconception Loop S1 — Tier-A evidence packet on failed sessions. The
-    // judge already articulated the failure (judgeFeedback present ⇒ Tier A);
-    // earlier fails become priorAttempts, the consistency signal the distiller
-    // needs. Clean sessions carry no packet.
+    // Misconception Loop S1 — Tier-A packet on diagnosable sessions. The judge
+    // (the Live tutor) already articulated the failure in its correction line.
     const fails = failedVerdictsRef.current;
     const latest = fails[fails.length - 1];
-    const diagnosisEvidence: DiagnosisEvidence | undefined = !success && latest ? {
-      challengeSummary: `Blend the spoken phonemes into the word "${latest.word}" and say it aloud.`,
+    const diagnosisEvidence: DiagnosisEvidence | undefined = accuracy < 60 && latest ? {
+      challengeSummary: `Sound out the letters of "${latest.word}" and blend them into the whole word aloud.`,
       expected: `Say the blended word "${latest.word}".`,
       observed: `Student said: "${latest.heard}".`,
       judgeFeedback: latest.judgeFeedback,
-      priorAttempts: fails.slice(0, -1).map(f => ({ challenge: `blend "${f.word}"`, observed: `said "${f.heard}" — ${f.judgeFeedback}` })),
+      priorAttempts: fails.slice(0, -1).map(f => ({
+        challenge: `blend "${f.word}"`,
+        observed: `said "${f.heard}" — ${f.judgeFeedback}`,
+      })),
     } : undefined;
 
-    submitEvaluation(
-      success,
-      accuracy,
-      metrics,
-      {
-        completedWords: Array.from(completedWords),
-        spokenWords: Array.from(spokenWords),
-        blendTimes,
-        attemptsPerWord,
-      },
-      undefined,
-      diagnosisEvidence
-    );
+    evaluation.submitResult(accuracy >= 60, accuracy, metrics, { outcomes }, undefined, diagnosisEvidence);
+    setRunning(false);
+    setStage('done');
+    setStatusLine('Great blending today!');
+  }, [evaluation, gradeLevel, patternType, words]);
 
-    // Spoken wrap-up from the AI tutor alongside the summary panel
-    sendText(
-      `[SESSION_COMPLETE] The student finished all ${wordsTotal} words (${wordsBlended} blended, ${soundsCorrectFirst} on the first try). Give a warm one-sentence wrap-up celebrating their blending practice.`,
-      { silent: true }
-    );
-  }, [
-    hasSubmittedEvaluation,
-    completedWords,
-    spokenWords,
-    currentWord,
-    words,
-    correctOnFirstTry,
-    attemptsPerWord,
-    blendTimes,
-    patternType,
-    gradeLevel,
-    submitEvaluation,
-    sendText,
-  ]);
+  // ── The loop ─────────────────────────────────────────────────────
+  const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
 
-  // ============================================================================
-  // Render Helpers
-  // ============================================================================
+  const closeWord = useCallback((item: BlendItem, blended: boolean) => {
+    const corrections = correctionsRef.current.get(item.id) ?? 0;
+    outcomesRef.current.push({
+      id: item.id,
+      blended,
+      corrections,
+      score: blended ? scoreForCorrections(corrections) : 0,
+      seconds: wordStartRef.current == null
+        ? null
+        : Math.round(((performance.now() - wordStartRef.current) / 1000) * 10) / 10,
+    });
+    if (blended) setCompletedWords(prev => new Set(Array.from(prev).concat(item.id)));
+  }, []);
 
-  const renderPhaseProgress = () => {
-    const phases: LearningPhase[] = ['listen', 'build', 'blend'];
-    return (
-      <div className="flex items-center gap-2 mb-4">
-        {phases.map((phase, index) => {
-          const isActive = phase === currentPhase;
-          const isCompleted =
-            (phase === 'listen' && (currentPhase === 'build' || currentPhase === 'blend')) ||
-            (phase === 'build' && currentPhase === 'blend') ||
-            (phase === 'blend' && isBlended);
-          const config = PHASE_CONFIG[phase];
-          return (
-            <React.Fragment key={phase}>
-              {index > 0 && (
-                <div className={`h-0.5 w-8 ${isCompleted || isActive ? 'bg-emerald-500/60' : 'bg-slate-600/40'}`} />
-              )}
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={`
-                    w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border
-                    ${isCompleted
-                      ? 'bg-emerald-500/30 border-emerald-500/50 text-emerald-300'
-                      : isActive
-                        ? 'bg-blue-500/30 border-blue-500/50 text-blue-300'
-                        : 'bg-slate-700/30 border-slate-600/40 text-slate-500'
-                    }
-                  `}
-                >
-                  {isCompleted ? '✓' : config.icon}
-                </div>
-                <span
-                  className={`text-xs font-medium ${
-                    isActive ? 'text-blue-300' : isCompleted ? 'text-emerald-400' : 'text-slate-500'
-                  }`}
-                >
-                  {config.label}
-                </span>
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
-    );
-  };
+  const applyVerdict = useCallback(
+    (judgment: 'affirmed' | 'corrected' | 'off-script', verdictText?: string) => {
+      const item = currentItem();
+      const loop = loopRef.current;
+      if (!item || !loop || judgment === 'off-script') return;
 
-  // Render a phoneme tile
-  const renderPhonemeTile = (
-    phoneme: { id: string; sound: string; letters: string },
-    onClick: () => void,
-    isInBuildArea: boolean,
-    showLetters: boolean
-  ) => {
-    const isActive = activeSoundId === phoneme.id;
-    // Pre-readers cannot read slash-notation (/k/). At PRE the tile's primary
-    // mark is the LETTER(s) the child can see in the built word; the sound is
-    // still spoken on tap via [PRONOUNCE_SOUND]. Reader grades keep /k/ notation.
-    return (
-      <button
-        key={phoneme.id}
-        onClick={onClick}
-        aria-label={`sound ${phoneme.sound}`}
-        className={`
-          relative px-4 py-3 rounded-xl border-2 font-bold text-lg
-          transition-all duration-200 cursor-pointer select-none
-          ${isActive
-            ? 'bg-amber-500/30 border-amber-400/60 text-amber-200 scale-110 shadow-lg shadow-amber-500/20'
-            : isInBuildArea
-              ? 'bg-blue-500/20 border-blue-500/40 text-blue-200 hover:opacity-70'
-              : 'bg-slate-700/40 border-slate-500/30 text-slate-200 hover:scale-105 hover:bg-slate-600/40'
+      if (judgment === 'corrected') {
+        const used = (correctionsRef.current.get(item.id) ?? 0) + 1;
+        correctionsRef.current.set(item.id, used);
+        SoundManager.playIncorrect();
+        failedVerdictsRef.current = [
+          ...failedVerdictsRef.current,
+          {
+            word: item.targetWord,
+            heard: lastHeardRef.current ?? '(not caught)',
+            judgeFeedback: verdictText ?? '',
+          },
+        ].slice(-8);
+
+        if (used <= MAX_CORRECTIONS_PER_WORD) {
+          // The tutor's correction line already re-modeled and re-asked in-band.
+          setStage('reading');
+          setStatusLine('Have another go — what word?');
+          return;
+        }
+        // Capped: acknowledge and move the lesson forward.
+        closeWord(item, false);
+        const next = itemOf(idxRef.current + 1);
+        loop.queueCue(moveOnCue(item, next, phonemesNamed));
+        if (next) {
+          setCurrentWordIndex(idxRef.current + 1);
+          idxRef.current += 1;
+          setRewardEmoji(null);
+          setStage('reading');
+          setStatusLine('Good try — here comes the next one.');
+          wordStartRef.current = performance.now();
+        } else {
+          finishAndSubmit();
+        }
+        return;
+      }
+
+      // Affirmed — the word is theirs. The picture is the reward, and this is
+      // the first moment it may appear.
+      SoundManager.playCorrect();
+      closeWord(item, true);
+      setStage('affirmed');
+      setRewardEmoji(item.emoji ?? null);
+      const next = itemOf(idxRef.current + 1);
+      if (next) {
+        setCurrentWordIndex(idxRef.current + 1);
+        idxRef.current += 1;
+        setStatusLine('Yes! Nice blending.');
+        wordStartRef.current = performance.now();
+        loop.queueCue(itemCue(next, { nameSounds: phonemesNamed }));
+      } else {
+        setStatusLine('You did it!');
+        loop.queueCue(completeCue());
+        finishAndSubmit();
+      }
+    },
+    [closeWord, currentItem, finishAndSubmit, itemOf, phonemesNamed],
+  );
+
+  const handleEmission = useCallback(
+    (emission: LoopEmission) => {
+      switch (emission.kind) {
+        case 'attempt-open':
+          lastHeardRef.current = null;
+          setStatusLine('Listening…');
+          return;
+        case 'attempt-transcript':
+          lastHeardRef.current = emission.text;
+          return;
+        case 'verdict':
+          if (emission.judgment === 'no-verdict') {
+            setStatusLine('One more time — what word?');
+            return;
           }
-        `}
-      >
-        {isPreReader ? (
-          // Band support — letter-primary tiles are MANDATED at K and are outside
-          // every support tier (contract R3): showTileLetters is a NO-OP here.
-          <span className="text-2xl uppercase">{phoneme.letters}</span>
-        ) : (
-          <>
-            <span className="text-xl">{phoneme.sound}</span>
-            {/* Reader tiles: the letters sub-label is a spelling cue the hard tier
-                withdraws — the phoneme notation (the stimulus) always stays. */}
-            {showLetters && tileLettersShown && (
-              <span className="block text-xs text-slate-400 mt-0.5">{phoneme.letters}</span>
-            )}
-          </>
-        )}
-      </button>
-    );
-  };
+          applyVerdict(emission.judgment, emission.verdictText);
+          return;
+        case 'session-resumed':
+        case 'resync': {
+          // The session survived but the word in flight did not. Re-ask it
+          // verbatim rather than leaving the child answering into something
+          // that will never judge them.
+          const item = currentItem();
+          const loop = loopRef.current;
+          if (item && loop) {
+            setStage('reading');
+            setStatusLine('Let’s take that word again.');
+            loop.queueCue(itemCue(item, { nameSounds: phonemesNamed }));
+          }
+          return;
+        }
+        case 'session-dead':
+          // Visible state, never a silent "Listening…".
+          setStatusLine('The tutor went quiet — tap the microphone to pick things back up.');
+          return;
+        default:
+          return;
+      }
+    },
+    [applyVerdict, currentItem, phonemesNamed],
+  );
 
-  // Listen phase: tap phonemes to hear sounds
-  const renderListenPhase = () => {
-    if (!currentWord) return null;
-    return (
-      <div className="space-y-4">
-        {/* Word visual hint */}
-        {currentWord.emoji && (
-          <LuminaPanel className="flex items-center justify-center px-5 py-4">
-            <span className="text-6xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
-              {currentWord.emoji}
-            </span>
-          </LuminaPanel>
-        )}
+  const loop = useJudgedSpeechLoop({
+    enabled: running,
+    onEmission: handleEmission,
+  });
+  loopRef.current = loop;
 
-        <LuminaPanel className="text-center">
-          {!isPreReader && (
-            <p className="text-slate-400 text-sm mb-3">Tap each sound to hear it:</p>
-          )}
-          <div className="flex flex-wrap gap-3 justify-center">
-            {currentWord.phonemes.map(phoneme =>
-              renderPhonemeTile(
-                phoneme,
-                () => handlePlaySound(phoneme.id),
-                false,
-                true
-              )
-            )}
-          </div>
-        </LuminaPanel>
+  // ── Keep the tutor's RUNTIME STATE truthful as words advance ─────
+  useEffect(() => {
+    if (!ctx.isConnected || !currentWord) return;
+    ctx.updateContext({
+      patternType,
+      currentWord: currentWord.targetWord,
+      targetPhonemes: currentWord.phonemes.map(p => p.sound).join(' + '),
+      supportTier: supportTier ?? null,
+    });
+    // Context methods are stable; keyed on the current word + connection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected, currentWord, patternType, supportTier]);
 
-        {/* Slow blend display — the listen-phase preview. Support-tier lever #1:
-            'full' shows the ordered letter chain → the word (legacy/easy), 'word'
-            drops the chain (the segmentation model) and keeps only the target word,
-            'none' hides the row so the student works from the tap-to-hear audio and
-            the emoji — both of which are NEVER withdrawn (R2/R8). */}
-        {blendPreview !== 'none' && (
-          <LuminaPanel className="text-center">
-            {!isPreReader && (
-              <p className="text-slate-500 text-xs mb-2">Blended together:</p>
-            )}
-            <div className="flex items-center justify-center gap-1">
-              {blendPreview === 'full' && (
-                <>
-                  {currentWord.phonemes.map((phoneme, i) => (
-                    <React.Fragment key={phoneme.id}>
-                      <span className="text-2xl font-bold text-slate-200">{phoneme.letters}</span>
-                      {i < currentWord.phonemes.length - 1 && (
-                        <span className="text-slate-600 text-lg mx-0.5">{'·'}</span>
-                      )}
-                    </React.Fragment>
-                  ))}
-                  <span className="text-slate-500 mx-2">{'→'}</span>
-                </>
-              )}
-              <span className="text-2xl font-bold text-emerald-300">{currentWord.targetWord}</span>
-            </div>
-          </LuminaPanel>
-        )}
+  // ── Tap-to-hear (R2) — never withdrawn by band or tier ───────────
+  // Speaks the SOUND, never the whole word: the word is the answer. A child
+  // who taps every letter has assembled the parts by ear and still has to run
+  // them together themselves, which is the skill.
+  const handlePlaySound = useCallback((phonemeId: string) => {
+    const phoneme = currentWord?.phonemes.find(p => p.id === phonemeId);
+    if (!phoneme) return;
+    SoundManager.tap();
+    setActiveSoundId(phonemeId);
+    ctx.sendText(pronounceCue(phoneme.sound), { silent: true });
+    if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
+    soundTimerRef.current = setTimeout(() => setActiveSoundId(null), 1200);
+  }, [ctx, currentWord]);
 
-        <div className="flex justify-center">
-          <LuminaButton tone="primary" onClick={handleStartBuild}>
-            Ready to Build!
-          </LuminaButton>
-        </div>
-      </div>
-    );
-  };
+  // ── Start: one gesture, because a browser will not open a mic without one ─
+  const startRun = useCallback(() => {
+    const first = itemOf(0);
+    const activeLoop = loopRef.current;
+    if (!first || !activeLoop) return;
+    correctionsRef.current.clear();
+    outcomesRef.current = [];
+    failedVerdictsRef.current = [];
+    lastHeardRef.current = null;
+    submittedRef.current = false;
+    setCompletedWords(new Set());
+    setCurrentWordIndex(0);
+    idxRef.current = 0;
+    setRewardEmoji(null);
+    activeLoop.reset();
+    setRunning(true);
+    setStage('reading');
+    setStatusLine('Listen, then say the word.');
+    wordStartRef.current = performance.now();
+    // ONE cue with ONE job: speak this. How-to-play is inside the quoted line
+    // rather than a directive telling the tutor to compose one — residual
+    // SWAP-1, where a two-job opening turn improvised its own ask and item 1
+    // ran without its model.
+    activeLoop.sendCueNow(itemCue(first, {
+      nameSounds: phonemesNamed, opening: true, howToPlay: isPreReader,
+    }));
+    activeLoop.arm();
+  }, [isPreReader, itemOf, phonemesNamed]);
 
-  // Build phase: arrange phonemes in correct order
-  const renderBuildPhase = () => {
-    if (!currentWord) return null;
-    const totalSlots = currentWord.phonemes.length;
-    const emptySlots = Math.max(0, totalSlots - placedPhonemeIds.length);
-    const getSlotState = (filled: boolean): DropZoneState =>
-      slotFlash ?? (filled ? 'filled' : 'idle');
+  const startRunRef = useRef(startRun);
+  startRunRef.current = startRun;
 
-    return (
-      <div className="space-y-4">
-        {/* Word visual hint */}
-        {currentWord.emoji && (
-          <LuminaPanel className="flex items-center justify-center gap-3 px-4 py-2">
-            <span className={isPreReader ? 'text-5xl' : 'text-3xl'} role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
-              {currentWord.emoji}
-            </span>
-            {!isPreReader && (
-              <span className="text-slate-400 text-xs italic">Build this word</span>
-            )}
-          </LuminaPanel>
-        )}
+  const prepareLive = useCallback(async () => {
+    if (preparing) return;
+    setPreparing(true);
+    setStatusLine('Getting ready…');
+    try {
+      if (!connectedRef.current && ctx.sessionMode === 'idle') {
+        weConnectedRef.current = true;
+        await ctx.connect({
+          primitive_type: 'phonics-blender',
+          instance_id: resolvedInstanceId,
+          primitive_data: {
+            activity: 'live direct instruction sound blending',
+            patternType,
+            currentWord: words[0]?.targetWord ?? '',
+            targetPhonemes: words[0]?.phonemes.map(p => p.sound).join(' + ') ?? '',
+            supportTier: supportTier ?? null,
+          },
+          grade_level: gradeLevel || 'kindergarten',
+          exhibit_id: exhibitId,
+          audio_input: BLEND_AUDIO_INPUT,
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
+        });
+        const started = performance.now();
+        while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
+        if (!connectedRef.current) throw new Error('The tutor did not connect.');
+      }
 
-        {/* Build area */}
-        <div>
-          {!isPreReader && (
-            <p className="text-xs text-slate-500 mb-2">Arrange the sounds to build the word:</p>
-          )}
-          <div
-            className={`
-              flex flex-wrap items-center gap-2 min-h-[64px] p-4 rounded-xl
-              border border-white/10 bg-white/[0.02]
-            `}
-          >
-            {placedPhonemeIds.map(pId => {
-              const phoneme = currentWord.phonemes.find(p => p.id === pId);
-              if (!phoneme) return null;
-              return (
-                <LuminaDropZone
-                  key={pId}
-                  state={getSlotState(true)}
-                  emptyPrompt="Drop sound here"
-                  className="min-h-[48px] min-w-[56px] flex-none p-0"
-                >
-                  {renderPhonemeTile(
-                    phoneme,
-                    () => handleRemovePhoneme(pId),
-                    true,
-                    false
-                  )}
-                </LuminaDropZone>
-              );
-            })}
-            {/* Support-tier lever #2: the exact-phoneme-count "?" slots tell the
-                student how many sounds the word has. At hard they collapse into ONE
-                open drop zone, so the count must come from listening. The Check
-                enable rule below stays length-based, so the answer is unchanged and
-                nothing auto-submits (R4). */}
-            {slotCountShown
-              ? Array.from({ length: emptySlots }).map((_, i) => (
-                  <LuminaDropZone
-                    key={`empty-${i}`}
-                    state={getSlotState(false)}
-                    emptyPrompt="?"
-                    className="min-h-[48px] min-w-[56px] flex-none px-4 py-3"
-                  />
-                ))
-              : emptySlots > 0 && (
-                  <LuminaDropZone
-                    key="empty-open"
-                    state={getSlotState(false)}
-                    emptyPrompt="?"
-                    className="min-h-[48px] min-w-[112px] flex-1 px-4 py-3"
-                  />
-                )}
-          </div>
-        </div>
+      ctx.startListening();
+      const micStarted = performance.now();
+      while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
+      if (!listeningRef.current) throw new Error('The microphone did not open.');
 
-        {/* Feedback — at PRE the drop-zone flash + tutor voice carry it (rule 5);
-            the text card is a reader affordance only. */}
-        {feedback && !isPreReader && (
-          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}>
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
+      startRunRef.current();
+    } catch (error) {
+      setStatusLine(error instanceof Error ? error.message : 'Could not start.');
+      setStage('idle');
+    } finally {
+      setPreparing(false);
+    }
+  }, [ctx, exhibitId, gradeLevel, patternType, preparing, resolvedInstanceId, supportTier, words]);
 
-        {/* Sound bank */}
-        <div>
-          {!isPreReader && (
-            <p className="text-xs text-slate-500 mb-2">Sound Bank:</p>
-          )}
-          <LuminaPanel>
-            {availablePhonemes.length > 0 ? (
-              <div className="flex flex-wrap gap-3 justify-center">
-                {availablePhonemes.map(phoneme =>
-                  renderPhonemeTile(
-                    phoneme,
-                    () => handlePlacePhoneme(phoneme.id),
-                    false,
-                    true
-                  )
-                )}
-              </div>
-            ) : (
-              !isPreReader && (
-                <p className="text-center text-slate-500 text-sm">
-                  All sounds placed! Check your answer.
-                </p>
-              )
-            )}
-          </LuminaPanel>
-        </div>
-
-        {/* Actions — arranging the sounds is a multi-part construction, so the
-            explicit Check confirm stays even at PRE (band contract rule 2). The
-            Clear button is a reader affordance; at PRE the child taps a placed
-            tile to remove it, so Clear is dropped to cut chrome. */}
-        <div className="flex items-center gap-2">
-          {!isPreReader && (
-            <LuminaButton
-              onClick={handleClearAll}
-              disabled={placedPhonemeIds.length === 0}
-            >
-              Clear
-            </LuminaButton>
-          )}
-          <LuminaActionButton
-            action="check"
-            onClick={handleCheckBuild}
-            disabled={placedPhonemeIds.length !== currentWord.phonemes.length}
-            className="ml-auto"
-          >
-            Check
-          </LuminaActionButton>
-        </div>
-      </div>
-    );
-  };
-
-  // Blend phase: see the completed word
-  const renderBlendPhase = () => {
-    if (!currentWord) return null;
-    return (
-      <div className="space-y-4">
-        {/* Blended word display */}
-        <div className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 p-6 text-center space-y-3">
-          {/* Phoneme breakdown */}
-          <div className="flex items-center justify-center gap-2">
-            {currentWord.phonemes.map((phoneme, i) => (
-              <React.Fragment key={phoneme.id}>
-                <button
-                  onClick={() => handlePlaySound(phoneme.id)}
-                  className={`
-                    px-3 py-2 rounded-lg border transition-all cursor-pointer
-                    ${activeSoundId === phoneme.id
-                      ? 'bg-amber-500/30 border-amber-400/50 text-amber-200 scale-110'
-                      : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                    }
-                  `}
-                >
-                  <span className="text-lg font-bold">{phoneme.sound}</span>
-                </button>
-                {i < currentWord.phonemes.length - 1 && (
-                  <span className="text-slate-600">+</span>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-
-          {/* Arrow */}
-          <div className="text-slate-500 text-2xl">{'↓'}</div>
-
-          {/* The blended word */}
-          <button
-            onClick={handlePlayBlendedWord}
-            className={`
-              inline-block px-8 py-4 rounded-2xl border-2 transition-all cursor-pointer
-              ${isBlended
-                ? 'bg-emerald-500/20 border-emerald-400/40 shadow-lg shadow-emerald-500/10'
-                : activeSoundId === 'blended'
-                  ? 'bg-amber-500/20 border-amber-400/40 scale-105'
-                  : 'bg-blue-500/20 border-blue-400/30 hover:scale-105'
-              }
-              ${isCelebrating ? 'animate-bounce' : ''}
-            `}
-          >
-            <span className="text-3xl font-bold text-slate-100">
-              {currentWord.targetWord}
-            </span>
-          </button>
-
-          {(currentWord.emoji || currentWord.imageDescription) && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              {currentWord.emoji && (
-                <span className="text-4xl" role="img" aria-label={currentWord.imageDescription || currentWord.targetWord}>
-                  {currentWord.emoji}
-                </span>
-              )}
-              {currentWord.imageDescription && !isPreReader && (
-                <p className="text-slate-400 text-sm italic">{currentWord.imageDescription}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Say it / Blend / Next controls */}
-        <div className="flex flex-col items-center gap-2">
-          {!isBlended ? (
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              {/* Spoken production beat — push-to-talk, judge-confirmed */}
-              <LuminaMicListener
-                state={spokenCapture.state}
-                level={spokenCapture.level}
-                isSupported={spokenCapture.isSupported}
-                onStart={() => void spokenCapture.start()}
-                onCancel={spokenCapture.cancel}
-                size="sm"
-                idleLabel="Say it!"
-                listeningLabel={`Say “${currentWord.targetWord}”!`}
-              />
-              {/* Deterministic fallback — always available, never penalized */}
-              <LuminaButton
-                tone="primary"
-                onClick={() => handleBlendComplete()}
-                className="text-lg px-8 py-3"
-              >
-                Blend!
-              </LuminaButton>
-            </div>
-          ) : (
-            <LuminaActionButton action="next" onClick={handleNextWord}>
-              {currentWordIndex < words.length - 1 ? 'Next Word' : 'Finish'}
-            </LuminaActionButton>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // Unmount: never leave Live holding the mic, never leave a timer running.
+  useEffect(() => () => {
+    if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
+    if (weConnectedRef.current) {
+      ctx.stopListening();
+      ctx.disconnect();
+    }
+    // Context methods are stable; unmount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
-  // Main Render
+  // Render
   // ============================================================================
 
   if (!currentWord) {
@@ -1088,66 +585,113 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     );
   }
 
+  const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const stageWord = stage === 'affirmed' ? 'yes!' : stage === 'reading' ? 'what word?' : 'get ready';
+
+  /** The stimulus: the word's letters. Tap any one to hear its sound. At
+   *  `none` the letters are joined into a solid word, so the child does the
+   *  segmenting — the help is withdrawn, never the letters themselves. */
+  const renderLetters = () => (
+    <div className={`flex items-center justify-center ${segmentation === 'none' ? 'gap-0' : 'gap-3'}`}>
+      {currentWord.phonemes.map((phoneme, i) => (
+        <React.Fragment key={phoneme.id}>
+          {segmentation === 'full' && i > 0 && (
+            <span className="text-slate-600 text-2xl" aria-hidden="true">·</span>
+          )}
+          <button
+            onClick={() => handlePlaySound(phoneme.id)}
+            aria-label={`sound ${phoneme.sound}`}
+            className={`
+              rounded-xl border-2 font-bold uppercase transition-all duration-200 cursor-pointer select-none
+              ${segmentation === 'none' ? 'px-1 py-3 border-transparent' : 'px-5 py-4'}
+              ${activeSoundId === phoneme.id
+                ? 'bg-amber-500/30 border-amber-400/60 text-amber-200 scale-110 shadow-lg shadow-amber-500/20'
+                : segmentation === 'none'
+                  ? 'text-white hover:text-amber-200'
+                  : 'bg-slate-700/40 border-slate-500/30 text-white hover:scale-105 hover:bg-slate-600/40'
+              }
+            `}
+          >
+            <span className="text-5xl">{phoneme.letters}</span>
+          </button>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            {/* Grade/pattern badges are adult chrome — hidden for pre-readers (rule 7). */}
+            {/* Grade/pattern badges are adult chrome — hidden for pre-readers (R3). */}
             {!isPreReader && (
               <div className="flex items-center gap-2">
-                <LuminaBadge className="text-xs">
-                  Grade {gradeLevel}
-                </LuminaBadge>
-                <LuminaBadge className="text-xs">
-                  {PATTERN_LABELS[patternType] || patternType}
-                </LuminaBadge>
+                <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+                <LuminaBadge className="text-xs">{PATTERN_LABELS[patternType] || patternType}</LuminaBadge>
               </div>
             )}
           </div>
-          {!isPreReader && (
-            <LuminaBadge accent={PHASE_ACCENT[currentPhase]} className="text-xs">
-              {PHASE_CONFIG[currentPhase].description}
-            </LuminaBadge>
-          )}
+          <LuminaBadge accent="cyan" className="text-xs">Say it out loud</LuminaBadge>
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!hasSubmittedEvaluation && (
+        {!evaluation.hasSubmitted && (
           <>
-            {/* Phase Progress + Word Counter are adult chrome — hidden for
-                pre-readers (rule 7); the tutor voices progress instead. */}
-            {!isPreReader && (
-              <>
-                {renderPhaseProgress()}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">
-                    Word {currentWordIndex + 1} of {words.length}
-                  </span>
-                  <span className="text-slate-500 text-xs">
-                    {completedWords.size} completed
-                  </span>
-                </div>
-              </>
+            {!isPreReader && words.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <LuminaChallengeCounter current={currentWordIndex + 1} total={words.length} variant="dots" />
+              </div>
             )}
 
-            {/* Phase Content */}
-            {currentPhase === 'listen' && renderListenPhase()}
-            {currentPhase === 'build' && renderBuildPhase()}
-            {currentPhase === 'blend' && renderBlendPhase()}
+            {/* The stage: the letters, and nothing that names the word. The
+                reward picture appears only after the child has blended it. */}
+            <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+              {renderLetters()}
+              {rewardEmoji && stage === 'affirmed' && (
+                <div className="mt-4 text-5xl leading-none animate-bounce" aria-hidden="true">
+                  {rewardEmoji}
+                </div>
+              )}
+              <div className="mt-4 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+            </div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                Tap a letter to hear its sound, then say the whole word.
+              </p>
+            )}
+
+            {/* The mic. ONE tap, at the start, because a browser will not open a
+                microphone without a gesture — never per answer, and never a
+                push-to-talk button the child has to find mid-word. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={micState}
+                level={ctx.micLevel}
+                isSupported={isSupported}
+                onStart={() => void prepareLive()}
+                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{statusLine}</p>
+            </div>
           </>
         )}
 
-        {/* Final Results — shared summary panel (celebration sound + confetti live there) */}
-        {hasSubmittedEvaluation && wordResults.length > 0 && (
+        {evaluation.hasSubmitted && wordResults.length > 0 && (
           <PhaseSummaryPanel
             phases={wordResults}
-            overallScore={submittedResult?.score}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Session Complete!"
-            celebrationMessage={`You blended ${completedWords.size} out of ${words.length} words!${spokenWords.size > 0 ? ` You said ${spokenWords.size} out loud — amazing!` : ''}`}
+            celebrationMessage={`You blended ${completedWords.size} out of ${words.length} words!`}
           />
         )}
       </LuminaCardContent>

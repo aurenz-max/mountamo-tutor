@@ -135,9 +135,36 @@ export interface VoiceTurnRecord {
 }
 
 export interface LoopAttempt {
+  /**
+   * What the learner DID that the tutor is about to judge.
+   *
+   * 'voice'   — a closed local voice turn (DI-1, the founding anchor). The
+   *             learner spoke; Gemini heard the audio and judges it in-band.
+   * 'gesture' — the learner committed a MANIPULATION (tiles placed, cards
+   *             sorted, a build finished). Gemini heard nothing, so the
+   *             consumer's cue carries what was done and the tutor speaks the
+   *             verdict; the sentinel scan binds it exactly as for voice.
+   *
+   * WHY THIS EXISTS (2026-08-09, user ruling). Until this field the loop could
+   * only anchor an attempt on speech, so every primitive whose answer is a
+   * gesture was locked out of the tutor-owned clock and left with a Check
+   * button and a `setTimeout`. That was an ENGINE limit; the DI literacy
+   * handoff had written it up as pedagogy ("don't voice-ify a manipulative"),
+   * which reads as a reason to leave those primitives broken. A child dragging
+   * phoneme tiles deserves the same teacher waiting on them as a child saying a
+   * word — so the anchor widened rather than the doctrine narrowing.
+   */
+  source: 'voice' | 'gesture';
+  /**
+   * The anchoring voice turn. SYNTHETIC for a gesture attempt (`durationMs` 0,
+   * `peak` 0, `openedAt === closedAt === ` the commit instant) so the verdict
+   * timeout and every existing consumer keep reading one shape — check
+   * `source`, not the turn, to tell the two apart.
+   */
   turn: VoiceTurnRecord;
   /** Live input transcription, attached if/when it arrives. May stay null —
-   *  the attempt is still judged (that is the DI-1 fix). */
+   *  the attempt is still judged (that is the DI-1 fix). A gesture attempt
+   *  normally has none: nothing was spoken. */
   transcript: string | null;
   transcriptAt: number | null;
 }
@@ -191,6 +218,19 @@ export type LoopEvent =
   /** A sub-minimum voice turn. No attempt opens — but its activity brackets
    *  already reached Gemini, so it is evidence the learner spoke. */
   | { type: 'voice-blip'; turn: VoiceTurnRecord }
+  /**
+   * The learner COMMITTED a manipulation and the ask describing it has gone out
+   * to the tutor. Opens an attempt exactly as `voice-close` does, so the verdict
+   * binds through the same sentinel scan.
+   *
+   * The consumer dispatches this at CUE-SEND time, not at commit time
+   * (`useJudgedSpeechLoop.submitGestureAttempt` does it for you): the cue may
+   * wait for the tutor to stop talking, and an attempt opened before its own ask
+   * went out would burn `verdictTimeoutMs` on that wait — and would block the
+   * very cue it is waiting for (`schedulePendingCue` refuses to send under an
+   * open attempt).
+   */
+  | { type: 'gesture-close'; at: number }
   | { type: 'transcript'; text: string; at: number }
   | { type: 'tutor-text'; text: string; at: number }
   | { type: 'tutor-quiet'; at: number }
@@ -359,7 +399,7 @@ export function reduceJudgedLoop(
       // Inert when disarmed (DI-3) — the deaf-loop signal this state produces is
       // raised by useJudgedSpeechLoop, which alone knows a run is live.
       if (!state.armed) return { state, emissions };
-      const attempt: LoopAttempt = { turn: event.turn, transcript: null, transcriptAt: null };
+      const attempt: LoopAttempt = { source: 'voice', turn: event.turn, transcript: null, transcriptAt: null };
       if (state.attempt) emissions.push({ kind: 'attempt-superseded', attempt: state.attempt });
       emissions.push({ kind: 'attempt-open', attempt });
       return {
@@ -368,6 +408,33 @@ export function reduceJudgedLoop(
           attempt,
           // A real attempt supersedes any unanchored trace: whatever the blip
           // was, this turn is what the tutor will be judging.
+          unanchoredSignal: null,
+          verdictText: '',
+          sawSentenceSinceAttempt: false,
+          sawQuietSinceAttempt: false,
+        },
+        emissions,
+      };
+    }
+
+    case 'gesture-close': {
+      // Same shape as `voice-close`, one deliberate difference: a gesture
+      // NEVER supersedes an open attempt. A voice turn may (the learner spoke
+      // twice); a manipulation landing while speech is awaiting judgment is the
+      // learner fiddling with tiles mid-verdict, and cancelling the judgment
+      // they are waiting on would strand it.
+      if (!state.armed || state.attempt) return { state, emissions };
+      const attempt: LoopAttempt = {
+        source: 'gesture',
+        turn: { openedAt: event.at, closedAt: event.at, durationMs: 0, peak: 0, duringTutorAudio: false },
+        transcript: null,
+        transcriptAt: null,
+      };
+      emissions.push({ kind: 'attempt-open', attempt });
+      return {
+        state: {
+          ...state,
+          attempt,
           unanchoredSignal: null,
           verdictText: '',
           sawSentenceSinceAttempt: false,
@@ -443,6 +510,10 @@ export function reduceJudgedLoop(
         const signal = state.unanchoredSignal;
         if (signal && event.at - signal.at <= config.retroAnchorWindowMs) {
           const retro: LoopAttempt = {
+            // Retro-anchoring only ever reconstructs SPEECH — a sub-minimum
+            // blip or a transcript. A gesture leaves no unanchored trace
+            // (nothing reaches Gemini but the cue we sent ourselves).
+            source: 'voice',
             turn: signal.turn ?? {
               openedAt: signal.at, closedAt: signal.at, durationMs: 0, peak: 0, duringTutorAudio: false,
             },

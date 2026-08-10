@@ -33,6 +33,7 @@ const turn = (overrides: Partial<VoiceTurnRecord> = {}): VoiceTurnRecord => ({
 });
 
 const attempt = (overrides: Partial<LoopAttempt> = {}): LoopAttempt => ({
+  source: 'voice',
   turn: turn(),
   transcript: null,
   transcriptAt: null,

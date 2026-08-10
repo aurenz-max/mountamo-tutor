@@ -3366,19 +3366,19 @@
   {
     "id": "cvc-speller",
     "domain": "literacy",
-    "description": "Audio-first CVC word encoding with three progressive task modes. Fill-the-Vowel: hear a word, see consonant frame (c_t),",
-    "constraints": "Only CVC (3-letter) words. One vowel focus per activity. Requires AI tutor voice for pronunciation.",
+    "description": "Live Direct Instruction CVC sounds-and-letters practice with a spoken tutor. PHONICS / ENCODING for K-1: the tutor says a CVC word, waits, judges the answer, and its own affirmation moves the lesson on. Two of the three modes are ANSWERED ALOUD - the child hears a word and SAYS ITS MIDDLE SOUND (there are no vowel buttons and no sound buckets to tap). The third, Spell It, is answered WITH THE HANDS: the child puts a letter in each of three Elkonin boxes from a letter bank, and the third letter landing is the answer - there is no Check button and nothing to click to advance. Tap-to-hear repeats the word. Requires a microphone. ESSENTIAL for K-1 phonics encoding (sound -> letter), the direction phonics-blender does not cover.",
+    "constraints": "Only CVC (3-letter) words. One vowel focus per activity (word_sort deliberately mixes the focus vowel with its contrast so the answer changes from word to word). Spoken answers are SOUNDS, never letter names - letter NAMES are a blocked response class here, so do not route letter-naming or alphabet-recognition objectives to this primitive. Requires the live tutor and a microphone. The manifest must NOT supply per-challenge words - the generator authors the word pool from the topic and vowel focus.",
     "supportsEvaluation": true,
     "evalModes": [
       {
         "evalMode": "fill_vowel",
-        "label": "Fill the Vowel (Tier 1)",
+        "label": "Middle Sound (Tier 1)",
         "beta": 1.5,
         "scaffoldingMode": 1,
         "challengeTypes": [
           "fill-vowel"
         ],
-        "description": "Hear word, pick missing vowel from 2 confusable options in a C_C frame."
+        "description": "Hear a word and SAY its middle sound aloud. A consonant frame (c _ t) is on screen and the vowel letter fills the blank only once the tutor affirms - that reveal is the sound-to-letter link. One vowel focus, so the sound is the same across the set (massed practice)."
       },
       {
         "evalMode": "spell_word",
@@ -3388,17 +3388,17 @@
         "challengeTypes": [
           "spell-word"
         ],
-        "description": "Hear word, spell all 3 letters in Elkonin boxes from a letter bank."
+        "description": "Hear a word and put a letter in each of three Elkonin boxes from a letter bank. The third letter landing is the answer; the tutor judges the build and its verdict is the advance."
       },
       {
         "evalMode": "word_sort",
-        "label": "Word Sort (Tier 3)",
+        "label": "Sound Groups (Tier 3)",
         "beta": 3.5,
         "scaffoldingMode": 3,
         "challengeTypes": [
           "word-sort"
         ],
-        "description": "Hear words, sort into 2 vowel-sound buckets (e.g., short-a vs short-e)."
+        "description": "Hear a word and SAY its middle sound aloud, across a pool that MIXES two vowels - so unlike fill_vowel the answer changes from word to word. Affirmed words collect into two on-screen vowel groups."
       }
     ],
     "hasTutoring": true

@@ -265,28 +265,35 @@ const TIER_GUARDRAIL =
 //   #1 perception   showWordImage      — the original-word picture self-check cue
 //                                         (all modes). hard withdraws it.
 //   #1 perception   showTargetHighlight— substitution: the amber highlight on the
-//                                         tile to change. hard withdraws → the
+//                                         sound to change. hard withdraws → the
 //                                         student locates the phoneme unaided.
-//   #2 instruction  nameTargetSound    — name the exact phoneme to add/remove/swap
-//                                         in the instruction (easy/medium) vs. state
-//                                         only the goal "make a new word" (hard).
-//   #5 answer-form  optionCount        — number of phoneme choice buttons for
-//                                         addition/substitution: 3 (easy) → 4 (med)
-//                                         → 5 (hard). Always exactly ONE correct, so
-//                                         the task & answer are unchanged; only the
-//                                         discrimination load rises. (Deletion has no
-//                                         option buttons → optionCount is ignored.)
+//   #2 instruction  nameTargetSound    — DEAD since the DI port. It first meant "the
+//                                         instruction does not name the sound to
+//                                         change", which only worked because the
+//                                         answer buttons made the answer determinate;
+//                                         with them gone an unnamed target makes the
+//                                         ask ambiguous ("change one sound in cat" →
+//                                         cap, cot, bat, hat…), and an ambiguous ask
+//                                         is a broken task, not a harder one. It was
+//                                         then re-based onto the tutor's sound-by-sound
+//                                         walk — and that walk was DELETED on a user
+//                                         ruling from the first live run (a voice
+//                                         cannot say `/æ/`, and the instruction was
+//                                         already clear without it). The spoken ask is
+//                                         now identical at every tier.
+//   #5 answer-form  optionCount        — DEAD since the DI port: the answer is spoken,
+//                                         so there are no choice buttons to widen.
+//                                         The discrimination load now lives entirely
+//                                         on axis 2 (position), below.
 // ---------------------------------------------------------------------------
 
 interface SoundSwapSupportScaffold {
   /** #1 — show the original word's picture cue (self-check). Withdrawn at hard. */
   showWordImage: boolean;
-  /** #1 (substitution) — highlight the tile to change. Withdrawn at hard. */
+  /** #1 (substitution) — highlight the sound to change. Withdrawn at hard. */
   showTargetHighlight: boolean;
-  /** #2 — name the exact target phoneme in the instruction (vs. goal only at hard). */
+  /** #2 — the tutor walks the starting word's sounds before the ask (vs. saying it once at hard). */
   nameTargetSound: boolean;
-  /** #5 (addition/substitution) — number of phoneme choice buttons (1 correct + distractors). */
-  optionCount: number;
   promptLines: string[];
 }
 
@@ -301,38 +308,30 @@ function resolveSupportStructure(
 
   const showWordImage = tier !== 'hard';
   const nameTargetSound = tier !== 'hard';
-  // More phoneme choices = harder discrimination at the SAME task. Deletion has no
-  // option buttons, so this field is inert there.
-  const optionCount = tier === 'easy' ? 3 : tier === 'medium' ? 4 : 5;
-  // The amber "change this tile" highlight is a substitution-only perception aid.
+  // The amber "change this sound" highlight is a substitution-only perception aid.
   const showTargetHighlight = pinnedType === 'substitution' ? tier !== 'hard' : false;
 
-  const lines: string[] = [lead];
+  const picture = `The starting word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`;
+  // The SPOKEN ask does not move with the tier at all: it is the starting word,
+  // the change, and "What word?", identically for every child (user ruling from
+  // the first live run — the sound-by-sound walk that used to sit between beats
+  // read as noise, and a voice cannot say the IPA glyphs it was made of).
+  const spoken = 'The tutor says the same three things at every tier: the starting word, the change, and "What word?".';
+  // The change itself is named at EVERY tier: the answer is spoken, so an
+  // unnamed target would have many right answers (see soundSwapScript.ts).
+  const named = 'The sound to change is named at every tier — the student says the new word aloud, so the question must have exactly one right answer.';
 
-  if (pinnedType === 'deletion') {
+  const lines: string[] = [lead, picture, spoken];
+
+  if (pinnedType === 'substitution') {
     lines.push(
-      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
-      `The instruction ${nameTargetSound ? 'names the exact sound to take away' : 'states only the goal ("take one sound away to make a new word"); the student must find which sound to remove'}.`,
-    );
-  } else if (pinnedType === 'addition') {
-    lines.push(
-      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
-      `The instruction ${nameTargetSound ? 'names the exact sound to add and where' : 'states only the goal ("add one sound to make a new word"); the student must decide the sound'}.`,
-      `There are ${optionCount} sound choices (exactly one correct) — ${tier === 'easy' ? 'few, so the choice is clear' : tier === 'medium' ? 'a moderate field of look-alikes' : 'a wide field of close look-alikes, so the student must discriminate carefully'}.`,
-    );
-  } else {
-    // substitution
-    lines.push(
-      `The original word's picture cue is ${showWordImage ? 'shown to help the student self-check' : 'withdrawn — the student works from the sounds alone'}.`,
-      `The tile to change is ${showTargetHighlight ? 'highlighted so the student sees where the swap happens' : 'NOT highlighted — the student must locate the sound to change from the instruction'}.`,
-      `The instruction ${nameTargetSound ? 'names the exact sound to change and its replacement target' : 'states only the goal ("change one sound to make a new word"); the student must find which sound to change'}.`,
-      `There are ${optionCount} sound choices (exactly one correct) — ${tier === 'easy' ? 'few, so the choice is clear' : tier === 'medium' ? 'a moderate field of look-alikes' : 'a wide field of close look-alikes, so the student must discriminate carefully'}.`,
+      `The sound to change is ${showTargetHighlight ? 'highlighted on screen so the student sees where the swap happens' : 'NOT highlighted — the student locates it from what they hear'}.`,
     );
   }
-
+  lines.push(named);
   lines.push('Keep the title and the word/image text neutral — never state the support level and never reveal the answer word.');
 
-  return { showWordImage, showTargetHighlight, nameTargetSound, optionCount, promptLines: lines };
+  return { showWordImage, showTargetHighlight, nameTargetSound, promptLines: lines };
 }
 
 // ---------------------------------------------------------------------------
@@ -922,11 +921,9 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
         // Highlight is a substitution-only perception aid; resolveSupportStructure
         // already returns false for non-substitution modes, but guard anyway.
         ch.showTargetHighlight = ch.operation === 'substitution' ? sc.showTargetHighlight : false;
-        // Option count only applies where there are choice buttons (addition/substitution).
-        // Deletion taps a tile directly and has no options — leave it unset there.
-        if (ch.operation === 'addition' || ch.operation === 'substitution') {
-          ch.optionCount = sc.optionCount;
-        }
+        // optionCount is deliberately NOT set: the DI port made the answer spoken,
+        // so there are no choice buttons for it to size. The field survives on the
+        // type as deprecated so old generated payloads still parse.
 
         // ── Axis 2 (structural — manipulation position): COUNT → validate. ──
         // The position is answer-bearing and was already re-derived from the phoneme

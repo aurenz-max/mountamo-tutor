@@ -1,17 +1,54 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * SoundSwap — DI modality, purely verbal. The Live tutor owns the clock.
+ *
+ * WHAT THE CHILD DOES. They see the starting word and its sounds, they may tap
+ * any sound to hear it, and they SAY THE NEW WORD ALOUD into an open mic. The
+ * Live tutor states the word, names the change, waits, judges the audio
+ * in-band, corrects contrastively, and its own affirmation is the advance.
+ *
+ * WHAT CHANGED (qa/di/BACKLOG.md item 16, second literacy port after
+ * phonics-blender). This primitive carried both defects the lane exists to
+ * undo: a 1400ms `setTimeout` that advanced on a stopwatch, and a push-to-talk
+ * mic the child had to find and press before answering. Underneath them the
+ * task was a costume — the child tapped a phoneme tile or picked one of 3-5
+ * sound buttons and the SCREEN computed the new word. Phoneme manipulation is
+ * an oral skill: hold a word in your head, change one sound, say what is left.
+ * A child who cannot do that can still tap the highlighted tile, and a child
+ * who can do it can still mis-tap. Deleted: `Start Activity`, the option
+ * buttons, the tile-tap answer, `Next Challenge` / `Finish` / `Skip →`, the
+ * push-to-talk say-it-again beat, and every advance timer. There is no
+ * `setTimeout`-to-advance in this file.
+ *
+ * ANSWER-LEAK RULE. The starting word and its sounds ARE the stimulus and are
+ * shown. The RESULT word is the answer: no printed result word, no result
+ * picture description, nothing spoken that names it, until the tutor has
+ * affirmed it. The reward reveal is the first moment either may appear.
+ *
+ * THE SPOKEN ASK IS THREE BEATS — "Listen: an. Add /p/ at the beginning. Your
+ * turn. What word?" — and the same three at every tier. See
+ * `soundSwapScript.ts`: the walk between beats 1 and 2 was deleted on a user
+ * ruling from the first live run, because the tutor cannot say `/æ/`. Within-
+ * mode difficulty therefore lives on the STRUCTURAL axis (where the sound sits)
+ * plus the two on-screen perception levers below; `nameTargetSound` and
+ * `optionCount` are both dead and are asserted dead in the tests.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines); no
+ * visible timers; tap-to-hear is never withdrawn; adult chrome is hidden for
+ * pre-readers.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
   LuminaChallengeCounter,
-  LuminaProgress,
-  LuminaFeedbackCard,
   LuminaMicListener,
   type LuminaAccent,
 } from '../../../ui';
@@ -21,12 +58,18 @@ import {
 } from '../../../evaluation';
 import type { SoundSwapMetrics } from '../../../evaluation/types';
 import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useJudgedSpeechLoop } from '../../../hooks/useJudgedSpeechLoop';
+import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
+import { isPreReaderGrade } from '../../../utils/kindergartenMode';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import {
+  completeCue,
+  itemCue,
+  moveOnCue,
+  pronounceCue,
+  type SwapItem,
+} from './soundSwapScript';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -47,18 +90,25 @@ export interface SoundSwapChallenge {
   substitutePosition?: 'beginning' | 'middle' | 'end';
   resultWord: string;
   resultPhonemes: string[];
+  /** POST-affirmation reward text only. Never shown before the child answers. */
   resultImage: string;
 
-  // ── Within-mode support tier scaffolds (set by the generator from config.difficulty).
-  //    Display/instruction only — NEVER change the word, phonemes, or the answer.
-  //    All optional; absent ⇒ legacy full-scaffold behavior (every cue shown). ──
-  /** #1 perception — show the original-word picture cue (self-check). Default: shown. */
+  // ── Within-mode support tier scaffolds (set by the generator from
+  //    config.difficulty). Display/instruction only — NEVER change the words,
+  //    the phonemes, or the answer. All optional; absent ⇒ full help. ──
+  /** #1 perception — show the starting word's picture cue. Default: shown. */
   showWordImage?: boolean;
-  /** #1 perception (substitution) — highlight the tile to change. Default: shown. */
+  /** #1 perception (substitution) — highlight the sound to change. Default: shown. */
   showTargetHighlight?: boolean;
-  /** #2 instruction — name the exact target sound in the instruction. Default: named. */
+  /**
+   * @deprecated DEAD since the walk was deleted (user ruling, first live run).
+   * It first meant "the instruction does not name the sound to change" — which
+   * only worked because answer buttons made the answer determinate — and was
+   * then re-based onto the tutor's sound-by-sound walk, which no longer exists.
+   * The tutor names the change at every tier and says nothing else.
+   */
   nameTargetSound?: boolean;
-  /** #5 answer-form (addition/substitution) — number of phoneme choice buttons. Default: 3. */
+  /** @deprecated No surface since the verbal port — there are no answer buttons. */
   optionCount?: number;
   remediationMove?: 'isolate_added_sound' | 'isolate_deleted_sound' | 'contrast_replacement';
 }
@@ -66,7 +116,7 @@ export interface SoundSwapChallenge {
 export interface SoundSwapData {
   title: string;
   gradeLevel: string;
-  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  /** Within-mode support tier from the manifest. Threaded to the tutor. */
   supportTier?: 'easy' | 'medium' | 'hard';
   challenges: SoundSwapChallenge[];
 
@@ -78,10 +128,6 @@ export interface SoundSwapData {
   exhibitId?: string;
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SoundSwapMetrics>) => void;
 }
-
-// ============================================================================
-// Props
-// ============================================================================
 
 interface SoundSwapProps {
   data: SoundSwapData;
@@ -104,82 +150,47 @@ const OPERATION_ICONS: Record<string, string> = {
   substitution: '🔄',
 };
 
-const OPERATION_DESCRIPTIONS: Record<string, string> = {
-  addition: 'Add a sound to make a new word',
-  deletion: 'Remove a sound to find a new word',
-  substitution: 'Change one sound to make a new word',
-};
-
 const OPERATION_ACCENTS: Record<string, LuminaAccent> = {
   addition: 'blue',
   deletion: 'purple',
   substitution: 'emerald',
 };
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  addition: { label: 'Addition', icon: '➕', accentColor: 'blue' },
-  deletion: { label: 'Deletion', icon: '➖', accentColor: 'purple' },
-  substitution: { label: 'Substitution', icon: '🔄', accentColor: 'emerald' },
-};
+/** Corrections the tutor may run on one challenge before the lesson moves on
+ *  anyway. A hard pair resurfaces through distributed review, not by drilling a
+ *  frustrated five-year-old in place. */
+const MAX_CORRECTIONS_PER_CHALLENGE = 2;
 
-const MAX_ATTEMPTS = 3;
+/** Manual voice-activity mode: our amplitude detector brackets every learner
+ *  turn. Gemini's speech-likeness VAD is unusable for short spoken responses
+ *  (DI bench run-3 ruling). Also declared on the catalog entry so the lesson
+ *  path opens the shared session the same way. */
+const SWAP_AUDIO_INPUT = { manual_activity: true };
 
-// Distractor phonemes for addition/substitution option buttons
-const DISTRACTOR_PHONEMES = [
-  '/b/', '/d/', '/f/', '/g/', '/h/', '/k/', '/l/', '/m/', '/n/', '/p/',
-  '/r/', '/s/', '/t/', '/v/', '/w/', '/z/',
-];
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-// ============================================================================
-// Helpers
-// ============================================================================
+type Stage = 'idle' | 'asking' | 'affirmed' | 'done';
 
-function getOperationInstruction(ch: SoundSwapChallenge): string {
-  switch (ch.operation) {
-    case 'addition':
-      return `Say "${ch.originalWord}." Add ${ch.addPhoneme} to the ${ch.addPosition}. What word?`;
-    case 'deletion':
-      return `Say "${ch.originalWord}." Take away the ${ch.deletePhoneme}. What's left?`;
-    case 'substitution':
-      return `Say "${ch.originalWord}." Change the ${ch.oldPhoneme} to ${ch.newPhoneme}. What word?`;
-  }
+interface ChallengeOutcome {
+  id: string;
+  operation: SoundSwapChallenge['operation'];
+  solved: boolean;
+  corrections: number;
+  score: number;
+  seconds: number | null;
 }
 
-/** The instruction the tutor PRESENTS. At the hard tier (nameTargetSound === false)
- *  this matches the neutral on-screen instruction — the tutor must not name the
- *  target sound the screen withheld. (The tutor still knows the answer internally
- *  via aiPrimitiveData; this only governs what it says aloud.) */
-function getPresentedInstruction(ch: SoundSwapChallenge): string {
-  if (ch.nameTargetSound === false) {
-    switch (ch.operation) {
-      case 'addition':
-        return `Say "${ch.originalWord}." Add one sound to make a new word. What word?`;
-      case 'deletion':
-        return `Say "${ch.originalWord}." Take one sound away to make a new word. What's left?`;
-      case 'substitution':
-        return `Say "${ch.originalWord}." Change one sound to make a new word. What word?`;
-    }
-  }
-  return getOperationInstruction(ch);
-}
+const scoreForCorrections = (corrections: number): number =>
+  corrections <= 0 ? 100 : corrections === 1 ? 67 : 33;
 
-function getOperationDescription(ch: SoundSwapChallenge): string {
-  switch (ch.operation) {
-    case 'addition':
-      return `add ${ch.addPhoneme} to the ${ch.addPosition}`;
-    case 'deletion':
-      return `remove the ${ch.deletePhoneme}`;
-    case 'substitution':
-      return `change ${ch.oldPhoneme} to ${ch.newPhoneme}`;
-  }
-}
-
-/** Find the index of the target phoneme based on position. */
+/** Find the index of the target phoneme based on position. Used only for the
+ *  perception highlight — the answer never depends on it. */
 function findTargetIndex(
   phonemes: string[],
-  targetPhoneme: string,
-  position: 'beginning' | 'middle' | 'end',
+  targetPhoneme: string | undefined,
+  position: 'beginning' | 'middle' | 'end' | undefined,
 ): number {
+  if (!targetPhoneme || !position) return -1;
   const normalized = targetPhoneme.toLowerCase();
   if (position === 'beginning') {
     return phonemes[0]?.toLowerCase() === normalized ? 0 : -1;
@@ -188,44 +199,10 @@ function findTargetIndex(
     const last = phonemes.length - 1;
     return phonemes[last]?.toLowerCase() === normalized ? last : -1;
   }
-  // middle — first match not at first or last index
   for (let i = 1; i < phonemes.length - 1; i++) {
     if (phonemes[i]?.toLowerCase() === normalized) return i;
   }
   return -1;
-}
-
-/**
- * Mode-aware tutor reveal policy keyed to the within-mode support tier. The tutor is
- * a second scaffold channel, so its reveal latitude must MATCH the on-screen tier:
- *  - easy   → may name the target sound / position and walk the setup step by step.
- *  - medium → nudge execution only; confirm the sound, don't pre-chew the whole move.
- *  - hard   → the instruction hid the target sound, so the tutor must NOT name it
- *             either; ask what the student hears in the word, never reveal the new word.
- * At EVERY tier the tutor never says the result word outright (the new word IS the
- * answer the student is producing).
- */
-function tutorRevealPolicy(
-  tier: 'easy' | 'medium' | 'hard' | undefined,
-  operation: string,
-): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return `[SUPPORT_TIER easy] Full scaffolding: you may name the exact sound to ${operation === 'deletion' ? 'take away' : operation === 'addition' ? 'add and where' : 'change'} and walk the student through the move step by step. Still never say the new result word — let them produce it.`;
-  }
-  if (tier === 'medium') {
-    return `[SUPPORT_TIER medium] Light scaffolding: nudge the execution only — confirm which sound they are working with if asked, but do not pre-solve the whole move, and never say the result word.`;
-  }
-  return `[SUPPORT_TIER hard] Minimal scaffolding: the on-screen instruction does NOT name the target sound, so you must not name it either. Ask what the student hears in the word and which sound to ${operation === 'deletion' ? 'remove' : operation === 'addition' ? 'add' : 'change'}; guide by questioning. Never reveal the target sound or the new result word.`;
-}
-
-/** Pick N random distractors that aren't the correct phoneme. */
-function pickDistractors(correctPhoneme: string, count: number): string[] {
-  const norm = correctPhoneme.toLowerCase().replace(/\//g, '');
-  return DISTRACTOR_PHONEMES
-    .filter(p => p.toLowerCase().replace(/\//g, '') !== norm)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, count);
 }
 
 // ============================================================================
@@ -246,57 +223,55 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Activity gate — student must click Start ─────────────────────
-  const [hasStarted, setHasStarted] = useState(false);
+  const ctx = useLuminaAIContext();
 
-  // ── Interaction state ─────────────────────────────────────────────
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [showResult, setShowResult] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [isShaking, setIsShaking] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-  // Tile animation state
-  const [removedIndex, setRemovedIndex] = useState<number | null>(null);
-  const [swappedPhoneme, setSwappedPhoneme] = useState<string | null>(null);
-  const [addedPhoneme, setAddedPhoneme] = useState<string | null>(null);
+  // ── State ────────────────────────────────────────────────────────
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [stage, setStage] = useState<Stage>('idle');
+  const [activeSoundIdx, setActiveSoundIdx] = useState<number | null>(null);
+  const [statusLine, setStatusLine] = useState('Tap the microphone to start.');
+  const [running, setRunning] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
+  /** The new word JUST made — post-answer only (answer-leak rule), cleared the
+   *  moment the next challenge opens. */
+  const [reward, setReward] = useState<{ word: string; image: string } | null>(null);
 
-  // New words the student said ALOUD (judge-confirmed) — the culminating
-  // production beat. Tracked by challenge id, cumulative across the session.
-  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
-  const diagnosisObservationsRef = useRef<Array<{challenge:string;expected:string;observed:string;judgeFeedback?:string}>>([]);
+  // Visual-only timer. It does NOT advance anything — it clears a highlight.
+  // Progression here has exactly one cause: a tutor verdict.
+  const soundTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Timing ────────────────────────────────────────────────────────
-  const startTimeRef = useRef(Date.now());
-
-  // ── Instance ID ───────────────────────────────────────────────────
-  const stableInstanceIdRef = useRef(instanceId || `sound-swap-${Date.now()}`);
+  const stableInstanceIdRef = useRef(instanceId || `sound-swap-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Shared challenge progress hook ────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const currentChallenge = challenges[currentIndex];
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.operation,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+  // Progression authority is React state; mirror into refs so the emission
+  // handler (which fires inside the loop's dispatch) reads it live.
+  const idxRef = useRef(0);
+  idxRef.current = currentIndex;
 
-  // ── Evaluation ────────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<SoundSwapMetrics>({
+  const correctionsRef = useRef(new Map<string, number>());
+  const outcomesRef = useRef<ChallengeOutcome[]>([]);
+  const challengeStartRef = useRef<number | null>(null);
+  const submittedRef = useRef(false);
+  const weConnectedRef = useRef(false);
+  const connectedRef = useRef(ctx.isConnected);
+  const listeningRef = useRef(ctx.isListening);
+  connectedRef.current = ctx.isConnected;
+  listeningRef.current = ctx.isListening;
+
+  /** What the child SAID, and what the tutor said back. Misconception Loop S1
+   *  Tier-A evidence — DATA only, never rendered (a stray write to a status
+   *  line in this family gets spoken aloud). */
+  const lastHeardRef = useRef<string | null>(null);
+  const failedVerdictsRef = useRef<Array<{
+    challenge: string; expected: string; heard: string; judgeFeedback: string;
+  }>>([]);
+
+  const isPreReader = isPreReaderGrade(gradeLevel);
+
+  const evaluation = usePrimitiveEvaluation<SoundSwapMetrics>({
     primitiveType: 'sound-swap',
     instanceId: resolvedInstanceId,
     skillId,
@@ -306,764 +281,347 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
+  const itemOf = useCallback(
+    (index: number): SwapItem | null => {
+      const challenge = challenges[index];
+      if (!challenge) return null;
+      return {
+        id: challenge.id,
+        operation: challenge.operation,
+        originalWord: challenge.originalWord,
+        originalPhonemes: challenge.originalPhonemes,
+        resultWord: challenge.resultWord,
+        addPhoneme: challenge.addPhoneme,
+        addPosition: challenge.addPosition,
+        deletePhoneme: challenge.deletePhoneme,
+        oldPhoneme: challenge.oldPhoneme,
+        newPhoneme: challenge.newPhoneme,
+      };
+    },
+    [challenges],
+  );
+  const currentItem = useCallback(() => itemOf(idxRef.current), [itemOf]);
 
-  const currentChallenge = challenges[currentIndex];
-  const previousOperationRef = useRef<string | null>(null);
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return challenges.map(challenge => {
+      const outcome = outcomesRef.current.find(o => o.id === challenge.id);
+      return {
+        label: `${challenge.originalWord} → ${challenge.resultWord}`,
+        icon: OPERATION_ICONS[challenge.operation] || '🔤',
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, challenges]);
 
-  // ── Shuffled phoneme options for addition/substitution ─────────────
-  // Memoised per challenge so it doesn't re-shuffle on every render.
-  const phonemeOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    if (currentChallenge.operation === 'deletion') return [];
+  // ── Submit ───────────────────────────────────────────────────────
+  const finishAndSubmit = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    const outcomes = outcomesRef.current;
+    const solved = outcomes.filter(o => o.solved).length;
+    const attemptsCount = outcomes.reduce((s, o) => s + 1 + o.corrections, 0);
+    const accuracy = outcomes.length
+      ? Math.round(outcomes.reduce((s, o) => s + o.score, 0) / outcomes.length)
+      : 0;
 
-    const correctPhoneme = currentChallenge.operation === 'addition'
-      ? currentChallenge.addPhoneme!
-      : currentChallenge.newPhoneme!;
-
-    // Support tier (#5 answer-form lever): optionCount sets the size of the choice
-    // field. More distractors = harder discrimination at the SAME task, with exactly
-    // ONE correct option always present (answer never changes). Default 3.
-    const totalOptions = Math.max(2, Math.min(5, currentChallenge.optionCount ?? 3));
-    const distractors = pickDistractors(correctPhoneme, totalOptions - 1);
-    return [
-      { phoneme: correctPhoneme, isCorrect: true },
-      ...distractors.map(p => ({ phoneme: p, isCorrect: false })),
-    ].sort(() => Math.random() - 0.5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex]);
-
-  // ── AI Tutoring integration ───────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    operation: currentChallenge?.operation ?? '',
-    originalWord: currentChallenge?.originalWord ?? '',
-    resultWord: currentChallenge?.resultWord ?? '',
-    operationDescription: currentChallenge ? getOperationDescription(currentChallenge) : '',
-    currentChallenge: currentIndex + 1,
-    totalChallenges: challenges.length,
-    currentPhase: currentChallenge?.operation ?? '',
-    attempts: currentAttempts,
-    targetPhoneme: currentChallenge?.deletePhoneme ?? currentChallenge?.oldPhoneme ?? '',
-    newPhoneme: currentChallenge?.newPhoneme ?? currentChallenge?.addPhoneme ?? '',
-    position: currentChallenge?.deletePosition ?? currentChallenge?.substitutePosition ?? currentChallenge?.addPosition ?? '',
-    originalPhonemes: currentChallenge?.originalPhonemes?.join(' ') ?? '',
-    supportTier: supportTier ?? null,
-  }), [currentChallenge, currentIndex, challenges.length, currentAttempts, supportTier]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'sound-swap',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // ── Activity introduction — fire once when connected ──────────────
-  const hasIntroducedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    const instruction = getPresentedInstruction(currentChallenge);
-    const policy = tutorRevealPolicy(supportTier, currentChallenge.operation);
-    sendText(
-      `[ACTIVITY_START] This is a Sound Swap phoneme manipulation activity for Grade ${gradeLevel}. `
-      + `There are ${challenges.length} challenges covering addition, deletion, and substitution. `
-      + `Warmly introduce the activity ("We're going to change sounds in words to make new words!"), `
-      + `then present the first challenge: ${instruction}`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [hasStarted, isConnected, currentChallenge, gradeLevel, challenges.length, sendText, supportTier]);
-
-  // ── Phase transition detection ────────────────────────────────────
-  useEffect(() => {
-    if (!currentChallenge) return;
-    const prevOp = previousOperationRef.current;
-    if (prevOp && prevOp !== currentChallenge.operation) {
-      sendText(
-        `[PHASE_TRANSITION] Moving from ${OPERATION_LABELS[prevOp]} to ${OPERATION_LABELS[currentChallenge.operation]}. `
-        + `Briefly explain: ${OPERATION_DESCRIPTIONS[currentChallenge.operation]}.`,
-        { silent: true },
-      );
-    }
-    previousOperationRef.current = currentChallenge.operation;
-  }, [currentChallenge, sendText]);
-
-  // ── Present challenge when it changes ─────────────────────────────
-  useEffect(() => {
-    if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
-    if (currentIndex === 0) return; // First challenge handled by ACTIVITY_START
-
-    const instruction = getPresentedInstruction(currentChallenge);
-    const policy = tutorRevealPolicy(supportTier, currentChallenge.operation);
-    sendText(
-      `[PRESENT_CHALLENGE] Challenge ${currentIndex + 1} of ${challenges.length}. ${instruction}`
-      + (policy ? ` ${policy}` : ''),
-      { silent: true },
-    );
-  }, [currentIndex, currentChallenge, isConnected, sendText, challenges.length, supportTier]);
-
-  // ── Reset interaction state when challenge advances ───────────────
-  useEffect(() => {
-    setFeedback('');
-    setFeedbackType('');
-    setShowResult(false);
-    setIsCelebrating(false);
-    setIsShaking(false);
-    setRemovedIndex(null);
-    setSwappedPhoneme(null);
-    setAddedPhoneme(null);
-  }, [currentIndex]);
-
-  // ── Compute per-operation accuracy from results ───────────────────
-  const computeAccuracies = useCallback(() => {
-    const byOp: Record<string, { correct: number; total: number }> = {
-      addition: { correct: 0, total: 0 },
-      deletion: { correct: 0, total: 0 },
-      substitution: { correct: 0, total: 0 },
+    const accuracyFor = (operation: SoundSwapChallenge['operation']) => {
+      const forOp = outcomes.filter(o => o.operation === operation);
+      return forOp.length
+        ? Math.round((forOp.filter(o => o.solved).length / forOp.length) * 100)
+        : 0;
     };
-    for (const ch of challenges) {
-      const result = challengeResults.find(r => r.challengeId === ch.id);
-      if (result) {
-        byOp[ch.operation].total++;
-        if (result.correct) byOp[ch.operation].correct++;
-      }
-    }
-    return {
-      additionAccuracy: byOp.addition.total > 0
-        ? Math.round((byOp.addition.correct / byOp.addition.total) * 100) : 0,
-      deletionAccuracy: byOp.deletion.total > 0
-        ? Math.round((byOp.deletion.correct / byOp.deletion.total) * 100) : 0,
-      substitutionAccuracy: byOp.substitution.total > 0
-        ? Math.round((byOp.substitution.correct / byOp.substitution.total) * 100) : 0,
-    };
-  }, [challenges, challengeResults]);
-
-  // ── Submit final evaluation ───────────────────────────────────────
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalCount = challenges.length;
-    const overallPct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
-    const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
-    const elapsed = Date.now() - startTimeRef.current;
-    const accs = computeAccuracies();
 
     const metrics: SoundSwapMetrics = {
       type: 'sound-swap',
-      operation: currentChallenge?.operation ?? 'substitution',
-      challengesCorrect: correctCount,
-      challengesTotal: totalCount,
-      additionAccuracy: accs.additionAccuracy,
-      deletionAccuracy: accs.deletionAccuracy,
-      substitutionAccuracy: accs.substitutionAccuracy,
-      attemptsCount: totalAttempts,
+      operation: challenges[Math.min(idxRef.current, challenges.length - 1)]?.operation ?? 'substitution',
+      challengesCorrect: solved,
+      challengesTotal: challenges.length,
+      additionAccuracy: accuracyFor('addition'),
+      deletionAccuracy: accuracyFor('deletion'),
+      substitutionAccuracy: accuracyFor('substitution'),
+      attemptsCount,
     };
 
-    setSubmittedScore(overallPct);
-    const observations = diagnosisObservationsRef.current;
-    const judgeBacked = [...observations].reverse().find(o => o.judgeFeedback);
-    const source = judgeBacked || observations[observations.length - 1];
-    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && source ? {
-      challengeSummary: source.challenge, expected: source.expected, observed: source.observed,
-      judgeFeedback: judgeBacked?.judgeFeedback,
-      priorAttempts: observations.filter(o => o !== source).slice(-4).map(o => ({challenge:o.challenge, observed:o.observed})),
+    // Misconception Loop S1 — Tier-A packet on diagnosable sessions. The judge
+    // (the Live tutor) already articulated the failure in its correction line.
+    const fails = failedVerdictsRef.current;
+    const latest = fails[fails.length - 1];
+    const diagnosisEvidence: DiagnosisEvidence | undefined = accuracy < 60 && latest ? {
+      challengeSummary: latest.challenge,
+      expected: latest.expected,
+      observed: `Student said: "${latest.heard}".`,
+      judgeFeedback: latest.judgeFeedback,
+      priorAttempts: fails.slice(0, -1).map(f => ({
+        challenge: f.challenge,
+        observed: `said "${f.heard}" — ${f.judgeFeedback}`,
+      })),
     } : undefined;
-    submitEvaluation(
-      overallPct >= 60,
-      overallPct,
-      metrics,
-      { durationMs: elapsed, challengeResults, spokenWords: Array.from(spokenWords) }, undefined, diagnosisEvidence,
-    );
 
-    // AI celebration
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[SESSION_COMPLETE] All ${totalCount} challenges done! Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Celebrate the transformations they made and summarize what operations were practiced.`,
-      { silent: true },
-    );
-  }, [
-    hasSubmittedEvaluation, challengeResults, challenges, currentChallenge,
-    computeAccuracies, phaseResults, submitEvaluation, sendText, spokenWords,
-  ]);
+    evaluation.submitResult(accuracy >= 60, accuracy, metrics, { outcomes }, undefined, diagnosisEvidence);
+    setRunning(false);
+    setStage('done');
+    setStatusLine('Great sound changing today!');
+  }, [challenges, evaluation]);
 
-  // ── Handle deletion — student taps a phoneme tile to remove ───────
-  const handleDeletionTap = useCallback((tappedIndex: number) => {
-    if (showResult || !currentChallenge) return;
+  // ── The loop ─────────────────────────────────────────────────────
+  const loopRef = useRef<ReturnType<typeof useJudgedSpeechLoop> | null>(null);
 
-    incrementAttempts();
-    const correctIndex = findTargetIndex(
-      currentChallenge.originalPhonemes,
-      currentChallenge.deletePhoneme!,
-      currentChallenge.deletePosition!,
-    );
-    const isCorrect = tappedIndex === correctIndex;
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setRemovedIndex(tappedIndex);
-      setFeedback(
-        `Yes! Take away ${currentChallenge.deletePhoneme} from "${currentChallenge.originalWord}" `
-        + `and you get "${currentChallenge.resultWord}"!`,
-      );
-      setFeedbackType('success');
-      setShowResult(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly removed ${currentChallenge.deletePhoneme} from `
-        + `"${currentChallenge.originalWord}" to get "${currentChallenge.resultWord}". `
-        + `Celebrate and reinforce both words!`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const tappedPhoneme = currentChallenge.originalPhonemes[tappedIndex];
-      diagnosisObservationsRef.current.push({challenge:`Delete one sound from ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Delete ${currentChallenge.deletePhoneme} at the ${currentChallenge.deletePosition}.`,observed:`Deleted ${tappedPhoneme}.`});
-      setFeedback(`That's ${tappedPhoneme} — look for the ${currentChallenge.deletePhoneme} sound.`);
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      sendText(
-        `[ANSWER_INCORRECT] Student tapped ${tappedPhoneme} but should remove ${currentChallenge.deletePhoneme}. `
-        + `Attempt ${currentAttempts + 1}. Hint: say the target sound clearly.`,
-        { silent: true },
-      );
-
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setTimeout(() => {
-          setRemovedIndex(correctIndex);
-          setShowResult(true);
-          setFeedback(
-            `The ${currentChallenge.deletePhoneme} sound was here. `
-            + `"${currentChallenge.originalWord}" without it is "${currentChallenge.resultWord}".`,
-          );
-          setFeedbackType('success');
-          recordResult({
-            challengeId: currentChallenge.id,
-            correct: false,
-            attempts: currentAttempts + 1,
-          });
-        }, 1000);
-      }
-    }
-  }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Handle addition — student picks a phoneme to add ──────────────
-  const handleAdditionPick = useCallback((phoneme: string, isCorrect: boolean) => {
-    if (showResult || !currentChallenge) return;
-
-    incrementAttempts();
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setAddedPhoneme(phoneme);
-      setFeedback(
-        `Yes! Add ${phoneme} to "${currentChallenge.originalWord}" `
-        + `and you get "${currentChallenge.resultWord}"!`,
-      );
-      setFeedbackType('success');
-      setShowResult(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly added ${phoneme} to the ${currentChallenge.addPosition} of `
-        + `"${currentChallenge.originalWord}" to make "${currentChallenge.resultWord}". `
-        + `Celebrate and say both words!`,
-        { silent: true },
-      );
-    } else {
-      diagnosisObservationsRef.current.push({challenge:`Add one sound to ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Add ${currentChallenge.addPhoneme} at the ${currentChallenge.addPosition}.`,observed:`Added ${phoneme}.`});
-      SoundManager.playIncorrect();
-      setFeedback(`${phoneme} doesn't make the right word here. Listen to the instruction again...`);
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      sendText(
-        `[ANSWER_INCORRECT] Student picked ${phoneme} but correct is ${currentChallenge.addPhoneme}. `
-        + `Attempt ${currentAttempts + 1}. Re-state: add ${currentChallenge.addPhoneme} to the ${currentChallenge.addPosition}.`,
-        { silent: true },
-      );
-
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setTimeout(() => {
-          setAddedPhoneme(currentChallenge.addPhoneme!);
-          setShowResult(true);
-          setFeedback(
-            `The answer is ${currentChallenge.addPhoneme}. `
-            + `"${currentChallenge.originalWord}" + ${currentChallenge.addPhoneme} = "${currentChallenge.resultWord}"!`,
-          );
-          setFeedbackType('success');
-          recordResult({
-            challengeId: currentChallenge.id,
-            correct: false,
-            attempts: currentAttempts + 1,
-          });
-        }, 1000);
-      }
-    }
-  }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Handle substitution — student picks replacement phoneme ────────
-  const handleSubstitutionPick = useCallback((phoneme: string, isCorrect: boolean) => {
-    if (showResult || !currentChallenge) return;
-
-    incrementAttempts();
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setSwappedPhoneme(phoneme);
-      setFeedback(
-        `Yes! Change ${currentChallenge.oldPhoneme} to ${phoneme} in "${currentChallenge.originalWord}" `
-        + `and you get "${currentChallenge.resultWord}"!`,
-      );
-      setFeedbackType('success');
-      setShowResult(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly changed ${currentChallenge.oldPhoneme} to ${phoneme} in `
-        + `"${currentChallenge.originalWord}" to make "${currentChallenge.resultWord}". `
-        + `Celebrate — "When we change ${currentChallenge.oldPhoneme} to ${phoneme}, ${currentChallenge.originalWord} becomes ${currentChallenge.resultWord}!"`,
-        { silent: true },
-      );
-    } else {
-      diagnosisObservationsRef.current.push({challenge:`Change one sound in ${currentChallenge.originalWord} to make ${currentChallenge.resultWord}.`,expected:`Replace ${currentChallenge.oldPhoneme} with ${currentChallenge.newPhoneme}.`,observed:`Selected ${phoneme} as the replacement.`});
-      SoundManager.playIncorrect();
-      setFeedback(`${phoneme} doesn't make the right word. Which sound replaces ${currentChallenge.oldPhoneme}?`);
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-
-      sendText(
-        `[ANSWER_INCORRECT] Student picked ${phoneme} but correct replacement is ${currentChallenge.newPhoneme}. `
-        + `Attempt ${currentAttempts + 1}. Hint: say "${currentChallenge.originalWord}", emphasize ${currentChallenge.oldPhoneme}, and re-state the swap.`,
-        { silent: true },
-      );
-
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setTimeout(() => {
-          setSwappedPhoneme(currentChallenge.newPhoneme!);
-          setShowResult(true);
-          setFeedback(
-            `We change ${currentChallenge.oldPhoneme} to ${currentChallenge.newPhoneme}. `
-            + `"${currentChallenge.originalWord}" becomes "${currentChallenge.resultWord}"!`,
-          );
-          setFeedbackType('success');
-          recordResult({
-            challengeId: currentChallenge.id,
-            correct: false,
-            attempts: currentAttempts + 1,
-          });
-        }, 1000);
-      }
-    }
-  }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Spoken production beat ────────────────────────────────────────
-  // Every operation ends by producing a new word ("what word do you get?"). The
-  // tile-tap only reports it; once the challenge is resolved the mic turns that
-  // into real oral production — the student SAYS the new word, and the judge
-  // ladder (Azure dual-signal → Gemini, utils/spokenWordJudge.ts) confirms it.
-  // Purely additive: the beat only appears after showResult, the Skip/Next path
-  // is always reachable, and a 'no-match' is never scored against the student.
-  //   'match'   → celebrate + track (bonus production credit)
-  //   'no-match'→ tutor models the new word by voice, NO penalty
-  //   'unclear' → invite a retry, silently
-  const spokenTargetWord = currentChallenge?.resultWord ?? '';
-
-  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
-    if (!currentChallenge || !spokenTargetWord || spokenWords.has(currentChallenge.id)) return;
-
-    if (result.outcome === 'match') {
-      SoundManager.playCorrect();
-      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
-      sendText(
-        `[STUDENT_SAID_WORD] The student said the new word "${spokenTargetWord}" out loud all by themselves — `
-        + `the result of the sound swap on "${currentChallenge.originalWord}"! `
-        + `Celebrate enthusiastically that they SAID the new word (one sentence).`,
-        { silent: true },
-      );
-    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
-      diagnosisObservationsRef.current.push({challenge:'Say the new word after manipulating its phonemes.',expected:`Say ${spokenTargetWord}.`,observed:`Judge heard "${result.verdict.heard}".`,judgeFeedback:result.verdict.misconception || `The judge heard "${result.verdict.heard}" instead of the transformed word with high confidence.`});
-      sendText(
-        `[SPOKEN_MISS] The student tried to say the new word "${spokenTargetWord}" aloud but it sounded like "${result.verdict.heard}". `
-        + `Gently model it — stretch the sounds "${currentChallenge.resultPhonemes.join('... ')}", then say "${spokenTargetWord}" — and invite one more try. `
-        + `Warm, never scolding. Two short sentences max.`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't catch it. One friendly sentence: invite them to say "${spokenTargetWord}" `
-        + `again a little louder, or just tap Next.`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, spokenTargetWord, spokenWords, sendText]);
-
-  const spokenCapture = useSpokenWordCapture({
-    targetWord: spokenTargetWord,
-    gradeLevel,
-    onResult: handleSpokenResult,
-    onNoSpeech: () => {
-      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say `
-        + `"${spokenTargetWord}" again a little louder, or just tap Next.`,
-        { silent: true },
-      );
-    },
-  });
-
-  // ── Advance to next challenge ─────────────────────────────────────
-  const handleNext = useCallback(() => {
-    spokenCapture.cancel(); // never carry a live mic across challenges
-    if (!advanceProgress()) {
-      // All challenges done — submit evaluation and show summary
-      submitFinalEvaluation();
-      setShowSummary(true);
-      return;
-    }
-    sendText(
-      `[NEXT_CHALLENGE] Moving to challenge ${currentIndex + 2} of ${challenges.length}.`,
-      { silent: true },
-    );
-  }, [advanceProgress, currentIndex, challenges.length, sendText, submitFinalEvaluation, spokenCapture]);
-
-  // Strong-flow UX: once the student says the new word aloud (judge-confirmed),
-  // glide to the next challenge on their behalf — no extra click. The mic itself
-  // stays tap-to-start (push-to-talk is the echo gate against the tutor's voice);
-  // only the advance is automatic — auto-advance yes, auto-listen no.
-  const handleNextRef = useRef(handleNext);
-  handleNextRef.current = handleNext;
-  useEffect(() => {
-    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
-    const t = setTimeout(() => handleNextRef.current(), 1400);
-    return () => clearTimeout(t);
-  }, [spokenWords, currentChallenge]);
-
-  // ── Render: Phoneme tile row ──────────────────────────────────────
-  // INTERACTION SURFACE — the phoneme tiles the student taps/manipulates.
-  const renderPhonemeTiles = (
-    phonemes: string[],
-    options?: {
-      onTileTap?: (index: number) => void;
-      removedIdx?: number | null;
-      swappedIdx?: number | null;
-      swappedTo?: string | null;
-      addPosition?: 'beginning' | 'end';
-      addedTo?: string | null;
-      highlightIdx?: number | null;
-      disabled?: boolean;
-    },
-  ) => {
-    const {
-      onTileTap,
-      removedIdx,
-      swappedIdx,
-      swappedTo,
-      addPosition,
-      addedTo,
-      highlightIdx,
-      disabled,
-    } = options ?? {};
-
-    const tiles: React.ReactNode[] = [];
-
-    // dropzone-triage: transformation-result placeholder, not a drop target.
-    // "+" slot or added phoneme at beginning
-    if (addPosition === 'beginning') {
-      tiles.push(
-        <div
-          key="add-begin"
-          className={`
-            rounded-xl border-2 border-dashed px-4 py-3 text-center transition-all duration-500
-            ${addedTo
-              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 scale-100 opacity-100'
-              : 'bg-white/5 border-white/20 text-slate-500 animate-pulse'
-            }
-          `}
-        >
-          <span className="text-xl font-bold">{addedTo || '+'}</span>
-        </div>,
-      );
-    }
-
-    phonemes.forEach((phoneme, idx) => {
-      const isRemoved = removedIdx === idx;
-      const isSwapped = swappedIdx === idx;
-      const isHighlighted = highlightIdx === idx;
-      const displayPhoneme = isSwapped && swappedTo ? swappedTo : phoneme;
-
-      tiles.push(
-        <button
-          key={idx}
-          onClick={() => !disabled && onTileTap?.(idx)}
-          disabled={disabled || isRemoved}
-          className={`
-            rounded-xl border-2 px-4 py-3 text-center transition-all duration-500
-            ${isRemoved
-              ? 'opacity-0 scale-0 border-transparent'
-              : isSwapped
-                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'
-                : isHighlighted
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-200 animate-pulse'
-                  : onTileTap && !disabled
-                    ? 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20 cursor-pointer'
-                    : 'bg-white/5 border-white/10 text-slate-200'
-            }
-          `}
-        >
-          <span className="text-xl font-bold">{displayPhoneme}</span>
-        </button>,
-      );
+  const closeChallenge = useCallback((item: SwapItem, solved: boolean) => {
+    const corrections = correctionsRef.current.get(item.id) ?? 0;
+    outcomesRef.current.push({
+      id: item.id,
+      operation: item.operation,
+      solved,
+      corrections,
+      score: solved ? scoreForCorrections(corrections) : 0,
+      seconds: challengeStartRef.current == null
+        ? null
+        : Math.round(((performance.now() - challengeStartRef.current) / 1000) * 10) / 10,
     });
+    if (solved) setSolvedIds(prev => new Set(Array.from(prev).concat(item.id)));
+  }, []);
 
-    // "+" slot or added phoneme at end
-    if (addPosition === 'end') {
-      tiles.push(
-        <div
-          key="add-end"
-          className={`
-            rounded-xl border-2 border-dashed px-4 py-3 text-center transition-all duration-500
-            ${addedTo
-              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 scale-100 opacity-100'
-              : 'bg-white/5 border-white/20 text-slate-500 animate-pulse'
-            }
-          `}
-        >
-          <span className="text-xl font-bold">{addedTo || '+'}</span>
-        </div>,
-      );
-    }
+  /** Move the surface to the next challenge. The CUE for it is queued by the
+   *  caller first: the tutor's line is what actually advances the lesson, this
+   *  only re-points the screen at what that line is about. */
+  const openNext = useCallback(() => {
+    const nextIndex = idxRef.current + 1;
+    if (!itemOf(nextIndex)) return false;
+    setCurrentIndex(nextIndex);
+    idxRef.current = nextIndex;
+    setReward(null);
+    challengeStartRef.current = performance.now();
+    return true;
+  }, [itemOf]);
 
-    return (
-      <div className="flex justify-center gap-2 flex-wrap">
-        {tiles}
-      </div>
-    );
-  };
+  const applyVerdict = useCallback(
+    (judgment: 'affirmed' | 'corrected' | 'off-script', verdictText?: string) => {
+      const item = currentItem();
+      const loop = loopRef.current;
+      if (!item || !loop || judgment === 'off-script') return;
 
-  // ── Render: Phoneme option buttons (addition / substitution) ──────
-  // INTERACTION SURFACE — the sound choice tiles the student picks from.
-  const renderPhonemeOptions = (
-    onPick: (phoneme: string, isCorrect: boolean) => void,
-  ) => (
-    <div className={`flex justify-center gap-3 ${isShaking ? 'animate-shake' : ''}`}>
-      {phonemeOptions.map((opt, idx) => (
-        <button
-          key={idx}
-          onClick={() => !showResult && onPick(opt.phoneme, opt.isCorrect)}
-          disabled={showResult}
-          className={`
-            rounded-xl border-2 px-5 py-3 text-center transition-all duration-200 cursor-pointer
-            ${showResult && opt.isCorrect
-              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 ring-2 ring-emerald-400/40'
-              : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
-            }
-            ${isCelebrating && opt.isCorrect ? 'animate-bounce' : ''}
-          `}
-        >
-          <span className="text-lg font-bold">{opt.phoneme}</span>
-        </button>
-      ))}
-    </div>
+      if (judgment === 'corrected') {
+        const used = (correctionsRef.current.get(item.id) ?? 0) + 1;
+        correctionsRef.current.set(item.id, used);
+        SoundManager.playIncorrect();
+        failedVerdictsRef.current = [
+          ...failedVerdictsRef.current,
+          {
+            challenge: `Start from "${item.originalWord}" and change its sounds to make a new word, said aloud.`,
+            expected: `Say the new word "${item.resultWord}".`,
+            heard: lastHeardRef.current ?? '(not caught)',
+            judgeFeedback: verdictText ?? '',
+          },
+        ].slice(-8);
+
+        if (used <= MAX_CORRECTIONS_PER_CHALLENGE) {
+          // The tutor's correction line already re-modeled and re-asked in-band.
+          setStage('asking');
+          setStatusLine('Have another go — what word?');
+          return;
+        }
+        // Capped: acknowledge and move the lesson forward.
+        closeChallenge(item, false);
+        const next = itemOf(idxRef.current + 1);
+        loop.queueCue(moveOnCue(item, next));
+        if (openNext()) {
+          setStage('asking');
+          setStatusLine('Good try — here comes the next one.');
+        } else {
+          finishAndSubmit();
+        }
+        return;
+      }
+
+      // Affirmed — the new word is theirs, and this is the first moment it may
+      // appear on screen.
+      SoundManager.playCorrect();
+      closeChallenge(item, true);
+      setStage('affirmed');
+      setReward({
+        word: item.resultWord,
+        image: challenges[idxRef.current]?.resultImage ?? '',
+      });
+      const next = itemOf(idxRef.current + 1);
+      if (next) {
+        setStatusLine('Yes! You changed the sound.');
+        loop.queueCue(itemCue(next));
+        openNext();
+      } else {
+        setStatusLine('You did it!');
+        loop.queueCue(completeCue());
+        finishAndSubmit();
+      }
+    },
+    [challenges, closeChallenge, currentItem, finishAndSubmit, itemOf, openNext],
   );
 
-  // ── Render: Deletion mode ─────────────────────────────────────────
-  const renderDeletionMode = () => {
-    if (!currentChallenge) return null;
-    const showImage = currentChallenge.showWordImage !== false;
-    const nameSound = currentChallenge.nameTargetSound !== false;
-    return (
-      <div className="space-y-5">
-        {/* Word display */}
-        <div className="text-center space-y-1">
-          {showImage && (
-            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
-          )}
-          <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
-        </div>
+  const handleEmission = useCallback(
+    (emission: LoopEmission) => {
+      switch (emission.kind) {
+        case 'attempt-open':
+          lastHeardRef.current = null;
+          setStatusLine('Listening…');
+          return;
+        case 'attempt-transcript':
+          lastHeardRef.current = emission.text;
+          return;
+        case 'verdict':
+          if (emission.judgment === 'no-verdict') {
+            setStatusLine('One more time — what word?');
+            return;
+          }
+          applyVerdict(emission.judgment, emission.verdictText);
+          return;
+        case 'session-resumed':
+        case 'resync': {
+          // The session survived but the challenge in flight did not. Re-ask it
+          // verbatim rather than leaving the child answering into something
+          // that will never judge them.
+          const item = currentItem();
+          const loop = loopRef.current;
+          if (item && loop) {
+            setStage('asking');
+            setStatusLine('Let’s take that one again.');
+            loop.queueCue(itemCue(item));
+          }
+          return;
+        }
+        case 'session-dead':
+          // Visible state, never a silent "Listening…".
+          setStatusLine('The tutor went quiet — tap the microphone to pick things back up.');
+          return;
+        default:
+          return;
+      }
+    },
+    [applyVerdict, currentItem],
+  );
 
-        {/* Instruction */}
-        <p className="text-center text-lg text-slate-300 font-medium">
-          {nameSound ? (
-            <>Tap the <span className="text-amber-300">{currentChallenge.deletePhoneme}</span> sound to remove it</>
-          ) : (
-            <>Take away one sound to make a new word — tap the sound to remove</>
-          )}
-        </p>
+  const loop = useJudgedSpeechLoop({
+    enabled: running,
+    onEmission: handleEmission,
+  });
+  loopRef.current = loop;
 
-        {/* Phoneme tiles — tappable */}
-        <div className={isShaking ? 'animate-shake' : ''}>
-          {renderPhonemeTiles(currentChallenge.originalPhonemes, {
-            onTileTap: handleDeletionTap,
-            removedIdx: removedIndex,
-            disabled: showResult,
-          })}
-        </div>
+  // ── Keep the tutor's RUNTIME STATE truthful as challenges advance ─
+  useEffect(() => {
+    if (!ctx.isConnected || !currentChallenge) return;
+    ctx.updateContext({
+      operation: currentChallenge.operation,
+      originalWord: currentChallenge.originalWord,
+      resultWord: currentChallenge.resultWord,
+      supportTier: supportTier ?? null,
+    });
+    // Context methods are stable; keyed on the current challenge + connection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected, currentChallenge, supportTier]);
 
-        {/* Result word (shown after correct/max attempts) */}
-        {showResult && (
-          <div className="text-center space-y-1">
-            <p className="text-sm text-slate-500">&rarr;</p>
-            <p className="text-2xl font-bold text-emerald-300">&ldquo;{currentChallenge.resultWord}&rdquo;</p>
-            <p className="text-sm text-slate-500 italic">{currentChallenge.resultImage}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
+  // ── Tap-to-hear — never withdrawn by band or tier ────────────────
+  // Speaks one SOUND of the starting word. A child who taps every sound has the
+  // word in pieces; making the change is still theirs to do.
+  const handlePlaySound = useCallback((index: number) => {
+    const phoneme = currentChallenge?.originalPhonemes[index];
+    if (!phoneme) return;
+    SoundManager.tap();
+    setActiveSoundIdx(index);
+    ctx.sendText(pronounceCue(phoneme), { silent: true });
+    if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
+    soundTimerRef.current = setTimeout(() => setActiveSoundIdx(null), 1200);
+  }, [ctx, currentChallenge]);
 
-  // ── Render: Addition mode ─────────────────────────────────────────
-  const renderAdditionMode = () => {
-    if (!currentChallenge) return null;
-    const showImage = currentChallenge.showWordImage !== false;
-    const nameSound = currentChallenge.nameTargetSound !== false;
-    return (
-      <div className="space-y-5">
-        {/* Word display */}
-        <div className="text-center space-y-1">
-          {showImage && (
-            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
-          )}
-          <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
-        </div>
+  // ── Start: one gesture, because a browser will not open a mic without one ─
+  const startRun = useCallback(() => {
+    const first = itemOf(0);
+    const activeLoop = loopRef.current;
+    if (!first || !activeLoop) return;
+    correctionsRef.current.clear();
+    outcomesRef.current = [];
+    failedVerdictsRef.current = [];
+    lastHeardRef.current = null;
+    submittedRef.current = false;
+    setSolvedIds(new Set());
+    setCurrentIndex(0);
+    idxRef.current = 0;
+    setReward(null);
+    activeLoop.reset();
+    setRunning(true);
+    setStage('asking');
+    setStatusLine('Listen, then say the new word.');
+    challengeStartRef.current = performance.now();
+    // ONE cue with ONE job: speak this. How-to-play is inside the quoted line
+    // rather than a directive telling the tutor to compose one — residual
+    // SWAP-1, where a two-job opening turn improvised its own ask and item 1
+    // ran without its model.
+    activeLoop.sendCueNow(itemCue(first, { opening: true, howToPlay: isPreReader }));
+    activeLoop.arm();
+  }, [isPreReader, itemOf]);
 
-        {/* Instruction */}
-        <p className="text-center text-lg text-slate-300 font-medium">
-          {nameSound ? (
-            <>Add a sound to the{' '}
-            <span className="text-amber-300">{currentChallenge.addPosition}</span>{' '}
-            to make a new word</>
-          ) : (
-            <>Add one sound to make a new word</>
-          )}
-        </p>
+  const startRunRef = useRef(startRun);
+  startRunRef.current = startRun;
 
-        {/* Phoneme tiles with + slot. When the instruction does NOT name the sound
-            (hard tier), the "+" position slot is also withheld until the answer is
-            shown, so the placement isn't a free cue. */}
-        {renderPhonemeTiles(currentChallenge.originalPhonemes, {
-          addPosition: (nameSound || showResult) ? currentChallenge.addPosition : undefined,
-          addedTo: addedPhoneme,
-          disabled: true,
-        })}
+  const prepareLive = useCallback(async () => {
+    if (preparing) return;
+    setPreparing(true);
+    setStatusLine('Getting ready…');
+    try {
+      if (!connectedRef.current && ctx.sessionMode === 'idle') {
+        weConnectedRef.current = true;
+        await ctx.connect({
+          primitive_type: 'sound-swap',
+          instance_id: resolvedInstanceId,
+          primitive_data: {
+            activity: 'live direct instruction phoneme manipulation',
+            operation: challenges[0]?.operation ?? '',
+            originalWord: challenges[0]?.originalWord ?? '',
+            resultWord: challenges[0]?.resultWord ?? '',
+            supportTier: supportTier ?? null,
+          },
+          grade_level: gradeLevel || 'kindergarten',
+          exhibit_id: exhibitId,
+          audio_input: SWAP_AUDIO_INPUT,
+          // DI-GREET-1: this pack's first cue is its opening line — the tutor
+          // must not improvise a greeting turn before it arrives.
+          owns_opening: true,
+        });
+        const started = performance.now();
+        while (!connectedRef.current && performance.now() - started < 12_000) await sleep(100);
+        if (!connectedRef.current) throw new Error('The tutor did not connect.');
+      }
 
-        {/* Phoneme options */}
-        {!showResult && (
-          <div className="space-y-2">
-            <p className="text-center text-sm text-slate-400">Pick the right sound:</p>
-            {renderPhonemeOptions(handleAdditionPick)}
-          </div>
-        )}
+      ctx.startListening();
+      const micStarted = performance.now();
+      while (!listeningRef.current && performance.now() - micStarted < 10_000) await sleep(100);
+      if (!listeningRef.current) throw new Error('The microphone did not open.');
 
-        {/* Result word */}
-        {showResult && (
-          <div className="text-center space-y-1">
-            <p className="text-sm text-slate-500">&rarr;</p>
-            <p className="text-2xl font-bold text-emerald-300">&ldquo;{currentChallenge.resultWord}&rdquo;</p>
-            <p className="text-sm text-slate-500 italic">{currentChallenge.resultImage}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
+      startRunRef.current();
+    } catch (error) {
+      setStatusLine(error instanceof Error ? error.message : 'Could not start.');
+      setStage('idle');
+    } finally {
+      setPreparing(false);
+    }
+  }, [challenges, ctx, exhibitId, gradeLevel, preparing, resolvedInstanceId, supportTier]);
 
-  // ── Render: Substitution mode ─────────────────────────────────────
-  const renderSubstitutionMode = () => {
-    if (!currentChallenge) return null;
-    const showImage = currentChallenge.showWordImage !== false;
-    const nameSound = currentChallenge.nameTargetSound !== false;
-    const showHighlight = currentChallenge.showTargetHighlight !== false;
-    const targetIdx = findTargetIndex(
-      currentChallenge.originalPhonemes,
-      currentChallenge.oldPhoneme!,
-      currentChallenge.substitutePosition!,
-    );
-
-    return (
-      <div className="space-y-5">
-        {/* Word display */}
-        <div className="text-center space-y-1">
-          {showImage && (
-            <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
-          )}
-          <p className="text-2xl font-bold text-slate-100">&ldquo;{currentChallenge.originalWord}&rdquo;</p>
-        </div>
-
-        {/* Instruction */}
-        <p className="text-center text-lg text-slate-300 font-medium">
-          {nameSound ? (
-            <>Change the <span className="text-amber-300">{currentChallenge.oldPhoneme}</span> to a new sound</>
-          ) : (
-            <>Change one sound to make a new word</>
-          )}
-        </p>
-
-        {/* Phoneme tiles. The amber target highlight is a perception scaffold — at
-            hard it is withdrawn so the student locates the sound to change, but the
-            swap result still animates on the correct tile after answering. */}
-        {renderPhonemeTiles(currentChallenge.originalPhonemes, {
-          highlightIdx: (!showResult && showHighlight) ? targetIdx : null,
-          swappedIdx: showResult ? targetIdx : null,
-          swappedTo: swappedPhoneme,
-          disabled: true,
-        })}
-
-        {/* Phoneme options */}
-        {!showResult && (
-          <div className="space-y-2">
-            <p className="text-center text-sm text-slate-400">Pick the replacement sound:</p>
-            {renderPhonemeOptions(handleSubstitutionPick)}
-          </div>
-        )}
-
-        {/* Result word */}
-        {showResult && (
-          <div className="text-center space-y-1">
-            <p className="text-sm text-slate-500">&rarr;</p>
-            <p className="text-2xl font-bold text-emerald-300">&ldquo;{currentChallenge.resultWord}&rdquo;</p>
-            <p className="text-sm text-slate-500 italic">{currentChallenge.resultImage}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
+  // Unmount: never leave Live holding the mic, never leave a timer running.
+  useEffect(() => () => {
+    if (soundTimerRef.current) clearTimeout(soundTimerRef.current);
+    if (weConnectedRef.current) {
+      ctx.stopListening();
+      ctx.disconnect();
+    }
+    // Context methods are stable; unmount-only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ============================================================================
-  // Main Render
+  // Render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (!currentChallenge) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -1073,36 +631,48 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
+  const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const stageWord = stage === 'affirmed' ? 'yes!' : stage === 'asking' ? 'what word?' : 'get ready';
+  const showImage = currentChallenge.showWordImage !== false;
+  const highlightIdx = currentChallenge.operation === 'substitution'
+    && currentChallenge.showTargetHighlight !== false
+    && stage !== 'affirmed'
+    ? findTargetIndex(
+      currentChallenge.originalPhonemes,
+      currentChallenge.oldPhoneme,
+      currentChallenge.substitutePosition,
+    )
+    : -1;
 
-  // ── Start screen ──────────────────────────────────────────────────
-  if (!hasStarted) {
-    const operations = Array.from(new Set(challenges.map(ch => ch.operation)));
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-4xl">{'🔄'}</div>
-          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-          <p className="text-slate-400 text-sm max-w-sm">
-            {challenges.length} challenges across{' '}
-            {operations.map(o => OPERATION_LABELS[o]).join(', ')} modes.
-            Change sounds in words to make new words!
-          </p>
-          <LuminaButton
-            tone="primary"
-            onClick={() => {
-              startTimeRef.current = Date.now();
-              setHasStarted(true);
-            }}
-            className="px-8 py-3 text-lg"
-          >
-            Start Activity
-          </LuminaButton>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+  /** The stimulus: the STARTING word and its sounds. Tap any sound to hear it.
+   *  Nothing here names the new word — that is the answer. */
+  const renderSounds = () => (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {currentChallenge.originalPhonemes.map((phoneme, i) => (
+        <button
+          key={`${currentChallenge.id}-${i}`}
+          onClick={() => handlePlaySound(i)}
+          aria-label={`sound ${phoneme}`}
+          // Perception scaffold, withdrawn at the hard tier. Exposed as an
+          // attribute because it is styling otherwise, and a scaffold nobody
+          // can assert on is a scaffold that silently stops working.
+          data-target={highlightIdx === i ? 'true' : undefined}
+          className={`
+            rounded-xl border-2 px-4 py-3 text-center font-bold transition-all duration-200 cursor-pointer select-none
+            ${activeSoundIdx === i
+              ? 'bg-amber-500/30 border-amber-400/60 text-amber-200 scale-110 shadow-lg shadow-amber-500/20'
+              : highlightIdx === i
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-200 animate-pulse'
+                : 'bg-slate-700/40 border-slate-500/30 text-white hover:scale-105 hover:bg-slate-600/40'
+            }
+          `}
+        >
+          <span className="text-2xl">{phoneme}</span>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <LuminaCard className={className}>
@@ -1110,119 +680,83 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            <div className="flex items-center gap-2">
-              <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
-            </div>
+            {/* Grade/operation badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge className="text-xs">Grade {gradeLevel}</LuminaBadge>
+                <LuminaBadge accent={OPERATION_ACCENTS[currentChallenge.operation]} className="text-xs">
+                  {OPERATION_ICONS[currentChallenge.operation]} {OPERATION_LABELS[currentChallenge.operation]}
+                </LuminaBadge>
+              </div>
+            )}
           </div>
-          {currentChallenge && !showSummary && (
-            <LuminaBadge accent={OPERATION_ACCENTS[currentChallenge.operation]} className="text-xs">
-              {OPERATION_ICONS[currentChallenge.operation]} {OPERATION_LABELS[currentChallenge.operation]}
-            </LuminaBadge>
-          )}
+          <LuminaBadge accent="cyan" className="text-xs">Say it out loud</LuminaBadge>
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress indicator */}
-        {!showSummary && (
+        {!evaluation.hasSubmitted && (
           <>
-            <div className="flex items-center justify-between text-sm">
-              <LuminaChallengeCounter
-                current={currentIndex + 1}
-                total={challenges.length}
-                className="text-slate-400"
-              />
-              <span className="text-slate-500 text-xs">
-                {challengeResults.filter(r => r.correct).length} correct
-              </span>
-            </div>
-            <LuminaProgress
-              accent="purple"
-              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
-            />
-          </>
-        )}
+            {!isPreReader && challenges.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <LuminaChallengeCounter current={currentIndex + 1} total={challenges.length} variant="dots" />
+              </div>
+            )}
 
-        {/* Challenge content */}
-        {!showSummary && currentChallenge && (
-          <>
-            {currentChallenge.operation === 'deletion' && renderDeletionMode()}
-            {currentChallenge.operation === 'addition' && renderAdditionMode()}
-            {currentChallenge.operation === 'substitution' && renderSubstitutionMode()}
-          </>
-        )}
-
-        {/* Feedback banner */}
-        {feedback && !showSummary && (
-          <LuminaFeedbackCard status={feedbackType === 'error' ? 'incorrect' : 'correct'}>
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Resolved footer. The culminating say-it beat is the PRIMARY next step
-            (auto-advances on a judged new word); it applies to every operation
-            because each ends by producing a single result word. The mic is always
-            additive — a quiet Skip is always reachable and 'no-match' is never
-            scored. When the mic isn't supported, it falls back to Next / Finish. */}
-        {showResult && !showSummary && currentChallenge && (
-          spokenCapture.isSupported && spokenTargetWord ? (
-            <div className="flex flex-col items-center gap-3">
-              {spokenWords.has(currentChallenge.id) ? (
-                // Said it → celebrate, then auto-glide to the next challenge (effect above)
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-emerald-300 text-base font-semibold">
-                    🎉 You said “{spokenTargetWord}” out loud!
-                  </span>
-                  <span className="text-slate-500 text-xs">
-                    {currentIndex < challenges.length - 1 ? 'Next challenge coming up…' : 'Wrapping up…'}
-                  </span>
-                </div>
-              ) : (
-                // Mic available → the say-the-new-word beat is the PRIMARY next step
-                <div className="flex flex-col items-center gap-3">
-                  <p className="text-slate-300 text-sm font-medium">Your turn — say the new word!</p>
-                  <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
-                    <LuminaMicListener
-                      state={spokenCapture.state}
-                      level={spokenCapture.level}
-                      isSupported={spokenCapture.isSupported}
-                      onStart={() => void spokenCapture.start()}
-                      onCancel={spokenCapture.cancel}
-                      size="sm"
-                      idleLabel={`Say “${spokenTargetWord}”!`}
-                      listeningLabel={`Say “${spokenTargetWord}”!`}
-                    />
-                  </div>
-                  {/* Quiet skip — never traps a student who can't or won't speak */}
-                  {spokenCapture.state === 'idle' && (
-                    <button
-                      onClick={handleNext}
-                      className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
-                    >
-                      {currentIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
-                    </button>
+            {/* The stage: the starting word and its sounds, and nothing that
+                names the new word. The reward appears only after the tutor has
+                affirmed the child's answer. */}
+            <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8 text-center">
+              {showImage && !isPreReader && (
+                <p className="text-sm text-slate-500 italic">{currentChallenge.originalImage}</p>
+              )}
+              <p className="text-4xl font-bold text-slate-100">{currentChallenge.originalWord}</p>
+              {renderSounds()}
+              {reward && stage === 'affirmed' && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm text-slate-500">→</p>
+                  <p className="text-3xl font-bold text-emerald-300 animate-bounce">{reward.word}</p>
+                  {reward.image && !isPreReader && (
+                    <p className="text-sm text-slate-500 italic">{reward.image}</p>
                   )}
                 </div>
               )}
+              <div className="mt-2 text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
             </div>
-          ) : (
-            <div className="flex justify-center">
-              <LuminaActionButton action="next" onClick={handleNext}>
-                {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-              </LuminaActionButton>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                Tap a sound to hear it, then say the new word.
+              </p>
+            )}
+
+            {/* The mic. ONE tap, at the start, because a browser will not open a
+                microphone without a gesture — never per answer, and never a
+                push-to-talk button the child has to find mid-challenge. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={micState}
+                level={ctx.micLevel}
+                isSupported={isSupported}
+                onStart={() => void prepareLive()}
+                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{statusLine}</p>
             </div>
-          )
+          </>
         )}
 
-        {/* Phase summary panel */}
-        {showSummary && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedScore ?? undefined}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Sound Swap Complete!"
-            celebrationMessage={`You practiced adding, removing, and swapping sounds in words!${spokenWords.size > 0 ? ` You said ${spokenWords.size} new word${spokenWords.size === 1 ? '' : 's'} out loud — amazing!` : ''}`}
-            className="mb-6"
+            celebrationMessage={`You made ${solvedIds.size} new word${solvedIds.size === 1 ? '' : 's'} by changing sounds!`}
           />
         )}
       </LuminaCardContent>

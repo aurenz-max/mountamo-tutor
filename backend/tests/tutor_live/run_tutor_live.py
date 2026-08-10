@@ -652,13 +652,28 @@ def build_decodable_reader_journey(live: Dict[str, Any], grade: str) -> Dict[str
 
 
 def build_cvc_speller_journey(live: Dict[str, Any], grade: str) -> Dict[str, Any]:
-    """Reader-fit STIMULUS/ORIENT journey (cvc-speller RF-1). Replays the EXACT
-    sendText messages CvcSpeller.tsx emits — [ACTIVITY_START], [SAY_WORD], the
-    wrong-attempt hint, and the success message with the spoken-production
-    invite — and checks (must_include) that the tutor actually SAYS each target
-    word aloud plus an ORIENT line in child terms. The word IS the stimulus for
-    a pre-reader: an intro that never says it strands the child exactly like an
-    unread story.
+    """⚠️ STALE SINCE THE DI PORT (2026-08-10) — DO NOT READ A GREEN RUN HERE AS
+    EVIDENCE ABOUT PRODUCTION.
+
+    This journey replays [ACTIVITY_START] / [SAY_WORD] / a wrong-attempt hint /
+    a success message with a spoken-production invite, and pushes a 13-key
+    context bag. CvcSpeller.tsx now emits [DI_CVC_ITEM] / [DI_CVC_BUILD] /
+    [DI_CVC_MOVE_ON] / [DI_CVC_COMPLETE] against a 3-key bag, and the catalog
+    directives those old tags keyed on are deleted. So this exercises a prompt
+    that no longer exists: it can still go green, and that green means nothing.
+
+    It is left in place rather than deleted because the gap is FAMILY-WIDE, not
+    this pack's — phonics-blender, sound-swap and word-flip all shipped their DI
+    ports with their journeys untouched, and the harness has no model of a
+    judged loop at all (zero DI_* tags anywhere in this file). Teaching it that
+    shape is one job, not four. Queued against the tutor-live harness.
+
+    ORIGINAL INTENT, kept for whoever does that work: the reader-fit
+    STIMULUS/ORIENT check (cvc-speller RF-1) — the tutor must actually SAY each
+    target word aloud plus an ORIENT line in child terms, because the word IS
+    the stimulus for a pre-reader and an intro that never says it strands the
+    child exactly like an unread story. That requirement survives the port
+    intact; only the transport it was written against has changed.
     """
     data = live.get("generatedData") or {}
     challenges = data.get("challenges") or []

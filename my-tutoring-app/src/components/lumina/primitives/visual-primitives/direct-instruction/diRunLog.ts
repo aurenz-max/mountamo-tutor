@@ -233,7 +233,16 @@ export function logDiEmission(emission: LoopEmission, ctx: DiRunItemContext = {}
 
   switch (emission.kind) {
     case 'attempt-open':
-      push({ ...base, speaker: 'stage', kind: emission.kind, text: 'attempt opened (voice turn closed)' });
+      push({
+        ...base,
+        speaker: 'stage',
+        kind: emission.kind,
+        // Name the anchor: a run mixing spoken and manipulated answers is
+        // unreadable if both say "voice turn closed".
+        text: emission.attempt.source === 'gesture'
+          ? 'attempt opened (build committed)'
+          : 'attempt opened (voice turn closed)',
+      });
       return;
 
     case 'attempt-superseded':

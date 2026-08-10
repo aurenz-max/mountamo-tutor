@@ -613,9 +613,16 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "main_idea": PriorConfig(4.0, "Synthesize the passage's central message"),
     },
     "cvc-speller": {
-        "fill_vowel": PriorConfig(1.5, "Recognition: pick missing vowel in C_C frame"),
+        # Betas unchanged by the 2026-08-10 DI port; the descriptions are not.
+        # fill_vowel stopped being recognition when its two printed vowel
+        # options were deleted (one of them was the answer) — the middle sound
+        # is now produced aloud, open-set. word_sort's spread over fill_vowel is
+        # no longer bucket-tapping vs option-tapping: both ask for the same
+        # spoken sound, and word_sort is harder because its pool MIXES two
+        # vowels, so the answer changes from word to word instead of repeating.
+        "fill_vowel": PriorConfig(1.5, "Production: say the middle sound of a heard CVC word, one vowel focus"),
         "spell_word": PriorConfig(2.5, "Guided: spell full CVC word in Elkonin boxes"),
-        "word_sort":  PriorConfig(3.5, "Application: sort words into vowel-sound buckets"),
+        "word_sort":  PriorConfig(3.5, "Discrimination: say the middle sound across a pool mixing two vowels"),
     },
     "picture-vocabulary": {
         "receptive_match": PriorConfig(1.5, "Receptive vocabulary — hear a word, tap the matching picture"),

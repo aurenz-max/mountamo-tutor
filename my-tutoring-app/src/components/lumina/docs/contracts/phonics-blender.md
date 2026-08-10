@@ -59,11 +59,12 @@ C3 there) are the same two conflicts, resolved the same two ways (band gate + sc
 - **Evidence:** component `isPreReader` gate (`PhonicsBlender.tsx:178`, `:647`); `isPreReaderGrade` import from `utils/kindergartenMode`; EVAL_TRACKER RF-2; reader-fit Audit C rules 1/3/6/7.
 - **Probe:** jsdom `PhonicsBlender.reader-fit.test.tsx` at `makeData('K')` vs `makeData('1')` — K hides counter/badges/stepper/labels/`/k/`, tiles letter-primary; Grade 1 keeps counter, "Grade 1" badge, "Tap each sound to hear it:", `/k/` notation, Clear + "Sound Bank:".
 
-### R4 — Check retained at K for multi-item construction · OBSERVED (committed 7cb5e5f)
-- **Property:** arranging the sound tiles into the target word is a multi-part construction, so the explicit **Check confirm stays even at Grade K** (rule-2 exception — tap=choose applies to atomic single-tap tasks, not to committing a multi-tile build). PRE declutter pressure (which dropped Clear) is the counter-party — decluttering must not remove the commit-your-work step (see C2, the same near-miss as sorting-station R7/C3).
-- **Demanded by:** pedagogy (multi-part evaluation semantics); K PRE declutter is the counter-party.
-- **Evidence:** reader-fit Audit C rule 2 ("Check KEPT (arranging sounds is a multi-part construction, rule-2 exception)"); jsdom test "build phase keeps the Check confirm but drops the Clear affordance".
-- **Probe:** jsdom — at K, the build phase renders a `Check` button and no `Clear`; at Grade 1, `Clear` returns.
+### R4 — the answer is SPOKEN, and only a tutor verdict advances · OBSERVED · ⚠ RE-BASED 2026-08-09 (was "Check retained at K")
+- **Property:** the child's answer to a blending item is **the whole word said aloud**, judged in-band from the audio by the Live tutor. Nothing on screen commits, checks, or advances: no Check, no Ready-to-Build, no Blend, no Next Word, no push-to-talk mic, and no `setTimeout`-to-advance. Progression has exactly one cause — a sentinel-classified tutor verdict.
+- **What this replaced, and why the original property is moot.** R4 originally pinned an explicit **Check** button, on the reasoning that arranging sound tiles is a multi-part construction that needs a commit step (rule-2 exception; C2). **There is no longer anything to commit** — the tile-arranging step is gone entirely (C3). The letters are a stimulus the child READS, not pieces they assemble, so the "never judge an unfinished build" guarantee has no unfinished build to guard. It survives only in the trivial sense that a spoken answer is atomic: the child either said a word or did not.
+- **Demanded by:** pedagogy (blending is a verbal skill); the DI modality; K PRE declutter is no longer a counter-party — it agrees.
+- **Evidence:** the single voice-anchored attempt per word in `PhonicsBlender.tsx`; `judgingContract` in `phonicsBlenderScript.ts`; jsdom "no button may carry the child forward"; the lane's grep gate (no advance timer, no PTT hook, no next/check action in the file).
+- **Probe:** jsdom — no `Check`, `Ready to Build`, `Blend!`, `Next Word` or `Clear` control renders at K **or** at Grade 1. Grep — `setTimeout(…advance/next…)`, `AUTO_ADVANCE`, `useSpokenWordCapture` and `LuminaDropZone` are all absent from the component.
 
 ### R5 — grade ladder tracks the canonical grade (K is not the default) · OBSERVED (probe-confirmed, committed 7cb5e5f)
 - **Property:** the pattern ladder reads the canonical curriculum grade `ctx.grade` via `clampGradeToK2` — Grade K → `cvc`, Grade 1 → `blend` (default), Grade 2 → `r-controlled`; grade > 2 clamps to `'2'` (a K-2 primitive tops out by design — grade-above is WRONG-PRIMITIVE, not a taller rung). Grades 1–2 must **NOT** be served pinned-K CVC content. This was a real dead lever before `7cb5e5f`: the generator read the PROSE band (`ctx.gradeContext`, "kindergarten students…") and matched it against `['K','1','2']`, which never equaled a grade key, so every objective fell to the `'K'` fallback — and it destructured `objectiveGrade` then immediately `void`ed it.
@@ -110,6 +111,24 @@ Both demands are right for their consumers: a pre-reader cannot read `/k/` notat
 ### C2 — PRE tap-simplicity vs multi-item construction commit-step — RESOLVED 2026-07-15 via scoping (near-miss)
 The PRE declutter pass dropped the Clear affordance (tap a placed tile to remove instead). A tempting over-general edit — "at K, tap=choose everywhere, drop Check too" — would have ablated the sort/build family's commit-your-work step. Resolved by scoping the declutter: Clear goes, **Check stays** because arranging sounds is a multi-part construction (R4). Recorded because the over-general "auto-submit at K" edit is exactly what a future declutter or K-stage pass would reach for. Same near-miss class as sorting-station C3 (R7 there).
 
+### C3 — the tile-build mechanic vs blending as a verbal skill — RESOLVED 2026-08-09 by DELETING the build, NOT by forking
+The DI port removes every button that advanced the child (Check, Ready to Build, Blend!, Next Word) and the push-to-talk mic. R4 as originally written **pinned the Check button by name**, so the port contradicted it — and the contract system's default answer to a contradiction is *fork, do not edit in place*.
+
+**Forking was rejected, by user ruling.** The complaint that opened this lane was that the primitive's own modality is wrong: *"if the existing primitive asks the student to click the mic, then answer, the existing primitive is wrong. these instructions will result in worse pedagogy."* A fork would have left the click-driven version shipping next to the fixed one and let the manifest choose — preserving the defect under a routing decision. That is the same move the lane's handoff proposed as "ROUTE", rejected for the same reason.
+
+**The build did not survive the first live run, and that is the real resolution.** The first port kept the tile-arranging step and made it a judged *gesture* attempt, so a word took two answers: arrange, then speak. Driven live at Grade K, the tutor said *"Your turn — put the sounds in order"* and the child answered by **saying "k-a-t"** — the pedagogically correct response to a blending task, and not the one the screen was asking for. User ruling: *"the exercise should be purely verbal using the DI capability, not a combination of clicking on tiles and speaking."*
+
+**The pedagogical statement, so it is not re-litigated:** blending IS a verbal act — look at the letters, say each sound, run them together. Dragging tiles into order is *sequencing* practice wearing a blending costume; it can be performed correctly by a child who cannot blend, and it can be failed by a child who can. The letters remain on screen because reading them is the stimulus; they are no longer pieces to assemble.
+
+**What a future edit must keep:** the answer stays spoken. If a later change reintroduces a placement, sort, or multiple-choice step *as the graded response*, it has ablated R4 whatever the UI looks like — and it should be a different primitive (see G1's segmentation gap, which genuinely wants a produce-the-tiles interaction and is a fork, not this mode).
+
+### C4 — R8's always-visible emoji vs the answer-leak rule — RESOLVED 2026-08-09 by scoping R8 to POST-answer
+R8 makes one emoji per word schema-required and calls it the visual anchor, *"load-bearing at K … the picture surface the reader-fit audit relies on when text is hidden"*. Under the verbal task that reading is a direct answer leak: 🐱 on screen tells a five-year-old the word is "cat" without a single sound being blended, and the child can answer the tutor correctly having decoded nothing. Same class as di-word-reading's founding rule (*"the printed word is the answer: no pictures or audio pre-cues before the child reads"*).
+
+**Resolved by scoping, not by removal.** The emoji stays schema-required and still renders — as a **reward, after an affirmed blend**, and in the completion recap. R8's demand (every word carries a picture) is untouched; only its *timing* is constrained. The K reader-fit premise that made it load-bearing has also changed: text is no longer hidden at K, because the letters ARE the task.
+
+**Related, same slice:** R3's *"Grade 1+ keeps `/k/` slash notation"* clause has no surface any more. The notation lived on the draggable phoneme tiles in the sound bank, and there is no sound bank — the stage shows the word's letters, and printing `/k/ /a/ /t/` next to them would hand over the sound-out. R3's band gate survives for **chrome** (badges, counter, the reader instruction line); its notation clause is dormant, not withdrawn.
+
 ## Gap requirements (close matches — the improvement queue)
 
 Source: `curriculum_fit_probe.py --primitive phonics-blender --domain literacy --grades K,1,2`
@@ -126,7 +145,7 @@ core blend identity is served; the gaps are the adjacent tasks the neighborhood 
 ### G1 — CVC segmentation (word → sounds, the inverse of blending) · OPEN
 - **Near-consumer:** K `Segment a CVC word into three phonemes (dog → /d/ /o/ /g/)` (probe 0.8034) + `Blend and segment individual sounds in CVC words using manipulatives` (LA001-03-D, 0.8054). The published K curriculum pairs blend AND segment on the same skill node ("Phoneme Blending & Segmentation").
 - **Shortfall:** the primitive only **blends** (arrange sound tiles → build the word). There is no **segment** task (hear/see the word → break it into its sounds). At K this must be tap/spoken, not typed.
-- **Path:** eval-mode split (`segment`) → `/add-eval-modes` (reuse the phoneme model; the interaction inverts: start from the whole word, produce the ordered tiles). If the segment answer is spoken, `/add-spoken-judge` ([[production-modality-roadmap]]).
+- **Path:** eval-mode split (`segment`) → `/add-eval-modes` (reuse the phoneme model; the interaction inverts: start from the whole word, produce the ordered tiles). If the segment answer is spoken, see `docs/SPOKEN_INTERACTION_DOCTRINE.md` — and for this primitive specifically, check `qa/di/BACKLOG.md` item 16 FIRST: phonics-blender is the DI loop-port pilot ([[production-modality-roadmap]]).
 - **Relation to R-series:** additive — shares R6's phoneme model but reverses the interaction. No conflict.
 
 ### G2 — onset-rime blending (2-part grain) · OPEN
@@ -172,6 +191,61 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
 
 ## Changelog
 
+- 2026-08-09 — **DI MODALITY PORT, and then the task went PURELY VERBAL after one live run.
+  R4 RE-BASED (C3), R8 SCOPED to post-answer (C4), R3's notation clause dormant (C4).
+  R1/R2/R5–R7/R9/R10 hold.** phonics-blender is the pilot for `qa/di/BACKLOG.md` item 16.
+  - **Deleted:** the push-to-talk mic (`useSpokenWordCapture`), the `Ready to Build!`,
+    `Check`, `Blend!`, `Next Word` and `Clear` buttons, the three-phase stepper, the
+    tile-arranging build (drop zones, sound bank, slot count), and the `setTimeout` that
+    carried the child between phases. **No advance timer survives anywhere in the path** —
+    the lane's checkable success gate, verified by grep.
+  - **The shipped task.** The child sees the word's letters as cards, may tap any letter to
+    hear that sound (never the word — the word is the answer), and SAYS the whole word into
+    an open mic. One voice-anchored attempt per word; the Live tutor models, waits, judges
+    the audio in-band, corrects contrastively, and its own affirmation is the advance.
+    Hand-authored DISTAR script in `phonicsBlenderScript.ts`.
+  - **TWO RULINGS, one day, and the second one reversed a design decision this contract had
+    already recorded.** The first port kept the tile-build and made it a judged *gesture*
+    attempt (two answers per word). Driven live at K, the tutor said *"put the sounds in
+    order"* and the child said **"k-a-t"** — the right answer to a blending task, and not
+    what the screen wanted. Ruling: *"the exercise should be purely verbal using the DI
+    capability, not a combination of clicking on tiles and speaking."* See C3.
+  - **Two answer-leaks the live run exposed, both closed:** the model row printed
+    `c · a · t → cat` (the whole word, in green, before the child spoke) and 🐱 sat above
+    it. Both are gone from the ask; the emoji is now a post-affirmation reward (C4).
+  - **ENGINE CHANGE, generic and now UNUSED BY THIS PRIMITIVE:** `useJudgedSpeechLoop` could
+    only anchor an attempt on a closed voice turn (DI-1), so any primitive whose answer is a
+    manipulation was locked out of the tutor-owned clock. `LoopAttempt.source` + the
+    `gesture-close` event + `submitGestureAttempt` widen the anchor (the cue is sent BEFORE
+    the attempt opens — an attempt opened at commit time would block the very cue meant to
+    provoke its verdict, `schedulePendingCue` refusing to send under an open attempt). The
+    verbal ruling means **phonics-blender no longer calls it**; it is kept, tested, and
+    waiting for the ports where touching genuinely IS the skill (word-sorter,
+    sentence-builder, story-map). Flagged rather than buried: it has no production caller
+    today.
+  - **Support tiers: two levers live, two dead and asserted dead.** `showBlendPreview` now
+    withdraws SEGMENTATION help (`full` separated letters with dots → `word` separated, no
+    dots → `none` joined into one solid word). `nameTargetPhonemes` gates whether the
+    scripted line models the sounds in order or only the word. `showSlotCount` and
+    `showTileLetters` have no surface left — there are no build slots, and the letters ARE
+    the stimulus; both are pinned as dead by test rather than silently ignored.
+  - **Catalog:** `audioInput: { manual_activity: true }` added (the amplitude detector
+    brackets each learner turn; Gemini's VAD is unusable for short spoken answers), and the
+    tutoring block rewritten to the DI frame — sentinel discipline, a BLENDING directive
+    naming what counts as an answer, a WAIT directive, and `contextKeys` **trimmed from 9 to
+    4** to exactly what the component pushes (an unpushed key renders the literal string
+    `(not set)` into the prompt).
+  - **Verification:** typecheck:lumina **0**; full `tsc` **803 = baseline**, zero errors in
+    any touched file; full Vitest **195 files / 2487 passing** (baseline 2483). Both
+    literacy suites rewritten off the old modality, **30/30**; engine + DI-family
+    **382/382**. Engine revert-bite bit (letting a gesture supersede an open voice attempt
+    fails the strand test).
+  - **⚠ PARTIALLY VERIFIED AT RUNTIME.** The live K run proved the loop connects, the tutor
+    models from the script, the mic captures and the child's speech transcribes — that is
+    what exposed the modality mismatch. **The verbal task as now shipped has NOT been
+    driven:** that the tutor waits, judges a real blend strictly, affirms a sound-out that
+    ends in the word, and advances on its own affirmation is unproven. Needs one mic
+    sitting.
 - 2026-08-02 — **`/add-support-tiers` (axis 3, scaffold withdrawal). COMPATIBLE — all 10
   requirements hold; no requirement weakened, no property changed for an existing consumer.**
   The tier is WITHIN-MODE only and lives entirely in code after the parse — **no tier text

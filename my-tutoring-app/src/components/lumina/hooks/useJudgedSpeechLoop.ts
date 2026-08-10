@@ -113,6 +113,10 @@ export interface JudgedSpeechLoop {
   voiceTurns: LiveVoiceTurns;
   /** Queue a cue to send after the current speech settles (verify beat). */
   queueCue: (text: string) => void;
+  /** Commit a manipulation as a judged attempt — `cue` describes what the
+   *  learner did and asks the tutor to speak its verdict. The attempt opens
+   *  when the cue is actually sent. See the implementation for why. */
+  submitGestureAttempt: (cue: string) => void;
   /** Send a cue immediately (run openers), dropping any queued cue. */
   sendCueNow: (text: string) => void;
   /** Drop any queued cue without sending it (abrupt stop). */
@@ -144,6 +148,13 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   audioPlayingRef.current = ctx.isAudioPlaying;
   const previousAudioPlayingRef = useRef(ctx.isAudioPlaying);
   const pendingCueRef = useRef<string | null>(null);
+  /**
+   * The queued cue (if any) that is ALSO a gesture attempt's ask — see
+   * `submitGestureAttempt`. Held until that exact cue is sent, then converted
+   * into the attempt. Cleared if the cue is dropped instead of sent, so a
+   * replaced ask can never open an attempt nobody was asked to judge.
+   */
+  const pendingGestureCueRef = useRef<string | null>(null);
   const cueTimerRef = useRef<number | null>(null);
   const cueFallbackTimerRef = useRef<number | null>(null);
   // ── Session-liveness ladder state (DI BACKLOG item 5) ─────────────────────
@@ -234,6 +245,26 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // release; reads all gating state through refs, so ordering is safe.
   const voiceActiveRef = useRef<() => boolean>(() => false);
 
+  /** `dispatch` is defined below (it depends on `schedulePendingCue`), and the
+   *  cue-send path has to reach it to open a gesture attempt. Ref, not
+   *  reordering: the cycle is real, and the send path only ever runs from a
+   *  timer, long after both are assigned. */
+  const dispatchRef = useRef<(event: LoopEvent) => void>(() => {});
+
+  /** A cue has just gone out. If it was a gesture attempt's ask, open the
+   *  attempt NOW — the tutor has been asked, so its next sentinel is the
+   *  verdict, and the verdict clock starts here rather than at commit time. */
+  const noteCueSent = useCallback((cue: string) => {
+    if (pendingGestureCueRef.current !== cue) return;
+    pendingGestureCueRef.current = null;
+    dispatchRef.current({ type: 'gesture-close', at: performance.now() });
+  }, []);
+
+  /** A queued cue is being discarded. Drop any gesture claim riding on it. */
+  const noteCueDropped = useCallback((cue: string | null) => {
+    if (cue != null && pendingGestureCueRef.current === cue) pendingGestureCueRef.current = null;
+  }, []);
+
   const schedulePendingCue = useCallback(() => {
     if (cueTimerRef.current != null || pendingCueRef.current == null) return;
     cueTimerRef.current = window.setTimeout(() => {
@@ -259,9 +290,10 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
         ctx.sendText(cue, { silent: true });
         callbacksRef.current.onCue?.({ phase: 'sent', text: cue });
         armDeadCueWatch(cue);
+        noteCueSent(cue);
       }
     }, VERIFY_BEAT_MS);
-  }, [armDeadCueWatch, ctx]);
+  }, [armDeadCueWatch, ctx, noteCueSent]);
 
   const dispatch = useCallback((event: LoopEvent) => {
     const step = reduceJudgedLoop(loopStateRef.current, event, configRef.current);
@@ -279,6 +311,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     // A processed verdict may have unblocked a queued (or newly queued) cue.
     if (step.emissions.some((emission) => emission.kind === 'verdict')) schedulePendingCue();
   }, [flushJudgeText, schedulePendingCue]);
+  dispatchRef.current = dispatch;
 
   const handleVoiceTurnClose = useCallback((event: Extract<VoiceTurnEvent, { kind: 'close' }>) => {
     flushJudgeText();
@@ -377,13 +410,35 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   }, [ctx.isAudioPlaying, enabled, dispatch, flushJudgeText, schedulePendingCue, clearDeadCueWatch]);
 
   // Verdict-timeout scan while an attempt is pending.
+  //
+  // ⚠️ DEPENDS ON `enabled` ALONE, AND THAT IS THE WHOLE POINT — it used to also
+  // depend on `dispatch`, and that made `verdictTimeoutMs` DEAD ANY TIME THE MIC
+  // WAS OPEN (found live 2026-08-10 on cvc-speller's first build item).
+  // `dispatch` → `schedulePendingCue` → `ctx`, and `LuminaAIContext` builds its
+  // value as a plain object literal (no useMemo) while `setMicLevel` fires on
+  // EVERY audio frame — so the provider re-renders every ~10-40ms, `dispatch`
+  // takes a new identity every time, and this effect tore down and recreated a
+  // 1000ms interval faster than it could ever fire. Not once, for a whole run.
+  //
+  // Nothing noticed for four ports because their tutor always speaks: verdicts
+  // arrive through `tutor-text` and off-script through `tutor-quiet`, so the
+  // tick is the one path they never need. `spell-word` is the first shape where
+  // the tutor is DELIBERATELY SILENT, and there the tick is the only thing that
+  // can ever close a stray voice attempt — and `schedulePendingCue` blocks every
+  // queued cue while an attempt is open, so one word said aloud mid-build jammed
+  // the lesson permanently.
+  //
+  // The interval reads `dispatchRef`, which is reassigned on every render, so it
+  // always calls the current dispatch without being rebound to it.
   useEffect(() => {
     if (!enabled) return;
     const interval = window.setInterval(() => {
-      if (loopStateRef.current.attempt != null) dispatch({ type: 'tick', at: performance.now() });
+      if (loopStateRef.current.attempt != null) {
+        dispatchRef.current({ type: 'tick', at: performance.now() });
+      }
     }, TICK_MS);
     return () => window.clearInterval(interval);
-  }, [enabled, dispatch]);
+  }, [enabled]);
 
   // Resume signal (DI BACKLOG item 5, fix (i)): the context bumps
   // sessionResumeCount for every transparent server-side resume AND every warm
@@ -438,9 +493,10 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     if (pendingCueRef.current != null) {
       callbacksRef.current.onCue?.({ phase: 'dropped', text: pendingCueRef.current });
     }
+    noteCueDropped(pendingCueRef.current);
     pendingCueRef.current = null;
     clearCueTimers();
-  }, [clearCueTimers]);
+  }, [clearCueTimers, noteCueDropped]);
 
   const queueCue = useCallback((text: string) => {
     // A queue that overwrites an unsent cue is a real (if usually benign)
@@ -448,6 +504,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     // timeline shows one 'sent' per 'queued' when the run is coherent.
     if (pendingCueRef.current != null && pendingCueRef.current !== text) {
       callbacksRef.current.onCue?.({ phase: 'dropped', text: pendingCueRef.current });
+      noteCueDropped(pendingCueRef.current);
     }
     pendingCueRef.current = text;
     callbacksRef.current.onCue?.({ phase: 'queued', text });
@@ -457,11 +514,32 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       cueFallbackTimerRef.current = null;
       schedulePendingCue();
     }, PENDING_CUE_MAX_WAIT_MS);
-  }, [schedulePendingCue]);
+  }, [noteCueDropped, schedulePendingCue]);
+
+  /**
+   * Commit a MANIPULATION as a judged attempt: the learner finished a build /
+   * sort / placement, and `cue` is the ask that tells the tutor what they did
+   * and which line to speak about it.
+   *
+   * The cue is paced exactly like any other (it waits for the tutor to finish
+   * talking), and the attempt opens the instant it actually goes out — so the
+   * verdict clock measures the tutor's thinking, not our own queueing, and the
+   * cue is never blocked by the attempt it is meant to provoke.
+   *
+   * The tutor's verdict then binds through the ordinary sentinel scan, which is
+   * the whole point: a child who arranges tiles gets the same waiting teacher,
+   * the same contrastive correction, and the same tutor-owned advance as a child
+   * who says a word — instead of a Check button and a timer.
+   */
+  const submitGestureAttempt = useCallback((cue: string) => {
+    pendingGestureCueRef.current = cue;
+    queueCue(cue);
+  }, [queueCue]);
 
   const sendCueNow = useCallback((text: string) => {
     if (pendingCueRef.current != null) {
       callbacksRef.current.onCue?.({ phase: 'dropped', text: pendingCueRef.current });
+      noteCueDropped(pendingCueRef.current);
     }
     pendingCueRef.current = null;
     clearCueTimers();
@@ -472,7 +550,8 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     callbacksRef.current.onCue?.({ phase: 'queued', text });
     callbacksRef.current.onCue?.({ phase: 'sent', text });
     armDeadCueWatch(text);
-  }, [armDeadCueWatch, clearCueTimers, ctx]);
+    noteCueSent(text);
+  }, [armDeadCueWatch, clearCueTimers, ctx, noteCueDropped, noteCueSent]);
 
   const arm = useCallback(() => dispatch({ type: 'arm' }), [dispatch]);
   const disarm = useCallback(() => dispatch({ type: 'disarm' }), [dispatch]);
@@ -483,6 +562,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     // Dropped, not flushed: a new run must not inherit the last run's judge.
     pendingJudgeRef.current = null;
     pendingCueRef.current = null;
+    pendingGestureCueRef.current = null;
     clearCueTimers();
     clearDeadCueWatch(true);
     conversationIndexRef.current = ctx.conversation.length;
@@ -498,6 +578,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   return {
     voiceTurns,
     queueCue,
+    submitGestureAttempt,
     sendCueNow,
     clearQueuedCue,
     arm,

@@ -10,6 +10,14 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import {
+  cumulativeLetters,
+  cvcUsableLetters,
+  groupVowels,
+  normalizeLetterGroup,
+  smallestGroupContaining,
+  type LetterGroup,
+} from './letterGroups';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -18,24 +26,25 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'fill-vowel': {
     promptDoc:
-      `"fill-vowel": Student hears a CVC word (AI says it), sees the consonant frame (e.g., "c_t"), `
-      + `and picks the correct vowel from 2 confusable options. Binary discrimination — exactly 2 vowel choices. `
-      + `The AI provides progressive scaffolding: natural word → stretched vowel → isolated vowel sound.`,
-    schemaDescription: "'fill-vowel' (hear word, pick missing vowel from 2 options)",
+      `"fill-vowel": The live tutor SAYS a CVC word; the student sees the consonant frame (e.g., "c_t") and `
+      + `SAYS THE MIDDLE SOUND ALOUD. There are no vowel options to pick from — the answer is spoken, and the `
+      + `vowel letter only appears in the blank once the tutor has affirmed it. One vowel focus for the set.`,
+    schemaDescription: "'fill-vowel' (hear word, say its middle sound aloud in a C_C frame)",
   },
   'spell-word': {
     promptDoc:
-      `"spell-word": Student hears a CVC word (AI says it) and spells the full word by placing 3 letters `
-      + `into Elkonin-box slots. Letter bank has target letters + distractors. `
-      + `AI scaffolds: natural word → onset-rime segmentation → full phoneme segmentation.`,
+      `"spell-word": The live tutor SAYS a CVC word and the student places 3 letters into Elkonin-box slots. `
+      + `Letter bank has target letters + distractors. The third letter landing IS the answer (there is no Check `
+      + `button); the tutor judges the build and its verdict advances the lesson.`,
     schemaDescription: "'spell-word' (hear word, spell all 3 letters in Elkonin boxes)",
   },
   'word-sort': {
     promptDoc:
-      `"word-sort": Student hears CVC words one at a time (AI says each word) and sorts them into `
-      + `2 vowel-sound buckets. Each bucket represents a confusable short vowel (e.g., short-a vs short-e). `
-      + `AI scaffolds: say word naturally → stretch vowel → contrast both vowel sounds.`,
-    schemaDescription: "'word-sort' (hear words, sort into 2 vowel-sound buckets)",
+      `"word-sort": The live tutor SAYS a CVC word and the student SAYS ITS MIDDLE SOUND ALOUD, exactly as in `
+      + `"fill-vowel" — but the word pool MIXES two confusable short vowels, so the answer changes from word to `
+      + `word instead of repeating. Affirmed words collect into two on-screen vowel groups; there are no buckets `
+      + `to tap. Include words with BOTH vowels or the mode collapses into "fill-vowel".`,
+    schemaDescription: "'word-sort' (hear words with two mixed vowels, say each middle sound aloud)",
   },
 };
 
@@ -65,9 +74,14 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 //                 distractorLevel (how cluttered the letter bank is — trims
 //                 distractorLetters only, NEVER the 3 target letters).
 //   word-sort   → showPictureCue (the emoji reveals the word; withdrawing it
-//                 forces a pure listen-and-sort).
-//   fill-vowel  → no display lever (consonant frame + 2 vowel options are the
-//                 task itself); the tutor channel carries its tier instead.
+//                 forces a pure listen-and-say).
+//   fill-vowel  → no display lever (the consonant frame IS the task, and the
+//                 vowel options it used to offer are deleted — they printed the
+//                 answer). Its tier rides on the SPOKEN channel instead: at
+//                 `easy` the tutor repeats the word with its vowel held
+//                 ("caaat") before handing over, at medium/hard it does not.
+//                 That lever lives in `cvcSpellerScript.askLine`, driven by the
+//                 `supportTier` this generator stamps on the result.
 // ---------------------------------------------------------------------------
 
 type CvcTaskType = 'fill-vowel' | 'spell-word' | 'word-sort';
@@ -123,19 +137,19 @@ function resolveSupportStructure(
       showPictureCue,
       promptLines: [
         lead,
-        `The picture cue (emoji of the word) is ${showPictureCue ? 'shown to anchor the word being sorted' : 'withdrawn — the student sorts purely by the vowel sound they hear'}.`,
+        `The picture cue (emoji of the word) is ${showPictureCue ? 'shown to anchor the word being asked about' : 'withdrawn — the student answers purely from the vowel sound they hear'}.`,
         neutral,
       ],
     };
   }
 
-  // fill-vowel: the consonant frame + 2 vowel choices ARE the task; nothing
-  // visual to withdraw without changing what is assessed. The tutor channel
-  // carries the tier (easy names the strategy, hard withholds it).
+  // fill-vowel: the consonant frame IS the task and there is nothing visual to
+  // withdraw. The tier rides on the SPOKEN channel — at `easy` the tutor
+  // repeats the word with its vowel held before handing over.
   return {
     promptLines: [
       lead,
-      'No on-screen scaffolding is withdrawn for this mode (the consonant frame and the two vowel choices are the task itself); the spoken support is tuned by tier instead.',
+      'No on-screen scaffolding is withdrawn for this mode (the consonant frame is the task itself); the spoken support is tuned by tier instead — at the easy tier the tutor repeats the word with its middle sound held before asking.',
       neutral,
     ],
   };
@@ -243,35 +257,44 @@ function selectDistractorLetters(
 }
 
 interface CvcProblemShape {
-  /** fill-vowel: the decoy vowel chosen by confusability distance. */
-  vowelDecoy?: string;
-  /** word-sort: the contrast bucket vowel chosen by confusability distance. */
+  /** word-sort: the contrast vowel the word pool is mixed against, chosen by
+   *  confusability distance. */
   contrastVowel?: string;
   /** spell-word: how similar the distractor letters are to the target letters. */
   letterSimilarity: 'far' | 'mid' | 'near';
   promptLines: string[];
 }
 
-/** One in-mode structural lever per task type, all of it "distractor similarity". */
+/**
+ * One in-mode structural lever per task type.
+ *
+ * ⚠️ `fill-vowel` HAS NO AXIS-2 LEVER ANY MORE, and that is a consequence of
+ * the DI port rather than a gap left unfilled. Its lever was the DECOY VOWEL —
+ * near at hard, far at easy — and a decoy only exists where the child chooses
+ * between printed options. Those options were deleted because one of the two
+ * printed the answer, so the answer is now spoken and open-set: there is
+ * nothing to make more confusable. This is the same outcome sound-swap
+ * recorded when `nameTargetSound` died. `fill-vowel`'s within-mode difficulty
+ * is carried entirely by axis 1 (the held-vowel repeat at `easy`) plus the
+ * word pool; `word-sort` is the mode where vowel confusability still lives,
+ * and there it now governs the POOL rather than a bucket label.
+ */
 function resolveProblemShape(
   taskType: CvcTaskType,
   tier: SupportTier,
   ctx: { targetVowel: string },
 ): CvcProblemShape {
   const lead =
-    'STRUCTURAL DIFFICULTY (second axis): this changes how CONFUSABLE the wrong choices are — '
+    'STRUCTURAL DIFFICULTY (second axis): this changes how CONFUSABLE the material is — '
     + 'NOT the target word, the vowel focus, or the answer.';
   const rank = VOWEL_CONFUSION_RANK[ctx.targetVowel] ?? [];
   const distLabel = tier === 'hard' ? 'a NEAR, highly confusable' : tier === 'easy' ? 'a FAR, easily distinguished' : 'a moderately confusable';
 
   if (taskType === 'fill-vowel') {
-    const vowelDecoy = pickByTier(rank, tier);
     return {
-      vowelDecoy,
       letterSimilarity: 'far',
       promptLines: [
-        lead,
-        `The two vowel choices are "${ctx.targetVowel}" and the decoy "${vowelDecoy ?? '?'}" — ${distLabel} vowel (the exact decoy is enforced in code).`,
+        'STRUCTURAL DIFFICULTY: this mode has no second-axis lever — the answer is spoken and open-set, so there are no wrong choices to make more confusable. Keep every word on the focus vowel.',
       ],
     };
   }
@@ -282,7 +305,7 @@ function resolveProblemShape(
       letterSimilarity: 'far',
       promptLines: [
         lead,
-        `Sort against the contrast vowel "${contrastVowel ?? '?'}" — ${distLabel} vowel vs the focus "${ctx.targetVowel}". Include words with BOTH vowels.`,
+        `Mix the word pool against the contrast vowel "${contrastVowel ?? '?'}" — ${distLabel} vowel vs the focus "${ctx.targetVowel}". Include words with BOTH vowels.`,
       ],
     };
   }
@@ -374,34 +397,17 @@ const cvcSpellerSchema: Schema = {
             type: Type.ARRAY,
             items: { type: Type.STRING },
             description: "3-5 extra letters NOT in the target word, used as distractors in the letter bank (spell-word mode)"
-          },
-          vowelOptions: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "Exactly 2 vowel letters for fill-vowel mode (e.g., ['a', 'e']). One correct, one confusable distractor."
-          },
-          sortBucketLabel: {
-            type: Type.STRING,
-            description: "For word-sort mode: which vowel sound bucket this word belongs to (e.g., 'short-a' or 'short-e')"
-          },
-          commonErrors: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                errorSpelling: {
-                  type: Type.STRING,
-                  description: "A common misspelling of the target word"
-                },
-                feedback: {
-                  type: Type.STRING,
-                  description: "Helpful corrective feedback for this error"
-                }
-              },
-              required: ["errorSpelling", "feedback"]
-            },
-            description: "Common misspellings with corrective feedback (spell-word mode)"
           }
+          // DELETED WITH THE DI PORT, and asserted dead rather than ignored:
+          //  - `vowelOptions` (fill-vowel's two printed vowel choices) — one of
+          //    the two WAS the answer, printed and captioned. The answer is now
+          //    spoken, so there is nothing to offer.
+          //  - `sortBucketLabel` — the sort columns are derived from the word's
+          //    own middle letter at affirmation time, so a generator-authored
+          //    label could only ever disagree with the word it labels.
+          //  - `commonErrors` — the correction wording is hand-authored in
+          //    `cvcSpellerScript.ts` (DISTAR discipline); a generated feedback
+          //    sentence has no line to be spoken in.
         },
         required: ["id", "taskType", "targetWord", "targetLetters", "targetPhonemes", "emoji", "imageDescription"]
       },
@@ -412,28 +418,135 @@ const cvcSpellerSchema: Schema = {
 };
 
 // ============================================================================
-// Letter Group Definitions
+// Scope: the CUMULATIVE LETTER GROUP is the ceiling; vowel focus is a narrowing
 // ============================================================================
-
-const LETTER_GROUP_SETS: Record<number, string[]> = {
-  1: ['s', 't', 'm', 'p'],
-  2: ['s', 't', 'm', 'p', 'n', 'c', 'b', 'd', 'g'],
-  3: ['s', 't', 'm', 'p', 'n', 'c', 'b', 'd', 'g', 'f', 'h', 'l', 'r', 'w'],
-  4: ['s', 't', 'm', 'p', 'n', 'c', 'b', 'd', 'g', 'f', 'h', 'l', 'r', 'w', 'j', 'k', 'v', 'x', 'y', 'z'],
-};
+//
+// ⚠️ THIS REPLACED A PRIVATE, VOWEL-STRIPPED FORK OF THE SHARED PROGRESSION,
+// and the fork is what starved the word pool (see `letterGroups.ts` for the
+// full diagnosis). The model now is:
+//
+//   letterGroup (1-4, cumulative, CARRIES ITS OWN VOWELS)  = the scope ceiling
+//   vowelFocus  (optional)                                  = a narrowing, and
+//                                                             ONLY when the
+//                                                             objective names a
+//                                                             vowel
+//
+// The curriculum is what settles this. `LA001-03-B` names all five short vowels
+// outright ("Match short vowel sounds (a, e, i, o, u)…"), and "Spell simple CVC
+// words" carries no vowel scoping at all — so a DEFAULT single-vowel cap is a
+// cap below stated lesson intent, which is a bug rather than a safety margin.
+// When nothing names a vowel, the answer space is whatever the group carries,
+// and a "which sound is in the middle?" task starts measuring again because the
+// answer changes from word to word.
 
 const VOWEL_MAP: Record<string, string> = {
   'short-a': 'a', 'short-e': 'e', 'short-i': 'i', 'short-o': 'o', 'short-u': 'u',
 };
 
+/**
+ * A vowel focus ONLY when something actually names one — config, then the
+ * objective/intent, then the topic. Returns null otherwise.
+ *
+ * ⚠️ IT USED TO DEFAULT TO 'short-a'. Any topic that did not literally match
+ * /short[ -]?[aeiou]/ — "Spell simple CVC words", "Kindergarten phonics",
+ * "CVC words" — was silently pinned to short-a, on no evidence, for the whole
+ * activity. `intent` is read as well as `topic` because the per-component
+ * objective is where a real narrowing ("short o words") actually arrives.
+ */
 export function resolveCvcVowelFocus(
   topic: string,
   configured?: string,
-): keyof typeof VOWEL_MAP {
+  intent?: string,
+): keyof typeof VOWEL_MAP | null {
   const explicit = configured?.toLowerCase().trim();
   if (explicit && explicit in VOWEL_MAP) return explicit as keyof typeof VOWEL_MAP;
-  const match = topic.toLowerCase().match(/short[\s-]*([aeiou])\b/);
-  return (match ? `short-${match[1]}` : 'short-a') as keyof typeof VOWEL_MAP;
+  for (const source of [intent, topic]) {
+    const match = source?.toLowerCase().match(/short[\s-]*([aeiou])\b/);
+    if (match) return `short-${match[1]}` as keyof typeof VOWEL_MAP;
+  }
+  return null;
+}
+
+/**
+ * The letter group in effect. The manifest wins; otherwise the default covers
+ * all five short vowels, because that is what the K curriculum's own
+ * letter-sound objective names. A named vowel focus can only RAISE the group,
+ * never lower it: an objective asking for "short o" against a group that has no
+ * `o` is a cap below intent, so the group comes up to meet it.
+ */
+const DEFAULT_LETTER_GROUP: LetterGroup = 3;
+
+export function resolveCvcLetterGroup(
+  configured: unknown,
+  vowelFocus: string | null,
+): LetterGroup {
+  const explicit = normalizeLetterGroup(configured);
+  let group = explicit ?? DEFAULT_LETTER_GROUP;
+  const vowel = vowelFocus ? VOWEL_MAP[vowelFocus] : null;
+  if (vowel) {
+    const needed = smallestGroupContaining(vowel);
+    if (needed && needed > group) group = needed;
+  }
+  return group;
+}
+
+/** Fewest challenges worth shipping — below this, a repeated rime is the lesser
+ *  failure and the offenders are kept with a loud warning instead. */
+const MIN_CHALLENGES = 3;
+
+/**
+ * Enforce SCOPE and VARIETY in code rather than trusting the prompt. Both rules
+ * are in the prompt too, and both are ones the model drifts on — a live probe
+ * caught `jam` (j is outside group 3), `fox` (x likewise) and, most tellingly,
+ * `pat` sitting next to `sat` in a set the prompt had explicitly told it to
+ * vary.
+ *
+ * The two rules:
+ *  1. **Every letter inside the cumulative group.** Otherwise the letter bank
+ *     literally cannot spell the word the tutor just said aloud.
+ *  2. **No repeated rime, no repeated word.** `sat, pat, mat, map` is one word
+ *     family wearing three hats. That set is what started this whole thread,
+ *     and it teaches almost nothing about the middle sound.
+ *
+ * It can only ever REMOVE, so it can never invent a word outside scope. It
+ * refuses to shrink a set below `MIN_CHALLENGES`, because a one-item lesson is
+ * a worse failure than a repeated rime — and it reports that refusal rather
+ * than truncating silently.
+ */
+export function enforceCvcScopeAndVariety<
+  T extends { targetWord: string; targetLetters?: string[] },
+>(challenges: T[], groupLetters: string[]): {
+  challenges: T[];
+  dropped: string[];
+  /** True when the rules WOULD have cut below the floor, so nothing was cut. */
+  truncated: boolean;
+} {
+  const allowed = new Set(groupLetters.map((l) => l.toLowerCase()));
+  const seenWords = new Set<string>();
+  const seenRimes = new Set<string>();
+  const kept: T[] = [];
+  const dropped: string[] = [];
+
+  for (const ch of challenges) {
+    const letters = (ch.targetLetters ?? ch.targetWord?.split('') ?? [])
+      .map((l) => (l ?? '').toLowerCase());
+    const word = letters.join('');
+    const rime = letters.slice(1).join('');
+    const outside = letters.filter((l) => !allowed.has(l));
+    const reason = letters.length !== 3 ? 'not-3-letters'
+      : outside.length ? `out-of-group(${outside.join('')})`
+      : seenWords.has(word) ? 'duplicate-word'
+      : seenRimes.has(rime) ? `duplicate-rime(-${rime})`
+      : null;
+    if (reason) { dropped.push(`${ch.targetWord}:${reason}`); continue; }
+    seenWords.add(word);
+    seenRimes.add(rime);
+    kept.push(ch);
+  }
+
+  if (!dropped.length) return { challenges, dropped, truncated: false };
+  if (kept.length < MIN_CHALLENGES) return { challenges, dropped, truncated: true };
+  return { challenges: kept, dropped, truncated: false };
 }
 
 /**
@@ -481,11 +594,18 @@ export const generateCvcSpeller = async (
   // -------------------------------------------------------------------------
   // Setup
   // -------------------------------------------------------------------------
-  const vowelFocus = resolveCvcVowelFocus(topic, config?.vowelFocus);
-  const letterGroup = config?.letterGroup || 1;
-  const targetVowel = VOWEL_MAP[vowelFocus] || 'a';
+  const vowelFocus = resolveCvcVowelFocus(topic, config?.vowelFocus, intent);
+  const letterGroup = resolveCvcLetterGroup(config?.letterGroup, vowelFocus);
+  const groupLetters = cvcUsableLetters(letterGroup);
+  const availableVowels = groupVowels(letterGroup);
+  // With a focus the answer space is that one vowel (massed practice, and the
+  // objective asked for it). Without one it is every vowel the GROUP carries —
+  // which is what stops a spoken "which sound?" task from having the same
+  // answer four times running.
+  const answerVowels = vowelFocus ? [VOWEL_MAP[vowelFocus]] : availableVowels;
+  const targetVowel = answerVowels[0] ?? 'a';
   const confusableVowel = CONFUSABLE_VOWELS[targetVowel] || (targetVowel === 'a' ? 'e' : 'a');
-  const consonants = LETTER_GROUP_SETS[letterGroup] || LETTER_GROUP_SETS[1];
+  const consonants = groupLetters.filter((l) => !availableVowels.includes(l));
 
   // -------------------------------------------------------------------------
   // Build prompt
@@ -506,12 +626,18 @@ export const generateCvcSpeller = async (
   const tierScaffold = pinnedType && supportTier
     ? resolveSupportStructure(pinnedType, supportTier)
     : null;
-  // Axis 2 (structural): the contrast vowel used in the prompt is tuned by tier
-  // (near at hard, far at easy). When no tier is present it falls back to the
-  // legacy nearest-confusable vowel, keeping the no-tier prompt byte-identical.
-  const structuralContrast = supportTier && VOWEL_CONFUSION_RANK[targetVowel]
-    ? (pickByTier(VOWEL_CONFUSION_RANK[targetVowel], supportTier) ?? confusableVowel)
-    : confusableVowel;
+  // Axis 2 (structural): the contrast vowel is tuned by tier (near at hard, far
+  // at easy) — but it is now drawn from the vowels the GROUP actually carries.
+  // Ranking globally could name a contrast whose letter is not in scope, so a
+  // group-1 lesson would be told to contrast against `e` and then forbidden the
+  // letter that spells it. Group 1 contrasts a/i, which is exactly what the
+  // canonical progression introduces it for.
+  const contrastPool = (VOWEL_CONFUSION_RANK[targetVowel] ?? [])
+    .filter((v) => availableVowels.includes(v) && v !== targetVowel);
+  const structuralContrast = (supportTier
+    ? pickByTier(contrastPool, supportTier)
+    : contrastPool[0])
+    ?? (availableVowels.find((v) => v !== targetVowel) ?? confusableVowel);
   const tierShape = pinnedType && supportTier
     ? resolveProblemShape(pinnedType, supportTier, { targetVowel })
     : null;
@@ -527,13 +653,23 @@ export const generateCvcSpeller = async (
   const generationPrompt = `Create a CVC word spelling activity for the topic: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: Beyond the topic "${topic}", lean word/letter choices toward "${intent}" when possible — but ALWAYS prioritize the phonics/decoding accuracy rules below over this focus.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevel}
-VOWEL FOCUS: ${vowelFocus} (the vowel "${targetVowel}")
-CONFUSABLE VOWEL PAIR: "${targetVowel}" vs "${structuralContrast}" (${VOWEL_KEYWORDS[targetVowel]} vs ${VOWEL_KEYWORDS[structuralContrast]})
-LETTER GROUP: ${letterGroup} (available consonants: ${consonants.join(', ')})
 
-AUDIO-FIRST DESIGN:
-This is an audio-first activity. The AI tutor SAYS each word aloud — students LISTEN, they don't read.
-The AI provides progressive scaffolding: natural word → stretched sounds → isolated phonemes.
+LETTER SCOPE — cumulative letter group ${letterGroup}. EVERY letter of EVERY word must come from this list, with no exceptions:
+${groupLetters.join(', ')}
+  available consonants: ${consonants.join(', ')}
+  available vowels: ${availableVowels.join(', ')}
+${vowelFocus
+  ? `VOWEL FOCUS: ${vowelFocus} — the objective names this vowel, so EVERY word uses "${targetVowel}" in the middle.`
+  : `VOWEL SPREAD: the objective names no single vowel, so SPREAD the words across the available vowels (${availableVowels.join(', ')}) — do NOT put the same vowel in every word. A set whose middle sound never changes stops testing anything after the second word.`}
+CONFUSABLE VOWEL PAIR (for word-sort): "${targetVowel}" vs "${structuralContrast}" (${VOWEL_KEYWORDS[targetVowel]} vs ${VOWEL_KEYWORDS[structuralContrast]})
+
+WORD VARIETY (all modes): no two words may share the same rime (the vowel+ending, e.g. "-at"). "sat, pat, mat" is ONE word family wearing three hats and it teaches almost nothing about the middle sound; "sat, pin, tip, nap" is a real set.
+
+AUDIO-FIRST, TUTOR-DRIVEN DESIGN:
+A live Direct Instruction tutor SAYS each word aloud, waits, and judges the answer — students LISTEN, they don't read.
+On "fill-vowel" and "word-sort" the student SAYS THE MIDDLE SOUND ALOUD; nothing on screen offers it to them.
+On "spell-word" the student places 3 letters in Elkonin boxes and the third letter landing is the answer.
+NOTHING you author may name the answer: no option lists, no bucket labels, no feedback sentences.
 
 ${challengeTypeSection}
 ${tierSection}
@@ -541,34 +677,34 @@ ${remediationSection}
 TASK-SPECIFIC FORMATS:
 
 For "fill-vowel" challenges:
-- Student hears the word, sees consonant frame (e.g., "c_t"), picks from 2 vowels
-- vowelOptions: exactly 2 vowels — the correct one ("${targetVowel}") and confusable ("${structuralContrast}")
+- The tutor says the word; the student sees the consonant frame (e.g., "c_t") and SAYS the middle sound
 - distractorLetters: not needed (omit or empty)
-${ctx.remediationFocus ? '- Set remediationMove to "contrast_vowel" and make the wrong vowel encode the diagnosed confusion.' : ''}
-- Words must use vowel "${targetVowel}" — the confusable "${structuralContrast}" is ONLY for the wrong option
+${ctx.remediationFocus ? '- Set remediationMove to "contrast_vowel" and choose words that isolate the diagnosed vowel confusion.' : ''}
+${vowelFocus
+  ? `- EVERY word must use vowel "${targetVowel}" — the objective named it, so this mode is massed practice on one sound`
+  : `- Spread the middle vowel across ${availableVowels.join(', ')} — no vowel may be the answer in more than half the words`}
 
 For "spell-word" challenges:
-- Student hears the word and places all 3 letters in Elkonin boxes
+- The tutor says the word and the student places all 3 letters in Elkonin boxes
 - distractorLetters: 3-5 letters NOT in the target word
-- vowelOptions: not needed
-- commonErrors: 1-2 common misspellings with feedback
-${ctx.remediationFocus ? '- Set remediationMove to "phoneme_slots" and include a distractor spelling that predicts the diagnosed confusion.' : ''}
+${ctx.remediationFocus ? '- Set remediationMove to "phoneme_slots" and choose words that surface the diagnosed confusion.' : ''}
 
 For "word-sort" challenges:
-- Student hears words and sorts into 2 buckets by vowel sound
-- sortBucketLabel: either "${vowelFocus}" or "short-${structuralContrast}"
+- The tutor says a word and the student SAYS its middle sound — same action as "fill-vowel", different pool
 - Include a MIX of both vowels — some words use "${targetVowel}", some use "${structuralContrast}"
-- vowelOptions: not needed, distractorLetters: not needed
-- IMPORTANT: word-sort challenges MUST include words with BOTH vowels (not just "${targetVowel}")
+- IMPORTANT: word-sort challenges MUST include words with BOTH vowels (not just "${targetVowel}"). Mixing them is
+  the ENTIRE difference between this mode and "fill-vowel": if every word carries the same vowel, the answer stops
+  changing and the mode collapses into the easier one.
 ${ctx.remediationFocus ? '- Set remediationMove to "minimal_pair_sort" and choose contrast words that isolate the diagnosed sound distinction.' : ''}
 
 REQUIREMENTS:
 - 4-6 challenges total
 - ALL words must be real English CVC words (3 letters)
-- Only use consonants from letter group ${letterGroup}: ${consonants.join(', ')}
+- EVERY letter of every word must come from letter group ${letterGroup}: ${groupLetters.join(', ')} — a word using any other letter is rejected
 - targetLetters: exactly 3 letters spelling the word
 - targetPhonemes: exactly 3 phonemes in slash notation
 - Choose concrete, picturable words appropriate for K-2
+- No two words share a rime, and no word appears twice
 ${!evalConstraint ? '- Mix task types to create variety (e.g., 2 fill-vowel, 2 spell-word, 2 word-sort)' : ''}
 
 PHONEME NOTATION:
@@ -597,15 +733,23 @@ PHONEME NOTATION:
     // Post-generation validation & defaults
     // ========================================================================
 
-    result.vowelFocus = vowelFocus as CvcSpellerData['vowelFocus'];
+    // Scope is CODE-owned: the LLM authored words inside a window, and the
+    // structure around them is stamped here (LLM emits the window, code builds
+    // the structure). `vowelFocus` is deliberately absent when nothing named a
+    // vowel — a session with no focus is not "short-a by default", and the
+    // component reads its absence as "the group's vowels are all in play".
+    if (vowelFocus) result.vowelFocus = vowelFocus as CvcSpellerData['vowelFocus'];
+    else delete (result as Partial<CvcSpellerData>).vowelFocus;
     result.letterGroup = letterGroup as CvcSpellerData['letterGroup'];
+    result.availableLetters = groupLetters;
 
     // Child-facing title: strip phoneme slash-notation (/æ/) and dev slugs
     // ('short-a') the model sometimes emits despite the schema description
     // (reader-fit RF-4 — a K draw shipped "Sort the Short Sounds: /æ/ or /ɛ/?").
     if (result.title && (/\/[^/\s]{1,4}\//.test(result.title) || /short-[aeiou]/i.test(result.title))) {
-      const vowelLetter = vowelFocus.replace('short-', '').toUpperCase();
-      result.title = `Short ${vowelLetter} Word Fun!`;
+      result.title = vowelFocus
+        ? `Short ${VOWEL_MAP[vowelFocus].toUpperCase()} Word Fun!`
+        : 'Sounds and Letters!';
     }
 
     if (result.challenges) {
@@ -616,7 +760,6 @@ PHONEME NOTATION:
         ch.emoji = ch.emoji || '';
         ch.imageDescription = ch.imageDescription || '';
         ch.distractorLetters = ch.distractorLetters || [];
-        ch.commonErrors = ch.commonErrors || [];
         const remediationMove = cvcRemediationMoveFor(ch.taskType as CvcTaskType, ctx.remediationFocus);
         if (remediationMove) {
           ch.remediationMove = remediationMove;
@@ -624,27 +767,25 @@ PHONEME NOTATION:
           delete ch.remediationMove;
         }
 
-        // Ensure fill-vowel has exactly 2 vowel options
-        if (ch.taskType === 'fill-vowel') {
-          if (!ch.vowelOptions || ch.vowelOptions.length !== 2) {
-            ch.vowelOptions = [targetVowel, confusableVowel];
-          }
-          // Shuffle vowel options
-          if (Math.random() > 0.5 && ch.vowelOptions) {
-            ch.vowelOptions = [ch.vowelOptions[1], ch.vowelOptions[0]];
-          }
-        }
-
-        // Ensure word-sort has a bucket label
-        if (ch.taskType === 'word-sort' && !ch.sortBucketLabel) {
-          const middleLetter = ch.targetLetters[1]?.toLowerCase();
-          ch.sortBucketLabel = middleLetter === confusableVowel
-            ? `short-${confusableVowel}`
-            : vowelFocus;
-        }
+        // The vowel-option pair and the sort-bucket label used to be repaired
+        // here. Both are gone with the DI port: the answer is spoken, so there
+        // is nothing to offer, and the sort column is read off the word's own
+        // middle letter at affirmation time so it cannot disagree with it.
 
         return ch;
       });
+
+      const { challenges: scoped, dropped, truncated } =
+        enforceCvcScopeAndVariety(result.challenges, groupLetters);
+      result.challenges = scoped;
+      if (dropped.length && !truncated) {
+        console.log(`[cvc-speller] dropped ${dropped.length} challenge(s): ${dropped.join(', ')}`);
+      } else if (dropped.length) {
+        console.warn(
+          `[cvc-speller] ${dropped.length} challenge(s) violate scope/variety but too few would `
+          + `remain; KEEPING ALL. ${dropped.join(', ')}`,
+        );
+      }
     }
 
     // ========================================================================
@@ -677,28 +818,13 @@ PHONEME NOTATION:
           );
         }
 
-        // ── Axis 2 (structural) for fill-vowel: re-select the DECOY vowel by
-        //    confusability (near at hard, far at easy). The correct vowel is the
-        //    word's middle letter and is never touched, so the answer
-        //    (targetLetters[1]) is preserved. ──
-        if (ch.taskType === 'fill-vowel') {
-          const correct = (ch.targetLetters?.[1] ?? targetVowel).toLowerCase();
-          const shape = resolveProblemShape('fill-vowel', supportTier, { targetVowel: correct });
-          let decoy = shape.vowelDecoy;
-          if (!decoy || decoy === correct) {
-            decoy = CONFUSABLE_VOWELS[correct] ?? (correct === 'a' ? 'e' : 'a');
-          }
-          ch.vowelOptions = Math.random() > 0.5 ? [correct, decoy] : [decoy, correct];
-        }
-
-        // ── Axis 2 (structural) for word-sort: pin the bucket label to the
-        //    tier-tuned contrast pair {focus, structuralContrast}. The WORDS are
-        //    prose (LLM-authored under the prompt's tier-tuned contrast); this
-        //    only keeps the labels consistent with that pair. ──
-        if (ch.taskType === 'word-sort') {
-          const mid = ch.targetLetters?.[1]?.toLowerCase();
-          ch.sortBucketLabel = mid === structuralContrast ? `short-${structuralContrast}` : vowelFocus;
-        }
+        // fill-vowel's decoy-vowel re-selection and word-sort's bucket-label
+        // pinning both lived here and are DELETED — see `resolveProblemShape`
+        // for why a spoken, open-set answer has no decoy, and the schema
+        // comment for why a generated bucket label could only desync from the
+        // word it labels. word-sort keeps its axis-2 lever in the PROMPT (the
+        // tier-tuned contrast vowel governs which words are drawn), which is
+        // where it was always doing the real work.
       }
       // Tell the live tutor the support level (blended sessions included) so its
       // reveal policy is tier-aware per challenge.

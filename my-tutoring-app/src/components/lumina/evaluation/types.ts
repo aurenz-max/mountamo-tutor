@@ -2330,7 +2330,9 @@ export interface LetterSoundLinkMetrics extends BasePrimitiveMetrics {
 
 export interface CvcSpellerMetrics extends BasePrimitiveMetrics {
   type: 'cvc-speller';
-  vowelFocus: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
+  /** Present only when the objective named a vowel; absent means the session
+   *  spanned the letter group's vowels (the normal case since 2026-08-10). */
+  vowelFocus?: 'short-a' | 'short-e' | 'short-i' | 'short-o' | 'short-u';
   taskType: 'fill-vowel' | 'spell-word' | 'word-sort';
   wordsSpelledCorrectly: number;
   wordsTotal: number;
