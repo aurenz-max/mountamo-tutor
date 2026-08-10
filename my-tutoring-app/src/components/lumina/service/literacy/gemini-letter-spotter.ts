@@ -17,32 +17,53 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'name-it': {
     promptDoc:
-      `"name-it" (Sentence Spotter): Student sees a short sentence where one letter in a key word is replaced by an emoji. `
+      `"name-it" (Sentence Spotter): Student sees a short sentence where one letter in a key word is hidden behind an emoji. `
       + `The AI reads the full sentence aloud. Student must figure out which letter the emoji replaced. `
-      + `REQUIRED fields for name-it: sentence, emoji, targetWord, options. `
-      + `Example: targetLetter "s", targetWord "sun", emoji "⭐", sentence "The ⭐un is bright.", options ["s","t","n","p"]. `
-      + `The emoji MUST replace exactly ONE occurrence of the targetLetter in the targetWord within the sentence. `
-      + `Use fun, varied emojis (⭐🌟🔮💎🎯🎪🦋🌈🎨🌺). Each challenge should use a different emoji. `
-      + `Sentences should be simple, 4-7 words, age-appropriate for K-2. `
-      + `The targetLetter should appear at the START of the targetWord for clarity (e.g., "⭐un" not "bu⭐"). `
-      + `2-3 challenges per session. Do NOT include letterGrid or targetCount for this mode.`,
+      + `REQUIRED fields for name-it: sentence, targetWord, options. `
+      + `Write the sentence PLAINLY with the whole word spelled out — code hides the letter behind the emoji afterwards. `
+      + `Example: targetLetter "s", targetWord "sun", sentence "The sun is bright.", options ["s","t","n","p"]. `
+      + `Sentences are simple, 4-7 words, age-appropriate for K-2, and MUST contain targetWord exactly once. `
+      + `targetLetter MUST be the FIRST letter of targetWord (e.g., "sun" for "s", never "bus"). `
+      + `Do NOT include letterGrid for this mode.`,
     schemaDescription: "'name-it' (sentence spotter — find missing letter)",
   },
   'find-it': {
     promptDoc:
       `"find-it": Student hears a letter name and finds all instances in a 4x4 grid of 16 uppercase letters. `
-      + `2-3 challenges per session. Grid contains 2-3 instances of the target mixed with distractors. `
-      + `targetCase must be "uppercase". Do NOT include options for this mode.`,
+      + `Grid contains 2-3 instances of the target mixed with distractors. `
+      + `targetCase must be "uppercase". Do NOT include options, sentence or targetWord for this mode.`,
     schemaDescription: "'find-it' (locate letter in grid)",
   },
   'match-it': {
     promptDoc:
       `"match-it": Student sees an uppercase letter and matches it to the correct lowercase form from 4 options. `
-      + `2-3 challenges per session. Distractors are visually similar lowercase letters (e.g., b/d, p/q, m/n). `
-      + `targetCase must be "uppercase". Do NOT include letterGrid or targetCount for this mode.`,
+      + `Distractors are visually similar lowercase letters (e.g., b/d, p/q, m/n). `
+      + `targetCase must be "uppercase". Do NOT include letterGrid, sentence or targetWord for this mode.`,
     schemaDescription: "'match-it' (match uppercase to lowercase)",
   },
 };
+
+/** Emoji pool for the sentence spotter. CODE-OWNED, never requested from the
+ *  model: asking flash-lite to emit emoji inside a JSON string is a known
+ *  failure trigger, and the splice below is fully deterministic anyway. */
+const SENTENCE_EMOJIS = ['⭐', '🌟', '🔮', '💎', '🎯', '🎪', '🦋', '🌈', '🎨', '🌺'];
+
+/**
+ * Hide the target letter behind the emoji. The model emits the PLAIN sentence
+ * ("The sun is bright."); this restores the stored shape the component expects
+ * ("The ⭐un is bright.") by replacing only the FIRST character of targetWord.
+ * Returns null when targetWord isn't present, so the caller can fall back.
+ */
+function spliceEmoji(sentence: string, targetWord: string, emoji: string): string | null {
+  const escaped = targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const match = re.exec(sentence);
+  // ANSWER-LEAK GUARD: must occur EXACTLY once. A second occurrence would leave the
+  // target letter spelled out elsewhere in the sentence, giving the answer away.
+  if (!match || re.exec(sentence)) return null;
+  const word = match[0];
+  return sentence.slice(0, match.index) + emoji + word.slice(1) + sentence.slice(match.index + word.length);
+}
 
 // ---------------------------------------------------------------------------
 // Within-mode support tier (config.difficulty) — scaffolding level, NOT letters
@@ -318,91 +339,97 @@ function selectDistractorsBySimilarity(
 }
 
 /**
- * Schema definition for Letter Spotter Data
+ * Build the response schema for ONE request, enum-locked to the letters actually
+ * in scope for this letter group.
  *
- * Generates interactive letter recognition activities for K-2 students.
- * Three modes: Name It (identify letter by name), Find It (locate letter in grid),
- * Match It (match uppercase to lowercase). Follows cumulative group progression
- * across 4 letter groups based on instructional frequency.
+ * Why per-request rather than a module constant: targetLetter, every `options`
+ * entry and every `letterGrid` cell is semantically a SINGLE letter drawn from
+ * `cumulativeLetters`, which is known before the call. Declared as free
+ * `Type.STRING` they were an unbounded generation surface — flash-lite looped
+ * inside one option and emitted a ~130KB string that truncated at the token
+ * ceiling, so JSON.parse threw `Unterminated string in JSON` and (running under
+ * Promise.all in buildCompleteExhibitFromManifest) took the whole exhibit down.
+ * An enum makes that runaway UNREPRESENTABLE rather than merely discouraged, and
+ * enforces the cumulative-group band cap the post-generation pass had to repair.
+ *
+ * Fields the code owns are not asked for at all: letterGroup, cumulativeLetters,
+ * newLetters and targetCount were each overwritten after generation — pure wasted
+ * tokens, and three more arrays to loop inside. `emoji` is code-attached too.
  */
-const letterSpotterSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    title: {
-      type: Type.STRING,
-      description: "Engaging title for the letter recognition activity (e.g., 'Spot the Letters - Group 1!')",
-    },
-    letterGroup: {
-      type: Type.NUMBER,
-      description: "Which letter group (1, 2, 3, or 4)",
-    },
-    cumulativeLetters: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "All letters available in this group (lowercase)",
-    },
-    newLetters: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-      description: "Letters newly introduced in this group (lowercase)",
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge identifier (e.g., 'ch1', 'ch2')",
-          },
-          mode: {
-            type: Type.STRING,
-            enum: ["name-it", "find-it", "match-it"],
-            description: "Challenge mode: name-it, find-it, or match-it",
-          },
-          targetLetter: {
-            type: Type.STRING,
-            description: "The letter to identify (lowercase, e.g., 's', 'a')",
-          },
-          targetCase: {
-            type: Type.STRING,
-            enum: ["uppercase", "lowercase", "both"],
-            description: "How to display the target letter",
-          },
-          options: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "For name-it: 4 letter name options. For match-it: 4 lowercase letter options. Include the correct answer.",
-          },
-          letterGrid: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "For find-it: 16 uppercase letters in a 4x4 grid with 2-3 instances of the target mixed with distractors",
-          },
-          targetCount: {
-            type: Type.NUMBER,
-            description: "For find-it: how many instances of the target letter are in the grid (2 or 3)",
-          },
-          sentence: {
-            type: Type.STRING,
-            description: "For name-it: a short sentence with the emoji replacing one letter (e.g., 'The ⭐un is bright.')",
-          },
-          emoji: {
-            type: Type.STRING,
-            description: "For name-it: the emoji used as placeholder (e.g., '⭐', '🌟', '🔮')",
-          },
-          targetWord: {
-            type: Type.STRING,
-            description: "For name-it: the full word containing the target letter (e.g., 'sun')",
-          },
-        },
-        required: ["id", "mode", "targetLetter", "targetCase"],
+function buildLetterSpotterSchema(cumulativeLetters: string[]): Schema {
+  const lower = cumulativeLetters.map(l => l.toLowerCase());
+  const upper = lower.map(l => l.toUpperCase());
+
+  return {
+    type: Type.OBJECT,
+    properties: {
+      title: {
+        type: Type.STRING,
+        maxLength: "60",
+        description: "Engaging title for the letter recognition activity (e.g., 'Spot the Letters - Group 1!')",
       },
-      description: "Array of 6-8 challenges mixing name-it, find-it, and match-it modes",
+      challenges: {
+        type: Type.ARRAY,
+        // Bounded: the top bound is the runaway backstop; the bottom bound keeps a
+        // pinned single-mode session a real practice set, not a demo of one item.
+        minItems: "6",
+        maxItems: "8",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: {
+              type: Type.STRING,
+              maxLength: "8",
+              description: "Unique challenge identifier (e.g., 'ch1', 'ch2')",
+            },
+            mode: {
+              type: Type.STRING,
+              enum: ["name-it", "find-it", "match-it"],
+              description: "Challenge mode: name-it, find-it, or match-it",
+            },
+            targetLetter: {
+              type: Type.STRING,
+              enum: lower,
+              description: "The letter to identify (lowercase)",
+            },
+            targetCase: {
+              type: Type.STRING,
+              enum: ["uppercase", "lowercase", "both"],
+              description: "How to display the target letter",
+            },
+            options: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING, enum: lower },
+              minItems: "3",
+              maxItems: "4",
+              description: "For name-it / match-it: 4 lowercase letter options, INCLUDING the correct answer (targetLetter)",
+            },
+            letterGrid: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING, enum: upper },
+              minItems: "16",
+              maxItems: "16",
+              description: "For find-it: exactly 16 uppercase letters in a 4x4 grid, with 2-3 instances of the target mixed with distractors",
+            },
+            sentence: {
+              type: Type.STRING,
+              maxLength: "80",
+              description: "For name-it: a short PLAIN sentence containing targetWord spelled out in full (e.g., 'The sun is bright.')",
+            },
+            targetWord: {
+              type: Type.STRING,
+              maxLength: "16",
+              description: "For name-it: the word whose FIRST letter is targetLetter (e.g., 'sun')",
+            },
+          },
+          required: ["id", "mode", "targetLetter", "targetCase"],
+        },
+        description: "Array of 6-8 challenges",
+      },
     },
-  },
-  required: ["title", "letterGroup", "cumulativeLetters", "newLetters", "challenges"],
-};
+    required: ["title", "challenges"],
+  };
+}
 
 // ============================================================================
 // Letter Group Definitions
@@ -468,14 +495,9 @@ export const generateLetterSpotter = async (
   );
   logEvalModeResolution('LetterSpotter', config?.targetEvalMode, evalConstraint);
 
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(letterSpotterSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
-        fieldName: 'mode',
-      })
-    : letterSpotterSchema;
-
   // -------------------------------------------------------------------------
-  // Letter group setup
+  // Letter group setup — resolved BEFORE the schema, which enum-locks every
+  // letter field to this group's alphabet.
   // -------------------------------------------------------------------------
   const letterGroup = (config?.letterGroup && config.letterGroup >= 1 && config.letterGroup <= 4)
     ? config.letterGroup
@@ -483,6 +505,13 @@ export const generateLetterSpotter = async (
 
   const cumulativeLetters = LETTER_GROUPS[letterGroup];
   const newLetters = NEW_LETTERS[letterGroup];
+
+  const baseSchema = buildLetterSpotterSchema(cumulativeLetters);
+  const activeSchema = evalConstraint
+    ? constrainChallengeTypeEnum(baseSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
+        fieldName: 'mode',
+      })
+    : baseSchema;
 
   // -------------------------------------------------------------------------
   // Build prompt with eval-mode-scoped challenge type docs
@@ -529,46 +558,89 @@ Generate 6-8 challenges. Prioritize new letters but include some review letters 
 ${challengeTypeSection}
 ${tierSection}
 MODE-SPECIFIC FIELD RULES:
-- name-it (SENTENCE SPOTTER): set sentence, emoji, targetWord, and options (4 letters). Do NOT set letterGrid or targetCount.
-  * sentence: a short (4-7 word) sentence where the emoji replaces the targetLetter at the START of targetWord
-  * emoji: a fun emoji (⭐🌟🔮💎🎯🎪🦋🌈🎨🌺) — use a DIFFERENT emoji per challenge
-  * targetWord: the full word (e.g., "sun") — must contain the targetLetter
+- name-it (SENTENCE SPOTTER): set sentence, targetWord, and options (4 letters). Do NOT set letterGrid.
+  * sentence: a short (4-7 word) PLAIN sentence containing targetWord spelled out in full
+  * targetWord: a word whose FIRST letter is the targetLetter (e.g., "sun" for "s")
   * options: 4 lowercase letters including the correct one
-  * Example: targetLetter "s", targetWord "sun", emoji "⭐", sentence "The ⭐un is bright."
-- find-it: set letterGrid (16 uppercase letters) and targetCount (2-3), do NOT set options, sentence, emoji, or targetWord
-- match-it: set options (4 lowercase letters), do NOT set letterGrid, targetCount, sentence, emoji, or targetWord
+  * Example: targetLetter "s", targetWord "sun", sentence "The sun is bright."
+  * Do NOT write any emoji — the app hides the letter behind one afterwards.
+- find-it: set letterGrid (16 uppercase letters), do NOT set options, sentence, or targetWord
+- match-it: set options (4 lowercase letters), do NOT set letterGrid, sentence, or targetWord
 
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
 - At least half the challenges should target NEW letters.
-- All distractor letters must come from the cumulative letters list.
-- For find-it grids: exactly 16 cells, each cell is a single UPPERCASE letter.
+- Every letter you emit — target, option, or grid cell — is a SINGLE character from the cumulative list.
+- For find-it grids: exactly 16 cells, each a single UPPERCASE letter, with 2-3 instances of the target.
 - For name-it and match-it: exactly 4 options, each a single lowercase letter.
 - Vary targetCase across name-it challenges (some uppercase, some lowercase, some both).
 ${!evalConstraint ? '- Order challenges so modes alternate (don\'t cluster all the same mode together).' : ''}
 
-LETTER GROUP DATA:
-- letterGroup: ${letterGroup}
-- cumulativeLetters: [${cumulativeLetters.map(l => `"${l}"`).join(', ')}]
-- newLetters: [${newLetters.map(l => `"${l}"`).join(', ')}]`;
+CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"${l}"`).join(', ')}]`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
-      contents: generationPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: activeSchema,
-        systemInstruction: `You are an expert K-2 literacy specialist designing letter recognition activities. You create engaging, developmentally appropriate challenges that help young students learn to identify letters by name, find them visually, and match uppercase to lowercase forms. You understand common letter confusions (b/d, p/q, m/n, u/n) and use them as strategic distractors to strengthen discrimination skills. You always use letters only from the specified cumulative group.`,
-      },
-    });
+    // ── Bounded retry + degrade. Even with the schema locked down, the free-text
+    //    fields can run long; a bare JSON.parse threw a raw SyntaxError which,
+    //    because generators run under Promise.all in buildCompleteExhibitFromManifest,
+    //    failed the WHOLE exhibit rather than one block. Retry once, then degrade
+    //    to a skeleton the validation pass below fills in — never throw. ──
+    const MAX_ATTEMPTS = 2;
+    let result: LetterSpotterData | null = null;
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("No data returned from Gemini API");
+    // `sentence` is the one field that can't be enum-locked, so it stays the
+    // residual runaway surface (Gemini treats STRING maxLength as advisory). Vary
+    // the retry prompt — re-sending the identical prompt can re-trigger the same
+    // loop deterministically.
+    const RETRY_NUDGE =
+      `\n\nIMPORTANT: keep the output SMALL. Every sentence is at most 8 words and ends `
+      + `with a period. Emit exactly 6 challenges. Do not repeat yourself.`;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-lite-latest',
+        contents: attempt === 1 ? generationPrompt : generationPrompt + RETRY_NUDGE,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: activeSchema,
+          // Hard backstop against a runaway. A full 8-challenge payload lands far
+          // below this; the truncated failure was ~33k tokens.
+          maxOutputTokens: 8192,
+          systemInstruction: `You are an expert K-2 literacy specialist designing letter recognition activities. You create engaging, developmentally appropriate challenges that help young students learn to identify letters by name, find them visually, and match uppercase to lowercase forms. You understand common letter confusions (b/d, p/q, m/n, u/n) and use them as strategic distractors to strengthen discrimination skills. You always use letters only from the specified cumulative group.`,
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        console.warn(`[LetterSpotter] Empty response on attempt ${attempt}/${MAX_ATTEMPTS}.`);
+        continue;
+      }
+      try {
+        result = JSON.parse(text) as LetterSpotterData;
+        break;
+      } catch (err) {
+        console.warn(
+          `[LetterSpotter] JSON parse failed on attempt ${attempt}/${MAX_ATTEMPTS} `
+          + `(${text.length} chars; finishReason=${response.candidates?.[0]?.finishReason ?? 'unknown'}). `
+          + `${err instanceof Error ? err.message : err}`,
+        );
+      }
     }
 
-    const result = JSON.parse(text) as LetterSpotterData;
+    if (!result || typeof result !== 'object') {
+      // Degrade, don't throw: emit the challenge SPINE only (id/mode/target) and let
+      // the validation pass below build every letter, grid, option and sentence.
+      console.warn(`[LetterSpotter] Degrading to a code-built lesson after ${MAX_ATTEMPTS} attempts.`);
+      const skeletonMode = (pinnedType ?? 'name-it') as LetterMode;
+      result = {
+        title: `Spot the Letters — Group ${letterGroup}`,
+        challenges: Array.from({ length: 6 }, (_, i) => ({
+          id: `ch${i + 1}`,
+          mode: skeletonMode,
+          targetLetter: newLetters[i % newLetters.length],
+          targetCase: 'uppercase' as const,
+        })),
+      } as unknown as LetterSpotterData;
+    }
 
     // ========================================================================
     // Post-generation validation & defaults
@@ -595,33 +667,35 @@ LETTER GROUP DATA:
           ch.targetLetter = newLetters[i % newLetters.length];
         }
 
-        // Validate name-it sentence fields
+        // name-it: the model emits a PLAIN sentence; CODE owns the emoji and the splice.
         if (ch.mode === 'name-it') {
-          const FALLBACK_EMOJIS = ['⭐', '🌟', '🔮', '💎', '🎯', '🎪', '🦋', '🌈', '🎨', '🌺'];
+          ch.emoji = SENTENCE_EMOJIS[i % SENTENCE_EMOJIS.length];
 
-          // Ensure emoji exists and varies per challenge
-          if (!ch.emoji) {
-            ch.emoji = FALLBACK_EMOJIS[i % FALLBACK_EMOJIS.length];
-          }
-
-          // Ensure targetWord exists
-          if (!ch.targetWord) {
-            // Simple fallback words for common letters
+          // The emoji hides the word's FIRST character, so targetWord MUST lead with
+          // the target letter. A word that doesn't isn't merely imperfect — it hides
+          // the wrong letter while the answer key still says targetLetter, i.e. an
+          // unsolvable item. (Live probe caught exactly this: 'fox' offered for 'x'.)
+          if (!ch.targetWord || ch.targetWord[0]?.toLowerCase() !== ch.targetLetter) {
             const fallbackWords: Record<string, string> = {
               s: 'sun', a: 'ant', t: 'top', i: 'ink', p: 'pan', n: 'net',
               c: 'cat', k: 'kit', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
               g: 'gum', o: 'owl', u: 'up', l: 'log', f: 'fan', b: 'bat',
-              j: 'jam', z: 'zip', w: 'wet', v: 'van', y: 'yam', x: 'fox', q: 'quiz',
+              // 'x-ray' not 'fox': x-initial words are rare, but this mode needs one.
+              j: 'jam', z: 'zip', w: 'wet', v: 'van', y: 'yam', x: 'x-ray', q: 'quilt',
             };
-            ch.targetWord = fallbackWords[ch.targetLetter] || ch.targetLetter + 'at';
+            const candidate = fallbackWords[ch.targetLetter];
+            // Re-check the table's own entry so a future edit can't reintroduce the leak.
+            ch.targetWord = candidate?.[0]?.toLowerCase() === ch.targetLetter
+              ? candidate
+              : ch.targetLetter + 'at';
           }
 
-          // Ensure sentence exists with emoji placeholder
-          if (!ch.sentence || !ch.sentence.includes(ch.emoji)) {
-            const word = ch.targetWord;
-            const emojiWord = ch.emoji + word.slice(1);
-            ch.sentence = `I see a ${emojiWord}.`;
-          }
+          // Splice the emoji over targetWord's first letter, restoring the stored
+          // shape the component expects ("The ⭐un is bright."). Falls back to a
+          // code-built sentence when the model's sentence can't carry the splice
+          // cleanly (word absent, or present more than once → answer leak).
+          const spliced = ch.sentence ? spliceEmoji(ch.sentence, ch.targetWord, ch.emoji) : null;
+          ch.sentence = spliced ?? `I see a ${ch.emoji}${ch.targetWord.slice(1)}.`;
 
           // Clean up fields that shouldn't exist for name-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
