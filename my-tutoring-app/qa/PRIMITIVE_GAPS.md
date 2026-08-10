@@ -1033,7 +1033,7 @@ Visual: glass-style containers with animated liquid levels. Containers can be di
    re-run the fit check against the real catalog entry. Two mechanics would still justify a
    fork later and are **not** claimed closed: per-*word* mastery state with spaced
    repetition (`fast-fact` tracks per-session, not per-word) and voice-judged spoken
-   recognition (`/add-spoken-judge` is the cheaper rung). Report
+   recognition (`/add-voice-control` is the cheaper rung; `/add-spoken-judge` retired 2026-08-09). Report
    `qa/curriculum-fit/sight-word-trainer-2026-08-06.md`. **This is the second time in two
    days that fit-before-birth prevented a duplicate build** — the LA lane's `spatial-scene`
    catch was the first.

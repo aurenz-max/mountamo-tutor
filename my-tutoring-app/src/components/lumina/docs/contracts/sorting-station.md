@@ -106,7 +106,7 @@ sort, 0.683) is fully served today — the other close matches are gaps:
 ### G1 — explain the sort ("because…") · OPEN
 - **Near-consumer:** K `PTRN001-02` "Explain complex sorting rules using 'because'" (probe 0.668).
 - **Shortfall:** no production/justification mode — the student places objects but never articulates the rule. At K this must be SPOKEN (a pre-reader can't type a reason).
-- **Path:** eval-mode split (`explain_sort`) → `/add-eval-modes` + `/add-spoken-judge` (clip-judge ladder; [[production-modality-roadmap]] — this is exactly the judge-driven student-production direction).
+- **Path:** eval-mode split (`explain_sort`) → `/add-eval-modes` + `/add-voice-control` (open-mic controllers; doctrine in `docs/SPOKEN_INTERACTION_DOCTRINE.md`; [[production-modality-roadmap]] — this is exactly the judge-driven student-production direction).
 - **Relation to R-series:** none — additive.
 
 ### G2 — two-attribute sorting reachable at K · OPEN

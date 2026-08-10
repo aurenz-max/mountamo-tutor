@@ -614,7 +614,8 @@ untagged (affordance-abstained) item must leave the misconception active.
   diagnosed prompt-object repetition as a code-enforced distractor.
 - Judge-schema misconception field across remaining judge-driven primitives
   (spoken judges: the transcript is the highest-fidelity evidence in the
-  product — every `/add-spoken-judge` primitive becomes a tier-A source).
+  product — every spoken-judged primitive becomes a tier-A source; see
+  `SPOKEN_INTERACTION_DOCTRINE.md`).
 - Evidence packets + prompt blocks for the next generator cohorts (reuse the
   support-tiers rollout ordering).
 - Executed via the skill suite (§5.1), one family per run, spoken judges first.

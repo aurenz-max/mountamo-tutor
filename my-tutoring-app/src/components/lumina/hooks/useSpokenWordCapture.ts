@@ -15,7 +15,7 @@
  *    pulse until the FINAL verdict (both via SoundManager)
  *  - the ladder + asymmetric outcome mapping
  *
- * What the PRIMITIVE owns (see .claude/skills/add-spoken-judge):
+ * What the PRIMITIVE owns (see docs/SPOKEN_INTERACTION_DOCTRINE.md):
  *  - when the beat is offered (push-to-talk button — never auto-listen)
  *  - verdict handling: 'match' → credit + playCorrect(); 'no-match' →
  *    tutor coaching, NO penalty; 'unclear' → silent fallback to the

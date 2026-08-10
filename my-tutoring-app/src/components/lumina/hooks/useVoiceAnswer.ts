@@ -29,7 +29,7 @@
  * `targetWord` is a new activation.
  *
  * The PROMPT LAW and quiet-tutor discipline from useSpokenTurn carry over
- * unchanged (see .claude/skills/add-spoken-judge — Design Themes).
+ * unchanged (see docs/SPOKEN_INTERACTION_DOCTRINE.md — Design Themes).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';

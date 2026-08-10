@@ -15,7 +15,7 @@
  *   //   from choice.answers[i], onClick={() => choice.tapOption(i, w)}
  *   // plus a LuminaMicListener fed from choice.voice
  *
- * Doctrine baked in (see .claude/skills/add-spoken-judge — Design Themes):
+ * Doctrine baked in (see docs/SPOKEN_INTERACTION_DOCTRINE.md — Design Themes):
  *  - the judge identifies WHICH option; grading happens here, client-side —
  *    the correct answer is never sent;
  *  - actuation levers: actOn ('high' | 'any') and voiceAction ('submit' |

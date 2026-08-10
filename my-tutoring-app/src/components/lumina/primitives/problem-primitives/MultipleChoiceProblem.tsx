@@ -51,7 +51,8 @@ import {
 // A label is sayable only if it's a short plain-English word/phrase: letters,
 // spaces, apostrophes, hyphens; ≤3 words; ≤24 chars. This deliberately excludes
 // bare numbers, katex, and math symbols — judge classes that aren't benched yet
-// (see /add-spoken-judge: quality is per content CLASS, not per primitive).
+// (see docs/SPOKEN_INTERACTION_DOCTRINE.md: quality is per content CLASS, not
+// per primitive).
 const SAYABLE_LABEL = /^[a-z][a-z' -]*$/;
 function isSayableLabel(raw: string): boolean {
   const l = raw.trim().toLowerCase();

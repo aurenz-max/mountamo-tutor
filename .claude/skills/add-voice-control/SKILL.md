@@ -21,14 +21,15 @@ Two shapes — pick ONE in Phase 1:
 
 ## Required Reading
 
-- `.claude/skills/add-spoken-judge/SKILL.md` → **Design Themes** + **asymmetric grading law** + **quiet-tutor law**. That skill explains the doctrine and judge architecture; this one only wires. Do not proceed without the tutor discipline in your head.
+- `my-tutoring-app/src/components/lumina/docs/SPOKEN_INTERACTION_DOCTRINE.md` → **Design Themes** + **asymmetric grading law** + **quiet-tutor law** + **who owns the clock**. That document is the doctrine home (it absorbed `/add-spoken-judge` when that skill was retired 2026-08-09); this skill only wires. Do not proceed without the tutor discipline in your head.
+- **⚠️ Check the DI question FIRST for basic-literacy primitives.** This skill auto-advances on a `setTimeout` — the *component* owns the clock. The DI modality gives the clock to the tutor, and for the basic literacy set that is usually the right answer. See the doctrine's "third column" section and `qa/di/BACKLOG.md` item 16 before wiring anything phonics-adjacent.
 - The header comments of `hooks/useVoiceAnswer.ts` and `hooks/useVoiceChoice.ts` — the API contracts.
 
 If the interaction was tuned in the **Voice Studio**, its 📋 Copy Spec JSON is the configuration for this task — honor it (modality, levers) instead of the defaults below.
 
 ## When to Use This Skill
 
-- **Answer shape:** a moment where the student *knows the word* and production beats recognition — naming, blending, rhyme production, sight words. Same selection criteria as `/add-spoken-judge` Phase 1.
+- **Answer shape:** a moment where the student *knows the word* and production beats recognition — naming, blending, rhyme production, sight words. Same selection criteria as the doctrine's "find the production moment".
 - **Choice shape:** the interaction is MCQ-shaped — discrete on-screen options, tap-to-answer today. The options must be short, SAYABLE labels (1–2 words a K-2 student can pronounce). Word banks, picture-word matching, cloze choices, sorting targets.
 
 **DO NOT use for:** free-form speech (sentences, retells — no judge for that yet), options that aren't natural speech ("3/4 + 1/8"), or homophone option sets (see Gotchas).
@@ -36,7 +37,7 @@ If the interaction was tuned in the **Voice Studio**, its 📋 Copy Spec JSON is
 ## Phase 1: Pick Shape + Modality
 
 1. Shape: is the voice act *producing* a word (answer) or *picking* one of several (choice)? If the primitive shows options AND the correct answer is one of them, choice is usually right — it also gives partial-recognition students a fair path.
-2. Modality: default `'open'` (the native shape — mic stays hot, zero friction). Use `'ptt'` only for a single culminating word after solve-work where the tutor coaches misses by voice (the tap is the echo gate — see add-spoken-judge's capture table).
+2. Modality: default `'open'` (the native shape — mic stays hot, zero friction). Use `'ptt'` only for a single culminating word after solve-work where the tutor coaches misses by voice (the tap is the echo gate — see the doctrine's capture-architecture table).
 3. Locate the existing tap/grade path. It must survive unchanged; voice routes INTO it, never around it.
 
 ## Phase 2A: Spoken ANSWER wiring (from the PictureVocabulary diff)
@@ -59,7 +60,7 @@ const spoken = useVoiceAnswer({
 
 - `active` drives everything: true → mic auto-opens (during the previous item's celebration beat, so the reopen is imperceptible); false → mic closes. Flip it off the moment the challenge resolves.
 - The **stale-verdict guard is built in** — the target word is frozen per utterance and mismatched verdicts are dropped. Do NOT add your own cancel-on-advance plumbing; flipping `active` is the whole contract.
-- `onResult` follows add-spoken-judge Phase 2 exactly (match → credit + `playCorrect()` + advance; no-match/unclear → nothing scored; open mic → tutor SILENT on misses).
+- `onResult` follows the doctrine's PTT wiring reference exactly (match → credit + `playCorrect()` + advance; no-match/unclear → nothing scored; open mic → tutor SILENT on misses).
 
 Render — **always pass `dormant`** (the hook computes honest dormancy; the orb becomes a tappable button whenever the mic is truly closed, and that tap doubles as the first-session permission grant):
 
@@ -110,7 +111,7 @@ Paint your existing UI from controller state (no new buttons):
 
 ## Phase 3: Tutor Discipline + Metrics
 
-4. Tutor: open mic ⇒ SILENT on every miss/unclear/no-speech; frame once up front; celebrate only first-voice/comeback/finish (quiet-tutor law, add-spoken-judge). The elicitation must never contain the answer word (PROMPT LAW).
+4. Tutor: open mic ⇒ SILENT on every miss/unclear/no-speech; frame once up front; celebrate only first-voice/comeback/finish (quiet-tutor law — see the doctrine). The elicitation must never contain the answer word (PROMPT LAW).
 5. Metrics: add voice outcomes to `submitEvaluation` extras — answer shape: `spokenWords`; choice shape: per-item `{ viaVoice: boolean }` on your existing result records.
 
 ## Phase 4: Verify
