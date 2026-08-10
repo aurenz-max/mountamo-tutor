@@ -71,8 +71,8 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'push-pull-arena',
-    description: 'Interactive arena where students push and pull objects of different sizes on various surfaces (ice, wood, carpet, grass). Canvas-based physics simulation with force arrows, momentum, and friction. Students discover that bigger pushes make things move faster, and heavier things need bigger pushes. ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
-    constraints: 'Best for K-5. Use observe mode for K-1, predict for 1-2, compare for 2-3, design for 4-5. Keep object weights 1-10 for clarity.',
+    description: 'Live tutor-judged force arena (DI modality) where the child watches and runs canvas physics simulations — pushes and pulls on ice, wood, carpet and grass — and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken answer from the audio in-band, corrects with the physics idea, and its own affirmation advances. Modes: observe (watch the preset force, say "push" or "pull"), predict (say "moves" or "stays" before it runs; the sim reveals the truth as the answer is judged), compare (two objects, same push — say which slides farther), design (experiment with force controls, say whether the goal needs a big or little push). ESSENTIAL for K-5 Physical Science: pushes and pulls (K-PS2-1), motion from forces (K-PS2-2), balanced/unbalanced forces (3-PS2-1).',
+    constraints: 'Best for K-5. Use observe mode for K-1, predict for 1-2, compare for 2-3, design for 4-5. Keep object weights 1-10 for clarity. Answers are single spoken words judged by the microphone-enabled Lumina tutor; there is no Check button and no printed answer options.',
     evalModes: [
       {
         evalMode: 'observe',
@@ -80,7 +80,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['observe'],
-        description: 'Push/pull an object, answer MC about what happened (moved/didn\'t, direction, speed)',
+        description: 'Watch the preset force move the object, then SAY whether it was a push or a pull',
       },
       {
         evalMode: 'predict',
@@ -88,7 +88,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         beta: 3.0,
         scaffoldingMode: 3,
         challengeTypes: ['predict'],
-        description: 'Given object weight + push strength, predict if it will move and how far',
+        description: 'Given object weight + push strength, SAY "moves" or "stays" before the simulation runs',
       },
       {
         evalMode: 'compare',
@@ -96,7 +96,7 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['compare'],
-        description: 'Two objects or two surfaces — which moves more/less? Rank by effort needed',
+        description: 'Two objects get the same push — SAY which one slides farther (by name)',
       },
       {
         evalMode: 'design',
@@ -104,22 +104,46 @@ export const PHYSICS_CATALOG: ComponentDefinition[] = [
         beta: 6.0,
         scaffoldingMode: 6,
         challengeTypes: ['design'],
-        description: 'Set up forces to achieve a goal (move heavy object, stop a moving one, balance forces)',
+        description: 'Experiment with the force controls, then SAY whether the goal needs a big or little push',
       },
     ],
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is exploring pushes and pulls in a {{theme}} arena. Object: {{objectName}} ({{objectWeight}}kg) on {{surface}}. Force: {{pushStrength}}/10 {{pushDirection}}. Challenge type: {{challengeType}}.',
-      contextKeys: ['theme', 'objectName', 'objectWeight', 'surface', 'pushStrength', 'pushDirection', 'challengeType'],
+      taskDescription: 'LIVE-JUDGED forces practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD, you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Object: {{objectName}} on {{surface}}. The correct spoken answer: {{expectedAnswer}}.',
+      contextKeys: ['challengeType', 'objectName', 'surface', 'expectedAnswer'],
       scaffoldingLevels: {
-        level1: '"Try pushing the {{objectName}}! What do you think will happen?"',
-        level2: '"The {{objectName}} weighs {{objectWeight}}kg and you\'re on {{surface}}. {{objectWeight > 5 ? \'Heavy objects need bigger pushes!\' : \'Light objects are easier to push!\'}} Try adjusting your force."',
-        level3: '"Here\'s the rule: Force must be bigger than friction to make something move. {{surface}} has {{surface === \'ice\' ? \'very little\' : surface === \'carpet\' ? \'a lot of\' : \'some\'}} friction. A {{objectWeight}}kg object on {{surface}} needs about {{Math.ceil(objectWeight * (surface === \'ice\' ? 0.03 : surface === \'wood\' ? 0.2 : surface === \'carpet\' ? 0.5 : 0.4) * 9.8)}}N of force to start moving."',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never name the answer.',
+        level2: 'Point the child at the evidence in one short sentence — "Watch which way it goes" — without naming the force word or outcome.',
+        level3: 'Invite one look together: "Tap Go and watch closely. Then tell me." Still never name the answer.',
       },
       commonStruggles: [
-        { pattern: 'Student thinks heavier objects always move slower', response: '"Heavier objects DO need bigger pushes to get moving, but once moving, they can go just as fast! It\'s about how much force you use compared to their weight."' },
-        { pattern: 'Student confuses push direction with object direction', response: '"A PUSH sends the object AWAY from you (to the right →). A PULL brings it TOWARD you (to the left ←). Try both and watch which way the object goes!"' },
-        { pattern: 'Student does not understand why object won\'t move', response: '"The surface is holding the object back — that\'s called friction! {{surface === \'carpet\' ? \'Carpet has lots of friction\' : surface === \'grass\' ? \'Grass grabs onto things\' : \'\'}}. Try a bigger push, or try ice — it\'s super slippery!"' },
-        { pattern: 'Student thinks objects move forever', response: '"Objects slow down because of friction — the surface rubs against them! On ice, things slide a long way because ice is smooth. On carpet, things stop quickly because carpet is rough."' },
+        { pattern: 'Describes the motion without committing to an answer word', response: 'The scripted ask names the two choices — re-speak it once and wait. The judging happens on the answer word.' },
+        { pattern: 'Long silence', response: 'Silence is the child thinking or watching — wait. If they truly seem stuck, re-speak the current ask once.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
+          instruction:
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'THE CHILD IS WATCHING PHYSICS — WAIT',
+          instruction:
+            'Think time is unbounded. Never narrate the simulation, never name the outcome, never fill silence. '
+            + 'The cue names the accepted answer words; judge what you heard against them.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+        },
       ],
     },
     supportsEvaluation: true,

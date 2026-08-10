@@ -1,16 +1,71 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
+/**
+ * PushPullArena — DI modality. The Live tutor owns the clock in every mode.
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - observe: taps Go, watches the preset force move the object, and SAYS
+ *    whether that was a push or a pull.
+ *  - predict: answers "moves, or stays?" BEFORE anything moves; the sim
+ *    auto-runs the moment their answer is committed, so the physics reveals
+ *    the truth while the tutor judges what they SAID.
+ *  - compare: two objects get the same push; the child says WHICH ONE slides
+ *    farther (by name); the sim auto-runs at commit, same reveal timing.
+ *  - design: full controls (direction, force slider, Go) — the child
+ *    experiments freely, then says whether the goal needs a big or little
+ *    push.
+ *
+ * WHAT CHANGED (second non-literacy consumer of useJudgedScriptRunner; also
+ * this primitive's Lumina-kit migration — it was raw shadcn). Deleted: the
+ * four MC answer chips (they PRINTED the answer — word-flip's chips in a
+ * physics costume), the answer-checking and advancing buttons, the
+ * show-the-answer reveal after three attempts, and the labeled Push/Pull
+ * toggle outside design mode (a child who taps a button labeled "Push" is
+ * reading, not observing, when asked "push or pull?"). All answers are now
+ * CODE-COMPUTED from the sim's own physics and judged from the child's
+ * speech in-band.
+ *
+ * ANSWER-LEAK RULE. The arena, the arrow, and the motion are the stimulus.
+ * The force word / outcome / object name is the answer: nothing prints it,
+ * and instructions are code-owned neutral asks (a generated "Push the
+ * ball!" names the answer of an observe item).
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; direct manipulation first —
+ * Go and the design controls are the experiment surface, never the commit;
+ * the tutor is quiet by default; no visible timers; no advance affordance.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaBadge,
+  LuminaButton,
+  LuminaChallengeCounter,
+  LuminaMicListener,
+  LuminaSlider,
+} from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { PushPullArenaMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  designPushSize,
+  headNoun,
+  itemCue,
+  moveOnCue,
+  predictMoves,
+  SURFACE_SPOKEN,
+  type ArenaItem,
+  type ArenaItemKind,
+} from './pushPullArenaScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
@@ -25,6 +80,8 @@ export type ArenaTheme = 'playground' | 'toys' | 'sports' | 'animals';
 export interface PushPullChallenge {
   id: string;
   type: PushPullChallengeType;
+  /** Code-owned neutral ask (the generator overwrites any LLM instruction
+   *  that names the answer). */
   instruction: string;
   // Primary object
   objectName: string;
@@ -36,21 +93,17 @@ export interface PushPullChallenge {
   object2Emoji?: string;
   // Environment
   surface: ArenaSurface;
-  // Force settings (observe / predict)
+  // Force settings (preset for observe/predict/compare; starting point for design)
   pushStrength?: number; // 1-10
   pushDirection?: PushPullDirection;
   // Design mode
   goalDescription?: string;
-  // Answer
-  correctAnswer: string;
-  distractor0: string;
-  distractor1: string;
-  distractor2?: string;
-  hint: string;
-  // ── Within-mode support tier scaffolds (display-only; NEVER change numbers/answer) ──
-  /** Show the on-canvas force-vector arrow + Newton readout (perception self-check). Default true. */
+  /** CODE-COMPUTED spoken answer (push/pull, moves/stays, object name,
+   *  big/little). Never authored by the LLM. */
+  spokenAnswer?: string;
+  spokenAlternates?: string[];
+  // ── Within-mode support tier scaffolds (display-only) ──
   showForceArrows?: boolean;
-  /** Show the on-canvas velocity (m/s) + distance-marker readouts after the sim runs. Default true. */
   showMotionReadout?: boolean;
 }
 
@@ -59,8 +112,6 @@ export interface PushPullArenaData {
   description: string;
   theme: ArenaTheme;
   challenges: PushPullChallenge[];
-
-  /** Within-mode support tier ('easy'|'medium'|'hard') — passed to the live tutor's reveal policy. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
@@ -100,18 +151,18 @@ const SURFACE_COLORS: Record<ArenaSurface, { ground: string; bg: string; label: 
   grass: { ground: '#66BB6A', bg: '#1B5E20', label: 'Grass' },
 };
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  observe: { label: 'Observe', icon: '👀', accentColor: 'blue' },
-  predict: { label: 'Predict', icon: '🔮', accentColor: 'purple' },
-  compare: { label: 'Compare', icon: '⚖️', accentColor: 'emerald' },
-  design:  { label: 'Design',  icon: '🎯', accentColor: 'amber' },
+const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  observe: { label: 'Observe', icon: '👀' },
+  predict: { label: 'Predict', icon: '🔮' },
+  compare: { label: 'Compare', icon: '⚖️' },
+  design:  { label: 'Design',  icon: '🎯' },
 };
 
 // Force scaling: pushStrength 1-10 maps to Newtons
 const FORCE_SCALE = 8; // 1 pushStrength = 8N
 
 // =============================================================================
-// Physics Engine
+// Physics Engine (unchanged — the living simulation is the product)
 // =============================================================================
 
 interface PhysicsObject {
@@ -217,7 +268,7 @@ function stepPhysics(state: PhysicsState, dt: number): PhysicsState {
 }
 
 // =============================================================================
-// Canvas Drawing
+// Canvas Drawing (unchanged)
 // =============================================================================
 
 function drawArena(
@@ -377,6 +428,42 @@ function drawArena(
 // Main Component
 // =============================================================================
 
+const ACTION_FOR_KIND: Record<ArenaItemKind, string> = {
+  observe: 'watch',
+  predict: 'predict',
+  compare: 'compare',
+  design: 'experiment',
+};
+
+/** Fallback spoken-answer computation for data generated before the port. */
+function resolveSpokenAnswer(ch: PushPullChallenge): { answer: string; alternates: string[] } {
+  if (ch.spokenAnswer) return { answer: ch.spokenAnswer, alternates: ch.spokenAlternates ?? [] };
+  switch (ch.type) {
+    case 'predict': {
+      const moves = predictMoves(ch.pushStrength ?? 5, ch.objectWeight, ch.surface);
+      return moves
+        ? { answer: 'moves', alternates: ['move', 'it moves', 'it will move', 'yes'] }
+        : { answer: 'stays', alternates: ['stay', 'stay still', 'it stays', 'no'] };
+    }
+    case 'compare': {
+      const lighter = (ch.object2Weight ?? 99) < ch.objectWeight
+        ? (ch.object2Name ?? ch.objectName)
+        : ch.objectName;
+      return { answer: lighter.toLowerCase(), alternates: [headNoun(lighter)] };
+    }
+    case 'design': {
+      const size = designPushSize(ch.objectWeight, ch.surface);
+      return size === 'big'
+        ? { answer: 'big', alternates: ['a big push', 'strong', 'a strong push', 'hard'] }
+        : { answer: 'little', alternates: ['a little push', 'small', 'gentle', 'soft'] };
+    }
+    default:
+      return ch.pushDirection === 'pull'
+        ? { answer: 'pull', alternates: ['a pull', 'pulling', 'you pulled it'] }
+        : { answer: 'push', alternates: ['a push', 'pushing', 'you pushed it'] };
+  }
+}
+
 export default function PushPullArena({ data, className = '' }: PushPullArenaProps) {
   const {
     title,
@@ -391,65 +478,84 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
   const resolvedInstanceId = instanceId || 'push-pull-arena-default';
 
-  // ── Evaluation hook ──────────────────────────────────────────────
-  const { submitResult, elapsedMs } = usePrimitiveEvaluation<PushPullArenaMetrics>({
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs } =
+    usePrimitiveEvaluation<PushPullArenaMetrics>({
+      primitiveType: 'push-pull-arena',
+      instanceId: resolvedInstanceId,
+      skillId,
+      subskillId,
+      objectiveId,
+      exhibitId,
+    });
+
+  // ── The pack ─────────────────────────────────────────────────────
+  const items = useMemo<ArenaItem[]>(() =>
+    challenges.map((ch) => {
+      const { answer, alternates } = resolveSpokenAnswer(ch);
+      return {
+        id: ch.id,
+        kind: ch.type,
+        answerKind: 'voice' as const,
+        responseClass: 'short_spoken_word' as const,
+        action: ACTION_FOR_KIND[ch.type],
+        objectName: ch.objectName,
+        object2Name: ch.object2Name,
+        surfaceSpoken: SURFACE_SPOKEN[ch.surface],
+        strength: ch.pushStrength ?? 5,
+        direction: ch.pushDirection ?? 'push',
+        spokenAnswer: answer,
+        alternates,
+      };
+    }),
+    [challenges],
+  );
+
+  const pack = useMemo<JudgedScriptPack<ArenaItem>>(() => ({
     primitiveType: 'push-pull-arena',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  });
+    activityLine: 'live direct instruction pushes-and-pulls practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      objectName: item.objectName,
+      surface: item.surfaceSpoken,
+      expectedAnswer: item.spokenAnswer,
+    }),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: (item) => item.kind === 'observe'
+        ? 'Tap Go, watch, then say what you saw.'
+        : item.kind === 'design'
+          ? 'Experiment, then say your answer.'
+          : 'Think, then say your answer.',
+      retry: () => 'Have another go — say your answer.',
+      noVerdict: () => 'One more time — say your answer.',
+      affirmedNext: 'Yes! You said what the physics did.',
+      affirmedLast: 'You did it!',
+      done: 'Great force science today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => ({
+      challenge: `${PHASE_TYPE_CONFIG[item.kind]?.label ?? item.kind}: ${item.objectName} on ${item.surfaceSpoken}.`,
+      expected: item.spokenAnswer,
+      observed: lastHeard ? `Heard "${lastHeard}".` : 'The tutor judged the answer wrong from the audio.',
+    }),
+  }), [items]);
 
-  // ── AI tutoring ──────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    theme: data.theme,
-    challengeCount: challenges.length,
-    supportTier: data.supportTier,
-  }), [data.theme, challenges.length, data.supportTier]);
-
-  // Mode-aware tier reveal clause: the live tutor is a second scaffold channel.
-  // easy → name the force principle / walk the setup; medium → nudge execution only;
-  // hard → never name the principle the instruction withheld, ask what the student
-  // observes, never reveal the answer.
-  const tierTutorClause = useMemo(() => {
-    switch (data.supportTier) {
-      case 'easy':
-        return ' SUPPORT (easy): name the force/motion idea at play (push vs pull, heavier-needs-more-force, slippery vs rough) and walk the student through what to watch for. Never state the answer.';
-      case 'medium':
-        return ' SUPPORT (medium): nudge how to run or read the simulation — do NOT name the underlying force rule for them. Never state the answer.';
-      case 'hard':
-        return ' SUPPORT (hard): do NOT name the force rule; the workspace shows no arrows or readouts. Ask what the student SAW happen and have them justify their thinking. Never reveal the answer.';
-      default:
-        return '';
-    }
-  }, [data.supportTier]);
-
-  const { sendText } = useLuminaAI({
-    primitiveType: 'push-pull-arena',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-  });
-
-  // ── Challenge progress (shared hooks) ────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const metrics: PushPullArenaMetrics = {
+      type: 'push-pull-arena',
+      evalMode: challenges[0]?.type,
+      challengesCompleted: summary.outcomes.length,
+      challengesCorrect: summary.solvedCount,
+      totalAttempts: summary.attemptsCount,
+      accuracy: summary.accuracy,
+      averageAttemptsPerChallenge:
+        summary.attemptsCount / Math.max(summary.outcomes.length, 1),
+    };
+    submitResult(summary.accuracy >= 70, summary.accuracy, metrics);
+  }, [challenges, submitResult]);
 
   // ── Canvas & physics state ───────────────────────────────────────
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -463,70 +569,16 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     trailPoints: [],
   });
   const animFrameRef = useRef<number>(0);
-
-  // ── UI state ─────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? challenges[0];
-
-  // Per-challenge scaffold flags (default ON — only a 'hard' tier withdraws them).
-  const showForceArrows = currentChallenge?.showForceArrows ?? true;
-  const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
-  const [forceStrength, setForceStrength] = useState(currentChallenge?.pushStrength ?? 5);
-  const [forceDirection, setForceDirection] = useState<PushPullDirection>(currentChallenge?.pushDirection ?? 'push');
   const [simRunning, setSimRunning] = useState(false);
-  const [simComplete, setSimComplete] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showingAnswer, setShowingAnswer] = useState(false);
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
+  const [forceStrength, setForceStrength] = useState(5);
+  const [forceDirection, setForceDirection] = useState<PushPullDirection>('push');
+  /** The reveal ran for this item (predict/compare auto-run at commit). */
+  const revealRanRef = useRef(false);
 
-  // Synchronous score for the summary panel. submittedResult is set in the
-  // auto-submit effect, which runs *after* the panel first mounts — without this
-  // fallback the panel mounts at score 0 ('needs-work' tier) and the once-only
-  // celebration (sound + confetti) fires silently, then its guard blocks re-firing.
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    return Math.round((correctCount / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  // ── Auto-submit evaluation when all challenges complete ──────────
-  const hasAutoSubmitted = useRef(false);
-  useEffect(() => {
-    if (!allChallengesComplete || hasAutoSubmitted.current) return;
-    hasAutoSubmitted.current = true;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-    const metrics: PushPullArenaMetrics = {
-      type: 'push-pull-arena',
-      evalMode: currentChallenge?.type,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      totalAttempts,
-      accuracy: overallScore,
-      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-    };
-
-    submitResult(overallScore >= 70, overallScore, metrics);
-    setSubmittedResult({ score: overallScore });
-
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Student finished all push/pull challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about forces and motion.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
-
-  // ── Initialize physics for current challenge ─────────────────────
   const initPhysics = useCallback((challenge: PushPullChallenge) => {
     const objs: PhysicsObject[] = [];
     const isCompare = challenge.type === 'compare';
 
-    // Primary object
     objs.push({
       x: isCompare ? CANVAS_W * 0.3 : CANVAS_W * 0.35,
       v: 0,
@@ -537,7 +589,6 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       color: objectColor(challenge.objectWeight),
     });
 
-    // Second object for compare mode
     if (isCompare && challenge.object2Name && challenge.object2Weight && challenge.object2Emoji) {
       objs.push({
         x: CANVAS_W * 0.7,
@@ -561,27 +612,70 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     };
   }, []);
 
-  // ── Sync physics to current challenge ────────────────────────────
-  useEffect(() => {
-    if (currentChallenge && !allChallengesComplete) {
-      initPhysics(currentChallenge);
-      setForceStrength(currentChallenge.pushStrength ?? 5);
-      setForceDirection(currentChallenge.pushDirection ?? 'push');
+  // ── The runner ───────────────────────────────────────────────────
+  const runner = useJudgedScriptRunner<ArenaItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    // The arena has no band field; K matches the old hardcode and the K-2
+    // demand this port serves.
+    gradeLevel: 'Kindergarten',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: (_item, index) => {
+      const challenge = challenges[index];
+      if (!challenge) return;
+      revealRanRef.current = false;
+      initPhysics(challenge);
+      setForceStrength(challenge.pushStrength ?? 5);
+      setForceDirection(challenge.pushDirection ?? 'push');
       setSimRunning(false);
-      setSimComplete(false);
-      setSelectedAnswer(null);
-      setFeedback(null);
-      setShowingAnswer(false);
-      // Redraw
       const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1, showForceArrows, showMotionReadout);
+      const ctx = canvas?.getContext('2d');
+      if (ctx) {
+        drawArena(ctx, physicsRef.current, window.devicePixelRatio || 1,
+          challenge.showForceArrows ?? true, challenge.showMotionReadout ?? true);
       }
-    }
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, initPhysics, showForceArrows, showMotionReadout]);
+    },
+    onEmission: (emission, item) => {
+      // predict/compare: the sim IS the reveal, and it runs the moment the
+      // child's answer is committed — the truth plays out on screen while
+      // the tutor judges what they SAID, not what they saw.
+      if (emission.kind !== 'attempt-open' || !item) return;
+      if ((item.kind === 'predict' || item.kind === 'compare') && !revealRanRef.current) {
+        revealRanRef.current = true;
+        runPresetForce();
+      }
+    },
+  });
 
-  // ── Canvas setup & sizing ────────────────────────────────────────
+  const currentChallenge = challenges[runner.currentIndex] ?? null;
+  const currentKind = runner.currentItem?.kind;
+  const showForceArrows = currentChallenge?.showForceArrows ?? true;
+  const showMotionReadout = currentChallenge?.showMotionReadout ?? true;
+
+  // ── Sim runs — the experiment surface, never the commit ──────────
+  const applyForce = useCallback((strength: number, direction: PushPullDirection) => {
+    if (!currentChallenge) return;
+    SoundManager.tap();
+    initPhysics(currentChallenge);
+    const dir = direction === 'push' ? 1 : -1;
+    physicsRef.current.appliedForce = strength * FORCE_SCALE * dir;
+    physicsRef.current.forceActive = true;
+    physicsRef.current.forceAppliedDuration = 0;
+    physicsRef.current.isRunning = true;
+    physicsRef.current.trailPoints = [];
+    setSimRunning(true);
+  }, [currentChallenge, initPhysics]);
+
+  /** Run the item's PRESET force (observe's Go, predict/compare's reveal). */
+  const runPresetForce = useCallback(() => {
+    if (!currentChallenge) return;
+    applyForce(currentChallenge.pushStrength ?? 5, currentChallenge.pushDirection ?? 'push');
+  }, [applyForce, currentChallenge]);
+  const runPresetForceRef = useRef(runPresetForce);
+  runPresetForceRef.current = runPresetForce;
+
+  // ── Canvas setup & animation loop (unchanged) ────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -590,12 +684,12 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     canvas.height = CANVAS_H * dpr;
     canvas.style.width = `${CANVAS_W}px`;
     canvas.style.height = `${CANVAS_H}px`;
+    if (challenges[0]) initPhysics(challenges[0]);
     const ctx = canvas.getContext('2d');
     if (ctx) drawArena(ctx, physicsRef.current, dpr, showForceArrows, showMotionReadout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Animation loop ───────────────────────────────────────────────
   useEffect(() => {
     if (!simRunning) return;
 
@@ -613,7 +707,6 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
       if (!physicsRef.current.isRunning) {
         setSimRunning(false);
-        setSimComplete(true);
       } else {
         animFrameRef.current = requestAnimationFrame(loop);
       }
@@ -626,292 +719,161 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
     };
   }, [simRunning, showForceArrows, showMotionReadout]);
 
-  // ── Apply force button handler ───────────────────────────────────
-  const handleApplyForce = useCallback(() => {
-    if (simRunning) return;
-    SoundManager.tap();
-    const dir = forceDirection === 'push' ? 1 : -1;
-    const forceN = forceStrength * FORCE_SCALE * dir;
+  // ── Phase summary ────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!hasSubmitted || !runner.summary) return [];
+    return challenges.map((ch) => {
+      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+      const config = PHASE_TYPE_CONFIG[ch.type] ?? { label: ch.type, icon: '🧲' };
+      return {
+        label: `${config.label} — ${ch.objectName}`,
+        icon: config.icon,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [hasSubmitted, runner.summary, challenges]);
 
-    // Reset objects to starting positions for fresh push
-    if (currentChallenge) {
-      initPhysics(currentChallenge);
-    }
+  // =============================================================================
+  // Render
+  // =============================================================================
 
-    physicsRef.current.appliedForce = forceN;
-    physicsRef.current.forceActive = true;
-    physicsRef.current.forceAppliedDuration = 0;
-    physicsRef.current.isRunning = true;
-    physicsRef.current.trailPoints = [];
-    setSimRunning(true);
-    setSimComplete(false);
-  }, [simRunning, forceStrength, forceDirection, currentChallenge, initPhysics]);
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  // design = the child's own experiment; observe = tap Go to run the preset.
+  const showDesignControls = currentKind === 'design';
+  const showGoButton = currentKind === 'observe' || currentKind === 'design';
+  const stageWord = runner.stage === 'affirmed'
+    ? 'yes!'
+    : runner.stage === 'asking'
+      ? (currentKind === 'observe' ? 'push, or pull?' : 'what do you say?')
+      : 'get ready';
 
-  // ── MC options ───────────────────────────────────────────────────
-  const mcOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    const correct = currentChallenge.correctAnswer;
-    const distractors = [
-      currentChallenge.distractor0,
-      currentChallenge.distractor1,
-      currentChallenge.distractor2,
-    ].filter(Boolean) as string[];
-
-    return [correct, ...distractors].sort(() => Math.random() - 0.5);
-  }, [currentChallenge]);
-
-  // ── Answer checking ──────────────────────────────────────────────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || !selectedAnswer) return;
-
-    incrementAttempts();
-    const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setFeedback({ correct: true, message: 'Correct! Great observation!' });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the physics.`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: currentChallenge.hint ?? 'Not quite — try pushing the object and observe what happens!',
-      });
-
-      if (currentAttempts >= 2) {
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-        });
-        setShowingAnswer(true);
-      }
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint about forces and motion.${tierTutorClause}`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
-
-  // ── Advance to next challenge ────────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — evaluation auto-submitted via useEffect above
-      return;
-    }
-
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
-
-  // Whether controls are user-adjustable (observe/design = yes, predict/compare = preset)
-  const controlsInteractive = currentChallenge?.type === 'observe' || currentChallenge?.type === 'design' || allChallengesComplete;
-  const canRunSim = !simRunning && !allChallengesComplete;
-
-  // For predict mode: student answers BEFORE running simulation
-  const isPredictMode = currentChallenge?.type === 'predict';
-  const needsAnswerFirst = isPredictMode && !simComplete && !feedback?.correct;
-
-  // ── Render ───────────────────────────────────────────────────────
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-100">{title}</CardTitle>
-            <CardDescription className="text-slate-400">{description}</CardDescription>
+    <LuminaCard className={className}>
+      <LuminaCardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            <p className="text-slate-400 text-sm">{description}</p>
           </div>
-          {!allChallengesComplete && challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
-          )}
+          <LuminaBadge accent="cyan" className="text-xs">Say it out loud</LuminaBadge>
         </div>
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Summary panel when complete */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Challenge Complete!"
-            celebrationMessage="You explored pushes and pulls!"
-            className="mb-6"
-          />
-        )}
-
-        {/* Canvas arena */}
-        <div className="rounded-lg overflow-hidden border border-white/10">
-          <canvas
-            ref={canvasRef}
-            className="w-full"
-            style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
-          />
-        </div>
-
-        {/* Challenge instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-            {currentChallenge.type === 'compare' && currentChallenge.object2Name && (
-              <p className="text-slate-400 text-xs mt-1">
-                Comparing: {currentChallenge.objectEmoji} {currentChallenge.objectName} ({currentChallenge.objectWeight}kg)
-                vs {currentChallenge.object2Emoji} {currentChallenge.object2Name} ({currentChallenge.object2Weight}kg)
-                on {SURFACE_COLORS[currentChallenge.surface].label}
-              </p>
-            )}
-            {currentChallenge.type === 'design' && currentChallenge.goalDescription && (
-              <p className="text-slate-400 text-xs mt-1">Goal: {currentChallenge.goalDescription}</p>
-            )}
-          </div>
-        )}
-
-        {/* Force controls */}
-        {!allChallengesComplete && (
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Direction toggle */}
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`text-xs ${forceDirection === 'pull' ? 'bg-orange-500/20 border-orange-400/40 text-orange-300' : 'bg-white/5 border border-white/20 text-slate-400'}`}
-                onClick={() => controlsInteractive && setForceDirection('pull')}
-                disabled={!controlsInteractive}
-              >
-                ← Pull
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`text-xs ${forceDirection === 'push' ? 'bg-blue-500/20 border-blue-400/40 text-blue-300' : 'bg-white/5 border border-white/20 text-slate-400'}`}
-                onClick={() => controlsInteractive && setForceDirection('push')}
-                disabled={!controlsInteractive}
-              >
-                Push →
-              </Button>
-            </div>
-
-            {/* Force slider */}
-            <div className="flex-1 min-w-[160px] flex items-center gap-2">
-              <span className="text-xs text-slate-400">Force:</span>
-              <Slider
-                value={[forceStrength]}
-                onValueChange={([v]) => {
-                  if (!controlsInteractive) return;
-                  SoundManager.tick();
-                  setForceStrength(v);
-                }}
-                min={1}
-                max={10}
-                step={1}
-                className="flex-1"
-                disabled={!controlsInteractive}
-              />
-              <span className="text-xs text-slate-300 w-8 text-right">{forceStrength}</span>
-            </div>
-
-            {/* Apply force button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={handleApplyForce}
-              disabled={!canRunSim || needsAnswerFirst}
-            >
-              {simRunning ? 'Simulating...' : needsAnswerFirst ? 'Answer first!' : 'Apply Force'}
-            </Button>
-          </div>
-        )}
-
-        {/* MC answer options */}
-        {currentChallenge && !allChallengesComplete && mcOptions.length > 0 && (
-          <div className="space-y-2">
-            {/* For predict mode, show note */}
-            {isPredictMode && !simComplete && (
-              <p className="text-xs text-amber-400/70">Make your prediction first, then run the simulation to check!</p>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {mcOptions.map((opt, i) => {
-                const isSelected = selectedAnswer === opt;
-                const isCorrectAnswer = opt === currentChallenge.correctAnswer;
-                const showCorrect = showingAnswer && isCorrectAnswer;
-
-                return (
-                  <Button
-                    key={`${currentChallenge.id}-${i}`}
-                    variant="ghost"
-                    className={`text-left text-sm justify-start h-auto py-2 px-3 whitespace-normal ${
-                      showCorrect
-                        ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
-                          : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
-                    }`}
-                    onClick={() => {
-                      if (feedback?.correct || showingAnswer) return;
-                      SoundManager.select();
-                      setSelectedAnswer(opt);
-                    }}
-                    disabled={!!feedback?.correct || showingAnswer}
-                  >
-                    {opt}
-                  </Button>
-                );
-              })}
-            </div>
-
-            {/* Check / Next buttons */}
-            <div className="flex gap-2">
-              {!feedback?.correct && !showingAnswer && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckAnswer}
-                  disabled={!selectedAnswer}
-                >
-                  Check Answer
-                </Button>
-              )}
-              {(feedback?.correct || showingAnswer) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-300"
-                  onClick={handleNextChallenge}
-                >
-                  {currentChallengeIndex + 1 >= challenges.length ? 'Finish' : 'Next Challenge'}
-                </Button>
-              )}
-            </div>
-
-            {/* Feedback */}
-            {feedback && (
-              <div className={`text-sm px-3 py-2 rounded-lg ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-400/20'
-                  : 'bg-amber-500/10 text-amber-300 border border-amber-400/20'
-              }`}>
-                {feedback.message}
+      <LuminaCardContent className="space-y-4">
+        {!hasSubmitted && (
+          <>
+            {challenges.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <LuminaChallengeCounter
+                  current={Math.min(runner.currentIndex + 1, challenges.length)}
+                  total={challenges.length}
+                  variant="dots"
+                />
               </div>
             )}
-          </div>
+
+            {/* Canvas arena — the stimulus and the experiment */}
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <canvas
+                ref={canvasRef}
+                className="w-full"
+                style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
+              />
+            </div>
+
+            {/* Code-owned neutral instruction */}
+            {currentChallenge?.instruction && (
+              <div className="rounded-lg bg-white/5 border border-white/10 p-3">
+                <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
+                {currentKind === 'design' && currentChallenge.goalDescription && (
+                  <p className="text-slate-400 text-xs mt-1">Goal: {currentChallenge.goalDescription}</p>
+                )}
+              </div>
+            )}
+
+            {/* Experiment controls. design: full controls (the manipulative).
+                observe: one Go that fires the ITEM's preset force — a labeled
+                Push/Pull toggle would print the answer. predict/compare: no
+                controls; the sim auto-runs when the answer is committed. */}
+            {(showDesignControls || showGoButton) && (
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                {showDesignControls && (
+                  <>
+                    <div className="flex gap-1">
+                      <LuminaButton
+                        tone={forceDirection === 'pull' ? 'primary' : 'subtle'}
+                        className="text-xs"
+                        onClick={() => { SoundManager.select(); setForceDirection('pull'); }}
+                      >
+                        ← Pull
+                      </LuminaButton>
+                      <LuminaButton
+                        tone={forceDirection === 'push' ? 'primary' : 'subtle'}
+                        className="text-xs"
+                        onClick={() => { SoundManager.select(); setForceDirection('push'); }}
+                      >
+                        Push →
+                      </LuminaButton>
+                    </div>
+                    <div className="flex-1 min-w-[160px] flex items-center gap-2">
+                      <span className="text-xs text-slate-400">Force:</span>
+                      <LuminaSlider
+                        value={[forceStrength]}
+                        onValueChange={([v]) => setForceStrength(v)}
+                        min={1}
+                        max={10}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-slate-300 w-8 text-right">{forceStrength}</span>
+                    </div>
+                  </>
+                )}
+                <LuminaButton
+                  tone="primary"
+                  className="text-sm"
+                  onClick={() => showDesignControls
+                    ? applyForce(forceStrength, forceDirection)
+                    : runPresetForce()}
+                  disabled={simRunning}
+                >
+                  {simRunning ? 'Moving…' : 'Go!'}
+                </LuminaButton>
+              </div>
+            )}
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {/* The mic. ONE tap, at the start — never per answer. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={runner.micState}
+                level={runner.micLevel}
+                isSupported={isSupported}
+                onStart={() => void runner.start()}
+                onCancel={runner.cancelListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{runner.statusLine}</p>
+            </div>
+          </>
         )}
-      </CardContent>
-    </Card>
+
+        {hasSubmitted && phaseResults.length > 0 && (
+          <PhaseSummaryPanel
+            phases={phaseResults}
+            overallScore={submittedResult?.score}
+            durationMs={elapsedMs}
+            heading="Challenge Complete!"
+            celebrationMessage="You explored pushes and pulls out loud!"
+          />
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 }

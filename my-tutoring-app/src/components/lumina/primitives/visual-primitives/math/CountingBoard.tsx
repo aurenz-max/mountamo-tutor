@@ -1,19 +1,63 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * CountingBoard — DI modality. The Live tutor owns the clock in every mode.
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - count_all / group_count / count_on / compare: they TAP each object to
+ *    count (one-to-one correspondence — the manipulative survives, it is the
+ *    working surface, not the answer) and SAY HOW MANY ALOUD into an open
+ *    mic. The tutor asks, waits, judges the audio in-band, corrects
+ *    contrastively, and its own affirmation is the advance.
+ *  - subitize (K): the objects flash then hide, and the child SAYS how many
+ *    they saw. Grade 1 keeps the objects visible.
+ *  - subitize_perceptual (Pre-K): pre-numeric — the child TAPS the hand that
+ *    matches the quantity. The tap is the commit (gesture anchor, second
+ *    production caller after cvc-speller's spell_word); the tutor's verdict
+ *    is the advance, and the whole item is number-free in the tutor's mouth.
+ *
+ * WHAT CHANGED (first non-literacy consumer of useJudgedScriptRunner;
+ * qa/di/BACKLOG.md item 16 extraction). Deleted: the Check Answer button, the
+ * Next Challenge button, the Try Again button and its retry penalty, the −/+
+ * numeral steppers for subitize and count-on, and the feedback card that
+ * printed the target. There is no advance timer and no advance button
+ * anywhere in this file.
+ *
+ * ⚠️ THE CHECK BUTTON WAS MEASURING THE WRONG THING, and that is this port's
+ * finding. count_all's check compared tapped-set size to the target — tap
+ * every object once, know no number word, pass. The counting SKILL
+ * (cardinality: say how many altogether) was delegated to a rhetorical
+ * [CARDINALITY_CHECK] the tutor asked after the grade was already recorded.
+ * The spoken answer IS now the graded act; the tapping is the strategy that
+ * gets the child there.
+ *
+ * ANSWER-LEAK RULE. The objects are the stimulus and are shown. The COUNT is
+ * the answer: the running tally no longer prints "/ total" (it printed the
+ * answer next to the child's progress), success feedback no longer names the
+ * target, and the number chip appears only AFTER the tutor has affirmed. The
+ * child's own tap badges (1, 2, 3… on counted objects) stay — they are the
+ * count trace the child constructs, tier-governed via showLastNumber, not an
+ * offered option.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines);
+ * no visible timers (the subitize flash is stimulus presentation, not an
+ * advance clock — nothing moves forward when it ends); "Show again" re-shows
+ * the STIMULUS and never the answer; adult chrome is hidden for pre-readers.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
+  LuminaButton,
   LuminaPanel,
   LuminaPrompt,
-  LuminaModeTabs,
   LuminaChallengeCounter,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaFeedbackCard,
+  LuminaMicListener,
   answerStateClass,
 } from '../../../ui';
 import {
@@ -21,12 +65,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { CountingBoardMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  handVerdictCue,
+  itemCue,
+  moveOnCue,
+  numberWordFor,
+  responseClassFor,
+  type CountingItem,
+  type CountingItemKind,
+} from './countingBoardScript';
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -75,23 +131,13 @@ export interface CountingBoardData {
 // Constants
 // ============================================================================
 
-type Phase = 'count' | 'subitize' | 'subitizePerceptual' | 'organize' | 'countOn';
-
-const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
-  count: { label: 'Count', description: 'Tap each object to count' },
-  subitize: { label: 'Subitize', description: 'How many do you see?' },
-  subitizePerceptual: { label: 'See & Show', description: 'Pick the matching hand' },
-  organize: { label: 'Organize', description: 'Group objects to count faster' },
-  countOn: { label: 'Count On', description: 'Start from a number and keep counting' },
-};
-
-const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  count_all: { label: 'Count All', icon: '🔢', accentColor: 'orange' },
-  subitize: { label: 'Subitize', icon: '⚡', accentColor: 'purple' },
-  subitize_perceptual: { label: 'Pre-K Subitize', icon: '✋', accentColor: 'pink' },
-  group_count: { label: 'Group Count', icon: '🎯', accentColor: 'emerald' },
-  count_on: { label: 'Count On', icon: '➕', accentColor: 'blue' },
-  compare: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
+const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  count_all: { label: 'Count All', icon: '🔢' },
+  subitize: { label: 'Subitize', icon: '⚡' },
+  subitize_perceptual: { label: 'See & Show', icon: '✋' },
+  group_count: { label: 'Group Count', icon: '🎯' },
+  count_on: { label: 'Count On', icon: '➕' },
+  compare: { label: 'Compare', icon: '⚖️' },
 };
 
 const OBJECT_EMOJI: Record<string, string> = {
@@ -110,8 +156,10 @@ const OBJECT_SIZE = 40;
 const OBJECT_PADDING = 24;
 
 // K subitize flash-then-hide timing. Objects appear for the flash window, then
-// hide before the numeric answer surface is enabled — genuine subitizing is
-// instant recognition, not tap-counting a static scene (reader-fit item 13).
+// hide before the spoken answer — genuine subitizing is instant recognition,
+// not tap-counting a static scene (reader-fit item 13). The flash is stimulus
+// presentation, NOT an advance clock: when it ends, nothing progresses — the
+// tutor is still waiting for the child's answer.
 const SUBITIZE_FLASH_MS = 1500;   // default; overridable per-challenge via flashDuration
 const SUBITIZE_PREP_MS = 800;     // brief "get ready" beat before the flash begins
 
@@ -270,6 +318,15 @@ interface CountingBoardProps {
   className?: string;
 }
 
+const ACTION_FOR_KIND: Record<CountingItemKind, string> = {
+  count_all: 'count',
+  group_count: 'count',
+  compare: 'compare',
+  count_on: 'count-on',
+  subitize: 'look',
+  subitize_perceptual: 'hands',
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -297,119 +354,225 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     showLastNumber = true,
   } = showOptions;
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
   const emoji = OBJECT_EMOJI[objects.type] || OBJECT_EMOJI.custom;
+  const objectWord = objects.type === 'custom' ? 'objects' : objects.type;
+  const isPreReader = gradeBand === 'K';
 
+  // ── Stage-payload state (the runner owns progression; this is the board) ──
   const [countedObjects, setCountedObjects] = useState<Set<number>>(new Set());
   const [countOrder, setCountOrder] = useState<Map<number, number>>(new Map());
-  const [doubleCounted, setDoubleCounted] = useState(false);
+  const [alreadyCountedNote, setAlreadyCountedNote] = useState(false);
+  const [handChoice, setHandChoice] = useState<number | null>(null);
+  const [preCountedCount, setPreCountedCount] = useState(0);
+  /** The count JUST affirmed — post-answer only (answer-leak rule), cleared
+   *  the moment the next item opens. 'match' = pre-numeric affirm (no digits). */
+  const [reward, setReward] = useState<string | null>(null);
 
-  // Challenge progress tracking (shared hooks)
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: CHALLENGE_TYPE_CONFIG,
-  });
-
-  const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
-    if (challenges.length === 0) return 'count';
-    const firstType = challenges[0].type;
-    if (firstType === 'subitize') return 'subitize';
-    if (firstType === 'subitize_perceptual') return 'subitizePerceptual';
-    if (firstType === 'count_on') return 'countOn';
-    if (firstType === 'group_count') return 'organize';
-    return 'count';
-  });
-
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-
-  // Subitize state
-  const [subitizeInput, setSubitizeInput] = useState('');
-  const [subitizeStartTime, setSubitizeStartTime] = useState(0);
-  // K subitize flash-then-hide lifecycle: objects are visible ONLY while
-  // `isSubitizeFlashing`; the numeric stepper is enabled once `subitizeAnswerReady`
-  // (the flash has completed). Reader grades ignore both and keep objects visible.
+  // K subitize flash-then-hide lifecycle (visual-only; advances nothing).
   const [isSubitizeFlashing, setIsSubitizeFlashing] = useState(false);
   const [subitizeAnswerReady, setSubitizeAnswerReady] = useState(false);
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Pre-K subitize state (hand-image answer)
-  const [handChoice, setHandChoice] = useState<number | null>(null);
-
-  // Count-on state
-  const [countOnInput, setCountOnInput] = useState('');
-  const [preCountedCount, setPreCountedCount] = useState(0);
-
-  // Domain-specific tracking (not covered by shared hooks)
-  const [usedGrouping, setUsedGrouping] = useState(false);
-  const [usedCountOn, setUsedCountOn] = useState(false);
-  const [currentRetries, setCurrentRetries] = useState(0);
-  const RETRY_PENALTY = 0.15; // 15% per retry
-
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `counting-board-${Date.now()}`);
+  const stableInstanceIdRef = useRef(instanceId || `counting-board-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // -------------------------------------------------------------------------
-  // Per-challenge layout
-  // -------------------------------------------------------------------------
-  const rawChallenge = challenges[currentChallengeIndex] ?? null;
-  const challengeCount = rawChallenge?.count ?? 5;
-  const challengeArrangement = rawChallenge?.arrangement ?? 'scattered';
-  const challengeGroupSize = rawChallenge?.groupSize;
+  const handChoiceRef = useRef<number | null>(null);
+  /** Any double-tap on an already-counted object this run (one-to-one signal). */
+  const doubleCountEverRef = useRef(false);
 
-  const currentChallenge = useMemo(() => {
-    return challenges[currentChallengeIndex] || null;
-  }, [challenges, currentChallengeIndex]);
+  const evaluation = usePrimitiveEvaluation<CountingBoardMetrics>({
+    primitiveType: 'counting-board',
+    instanceId: resolvedInstanceId,
+    skillId,
+    subskillId,
+    objectiveId,
+    exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
 
-  // Reader-fit item 13: at K, `subitize` flashes the objects then hides them
-  // before the numeric answer. Reader grades (Grade 1) keep the objects visible.
-  // The fork is band + mode scoped — count_all and subitize_perceptual are untouched.
-  const isKSubitize = gradeBand === 'K' && currentChallenge?.type === 'subitize';
+  // ── The pack: generator challenges → judged items + hand-authored script ──
+  const items = useMemo<CountingItem[]>(() =>
+    challenges.map((ch) => ({
+      id: ch.id,
+      kind: ch.type,
+      answerKind: ch.type === 'subitize_perceptual' ? 'gesture' : 'voice',
+      responseClass: responseClassFor({ kind: ch.type, target: ch.targetAnswer }),
+      action: ACTION_FOR_KIND[ch.type],
+      objectWord,
+      count: ch.count,
+      target: ch.targetAnswer,
+      startFrom: ch.startFrom ?? undefined,
+      groupSize: ch.groupSize ?? undefined,
+    })),
+    [challenges, objectWord],
+  );
 
-  // Per-challenge scatter seed: stable within a challenge (positions don't jump
-  // as the student taps) but varied across challenges so no two scattered boards
-  // land in identical spots. Line/groups/circle arrangements ignore the seed.
+  const pack = useMemo<JudgedScriptPack<CountingItem>>(() => ({
+    primitiveType: 'counting-board',
+    activityLine: 'live direct instruction counting practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      objectType: item.objectWord,
+      targetCount: String(item.target),
+    }),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: (item) => item.kind === 'subitize_perceptual'
+        ? 'Look, then tap the hand that matches.'
+        : 'Listen, then say how many out loud.',
+      retry: (item) => item.kind === 'subitize_perceptual'
+        ? 'Look again — then tap the hand that matches.'
+        : 'Have another go — say how many.',
+      noVerdict: () => 'One more time — say how many.',
+      affirmedNext: 'Yes! You counted it.',
+      affirmedLast: 'You did it!',
+      moveOn: 'Good try — here comes the next one.',
+      done: 'Great counting today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) =>
+      item.kind === 'subitize_perceptual'
+        ? {
+            challenge: `See ${item.count} ${item.objectWord} and tap the matching hand.`,
+            expected: `The hand with ${item.target} fingers.`,
+            observed: handChoiceRef.current != null
+              ? `Tapped the hand with ${handChoiceRef.current} fingers.`
+              : 'Tapped a hand that did not match.',
+          }
+        : {
+            challenge: `Count ${item.count} ${item.objectWord} and say how many altogether.`,
+            expected: `${numberWordFor(item.target)} (${item.target})`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          },
+  }), [items]);
+
+  // ── Per-item board reset ──────────────────────────────────────────────────
+  const resetBoardFor = useCallback((item: CountingItem) => {
+    setReward(null);
+    setAlreadyCountedNote(false);
+    setHandChoice(null);
+    handChoiceRef.current = null;
+    if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
+    setIsSubitizeFlashing(false);
+    setSubitizeAnswerReady(false);
+
+    if (item.kind === 'count_on') {
+      const startFrom = item.startFrom || Math.floor(item.target / 2);
+      setPreCountedCount(startFrom);
+      const preCounted = new Set<number>();
+      const preOrder = new Map<number, number>();
+      for (let i = 0; i < startFrom && i < item.count; i++) {
+        preCounted.add(i);
+        preOrder.set(i, i + 1);
+      }
+      setCountedObjects(preCounted);
+      setCountOrder(preOrder);
+    } else {
+      setPreCountedCount(0);
+      setCountedObjects(new Set());
+      setCountOrder(new Map());
+    }
+  }, []);
+
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const byId = new Map(challenges.map((ch) => [ch.id, ch]));
+    const subitizeOutcomes = summary.outcomes.filter((o) => byId.get(o.id)?.type === 'subitize');
+    const oneToOne = !doubleCountEverRef.current;
+
+    const metrics: CountingBoardMetrics = {
+      type: 'counting-board',
+      evalMode: challenges[0]?.type ?? 'default',
+      countingAccuracy: summary.accuracy,
+      oneToOneCorrespondence: oneToOne,
+      subitizeAccuracy: subitizeOutcomes.length > 0
+        ? Math.round((subitizeOutcomes.filter((o) => o.solved).length / subitizeOutcomes.length) * 100)
+        : 0,
+      subitizeSpeed: subitizeOutcomes.length > 0
+        ? Math.round(
+            subitizeOutcomes.reduce((s, o) => s + (o.seconds ?? 0) * 1000, 0) / subitizeOutcomes.length,
+          )
+        : 0,
+      countOnUsed: summary.outcomes.some((o) => byId.get(o.id)?.type === 'count_on' && o.solved),
+      groupingUsed: challenges.some((ch) => ch.type === 'group_count'),
+      cardinalityUnderstood: oneToOne && summary.accuracy >= 80,
+      attemptsCount: summary.attemptsCount,
+    };
+
+    evaluation.submitResult(
+      summary.solvedCount === challenges.length,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [challenges, evaluation]);
+
+  const runner = useJudgedScriptRunner<CountingItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: resetBoardFor,
+    onAffirmed: (item) => {
+      setReward(item.kind === 'subitize_perceptual' ? 'match' : String(item.target));
+    },
+    onCorrectionRetry: (item) => {
+      // The tutor's correction re-modeled and re-asked in-band; restore the
+      // working surface for another go.
+      if (item.kind === 'subitize_perceptual') {
+        setHandChoice(null);
+        handChoiceRef.current = null;
+      } else if (item.kind === 'subitize') {
+        // Re-arm the flash: the auto-start effect refires once flags clear.
+        if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
+        setIsSubitizeFlashing(false);
+        setSubitizeAnswerReady(false);
+      } else {
+        resetBoardFor(item);
+      }
+    },
+  });
+
+  const currentItem = runner.currentItem;
+  const currentChallenge = challenges[runner.currentIndex] ?? null;
+
+  // ── Per-challenge layout ──────────────────────────────────────────────────
+  const challengeCount = currentChallenge?.count ?? 5;
+  const challengeArrangement = currentChallenge?.arrangement ?? 'scattered';
+  const challengeGroupSize = currentChallenge?.groupSize;
+
+  const isKSubitize = gradeBand === 'K' && currentItem?.kind === 'subitize';
+
   const scatterSeed = useMemo(() => {
-    const src = rawChallenge?.id ?? `${currentChallengeIndex}`;
+    const src = currentChallenge?.id ?? `${runner.currentIndex}`;
     let h = 0;
     for (let i = 0; i < src.length; i++) {
       h = (h * 31 + src.charCodeAt(i)) >>> 0;
     }
     return (h % 2147483646) + 1; // Lehmer RNG needs a seed in 1..2147483646 (never 0)
-  }, [rawChallenge?.id, currentChallengeIndex]);
+  }, [currentChallenge?.id, runner.currentIndex]);
 
   const positions = useMemo(() =>
     generatePositions(challengeCount, challengeArrangement, challengeGroupSize, scatterSeed),
     [challengeCount, challengeArrangement, challengeGroupSize, scatterSeed]
   );
 
-  // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per challenge.
-  // We seed the shuffle with the challenge id so the order is stable within a
-  // challenge but varies across challenges. The correct answer is NEVER in a
-  // predictable position.
+  // Pre-K subitize: three hand options (1, 2, 3 fingers), shuffled per
+  // challenge with a stable per-challenge seed — the matching hand is never in
+  // a predictable position.
   const handOptions = useMemo<number[]>(() => {
-    if (currentChallenge?.type !== 'subitize_perceptual') return [];
+    if (currentItem?.kind !== 'subitize_perceptual') return [];
     const base = [1, 2, 3];
-    const seedSource = currentChallenge.id ?? `${currentChallengeIndex}`;
+    const seedSource = currentChallenge?.id ?? `${runner.currentIndex}`;
     let h = 0;
     for (let i = 0; i < seedSource.length; i++) {
       h = (h * 31 + seedSource.charCodeAt(i)) >>> 0;
@@ -423,914 +586,444 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       [base[i], base[j]] = [base[j], base[i]];
     }
     return base;
-  }, [currentChallenge, currentChallengeIndex]);
+  }, [currentItem?.kind, currentChallenge?.id, runner.currentIndex]);
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<CountingBoardMetrics>({
-    primitiveType: 'counting-board',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
-  });
-
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    objectType: objects.type,
-    objectCount: challengeCount,
-    arrangement: challengeArrangement,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? 'Free counting',
-    challengeType: currentChallenge?.type ?? 'count_all',
-    targetAnswer: currentChallenge?.targetAnswer ?? challengeCount,
-    currentCount: countedObjects.size,
-    attemptNumber: currentAttempts + 1,
-    currentPhase,
-  }), [
-    objects.type, challengeCount, challengeArrangement, gradeBand, challenges.length,
-    currentChallengeIndex, currentChallenge, countedObjects.size, currentAttempts, currentPhase,
-  ]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'counting-board',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-  });
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    sendText(
-      `[ACTIVITY_START] This is a counting board activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `The first challenge has ${challengeCount} ${objects.type} arranged in a ${challengeArrangement} pattern. `
-      + `Each challenge has a different count and arrangement. `
-      + `${challenges.length} challenges total. First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce the activity warmly: "Look at all these ${objects.type}! Let's count them together." `
-      + `Then read the first instruction.`,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, challengeCount, objects.type, challengeArrangement, gradeBand, currentChallenge, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Interaction Handlers
-  // -------------------------------------------------------------------------
-  const handleObjectTap = useCallback((objectIndex: number) => {
-    if (hasSubmittedEvaluation) return;
-    // K subitize is perceptual recognition, never tap-counting: no tap ever
-    // mutates counted state (objects are only on screen during the brief flash).
-    if (isKSubitize) return;
-
-    if (countedObjects.has(objectIndex)) {
-      SoundManager.invalid();   // ← blocked action (already counted), not a wrong answer
-      if (!doubleCounted) {
-        setDoubleCounted(true);
-        if (isConnected) {
-          sendText(
-            `[DOUBLE_COUNT] The student tapped an object they already counted (object #${objectIndex + 1}). `
-            + `Gently correct: "Oops, you already counted that one! Try tapping a different ${objects.type}."`,
-            { silent: true }
-          );
-        }
-      }
-      setFeedback(`You already counted that ${objects.type === 'custom' ? 'object' : objects.type.slice(0, -1)}!`);
-      setFeedbackType('error');
-      return;
-    }
-
-    SoundManager.tap();   // ← tactile count placement
-    const newCount = countedObjects.size + 1;
-    setCountedObjects(prev => {
-      const next = new Set(prev);
-      next.add(objectIndex);
-      return next;
-    });
-    setCountOrder(prev => {
-      const next = new Map(prev);
-      next.set(objectIndex, newCount);
-      return next;
-    });
-    setFeedback('');
-    setFeedbackType('');
-  }, [hasSubmittedEvaluation, isKSubitize, countedObjects, doubleCounted, isConnected, sendText, objects.type]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Checking
-  // -------------------------------------------------------------------------
-  const checkCountChallenge = useCallback(() => {
-    if (!currentChallenge) return false;
-    const target = currentChallenge.targetAnswer;
-    const counted = countedObjects.size;
-    const correct = counted === target;
-    const oneToOne = counted === target && !doubleCounted;
-    incrementAttempts();
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! There are ${target} ${objects.type}!`);
-      setFeedbackType('success');
-      sendText(
-        `[COUNT_CORRECT] Student correctly counted ${target} ${objects.type}. `
-        + `${!doubleCounted ? 'Perfect one-to-one correspondence!' : 'They double-counted once but got the right answer.'} `
-        + `[CARDINALITY_CHECK] Ask: "How many ${objects.type} altogether?" to check cardinality understanding.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`You counted ${counted} but there are ${target} ${objects.type}. Try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[COUNT_INCORRECT] Student counted ${counted} but there are ${target} ${objects.type}. `
-        + `Attempt ${currentAttempts + 1}. Hint: "Touch each ${objects.type === 'custom' ? 'object' : objects.type.slice(0, -1)} one time as you count."`,
-        { silent: true }
-      );
-    }
-
-    return { correct, oneToOne };
-  }, [currentChallenge, countedObjects.size, doubleCounted, objects.type, currentAttempts, sendText, incrementAttempts]);
-
-  const checkSubitizeAnswer = useCallback(() => {
-    if (!currentChallenge) return { correct: false, timeMs: 0 };
-    const target = currentChallenge.targetAnswer;
-    const answer = parseInt(subitizeInput, 10);
-    const correct = answer === target;
-    const timeMs = Date.now() - subitizeStartTime;
-    incrementAttempts();
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! There are ${target} ${objects.type}!`);
-      setFeedbackType('success');
-      sendText(
-        `[SUBITIZE_CORRECT] Student correctly recognized ${target} ${objects.type} in ${timeMs}ms. `
-        + `Celebrate: "Great eyes! You knew it was ${target} without counting one by one!"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite — you said ${answer}. Look again!`);
-      setFeedbackType('error');
-      sendText(
-        `[SUBITIZE_INCORRECT] Student guessed ${answer} but there are ${target} ${objects.type}. `
-        + `Time: ${timeMs}ms. Give a brief hint without revealing the answer.`,
-        { silent: true }
-      );
-    }
-
-    return { correct, timeMs };
-  }, [currentChallenge, subitizeInput, subitizeStartTime, objects.type, sendText, incrementAttempts]);
-
-  const checkSubitizePerceptualAnswer = useCallback((picked: number) => {
-    if (!currentChallenge) return { correct: false, timeMs: 0 };
-    const target = currentChallenge.targetAnswer;
-    const correct = picked === target;
-    const timeMs = Date.now() - subitizeStartTime;
-    incrementAttempts();
-
-    // Feedback strings must NEVER contain numerals — pre-numeric mode.
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! That's how many ${objects.type} you saw!`);
-      setFeedbackType('success');
-      sendText(
-        `[PRE_K_SUBITIZE_CORRECT] Student picked the matching hand for ${target} ${objects.type} in ${timeMs}ms. `
-        + `Celebrate warmly without using numbers: "Wow! Great looking!"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Look again at the ${objects.type}! Which hand matches?`);
-      setFeedbackType('error');
-      sendText(
-        `[PRE_K_SUBITIZE_INCORRECT] Student picked a hand that does not match. Target was ${target} ${objects.type}. `
-        + `Encourage another look. Do NOT say the number — guide perception only.`,
-        { silent: true }
-      );
-    }
-
-    return { correct, timeMs };
-  }, [currentChallenge, subitizeStartTime, objects.type, sendText, incrementAttempts]);
-
-  const checkCountOnAnswer = useCallback(() => {
-    if (!currentChallenge) return false;
-    const target = currentChallenge.targetAnswer;
-    const answer = parseInt(countOnInput, 10);
-    const correct = answer === target;
-    incrementAttempts();
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! ${preCountedCount} and ${target - preCountedCount} more makes ${target}!`);
-      setFeedbackType('success');
-      setUsedCountOn(true);
-      sendText(
-        `[COUNT_ON_CORRECT] Student counted on from ${preCountedCount} to get ${target}. `
-        + `Celebrate: "You didn't start from 1 — you counted on from ${preCountedCount}! Smart strategy!"`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite. Start from ${preCountedCount} and count the rest.`);
-      setFeedbackType('error');
-      sendText(
-        `[COUNT_ON_INCORRECT] Student answered ${answer} but target is ${target}. `
-        + `Start from: ${preCountedCount}. Hint: "You know there are ${preCountedCount} in this group. Now count the others: ${preCountedCount + 1}, ${preCountedCount + 2}..."`,
-        { silent: true }
-      );
-    }
-
-    return correct;
-  }, [currentChallenge, countOnInput, preCountedCount, sendText, incrementAttempts]);
-
-  // -------------------------------------------------------------------------
-  // Retry Handler
-  // -------------------------------------------------------------------------
-  const handleRetry = useCallback(() => {
-    if (!currentChallenge) return;
-    setCurrentRetries(prev => prev + 1);
-    setCountedObjects(new Set());
-    setCountOrder(new Map());
-    setDoubleCounted(false);
-    setSubitizeInput('');
-    setCountOnInput('');
-    setHandChoice(null);
-    setFeedback('');
-    setFeedbackType('');
-    // Re-arm the K subitize flash so a retry re-shows then re-hides the objects.
-    if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
-    setIsSubitizeFlashing(false);
-    setSubitizeAnswerReady(false);
-
-    // Re-setup count-on pre-counted objects
-    if (currentChallenge.type === 'count_on') {
-      const startFrom = currentChallenge.startFrom || Math.floor(currentChallenge.targetAnswer / 2);
-      setPreCountedCount(startFrom);
-      const preCounted = new Set<number>();
-      const preOrder = new Map<number, number>();
-      for (let i = 0; i < startFrom && i < currentChallenge.count; i++) {
-        preCounted.add(i);
-        preOrder.set(i, i + 1);
-      }
-      setCountedObjects(preCounted);
-      setCountOrder(preOrder);
-    }
-
-    sendText(
-      `[RETRY] Student is retrying challenge ${currentChallengeIndex + 1} (retry #${currentRetries + 1}). `
-      + `Encourage them: "Let's try again! Take your time."`,
-      { silent: true }
-    );
-  }, [currentChallenge, currentChallengeIndex, currentRetries, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation
-  // -------------------------------------------------------------------------
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-
-    let correct = false;
-    let timeMs: number | undefined;
-    let oneToOne = false;
-
-    switch (currentChallenge.type) {
-      case 'count_all':
-      case 'group_count':
-      case 'compare': {
-        const result = checkCountChallenge();
-        correct = result ? result.correct : false;
-        oneToOne = result ? result.oneToOne : false;
-        break;
-      }
-      case 'subitize': {
-        const result = checkSubitizeAnswer();
-        correct = result.correct;
-        timeMs = result.timeMs;
-        break;
-      }
-      case 'count_on':
-        correct = checkCountOnAnswer() ?? false;
-        oneToOne = true;
-        break;
-      case 'subitize_perceptual': {
-        // For this mode, evaluation happens directly on hand-tap via handleHandPick.
-        // This switch arm is a defensive no-op — handleHandPick records the result.
-        return;
-      }
-    }
-
-    if (correct) {
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        timeMs,
-        attempts: currentAttempts + 1,
-        oneToOne,
-        retries: currentRetries,
-      });
-    }
-  }, [currentChallenge, currentAttempts, currentRetries, checkCountChallenge, checkSubitizeAnswer, checkCountOnAnswer, recordResult]);
-
-  // Hand-tap commits the answer immediately (pre-K: single-tap UX, no separate Check Answer step).
-  const handleHandPick = useCallback((picked: number) => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
-    setHandChoice(picked);
-    const { correct, timeMs } = checkSubitizePerceptualAnswer(picked);
-    if (correct) {
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        timeMs,
-        attempts: currentAttempts + 1,
-        oneToOne: true,
-        retries: currentRetries,
-      });
-    }
-  }, [currentChallenge, hasSubmittedEvaluation, checkSubitizePerceptualAnswer, recordResult, currentAttempts, currentRetries]);
-
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete — use phaseResults for AI feedback
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their counting skills!`,
-        { silent: true }
-      );
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const subitizeResults = challengeResults.filter(r => {
-          const ch = challenges.find(c => c.id === r.challengeId);
-          return ch?.type === 'subitize';
-        });
-
-        const countingCorrect = challengeResults.filter(r => r.correct).length;
-        const totalRetries = challengeResults.reduce((s, r) => s + ((r.retries as number) || 0), 0);
-        const retryPenalty = totalRetries * RETRY_PENALTY;
-        const countingAccuracy = challenges.length > 0
-          ? Math.round(Math.max(0, (countingCorrect / challenges.length) * 100 * (1 - retryPenalty))) : 0;
-        const subitizeAccuracy = subitizeResults.length > 0
-          ? Math.round((subitizeResults.filter(r => r.correct).length / subitizeResults.length) * 100) : 0;
-        const subitizeSpeed = subitizeResults.length > 0
-          ? Math.round(subitizeResults.reduce((s, r) => s + ((r.timeMs as number) || 0), 0) / subitizeResults.length) : 0;
-        const oneToOneAll = challengeResults.every(r => r.oneToOne);
-
-        const score = countingAccuracy;
-
-        const metrics: CountingBoardMetrics = {
-          type: 'counting-board',
-          evalMode: challenges[0]?.type ?? 'default',
-          countingAccuracy,
-          oneToOneCorrespondence: oneToOneAll,
-          subitizeAccuracy,
-          subitizeSpeed,
-          countOnUsed: usedCountOn,
-          groupingUsed: usedGrouping,
-          cardinalityUnderstood: oneToOneAll && countingAccuracy >= 80,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        submitEvaluation(
-          countingCorrect === challenges.length,
-          score,
-          metrics,
-          { challengeResults }
-        );
-      }
-      return;
-    }
-
-    // advanceProgress() already incremented index and reset attempts.
-    // Now reset domain-specific state.
-    setFeedback('');
-    setFeedbackType('');
-    setSubitizeInput('');
-    setCountOnInput('');
-    setHandChoice(null);
-    setCountedObjects(new Set());
-    setCountOrder(new Map());
-    setDoubleCounted(false);
-    setCurrentRetries(0);
-    // Re-arm the K subitize flash for the next challenge (the auto-start effect
-    // re-fires because both flags are cleared).
-    if (flashTimeoutRef.current) { clearTimeout(flashTimeoutRef.current); flashTimeoutRef.current = null; }
-    setIsSubitizeFlashing(false);
-    setSubitizeAnswerReady(false);
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-
-    // Set phase
-    if (nextChallenge.type === 'subitize') setCurrentPhase('subitize');
-    else if (nextChallenge.type === 'subitize_perceptual') setCurrentPhase('subitizePerceptual');
-    else if (nextChallenge.type === 'count_on') {
-      setCurrentPhase('countOn');
-      const nextChallengeCount = nextChallenge.count ?? 5;
-      const startFrom = nextChallenge.startFrom || Math.floor(nextChallenge.targetAnswer / 2);
-      setPreCountedCount(startFrom);
-      const preCounted = new Set<number>();
-      const preOrder = new Map<number, number>();
-      for (let i = 0; i < startFrom && i < nextChallengeCount; i++) {
-        preCounted.add(i);
-        preOrder.set(i, i + 1);
-      }
-      setCountedObjects(preCounted);
-      setCountOrder(preOrder);
-    }
-    else if (nextChallenge.type === 'group_count') {
-      setCurrentPhase('organize');
-      setUsedGrouping(true);
-    }
-    else setCurrentPhase('count');
-
-    sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, ${nextChallenge.count} objects in ${nextChallenge.arrangement}). `
-      + `Read the instruction to the student and encourage them.`,
-      { silent: true }
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, usedCountOn, usedGrouping, submitEvaluation, currentChallengeIndex,
-  ]);
-
-  // -------------------------------------------------------------------------
-  // Subitize timer start
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (currentChallenge?.type === 'subitize' || currentChallenge?.type === 'subitize_perceptual') {
-      setSubitizeStartTime(Date.now());
-    }
-  }, [currentChallengeIndex, currentChallenge?.type]);
-
-  // -------------------------------------------------------------------------
-  // Computed Values
-  // -------------------------------------------------------------------------
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
-
-  // -------------------------------------------------------------------------
-  // K subitize flash-then-hide (reader-fit item 13)
-  // -------------------------------------------------------------------------
+  // ── K subitize flash-then-hide ────────────────────────────────────────────
   const startSubitizeFlash = useCallback(() => {
     if (!currentChallenge) return;
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
-    setSubitizeInput('');
-    setFeedback('');
-    setFeedbackType('');
     setSubitizeAnswerReady(false);
     setIsSubitizeFlashing(true);
-    setSubitizeStartTime(Date.now());
-
     const duration = currentChallenge.flashDuration || SUBITIZE_FLASH_MS;
     flashTimeoutRef.current = setTimeout(() => {
       setIsSubitizeFlashing(false);
-      setSubitizeAnswerReady(true);   // objects now hidden — the numeral answer is legitimate
+      setSubitizeAnswerReady(true);
       flashTimeoutRef.current = null;
     }, duration);
   }, [currentChallenge]);
 
-  // Auto-start the flash when a K subitize challenge is first shown (a brief prep
-  // beat, then flash → hide). Fires once per challenge: after the flash completes
-  // `subitizeAnswerReady` is true, so this guard no longer matches.
+  // Auto-start the flash when a K subitize item is live. Fires once per item:
+  // after the flash completes `subitizeAnswerReady` holds, and both flags are
+  // cleared on item open and on a correction retry (which re-flashes).
   useEffect(() => {
-    if (isKSubitize && !isSubitizeFlashing && !subitizeAnswerReady && !isCurrentChallengeComplete) {
+    if (runner.running && isKSubitize && !isSubitizeFlashing && !subitizeAnswerReady) {
       const timer = setTimeout(() => startSubitizeFlash(), SUBITIZE_PREP_MS);
       return () => clearTimeout(timer);
     }
-  }, [isKSubitize, isSubitizeFlashing, subitizeAnswerReady, isCurrentChallengeComplete, startSubitizeFlash]);
+  }, [runner.running, isKSubitize, isSubitizeFlashing, subitizeAnswerReady, startSubitizeFlash]);
 
-  // Cancel any in-flight flash timeout on unmount.
+  // Cancel timers on unmount.
   useEffect(() => () => {
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
   }, []);
 
-  // -------------------------------------------------------------------------
-  // Auto-submit evaluation when all challenges complete
-  // -------------------------------------------------------------------------
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
+  // ── Tap-to-count — the working surface, never the commit ──────────────────
+  const handleObjectTap = useCallback((objectIndex: number) => {
+    if (!runner.running || evaluation.hasSubmitted) return;
+    const kind = currentItem?.kind;
+    // Subitizing is perceptual recognition, never tap-counting.
+    if (kind === 'subitize' || kind === 'subitize_perceptual') return;
+
+    if (countedObjects.has(objectIndex)) {
+      SoundManager.invalid();
+      doubleCountEverRef.current = true;
+      // On-screen nudge only — never a tutor interruption during working time.
+      setAlreadyCountedNote(true);
+      if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
+      noteTimerRef.current = setTimeout(() => setAlreadyCountedNote(false), 1500);
+      return;
     }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
-  // -------------------------------------------------------------------------
-  // Overall Score
-  // -------------------------------------------------------------------------
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+    SoundManager.tap();
+    const newCount = countedObjects.size + 1;
+    setCountedObjects((prev) => {
+      const next = new Set(prev);
+      next.add(objectIndex);
+      return next;
+    });
+    setCountOrder((prev) => {
+      const next = new Map(prev);
+      next.set(objectIndex, newCount);
+      return next;
+    });
+  }, [runner.running, evaluation.hasSubmitted, currentItem?.kind, countedObjects]);
 
-  // Phase tab strip (read-only indicator of the active phase).
-  const phaseTabs = useMemo(
-    () => Object.entries(PHASE_CONFIG).map(([value, config]) => ({ value, label: config.label })),
-    []
-  );
+  // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
+  const handleHandPick = useCallback((fingers: number) => {
+    const item = runner.currentItem;
+    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!item || item.kind !== 'subitize_perceptual') return;
+    if (runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setHandChoice(fingers);
+    handChoiceRef.current = fingers;
+    runner.submitGestureAttempt(handVerdictCue(item, fingers));
+  }, [runner, evaluation.hasSubmitted]);
 
-  // -------------------------------------------------------------------------
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted || !runner.summary) return [];
+    return challenges.map((ch) => {
+      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+      const config = CHALLENGE_TYPE_CONFIG[ch.type] ?? { label: ch.type, icon: '🔢' };
+      return {
+        label: `${config.label} — ${ch.count} ${objectWord}`,
+        icon: config.icon,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, challenges, objectWord]);
+
+  // ============================================================================
   // Render
-  // -------------------------------------------------------------------------
+  // ============================================================================
+
+  if (!currentChallenge && !evaluation.hasSubmitted) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No counting challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const kind = currentItem?.kind;
+  const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual';
+  const stageWord = runner.stage === 'affirmed'
+    ? 'yes!'
+    : runner.stage === 'judging'
+      ? 'let’s see…'
+      : runner.stage === 'asking'
+        ? (kind === 'subitize_perceptual' ? 'which hand?' : 'how many?')
+        : 'get ready';
+
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="orange" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </LuminaBadge>
-            <LuminaBadge accent="emerald" className="text-xs">
-              {challengeArrangement}
-            </LuminaBadge>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            {/* Grade / mode badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                {/* isPreReader gates this block, so only Grade 1 reaches it. */}
+                <LuminaBadge accent="orange" className="text-xs">
+                  Grade 1
+                </LuminaBadge>
+                {kind && (
+                  <LuminaBadge accent="emerald" className="text-xs">
+                    {CHALLENGE_TYPE_CONFIG[kind]?.icon} {CHALLENGE_TYPE_CONFIG[kind]?.label}
+                  </LuminaBadge>
+                )}
+              </div>
+            )}
           </div>
+          <LuminaBadge accent="cyan" className="text-xs">
+            {kind === 'subitize_perceptual' ? 'Tap the hand' : 'Say it out loud'}
+          </LuminaBadge>
         </div>
-        {description && (
+        {!isPreReader && description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Phase Progress */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <LuminaModeTabs tabs={phaseTabs} active={currentPhase} accent="orange" />
-            <LuminaChallengeCounter
-              current={Math.min(currentChallengeIndex + 1, challenges.length)}
-              total={challenges.length}
-              className="ml-auto"
-            />
-          </div>
-        )}
+        {!evaluation.hasSubmitted && currentChallenge && (
+          <>
+            {!isPreReader && challenges.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <LuminaChallengeCounter
+                  current={Math.min(runner.currentIndex + 1, challenges.length)}
+                  total={challenges.length}
+                  variant="dots"
+                />
+              </div>
+            )}
 
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPrompt className="text-sm">
-            {currentChallenge.instruction}
-          </LuminaPrompt>
-        )}
+            {!isPreReader && currentChallenge.instruction && (
+              <LuminaPrompt className="text-sm">
+                {currentChallenge.instruction}
+              </LuminaPrompt>
+            )}
 
-        {/* Counting Workspace */}
-        <div className="flex justify-center">
-          <svg
-            width={WORKSPACE_WIDTH}
-            height={WORKSPACE_HEIGHT}
-            viewBox={`0 0 ${WORKSPACE_WIDTH} ${WORKSPACE_HEIGHT}`}
-            className="max-w-full h-auto rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.02)' }}
-          >
-            {/* Workspace border */}
-            <rect
-              x={1}
-              y={1}
-              width={WORKSPACE_WIDTH - 2}
-              height={WORKSPACE_HEIGHT - 2}
-              rx={12}
-              ry={12}
-              fill="none"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth={1.5}
-            />
+            {/* Counting Workspace */}
+            <div className="flex justify-center">
+              <svg
+                width={WORKSPACE_WIDTH}
+                height={WORKSPACE_HEIGHT}
+                viewBox={`0 0 ${WORKSPACE_WIDTH} ${WORKSPACE_HEIGHT}`}
+                className="max-w-full h-auto rounded-xl"
+                style={{ background: 'rgba(255,255,255,0.02)' }}
+              >
+                <rect
+                  x={1}
+                  y={1}
+                  width={WORKSPACE_WIDTH - 2}
+                  height={WORKSPACE_HEIGHT - 2}
+                  rx={12}
+                  ry={12}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.1)"
+                  strokeWidth={1.5}
+                />
 
-            {/* Group circles */}
-            {showGroupCircles && challengeArrangement === 'groups' && challengeGroupSize && (
-              (() => {
-                const gs = challengeGroupSize;
-                const numGroups = Math.ceil(challengeCount / gs);
-                const itemSpacing = OBJECT_SIZE + 6;
-                const subCols = Math.min(3, gs);
-                const gw = (subCols - 1) * itemSpacing + OBJECT_SIZE;
-                const gGap = 20;
+                {/* Group circles */}
+                {showGroupCircles && challengeArrangement === 'groups' && challengeGroupSize && (
+                  (() => {
+                    const gs = challengeGroupSize;
+                    const numGroups = Math.ceil(challengeCount / gs);
+                    const itemSpacing = OBJECT_SIZE + 6;
+                    const subCols = Math.min(3, gs);
+                    const gw = (subCols - 1) * itemSpacing + OBJECT_SIZE;
+                    const gGap = 20;
 
-                const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
-                const maxGPR = Math.max(1, Math.floor((usable + gGap) / (gw + gGap)));
-                const gRows = Math.ceil(numGroups / maxGPR);
+                    const usable = WORKSPACE_WIDTH - 2 * OBJECT_PADDING;
+                    const maxGPR = Math.max(1, Math.floor((usable + gGap) / (gw + gGap)));
+                    const gRows = Math.ceil(numGroups / maxGPR);
 
-                const subRowsMax = Math.ceil(gs / subCols);
-                const gh = (subRowsMax - 1) * itemSpacing + OBJECT_SIZE;
-                const gRowGap = 16;
-                const totalGH = gRows * gh + (gRows - 1) * gRowGap;
-                const gStartY = (WORKSPACE_HEIGHT - totalGH) / 2 + OBJECT_SIZE / 2;
+                    const subRowsMax = Math.ceil(gs / subCols);
+                    const gh = (subRowsMax - 1) * itemSpacing + OBJECT_SIZE;
+                    const gRowGap = 16;
+                    const totalGH = gRows * gh + (gRows - 1) * gRowGap;
+                    const gStartY = (WORKSPACE_HEIGHT - totalGH) / 2 + OBJECT_SIZE / 2;
 
-                return Array.from({ length: numGroups }, (_, g) => {
-                  const gRow = Math.floor(g / maxGPR);
-                  const gCol = g % maxGPR;
-                  const groupsInRow = Math.min(maxGPR, numGroups - gRow * maxGPR);
-                  const rowTotalW = groupsInRow * gw + (groupsInRow - 1) * gGap;
-                  const rowStartX = (WORKSPACE_WIDTH - rowTotalW) / 2 + gw / 2;
+                    return Array.from({ length: numGroups }, (_, g) => {
+                      const gRow = Math.floor(g / maxGPR);
+                      const gCol = g % maxGPR;
+                      const groupsInRow = Math.min(maxGPR, numGroups - gRow * maxGPR);
+                      const rowTotalW = groupsInRow * gw + (groupsInRow - 1) * gGap;
+                      const rowStartX = (WORKSPACE_WIDTH - rowTotalW) / 2 + gw / 2;
 
-                  const cx = rowStartX + gCol * (gw + gGap);
-                  const topY = gStartY + gRow * (gh + gRowGap);
+                      const cx = rowStartX + gCol * (gw + gGap);
+                      const topY = gStartY + gRow * (gh + gRowGap);
 
-                  const itemsInGroup = Math.min(gs, challengeCount - g * gs);
-                  const rows = Math.ceil(itemsInGroup / subCols);
-                  const cols = Math.min(subCols, itemsInGroup);
-                  const cy = topY + ((rows - 1) * itemSpacing) / 2;
-                  const rx = Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
-                  const ry = Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
+                      const itemsInGroup = Math.min(gs, challengeCount - g * gs);
+                      const rows = Math.ceil(itemsInGroup / subCols);
+                      const cols = Math.min(subCols, itemsInGroup);
+                      const cy = topY + ((rows - 1) * itemSpacing) / 2;
+                      const rx = Math.max(((cols - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
+                      const ry = Math.max(((rows - 1) * itemSpacing) / 2 + OBJECT_SIZE / 2 + 8, OBJECT_SIZE);
+
+                      return (
+                        <ellipse
+                          key={`group-${g}`}
+                          cx={cx}
+                          cy={cy}
+                          rx={rx}
+                          ry={ry}
+                          fill="rgba(234,179,8,0.05)"
+                          stroke="rgba(234,179,8,0.2)"
+                          strokeWidth={1.5}
+                          strokeDasharray="6 3"
+                        />
+                      );
+                    });
+                  })()
+                )}
+
+                {/* Objects — hidden during the K subitize answer phase (flash-then-hide) */}
+                {!(isKSubitize && !isSubitizeFlashing) && positions.map((pos, index) => {
+                  const isCounted = countedObjects.has(index);
+                  const countNum = countOrder.get(index);
+                  const isPreCounted = kind === 'count_on' && index < preCountedCount;
 
                   return (
-                    <ellipse
-                      key={`group-${g}`}
-                      cx={cx}
-                      cy={cy}
-                      rx={rx}
-                      ry={ry}
-                      fill="rgba(234,179,8,0.05)"
-                      stroke="rgba(234,179,8,0.2)"
-                      strokeWidth={1.5}
-                      strokeDasharray="6 3"
-                    />
-                  );
-                });
-              })()
-            )}
+                    <g
+                      key={index}
+                      className={boardTappable ? 'cursor-pointer' : undefined}
+                      onClick={boardTappable ? () => handleObjectTap(index) : undefined}
+                    >
+                      {highlightOnTap && isCounted && (
+                        <circle
+                          cx={pos.x}
+                          cy={pos.y}
+                          r={OBJECT_SIZE / 2 + 4}
+                          fill="none"
+                          stroke={isPreCounted ? 'rgba(59,130,246,0.5)' : 'rgba(234,179,8,0.5)'}
+                          strokeWidth={2.5}
+                          className="transition-all duration-200"
+                        />
+                      )}
 
-            {/* Objects — hidden during the K subitize answer phase (flash-then-hide) */}
-            {!(isKSubitize && !isSubitizeFlashing) && positions.map((pos, index) => {
-              const isCounted = countedObjects.has(index);
-              const countNum = countOrder.get(index);
-              const isPreCounted = currentPhase === 'countOn' && index < preCountedCount;
-
-              return (
-                <g
-                  key={index}
-                  className="cursor-pointer"
-                  onClick={() => handleObjectTap(index)}
-                >
-                  {/* Highlight ring */}
-                  {highlightOnTap && isCounted && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r={OBJECT_SIZE / 2 + 4}
-                      fill="none"
-                      stroke={isPreCounted ? 'rgba(59,130,246,0.5)' : 'rgba(234,179,8,0.5)'}
-                      strokeWidth={2.5}
-                      className="transition-all duration-200"
-                    />
-                  )}
-
-                  {/* Object background circle */}
-                  <circle
-                    cx={pos.x}
-                    cy={pos.y}
-                    r={OBJECT_SIZE / 2}
-                    fill={isCounted
-                      ? (isPreCounted ? 'rgba(59,130,246,0.15)' : 'rgba(234,179,8,0.12)')
-                      : 'rgba(255,255,255,0.04)'
-                    }
-                    className="transition-colors duration-150"
-                  />
-
-                  {/* Emoji */}
-                  <text
-                    x={pos.x}
-                    y={pos.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fontSize={OBJECT_SIZE * 0.6}
-                    className="select-none pointer-events-none"
-                    style={{ opacity: isCounted ? 1 : 0.7 }}
-                  >
-                    {emoji}
-                  </text>
-
-                  {/* Count number overlay */}
-                  {showLastNumber && isCounted && countNum !== undefined && (
-                    <g>
                       <circle
-                        cx={pos.x + OBJECT_SIZE / 2 - 4}
-                        cy={pos.y - OBJECT_SIZE / 2 + 4}
-                        r={10}
-                        fill={isPreCounted ? '#3b82f6' : '#eab308'}
-                        stroke="rgba(0,0,0,0.3)"
-                        strokeWidth={1}
+                        cx={pos.x}
+                        cy={pos.y}
+                        r={OBJECT_SIZE / 2}
+                        fill={isCounted
+                          ? (isPreCounted ? 'rgba(59,130,246,0.15)' : 'rgba(234,179,8,0.12)')
+                          : 'rgba(255,255,255,0.04)'
+                        }
+                        className="transition-colors duration-150"
                       />
+
                       <text
-                        x={pos.x + OBJECT_SIZE / 2 - 4}
-                        y={pos.y - OBJECT_SIZE / 2 + 4}
+                        x={pos.x}
+                        y={pos.y}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fontSize={11}
-                        fill="white"
-                        fontWeight="bold"
-                        className="pointer-events-none select-none"
+                        fontSize={OBJECT_SIZE * 0.6}
+                        className="select-none pointer-events-none"
+                        style={{ opacity: isCounted ? 1 : 0.7 }}
                       >
-                        {countNum}
+                        {emoji}
                       </text>
+
+                      {showLastNumber && isCounted && countNum !== undefined && (
+                        <g>
+                          <circle
+                            cx={pos.x + OBJECT_SIZE / 2 - 4}
+                            cy={pos.y - OBJECT_SIZE / 2 + 4}
+                            r={10}
+                            fill={isPreCounted ? '#3b82f6' : '#eab308'}
+                            stroke="rgba(0,0,0,0.3)"
+                            strokeWidth={1}
+                          />
+                          <text
+                            x={pos.x + OBJECT_SIZE / 2 - 4}
+                            y={pos.y - OBJECT_SIZE / 2 + 4}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fontSize={11}
+                            fill="white"
+                            fontWeight="bold"
+                            className="pointer-events-none select-none"
+                          >
+                            {countNum}
+                          </text>
+                        </g>
+                      )}
                     </g>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-
-        {/* Running Count */}
-        {showRunningCount && currentPhase !== 'subitize' && currentPhase !== 'subitizePerceptual' && (
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <span className="text-slate-300">
-              Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
-              <span className="text-slate-500"> / {challengeCount}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Pre-K Subitize Hand Picker (no numerals anywhere) */}
-        {currentPhase === 'subitizePerceptual' && !isCurrentChallengeComplete && (
-          <div className="flex flex-col items-center gap-3">
-            <span className="text-slate-300 text-sm">Which hand shows how many you saw?</span>
-            <div className="flex items-center justify-center gap-4">
-              {handOptions.map((choice) => {
-                const isPicked = handChoice === choice;
-                return (
-                  <button
-                    key={choice}
-                    type="button"
-                    aria-label="Pick this hand"
-                    className={`h-24 w-24 p-2 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(isPicked ? 'selected' : 'idle')}`}
-                    onClick={() => handleHandPick(choice)}
-                    disabled={hasSubmittedEvaluation}
-                  >
-                    <HandIcon fingerCount={choice as 1 | 2 | 3} size={72} />
-                  </button>
-                );
-              })}
+                  );
+                })}
+              </svg>
             </div>
-          </div>
-        )}
 
-        {/* K subitize: pre-flash / flashing "watch" prompt (objects are on screen briefly) */}
-        {isKSubitize && !subitizeAnswerReady && !isCurrentChallengeComplete && (
-          <div className="flex items-center justify-center">
-            <span className="text-orange-300 text-sm font-medium">
-              👀 {isSubitizeFlashing ? 'Look quick!' : 'Get ready to look…'}
-            </span>
-          </div>
-        )}
-
-        {/* Subitize Input — for K, only after the flash has hidden the objects */}
-        {currentPhase === 'subitize' && !isCurrentChallengeComplete && (!isKSubitize || subitizeAnswerReady) && (
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-slate-300 text-sm">How many {objects.type} do you see?</span>
-              <div className="flex items-center gap-1.5">
-                <LuminaButton
-                  className="h-10 w-10 text-lg font-bold p-0"
-                  onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
-                  disabled={hasSubmittedEvaluation}
-                >
-                  &minus;
-                </LuminaButton>
-                <span className="w-12 text-center text-2xl font-bold text-orange-300 tabular-nums select-none">
-                  {parseInt(subitizeInput, 10) || 0}
+            {/* Running count — the child's own trace ONLY. The "/ total" the
+                old tally printed was the answer, typeset next to the child's
+                progress; it does not survive the spoken-answer port. */}
+            {showRunningCount && boardTappable && countedObjects.size > 0 && (
+              <div className="flex items-center justify-center text-sm">
+                <span className="text-slate-300">
+                  Counted: <span className="text-orange-300 font-bold text-lg">{countedObjects.size}</span>
                 </span>
-                <LuminaButton
-                  className="h-10 w-10 text-lg font-bold p-0"
-                  onClick={() => { SoundManager.tick(); setSubitizeInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
-                  disabled={hasSubmittedEvaluation}
-                >
-                  +
-                </LuminaButton>
               </div>
-            </div>
+            )}
+
+            {alreadyCountedNote && (
+              <p className="text-center text-xs text-amber-300">
+                You already counted that one — try a different {objectWord.replace(/s$/, '')}!
+              </p>
+            )}
+
+            {/* Pre-K hand picker (no numerals anywhere; the tap is the commit) */}
+            {kind === 'subitize_perceptual' && (
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-slate-300 text-sm">Which hand shows how many you saw?</span>
+                <div className="flex items-center justify-center gap-4">
+                  {handOptions.map((choice) => {
+                    const isPicked = handChoice === choice;
+                    return (
+                      <button
+                        key={choice}
+                        type="button"
+                        aria-label="Pick this hand"
+                        className={`h-24 w-24 p-2 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(isPicked ? 'selected' : 'idle')}`}
+                        onClick={() => handleHandPick(choice)}
+                        disabled={!runner.running || runner.stage === 'judging'}
+                      >
+                        <HandIcon fingerCount={choice as 1 | 2 | 3} size={72} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* K subitize flash prompt + re-show (stimulus support — it re-shows
+                the objects, never the answer, and is never withdrawn) */}
             {isKSubitize && (
-              <LuminaButton
-                tone="subtle"
-                className="text-xs"
-                onClick={startSubitizeFlash}
-                disabled={hasSubmittedEvaluation}
-              >
-                Show again
-              </LuminaButton>
-            )}
-          </div>
-        )}
-
-        {/* Count-on Input */}
-        {currentPhase === 'countOn' && !isCurrentChallengeComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-slate-300 text-sm">
-              There are <span className="text-blue-400 font-bold">{preCountedCount}</span> already counted.
-              How many altogether?
-            </span>
-            <div className="flex items-center gap-1.5">
-              <LuminaButton
-                className="h-10 w-10 text-lg font-bold p-0"
-                onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
-                disabled={hasSubmittedEvaluation}
-              >
-                &minus;
-              </LuminaButton>
-              <span className="w-12 text-center text-2xl font-bold text-blue-300 tabular-nums select-none">
-                {parseInt(countOnInput, 10) || 0}
-              </span>
-              <LuminaButton
-                className="h-10 w-10 text-lg font-bold p-0"
-                onClick={() => { SoundManager.tick(); setCountOnInput(prev => String(Math.min(30, (parseInt(prev, 10) || 0) + 1))); }}
-                disabled={hasSubmittedEvaluation}
-              >
-                +
-              </LuminaButton>
-            </div>
-          </div>
-        )}
-
-        {/* Feedback */}
-        {feedback && (feedbackType === 'success' || feedbackType === 'error' || feedbackType === 'info') && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Action Buttons */}
-        {challenges.length > 0 && (
-          <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && (
-              <>
-                {currentPhase !== 'subitizePerceptual' && (
-                  <LuminaActionButton
-                    action="check"
-                    onClick={handleCheckAnswer}
-                    disabled={
-                      (currentPhase === 'count' && countedObjects.size === 0) ||
-                      (isKSubitize && !subitizeAnswerReady) ||
-                      hasSubmittedEvaluation
-                    }
-                  />
+              <div className="flex flex-col items-center gap-2">
+                {!subitizeAnswerReady && (
+                  <span className="text-orange-300 text-sm font-medium">
+                    👀 {isSubitizeFlashing ? 'Look quick!' : 'Get ready to look…'}
+                  </span>
                 )}
-                {feedbackType === 'error' && (
-                  <LuminaActionButton
-                    action="retry"
-                    onClick={handleRetry}
-                    disabled={hasSubmittedEvaluation}
-                  >
-                    Try Again{currentRetries > 0 ? ` (−${Math.round(currentRetries * RETRY_PENALTY * 100)}%)` : ' (−15%)'}
-                  </LuminaActionButton>
+                {subitizeAnswerReady && runner.running && (
+                  <LuminaButton tone="subtle" className="text-xs" onClick={startSubitizeFlash}>
+                    Show again
+                  </LuminaButton>
                 )}
-              </>
-            )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
-                Next Challenge
-              </LuminaActionButton>
-            )}
-            {allChallengesComplete && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">
-                  All challenges complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
               </div>
             )}
-          </div>
+
+            {/* Count-on stimulus line (the start number is the stimulus, not
+                the answer) */}
+            {kind === 'count_on' && !isPreReader && (
+              <p className="text-center text-sm text-slate-300">
+                There are <span className="text-blue-400 font-bold">{preCountedCount}</span> already counted.
+              </p>
+            )}
+
+            {/* The reward — the first moment the count may appear on screen. */}
+            {reward && runner.stage === 'affirmed' && (
+              <LuminaPanel className="p-3 text-center">
+                {reward === 'match' ? (
+                  <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
+                    ✋ That hand matches!
+                  </span>
+                ) : (
+                  <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
+                    {reward} — {numberWordFor(Number(reward))} {objectWord}!
+                  </span>
+                )}
+              </LuminaPanel>
+            )}
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {kind === 'subitize_perceptual'
+                  ? 'Look at the objects, then tap the matching hand.'
+                  : 'Tap each object as you count, then say how many out loud.'}
+              </p>
+            )}
+
+            {/* The mic. ONE tap, at the start, because a browser will not open a
+                microphone without a gesture — never per answer, and never a
+                push-to-talk button the child has to find mid-challenge. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={runner.micState}
+                level={runner.micLevel}
+                isSupported={isSupported}
+                onStart={() => void runner.start()}
+                onCancel={runner.cancelListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{runner.statusLine}</p>
+            </div>
+          </>
         )}
 
-        {/* Hint */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPanel className="p-2 text-center">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </LuminaPanel>
-        )}
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Counting Complete!"
-            celebrationMessage={`You completed all ${challenges.length} challenges with ${objects.type}!`}
+            celebrationMessage={`You counted ${runner.summary?.solvedCount ?? 0} board${(runner.summary?.solvedCount ?? 0) === 1 ? '' : 's'} of ${objectWord} out loud!`}
             className="mt-4"
           />
         )}

@@ -2028,8 +2028,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'counting-board',
-    description: 'Flexible Pre-K to Grade 1 counting workspace with tappable objects (bears, apples, stars, fish, butterflies, blocks) arranged in different patterns (scattered, line, groups, circle). Supports counting strategies: pre-numeric perceptual subitizing (Pre-K, hand-image answers, no numerals), count-all (tap each object), subitizing (recognize and type the numeral), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (which group has more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
-    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand-image answers (no numerals). K: count 1-20 objects, count_all and subitize. Grade 1: count to 30, count-on and group counting.',
+    description: 'Live tutor-judged Pre-K to Grade 1 counting workspace (DI modality) with tappable objects (bears, apples, stars, fish, butterflies, blocks) in varied arrangements (scattered, line, groups, circle). The child counts by tapping and ANSWERS OUT LOUD: the Live tutor asks with scripted lines, judges the spoken number word from the audio in-band, corrects DISTAR-style, and its own affirmation advances the lesson. Modes: pre-numeric perceptual subitizing (Pre-K, tap the matching hand — fully number-free), count-all (tap each object, say how many), flash subitizing (K: objects flash then hide; say how many you saw), count-on (start from a known group), group counting (count by 2s/5s/10s), and compare (say how many in the group with more). Builds one-to-one correspondence, cardinality principle, and subitizing fluency from pre-numeric perception upward. ESSENTIAL for Pre-K through Grade 1 counting, number sense, and early addition foundations.',
+    constraints: 'Best for grades Pre-K to 1. Pre-K: perceptual subitize 1-3 objects with hand answers (no numerals anywhere in the item). K: count 1-20 objects, count_all and subitize. Grade 1: count to 30, count-on and group counting. Answers are spoken number words (or a hand tap at Pre-K) judged by the microphone-enabled Lumina tutor; there is no Check button and no typed answer.',
     evalModes: [
       {
         evalMode: 'subitize_perceptual',
@@ -2080,27 +2080,48 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Determine which group has more. Comparative reasoning with reduced prompts.',
       },
     ],
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is counting objects on a counting board. Challenge: {{instruction}}. Target answer: {{targetAnswer}}. Current count: {{currentCount}}. Arrangement: {{arrangement}}. Object type: {{objectType}}. Challenge type: {{challengeType}}. Attempt: {{attemptNumber}}.',
-      contextKeys: ['instruction', 'targetAnswer', 'currentCount', 'arrangement', 'objectType', 'challengeType', 'attemptNumber'],
+      taskDescription: 'LIVE-JUDGED counting practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD (or taps a hand on pre-numeric items), you judge what you HEARD, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. Objects on the board: {{objectType}}. The correct count for the current board: {{targetCount}}.',
+      contextKeys: ['challengeType', 'objectType', 'targetCount'],
       scaffoldingLevels: {
-        level1: '"Touch each {{objectType}} as you count it. Ready? Let\'s count together: 1, 2, 3..."',
-        level2: '"Try grouping the {{objectType}} together. Can you see groups of 5? Count by groups!"',
-        level3: '"You already know there are {{startFrom}}. Now count on from {{startFrom}}: {{startFrom}}+1, {{startFrom}}+2... What is the total?"',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
+        level2: 'Remind the child of the method in one short sentence — "Touch each one just one time as you count" — without saying any number.',
+        level3: 'Invite one try together: "Point at the first one. Count with your finger. Then tell me how many." Still never say the count.',
       },
       commonStruggles: [
-        { pattern: 'Double-counting objects', response: '"Oops, you counted that one already! Try touching each {{objectType}} just once as you count."' },
-        { pattern: 'Skipping objects when counting', response: '"Some {{objectType}} got left out! Try starting from one side and moving across so you don\'t miss any."' },
-        { pattern: 'Not stating final count (cardinality)', response: '"You counted to {{currentCount}}. So how many {{objectType}} are there altogether? The last number you say tells you the total!"' },
+        { pattern: 'Double-counts or skips objects while tapping', response: 'The scripted correction re-models the count AFTER the attempt is judged. Never interrupt a child mid-count.' },
+        { pattern: 'Long silence', response: 'Silence is the child counting — wait. If they truly seem stuck, re-speak the current ask once; never count for them.' },
       ],
       aiDirectives: [
         {
-          title: 'K-LEVEL COUNTING ENCOURAGEMENT',
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
           instruction:
-            'Use warm, enthusiastic language appropriate for K-1. Count along with the student. '
-            + 'Celebrate each correct count. For subitize challenges, express wonder: "Wow, you saw that fast!" '
-            + 'Emphasize cardinality: "So there are 7 bears altogether!" '
-            + 'For count-on, model the strategy: "We know there are 5 already. Let\'s count on: 6, 7, 8..."',
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'THE CHILD IS COUNTING — WAIT',
+          instruction:
+            'Think time is unbounded. Never count along, never prompt mid-count, never fill silence. '
+            + 'Counting aloud that ends on the correct number IS a correct answer — the last number said tells the total.',
+        },
+        {
+          title: 'PRE-NUMERIC ITEMS ARE NUMBER-FREE',
+          instruction:
+            'On subitize_perceptual items say no number word and no digit at any point. The child answers by tapping a hand; '
+            + 'you wait in silence and speak only the scripted verdict lines.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
         },
       ],
     },
@@ -2342,8 +2363,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'hundreds-chart',
-    description: 'Interactive hundreds chart (10x10 grid, 1-100) for skip-counting pattern discovery. Students highlight skip-count sequences (2s, 5s, 10s), complete partially shown patterns, identify visual column/row/diagonal relationships, and determine skip intervals. Connects number grid topology to multiplication foundations. ESSENTIAL for grades 1-3 skip counting, pattern recognition, and place value understanding.',
-    constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. Grid always 1-100.',
+    description: 'Interactive number grid (10 numbers per row) for counting and skip-counting pattern discovery. The grid ceiling follows the lesson: a "counting to 10" lesson renders a 1-10 board and counting IN ORDER (by 1s), while an unbounded skip-counting lesson renders the full 1-100 chart. Students highlight sequences, complete partially shown patterns, identify visual column/row/diagonal relationships, and determine skip intervals. Connects number grid topology to multiplication foundations. Good for K counting-to-10/20 and ESSENTIAL for grades 1-3 skip counting, pattern recognition, and place value understanding.',
+    constraints: 'K: counting in order on a small board (1-10, 1-20), highlight mode. Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. State the ceiling in the topic or intent ("to 10", "within 50") — the grid sizes itself to it and defaults to 1-100 when the lesson names none. Skip intervals too coarse for a small board are dropped automatically.',
     evalModes: [
       {
         evalMode: 'highlight_sequence',

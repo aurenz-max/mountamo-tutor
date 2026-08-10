@@ -19,6 +19,60 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import {
+  FRICTION_MU,
+  FORCE_SCALE_N,
+  designPushSize,
+  headNoun,
+  predictMoves,
+} from '../../primitives/visual-primitives/physics/pushPullArenaScript';
+
+// ============================================================================
+// CODE-OWNED ANSWERS + NEUTRAL INSTRUCTIONS (the DI port)
+// ============================================================================
+
+/** Stamp the code-computed spoken answer, its stated alternates, and a
+ *  neutral on-screen ask. Never authored by the LLM: an instruction like
+ *  "Push the ball!" IS the answer of an observe item. */
+function applyJudgedAnswer(ch: PushPullChallenge): void {
+  switch (ch.type) {
+    case 'predict': {
+      const moves = predictMoves(ch.pushStrength ?? 5, ch.objectWeight, ch.surface);
+      ch.spokenAnswer = moves ? 'moves' : 'stays';
+      ch.spokenAlternates = moves
+        ? ['move', 'it moves', 'it will move', 'yes']
+        : ['stay', 'stay still', 'it stays', 'no'];
+      ch.instruction = `Think first: will the ${ch.objectName} move, or stay?`;
+      return;
+    }
+    case 'compare': {
+      const lighter = (ch.object2Weight ?? 99) < ch.objectWeight
+        ? (ch.object2Name ?? ch.objectName)
+        : ch.objectName;
+      ch.spokenAnswer = lighter.toLowerCase();
+      ch.spokenAlternates = [headNoun(lighter)];
+      ch.instruction = 'Same push for both. Which one slides farther?';
+      return;
+    }
+    case 'design': {
+      const size = designPushSize(ch.objectWeight, ch.surface);
+      ch.spokenAnswer = size;
+      ch.spokenAlternates = size === 'big'
+        ? ['a big push', 'strong', 'a strong push', 'hard']
+        : ['a little push', 'small', 'gentle', 'soft'];
+      ch.instruction = `What kind of push does the ${ch.objectName} need? Try it!`;
+      return;
+    }
+    default: {
+      const pull = ch.pushDirection === 'pull';
+      ch.spokenAnswer = pull ? 'pull' : 'push';
+      ch.spokenAlternates = pull
+        ? ['a pull', 'pulling', 'you pulled it']
+        : ['a push', 'pushing', 'you pushed it'];
+      ch.instruction = `Tap Go and watch the ${ch.objectName}. What kind of force is that?`;
+    }
+  }
+}
 
 // Re-export for convenience
 export type {
@@ -37,32 +91,32 @@ export type {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   observe: {
     promptDoc:
-      `"observe": Hands-on exploration. Student pushes/pulls an object and observes the result. `
-      + `MC questions like "Did the ball move?", "Which direction?", "Did it move fast or slow?" `
-      + `Include the pushStrength (1-10) and pushDirection ('push' or 'pull'). Easiest difficulty. K-1.`,
-    schemaDescription: "'observe' (push/pull and answer about what happened)",
+      `"observe": The student watches the preset force move the object and SAYS whether it was a `
+      + `push or a pull. Include the pushStrength (1-10) and pushDirection ('push' or 'pull'). `
+      + `Vary pushDirection across observe challenges. Easiest difficulty. K-1.`,
+    schemaDescription: "'observe' (watch the force, say push or pull)",
   },
   predict: {
     promptDoc:
-      `"predict": Prediction before action. Given object weight, surface, and push strength, `
-      + `student predicts whether it will move, how far, or what direction BEFORE seeing the simulation. `
-      + `Include pushStrength (1-10) and pushDirection. Medium difficulty. Grades 1-2.`,
-    schemaDescription: "'predict' (predict outcome before simulation)",
+      `"predict": Given object weight, surface, and push strength, the student SAYS whether it `
+      + `will move or stay BEFORE the simulation runs. Include pushStrength (1-10) and `
+      + `pushDirection. Mix clearly-moves setups (light object, slippery surface) with `
+      + `clearly-stays setups (heavy object, rough surface, weak push). Medium difficulty. Grades 1-2.`,
+    schemaDescription: "'predict' (say moves or stays before it runs)",
   },
   compare: {
     promptDoc:
-      `"compare": Side-by-side comparison. TWO objects with different weights on the same surface, `
-      + `or same object on two different surfaces. Student determines which moves more/less or which `
-      + `needs more effort. MUST include object2Name, object2Weight, object2Emoji for the second object. `
-      + `Medium-high difficulty. Grades 2-3.`,
-    schemaDescription: "'compare' (compare two objects or surfaces)",
+      `"compare": TWO objects with clearly different weights on the same surface get the same `
+      + `push; the student SAYS which one slides farther. MUST include object2Name and `
+      + `object2Weight for the second object. Medium-high difficulty. Grades 2-3.`,
+    schemaDescription: "'compare' (say which object slides farther)",
   },
   design: {
     promptDoc:
-      `"design": Goal-directed. Student must determine the right force to achieve a specific goal `
-      + `(move heavy object to a target, stop a sliding object, balance opposing forces). `
-      + `Include goalDescription. Highest difficulty. Grades 4-5.`,
-    schemaDescription: "'design' (set up forces to achieve a goal)",
+      `"design": Goal-directed: the student experiments with the force controls and SAYS whether `
+      + `moving the object all the way needs a big push or a little push. Include goalDescription. `
+      + `Highest difficulty. Grades 4-5.`,
+    schemaDescription: "'design' (experiment, say big or little push)",
   },
 };
 
@@ -237,10 +291,6 @@ const pushPullArenaSchema: Schema = {
             enum: ['observe', 'predict', 'compare', 'design'],
             description: 'Challenge type',
           },
-          instruction: {
-            type: Type.STRING,
-            description: 'Clear instruction for the student. Do NOT reveal the answer.',
-          },
           surface: {
             type: Type.STRING,
             enum: ['ice', 'wood', 'carpet', 'grass'],
@@ -274,28 +324,15 @@ const pushPullArenaSchema: Schema = {
           },
           goalDescription: {
             type: Type.STRING,
-            description: 'Goal description for design mode (e.g., "Move the rock past the red line"). Omit for non-design.',
+            description: 'Goal description for design mode (e.g., "Move the rock all the way across"). Do NOT name a force size. Omit for non-design.',
           },
-          correctAnswer: {
-            type: Type.STRING,
-            description: 'The correct answer to the MC question',
-          },
-          distractor0: {
-            type: Type.STRING,
-            description: 'First wrong answer option',
-          },
-          distractor1: {
-            type: Type.STRING,
-            description: 'Second wrong answer option',
-          },
-          hint: {
-            type: Type.STRING,
-            description: 'Pedagogical hint that guides without giving away the answer',
-          },
+          // The DI port retired correctAnswer / distractors / hint / instruction:
+          // every answer is CODE-COMPUTED from the physics, and instructions are
+          // code-owned neutral asks (an LLM instruction like "Push the ball!"
+          // names an observe item's answer). Dead levers stay out of the schema.
         },
         required: [
-          'id', 'type', 'instruction', 'surface', 'objectName', 'objectWeight',
-          'correctAnswer', 'distractor0', 'distractor1', 'hint',
+          'id', 'type', 'surface', 'objectName', 'objectWeight',
         ],
       },
       description: 'Array of challenges',
@@ -458,21 +495,17 @@ Vary surfaces across challenges for variety.
     const allowedTypes = evalConstraint?.allowedTypes;
 
     // ── Post-process challenges ──
-    let rejectedCount = 0;
+    // The LLM emitted the WINDOW (types, objects, surfaces, strengths); code
+    // builds the structure AND every answer. Instructions are code-owned
+    // neutral asks; spoken answers are computed from the sim's own physics
+    // with DECISIVE margins (an ambiguous ask is not a harder task).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const challenges: (PushPullChallenge | null)[] = (raw.challenges || []).map((c: any, i: number) => {
+    const challenges: PushPullChallenge[] = (raw.challenges || []).map((c: any, i: number) => {
       let type = c.type as PushPullChallengeType;
 
       // Force type to match eval constraint
       if (allowedTypes && !allowedTypes.includes(type)) {
         type = allowedTypes[0] as PushPullChallengeType;
-      }
-
-      // Validate required fields
-      if (!c.instruction || !c.correctAnswer || !c.distractor0 || !c.distractor1) {
-        console.warn(`[PushPullArena] Rejecting challenge ${i}: missing required MC fields`);
-        rejectedCount++;
-        return null;
       }
 
       const surface: ArenaSurface = SURFACES.includes(c.surface) ? c.surface : 'wood';
@@ -484,26 +517,35 @@ Vary surfaces across challenges for variety.
       const challenge: PushPullChallenge = {
         id: c.id || `c${i + 1}`,
         type,
-        instruction: c.instruction,
+        instruction: '',
         objectName: obj.name,
         objectWeight: obj.weight,
         objectEmoji: obj.emoji,
         surface,
-        correctAnswer: c.correctAnswer,
-        distractor0: c.distractor0,
-        distractor1: c.distractor1,
-        hint: c.hint || 'Think about how heavy the object is and how slippery the surface is.',
       };
 
-      // Type-specific fields
       if (type === 'observe' || type === 'predict') {
         challenge.pushStrength = Math.max(1, Math.min(10, Math.round(c.pushStrength || 5)));
         challenge.pushDirection = c.pushDirection === 'pull' ? 'pull' : 'push';
       }
 
+      if (type === 'predict') {
+        // Decisive margin: keep the LLM's implied outcome but push the
+        // strength clear of the static-friction boundary (≥1.4× to move,
+        // ≤0.6× to stay), so the judged answer is never a coin flip.
+        const frictionN = FRICTION_MU[surface] * challenge.objectWeight * 9.8;
+        const s = challenge.pushStrength ?? 5;
+        if (s * FORCE_SCALE_N > frictionN) {
+          const needed = Math.ceil((frictionN * 1.4) / FORCE_SCALE_N);
+          challenge.pushStrength = needed <= 10 ? Math.max(s, Math.max(1, needed)) : Math.max(1, Math.floor((frictionN * 0.6) / FORCE_SCALE_N));
+        } else {
+          const cap = Math.floor((frictionN * 0.6) / FORCE_SCALE_N);
+          challenge.pushStrength = cap >= 1 ? Math.min(s, cap) : Math.min(10, Math.ceil((frictionN * 1.4) / FORCE_SCALE_N));
+        }
+      }
+
       if (type === 'compare') {
         if (!c.object2Weight) {
-          // No second object — pick a contrasting one
           const [, heavy] = pickContrastingPair();
           challenge.object2Name = heavy.name;
           challenge.object2Weight = heavy.weight;
@@ -515,25 +557,49 @@ Vary surfaces across challenges for variety.
           challenge.object2Weight = obj2.weight;
           challenge.object2Emoji = obj2.emoji;
         }
-        // Compare mode gets a moderate default push
+        // Same weights would make "which slides farther" unanswerable — force
+        // a contrasting pair instead of shipping a broken ask.
+        if (challenge.object2Weight === challenge.objectWeight) {
+          const [light, heavy] = pickContrastingPair();
+          challenge.objectName = light.name;
+          challenge.objectWeight = light.weight;
+          challenge.objectEmoji = light.emoji;
+          challenge.object2Name = heavy.name;
+          challenge.object2Weight = heavy.weight;
+          challenge.object2Emoji = heavy.emoji;
+        }
         challenge.pushStrength = 5;
         challenge.pushDirection = 'push';
       }
 
       if (type === 'design') {
-        challenge.goalDescription = c.goalDescription || 'Move the object across the arena';
+        // Decisive by construction: big = heavy on carpet (~39N needed),
+        // little = light on ice/wood (≤8N) — see designPushSize's murky band.
+        const wantsBig = challenge.objectWeight >= 5;
+        if (wantsBig) {
+          const heavy = pickObject(Math.max(8, challenge.objectWeight));
+          challenge.objectName = heavy.name;
+          challenge.objectWeight = heavy.weight;
+          challenge.objectEmoji = heavy.emoji;
+          challenge.surface = 'carpet';
+        } else {
+          const light = pickObject(Math.min(2, challenge.objectWeight));
+          challenge.objectName = light.name;
+          challenge.objectWeight = light.weight;
+          challenge.objectEmoji = light.emoji;
+          challenge.surface = surface === 'ice' ? 'ice' : 'wood';
+        }
+        challenge.goalDescription = c.goalDescription || 'Move it all the way across';
         challenge.pushStrength = 5;
         challenge.pushDirection = 'push';
       }
 
+      // ── Code-owned spoken answer + neutral instruction ──
+      applyJudgedAnswer(challenge);
       return challenge;
     });
 
-    const validChallenges = challenges.filter((c): c is PushPullChallenge => c !== null);
-
-    if (rejectedCount > 0) {
-      console.warn(`[PushPullArena] Rejected ${rejectedCount}/${challenges.length} challenges`);
-    }
+    const validChallenges = challenges;
 
     if (validChallenges.length === 0) {
       console.error('[PushPullArena] All challenges rejected — using fallback');
@@ -604,131 +670,59 @@ function buildFallback(grade: string, targetEvalMode?: string): PushPullArenaDat
   const mode = (targetEvalMode || 'observe') as PushPullChallengeType;
 
   const fallbackChallenges: PushPullChallenge[] = [];
+  const base = { instruction: '', pushStrength: 5, pushDirection: 'push' as const };
 
   if (mode === 'observe' || !targetEvalMode) {
     fallbackChallenges.push({
-      id: 'f1',
-      type: 'observe',
-      instruction: 'Push the tennis ball on the wood floor. What happens?',
-      objectName: 'Tennis Ball',
-      objectWeight: 1,
-      objectEmoji: '🎾',
-      surface: 'wood',
-      pushStrength: 5,
-      pushDirection: 'push',
-      correctAnswer: 'The ball rolls across the floor',
-      distractor0: 'The ball does not move',
-      distractor1: 'The ball flies into the air',
-      hint: 'A tennis ball is very light — even a small push will move it!',
+      ...base, id: 'f1', type: 'observe',
+      objectName: 'Tennis Ball', objectWeight: 1, objectEmoji: '🎾', surface: 'wood',
     });
     fallbackChallenges.push({
-      id: 'f2',
-      type: 'observe',
-      instruction: 'Now push the heavy rock on carpet. Does it move?',
-      objectName: 'Rock',
-      objectWeight: 9,
-      objectEmoji: '🪨',
-      surface: 'carpet',
-      pushStrength: 3,
-      pushDirection: 'push',
-      correctAnswer: 'The rock barely moves or stays still',
-      distractor0: 'The rock slides far across the carpet',
-      distractor1: 'The rock bounces',
-      hint: 'Heavy objects on rough surfaces are very hard to push!',
+      ...base, id: 'f2', type: 'observe',
+      objectName: 'Toy Car', objectWeight: 2, objectEmoji: '🚗', surface: 'wood',
+      pushDirection: 'pull',
     });
   }
 
   if (mode === 'predict') {
     fallbackChallenges.push({
-      id: 'f1',
-      type: 'predict',
-      instruction: 'A soccer ball (2kg) is on ice. You push with force 4. What will happen?',
-      objectName: 'Soccer Ball',
-      objectWeight: 2,
-      objectEmoji: '⚽',
-      surface: 'ice',
+      ...base, id: 'f1', type: 'predict',
+      objectName: 'Soccer Ball', objectWeight: 2, objectEmoji: '⚽', surface: 'ice',
       pushStrength: 4,
-      pushDirection: 'push',
-      correctAnswer: 'The ball slides a long way on the slippery ice',
-      distractor0: 'The ball does not move',
-      distractor1: 'The ball stops immediately',
-      hint: 'Ice is very slippery — there is almost no friction to slow things down!',
     });
     fallbackChallenges.push({
-      id: 'f2',
-      type: 'predict',
-      instruction: 'The same soccer ball is now on grass. Same push (force 4). What changes?',
-      objectName: 'Soccer Ball',
-      objectWeight: 2,
-      objectEmoji: '⚽',
-      surface: 'grass',
-      pushStrength: 4,
-      pushDirection: 'push',
-      correctAnswer: 'The ball moves but stops much sooner than on ice',
-      distractor0: 'The ball goes just as far as on ice',
-      distractor1: 'The ball does not move at all',
-      hint: 'Grass has much more friction than ice — it slows things down!',
+      ...base, id: 'f2', type: 'predict',
+      objectName: 'Rock', objectWeight: 9, objectEmoji: '🪨', surface: 'carpet',
+      pushStrength: 2,
     });
   }
 
   if (mode === 'compare') {
     fallbackChallenges.push({
-      id: 'f1',
-      type: 'compare',
-      instruction: 'Both the tennis ball and the rock get the same push on wood. Which moves more?',
-      objectName: 'Tennis Ball',
-      objectWeight: 1,
-      objectEmoji: '🎾',
-      object2Name: 'Rock',
-      object2Weight: 9,
-      object2Emoji: '🪨',
-      surface: 'wood',
-      pushStrength: 5,
-      pushDirection: 'push',
-      correctAnswer: 'The tennis ball moves much more because it is lighter',
-      distractor0: 'The rock moves more because it is heavier',
-      distractor1: 'They move the same distance',
-      hint: 'Heavier things are harder to push — they need more force!',
+      ...base, id: 'f1', type: 'compare',
+      objectName: 'Tennis Ball', objectWeight: 1, objectEmoji: '🎾',
+      object2Name: 'Rock', object2Weight: 9, object2Emoji: '🪨', surface: 'wood',
     });
   }
 
   if (mode === 'design') {
     fallbackChallenges.push({
-      id: 'f1',
-      type: 'design',
-      instruction: 'You need to move the heavy barrel across the carpet. What should you do?',
-      objectName: 'Barrel',
-      objectWeight: 8,
-      objectEmoji: '🛢️',
-      surface: 'carpet',
+      ...base, id: 'f1', type: 'design',
+      objectName: 'Barrel', objectWeight: 8, objectEmoji: '🛢️', surface: 'carpet',
       goalDescription: 'Move the barrel all the way across',
-      pushStrength: 5,
-      pushDirection: 'push',
-      correctAnswer: 'Use a very strong push (force 9 or 10)',
-      distractor0: 'Use a gentle push (force 2)',
-      distractor1: 'Pull instead of push',
-      hint: 'The barrel is very heavy and carpet has lots of friction — you need a BIG force!',
     });
   }
+
+  const challenges = fallbackChallenges.length > 0 ? fallbackChallenges : [{
+    ...base, id: 'f0', type: 'observe' as const,
+    objectName: 'Tennis Ball', objectWeight: 1, objectEmoji: '🎾', surface: 'wood' as const,
+  }];
+  challenges.forEach(applyJudgedAnswer);
 
   return {
     title: 'Push & Pull Arena',
     description: 'Explore how pushes and pulls make things move!',
     theme: 'playground',
-    challenges: fallbackChallenges.length > 0 ? fallbackChallenges : [{
-      id: 'f0',
-      type: 'observe',
-      instruction: 'Push the ball! What happens?',
-      objectName: 'Tennis Ball',
-      objectWeight: 1,
-      objectEmoji: '🎾',
-      surface: 'wood',
-      pushStrength: 5,
-      pushDirection: 'push',
-      correctAnswer: 'The ball rolls forward',
-      distractor0: 'Nothing happens',
-      distractor1: 'The ball goes backwards',
-      hint: 'Try pushing the ball and watch what happens!',
-    }],
+    challenges,
   };
 }

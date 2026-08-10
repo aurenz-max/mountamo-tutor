@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { CountingBoardData } from "../../primitives/visual-primitives/math/CountingBoard";
+import { numberWordFor } from "../../primitives/visual-primitives/math/countingBoardScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -572,6 +573,29 @@ Return the complete counting board configuration.
     // Force targetAnswer = count (except compare, where targetAnswer = larger group)
     if (['count_all', 'group_count', 'count_on', 'subitize', 'subitize_perceptual'].includes(challenge.type)) {
       challenge.targetAnswer = challenge.count;
+    }
+
+    // ── DI answer-leak guard (spoken-answer port). The instruction is on
+    // screen while the child works, and the COUNT is now the graded SPOKEN
+    // answer — an instruction naming the target ("Count all 7 bears!") prints
+    // the answer. Only the TARGET is guarded: count_on's startFrom is
+    // legitimate stimulus. Runs after the target is forced, so it guards the
+    // value the judge will actually accept.
+    {
+      const target = challenge.targetAnswer;
+      const leak = new RegExp(`(^|\\D)${target}(\\D|$)|\\b${numberWordFor(target)}\\b`, 'i');
+      if (leak.test(challenge.instruction ?? '')) {
+        const objectWord = data.objects?.type === 'custom' ? 'objects' : (data.objects?.type ?? 'objects');
+        const fallbackAsk: Record<string, string> = {
+          count_all: `Can you count all the ${objectWord}?`,
+          subitize: 'How many do you see right away?',
+          subitize_perceptual: 'How many do you see?',
+          count_on: 'Count on to find how many altogether!',
+          group_count: 'Count the groups — how many altogether?',
+          compare: 'Which group has more? Count it!',
+        };
+        challenge.instruction = fallbackAsk[challenge.type] ?? `Can you count the ${objectWord}?`;
+      }
     }
 
     // Ensure groupSize exists when arrangement is 'groups'
