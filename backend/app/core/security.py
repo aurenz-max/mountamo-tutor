@@ -158,10 +158,22 @@ class SecureUserRegistration(BaseModel):
     password: str
     display_name: str
     grade_level: str = "K"  # Changed from Optional[int] to str with default
-    
+    invite_code: Optional[str] = None  # required when settings.INVITE_REQUIRED_FOR_SIGNUP
+
     @validator('email')
     def validate_email(cls, v):
         return InputSanitizer.sanitize_email(v)
+
+    @validator('invite_code')
+    def validate_invite_code(cls, v):
+        if v is None:
+            return None
+        v = v.strip().upper()
+        if not v:
+            return None
+        if len(v) > 32 or not re.match(r'^[A-Z0-9\-]+$', v):
+            raise ValueError('Invalid invite code format')
+        return v
     
     @validator('display_name')
     def validate_display_name(cls, v):

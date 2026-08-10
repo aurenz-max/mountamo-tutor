@@ -55,7 +55,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string, gradeLevel?: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string, gradeLevel?: string, inviteCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   getAuthToken: () => Promise<string | null>;
   refreshUserProfile: () => Promise<void>;
@@ -249,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('✅ Profile updated locally');
   }, [userProfile]);
 
-  const register = async (email: string, password: string, displayName: string, gradeLevel?: string) => {
+  const register = async (email: string, password: string, displayName: string, gradeLevel?: string, inviteCode?: string) => {
     try {
       console.log('📝 Registering user:', email);
       
@@ -266,6 +266,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           password,
           display_name: displayName,
           grade_level: gradeLevel || 'K',
+          // Signup is invite-gated server-side (INVITE_REQUIRED_FOR_SIGNUP);
+          // omit the field entirely when the visitor has no code so the
+          // backend's "missing" message (not "invalid") is what they see.
+          ...(inviteCode ? { invite_code: inviteCode } : {}),
         }),
       });
 

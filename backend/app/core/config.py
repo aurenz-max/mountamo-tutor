@@ -134,6 +134,10 @@ class Settings(BaseSettings):
     # Authentication Security Settings
     AUTH_PASSWORD_MIN_LENGTH: int = Field(default=8, env="AUTH_PASSWORD_MIN_LENGTH")
     AUTH_REQUIRE_EMAIL_VERIFICATION: bool = Field(default=False, env="AUTH_REQUIRE_EMAIL_VERIFICATION")
+    # Invite-only signup: /api/auth/register rejects requests without a valid
+    # invite code (Firestore `invite_codes`, minted via scripts/mint_invite.py).
+    # Set INVITE_REQUIRED_FOR_SIGNUP=false to reopen public signup.
+    INVITE_REQUIRED_FOR_SIGNUP: bool = Field(default=True, env="INVITE_REQUIRED_FOR_SIGNUP")
     AUTH_ENABLE_MFA: bool = Field(default=False, env="AUTH_ENABLE_MFA")
     AUTH_SESSION_TIMEOUT_MINUTES: int = Field(default=60, env="AUTH_SESSION_TIMEOUT_MINUTES")
     

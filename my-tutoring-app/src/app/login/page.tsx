@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Sparkles, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Sparkles, ArrowLeft, Ticket } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GenerativeBackground } from '@/components/lumina/primitives/GenerativeBackground';
@@ -16,16 +16,25 @@ import {
   LuminaBadge,
 } from '@/components/lumina/ui';
 
+interface InviteInfo {
+  gradeLevel: string | null;
+  studentName: string | null;
+}
+
 const LoginPage: React.FC = () => {
   const searchParams = useSearchParams();
   // Deep-link into signup from the landing page / in-app "save progress" prompt
-  // via ?mode=signup. Everything else opens in sign-in mode.
-  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
+  // via ?mode=signup, or from an invite link via ?invite=CODE (invite implies
+  // signup — the visitor by definition has no account yet).
+  const inviteParam = searchParams.get('invite');
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup' && !inviteParam);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [gradeLevel, setGradeLevel] = useState('K');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState(inviteParam ? inviteParam.toUpperCase() : '');
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +52,37 @@ const LoginPage: React.FC = () => {
       router.replace(redirect || '/lumina');
     }
   }, [user, router, searchParams]);
+
+  // Invite deep link: look the code up so the form can greet the family and
+  // lock in the pre-provisioned grade. Best-effort — a failed lookup just
+  // leaves the form generic; the register endpoint re-validates regardless.
+  useEffect(() => {
+    if (!inviteParam) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const code = encodeURIComponent(inviteParam.toUpperCase());
+    fetch(`${apiUrl}/api/auth/invite/${code}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((info) => {
+        if (!info) return;
+        if (info.valid) {
+          setInviteInfo({
+            gradeLevel: info.grade_level ?? null,
+            studentName: info.student_display_name ?? null,
+          });
+          if (info.grade_level) setGradeLevel(info.grade_level);
+          if (info.student_display_name) {
+            setDisplayName((prev) => prev || info.student_display_name);
+          }
+        } else if (info.reason === 'redeemed') {
+          setError('This invite code has already been used. If that was you, just sign in below.');
+        } else if (info.reason === 'expired') {
+          setError('This invite code has expired — ask for a fresh one.');
+        }
+      })
+      .catch(() => {
+        /* offline / backend down: the form still works, submit validates */
+      });
+  }, [inviteParam]);
 
   const gradeLevels = [
     { value: 'K', label: 'Kindergarten' },
@@ -122,7 +162,8 @@ const LoginPage: React.FC = () => {
           router.push(redirect || '/lumina');
         }, 1000);
       } else {
-        await register(email, password, displayName, gradeLevel);
+        const trimmedCode = inviteCode.trim().toUpperCase();
+        await register(email, password, displayName, gradeLevel, trimmedCode || undefined);
         setSuccess('Account created! Taking you to your lesson...');
 
         setTimeout(() => {
@@ -161,6 +202,8 @@ const LoginPage: React.FC = () => {
     setPassword('');
     setConfirmPassword('');
     setDisplayName('');
+    // Invite code intentionally survives the toggle — a family that flips to
+    // sign-in by mistake shouldn't have to re-type it.
   };
 
   // Already signed in — render a clean, on-brand hand-off instead of the form.
@@ -188,6 +231,8 @@ const LoginPage: React.FC = () => {
     'focus:outline-none focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/20 disabled:opacity-60';
   const labelClass = 'block text-sm font-medium text-slate-300 mb-1.5';
 
+  const invitedName = inviteInfo?.studentName;
+
   return (
     <div className="dark relative min-h-screen overflow-x-hidden text-slate-100 selection:bg-purple-500/30">
       {/* Shared canvas — same background the landing + app run on, so signup
@@ -213,17 +258,23 @@ const LoginPage: React.FC = () => {
             <Link href="/" className="mb-4 inline-flex">
               <LuminaMark size={48} />
             </Link>
-            <LuminaBadge accent="purple" className="mb-4 gap-1.5 px-3 py-1 text-xs">
+            <LuminaBadge accent={inviteInfo && !isLogin ? 'cyan' : 'purple'} className="mb-4 gap-1.5 px-3 py-1 text-xs">
               <Sparkles className="h-3.5 w-3.5" />
-              Adaptive learning for K–5
+              {inviteInfo && !isLogin ? "You're invited" : 'Adaptive learning for K–5'}
             </LuminaBadge>
             <h1 className="text-3xl font-bold tracking-tight text-white">
-              {isLogin ? 'Welcome back' : 'Create your account'}
+              {isLogin
+                ? 'Welcome back'
+                : inviteInfo
+                  ? 'Welcome to Lumina!'
+                  : 'Create your account'}
             </h1>
             <p className="mt-2 text-sm text-slate-400">
               {isLogin
                 ? 'Sign in to pick up where you left off.'
-                : 'Save your progress and let every lesson adapt to you.'}
+                : inviteInfo
+                  ? `Let's set up ${invitedName ? `${invitedName}'s` : 'your'} account — every lesson will adapt as ${invitedName || 'your student'} learns.`
+                  : 'Save your progress and let every lesson adapt to you.'}
             </p>
           </div>
 
@@ -247,7 +298,7 @@ const LoginPage: React.FC = () => {
                 {!isLogin && (
                   <div>
                     <label htmlFor="displayName" className={labelClass}>
-                      Full Name
+                      Student&apos;s Name
                     </label>
                     <LuminaInput
                       id="displayName"
@@ -255,7 +306,7 @@ const LoginPage: React.FC = () => {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="w-full"
-                      placeholder="Enter your full name"
+                      placeholder="Who will be learning?"
                       disabled={loading}
                     />
                   </div>
@@ -332,7 +383,7 @@ const LoginPage: React.FC = () => {
                         value={gradeLevel}
                         onChange={(e) => setGradeLevel(e.target.value)}
                         className={selectClass}
-                        disabled={loading}
+                        disabled={loading || Boolean(inviteInfo?.gradeLevel)}
                       >
                         {gradeLevels.map((grade) => (
                           <option key={grade.value} value={grade.value} className="bg-slate-900">
@@ -340,6 +391,36 @@ const LoginPage: React.FC = () => {
                           </option>
                         ))}
                       </select>
+                      {inviteInfo?.gradeLevel && (
+                        <p className="mt-1.5 text-xs text-slate-500">
+                          Set by your invitation — you can change it later in your profile.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="inviteCode" className={labelClass}>
+                        Invite Code
+                      </label>
+                      <div className="relative">
+                        <Ticket className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                        <LuminaInput
+                          id="inviteCode"
+                          type="text"
+                          value={inviteCode}
+                          onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                          className="w-full pl-9 uppercase tracking-wider"
+                          placeholder="LUMINA-XXXXXX"
+                          disabled={loading}
+                          autoComplete="off"
+                          spellCheck={false}
+                        />
+                      </div>
+                      {!inviteInfo && (
+                        <p className="mt-1.5 text-xs text-slate-500">
+                          Lumina is invite-only during our pilot.
+                        </p>
+                      )}
                     </div>
                   </>
                 )}

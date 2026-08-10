@@ -241,14 +241,47 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
         # Ensure Firebase is initialized
         if _firebase_app is None:
             initialize_firebase()
-        
+
         # Additional password validation using settings
         if len(user_data.password) < getattr(settings, 'AUTH_PASSWORD_MIN_LENGTH', 8):
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Password must be at least {getattr(settings, 'AUTH_PASSWORD_MIN_LENGTH', 8)} characters"
             )
-        
+
+        # Invite gate — validated BEFORE the Firebase user is minted so a bad
+        # code never leaves a half-provisioned account behind.
+        invite = None
+        if settings.INVITE_REQUIRED_FOR_SIGNUP or user_data.invite_code:
+            from ...services.invite_service import invite_service
+
+            if not user_data.invite_code:
+                SecurityLogger.log_registration_attempt(
+                    request=request, email=user_data.email, success=False,
+                    details={"error": "invite_code_missing"}
+                )
+                raise HTTPException(
+                    status_code=403,
+                    detail="Lumina is invite-only right now. Please use your invite link or code."
+                )
+            ok, reason, invite = invite_service.validate_invite(user_data.invite_code)
+            if not ok:
+                SecurityLogger.log_registration_attempt(
+                    request=request, email=user_data.email, success=False,
+                    details={"error": f"invite_{reason}", "invite_code": user_data.invite_code}
+                )
+                friendly = {
+                    "redeemed": "This invite code has already been used.",
+                    "revoked": "This invite code is no longer valid.",
+                    "expired": "This invite code has expired.",
+                }.get(reason, "That invite code isn't valid. Check for typos and try again.")
+                raise HTTPException(status_code=403, detail=friendly)
+
+        # The invite's grade is authoritative over the form: the inviter knows
+        # the child, and the form default ("K") silently wins whenever a parent
+        # skips the dropdown.
+        effective_grade = (invite or {}).get("grade_level") or user_data.grade_level
+
         # Create user in Firebase Auth
         user_record = auth.create_user(
             email=user_data.email,
@@ -263,6 +296,7 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
         # path has no grade, so the signup selection is silently dropped.
         # Non-fatal: if this fails, the lazy path still provisions a profile
         # (grade-less) on first authenticated call, so we never block signup.
+        new_student_id = None
         try:
             from ...core.middleware import get_cosmos_db_service
             from ...services.user_profiles import user_profiles_service
@@ -272,20 +306,45 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
                 email=user_data.email,
                 display_name=user_data.display_name,
             )
+            new_student_id = student_mapping["student_id"]
             existing_profile = await user_profiles_service.get_user_profile(user_record.uid)
             if not existing_profile:
                 await user_profiles_service.create_user_profile(
                     uid=user_record.uid,
-                    student_id=student_mapping["student_id"],
+                    student_id=new_student_id,
                     email=user_data.email,
                     display_name=user_data.display_name,
-                    grade_level=user_data.grade_level,
+                    grade_level=effective_grade,
                 )
+
+            # Planning-side grade of record. Without this write the planner's
+            # bare-subject resolution scans grade docs first-doc-wins
+            # (lexicographic: "1" beats "Kindergarten") and a brand-new K
+            # student is served the Grade 1 curriculum from lesson one.
+            from ...dependencies import get_firestore_service
+            firestore_service = get_firestore_service()
+            if firestore_service is not None:
+                await firestore_service.set_student_grade_level(new_student_id, effective_grade)
         except Exception as profile_err:
             logger.warning(
                 f"⚠️ Eager profile provisioning failed for {user_data.email} "
                 f"(falling back to lazy creation): {profile_err}"
             )
+
+        # Burn the invite last, once the account it vouched for actually
+        # exists. Fail-open by design: an unredeemed code after a crashed
+        # signup stays usable for the retry.
+        if invite is not None:
+            try:
+                from ...services.invite_service import invite_service
+                invite_service.redeem_invite(
+                    code=user_data.invite_code,
+                    firebase_uid=user_record.uid,
+                    email=user_data.email,
+                    student_id=new_student_id,
+                )
+            except Exception as redeem_err:
+                logger.error(f"❌ Invite redemption failed for {user_data.invite_code}: {redeem_err}")
 
         # Log successful registration
         SecurityLogger.log_registration_attempt(
@@ -330,6 +389,32 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
         )
         logger.error(f"❌ Registration failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Registration failed")
+
+@router.get("/invite/{code}")
+async def get_invite_info(code: str, request: Request):
+    """
+    Pre-signup invite lookup — powers the /login?invite=CODE deep link so the
+    signup form can greet the family and lock the pre-provisioned grade.
+    Unauthenticated by necessity (the visitor has no account yet); rate-limited
+    so it can't be used to enumerate codes.
+    """
+    check_rate_limit(request, limit=10, window_seconds=60, key_suffix="invite_lookup")
+
+    from ...services.invite_service import invite_service, normalize_code
+
+    normalized = normalize_code(code)
+    if not normalized or len(normalized) > 32:
+        return {"valid": False, "reason": "not_found"}
+
+    ok, reason, invite = invite_service.validate_invite(normalized)
+    if not ok:
+        return {"valid": False, "reason": reason}
+    return {
+        "valid": True,
+        "grade_level": invite.get("grade_level"),
+        "student_display_name": invite.get("student_display_name"),
+    }
+
 
 @router.get("/config")
 async def get_firebase_config(request: Request):
