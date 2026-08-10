@@ -291,7 +291,7 @@ export const generateExhibitManifestStreaming = async (
   gradeLevel: string = 'elementary',
   objectives?: Array<{ id: string; text: string; verb: string; icon: string; subskillId?: string; skillId?: string; grade?: string }>,
   studentContext?: StudentGenerationContext | null,
-  callbacks?: ManifestProgressCallback
+  callbacks?: ManifestProgressCallback,
 ): Promise<ExhibitManifest> => {
   try {
     const gradeLevelContext = getGradeLevelContext(gradeLevel);
@@ -304,6 +304,23 @@ export const generateExhibitManifestStreaming = async (
     const catalogContext = UNIVERSAL_CATALOG.map(c =>
       `- ${c.id}: ${c.description}${c.constraints ? ` [${c.constraints}]` : ''}`
     ).join('\n');
+
+    // Within-block ordering rule: the Introduce / Visualize / Apply phase ladder.
+    //
+    // A modality-first alternative (the student meets the THING before the words
+    // about it) was measured and REJECTED 2026-08-08. It did exactly what it was
+    // written to do — exposition opening a block fell 50% → 17% — and lesson
+    // quality FELL with it (4.03 → 3.75/5, dependency violations 47% → 61%).
+    // Within a block an explainer is usually the PREREQUISITE for the manipulative,
+    // not a symbol standing in for it: you cannot count corners before "corner" is
+    // defined. The objective layer ranks prerequisite ABOVE concrete-before-symbol
+    // for that reason, and making modality-first absolute reproduces the error one
+    // layer down. Do not re-propose without reading
+    // qa/topic-traces/manifest-modality-ab-2026-08-08.md.
+    const blockOrderRule = `2. Components should PROGRESS within each objective through these PHASES:
+   - Phase 1 (Introduce): Explain core vocabulary/concepts, including visual exhibits if relevant
+   - Phase 2 (Visualize): Demonstrate with an interactive or visual tool
+   - Phase 3 (Apply): Practice or applications`;
 
     // Format objectives if provided. Curriculum-launched objectives carry a
     // precise grade ('K'|'1'..'12') — surface it so the curator's primitive
@@ -357,10 +374,7 @@ PERSONALIZATION (only when a STUDENT PROFILE block is present): a STRUGGLING stu
 
 ## RULES FOR EACH OBJECTIVE BLOCK:
 1. Include 2-4 components per objective (not too few, not too many)
-2. Components should PROGRESS within each objective through these PHASES:
-   - Phase 1 (Introduce): Explain core vocabulary/concepts, including visual exhibits if relevant
-   - Phase 2 (Visualize): Demonstrate with an interactive or visual tool
-   - Phase 3 (Apply): Practice or applications
+${blockOrderRule}
 3. Always choose the MOST SPECIFIC component from the catalog for the topic.
    Read each component's description carefully — prefer domain-specific interactive tools over generic display components.
 4. Each component's intent MUST directly address its parent objective

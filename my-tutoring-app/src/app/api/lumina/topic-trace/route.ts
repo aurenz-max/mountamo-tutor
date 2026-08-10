@@ -42,9 +42,9 @@ export const dynamic = 'force-dynamic';
  *   {
  *     topic, gradeLevel?, componentId?, images?, manifestOnly?,
  *     objectives?:    [{ id, text, verb, icon }],  // FIXED objectives — skips the
- *                                                  // brief so A/B runs compare the
+ *                                                  // brief so repeat runs compare the
  *                                                  // same lesson, not brief variance
- *     studentContext?: StudentGenerationContext    // from POST /api/student-profile/
+ *     studentContext?: StudentGenerationContext,   // from POST /api/student-profile/
  *                                                  // generation-context (FastAPI)
  *   }
  *   When studentContext is provided it is injected into the manifest prompt
@@ -81,6 +81,71 @@ function stripImageData(node: unknown): unknown {
     return out;
   }
   return node;
+}
+
+/** Project a manifest's objective blocks into the trace's `objectives` shape. */
+function projectObjectives(manifest: ExhibitManifest) {
+  return (manifest.objectiveBlocks || []).map((b) => ({
+    objectiveId: b.objectiveId,
+    objectiveText: b.objectiveText,
+    objectiveVerb: b.objectiveVerb,
+    componentIds: b.components.map((c) => c.componentId),
+    // Personalization assessment: difficulty configs the curator chose.
+    // Eval-mode instrumentation: surface the curator's targetEvalMode pin and
+    // validate it against the primitive's catalog modes, so a manifestOnly run
+    // measures the manifest miss-rate (how often a multi-mode primitive leaves
+    // the manifest stage WITHOUT a valid pin → the recovery-path question).
+    componentConfigs: b.components.map((c) => {
+      const def = getComponentById(c.componentId);
+      const modeDefs = def?.evalModes ?? [];
+      const validModes = modeDefs.map((m) => m.evalMode);
+      // config is a loose bag, so narrow the pin here — otherwise every
+      // downstream .map() over the split silently degrades to any.
+      const pin: string | null = (c.config?.targetEvalMode as string | undefined) ?? null;
+      // Resolved mode definitions behind the pin. A blend ('a|b') names several;
+      // 'mixed' and unpinned single-mode primitives resolve to none.
+      const pinnedDefs = pin && pin !== 'mixed'
+        ? pin
+            .split('|')
+            .map((k) => modeDefs.find((m) => m.evalMode === k))
+            .filter((m): m is (typeof modeDefs)[number] => m !== undefined)
+        : [];
+      // For a blend, report the HARDEST rung — that's the demand the student
+      // actually meets, and it's what a within-block ramp check must compare.
+      const betaOf = pinnedDefs.length ? Math.max(...pinnedDefs.map((m) => m.beta)) : null;
+      const tierOf = pinnedDefs.length
+        ? Math.max(...pinnedDefs.map((m) => m.scaffoldingMode))
+        : null;
+      // The pin can be single ('build'), a blend ('a|b'), or the 'mixed' sentinel
+      // (SINGLE|BLEND|MIXED encoding). Valid iff it's 'mixed', or every '|'-part
+      // is a real catalog mode for this primitive.
+      const pinValid = (p: string | null): boolean =>
+        p != null && (p === 'mixed' || p.split('|').every((k) => validModes.includes(k)));
+      return {
+        componentId: c.componentId,
+        title: c.title,
+        intent: c.intent,
+        // What the primitive IS. An ordering judge cannot tell that
+        // `hundreds-chart` is a grid of written numerals from its id alone.
+        description: def?.description ?? null,
+        difficulty: c.config?.difficulty ?? null,
+        targetEvalMode: pin,
+        evalModeCount: validModes.length,
+        // What the pinned mode(s) actually ask the student to DO. A judge
+        // comparing two orderings cannot read a bare key like "build" —
+        // ordering quality is a claim about the skills, not the key names.
+        evalModeSkills: pinnedDefs.map((m) => `${m.evalMode}: ${m.description}`),
+        // Calibration behind the resolved pin — lets a caller check the
+        // within-block cognitive ramp without re-reading the catalog.
+        beta: betaOf,
+        scaffoldingMode: tierOf,
+        // null = N/A (primitive has <2 modes, no pin needed);
+        // true  = multi-mode AND validly pinned (single | blend | mixed);
+        // false = multi-mode but pin missing or not a real catalog mode (a MISS).
+        targetEvalModeValid: validModes.length < 2 ? null : pinValid(pin),
+      };
+    }),
+  }));
 }
 
 interface TraceParams {
@@ -168,39 +233,7 @@ async function runTrace(params: TraceParams) {
       ? { title: manifest.curatorBrief.title, intent: manifest.curatorBrief.intent }
       : null,
     // The objectives the lesson was built around — where scope language lives.
-    objectives:
-      (manifest.objectiveBlocks || []).map((b) => ({
-        objectiveId: b.objectiveId,
-        objectiveText: b.objectiveText,
-        objectiveVerb: b.objectiveVerb,
-        componentIds: b.components.map((c) => c.componentId),
-        // Personalization assessment: difficulty configs the curator chose.
-        // Eval-mode instrumentation: surface the curator's targetEvalMode pin and
-        // validate it against the primitive's catalog modes, so a manifestOnly run
-        // measures the manifest miss-rate (how often a multi-mode primitive leaves
-        // the manifest stage WITHOUT a valid pin → the recovery-path question).
-        componentConfigs: b.components.map((c) => {
-          const validModes = getComponentById(c.componentId)?.evalModes?.map((m) => m.evalMode) ?? [];
-          const pin = c.config?.targetEvalMode ?? null;
-          // The pin can be single ('build'), a blend ('a|b'), or the 'mixed' sentinel
-          // (SINGLE|BLEND|MIXED encoding). Valid iff it's 'mixed', or every '|'-part
-          // is a real catalog mode for this primitive.
-          const pinValid = (p: string | null): boolean =>
-            p != null && (p === 'mixed' || p.split('|').every((k) => validModes.includes(k)));
-          return {
-            componentId: c.componentId,
-            title: c.title,
-            intent: c.intent,
-            difficulty: c.config?.difficulty ?? null,
-            targetEvalMode: pin,
-            evalModeCount: validModes.length,
-            // null = N/A (primitive has <2 modes, no pin needed);
-            // true  = multi-mode AND validly pinned (single | blend | mixed);
-            // false = multi-mode but pin missing or not a real catalog mode (a MISS).
-            targetEvalModeValid: validModes.length < 2 ? null : pinValid(pin),
-          };
-        }),
-      })) || [],
+    objectives: projectObjectives(manifest),
     briefObjectives: objectives ?? null,
     finalAssessment: manifest.finalAssessment
       ? {
@@ -324,11 +357,11 @@ export async function GET(request: NextRequest) {
         gradeLevel: 'optional, default "elementary"',
         componentId: 'optional — only trace components with this id (focus one generator)',
         objectives: 'optional — "false" to skip the curator brief',
-        manifestOnly: 'optional — "true" to stop after the manifest (fast A/B)',
+        manifestOnly: 'optional — "true" to stop after the manifest (fast)',
       },
       post: {
         body: '{ topic, gradeLevel?, componentId?, manifestOnly?, objectives?: [{id,text,verb,icon}], studentContext?: <generation-context response> }',
-        note: 'Fixed objectives skip the brief so A/B runs compare the same lesson ± studentContext. The response echoes the injected STUDENT PROFILE block under personalization.promptBlock and the STUDENT VOICE block (from studentContext.studentProfile) under personalization.voiceBlock.',
+        note: 'Fixed objectives skip the brief so repeat runs compare the same lesson ± studentContext. The response echoes the injected STUDENT PROFILE block under personalization.promptBlock and the STUDENT VOICE block (from studentContext.studentProfile) under personalization.voiceBlock.',
       },
       returns:
         'The manifest plus, per primitive, the generator input (the api call) and the generated output.',

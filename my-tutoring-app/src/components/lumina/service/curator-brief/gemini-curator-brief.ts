@@ -300,17 +300,55 @@ For **visualTheme**, pick the single menu value closest to what the hook is ABOU
 ### Objective Writing
 - Start each objective with a measurable action verb
 - Keep objectives achievable within the estimated time
-- Progress from lower to higher Bloom's levels when appropriate
 - Use age-appropriate language
 
-**Verb Categories:**
-- identify: Recognize, locate, name, list
-- explain: Describe, summarize, interpret, paraphrase
-- create: Design, construct, produce, compose
-- analyze: Compare, contrast, examine, differentiate
-- compare: Match, relate, distinguish, categorize
-- apply: Use, demonstrate, solve, implement
-- evaluate: Judge, assess, critique, justify
+**ORDERING — hard rule.** The objectives are TAUGHT in the order you list them, and
+each one becomes a block of activities in that sequence. The student meets objective 1
+first, so objective 1 must be the one they can succeed at on day one.
+
+Order by these THREE rules, in this priority. Rule 1 beats rule 2, rule 2 beats rule 3.
+
+**RULE 1 — PREREQUISITE FIRST.** When the student cannot do objective X without already
+knowing objective Y, Y is listed first — whatever the two verbs are, and whichever is
+more concrete. Examples: knowing that the last number counted tells you "how many"
+(cardinality) comes BEFORE counting a group to find how many; knowing the sound each
+letter makes comes BEFORE blending letters into whole words. If you are unsure whether
+one truly requires the other, it is not a prerequisite — go to rule 2.
+
+**RULE 2 — CONCRETE BEFORE THE SYMBOL FOR IT.** With no prerequisite between them: when
+one objective has the student work with real or pictured THINGS (objects to count,
+sounds to hear, a machine part to move) and another has them work with the WRITTEN
+SYMBOL for the same content (numerals, letters, notation, equations), the concrete
+objective is listed FIRST — even when its verb sits at a higher Bloom level. A child
+must count seven bears before "7" means anything; must hear the sounds in a word before
+mapping them to letters.
+- Example, and it is the most common failure: "Apply counting to find how many objects
+  are in a group" (apply, level 3) comes BEFORE "Identify the numbers 1-10 in order"
+  (identify, level 1). Counting real things is concrete; a grid of written numerals is
+  abstract. The higher Bloom verb goes first here, and that is correct.
+- This applies hardest at K-2 and in any first encounter with a notation, at any grade.
+- If both objectives are equally concrete, or the topic has no symbol/thing split
+  (naming the parts of a machine you can see, describing what a plant part does), this
+  rule is silent — go to rule 3.
+
+**RULE 3 — otherwise, NON-DECREASING Bloom order.** With rules 1 and 2 satisfied, do
+not place a lower-level objective after a higher-level one. The most common mistake
+this catches is appending a conceptual "explain" objective LAST, after an "apply"
+objective: if a lesson needs the student to understand a concept AND use it, the
+understanding objective comes first — level (2) before level (3).
+
+**Verb categories, lowest Bloom level to highest:**
+- (1) identify — Remember: recognize, locate, name, list
+- (2) explain — Understand: describe, summarize, interpret, paraphrase
+- (2) compare — Understand: match, relate, distinguish, categorize
+- (3) apply — Apply: use, demonstrate, solve, implement
+- (4) analyze — Analyze: contrast, examine, differentiate
+- (5) evaluate — Evaluate: judge, assess, critique, justify
+- (6) create — Create: design, construct, produce, compose
+
+Before you finalize: read objective 1 back and ask whether a student who has never met
+this topic could start there today. If objective 1 asks them to recognize a symbol they
+have not yet been given a meaning for, you have ordered it wrong — apply rule 2.
 
 ### Prerequisites
 - List 2-4 genuine prerequisites (not too many)
@@ -340,7 +378,9 @@ For **visualTheme**, pick the single menu value closest to what the hook is ABOU
 **K-2:**
 - Hooks: Simple scenarios, familiar situations (home, playground, family)
 - Language: Short sentences, concrete words, avoid abstractions
-- Objectives: 2-3 max, focus on identify/explain
+- Objectives: 2-3 max. Lead with the one where the child DOES something with real or
+  pictured things ("apply" is fine and often correct first at this age); symbol
+  recognition follows it, never opens.
 - Time: 10-15 minutes typical
 
 **3-5:**

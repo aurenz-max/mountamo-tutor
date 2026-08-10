@@ -40,6 +40,25 @@
  * FALLBACK, not the source of truth. Stripping the eval-mode prose from the
  * manifest prompt (to reclaim its cognitive-load budget) is a measured Phase 2 —
  * see the ablation report's "study (ii)".
+ *
+ * TWO EXTENSIONS OF THIS STAGE WERE BUILT, MEASURED AND REJECTED (2026-08-08),
+ * and the code for both was removed on 2026-08-09. Do not re-propose either
+ * without reading why they failed:
+ *   - POSITION-AWARE MODE PICK (let the slot's position in the block inform which
+ *     of several fitting modes it takes). No-op on 26 of 48 same-manifest pairs;
+ *     on the 22 that differed HEAD won 13-9. The within-block skill collapse it
+ *     was built to fix does not exist — 0 of 86 blocks resolved every slot to the
+ *     same skill. qa/topic-traces/order-ab-2026-08-08.md.
+ *   - THIS STAGE ALSO REORDERING EACH BLOCK (it knows every component's skill,
+ *     which the manifest did not). 10 ordering actions over 66 blocks: 5 right,
+ *     3 defensible, 2 wrong — and it made directly contradictory calls on the
+ *     same topic and verb across two passes, each with a rationale that read
+ *     well. A plausible per-action rationale is not a policy. It also spent 4 of
+ *     7 actions on the domain that already sequenced best.
+ *     qa/topic-traces/armC-block-ordering-2026-08-08.md.
+ * The lesson-ordering defect that prompted both was solved one layer up, at the
+ * OBJECTIVE layer, in gemini-curator-brief.ts (3.25 → 3.89/5) —
+ * qa/topic-traces/order-audit-2026-08-08.md.
  */
 
 import { Type, Schema } from '@google/genai';
@@ -63,6 +82,47 @@ interface MutableComponent {
   config?: Record<string, unknown>;
 }
 
+/**
+ * One objective block, normalized: the authoritative objective (a supplied
+ * objective always beats the curator's echo of it, which can drift) plus a live
+ * reference to the manifest's own components array.
+ */
+interface WalkedBlock {
+  objectiveText: string;
+  objectiveVerb: string;
+  /** The curator's own echo, kept only for the final-assessment summary line. */
+  curatorObjectiveText: string;
+  components: MutableComponent[];
+}
+
+const modesOf = (componentId: string) => getComponentById(componentId)?.evalModes ?? [];
+
+/**
+ * Walk the manifest's objective blocks once, resolving each against the supplied
+ * objectives, so the authoritative-objective rule has exactly one implementation.
+ */
+function walkBlocks(
+  manifest: ExhibitManifest,
+  objectives?: Array<{ id: string; text: string; verb: string }>,
+): WalkedBlock[] {
+  const objById = new Map((objectives ?? []).map((o) => [o.id, o]));
+  const raw = (manifest.objectiveBlocks ?? []) as unknown as Array<{
+    objectiveId: string;
+    objectiveText: string;
+    objectiveVerb: string;
+    components: MutableComponent[];
+  }>;
+  return raw.map((block) => {
+    const auth = objById.get(block.objectiveId);
+    return {
+      objectiveText: auth?.text ?? block.objectiveText,
+      objectiveVerb: auth?.verb ?? block.objectiveVerb,
+      curatorObjectiveText: block.objectiveText,
+      components: block.components ?? [],
+    };
+  });
+}
+
 interface Sibling {
   componentId: string;
   intent: string;
@@ -80,58 +140,47 @@ interface Slot {
   currentPin: string | null;
 }
 
-function collectSlots(
-  manifest: ExhibitManifest,
-  objectives?: Array<{ id: string; text: string; verb: string }>,
-): Slot[] {
-  const objById = new Map((objectives ?? []).map((o) => [o.id, o]));
+const candidateModesOf = (componentId: string) =>
+  modesOf(componentId).map((m) => ({
+    key: m.evalMode,
+    label: m.label,
+    description: (m.description ?? '').slice(0, 160),
+  }));
+
+function collectSlots(blocks: WalkedBlock[], manifest: ExhibitManifest): Slot[] {
   const slots: Slot[] = [];
   let n = 0;
 
-  const blocks = (manifest.objectiveBlocks ?? []) as unknown as Array<{
-    objectiveId: string;
-    objectiveText: string;
-    objectiveVerb: string;
-    components: MutableComponent[];
-  }>;
-
   for (const block of blocks) {
-    const auth = objById.get(block.objectiveId);
-    const objectiveText = auth?.text ?? block.objectiveText;
-    const objectiveVerb = auth?.verb ?? block.objectiveVerb;
-    const blockComponents = block.components ?? [];
-    for (const component of blockComponents) {
-      const modes = getComponentById(component.componentId)?.evalModes ?? [];
-      if (modes.length < 2) continue; // only multi-mode primitives have a choice to make
+    const blockComponents = block.components;
+    blockComponents.forEach((component) => {
+      const modes = modesOf(component.componentId);
+      if (modes.length < 2) return; // only multi-mode primitives have a choice to make
       // Siblings: every OTHER component under this objective, so the model can
       // see how the objective's primitive set already divides the skill.
-      const siblings: Sibling[] = blockComponents
-        .filter((c) => c !== component)
-        .map((c) => ({ componentId: c.componentId, intent: (c.intent ?? '').slice(0, 120) }));
+      const siblings: Sibling[] = blockComponents.flatMap((c) =>
+        c === component ? [] : [{ componentId: c.componentId, intent: (c.intent ?? '').slice(0, 120) }],
+      );
       slots.push({
         slotId: `s${n++}`,
         component,
-        objectiveText,
-        objectiveVerb,
+        objectiveText: block.objectiveText,
+        objectiveVerb: block.objectiveVerb,
         intent: component.intent ?? '',
         candidateKeys: modes.map((m) => m.evalMode),
-        candidateModes: modes.map((m) => ({
-          key: m.evalMode,
-          label: m.label,
-          description: (m.description ?? '').slice(0, 160),
-        })),
+        candidateModes: candidateModesOf(component.componentId),
         siblings,
         currentPin: (component.config?.targetEvalMode as string | undefined) ?? null,
       });
-    }
+    });
   }
 
   // Final assessment spans the whole lesson — resolve it too if it's multi-mode.
   const fa = manifest.finalAssessment as unknown as MutableComponent | undefined;
   if (fa) {
-    const modes = getComponentById(fa.componentId)?.evalModes ?? [];
+    const modes = modesOf(fa.componentId);
     if (modes.length >= 2) {
-      const lessonObjective = blocks.map((b) => b.objectiveText).filter(Boolean).join('; ');
+      const lessonObjective = blocks.map((b) => b.curatorObjectiveText).filter(Boolean).join('; ');
       slots.push({
         slotId: `s${n++}`,
         component: fa,
@@ -139,11 +188,7 @@ function collectSlots(
         objectiveVerb: 'evaluate',
         intent: fa.intent ?? '',
         candidateKeys: modes.map((m) => m.evalMode),
-        candidateModes: modes.map((m) => ({
-          key: m.evalMode,
-          label: m.label,
-          description: (m.description ?? '').slice(0, 160),
-        })),
+        candidateModes: candidateModesOf(fa.componentId),
         siblings: [], // its objectiveText already spans the whole lesson
         currentPin: (fa.config?.targetEvalMode as string | undefined) ?? null,
       });
@@ -153,34 +198,37 @@ function collectSlots(
   return slots;
 }
 
-function buildSchema(): Schema {
-  return {
+const PICKS_SCHEMA: Schema = {
+  type: Type.ARRAY,
+  items: {
     type: Type.OBJECT,
     properties: {
-      picks: {
+      slotId: { type: Type.STRING },
+      chosenModes: {
         type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            slotId: { type: Type.STRING },
-            chosenModes: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description:
-                "The subset of THIS slot's candidate mode keys whose SKILL the objective + intent needs. " +
-                'ONE key = single skill. ALL of the slot\'s candidate keys = broad mixed / "auto" practice ' +
-                '(use when the primitive should cycle its skills with no single one emphasized). ' +
-                'A 2+ subset (fewer than all) = curated blend. Every entry MUST be one of the slot\'s candidate keys.',
-            },
-            rationale: { type: Type.STRING },
-          },
-          required: ['slotId', 'chosenModes'],
-        },
+        items: { type: Type.STRING },
+        description:
+          "The subset of THIS slot's candidate mode keys whose SKILL the objective + intent needs. " +
+          'ONE key = single skill. ALL of the slot\'s candidate keys = broad mixed / "auto" practice ' +
+          '(use when the primitive should cycle its skills with no single one emphasized). ' +
+          'A 2+ subset (fewer than all) = curated blend. Every entry MUST be one of the slot\'s candidate keys.',
       },
+      rationale: { type: Type.STRING },
     },
-    required: ['picks'],
-  };
-}
+    required: ['slotId', 'chosenModes'],
+  },
+};
+
+const RESPONSE_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: { picks: PICKS_SCHEMA },
+  required: ['picks'],
+};
+
+const RULES = `Rules, in priority order:
+1. Match by skill and content only. Never pick by lesson position, phase, or "introducing the tool".
+2. For a SINGLE pick, do not over-reach: choose the simplest mode that fully covers the objective's skill — a higher-tier mode teaches a different, harder skill the objective did not ask for. Mixed is NOT a way to dodge this: only go mixed when no single skill is the point.
+3. Use the sibling components to DIVIDE LABOR across the objective. If other components already anchor the core skill, this slot can take a contrasting skill or the mixed/synthesis role rather than duplicating them. Per-slot fit (rules 1-2) still wins over forced variety.`;
 
 function buildPrompt(topic: string, gradeLevel: string, slots: Slot[]): string {
   const slotText = slots
@@ -203,10 +251,7 @@ Each eval mode is a DISTINCT skill — NOT a difficulty level. For each slot, re
 - ALL of the slot's candidate keys when the component is meant for broad / mixed practice — the primitive cycling through its skills with rising difficulty, with no single skill emphasized. Summative or "compare strategies / put it all together" intents usually want this.
 - A subset of 2+ (but not all) when the intent genuinely spans a few specific skills.
 
-Rules, in priority order:
-1. Match by skill and content only. Never pick by lesson position, phase, or "introducing the tool".
-2. For a SINGLE pick, do not over-reach: choose the simplest mode that fully covers the objective's skill — a higher-tier mode teaches a different, harder skill the objective did not ask for. Mixed is NOT a way to dodge this: only go mixed when no single skill is the point.
-3. Use the sibling components to DIVIDE LABOR across the objective. If other components already anchor the core skill, this slot can take a contrasting skill or the mixed/synthesis role rather than duplicating them. Per-slot fit (rules 1-2) still wins over forced variety.
+${RULES}
 
 SLOTS:
 ${slotText}
@@ -249,9 +294,10 @@ export async function resolveLessonEvalModes(
   gradeLevel: string,
   objectives?: Array<{ id: string; text: string; verb: string }>,
 ): Promise<EvalModeResolutionSummary> {
-  const slots = collectSlots(manifest, objectives);
+  const walked = walkBlocks(manifest, objectives);
+  const slots = collectSlots(walked, manifest);
   if (slots.length === 0) {
-    console.log(`[resolveLessonEvalModes] no multi-mode slots for "${topic}" (${gradeLevel}) — nothing to resolve`);
+    console.log(`[resolveLessonEvalModes] nothing to resolve for "${topic}" (${gradeLevel})`);
     return { slots: 0, changed: 0, kept: 0, mixed: 0, blend: 0 };
   }
 
@@ -276,7 +322,7 @@ export async function resolveLessonEvalModes(
       contents: buildPrompt(topic, gradeLevel, slots),
       config: {
         responseMimeType: 'application/json',
-        responseSchema: buildSchema(),
+        responseSchema: RESPONSE_SCHEMA,
         temperature: 0.3,
         abortSignal: abort.signal,
       },
