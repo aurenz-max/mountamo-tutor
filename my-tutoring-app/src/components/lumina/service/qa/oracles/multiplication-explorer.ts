@@ -1,31 +1,35 @@
 import type { ContentOracle, OracleResult, OracleViolation } from './types';
-import { asRecordArray, parseScopeCeiling } from './helpers';
+import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers';
 
 /**
- * multiplication-explorer oracle — a CALCULATION oracle. Each challenge carries
- * its OWN `targetFact` string ("2 × 5 = 10"); a fluency drill legitimately varies
- * the fact per challenge while the exploration modes (build/connect/…) keep the
- * one shared `data.fact`.
+ * multiplication-explorer oracle — a CALCULATION oracle. EVERY challenge carries
+ * its own fact: the structured `challenge.fact` plus the `targetFact` string
+ * ("2 × 5 = 10") that states it. A session is N different facts, each seen
+ * through its own modality (`challenge.representation`).
  *
- * The component (MultiplicationExplorer.tsx, post-fix 2026-07-07) judges each
- * challenge against its OWN fact:
- *   activeFact = parseTargetFact(currentChallenge.targetFact) ?? data.fact
+ * The component judges each challenge against its OWN fact:
+ *   activeFact = challenge.fact ?? parseTargetFact(challenge.targetFact) ?? data.fact
  *   getExpectedAnswer(): hiddenValue==='product' → activeFact.product
  *                        hiddenValue==='factor1' → activeFact.factor1
  *                        hiddenValue==='factor2' → activeFact.factor2
  *                        (null / anything else)  → activeFact.product   // default
  *   isCorrect = parseInt(answer) === getExpectedAnswer()
- * The equation display renders `activeFact` too, so what's asked and what's judged
- * can never disagree. `parseTargetFact` recomputes the product from the factors —
- * a shipped "= p" that disagrees is ignored. `data.fact` is now only the display
- * source for the shared representations and the fallback when a targetFact can't
- * be parsed.
+ * The equation display AND every representation panel render `activeFact`, so
+ * what's asked, what's drawn and what's judged cannot disagree. `data.fact` is now
+ * only a back-compat default for consumers predating per-challenge facts.
  *
- * (History: before the fix, the component judged EVERY challenge against the one
- * shared `data.fact`, so a fluency session emitting 5 different facts marked
- * correct answers wrong. This oracle caught it — 20 desyncs across 5 runs. The
- * fix moved the judge onto the per-challenge targetFact; the check below now
- * verifies that contract instead of the shared-fact one.)
+ * HISTORY — two halves of one defect, fixed a redesign apart:
+ *  - 2026-07-07: the component judged every challenge against the one shared
+ *    `data.fact`, so a fluency session emitting 5 facts marked correct answers
+ *    wrong. This oracle caught it — 20 desyncs across 5 runs. The judge moved onto
+ *    the per-challenge fact.
+ *  - That fix moved grading and the headline equation but left every
+ *    REPRESENTATION panel drawing the shared fact — a split-brain where the
+ *    student saw one equation, a picture of a different fact, and was graded on
+ *    the first. It stayed invisible only because the generator forced every
+ *    challenge onto one fact, which is what made a session "3 × 4 asked five
+ *    ways". The redesign fixed both: code-owned per-challenge facts, and every
+ *    panel reading activeFact.
  *
  * THE INDEPENDENCE RULE: parse each challenge's `targetFact` OURSELVES and
  * recompute the product from the factors — never trust the shipped RHS or
@@ -50,12 +54,19 @@ import { asRecordArray, parseScopeCeiling } from './helpers';
  *  - clustering        : no exact-duplicate challenge card (same type +
  *    hiddenValue + targetFact + instruction).
  *
+ * NOW CHECKED — answer-variety. This exemption used to read: "the exploration
+ * modes legitimately drill the ONE shared fact, so judged answers cluster by
+ * design." That design was the defect. A five-challenge session on 3 × 4 asked
+ * five ways is one question with four restatements: the student types the same
+ * number five times and the adaptive engine banks a single data point. The
+ * generator now draws a DIFFERENT fact per challenge from a code-owned pool, so
+ * clustered answers are a regression signal rather than the intended shape.
+ *
+ * The one legitimate single-fact session — the manifest pinning both factors —
+ * still trips this if every challenge also hides the same slot, and that is
+ * correct: whatever pinned it, five identical answers measure nothing.
+ *
  * Deliberately NOT checked:
- *  - answer-variety ("every answer is N"): the exploration modes (build/connect/
- *    commutative/distributive) legitimately drill the ONE shared fact across
- *    several challenges, so judged answers cluster on one value by design. A
- *    checkAnswerVariety over judged answers would false-positive on every valid
- *    single-fact session. The duplicate-card check is the meaningful signal.
  *  - broad answer-leak (text scan): factors appear in instructions by design
  *    ("Build 2 packs of 5 stickers"), and showProduct legitimately renders the
  *    product for factor-hidden (missing_factor) challenges where the product is
@@ -144,6 +155,7 @@ export const multiplicationExplorerOracle: ContentOracle = {
     }
 
     const taskSeen = new Map<string, number>();
+    const judgedAnswers: number[] = [];
     let checked = 0;
 
     for (let i = 0; i < challenges.length; i++) {
@@ -199,10 +211,39 @@ export const multiplicationExplorerOracle: ContentOracle = {
         }
       }
 
+      // ── The structured per-challenge fact must agree with its targetFact ──
+      // The generator stamps both from one source, so a disagreement means
+      // something wrote one without the other — the split-brain class again, this
+      // time between the drawn fact (challenge.fact) and the stated one.
+      const ownFact = c.fact as { factor1?: unknown; factor2?: unknown } | undefined;
+      if (ownFact && parsed) {
+        const [ta, tb] = parsed.factors;
+        if (ownFact.factor1 !== ta || ownFact.factor2 !== tb) {
+          violations.push({
+            check: 'answer-key-desync',
+            where,
+            detail: `challenge.fact {${String(ownFact.factor1)}, ${String(ownFact.factor2)}} disagrees with targetFact "${targetFact}" — the picture and the equation would show different facts`,
+          });
+        }
+      }
+
+      // The value the student actually types, mirroring getExpectedAnswer().
+      if (parsed) {
+        const [ta, tb] = parsed.factors;
+        judgedAnswers.push(
+          hiddenValue === 'factor1' ? ta : hiddenValue === 'factor2' ? tb : ta * tb,
+        );
+      }
+
       // clustering: byte-identical challenge card.
       const taskKey = `${type}|${hiddenValue}|${targetFact.replace(/\s+/g, ' ').trim()}|${String(c.instruction ?? '').replace(/\s+/g, ' ').trim()}`;
       taskSeen.set(taskKey, (taskSeen.get(taskKey) ?? 0) + 1);
     }
+
+    // clustering: the judged answers must spread. See the "NOW CHECKED" note above
+    // — this is the guard against a session collapsing back onto one fact.
+    const variety = checkAnswerVariety(judgedAnswers, 'challenges[].judgedAnswer');
+    if (variety) violations.push(variety);
 
     taskSeen.forEach((count, key) => {
       if (count > 1) {

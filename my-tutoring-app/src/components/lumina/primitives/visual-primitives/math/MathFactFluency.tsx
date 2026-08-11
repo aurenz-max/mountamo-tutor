@@ -320,8 +320,10 @@ const MathFactFluency: React.FC<MathFactFluencyProps> = ({ data, className }) =>
   useEffect(() => {
     if (currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete) {
       setChallengeStartTime(Date.now());
-      // Focus input for type-in challenges
-      const t = setTimeout(() => inputRef.current?.focus(), 100);
+      // Focus input for type-in challenges. preventScroll: this fires 100ms
+      // after mount — i.e. after App's land-at-the-top reset — so without it a
+      // lesson containing this primitive scrolls itself down to the input.
+      const t = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 100);
       return () => clearTimeout(t);
     }
   }, [currentChallengeIndex, currentChallenge, allChallengesComplete, isCurrentChallengeComplete]);

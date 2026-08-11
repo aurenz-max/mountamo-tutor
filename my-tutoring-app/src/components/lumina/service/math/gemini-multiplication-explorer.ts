@@ -91,6 +91,194 @@ const COUNT_BY_MODE: Record<MultiplicationExplorerChallengeType, number> = {
 };
 
 // ---------------------------------------------------------------------------
+// Code-owned FACT POOL + modality assignment (CLASS-3)
+// ---------------------------------------------------------------------------
+/**
+ * WHY CODE OWNS THE FACTS
+ * -----------------------
+ * This generator used to emit ONE `fact` and point every challenge at it, so a
+ * five-challenge session was "3 × 4" asked five ways: same numbers, same picture,
+ * five wordings. That is not five questions — it's one question with four
+ * restatements, and it gave the adaptive engine a single data point per session.
+ *
+ * Now each challenge carries its OWN fact, drawn HERE rather than from the model.
+ * Facts must be code-picked for the same reason array-grid's dimensions are
+ * (PRD §6a #2): structured-output flash-lite converges hard per call, so "give me
+ * five different facts" reliably returns 3×4 and its immediate neighbours. Code
+ * enumerates the admissible facts and samples for spread; Gemini only writes the
+ * words around the facts it is handed.
+ *
+ * The MANIFEST PIN still wins: when the lesson pins both factors it is genuinely
+ * about one fact (`config.factor1 = 3, factor2 = 4`), and the session correctly
+ * collapses to that fact explored across modalities. Pinning one factor means a
+ * times table — every challenge keeps that factor and varies the other.
+ */
+
+/** A representation key the component can render (mirrors MultiplicationRepresentation). */
+export type ExplorerRepresentation =
+  | 'groups' | 'array' | 'repeated_addition' | 'number_line' | 'area_model' | 'all';
+
+export interface ExplorerFact {
+  factor1: number;
+  factor2: number;
+}
+
+/**
+ * Admissible factor band per grade band. Mirrors the prose rules the prompt used
+ * to state ("grade 2 keeps products ≤ 50", "grade 3-4 any fact through 12×12"),
+ * but as a table code can actually enumerate. A Tier-2 scope cap narrows it further.
+ */
+export const FACT_BAND: Record<'2-3' | '3-4', { min: number; max: number; maxProduct: number }> = {
+  '2-3': { min: 2, max: 10, maxProduct: 50 },
+  '3-4': { min: 2, max: 12, maxProduct: 144 },
+};
+
+/** Fisher-Yates — the only source of between-session fact variance. */
+function shuffleFacts<T>(items: T[]): T[] {
+  const out = items.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+const factCard = (f: ExplorerFact) => `${f.factor1}x${f.factor2}`;
+const factShape = (f: ExplorerFact) =>
+  f.factor1 <= f.factor2 ? `${f.factor1}x${f.factor2}` : `${f.factor2}x${f.factor1}`;
+
+/**
+ * Pick `count` facts, preferring maximum spread. Selection tiers, each of which
+ * only ever adds a card not already present:
+ *   1. distinct PRODUCTS   — the widest spread; no two challenges share an answer.
+ *   2. distinct SHAPES     — 3×4 after 2×6 (same product 12, different picture).
+ *   3. distinct CARDS      — commutative reflections (4×3 after 3×4), which are a
+ *      genuinely different task in a primitive whose whole point includes commutativity.
+ * A pinned factor narrows the enumeration rather than filtering afterwards, so a
+ * pin can never starve the pool into repeats.
+ */
+export function selectFacts(
+  band: { min: number; max: number; maxProduct: number },
+  count: number,
+  opts: { pinnedFactor1?: number; pinnedFactor2?: number } = {},
+): ExplorerFact[] {
+  const admissible: ExplorerFact[] = [];
+  const f1Lo = opts.pinnedFactor1 ?? band.min;
+  const f1Hi = opts.pinnedFactor1 ?? band.max;
+  const f2Lo = opts.pinnedFactor2 ?? band.min;
+  const f2Hi = opts.pinnedFactor2 ?? band.max;
+  for (let f1 = f1Lo; f1 <= f1Hi; f1++) {
+    for (let f2 = f2Lo; f2 <= f2Hi; f2++) {
+      // ×1 is not a fact worth a challenge card; the product ceiling is the grade rule.
+      if (f1 < 2 || f2 < 2) continue;
+      if (f1 * f2 > band.maxProduct) continue;
+      admissible.push({ factor1: f1, factor2: f2 });
+    }
+  }
+
+  const picked: ExplorerFact[] = [];
+  const usedProducts = new Set<number>();
+  const usedShapes = new Set<string>();
+  const usedCards = new Set<string>();
+  const take = (f: ExplorerFact) => {
+    usedProducts.add(f.factor1 * f.factor2);
+    usedShapes.add(factShape(f));
+    usedCards.add(factCard(f));
+    picked.push(f);
+  };
+
+  for (const f of shuffleFacts(admissible)) {
+    if (picked.length >= count) break;
+    if (usedProducts.has(f.factor1 * f.factor2)) continue;
+    take(f);
+  }
+  for (const f of shuffleFacts(admissible)) {
+    if (picked.length >= count) break;
+    if (usedShapes.has(factShape(f))) continue;
+    take(f);
+  }
+  for (const f of shuffleFacts(admissible)) {
+    if (picked.length >= count) break;
+    if (usedCards.has(factCard(f))) continue;
+    take(f);
+  }
+
+  // Both factors pinned → the lesson IS one fact; repeat it deliberately so the
+  // session explores it across modalities (the one case where that is correct).
+  if (picked.length === 0 && admissible.length > 0) {
+    return Array.from({ length: count }, () => admissible[0]);
+  }
+  if (picked.length === 1 && admissible.length === 1) {
+    return Array.from({ length: count }, () => picked[0]);
+  }
+  if (picked.length < count) {
+    console.warn(
+      `[MultiplicationExplorer] only ${picked.length} distinct facts available for ${count} `
+      + `challenges (band ${band.min}-${band.max}, product ≤ ${band.maxProduct}`
+      + `${opts.pinnedFactor1 !== undefined ? `, factor1 pinned ${opts.pinnedFactor1}` : ''}`
+      + `${opts.pinnedFactor2 !== undefined ? `, factor2 pinned ${opts.pinnedFactor2}` : ''}) `
+      + `— shipping a shorter session rather than repeating a fact.`,
+    );
+  }
+  return picked;
+}
+
+/**
+ * Which modality each challenge is seen through. Round-robin over the ENABLED
+ * representations is what turns a single-mode session into modality coverage —
+ * "ask N questions, each through a different lens" — instead of N questions in
+ * the same panel. Two types override it because the model IS the strategy:
+ * `connect` needs all five at once, and `distributive` is taught on the area model.
+ */
+export function assignRepresentations(
+  types: MultiplicationExplorerChallengeType[],
+  enabled: ExplorerRepresentation[],
+): ExplorerRepresentation[] {
+  const cycle = enabled.filter((r) => r !== 'all');
+  return types.map((t, i) => {
+    if (t === 'connect') return 'all';
+    if (t === 'distributive' && cycle.includes('area_model')) return 'area_model';
+    if (cycle.length === 0) return 'array';
+    return cycle[i % cycle.length];
+  });
+}
+
+/**
+ * Deterministic challenge text for a given (type, fact) — the no-LLM path.
+ *
+ * EVERY instruction here resolves to ONE number, because the component's only
+ * answer affordance is a numeric keypad and it grades `parseInt(answer) ===
+ * expected`. The pre-redesign fallbacks asked "Is 3 × 4 the same as 4 × 3?" and
+ * "Do they show the same amount?" while silently expecting the product — a
+ * student who answered the question as written could never be right.
+ */
+export function buildFallbackChallenge(
+  type: MultiplicationExplorerChallengeType,
+  fact: ExplorerFact,
+  index: number,
+): Record<string, unknown> {
+  const { factor1: a, factor2: b } = fact;
+  const p = a * b;
+  const targetFact = `${a} × ${b} = ${p}`;
+  const base = { id: `c${index + 1}`, targetFact, timeLimit: null as number | null };
+  switch (type) {
+    case 'connect':
+      return { ...base, type, instruction: `All the pictures show ${a} × ${b}. How many are there in total?`, hiddenValue: 'product', hint: 'Every picture shows the same fact — count any one of them.', narration: `Groups, arrays and jumps all show ${a} × ${b}. Let's find the total.` };
+    case 'commutative':
+      return { ...base, type, instruction: `${a} × ${b} and ${b} × ${a} make the same total. What is it?`, hiddenValue: 'product', hint: 'Flip the array sideways — the total does not change.', narration: `Swapping the numbers keeps the total the same. What is it?` };
+    case 'distributive':
+      return { ...base, type, instruction: `Break ${a} × ${b} into easier parts. What is the total?`, hiddenValue: 'product', hint: `Try ${Math.min(5, Math.max(1, a - 1))} × ${b} plus ${a - Math.min(5, Math.max(1, a - 1))} × ${b}.`, narration: `Let's break a hard fact into easy ones!` };
+    case 'missing_factor':
+      return { ...base, type, instruction: `? × ${b} = ${p}. What is the missing number?`, hiddenValue: 'factor1', hint: `Count by ${b}s until you reach ${p}.`, narration: `One factor is hidden. Can you work it out?` };
+    case 'fluency':
+      return { ...base, type, timeLimit: 6, instruction: `Quick! What is ${a} × ${b}?`, hiddenValue: 'product', hint: `Think of ${a} groups of ${b}.`, narration: `Let's see how fast you know this one!` };
+    case 'build':
+    default:
+      return { ...base, type: 'build', instruction: `Build ${a} groups of ${b}. How many is that in total?`, hiddenValue: 'product', hint: `Count up: ${Array.from({ length: a }, (_, i) => b * (i + 1)).join(', ')}.`, narration: `Let's build ${a} groups of ${b} and count them!` };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
 // ---------------------------------------------------------------------------
 // The two-field contract (same as ten-frame / counting-board): config.targetEvalMode
@@ -396,6 +584,31 @@ export const generateMultiplicationExplorer = async (
   // For config.challengeTypes without an eval mode, use them as a hint
   const effectiveChallengeTypes = evalConstraint?.allowedTypes ?? config?.challengeTypes;
 
+  // ── Code-owned facts (CLASS-3) ───────────────────────────────────
+  // Picked BEFORE the call so the prompt can hand Gemini the exact fact each
+  // challenge is about — the words it writes then match the numbers code chose,
+  // and neither can drift from the other. ctx.grade is the canonical curriculum
+  // grade; never parse it out of the gradeContext prose (GenerationContext:68).
+  const factBandKey: '2-3' | '3-4' =
+    config?.gradeBand ??
+    (ctx.grade && /^\d+$/.test(ctx.grade) && parseInt(ctx.grade, 10) >= 4 ? '3-4' : '2-3');
+  const sessionFacts = selectFacts(FACT_BAND[factBandKey], instanceCount, {
+    pinnedFactor1: config?.factor1,
+    pinnedFactor2: config?.factor2,
+  });
+  const factsSection = sessionFacts.length
+    ? `\n## THE FACTS FOR THIS SESSION (assigned — do not choose your own)\n`
+      + sessionFacts
+          .map((f, i) => `- Challenge ${i + 1}: ${f.factor1} × ${f.factor2} = ${f.factor1 * f.factor2}`)
+          .join('\n')
+      + `\nWrite each challenge's instruction, hint and narration ABOUT ITS OWN FACT above, in order.\n`
+      + `Challenge N's targetFact MUST be exactly the fact listed for challenge N.\n`
+    : '';
+  console.log(
+    `[MultiplicationExplorer] facts (band ${factBandKey}): `
+    + sessionFacts.map((f) => `${f.factor1}×${f.factor2}`).join(', '),
+  );
+
   // ── Within-mode support tier ──
   // The eval mode owns WHAT skill; config.difficulty owns how much on-screen
   // scaffolding within it. supportTier DRIVES application (per challenge, blends
@@ -432,6 +645,7 @@ The multiplication explorer connects 5 representations of the same fact:
 5. Area Model (3 × 4 rectangle)
 
 ${challengeTypeSection}
+${factsSection}
 ${tierSection}
 ${!evalConstraint ? `
 GRADE-LEVEL GUIDELINES:
@@ -475,12 +689,16 @@ REQUIREMENTS:
 2. product MUST equal factor1 × factor2 exactly
 3. Generate EXACTLY ${instanceCount} challenges that progress in difficulty
 4. Start with easier challenges and progress to harder types
-5. For grade 2, keep factors ≤ 10 and use only ×2, ×5, ×10
-6. For grade 3-4, any facts through 12×12 are fine
+5. Use the ASSIGNED fact for each challenge — do NOT invent factors of your own
+6. Each challenge's instruction must be answerable by typing ONE number on a keypad.
+   Never phrase a challenge as a yes/no question ("Do they show the same amount?") —
+   the student answers with a number, so ask for one ("...how many in total?").
 7. hiddenValue should be null for build/connect, 'product' for fluency, 'factor1' or 'factor2' for missing_factor
 8. Include warm, encouraging hint and narration text
 9. All 5 representations should generally be true (set false only if factor is too large for visual)
 10. Set activeRepresentation to 'groups' as the starting view
+11. The title must be NUMBER-FREE — the session covers several different facts, so a
+    title like "Sticker Packs: 3 × 4" would be wrong. Use "Sticker Packs" instead.
 
 Return the complete multiplication explorer configuration.
 `;
@@ -507,10 +725,9 @@ Return the complete multiplication explorer configuration.
     data.fact.product = data.fact.factor1 * data.fact.factor2;
   }
 
-  // Validation: gradeBand
-  if (data.gradeBand !== '2-3' && data.gradeBand !== '3-4') {
-    data.gradeBand = '2-3';
-  }
+  // gradeBand is code-owned: the facts were enumerated from FACT_BAND[factBandKey],
+  // so letting Gemini report a different band would describe content it didn't pick.
+  data.gradeBand = factBandKey;
 
   // Validation: activeRepresentation
   const validReps = ['groups', 'array', 'repeated_addition', 'number_line', 'area_model', 'all'];
@@ -532,25 +749,16 @@ Return the complete multiplication explorer configuration.
   }
 
   // ── Fallback if empty ──
+  // Build a FULL session from the code-owned facts, not a single card: one
+  // challenge per fact keeps mastery-over-demo (3-6+ instances) even when the
+  // model returns nothing usable.
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'build';
-    const fallbacks: Record<string, { type: string; instruction: string; targetFact: string; hiddenValue: string | null; timeLimit: number | null; hint: string; narration: string }> = {
-      build: { type: 'build', instruction: `How many is ${data.fact.factor1} groups of ${data.fact.factor2}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: null, hint: `Count the groups: ${Array.from({ length: data.fact.factor1 }).map((_, i) => data.fact.factor2 * (i + 1)).join(', ')}`, narration: `Let's find out what ${data.fact.factor1} times ${data.fact.factor2} equals!` },
-      connect: { type: 'connect', instruction: `Look at all 5 pictures. They all show ${data.fact.factor1} × ${data.fact.factor2}!`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: null, timeLimit: null, hint: 'Each picture shows the same fact in a different way.', narration: `Can you see how groups, arrays, and addition all show the same number?` },
-      commutative: { type: 'commutative', instruction: `Is ${data.fact.factor1} × ${data.fact.factor2} the same as ${data.fact.factor2} × ${data.fact.factor1}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: null, timeLimit: null, hint: 'Flip the array sideways — do you get the same total?', narration: `Let's see what happens when we swap the numbers!` },
-      distributive: { type: 'distributive', instruction: `Can you break ${data.fact.factor1} × ${data.fact.factor2} into easier parts?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: null, hint: `Try splitting: 5 × ${data.fact.factor2} + ${Math.max(0, data.fact.factor1 - 5)} × ${data.fact.factor2}`, narration: `Let's use a trick to make this easier!` },
-      missing_factor: { type: 'missing_factor', instruction: `? × ${data.fact.factor2} = ${data.fact.product}. What is the missing number?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'factor1', timeLimit: null, hint: `Count by ${data.fact.factor2}s until you reach ${data.fact.product}.`, narration: `One factor is hidden. Can you figure it out?` },
-      fluency: { type: 'fluency', instruction: `Quick! What is ${data.fact.factor1} × ${data.fact.factor2}?`, targetFact: `${data.fact.factor1} × ${data.fact.factor2} = ${data.fact.product}`, hiddenValue: 'product', timeLimit: 6, hint: `Think of ${data.fact.factor1} groups of ${data.fact.factor2}.`, narration: `Let's see how fast you know this fact!` },
-    };
-    console.log(`[MultiplicationExplorer] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
+    const fallbackType = (evalConstraint?.allowedTypes[0] ?? 'build') as MultiplicationExplorerChallengeType;
+    console.log(`[MultiplicationExplorer] No valid challenges — building ${sessionFacts.length} ${fallbackType} fallbacks`);
+    data.challenges = sessionFacts.map((f, i) => buildFallbackChallenge(fallbackType, f, i));
   }
 
-  // Final summary log
-  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
-  console.log(`[MultiplicationExplorer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
-
-  // Ensure representations object has all fields
+  // Ensure representations object has all fields (needed before modality assignment)
   data.representations = {
     equalGroups: data.representations?.equalGroups ?? true,
     array: data.representations?.array ?? true,
@@ -558,6 +766,38 @@ Return the complete multiplication explorer configuration.
     numberLine: data.representations?.numberLine ?? true,
     areaModel: data.representations?.areaModel ?? true,
   };
+
+  // ── Stamp the code-owned fact + modality onto every challenge ──────────────
+  // The prompt ASKED for these facts, but the response is not trusted to carry
+  // them: this is the only writer, so what the student is asked, shown and graded
+  // on comes from one source. A challenge the model returned beyond the fact pool
+  // is dropped rather than given an invented fact.
+  {
+    const challengeList = (data.challenges as Array<Record<string, unknown>>).slice(0, sessionFacts.length);
+    data.challenges = challengeList.map((c, i) => {
+      const f = sessionFacts[i];
+      const product = f.factor1 * f.factor2;
+      return {
+        ...c,
+        id: String(c.id ?? `c${i + 1}`),
+        fact: { factor1: f.factor1, factor2: f.factor2 },
+        targetFact: `${f.factor1} × ${f.factor2} = ${product}`,
+      };
+    });
+  }
+
+  // The session `fact` is now only a back-compat default for consumers that
+  // predate per-challenge facts; the first challenge's fact is the honest one.
+  if (sessionFacts.length > 0) {
+    const first = sessionFacts[0];
+    data.fact = { factor1: first.factor1, factor2: first.factor2, product: first.factor1 * first.factor2 };
+  }
+
+  // Final summary log (modalities are assigned later and logged separately)
+  const typeBreakdown = (data.challenges as Array<{ type: string; targetFact: string }>)
+    .map((c) => `${c.type}:${c.targetFact.replace(/\s/g, '')}`)
+    .join(', ');
+  console.log(`[MultiplicationExplorer] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
 
   // Ensure showOptions
   data.showOptions = {
@@ -567,8 +807,11 @@ Return the complete multiplication explorer configuration.
     showDistributiveBreakdown: data.showOptions?.showDistributiveBreakdown ?? (data.gradeBand === '3-4'),
   };
 
-  // Disable number line for large products (>50 looks cramped)
-  if (data.fact.product > 50) {
+  // Disable number line for large products (>50 looks cramped). Facts now vary per
+  // challenge, so the guard is driven by the LARGEST product in the session — the
+  // session `fact` is only the first challenge's and would let later facts through.
+  const maxSessionProduct = sessionFacts.reduce((m, f) => Math.max(m, f.factor1 * f.factor2), 0);
+  if (maxSessionProduct > 50) {
     data.representations.numberLine = false;
   }
 
@@ -636,7 +879,7 @@ Return the complete multiplication explorer configuration.
         areaModel: isCore && hasType('distributive'),
       };
       // Re-apply the large-product number-line guard after the tier reshuffle.
-      if (data.fact.product > 50) data.representations.numberLine = false;
+      if (maxSessionProduct > 50) data.representations.numberLine = false;
     }
 
     // Persist the tier so the live tutor matches what's on screen (set whenever a tier
@@ -651,16 +894,12 @@ Return the complete multiplication explorer configuration.
     );
   }
 
-  // Apply explicit config overrides
+  // Apply explicit config overrides.
+  // NOTE: config.factor1/factor2 are deliberately NOT re-applied to data.fact here.
+  // They were honoured up front by narrowing the fact pool in selectFacts, so every
+  // challenge already respects the pin. Writing them again would desync data.fact
+  // from challenge 1 — the exact split-brain this redesign removes.
   if (config) {
-    if (config.factor1 !== undefined) {
-      data.fact.factor1 = config.factor1;
-      data.fact.product = config.factor1 * data.fact.factor2;
-    }
-    if (config.factor2 !== undefined) {
-      data.fact.factor2 = config.factor2;
-      data.fact.product = data.fact.factor1 * config.factor2;
-    }
     if (config.gradeBand !== undefined) data.gradeBand = config.gradeBand;
   }
 
@@ -676,6 +915,31 @@ Return the complete multiplication explorer configuration.
     if (productIsAsked) {
       data.showOptions = { ...data.showOptions, showProduct: false };
     }
+  }
+
+  // ── Modality assignment (LAST) ────────────────────────────────────────────
+  // Runs after the support tier and config overrides have settled which panels are
+  // enabled. Assigning earlier could pin a challenge to a representation the tier
+  // then disables, leaving that challenge staring at a tab that no longer exists.
+  {
+    const enabledReps: ExplorerRepresentation[] = [
+      ...(data.representations.equalGroups ? ['groups' as const] : []),
+      ...(data.representations.array ? ['array' as const] : []),
+      ...(data.representations.repeatedAddition ? ['repeated_addition' as const] : []),
+      ...(data.representations.numberLine ? ['number_line' as const] : []),
+      ...(data.representations.areaModel ? ['area_model' as const] : []),
+    ];
+    const list = data.challenges as Array<Record<string, unknown>>;
+    const reps = assignRepresentations(
+      list.map((c) => String(c.type) as MultiplicationExplorerChallengeType),
+      enabledReps,
+    );
+    data.challenges = list.map((c, i) => ({ ...c, representation: reps[i] }));
+    console.log(
+      `[MultiplicationExplorer] modalities → `
+      + (data.challenges as Array<{ type: string; representation: string }>)
+          .map((c) => `${c.type}@${c.representation}`).join(', '),
+    );
   }
 
   return data;

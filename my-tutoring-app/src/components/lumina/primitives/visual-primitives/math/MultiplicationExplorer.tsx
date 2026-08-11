@@ -26,6 +26,14 @@ import CalculatorInput from '../../input-primitives/CalculatorInput';
 // Data Interface (Single Source of Truth)
 // =============================================================================
 
+export type MultiplicationRepresentation =
+  | 'groups'
+  | 'array'
+  | 'repeated_addition'
+  | 'number_line'
+  | 'area_model'
+  | 'all';
+
 export interface MultiplicationExplorerChallenge {
   id: string;
   type: 'build' | 'connect' | 'commutative' | 'distributive' | 'missing_factor' | 'fluency';
@@ -35,6 +43,22 @@ export interface MultiplicationExplorerChallenge {
   timeLimit: number | null; // seconds, for fluency mode
   hint: string;
   narration: string;
+
+  /**
+   * This challenge's OWN fact — the structured form of `targetFact`, stamped by
+   * the generator from a code-owned pool so a session is N DIFFERENT facts rather
+   * than one fact asked N ways. Preferred over parsing `targetFact`; absent on
+   * pre-redesign data, which still parses (see resolveChallengeFact).
+   */
+  fact?: { factor1: number; factor2: number };
+
+  /**
+   * The modality THIS challenge is seen through. One representation per challenge
+   * is what makes a session cover the modalities rather than re-showing one fact
+   * in every panel. 'all' shows the five side by side — the `connect` mode, where
+   * holding one fact across representations IS the lesson.
+   */
+  representation?: MultiplicationRepresentation;
 }
 
 export interface MultiplicationExplorerData {
@@ -521,11 +545,8 @@ function tutorRevealPolicy(
 
 /**
  * Parse a per-challenge `targetFact` string ("3 × 4 = 12") into its factors.
- * This primitive renders a single shared `data.fact`, but each challenge carries
- * its OWN fact — a fluency drill legitimately varies the fact per challenge. The
- * challenge's targetFact is the source of truth for what is asked and how the
- * answer is judged; `data.fact` is the fallback for the exploration modes
- * (build/connect/…), whose targetFact always equals the shared fact. Product is
+ * Back-compat path only: pre-redesign data carries the fact as prose. New data
+ * ships the structured `challenge.fact`, which needs no parsing. Product is
  * recomputed from the factors — a shipped "= p" that disagrees is never trusted.
  */
 function parseTargetFact(
@@ -538,6 +559,33 @@ function parseTargetFact(
   const factor2 = parseInt(nums[1], 10);
   if (!Number.isFinite(factor1) || !Number.isFinite(factor2)) return null;
   return { factor1, factor2, product: factor1 * factor2 };
+}
+
+/**
+ * The fact a challenge is asked, drawn, AND judged on — the single source of
+ * truth for all three, so they can never disagree.
+ *
+ * Resolution order: the structured per-challenge `fact` (code-owned, current) →
+ * a parsed `targetFact` (pre-redesign data) → the session `data.fact` (last
+ * resort). Product is always recomputed from the factors.
+ *
+ * HISTORY — why this must feed the VISUALS too: a 2026-07-07 fix moved grading
+ * and the headline equation onto the per-challenge fact but left every
+ * representation panel rendering the shared `data.fact`. That left the primitive
+ * split-brain: with per-challenge facts a student saw one equation, a picture of
+ * a DIFFERENT fact, and was graded on the first. It stayed invisible only because
+ * the generator forced every challenge onto one fact — which is exactly what made
+ * a session "3 × 4 asked five ways". Both are fixed together or neither is.
+ */
+function resolveChallengeFact(
+  challenge: MultiplicationExplorerChallenge | null,
+  sessionFact: { factor1: number; factor2: number; product: number },
+): { factor1: number; factor2: number; product: number } {
+  const own = challenge?.fact;
+  if (own && Number.isFinite(own.factor1) && Number.isFinite(own.factor2)) {
+    return { factor1: own.factor1, factor2: own.factor2, product: own.factor1 * own.factor2 };
+  }
+  return parseTargetFact(challenge?.targetFact) ?? sessionFact;
 }
 
 const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, className }) => {
@@ -582,18 +630,27 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const [activeTab, setActiveTab] = useState<string>(data.activeRepresentation === 'all' ? 'groups' : data.activeRepresentation);
   const currentChallenge = challenges[challengeIndex] ?? null;
 
-  // The fact the CURRENT challenge asks about. Fluency challenges each carry their
-  // own targetFact; the exploration modes fall back to the shared `data.fact`
-  // (their targetFact equals it). This is the single source of truth for the
-  // equation display AND for grading — so the two can never disagree.
+  // The fact the CURRENT challenge asks about — drives the equation display, EVERY
+  // representation panel, and grading, so all three always agree. See
+  // resolveChallengeFact for why the visuals must read this and not `data.fact`.
   const activeFact = useMemo(
-    () => parseTargetFact(currentChallenge?.targetFact) ?? fact,
+    () => resolveChallengeFact(currentChallenge, fact),
     [currentChallenge, fact],
   );
 
+  // The modality THIS challenge is seen through. Pinning one representation per
+  // challenge is what makes a session COVER the modalities (fact A as groups, fact
+  // B on a number line, …) instead of re-drawing one fact in every panel.
+  const challengeRepresentation = currentChallenge?.representation;
+
+  // 'all' = the five side by side (the connect mode). The student can also reach
+  // that view manually via the Connect phase button.
+  const showAllRepresentations =
+    challengeRepresentation === 'all' || currentPhase === 'connect';
+
   // AI tutoring integration
   const aiPrimitiveData = useMemo(() => ({
-    fact: `${fact.factor1} × ${fact.factor2} = ${fact.product}`,
+    fact: `${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}`,
     currentPhase,
     challengeIndex,
     challengeType: currentChallenge?.type || 'none',
@@ -604,7 +661,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     factsTotal,
     gradeBand,
     supportTier: supportTier ?? null,
-  }), [fact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand, supportTier]);
+  }), [activeFact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand, supportTier]);
 
   const { sendText } = useLuminaAI({
     primitiveType: 'multiplication-explorer',
@@ -649,6 +706,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       return next;
     });
   }, [activeTab]);
+
+  // Follow the challenge's pinned modality when it advances. This only sets the
+  // STARTING lens — the student can still switch tabs freely within a challenge.
+  useEffect(() => {
+    if (challengeRepresentation && challengeRepresentation !== 'all') {
+      setActiveTab(challengeRepresentation);
+    }
+  }, [challengeRepresentation, currentChallenge?.id]);
 
   // Start fluency timer when entering fluency challenges
   useEffect(() => {
@@ -781,16 +846,16 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     setFlipped((f) => !f);
     setCommutativeExplored(true);
 
-    const factKey = `${fact.factor1}x${fact.factor2}`;
+    const factKey = `${activeFact.factor1}x${activeFact.factor2}`;
     if (lastFlipNarratedFactRef.current !== factKey) {
       lastFlipNarratedFactRef.current = factKey;
       sendText(
-        `[COMMUTATIVE_FLIP] Student flipped ${fact.factor1} × ${fact.factor2} to ${fact.factor2} × ${fact.factor1}. ` +
+        `[COMMUTATIVE_FLIP] Student flipped ${activeFact.factor1} × ${activeFact.factor2} to ${activeFact.factor2} × ${activeFact.factor1}. ` +
         `Ask: "Is the total the same? Why?"`,
         { silent: true }
       );
     }
-  }, [fact, flipped, sendText]);
+  }, [activeFact, flipped, sendText]);
 
   const handleShowFactFamily = useCallback(() => {
     SoundManager.pop();
@@ -798,25 +863,25 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
     sendText(
       `[FACT_FAMILY] Student explored the fact family: ` +
-      `${fact.factor1}×${fact.factor2}=${fact.product}, ${fact.product}÷${fact.factor1}=${fact.factor2}, etc. ` +
+      `${activeFact.factor1}×${activeFact.factor2}=${activeFact.product}, ${activeFact.product}÷${activeFact.factor1}=${activeFact.factor2}, etc. ` +
       `Briefly explain how multiplication and division are connected.`,
       { silent: true }
     );
-  }, [fact, sendText]);
+  }, [activeFact, sendText]);
 
   const handleShowDistributive = useCallback(() => {
     SoundManager.pop();
     setDistributiveUsed(true);
 
-    const a = Math.min(5, fact.factor1 - 1);
-    const b = fact.factor1 - a;
+    const a = Math.min(5, activeFact.factor1 - 1);
+    const b = activeFact.factor1 - a;
     sendText(
       `[DISTRIBUTIVE_STRATEGY] Student explored distributive property: ` +
-      `${fact.factor1}×${fact.factor2} = ${a}×${fact.factor2} + ${b}×${fact.factor2} = ${a * fact.factor2} + ${b * fact.factor2} = ${fact.product}. ` +
+      `${activeFact.factor1}×${activeFact.factor2} = ${a}×${activeFact.factor2} + ${b}×${activeFact.factor2} = ${a * activeFact.factor2} + ${b * activeFact.factor2} = ${activeFact.product}. ` +
       `Celebrate the strategy: "You broke a hard fact into easy ones!"`,
       { silent: true }
     );
-  }, [fact, sendText]);
+  }, [activeFact, sendText]);
 
   const handleComplete = useCallback(() => {
     if (hasSubmitted) return;
@@ -844,7 +909,12 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
 
     submitResult(success, score, metrics, {
       studentWork: {
-        fact,
+        // Every fact the session practiced — one per challenge, not a single
+        // session fact, now that each challenge carries its own.
+        facts: challenges.map((c) => {
+          const f = resolveChallengeFact(c, fact);
+          return { type: c.type, fact: `${f.factor1} × ${f.factor2} = ${f.product}` };
+        }),
         phases: currentPhase,
         challengeIndex,
         flipped,
@@ -863,7 +933,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     hasSubmitted, fluencyTimes, factsCorrect, factsTotal, representationsUsed,
     commutativeExplored, distributiveUsed, factFamilyCompleted,
     missingFactorCorrect, missingFactorTotal, attemptsCount,
-    fact, currentPhase, challengeIndex, flipped, submitResult, sendText,
+    fact, challenges, currentPhase, challengeIndex, flipped, submitResult, sendText,
   ]);
 
   const handleReset = useCallback(() => {
@@ -901,10 +971,11 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   }, [representations]);
 
   const renderRepresentation = (tabValue: string) => {
+    // activeFact, not the session fact — the picture must show the fact being asked.
     const panelProps = {
-      factor1: fact.factor1,
-      factor2: fact.factor2,
-      product: fact.product,
+      factor1: activeFact.factor1,
+      factor2: activeFact.factor2,
+      product: activeFact.product,
       showProduct: showOptions.showProduct,
       flipped,
     };
@@ -918,12 +989,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     }
   };
 
-  // In "connect" phase, show all 5 at once
+  // Connect: the five representations of ONE fact, side by side. This is the one
+  // place a constant fact IS the pedagogy — the insight is that they all encode the
+  // same thing — so it still renders a single fact, just the ACTIVE challenge's.
   const renderAllRepresentations = () => {
     const panelProps = {
-      factor1: fact.factor1,
-      factor2: fact.factor2,
-      product: fact.product,
+      factor1: activeFact.factor1,
+      factor2: activeFact.factor2,
+      product: activeFact.product,
       showProduct: showOptions.showProduct,
       flipped,
     };
@@ -969,7 +1042,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         <div className="flex items-center justify-between">
           <div>
             <LuminaCardTitle>
-              {data.title || `${fact.factor1} × ${fact.factor2}`}
+              {data.title || 'Multiplication Explorer'}
             </LuminaCardTitle>
             <LuminaCardDescription className="mt-1">
               {data.description || 'Explore multiplication through multiple representations'}
@@ -999,14 +1072,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         {showOptions.showCommutativeFlip && (
           <div className="flex justify-center">
             <LuminaButton className="text-sm" onClick={handleFlip}>
-              Flip: {fact.factor1} &times; {fact.factor2} ↔ {fact.factor2} &times; {fact.factor1}
+              Flip: {activeFact.factor1} &times; {activeFact.factor2} ↔ {activeFact.factor2} &times; {activeFact.factor1}
             </LuminaButton>
           </div>
         )}
 
         {/* Representations */}
-        {currentPhase === 'connect' ? (
-          /* Connect phase: show all at once */
+        {showAllRepresentations ? (
+          /* Connect: the five representations of one fact, side by side */
           renderAllRepresentations()
         ) : (
           /* Other phases: tabbed view */
@@ -1039,7 +1112,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
               Show Fact Family (× and ÷)
             </LuminaButton>
             {factFamilyCompleted && (
-              <FactFamilyDisplay f1={fact.factor1} f2={fact.factor2} p={fact.product} />
+              <FactFamilyDisplay f1={activeFact.factor1} f2={activeFact.factor2} p={activeFact.product} />
             )}
           </div>
         )}
@@ -1052,9 +1125,9 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
             </LuminaButton>
             {distributiveUsed && (
               <DistributiveDisplay
-                factor1={fact.factor1}
-                factor2={fact.factor2}
-                product={fact.product}
+                factor1={activeFact.factor1}
+                factor2={activeFact.factor2}
+                product={activeFact.product}
               />
             )}
           </div>

@@ -80,11 +80,14 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     startGenerate({ topic: handoff, gradeLevel: initialGrade ?? gradeLevel });
   }, [initialTopic, initialGrade, gradeLevel, startGenerate]);
 
-  // Auto-scroll when generation starts
+  // Every phase change lands at the top. This used to fire only on GENERATING,
+  // which is the one phase that doesn't need it — the generating screen GROWS
+  // as it works (objectives, per-primitive build rows, thinking log), so by the
+  // time the exhibit mounts the window is usually scrolled well down, and the
+  // lesson rendered underneath it. 'auto', not 'smooth': a smooth scroll is an
+  // interruptible animation that any wheel/touch input cancels mid-flight.
   useEffect(() => {
-    if (phase === GameState.GENERATING) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, [phase]);
 
   // Drawer State

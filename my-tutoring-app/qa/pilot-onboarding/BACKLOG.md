@@ -27,6 +27,31 @@ Firebase Auth has no native invite codes; ours are a Firestore collection
   beat form `K` on `students/{id}`). **Browser pass on the signup form itself
   still owed — needs a human sitting (drive the deep link end-to-end).**
 
+## DEPLOY STATE (measured 2026-08-10, live-test session)
+
+- **Vercel** (`mountamo-education.vercel.app`) auto-builds from `main`
+  (fast-forwarded to `f4facf5` this session — the ship record's named
+  condition "immediately if the pilot invite needs to go out" was taken).
+- **⚠️ The prod frontend has NO `NEXT_PUBLIC_API_BASE_URL`** — the live
+  bundle carries the `http://localhost:8000` fallback (read out of the
+  deployed JS). The live site therefore only works on the dev machine with
+  the local backend running. Fine for the owner's own live test; a blocker
+  for the family.
+- **Backend → Cloud Run** exists as `cloudbuild.yaml` (`ai-tutor-backend`,
+  us-east5) but gcloud auth on the dev machine is expired; whether the
+  service is currently deployed is UNVERIFIED. ⚠️ Before deploying: the
+  cloudbuild step uses `--set-env-vars` with ONLY `PROJECT_NAME`, which
+  REPLACES the service's env-var set — if Cosmos/Gemini/Firebase secrets
+  live as env vars on the service (not mounted volumes), that deploy wipes
+  them. Inspect `gcloud run services describe ai-tutor-backend` first.
+- Backend CORS already allows `*.vercel.app` (regex, main.py).
+- Family-pilot checklist: (1) `gcloud auth login` → deploy backend →
+  note the service URL; (2) Vercel dashboard → env var
+  `NEXT_PUBLIC_API_BASE_URL=<service URL>` → redeploy; (3)
+  `INVITE_REQUIRED_FOR_SIGNUP` defaults ON — prod signup is gated the
+  moment the backend lands; (4) re-run `probe_invite_flow.py
+  --base-url <service URL>` against prod before sending the invite.
+
 ## QUEUE
 
 1. **Lesson session record (the "decipher what happened" backbone).**

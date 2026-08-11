@@ -32,9 +32,51 @@ const clean = {
   ],
 };
 
+/**
+ * The post-redesign shape: N challenges = N different facts, each carrying the
+ * structured `fact` alongside its `targetFact`, each pinned to its own modality.
+ */
+const cleanVaried = {
+  ...clean,
+  title: 'Pack It Up',
+  fact: { factor1: 4, factor2: 5, product: 20 },
+  challenges: [
+    { id: 'c1', type: 'build', instruction: 'Build 4 packs with 5 in each. How many in total?', targetFact: '4 × 5 = 20', fact: { factor1: 4, factor2: 5 }, representation: 'groups', hiddenValue: 'product', timeLimit: null, hint: 'Skip-count by 5.', narration: 'Let us build it!' },
+    { id: 'c2', type: 'build', instruction: 'Build 3 packs with 7 in each. How many in total?', targetFact: '3 × 7 = 21', fact: { factor1: 3, factor2: 7 }, representation: 'array', hiddenValue: 'product', timeLimit: null, hint: 'Skip-count by 7.', narration: 'Next one!' },
+    { id: 'c3', type: 'build', instruction: 'Build 6 packs with 2 in each. How many in total?', targetFact: '6 × 2 = 12', fact: { factor1: 6, factor2: 2 }, representation: 'number_line', hiddenValue: 'product', timeLimit: null, hint: 'Jump by 2.', narration: 'Keep going!' },
+    { id: 'c4', type: 'build', instruction: 'Build 2 packs with 9 in each. How many in total?', targetFact: '2 × 9 = 18', fact: { factor1: 2, factor2: 9 }, representation: 'area_model', hiddenValue: 'product', timeLimit: null, hint: 'Double 9.', narration: 'Last one!' },
+  ],
+};
+
 describe('multiplication-explorer oracle', () => {
   it('passes clean data', () => {
     expect(multiplicationExplorerOracle.verify(clean, ctx).violations).toEqual([]);
+  });
+
+  it('passes a post-redesign session — N different facts, one modality each', () => {
+    expect(multiplicationExplorerOracle.verify(cleanVaried, ctx).violations).toEqual([]);
+  });
+
+  it('flags clustering — the "one fact asked five ways" regression', () => {
+    // The shape this redesign removed: every challenge on 3 × 4 hiding the same
+    // slot, so the student types 12 five times and the session measures once.
+    const data = JSON.parse(JSON.stringify(cleanVaried));
+    data.challenges = [1, 2, 3, 4].map((i) => ({
+      id: `c${i}`, type: 'build', instruction: `Way ${i} of showing 3 x 4.`,
+      targetFact: '3 × 4 = 12', fact: { factor1: 3, factor2: 4 },
+      representation: 'groups', hiddenValue: 'product', timeLimit: null, hint: '', narration: '',
+    }));
+    const v = multiplicationExplorerOracle.verify(data, ctx).violations;
+    expect(v.some((x) => x.check === 'clustering' && /judgedAnswer/.test(x.where))).toBe(true);
+  });
+
+  it('flags answer-key desync — challenge.fact disagrees with its targetFact', () => {
+    // The split-brain class: the drawn fact and the stated fact diverge, so the
+    // student sees a picture of one fact and an equation for another.
+    const data = JSON.parse(JSON.stringify(cleanVaried));
+    data.challenges[1].fact = { factor1: 5, factor2: 8 }; // targetFact still says 3 × 7
+    const v = multiplicationExplorerOracle.verify(data, ctx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && /disagrees with targetFact/.test(x.detail))).toBe(true);
   });
 
   it('does NOT flag a fluency drill of distinct facts — each challenge is judged on its own targetFact (post-fix contract)', () => {

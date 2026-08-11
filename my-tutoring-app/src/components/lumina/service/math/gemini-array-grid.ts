@@ -199,13 +199,14 @@ const COUNT_BY_MODE: Record<ArrayGridChallengeType, number> = {
 const ROW_BUTTON_CAP = 6;
 const COL_BUTTON_CAP = 8;
 
+// Smallest number of DISTINCT array cards a session may ship. Below this the
+// constraint set is unusable (the oracle also flags <3 as a demo-sized set), so
+// the ceiling is relaxed rather than the same card repeated. See MIN-CARDS guard.
+const MIN_DISTINCT_CARDS = 3;
+
 // ---------------------------------------------------------------------------
 // Local randomness helpers (Gemini convergence per PRD §6a #2)
 // ---------------------------------------------------------------------------
-
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 interface DimensionPair {
   rows: number;
@@ -215,6 +216,24 @@ interface DimensionPair {
 function canonKey(a: number, b: number): string {
   // Treat (3,5) and (5,3) as the same shape for dedup — commutative property.
   return a <= b ? `${a}x${b}` : `${b}x${a}`;
+}
+
+/** Ordered identity — what the student actually sees. (3,5) ≠ (5,3): different
+ *  visual, and different rows/columns answers in multiply_array. Two challenges
+ *  sharing this key are a byte-identical card (the oracle's clustering check). */
+function cardKey(p: DimensionPair): string {
+  return `${p.rows}x${p.columns}`;
+}
+
+/** Fisher-Yates. The admissible set is enumerated deterministically, so this is
+ *  the only source of between-session variance. */
+function shuffle<T>(items: T[]): T[] {
+  const out = items.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 /**
@@ -261,6 +280,122 @@ function dimensionRangeFor(
   }
 }
 
+interface DimensionBand {
+  rowMin: number;
+  rowMax: number;
+  colMin: number;
+  colMax: number;
+}
+
+/** Apply the Tier-2 scope cap to a mode's grade band. Narrows ONLY — never widens
+ *  past the mode's band — and stays inside the component's button panels so every
+ *  emitted pair is selectable in build mode. */
+function narrowBand(type: ArrayGridChallengeType, cap?: { min: number; max: number }): DimensionBand {
+  let { rowMin, rowMax, colMin, colMax } = dimensionRangeFor(type);
+  if (cap) {
+    rowMax = Math.min(rowMax, cap.max);
+    colMax = Math.min(colMax, cap.max);
+    rowMin = Math.min(Math.max(rowMin, cap.min), rowMax);
+    colMin = Math.min(Math.max(colMin, cap.min), colMax);
+  }
+  return {
+    rowMin,
+    rowMax: Math.min(rowMax, ROW_BUTTON_CAP),
+    colMin,
+    colMax: Math.min(colMax, COL_BUTTON_CAP),
+  };
+}
+
+/**
+ * Every (rows, columns) card the band + product ceiling admit, split by shape.
+ *
+ * The whole space is at most 6×8 = 48 pairs, so we ENUMERATE it rather than
+ * rejection-sample. Rejection sampling was the bug this replaced: when the
+ * constraints admitted few (or zero) non-square pairs, the sampler exhausted its
+ * attempt budget and fell through to a fallback that dropped the non-square AND
+ * dedup guards, shipping the same card N times ("2×2" on every problem).
+ */
+function enumerateAdmissible(
+  band: DimensionBand,
+  productMax?: number,
+): { nonSquare: DimensionPair[]; squares: DimensionPair[]; total: number } {
+  const nonSquare: DimensionPair[] = [];
+  const squares: DimensionPair[] = [];
+  for (let rows = Math.max(2, band.rowMin); rows <= band.rowMax; rows++) {
+    for (let columns = Math.max(2, band.colMin); columns <= band.colMax; columns++) {
+      // Trivial 1×N / N×1 arrays are excluded by the max(2, …) floors above.
+      if (productMax !== undefined && rows * columns > productMax) continue;
+      (rows === columns ? squares : nonSquare).push({ rows, columns });
+    }
+  }
+  return { nonSquare, squares, total: nonSquare.length + squares.length };
+}
+
+/**
+ * MIN-CARDS guard. A product ceiling this primitive cannot express is not a
+ * usable ceiling: the smallest non-square array is 2×3 = 6, so any ceiling below
+ * 6 admits nothing but 2×2 and collapses the session onto one card.
+ *
+ * That happens for real lesson text, because the ceiling is regex-read from prose
+ * (parseProductCeiling): "build arrays up to 4 rows" and "relate repeated addition
+ * to 4 equal groups" bound a DIMENSION or a GROUP COUNT, not a product, yet both
+ * yield productMax = 4.
+ *
+ * Rather than drop the bound outright, raise it to the SMALLEST value that admits
+ * `target` distinct cards — the least relaxation that still lets the session teach.
+ * Per the trust-intent rule, a cap that starves the visual is a bug in the cap, and
+ * of every input here the regex-read ceiling is the least trustworthy: the band
+ * comes from a schema-constrained resolver, the session length is a product
+ * requirement. So the ceiling is what yields. Returns undefined (no product bound)
+ * when even the unbounded band cannot reach `target`.
+ */
+function relaxProductCeiling(
+  band: DimensionBand,
+  productMax: number | undefined,
+  target: number,
+): number | undefined {
+  if (productMax === undefined) return undefined;
+  if (enumerateAdmissible(band, productMax).total >= target) return productMax;
+  const bandMaxProduct = band.rowMax * band.colMax;
+  for (let p = productMax + 1; p <= bandMaxProduct; p++) {
+    if (enumerateAdmissible(band, p).total >= target) return p;
+  }
+  return undefined;
+}
+
+/**
+ * Second-stage guard. When the DIMENSION band alone (ceiling already dropped)
+ * cannot supply MIN_DISTINCT_CARDS — e.g. a {min:2,max:3} scope cap leaves
+ * count_array with just 2×3 and 3×3 — widen it back toward the mode's grade band.
+ * Same trust-intent logic as above, applied one level up; a scope cap that leaves
+ * the primitive unable to present its own subject matter is not a usable cap.
+ */
+function widenBandToFloor(type: ArrayGridChallengeType, band: DimensionBand): DimensionBand {
+  const full = dimensionRangeFor(type);
+  const rowCeil = Math.min(full.rowMax, ROW_BUTTON_CAP);
+  const colCeil = Math.min(full.colMax, COL_BUTTON_CAP);
+  const widened = { ...band };
+  while (enumerateAdmissible(widened, undefined).total < MIN_DISTINCT_CARDS) {
+    if (widened.rowMax >= rowCeil && widened.colMax >= colCeil) break;
+    if (widened.rowMax < rowCeil) widened.rowMax++;
+    if (widened.colMax < colCeil) widened.colMax++;
+  }
+  return widened;
+}
+
+/**
+ * Pick up to `count` DISTINCT array cards, in descending order of pedagogical
+ * preference. No tier ever repeats an ordered (rows, columns) pair — if the
+ * admissible set is smaller than `count` the session is SHORTENED, never padded
+ * with a duplicate card.
+ *
+ *  1. distinct non-square SHAPES (one of 2×3 / 3×2, one of 3×4 / 4×3, …) —
+ *     maximum product spread, and rows stay visibly distinguishable from columns.
+ *  2. squares (3×3) — a distinct card carrying a product no other tier supplies.
+ *  3. commutative reflections (5×3 after 3×5) — distinct student tasks (different
+ *     visual, different rows/columns answers), but they REPEAT a product, so they
+ *     come last: the oracle's variety check wants products to spread.
+ */
 function selectDimensionPairs(
   type: ArrayGridChallengeType,
   count: number,
@@ -269,52 +404,76 @@ function selectDimensionPairs(
   cap?: { min: number; max: number },
   /** Objective PRODUCT ceiling (rows × columns) from parseProductCeiling. A pair
    *  whose product exceeds it is out of scope ("multiplication to 20" → 5×8=40 is
-   *  past the objective); absent → no product bound. Narrows only. */
+   *  past the objective); absent → no product bound. Narrows only, and is subject
+   *  to the MIN-CARDS guard above. */
   productMax?: number,
 ): DimensionPair[] {
-  let { rowMin, rowMax, colMin, colMax } = dimensionRangeFor(type);
-  if (cap) {
-    // Narrow ONLY — never widen past the mode's grade band. max caps the top,
-    // min lifts the floor (clamped under the capped max so the range stays valid).
-    rowMax = Math.min(rowMax, cap.max);
-    colMax = Math.min(colMax, cap.max);
-    rowMin = Math.min(Math.max(rowMin, cap.min), rowMax);
-    colMin = Math.min(Math.max(colMin, cap.min), colMax);
-  }
-  // A pair is admissible if non-trivial, non-square, and within the product ceiling.
-  const withinProduct = (r: number, c: number) => productMax === undefined || r * c <= productMax;
-  const pairs: DimensionPair[] = [];
-  const seen = new Set<string>();
-  const maxAttempts = count * 12;
+  const requested = narrowBand(type, cap);
 
-  for (let i = 0; i < maxAttempts && pairs.length < count; i++) {
-    const rows = randInt(rowMin, Math.min(rowMax, ROW_BUTTON_CAP));
-    const columns = randInt(colMin, Math.min(colMax, COL_BUTTON_CAP));
-    // Avoid trivial 1×N / N×1 arrays.
-    if (rows < 2 || columns < 2) continue;
-    // Avoid squares — they don't differentiate "rows" from "columns".
-    if (rows === columns) continue;
-    // Honor the objective product ceiling — an over-ceiling array is out of scope.
-    if (!withinProduct(rows, columns)) continue;
-    const key = canonKey(rows, columns);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    pairs.push({ rows, columns });
+  // Stage 1 — yield the (regex-read, least trustworthy) product ceiling first.
+  let band = requested;
+  let effectiveMax = relaxProductCeiling(band, productMax, count);
+  // Stage 2 — if the band ALONE still can't reach the floor, widen the band too.
+  if (enumerateAdmissible(band, effectiveMax).total < MIN_DISTINCT_CARDS) {
+    band = widenBandToFloor(type, band);
+    effectiveMax = relaxProductCeiling(band, productMax, count);
   }
 
-  // Fallback: if dedup killed too many, accept duplicates rather than blocking —
-  // but STILL honor the product ceiling (out-of-scope content is worse than a
-  // repeated card). If the ceiling is so tight nothing admissible remains, we
-  // exit with fewer pairs rather than emit an over-scope array.
-  let guard = count * 24;
-  while (pairs.length < count && guard-- > 0) {
-    const rows = randInt(rowMin, Math.min(rowMax, ROW_BUTTON_CAP));
-    const columns = randInt(colMin, Math.min(colMax, COL_BUTTON_CAP));
-    if (rows < 2 || columns < 2 || !withinProduct(rows, columns)) continue;
-    pairs.push({ rows, columns });
+  if (productMax !== undefined && effectiveMax !== productMax) {
+    console.warn(
+      `⊞ Array Grid product ceiling ${productMax} admits too few distinct arrays in band `
+      + `${requested.rowMin}-${requested.rowMax} × ${requested.colMin}-${requested.colMax} — `
+      + `relaxed to ${effectiveMax ?? 'none'}. (A "to N" in the scope text may bound rows or groups, not the product.)`,
+    );
+  }
+  if (band !== requested) {
+    console.warn(
+      `⊞ Array Grid scope cap left only ${enumerateAdmissible(requested, undefined).total} arrays in band `
+      + `${requested.rowMin}-${requested.rowMax} × ${requested.colMin}-${requested.colMax} — `
+      + `widened to ${band.rowMin}-${band.rowMax} × ${band.colMin}-${band.colMax}.`,
+    );
   }
 
-  return pairs.slice(0, count);
+  const { nonSquare, squares } = enumerateAdmissible(band, effectiveMax);
+
+  const picked: DimensionPair[] = [];
+  const usedShapes = new Set<string>();
+  const usedCards = new Set<string>();
+
+  const take = (pair: DimensionPair) => {
+    usedShapes.add(canonKey(pair.rows, pair.columns));
+    usedCards.add(cardKey(pair));
+    picked.push(pair);
+  };
+
+  // 1 — one card per distinct non-square shape.
+  for (const pair of shuffle(nonSquare)) {
+    if (picked.length >= count) break;
+    if (usedShapes.has(canonKey(pair.rows, pair.columns))) continue;
+    take(pair);
+  }
+  // 2 — squares.
+  for (const pair of shuffle(squares)) {
+    if (picked.length >= count) break;
+    take(pair);
+  }
+  // 3 — commutative reflections of shapes already used.
+  for (const pair of shuffle(nonSquare)) {
+    if (picked.length >= count) break;
+    if (usedCards.has(cardKey(pair))) continue;
+    take(pair);
+  }
+
+  if (picked.length < count) {
+    console.warn(
+      `⊞ Array Grid: only ${picked.length} distinct arrays available for ${count} requested `
+      + `(band ${band.rowMin}-${band.rowMax} × ${band.colMin}-${band.colMax}`
+      + `${effectiveMax !== undefined ? `, product ≤ ${effectiveMax}` : ''}) — shipping a shorter session `
+      + `rather than repeating a card.`,
+    );
+  }
+
+  return picked;
 }
 
 // ---------------------------------------------------------------------------
@@ -503,7 +662,9 @@ Return ONLY the wrapper metadata in the response schema.
     title: wrapper.title || 'Array Builder',
     description:
       wrapper.description ||
-      `Practice ${instanceCount} ${challengeType.replace('_', ' ')} problems with arrays.`,
+      // challenges.length, not instanceCount — the selector ships a shorter session
+      // rather than repeating a card when the scope admits fewer distinct arrays.
+      `Practice ${challenges.length} ${challengeType.replace('_', ' ')} problems with arrays.`,
     challenges,
     challengeType,
     iconType,
