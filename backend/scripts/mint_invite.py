@@ -33,7 +33,8 @@ APP_BASE_URL = os.getenv("LUMINA_APP_URL", "http://localhost:3000")
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--grade", type=str, default=None,
-                        help='Pre-provision the student grade, e.g. "K", "1st" (authoritative over the signup form)')
+                        help='Pre-provision the student grade — any form works ("3", "3rd", "third", "K"); '
+                             'normalized to the platform vocabulary. Authoritative over the signup form.')
     parser.add_argument("--name", type=str, default=None,
                         help="Child's name — prefills the signup form greeting")
     parser.add_argument("--note", type=str, default=None,

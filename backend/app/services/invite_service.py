@@ -83,6 +83,14 @@ class InviteService:
         expires_days: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Mint a new active invite. Fails rather than overwrite an existing code."""
+        # Normalize the grade into the platform's vocabulary (K, 1st, 2nd, …)
+        # at mint time. The invite's grade is authoritative over the signup
+        # form AND drives the form's locked dropdown — an un-normalized "3"
+        # matches no <option> and renders the grade field blank-and-locked.
+        if grade_level:
+            from ..core.security import InputSanitizer
+            grade_level = InputSanitizer.sanitize_grade_level(grade_level)
+
         code = normalize_code(code) if code else generate_code()
         doc_ref = self._doc(code)
         if doc_ref.get().exists:

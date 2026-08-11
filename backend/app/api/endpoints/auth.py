@@ -279,8 +279,20 @@ async def register_user(request: Request, user_data: SecureUserRegistration):
 
         # The invite's grade is authoritative over the form: the inviter knows
         # the child, and the form default ("K") silently wins whenever a parent
-        # skips the dropdown.
-        effective_grade = (invite or {}).get("grade_level") or user_data.grade_level
+        # skips the dropdown. Normalize it defensively — invite docs can be
+        # hand-edited, and this path bypasses SecureUserRegistration's
+        # validator (which only saw the form's grade).
+        invite_grade = (invite or {}).get("grade_level")
+        if invite_grade:
+            try:
+                invite_grade = InputSanitizer.sanitize_grade_level(invite_grade)
+            except ValueError:
+                logger.warning(
+                    f"⚠️ Invite {user_data.invite_code} carries unusable grade "
+                    f"{invite_grade!r}; falling back to the form's grade"
+                )
+                invite_grade = None
+        effective_grade = invite_grade or user_data.grade_level
 
         # Create user in Firebase Auth
         user_record = auth.create_user(
