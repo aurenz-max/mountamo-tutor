@@ -54,7 +54,7 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); next = the MIC SITTING (#82-#87), then `phoneme-explorer` (portfolio call first) — literacy ports 5+ now cost a script + a stage, not a loop wiring.**
+### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); port 5 `picture-vocabulary` ✅ SHIPPED **AND USER-DRIVEN SAME DAY 2026-08-11 (#91 STRUCK — the SPOKEN judge refused deliberate errors, first user evidence of the lane's core debt; "an incredibly strong modality from a learning standpoint")** · port 6 `phoneme-explorer` ✅ SHIPPED 2026-08-11 (user portfolio call: convert — ALL FOUR modes verbal; mic row #92) · port 7 `letter-sound-link` ✅ SHIPPED 2026-08-11 (the parked portfolio call ANSWERED: 2 directions verbal, `hear-see` taps because `letter_name` is BLOCKED; new continuant content gate; mic row #93) · next = the MIC SITTING (#82-#87, #89, #92, #93).**
 
 > **✅ THE GENERALIZED RUNNER (2026-08-10, user directive: "lets not retrofit but instead
 > build the general schema and capability, try it on 2-3 subjects").** Two new modules in
@@ -110,6 +110,361 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 >   migration of the 8 existing consumers; `/add-di-loop` as a SKILL (the runner is its
 >   stronger form — write the thin skill wrapper after the mic sittings prove the
 >   template, per this item's own queue note).
+
+> ### 2026-08-11 — `di-spoken-practice`: the CONTENT-GENERIC pack (user thread, exploratory)
+>
+> **User question:** why is the loop a plug-in on bespoke primitives rather than one
+> standalone primitive with an overarching Gemini schema? **The measurement that says the
+> question is right:** after the verbal ruling stripped the costumes, `WordFlip.tsx` (661
+> lines) and `SoundSwap.tsx` (767) each expose ONE interactive element — a tap-to-hear. The
+> 5 DI packs are 4,077 lines of component whose visual variance is "a letter / a word / a
+> sentence / a fact". **The fork drawn (NOT the rejected ROUTE/CONVERT/LEAVE bucketing —
+> that triaged which primitives get the treatment; this is about how the treatment is
+> delivered):** does the manipulative CARRY pedagogy? Yes → bespoke (counting-board's
+> touch-each-one IS one-to-one correspondence; Elkonin boxes ARE encoding; the sim IS the
+> truth). No → this pack.
+>
+> **SHIPPED (uncommitted):** `diSpokenPracticeScript.ts` + `DiSpokenPractice.tsx` +
+> `gemini-di-spoken-practice.ts` + `DiSpokenPracticeScriptPanel.tsx` (dev), fully
+> registered (catalog, ComponentId, primitiveRegistry, diGenerators, metrics,
+> `problem_type_registry.py`), 3 eval modes (`say_answer` / `read_aloud` / `count_and_say`).
+> **1,493 lines TOTAL — including a dev panel and 21 tests — against 1,652 for ONE bespoke
+> pack.**
+>
+> **The line that makes generation safe: the DISTAR skeleton is CODE, every sentence is a
+> slot.** Sentinels ("Yes, …" / "My turn: …") are code-owned, so a generated correction
+> that opens with a sentinel cannot break the verdict scan (asserted). The two interesting
+> slots are `acceptRule` (a RIGHT answer that does not look right) and `signatureError` (a
+> WRONG one that sounds right) — the clauses every port discovered by driving it live.
+>
+> **Two gates a bespoke pack cannot run**, both because `expectedAnswer` is a FIELD:
+> `deriveResponseClass` REFUSES anything it cannot place in the benched registry (a 4-word
+> answer is `open_set_word` = BLOCKED; the item drops rather than downgrades), and
+> `findAnswerLeaks` scans ask/how-to-play/printed-stimulus mechanically — exempting the
+> stimulus only on `decode` items, where the printed word IS the task.
+>
+> **DRIVEN THROUGH THE REAL PIPELINE (dev server + live Gemini, 3 modes × 4 items) AND IT
+> FOUND TWO DEFECTS, BOTH FIXED:** (1) flash-lite returned `expectedAnswer: "2"` with
+> `alternates: ["two"]` — written and spoken forms inverted — so the item shipped declaring
+> `short_spoken_word` when the child says a number WORD; `normalizeSpokenAnswer` now owns it
+> in code and a bare numeral surviving normalisation is refused (>20 = the #63 build-ahead
+> class). (2) **half the generated `acceptRule`s referenced a channel the judge cannot
+> perceive** — "counting on your fingers", "tapping objects" — because nothing told the model
+> the judge only ever hears AUDIO. Prompt constraint added; re-driven, 0/12 silent-channel
+> rules.
+>
+> **VERDICT ON THE EXPERIMENT (the point of the build):** `signatureError` is genuinely good
+> — it independently found the echo-the-addend miss that `di-math-facts` hand-authored
+> (`di-math-facts-echoes-last-number`) and, on decoding, rhyme substitution / sounds-without-
+> blending / same-initial-letter. `acceptRule` needed the audio constraint and is now correct
+> but repeats per skill rather than per item — arguably right, since it IS a skill property.
+> **So the model can write the error analysis; it could not be trusted to know what the judge
+> can hear.**
+>
+> **✅ DRIVEN LIVE 2026-08-11 by the user (`5813884d14d3`, standalone tester) — 3 items
+> answered, and it found THREE defects, all fixed the same slice.** (1) **THE TUTOR READ THE
+> `[CURRENT STATE]` BLOCK ALOUD TO THE CHILD** — turns 13-17, five consecutive turns of
+> "activity: live direct instruction spoken practice, challengeType: say_answer, stimulus:
+> 5 x 3…" carrying 14-55 audio frames each (clean speech in the same session runs 9-21 frames
+> for a short line). It started right after an off-task utterance ("I'm going to go to the
+> bathroom") drew a conversational turn with a state block batched onto it — SWAP-2's
+> off-script contagion, escalated from chatter into reciting private metadata. **`lumina_tutor.py:556`
+> already says "Never read it aloud, list it back, or comment on it", so this is a COMPLIANCE
+> failure, not a missing rule — and a rule the model can break is not a gate.** FIX: this pack
+> now pushes NO runtime state at all (`contextFor` → `{}`, `contextKeys: []`), which is correct
+> rather than evasive — the state block informs IMPROVISED turns and a judged-script tutor never
+> improvises; every word it may speak arrives inside a cue that already carries the stimulus and
+> the full judging contract. The channel had no consumer and only a failure mode.
+> **[OVERRULED by the user 2026-08-11 — see the `436dcb5616cb` addendum below: the channel is
+> restored; the recitation root was mis-voiced scaffold text, not the channel.]**
+> (2) **Generated `howToPlay` was filler** — "Look at the math fact, then say the answer out
+> loud!" before every opening, in a pack where every item is answered out loud. Now CODE-OWNED,
+> one line per mode, and removed from the schema. The rule it establishes: counting-board's
+> how-to-play is a PROCEDURE ("touch each bear once as you count") because that pack has a
+> manipulative; this one has none, so "what to do" is a property of the MODE, not the skill.
+> (3) A barge-in at 5.2s killed turn 1 and the tutor re-spoke the whole opening line verbatim —
+> which doubled the filler. Recovery behaviour, left alone now that the line is short.
+> **Bonus DI-1 evidence:** ASR read the child's answer as **"sex"** and the tutor affirmed
+> **"Yes, six."** — judged from audio, transcript is a spectator, fifth instance.
+>
+> **⚠ THE FIXES ARE NOT RE-DRIVEN.** Generation is re-verified (how-to-play is now the code line;
+> `contextFor` returns `{}` so `attach()` has nothing to prepend) but **nobody has heard a session
+> since** — the state-recitation fix in particular can only be confirmed live.
+> **⚠ FAMILY QUESTION, FILED NOT ASSUMED: are the 5 hand-authored DI packs exposed to the same
+> recitation?** They keep their contextKeys legitimately (`supportTier` gates whether the tutor
+> may model before a cold ask), so they cannot take this fix as-is. TRN-1 recorded the same block
+> reaching Pip's bubble *unspoken*; this run is the first with audio frames behind it.
+>
+> **⚠ It inherits the exact unproven spoken judge that gates #82-#87** —
+> this is a generation-side artifact, not a verified loop, and it is now SELECTABLE BY THE
+> MANIFEST (a catalog entry is required for the eval-test tester to resolve it). **Open user
+> decision: hold it out of lesson routing until it has a mic row, or let it route.** Test
+> ground: `/lumina` → dev panels → Direct Instruction → **"Spoken Practice (generic)"**; the
+> script panel under the run shows every generated clause + the assembled cue.
+>
+> **Gates:** typecheck:lumina **0** · full tsc **803 = baseline** · vitest **210 files /
+> 2746 passing** (the 1 suite error is the pre-filed `canvas-confetti` teardown, unrelated).
+>
+> **✅ DRIVEN LIVE AGAIN 2026-08-11 by the user (`436dcb5616cb`) — TWO defects, both fixed
+> the same slice, and one USER RULING that reverses a fix above.**
+> (1) **THE ASK NEVER SAID THE PROBLEM.** Turn 1 spoke the cue exactly as scripted — and the
+> script was "Here is a groups problem. What is the answer?" over a printed "2 x 3": a question
+> with no problem in it, inherited by every correction re-ask. Root: the generator's prompt only
+> required the ask to speak the stimulus on `printStimulus: false` items; for printed stimuli it
+> framed the child as reading the screen. FIX: prompt + `ask` schema now require the say_answer
+> ask to STATE the problem ("Two plus one. What is two plus one?"), and a new mechanical gate
+> `findUnspokenStimulus` drops any say_answer 'text'/'none' item whose ask omits its stimulus
+> tokens (digit ↔ number-word equivalent; operator glyphs exempt; read_aloud / count_and_say /
+> emoji exempt because THEIR stimulus must stay out of the ask).
+> (2) **THE TUTOR SPOKE A `commonStruggles` RESPONSE VERBATIM** — turn 2, after an un-judgeable
+> utterance (ASR: "¿Qué?"): "Wait. Think time is unbounded here; only re-ask if the application
+> tells you to." That is the catalog scaffold's own text, byte-for-byte. NOT the state channel,
+> NOT cue leakage: the field's contract is WORDS THE TUTOR SPEAKS (backend renders it as a quoted
+> script line), and the pack had authored meta-commentary into it — she was primed at session
+> start to say those instructions. A response that cannot be performed can only be recited.
+> `di-math-facts` proves the contract: its five struggle responses are performable script moves
+> and have never been recited. FIX: responses rewritten as performable moves; the standing WAIT
+> doctrine moved to a new aiDirective ("THE LEARNER'S TURN") where priming belongs.
+> **USER RULING — the state-channel amputation above is REVERSED:** every other primitive sends
+> state + instructions through the full channel with no issues, and a GENERALIZED pack does not
+> get to amputate platform channels to feel safe; post-hoc in-cue trailers ("don't say these
+> instructions") cannot beat wrong session-start priming. `contextFor`/`contextKeys` restored
+> (`challengeType` + `stimulus`), stimulus-side only per the di-math-facts rule — decode items
+> push no stimulus (it IS the answer), counting items push the object word, never the count.
+> The per-cue judging contract correspondingly thinned to per-item data ("Then wait for the
+> learner." + answer/alternates/acceptRule/signatureError/branches); the doctrine paragraph and
+> bracket-tag trailers deleted from every cue. This also ANSWERS the family question filed above:
+> the hand-authored packs' channels were never the exposure — voice discipline in the scaffold is.
+> **⚠ NOT RE-DRIVEN LIVE.** Gates re-run (typecheck:lumina 0; pack tests 29/29 including the new
+> unspoken-stimulus + contextFor suites) but nobody has heard a session since — the restored
+> state channel and the stated-problem ask can only be confirmed by a mic run in the tester.
+>
+> **✅ DRIVEN LIVE A THIRD TIME 2026-08-11 by the user (`f634f61b2b42`) — 4/4 items, 100%,
+> drive-2's fixes all CONFIRMED, one NEW defect found and fixed at the ENGINE level.**
+> Confirmed: every ask stated its problem aloud ("Two times three. What is two times three?");
+> the scaffold was never recited; `[CURRENT STATE]` blocks attached to cues (state_attached
+> 1-3) and were never spoken; verdicts stayed crisp ("Yes, six."). Bonus: DI-1 sixth instance
+> — ASR transcribed the child's answer as "Nein.", the tutor affirmed "Yes, nine." from audio.
+> **THE NEW DEFECT — the off-script hostage (turn 3):** a stray noise right after "Yes, six."
+> drew an improvised turn, and the model INVENTED AN ITEM THAT DOES NOT EXIST in the session
+> ("Two groups of six… twelve"; the real item 2 was 4 x 2) and recited it IN CUE FORMAT —
+> "[SAY_ITEM] Say exactly… If it is wrong, say exactly…" — for 34 seconds / 116 audio frames.
+> The real item-2 cue had been queued at 12.6s but the engine's own audio block held it behind
+> the improvisation until 52.5s. Attempt anchoring HELD (the phantom item was never judged; the
+> embedded "My turn:" sentence advanced nothing) — the engine refused the content but funded
+> the airtime. **FIX (engine, all 8 judged-loop consumers): off-script cut-in in
+> `useJudgedSpeechLoop`.** After the queue-time line's falling edge, a tutor turn that begins
+> while a cue is queued is off-script by definition — the cue now ships THROUGH it with
+> `interrupt: true` (`TextQueueEntry.interrupt`, the backend floor's caller-decides channel,
+> previously never exercised by this engine). The child's own voice still always blocks; a
+> scripted verdict line is never cut (quiet-edge stamp + a pendingJudge guard for the
+> transcript-beats-playback race, demoted inside the verdict dispatch). Pinned by 2 new tests
+> in `useJudgedSpeechLoop.diagnostics.test.tsx` (cut fires; verdict-lag never cuts); cue log
+> gains `cutIn` on 'sent'. Gates: typecheck:lumina 0 · hooks 119/119 · DI folder 171/171.
+> **⚠ The cut-in itself is NOT yet heard live** — next mic run should look for a `cut_in: true`
+> send in the session ledger the first time a noise draws an improvised turn.
+>
+> **✅ DRIVEN LIVE A FOURTH TIME 2026-08-12 by the user (`592abf43424c`, "adding within 10",
+> 92%) — ONE defect found and fixed the same slice: CONVERGENT CONTENT.** All four items
+> summed to 5 (3+2, 2+3, 4+1, 1+4 — every ordered pair). Not the response class (that is a
+> judging bucket derived after generation) and not the schema: flash-lite's structured output
+> is convergent on free numeric fields — it picked the answer 5 first and back-solved operands,
+> and the "N DIFFERENT problems" rule was satisfied by commuted twins. The known fix
+> (numberPoolService doctrine) applied with the pack's content-generic wrinkle: a shuffled
+> full-band seed list (1-20; 1-10 for counts) injected per attempt as a CONDITIONAL prompt
+> section — the model reads whether the topic is numeric natively (no regex classifier), the
+> TOPIC stays authoritative for range, and literacy topics are told to ignore it. Pooling the
+> answer invites bad back-solves, so a new mechanical gate `findArithmeticMismatches` drops
+> any say_answer item whose printed fact disagrees with its own answer (drop, never patch —
+> the generated correctionBody states the claimed answer; also catches unbenched "zero").
+> Rule 3 now names commuted twins as the same problem. **Re-driven through the real route,
+> 8 runs:** "within 10" ×3 → 4/4, 4/4, 3/3 distinct answers (was 1/4); "within 5" ×2 → all
+> answers ≤5 with all seeds >5 skipped; "rhyming words" → zero number contamination;
+> count_and_say ×2 → counts walk the seed order (8,1,2,4). Gates: typecheck:lumina 0 ·
+> pack tests 33/33. Seeds + answers now in the generator's run log.
+
+> ### 2026-08-11 — ✅ PORT 5 SHIPPED: `picture-vocabulary`, the runner's first literacy consumer
+>
+> **User-pulled ("continue on the remaining spoken modalities"), and the extraction's promise
+> held: the port cost a SCRIPT and a STAGE, no loop wiring.** Files:
+> `pictureVocabularyScript.ts` (new, hand-authored DISTAR), `PictureVocabulary.tsx`
+> (whole-file, on `useJudgedScriptRunner`), `gemini-picture-vocabulary.ts` (assembly),
+> `catalog/literacy.ts` (audioInput + DI tutoring block + contextKeys **5 → 2**),
+> `problem_type_registry.py` (β story, βs unchanged),
+> `__tests__/PictureVocabulary.di-script.test.ts` (new, 22). Deleted: the Start with Voice /
+> tap-only fork and the whole `voiceMode` axis, the 4-option word chips + "Show me choices",
+> `MAX_WRONG_TAPS` + the reveal-after-3 ladder, the 1600ms auto-advance timer, Next/Finish,
+> and every `sendText` choreography block.
+> Gates: typecheck:lumina **0** · full tsc **803 = baseline** · vitest **211 files / 2782**
+> (the 1 suite error is the pre-filed canvas-confetti teardown) · both §1 greps clean ·
+> template keys **2/2, asserted in the test** · **live real-pipeline probes 6/6 modes** —
+> packs built from live Gemini content pass `validateJudgedScriptPack`, sentinel scan over
+> generated words included.
+>
+> **⚠️ THE SPLIT IS THE FINDING: four modes went verbal, two went INTO the hands — and the
+> hands ruling is standing-gate-1 arithmetic, not a softening.** naming / opposite /
+> gradable_scale / sentence_frame are spoken production (`short_spoken_word`, judged
+> in-band). receptive_match keeps its tap (receptive identification IS a 1-in-4 selection
+> skill — a child without the word cannot pick the referent). **association CONVERTS to a
+> tap:** "what goes with sock?" has many honest spoken answers (shoe, foot, laundry), which
+> is `open_set_word` — a BLOCKED class — so the emoji cards CLOSE the set while the relation
+> stays the skill. Both tap modes commit through the gesture anchor (production callers 3-4)
+> with CODE-COMPUTED verdicts ([PV_TAP], handVerdictCue's pattern) and spell_word's SILENCE
+> contract.
+>
+> **The chips died in all four spoken modes (word-flip's leak, a third time) — and in
+> gradable_scale they were also a COSTUME:** every same-scale distractor was already PRINTED
+> on the scale, so the one option not on screen was the answer by string-matching, no
+> gradient reasoning needed. Dropping options also freed the spoken modes from the
+> 3-distractor pool floor. Generated content can no longer collide with the verdict scan:
+> the generator refuses the word token "yes" in every pool and rejects frames whose
+> sentences open with a sentinel.
+>
+> **Cue shapes reused, none invented:** opposite models the RULE on a code-owned pair the
+> session never asks about (`pickModelOppositePair` — word-flip's `pickModelNoun` ruling);
+> naming models nothing before the ask (the model IS the answer — sound-swap's shape);
+> gradable/frame SPEAK their stimulus with the blank as "hmm" (the ask states its problem —
+> drive-2's rule, and a pre-reader cannot read the scale); tap-to-hear re-speaks the
+> QUESTION only (the old [ISOLATE]-style ladder pattern never returns). Accept clauses are
+> hand-authored per mode ("puppy for a dog counts; affirm and echo the target") — the
+> di-spoken-practice `acceptRule` finding arriving at a bespoke pack.
+>
+> **✅ DRIVEN BY THE USER THE SAME DAY — #91 STRUCK.** *"i did each round of tests and it
+> worked great, this is an incredibly strong modality from a learning standpoint."* The
+> spoken judge refused deliberate errors, the tap-verdict path landed, and the runner's
+> first literacy outing held — all three unproven halves answered on this surface. (The
+> #82-#87 rows stay open: the evidence is per-surface.) Remaining literacy census after
+> port 5: `letter-sound-link`, `rhyme-studio`, `phoneme-explorer` on stopwatches;
+> `interactive-book`, `word-workout`, `story-talk` on click-to-advance; 20 with no voice.
+
+> ### 2026-08-11 — ✅ PORT 7 SHIPPED: `letter-sound-link` — THE PORTFOLIO CALL, ANSWERED BY THE SPLIT
+>
+> **User-pulled** (*"continue down the track of updating literacy primitives over to DI
+> modality, specifically now letter-sound-link"*). Files: `letterSoundLinkScript.ts` (new,
+> hand-authored DISTAR), `LetterSoundLink.tsx` (whole-file, on `useJudgedScriptRunner` —
+> **third literacy consumer**), `gemini-letter-sound-link.ts` (the content gate),
+> `catalog/literacy.ts` (audioInput + DI block + contextKeys **10 → 2**),
+> `__tests__/LetterSoundLink.di-script.test.ts` (new, 29 cases) and
+> `LetterSoundLink.reader-fit.test.tsx` (rewritten onto the new surface).
+> **Deleted:** the two-tap audition protocol, `useSpokenWordCapture` + the "say the keyword"
+> bonus beat + its 1400ms auto-advance, Next/Finish/Skip, `MAX_ATTEMPTS`, every
+> `[ACTIVITY_START]`/`[NEXT_CHALLENGE]`/`[SAY_KEYWORD]`/`[TAP_OPTION]` tag, and the whole
+> `KEYWORD_SAFE_PRE_ANSWER` reveal matrix. Also deleted:
+> `LetterSoundLink.support-tiers.test.tsx` — every case asserted the audition protocol and
+> the on-card tier text; its surviving intent (answer-leak + tier withdrawal) is now in the
+> di-script test, where the leaks actually live.
+>
+> **⚠️ THE PORTFOLIO NOTE WAS THE ANSWER, NOT THE OBSTACLE.** The brief parked this one on a
+> call: *"receptive discrimination vs di-letter-sounds' production; it also covers stop
+> consonants and the phoneme→grapheme direction."* Both halves of that coverage claim survive
+> the port **because the child's answer is made of something other than an isolated stop** —
+> in `hear-see` the TUTOR makes the stop and the child taps; in `keyword-match` the child
+> says a whole word. The overlap with `di-letter-sounds` is real in exactly ONE place
+> (`see-hear` on a continuant), and routing around the primitive to avoid it would have
+> preserved the defect in three modes to dodge a duplicate in one.
+>
+> **THE SPLIT: two directions go verbal, one stays in the hands — standing-gate-1
+> arithmetic.** `see-hear` = the answer is a SOUND → spoken (`continuant_sound`).
+> `keyword-match` = the answer is a WORD from a closed two-picture set → spoken
+> (`short_spoken_word`). **`hear-see` TAPS**: the answer is a GRAPHEME, and naming a letter
+> aloud is `letter_name` — a BLOCKED class (the LetterSpotter homophone ruling). A grapheme
+> cannot be spoken, so it is touched; the verdict is code-computed and the tutor is handed
+> its exact line ([LSL_TAP]), and its correction re-models the SOUND without ever naming the
+> letter, so the retry stays a real retry.
+>
+> **THE CONTINUANT GATE IS THE PORT'S ONE NEW CONTENT RULE.** `see-hear` asks a five-year-old
+> to produce a sound ALONE, and only held sounds are benched for that — so the generator may
+> only target `s n m f l r v z` + the short vowels there, enforced in CODE post-parse
+> (`retargetForMode`) rather than trusted to the prompt. Stops keep FULL coverage in the
+> other two directions. Two content bugs fell out of writing the spoken ask: **`x` is
+> unaskable in keyword-match** (its keyword "box" does not start with /ks/ — a false anchor
+> that survived because nobody ever had to SAY the relation), and **`y`'s keyword became
+> "yo-yo"**, because "yes" mid-correction would have opened a sentence with the affirm
+> sentinel and been scanned as a VERDICT.
+>
+> **Support tiers were RE-BASED, not deleted** (the L3 contract): the old levers were on-card
+> text a pre-reader cannot read plus an audition step this port removes, so the axis moved
+> onto di-letter-sounds' proven DISTAR rungs — easy = model + guide + test, medium = model +
+> test, hard = TEST ONLY with the cold-sound guard. `hear-see` is exempt from the guard: its
+> sound is the STIMULUS, and withdrawing it deletes the question rather than the support.
+>
+> **`see_hear` beta RAISED 1.5 → 3.0.** It stopped being a 1-of-2 audio discrimination
+> (guessable at 50%) and became unaided grapheme→phoneme production with nothing on screen.
+> Leaving the old beta would have mis-calibrated the adaptive engine against a harder task.
+>
+> **EVIDENCE.** `typecheck:lumina` 0 · full suite 212 files / 2819 tests green · **5
+> real-pipeline probes against live Gemini** (see_hear @ g1 + g3, hear_see @ g1,
+> keyword_match @ g3, mixed @ g3): the continuant gate held on every drawn item, packs built
+> from live content passed `validateJudgedScriptPack` (sentinel scan over generated words
+> included), and no spoken line leaked its keyword. Gemini honored the constraint 5/5 so the
+> code retarget never fired — which is why it now has its own unit test rather than shipping
+> as an unexecuted safety net. **Pool worry disproved: see_hear @ group 1 drew `s a n i`,
+> four distinct producible letters.**
+>
+> **⚠️ NOT DRIVEN LIVE — HUMAN-CHECKS #93.** No mic has heard this surface. #91 proved the
+> spoken judge refuses deliberate errors on `picture-vocabulary`, but the evidence is
+> per-surface and this one carries a NEW judging target: a held SOUND rather than a word.
+> The row carries the per-mode wrong answers to say — the letter NAME is the one that
+> matters. Remaining literacy census after port 7: `rhyme-studio` (behind a bench) on a
+> stopwatch; `interactive-book`, `word-workout`, `story-talk` on click-to-advance; 20 with
+> no voice at all.
+
+> ### 2026-08-11 — ✅ PORT 6 SHIPPED: `phoneme-explorer` — ALL FOUR MODES GO VERBAL (user portfolio call)
+>
+> **User-pulled after driving port 5** (*"the judge is a little less smooth on phoneme
+> explorer than our DI version — can we change to the DI modality?"*) — the old surface
+> judged through transcribe-then-match (`useVoiceChoice`); now the Live tutor judges the
+> audio in-band. Files: `phonemeExplorerScript.ts` (new, hand-authored DISTAR),
+> `PhonemeExplorer.tsx` (whole-file, on `useJudgedScriptRunner` — second literacy consumer),
+> `gemini-phoneme-explorer.ts` (schema restructure), `catalog/literacy.ts` (audioInput + DI
+> block + contextKeys **5 → 2**), `problem_type_registry.py`,
+> `__tests__/PhonemeExplorer.di-script.test.ts` (new) and
+> `PhonemeExplorer.support-tiers.test.tsx` (rewritten onto the new surface). Deleted: the
+> 4-choice answer grids in every mode, `MAX_ATTEMPTS` + the reveal-after-3 ladder, the
+> 1800ms auto-advance timer, Next/Finish, the transcribe-then-match voice beat, and the
+> whole `sendChallengeIntro` choreography.
+>
+> **THE 4-CHOICE GRID WAS A COSTUME ON ALL FOUR MODES, each a different way:** picking
+> "cat" after hearing /k/ /a/ /t/ is word recognition, not blending; `manipulate` was
+> sound-swap's exact ruling arriving in its sibling; `segment`'s printed breakdowns were
+> reading. **`isolate` keeps its four cards ON SCREEN as the question-side MENU** (unmarked,
+> so print is not a leak) and the answer is SAID from that closed set — which is also what
+> keeps it off the unbenched produce-a-stop-sound class (standing gate 1: the child answers
+> with a benched word, never an isolated stop). **`segment` becomes "say how many sounds" —
+> and its WORD is never printed at any tier**: a reader counts LETTERS ("sheep": 5 letters,
+> 3 sounds). The word arrives by voice + picture; the count is the benched number-word
+> class; the correction earns the walk ("My turn: sheep. /sh/ … /ee/ … /p/. Three sounds.").
+>
+> **Two structural moves worth keeping:** (1) the generator's placeholder-backfill
+> validators ("word"/"???" shells) became KEEP-OR-DROP — in a judged spoken loop a
+> fabricated item is a spoken ask the tutor must then judge, so a broken challenge ships
+> NOTHING; the same gates run again component-side (`itemsFromChallenges`), belt and
+> suspenders on both sides of the wire. (2) bare vowel letters in spoken walks get
+> di-letter-sounds' spellings (a bare 'a' reads as the letter NAME "ay" — cvc-speller's
+> finding, now a script-layer rule via `spokenPhonemeToken`); an unsayable blend walk DROPS
+> the item, because the walk IS the ask. Manipulate's operation prose is gated answer-free
+> (an ask that contains its own answer ships nothing) — generator-side AND build-side.
+>
+> **Support tiers survive the port** (the L3 contract): worked-example card + sub-label,
+> picture cues, blend furniture and operation print are still tier-withdrawn at render from
+> the same generator-stamped flags; `readOptionsAloud` now governs whether the scripted ask
+> ENUMERATES the menu. The `{{supportTier}}` reveal-policy directive died with the
+> improvised turns it governed — tier latitude is in the cue now.
+>
+> **Gates:** typecheck:lumina **0** · slice suites **69/69** (both new di-script files, the
+> rewritten support-tiers suite, both generators' tests) · both §1 greps clean · template
+> keys **2/2 asserted** · **live real-pipeline probes 4/4 modes, ZERO items dropped**
+> (isolate menus, real CVC blend words, varied segment counts, real manipulate transforms —
+> every pack built from live content passes `validateJudgedScriptPack`). Full tsc reads 804
+> vs the 803 baseline; the +1 is legacy noise outside components/lumina (lumina = 0, and
+> nothing outside lumina imports this primitive) — flagged, not claimed. Full vitest is
+> green except `letter-sound-link`'s old suites, which a CONCURRENT session has mid-port on
+> disk — that lane's record belongs to that session.
+>
+> **⚠️ NOT DRIVEN LIVE — HUMAN-CHECKS #92.** Port 5's drive proved the spoken judge refuses
+> errors on ITS surface; this port adds two firsts the row's criteria carry — COUNT answers
+> (segment) and the family's first mixed-action how-to-play re-speak through the runner's
+> `action` lever.
 
 > **📄 THE BRIEF IS `qa/HANDOFF-di-literacy-modality-2026-08-09.md` (rev 4).** It carries the
 > frame, the re-measured census, the step-by-step port procedure extracted from the pilot,

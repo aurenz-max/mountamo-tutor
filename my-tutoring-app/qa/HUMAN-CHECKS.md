@@ -7,13 +7,42 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open (as of 2026-08-10, refreshed by `/pm` 2026-08-10)
+## Open (as of 2026-08-11, refreshed by `/pm` 2026-08-11)
 
 > **2026-08-10 — the judged-loop family. SIX rows open (#82–#87): four literacy ports plus
 > the two judged-script-runner ports (`counting-board` #86, `push-pull-arena` #87) that
 > landed after the driving card was written. Every one of them is undriven or half-driven
 > on the same half: the SPOKEN judge refusing a wrong answer. Plus #88 (pilot signup
-> deep-link — gates invite #1). Next free ID = 89.**
+> deep-link — gates invite #1). Next free ID = 94.**
+>
+> **2026-08-11 (late) — #93 filed for port 7 (`letter-sound-link`). It is not just another
+> row on the pile: it is the first judged surface whose target is a held SOUND rather than a
+> word, and its signature error — saying the letter NAME where the sound was asked for — is
+> the one wrong answer this whole primitive exists to correct. #91's evidence does not
+> transfer to it.**
+>
+> **✅ 2026-08-11 (late) — #91 STRUCK: the user drove picture-vocabulary through every mode
+> the same day it shipped, wrong answers included, and it held.** This is the lane's first
+> user-driven evidence of the SPOKEN judge refusing deliberate errors — the exact debt
+> #82/#83/#84 hold open on their own surfaces (those rows stay open; the evidence is
+> per-surface). #92 filed for port 6 (`phoneme-explorer`), which shipped on the strength of
+> that drive.
+>
+> **✅ 2026-08-11 — #88 IS STRUCK, the first row closed here in over three days.** The pilot
+> family's front door is open: prod frontend, prod backend on Cloud Run, a real account minted
+> through the live site, and the invited grade confirmed on the profile in Settings.
+> **EIGHT rows remain and all but one are a mic sitting** (#82–#87, #89, plus #91
+> `picture-vocabulary` filed by a concurrent session) — the lone exception is #90, a screen
+> glance. **The entire human queue is now the judged loop.** One ~25-minute pass clears it.
+>
+> **⚠️ 2026-08-11 — TWO rows added, and note what they have in common with #82–#87: both are
+> surfaces that a human DID drive, whose FIXES nobody has heard or seen since.** #89 is
+> `di-spoken-practice` after three live drives (the third found the off-script hostage and
+> fixed it in the shared engine — **that cut-in has never fired in front of a person, and it
+> now sits under all 8 judged-loop consumers**). #90 is `multiplication-explorer` after the
+> per-challenge rework. **A drive that finds a defect does not close the row it opened** —
+> the fix inherits the row. That is the same shape as "a drive that answers everything
+> correctly does not advance these rows," one layer later.
 >
 > **📄 DRIVING CARD: `qa/HANDOFF-di-mic-sitting-2026-08-10.md`** — covers **#82–#85** with
 > the exact wrong answers to say and the shared first-10-seconds check. **#86/#87 are the
@@ -44,22 +73,169 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > across all eight scripted-opener packs. **Criterion #84 (f) is the check for it, and it is
 > the same first-10-seconds check on #82 and #83.**
 
-### #88 — pilot onboarding, invite deep-link signup: form → account → first lesson at the INVITED grade? · OPEN, GATES INVITE #1
-- **Slice 1 shipped + probed 2026-08-10 (probe 6/6 against the live backend), but the probe
-  drives the API, not the form.** This browser pass is owed before the invite link goes to
-  the pilot family. Queue record: `qa/pilot-onboarding/BACKLOG.md`.
-- Mint a code (`backend/scripts/mint_invite.py --grade K --name "Ava"`), open
-  `/login?mode=signup&invite=CODE` in a fresh browser profile:
-  - (a) The form greets the child by name and the grade is locked to the invite's grade —
-    the dropdown must not offer a way to override it.
-  - (b) Sign up → account lands signed in with no visible Firebase error path.
-  - (c) `/login?mode=signup` with NO code refuses with a readable message, not a silent 403.
-  - (d) Re-using the redeemed code on a second signup fails (single-use).
-  - (e) Start a lesson as the new student: it plans at the INVITED grade — a K invite must
-    not open Grade-1 material. ⭐ This is the exact bug slice 1 fixed server-side
-    (`students/{id}.grade_level` was never written; first-doc-wins scanned to Grade 1), and
-    the probe proved the doc write, not the lesson.
-- **Route the result to:** `qa/pilot-onboarding/BACKLOG.md`; strike there AND here.
+### #93 — letter-sound-link, DI modality (port 7): does the judge refuse a LETTER NAME where a SOUND was asked for? · OPEN, NEVER DRIVEN
+- **SHIPPED 2026-08-11 (uncommitted), user-pulled.** Two directions verbal, one tapped:
+  `see-hear` = say the SOUND (`continuant_sound`), `keyword-match` = say the WORD
+  (`short_spoken_word`), `hear-see` = TAP the letter (`letter_name` is a BLOCKED class, so
+  the grapheme is touched, not named). Machine gates: typecheck:lumina 0 · full suite
+  212 files / 2819 tests · 5 real-pipeline probes against live Gemini, continuant gate held
+  on every drawn item. ~3 minutes, `/lumina` → dev panels → Language Arts → Letter Sound Link.
+- **(a) THE ONE THAT MATTERS — `see-hear`: say the LETTER NAME instead of the sound**
+  ("ess" for s, "em" for m) → must be REFUSED and re-modeled. This is the primitive's own
+  documented signature error, and it is the family's **first judging target that is a held
+  SOUND rather than a word** — #91 proved the judge on words, not on this. A permissive
+  judge affirming "ess" is the whole risk of this port.
+- (b) `see-hear`, accept side: say the sound with a little "uh" on the end ("sssuh") → must
+  be AFFIRMED. A five-year-old's mouth is still learning, and a judge that refuses this is
+  as broken as one that accepts "ess".
+- (c) `keyword-match`: say the OTHER picture's word (it starts with the confusable sound)
+  → refused; then say a fair different name for the right picture ("cap" for a hat) →
+  affirmed with the target echoed.
+- (d) `hear-see`: tap the CONFUSABLE letter (d for /t/) → the tutor corrects **without ever
+  naming or spelling either letter** — it re-models the SOUND only. If it says "that's D,
+  you want T", the retry is free and the row fails.
+- (e) **Answer-leak sweep, all three modes:** no keyword picture and no keyword WORD appears
+  or is spoken before the tutor affirms. In `see-hear` nothing on screen but the letter; in
+  `keyword-match` two pictures with no words printed.
+- (f) Tap-to-hear: in `see-hear` it re-asks the QUESTION and never says the sound; in
+  `hear-see` it repeats the sound (there the sound IS the question).
+- (g) First 10 seconds: no improvised greeting before the scripted opener (DI-GREET-1).
+- (h) Nothing on screen advances the lesson — no Next, Finish, Skip or Check anywhere.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16 (port 7 block); strike there AND here.
+
+### #92 — phoneme-explorer, DI modality (port 6): do four verbal modes hold — including the family's first COUNT answers and first mixed-mode re-teach? · OPEN, NEVER DRIVEN
+- **SHIPPED 2026-08-11 (uncommitted), user portfolio call after driving port 5** (*"the
+  judge is a little less smooth on phoneme explorer than our DI version"* — it judged via
+  transcribe-then-match; now the Live tutor judges in-band). All four modes verbal; the
+  4-choice grids died as costumes. Machine gates: typecheck:lumina 0 · slice suites 69/69 ·
+  §1 greps clean · live-generation probes 4/4 modes, zero drops. ~3 minutes, `/lumina` →
+  dev panels → Language Arts → Phoneme Explorer.
+- (a) `blend`: say the separate sounds and STOP ("k… a… t") → refused (signature error);
+  then sound out and LAND on the word → affirmed.
+- (b) `segment`: say the WORD back when asked how many sounds → refused; count aloud and
+  land on the number → affirmed. **Check the word is nowhere on screen** (a reader would
+  count letters).
+- (c) `manipulate`: say the ORIGINAL word back → refused (sound-swap's signature error on
+  a second surface).
+- (d) `isolate`: say the EXAMPLE word (it also starts with the sound) → refused per the
+  contract ("my example, not one of the cards"); say a menu word with the wrong first
+  sound → refused.
+- (e) Tap-to-hear: a blend tile speaks ONE sound (bare vowels as "aaa", never letter
+  names); the segment card speaks the word; nothing spoken is ever judged as an answer.
+- (f) Mixed/Auto session: when the MODE changes mid-session the how-to-play is re-spoken
+  inside the next ask (the runner's `action` lever — first mixed-action literacy pack).
+- (g) First 10 seconds: no improvised greeting before the scripted opener.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16 (port 6 block); strike there AND here.
+
+### ~~#91 — picture-vocabulary, DI modality (port 5): do six modes hold on one surface — spoken judge, tap judge, and the runner's first literacy outing?~~ · ✅ STRUCK 2026-08-11 — USER DROVE EVERY MODE, ALL HELD
+- **User verdict, same day the port shipped:** *"i did each round of tests and it worked
+  great, this is an incredibly strong modality from a learning standpoint."* The spoken
+  judge refused deliberate errors, the tap-verdict path landed, and the runner's first
+  literacy outing held — the three unproven halves this row was opened for, all answered.
+  No session ledger was pulled; the strike rests on the user's own driving of the row's
+  criteria. Result routed to `qa/di/BACKLOG.md` item 16 (port 5 block).
+- **SHIPPED 2026-08-11 (uncommitted): the fifth literacy port and the FIRST literacy
+  consumer of `useJudgedScriptRunner`** — the port cost a script and a stage, no loop
+  wiring (`pictureVocabularyScript.ts` + whole-file `PictureVocabulary.tsx`). Machine
+  gates: typecheck:lumina 0 · full tsc 803 = baseline · vitest 211 files / 2782 · 22
+  script tests · §1 greps clean · **live-generation probes 6/6 modes** (packs built from
+  real Gemini content pass every structural gate, sentinel scan included). **The mic flow
+  is unheard**, and this surface stacks THREE unproven halves: the spoken judge refusing
+  a wrong answer (the family debt), the code-computed TAP verdict path on emoji cards
+  (new), and the runner itself on literacy (new). ~3 minutes, `/lumina` → dev panels →
+  Language Arts → Picture Vocabulary.
+- (a) `naming`: say a WRONG word for the picture ("cat" for a dog) → the correction opens
+  "My turn:", models "this is a dog", and re-asks; a second wrong → capped, moves on.
+- (b) `naming`: say a fair synonym ("puppy" for a dog picture) → AFFIRMED, tutor echoes
+  the target word (the accept clause working).
+- (c) `opposite`: say the BASE word back ("big" when asked the opposite of big) →
+  REFUSED. The signature error of the mode — fluent, confident, unchanged.
+- (d) `receptive_match` / `association`: tap a WRONG card → the tutor speaks the scripted
+  correction and the cards re-enable; tap right → the "Yes!" verdict is the advance. The
+  tutor must stay SILENT while you hesitate over the cards (silence contract).
+- (e) An association retry must NOT name the answer — a retry that names it is free.
+- (f) Tap-to-hear (stimulus card / "Hear it again") re-speaks the QUESTION only, never
+  the answer.
+- (g) First 10 seconds: no improvised greeting before the scripted opener — `owns_opening`
+  through the runner, the same check as #82/#83.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16 (port 5 block); strike there AND here.
+
+### #90 — multiplication-explorer: does each challenge draw its OWN fact, and does the picture agree with the equation? · OPEN, NEVER LOOKED AT
+- **`927b754` (2026-08-11, pushed) reworked this primitive so every challenge carries a
+  code-owned fact AND its own visual modality** (groups / array / repeated addition / …).
+  Machine-gated: oracle contract rewritten, structural + per-challenge test suites added,
+  typecheck 0. **Nobody has watched the screen.** ~2 minutes, `/lumina` → dev panels → math.
+- Run the **fluency** mode (the multi-fact one — this is where the primitive was broken):
+  - (a) Each challenge's headline equation, the visual, and the graded answer name the
+    **same** fact. ⭐ This is the whole point: the July fix made *grading* per-challenge and
+    left the five representation panels on the shared fact, so the picture could show
+    `4 × 5` while the question asked `2 × 2`. Watch the picture change between challenges.
+  - (b) Answer a middle challenge **correctly** → accepted. (The original defect marked 4 of
+    5 correct answers wrong; the July fix closed the grading half and this is the re-check.)
+  - (c) The facts across one session are genuinely different (distinct products, not the
+    same fact re-skinned) — `selectFacts` claims maximum spread; look at whether it reads
+    that way to a child.
+  - (d) Answer one **wrong** → the correction refers to the fact actually on screen.
+- **Route the result to:** `qa/EVAL_TRACKER.md` (multiplication-explorer row, refreshed
+  2026-08-11); strike there AND here.
+
+### #89 — di-spoken-practice: do the drive-3 fixes hold, and does the off-script CUT-IN fire? · OPEN, FIXES UNHEARD
+- **FOUR user drives on 2026-08-11 (`5813884d14d3`, `436dcb5616cb`, `f634f61b2b42` = 4/4,
+  `592abf43424c` = 92%) found seven defects, all fixed. Two of the fixes have never been
+  heard: the shared-engine cut-in (c), and — from drive 4 — the seed pool.** Drive 4's
+  defect was **convergent content**: all four items summed to 5 (3+2, 2+3, 4+1, 1+4). That
+  half is machine-re-verified through the real route (8 runs, "within 10" ×3 → 4/4, 4/4, 3/3
+  distinct answers), so **(f) below is a glance, not the gate** — (c) is the gate.
+  ~2 minutes: `/lumina` → dev panels → Direct Instruction → **"Spoken Practice (generic)"**.
+  The script panel under the run shows every generated clause + the assembled cue.
+- (a) **The scripted opener is the first thing you hear** — no improvised greeting before it
+  (DI-GREET-1), and the how-to-play line is the short code-owned one, spoken once.
+- (b) **Every ask STATES the problem aloud** — "Two times three. What is two times three?",
+  not "Here is a groups problem. What is the answer?" (drive-2 defect; `findUnspokenStimulus`
+  is the mechanical gate, this is the audible half).
+- (c) ⭐ **THE CUT-IN. Make a stray noise right after a verdict lands** — cough, talk to
+  someone, anything off-task. Drive 3 saw the tutor answer that noise by **inventing an item
+  that does not exist** ("Two groups of six… twelve" when the real item was 4 × 2) and
+  reciting it in raw cue format for **34 seconds**, while the real cue sat queued from 12.6s
+  to 52.5s. The fix ships the queued cue THROUGH the improvisation with `interrupt: true`.
+  **What to watch: the improvised turn should be cut off and the real item should arrive
+  within a couple of seconds.** Then check the session ledger for `cut_in: true` on that send.
+- (d) **The `[CURRENT STATE]` block must stay UNSPOKEN.** Drive 1 heard the tutor recite it
+  aloud for five turns ("activity: live direct instruction spoken practice, challengeType…").
+  The channel was amputated, then **restored by user ruling** when the real root turned out to
+  be mis-voiced `commonStruggles` text. Drive 3 confirmed it attaches and stays silent —
+  re-confirm, because this is the one defect whose fix was a *reversal*.
+- (e) **Answer deliberately WRONG at least twice** — same standing instruction as #82–#87.
+  This pack inherits the unproven spoken judge; every affirmation it has produced so far is
+  compatible with a permissive judge.
+- (f) **Glance only:** the four items are four genuinely different problems — not one answer
+  reached four ways, and not commuted twins (3+2 / 2+3 count as the same problem).
+- **⚠️ (c) is not really about this pack.** The cut-in landed in `useJudgedSpeechLoop` and is
+  now live under **all 8 judged-loop consumers** — the 5 DI packs, the 4 literacy ports, both
+  runner pilots. If it misfires, it misfires everywhere. This row is the cheapest place to
+  hear it.
+- **Route the result to:** `qa/di/BACKLOG.md` item 16 (the dated 2026-08-11 blocks); strike
+  there AND here.
+
+### ~~#88 — pilot onboarding, invite deep-link signup: form → account → first lesson at the INVITED grade?~~ · ✅ **PASS — user drive 2026-08-11. CLOSED.**
+- **Driven on the LIVE site (not localhost) with a real invite: a `test1grade3` account was
+  minted through prod signup, and the user confirmed in Settings that the profile carries
+  grade 3.** Prod frontend → prod backend → prod Firestore, end to end.
+- **That closes the ⭐ criterion.** The bug slice 1 fixed was that `students/{id}.grade_level`
+  was never written, so a first-doc-wins lexicographic scan planned every new account against
+  the **Grade 1** graph. The invited grade surviving onto the profile IS that mechanism — and
+  it survived the second bug too, `f4facf5`, where `--grade 3` stored the literal `"3"` against
+  a platform that speaks `K/1st/2nd/3rd`.
+- **Left undriven deliberately, and NOT worth reopening this row for:** (c) no-code refusal and
+  (d) redeemed-code re-use — negative paths, both covered by `probe_invite_flow.py` 6/6 against
+  a live backend on 2026-08-10. If either regresses it will be a backend change, and the probe
+  is the cheaper gate.
+- **⚠️ FOR WHOEVER RE-CHECKS ANY OF THIS: do not use curl.** `/login` serves a Next
+  error-boundary shell to non-browser clients — `useSearchParams()` without `<Suspense>` bails
+  out of prerendering, and the real form appears only after hydration. This run read that shell
+  as a dead front door and said so; the account in Firestore is what settled it. Assert on the
+  hydrated DOM, or drive it in a browser.
+- **Routed to:** `qa/pilot-onboarding/BACKLOG.md` (struck there too).
 
 ### #87 — push-pull-arena, judged-script runner: can the tutor judge a physics answer, and does the reveal-at-commit land? · OPEN, NEVER DRIVEN
 - **First SCIENCE consumer of `useJudgedScriptRunner` (2026-08-10), and the first pack whose
