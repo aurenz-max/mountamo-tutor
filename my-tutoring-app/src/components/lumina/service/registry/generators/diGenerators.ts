@@ -12,6 +12,7 @@ import { generateDiWordReading } from '../../direct-instruction/gemini-di-word-r
 import { generateDiMathFacts } from '../../direct-instruction/gemini-di-math-facts';
 import { generateDiShapes } from '../../direct-instruction/gemini-di-shapes';
 import { generateDiSentenceReading } from '../../direct-instruction/gemini-di-sentence-reading';
+import { generateDiSpokenPractice } from '../../direct-instruction/gemini-di-spoken-practice';
 
 // di-letter-sounds — continuous letter sounds, menu-scoped to the objective.
 registerContextGenerator('di-letter-sounds', async (ctx) => ({
@@ -61,6 +62,18 @@ registerContextGenerator('di-sentence-reading', async (ctx) => ({
   type: 'di-sentence-reading',
   instanceId: ctx.instanceId,
   data: await generateDiSentenceReading(ctx.topic, ctx.gradeContext, {
+    ...ctx.raw,
+    intent: ctx.intent,
+  }),
+}));
+
+// di-spoken-practice — the content-generic pack: Gemini writes the items AND
+// their per-skill judging clauses, code holds the gates (benched response
+// class, answer-leak scan, code-computed counting answers).
+registerContextGenerator('di-spoken-practice', async (ctx) => ({
+  type: 'di-spoken-practice',
+  instanceId: ctx.instanceId,
+  data: await generateDiSpokenPractice(ctx.topic, ctx.gradeContext, {
     ...ctx.raw,
     intent: ctx.intent,
   }),

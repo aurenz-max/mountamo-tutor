@@ -583,6 +583,15 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "sentence_review":       PriorConfig(3.5, "Review: re-read taught sentences drawn from a wide cumulative mix"),
         "sight_phrase_sentence": PriorConfig(4.0, "Production: read a sentence dense in irregular high-frequency words — whole-word recall in connected text"),
     },
+    # The content-generic DI pack. Its modes name the ACT, not a subject — one
+    # instance can serve any skill whose answer is a short spoken word — so the
+    # betas rank the act's own load (enumerate < decode < recall), and the skill
+    # difficulty rides on the objective this instance was generated for.
+    "di-spoken-practice": {
+        "count_and_say": PriorConfig(1.5, "Enumerate: count a group of pictures and say how many"),
+        "read_aloud":    PriorConfig(2.5, "Decode: read the printed stimulus aloud"),
+        "say_answer":    PriorConfig(3.0, "Recall: produce a spoken answer the child was not shown"),
+    },
     "phoneme-explorer": {
         "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),
         "blend":      PriorConfig(2.5, "Guided: combine phonemes into word"),

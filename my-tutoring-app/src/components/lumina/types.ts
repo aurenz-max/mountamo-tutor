@@ -1375,6 +1375,7 @@ export type ComponentId =
   | 'di-math-facts'             // Live-judged Direct Instruction: spoken math fact fluency call-response (K-G2)
   | 'di-shapes'                 // Live-judged Direct Instruction: name a drawn 2D shape aloud at any rotation (K-G1)
   | 'di-sentence-reading'       // Live-judged Direct Instruction: read a printed short sentence aloud, judged word-by-word (G1-2)
+  | 'di-spoken-practice'        // Live-judged Direct Instruction, CONTENT-GENERIC: any skill whose answer is one short spoken word; items + judging clauses generated per objective
   | 'decodable-reader'          // Controlled-vocabulary reading with per-word TTS and comprehension (K-2)
   | 'story-map'                 // Interactive plot structure diagram (K-6)
   | 'character-web'             // Character analysis and relationship mapping (grades 2-6)

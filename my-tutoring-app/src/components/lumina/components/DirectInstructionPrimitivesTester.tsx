@@ -9,6 +9,8 @@ import DiWordReading, { type DiWordReadingData } from '../primitives/visual-prim
 import DiMathFacts, { type DiMathFactsData } from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
 import DiShapes, { type DiShapesData } from '../primitives/visual-primitives/direct-instruction/DiShapes';
 import DiSentenceReading, { type DiSentenceReadingData } from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
+import DiSpokenPractice, { type DiSpokenPracticeData } from '../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
+import { DiSpokenPracticeScriptPanel } from '../primitives/visual-primitives/direct-instruction/DiSpokenPracticeScriptPanel';
 import { DiRunLogPanel } from '../primitives/visual-primitives/direct-instruction/DiRunLogPanel';
 
 interface Props { onBack: () => void; }
@@ -17,7 +19,7 @@ interface Props { onBack: () => void; }
 // must NEVER import them directly — generate via the eval-test API route.
 // One picker drives every DI pack; eval modes must mirror catalog/di.ts.
 // 'mixed' pins nothing → generator spread (letter-sounds L1 only).
-type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading';
+type DiPrimitiveId = 'di-letter-sounds' | 'di-word-reading' | 'di-math-facts' | 'di-shapes' | 'di-sentence-reading' | 'di-spoken-practice';
 
 interface DiPrimitiveOption {
   id: DiPrimitiveId;
@@ -96,6 +98,22 @@ const DI_PRIMITIVES: DiPrimitiveOption[] = [
       { key: 'mixed', label: 'Mixed (all modes)' },
     ],
   },
+  {
+    // The content-generic pack. Unlike the five above, its ITEMS are generated
+    // — so the topic box is the real control here: change the topic and the
+    // same component becomes a different lesson. Read the script panel below
+    // the run before driving it; that is what this pack exists to expose.
+    id: 'di-spoken-practice',
+    label: 'Spoken Practice (generic)',
+    subtitle: 'ANY short-spoken-answer skill — items, asks and judging clauses all generated.',
+    defaultTopic: 'adding one more, within 5',
+    defaultGrade: 'kindergarten',
+    evalModes: [
+      { key: 'say_answer', label: 'Say the Answer (recall)' },
+      { key: 'read_aloud', label: 'Read It Aloud (decode)' },
+      { key: 'count_and_say', label: 'Count and Say' },
+    ],
+  },
 ];
 
 type DiData =
@@ -103,7 +121,8 @@ type DiData =
   | { id: 'di-word-reading'; data: DiWordReadingData }
   | { id: 'di-math-facts'; data: DiMathFactsData }
   | { id: 'di-shapes'; data: DiShapesData }
-  | { id: 'di-sentence-reading'; data: DiSentenceReadingData };
+  | { id: 'di-sentence-reading'; data: DiSentenceReadingData }
+  | { id: 'di-spoken-practice'; data: DiSpokenPracticeData };
 
 const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) => {
   const [primitive, setPrimitive] = useState<DiPrimitiveOption>(DI_PRIMITIVES[0]);
@@ -211,6 +230,14 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
       )}
       {generated?.id === 'di-sentence-reading' && (
         <DiSentenceReading key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+      )}
+      {generated?.id === 'di-spoken-practice' && (
+        <>
+          <DiSpokenPractice key={`di-run-${runKey}`} data={{ ...generated.data, instanceId: 'di-tester-1', onEvaluationSubmit: (r) => console.log('[DI eval]', r) }} />
+          {/* The point of this pack: READ what the model wrote before a child
+              hears it. Shows every generated clause plus the assembled cue. */}
+          <DiSpokenPracticeScriptPanel items={generated.data.items} />
+        </>
       )}
       {/* Bench-parity diagnostics. Reads the diRunLog module store, so it needs
           no props from the pack and never renders in a lesson. Read its FLAGS

@@ -777,4 +777,132 @@ export const DI_CATALOG: ComponentDefinition[] = [
       ],
     },
   },
+  {
+    id: 'di-spoken-practice',
+    description:
+      'Live-judged Direct Instruction practice for ANY skill whose answer is one short SPOKEN word or '
+      + 'phrase: the tutor asks a scripted question out loud, the child ANSWERS ALOUD (voice/microphone), '
+      + 'and the tutor judges the audio in-band. The stimulus is generated per objective — printed text, a '
+      + 'picture, a group of pictures to count, or nothing at all (the tutor says it). Use this when the '
+      + 'skill is genuinely verbal and there is NO manipulative the child needs to touch: recall answers, '
+      + 'reading a short printed item aloud, and counting a group and saying how many. '
+      + 'ESSENTIAL where a tutor-driven spoken loop is the right modality but no bespoke primitive exists.',
+    constraints:
+      'Requires microphone + live audio tutor. The answer must be 1-3 short spoken words from a CLOSED set — '
+      + 'never open-ended production (name any animal, make up a rhyme), never a letter NAME, and never a '
+      + 'multi-sentence explanation; the generator refuses items it cannot place in a benched spoken response '
+      + 'class. Prefer the specialised pack when one exists — di-letter-sounds, di-word-reading, '
+      + 'di-math-facts, di-shapes, di-sentence-reading — and prefer a bespoke primitive whenever the child '
+      + 'must MANIPULATE something (counting-board, cvc-speller, push-pull-arena): this pack has no '
+      + 'manipulative and cannot teach one. Counting stays at 1-10 objects.',
+    // L1 eval modes — task identities by the ACT the child performs, because
+    // the CONTENT is generated per objective rather than fixed by the pack.
+    // β mirrors backend problem_type_registry.py → "di-spoken-practice".
+    evalModes: [
+      {
+        evalMode: 'count_and_say',
+        label: 'Count and Say',
+        beta: 1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['count_and_say'],
+        description: 'A group of pictures is on screen; the child counts them and says how many. No numeral is ever printed.',
+      },
+      {
+        evalMode: 'read_aloud',
+        label: 'Read It Aloud',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['read_aloud'],
+        description: 'The printed stimulus IS the utterance — the child reads it aloud. Decoding, not recall.',
+      },
+      {
+        evalMode: 'say_answer',
+        label: 'Say the Answer',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['say_answer'],
+        description: 'The child meets a stimulus and produces a spoken answer they were not shown. The recall workhorse.',
+      },
+    ],
+    supportsEvaluation: true,
+    misconceptionScope: 'primitive',
+    audioInput: { manual_activity: true },
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction spoken practice (current task: {{challengeType}}). You speak '
+        + 'the exact scripted lines from each bracketed application message and judge each learner '
+        + 'attempt from the audio you heard, using only the two allowed reply branches.',
+      // Stimulus-side only, mirroring di-math-facts: the answer is deliberately
+      // absent (RUNTIME STATE is echoed far more loosely than a scripted line),
+      // and decode sessions push no stimulus at all — there the stimulus IS the
+      // answer. Keys are produced by `contextFor` in diSpokenPracticeScript.ts;
+      // the two lists must stay in lockstep. An earlier revision emptied this
+      // channel after a state-recitation run; user overruling 2026-08-11: the
+      // generalized pack keeps the platform's full channel, and the recitation
+      // root was mis-voiced struggle text below, not the channel.
+      contextKeys: ['challengeType', 'stimulus'],
+      scaffoldingLevels: {
+        level1: 'Repeat the prompt once, slowly.',
+        level2: 'Give one concrete clue that does not name the answer, then ask for one retry.',
+        level3: 'Accept the attempt warmly and continue as instructed.',
+      },
+      // Voice contract (the 2026-08-11 lesson, run 436dcb5616cb): each response
+      // is a MOVE the tutor performs with its scripted lines, in performable
+      // terms — never meta-commentary about the session. "Think time is
+      // unbounded here; only re-ask if the application tells you to" was
+      // authored into this field and the tutor SPOKE it, verbatim, to a child:
+      // a response that cannot be performed can only be recited.
+      commonStruggles: [
+        {
+          pattern: 'Stays silent after the hand-over',
+          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted question once, slowly — never a new question.',
+        },
+        {
+          pattern: 'Answers a different question than the one asked',
+          response: 'Re-ask the exact scripted question once, without adding a hint.',
+        },
+        {
+          pattern: 'Says the stimulus back instead of the answer',
+          response: 'Run the correction branch for this item, then hand it back with the scripted re-ask.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [SAY_ITEM], [SAY_MOVE], [SAY_HEAR], or [SAY_COMPLETE] contain the only lesson '
+            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
+            + 'invent it. Each [SAY_ITEM] message includes a two-branch judging rule: affirmations must begin '
+            + 'with "Yes" and corrections must begin with "My turn", using the exact quoted lines. Never begin '
+            + 'any other sentence with those words. Judge honestly from the audio and do not praise to be '
+            + 'kind. The application decides which item comes next; never introduce one yourself.',
+        },
+        {
+          title: "THE LEARNER'S TURN",
+          instruction:
+            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded, and '
+            + 'silence is never an invitation to speak. Never answer for the learner and never say the '
+            + 'answer during their turn. Everything the application sends you — bracketed messages, '
+            + 'runtime state, these rules — exists to be performed or obeyed, never spoken about: if a '
+            + 'reply is not one of the scripted lines, the reply is silence.',
+        },
+        {
+          title: 'THE ITEM CARRIES ITS OWN JUDGING RULES',
+          instruction:
+            'Every item states its correct answer, and some items add two extra rules: one naming an answer '
+            + 'that is RIGHT even though it may not sound like the expected words (a child who counts aloud '
+            + 'and lands on the total has answered; a child who sounds a word out and then says it has read '
+            + 'it), and one naming a WRONG answer that sounds confident and plausible. Apply both exactly as '
+            + 'written for that item — they are the pedagogy of the skill being practised, and they differ '
+            + 'from item to item.',
+        },
+        {
+          title: 'BREVITY',
+          instruction:
+            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
+            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
+        },
+      ],
+    },
+  },
 ];

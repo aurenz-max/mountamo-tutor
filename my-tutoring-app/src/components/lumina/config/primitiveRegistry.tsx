@@ -175,6 +175,7 @@ import DiWordReading from '../primitives/visual-primitives/direct-instruction/Di
 import DiMathFacts from '../primitives/visual-primitives/direct-instruction/DiMathFacts';
 import DiShapes from '../primitives/visual-primitives/direct-instruction/DiShapes';
 import DiSentenceReading from '../primitives/visual-primitives/direct-instruction/DiSentenceReading';
+import DiSpokenPractice from '../primitives/visual-primitives/direct-instruction/DiSpokenPractice';
 import DecodableReader from '../primitives/visual-primitives/literacy/DecodableReader';
 import EvidenceFinder from '../primitives/visual-primitives/literacy/EvidenceFinder';
 import ContextCluesDetective from '../primitives/visual-primitives/literacy/ContextCluesDetective';
@@ -1935,6 +1936,16 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'di-sentence-reading': {
     component: DiSentenceReading,
     sectionTitle: 'Sentence Reading',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'di-spoken-practice': {
+    component: DiSpokenPractice,
+    sectionTitle: 'Say It Out Loud',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,
