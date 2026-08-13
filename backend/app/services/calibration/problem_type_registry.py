@@ -593,10 +593,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "say_answer":    PriorConfig(3.0, "Recall: produce a spoken answer the child was not shown"),
     },
     "phoneme-explorer": {
-        "isolate":    PriorConfig(1.5, "Recognition: identify initial/final phoneme"),
-        "blend":      PriorConfig(2.5, "Guided: combine phonemes into word"),
-        "segment":    PriorConfig(3.5, "Application: break word into phonemes"),
-        "manipulate": PriorConfig(5.0, "Production: add/delete/substitute phoneme"),
+        # DI modality (2026-08-11): every mode is answered ALOUD and judged by
+        # the live tutor in-band — the 4-choice grids died as costumes. segment
+        # is now "say how many sounds" (the word is never printed, so letters
+        # cannot be counted). βs unchanged.
+        "isolate":    PriorConfig(1.5, "Recognition: hear a sound + 4-word menu, SAY the word with that initial sound"),
+        "blend":      PriorConfig(2.5, "Guided: hear the phonemes one at a time, SAY the blended word"),
+        "segment":    PriorConfig(3.5, "Application: hear a word (never printed), SAY how many sounds it has"),
+        "manipulate": PriorConfig(5.0, "Production: hear a word and one sound change, SAY the new word"),
     },
     "word-workout": {
         "real_vs_nonsense": PriorConfig(1.5, "Recognition: real vs nonsense word"),
@@ -634,12 +638,17 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "word_sort":  PriorConfig(3.5, "Discrimination: say the middle sound across a pool mixing two vowels"),
     },
     "picture-vocabulary": {
-        "receptive_match": PriorConfig(1.5, "Receptive vocabulary — hear a word, tap the matching picture"),
-        "naming":          PriorConfig(2.5, "Expressive naming — see a picture, say the word aloud (speech-judged)"),
-        "association":     PriorConfig(3.0, "Word associations — say the thing that goes with a shown word (sock→shoe)"),
-        "opposite":        PriorConfig(3.5, "Word relationships — produce the opposite of a shown word aloud"),
-        "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word in a spoken sentence frame"),
-        "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of an ordered low→high word gradient"),
+        # DI modality (2026-08-11): tutor-judged loop in every mode. Four modes
+        # are spoken production with no printed options (the old chips leaked
+        # the answer); receptive_match and association are tutor-judged TAPS on
+        # emoji-only cards — association because open-set spoken production is
+        # a blocked response class, not because it is easier. βs unchanged.
+        "receptive_match": PriorConfig(1.5, "Receptive vocabulary — hear a word, tap the matching picture (tutor verdict advances)"),
+        "naming":          PriorConfig(2.5, "Expressive naming — see a picture, say the word aloud (live-judged, no word chips)"),
+        "association":     PriorConfig(3.0, "Word associations — tap the picture that goes with a shown thing (sock→shoe; closed set, tutor verdict)"),
+        "opposite":        PriorConfig(3.5, "Word relationships — produce the opposite aloud (live-judged; base word said back = signature error)"),
+        "sentence_frame":  PriorConfig(5.0, "Vocabulary in context — say the missing word of a spoken sentence frame (live-judged)"),
+        "gradable_scale":  PriorConfig(6.0, "Gradable vocabulary — say the missing rung of a spoken low→high word gradient (live-judged)"),
     },
     "story-talk": {
         "who_what_where": PriorConfig(2.0, "Literal recall — answer who/what/where from a read-aloud story"),

@@ -1,137 +1,203 @@
 // @vitest-environment jsdom
 /**
- * Reader-fit behavioral verification for letter-sound-link @ PRE
- * (qa/reader-fit/letter-sound-link-PRE-2026-07-14.md). The PRE contract:
- *  1. Adult chrome + the 10px two-tap protocol text are gone at gradeLevel 'K'
- *     (Group/mode badges, counter, "tap to hear"/"tap to choose", footer + task
- *     sentences) — replaced by wordless ear→check glyphs and the spoken tutor beat.
- *  2. The audition-then-commit two-tap still WORKS (rule 2 permits a multi-part
- *     confirm) — first tap previews ([TAP_OPTION]), second tap on the same option
- *     confirms and reaches [ANSWER_CORRECT] + the production beat.
- *  3. Reader grades (control) keep the original text protocol + chrome.
+ * LetterSoundLink render contract after the DI port (qa/di/BACKLOG.md item 16),
+ * carrying forward the PRE-band reader-fit gates that survived it
+ * (qa/reader-fit/letter-sound-link-PRE-2026-07-14.md).
  *
- * External hooks (live tutor, evaluation, audio, spoken judge) are mocked.
+ * What this locks in:
+ *  1. §1 GATE A — nothing on screen carries the child forward: no Next,
+ *     Finish, Skip or Check. The tutor's verdict is the only advance.
+ *  2. §1 GATE B — nothing names the answer before the child gives it:
+ *     - see-hear: the two SPEAKER BUBBLES are asserted GONE, not merely
+ *       unused. They played the answer as audio and asked only for
+ *       recognition — the mode now asks the child to produce the sound.
+ *     - keyword-match: the two pictures are shown but their WORDS are not
+ *       printed, and nothing about them is tappable (the answer is spoken).
+ *     - every mode: the keyword anchor picture is absent pre-verdict. It
+ *       encodes the sound, so showing it early is the same leak as saying it.
+ *  3. hear-see keeps its two letter buttons — that IS its answer surface,
+ *     because a letter NAME has no reliable judge — and they are DISABLED
+ *     until the run starts, so no tap can commit before the tutor has asked.
+ *  4. Adult chrome is hidden at grade K and present at a reader grade.
+ *
+ * The live loop itself is NOT driven here. It cannot be driven honestly in
+ * jsdom (the mic never opens, the context refs never re-render), and a green
+ * test that never fired the path is worse than no test — the pedagogy is
+ * pinned in LetterSoundLink.di-script.test.ts instead.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 const sendText = vi.hoisted(() => vi.fn());
-vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText, isConnected: true }),
+const ctxState = vi.hoisted(() => ({
+  isConnected: true,
+  isListening: false,
+  isAudioPlaying: false,
+  micLevel: 0,
+  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionResumeCount: 0,
+  conversation: [] as Array<{ role: string; content: string }>,
+}));
+vi.mock('@/contexts/LuminaAIContext', () => ({
+  useLuminaAIContext: () => ({
+    ...ctxState,
+    sendText,
+    connect: vi.fn(async () => {}),
+    disconnect: vi.fn(),
+    reconnect: vi.fn(),
+    startListening: vi.fn(() => { ctxState.isListening = true; }),
+    stopListening: vi.fn(),
+    updateContext: vi.fn(),
+  }),
 }));
 
-const submitSpy = vi.hoisted(() => vi.fn());
-vi.mock('../../../../evaluation', async () => {
-  const ReactMod = await import('react');
-  return {
-    usePrimitiveEvaluation: () => {
-      const [hasSubmitted, setHasSubmitted] = ReactMod.useState(false);
-      return {
-        submitResult: (...args: unknown[]) => { submitSpy(...args); setHasSubmitted(true); },
-        hasSubmitted,
-        submittedResult: null,
-        elapsedMs: 0,
-      };
-    },
-    useEvaluationContext: () => null,
-  };
-});
+const submitGestureAttempt = vi.hoisted(() => vi.fn());
+vi.mock('../../../../hooks/useJudgedSpeechLoop', () => ({
+  useJudgedSpeechLoop: () => ({
+    voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
+    queueCue: vi.fn(),
+    submitGestureAttempt,
+    sendCueNow: vi.fn(),
+    clearQueuedCue: vi.fn(),
+    arm: vi.fn(),
+    disarm: vi.fn(),
+    reset: vi.fn(),
+    isAwaitingJudgment: () => false,
+    config: {},
+  }),
+}));
+
+vi.mock('../../../../evaluation', () => ({
+  usePrimitiveEvaluation: () => ({
+    submitResult: vi.fn(),
+    hasSubmitted: false,
+    submittedResult: null,
+    elapsedMs: 0,
+  }),
+  useEvaluationContext: () => null,
+}));
 
 vi.mock('../../../../utils/SoundManager', () => ({
   SoundManager: new Proxy({}, { get: () => vi.fn() }),
 }));
 
-// No mic → the production beat falls back to a prominent Next/Finish button,
-// keeping the advance flow deterministic for this test.
-vi.mock('../../../../hooks/useSpokenWordCapture', () => ({
-  useSpokenWordCapture: () => ({
-    state: 'idle', level: 0, isSupported: false,
-    start: vi.fn(), cancel: vi.fn(),
-  }),
-}));
+import LetterSoundLink, {
+  type LetterSoundLinkChallenge,
+  type LetterSoundLinkData,
+} from '../LetterSoundLink';
 
-import LetterSoundLink, { type LetterSoundLinkData } from '../LetterSoundLink';
+const SAY_SOUND: LetterSoundLinkChallenge = {
+  id: 'ch1', mode: 'see-hear', targetLetter: 's', targetSound: '/s/',
+  keywordWord: 'sun', keywordImage: 'sun',
+};
+const FIND_LETTER: LetterSoundLinkChallenge = {
+  id: 'ch2', mode: 'hear-see', targetLetter: 't', targetSound: '/t/',
+  keywordWord: 'top', keywordImage: 'top',
+  options: [{ letter: 't', isCorrect: true }, { letter: 'd', isCorrect: false }],
+};
+const SAY_WORD: LetterSoundLinkChallenge = {
+  id: 'ch3', mode: 'keyword-match', targetLetter: 'm', targetSound: '/m/',
+  keywordWord: 'map', keywordImage: 'map',
+  options: [{ sound: 'map', isCorrect: true }, { sound: 'net', isCorrect: false }],
+};
 
-const makeData = (gradeLevel: string): LetterSoundLinkData => ({
+const makeData = (
+  gradeLevel: string,
+  challenges: LetterSoundLinkChallenge[] = [SAY_SOUND],
+): LetterSoundLinkData => ({
   title: 'Letter Sounds',
   letterGroup: 1,
   cumulativeLetters: ['s', 'a', 't', 'i', 'p', 'n'],
   gradeLevel,
-  challenges: [
-    {
-      id: 'ch1', mode: 'see-hear', targetLetter: 's', targetSound: '/s/',
-      keywordWord: 'sun', keywordImage: 'sun',
-      options: [{ sound: '/s/', isCorrect: true }, { sound: '/t/', isCorrect: false }],
-    },
-    {
-      id: 'ch2', mode: 'see-hear', targetLetter: 't', targetSound: '/t/',
-      keywordWord: 'top', keywordImage: 'top',
-      options: [{ sound: '/t/', isCorrect: true }, { sound: '/p/', isCorrect: false }],
-    },
-  ],
+  challenges,
 });
 
-const tagged = (tag: string) =>
-  sendText.mock.calls.map(c => String(c[0])).filter(m => m.startsWith(tag));
+beforeEach(() => {
+  sendText.mockClear();
+  submitGestureAttempt.mockClear();
+  ctxState.isListening = false;
+});
+afterEach(cleanup);
 
-describe('LetterSoundLink @ PRE (gradeLevel K)', () => {
-  beforeEach(() => sendText.mockClear());
-  afterEach(cleanup);
+// ── GATE A: nothing on screen carries the child forward ─────────────────────
 
-  it('hides adult chrome and the unreadable two-tap protocol text', () => {
+describe('LetterSoundLink · the tutor owns the clock', () => {
+  it('offers no Next, Finish, Skip or Check anywhere', () => {
+    render(<LetterSoundLink data={makeData('K', [SAY_SOUND, FIND_LETTER, SAY_WORD])} />);
+    for (const label of [/next/i, /finish/i, /skip/i, /check/i, /continue/i]) {
+      expect(screen.queryByRole('button', { name: label })).toBeNull();
+    }
+  });
+});
+
+// ── GATE B: nothing names the answer before the child gives it ──────────────
+
+describe('LetterSoundLink · answer-leak', () => {
+  it('see-hear: the speaker bubbles are GONE — the child produces the sound', () => {
     render(<LetterSoundLink data={makeData('K')} />);
-    expect(screen.queryByText('Group 1')).toBeNull();
-    expect(screen.queryByText('See → Hear')).toBeNull();       // mode badge
+    // The letter (the stimulus) is on screen…
+    expect(screen.getByText('S')).toBeTruthy();
+    // …and the two audio options that used to play the answer are not.
     expect(screen.queryByText('tap to hear')).toBeNull();
     expect(screen.queryByText('tap to choose')).toBeNull();
-    expect(screen.queryByText(/Tap each speaker to hear the sound/)).toBeNull();
-    expect(screen.queryByText('Which sound does this letter make?')).toBeNull();
-    // the target letter (the stimulus) still shows
+    expect(screen.queryByText('/s/')).toBeNull();
+    expect(screen.queryByText('/t/')).toBeNull();
+  });
+
+  it('no keyword anchor appears before a verdict, in any mode', () => {
+    render(<LetterSoundLink data={makeData('K', [SAY_SOUND])} />);
+    expect(screen.queryByText('sun')).toBeNull();
+    expect(screen.queryByText('☀️')).toBeNull();
+    cleanup();
+
+    render(<LetterSoundLink data={makeData('K', [FIND_LETTER])} />);
+    expect(screen.queryByText('top')).toBeNull();
+    expect(screen.queryByText('🔝')).toBeNull();
+  });
+
+  it('keyword-match: pictures show, words do not, and nothing is tappable', () => {
+    render(<LetterSoundLink data={makeData('K', [SAY_WORD])} />);
+    expect(screen.getByText('🗺️')).toBeTruthy();
+    expect(screen.getByText('🥅')).toBeTruthy();
+    expect(screen.queryByText('map')).toBeNull();
+    expect(screen.queryByText('net')).toBeNull();
+    // The only button on the stage is the mic (the answer is SPOKEN).
+    expect(screen.queryByRole('button', { name: /map|net/i })).toBeNull();
+  });
+});
+
+// ── The one gesture direction ───────────────────────────────────────────────
+
+describe('LetterSoundLink · hear-see keeps its hands', () => {
+  it('renders both letters — a letter NAME has no judge, so the grapheme is touched', () => {
+    render(<LetterSoundLink data={makeData('K', [FIND_LETTER])} />);
+    expect(screen.getByRole('button', { name: 'T' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'D' })).toBeTruthy();
+  });
+
+  it('the letters are DISABLED until the run starts — no tap can beat the ask', () => {
+    render(<LetterSoundLink data={makeData('K', [FIND_LETTER])} />);
+    const target = screen.getByRole('button', { name: 'T' }) as HTMLButtonElement;
+    expect(target.disabled).toBe(true);
+    fireEvent.click(target);
+    expect(submitGestureAttempt).not.toHaveBeenCalled();
+  });
+});
+
+// ── Band chrome ─────────────────────────────────────────────────────────────
+
+describe('LetterSoundLink · pre-reader chrome gate', () => {
+  it('hides adult chrome at grade K', () => {
+    render(<LetterSoundLink data={makeData('K')} />);
+    expect(screen.queryByText('Group 1')).toBeNull();
+    expect(screen.queryByText(/Say the Sound/)).toBeNull();
     expect(screen.getByText('S')).toBeTruthy();
   });
 
-  it('audition-then-commit: first tap previews, second tap confirms and reaches the production beat', () => {
-    render(<LetterSoundLink data={makeData('K')} />);
-    // pre-lock, the only interactive buttons are the two speaker bubbles
-    let bubbles = screen.getAllByRole('button');
-    expect(bubbles).toHaveLength(2);
-
-    fireEvent.click(bubbles[0]);                 // first tap → preview
-    expect(tagged('[TAP_OPTION]')).toHaveLength(1);
-    expect(tagged('[ANSWER_CORRECT]')).toHaveLength(0);
-
-    bubbles = screen.getAllByRole('button');     // re-query after re-render
-    fireEvent.click(bubbles[0]);                 // second tap on same → commit
-    expect(tagged('[ANSWER_CORRECT]')).toHaveLength(1);
-
-    // locked but not complete (2 challenges) → prominent Next appears
-    expect(screen.getByRole('button', { name: /Next Challenge/ })).toBeTruthy();
-  });
-
-  it('completing both challenges submits the evaluation', () => {
-    render(<LetterSoundLink data={makeData('K')} />);
-    // ch1: audition + commit correct
-    fireEvent.click(screen.getAllByRole('button')[0]);
-    fireEvent.click(screen.getAllByRole('button')[0]);
-    fireEvent.click(screen.getByRole('button', { name: /Next Challenge/ }));
-    // ch2: audition + commit correct → Finish
-    fireEvent.click(screen.getAllByRole('button')[0]);
-    fireEvent.click(screen.getAllByRole('button')[0]);
-    expect(submitSpy).toHaveBeenCalled();
-    expect(tagged('[ALL_COMPLETE]')).toHaveLength(1);
-  });
-});
-
-describe('LetterSoundLink @ reader grade (control, gradeLevel 2)', () => {
-  beforeEach(() => sendText.mockClear());
-  afterEach(cleanup);
-
-  it('keeps the original text protocol + chrome', () => {
+  it('keeps the chrome at a reader grade (control)', () => {
     render(<LetterSoundLink data={makeData('2')} />);
     expect(screen.getByText('Group 1')).toBeTruthy();
-    expect(screen.getAllByText('tap to hear').length).toBeGreaterThan(0);
-    expect(screen.getByText(/Tap each speaker to hear the sound/)).toBeTruthy();
-    expect(screen.getByText('Which sound does this letter make?')).toBeTruthy();
+    expect(screen.getByText(/Say the Sound/)).toBeTruthy();
   });
 });

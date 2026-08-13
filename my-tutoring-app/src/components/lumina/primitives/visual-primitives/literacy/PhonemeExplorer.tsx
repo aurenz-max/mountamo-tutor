@@ -1,20 +1,52 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * PhonemeExplorer — DI modality (sixth literacy port, 2026-08-11; second
+ * literacy consumer of useJudgedScriptRunner). The Live tutor owns the clock
+ * in every mode: it asks, waits, judges the child's spoken answer from the
+ * audio in-band, corrects contrastively, and its OWN verdict is the advance.
+ * There is no advance timer, no answer buttons, no Next button and no
+ * push-to-talk mic anywhere in this file.
+ *
+ * ALL FOUR MODES ARE VERBAL — the old 4-choice grid was a costume on each:
+ *  - isolate: the four cards STAY as the on-screen MENU (the question side,
+ *    unmarked — print is not a leak here) but the answer is SAID, not tapped.
+ *    Tapping a card speaks that word (tap-to-hear, never a commit).
+ *  - blend: the phoneme tiles stay (stimulus; tap one to hear that sound) and
+ *    the child SAYS the blended word. Picking "cat" among four printed words
+ *    was word recognition, not blending.
+ *  - segment: the child SAYS how many sounds they hear. The printed word is
+ *    GONE deliberately — a reader counts letters, which is exactly the skill
+ *    this mode is not; the word arrives by voice (+ picture, tap-to-hear).
+ *  - manipulate: the child SAYS the new word (sound-swap's ruling in its
+ *    sibling primitive). The original word stays printed — it is the stimulus.
+ *
+ * SUPPORT TIERS SURVIVE THE PORT (L3 contract): the worked-example card and
+ * its sub-label (isolate), the picture cues, the blend cue furniture and the
+ * printed operation detail are still tier-withdrawn at render time from the
+ * same generator-stamped flags; the read-aloud lever now governs whether the
+ * scripted ask ENUMERATES the menu (phonemeExplorerScript honors it).
+ *
+ * ANSWER-LEAK RULE: blend/manipulate answers and segment's count appear on
+ * screen only after the tutor has affirmed. Tap-to-hear re-speaks question-
+ * side audio only ([PE_HEAR] cues).
+ *
+ * Items that cannot be asked or judged honestly (unsayable blend walk, the
+ * answer inside the operation prose, an example word sitting in the menu) are
+ * DROPPED at build time by `itemsFromChallenges` — ship nothing over a broken
+ * ask.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaChallengeCounter,
-  LuminaProgress,
   LuminaPanel,
-  LuminaFeedbackCard,
+  LuminaChallengeCounter,
   LuminaMicListener,
-  answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -22,13 +54,25 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PhonemeExplorerMetrics } from '../../../evaluation/types';
-import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useVoiceChoice } from '../../../hooks/useVoiceChoice';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  hearSoundCue,
+  hearWordCue,
+  itemCue,
+  itemsFromChallenges,
+  moveOnCue,
+  pronounceCue,
+  stimulusFor,
+  type PhonemeExplorerItem,
+} from './phonemeExplorerScript';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -48,52 +92,52 @@ interface PhonemeChallenge {
   phonemeSound?: string;
   exampleWord?: string;
   exampleEmoji?: string;
+  /** isolate ONLY: the 4-card menu (1 correct, unmarked on screen). */
+  choices?: PhonemeChoice[];
   // -- blend fields --
   phonemeSequence?: string[];
-  phonemeDisplay?: string;
+  /** blend: the ANSWER — the word the sounds make. Never printed pre-affirm. */
+  word?: string;
+  emoji?: string;
   // -- segment fields --
   targetWord?: string;
   targetEmoji?: string;
-  segmentOptions?: string[];
-  correctSegmentation?: number;
+  /** segment: the correct breakdown; its LENGTH is the graded answer. */
+  segments?: string[];
   // -- manipulate fields --
   originalWord?: string;
   originalEmoji?: string;
   operation?: string;
   operationDescription?: string;
-  // -- shared choices (isolate, blend, manipulate) --
-  choices?: PhonemeChoice[];
+  /** manipulate: the ANSWER. Never printed pre-affirm. */
+  resultWord?: string;
+  resultEmoji?: string;
   remediationMove?: 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
 
   // ── Within-mode support tier scaffolds (stamped by the generator from
   //    ctx.supportTier). Display/instruction only — they NEVER change the
-  //    phonemes, the words, the choices, or which choice is correct.
-  //    ALL OPTIONAL: absent ⇒ legacy full-help render (every cue shown), which is
-  //    why every read below is `!== false` and never a truthiness check. ──
+  //    phonemes, the words, or the answer. ALL OPTIONAL: absent ⇒ legacy
+  //    full-help render, which is why every read is `!== false`. ──
   /** isolate — render the worked-example card at all. Default: shown. */
   showExampleWord?: boolean;
   /** isolate — render the "starts with X" sub-label under the example. Default: shown. */
   showExampleHint?: boolean;
-  /** all modes — render emoji on choice buttons + the segment/manipulate target. Default: shown. */
+  /** all modes — render emoji on the menu cards + the segment/manipulate stimulus. Default: shown. */
   showChoiceEmoji?: boolean;
   /** blend — render the "Blend these sounds together:" cue and the "+" separators. Default: shown. */
   showBlendCue?: boolean;
   /** manipulate — render the authored operationDescription (vs a neutral line). Default: shown. */
   showOperationDetail?: boolean;
-  /** tutor — auto-read all four options at challenge start. Default: read. */
+  /** ask — enumerate the isolate menu aloud. Default: enumerate. */
   readOptionsAloud?: boolean;
 }
 
 export interface PhonemeExplorerData {
   title: string;
   challenges: PhonemeChallenge[];
-  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
+  /** Within-mode support tier from the manifest (generator stamps per-challenge flags). */
   supportTier?: 'easy' | 'medium' | 'hard';
-
-  // Voice control (spoken CHOICE shape) — say an option to pick it.
   gradeLevel?: string;
-  /** Single-mic arbitration: manifest sets false to yield the mic elsewhere. */
-  voiceEligible?: boolean;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -104,10 +148,6 @@ export interface PhonemeExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PhonemeExplorerMetrics>) => void;
 }
 
-// ============================================================================
-// Props
-// ============================================================================
-
 interface PhonemeExplorerProps {
   data: PhonemeExplorerData;
   className?: string;
@@ -117,101 +157,12 @@ interface PhonemeExplorerProps {
 // Constants
 // ============================================================================
 
-const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  isolate: { label: 'Sound Match', icon: '🔊', accentColor: 'blue' },
-  blend: { label: 'Sound Blend', icon: '🧩', accentColor: 'purple' },
-  segment: { label: 'Sound Split', icon: '✂️', accentColor: 'emerald' },
-  manipulate: { label: 'Sound Swap', icon: '🔀', accentColor: 'amber' },
+const MODE_META: Record<string, { badge: string; icon: string; prompt: string; accent: LuminaAccent }> = {
+  isolate: { badge: 'Sound Match', icon: '🔊', prompt: 'Which word begins with my sound? Say it!', accent: 'blue' },
+  blend: { badge: 'Sound Blend', icon: '🧩', prompt: 'Say the sounds fast — what word?', accent: 'purple' },
+  segment: { badge: 'Sound Count', icon: '✂️', prompt: 'How many sounds? Say the number!', accent: 'emerald' },
+  manipulate: { badge: 'Sound Swap', icon: '🔀', prompt: 'Say the new word!', accent: 'amber' },
 };
-
-const MODE_LABELS: Record<string, { badge: string; icon: string; instruction: string; accent: LuminaAccent }> = {
-  isolate: {
-    badge: 'Sound Match',
-    icon: '🔊',
-    instruction: 'Which word starts with the same sound?',
-    accent: 'blue',
-  },
-  blend: {
-    badge: 'Sound Blend',
-    icon: '🧩',
-    instruction: 'What word do these sounds make?',
-    accent: 'purple',
-  },
-  segment: {
-    badge: 'Sound Split',
-    icon: '✂️',
-    instruction: 'How do you break this word into sounds?',
-    accent: 'emerald',
-  },
-  manipulate: {
-    badge: 'Sound Swap',
-    icon: '🔀',
-    instruction: 'What new word do you get?',
-    accent: 'amber',
-  },
-};
-
-const MAX_ATTEMPTS = 3;
-
-// Once a challenge resolves (correct, or answer revealed after max attempts), we
-// wait this long — long enough for the celebration/feedback to read — then move
-// to the next challenge on our own. The manual Next button stays as an override.
-const AUTO_ADVANCE_MS = 1800;
-
-// A voice CHOICE unit is only safe when its options are short, single, and
-// SAYABLE, and are distinct after lowercasing (a homophone/dup set would
-// misroute a spoken verdict). Gate fails → the mic never renders and the tap
-// path is exactly what it was before voice existed.
-const SAYABLE_WORD = /^[a-z][a-z' -]*$/;
-function phonemeVoiceReady(choices: PhonemeChoice[], answer: string): boolean {
-  if (!choices || choices.length === 0) return false;
-  const words = choices.map((c) => c.word.trim().toLowerCase());
-  if (new Set(words).size !== words.length) return false; // ambiguous when spoken
-  if (!words.includes(answer.trim().toLowerCase())) return false;
-  return words.every(
-    (w) => w.length > 0 && w.length <= 24 && w.split(/\s+/).length <= 2 && SAYABLE_WORD.test(w),
-  );
-}
-
-// A DECLARED pre-reader band always keeps the picture cue on the answer buttons
-// and the tutor's option read-aloud, whatever the support tier says — at K the
-// emoji IS the pre-reader's access to the option words, so no tier may withdraw
-// it. An ABSENT band is not an override: the generator already applied the K
-// guard when it stamped the scaffolds, and an unstamped payload has nothing to
-// override. (Defaulting to "K" here would silently no-op the whole tier.)
-const PRE_READER_BANDS = new Set([
-  'k', 'pre', 'prek', 'pre-k', 'pre_k', 'kindergarten', 'pre-reader', 'prereader',
-]);
-function isPreReaderBand(grade?: string): boolean {
-  if (!grade) return false;
-  return PRE_READER_BANDS.has(grade.trim().toLowerCase());
-}
-
-/**
- * Tutor reveal policy keyed to the within-mode support tier. The tutor is a second
- * scaffold channel, so its latitude must MATCH what the screen shows:
- *  - easy   → may walk the whole setup and read every option aloud.
- *  - medium → nudge only; the worked example is thinner on screen, so be thinner too.
- *  - hard   → the screen withdrew the worked example / instruction furniture and the
- *             option enumeration; do not hand any of it back. On-demand pronunciation
- *             of the sound or the word (this primitive's whole point) always stays.
- * At EVERY tier the tutor never says which option is correct.
- */
-function tutorRevealPolicy(tier: 'easy' | 'medium' | 'hard' | undefined): string {
-  if (!tier) return '';
-  if (tier === 'easy') {
-    return `[SUPPORT_TIER easy] Full scaffolding: you may name the target sound, use the example word, `
-      + `read every option aloud, and walk the student through the move. Never say which option is correct.`;
-  }
-  if (tier === 'medium') {
-    return `[SUPPORT_TIER medium] Light scaffolding: name the sound and read the options, but do not pre-solve — `
-      + `let the student compare the options themselves. Never say which option is correct.`;
-  }
-  return `[SUPPORT_TIER hard] Minimal scaffolding: the screen has withdrawn the worked example, the picture cues `
-    + `and the printed instruction furniture on purpose — do NOT hand them back and do NOT list the options. `
-    + `Say the sound (or the word) clearly, ask the student what they hear, and let them read the choices. `
-    + `Pronounce anything on request. Never say which option is correct.`;
-}
 
 // ============================================================================
 // Component
@@ -227,62 +178,38 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     objectiveId,
     exhibitId,
     onEvaluationSubmit,
-    supportTier,
   } = data;
 
-  const gradeLevel = data.gradeLevel ?? 'K';
-  // Band gate reads the RAW declared band (not the 'K' fallback) — see isPreReaderBand.
-  const preReaderBand = isPreReaderBand(data.gradeLevel);
+  const gradeLevel = data.gradeLevel ?? 'kindergarten';
 
-  // ── Activity gate ──────────────────────────────────────────────
-  const [hasStarted, setHasStarted] = useState(false);
-
-  // ── Interaction state ──────────────────────────────────────────
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [showResult, setShowResult] = useState(false);
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const [isShaking, setIsShaking] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-
-  // ── Timing ─────────────────────────────────────────────────────
-  const startTimeRef = useRef(Date.now());
-
-  // Count first-time correct answers landed by voice (metrics extra).
-  const voiceCorrectCountRef = useRef(0);
-  // Per-challenge latch guarding the auto-advance timer (see effect below).
-  const autoAdvancedForRef = useRef<number | null>(null);
-  const diagnosisObservationsRef = useRef<Array<{ challenge: string; expected: string; observed: string }>>([]);
-
-  // ── Instance ID ────────────────────────────────────────────────
   const stableInstanceIdRef = useRef(instanceId || `phoneme-explorer-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Shared challenge progress hook ─────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const ctx = useLuminaAIContext();
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.mode,
-    phaseConfig: PHASE_CONFIG,
-  });
+  // ── Items (drop-gated) + a lookup back to the source challenge ────────────
+  const items = useMemo<PhonemeExplorerItem[]>(() => {
+    const built = itemsFromChallenges(challenges);
+    if (built.length < challenges.length) {
+      console.warn(
+        `[PhonemeExplorer] dropped ${challenges.length - built.length} unaskable challenge(s) (leak/sayability gates)`,
+      );
+    }
+    return built;
+  }, [challenges]);
 
-  // ── Evaluation ─────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<PhonemeExplorerMetrics>({
+  const challengeById = useMemo(() => {
+    const map = new Map<string, PhonemeChallenge>();
+    for (const ch of challenges) map.set(ch.id, ch);
+    return map;
+  }, [challenges]);
+
+  // ── Per-item stage state ──────────────────────────────────────────────────
+  /** Affirmed: the first moment the answer may appear on screen. */
+  const [revealed, setRevealed] = useState(false);
+
+  // ── Evaluation ────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<PhonemeExplorerMetrics>({
     primitiveType: 'phoneme-explorer',
     instanceId: resolvedInstanceId,
     skillId,
@@ -292,467 +219,197 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
-
-  const currentChallenge = challenges[currentIndex];
-
-  // ── Support tier: picture cue on the answer surface ─────────────
-  // hard withdraws the emoji so the student decodes PRINT. The emoji stays in the
-  // data (the generator schema requires it and the tutor still names words) — this
-  // is a render-time withdrawal only. A declared pre-reader band always wins.
-  const showChoiceEmoji =
-    preReaderBand || currentChallenge?.showChoiceEmoji !== false;
-
-  // ── Shuffle choices once per challenge (for choice-based modes) ─
-  const shuffledChoices = useMemo(() => {
-    if (!currentChallenge?.choices) return [];
-    return [...currentChallenge.choices].sort(() => Math.random() - 0.5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex]);
-
-  // ── AI Tutoring integration ────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    currentChallenge: currentIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    mode: currentChallenge?.mode,
-    supportTier: supportTier ?? null,
-  }), [currentIndex, challenges.length, currentAttempts, currentChallenge?.mode, supportTier]);
-
-  const { sendText, isConnected, isAIResponding, isAudioPlaying } = useLuminaAI({
-    primitiveType: 'phoneme-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // ── Activity introduction ──────────────────────────────────────
-  const hasIntroducedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendChallengeIntro(currentChallenge, challenges.length, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasStarted, isConnected, currentChallenge]);
-
-  // ── Introduce new challenge when index changes ─────────────────
-  useEffect(() => {
-    if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
-    if (currentIndex === 0) return;
-    sendChallengeIntro(currentChallenge, challenges.length, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, currentChallenge, isConnected]);
-
-  function sendChallengeIntro(ch: PhonemeChallenge, total: number, isFirst: boolean) {
-    const prefix = isFirst
-      ? `[ACTIVITY_START] This is a phoneme awareness activity with ${total} challenges. Warmly introduce: "Let's explore sounds!" `
-      : `[NEW_CHALLENGE] `;
-
-    // Support tier — the tutor is the second scaffold channel and must not hand
-    // back what the screen withdrew. At hard the automatic enumeration of all four
-    // options is suppressed (the student reads them); the TASK FRAMING stays, and
-    // on-demand pronunciation of the sound/word is never withdrawn. A declared
-    // pre-reader band always keeps the read-aloud.
-    const enumerate = preReaderBand || ch.readOptionsAloud !== false;
-    const policy = tutorRevealPolicy(supportTier);
-    const tail = policy ? ` ${policy}` : '';
-
-    switch (ch.mode) {
-      case 'isolate': {
-        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
-        // The worked example is on-screen scaffolding; when it is withdrawn the
-        // tutor must not voice it either. The phoneme SOUND is the stimulus and
-        // is spoken at every tier.
-        const example = ch.showExampleWord === false ? '' : `, like in ${ch.exampleWord}`;
-        sendText(
-          prefix
-          + `Mode: Sound Match. Say the sound "${ch.phonemeSound}" clearly and slowly. `
-          + `Say: "This is the ${ch.phoneme} sound${example}! `
-          + `Which word starts with ${ch.phonemeSound}?" `
-          + (enumerate
-            ? `Then read each option aloud: "${choiceWords}".`
-            : `Do NOT read the options aloud — the student reads them. Say each sound again if asked.`)
-          + tail,
-          { silent: true },
-        );
-        break;
-      }
-      case 'blend': {
-        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
-        sendText(
-          prefix
-          + `Mode: Sound Blend. Say each sound slowly: "${ch.phonemeDisplay}". `
-          + `Say: "Listen... ${ch.phonemeDisplay}... What word do these sounds make?" `
-          + (enumerate
-            ? `Read each option aloud: "${choiceWords}".`
-            : `Do NOT read the options aloud — the student reads them. Repeat the sounds if asked.`)
-          + tail,
-          { silent: true },
-        );
-        break;
-      }
-      case 'segment': {
-        sendText(
-          prefix
-          + `Mode: Sound Split. Show the word "${ch.targetWord}" ${ch.targetEmoji}. `
-          + `Say: "Let's break '${ch.targetWord}' into sounds! How many sounds do you hear?" `
-          + (enumerate
-            ? `Read each option aloud: "${ch.segmentOptions?.join(', ')}".`
-            : `Do NOT read the options aloud — the student reads them. Repeat the word if asked.`)
-          + tail,
-          { silent: true },
-        );
-        break;
-      }
-      case 'manipulate': {
-        const choiceWords = ch.choices?.map(c => c.word).join(', ') ?? '';
-        // operationDescription is ALWAYS spoken: at hard the printed panel is
-        // replaced by a neutral line, so the voice is the channel that carries the
-        // operation. Withdrawing both would make the item unanswerable.
-        sendText(
-          prefix
-          + `Mode: Sound Swap. Show word "${ch.originalWord}" ${ch.originalEmoji}. `
-          + `Say: "${ch.operationDescription}" `
-          + `"What new word do you get?" `
-          + (enumerate
-            ? `Read options: "${choiceWords}".`
-            : `Do NOT read the options aloud — the student reads them. Repeat the instruction if asked.`)
-          + tail,
-          { silent: true },
-        );
-        break;
-      }
-    }
-  }
-
-  // ── Reset interaction state when challenge advances ────────────
-  useEffect(() => {
-    setSelectedIndex(null);
-    setFeedback('');
-    setFeedbackType('');
-    setShowResult(false);
-    setIsCelebrating(false);
-    setIsShaking(false);
-    // Clear the auto-advance latch so this fresh challenge can schedule its own
-    // advance (this effect runs before the auto-advance effect on index change,
-    // and showResult is now false, so no stale timer is scheduled).
-    autoAdvancedForRef.current = null;
-  }, [currentIndex]);
-
-  // ── Submit final evaluation ────────────────────────────────────
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalCount = challenges.length;
-    const overallPct = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
-    const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
-    const elapsed = Date.now() - startTimeRef.current;
-
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const metrics: PhonemeExplorerMetrics = {
       type: 'phoneme-explorer',
-      challengesCorrect: correctCount,
-      challengesTotal: totalCount,
-      accuracy: overallPct,
-      attemptsCount: totalAttempts,
-      voiceAnswerCount: voiceCorrectCountRef.current,
+      challengesCorrect: summary.solvedCount,
+      challengesTotal: items.length,
+      accuracy: summary.accuracy,
+      attemptsCount: summary.attemptsCount,
+      // Every answer in the DI modality is spoken.
+      voiceAnswerCount: summary.solvedCount,
     };
-    const latest = diagnosisObservationsRef.current.at(-1);
-    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && latest ? {
-      challengeSummary: latest.challenge,
-      expected: latest.expected,
-      observed: latest.observed,
-      priorAttempts: diagnosisObservationsRef.current.slice(0, -1).map((item) => ({
-        challenge: item.challenge,
-        observed: item.observed,
-      })),
-    } : undefined;
-
-    setSubmittedScore(overallPct);
-    submitEvaluation(
-      overallPct >= 60,
-      overallPct,
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
       metrics,
-      { durationMs: elapsed, challengeResults },
+      { challengeResults: summary.outcomes },
       undefined,
-      diagnosisEvidence,
+      summary.diagnosisEvidence,
     );
+  }, [items.length, evaluation]);
 
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[ALL_COMPLETE] All ${totalCount} challenges done! Scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-      + `Celebrate and summarize which sounds were practiced. Then STOP.`,
-      { silent: true },
-    );
-  }, [
-    hasSubmittedEvaluation, challengeResults, challenges, phaseResults,
-    submitEvaluation, sendText,
-  ]);
-
-  // ── Handle choice selection (isolate, blend, manipulate) ───────
-  // Tap AND voice both land here. `viaVoice` submissions skip the outcome
-  // SoundManager calls — the voice controller already played them
-  // (useVoiceChoice owns actuation sounds).
-  const handleChoiceSelect = useCallback((choiceIndex: number, viaVoice = false) => {
-    if (showResult || !currentChallenge) return;
-
-    const choice = shuffledChoices[choiceIndex];
-    if (!choice) return;
-    setSelectedIndex(choiceIndex);
-    incrementAttempts();
-
-    if (choice.correct) {
-      if (viaVoice) voiceCorrectCountRef.current += 1;
-      else SoundManager.playCorrect();
-      setFeedback(`Yes! ${choice.emoji} "${choice.word}" is correct!`);
-      setFeedbackType('success');
-      setShowResult(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly picked "${choice.word}" ${choice.emoji}. `
-        + `Brief celebration! Then STOP and wait for student to click Next.`,
-        { silent: true },
-      );
-    } else {
-      const correctChoice = shuffledChoices.find(c => c.correct);
-      const challengeSummary = currentChallenge.mode === 'isolate'
-        ? `Identify a word sharing the ${currentChallenge.phonemeSound ?? currentChallenge.phoneme ?? 'target'} sound with ${currentChallenge.exampleWord ?? 'the example word'}.`
-        : currentChallenge.mode === 'blend'
-          ? `Blend ${currentChallenge.phonemeDisplay ?? currentChallenge.phonemeSequence?.join(' ')} into a whole word.`
-          : `${currentChallenge.operationDescription ?? `Apply the ${currentChallenge.operation ?? 'phoneme'} operation to ${currentChallenge.originalWord ?? 'the word'}`}.`;
-      diagnosisObservationsRef.current.push({
-        challenge: challengeSummary,
-        expected: `Choose ${correctChoice?.word ?? 'the phonologically correct word'}.`,
-        observed: `Chose ${choice.word}.`,
-      });
-      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
-      if (!viaVoice) SoundManager.playIncorrect();
-      setFeedback(`Hmm, that's not quite right. Try again!`);
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-      setSelectedIndex(null);
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${choice.word}" ${choice.emoji} — incorrect. `
-        + `Attempt ${currentAttempts + 1}. Give a brief hint.`,
-        { silent: true },
-      );
-
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        const correctChoice = shuffledChoices.find(c => c.correct);
-        setTimeout(() => {
-          setShowResult(true);
-          setFeedback(
-            `The answer is ${correctChoice?.emoji} "${correctChoice?.word}"!`
-          );
-          setFeedbackType('success');
-          recordResult({ challengeId: currentChallenge.id, correct: false, attempts: currentAttempts + 1 });
-        }, 1000);
-      }
-    }
-  }, [showResult, currentChallenge, shuffledChoices, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Handle segment option selection ────────────────────────────
-  const handleSegmentSelect = useCallback((optionIndex: number) => {
-    if (showResult || !currentChallenge || currentChallenge.mode !== 'segment') return;
-
-    setSelectedIndex(optionIndex);
-    incrementAttempts();
-
-    const isCorrect = optionIndex === currentChallenge.correctSegmentation;
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      const correctOption = currentChallenge.segmentOptions?.[optionIndex] ?? '';
-      setFeedback(`Yes! "${currentChallenge.targetWord}" breaks into ${correctOption}!`);
-      setFeedbackType('success');
-      setShowResult(true);
-      setIsCelebrating(true);
-      setTimeout(() => setIsCelebrating(false), 1500);
-
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly segmented "${currentChallenge.targetWord}" as ${correctOption}. `
-        + `Celebrate! Then STOP.`,
-        { silent: true },
-      );
-    } else {
-      const selectedOption = currentChallenge.segmentOptions?.[optionIndex] ?? '';
-      const correctOption = currentChallenge.segmentOptions?.[currentChallenge.correctSegmentation ?? 0] ?? '';
-      diagnosisObservationsRef.current.push({
-        challenge: `Segment ${currentChallenge.targetWord ?? 'the target word'} into its phonemes.`,
-        expected: correctOption,
-        observed: `Chose ${selectedOption}.`,
-      });
-      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite — listen carefully to each sound. Try again!`);
-      setFeedbackType('error');
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-      setSelectedIndex(null);
-
-      sendText(
-        `[ANSWER_INCORRECT] Student picked wrong segmentation. Attempt ${currentAttempts + 1}. Help them count the sounds.`,
-        { silent: true },
-      );
-
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        const correctOption = currentChallenge.segmentOptions?.[currentChallenge.correctSegmentation ?? 0] ?? '';
-        setTimeout(() => {
-          setShowResult(true);
-          setFeedback(
-            `The answer is ${correctOption}!`
-          );
-          setFeedbackType('success');
-          recordResult({ challengeId: currentChallenge.id, correct: false, attempts: currentAttempts + 1 });
-        }, 1000);
-      }
-    }
-  }, [showResult, currentChallenge, currentAttempts, incrementAttempts, recordResult, sendText]);
-
-  // ── Voice: say an on-screen option to pick it ───────────────────
-  // (/add-voice-control, spoken CHOICE shape.) Only the choice-based modes
-  // (isolate/blend/manipulate) are voice-eligible; `segment` uses non-sayable
-  // "c-a-t" options and is excluded. A single-unit useVoiceChoice listens for
-  // one of the four option words and routes the verdict into the SAME grading
-  // path a tap uses — voice is purely additive, tap unchanged.
-  const correctWord = useMemo(
-    () => shuffledChoices.find((c) => c.correct)?.word ?? '',
-    [shuffledChoices],
-  );
-
-  const voiceReady = useMemo(
-    () =>
-      (data.voiceEligible ?? true) &&
-      currentChallenge?.mode !== 'segment' &&
-      phonemeVoiceReady(shuffledChoices, correctWord),
-    [data.voiceEligible, currentChallenge?.mode, shuffledChoices, correctWord],
-  );
-
-  const voiceItems = useMemo(() => {
-    if (!voiceReady) return [];
-    return [{
-      answer: correctWord.trim().toLowerCase(),
-      options: shuffledChoices.map((c) => c.word.trim().toLowerCase()),
-    }];
-  }, [voiceReady, correctWord, shuffledChoices]);
-
-  // ANSWER-LEAK GATE (the StoryTalk narrow exception to "never gate the mic on
-  // tutor-busy signals"): the tutor is prompted to read all four options aloud,
-  // the correct one included. An open mic during that audio could hear the tutor
-  // voice the answer and credit it. So the mic runs only while the tutor is fully
-  // quiet — this is framing-then-open-mic, not a turn-taking window.
-  const tutorQuiet = !isAIResponding && !isAudioPlaying;
-  const voiceActive =
-    hasStarted && !showSummary && !showResult && tutorQuiet && voiceItems.length > 0;
-
-  const voiceChoice = useVoiceChoice({
-    items: voiceItems,
-    gradeLevel,
-    active: voiceActive,
-    onSubmit: (_unit, word) => {
-      const idx = shuffledChoices.findIndex(
-        (c) => c.word.trim().toLowerCase() === word,
-      );
-      if (idx !== -1) handleChoiceSelect(idx, true);
+  // ── The pack — wording lives in phonemeExplorerScript.ts ──────────────────
+  const pack = useMemo<JudgedScriptPack<PhonemeExplorerItem>>(() => ({
+    primitiveType: 'phoneme-explorer',
+    activityLine: 'live direct instruction phoneme awareness practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      stimulus: stimulusFor(item),
+    }),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: (item) => item.kind === 'segment'
+        ? 'Listen, then say how many sounds.'
+        : 'Listen, then say your answer out loud.',
+      retry: (item) => item.kind === 'segment'
+        ? 'Have another go — say how many sounds.'
+        : 'Have another go — say your answer.',
+      noVerdict: () => 'One more time — say your answer.',
+      affirmedNext: 'Yes! You heard it.',
+      affirmedLast: 'You did it!',
+      moveOn: 'Good try — here comes the next one.',
+      done: 'Great sound work today!',
     },
+    diagnosisObservation: (item, { lastHeard }) => ({
+      challenge: item.kind === 'isolate'
+        ? `Say which word starts with the ${item.phonemeSound ?? item.phoneme} sound.`
+        : item.kind === 'blend'
+          ? `Blend ${item.walk} into a whole word.`
+          : item.kind === 'segment'
+            ? `Count the sounds in "${item.targetWord}".`
+            : `${item.operationSpoken ?? 'Change one sound.'} (from "${item.originalWord}")`,
+      expected: item.kind === 'segment' ? `${item.answer} (${item.soundCount})` : item.answer,
+      observed: lastHeard
+        ? `Heard "${lastHeard}".`
+        : 'The tutor judged the answer wrong from the audio.',
+    }),
+  }), [items]);
+
+  const runner = useJudgedScriptRunner<PhonemeExplorerItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: () => setRevealed(false),
+    onAffirmed: () => setRevealed(true),
   });
 
-  // ── Advance to next challenge ──────────────────────────────────
-  const handleNext = useCallback(() => {
-    if (!advanceProgress()) {
-      submitFinalEvaluation();
-      setShowSummary(true);
-      return;
-    }
-  }, [advanceProgress, submitFinalEvaluation]);
+  const currentItem = runner.currentItem;
+  const currentChallenge = currentItem ? challengeById.get(currentItem.id) : undefined;
 
-  // ── Auto-advance once the challenge resolves ───────────────────
-  // Fires on any resolved result (correct via tap/voice, or answer revealed
-  // after max attempts) so the student never has to hunt for the Next button.
-  // Ref-guarded per challenge so a pending timer and a manual click can't both
-  // advance: keyed on currentIndex, the timer is cleared on the index change a
-  // click causes, and the latch is wiped in the per-challenge reset effect.
-  const advanceRef = useRef(handleNext);
-  advanceRef.current = handleNext;
-  useEffect(() => {
-    if (!showResult || showSummary) return;
-    if (autoAdvancedForRef.current === currentIndex) return;
-    autoAdvancedForRef.current = currentIndex;
-    const t = setTimeout(() => advanceRef.current(), AUTO_ADVANCE_MS);
-    return () => clearTimeout(t);
+  // ── Tap-to-hear question-side audio (never a commit, never the answer) ────
+  const hearWord = useCallback((word: string | undefined) => {
+    if (!word || !ctx.isConnected) return;
+    SoundManager.tap();
+    ctx.sendText(hearWordCue(word), { silent: true });
+    // Context methods are stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showResult, currentIndex, showSummary]);
+  }, [ctx.isConnected]);
+
+  const hearSound = useCallback((raw: string | undefined) => {
+    if (!raw || !ctx.isConnected) return;
+    SoundManager.tap();
+    ctx.sendText(hearSoundCue(raw), { silent: true });
+    // Context methods are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.isConnected]);
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted || !runner.summary) return [];
+    return items.map((item) => {
+      const outcome = runner.summary!.outcomes.find((o) => o.id === item.id);
+      const meta = MODE_META[item.kind];
+      return {
+        label: meta.badge,
+        icon: meta.icon,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
   // Render helpers per mode
   // ============================================================================
 
-  const renderIsolateChallenge = (ch: PhonemeChallenge) => (
+  const renderIsolate = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
     <div className="space-y-5">
-      {/* Phoneme display — interaction surface (sound object) */}
+      {/* Phoneme tile — the stimulus. Tap to hear the sound. */}
       <div className="flex flex-col items-center gap-3">
-        <div className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center">
-          <div className="text-5xl font-black text-blue-200 tracking-wide">
-            {ch.phoneme}
-          </div>
-          <p className="text-sm text-blue-400/70 mt-2 italic">
-            &ldquo;{ch.phonemeSound}&rdquo;
-          </p>
-        </div>
+        <button
+          onClick={() => hearSound(item.phonemeSound ?? item.phoneme)}
+          className="rounded-2xl bg-blue-500/15 border-2 border-blue-500/30 px-10 py-6 text-center cursor-pointer"
+        >
+          <div className="text-5xl font-black text-blue-200 tracking-wide">{item.phoneme}</div>
+          <p className="text-sm text-blue-400/70 mt-2 italic">&ldquo;{item.phonemeSound}&rdquo;</p>
+        </button>
       </div>
 
-      {/* Worked example — SCAFFOLDING, not the stimulus. Withdrawn whole at the
-          hard tier; the "starts with" sub-label goes first at medium. */}
-      {ch.showExampleWord !== false && (
-        <div className="flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3">
-          <span className="text-3xl">{ch.exampleEmoji}</span>
+      {/* Worked example — SCAFFOLDING, tier-withdrawn whole at hard; the
+          sub-label goes first at medium. Tap to hear the example word. */}
+      {ch?.showExampleWord !== false && item.exampleWord && (
+        <button
+          onClick={() => hearWord(item.exampleWord)}
+          className="mx-auto flex items-center justify-center gap-3 rounded-xl bg-white/5 border border-white/10 px-5 py-3 cursor-pointer"
+        >
+          <span className="text-3xl">{item.exampleEmoji}</span>
           <div className="text-center">
-            <span className="text-xl font-bold text-slate-100">{ch.exampleWord}</span>
-            {ch.showExampleHint !== false && (
+            <span className="text-xl font-bold text-slate-100">{item.exampleWord}</span>
+            {ch?.showExampleHint !== false && (
               <p className="text-xs text-slate-500">
-                starts with <span className="text-blue-300 font-semibold">{ch.phoneme}</span>
+                starts with <span className="text-blue-300 font-semibold">{item.phoneme}</span>
               </p>
             )}
           </div>
-        </div>
+        </button>
       )}
 
-      {/* Question */}
       <p className="text-center text-base text-slate-300 font-medium">
-        Which word also starts with the{' '}
-        <span className="text-blue-300 font-bold">{ch.phoneme}</span> sound?
+        {MODE_META.isolate.prompt}
       </p>
 
-      {/* 4 choice buttons */}
-      {renderChoiceGrid()}
+      {/* The MENU — the question side, unmarked. Tap a card to HEAR its word;
+          the answer is spoken, never tapped. Reveal highlights on affirm. */}
+      <div className="grid grid-cols-2 gap-3">
+        {(item.menu ?? []).map((card, idx) => {
+          const isAnswer = card.word.toLowerCase() === item.answer.toLowerCase();
+          return (
+            <button
+              key={`${item.id}-${idx}`}
+              onClick={() => hearWord(card.word)}
+              className={`
+                rounded-xl border-2 p-4 flex flex-col items-center gap-2
+                transition-all duration-200 cursor-pointer
+                ${revealed && isAnswer
+                  ? 'bg-emerald-500/15 border-emerald-400/50 ring-2 ring-emerald-400/40'
+                  : 'bg-white/5 border-white/10 hover:border-white/25'}
+              `}
+            >
+              {(ch?.showChoiceEmoji !== false) && <span className="text-3xl">{card.emoji}</span>}
+              <span className="text-lg font-bold">{card.word}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-center text-xs text-slate-500">Tap a card to hear it — then say your answer out loud.</p>
     </div>
   );
 
-  const renderBlendChallenge = (ch: PhonemeChallenge) => (
+  const renderBlend = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
     <div className="space-y-5">
-      {/* Phoneme tiles — interaction surface (sound objects), never withdrawn.
-          The cue label and the "+" separators are INSTRUCTION FURNITURE: at the
-          hard tier they go and the tiles read as a cold sequence. */}
       <div className="flex flex-col items-center gap-3">
-        {ch.showBlendCue !== false && (
+        {ch?.showBlendCue !== false && (
           <p className="text-sm text-purple-400/70 font-medium">Blend these sounds together:</p>
         )}
         <div className="flex items-center gap-2">
-          {ch.phonemeSequence?.map((p, i) => (
+          {item.phonemeSequence?.map((p, i) => (
             <React.Fragment key={i}>
-              <div className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center">
-                <span className="text-2xl font-black text-purple-200">/{p}/</span>
-              </div>
-              {ch.showBlendCue !== false && i < (ch.phonemeSequence?.length ?? 0) - 1 && (
+              <button
+                onClick={() => hearSound(p)}
+                className="rounded-xl bg-purple-500/15 border-2 border-purple-500/30 px-5 py-4 text-center cursor-pointer"
+              >
+                <span className="text-2xl font-black text-purple-200">/{p.replace(/\//g, '')}/</span>
+              </button>
+              {ch?.showBlendCue !== false && i < (item.phonemeSequence?.length ?? 0) - 1 && (
                 <span className="text-purple-400/50 text-lg">+</span>
               )}
             </React.Fragment>
@@ -760,125 +417,84 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
         </div>
       </div>
 
-      {/* Question */}
-      <p className="text-center text-base text-slate-300 font-medium">
-        What word do these sounds make?
-      </p>
+      <p className="text-center text-base text-slate-300 font-medium">{MODE_META.blend.prompt}</p>
 
-      {/* 4 choice buttons */}
-      {renderChoiceGrid()}
+      {/* The reveal — the first moment the word may appear on screen. */}
+      {revealed && (
+        <LuminaPanel className="p-3 text-center">
+          <span className="text-emerald-300 text-xl font-black">
+            {item.answerEmoji} {item.answer}
+          </span>
+        </LuminaPanel>
+      )}
+      <p className="text-center text-xs text-slate-500">Tap a sound to hear it.</p>
     </div>
   );
 
-  const renderSegmentChallenge = (ch: PhonemeChallenge) => (
+  const renderSegment = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
     <div className="space-y-5">
-      {/* Target word display — interaction surface (sound object) */}
+      {/* The word is NEVER printed — a reader would count letters, not sounds.
+          The picture (tier-withdrawable) + tap-to-hear carry the stimulus. */}
       <div className="flex flex-col items-center gap-3">
-        <div className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center">
-          {/* Picture cue withdrawn at hard — the WORD is the stimulus and stays. */}
-          {showChoiceEmoji && <span className="text-4xl">{ch.targetEmoji}</span>}
-          <div className="text-3xl font-black text-emerald-200 mt-2">
-            {ch.targetWord}
-          </div>
-        </div>
+        <button
+          onClick={() => hearWord(item.targetWord)}
+          className="rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/30 px-10 py-6 text-center cursor-pointer"
+        >
+          <span className="text-5xl">
+            {(ch?.showChoiceEmoji !== false) ? item.targetEmoji : '🔊'}
+          </span>
+          <p className="text-xs text-emerald-300/70 mt-2">Tap to hear the word</p>
+        </button>
       </div>
 
-      {/* Question */}
-      <p className="text-center text-base text-slate-300 font-medium">
-        How do you break <span className="text-emerald-300 font-bold">&ldquo;{ch.targetWord}&rdquo;</span> into sounds?
-      </p>
+      <p className="text-center text-base text-slate-300 font-medium">{MODE_META.segment.prompt}</p>
 
-      {/* 4 segmentation options — graded answer surface */}
-      <div className={`grid grid-cols-1 gap-2 ${isShaking ? 'animate-shake' : ''}`}>
-        {ch.segmentOptions?.map((option, idx) => {
-          const isCorrectOption = showResult && idx === ch.correctSegmentation;
-          const isWrongSelected = showResult && selectedIndex === idx && idx !== ch.correctSegmentation;
-          const state = isCorrectOption ? 'correct' : isWrongSelected ? 'incorrect' : 'idle';
-
-          return (
-            <button
-              key={idx}
-              onClick={() => !showResult && handleSegmentSelect(idx)}
-              disabled={showResult}
-              className={`
-                rounded-xl border-2 p-4 text-center transition-all duration-200 cursor-pointer
-                ${answerStateClass(state)}
-                ${isCorrectOption ? 'ring-2 ring-emerald-400/40' : ''}
-                ${isCelebrating && isCorrectOption ? 'animate-bounce' : ''}
-              `}
-            >
-              <span className="text-lg font-mono font-bold">
-                {option}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* The reveal — count + breakdown appear only after the affirmation. */}
+      {revealed && (
+        <LuminaPanel className="p-3 text-center">
+          <span className="text-emerald-300 text-xl font-black">
+            {item.targetWord} — {item.answer} sounds
+          </span>
+          {item.segments && (
+            <p className="text-slate-300 text-sm mt-1 font-mono">
+              {item.segments.map((s) => `/${s.replace(/\//g, '')}/`).join(' ')}
+            </p>
+          )}
+        </LuminaPanel>
+      )}
     </div>
   );
 
-  const renderManipulateChallenge = (ch: PhonemeChallenge) => (
+  const renderManipulate = (item: PhonemeExplorerItem, ch: PhonemeChallenge | undefined) => (
     <div className="space-y-5">
-      {/* Original word — interaction surface (sound object) */}
+      {/* Original word — the stimulus, printed (sound-swap's rule). Tap to hear. */}
       <div className="flex flex-col items-center gap-3">
-        <div className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center">
-          {/* Picture cue withdrawn at hard — the WORD is the stimulus and stays. */}
-          {showChoiceEmoji && <span className="text-4xl">{ch.originalEmoji}</span>}
-          <div className="text-3xl font-black text-amber-200 mt-2">
-            {ch.originalWord}
-          </div>
-        </div>
+        <button
+          onClick={() => hearWord(item.originalWord)}
+          className="rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 px-10 py-6 text-center cursor-pointer"
+        >
+          {(ch?.showChoiceEmoji !== false) && <span className="text-4xl">{item.originalEmoji}</span>}
+          <div className="text-3xl font-black text-amber-200 mt-2">{item.originalWord}</div>
+        </button>
       </div>
 
-      {/* Operation instruction. At the hard tier the printed spell-out is replaced
-          by a fixed neutral line chosen in CODE (never an LLM rewrite — those
-          desync from the answer); the tutor still says the full operation aloud,
-          so the item stays answerable through the audio channel. */}
+      {/* Operation — tier-withdrawable print; the scripted ask always says it. */}
       <LuminaPanel className="text-center">
         <p className="text-base text-slate-200 font-medium">
-          {ch.showOperationDetail === false ? 'Make a new word.' : ch.operationDescription}
+          {ch?.showOperationDetail === false ? 'Make a new word.' : ch?.operationDescription}
         </p>
       </LuminaPanel>
 
-      {/* Question */}
-      <p className="text-center text-base text-slate-300 font-medium">
-        What new word do you get?
-      </p>
+      <p className="text-center text-base text-slate-300 font-medium">{MODE_META.manipulate.prompt}</p>
 
-      {/* 4 choice buttons */}
-      {renderChoiceGrid()}
-    </div>
-  );
-
-  const renderChoiceGrid = () => (
-    <div className={`grid grid-cols-2 gap-3 ${isShaking ? 'animate-shake' : ''}`}>
-      {shuffledChoices.map((choice, idx) => {
-        const isCorrectChoice = showResult && choice.correct;
-        const isWrongSelected = showResult && selectedIndex === idx && !choice.correct;
-        const state = isCorrectChoice ? 'correct' : isWrongSelected ? 'incorrect' : 'idle';
-
-        return (
-          <button
-            key={idx}
-            onClick={() => !showResult && handleChoiceSelect(idx)}
-            disabled={showResult}
-            className={`
-              rounded-xl border-2 p-4 flex flex-col items-center gap-2
-              transition-all duration-200 cursor-pointer
-              ${answerStateClass(state)}
-              ${isCorrectChoice ? 'ring-2 ring-emerald-400/40' : ''}
-              ${isCelebrating && isCorrectChoice ? 'animate-bounce' : ''}
-            `}
-          >
-            {/* Picture cue withdrawn at hard so the student decodes PRINT.
-                The word — the answer surface — is never withdrawn. */}
-            {showChoiceEmoji && <span className="text-3xl">{choice.emoji}</span>}
-            <span className="text-lg font-bold">
-              {choice.word}
-            </span>
-          </button>
-        );
-      })}
+      {/* The reveal — the first moment the new word may appear on screen. */}
+      {revealed && (
+        <LuminaPanel className="p-3 text-center">
+          <span className="text-emerald-300 text-xl font-black">
+            {item.answerEmoji} {item.answer}
+          </span>
+        </LuminaPanel>
+      )}
     </div>
   );
 
@@ -886,7 +502,7 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
   // Main Render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -896,133 +512,64 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
-  const modeInfo = MODE_LABELS[currentChallenge?.mode ?? 'isolate'];
-
-  // ── Start screen ──────────────────────────────────────────────
-  if (!hasStarted) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-5xl">{'🔊'}</div>
-          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">
-            Phoneme Explorer
-          </LuminaBadge>
-          <p className="text-slate-400 text-sm max-w-sm">
-            Listen to sounds and explore how words are built!
-            {' '}{challenges.length} challenges to complete.
-          </p>
-          <LuminaButton
-            tone="primary"
-            onClick={() => {
-              startTimeRef.current = Date.now();
-              setHasStarted(true);
-            }}
-            className="px-8 py-3 text-lg"
-          >
-            Start Activity
-          </LuminaButton>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const modeMeta = MODE_META[currentItem?.kind ?? 'isolate'];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          {!showSummary && (
-            <LuminaBadge accent={modeInfo.accent} className="text-xs">
-              {modeInfo.icon} {modeInfo.badge}
+          {!evaluation.hasSubmitted && currentItem && (
+            <LuminaBadge accent={modeMeta.accent} className="text-xs">
+              {modeMeta.icon} {modeMeta.badge}
             </LuminaBadge>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress indicator */}
-        {!showSummary && (
+        {!evaluation.hasSubmitted && (
           <>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex justify-center">
               <LuminaChallengeCounter
-                current={currentIndex + 1}
-                total={challenges.length}
-                className="text-slate-400 text-sm"
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
               />
-              <span className="text-slate-500 text-xs">
-                {challengeResults.filter(r => r.correct).length} correct
-              </span>
             </div>
-            <LuminaProgress
-              accent={modeInfo.accent}
-              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
-            />
+
+            {currentItem && currentItem.kind === 'isolate' && renderIsolate(currentItem, currentChallenge)}
+            {currentItem && currentItem.kind === 'blend' && renderBlend(currentItem, currentChallenge)}
+            {currentItem && currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
+            {currentItem && currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
+
+            {/* ONE start gesture: connect, open the mic, opening cue, arm. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={runner.micState}
+                level={runner.micLevel}
+                isSupported={isSupported}
+                onStart={() => void runner.start()}
+                onCancel={runner.cancelListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{runner.statusLine}</p>
+            </div>
           </>
         )}
 
-        {/* Challenge content — mode-specific rendering */}
-        {!showSummary && currentChallenge && (
-          <>
-            {currentChallenge.mode === 'isolate' && renderIsolateChallenge(currentChallenge)}
-            {currentChallenge.mode === 'blend' && renderBlendChallenge(currentChallenge)}
-            {currentChallenge.mode === 'segment' && renderSegmentChallenge(currentChallenge)}
-            {currentChallenge.mode === 'manipulate' && renderManipulateChallenge(currentChallenge)}
-
-            {/* Voice: say an option to pick it. The orb is HIDDEN while the tutor
-                reads the options aloud (answer-leak gate) — it appears once the
-                tutor is quiet, then stays hot (open mic) until the answer lands. */}
-            {voiceReady && !showResult && tutorQuiet && (
-              <div className="flex flex-col items-center pt-1">
-                <LuminaMicListener
-                  state={voiceChoice.voice.state}
-                  level={voiceChoice.voice.level}
-                  isSupported={voiceChoice.voice.isSupported}
-                  dormant={voiceChoice.voice.dormant}
-                  onStart={voiceChoice.voice.start}
-                  onCancel={voiceChoice.voice.stop}
-                  accent={modeInfo.accent}
-                  size="sm"
-                  idleLabel="Say your answer"
-                  listeningLabel="Say the word!"
-                />
-                {voiceChoice.note && (
-                  <p className="text-amber-300 text-sm mt-2 text-center">{voiceChoice.note}</p>
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Feedback banner */}
-        {feedback && !showSummary && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
-            className="text-center"
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Next / Finish button */}
-        {showResult && !showSummary && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNext}>
-              {currentIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </LuminaActionButton>
-          </div>
-        )}
-
-        {/* Phase summary panel */}
-        {showSummary && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedScore ?? undefined}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Phoneme Explorer Complete!"
-            celebrationMessage="Great job exploring sounds!"
-            className="mb-6"
+            celebrationMessage="Great job hearing every sound!"
+            className="mt-4"
           />
         )}
       </LuminaCardContent>

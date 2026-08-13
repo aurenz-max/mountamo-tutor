@@ -1,19 +1,59 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * LetterSoundLink — DI modality (SEVENTH literacy port, 2026-08-11). The Live
+ * tutor owns the clock in every mode: it asks, waits, judges the answer,
+ * corrects by re-modeling, and its OWN verdict is the advance. There is no
+ * advance timer, no push-to-talk mic, no Next button, no per-option audition
+ * protocol and no answer text anywhere before the tutor affirms.
+ *
+ * WHAT WENT, AND WHY:
+ *  - **The two-tap audition protocol** (tap a speaker to hear an option, tap
+ *    again to keep it) was the whole see-hear/keyword-match interaction, and it
+ *    handed the answer over as audio: the child only had to RECOGNISE the sound
+ *    someone else produced. Both modes now ask the child to produce — the sound
+ *    in see-hear, the word in keyword-match.
+ *  - **`useSpokenWordCapture` + the "say the keyword" bonus beat + its 1400ms
+ *    auto-advance timer.** That was speaking bolted onto clicking, which is
+ *    exactly the modality the ruling rejected. Saying something is now the
+ *    answer, not a reward for having already answered.
+ *  - **Every `[ACTIVITY_START]` / `[NEXT_CHALLENGE]` / `[SAY_KEYWORD]` /
+ *    `[TAP_OPTION]` tag and the whole `KEYWORD_SAFE_PRE_ANSWER` table.** The
+ *    keyword is now simply never spoken or pictured before a verdict, in any
+ *    mode — one rule instead of a per-mode reveal matrix.
+ *
+ * WHAT STAYED, AND WHY:
+ *  - **`hear-see` is answered with the hands.** Naming a letter aloud is
+ *    `letter_name`, a BLOCKED response class. The grapheme cannot be spoken, so
+ *    it is touched — and it is still an honest answer surface, because a child
+ *    who cannot map the sound onto its letter cannot pick it out of two
+ *    confusable letters. Verdicts are CODE-COMPUTED and the tutor is handed its
+ *    exact line ([LSL_TAP]).
+ *  - **The support tier**, re-based onto di-letter-sounds' DISTAR rungs (easy =
+ *    model + guide + test, medium = model + test, hard = test only). The old
+ *    tier levers were on-card text and an audition step — one invisible to a
+ *    pre-reader, the other deleted here — so the axis moved to how much of the
+ *    sequence precedes the attempt. The generator still stamps the legacy
+ *    scaffold fields; they are inert on this surface and kept so the tier
+ *    resolver and its tests stay green.
+ *  - **The pre-reader chrome gate** (reader-fit rule 7): no group/mode badges,
+ *    no counter text at K.
+ *
+ * Cue lines, judging contracts and the continuant gate live in
+ * `letterSoundLinkScript.ts` (hand-authored, DISTAR). Nothing in this file
+ * writes a spoken line.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
-  LuminaProgress,
-  LuminaActionButton,
-  LuminaFeedbackCard,
   LuminaChallengeCounter,
-  answerStateClasses,
   LuminaMicListener,
+  answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -21,12 +61,24 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LetterSoundLinkMetrics } from '../../../evaluation/types';
-import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useSpokenWordCapture, type SpokenJudgeResult } from '../../../hooks/useSpokenWordCapture';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  itemCue,
+  itemFromChallenge,
+  moveOnCue,
+  pronounceCue,
+  stimulusFor,
+  tapVerdictCue,
+  type LetterSoundItem,
+  type LetterSoundMode,
+  type LetterSoundTier,
+} from './letterSoundLinkScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -35,7 +87,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface LetterSoundLinkChallenge {
   id: string;
-  mode: 'see-hear' | 'hear-see' | 'keyword-match';
+  mode: LetterSoundMode;
   targetLetter: string;
   targetSound: string;
   keywordWord: string;
@@ -45,28 +97,15 @@ export interface LetterSoundLinkChallenge {
   /** Private generator trace; never rendered as student-visible copy. */
   remediationMove?: 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
 
-  // ── Within-mode support-tier scaffolds (stamped by the generator from
-  //    ctx.supportTier). Display/instruction only — they NEVER change the letter,
-  //    the sound, the keyword, or which option is correct. Every field is
-  //    OPTIONAL: absent ⇒ byte-identical legacy full-help render. ──
-  /** #1 perception — when the keyword picture anchor appears.
-   *  'proactive' (easy) = before the first attempt, 'after-miss' = legacy,
-   *  'never' (hard) = withdrawn. Absent ⇒ 'after-miss'. */
+  // ── Legacy within-mode support-tier scaffolds, stamped by the generator.
+  //    INERT on the judged surface: the tier now composes the DISTAR lead-in
+  //    (letterSoundLinkScript) instead of toggling on-card text a pre-reader
+  //    could never read. Kept on the type so the tier resolver, its unit tests
+  //    and any pre-DI cached content still typecheck. ──
   showKeywordAnchor?: 'proactive' | 'after-miss' | 'never';
-  /** #2 instruction — the on-card task cue. undefined ⇒ the legacy fixed line;
-   *  string ⇒ a tier-authored cue; null ⇒ withdrawn (hard). Never names the answer. */
   strategyHint?: string | null;
-  /** #2 instruction — the footer protocol cue. Same tri-state as strategyHint. */
   protocolHint?: string | null;
-  /** #2 instruction (hear-see) — the "more than one letter makes this sound" nudge.
-   *  Absent ⇒ shown (legacy). false ⇒ withdrawn (hard). */
   showSharedSoundHint?: boolean;
-  /** #3 answer-form — may the student audition an option before committing?
-   *  Absent ⇒ legacy audition-then-commit. false ⇒ the first tap commits.
-   *  Honored for keyword-match only (its options carry a picture, so they are
-   *  identifiable without audio); see-hear bubbles have no visual identity, so
-   *  its audition IS the stimulus channel and is never withdrawn. Also forced
-   *  inert at K — the pre-reader band's two-tap protocol always wins. */
   auditionBeforeCommit?: boolean;
 }
 
@@ -75,11 +114,11 @@ export interface LetterSoundLinkData {
   letterGroup: 1 | 2 | 3 | 4;
   cumulativeLetters: string[];
   challenges: LetterSoundLinkChallenge[];
-  /** Canonical grade key ('K' | '1' | '2'…). Drives the pre-reader band-gate. */
+  /** Canonical grade key ('K' | '1' | '2'…). Drives the pre-reader chrome gate. */
   gradeLevel?: string;
-  /** Within-mode support tier from the manifest. Threaded to the tutor reveal policy. */
-  supportTier?: 'easy' | 'medium' | 'hard';
-  /** Attempts before a challenge locks and reveals. Absent ⇒ legacy MAX_ATTEMPTS (3). */
+  /** Within-mode support tier from the manifest — the DISTAR lead-in ladder. */
+  supportTier?: LetterSoundTier;
+  /** Attempts before an item is closed. Absent ⇒ legacy 3 (⇒ 2 corrections). */
   maxAttempts?: number;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
@@ -95,151 +134,28 @@ export interface LetterSoundLinkData {
 // Constants
 // ============================================================================
 
-const MODE_CONFIG: Record<string, { label: string; description: string; icon: string }> = {
-  'see-hear': { label: 'See → Hear', description: 'See a letter, pick its sound', icon: '👁️' },
-  'hear-see': { label: 'Hear → See', description: 'Hear a sound, find the letter', icon: '👂' },
-  'keyword-match': { label: 'Keyword Match', description: 'Match letter to keyword', icon: '🖼️' },
+const MODE_META: Record<LetterSoundMode, { badge: string; icon: string; accent: LuminaAccent }> = {
+  'see-hear': { badge: 'Say the Sound', icon: '🗣️', accent: 'blue' },
+  'hear-see': { badge: 'Find the Letter', icon: '👂', accent: 'purple' },
+  'keyword-match': { badge: 'Say the Word', icon: '🖼️', accent: 'emerald' },
 };
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'see-hear': { label: 'See → Hear', accentColor: 'blue' },
-  'hear-see': { label: 'Hear → See', accentColor: 'purple' },
-  'keyword-match': { label: 'Keyword Match', accentColor: 'emerald' },
-};
-
-/** Mode → accent for chrome badges. */
-const MODE_ACCENT: Record<string, LuminaAccent> = {
-  'see-hear': 'blue',
-  'hear-see': 'purple',
-  'keyword-match': 'emerald',
-};
-
-/** Vowels for color-coding: vowels = red, consonants = blue */
+/** Vowels = red, consonants = blue (the shipped colour code). */
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
-/** Keyword image emoji/icon mapping */
+/** Keyword picture map. `y` reads "yo-yo", never "yes": a keyword that opens a
+ *  correction sentence with the affirm sentinel would be read as a verdict by
+ *  the engine's sentence scan (and ✅ never said "yes" to a pre-reader anyway). */
 const KEYWORD_IMAGES: Record<string, string> = {
   sun: '☀️', apple: '🍎', top: '🔝', itch: '🤏', pig: '🐷', net: '🥅',
   cat: '🐱', kite: '🪁', egg: '🥚', hat: '🎩', run: '🏃', map: '🗺️', dog: '🐶',
   go: '🟢', octopus: '🐙', up: '⬆️', lip: '👄', fan: '🌬️', bat: '🦇',
-  jam: '🍯', zip: '⚡', web: '🕸️', van: '🚐', yes: '✅', box: '📦', queen: '👑',
+  jam: '🍯', zip: '⚡', web: '🕸️', van: '🚐', 'yo-yo': '🪀', box: '📦', queen: '👑',
 };
 
-/** Speaker bubble colors for the two binary options */
-const SPEAKER_COLORS = [
-  {
-    bg: 'bg-rose-500/15',
-    border: 'border-rose-400/30',
-    hoverBg: 'hover:bg-rose-500/25',
-    activeBg: 'bg-rose-500/30',
-    activeBorder: 'border-rose-400/50',
-    ring: 'ring-rose-400/40',
-    iconColor: 'text-rose-300',
-    label: 'rose',
-  },
-  {
-    bg: 'bg-sky-500/15',
-    border: 'border-sky-400/30',
-    hoverBg: 'hover:bg-sky-500/25',
-    activeBg: 'bg-sky-500/30',
-    activeBorder: 'border-sky-400/50',
-    ring: 'ring-sky-400/40',
-    iconColor: 'text-sky-300',
-    label: 'sky',
-  },
-];
+const emojiFor = (word: string) => KEYWORD_IMAGES[word.toLowerCase()] || '📝';
 
-const MAX_ATTEMPTS = 3;
-
-// ============================================================================
-// Answer-dimension policy — WHICH FACT IS THE ANSWER DIFFERS PER MODE.
-// The live tutor may never name the current mode's answer dimension before the
-// student answers (letter-spotter precedent: when the target is the answer, the
-// tutor never names it). The other dimension is the on-screen/played stimulus
-// and is always fair game.
-//   see-hear      → the SOUND is the answer (the keyword ENCODES it → also barred)
-//   hear-see      → the LETTER is the answer (the sound is the given stimulus)
-//   keyword-match → the KEYWORD WORD is the answer (as is the sound it starts with)
-// ============================================================================
-
-type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
-
-const ANSWER_DIMENSION: Record<LetterSoundMode, string> = {
-  'see-hear': 'the sound this letter makes, or its keyword word (the keyword encodes that sound)',
-  'hear-see': 'the target letter, or its letter name',
-  'keyword-match': 'the correct keyword word, or the sound this letter makes',
-};
-
-/** May the tutor voice the keyword BEFORE the challenge is resolved? Only where the
- *  keyword is neither the answer nor an encoding of it — i.e. hear-see, where the
- *  sound is already the given stimulus. */
-const KEYWORD_SAFE_PRE_ANSWER: Record<LetterSoundMode, boolean> = {
-  'see-hear': false,
-  'hear-see': true,
-  'keyword-match': false,
-};
-
-/** A one-line, answer-free brief the tutor can use to introduce a challenge.
- *  Names only what is already on screen (the letter) — never the answer. */
-function modeBrief(mode: string, targetLetter: string): string {
-  if (mode === 'hear-see') {
-    return 'a sound will play, and the student picks which of two letters makes it';
-  }
-  if (mode === 'keyword-match') {
-    return `the letter "${targetLetter.toUpperCase()}" is on screen, and the student picks the picture word that starts with its sound`;
-  }
-  return `the letter "${targetLetter.toUpperCase()}" is on screen, and the student picks which of two sounds it makes`;
-}
-
-/** Resolve a display line with the tier tri-state: undefined ⇒ legacy text,
- *  a string ⇒ the tier-authored cue, null ⇒ withdrawn (render nothing). */
-function resolveCue(cue: string | null | undefined, legacy: string): string | null {
-  if (cue === null) return null;
-  return cue ?? legacy;
-}
-
-// ============================================================================
-// Speaker Icon SVG
-// ============================================================================
-
-const SpeakerIcon: React.FC<{ className?: string; playing?: boolean }> = ({ className = '', playing = false }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`${className} ${playing ? 'animate-pulse' : ''}`}
-  >
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity={0.3} />
-    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-    {playing && (
-      <>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-      </>
-    )}
-  </svg>
-);
-
-/** Wordless "tap to hear" cue for pre-readers — a small ear. */
-const EarGlyph: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-    strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M6 8.5a6 6 0 0 1 12 0c0 3-2 4-3.5 5.5S13 17 13 18.5a2.5 2.5 0 0 1-5 0" />
-    <path d="M9 8.5a3 3 0 0 1 5.5-1.5" />
-  </svg>
-);
-
-/** Wordless "tap again to keep it" cue for pre-readers — a pulsing check. */
-const KeepGlyph: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}
-    strokeLinecap="round" strokeLinejoin="round"
-    className={`${className} animate-pulse`} aria-hidden>
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
+const DEFAULT_MAX_ATTEMPTS = 3;
 
 // ============================================================================
 // Props
@@ -258,11 +174,10 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   const {
     title,
     letterGroup,
-    cumulativeLetters = [],
     challenges = [],
     gradeLevel = 'K',
     supportTier,
-    maxAttempts: maxAttemptsProp,
+    maxAttempts,
     instanceId,
     skillId,
     subskillId,
@@ -271,129 +186,31 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     onEvaluationSubmit,
   } = data;
 
-  /** Pre-reader band: the two-tap protocol + chrome are voiced/hidden, never read. */
+  /** Pre-reader band: adult chrome is hidden, never read (reader-fit rule 7). */
   const isPreReader = gradeLevel === 'K';
 
-  /** Attempts before lock+reveal. Absent tier field ⇒ legacy 3. */
-  const maxAttempts = typeof maxAttemptsProp === 'number' && maxAttemptsProp > 0
-    ? maxAttemptsProp
-    : MAX_ATTEMPTS;
-
-  // ---------------------------------------------------------------------------
-  // Refs & IDs
-  // ---------------------------------------------------------------------------
   const stableInstanceIdRef = useRef(instanceId || `letter-sound-link-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const startTimeRef = useRef(Date.now());
 
-  // ---------------------------------------------------------------------------
-  // Shared hooks — challenge progression
-  // ---------------------------------------------------------------------------
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const tier: LetterSoundTier = supportTier ?? 'medium';
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.mode,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ---------------------------------------------------------------------------
-  // Local UI state
-  // ---------------------------------------------------------------------------
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [listenedOption, setListenedOption] = useState<number | null>(null);
-  const [playingOption, setPlayingOption] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [isLocked, setIsLocked] = useState(false);
-  const [confusedPairs, setConfusedPairs] = useState<Array<[string, string]>>([]);
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
-  const [showKeywordHint, setShowKeywordHint] = useState(false);
-  // Keywords the student said ALOUD (judge-confirmed) — the culminating production beat
-  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
-  const diagnosisObservationsRef = useRef<Array<{
-    challenge: string;
-    expected: string;
-    observed: string;
-    judgeFeedback?: string;
-  }>>([]);
-
-  // Per-mode tracking for evaluation metrics
-  const [seeHearResults, setSeeHearResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
-  const [hearSeeResults, setHearSeeResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
-  const [vowelResults, setVowelResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
-  const [consonantResults, setConsonantResults] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
-
-  const currentChallenge = challenges[currentChallengeIndex];
-
-  // ---------------------------------------------------------------------------
-  // Support-tier derivations (all default to the legacy full-help behavior)
-  // ---------------------------------------------------------------------------
-
-  /** When the keyword picture anchor may appear. Absent field ⇒ legacy 'after-miss'. */
-  const anchorModeFor = useCallback(
-    (ch?: LetterSoundLinkChallenge) => ch?.showKeywordAnchor ?? 'after-miss',
-    [],
+  const items = useMemo<LetterSoundItem[]>(
+    () => challenges.map((ch) => itemFromChallenge(ch, emojiFor, tier)),
+    [challenges, tier],
   );
 
-  /** May the tutor voice [SAY_KEYWORD] for this challenge before it resolves?
-   *  Barred wherever the keyword IS (or encodes) the answer, and withdrawn at
-   *  hard where the anchor itself is withdrawn. */
-  const keywordVoiceAllowed = useCallback(
-    (ch?: LetterSoundLinkChallenge) =>
-      !!ch && KEYWORD_SAFE_PRE_ANSWER[ch.mode] === true && anchorModeFor(ch) !== 'never',
-    [anchorModeFor],
-  );
+  // ── Per-item stage state ───────────────────────────────────────────────────
+  /** The tapped letter (hear-see only) — cleared on retry and on item open. */
+  const [tapped, setTapped] = useState<string | null>(null);
+  const tappedRef = useRef<string | null>(null);
+  /** Affirmed: the first moment the answer may appear on screen. */
+  const [revealed, setRevealed] = useState(false);
+  /** [target, chosen] letter pairs from wrong hear-see taps — the one place
+   *  this primitive can observe a confusion directly. */
+  const confusedPairsRef = useRef<Array<[string, string]>>([]);
 
-  /** Proactive anchor (easy) ⇒ the tutor may also voice the keyword up front. */
-  const keywordVoiceUpFront = useCallback(
-    (ch?: LetterSoundLinkChallenge) => keywordVoiceAllowed(ch) && anchorModeFor(ch) === 'proactive',
-    [keywordVoiceAllowed, anchorModeFor],
-  );
-
-  /** Answer-form lever: does the first tap commit? Honored for keyword-match only,
-   *  and NEVER at K — the pre-reader band's audition-then-commit protocol wins. */
-  const commitsOnFirstTap =
-    currentChallenge?.auditionBeforeCommit === false
-    && currentChallenge.mode === 'keyword-match'
-    && !isPreReader;
-
-  /** Tier-aware, MODE-AWARE reveal policy for the live tutor. No tier ever names
-   *  the current mode's answer dimension; the tiers differ only in how much
-   *  strategy the tutor supplies. */
-  const tierTutorClause = useMemo(() => {
-    if (!supportTier || !currentChallenge) return '';
-    const barred = ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer';
-    if (supportTier === 'easy') {
-      return ` SUPPORT TIER easy: name the listening strategy out loud and model the move warmly `
-        + `(e.g. "listen to both, then pick"), but NEVER say ${barred}, and never say which option is correct.`;
-    }
-    if (supportTier === 'hard') {
-      return ` SUPPORT TIER hard: give NO strategy. Ask what the student notices and have them explain `
-        + `their pick. Reveal nothing — never ${barred}, never a strategy, never the correct option. `
-        + `You may still play sounds on request.`;
-    }
-    return ` SUPPORT TIER medium: nudge them to carry out their own approach with one short question; `
-      + `do not lay out the whole strategy, and never say ${barred} or which option is correct.`;
-  }, [supportTier, currentChallenge]);
-
-  // ---------------------------------------------------------------------------
-  // Evaluation hook
-  // ---------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<LetterSoundLinkMetrics>({
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<LetterSoundLinkMetrics>({
     primitiveType: 'letter-sound-link',
     instanceId: resolvedInstanceId,
     skillId,
@@ -403,887 +220,284 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---------------------------------------------------------------------------
-  // AI Tutoring
-  // ---------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    letterGroup,
-    challengeMode: currentChallenge?.mode ?? '',
-    targetLetter: currentChallenge?.targetLetter ?? '',
-    targetSound: currentChallenge?.targetSound ?? '',
-    keywordWord: currentChallenge?.keywordWord ?? '',
-    sharedSoundLetters: currentChallenge?.sharedSoundLetters?.join(', ') ?? '',
-    currentChallenge: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    supportTier: supportTier ?? '',
-  }), [
-    letterGroup, currentChallenge, currentChallengeIndex,
-    challenges.length, currentAttempts, supportTier,
-  ]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'letter-sound-link',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // Activity introduction — once on AI connect
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    // ANSWER-LEAK FIX: the intro used to state the letter AND its sound AND fire
-    // [SAY_KEYWORD] before challenge 1 — which hands over the answer in see-hear
-    // (sound), keyword-match (keyword/sound) AND hear-see (letter). The brief is
-    // now mode-aware: it names only the on-screen stimulus, and the keyword is
-    // voiced up front ONLY where it is not the answer and the tier invites it.
-    const brief = modeBrief(currentChallenge.mode, currentChallenge.targetLetter);
-    const barred = ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer';
-    sendText(
-      `[ACTIVITY_START] Letter-sound correspondence activity for Group ${letterGroup} `
-      + `(letters: ${cumulativeLetters.join(', ')}). `
-      + `There are ${challenges.length} challenges. `
-      + `Introduce the activity warmly — we're learning the SOUNDS that letters make! `
-      + `First challenge: ${brief}. `
-      + `Do NOT say ${barred} — that is exactly what the student has to find. `
-      + (keywordVoiceUpFront(currentChallenge)
-        ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
-        : '')
-      + `Keep it brief — 2-3 sentences.`
-      + tierTutorClause,
-      { silent: true },
-    );
-  }, [
-    isConnected, currentChallenge, letterGroup, cumulativeLetters, challenges.length,
-    sendText, keywordVoiceUpFront, tierTutorClause,
-  ]);
-
-  // ---------------------------------------------------------------------------
-  // Auto-play sound for hear-see mode on challenge load
-  // ---------------------------------------------------------------------------
-  const lastAutoPlayedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isConnected || !currentChallenge || isLocked) return;
-    if (currentChallenge.mode !== 'hear-see') return;
-    if (lastAutoPlayedRef.current === currentChallenge.id) return;
-
-    lastAutoPlayedRef.current = currentChallenge.id;
-    // Small delay to let the UI render first
-    const timer = setTimeout(() => {
-      sendText(
-        `[PRONOUNCE_SOUND] Say ONLY the sound ${currentChallenge.targetSound}. Just the clean phoneme, nothing else. Then pause.`,
-        { silent: true },
-      );
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [isConnected, currentChallenge, isLocked, sendText]);
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  /** Is a letter a vowel? */
-  const isVowel = useCallback((letter: string) => VOWELS.has(letter.toLowerCase()), []);
-
-  /** Get color class for a letter based on vowel/consonant */
-  const getLetterColorClass = useCallback((letter: string) => {
-    return isVowel(letter) ? 'text-red-300' : 'text-blue-300';
-  }, [isVowel]);
-
-  /** Get the emoji for a keyword */
-  const getKeywordEmoji = useCallback((keyword: string) => {
-    return KEYWORD_IMAGES[keyword.toLowerCase()] || '📝';
-  }, []);
-
-  /** Track confused sound pairs */
-  const trackConfusion = useCallback((targetSound: string, chosenSound: string) => {
-    setConfusedPairs(prev => [...prev, [targetSound, chosenSound]]);
-  }, []);
-
-  /** Update per-mode accuracy counters */
-  const updateModeAccuracy = useCallback((mode: string, isCorrect: boolean, letter: string) => {
-    if (mode === 'see-hear') {
-      setSeeHearResults(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
-    } else if (mode === 'hear-see') {
-      setHearSeeResults(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
-    }
-    if (isVowel(letter)) {
-      setVowelResults(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
-    } else {
-      setConsonantResults(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
-    }
-  }, [isVowel]);
-
-  // ---------------------------------------------------------------------------
-  // Speaker bubble: tap to hear, tap again to choose
-  // ---------------------------------------------------------------------------
-  const handleSpeakerTap = useCallback((optionIndex: number) => {
-    if (isLocked || hasSubmittedEvaluation || !currentChallenge) return;
-
-    const options = currentChallenge.options || [];
-    const option = options[optionIndex];
-    if (!option) return;
-
-    // First tap on this option: play the sound
-    if (listenedOption !== optionIndex) {
-      setListenedOption(optionIndex);
-      setPlayingOption(optionIndex);
-      setSelectedOption(null);
-
-      // Play the sound via AI
-      if (currentChallenge.mode === 'see-hear' || currentChallenge.mode === 'keyword-match') {
-        const soundToPlay = option.sound || '';
-        if (currentChallenge.mode === 'keyword-match') {
-          // For keyword match, say the word
-          sendText(
-            `[TAP_OPTION] Say the word "${soundToPlay}" clearly. Just the word, nothing else.`,
-            { silent: true },
-          );
-        } else {
-          // For see-hear, say the phoneme
-          sendText(
-            `[TAP_OPTION] Say only the sound ${soundToPlay}. Just the clean phoneme, nothing else.`,
-            { silent: true },
-          );
-        }
-      } else if (currentChallenge.mode === 'hear-see') {
-        // For hear-see, say the letter name
-        const letterToSay = option.letter || '';
-        sendText(
-          `[TAP_OPTION] Say the name of the letter "${letterToSay.toUpperCase()}". Just the letter name, nothing else.`,
-          { silent: true },
-        );
-      }
-
-      // Clear playing animation after a short delay
-      setTimeout(() => setPlayingOption(null), 1500);
-
-      // #3 answer-form lever (hard, keyword-match, non-K): the audition step is
-      // withdrawn — this tap commits. The word audio above still fires, so the
-      // on-demand audio channel is intact; what is gone is the chance to compare
-      // both options before choosing.
-      if (commitsOnFirstTap) {
-        setSelectedOption(optionIndex);
-        confirmSelection(optionIndex);
-      }
-      return;
-    }
-
-    // Second tap on same option: confirm selection
-    setSelectedOption(optionIndex);
-    confirmSelection(optionIndex);
-  }, [isLocked, hasSubmittedEvaluation, currentChallenge, listenedOption, sendText, commitsOnFirstTap]);
-
-  // ---------------------------------------------------------------------------
-  // Confirm selection (called on second tap)
-  // ---------------------------------------------------------------------------
-  const confirmSelection = useCallback((optionIndex: number) => {
-    if (!currentChallenge) return;
-
-    const options = currentChallenge.options || [];
-    const option = options[optionIndex];
-    if (!option) return;
-
-    incrementAttempts();
-    const isCorrect = option.isCorrect;
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setFeedback(
-        currentChallenge.mode === 'keyword-match'
-          ? `Yes! "${currentChallenge.targetLetter.toUpperCase()}" makes ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}"!`
-          : `Yes! The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}!`
-      );
-      setFeedbackType('success');
-      setIsLocked(true);
-
-      updateModeAccuracy(currentChallenge.mode, true, currentChallenge.targetLetter);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        mode: currentChallenge.mode,
-        targetLetter: currentChallenge.targetLetter,
-        targetSound: currentChallenge.targetSound,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] The student correctly identified the letter-sound link! `
-        + `Letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
-        + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
-        + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. `
-        + `Say "Yes! The letter ${currentChallenge.targetLetter.toUpperCase()} makes the sound ${currentChallenge.targetSound}!" `
-        + `${currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0
-          ? `Fun fact: ${currentChallenge.sharedSoundLetters.join(' and ')} also make this sound!`
-          : ''}`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const wrongDisplay = currentChallenge.mode === 'hear-see'
-        ? `letter "${option.letter || '?'}"`
-        : `sound "${option.sound || '?'}"`;
-      diagnosisObservationsRef.current.push({
-        challenge: currentChallenge.mode === 'hear-see'
-          ? `Hear ${currentChallenge.targetSound} and choose its letter.`
-          : `Link letter ${currentChallenge.targetLetter.toUpperCase()} to its ${currentChallenge.mode === 'keyword-match' ? 'keyword' : 'sound'}.`,
-        expected: currentChallenge.mode === 'keyword-match'
-          ? `Choose the keyword ${currentChallenge.keywordWord}.`
-          : `Choose ${currentChallenge.mode === 'hear-see' ? currentChallenge.targetLetter : currentChallenge.targetSound}.`,
-        observed: `Chose ${option.letter || option.sound || '(empty)'}.`,
-      });
-      setFeedback('Not quite! Listen again and try the other one.');
-      setFeedbackType('error');
-
-      // Show keyword hint after first wrong attempt (progressive scaffolding)
-      setShowKeywordHint(true);
-
-      // Track confusion
-      if (currentChallenge.mode === 'see-hear' && option.sound) {
-        trackConfusion(currentChallenge.targetSound, option.sound);
-      } else if (currentChallenge.mode === 'hear-see' && option.letter) {
-        trackConfusion(currentChallenge.targetLetter, option.letter);
-      }
-
-      // Reset listened state so they can tap again
-      setListenedOption(null);
-      setSelectedOption(null);
-
-      // ANSWER-LEAK FIX: [SAY_KEYWORD] used to fire on every miss — in see-hear
-      // and keyword-match the keyword hands over (or encodes) the answer, so it is
-      // suppressed there, and at hard it is suppressed everywhere (the anchor is
-      // withdrawn). The tutor still receives the truth privately, with an explicit
-      // non-reveal instruction, exactly as letter-spotter does.
-      sendText(
-        `[ANSWER_INCORRECT] The student chose ${wrongDisplay} but the correct answer is `
-        + `letter "${currentChallenge.targetLetter.toUpperCase()}" → sound ${currentChallenge.targetSound}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + (keywordVoiceAllowed(currentChallenge)
-          ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
-          : '')
-        + `Give a brief hint WITHOUT saying ${ANSWER_DIMENSION[currentChallenge.mode] ?? 'the answer'}.`
-        + tierTutorClause,
-        { silent: true },
-      );
-
-      // After max attempts, reveal and lock
-      if (currentAttempts + 1 >= maxAttempts) {
-        setFeedback(
-          `The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}".`
-        );
-        setFeedbackType('error');
-        setIsLocked(true);
-
-        updateModeAccuracy(currentChallenge.mode, false, currentChallenge.targetLetter);
-
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-          mode: currentChallenge.mode,
-          targetLetter: currentChallenge.targetLetter,
-          targetSound: currentChallenge.targetSound,
-        });
-
-        sendText(
-          `[NEW_SOUND_INTRO] The student couldn't get this one. `
-          + `Say: "This letter is ${currentChallenge.targetLetter.toUpperCase()}, and it makes the sound ${currentChallenge.targetSound}, like in ${currentChallenge.keywordWord}!" `
-          + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. Keep it encouraging.`,
-          { silent: true },
-        );
-      }
-    }
-  }, [
-    currentChallenge, currentAttempts, maxAttempts, keywordVoiceAllowed, tierTutorClause,
-    incrementAttempts, recordResult, sendText, trackConfusion, updateModeAccuracy,
-  ]);
-
-  // ---------------------------------------------------------------------------
-  // Submit final evaluation
-  // ---------------------------------------------------------------------------
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const total = challengeResults.length;
-    const correct = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const elapsedMs = Date.now() - startTimeRef.current;
-    const overallScore = total > 0 ? Math.round((correct / total) * 100) : 0;
-
-    // Deduplicate confused pairs
-    const uniquePairs = Array.from(
-      new Set(confusedPairs.map(([a, b]) => [a, b].sort().join('↔')))
-    );
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const rate = (predicate: (item: LetterSoundItem) => boolean) => {
+      const scoped = items.filter(predicate);
+      if (scoped.length === 0) return 100;
+      const solved = scoped.filter(
+        (item) => summary.outcomes.find((o) => o.id === item.id)?.solved,
+      ).length;
+      return Math.round((solved / scoped.length) * 100);
+    };
 
     const metrics: LetterSoundLinkMetrics = {
       type: 'letter-sound-link',
       letterGroup,
-      challengesCorrect: correct,
-      challengesTotal: total,
-      graphemeToPhonemeAccuracy: seeHearResults.total > 0
-        ? Math.round((seeHearResults.correct / seeHearResults.total) * 100) : 100,
-      phonemeToGraphemeAccuracy: hearSeeResults.total > 0
-        ? Math.round((hearSeeResults.correct / hearSeeResults.total) * 100) : 100,
-      vowelSoundAccuracy: vowelResults.total > 0
-        ? Math.round((vowelResults.correct / vowelResults.total) * 100) : 100,
-      consonantSoundAccuracy: consonantResults.total > 0
-        ? Math.round((consonantResults.correct / consonantResults.total) * 100) : 100,
-      confusedSoundPairs: uniquePairs,
-      attemptsCount: totalAttempts,
+      challengesCorrect: summary.solvedCount,
+      challengesTotal: items.length,
+      // see-hear is now grapheme → SPOKEN phoneme; hear-see stays phoneme →
+      // grapheme. keyword-match contributes to neither direction on purpose.
+      graphemeToPhonemeAccuracy: rate((item) => item.mode === 'see-hear'),
+      phonemeToGraphemeAccuracy: rate((item) => item.mode === 'hear-see'),
+      vowelSoundAccuracy: rate((item) => VOWELS.has(item.letter.toLowerCase())),
+      consonantSoundAccuracy: rate((item) => !VOWELS.has(item.letter.toLowerCase())),
+      confusedSoundPairs: Array.from(
+        new Set(confusedPairsRef.current.map(([a, b]) => [a, b].sort().join('↔'))),
+      ),
+      attemptsCount: summary.attemptsCount,
     };
 
-    setSubmittedResult({ score: overallScore });
-
-    const observations = diagnosisObservationsRef.current;
-    const judgeBacked = [...observations].reverse().find(item => item.judgeFeedback);
-    const evidenceSource = judgeBacked || observations[observations.length - 1];
-    const diagnosisEvidence: DiagnosisEvidence | undefined = overallScore < 60 && evidenceSource
-      ? {
-          challengeSummary: evidenceSource.challenge,
-          expected: evidenceSource.expected,
-          observed: evidenceSource.observed,
-          judgeFeedback: judgeBacked?.judgeFeedback,
-          priorAttempts: observations
-            .filter(item => item !== evidenceSource)
-            .slice(-4)
-            .map(item => ({ challenge: item.challenge, observed: item.observed })),
-        }
-      : undefined;
-
-    submitEvaluation(
-      overallScore >= 60,
-      overallScore,
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
       metrics,
-      { challengeResults, durationMs: elapsedMs, spokenWords: Array.from(spokenWords) },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
       undefined,
-      diagnosisEvidence,
+      summary.diagnosisEvidence,
     );
+  }, [items, letterGroup, evaluation]);
 
-    // AI celebration
-    const phaseScoreStr = phaseResults.length > 0
-      ? phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ')
-      : `Overall: ${overallScore}%`;
-    sendText(
-      `[ALL_COMPLETE] Student finished all ${total} letter-sound challenges! `
-      + `Score: ${correct}/${total} (${overallScore}%). ${phaseScoreStr}. `
-      + (uniquePairs.length > 0 ? `Confused sound pairs: ${uniquePairs.join(', ')}. ` : '')
-      + (spokenWords.size > 0 ? `They also said ${spokenWords.size} keyword${spokenWords.size > 1 ? 's' : ''} out loud! ` : '')
-      + `Celebrate and give encouraging feedback about their letter-sound knowledge!`,
-      { silent: true },
-    );
-  }, [
-    hasSubmittedEvaluation, challengeResults, letterGroup, confusedPairs,
-    seeHearResults, hearSeeResults, vowelResults, consonantResults,
-    phaseResults, spokenWords, submitEvaluation, sendText,
-  ]);
+  // ── The pack — wording lives in letterSoundLinkScript.ts ───────────────────
+  const pack = useMemo<JudgedScriptPack<LetterSoundItem>>(() => ({
+    primitiveType: 'letter-sound-link',
+    activityLine: 'live direct instruction letter-sound practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeMode: item.mode,
+      stimulus: stimulusFor(item),
+    }),
+    // maxAttempts counts elicitations; the runner counts CORRECTIONS, so the
+    // first ask is not one of them. Tier `hard` ships 2 ⇒ one correction.
+    maxCorrections: Math.max(1, (maxAttempts ?? DEFAULT_MAX_ATTEMPTS) - 1),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: (item) => item.answerKind === 'gesture'
+        ? 'Listen, then tap the letter.'
+        : 'Listen, then say your answer out loud.',
+      retry: (item) => item.answerKind === 'gesture'
+        ? 'Listen again — then tap the letter.'
+        : 'Have another go — say your answer.',
+      noVerdict: () => 'One more time — say your answer.',
+      affirmedNext: 'Yes! You got it.',
+      affirmedLast: 'You did it!',
+      moveOn: 'Good try — here comes the next one.',
+      done: 'Great letter-sound work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      if (item.answerKind === 'gesture') {
+        return {
+          challenge: `Hear the sound ${item.spoken} and tap the letter that makes it.`,
+          expected: `The letter "${item.answer.toUpperCase()}".`,
+          observed: tappedRef.current
+            ? `Tapped the letter "${tappedRef.current.toUpperCase()}".`
+            : 'Tapped a letter that did not match.',
+        };
+      }
+      return {
+        challenge: item.mode === 'see-hear'
+          ? `Say the sound the letter "${item.letter.toUpperCase()}" makes.`
+          : `Say which pictured word starts with the sound of "${item.letter.toUpperCase()}".`,
+        expected: item.mode === 'see-hear'
+          ? `The sound ${item.spoken}.`
+          : `The word "${item.answer}".`,
+        observed: lastHeard
+          ? `Heard "${lastHeard}".`
+          : 'The tutor judged the answer wrong from the audio.',
+      };
+    },
+  }), [items, maxAttempts]);
 
-  // Auto-submit when complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      submitFinalEvaluation();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, submitFinalEvaluation]);
-
-  // Compute score directly from results for immediate display (avoids 0% flash)
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  // ---------------------------------------------------------------------------
-  // Spoken production beat — once a challenge is resolved, the student says the
-  // KEYWORD aloud (the anchor of the letter-sound link — "A makes /a/ like
-  // APPLE — now YOU say APPLE!"). The judge ladder (Azure dual-signal → Gemini,
-  // utils/spokenWordJudge.ts) confirms it. Purely additive: the mic never
-  // bypasses the recognition challenge (it appears only after isLocked), the
-  // Next button is always available, and 'no-match' is never penalized.
-  //   'match'   → celebrate + track (bonus production credit)
-  //   'no-match'→ tutor models the keyword by voice, NO penalty
-  //   'unclear' → invite a retry, silently
-  // ---------------------------------------------------------------------------
-  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
-    if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
-    const target = currentChallenge.keywordWord;
-    if (result.outcome === 'match') {
-      SoundManager.playCorrect();
-      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
-      sendText(
-        `[STUDENT_SAID_WORD] The student said the keyword "${target}" out loud all by themselves — the word for the letter "${currentChallenge.targetLetter.toUpperCase()}" that makes the sound ${currentChallenge.targetSound}! Celebrate enthusiastically that they SAID the whole word (one sentence).`,
-        { silent: true },
-      );
-    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
-      diagnosisObservationsRef.current.push({
-        challenge: `Say the keyword that anchors ${currentChallenge.targetLetter.toUpperCase()} to ${currentChallenge.targetSound}.`,
-        expected: `Say the whole keyword ${target}.`,
-        observed: `Judge heard "${result.verdict.heard}".`,
-        judgeFeedback: result.verdict.misconception
-          || `The spoken-word judge heard "${result.verdict.heard}" instead of the keyword and rated the mismatch high confidence.`,
-      });
-      sendText(
-        `[SPOKEN_MISS] The student tried to say the keyword "${target}" aloud but it sounded like "${result.verdict.heard}". Gently model it — start with the ${currentChallenge.targetSound} sound, then say the whole word "${target}" — and invite one more try. Warm, never scolding. Two short sentences max.`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't catch the student clearly. One friendly sentence: invite them to say "${target}" again a little louder, or just tap Next.`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, spokenWords, sendText]);
-
-  const spokenCapture = useSpokenWordCapture({
-    targetWord: currentChallenge?.keywordWord ?? '',
-    gradeLevel: 'K',
-    onResult: handleSpokenResult,
-    onNoSpeech: () => {
-      if (!currentChallenge || spokenWords.has(currentChallenge.id)) return;
-      sendText(
-        `[SPOKEN_UNCLEAR] The microphone didn't hear the student. One friendly sentence: invite them to say "${currentChallenge.keywordWord}" again a little louder, or just tap Next.`,
-        { silent: true },
-      );
+  const runner = useJudgedScriptRunner<LetterSoundItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: () => {
+      setTapped(null);
+      tappedRef.current = null;
+      setRevealed(false);
+    },
+    onAffirmed: () => setRevealed(true),
+    onCorrectionRetry: () => {
+      // The tutor's correction re-modeled in-band; free the letters for another go.
+      setTapped(null);
+      tappedRef.current = null;
     },
   });
 
-  // ---------------------------------------------------------------------------
-  // Advance to next challenge
-  // ---------------------------------------------------------------------------
-  const handleNextChallenge = useCallback(() => {
-    spokenCapture.cancel(); // never carry a live mic across challenges
-    setSelectedOption(null);
-    setListenedOption(null);
-    setPlayingOption(null);
-    setFeedback('');
-    setFeedbackType('');
-    setIsLocked(false);
-    setShowKeywordHint(false);
+  const currentItem = runner.currentItem;
 
-    if (!advanceProgress()) {
-      submitFinalEvaluation();
-      return;
+  // ── The tap — hear-see only; the tap IS the commit ────────────────────────
+  const handleLetterTap = useCallback((letter: string) => {
+    const item = runner.currentItem;
+    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!item || item.answerKind !== 'gesture') return;
+    if (runner.isAwaitingGesture() || revealed) return;
+    SoundManager.tap();
+    setTapped(letter);
+    tappedRef.current = letter;
+    if (letter.toLowerCase() !== item.answer.toLowerCase()) {
+      confusedPairsRef.current.push([item.answer.toLowerCase(), letter.toLowerCase()]);
     }
+    runner.submitGestureAttempt(tapVerdictCue(item, letter));
+  }, [runner, evaluation.hasSubmitted, revealed]);
 
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    if (!nextChallenge) return;
-
-    const modeLabel = MODE_CONFIG[nextChallenge.mode]?.description ?? nextChallenge.mode;
-
-    // ANSWER-LEAK FIX: this used to restate letter + sound + keyword for EVERY
-    // upcoming challenge, pre-answer. Same mode-aware rule as [ACTIVITY_START].
-    const nextBarred = ANSWER_DIMENSION[nextChallenge.mode] ?? 'the answer';
-    const nextTierClause = supportTier
-      ? (supportTier === 'easy'
-          ? ` SUPPORT TIER easy: you may name the listening strategy, but never ${nextBarred}.`
-          : supportTier === 'hard'
-            ? ` SUPPORT TIER hard: no strategy, no hints — just set them off. Reveal nothing.`
-            : ` SUPPORT TIER medium: one short nudge only; never ${nextBarred}.`)
-      : '';
-
-    sendText(
-      `[NEXT_CHALLENGE] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `${modeLabel}. This one: ${modeBrief(nextChallenge.mode, nextChallenge.targetLetter)}. `
-      + `Do NOT say ${nextBarred} — that is what the student has to find. `
-      + (keywordVoiceUpFront(nextChallenge)
-        ? `[SAY_KEYWORD] ${nextChallenge.targetSound} as in ${nextChallenge.keywordWord}. `
-        : '')
-      + `Briefly introduce the new challenge.`
-      + nextTierClause,
-      { silent: true },
-    );
-  }, [
-    advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, sendText,
-    spokenCapture, keywordVoiceUpFront, supportTier,
-  ]);
-
-  // Keep a live ref so the auto-advance timer always calls the latest handler.
-  const handleNextChallengeRef = useRef(handleNextChallenge);
-  handleNextChallengeRef.current = handleNextChallenge;
-
-  // Strong-flow UX: once the student says the keyword aloud (judge-confirmed),
-  // glide to the next challenge on their behalf — no extra click. The mic itself
-  // stays tap-to-start (push-to-talk is the echo gate against the tutor's voice),
-  // but everything after a successful production advances automatically.
-  useEffect(() => {
-    if (!currentChallenge || !spokenWords.has(currentChallenge.id)) return;
-    const t = setTimeout(() => handleNextChallengeRef.current(), 1400);
-    return () => clearTimeout(t);
-  }, [spokenWords, currentChallenge]);
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted || !runner.summary) return [];
+    return items.map((item) => {
+      const outcome = runner.summary!.outcomes.find((o) => o.id === item.id);
+      const meta = MODE_META[item.mode];
+      return {
+        label: meta.badge,
+        icon: meta.icon,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
   // ============================================================================
-  // Render: Speaker Bubble (shared by see-hear & keyword-match modes)
+  // Render helpers
   // ============================================================================
-  const renderSpeakerBubble = (idx: number, colorConfig: typeof SPEAKER_COLORS[0]) => {
-    const isListened = listenedOption === idx;
-    const isSelected = selectedOption === idx;
-    const isPlaying = playingOption === idx;
-    const showCorrect = isLocked && currentChallenge?.options?.[idx]?.isCorrect;
-    const showWrong = isSelected && feedbackType === 'error' && !currentChallenge?.options?.[idx]?.isCorrect;
 
-    return (
-      <button
-        key={idx}
-        onClick={() => handleSpeakerTap(idx)}
-        disabled={isLocked}
+  const letterColor = (letter: string) =>
+    VOWELS.has(letter.toLowerCase()) ? 'text-red-300' : 'text-blue-300';
+
+  /** The printed grapheme — the stimulus in see-hear and keyword-match. Tapping
+   *  it re-speaks the QUESTION (never the answer). */
+  const renderLetterCard = (item: LetterSoundItem) => (
+    <div className="flex justify-center">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={runner.hearStimulus}
         className={`
-          relative flex flex-col items-center justify-center gap-2
-          w-28 h-28 sm:w-32 sm:h-32 rounded-full
-          border-2 transition-all duration-300
-          ${showCorrect
-            ? `${answerStateClasses.correct} scale-110`
-            : showWrong
-              ? `${answerStateClasses.incorrect} scale-95`
-              : isListened
-                ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
-                : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
-          }
-          ${isLocked ? 'cursor-default' : 'cursor-pointer'}
-          disabled:opacity-70
+          text-8xl font-bold ${letterColor(item.letter)}
+          bg-white/5 border-2 border-white/15 rounded-2xl
+          px-12 py-8 select-none cursor-pointer transition-all
+          ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
         `}
       >
-        <SpeakerIcon
-          className={`w-10 h-10 sm:w-12 sm:h-12 ${
-            showCorrect ? 'text-emerald-300' : showWrong ? 'text-rose-300' : colorConfig.iconColor
-          }`}
-          playing={isPlaying}
-        />
-        {/* Pre-reader: wordless ear (tap to hear) → pulsing check (tap to keep).
-            Reader: the original 10px text cues. */}
-        {isListened && !isLocked && (
-          isPreReader
-            ? <KeepGlyph className="w-6 h-6 text-emerald-300" />
-            : <span className="text-[10px] text-slate-400 animate-pulse">tap to choose</span>
-        )}
-        {!isListened && !isLocked && (
-          isPreReader
-            ? <EarGlyph className="w-6 h-6 text-slate-400" />
-            : <span className="text-[10px] text-slate-500">tap to hear</span>
-        )}
-      </button>
-    );
-  };
-
-  // ============================================================================
-  // Render: See → Hear Mode (audio-first speaker bubbles)
-  // ============================================================================
-  const renderSeeHear = () => {
-    if (!currentChallenge) return null;
-    const letterColor = getLetterColorClass(currentChallenge.targetLetter);
-    // Tier cues: undefined ⇒ the legacy line (byte-identical), string ⇒ the
-    // tier-authored cue, null ⇒ withdrawn.
-    const taskCue = resolveCue(currentChallenge.strategyHint, 'Which sound does this letter make?');
-    const protocolCue = resolveCue(
-      currentChallenge.protocolHint,
-      'Tap each speaker to hear the sound, then tap your answer again to choose it',
-    );
-    const anchorMode = anchorModeFor(currentChallenge);
-    const showAnchor = anchorMode === 'proactive'
-      || (anchorMode === 'after-miss' && showKeywordHint);
-
-    return (
-      <div className="space-y-6">
-        {/* Large letter display */}
-        <div className="flex flex-col items-center gap-2">
-          <div className={`
-            text-8xl font-bold ${letterColor}
-            bg-white/5 border-2 border-white/15 rounded-2xl
-            px-12 py-8 select-none
-          `}>
-            {currentChallenge.targetLetter.toUpperCase()}
-          </div>
-          {!isPreReader && taskCue && (
-            <p className="text-slate-400 text-sm">{taskCue}</p>
-          )}
-        </div>
-
-        {/* Keyword anchor — proactive (easy), after a miss (legacy/medium), or
-            never (hard). Pre-reader: picture only. */}
-        {showAnchor && (
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
-            <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
-            {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
-          </div>
-        )}
-
-        {/* Two speaker bubbles */}
-        <div className="flex items-center justify-center gap-6 sm:gap-10">
-          {(currentChallenge.options || []).slice(0, 2).map((_, idx) =>
-            renderSpeakerBubble(idx, SPEAKER_COLORS[idx])
-          )}
-        </div>
-
-        {!isPreReader && protocolCue && (
-          <p className="text-center text-xs text-slate-600">
-            {protocolCue}
-          </p>
-        )}
+        {item.letter.toUpperCase()}
       </div>
-    );
-  };
+    </div>
+  );
 
-  // ============================================================================
-  // Render: Hear → See Mode (auto-play sound, pick the letter)
-  // ============================================================================
-  const renderHearSee = () => {
-    if (!currentChallenge) return null;
-    const options = currentChallenge.options || [];
-    const taskCue = resolveCue(currentChallenge.strategyHint, 'Tap to hear the sound, then find the letter!');
-    const anchorMode = anchorModeFor(currentChallenge);
-    const showAnchor = anchorMode === 'proactive'
-      || (anchorMode === 'after-miss' && showKeywordHint);
-    // The shared-sound nudge is scaffolding, not the stimulus — withdrawn at hard.
-    const showSharedSoundHint = currentChallenge.showSharedSoundHint !== false;
+  /** The keyword anchor. It appears ONLY once the tutor has affirmed — the
+   *  picture encodes the sound, so showing it earlier is the same leak as
+   *  saying it. */
+  const renderKeywordReveal = (item: LetterSoundItem) => (
+    <div className="flex items-center justify-center gap-2 animate-in fade-in duration-500">
+      <span className="text-4xl">{item.keywordEmoji}</span>
+      <span className="text-emerald-200 text-lg font-bold">{item.keyword}</span>
+    </div>
+  );
 
-    return (
-      <div className="space-y-6">
-        {/* Sound play button — no phoneme text shown */}
-        <div className="flex flex-col items-center gap-3">
-          <button
-            onClick={() => {
-              sendText(
-                `[PRONOUNCE_SOUND] Say ONLY the sound ${currentChallenge.targetSound}. Just the clean phoneme, nothing else.`,
-                { silent: true },
-              );
-            }}
-            className="
-              flex items-center justify-center
-              w-28 h-28 rounded-full
-              bg-amber-500/15 border-2 border-amber-500/30
-              cursor-pointer select-none
-              hover:bg-amber-500/25 hover:scale-105 transition-all
-              active:scale-95
-            "
-          >
-            <SpeakerIcon className="w-14 h-14 text-amber-300" playing={false} />
-          </button>
-          {!isPreReader && taskCue && (
-            <p className="text-slate-400 text-sm">{taskCue}</p>
-          )}
-        </div>
-
-        {/* Keyword anchor — proactive (easy), after a miss (legacy/medium), or
-            never (hard). Pre-reader: picture only. */}
-        {showAnchor && (
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs animate-in fade-in duration-500">
-            <span className={isPreReader ? 'text-4xl' : 'text-lg'}>{getKeywordEmoji(currentChallenge.keywordWord)}</span>
-            {!isPreReader && <span>Think of &quot;{currentChallenge.keywordWord}&quot;</span>}
+  const renderChallenge = (item: LetterSoundItem) => {
+    switch (item.mode) {
+      // ── Say the sound this letter makes (the child produces it) ──────────
+      case 'see-hear':
+        return (
+          <div className="space-y-5">
+            {renderLetterCard(item)}
+            {revealed && renderKeywordReveal(item)}
           </div>
-        )}
+        );
 
-        {/* Shared sound note */}
-        {!isPreReader && showSharedSoundHint && currentChallenge.sharedSoundLetters && currentChallenge.sharedSoundLetters.length > 0 && (
-          <p className="text-center text-xs text-slate-600">
-            Hint: More than one letter might make this sound!
-          </p>
-        )}
-
-        {/* Letter options — these stay as visible letters (letters are what's being tested) */}
-        <div className="flex items-center justify-center gap-6 sm:gap-10">
-          {options.slice(0, 2).map((option, idx) => {
-            const isSelected = selectedOption === idx;
-            const showCorrect = isLocked && option.isCorrect;
-            const showWrong = isSelected && feedbackType === 'error' && !option.isCorrect;
-            const letter = option.letter || '?';
-            const letterColor = getLetterColorClass(letter);
-
-            return (
+      // ── Hear a sound, tap the letter that makes it (the one gesture mode) ─
+      case 'hear-see':
+        return (
+          <div className="space-y-5">
+            <div className="flex justify-center">
               <button
-                key={idx}
-                onClick={() => {
-                  if (isLocked) return;
-                  setSelectedOption(idx);
-                  incrementAttempts();
-
-                  // Directly confirm for hear-see (no two-tap needed — letters are visible)
-                  const isCorrect = option.isCorrect;
-
-                  if (isCorrect) {
-                    SoundManager.playCorrect();
-                    setFeedback(`Yes! The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}!`);
-                    setFeedbackType('success');
-                    setIsLocked(true);
-                    updateModeAccuracy(currentChallenge.mode, true, currentChallenge.targetLetter);
-                    recordResult({
-                      challengeId: currentChallenge.id,
-                      correct: true,
-                      attempts: currentAttempts + 1,
-                      mode: currentChallenge.mode,
-                      targetLetter: currentChallenge.targetLetter,
-                      targetSound: currentChallenge.targetSound,
-                    });
-                    sendText(
-                      `[ANSWER_CORRECT] The student correctly picked letter "${currentChallenge.targetLetter.toUpperCase()}" for the sound ${currentChallenge.targetSound}! `
-                      + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
-                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. Celebrate briefly!`,
-                      { silent: true },
-                    );
-                  } else {
-                    SoundManager.playIncorrect();
-                    setFeedback('Not quite! Listen to the sound again and try the other letter.');
-                    setFeedbackType('error');
-                    setShowKeywordHint(true);
-                    setSelectedOption(null);
-                    trackConfusion(currentChallenge.targetLetter, option.letter || '');
-                    // hear-see: the SOUND is the given stimulus, so replaying it
-                    // ([PRONOUNCE_SOUND]) is never withdrawn. The LETTER is the
-                    // answer — the tutor is told never to name it. The keyword
-                    // anchors the sound, so it is allowed here unless the tier
-                    // has withdrawn the anchor (hard).
-                    sendText(
-                      `[ANSWER_INCORRECT] Student chose "${(option.letter || '').toUpperCase()}" but correct is "${currentChallenge.targetLetter.toUpperCase()}" (${currentChallenge.targetSound}). `
-                      + `Attempt ${currentAttempts + 1}. `
-                      + `[PRONOUNCE_SOUND] ${currentChallenge.targetSound}. `
-                      + (keywordVoiceAllowed(currentChallenge)
-                        ? `[SAY_KEYWORD] ${currentChallenge.targetSound} as in ${currentChallenge.keywordWord}. `
-                        : '')
-                      + `Give a brief hint WITHOUT saying ${ANSWER_DIMENSION['hear-see']}.`
-                      + tierTutorClause,
-                      { silent: true },
-                    );
-
-                    if (currentAttempts + 1 >= maxAttempts) {
-                      setFeedback(
-                        `The letter "${currentChallenge.targetLetter.toUpperCase()}" makes the sound ${currentChallenge.targetSound}, like in "${currentChallenge.keywordWord}".`
-                      );
-                      setFeedbackType('error');
-                      setIsLocked(true);
-                      updateModeAccuracy(currentChallenge.mode, false, currentChallenge.targetLetter);
-                      recordResult({
-                        challengeId: currentChallenge.id,
-                        correct: false,
-                        attempts: currentAttempts + 1,
-                        mode: currentChallenge.mode,
-                        targetLetter: currentChallenge.targetLetter,
-                        targetSound: currentChallenge.targetSound,
-                      });
-                    }
-                  }
-                }}
-                disabled={isLocked}
+                onClick={runner.hearStimulus}
                 className={`
-                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold border-2 transition-all
-                  ${showCorrect
-                    ? `${answerStateClasses.correct} scale-110`
-                    : showWrong
-                      ? `${answerStateClasses.incorrect} scale-95`
-                      : `bg-white/5 border-white/20 hover:bg-white/10 hover:scale-105 ${letterColor}`
-                  }
+                  flex items-center justify-center w-24 h-24 rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
                 `}
+                aria-label="Hear the sound again"
               >
-                {letter.toUpperCase()}
+                <span className="text-4xl">🔊</span>
               </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // ============================================================================
-  // Render: Keyword Match Mode (speaker bubbles with word audio)
-  // ============================================================================
-  const renderKeywordMatch = () => {
-    if (!currentChallenge) return null;
-    const letterColor = getLetterColorClass(currentChallenge.targetLetter);
-    // NB: the legacy JSX wrote these with `&apos;` — an ASCII apostrophe — so the
-    // legacy fallbacks must use the same character to stay byte-identical.
-    const taskCue = resolveCue(currentChallenge.strategyHint, 'Which word starts with this letter\'s sound?');
-    const protocolCue = resolveCue(
-      currentChallenge.protocolHint,
-      'Tap each picture to hear the word, then choose which one starts with this letter\'s sound',
-    );
-
-    return (
-      <div className="space-y-6">
-        {/* Letter display */}
-        <div className="flex flex-col items-center gap-2">
-          <div className={`
-            text-7xl font-bold ${letterColor}
-            bg-white/5 border-2 border-white/15 rounded-2xl
-            px-10 py-6 select-none
-          `}>
-            {currentChallenge.targetLetter.toUpperCase()}
+            </div>
+            <div className="flex items-center justify-center gap-6 sm:gap-10">
+              {item.options.map((option, idx) => {
+                const isTarget = option.value.toLowerCase() === item.answer.toLowerCase();
+                const state = revealed && isTarget
+                  ? 'correct'
+                  : tapped === option.value && !isTarget
+                    ? 'incorrect'
+                    : 'idle';
+                return (
+                  <button
+                    key={`${item.id}-${idx}`}
+                    onClick={() => handleLetterTap(option.value)}
+                    disabled={!runner.running || revealed}
+                    className={`
+                      w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold border-2
+                      transition-all duration-200 cursor-pointer
+                      ${answerStateClass(state)}
+                      ${state === 'idle' ? letterColor(option.value) : ''}
+                      ${revealed && isTarget ? 'ring-2 ring-emerald-400/40 scale-105' : ''}
+                    `}
+                  >
+                    {option.value.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          {!isPreReader && taskCue && (
-            <p className="text-slate-400 text-sm">{taskCue}</p>
-          )}
-        </div>
+        );
 
-        {/* Two keyword options as speaker bubbles with emoji */}
-        <div className="flex items-center justify-center gap-6 sm:gap-10">
-          {(currentChallenge.options || []).slice(0, 2).map((option, idx) => {
-            const keyword = option.sound || '';
-            const emoji = getKeywordEmoji(keyword);
-            const colorConfig = SPEAKER_COLORS[idx];
-            const isListened = listenedOption === idx;
-            const isSelected = selectedOption === idx;
-            const showCorrect = isLocked && option.isCorrect;
-            const showWrong = isSelected && feedbackType === 'error' && !option.isCorrect;
-
-            return (
-              <button
-                key={idx}
-                onClick={() => handleSpeakerTap(idx)}
-                disabled={isLocked}
-                className={`
-                  relative flex flex-col items-center justify-center gap-1.5
-                  w-28 h-28 sm:w-32 sm:h-32 rounded-2xl
-                  border-2 transition-all duration-300
-                  ${showCorrect
-                    ? `${answerStateClasses.correct} scale-110`
-                    : showWrong
-                      ? `${answerStateClasses.incorrect} scale-95`
-                      : isListened
-                        ? `${colorConfig.activeBg} ${colorConfig.activeBorder} ring-2 ${colorConfig.ring} scale-105`
-                        : `${colorConfig.bg} ${colorConfig.border} ${colorConfig.hoverBg} hover:scale-105`
-                  }
-                  ${isLocked ? 'cursor-default' : 'cursor-pointer'}
-                  disabled:opacity-70
-                `}
-              >
-                <span className="text-3xl">{emoji}</span>
-                {/* Pre-reader: wordless ear → pulsing check. Reader: 10px text. */}
-                {isListened && !isLocked && (
-                  isPreReader
-                    ? <KeepGlyph className="w-5 h-5 text-emerald-300" />
-                    : <span className="text-[10px] text-slate-400 animate-pulse">tap to choose</span>
-                )}
-                {!isListened && !isLocked && (
-                  isPreReader
-                    ? <EarGlyph className="w-5 h-5 text-slate-400" />
-                    : (
-                      <span className="text-[10px] text-slate-500">
-                        {/* When the audition step is withdrawn the first tap commits,
-                            so the affordance label must say so — never lie about the
-                            protocol. (Never reached at K: the lever is inert there.) */}
-                        {commitsOnFirstTap ? 'tap to choose' : 'tap to hear'}
-                      </span>
-                    )
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {!isPreReader && protocolCue && (
-          <p className="text-center text-xs text-slate-600">
-            {protocolCue}
-          </p>
-        )}
-      </div>
-    );
+      // ── Say the picture word that starts with this letter's sound ────────
+      case 'keyword-match':
+        return (
+          <div className="space-y-5">
+            {renderLetterCard(item)}
+            {/* Display only — the answer is SPOKEN. Nothing here is tappable,
+                and no word is printed until the tutor affirms. */}
+            <div className="flex items-center justify-center gap-6 sm:gap-10">
+              {item.options.map((option, idx) => {
+                const isTarget = option.value.toLowerCase() === item.answer.toLowerCase();
+                return (
+                  <div
+                    key={`${item.id}-${idx}`}
+                    className={`
+                      w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2
+                      flex flex-col items-center justify-center gap-1.5
+                      transition-all duration-200
+                      ${revealed && isTarget
+                        ? 'bg-emerald-500/20 border-emerald-400/50 ring-2 ring-emerald-400/40 scale-105'
+                        : 'bg-white/5 border-white/15'}
+                    `}
+                  >
+                    <span className="text-4xl">{option.emoji}</span>
+                    {revealed && isTarget && (
+                      <span className="text-sm font-bold text-emerald-200">{option.value}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+    }
   };
 
   // ============================================================================
-  // Main Render
+  // Main render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -1293,116 +507,67 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const modeMeta = MODE_META[currentItem?.mode ?? 'see-hear'];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-            {/* Pre-reader: hide adult chrome (group/mode badges) — rule 7. */}
-            {!isPreReader && (
-              <div className="flex items-center gap-2">
-                <LuminaBadge className="text-xs">
-                  Group {letterGroup}
-                </LuminaBadge>
-                {currentChallenge && (
-                  <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
-                    {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
-                  </LuminaBadge>
-                )}
-              </div>
-            )}
-          </div>
-          {!isPreReader && (
-            <LuminaChallengeCounter current={currentChallengeIndex + 1} total={challenges.length} />
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          {/* Pre-reader: hide adult chrome (group/mode badges) — rule 7. */}
+          {!isPreReader && !evaluation.hasSubmitted && currentItem && (
+            <div className="flex items-center gap-2">
+              <LuminaBadge className="text-xs">Group {letterGroup}</LuminaBadge>
+              <LuminaBadge accent={modeMeta.accent} className="text-xs">
+                {modeMeta.icon} {modeMeta.badge}
+              </LuminaBadge>
+            </div>
           )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress bar */}
-        <LuminaProgress
-          accent="blue"
-          value={((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}
-        />
-
-        {/* Challenge content */}
-        {!allChallengesComplete && currentChallenge && (
+        {!evaluation.hasSubmitted && (
           <>
-            {currentChallenge.mode === 'see-hear' && renderSeeHear()}
-            {currentChallenge.mode === 'hear-see' && renderHearSee()}
-            {currentChallenge.mode === 'keyword-match' && renderKeywordMatch()}
+            <div className="flex justify-center">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
+            </div>
+
+            {currentItem && renderChallenge(currentItem)}
+
+            {/* ONE start gesture: connect, open the mic, opening cue, arm.
+                A browser will not open a microphone without a gesture — never
+                per answer, never a push-to-talk button mid-challenge. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={runner.micState}
+                level={runner.micLevel}
+                isSupported={isSupported}
+                onStart={() => void runner.start()}
+                onCancel={runner.cancelListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{runner.statusLine}</p>
+            </div>
           </>
         )}
 
-        {/* Feedback */}
-        {feedback && (
-          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Culminating production beat — say the KEYWORD aloud. Once a challenge
-            is resolved, this IS the next step: a single prominent mic CTA, and a
-            successful spoken keyword auto-advances (no click). Next is a quiet skip. */}
-        {isLocked && !allChallengesComplete && currentChallenge && (
-          <div className="flex flex-col items-center gap-3">
-            {spokenWords.has(currentChallenge.id) ? (
-              // Said it → celebrate, then auto-glide to the next challenge (effect above)
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-emerald-300 text-base font-semibold">
-                  {'🎉'} You said “{currentChallenge.keywordWord}” out loud!
-                </span>
-                <span className="text-slate-500 text-xs">Next one coming up…</span>
-              </div>
-            ) : spokenCapture.isSupported ? (
-              // Mic available → the say-it beat is the PRIMARY next step
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-slate-300 text-sm font-medium">
-                  Your turn — say “{currentChallenge.keywordWord}”!
-                </p>
-                <div className="flex items-center justify-center gap-3 flex-wrap min-h-[52px]">
-                  <LuminaMicListener
-                    state={spokenCapture.state}
-                    level={spokenCapture.level}
-                    isSupported={spokenCapture.isSupported}
-                    onStart={() => void spokenCapture.start()}
-                    onCancel={spokenCapture.cancel}
-                    size="sm"
-                    idleLabel={`Say “${currentChallenge.keywordWord}”!`}
-                    listeningLabel={`Say “${currentChallenge.keywordWord}”!`}
-                  />
-                </div>
-                {/* Quiet skip — never traps a student who can't or won't speak */}
-                {spokenCapture.state === 'idle' && (
-                  <button
-                    onClick={handleNextChallenge}
-                    className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
-                  >
-                    {currentChallengeIndex < challenges.length - 1 ? 'Skip →' : 'Skip to finish →'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              // No mic → original prominent Next / Finish
-              <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-              </LuminaActionButton>
-            )}
-          </div>
-        )}
-
-        {/* Completion summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Letter-Sound Link Complete!"
-            celebrationMessage={`Great job connecting letters to their sounds!${spokenWords.size > 0 ? ` You said ${spokenWords.size} keyword${spokenWords.size > 1 ? 's' : ''} out loud — amazing!` : ''}`}
-            className="mb-6"
+            celebrationMessage={`You worked on ${items.length} letter sounds with your own voice!`}
+            className="mt-4"
           />
         )}
       </LuminaCardContent>

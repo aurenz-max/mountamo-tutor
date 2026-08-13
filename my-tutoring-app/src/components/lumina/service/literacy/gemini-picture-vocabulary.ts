@@ -241,8 +241,17 @@ interface SubPool {
 
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Single token, no spaces, 2-12 chars. */
-const isValidWordToken = (w: string): boolean => /^\S{2,12}$/.test(w) && !/\s/.test(w);
+/** Single token, no spaces, 2-12 chars. "yes" is refused everywhere: a base
+ *  word spoken as its own sentence ("Yes. Your turn…") would open the ask with
+ *  the DI affirm sentinel and the verdict scan would misread it (standing
+ *  gate 2 — see pictureVocabularyScript.ts). */
+const isValidWordToken = (w: string): boolean =>
+  /^\S{2,12}$/.test(w) && !/\s/.test(w) && w.toLowerCase() !== 'yes';
+
+/** DI sentinel guard for full generated sentences: no sentence the tutor may
+ *  speak may OPEN with "yes" or "my turn" (sentence-scoped verdict scan). */
+const opensWithSentinel = (text: string): boolean =>
+  /(?:^|[.!?])\s*["']?\s*(?:yes\b|my\s+turn\b)/i.test(text);
 
 /**
  * PROMPT LAW (code-enforced): frames may never contain the target word — the
@@ -270,6 +279,10 @@ const normalizeFrames = (
   const target = word.toLowerCase();
   if (display.toLowerCase().includes(target)) return null;
   if (spoken.toLowerCase().includes(target)) return null;
+
+  // The tutor SPEAKS frameSpoken inside a judged cue — a sentence opening with
+  // an affirm/correct sentinel would be misread as a verdict.
+  if (opensWithSentinel(display) || opensWithSentinel(spoken)) return null;
 
   return { frameDisplay: display, frameSpoken: spoken };
 };
@@ -525,8 +538,13 @@ const buildOptions = (
 };
 
 /**
- * Build one challenge of the given type from `entry`, drawing distractors from
- * `pool`. Returns null when distractors can't be assembled.
+ * Build one challenge of the given type from `entry`.
+ *
+ * DI PORT (2026-08-11): option cards exist ONLY on the two tap modes
+ * (receptive_match, association) — for the four SPOKEN modes a printed option
+ * list is an answer leak (word-flip's chips ruling), so no options are built
+ * at all, which also frees those modes from the 3-distractor pool floor.
+ * Both tap modes render emoji-only cards, so their emojis must be distinct.
  */
 const buildChallenge = (
   type: PictureVocabChallengeType,
@@ -537,25 +555,13 @@ const buildChallenge = (
 
   if (type === 'opposite') {
     if (!hasValidOpposite(entry)) return null;
-    const target: PictureVocabOption = { word: entry.oppositeWord!, emoji: entry.oppositeEmoji! };
-    // Distractor candidates: other entries' words AND their opposites.
-    const candidates: PictureVocabOption[] = others.flatMap(e => {
-      const c: PictureVocabOption[] = [{ word: e.word, emoji: e.emoji }];
-      if (hasValidOpposite(e)) c.push({ word: e.oppositeWord!, emoji: e.oppositeEmoji! });
-      return c;
-    });
-    const options = buildOptions(target, candidates, {
-      distinctEmojis: false,
-      // The base word is the classic error — always seat it as a distractor.
-      forcedDistractors: [{ word: entry.word, emoji: entry.emoji }],
-    });
-    if (!options) return null;
+    // Spoken mode — no option cards. The base word survives as the signature
+    // error NAMED IN THE JUDGING CONTRACT, not as a printed distractor.
     return {
       id: 'pv-pending',
       type,
       word: entry.oppositeWord!,
       emoji: entry.oppositeEmoji!,
-      options,
       baseWord: entry.word,
       baseEmoji: entry.emoji,
     };
@@ -570,8 +576,9 @@ const buildChallenge = (
       if (hasValidAssociation(e)) c.push({ word: e.relatedWord!, emoji: e.relatedEmoji! });
       return c;
     });
-    // No forced base distractor: the prompt object itself is never a valid "goes-with" answer.
-    const options = buildOptions(target, candidates, { distinctEmojis: false });
+    // Emoji-only cards (tap answer) → emojis must be distinct. No forced base
+    // distractor: the prompt object itself is never a valid "goes-with" answer.
+    const options = buildOptions(target, candidates, { distinctEmojis: true });
     if (!options) return null;
     return {
       id: 'pv-pending',
@@ -586,27 +593,26 @@ const buildChallenge = (
 
   if (type === 'sentence_frame') {
     if (!entry.frameDisplay || !entry.frameSpoken) return null;
-    const target: PictureVocabOption = { word: entry.word, emoji: entry.emoji };
-    const options = buildOptions(target, others.map(e => ({ word: e.word, emoji: e.emoji })), {
-      distinctEmojis: false,
-    });
-    if (!options) return null;
+    // Spoken mode — no option cards.
     return {
       id: 'pv-pending',
       type,
       word: entry.word,
       emoji: entry.emoji,
-      options,
       frameDisplay: entry.frameDisplay,
       frameSpoken: entry.frameSpoken,
     };
   }
 
-  // receptive_match | naming
+  if (type === 'naming') {
+    // Spoken mode — no option cards.
+    return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji };
+  }
+
+  // receptive_match — emoji-only tap cards, emojis must be distinct.
   const target: PictureVocabOption = { word: entry.word, emoji: entry.emoji };
   const options = buildOptions(target, others.map(e => ({ word: e.word, emoji: e.emoji })), {
-    // receptive_match renders emoji-only cards → emojis must be distinct.
-    distinctEmojis: type === 'receptive_match',
+    distinctEmojis: true,
   });
   if (!options) return null;
   return { id: 'pv-pending', type, word: entry.word, emoji: entry.emoji, options };
@@ -647,31 +653,23 @@ const assembleSingleMode = (
 };
 
 /**
- * Build one gradable-scale challenge: blank the `targetIndex` rung, draw the 4
- * options from the scale's OWN rungs (the natural confusables) first, padding
- * from other scales only if the scale is short. Emoji='' on options (word-only
- * cards); challenge.emoji is the concept emoji, used only in the success line.
+ * Build one gradable-scale challenge: blank the `targetIndex` rung. SPOKEN
+ * mode — no option cards. (The old word chips were also solvable by
+ * elimination: every same-scale distractor was already PRINTED on the scale,
+ * so the one option not on screen was the answer with no gradient reasoning —
+ * a costume the DI port deletes along with the leak.)
  */
 const buildGradableChallenge = (
   scale: GradableScale,
   targetIndex: number,
-  otherScales: GradableScale[],
 ): PictureVocabChallenge | null => {
   const words = scale.words;
   if (targetIndex < 0 || targetIndex >= words.length) return null;
-  const target: PictureVocabOption = { word: words[targetIndex], emoji: '' };
-  const sameScale: PictureVocabOption[] = words
-    .filter((_, i) => i !== targetIndex)
-    .map(w => ({ word: w, emoji: '' }));
-  const padPool: PictureVocabOption[] = otherScales.flatMap(s => s.words.map(w => ({ word: w, emoji: '' })));
-  const options = buildOptions(target, [...sameScale, ...shuffle(padPool)], { distinctEmojis: false });
-  if (!options) return null;
   return {
     id: 'pv-pending',
     type: 'gradable_scale',
     word: words[targetIndex],
     emoji: scale.emoji,
-    options,
     scaleWords: words,
     scaleTargetIndex: targetIndex,
   };
@@ -690,17 +688,15 @@ const assembleGradable = (scales: GradableScale[]): PictureVocabChallenge[] => {
 
   for (const scale of shuffled) {
     if (challenges.length === 5) break;
-    const others = shuffled.filter(s => s !== scale);
-    const ch = buildGradableChallenge(scale, interiorIndex(scale.words.length), others);
+    const ch = buildGradableChallenge(scale, interiorIndex(scale.words.length));
     if (ch) challenges.push(ch);
   }
   // Thin pool: reuse scales with a shifted target rung to reach 5 (best-effort).
   let guard = 0;
   while (challenges.length < 5 && shuffled.length > 0 && guard < 20) {
     const scale = shuffled[guard % shuffled.length];
-    const others = shuffled.filter(s => s !== scale);
     const idx = (interiorIndex(scale.words.length) + guard) % scale.words.length;
-    const ch = buildGradableChallenge(scale, idx, others);
+    const ch = buildGradableChallenge(scale, idx);
     if (ch) challenges.push(ch);
     guard += 1;
   }
@@ -1045,7 +1041,9 @@ export const generatePictureVocabulary = async (
     const challenges = assembled.map((ch, i) => {
       const remediationMove = pictureVocabularyRemediationMoveFor(ch.type, ctx.remediationFocus);
       let options = ch.options;
-      if (remediationMove === 'relation_contrast' && ch.baseWord && ch.baseEmoji
+      // relation_contrast seats the prompt object itself as a card (the classic
+      // "matches the prompt" error) — only tap modes carry cards at all.
+      if (remediationMove === 'relation_contrast' && options && ch.baseWord && ch.baseEmoji
           && !options.some((option) => option.word === ch.baseWord)) {
         const targetIndex = options.findIndex((option) => option.word === ch.word);
         const replaceIndex = options.findIndex((_, index) => index !== targetIndex);
@@ -1055,7 +1053,7 @@ export const generatePictureVocabulary = async (
       }
       return {
         ...ch,
-        options,
+        ...(options ? { options } : {}),
         id: `pv-${i + 1}`,
         ...(remediationMove ? { remediationMove } : {}),
       };

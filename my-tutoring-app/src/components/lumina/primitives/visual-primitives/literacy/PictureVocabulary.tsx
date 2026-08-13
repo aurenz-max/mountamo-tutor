@@ -1,17 +1,44 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * PictureVocabulary — DI modality (fifth literacy port, 2026-08-11; FIRST
+ * literacy consumer of useJudgedScriptRunner). The Live tutor owns the clock
+ * in every mode: it asks, waits, judges, corrects contrastively, and its OWN
+ * verdict is the advance. There is no advance timer, no push-to-talk mic, no
+ * Next button and no answer chips anywhere in this file.
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - naming / opposite / gradable_scale / sentence_frame: the answer is
+ *    SPOKEN into an open mic and judged by the tutor from the audio in-band.
+ *    The old 4-chip "support net" printed the answer for any Grade-1 reader
+ *    (word-flip's chips, a third time) and is deleted.
+ *  - receptive_match / association: the answer is a TAP on emoji-only picture
+ *    cards. Receptive identification is a real 1-in-4 selection skill, and
+ *    association PRODUCTION is an open spoken set ("what goes with sock" —
+ *    shoe, foot, laundry are all honest), a BLOCKED response class — so the
+ *    cards close the set while the relation stays the skill. The tap commits
+ *    through the gesture anchor; the tutor's verdict is the advance.
+ *
+ * DELETED from the click-driven version: the Start with Voice / Start
+ * tap-only fork and the whole voiceMode axis, the 4-option word chips and
+ * "Show me choices", MAX_WRONG_TAPS and the reveal-after-3 ladder, the
+ * 1600ms auto-advance timer, Next/Finish buttons, the word-match voice-answer
+ * beat, and every sendText choreography block — the pack's cues carry the
+ * entire spoken surface (`pictureVocabularyScript.ts`).
+ *
+ * ANSWER-LEAK RULE: the target word appears on screen only after the tutor
+ * has affirmed (or, spoken by the tutor, inside a scripted correction).
+ * Tap-to-hear re-speaks the QUESTION, never the answer.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
   LuminaChallengeCounter,
-  LuminaProgress,
-  LuminaFeedbackCard,
   LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
@@ -21,25 +48,37 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { PictureVocabularyMetrics } from '../../../evaluation/types';
-import type { DiagnosisEvidence } from '../../../evaluation/diagnosis/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useVoiceAnswer, type SpokenJudgeResult } from '../../../hooks/useVoiceAnswer';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  itemCue,
+  itemFromChallenge,
+  moveOnCue,
+  pickModelOppositePair,
+  pronounceCue,
+  scaleSpokenFor,
+  stimulusFor,
+  tapVerdictCue,
+  type PictureVocabItem,
+} from './pictureVocabularyScript';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
 export type PictureVocabChallengeType =
-  | 'receptive_match'   // tutor says the word → student taps the picture
-  | 'naming'            // student sees the picture → says the word
-  | 'opposite'          // student sees a word+picture → says its opposite
-  | 'association'       // student sees a word+picture → says the thing that GOES WITH it (sock→shoe)
-  | 'gradable_scale'    // student sees an ordered gradient with one rung blank → says the missing rung
-  | 'sentence_frame';   // tutor voices a sentence with a blank → student says the missing word
+  | 'receptive_match'   // tutor says the word → student taps the picture (gesture)
+  | 'naming'            // student sees the picture → says the word (spoken)
+  | 'opposite'          // student sees a word+picture → says its opposite (spoken)
+  | 'association'       // student sees a word+picture → taps what GOES WITH it (gesture)
+  | 'gradable_scale'    // ordered gradient with one rung blank → says the missing rung (spoken)
+  | 'sentence_frame';   // tutor voices a sentence with a blank → says the missing word (spoken)
 
 export interface PictureVocabOption {
   word: string;
@@ -53,9 +92,11 @@ export interface PictureVocabChallenge {
   word: string;
   /** Picture (emoji) of the target word. Never shown pre-solve in sentence_frame mode. */
   emoji: string;
-  /** Exactly 4 options (includes the target once). Used for receptive taps and as the spoken-mode fallback. */
-  options: PictureVocabOption[];
-  // -- opposite mode --
+  /** TAP MODES ONLY (receptive_match, association): exactly 4 emoji-distinct
+   *  cards including the target once. Spoken modes carry none — a printed
+   *  option list is an answer leak. */
+  options?: PictureVocabOption[];
+  // -- opposite / association --
   baseWord?: string;
   baseEmoji?: string;
   // -- sentence_frame mode --
@@ -63,8 +104,6 @@ export interface PictureVocabChallenge {
   frameDisplay?: string;
   /** What the tutor says aloud. Must NOT contain the target word. */
   frameSpoken?: string;
-  // -- association mode --
-  // reuses baseWord/baseEmoji (the prompt object shown) + word/emoji (the partner = the answer).
   // -- gradable_scale mode --
   /** Ordered rung words on the gradient, e.g. ['freezing','cold','cool','warm','hot']. */
   scaleWords?: string[];
@@ -101,42 +140,14 @@ interface PictureVocabularyProps {
 // Constants
 // ============================================================================
 
-const PHASE_CONFIG: Record<string, PhaseConfig> = {
-  receptive_match: { label: 'Listen & Find', icon: '👂', accentColor: 'blue' },
-  naming: { label: 'Say It', icon: '🎙️', accentColor: 'emerald' },
-  association: { label: 'Goes Together', icon: '🧩', accentColor: 'pink' },
-  opposite: { label: 'Opposites', icon: '🔁', accentColor: 'amber' },
-  sentence_frame: { label: 'Finish the Sentence', icon: '💬', accentColor: 'purple' },
-  gradable_scale: { label: 'Word Scale', icon: '🎚️', accentColor: 'cyan' },
+const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string; accent: LuminaAccent; prompt: string }> = {
+  receptive_match: { badge: 'Listen & Find', icon: '👂', accent: 'blue', prompt: 'Listen… then tap the picture!' },
+  naming: { badge: 'Say It', icon: '🎙️', accent: 'emerald', prompt: 'What is this? Say it out loud!' },
+  opposite: { badge: 'Opposites', icon: '🔁', accent: 'amber', prompt: 'What’s the opposite? Say it!' },
+  association: { badge: 'Goes Together', icon: '🧩', accent: 'pink', prompt: 'Tap the picture that goes with it!' },
+  gradable_scale: { badge: 'Word Scale', icon: '🎚️', accent: 'cyan', prompt: 'Which word is missing? Say it!' },
+  sentence_frame: { badge: 'Finish the Sentence', icon: '💬', accent: 'purple', prompt: 'Say the missing word!' },
 };
-
-const MODE_META: Record<PictureVocabChallengeType, { badge: string; icon: string; accent: LuminaAccent }> = {
-  receptive_match: { badge: 'Listen & Find', icon: '👂', accent: 'blue' },
-  naming: { badge: 'Say It', icon: '🎙️', accent: 'emerald' },
-  association: { badge: 'Goes Together', icon: '🧩', accent: 'pink' },
-  opposite: { badge: 'Opposites', icon: '🔁', accent: 'amber' },
-  sentence_frame: { badge: 'Finish the Sentence', icon: '💬', accent: 'purple' },
-  gradable_scale: { badge: 'Word Scale', icon: '🎚️', accent: 'cyan' },
-};
-
-const MAX_WRONG_TAPS = 3;
-
-function describeVocabularyChallenge(ch: PictureVocabChallenge): string {
-  if (ch.type === 'opposite') return `Produce the opposite of "${ch.baseWord}".`;
-  if (ch.type === 'association') return `Produce a word that naturally goes with "${ch.baseWord}".`;
-  if (ch.type === 'sentence_frame') return `Complete the sentence frame: ${ch.frameDisplay}`;
-  if (ch.type === 'gradable_scale') {
-    const visible = (ch.scaleWords ?? []).map((word, index) => index === ch.scaleTargetIndex ? '____' : word);
-    return `Name the missing word in the ordered scale: ${visible.join(' → ')}.`;
-  }
-  if (ch.type === 'naming') return `Name the pictured vocabulary item ${ch.emoji}.`;
-  return `Choose the picture matching the spoken vocabulary word.`;
-}
-const AUTO_ADVANCE_MS = 1600;
-
-const isSpokenMode = (t: PictureVocabChallengeType | undefined) =>
-  t === 'naming' || t === 'opposite' || t === 'association'
-  || t === 'gradable_scale' || t === 'sentence_frame';
 
 // ============================================================================
 // Component
@@ -154,62 +165,27 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     onEvaluationSubmit,
   } = data;
 
-  const gradeLevel = data.gradeLevel ?? 'K';
-
-  // ── Activity gate + session voice consent ─────────────────────
-  const [hasStarted, setHasStarted] = useState(false);
-  // 'auto' = conversational voice-activity mode (session-level opt-in from the
-  // start screen — THE consent gesture). 'off' = tap-only.
-  const [voiceMode, setVoiceMode] = useState<'auto' | 'off'>('off');
-
-  // ── Interaction state (reset per challenge) ────────────────────
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [spokenMatched, setSpokenMatched] = useState(false);
-  const [choicesRevealed, setChoicesRevealed] = useState(false);
-  const [spokenMisses, setSpokenMisses] = useState(0);
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-
-  // Session-level spoken metrics
-  const [spokenWords, setSpokenWords] = useState<Set<string>>(new Set());
-  const [totalSpokenMisses, setTotalSpokenMisses] = useState(0);
-
-  const startTimeRef = useRef(Date.now());
-  const recordedRef = useRef(false);
-  const diagnosisObservationsRef = useRef<Array<DiagnosisEvidence & { challengeId: string }>>([]);
+  const gradeLevel = data.gradeLevel ?? 'kindergarten';
 
   const stableInstanceIdRef = useRef(instanceId || `picture-vocabulary-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Shared challenge progress ──────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  // ── Items + the code-owned opposite model pair ─────────────────────────────
+  const items = useMemo<PictureVocabItem[]>(
+    () => challenges.map(itemFromChallenge),
+    [challenges],
+  );
+  const modelPair = useMemo(() => pickModelOppositePair(items), [items]);
 
-  const currentChallenge = challenges[currentIndex];
+  // ── Per-item stage state ───────────────────────────────────────────────────
+  /** The tapped card's word (gesture modes) — cleared on retry and item open. */
+  const [tapped, setTapped] = useState<string | null>(null);
+  const tappedRef = useRef<string | null>(null);
+  /** Affirmed: the first moment the answer may appear on screen. */
+  const [revealed, setRevealed] = useState(false);
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_CONFIG,
-  });
-
-  // ── Evaluation ─────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<PictureVocabularyMetrics>({
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<PictureVocabularyMetrics>({
     primitiveType: 'picture-vocabulary',
     instanceId: resolvedInstanceId,
     skillId,
@@ -219,533 +195,272 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const [submittedScore, setSubmittedScore] = useState<number | null>(null);
-
-  // ── Shuffle options once per challenge ─────────────────────────
-  const shuffledOptions = useMemo(() => {
-    if (!currentChallenge?.options) return [];
-    return [...currentChallenge.options].sort(() => Math.random() - 0.5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge?.id]);
-
-  // ── AI tutoring ────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type,
-    currentChallengeIndex: currentIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    voiceMode,
-  }), [currentChallenge?.type, currentIndex, challenges.length, currentAttempts, voiceMode]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'picture-vocabulary',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
-  });
-
-  // ── Challenge intros (quiet-by-default elicitation) ────────────
-  // PRINCIPLE: less is more. In a spoken session the tutor's voice should be
-  // RARE, not per-round. We set the game frame ONCE up front, then the tutor
-  // speaks on a round ONLY to deliver audio the screen can't give a pre-reader:
-  // the word to TAP (receptive), the base word (opposite), or the sentence to
-  // finish. Naming is fully self-evident on screen → the tutor stays SILENT and
-  // lets the picture + on-screen prompt + live mic carry it.
-  //
-  // PROMPT LAW: for spoken modes the tutor must NEVER speak the target word —
-  // the mic is OPEN while the tutor talks (decoupled from tutor state by
-  // design: a missed student answer is worse than tutor bleed, which can only
-  // land as no-match/unclear). The bracketed instructions below (and the
-  // catalog aiDirectives) enforce this.
-  const sendChallengeIntro = useCallback((ch: PictureVocabChallenge, isFirst: boolean) => {
-    if (isFirst) {
-      // One warm sentence that sets up the WHOLE game, then start the first item.
-      const frame =
-        `[ACTIVITY_START] Picture vocabulary — ${challenges.length} quick pictures. `
-        + `Give ONE short, warm sentence to set it up (e.g. "Let's look at some pictures — when each one pops up, just say what it is!"), then start the first one. Keep it brief. `;
-      switch (ch.type) {
-        case 'receptive_match':
-          sendText(frame + `First: say "Find the ${ch.word}!" clearly — the student answers by TAPPING (you MAY say "${ch.word}").`, { silent: true });
-          break;
-        case 'naming':
-          sendText(frame + `First: a picture is on screen. Ask ONE short "What is this? Say it!" then be SILENT and wait. NEVER say "${ch.word}". The mic is live.`, { silent: true });
-          break;
-        case 'opposite':
-          sendText(frame + `First: the screen shows "${ch.baseWord}". Ask "What's the opposite of ${ch.baseWord}?" then be SILENT and wait. NEVER say "${ch.word}". The mic is live.`, { silent: true });
-          break;
-        case 'association':
-          sendText(frame + `First: the screen shows "${ch.baseWord}". Ask "What goes with ${ch.baseWord}?" then be SILENT and wait. NEVER say "${ch.word}". The mic is live.`, { silent: true });
-          break;
-        case 'gradable_scale': {
-          const spokenScale = (ch.scaleWords ?? []).map((w, i) => i === ch.scaleTargetIndex ? 'hmm' : w).join(', ');
-          sendText(frame + `First: read the scale in order, the blank spoken as "hmm": "${spokenScale}" — then ask "Which word is missing? Say it!" and be SILENT and wait. NEVER say "${ch.word}". The mic is live.`, { silent: true });
-          break;
-        }
-        case 'sentence_frame':
-          sendText(frame + `First: say this sentence, pausing at the blank: "${ch.frameSpoken ?? ch.frameDisplay}" — then be SILENT and wait. NEVER say "${ch.word}". The mic is live.`, { silent: true });
-          break;
-      }
-      return;
-    }
-    // Subsequent rounds: speak ONLY to deliver content the screen can't convey.
-    switch (ch.type) {
-      case 'receptive_match':
-        // Mechanism — the student taps what you name.
-        sendText(`[NEXT_WORD] Say only: "Find the ${ch.word}." The student taps (you MAY say "${ch.word}").`, { silent: true });
-        break;
-      case 'naming':
-        // Self-evident on screen → stay SILENT. The picture + live mic do the work.
-        break;
-      case 'opposite':
-        // Base OBJECT is shown as an emoji and the ch1 framing established the task,
-        // so stay SILENT — voicing a per-round cue talks over the student and stalls
-        // the mic (same collision as association/naming). The live mic carries it.
-        break;
-      case 'association':
-        // Self-evident on screen — the base OBJECT is shown as an emoji (like naming's
-        // picture), so the tutor stays SILENT. This also avoids colliding the tutor's
-        // audio playback with the judge mic arming on the same challenge, which stalled
-        // capture (the "Goes Together" challenge-2 block). The live mic carries it.
-        break;
-      case 'gradable_scale': {
-        // The scale must be heard; speak the blank as "hmm" so the answer is never voiced.
-        const spokenScale = (ch.scaleWords ?? []).map((w, i) => i === ch.scaleTargetIndex ? 'hmm' : w).join(', ');
-        sendText(`[NEXT_WORD] Read the scale, blank as "hmm": "${spokenScale}". NEVER say "${ch.word}". Then be silent — the mic is live.`, { silent: true });
-        break;
-      }
-      case 'sentence_frame':
-        // The sentence IS the content and must be heard.
-        sendText(`[NEXT_WORD] Say the sentence, pausing at the blank: "${ch.frameSpoken ?? ch.frameDisplay}". NEVER say "${ch.word}". Then be silent — the mic is live.`, { silent: true });
-        break;
-    }
-  }, [challenges.length, sendText]);
-
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!hasStarted || !isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendChallengeIntro(currentChallenge, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasStarted, isConnected, currentChallenge]);
-
-  useEffect(() => {
-    if (!currentChallenge || !isConnected || !hasIntroducedRef.current) return;
-    if (currentIndex === 0) return;
-    sendChallengeIntro(currentChallenge, false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex]);
-
-  // ── Complete current challenge (stale-state guarded) ───────────
-  const completeCurrentChallenge = useCallback((correct: boolean, viaSpoken: boolean) => {
-    if (!currentChallenge || recordedRef.current) return;
-    recordedRef.current = true;
-    const wrongTaps = currentAttempts;
-    const score = correct ? Math.max(25, 100 - wrongTaps * 25) : 0;
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct,
-      attempts: wrongTaps + 1,
-      score,
-      ...(viaSpoken ? { spoken: true } : {}),
-    });
-  }, [currentChallenge, currentAttempts, recordResult]);
-
-  // ── Spoken turn (the conversational beat) ──────────────────────
-  const spokenActive =
-    hasStarted && !showSummary && !showResult && !spokenMatched
-    && voiceMode === 'auto' && isSpokenMode(currentChallenge?.type);
-
-  // DESIGN LAW: the tutor NEVER speaks in response to a miss, an unclear catch,
-  // or silence. The mic is open and decoupled from tutor state, so any coaching
-  // audio here plays straight over a student who is still thinking or already
-  // forming their next try — worst on opposite/association, where the answer
-  // takes the longest to reach. The always-visible tap choices ARE the support
-  // net; the tutor stays quiet and lets the student's voice have the floor.
-  const handleSpokenResult = useCallback((result: SpokenJudgeResult) => {
-    if (!currentChallenge || showResult || spokenMatched) return;
-    if (result.outcome === 'match') {
-      SoundManager.playCorrect();
-      setSpokenMatched(true);
-      setShowResult(true);
-      setSpokenWords(prev => new Set(Array.from(prev).concat(currentChallenge.id)));
-      setFeedback(`You said "${currentChallenge.word}"! ${currentChallenge.emoji}`);
-      setFeedbackType('success');
-      completeCurrentChallenge(true, true);
-      // Quiet-by-default: the happy SFX + on-screen feedback + auto-advance carry
-      // a routine success. The tutor speaks up ONLY for a moment that earns it —
-      // the FIRST time the student uses their voice, or a comeback after a miss.
-      const firstVoice = spokenWords.size === 0;
-      const recovered = spokenMisses > 0;
-      if (firstVoice || recovered) {
-        sendText(
-          `[SPOKEN_MATCH] Student said "${currentChallenge.word}" out loud`
-          + (firstVoice ? ' — their FIRST spoken answer' : ' after trying again')
-          + `! ONE short, joyful sentence (you may say the word now). Then STOP.`,
-          { silent: true },
-        );
-      }
-    } else if (result.outcome === 'no-match' && result.verdict?.heard) {
-      // Heard a real but wrong word. Stay silent — the choices are already on
-      // screen as a support net, and the mic keeps listening for another try.
-      setSpokenMisses(m => m + 1);
-      setTotalSpokenMisses(t => t + 1);
-      diagnosisObservationsRef.current.push({
-        challengeId: currentChallenge.id,
-        challengeSummary: describeVocabularyChallenge(currentChallenge),
-        expected: `Produce the vocabulary word "${currentChallenge.word}".`,
-        observed: `Said "${result.verdict.heard}".`,
-        judgeFeedback: result.verdict.misconception ?? result.verdict.reasoning,
-      });
-      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
-    } else {
-      // Mic didn't catch a clear word (silence/noise). Stay silent and keep
-      // listening; a spoken "say it again" here just talks over the student.
-      setSpokenMisses(m => m + 1);
-    }
-  }, [currentChallenge, showResult, spokenMatched, spokenWords, spokenMisses, completeCurrentChallenge, sendText]);
-
-  const handleNoSpeech = useCallback(() => {
-    if (!currentChallenge || showResult || spokenMatched) return;
-    // The student went quiet — almost always still thinking (opposites and
-    // associations take a beat). The tutor stays silent and the mic keeps
-    // listening; the choices are already visible if they'd rather tap.
-  }, [currentChallenge, showResult, spokenMatched]);
-
-  // Open-mic persistence on the useVoiceCapture engine (migrated off the
-  // deprecated useSpokenTurn window loop): while spokenActive the mic is
-  // simply hot — no silence strikes, no re-arm windows. Stale verdicts are
-  // dropped by the hook (target word frozen per utterance), the honest
-  // 'opening' orb state flows through LuminaMicListener, and the global
-  // auto-listen switch (navbar/Ctrl+M) is enforced by the engine.
-  const spokenTurn = useVoiceAnswer({
-    targetWord: currentChallenge?.word ?? '',
-    gradeLevel,
-    active: spokenActive,
-    onResult: handleSpokenResult,
-    onNoSpeech: handleNoSpeech,
-  });
-  // Ref so handleNext (declared before spokenTurn is in scope for its deps) can cancel.
-  const spokenTurnRef = useRef<typeof spokenTurn | null>(null);
-  spokenTurnRef.current = spokenTurn;
-
-  // ── Tap path (receptive mode + fallback for spoken modes) ──────
-  const handleOptionTap = useCallback((idx: number) => {
-    if (!currentChallenge || showResult) return;
-    const option = shuffledOptions[idx];
-    if (!option) return;
-    setSelectedIndex(idx);
-
-    if (option.word === currentChallenge.word) {
-      SoundManager.playCorrect();
-      setShowResult(true);
-      setFeedback(`Yes! ${currentChallenge.emoji} "${currentChallenge.word}"!`);
-      setFeedbackType('success');
-      completeCurrentChallenge(true, false);
-      // Quiet-by-default: SFX + on-screen feedback carry a routine correct tap.
-      // No tutor chatter — the session celebration ([ALL_COMPLETE]) covers the win.
-    } else {
-      diagnosisObservationsRef.current.push({
-        challengeId: currentChallenge.id,
-        challengeSummary: describeVocabularyChallenge(currentChallenge),
-        expected: `Choose the vocabulary word "${currentChallenge.word}".`,
-        observed: `Chose "${option.word}".`,
-      });
-      diagnosisObservationsRef.current = diagnosisObservationsRef.current.slice(-8);
-      SoundManager.playIncorrect();
-      incrementAttempts();
-      setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 500);
-      setSelectedIndex(null);
-      setFeedback(`Hmm, not that one. Try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student tapped "${option.word}" — incorrect (attempt ${currentAttempts + 1}). Give a tiny hint without saying "${currentChallenge.word}".`,
-        { silent: true },
-      );
-      if (currentAttempts + 1 >= MAX_WRONG_TAPS) {
-        setTimeout(() => {
-          setShowResult(true);
-          setFeedback(`It's ${currentChallenge.emoji} "${currentChallenge.word}"!`);
-          setFeedbackType('success');
-          completeCurrentChallenge(false, false);
-          sendText(
-            `[ANSWER_REVEALED] Out of tries — the answer "${currentChallenge.word}" is now shown. Say it warmly and move on. No shame.`,
-            { silent: true },
-          );
-        }, 900);
-      }
-    }
-  }, [currentChallenge, showResult, shuffledOptions, currentAttempts, incrementAttempts, completeCurrentChallenge, sendText]);
-
-  // ── Advance / submit ───────────────────────────────────────────
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalCount = challenges.length;
-    const totalAttempts = challengeResults.reduce((sum, r) => sum + r.attempts, 0);
-    const firstTryCount = challengeResults.filter(r => r.correct && r.attempts <= 1).length;
-    const overallPct = totalCount > 0
-      ? Math.round(challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0) / totalCount)
-      : 0;
-    const elapsed = Date.now() - startTimeRef.current;
-
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
     const metrics: PictureVocabularyMetrics = {
       type: 'picture-vocabulary',
       challengeType: data.challengeType,
-      totalChallenges: totalCount,
-      correctCount,
-      attemptsCount: totalAttempts,
-      firstTryCount,
-      hintsViewed: 0,
-      overallAccuracy: overallPct,
-      averageAttemptsPerChallenge: totalCount > 0 ? totalAttempts / totalCount : 0,
+      totalChallenges: challenges.length,
+      correctCount: summary.solvedCount,
+      attemptsCount: summary.attemptsCount,
+      firstTryCount: summary.firstTryCount,
+      hintsViewed: summary.hearTaps,
+      overallAccuracy: summary.accuracy,
+      averageAttemptsPerChallenge: challenges.length > 0
+        ? summary.attemptsCount / challenges.length
+        : 0,
     };
-    const latest = diagnosisObservationsRef.current.at(-1);
-    const diagnosisEvidence: DiagnosisEvidence | undefined = overallPct < 60 && latest ? {
-      challengeSummary: latest.challengeSummary,
-      expected: latest.expected,
-      observed: latest.observed,
-      judgeFeedback: latest.judgeFeedback,
-      priorAttempts: diagnosisObservationsRef.current.slice(0, -1).map((item) => ({
-        challenge: item.challengeSummary,
-        observed: item.observed,
-      })),
-    } : undefined;
-
-    setSubmittedScore(overallPct);
-    submitEvaluation(overallPct >= 60, overallPct, metrics, {
-      durationMs: elapsed,
-      challengeResults,
-      spokenWords: Array.from(spokenWords),
-      spokenMisses: totalSpokenMisses,
-      voiceMode,
-    }, undefined, diagnosisEvidence);
-
-    const spokenCount = spokenWords.size;
-    const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}%`).join(', ');
-    sendText(
-      `[ALL_COMPLETE] All ${totalCount} done! Scores: ${phaseScoreStr}. Overall ${overallPct}%. `
-      + `${spokenCount > 0 ? `The student SAID ${spokenCount} word${spokenCount === 1 ? '' : 's'} out loud — celebrate that especially. ` : ''}`
-      + `Short celebration, then STOP.`,
-      { silent: true },
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
     );
-  }, [
-    hasSubmittedEvaluation, challengeResults, challenges.length, data.challengeType,
-    phaseResults, spokenWords, totalSpokenMisses, voiceMode, submitEvaluation, sendText,
-  ]);
+  }, [challenges.length, data.challengeType, evaluation]);
 
-  const handleNext = useCallback(() => {
-    spokenTurnRef.current?.cancel(); // never carry a live mic across challenges
-    if (!advanceProgress()) {
-      submitFinalEvaluation();
-      setShowSummary(true);
-    }
-  }, [advanceProgress, submitFinalEvaluation]);
+  // ── The pack — wording lives in pictureVocabularyScript.ts ────────────────
+  const pack = useMemo<JudgedScriptPack<PictureVocabItem>>(() => ({
+    primitiveType: 'picture-vocabulary',
+    activityLine: 'live direct instruction picture vocabulary practice',
+    items,
+    itemCue: (item, opts) => itemCue(item, opts, { modelPair }),
+    moveOnCue: (item, next, opts) => moveOnCue(item, next, opts, { modelPair }),
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      stimulus: stimulusFor(item),
+    }),
+    statusLines: {
+      idle: 'Tap the microphone to start.',
+      ready: (item) => item.answerKind === 'gesture'
+        ? 'Listen, then tap the picture.'
+        : 'Listen, then say your answer out loud.',
+      retry: (item) => item.answerKind === 'gesture'
+        ? 'Look again — then tap the picture.'
+        : 'Have another go — say your answer.',
+      noVerdict: () => 'One more time — say your answer.',
+      affirmedNext: 'Yes! You got it.',
+      affirmedLast: 'You did it!',
+      moveOn: 'Good try — here comes the next one.',
+      done: 'Great word work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) =>
+      item.answerKind === 'gesture'
+        ? {
+            challenge: item.kind === 'receptive_match'
+              ? `Hear "${item.word}" and tap its picture.`
+              : `Tap the picture that goes with "${item.baseWord}".`,
+            expected: `The picture of "${item.word}".`,
+            observed: tappedRef.current
+              ? `Tapped the picture of "${tappedRef.current}".`
+              : 'Tapped a picture that did not match.',
+          }
+        : {
+            challenge: item.kind === 'naming'
+              ? 'Name the pictured vocabulary item aloud.'
+              : item.kind === 'opposite'
+                ? `Produce the opposite of "${item.baseWord}" aloud.`
+                : item.kind === 'gradable_scale'
+                  ? `Say the missing word in the scale: ${scaleSpokenFor(item)}.`
+                  : `Complete the sentence: ${item.frameDisplay}`,
+            expected: `The word "${item.word}".`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          },
+  }), [items, modelPair]);
 
-  // Auto-advance after a spoken match — driven off recorded state, ref-guarded
-  // so a timer and a click can never both fire.
-  const advanceRef = useRef(handleNext);
-  advanceRef.current = handleNext;
-  const autoAdvancedForRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!currentChallenge || !spokenMatched || !showResult) return;
-    if (autoAdvancedForRef.current === currentChallenge.id) return;
-    autoAdvancedForRef.current = currentChallenge.id;
-    const t = setTimeout(() => advanceRef.current(), AUTO_ADVANCE_MS);
-    return () => clearTimeout(t);
-    // Key on the stable id (matches the reset/shuffle effects). The latch that
-    // guards this effect (autoAdvancedForRef) is cleared per-challenge in the
-    // reset effect below — otherwise the advance→reset transition, where
-    // spokenMatched is briefly still true under the NEXT challenge's id, poisons
-    // the latch and the next real match never schedules ("Next one coming up…"
-    // hangs forever).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spokenMatched, showResult, currentChallenge?.id]);
+  const runner = useJudgedScriptRunner<PictureVocabItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: () => {
+      setTapped(null);
+      tappedRef.current = null;
+      setRevealed(false);
+    },
+    onAffirmed: () => setRevealed(true),
+    onCorrectionRetry: () => {
+      // The tutor's line re-oriented in-band; free the cards for another go.
+      setTapped(null);
+      tappedRef.current = null;
+    },
+  });
 
-  // ── Per-challenge reset (PRD §5 rule 8) ────────────────────────
-  useEffect(() => {
-    setSelectedIndex(null);
-    setShowResult(false);
-    setSpokenMatched(false);
-    setSpokenMisses(0);
-    setFeedback('');
-    setFeedbackType('');
-    setIsShaking(false);
-    recordedRef.current = false;
-    // Clear the auto-advance latch so this fresh challenge can schedule its own
-    // advance. Runs after the auto-advance effect in the transition commit, so
-    // it wipes any latch that effect set on stale (still-true) spokenMatched.
-    autoAdvancedForRef.current = null;
-    // Always show the 4 choices from the start — the spoken answer stays the
-    // primary, judged path, but the visible words are a support net AND a
-    // guaranteed way forward when the mic stalls or the tutor is mid-sentence.
-    setChoicesRevealed(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallenge?.id]);
+  const currentItem = runner.currentItem;
 
-  // Voice toggled off mid-session → reveal choices for the live challenge.
-  useEffect(() => {
-    if (voiceMode === 'off') setChoicesRevealed(true);
-  }, [voiceMode]);
+  // ── The tap — gesture modes only; the tap IS the commit ───────────────────
+  const handleOptionTap = useCallback((option: PictureVocabOption) => {
+    const item = runner.currentItem;
+    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!item || item.answerKind !== 'gesture') return;
+    if (runner.isAwaitingGesture() || revealed) return;
+    SoundManager.tap();
+    setTapped(option.word);
+    tappedRef.current = option.word;
+    runner.submitGestureAttempt(tapVerdictCue(item, option.word));
+  }, [runner, evaluation.hasSubmitted, revealed]);
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted || !runner.summary) return [];
+    return challenges.map((ch) => {
+      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+      const meta = MODE_META[ch.type];
+      return {
+        label: meta.badge,
+        icon: meta.icon,
+        score: outcome?.score ?? 0,
+        attempts: (outcome?.corrections ?? 0) + 1,
+        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
+      };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, challenges]);
 
   // ============================================================================
   // Render helpers
   // ============================================================================
 
-  const renderListeningState = () => {
-    if (!spokenActive || !spokenTurn.isSupported) return null;
-    // The mic is tinted to the live challenge's mode accent so the orb reads as
-    // part of the same beat (emerald=naming, amber=opposite, pink=association…).
-    return (
-      <div className="flex justify-center min-h-[64px] items-center">
-        <LuminaMicListener
-          state={spokenTurn.state}
-          level={spokenTurn.level}
-          isSupported={spokenTurn.isSupported}
-          dormant={spokenTurn.dormant}
-          onStart={() => spokenTurn.startManual()}
-          onCancel={() => spokenTurn.cancel()}
-          accent={modeMeta.accent}
-          idleLabel="Say it!"
-          listeningLabel="Your turn — say it!"
-        />
-      </div>
-    );
-  };
+  /** A tappable stimulus card: tap = hear the question again (never the answer). */
+  const stimulusCardClass = (accentBg: string, accentBorder: string) =>
+    `rounded-2xl ${accentBg} border-2 ${accentBorder} text-center cursor-pointer select-none transition-all `
+    + (runner.stimulusTapped ? 'ring-2 ring-cyan-300/60 ' : '');
 
-  const renderOptionCards = (showEmoji: boolean, showWord: boolean) => (
-    <div className={`grid grid-cols-2 gap-3 ${isShaking ? 'animate-shake' : ''}`}>
-      {shuffledOptions.map((option, idx) => {
-        const isCorrectOption = showResult && option.word === currentChallenge?.word;
-        const isWrongSelected = showResult && selectedIndex === idx && !isCorrectOption;
-        const state = isCorrectOption ? 'correct' : isWrongSelected ? 'incorrect' : 'idle';
+  const renderTapCards = (item: PictureVocabItem) => (
+    <div className="grid grid-cols-2 gap-3">
+      {(item.options ?? []).map((option, idx) => {
+        const isTarget = option.word.toLowerCase() === item.word.toLowerCase();
+        const state = revealed && isTarget
+          ? 'correct'
+          : tapped === option.word && !isTarget
+            ? 'incorrect'
+            : 'idle';
         return (
           <button
-            key={`${currentChallenge?.id}-${idx}`}
-            onClick={() => !showResult && handleOptionTap(idx)}
-            disabled={showResult}
+            key={`${item.id}-${idx}`}
+            onClick={() => handleOptionTap(option)}
+            disabled={!runner.running || revealed}
             className={`
               rounded-xl border-2 p-4 flex flex-col items-center gap-1.5
               transition-all duration-200 cursor-pointer
               ${answerStateClass(state)}
-              ${isCorrectOption ? 'ring-2 ring-emerald-400/40' : ''}
+              ${revealed && isTarget ? 'ring-2 ring-emerald-400/40' : ''}
             `}
           >
-            {showEmoji && <span className="text-4xl">{option.emoji}</span>}
-            {showWord && <span className="text-lg font-bold">{option.word}</span>}
+            <span className="text-4xl">{option.emoji}</span>
+            {/* The word appears only after the tutor has affirmed. */}
+            {revealed && isTarget && (
+              <span className="text-sm font-bold">{option.word}</span>
+            )}
           </button>
         );
       })}
     </div>
   );
 
-  const renderChallenge = (ch: PictureVocabChallenge) => {
-    switch (ch.type) {
+  const renderChallenge = (item: PictureVocabItem) => {
+    const meta = MODE_META[item.kind];
+    switch (item.kind) {
       case 'receptive_match':
         return (
           <div className="space-y-5">
             <p className="text-center text-base text-slate-300 font-medium">
-              {'👂'} Listen… tap the picture your tutor names!
+              {meta.icon} {meta.prompt}
             </p>
-            {/* Emoji-only cards: the word stays spoken, not printed */}
-            {renderOptionCards(true, false)}
+            <div className="flex justify-center">
+              <button
+                onClick={runner.hearStimulus}
+                className={`text-xs rounded-full border border-white/10 px-3 py-1.5 text-slate-400 hover:text-slate-200 transition-all ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+              >
+                🔊 Hear it again
+              </button>
+            </div>
+            {renderTapCards(item)}
           </div>
         );
       case 'naming':
         return (
           <div className="space-y-5">
             <div className="flex justify-center">
-              <div className="rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/30 px-12 py-8 text-center">
-                <span className="text-7xl">{ch.emoji}</span>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={stimulusCardClass('bg-emerald-500/10', 'border-emerald-500/30') + 'px-12 py-8'}
+              >
+                <span className="text-7xl">{item.emoji}</span>
+                {revealed && (
+                  <div className="text-2xl font-black text-emerald-200 mt-2">{item.word}</div>
+                )}
               </div>
             </div>
-            <p className="text-center text-base text-slate-300 font-medium">
-              What is this?{voiceMode === 'auto' ? ' Say it out loud!' : ''}
-            </p>
-            {renderListeningState()}
-            {choicesRevealed && !spokenMatched && (
-              <>
-                {voiceMode === 'auto' && !showResult && (
-                  <p className="text-center text-xs text-slate-500">…or tap the word:</p>
-                )}
-                {renderOptionCards(false, true)}
-              </>
-            )}
-            {voiceMode === 'auto' && !choicesRevealed && !showResult && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setChoicesRevealed(true)}
-                  className="text-slate-500 text-xs hover:text-slate-300"
-                >
-                  Show me choices →
-                </button>
-              </div>
-            )}
+            <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
       case 'opposite':
         return (
           <div className="space-y-5">
-            <div className="flex justify-center">
-              <div className="rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 px-10 py-6 text-center">
-                <span className="text-5xl">{ch.baseEmoji}</span>
-                <div className="text-2xl font-black text-amber-200 mt-2">{ch.baseWord}</div>
+            <div className="flex justify-center items-center gap-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={stimulusCardClass('bg-amber-500/10', 'border-amber-500/30') + 'px-10 py-6'}
+              >
+                <span className="text-5xl">{item.baseEmoji}</span>
+                <div className="text-2xl font-black text-amber-200 mt-2">{item.baseWord}</div>
+              </div>
+              <span className="text-2xl text-slate-500">🔁</span>
+              <div className="rounded-2xl bg-white/5 border-2 border-dashed border-amber-300/40 px-10 py-6 text-center min-w-[120px]">
+                {revealed ? (
+                  <>
+                    <span className="text-5xl">{item.emoji}</span>
+                    <div className="text-2xl font-black text-amber-200 mt-2">{item.word}</div>
+                  </>
+                ) : (
+                  <span className="text-4xl text-amber-300/70">?</span>
+                )}
               </div>
             </div>
-            <p className="text-center text-base text-slate-300 font-medium">
-              What&rsquo;s the <span className="text-amber-300 font-bold">opposite</span>?
-              {voiceMode === 'auto' ? ' Say it!' : ''}
-            </p>
-            {renderListeningState()}
-            {choicesRevealed && !spokenMatched && renderOptionCards(false, true)}
-            {voiceMode === 'auto' && !choicesRevealed && !showResult && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setChoicesRevealed(true)}
-                  className="text-slate-500 text-xs hover:text-slate-300"
-                >
-                  Show me choices →
-                </button>
-              </div>
-            )}
+            <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
       case 'association':
         return (
           <div className="space-y-5">
             <div className="flex justify-center">
-              <div className="rounded-2xl bg-pink-500/10 border-2 border-pink-500/30 px-10 py-6 text-center">
-                <span className="text-5xl">{ch.baseEmoji}</span>
-                <div className="text-2xl font-black text-pink-200 mt-2">{ch.baseWord}</div>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={stimulusCardClass('bg-pink-500/10', 'border-pink-500/30') + 'px-10 py-6'}
+              >
+                <span className="text-5xl">{item.baseEmoji}</span>
+                <div className="text-2xl font-black text-pink-200 mt-2">{item.baseWord}</div>
               </div>
             </div>
-            <p className="text-center text-base text-slate-300 font-medium">
-              What <span className="text-pink-300 font-bold">goes with</span> it?
-              {voiceMode === 'auto' ? ' Say it!' : ''}
-            </p>
-            {renderListeningState()}
-            {choicesRevealed && !spokenMatched && renderOptionCards(false, true)}
-            {voiceMode === 'auto' && !choicesRevealed && !showResult && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setChoicesRevealed(true)}
-                  className="text-slate-500 text-xs hover:text-slate-300"
-                >
-                  Show me choices →
-                </button>
-              </div>
-            )}
+            <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
+            {renderTapCards(item)}
           </div>
         );
       case 'gradable_scale': {
-        const rungs = ch.scaleWords ?? [];
+        const rungs = item.scaleWords ?? [];
         return (
           <div className="space-y-5">
             <div className="flex justify-center">
-              <div className="flex items-stretch gap-1.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-500/30 p-3 overflow-x-auto max-w-full">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={`flex items-stretch gap-1.5 rounded-2xl bg-cyan-500/10 border-2 border-cyan-500/30 p-3 overflow-x-auto max-w-full cursor-pointer ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}`}
+              >
                 {rungs.map((w, i) => {
-                  const isTarget = i === ch.scaleTargetIndex;
-                  const reveal = isTarget && showResult;
+                  const isTarget = i === item.scaleTargetIndex;
+                  const reveal = isTarget && revealed;
                   return (
                     <div
                       key={i}
@@ -766,58 +481,34 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
                 })}
               </div>
             </div>
-            <p className="text-center text-base text-slate-300 font-medium">
-              Which word is <span className="text-cyan-300 font-bold">missing</span>?
-              {voiceMode === 'auto' ? ' Say it!' : ''}
-            </p>
-            {renderListeningState()}
-            {choicesRevealed && !spokenMatched && renderOptionCards(false, true)}
-            {voiceMode === 'auto' && !choicesRevealed && !showResult && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setChoicesRevealed(true)}
-                  className="text-slate-500 text-xs hover:text-slate-300"
-                >
-                  Show me choices →
-                </button>
-              </div>
-            )}
+            <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
       }
       case 'sentence_frame':
         return (
           <div className="space-y-5">
-            {/* No emoji pre-solve — the picture IS the answer */}
+            {/* No emoji pre-solve — the picture IS the answer. */}
             <div className="flex justify-center">
-              <div className="rounded-2xl bg-purple-500/10 border-2 border-purple-500/30 px-8 py-6 text-center max-w-md">
-                {showResult ? (
-                  <span className="text-5xl">{ch.emoji}</span>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={stimulusCardClass('bg-purple-500/10', 'border-purple-500/30') + 'px-8 py-6 max-w-md'}
+              >
+                {revealed ? (
+                  <span className="text-5xl">{item.emoji}</span>
                 ) : (
-                  <span className="text-4xl">{'💬'}</span>
+                  <span className="text-4xl">💬</span>
                 )}
                 <div className="text-xl font-bold text-purple-100 mt-3 leading-relaxed">
-                  {showResult && ch.frameDisplay
-                    ? ch.frameDisplay.replace(/_{2,}/, ch.word)
-                    : ch.frameDisplay}
+                  {revealed && item.frameDisplay
+                    ? item.frameDisplay.replace(/_{2,}/, item.word)
+                    : item.frameDisplay}
                 </div>
               </div>
             </div>
-            <p className="text-center text-base text-slate-300 font-medium">
-              What&rsquo;s the missing word?{voiceMode === 'auto' ? ' Say it!' : ''}
-            </p>
-            {renderListeningState()}
-            {choicesRevealed && !spokenMatched && renderOptionCards(false, true)}
-            {voiceMode === 'auto' && !choicesRevealed && !showResult && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setChoicesRevealed(true)}
-                  className="text-slate-500 text-xs hover:text-slate-300"
-                >
-                  Show me choices →
-                </button>
-              </div>
-            )}
+            <p className="text-center text-base text-slate-300 font-medium">{meta.prompt}</p>
           </div>
         );
     }
@@ -837,138 +528,63 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
-  const modeMeta = MODE_META[currentChallenge?.type ?? 'naming'];
-  const micSupported = spokenTurn.isSupported;
-
-  // ── Start screen: the session-level voice consent gesture ─────
-  if (!hasStarted) {
-    return (
-      <LuminaCard className={className}>
-        <LuminaCardContent className="p-8 flex flex-col items-center text-center space-y-5">
-          <div className="text-5xl">{'🗣️'}</div>
-          <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
-          <LuminaBadge className="text-xs">Picture Vocabulary</LuminaBadge>
-          <p className="text-slate-400 text-sm max-w-sm">
-            {data.description || 'Look at pictures and show what words you know!'}
-            {' '}{challenges.length} challenges.
-          </p>
-          <div className="flex flex-col items-center gap-2.5">
-            {micSupported && (
-              <LuminaButton
-                tone="primary"
-                onClick={() => {
-                  startTimeRef.current = Date.now();
-                  setVoiceMode('auto');
-                  setHasStarted(true);
-                }}
-                className="px-8 py-3 text-lg"
-              >
-                {'🎙️'} Start with Voice
-              </LuminaButton>
-            )}
-            <LuminaButton
-              tone={micSupported ? 'ghost' : 'primary'}
-              onClick={() => {
-                startTimeRef.current = Date.now();
-                setVoiceMode('off');
-                setHasStarted(true);
-              }}
-              className={micSupported ? 'px-6 py-2 text-sm' : 'px-8 py-3 text-lg'}
-            >
-              Start tap-only
-            </LuminaButton>
-            {micSupported && (
-              <p className="text-slate-600 text-xs max-w-xs">
-                Voice mode keeps the microphone open so you can just say your answers — best with a headset.
-              </p>
-            )}
-          </div>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+  const modeMeta = MODE_META[currentItem?.kind ?? 'naming'];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            {!showSummary && voiceMode === 'auto' && (
-              <button
-                onClick={() => { spokenTurn.cancel(); setVoiceMode('off'); }}
-                className="text-xs text-slate-500 hover:text-slate-300 border border-white/10 rounded-full px-2.5 py-1"
-                title="Turn off voice mode"
-              >
-                {'🎙️'} on
-              </button>
-            )}
-            {!showSummary && (
-              <LuminaBadge accent={modeMeta.accent} className="text-xs">
-                {modeMeta.icon} {modeMeta.badge}
-              </LuminaBadge>
-            )}
-          </div>
+          {!evaluation.hasSubmitted && currentItem && (
+            <LuminaBadge accent={modeMeta.accent} className="text-xs">
+              {modeMeta.icon} {modeMeta.badge}
+            </LuminaBadge>
+          )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {!showSummary && (
+        {!evaluation.hasSubmitted && (
           <>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex justify-center">
               <LuminaChallengeCounter
-                current={currentIndex + 1}
+                current={Math.min(runner.currentIndex + 1, challenges.length)}
                 total={challenges.length}
-                className="text-slate-400 text-sm"
+                variant="dots"
               />
-              <span className="text-slate-500 text-xs">
-                {challengeResults.filter(r => r.correct).length} correct
-                {spokenWords.size > 0 && ` · ${spokenWords.size} spoken 🎙️`}
-              </span>
             </div>
-            <LuminaProgress
-              accent={modeMeta.accent}
-              value={((showResult ? currentIndex + 1 : currentIndex) / challenges.length) * 100}
-            />
+
+            {currentItem && renderChallenge(currentItem)}
+
+            {/* ONE start gesture: connect, open the mic, opening cue, arm.
+                A browser will not open a microphone without a gesture — never
+                per answer, never a push-to-talk button mid-challenge. */}
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <LuminaMicListener
+                state={runner.micState}
+                level={runner.micLevel}
+                isSupported={isSupported}
+                onStart={() => void runner.start()}
+                onCancel={runner.cancelListening}
+                size="lg"
+                idleLabel="Tap to start"
+                openingLabel="Getting ready…"
+                listeningLabel="I’m listening"
+              />
+              <p className="text-sm text-slate-300">{runner.statusLine}</p>
+            </div>
           </>
         )}
 
-        {!showSummary && currentChallenge && renderChallenge(currentChallenge)}
-
-        {feedback && !showSummary && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'success' ? 'correct' : 'incorrect'}
-            className="text-center"
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Next: manual for tap path; spoken match auto-advances (no button = no double-advance) */}
-        {showResult && !showSummary && !spokenMatched && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNext}>
-              {currentIndex < challenges.length - 1 ? 'Next' : 'Finish'}
-            </LuminaActionButton>
-          </div>
-        )}
-        {showResult && !showSummary && spokenMatched && (
-          <p className="text-center text-slate-500 text-xs animate-pulse">Next one coming up…</p>
-        )}
-
-        {showSummary && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedScore ?? undefined}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Picture Vocabulary Complete!"
-            celebrationMessage={
-              spokenWords.size > 0
-                ? `Amazing — you said ${spokenWords.size} word${spokenWords.size === 1 ? '' : 's'} out loud! 🎙️`
-                : 'Great job with your words!'
-            }
-            className="mb-6"
+            celebrationMessage={`You worked on ${challenges.length} words with your own voice and hands!`}
+            className="mt-4"
           />
         )}
       </LuminaCardContent>

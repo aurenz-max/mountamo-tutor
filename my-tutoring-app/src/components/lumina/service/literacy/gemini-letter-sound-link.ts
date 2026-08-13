@@ -13,6 +13,10 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import {
+  canProduceSound,
+  PRODUCIBLE_LETTERS,
+} from '../../primitives/visual-primitives/literacy/letterSoundLinkScript';
 
 type LetterSoundMode = 'see-hear' | 'hear-see' | 'keyword-match';
 type LetterSoundRemediationMove = 'contrast_sound' | 'contrast_letter' | 'contrast_keyword';
@@ -152,25 +156,29 @@ export function hearSeeContrastAvailable(remediationFocus: string | undefined, c
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'see-hear': {
     promptDoc:
-      `"see-hear": Student sees a letter displayed, hears two sounds via speaker buttons, and picks the correct one. `
-      + `2-3 challenges per session. Options are {sound: "/phoneme/", isCorrect: boolean}. Exactly ONE correct. `
-      + `Pick a confusable distractor sound — phonologically similar but distinct (see DISTRACTOR RULES).`,
-    schemaDescription: "'see-hear' (see letter, pick sound from 2 speaker buttons)",
+      `"see-hear": Student sees a letter and SAYS ALOUD the sound it makes; the live tutor judges the audio. `
+      + `2-3 challenges per session. Emit NO options for this mode — there is nothing to pick from. `
+      + `targetLetter MUST be one of: ${PRODUCIBLE_LETTERS.join(', ')} — these are the only sounds a `
+      + `kindergartener can be asked to hold and produce alone. Never target t, p, c, k, d, g, b, j, w, y, h, x or qu here.`,
+    schemaDescription: "'see-hear' (see letter, SAY its sound aloud)",
   },
   'hear-see': {
     promptDoc:
-      `"hear-see": Student hears a sound (auto-played), picks the correct LETTER from 2 options. `
+      `"hear-see": The tutor says a sound; the student TAPS the correct LETTER from 2 options. `
       + `2-3 challenges per session. Options are {letter: "x", isCorrect: boolean}. Exactly ONE correct. `
+      + `Any letter in the group may be targeted here — the tutor makes the sound, the student only has to find it. `
       + `Pick a letter whose sound is confusable with the target (see DISTRACTOR RULES). `
       + `If target sound /k/ can be made by both c and k, set sharedSoundLetters to ["c", "k"].`,
-    schemaDescription: "'hear-see' (hear sound, find letter from 2 options)",
+    schemaDescription: "'hear-see' (hear sound, TAP the letter that makes it)",
   },
   'keyword-match': {
     promptDoc:
-      `"keyword-match": Student sees a letter and picks the correct KEYWORD WORD from 2 options. `
-      + `2-3 challenges per session. Options are {sound: "keyword_word", isCorrect: boolean}. Exactly ONE correct. `
+      `"keyword-match": Student sees a letter and two pictures and SAYS ALOUD the picture word that starts with `
+      + `that letter's sound. 2-3 challenges per session. Options are {sound: "keyword_word", isCorrect: boolean}. `
+      + `Exactly ONE correct. The correct keyword must genuinely START with the target letter's sound — never `
+      + `target the letter x here (its sound /ks/ does not begin English words). `
       + `Distractor keyword should start with a confusable sound (see DISTRACTOR RULES).`,
-    schemaDescription: "'keyword-match' (match letter to keyword from 2 options)",
+    schemaDescription: "'keyword-match' (see letter, SAY the picture word that starts with its sound)",
   },
 };
 
@@ -283,7 +291,11 @@ const KEYWORD_MAP: Record<string, string> = {
   s: 'sun', a: 'apple', t: 'top', i: 'itch', p: 'pig', n: 'net',
   c: 'cat', k: 'kite', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
   g: 'go', o: 'octopus', u: 'up', l: 'lip', f: 'fan', b: 'bat',
-  j: 'jam', z: 'zip', w: 'web', v: 'van', y: 'yes', x: 'box', qu: 'queen',
+  // `y` reads "yo-yo", never "yes". Under the judged loop a correction says
+  // "…and the word <keyword> starts with…", and a keyword that can open a
+  // sentence with the affirm sentinel would be read as a VERDICT by the
+  // engine's sentence scan. (✅ never said "yes" to a pre-reader anyway.)
+  j: 'jam', z: 'zip', w: 'web', v: 'van', y: 'yo-yo', x: 'box', qu: 'queen',
 };
 
 // Letters that share the same sound
@@ -291,6 +303,61 @@ const SHARED_SOUND_MAP: Record<string, string[]> = {
   c: ['c', 'k'],
   k: ['c', 'k'],
 };
+
+// ============================================================================
+// WHICH LETTERS EACH MODE MAY TARGET — the DI port's content gate (2026-08-11)
+//
+// Under the judged loop each mode asks for a different KIND of answer, and two
+// of the three constrain which letters are askable. Enforced in CODE after the
+// parse, never left to the prompt: the pool is code's business (letterGroups'
+// ruling), and a single illegal draw here is a child asked for a sound no
+// judge has been benched on.
+//
+//  · see-hear      the child PRODUCES the sound → held sounds only. Stops,
+//                  affricates, glides and clusters (t p c k d g b j w y h x qu)
+//                  are unbenched for child production — standing gate 1. They
+//                  are not lost: they keep full coverage in the other two
+//                  directions, where the TUTOR makes the sound and the child
+//                  taps or says a whole word. `PRODUCIBLE_LETTERS` is the same
+//                  list the script speaks from, imported rather than copied.
+//  · keyword-match the ask is "which picture STARTS with this letter's sound",
+//                  so the keyword must actually start with it. Every keyword
+//                  above does except `x` → "box": /ks/ never begins an English
+//                  word, so `x` is unaskable in this mode (it was already a
+//                  false anchor pre-DI; the spoken ask is what surfaced it).
+//  · hear-see      no constraint — the tutor produces the sound, the child taps.
+// ============================================================================
+
+const MODE_TARGETABLE: Record<LetterSoundMode, (letter: string) => boolean> = {
+  'see-hear': (letter) => canProduceSound(letter),
+  'hear-see': () => true,
+  'keyword-match': (letter) => letter.toLowerCase() !== 'x',
+};
+
+/** Is this letter askable in this mode at all? Exported for the unit test —
+ *  live Gemini honors the prompt constraint, so the retarget path below is a
+ *  safety net that would otherwise never execute. */
+export const isTargetableInMode = (mode: LetterSoundMode, letter: string): boolean =>
+  MODE_TARGETABLE[mode]?.(letter) ?? true;
+
+/**
+ * A legal target for `mode` inside the cumulative group, preferring one this
+ * session has not used yet (N challenges = N problems). Returns null when the
+ * mode's pool is empty for this group, in which case the caller leaves the
+ * challenge alone rather than inventing an out-of-group letter.
+ *
+ * Exported so the gate is unit-testable without calling Gemini (the same
+ * reason `resolveLetterSoundSupportScaffold` is).
+ */
+export function retargetForMode(
+  mode: LetterSoundMode,
+  cumulativeLetters: string[],
+  used: Set<string>,
+): string | null {
+  const legal = cumulativeLetters.filter((l) => MODE_TARGETABLE[mode](l));
+  if (legal.length === 0) return null;
+  return legal.find((l) => !used.has(l)) ?? legal[0];
+}
 
 // ============================================================================
 // Confusable Sound Pairs — pedagogically meaningful distractors
@@ -472,9 +539,15 @@ Generate 6-8 challenges. Each challenge links a letter to its sound and keyword.
 ${challengeTypeSection}
 ${remediationSection}
 
-BINARY DISCRIMINATION FORMAT:
-Every challenge has EXACTLY 2 options — one correct, one distractor.
-This is an audio-first activity: students HEAR sounds via speaker buttons, they do NOT read phoneme text.
+HOW THIS ACTIVITY IS ANSWERED (it is a live SPOKEN lesson, not a clicking exercise):
+A live AI tutor asks each challenge out loud and judges the child's answer from the audio.
+- see-hear: the child SAYS the sound the letter makes. No options at all.
+- hear-see: the tutor says the sound; the child TAPS one of 2 letters.
+- keyword-match: the child SAYS the picture word that starts with the letter's sound (2 pictures shown).
+Nothing on screen prints the answer, so a distractor is never a support — it is a real contrast.
+
+BINARY DISCRIMINATION FORMAT (the two modes that HAVE options):
+hear-see and keyword-match each have EXACTLY 2 options — one correct, one distractor.
 The distractor must be a phonologically confusable sound — not random.
 
 DISTRACTOR RULES (CRITICAL):
@@ -485,10 +558,15 @@ DISTRACTOR RULES (CRITICAL):
 - For hear-see mode: the two letter options must make DIFFERENT sounds.
 - Suggested confusable pairs for this group: ${confusablePairsRef}
 
-MODE-SPECIFIC OPTION FORMATS (2 options each):
-- see-hear: options are {sound: "/phoneme/", isCorrect: boolean} — exactly 2 options
+MODE-SPECIFIC OPTION FORMATS:
+- see-hear: NO options — the child speaks the sound
 - hear-see: options are {letter: "x", isCorrect: boolean} — exactly 2 options
 - keyword-match: options are {sound: "keyword_word", isCorrect: boolean} — exactly 2 options
+
+TARGETABLE LETTERS BY MODE (hard rule — a wrong draw is silently corrected in code):
+- see-hear: ONLY ${cumulativeLetters.filter(canProduceSound).join(', ') || '(none in this group)'}
+- keyword-match: any group letter EXCEPT x
+- hear-see: any group letter
 
 RULES:
 ${ctx.remediationFocus ? '- REMEDIATION TRACE: see-hear uses remediationMove="contrast_sound"; hear-see uses "contrast_letter"; keyword-match uses "contrast_keyword". Make the wrong option encode the diagnosed confusion.' : ''}
@@ -537,6 +615,10 @@ LETTER GROUP DATA:
 
     // Validate challenges
     if (result.challenges) {
+      /** Targets already spent, so a retarget prefers an unused letter. */
+      const usedTargets = new Set<string>();
+      const retargeted: string[] = [];
+
       result.challenges = result.challenges.map((ch: LetterSoundLinkChallenge, i: number) => {
         // Ensure IDs exist
         if (!ch.id) ch.id = `ch${i + 1}`;
@@ -546,6 +628,22 @@ LETTER GROUP DATA:
         if (!cumulativeLetters.includes(ch.targetLetter)) {
           ch.targetLetter = cumulativeLetters[i % cumulativeLetters.length];
         }
+
+        // DI content gate: the mode decides which letters are askable at all.
+        // Runs before every downstream fixup so the sound, keyword and options
+        // are all rebuilt around the legal target.
+        if (!MODE_TARGETABLE[ch.mode as LetterSoundMode]?.(ch.targetLetter)) {
+          const replacement = retargetForMode(
+            ch.mode as LetterSoundMode,
+            cumulativeLetters,
+            usedTargets,
+          );
+          if (replacement) {
+            retargeted.push(`${ch.id}: ${ch.mode} "${ch.targetLetter}" → "${replacement}"`);
+            ch.targetLetter = replacement;
+          }
+        }
+        usedTargets.add(ch.targetLetter);
 
         // Ensure targetSound uses the canonical sound
         ch.targetSound = LETTER_SOUNDS[ch.targetLetter] || ch.targetSound || '/s/';
@@ -570,10 +668,18 @@ LETTER GROUP DATA:
         return ch;
       });
 
+      if (retargeted.length > 0) {
+        console.log(
+          `[letter-sound-link] DI content gate retargeted ${retargeted.length} challenge(s): `
+          + retargeted.join('; '),
+        );
+      }
+
       // Fallback: ensure at least one challenge exists
       if (result.challenges.length === 0) {
-        const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'see-hear';
-        const targetLetter = cumulativeLetters[0];
+        const fallbackMode = (evalConstraint?.allowedTypes[0] ?? 'see-hear') as LetterSoundMode;
+        const targetLetter = retargetForMode(fallbackMode, cumulativeLetters, new Set())
+          ?? cumulativeLetters[0];
         const distractor = pickDistractor(targetLetter, cumulativeLetters);
         result.challenges = [{
           id: 'ch1',
@@ -582,10 +688,17 @@ LETTER GROUP DATA:
           targetSound: LETTER_SOUNDS[targetLetter],
           keywordWord: KEYWORD_MAP[targetLetter],
           keywordImage: KEYWORD_MAP[targetLetter],
-          options: [
-            { sound: LETTER_SOUNDS[targetLetter], isCorrect: true },
-            { sound: LETTER_SOUNDS[distractor], isCorrect: false },
-          ],
+          options: fallbackMode === 'see-hear'
+            ? [] // the child speaks the sound — nothing to pick from
+            : fallbackMode === 'hear-see'
+              ? [
+                  { letter: targetLetter, isCorrect: true },
+                  { letter: distractor, isCorrect: false },
+                ]
+              : [
+                  { sound: KEYWORD_MAP[targetLetter], isCorrect: true },
+                  { sound: KEYWORD_MAP[distractor], isCorrect: false },
+                ],
         }];
       }
     }
@@ -648,13 +761,11 @@ function validateOptions(
   const opts = ch.options || [];
 
   if (ch.mode === 'see-hear') {
-    return ensureTwoOptions(
-      opts,
-      ch.targetSound,
-      ch.targetLetter,
-      'sound',
-      cumulativeLetters,
-    );
+    // DI port: the child SAYS the sound, so there is nothing to choose from.
+    // Any options Gemini emitted here are dropped rather than rendered — a
+    // printed distractor sound is the old "support net" that made the task
+    // recognition instead of production.
+    return [];
   } else if (ch.mode === 'hear-see') {
     return ensureTwoOptions(
       opts,

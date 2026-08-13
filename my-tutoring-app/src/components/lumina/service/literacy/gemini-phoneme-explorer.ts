@@ -32,45 +32,47 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 // Challenge type documentation registry (per-mode prompt specs)
 // ---------------------------------------------------------------------------
 
+// DI MODALITY (2026-08-11): every mode is answered ALOUD and judged by the
+// live tutor in-band. Only `isolate` still carries 4 choices — they are the
+// on-screen MENU (the question side, unmarked); the other three modes emit the
+// ANSWER as a field and no choices at all. `phonemeExplorerScript.ts` owns the
+// leak/sayability gates that drop an item the tutor could not honestly ask.
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   isolate: {
     promptDoc:
-      `"isolate": Student hears/sees a target phoneme (letter sound) and an example word, `
-      + `then picks which of 4 emoji+word choices starts with the same INITIAL/beginning sound. `
-      + `Set phoneme (uppercase letter), phonemeSound (pronunciation), exampleWord + exampleEmoji. `
-      + `Provide exactly 4 choices (1 correct starting with same sound, 3 distractors starting with different sounds). `
-      + `This mode is BEGINNING-sound only — the component renders "starts with" and cannot present `
-      + `ending-sound, rhyme, or medial-sound matching. K: single consonants. Grade 1: blends/digraphs as onsets.`,
-    schemaDescription: "'isolate' (identify the INITIAL/beginning phoneme)",
+      `"isolate": The tutor says a target sound and reads a 4-word menu aloud; the student SAYS which `
+      + `word starts with that sound. Set phoneme (uppercase letter), phonemeSound (pronunciation), `
+      + `exampleWord + exampleEmoji. Provide exactly 4 choices (1 correct starting with the sound, 3 `
+      + `distractors starting with clearly DIFFERENT sounds). The exampleWord must NOT be one of the 4 `
+      + `choices. This mode is BEGINNING-sound only. K: single consonants. Grade 1: blends/digraphs as onsets.`,
+    schemaDescription: "'isolate' (say the menu word with the target initial sound)",
   },
   blend: {
     promptDoc:
-      `"blend": Student sees a sequence of individual phoneme tiles (e.g., /c/ /a/ /t/) `
-      + `and must pick which of 4 words those phonemes blend into. `
-      + `Set phonemeSequence (array of individual sounds, e.g., ["k","a","t"]) and phonemeDisplay (e.g., "/k/ /a/ /t/"). `
-      + `Provide exactly 4 choices with word+emoji (1 correct = the blended word, 3 distractors = similar-sounding words). `
+      `"blend": The tutor says the sounds one at a time and the student SAYS the blended word aloud. `
+      + `Set phonemeSequence (array of individual sounds, e.g., ["k","a","t"]), word (the word those `
+      + `sounds make, e.g., "cat") and emoji (depicting the word). No choices — the spoken word IS the answer. `
       + `K: 3-phoneme CVC words. Grade 1: 4-phoneme words with blends. Grade 2: 4-5 phoneme words.`,
-    schemaDescription: "'blend' (combine phonemes into word)",
+    schemaDescription: "'blend' (say the word the sounds make)",
   },
   segment: {
     promptDoc:
-      `"segment": Student sees a word with its emoji and must pick the correct phoneme breakdown from 4 options. `
-      + `Set targetWord (the word to segment) and targetEmoji (emoji for the word). `
-      + `Provide exactly 4 segmentOptions: each is a string showing a phoneme breakdown (e.g., "/c/ /a/ /t/"). `
-      + `Exactly 1 option is correct (correctSegmentation index, 0-based). `
-      + `Distractors should have wrong phoneme count, swapped sounds, or missing sounds. `
-      + `K: 3-phoneme CVC words. Grade 1: 3-4 phoneme words. Grade 2: 4-5 phoneme words.`,
-    schemaDescription: "'segment' (break word into phonemes)",
+      `"segment": The tutor says a word and the student SAYS HOW MANY sounds they hear. `
+      + `Set targetWord, targetEmoji, and segments (the word's phonemes IN ORDER, e.g., ["k","a","t"] — `
+      + `its length is the graded count, 2-5 sounds). No options. Segment by SOUNDS, not letters `
+      + `("sheep" is 3 sounds: sh-ee-p). K: 3-phoneme CVC words. Grade 1: 3-4 phonemes. Grade 2: 4-5 phonemes.`,
+    schemaDescription: "'segment' (say how many sounds the word has)",
   },
   manipulate: {
     promptDoc:
-      `"manipulate": Student reads an instruction to change one phoneme in a word and picks the resulting word. `
-      + `Set originalWord, originalEmoji, operation ("substitute"|"delete"|"add"), `
-      + `operationDescription (e.g., "Change the /c/ in 'cat' to /b/"). `
-      + `Provide exactly 4 choices with word+emoji (1 correct = result of manipulation, 3 distractors). `
+      `"manipulate": The tutor says a word and one sound to change, and the student SAYS the new word aloud. `
+      + `Set originalWord, originalEmoji, operation ("substitute"|"delete"|"add"), operationDescription `
+      + `(e.g., "Change the /k/ in 'cat' to /b/"), resultWord (the answer) and resultEmoji. `
+      + `CRITICAL: operationDescription must NEVER contain the resultWord — it is spoken with the microphone `
+      + `open, and containing the answer would give it away. No choices. `
       + `K: initial consonant substitution only. Grade 1: initial/final substitution, deletion. `
       + `Grade 2: medial vowel substitution, addition, multi-step.`,
-    schemaDescription: "'manipulate' (add/delete/substitute phoneme)",
+    schemaDescription: "'manipulate' (say the word after the sound change)",
   },
 };
 
@@ -285,10 +287,10 @@ function modeItemSchema(mode: PhonemeMode): Schema {
             items: { type: Type.STRING },
             description: "Array of individual phoneme sounds (e.g., ['k','a','t'] for 'cat')",
           },
-          phonemeDisplay: { type: Type.STRING, description: "Display string for phoneme tiles (e.g., '/k/ /a/ /t/')" },
-          choices: choicesSchema,
+          word: { type: Type.STRING, description: "The word the sounds blend into (e.g., 'cat') — the spoken answer" },
+          emoji: { type: Type.STRING, description: "A single emoji depicting the word. MUST visually match." },
         },
-        required: ["phonemeSequence", "phonemeDisplay", "choices"],
+        required: ["phonemeSequence", "word", "emoji"],
       };
     case 'segment':
       return {
@@ -297,16 +299,15 @@ function modeItemSchema(mode: PhonemeMode): Schema {
           remediationMove,
           targetWord: { type: Type.STRING, description: "The word to segment into phonemes (e.g., 'cat')" },
           targetEmoji: { type: Type.STRING, description: "Emoji depicting the target word (e.g., '🐱')" },
-          segmentOptions: {
+          segments: {
             type: Type.ARRAY,
-            minItems: "4",
-            maxItems: "4",
+            minItems: "2",
+            maxItems: "5",
             items: { type: Type.STRING },
-            description: "4 phoneme breakdown options (e.g., ['/k/ /a/ /t/', '/k/ /t/', '/s/ /a/ /t/', '/k/ /a/ /t/ /s/'])",
+            description: "The word's phonemes IN ORDER (e.g., ['k','a','t']). Its length is the graded sound count. Segment by SOUNDS, not letters.",
           },
-          correctSegmentation: { type: Type.NUMBER, description: "0-based index of the correct option in segmentOptions" },
         },
-        required: ["targetWord", "targetEmoji", "segmentOptions", "correctSegmentation"],
+        required: ["targetWord", "targetEmoji", "segments"],
       };
     case 'manipulate':
       return {
@@ -316,10 +317,11 @@ function modeItemSchema(mode: PhonemeMode): Schema {
           originalWord: { type: Type.STRING, description: "The starting word (e.g., 'cat')" },
           originalEmoji: { type: Type.STRING, description: "Emoji for the starting word (e.g., '🐱')" },
           operation: { type: Type.STRING, enum: ["substitute", "delete", "add"], description: "Type of phoneme operation" },
-          operationDescription: { type: Type.STRING, description: "Human-readable instruction (e.g., \"Change the /k/ in 'cat' to /b/\")" },
-          choices: choicesSchema,
+          operationDescription: { type: Type.STRING, description: "Spoken instruction (e.g., \"Change the /k/ in 'cat' to /b/\"). MUST NOT contain the resultWord." },
+          resultWord: { type: Type.STRING, description: "The word after the change (e.g., 'bat') — the spoken answer" },
+          resultEmoji: { type: Type.STRING, description: "A single emoji depicting resultWord. MUST visually match." },
         },
-        required: ["originalWord", "originalEmoji", "operation", "operationDescription", "choices"],
+        required: ["originalWord", "originalEmoji", "operation", "operationDescription", "resultWord", "resultEmoji"],
       };
   }
 }
@@ -383,7 +385,7 @@ MODE SPEC — ${doc}
 CRITICAL RULES:
 - Every emoji MUST visually depict the word it's paired with. Only standard, widely-recognized emojis.
 - Every field must be fully, concretely populated — NEVER use placeholder text like "word" or "???".
-${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes; distractors must be similar-sounding but wrong words.\n' : ''}${mode === 'segment' ? '- The correct segmentation must have the right phoneme count and sounds; distractors have wrong count or swapped sounds.\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear; the correct choice is the actual result; distractors are plausible but wrong.\n' : ''}
+${mode === 'isolate' ? '- Use a DIFFERENT target phoneme for each challenge (do not repeat the same letter).\n' : ''}${mode === 'isolate' ? '- The correct choice MUST start with the same sound as the phoneme; distractors start with DIFFERENT sounds. The exampleWord must NOT appear among the choices.\n' : ''}${mode === 'blend' ? '- phonemeSequence must be accurate phonemes and word must be EXACTLY the word they blend into.\n' : ''}${mode === 'segment' ? '- segments must be the word\'s true SOUNDS in order, not its letters ("sheep" → ["sh","ee","p"], 3 sounds).\n' : ''}${mode === 'manipulate' ? '- operationDescription must be clear and must NEVER contain resultWord (it is spoken with the microphone open); resultWord is the true result of the operation.\n' : ''}
 Relate words to the topic "${topic}" when possible, but prioritize phonological accuracy and emoji availability.`;
 
   const response = await ai.models.generateContent({
@@ -419,8 +421,14 @@ Relate words to the topic "${topic}" when possible, but prioritize phonological 
     .slice(0, count)
     .map((ch: RawChallenge) => {
       ch.mode = mode;
-      validateModeChallenge(ch, mode);
       return ch;
+    })
+    .filter((ch) => {
+      const keep = validateModeChallenge(ch, mode);
+      if (!keep) {
+        console.warn(`[PhonemeExplorer] dropped a malformed ${mode} challenge (drop, never backfill)`);
+      }
+      return keep;
     });
 }
 
@@ -544,70 +552,57 @@ export const generatePhonemeExplorer = async (
 };
 
 // ---------------------------------------------------------------------------
-// Validation helpers (safety net — required-field schemas should prevent shells)
+// Validation — KEEP or DROP, never backfill. (The old validators patched
+// malformed challenges with "word"/"???" placeholders; in a judged spoken loop
+// a fabricated item becomes a spoken ask the tutor must then judge, so a
+// challenge that arrives broken ships nothing. `phonemeExplorerScript.ts`'s
+// itemFromChallenge runs the same gates again component-side — belt and
+// suspenders on two sides of the wire.)
 // ---------------------------------------------------------------------------
 
-function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): void {
+const isWord = (v: unknown): v is string =>
+  typeof v === 'string' && /^[a-z][a-z' -]*$/i.test(v.trim()) && v.trim().toLowerCase() !== 'yes';
+
+const isNonEmptyString = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0;
+
+function validateModeChallenge(ch: RawChallenge, mode: PhonemeMode): boolean {
   switch (mode) {
-    case 'isolate':
-      if (!ch.phoneme || typeof ch.phoneme !== "string") ch.phoneme = "?";
-      if (!ch.phonemeSound || typeof ch.phonemeSound !== "string")
-        ch.phonemeSound = (ch.phoneme as string).toLowerCase();
-      if (!ch.exampleWord || typeof ch.exampleWord !== "string") ch.exampleWord = "word";
-      if (!ch.exampleEmoji || typeof ch.exampleEmoji !== "string") ch.exampleEmoji = "🔤";
-      validateChoices(ch);
-      break;
-    case 'blend':
-      if (!Array.isArray(ch.phonemeSequence) || (ch.phonemeSequence as string[]).length === 0)
-        ch.phonemeSequence = ["?", "?", "?"];
-      if (!ch.phonemeDisplay || typeof ch.phonemeDisplay !== "string")
-        ch.phonemeDisplay = (ch.phonemeSequence as string[]).map((p) => `/${p}/`).join(" ");
-      validateChoices(ch);
-      break;
-    case 'segment':
-      if (!ch.targetWord || typeof ch.targetWord !== "string") ch.targetWord = "word";
-      if (!ch.targetEmoji || typeof ch.targetEmoji !== "string") ch.targetEmoji = "🔤";
-      if (!Array.isArray(ch.segmentOptions) || (ch.segmentOptions as string[]).length < 4) {
-        ch.segmentOptions = ["/w/ /er/ /d/", "/w/ /d/", "/w/ /o/ /r/ /d/", "/w/ /u/ /r/ /d/"];
-        ch.correctSegmentation = 0;
-      }
-      if (typeof ch.correctSegmentation !== "number" ||
-        (ch.correctSegmentation as number) < 0 ||
-        (ch.correctSegmentation as number) >= (ch.segmentOptions as string[]).length) {
-        ch.correctSegmentation = 0;
-      }
-      break;
-    case 'manipulate':
-      if (!ch.originalWord || typeof ch.originalWord !== "string") ch.originalWord = "word";
-      if (!ch.originalEmoji || typeof ch.originalEmoji !== "string") ch.originalEmoji = "🔤";
-      if (!ch.operation || typeof ch.operation !== "string") ch.operation = "substitute";
-      if (!ch.operationDescription || typeof ch.operationDescription !== "string")
-        ch.operationDescription = "Change a sound in the word";
-      validateChoices(ch);
-      break;
-  }
-}
-
-function validateChoices(ch: RawChallenge): void {
-  if (!Array.isArray(ch.choices) || (ch.choices as unknown[]).length === 0) {
-    ch.choices = [
-      { word: "???", emoji: "❓", correct: true },
-      { word: "???", emoji: "❓", correct: false },
-      { word: "???", emoji: "❓", correct: false },
-      { word: "???", emoji: "❓", correct: false },
-    ];
-  }
-
-  // Ensure exactly one correct answer
-  const choices = ch.choices as { word: string; emoji: string; correct: boolean }[];
-  const correctCount = choices.filter((c) => c.correct).length;
-  if (correctCount === 0 && choices.length > 0) {
-    choices[0].correct = true;
-  } else if (correctCount > 1) {
-    let foundFirst = false;
-    for (const c of choices) {
-      if (c.correct && foundFirst) c.correct = false;
-      if (c.correct) foundFirst = true;
+    case 'isolate': {
+      if (!isNonEmptyString(ch.phoneme) || !isNonEmptyString(ch.phonemeSound)) return false;
+      if (!isWord(ch.exampleWord) || !isNonEmptyString(ch.exampleEmoji)) return false;
+      const choices = ch.choices;
+      if (!Array.isArray(choices) || choices.length !== 4) return false;
+      const typed = choices as { word?: unknown; emoji?: unknown; correct?: unknown }[];
+      if (!typed.every((c) => isWord(c.word) && isNonEmptyString(c.emoji))) return false;
+      if (typed.filter((c) => c.correct === true).length !== 1) return false;
+      const words = typed.map((c) => (c.word as string).trim().toLowerCase());
+      if (new Set(words).size !== words.length) return false;
+      // The example is a SECOND right answer if it sits in the menu.
+      if (words.includes((ch.exampleWord as string).trim().toLowerCase())) return false;
+      return true;
+    }
+    case 'blend': {
+      const seq = ch.phonemeSequence;
+      return Array.isArray(seq) && seq.length >= 2 && seq.length <= 5
+        && (seq as unknown[]).every(isNonEmptyString)
+        && isWord(ch.word) && isNonEmptyString(ch.emoji);
+    }
+    case 'segment': {
+      const segs = ch.segments;
+      return isWord(ch.targetWord) && isNonEmptyString(ch.targetEmoji)
+        && Array.isArray(segs) && segs.length >= 2 && segs.length <= 5
+        && (segs as unknown[]).every(isNonEmptyString);
+    }
+    case 'manipulate': {
+      if (!isWord(ch.originalWord) || !isNonEmptyString(ch.originalEmoji)) return false;
+      if (!isNonEmptyString(ch.operationDescription)) return false;
+      if (!isWord(ch.resultWord) || !isNonEmptyString(ch.resultEmoji)) return false;
+      const result = (ch.resultWord as string).trim();
+      if (result.toLowerCase() === (ch.originalWord as string).trim().toLowerCase()) return false;
+      // The operation is SPOKEN with the mic open — containing the answer gives it away.
+      const escaped = result.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`\\b${escaped}\\b`, 'i').test(ch.operationDescription as string)) return false;
+      return true;
     }
   }
 }
