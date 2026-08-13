@@ -39,11 +39,15 @@ const ctxState: { conversation: Msg[]; isAudioPlaying: boolean } = {
   isAudioPlaying: false,
 };
 const sentTexts: string[] = [];
+const sentOptions: Array<Record<string, unknown> | undefined> = [];
 vi.mock('@/contexts/LuminaAIContext', () => ({
   useLuminaAIContext: () => ({
     conversation: ctxState.conversation,
     isAudioPlaying: ctxState.isAudioPlaying,
-    sendText: (text: string) => { sentTexts.push(text); },
+    sendText: (text: string, options?: Record<string, unknown>) => {
+      sentTexts.push(text);
+      sentOptions.push(options);
+    },
   }),
 }));
 
@@ -269,5 +273,70 @@ describe('useJudgedSpeechLoop — the cue ledger', () => {
     expect(cues[1].text).toBe('[DI_MOVE_ON] stop correcting');
     expect(sentTexts).toEqual(['[DI_ITEM] five plus zero']);
     expect(ledger(cues)).toBe(0);
+  });
+});
+
+describe('useJudgedSpeechLoop — off-script cut-in (run f634f61b2b42)', () => {
+  // After a verdict the model has nothing scripted left to say — the next
+  // thing the child must hear is the queued cue. The live run: a stray noise
+  // after "Yes, six." drew an IMPROVISED turn (an invented item, recited in
+  // cue format), and the audio block held the real cue behind it for 40
+  // seconds. A tutor turn that begins after the queue-time line has finished
+  // is off-script by definition, and the script cuts it.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    ctxState.conversation = [];
+    ctxState.isAudioPlaying = false;
+    voiceState.active = false;
+    sentTexts.length = 0;
+    sentOptions.length = 0;
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('cuts an improvised turn instead of waiting behind it', () => {
+    const { cues, view, beat } = setup();
+    act(() => view.result.current.arm());
+    // The verdict line is playing when the runner queues the next item's cue.
+    act(() => { ctxState.isAudioPlaying = true; view.rerender(); });
+    act(() => view.result.current.queueCue('[SAY_ITEM] four times two'));
+    beat();
+    expect(sentTexts).toEqual([]); // the scripted line is never cut
+    // The verdict line ends…
+    act(() => { ctxState.isAudioPlaying = false; view.rerender(); });
+    // …and before the beat releases the cue, the tutor starts a turn nobody
+    // cued. The cue ships THROUGH it, with interrupt.
+    act(() => { ctxState.isAudioPlaying = true; view.rerender(); });
+    beat();
+
+    expect(sentTexts).toEqual(['[SAY_ITEM] four times two']);
+    expect(sentOptions[0]).toMatchObject({ interrupt: true });
+    expect(cues.find((c) => c.phase === 'sent')?.cutIn).toBe(true);
+    expect(ledger(cues)).toBe(0);
+  });
+
+  it('never cuts a verdict line whose audio lags its transcript', () => {
+    // The race the stamp guards: the affirm-path queue runs off the verdict
+    // TRANSCRIPT, which can arrive before the verdict AUDIO starts. That
+    // audio is a scripted line — it blocks the cue and is never interrupted.
+    const { cues, view, learnerTurnCloses, beat } = setup();
+    act(() => view.result.current.arm());
+    learnerTurnCloses(); // an attempt is open, so the verdict anchors
+    act(() => {
+      ctxState.conversation = [{ role: 'assistant', content: 'Yes, six.', timestamp: 1 }];
+      view.rerender();
+    });
+    act(() => view.result.current.queueCue('[SAY_ITEM] four times two'));
+    // Only now does the verdict line's audio start.
+    act(() => { ctxState.isAudioPlaying = true; view.rerender(); });
+    beat();
+    expect(sentTexts).toEqual([]);
+    expect(cues.some((c) => c.phase === 'blocked' && c.reason === 'audio')).toBe(true);
+
+    // The line finishes; the cue ships plainly on the release edge.
+    act(() => { ctxState.isAudioPlaying = false; view.rerender(); });
+    beat();
+    expect(sentTexts).toEqual(['[SAY_ITEM] four times two']);
+    expect(sentOptions[0]).toMatchObject({ interrupt: false });
+    expect(cues.find((c) => c.phase === 'sent')?.cutIn).toBeUndefined();
   });
 });

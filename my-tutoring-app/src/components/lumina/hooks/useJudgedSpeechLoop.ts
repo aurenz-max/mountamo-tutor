@@ -75,6 +75,9 @@ export interface CueLogEvent {
    *  ladder. Diagnostics like the rest: it does not consume a 'queued', so the
    *  `queued − sent − dropped` ledger arithmetic is unaffected. */
   phase: 'queued' | 'sent' | 'blocked' | 'dropped' | 'dead';
+  /** 'sent' only: the cue shipped with interrupt because the tutor was holding
+   *  the floor OFF-SCRIPT (see the off-script cut-in note at the send path). */
+  cutIn?: boolean;
   /** The cue text, verbatim. Consumers are expected to truncate for display. */
   text: string;
   /** On 'blocked': which gate held it. */
@@ -148,6 +151,18 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   audioPlayingRef.current = ctx.isAudioPlaying;
   const previousAudioPlayingRef = useRef(ctx.isAudioPlaying);
   const pendingCueRef = useRef<string | null>(null);
+  /**
+   * Has the tutor line DURING which the pending cue was queued finished
+   * playing? Stamped at queue time, raised on the audio falling edge. While
+   * false, playing audio is that scripted line (a verdict, a correction) and
+   * the cue waits for it. Once true, the model has nothing scripted left to
+   * say — any audio that rises again is an OFF-SCRIPT turn, and the pending
+   * cue cuts it rather than waiting behind it (run f634f61b2b42: a stray noise
+   * after "Yes, six." drew an improvised turn that held item 2's cue hostage
+   * for 40 seconds while the tutor recited an invented item, cue format and
+   * all — the engine's own audio block was the hostage-taker's shield).
+   */
+  const pendingCueQuietEdgeRef = useRef(false);
   /**
    * The queued cue (if any) that is ALSO a gesture attempt's ask — see
    * `submitGestureAttempt`. Held until that exact cue is sent, then converted
@@ -269,12 +284,22 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     if (cueTimerRef.current != null || pendingCueRef.current == null) return;
     cueTimerRef.current = window.setTimeout(() => {
       cueTimerRef.current = null;
+      // OFF-SCRIPT CUT-IN: audio playing after the queue-time line already
+      // finished is a turn nobody cued — after a verdict the model has nothing
+      // scripted left to say, so the script does not wait behind it. The cue
+      // ships WITH interrupt (the floor is the caller's call —
+      // TextQueueEntry.interrupt) instead of blocking on 'audio'. A stray
+      // pre-cue attempt opened by the same noise stops blocking too: judging
+      // an item whose ask was never spoken is not a state worth waiting on.
+      // The child's own voice still always blocks — we cut the tutor, never
+      // the learner.
+      const offScript = audioPlayingRef.current && pendingCueQuietEdgeRef.current;
       // Blocked: the cue STAYS queued and re-fires on the next release edge.
       // Reported so a run that ends on a block is distinguishable from a run
       // where no cue was ever queued — the two look identical from outside.
-      const blockedBy = audioPlayingRef.current ? 'audio'
+      const blockedBy = audioPlayingRef.current && !offScript ? 'audio'
         : voiceActiveRef.current() ? 'voice'
-        : loopStateRef.current.attempt != null ? 'attempt'
+        : loopStateRef.current.attempt != null && !offScript ? 'attempt'
         : null;
       if (blockedBy) {
         callbacksRef.current.onCue?.({
@@ -287,8 +312,8 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       const cue = pendingCueRef.current;
       pendingCueRef.current = null;
       if (cue) {
-        ctx.sendText(cue, { silent: true });
-        callbacksRef.current.onCue?.({ phase: 'sent', text: cue });
+        ctx.sendText(cue, { silent: true, interrupt: offScript });
+        callbacksRef.current.onCue?.({ phase: 'sent', text: cue, cutIn: offScript || undefined });
         armDeadCueWatch(cue);
         noteCueSent(cue);
       }
@@ -308,6 +333,12 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       flushJudgeText();
       pendingJudgeRef.current = { judgment: emission.judgment, text: emission.verdictText };
     }
+    // A cue queued by this dispatch's own emission handlers (affirm → next
+    // item cue) was stamped before the judge line above was seeded. It rides
+    // BEHIND that line — if its audio has not played yet, audio-off at queue
+    // time said nothing about quiet, so the off-script stamp is demoted and
+    // the falling edge of the verdict line raises it instead.
+    if (pendingJudgeRef.current != null) pendingCueQuietEdgeRef.current = false;
     // A processed verdict may have unblocked a queued (or newly queued) cue.
     if (step.emissions.some((emission) => emission.kind === 'verdict')) schedulePendingCue();
   }, [flushJudgeText, schedulePendingCue]);
@@ -398,13 +429,23 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   useEffect(() => {
     const wasPlaying = previousAudioPlayingRef.current;
     previousAudioPlayingRef.current = ctx.isAudioPlaying;
-    if (!wasPlaying && ctx.isAudioPlaying) clearDeadCueWatch(true);
+    if (!wasPlaying && ctx.isAudioPlaying) {
+      clearDeadCueWatch(true);
+      // Audio rising while a cue is pending AND its queue-time line already
+      // ended: an off-script turn just started. Schedule now so the cut-in
+      // fires one beat in, instead of waiting for the 5s fallback while the
+      // improvisation runs (run f634f61b2b42 lost 40 seconds to exactly this).
+      if (pendingCueRef.current != null && pendingCueQuietEdgeRef.current) schedulePendingCue();
+    }
     if (wasPlaying && !ctx.isAudioPlaying) {
       // The tutor stopped talking: its judging line is complete. Emit it
       // BEFORE the quiet dispatch, so the order a consumer sees is always
       // judgment → that judgment's full text → whatever quiet triggers.
       if (enabled) flushJudgeText();
       if (enabled) dispatch({ type: 'tutor-quiet', at: performance.now() });
+      // The line a pending cue was queued behind has finished — from here on
+      // the model is off-script if it speaks again.
+      if (pendingCueRef.current != null) pendingCueQuietEdgeRef.current = true;
       schedulePendingCue();
     }
   }, [ctx.isAudioPlaying, enabled, dispatch, flushJudgeText, schedulePendingCue, clearDeadCueWatch]);
@@ -507,6 +548,14 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       noteCueDropped(pendingCueRef.current);
     }
     pendingCueRef.current = text;
+    // Queued while the tutor speaks — or while a verdict line is owed but its
+    // audio has not started (transcript can beat playback) — the cue rides
+    // BEHIND that scripted line; it finishes before the cue may go. Queued in
+    // true quiet = nothing scripted is left, and any audio from here on is
+    // off-script. (The affirm-path queue runs inside the verdict dispatch
+    // BEFORE the judge line is seeded; the dispatch demotes this stamp right
+    // after seeding, closing that ordering gap.)
+    pendingCueQuietEdgeRef.current = !audioPlayingRef.current && pendingJudgeRef.current == null;
     callbacksRef.current.onCue?.({ phase: 'queued', text });
     if (!audioPlayingRef.current) schedulePendingCue();
     if (cueFallbackTimerRef.current != null) window.clearTimeout(cueFallbackTimerRef.current);
