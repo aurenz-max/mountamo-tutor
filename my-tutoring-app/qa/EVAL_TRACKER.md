@@ -49,7 +49,7 @@
 | ordinal-line | 5 | 5 | 0 | 2026-06-20 | [structural sweep](eval-reports/ordinal-line-2026-06-20.md) |
 | shape-sorter | 3 | 3 | 0 | 2026-03-17 | [report](eval-reports/shape-sorter-2026-03-17.md) |
 | math-fact-fluency | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| multiplication-explorer | 6 | 6 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/multiplication-explorer-2026-06-14.md) |
+| multiplication-explorer | 6 | 6 | 0 | 2026-08-11 | [oracle fix 07-07](eval-reports/multiplication-explorer-2026-07-07.md) + per-challenge rework `927b754` — **human gate #90** |
 | skip-counting-runner | 5 | 5 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/skip-counting-runner-2026-06-14.md) |
 | shape-builder | 6 | 5 | 1 | 2026-03-28 | [report](eval-reports/shape-builder-2026-03-28.md) |
 | shape-tracer | 4 | 4 | 0 | 2026-07-14 | [SHT-1 RESOLVED — code-placed geometry](eval-reports/shape-tracer-2026-07-14.md) — all 4 modes runtime-verified (trace/connect_dots/complete/draw_from_description) |
@@ -522,6 +522,40 @@ glyph in code.
 were an option. Note that once the generator guard lands, that check becomes a regression
 detector for the guard rather than an independent finding; keep the two implementations
 unshared so a bug in the guard still fails the oracle.
+
+### SP-30: A single-object primitive grows a multi-item eval mode — every render path still reading the SHARED object silently disagrees with the per-challenge one
+
+**Affected:** `multiplication-explorer` (twice — `answer-key-desync`, 20 violations / 5 runs,
+fixed 2026-07-07; the *visual* half of the same split fixed 2026-08-11 in `927b754`).
+Candidate class: any primitive whose data has a session-level subject (`data.fact`,
+`data.word`, `data.shape`) **and** a challenge list that can name a different one.
+
+**Risk:** the challenge asks A, the picture draws B, the key grades C. In the first instance
+4 of 5 correct fluency answers were marked **wrong, deterministically** — and IRT ate the
+result, so the selector was fed confident garbage rather than nothing.
+
+**Root cause:** the primitive was architected single-fact (title, big equation, all five
+representations, fact-family, area-model all render from one shared `data.fact`), and the
+multi-fact eval mode was added later at the *generator* layer only. Nothing in the component
+was wrong when it was written; the contract changed underneath it.
+
+**⚠️ The reusable lesson is in the SECOND fix, not the first.** The 07-07 pass added
+`parseTargetFact` and pointed `getExpectedAnswer()` **and the big equation** at the
+per-challenge fact — so the two surfaces the oracle checked agreed, the desync count went to
+zero, and the row read as closed. **The five representation panels were never re-pointed.**
+The picture kept drawing the shared fact for another month while the tracker showed a pass.
+This is CLAUDE.md's *close the channel, not the symptom*: the channel is "how many places
+read the shared object", and the answer is found by enumerating readers, not by re-running
+the check that just went green.
+
+**Fix pattern:** resolve the active subject **once**, at the top of the component, through an
+explicit fallback chain (`challenge.fact` → parsed `targetFact` → `data.fact`), and make every
+render path and the grading predicate read that one value. Then grep the component for the
+remaining `data.<subject>` references — each surviving one is a surface that can still lie.
+
+**Detection:** `/oracle-test` — but the oracle must check *what is drawn*, not only what is
+graded, or it certifies exactly this half-fix. The 08-11 oracle rewrite added fact-clustering
+and answer-key-desync checks for that reason.
 
 ## Open Issues — CRITICAL / HIGH
 

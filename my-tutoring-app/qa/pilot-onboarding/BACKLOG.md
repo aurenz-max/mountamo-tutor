@@ -27,30 +27,54 @@ Firebase Auth has no native invite codes; ours are a Firestore collection
   beat form `K` on `students/{id}`). **Browser pass on the signup form itself
   still owed — needs a human sitting (drive the deep link end-to-end).**
 
-## DEPLOY STATE (measured 2026-08-10, live-test session)
+## DEPLOY STATE — ✅ DONE 2026-08-11 (the whole checklist, same day it was filed)
 
-- **Vercel** (`mountamo-education.vercel.app`) auto-builds from `main`
-  (fast-forwarded to `f4facf5` this session — the ship record's named
-  condition "immediately if the pilot invite needs to go out" was taken).
-- **⚠️ The prod frontend has NO `NEXT_PUBLIC_API_BASE_URL`** — the live
-  bundle carries the `http://localhost:8000` fallback (read out of the
-  deployed JS). The live site therefore only works on the dev machine with
-  the local backend running. Fine for the owner's own live test; a blocker
-  for the family.
-- **Backend → Cloud Run** exists as `cloudbuild.yaml` (`ai-tutor-backend`,
-  us-east5) but gcloud auth on the dev machine is expired; whether the
-  service is currently deployed is UNVERIFIED. ⚠️ Before deploying: the
-  cloudbuild step uses `--set-env-vars` with ONLY `PROJECT_NAME`, which
-  REPLACES the service's env-var set — if Cosmos/Gemini/Firebase secrets
-  live as env vars on the service (not mounted volumes), that deploy wipes
-  them. Inspect `gcloud run services describe ai-tutor-backend` first.
+**The 08-10 blocker is closed. Prod is real: frontend on Vercel, backend on
+Cloud Run, and a real account minted through the live site.**
+
+- **Backend is UP** at `https://mountamo-education-869605204378.us-east5.run.app`.
+  Verified from the public endpoints: `/` returns the v4.0.0 welcome, `/docs`
+  serves, and `/api/auth/invite/{bogus}` answers `{"valid":false,"reason":
+  "not_found"}` — prod FastAPI reaching prod Firestore, not just booting.
+- **The `--set-env-vars` footgun did NOT bite.** Secrets survived (Firestore
+  answers), so the deploy either preserved them or set them explicitly.
+- **`NEXT_PUBLIC_API_BASE_URL` took.** Zero `http://localhost:8000` across
+  9.4MB of deployed JS (that fallback WAS the whole 08-10 defect); the bundle
+  carries the run.app URL.
+- **✅ USER DROVE THE REAL FLOW END-TO-END** on the live site with a real
+  invite — a `test1grade3` account exists in Firestore, **and the profile
+  carries grade 3, confirmed in Settings.** This is the runtime verification
+  the 08-10 probe could not give (the probe drove the API, not the form).
+- **~~Browser pass owed~~ → ✅ HUMAN-CHECKS #88 STRUCK 2026-08-11.** The
+  invited grade landing on the profile is the mechanism slice 1 fixed
+  (`students/{id}.grade_level` unwritten → first-doc-wins scan to Grade 1),
+  and it survived `f4facf5` (the literal `"3"` vs `3rd` vocabulary bug) too.
+  **Invite #1 is UNBLOCKED.**
+
+### ⚠️ Residuals — small, but fix before the family session
+
+1. **Service name mismatch.** It deployed as **`mountamo-education`**;
+   `cloudbuild.yaml` names **`ai-tutor-backend`**. The next `gcloud builds
+   submit` will target a service that isn't the live one. Reconcile the yaml
+   (or the service) before deploying again — and note the `--set-env-vars`
+   caveat still applies to whichever name wins.
+2. **Cold start ~18s** on the first request (measured). That is a long time
+   for a seven-year-old's first click, and Cloud Run will scale to zero
+   between sessions. Consider `--min-instances=1` for the pilot window.
+3. **`probe_invite_flow.py --base-url <prod>` has NOT been run against prod.**
+   The user's live drive supersedes most of it, but the probe also checks
+   single-use redemption and the invite-grade-beats-form write. ⚠️ It creates
+   and deletes a real Firebase user — running it against prod is fine only
+   with `--keep` OFF, and it is rate-limited 3/5min per IP.
+4. **Curl reads `/login` as a Next error shell.** This is EXPECTED, not a
+   defect: `useSearchParams()` without a `<Suspense>` boundary makes Next bail
+   out of prerendering, so the static HTML is an error-boundary shell that
+   hydrates into the real form in a browser. **Recorded because it cost this
+   run a wrong call** — a server-response artifact was read as a user-visible
+   failure, and the page was never actually loaded. Any future headless check
+   of `/login` must assert on the hydrated DOM, not the served HTML.
 - Backend CORS already allows `*.vercel.app` (regex, main.py).
-- Family-pilot checklist: (1) `gcloud auth login` → deploy backend →
-  note the service URL; (2) Vercel dashboard → env var
-  `NEXT_PUBLIC_API_BASE_URL=<service URL>` → redeploy; (3)
-  `INVITE_REQUIRED_FOR_SIGNUP` defaults ON — prod signup is gated the
-  moment the backend lands; (4) re-run `probe_invite_flow.py
-  --base-url <service URL>` against prod before sending the invite.
+- `INVITE_REQUIRED_FOR_SIGNUP` defaults ON — prod signup is gated.
 
 ## QUEUE
 
