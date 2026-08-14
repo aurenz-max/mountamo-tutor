@@ -272,11 +272,25 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > across all eight scripted-opener packs. **Criterion #84 (f) is the check for it, and it is
 > the same first-10-seconds check on #82 and #83.**
 
-### #99 — **MIC-LEVEL CONTEXT CHURN (DI BACKLOG 19b): the mic level stopped being a React value and became a subscription. Does the mic still HEAR?** · **OPEN — STANDALONE PATH DRIVEN AND CLEAR 2026-08-14; ONLY THE LESSON PATH REMAINS** · **⚠️ THE ONE ROW THE 08-14 RULING DOES NOT COVER**
+### #99 — **MIC-LEVEL CONTEXT CHURN (DI BACKLOG 19b): the mic level stopped being a React value and became a subscription. Does the mic still HEAR?** · **✅ CLOSED 2026-08-14 — BOTH PATHS DRIVEN: standalone (drive 1) + LESSON (drive 2, session `046ad3a42906`)**
 
 **✅ DRIVE 1 (2026-08-14, user, `ten-frame` / `subitize`) — *"worked correctly for subitize."*** The frame-driven turn machine is confirmed on a real microphone: a spoken number opened a turn, the turn closed, and the tutor judged it. **(a), (b) and (d) are struck for the STANDALONE path**, and with them the whole deaf-mic risk that made this row worth filing — the subscription reaches the machine. `subitize` also carries the stimulus flash, so the timer-under-churn paths landed in the right order too.
 
-**⏳ WHAT DRIVE 1 CANNOT CLOSE — the LESSON path, which is different code, not the same check twice.** A standalone surface runs its own `useLiveVoiceTurns`; a lesson consumes the PROVIDER's single shared instance, and the per-frame resubscribe this slice removed lived on that side. Pip's halo and the mic button's ring (criterion (e)) exist only there and were rewired in the same slice. **One lesson launch closes the row.**
+~~**⏳ WHAT DRIVE 1 CANNOT CLOSE — the LESSON path, which is different code, not the same check twice.** A standalone surface runs its own `useLiveVoiceTurns`; a lesson consumes the PROVIDER's single shared instance, and the per-frame resubscribe this slice removed lived on that side. Pip's halo and the mic button's ring (criterion (e)) exist only there and were rewired in the same slice. **One lesson launch closes the row.**~~
+
+**✅ DRIVE 2 (2026-08-14 19:56, user, a live K counting LESSON — session `046ad3a42906`, log
+`backend/logs/lumina-sessions/2026-08-14-195650-lumina-tutor-046ad3a42906.jsonl`) — THE LESSON
+PATH IS DRIVEN AND CLEAR; the row is CLOSED.** The lesson ran curator-brief → `counting-board`
+(7 spoken answers, 7 affirms on the scripted form — *"Yes, N fish. … Your turn. How many
+fish?"*, run completed) → `ten-frame` `subitize` (2 spoken answers after the flash cue — *"Eyes
+ready — watch the frame!"* — both affirmed) → hundreds-chart → number-sequencer → number-tracer
+→ fast-fact → knowledge-check. **11 voice turns opened through the PROVIDER's shared instance
+and closed; floor gate: superseded 0, wedged 0.** Doctrine bonus, live-proven in one run: ASR
+transcribed spoken six/five/nine/ten as **"sechs" / "fünf" / "Nein." / "잔"** and the judge
+affirmed the correct number every time — **it judges the audio; the transcript is a spectator.**
+This drive also live-verifies **19i** (both judged ports STARTED and ran in a lesson) and gives
+`cuedItemId` its in-lesson `subitize` closes. Report:
+`qa/tutor-reports/lesson-live-2026-08-14-k-counting-di.md`.
 
 **Why this is a mic row when the sitting is closed.** The standing rule retires *per-surface
 re-runs of the judging contract*. This is not that: it rewired **how a captured audio frame
@@ -302,17 +316,23 @@ the lesson-mode resubscribe gate in `useJudgedSpeechLoop.shared-turns` revert-bi
 - ~~**(b) A turn still CLOSES.** After you answer, she replies within a beat or two. A turn
   that opens and never closes looks like the tutor ignoring you — the `activityEnd` bracket
   is what hands Gemini the turn.~~ ✅ **STRUCK — drive 1.**
-- **(c) The bar has not moved.** Two things to feel, in both directions:
+- ~~**(c) The bar has not moved.** Two things to feel, in both directions:
   - **Not deaf** — a quiet, normal-volume answer still opens a turn (don't shout to test it).
   - **Not trigger-happy** — a cough, a chair scrape, or the tutor's own voice through the
     speakers does NOT open a turn. *(The calibration now sees each frame exactly once; it
-    used to occasionally see one twice, which shifted the measured noise floor.)*
+    used to occasionally see one twice, which shifted the measured noise floor.)*~~ ✅ **STRUCK
+  — drive 2.** Not-deaf: 9/9 single-word answers opened turns in a lesson. Not-trigger-happy:
+  every turn that reached the judge carried a real answer, 0 supersessions; the feel half was
+  the driver's to notice and nothing was reported.
 - ~~**(d) The orb's spike ring still moves with your voice** — that ring is now driven by its
   own subscription instead of a prop, and a flat ring on a working mic is this slice's
   signature cosmetic failure.~~ ✅ **STRUCK — drive 1 (a flat ring on a working mic is the one thing a clean subitize run could not have hidden).**
-- **(e) IN A LESSON (not the tester): Pip's halo and the mic button's ring still pulse when
+- ~~**(e) IN A LESSON (not the tester): Pip's halo and the mic button's ring still pulse when
   you speak.** Same subscription change, different leaf; `CuratorCompanion` is the only
-  surface where both were rewired at once.
+  surface where both were rewired at once.~~ ✅ **STRUCK — drive 2 was a full lesson at the
+  mic and the user watched it.** The log cannot see pixels: **if the halo or mic ring looked
+  flat during that drive, REFILE as a pixel row** — the mic-transport half this row existed
+  for is proven either way.
 - **(f) 🎁 THE PAYOFF, if you notice it.** Everything under the provider used to re-render
   30-100×/sec with the mic open. It should simply feel *smoother* — animations less janky,
   fewer stalls. Not a pass/fail criterion; if the run feels WORSE, that is a finding.

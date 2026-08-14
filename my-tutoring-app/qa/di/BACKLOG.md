@@ -64,8 +64,77 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 
 ## Queue
 
-### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); port 5 `picture-vocabulary` ✅ SHIPPED **AND USER-DRIVEN SAME DAY 2026-08-11 (#91 STRUCK — the SPOKEN judge refused deliberate errors, first user evidence of the lane's core debt; "an incredibly strong modality from a learning standpoint")** · port 6 `phoneme-explorer` ✅ SHIPPED 2026-08-11 **AND USER-DRIVEN 2026-08-12 (#92 STRUCK — "several sessions in a row… some incorrect, some correct… this passes human check"; the spoken judge is now user-confirmed on TWO runner surfaces) · ✅ `/add-di-loop` SHIPPED 2026-08-12 (user call, the moment its gate cleared): the thin skill wrapper at `.claude/skills/add-di-loop/SKILL.md` — carries the DECISIONS (answer-material fork, script questions, leak gates, close discipline) and points at the runner/contract for the mechanics; L5 ladder re-pointed in CLAUDE.md + PRIMITIVE_LIFECYCLE.md (DI = the strong form, `/add-voice-control` = interim)** · port 7 `letter-sound-link` ✅ SHIPPED 2026-08-11 (the parked portfolio call ANSWERED: 2 directions verbal, `hear-see` taps because `letter_name` is BLOCKED; new continuant content gate; mic row #93) · port 11 `letter-spotter` ✅ SHIPPED 2026-08-13 (**called by a live drive, not the sweep** — the click-era session spoke one item 2-4×, coalesced a hint and a reveal into one turn, ran 16s behind the screen and volunteered a shape riddle per item; **REVISED TWICE BY DRIVE THE SAME DAY — `name-it` is now SPOKEN and `letter_name` is UNBLOCKED (accepted-build-ahead); the tiles are deleted; the `[LSP_TAP]`-read-aloud defect fixed at the TRANSPORT via the bracket hold, which covers all six gesture-bearing packs; the port-8 repetition rule promoted from this file into `/add-di-loop`**; `find-it` re-shaped from select-all-then-Check to one target/one commit; the live probe caught `targetWord` arriving as 400 chars of model deliberation that EVERY semantic gate passed → shape gates both sides; mic row #97) · port 10 `decodable-reader` ✅ SHIPPED 2026-08-12 (**P3 COMPLETE** — its reads split with no new seam; FIRST pack to fork its answer material INSIDE one run: read the line → say a one-word answer → tap a proposition; per-word tap-to-hear deleted as an answer-leak channel; mic row #96) · next = the MIC SITTING (#82-#87, #89, #93, **#94**, #96 — ⭐ #93 first: a SOUND target, which no strike yet covers).**
+### 16. 🔝 **TOP PRIORITY (user ruling 2026-08-09) — PORT THE DI MODALITY ONTO THE LITERACY PRIMITIVES. Pilot `phonics-blender` ✅ SHIPPED · port 2 `sound-swap` ✅ SHIPPED · port 3 `word-flip` ✅ SHIPPED · port 4 `cvc-speller` ✅ SHIPPED 2026-08-10 (the gesture anchor now has a production caller) · ✅ THE LOOP IS NOW A GENERALIZED CAPABILITY (2026-08-10, user-directed): `judgedScriptContract` + `useJudgedScriptRunner` extracted from the eight consumers — NO retrofit — and proven cross-subject same day on `counting-board` (math, #86) and `push-pull-arena` (science, #87); port 5 `picture-vocabulary` ✅ SHIPPED **AND USER-DRIVEN SAME DAY 2026-08-11 (#91 STRUCK — the SPOKEN judge refused deliberate errors, first user evidence of the lane's core debt; "an incredibly strong modality from a learning standpoint")** · port 6 `phoneme-explorer` ✅ SHIPPED 2026-08-11 **AND USER-DRIVEN 2026-08-12 (#92 STRUCK — "several sessions in a row… some incorrect, some correct… this passes human check"; the spoken judge is now user-confirmed on TWO runner surfaces) · ✅ `/add-di-loop` SHIPPED 2026-08-12 (user call, the moment its gate cleared): the thin skill wrapper at `.claude/skills/add-di-loop/SKILL.md` — carries the DECISIONS (answer-material fork, script questions, leak gates, close discipline) and points at the runner/contract for the mechanics; L5 ladder re-pointed in CLAUDE.md + PRIMITIVE_LIFECYCLE.md (DI = the strong form, `/add-voice-control` = interim)** · port 7 `letter-sound-link` ✅ SHIPPED 2026-08-11 (the parked portfolio call ANSWERED: 2 directions verbal, `hear-see` taps because `letter_name` is BLOCKED; new continuant content gate; mic row #93) · port 11 `letter-spotter` ✅ SHIPPED 2026-08-13 (**called by a live drive, not the sweep** — the click-era session spoke one item 2-4×, coalesced a hint and a reveal into one turn, ran 16s behind the screen and volunteered a shape riddle per item; **REVISED TWICE BY DRIVE THE SAME DAY — `name-it` is now SPOKEN and `letter_name` is UNBLOCKED (accepted-build-ahead); the tiles are deleted; the `[LSP_TAP]`-read-aloud defect fixed at the TRANSPORT via the bracket hold, which covers all six gesture-bearing packs; the port-8 repetition rule promoted from this file into `/add-di-loop`**; `find-it` re-shaped from select-all-then-Check to one target/one commit; the live probe caught `targetWord` arriving as 400 chars of model deliberation that EVERY semantic gate passed → shape gates both sides; mic row #97) · port 10 `decodable-reader` ✅ SHIPPED 2026-08-12 (**P3 COMPLETE** — its reads split with no new seam; FIRST pack to fork its answer material INSIDE one run: read the line → say a one-word answer → tap a proposition; per-word tap-to-hear deleted as an answer-leak channel; mic row #96) · port 14 `interactive-book` ✅ SHIPPED 2026-08-14 (**Phase 1 of the interim-rung retirement, 1 of 3 — the last `useSpokenWordCapture` in literacy is GONE**; `read-focus-word` spoken oral cloze / `find-feature` taps a POSITION; headless drives green: 15/15 refusals + 15/15 affirms, gesture holds silent 5/5, cap→moveOn verbatim; ⭐ the probe's finding was SUPPLY — 5/6 draws shipped the fallback book until the reject path learned to say why) · the MIC SITTING IS CLOSED (user ruling 2026-08-14 — a port ships on machine gates + live probe + `--di` drive) · next = Phase-1 port `story-talk` (expect a per-mode split: naming goes verbal, `feeling_check`/`why_because` inference keeps the 4-picture answer space), then `word-workout` last (`real_vs_nonsense` stays a TAP — "yes" collides with the affirm sentinel).**
 
+> ### ✅ 2026-08-14 — PORT 14 `interactive-book` SHIPPED (Phase 1 of the interim-rung retirement: the last push-to-talk in literacy is gone)
+>
+> **THE FORK (the table picture; no new response classes):** `read-focus-word` → VOICE
+> `short_spoken_word` (shared reading IS spoken — the tutor reads the sentence lead and stops:
+> *"Listen: Warm air melts the ice into a wet — hmm. Your turn. Read the glowing word."*);
+> `find-feature` → GESTURE `manipulation` (the answer is WHICH printed element is the
+> title/author/heading/caption/page number — a POSITION; concepts-of-print is assessed at a
+> real table by POINTING, and reading the part's words aloud would be a different, harder
+> skill than the print concept being measured). **Deleted:** the push-to-talk capture +
+> tap-to-choose voice hooks (the standing open-mic violation this port existed to discharge),
+> the tap-the-glowing-word fallback (it completed an ORAL READING task without reading — the
+> costume test), the read-advance delay timer, the voice-mode fork, the 3-attempt
+> reveal-and-lock ladder, free page navigation mid-run (the screen now follows the lesson to
+> each item's page — the click-era catalog had a struggle entry for the child wandering off
+> the target page), the hint disclosure, the focus-word exploration side quest, and seven
+> improvised `sendText` sites. **The watch-item survived:** the manifest still supplies no
+> book text, no answers, no challenges — the generator derives every scored contract from the
+> visible book, and the script's build gates re-check each item at the seam (gates imported
+> generator-side from `interactiveBookScript.ts`, one address).
+>
+> **Files:** `interactiveBookScript.ts` (new — cues, gates, packBase, harness answers) ·
+> `InteractiveBook.tsx` (whole-file rewrite onto `useJudgedScriptRunner`) ·
+> `gemini-interactive-book.ts` (script-imported gates; supply fixes below) · catalog entry
+> (`[IB_*]` frame, `JUDGED_AUDIO_INPUT`, contextKeys `['challengeType','stimulus']`, βs held —
+> find-feature's task identity is unchanged and read-focus-word was already priced as spoken
+> production, its deleted tap escape only ever earned partial credit) ·
+> `__tests__/InteractiveBook.di-script.test.ts` (34 pins, session-shaped repeat-ask packs) ·
+> `diDrivePlan.ts` adapter (`DiHarnessAnswers` widened: gesture commits can carry tapped TEXT
+> beside ten-frame's placed COUNTS).
+>
+> **⭐ THE PROBE'S FINDING WAS SUPPLY, NOT THE LOOP: 5 of 6 generation draws shipped the
+> FALLBACK book, and nobody had ever seen why.** The reject path logged only "malformed"; it
+> now logs the failing gate per rejection, and the reasons named flash-lite's focus-word
+> placement contract (word repeated across the page's two paragraphs; field not copied
+> verbatim from the paragraph). Fix: mechanical cross-field prompt rules + a THIRD generation
+> attempt → next probe round **3/3 LIVE books** (*Pond Animals* / *Strong Bridges* / *Sun and
+> Snow*), 0 fallbacks, 0 seam drops. The fallback book itself was re-authored so every focus
+> word carries a ≥2-word lead (a fallback that ships under-count sessions defeats its purpose).
+> Probe words drawn: frog bug duck fish snail bird · beam pier arch weight towers cable ·
+> sunshine mud sun water snow wind.
+>
+> **Gates:** typecheck:lumina 0 · full tsc 0 Lumina errors · census greps 0/0 · vitest literacy
+> 525/525 (34 new) · live probes 3/3 with `checkPackGates` `[]` over live content. **Headless
+> drives** (`qa/tutor-reports/interactive-book-live-di-plain-2026-08-14-{read-focus-word,find-feature,cap-drill}.md`):
+> `read-focus-word` ×3 runs — **15/15 refusals of deliberate wrongs, 15/15 exact scripted
+> affirms**, harness verdict PASS · find-feature (all-gesture draw) — **all 5 hands-hold beats
+> SILENT (0 audio bytes)**, every code-computed verdict line spoken verbatim, reveal-on-affirm
+> reads the found text ("Yes, that is the title — it says Water Changes Shape!") · cap drill
+> (spoken) — 3 deliberate wrongs → cap → **moveOn verbatim with the close-line naming the word**
+> ("Good try! That glowing word is water."), run continues clean to the exact complete line.
+>
+> **Findings carried, not fixed here:**
+> - **Item 21 RECURRED in FABRICATED form** (read-focus-word run 1: 3/5 asks after onset,
+>   session-sticky; runs 2-3 clean). The model invented a `[CURRENT STATE]: … and the correct
+>   answer being 'liquid'` narration before the ask — answer leaked. The transport fix HELD
+>   (the real backend template never appeared and the pack's state push carries no answer);
+>   this is the `[LSP_TAP]` fabrication class arriving on a VOICE turn. Both contracts now END
+>   by naming the failure (fact-form); the structural fix remains item 21's cut-in ruling.
+>   Recurrence bullet filed on item 21.
+> - **`di-correction-verbatim-repeat` WARN accepted with rationale** (cap drill): corrections
+>   2 and 3 are byte-identical BY DESIGN — decodable-reader's ruled position ("do not invent a
+>   third wording"), and this pack's correction has no ⟨what they said⟩ contrast channel
+>   because the printed word is static. The oracle is calibrated for packs that have one.
+> - **No mic row filed** — standing rule (mic sitting closed 2026-08-14): nothing here is a
+>   class the contract has not proven (`short_spoken_word` on its 5th surface, `manipulation`
+>   on its 7th). For a voluntary human drive, the wrong answers worth saying: a context guess
+>   that fits the sentence (say "water" where the glowing word is "ice"), the lead's last word
+>   said back, a near-synonym ("mug" for "cup"); wrong taps: any other printed feature.
+>
 > ### ⚠️ 2026-08-13 — PORT 10 REVISED BY DRIVE: THE PROPOSITION ANSWER IS SPOKEN (`closed_set_choice`), AND THE SUMMARY STOPPED FLATTERING
 >
 > **THE RULING, third time of asking.** *"mode sequence/cause effect doesnt let me answer for
@@ -276,13 +345,10 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 > independently since the rev-1 census — it violates the standing open-mic ruling). Both
 > response classes involved are already benched, so **no bench sitting gates any of the three.**
 >
-> 1. **`interactive-book`** — the **only remaining `useSpokenWordCapture` in literacy**, so
->    this port discharges a standing doctrine violation as a side effect. `read-focus-word` is
->    *already* spoken production (`short_spoken_word`, benched and shipped 4×); `find-feature`
->    is locate-and-tap (`manipulation`, benched by rhyme-studio's recognition mode). ⚠ Watch
->    the generator's hard constraint (the manifest must not supply book text, feature answers,
->    or focus-word answers — the generator derives every scored contract from visible content);
->    that is an answer-leak gate that already exists and must survive the port.
+> 1. ✅ **`interactive-book` — SHIPPED 2026-08-14 (port 14; dated block at the top of this
+>    item).** As scoped: `read-focus-word` spoken, `find-feature` locate-and-tap, the doctrine
+>    violation discharged, and the answer-leak constraint survived (gates now imported
+>    generator-side from the script module).
 > 2. **`story-talk`** — **already the DI shape minus the loop**: the tutor READS the story
 >    aloud with character voices and the child answers a who/what/where question. Today the
 >    answer is a tap on 1 of 4 pictures. **The fork question here is which modes go verbal:**
@@ -1796,6 +1862,7 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 - **The fix shape is TRANSPORT, and its precedent is already in the tree:** the off-script cut-in in `useJudgedSpeechLoop` (`interrupt: true`) built for the phantom-item hostage. A tutor turn that OPENS with control syntax (`[`, "Per the instructions", a tag name) is off-script by definition and can be cut the same way. **Needs a user ruling before code** — the last engine-level change in this exact area was overruled.
 - ⚠️ **NOT ten-frame's, and not math's.** The cue shape is family-wide; ten-frame is just the first port the harness has ever driven. Assume every runner-era port carries it until driven.
 - ⚠️ **`--runs 1` IS WHY THIS WAS MISSED.** The first ten-frame report (same config) came back **PASS, 0 HIGH** — the failure is intermittent, and at `--runs 1` the harness's own "confirmed at ≥2/3" rule degrades to "everything counts", which makes a finding's ABSENCE meaningless. **Drive judged ports at `--runs 3`.** Related harness wart: the report path is date-stamped only, so a same-day re-run silently OVERWRITES its own baseline.
+- 🔁 **RECURRENCE 2026-08-14 — port 14 `interactive-book`, first drive, and it arrived in FABRICATED form with the transport fix in place.** 1 of 3 sessions: from item 3 onward the model prefixed every ask with `[CURRENT STATE]: The student is on attempt 0 for the challenge 'read-focus-word' with the prompt '…' and the correct answer being 'liquid'.` — answer spoken before the ask, 3/5 asks, session-sticky after onset; the other two sessions were clean. **The backend sent none of it:** the real template is `[CURRENT STATE] Where the student is in this activity:` + key/value lines, the pack's state push is `{challengeType, stimulus}` with no answer and no attempt counter, and `scripted: true` kept it off the cue — the model imitated the tag from its own system-prompt vocabulary and paraphrased the CUE's judging contract into it (the `[LSP_TAP]` fabrication shape on a VOICE turn). This CONFIRMS the "cannot be prompted away" bullet with the transport half eliminated: what remains is the cut-in, which still needs its user ruling. Port-side mitigation only: both interactive-book contracts now end by naming the failure (fact-form). Report: `interactive-book-live-di-plain-2026-08-14-read-focus-word.md`, run 1.
 
 ### 20. 🎙️ **OPENED 2026-08-13 — THE TRANSCRIPT IS NOT WHAT THE JUDGE HEARD, AND OUR EVIDENCE IS BUILT FROM THE TRANSCRIPT** (user, on the #93 drive: *"the tutor did it right, the transcription is never as good as the real phrasing"*)
 
@@ -1836,9 +1903,9 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
   - **Mechanism.** A lesson opens ONE shared microphone at connect, so `ctx.isListening` is true before the child acts. All fifteen surfaces computed `micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle'` — so the orb read **'armed'**, and `armed` is precisely the state in which `LuminaMicListener` renders the live surface INSTEAD of the tap-to-start button (`showButton = state === 'idle' && (dormant ?? true)`). **`onStart` is only wired to that button.** No affordance → `start()` unreachable → `running` false → `canAttempt` false → **every tap on the board dead**, under an orb captioned *"I'm listening"* / *"Show me on the frame"* and a status line reading *"Tap the microphone to start."* `cancelListening` is also `undefined` in a lesson, so there was no way back to 'idle' either. A hard dead end.
   - **Fix:** gate on `running && ctx.isListening`. `isListening` answers *"is the mic hardware open"*, which in a lesson is not the question; the orb asks *"is this RUN listening for an answer"*, and only `running` answers that. **Standalone is unaffected** — there `isListening` only goes true inside `start()`, so the two agree. Applied at all five sites: `useJudgedScriptRunner` (the eleven runner ports) + the four pre-runner ports' local copies (cvc-speller, phonics-blender, sound-swap, word-flip).
   - **Gate:** new lesson-mode case in `useJudgedScriptRunner.test.tsx` — pre-start `micState === 'idle'` and `canAttempt === false` with `sessionMode: 'lesson'` + `isListening: true`, armed and attemptable after `start()`. **Verified to FAIL against the reverted line.** typecheck:lumina 0 · full vitest 3131.
-  - ⚠️ **STILL UNDRIVEN AT A MICROPHONE.** The fix restores the start gesture; that it then *runs* through a lesson's shared turn authority is what HUMAN-CHECKS #99's remaining half asks.
+  - ~~⚠️ **STILL UNDRIVEN AT A MICROPHONE.** The fix restores the start gesture; that it then *runs* through a lesson's shared turn authority is what HUMAN-CHECKS #99's remaining half asks.~~ ✅ **DRIVEN 2026-08-14 (#99 drive 2, session `046ad3a42906`):** in a live K counting lesson both judged ports started AND ran through the lesson's shared turn authority — `counting-board` 7/7 spoken answers judged to completion, `ten-frame` `subitize` 2/2. The fix is live-verified; report `qa/tutor-reports/lesson-live-2026-08-14-k-counting-di.md`.
   - 🔎 **THE OPEN PRODUCT QUESTION THIS EXPOSES, deliberately NOT decided here: should a judged run auto-start in a lesson at all?** The tap-to-start exists because a browser will not open a microphone without a gesture — but in a lesson that gesture already happened at lesson entry and the mic is open. Auto-starting on mount is wrong (every judged block on the page would fire its opening cue at once), so it needs an active-primitive/viewport gate. **User call; the fix above is the conservative one that restores what the UI already claimed.**
-- **19b. MIC-LEVEL CONTEXT CHURN** — ✅ **CODE SHIPPED 2026-08-14 · ✅ STANDALONE MIC DRIVE CLEAR (user, `ten-frame`/`subitize`: *"worked correctly"*) · ⏳ STILL OPEN ON THE LESSON PATH (HUMAN-CHECKS #99).** The deaf-mic risk is retired — a real voice opened a turn, it closed, and the judge ruled. What is unproven is the PROVIDER's shared turn instance (a lesson, not a tester) and Pip's halo, which is where the per-frame resubscribe actually lived. **One lesson launch closes it; do not close it on the machine gates.**
+- **19b. MIC-LEVEL CONTEXT CHURN** — ✅ **CODE SHIPPED 2026-08-14 · ✅ STANDALONE MIC DRIVE CLEAR (user, `ten-frame`/`subitize`: *"worked correctly"*) · ✅ CLOSED 2026-08-14 — LESSON PATH DRIVEN (#99 drive 2, session `046ad3a42906`).** The deaf-mic risk is retired on BOTH paths: standalone (drive 1), and the PROVIDER's shared turn instance in a live lesson (drive 2 — 11 voice turns opened and closed, `counting-board` 7/7 + `ten-frame` `subitize` 2/2 judged, superseded 0, wedged 0). The item's own bar — "one lesson launch closes it; do not close it on the machine gates" — was met at a microphone, not on tsc. Report `qa/tutor-reports/lesson-live-2026-08-14-k-counting-di.md`.
   - **What shipped, both halves of the item plus the one thing it did not anticipate:**
     1. **`micLevel` is out of the context value.** The provider holds `micLevelRef` + a listener set and publishes synchronously from `onAudioData`; the value exposes `subscribeMicLevel` and `micLevelRef` only. **Nothing in the provider re-renders on an audio frame any more.** A `useMicLevel()` hook wraps the subscription for the surfaces that PAINT the level, so the per-frame render stops inside the leaf that draws it.
     2. **`sendText` reaches `schedulePendingCue` through `sendTextRef`.** That makes `schedulePendingCue` → `dispatch` → `handleVoiceTurnClose` identity-stable, which unsticks all four effects the item named — including the per-frame **lesson-mode voice-turn RESUBSCRIBE**, now pinned by a revert-biting test in `useJudgedSpeechLoop.shared-turns`.
@@ -1883,7 +1950,92 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
   - **19h(iii). QUEUED —** the §1 census greps become a vitest rule over every component importing `useJudgedScriptRunner` (two shipped ports already violate the comment clause). Executor: direct edit.
 - *(19-adjacent, already filed: 18a `numberWordFor` ×3 — fold into 19f's barrel if convenient; 18b rides 19c.)*
 
-### 18. 🔢 **P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · P3 (#63) NEXT — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+### 18. 🔢 **P1 SHIPPED 2026-08-13 + DRIVEN (6/6 refusals) · P2 `addition-subtraction-scene` SHIPPED 2026-08-14 · `number-bond` SHIPPED 2026-08-14 (the P3-correction port) · P3 (#63) = THE REMAINING GATE — THE DI MODALITY ON MATH PRIMITIVES (user thread 2026-08-12: *"would there be value adding /add-di-loop to any of those? for example ten frame… addition subtraction scene may benefit from speaking aloud instead of typing"*)**
+
+> #### ✅ 2026-08-14 — `number-bond` IS ON THE JUDGED LOOP (all four eval modes; the port the P3-correction block below authorized). Third math port; first to ship WITH its `DiPortAdapter` in the same slice, per 19h-i-b.
+>
+> **The fork as shipped** — one spoken, three built, one expansion:
+> `missing_part` → **SPOKEN** (`number_word_to_20`; answers 1..9 by construction — whole ≤ 10, part
+> 1..whole−1; the −/+ stepper and its Check button were the costume: a 0…max row is a weak MENU) ·
+> `decompose` → **built**, and **EXPANDED: one challenge → one judged turn per pair** ("Make five
+> with two parts." → "Find a different way…" → "Find the last way…"), the same one-pair-at-a-time
+> pacing the click era ran through Submit Pair, with the verdict now judging sum AND novelty (a
+> repeated pair is the mode's signature error, corrected not ignored) — precedent: decodable-reader's
+> per-sentence split · `fact_family` → **built** (writing the four equations is FORM; the four boxes
+> are the page; the Check button became a stillness close over TYPED input — a first for the family) ·
+> `build_equation` → **built** (ASS's identical fork, consumed not re-derived). βs HELD ×4, rationale
+> in the catalog comments (`missing_part` rides ASS's solve-story precedent: weak menu → speech, β
+> per mode).
+>
+> **Files:** `math/numberBondScript.ts` (NEW — pack, build gates, code-computed verdicts, harness
+> answers, `numberBondPackBase`) · `math/NumberBond.tsx` (whole-file rewrite) ·
+> `service/math/gemini-number-bond.ts` (imports `isValidBondPart` from the script — ONE predicate on
+> both sides of the wire; fixed `part1 = 0` surviving `?? `-fallbacks in three modes; decompose
+> count 5 → 3, see residuals) · `catalog/math.ts` (DI frame, `audioInput`, contextKeys
+> `['challengeType','stimulus']`) · `service/qa/di/diDrivePlan.ts` (adapter) ·
+> `__tests__/NumberBond.di-script.test.ts` (NEW, 37 tests incl. the real-session-shape pack).
+> **Deleted:** the missing-part stepper + Check, Check Fact Family, Check Equation, the Next control,
+> the ≥2-attempt hint panel, the feedback strings that printed the answer, the old tutor hook and all
+> improvised turns, the per-tier reveal clauses that governed them (render tier levers survive).
+> No contract file existed (`docs/contracts/` has no number-bond entry), so no `--check` gate ran.
+>
+> **⭐ THE FINDING — THE CATALOG'S SCAFFOLDING LADDER IS A NO-VERDICT CHANNEL, AND ONLY A CAP DRILL
+> SEES IT.** First cap drill: on the SECOND identical wrong answer the model balked at repeating the
+> byte-identical scripted correction (18c) and recited the ladder's quoted hints instead — *"Think
+> about the two parts that make the whole…"*, *"Take your time…"* — lines opening with NEITHER
+> sentinel, so the engine saw no verdict and the correction counter stalled (2× CONFIRMED HIGH
+> `di-no-verdict`). The ladder had handed the model sanctioned-sounding replacement lines for exactly
+> the moment 18c makes it want one. **Fixed on both surfaces** (ladder now commands script fidelity
+> and OFFERS no speakable line; the cue's correction clause now says "the SAME line on every wrong
+> answer"), **re-driven clean** (cap drill: 3/3 byte-identical corrections, verdicts flow, move-on
+> fires), and **pinned** (revert-biting test). **→ QUEUED as 18d below: the class is family-wide.**
+>
+> **Two answer-leak catches writing the ask surfaced** (same class, opposite sides): *"has TWO
+> parts"* would speak the answer whenever whole − part = 2, and the context channel's *"one part
+> shown"* whenever it = 1 — both re-worded, and `leakTokens` knows "one" is always-public ("One part
+> is…") and the symmetric bond (6 = 3 + 3) legitimately states its answer as the known part.
+>
+> **Gates:** `typecheck:lumina` **0** · full `tsc` **803 = exact baseline, 0 in touched files** ·
+> census greps **0 + 0** · own suite **37/37** · oracle suite **10/10 (untouched semantics)** · full
+> vitest **3201 passed / 4 skipped / 0 failed** (the 1 error is the known solar-system-explorer
+> confetti teardown, already filed) · **live 6-probe pipeline run, deleted after** — both bands ×
+> both K modes + the two G1 modes — **30/30 challenges kept, ZERO drops**, `checkPackGates` clean on
+> live content. Drawn values:
+> > `missing_part@K(3=1+2, 4=2+2, 5=3+2, 4=1+3, 5=2+3)` · `missing_part@1(4=1+3, 6=2+4, 7=4+3,
+> > 8=3+5, 10=6+4)` · `decompose@K(w=2,3,4,5,3 → 12 items)` · `decompose@1(w=6,7,8,9,10 → 24 items)` ·
+> > `fact_family@1(4=1+3, 6=2+4, 7=3+4, 8=3+5, 10=4+6)` · `build_equation@1(5=2+3, 6=4+2, 7=3+4,
+> > 8=5+3, 10=6+4)`.
+> · **Headless judged drives** (`qa/tutor-reports/number-bond-live-di-{plain,signature}-2026-08-14.md`):
+> `missing_part` ×3 runs **15/15 wrong answers refused, 15/15 right affirmed** · **signature drive
+> 5/5** — the WHOLE said back was refused every time, the exact discrimination claim ·
+> **cap drill clean after the 18d fix** (residual WARNs = 18c(b)+(c), inherited family-wide by
+> construction, same as P2) · `build_equation` gesture drive: **hands-hold beats SILENT (0 audio
+> bytes — the bracket held), 5/5 code-computed verdict lines spoken exactly**.
+>
+> **NO MIC ROW FILED, standing rule applied:** `number_word_to_20` and `manipulation` are proven
+> classes; the count-up accept clause and whole-echo refusal are machine-proven above. **Knowingly
+> carried:** the three settle closes are hand-tuned by ear (3s split / 6s typing / 4.5s tray, short
+> structural forms 1.2–2s) and typing is a NEW commit surface for the family — same class as ASS's
+> settle residual, priced only by a child's hands; 19c is where they stop being per-component
+> constants. The decompose novelty verdict and the fact-family typed close have machine + cue-
+> compliance evidence only — no browser run of the three closes yet ("should work — needs a browser
+> check on the decompose/fact-family/build-equation closes").
+>
+> **RESIDUALS (filed, not fixed):** decompose sessions were 24 judged turns at G1 off 5 challenges —
+> `COUNT_BY_MODE.decompose` cut to 3 in this slice (manifest override still wins); if a manifest
+> pins 5+ the session runs long again — watch it. One `di-correction-verbatim-repeat` WARN pair per
+> capped item is 18c(c) surfacing on every port now that cap drills exist; the fix is the runner
+> knowing the final attempt (18c), not per-port wording.
+>
+> #### 18d. 🔴 QUEUED — SWEEP: every judged port's catalog `scaffoldingLevels`/`commonStruggles` that OFFERS a quoted replacement line is a no-verdict stall waiting for its cap drill
+>
+> The number-bond cap drill proved the mechanism (block above). ASS's ladder carries the same shape
+> (*"Think about what happened in the story"*), and any port whose catalog quotes a speakable hint
+> is suspect — the pre-runner four included. **Executor: targeted catalog edits on the letter-spotter
+> pattern above + a `--di-cap` re-drive per port with an adapter (cheap since 19h-i-b); ports without
+> adapters get the edit + their existing catalog sentinel scan.** Not fixed inline here because it
+> touches ~14 catalog entries across two subject files while item 16's Phase-1 ports are actively
+> editing the same literacy catalog — a sweep mid-collision would clobber a concurrent session.
 
 > #### ✅ 2026-08-14 — P2 SHIPPED: `addition-subtraction-scene` IS ON THE JUDGED LOOP (all four eval modes). The user's second example, and the taxonomy's purest Class-A case.
 >
@@ -2101,8 +2253,21 @@ manifest/lesson path — catalog entries + eval modes, NO new launch surface
 >   benched range. The line above was more cautious than the primitive is.
 > - **P3** — accept **#63** (or re-bench) to unlock the >20 tier; that is the gate on
 >   coin-counter, area-model, array-grid, skip-counting-runner and most of G2+. **NOW THE TOP OF
->   THIS ITEM.** Both ports that could ship without it have shipped, so every remaining Class-A
->   candidate is behind this one acceptance — price it as lane-unblocking, not as one row.
+>   THIS ITEM.** ~~Both ports that could ship without it have shipped, so every remaining Class-A
+>   candidate is behind this one acceptance~~ — price it as lane-unblocking, not as one row.
+>   **⚠️ CORRECTED `/pm` 2026-08-14: `number-bond` is NOT behind #63.** Its `maxNumber` is
+>   **5 (K) / 10 (G1)** (`gemini-number-bond.ts:318`) — entirely inside the benched ≤20 range,
+>   the same over-caution this item's own P2 line had ("more cautious than the primitive is").
+>   Fork on the P2 pattern: `missing_part` → **spoken** (the generator already forbids
+>   trivially-0 parts, so the zero gate holds) · `decompose` / `fact_family` / `build_equation`
+>   → stay **built** (finding all pairs / writing equations / dragging tiles IS the pedagogy).
+>   Ships on the standing rule — machine gates + live generation probe + a `--di` drive (export
+>   the cue surface + `DiPortAdapter` in the port, per 19h-i-b). Executor: `/add-di-loop`.
+>   **✅ EXECUTED 2026-08-14 — see the `number-bond` block at the top of this item.** The fork
+>   shipped exactly as scoped here, plus one expansion the scoping missed: decompose's
+>   find-all-pairs shape becomes one judged turn per pair.
+>   `ordinal-line` stays gated — not by #63 but by RESPONSE CLASS (ordinal words are unbenched;
+>   `identify` is a tap anyway) — do not read this correction as unblocking it.
 > - **P4** — Class-A sweep within the newly benched range, serial.
 >
 > #### ⚠️ Also found: `numberWordFor` now exists in TWO copies
