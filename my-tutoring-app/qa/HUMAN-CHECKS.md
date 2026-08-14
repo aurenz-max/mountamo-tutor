@@ -7,7 +7,7 @@ When a row is verified, strike it here AND note it in the owning report.
 Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 "browser glance" debt.
 
-## Open — ONE list, newest first (as of 2026-08-13, `/pm`)
+## Open — ONE list, newest first (as of 2026-08-14, `/pm`)
 
 > **📐 FORMAT UNIFIED 2026-08-13 (user ruling).** This file used to keep TWO "Open"
 > sections in two formats — a `###` section list for the judged-loop era and a 5-column
@@ -21,19 +21,70 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > the table rows unfolding into sections.**
 > **File new rows AT THE TOP, in this format. There is no second place to put them.**
 >
-> ⚠️ **The 78 are not one queue.** The top **14 are the judged-loop mic sitting** (#82–#98,
-> live surfaces, user-owned, ~30 min) — that is the block worth reading. **The other ~64 are
-> the older pixel-debt tail (#3–#81)**, most of it carried since July; it is a backlog, not a
-> sitting. Rank first, count second.
+> 🛑 **THE JUDGED-LOOP MIC SITTING IS CLOSED — USER RULING 2026-08-14: *"feels like we're doing an
+> excessive amount of testing to close this out, lets just trust the tutor works ive done a lot
+> here."*** It is the standing *"QA is a gate, not a census"* ruling applied to this queue, and the
+> evidence backs it: **the spoken judge has now refused deliberate errors on THREE independent
+> surfaces** — `picture-vocabulary` (#91), `phoneme-explorer` (#92), `letter-sound-link` (#93), plus
+> `read-aloud-studio`'s word swap and, on 2026-08-14, **`ten-frame` at 6/6 refusals and 6/6 affirms
+> with zero errors either way**, which carried it into math. **Every remaining row was a re-run of
+> that one contract on another surface.** Struck as a block: **#82 · #83 · #84 · #85 · #86 · #87 ·
+> #89 · #94 · #95 · #96 · #97 · #98.**
+>
+> **What we are knowingly carrying, so nobody has to re-derive it later:**
+> - **The counting-vs-total split is UNVERIFIED.** `subitize` is supposed to refuse *"one… two…
+>   three… four"* while `counting-board` accepts the identical utterance. Every wrong answer ever
+>   driven was a bare wrong number. If subitize ever reads as too lenient, this is the first thing
+>   to look at — it is a *pedagogy* risk, not a broken loop.
+> - **`make_ten`, `operate`, and the stillness commit on `build` have been walked but never
+>   answered wrong.** The machinery is confirmed; the refusals are inferred from the shared judge.
+> - **Three real defects are OPEN and unfixed** (`qa/di/BACKLOG.md` item 18c): a sub-second noise
+>   restarts a correction from the top; a capped item asks a question then withdraws it; the
+>   correction never varies. These are development work now, not verification debt.
+>
+> **The rule going forward: a judged port ships on its machine gates + a live generation probe.**
+> A mic row is filed only when a port does something the contract has NOT already proven — a new
+> response class, a new answer material, a new stimulus mechanism — not once per surface.
+>
+> ⚠️ **STILL OPEN: #90** (`multiplication-explorer` — does each challenge draw its own fact, and
+> does the picture agree with the equation?). **It survives this ruling because it is not about the
+> tutor at all** — it is a ten-second screen glance at a correctness fix that reached production,
+> and no judge drive covers it. **Plus the ~64 older pixel-debt rows (#3–#81)**, a backlog rather
+> than a sitting. Rank first, count second.
+>
+> *(#93 was struck between the merge and this line — the count in the merge banner above says
+> 78 and is already one stale. Which is the third demonstration in two days of why this file
+> should rank rather than count.)*
+
+> ### `/pm` 2026-08-14 refresh — **NO new rows filed, and that is the point**
+>
+> **One current-era row remains open: #90.** Two 08-14 slices landed (port 13
+> `addition-subtraction-scene`, and `/tutor-test --di`) and **neither filed a mic row** — the
+> first application of the new standing rule. Correct in both cases: port 13 introduced no new
+> response class, answer material, or stimulus mechanism, and `--di` is a headless harness with
+> no pixels. Re-greped every `qa/` report newer than the previous as-of date for
+> `browser glance` / `NOT browser-verified` / `needs a browser check`: **zero hits.**
+>
+> ⚠️ **TWO OLD ROWS WERE RE-BASED, NOT STRUCK — #4 and #31, and both had gone quietly WRONG.**
+> The two DI math ports deleted the exact UI those rows told you to look at (`NumberTileRow` at
+> K; the Grade 1–2 make-ten stepper), and **#31's *"final empty-cell tap auto-completes"* was
+> describing the SP-31 defect as if it were the spec.** ⭐ **The general trap: a pixel row ages
+> against a primitive that keeps moving, and a stale check is worse than a missing one** — it
+> spends a human's scarcest attention hunting a component that no longer renders, and it reads
+> as coverage. **Whoever ports a primitive owns re-basing its open pixel rows in the same
+> slice.** Both rows now carry the SP-31 probe (answer it WRONG on purpose and confirm the
+> primitive lets you), which is the cheapest thing a human can do that no machine gate does.
 
 
 > **THIRTEEN CURRENT-ERA ROWS OPEN — #82 · #83 · #84 · #85 · #86 · #87 · #89 · #90 · #94 ·
 > #95 · #96 · #97 · #98. Next free ID = 99.** Twelve are the one mic sitting; #90 is a screen
 > glance. **STRUCK so far: #88, #91, #92, #93** *(#93 struck 2026-08-13 on the user's
 > letter-sound-link drive — the held-SOUND judge refused the letter name)*. ⚠️ **This count covers the judged-loop era only —
-> the second "Open" table further down carries ~55 more rows (#3–#81) of older pixel debt, all
-> still open.** Two Open sections in two formats remains the underlying defect (flagged
-> 2026-08-12, still not restructured — it now needs a user call, not another flag).
+> the ~64 older pixel-debt rows (#3–#81) continue below in the same list.** ~~Two Open sections
+> in two formats remains the underlying defect (flagged 2026-08-12, still not restructured — it
+> now needs a user call, not another flag).~~ **✅ RESTRUCTURED 2026-08-13 on the user's ruling —
+> there is one list now, and this paragraph's own "second table" wording was left behind by that
+> merge.**
 >
 > ⚠️ **`/pm` 2026-08-13 — THREE CORRECTIONS, and two of them were the register contradicting
 > itself:**
@@ -221,7 +272,58 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 > across all eight scripted-opener packs. **Criterion #84 (f) is the check for it, and it is
 > the same first-10-seconds check on #82 and #83.**
 
-### #98 — ten-frame, DI modality (FIRST MATH PORT): does a spoken NUMBER get judged, and does a hands turn close on stillness? · OPEN, PARTIALLY DRIVEN 2026-08-13 — **one blocking defect found and fixed; nothing about the JUDGE has been heard yet**
+### #99 — **MIC-LEVEL CONTEXT CHURN (DI BACKLOG 19b): the mic level stopped being a React value and became a subscription. Does the mic still HEAR?** · **OPEN — STANDALONE PATH DRIVEN AND CLEAR 2026-08-14; ONLY THE LESSON PATH REMAINS** · **⚠️ THE ONE ROW THE 08-14 RULING DOES NOT COVER**
+
+**✅ DRIVE 1 (2026-08-14, user, `ten-frame` / `subitize`) — *"worked correctly for subitize."*** The frame-driven turn machine is confirmed on a real microphone: a spoken number opened a turn, the turn closed, and the tutor judged it. **(a), (b) and (d) are struck for the STANDALONE path**, and with them the whole deaf-mic risk that made this row worth filing — the subscription reaches the machine. `subitize` also carries the stimulus flash, so the timer-under-churn paths landed in the right order too.
+
+**⏳ WHAT DRIVE 1 CANNOT CLOSE — the LESSON path, which is different code, not the same check twice.** A standalone surface runs its own `useLiveVoiceTurns`; a lesson consumes the PROVIDER's single shared instance, and the per-frame resubscribe this slice removed lived on that side. Pip's halo and the mic button's ring (criterion (e)) exist only there and were rewired in the same slice. **One lesson launch closes the row.**
+
+**Why this is a mic row when the sitting is closed.** The standing rule retires *per-surface
+re-runs of the judging contract*. This is not that: it rewired **how a captured audio frame
+reaches the turn machine**, which is the seam every judged surface in the app opens a turn
+through. Before, the level was a field on the LuminaAIContext value and `useLiveVoiceTurns`
+stepped its machine in a `useEffect` keyed on it — so one float travelled through provider
+state and a full re-render of the whole tree, 30-100 times a second, before a turn could
+open. It is now published straight to subscribers and the machine steps in that callback.
+**If that subscription is wrong, no turn ever opens and every DI surface goes silently deaf
+— a strictly worse failure than the churn it replaced, and jsdom cannot tell you.**
+
+**Machine gates already passed (so this row is about the microphone, nothing else):**
+typecheck:lumina 0 · full vitest 3130 passed (+5 new) · a new `useLiveVoiceTurns.frames`
+suite proves frames alone open AND close a turn with zero renders, and revert-bites ·
+the lesson-mode resubscribe gate in `useJudgedSpeechLoop.shared-turns` revert-bites.
+
+**How to reach it: any judged surface with a real mic. One run is enough — `ten-frame`
+(`subitize` or `build`) or `letter-sound-link` are the two most recently driven.**
+
+- ~~**(a) ⭐ THE ONE THAT MATTERS — a spoken answer is still HEARD.** Say the answer out loud.
+  The tutor must respond to *your voice*, not time out. **If nothing you say ever registers,
+  stop: the subscription is broken and everything below is moot.**~~ ✅ **STRUCK — drive 1.**
+- ~~**(b) A turn still CLOSES.** After you answer, she replies within a beat or two. A turn
+  that opens and never closes looks like the tutor ignoring you — the `activityEnd` bracket
+  is what hands Gemini the turn.~~ ✅ **STRUCK — drive 1.**
+- **(c) The bar has not moved.** Two things to feel, in both directions:
+  - **Not deaf** — a quiet, normal-volume answer still opens a turn (don't shout to test it).
+  - **Not trigger-happy** — a cough, a chair scrape, or the tutor's own voice through the
+    speakers does NOT open a turn. *(The calibration now sees each frame exactly once; it
+    used to occasionally see one twice, which shifted the measured noise floor.)*
+- ~~**(d) The orb's spike ring still moves with your voice** — that ring is now driven by its
+  own subscription instead of a prop, and a flat ring on a working mic is this slice's
+  signature cosmetic failure.~~ ✅ **STRUCK — drive 1 (a flat ring on a working mic is the one thing a clean subitize run could not have hidden).**
+- **(e) IN A LESSON (not the tester): Pip's halo and the mic button's ring still pulse when
+  you speak.** Same subscription change, different leaf; `CuratorCompanion` is the only
+  surface where both were rewired at once.
+- **(f) 🎁 THE PAYOFF, if you notice it.** Everything under the provider used to re-render
+  30-100×/sec with the mic open. It should simply feel *smoother* — animations less janky,
+  fewer stalls. Not a pass/fail criterion; if the run feels WORSE, that is a finding.
+
+**Also true and worth one line: this closes the amplifier behind a whole bug family.** The
+`verdictTimeoutMs`-is-dead bug (2026-08-10, cvc-speller) and ten-frame's never-flashing
+subitize frame (drive 2, 2026-08-13) were both "a timer effect torn down faster than it
+could fire, and only with the mic open". The per-frame render was the amplifier in both.
+The dep-list rules that fixed them stay — but the thing that made them fatal is gone.
+
+### ~~#98 — ten-frame, DI modality (FIRST MATH PORT): does a spoken NUMBER get judged, and does a hands turn close on stillness? · OPEN, PARTIALLY DRIVEN 2026-08-13 — **one blocking defect found and fixed; nothing about the JUDGE has been heard yet** ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **⚠️ DRIVE 1 (2026-08-13, user, Math Primitives Tester, `build` @Elementary) — DID NOT REACH THE
   JUDGE.** Item 1 accepted counters; **item 2's frame was completely dead.** Cause: the component
   gated taps on `runner.stage === 'asking'`, but the runner sets `affirmed` and opens the next item
@@ -251,6 +353,45 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   instructs, then the frame flashes), hand items commit, spoken items are heard, and no board goes
   dead. **The three blocking defects found in drives 1-3 are closed by observation, not just by
   test.**
+- **⚠️ DRIVE 5 (2026-08-14, user, `subitize`) — A FOURTH BLOCKING DEFECT, and it is drive 3's bug
+  arriving through a different door.** *"when i get it wrong, the very next one flashes way too fast
+  before she finishes her statement — it should always happen after she finishes the line about
+  'how many do you see?'"* **The falling edge was right; its SUBJECT was wrong.** On an affirm the
+  runner QUEUES the next item's cue and opens the item in the same dispatch, but a queued cue only
+  sends once the floor clears — so the new item sits on screen for the entire tail of the PREVIOUS
+  item's affirmation. The "she spoke, then stopped" latch filled on that tail, her affirm drained,
+  and the flash fired in the silence **before this item's ask had been sent**. It bites hardest
+  right after a wrong answer because the corrected item's affirm is its own longer turn.
+  **Fixed in the SHARED RUNNER, not in ten-frame:** `useJudgedScriptRunner` now exposes
+  **`cuedItemId`** — the id of the item the tutor's most recently *sent* cue is about — and a
+  stimulus gate must match it as well as watching `tutorSpeaking`. No tuned milliseconds; a
+  correction needs no special case (no new cue is sent, so the id still names the current item).
+  **This is item 19c's first half, pulled forward by a live drive** — every judged surface that
+  keys a stimulus to the tutor's voice inherits the same hole. Gates: `typecheck:lumina` **0** ·
+  full tsc **803 = exact baseline, 0 in touched files** · full vitest **3053 pass** · new
+  regression test **revert-bitten** (it fails with the gate removed). **⚠️ UNHEARD — needs the
+  re-drive below.**
+- **✅ DRIVE 6 (2026-08-14, user, `subitize`, session `e8093c77308e`, 8 items / 183s to the closing
+  line) — THE HEADLINE CRITERION IS MET: THE SPOKEN JUDGE REFUSES ON MATH.** *"tested several
+  incorrect."* **Six deliberate wrong numbers, six REFUSALS; six correct answers, six AFFIRMS;
+  zero false affirms and zero false refusals.** Item 4 → "three" ✗, "five" ✗, "four" ✓. Item 5
+  (answer 5) → "four" ✗ ×3 → capped → move-on. Item 7 (answer 7) → "eight" ✗ → "seven" ✓. This is
+  the first time the judge has been heard refusing anything on a math surface, and it closes the
+  question the four correct-only drives could not touch. **Still owed on this row:** criterion (a)
+  proper — *count aloud up to the right answer* ("one… two… three… four") must be REFUSED while
+  `counting-board` accepts the identical utterance. Every wrong answer in this run was a bare
+  wrong number, so the counting-vs-total split is still untested. Also unheard: `make_ten`,
+  `operate`, and the stillness commit on `build`.
+- **⚠️ THREE DEFECTS THE SAME RUN EXPOSED — filed to `qa/di/BACKLOG.md` item 18c, none fixed yet:**
+  **(1) a 600 ms noise restarts a correction from the top** (t=135.2: `activity_start` → barge-in →
+  turn 15 killed mid-sentence with no transcript at all → turn 16 re-spoke the whole correction, so
+  the child heard half a line and then the entire line again, 8.4 s for one correction);
+  **(2) the capped item asks a question and then withdraws it** — after the third wrong answer the
+  tutor's correction still ended *"Your turn. How many counters did you see?"* and 0.9 s later the
+  runner's move-on cue said *"Good try! Here comes the next one."*, so the child was asked and then
+  told to move on before answering; **(3) the correction is byte-identical every time** —
+  *"My turn: it was five. Look at the whole group at once instead of counting them."* three times
+  in a row, so a child who missed it once gets nothing new on the third pass.
 - **⚠️ THE ROW STAYS OPEN, and the reason is narrow: a drive that answers correctly does not test a
   JUDGE.** Criteria (a) and (c)-(g) are all *"say the wrong thing on purpose"* — they ask whether
   the tutor REFUSES a fluent, confident, wrong answer. Nothing above establishes that.
@@ -312,7 +453,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   bands and both frame sizes (38/38 items askable, zero drops). None of that touches the mic —
   **only a mic run closes this row.**
 
-### #97 — letter-spotter, DI modality (port 11): is the SPOKEN name-it judged, and do the tap items stay silent? · OPEN, PARTIALLY DRIVEN 2026-08-13
+### ~~#97 — letter-spotter, DI modality (port 11): is the SPOKEN name-it judged, and do the tap items stay silent? · OPEN, PARTIALLY DRIVEN 2026-08-13 ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - ⚠️ **THIS ROW'S PREMISE CHANGED AFTER IT WAS FILED, and the section below said otherwise for
   three hours.** The port shipped **tap-only** ("the first pack in the family where NO mode is
   spoken", `letter_name` BLOCKED). **The user's drive `6ada8c0a1bcf` overturned that same day:**
@@ -368,7 +509,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **How to reach it:** Lumina dev → LanguageArtsPrimitivesTester → **Letter Spotter** at grade K; one run reaching all three directions; mic run, **answering wrong on purpose**
 - **Source report:** this session; `qa/di/BACKLOG.md` item 16
 
-### #96 — **`decodable-reader` after the DI port (port 10) — the primitive whose READING PHASE MEASURED NOTHING, and the first judged surface that forks its answer material INSIDE a single run** · OPEN, PARTIALLY DRIVEN 2026-08-13 — **the drive STRUCK (a)/(b)/(d) in substance and FOUND TWO DEFECTS, both now fixed**
+### ~~#96 — **`decodable-reader` after the DI port (port 10) — the primitive whose READING PHASE MEASURED NOTHING, and the first judged surface that forks its answer material INSIDE a single run** · OPEN, PARTIALLY DRIVEN 2026-08-13 — **the drive STRUCK (a)/(b)/(d) in substance and FOUND TWO DEFECTS, both now fixed** ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **⚠️ DRIVE 2026-08-13 (user, two runs: `read_along` @ K and a decode mode).** Verdict on the judged loop itself: ***"DI worked great"*** — the first mode passed. Two things failed and neither was a wording nit:
   - **THE SUMMARY LIED.** Both runs ended *"N of N done all by yourself"* with a ✅ per row while the user had **answered one question wrong and been corrected**. The completion block was bespoke and counted `solvedCount` — *an item closed* — as *done alone*. **FIXED:** the primitive now renders the family `PhaseSummaryPanel` (per-item score, attempt count, first-try star, honest overall ring), and the celebration line counts `firstTryCount`, not solves.
   - **THE PROPOSITION QUESTION COULD NOT BE ANSWERED ALOUD.** *"mode sequence/cause effect doesnt let me answer for the 2nd part verbally, i need to click on the button even though im speaking, this is the same issue with inference mode."* **FIXED:** `answer_tap` is gone; `sequence` / `inference` / `main_idea` now answer through the new `closed_set_choice` response class (accepted-build-ahead on this ruling — **this row is its acceptance drive**). The cards stay on screen as the closed set; they are no longer buttons.
@@ -376,7 +517,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **How to reach it:** Lumina dev → LanguageArtsPrimitivesTester → **Decodable Reader**, once at grade K (`read_along`), once at grade 1 (`literal`), once at grade 2 (`sequence`/`inference`/`main_idea` — the spoken-choice fork); mic run, **answering wrong on purpose exactly once** so (g) is testable
 - **Source report:** `qa/di/BACKLOG.md` item 16, 2026-08-12 port-10 block; 2026-08-13 spoken-choice + honest-summary revision
 
-### #95 — read-aloud-studio, DI modality (port 9): does a passage-length read get judged line by line? · OPEN, HALF-DRIVEN — **(a) COLD READ + WORD SWAP BOTH HELD**
+### ~~#95 — read-aloud-studio, DI modality (port 9): does a passage-length read get judged line by line? · OPEN, HALF-DRIVEN — **(a) COLD READ + WORD SWAP BOTH HELD** ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **⚠️ DRIVEN 2026-08-13 (session `dc60915090e5`, `backend/logs/lumina-sessions/2026-08-13-033708-…jsonl`)
   AND NOT STRUCK — but this is the first drive in the lane where the SPOKEN judge heard a
   connected-text miss and refused it.** 9 turns, 5 reads, 4 items, 73s, user verdict *"works
@@ -420,7 +561,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **How to reach it:** Dev tools → **language-arts**-primitives-tester → **Read Aloud Studio** → Generate (try eval modes `accuracy` @ 2, `expression` @ 4, `dialogue` @ 5) → tap the mic once → answer WRONG on purpose per (a)-(d)
 - **Source report:** `qa/di/BACKLOG.md` item 16, port-9 block
 
-### #94 — **`rhyme-studio` after the DI port (port 8) — the first judged surface whose SPOKEN answer set was deliberately NARROWED, and one criterion below is a real open question, not a formality** · OPEN
+### ~~#94 — **`rhyme-studio` after the DI port (port 8) — the first judged surface whose SPOKEN answer set was deliberately NARROWED, and one criterion below is a real open question, not a formality** · OPEN ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **What to check:** *(Filed 2026-08-12 with the port. Machine-proven: `typecheck:lumina` 0, full suite 2854 green, 5 live real-pipeline probes across every eval mode. No mic has heard it.)* **(a) recognition — SAY the wrong answer on purpose** ("no" when they do rhyme). *(This mode was a 👍/👎 tap for one day; the user's first drive removed it and the log showed the tap had also wedged the run — see the port-8 revision block. The whole mode is new since then and NOTHING here has been heard.)* Three things: the tutor must **accept the natural variants** — try "yeah", "uh huh", "nope", "they don't", not just the bare word (that latitude is the `yes_no` class's one real residual: "no" is VC-length); the correction must re-direct to the ends of the words (*"My turn: listen again to the end of each word. Here they are: cat, hat…"*) and must **NOT** say whether they rhyme; and miss it TWICE so the move-on finally resolves the pair (*"The words cat and hat do rhyme — both end with at"*). **Also confirm the affirmation of a correct NO opens with "Yes,"** — it means *you are right*, and if the tutor says "Correct!" instead, the run silently stops advancing (that is exactly what happened on the first drive). **(b) identification — say the ONSET-SHARING distractor** ("can" when the target is "cat", "pan" for "pig"). This is the signature error the whole mode diagnoses (rhyme confused with alliteration) and it arrives confident. The judge must refuse it. Then **say the TARGET back** ("cat" for "cat") — also a refusal. **(c) production — the OPEN QUESTION.** The cards show 2 correct rhymes of 4; the accept set was deliberately narrowed to **exactly what is on screen** after a live probe caught the model inventing "nake" as an acceptable rhyme for "cake". So: **say a real rhyme that is NOT on a card** (cards say bat/hat → say "mat"). It will be CORRECTED. Report whether that reads as unfair to a child who just did the skill — if it does, the fix is not leniency, it is the `open_set_word` bench sitting this primitive still owes. Also say a non-rhyming card ("dog") — must be refused. **(c2) THE FADE — added 2026-08-13 from the second drive, where the tutor recited *"Words rhyme when they end the same way. Listen: bee, tree…"* on all eight items.** Run 6+ items in ONE mode and confirm the rule model is spoken on the FIRST ask and then not again; at the **easy** tier the short *"Listen hard to the end of each word"* should persist per item while the full model does not. Miss an item TWICE — the move-on must bring the full model back for the next ask. Report whether the run now reads as too BARE at the other end (that is the live question this trades against). Also listen for the tutor saying anything about *waiting* or *think time* into a silence: that was a catalog struggle response being recited verbatim and it should be gone. **(d) the tutor never says the rime first.** Across all three modes, nothing before a verdict may name the shared ending. At the **hard** tier it must not even explain what rhyming is (the cold guard) — drive one hard-tier lesson and listen for a leak from the catalog's second channel. **(e) the clock, and the failure the first drive found.** No Next/Finish/Skip/Start anywhere, no advance timer, mic opens once at the start. **Watch specifically for the tutor running AHEAD of the screen** — on the first drive it invented a whole next question ("cake, chair") while the screen still showed cat/hat, and spoke the bracket tags "RS TAP" / "RS MOVE" out loud. Both are now forbidden by name in the catalog, and neither has been re-heard. If you hear a tag spoken, or a question about words that are not on screen, stop and report it — that is the tutor improvising past the script, not a wording nit.
 - **How to reach it:** Dev tools → **language-arts**-primitives-tester → **Rhyme Studio** → Generate (try eval modes `recognition` @ K, `identification` @ K, `production` @ 1, and one mixed @ 1 with the hard tier) → tap the mic once → answer WRONG on purpose per (a)-(c)
 - **Source report:** `qa/di/BACKLOG.md` item 16, port-8 block
@@ -566,7 +707,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **Route the result to:** `qa/EVAL_TRACKER.md` (multiplication-explorer row, refreshed
   2026-08-11); strike there AND here.
 
-### #89 — di-spoken-practice: do the drive-3 fixes hold, and does the off-script CUT-IN fire? · OPEN, FIXES UNHEARD
+### ~~#89 — di-spoken-practice: do the drive-3 fixes hold, and does the off-script CUT-IN fire? · OPEN, FIXES UNHEARD ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **FOUR user drives on 2026-08-11 (`5813884d14d3`, `436dcb5616cb`, `f634f61b2b42` = 4/4,
   `592abf43424c` = 92%) found seven defects, all fixed. Two of the fixes have never been
   heard: the shared-engine cut-in (c), and — from drive 4 — the seed pool.** Drive 4's
@@ -624,7 +765,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   hydrated DOM, or drive it in a browser.
 - **Routed to:** `qa/pilot-onboarding/BACKLOG.md` (struck there too).
 
-### #87 — push-pull-arena, judged-script runner: can the tutor judge a physics answer, and does the reveal-at-commit land? · OPEN, NEVER DRIVEN
+### ~~#87 — push-pull-arena, judged-script runner: can the tutor judge a physics answer, and does the reveal-at-commit land? · OPEN, NEVER DRIVEN ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **First SCIENCE consumer of `useJudgedScriptRunner` (2026-08-10), and the first pack whose
   answers are computed from a live simulation.** Machine-green (typecheck 0, script suite
   10/10, §1 greps clean); nothing below the generator has been driven. ~2 minutes.
@@ -644,7 +785,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   (stated alternate, not judge improvisation).
 - **No button anywhere may advance the lesson; Go only re-runs the experiment.**
 
-### #86 — counting-board, judged-script runner: is a spoken count judged, and is the pre-numeric hand item number-free? · OPEN, NEVER DRIVEN
+### ~~#86 — counting-board, judged-script runner: is a spoken count judged, and is the pre-numeric hand item number-free? · OPEN, NEVER DRIVEN ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **First MATH consumer of `useJudgedScriptRunner` (2026-08-10) — the first judged loop
   outside literacy/DI, and the runner's second gesture caller.** Machine-green (typecheck 0,
   script suite 29/29, §1 grep clean); nothing below the generator has been driven. ~2 minutes.
@@ -670,7 +811,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **If a correction fails to fire, the fix is a WORDING fix in `countingBoardScript.ts`;
   the loop mechanics are the runner's and are unit-covered.**
 
-### #85 — cvc-speller, DI modality: does the tutor refuse the whole word said back, and does a BUILD get judged at all? · OPEN, SITTING B DONE
+### ~~#85 — cvc-speller, DI modality: does the tutor refuse the whole word said back, and does a BUILD get judged at all? · OPEN, SITTING B DONE ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **✅ SITTING B (`spell_word`) DRIVEN 2026-08-10 AND IT CLOSED THE LANE'S BIGGEST DEBT.** Five
   items, 3m47s: cat 100% (1 attempt) · hen 100% (1) · pig 100% (1) · **dog 67% (2 attempts)** ·
   **bug 33% (3 attempts)**. User: *"the program worked great after that even on errors."*
@@ -735,7 +876,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   `cvcSpellerScript.ts`, not a component fix** — and the same judging shape is now copied
   four times, so check whether it is this pack's wording or the family's.
 
-### #84 — word-flip, DI modality: does the tutor refuse the singular said back? · OPEN, HALF-DRIVEN
+### ~~#84 — word-flip, DI modality: does the tutor refuse the singular said back? · OPEN, HALF-DRIVEN ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **⚠️ DRIVEN 2026-08-10 (session `5269fc87d6da`) AND DELIBERATELY NOT STRUCK.** 5/5, 1m24s,
   every advance an affirmation, `superseded: 0`, `wedged: false`, no leaked plural.
   **(c), (d) and (e) are MET, and (c) is met twice over** — the ASR read `'trunks'` and the
@@ -804,7 +945,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
   *(Confirmed on the 2026-08-10 drive: no leak across 5 items.)*
 - **Route the result to:** `qa/di/BACKLOG.md` item 16.
 
-### #83 — sound-swap, DI modality: does the tutor refuse an unchanged word? · OPEN, HALF-DRIVEN
+### ~~#83 — sound-swap, DI modality: does the tutor refuse an unchanged word? · OPEN, HALF-DRIVEN ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **⚠️ DRIVEN 2026-08-09 (session `a964bccc5ca2`) AND DELIBERATELY NOT STRUCK.** The run was
   clean — 9/9 first try, 2m34s, every advance an affirmation, no leaked answer, and DI-1
   confirmed live (ASR read "sept", the tutor affirmed "Yes, sit." from the audio). **But all
@@ -843,7 +984,7 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **Route the result to:** `qa/di/BACKLOG.md` item 16. If (a) fails, fix the wording BEFORE
   porting a third primitive — the same contract shape is about to be copied again.
 
-### #82 — phonics-blender, DI modality: does the verbal loop actually teach? · OPEN, BLOCKING
+### ~~#82 — phonics-blender, DI modality: does the verbal loop actually teach? · OPEN, BLOCKING ~~ · ✅ **STRUCK 2026-08-14 by the user ruling above (judging contract proven on three surfaces + math; per-surface re-runs retired).**
 - **Why it exists.** The pilot for `qa/di/BACKLOG.md` item 16. One live K run happened
   *mid-port* and is what produced the "purely verbal" ruling — it proved the loop connects,
   the tutor models from the script, the mic captures and speech transcribes. **The task as
@@ -1213,7 +1354,8 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **Source report:** `qa/reader-fit/counting-board-item13-2026-07-20.md`
 
 ### #31 — ten-frame `make_ten` @ K direct manipulation · OPEN
-- **What to check:** seed counters cannot be removed; every empty cell accepts one tap and visibly fills; final empty-cell tap auto-completes with no stepper/Check; added-counter color makes the number bond legible. Critical recheck from the first browser run: advancing from a full make-ten frame into operate/add must show an EMPTY frame before the child builds the sum. Also glance that subitize still flashes/hides and Grade 1–2 make-ten still shows the stepper.
+- ⚠️ **RE-BASED `/pm` 2026-08-14 — two criteria below describe behavior the DI port (port 12, 2026-08-13) deliberately DELETED.** *"Final empty-cell tap auto-completes"* **was the defect**, not the spec: it made `make_ten` @ K unable to emit a wrong answer at all (EVAL_TRACKER **SP-31**). It now commits on **stillness**. And the **steppers are gone** — *"Grade 1–2 make-ten still shows the stepper"* is no longer checkable.
+- **What to check:** seed counters cannot be removed; every empty cell accepts one tap and visibly fills; added-counter color makes the number bond legible. ⭐ **The SP-31 recheck: stop building EARLY — leave the frame short of ten and hold still. It must commit and be REFUSED.** (Before the port, stopping early simply did nothing, so the mode only ever recorded successes.) Critical recheck from the first browser run: advancing from a full make-ten frame into operate/add must show an EMPTY frame before the child builds the sum. Also glance that subitize still flashes/hides.
 - **How to reach it:** MathPrimitivesTester → ten-frame mixed session, grade K; complete make-ten then advance into add; repeat make-ten at Grade 1
 - **Source report:** `qa/reader-fit/ten-frame-item12-2026-07-16.md`
 
@@ -1322,10 +1464,21 @@ Maintained by `/pm` (Claude) or `$pm` (Codex); each run re-greps reports for new
 - **How to reach it:** K letter-sound lesson
 - **Source report:** `qa/reader-fit/letter-sound-link-PRE-2026-07-14.md`
 
-### #4 — addition-subtraction-scene @ K · OPEN
-- **What to check:** NumberTileRow toy-tile look + layout; create_story build flow feel
-- **How to reach it:** K add/sub lesson
-- **Source report:** `qa/reader-fit/addition-subtraction-scene-PRE-1b-2026-07-14.md`
+### #4 — addition-subtraction-scene @ K · OPEN — ⚠️ **RE-BASED `/pm` 2026-08-14: BOTH original criteria are now checks on deleted UI.**
+- **Why it changed:** the DI port (port 13, 2026-08-14) made this primitive judged. **K's
+  `NumberTileRow` is GONE** — the typed numeral is exactly what the port deletes — and **G1
+  `create_story` was rebuilt on K's construction** after it was found accepting any input
+  (`const correct = true`; EVAL_TRACKER **SP-31**). Checking the old row would have sent you
+  looking for a component that no longer renders.
+- **What to check now:** (a) at K, `solve_story` asks for the answer **aloud** and there is no
+  numeral tile row to type into; (b) `act_out` @ K stays **enacted** (contract R3) and commits
+  on **stillness**, not on the count matching — ⭐ **deliberately place the WRONG count and
+  stop; it must commit and then be refused**, which is the whole of SP-31; (c) the equation
+  tray on `build_equation` does not commit on the keystroke that completes `N op N = N`
+  (type `3 + 2 = 1`, pause briefly, correct it to `10` — the 1.2s window should let you).
+- **How to reach it:** K add/sub lesson; then the same at Grade 1 for `create_story`.
+- **Source report:** `qa/di/BACKLOG.md` item 18 P2 (supersedes
+  `qa/reader-fit/addition-subtraction-scene-PRE-1b-2026-07-14.md` for the K flow).
 
 ### #3 — comparison-builder @ K · OPEN
 - **What to check:** tappable SVG group boxes + middle `=` pixel look

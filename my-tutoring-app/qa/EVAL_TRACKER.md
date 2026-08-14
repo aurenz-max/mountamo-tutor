@@ -37,9 +37,9 @@
 | sentence-builder | 4 | 2 | 2 | 2026-06-25 | [structural sweep (simple, tiers PASS)](eval-reports/sentence-builder-2026-06-25.md) |
 | area-model | 5 | 5 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
 | counting-board | 5 | 5 | 0 | 2026-03-15 | [report](eval-reports/counting-board-2026-03-15.md) |
-| ten-frame | 4 | 4 | 0 | 2026-07-16 | [reader-fit item 12 + all-mode eval](eval-reports/ten-frame-2026-07-16.md) |
+| ten-frame | 4 | 4 | 0 | 2026-08-13 | ⚠️ **SP-31 — `make_ten`@K auto-judged on a full frame, so it could only ever emit a CORRECT answer.** Fixed 2026-08-13 in the DI port (`qa/di/BACKLOG.md` item 18 P1). Prior: [reader-fit item 12 + all-mode eval](eval-reports/ten-frame-2026-07-16.md) |
 | factor-tree | 6 | 6 | 0 | 2026-06-11 | [difficulty sweep](eval-reports/difficulty-sweep-rollout2-2026-06-11.md) |
-| addition-subtraction-scene | 4 | 4 | 0 | 2026-06-20 | [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
+| addition-subtraction-scene | 4 | 4 | 0 | 2026-08-14 | ⚠️ **SP-31 — the 06-20 "4/4 PASS" was not wrong, it was unreachable: `act_out`@K + `create_story` committed on a MATCH and G1 `create_story` was `const correct = true`.** Fixed 2026-08-14 in the DI port (`qa/di/BACKLOG.md` item 18 P2); stillness commit + G1 given K's construction. Prior: [support-tier sweep](eval-reports/addition-subtraction-scene-2026-06-20.md) |
 | number-line | 5 | 5 | 0 | 2026-08-03 | [14m canonical-grade band pilot](reader-fit/number-line-14m-2026-08-03.md) |
 | fraction-circles | 4 | 4 | 0 | 2026-06-18 | [report](eval-reports/fraction-circles-2026-06-18.md) |
 | number-bond | 4 | 4 | 0 | 2026-06-14 | [support-tier sweep](eval-reports/number-bond-2026-06-14.md) |
@@ -556,6 +556,49 @@ remaining `data.<subject>` references — each surviving one is a surface that c
 **Detection:** `/oracle-test` — but the oracle must check *what is drawn*, not only what is
 graded, or it certifies exactly this half-fix. The 08-11 oracle rewrite added fact-clustering
 and answer-key-desync checks for that reason.
+
+### SP-31: The commit fires on a MATCH — an eval mode that cannot produce a wrong answer, feeding IRT evidence that measures nothing
+
+**Affected:** `addition-subtraction-scene` — `act_out` @ K and `create_story` auto-judged the
+instant the enacted count MATCHED the target, and G1 `create_story` was worse: a literal
+`const correct = true`, with any scene + object selection accepted. Found 2026-08-14 while
+writing the spoken ask for the DI port (`qa/di/BACKLOG.md` item 18 P2). `ten-frame` carried
+the same shape (`make_ten` @ K auto-judged on a full frame, so it could only ever emit a
+correct answer) — found 2026-08-13 in the port before it.
+
+**Candidate class: every Class-B primitive** — one where the child BUILDS rather than picks,
+and the interaction has no terminal state of its own: `base-ten-blocks`, `fraction-bar`,
+`balance-scale`, `sorting-station`, `counting-board`, `number-bond`. Ask of each mode: *what
+event commits the answer?* If the honest answer is "the moment the state equals the target",
+the mode has no wrong branch.
+
+**Risk — and it is worse than a wrong grade.** A mode that cannot be answered wrongly reports
+100% correct forever. Nothing looks broken: no student complaint, no failing oracle, no
+desync. The 2PL gates ingest a stream of confident successes, θ rises on evidence that never
+discriminated, and the selector routes *away* from a skill the child may not have. **SP-30 fed
+the model garbage; this feeds it flattery, which is harder to see and survives longer.** The
+G1 `create_story` instance sat in production for months with the tracker reading 4/4 PASS.
+
+**Root cause:** an auto-advance written as a convenience (spare the child a Check button)
+doubles as the correctness gate, because "the build is finished" and "the build is right"
+are the same predicate when the only way to finish is to be right. A Check button hid this —
+it gave a wrong build somewhere to land. **Deleting the button under `/add-di-loop` is what
+exposed it, in two consecutive ports.**
+
+**Fix pattern: separate FINISHED from RIGHT.** A hands turn closes on **stillness** — the
+gestural analogue of the mic's silence bracket — never on a match: a wrong placement commits
+exactly as readily as a right one, and the judge then refuses it. Where the build is a
+sentence that can be extended (`3 + 2 = 1` on its way to `3 + 2 = 10`), a complete-looking
+state SHORTENS the stillness window rather than committing on the keystroke. Where no
+defensible verdict exists at all, delete the mode rather than ship a `true` (G1 `create_story`
+was given K's construction).
+
+**Detection:** grep the component for a commit/submit call inside an effect or handler whose
+condition compares state to the answer (`=== target`, `.every(correct)`, `count === answer`),
+and for any `correct = true` / `isCorrect: true` literal in a grading path. **`/oracle-test`
+does NOT catch this** — the oracle solves the item and compares to the key, so a mode that
+accepts everything passes it perfectly. The cheap runtime probe: **answer it wrong on
+purpose and see whether the primitive lets you.**
 
 ## Open Issues — CRITICAL / HIGH
 
