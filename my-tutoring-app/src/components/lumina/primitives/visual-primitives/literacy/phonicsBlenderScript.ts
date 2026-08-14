@@ -87,13 +87,13 @@ export const canWalk = (item: BlendItem): boolean => soundWalk(item).length > 0;
  * is: affirming a close-but-different word teaches a child their miss was right.
  */
 export function judgingContract(item: BlendItem) {
-  return `Then wait for the learner to speak.
+  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner answers.
 Each time the learner responds, judge the audio you heard against the word "${item.targetWord}":
 - The learner said ${item.targetWord} — straight through, or sounded it out and then said it fast: say exactly "Yes, ${item.targetWord}." and stop.
-- Anything else — a different word (even one that sounds close to ${item.targetWord}), or only the separate sounds without ever running them into the whole word: say exactly "My turn: ${canWalk(item) ? `${soundWalk(item)} — ` : ''}${item.targetWord}. Your turn. What word?" and stop, then wait again.
+- Anything else — a different word (even one that sounds close to ${item.targetWord}), or only the separate sounds without ever running them into the whole word: say exactly "My turn: ${canWalk(item) ? `${soundWalk(item)} — ` : ''}${item.targetWord}. Your turn. What word?" and stop — the learner tries again while you stay silent.
 Judge strictly on the FINAL word: a near-sounding DIFFERENT word is wrong, not close enough. Sounding it out first is correct, not a fault.
 Never begin any other sentence with the word "Yes" or the words "My turn".
-Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
+Speak nothing beyond these exact lines. After you affirm, you stay silent until the application's next instruction.`;
 }
 
 /**

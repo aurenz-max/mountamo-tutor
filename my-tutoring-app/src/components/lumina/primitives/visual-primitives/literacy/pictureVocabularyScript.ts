@@ -281,7 +281,7 @@ const wrongClauseFor = (item: PictureVocabItem): string => {
 };
 
 const judgingContract = (item: PictureVocabItem): string =>
-  `Then WAIT silently — the learner is thinking, and think time is unbounded. Never say the answer during their turn. `
+  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never say the answer during their turn. `
   + `The correct answer is "${item.word}". ${acceptClauseFor(item)}${wrongClauseFor(item)}`
   + `If the answer is right, say exactly: "Yes, ${item.word}." `
   + `If it is wrong, say exactly: "${correctionFor(item)}"`;
@@ -293,7 +293,7 @@ const tapContract = (item: PictureVocabItem): string => {
     ? `Never say what goes with ${item.baseWord} — the tap is the answer. `
     : '';
   return (
-    `Then WAIT in complete silence — the learner answers by TAPPING a picture, not by speaking. `
+    `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a picture, not by speaking, so you then stay completely silent. `
     + base
     + `Do not describe the pictures, do not narrate, and do not judge anything you hear through the microphone. `
     + `You will be told what the learner tapped and given the exact line to say; only then do you speak.`

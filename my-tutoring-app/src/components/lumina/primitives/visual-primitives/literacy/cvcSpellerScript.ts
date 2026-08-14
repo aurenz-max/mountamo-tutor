@@ -68,9 +68,12 @@
  * sound — the class `di-letter-sounds` benched and ships live on (its vowel
  * modes ask for exactly this, and its own spellings are what this module
  * speaks). No new bench sitting is owed. `spell-word` produces no spoken
- * answer at all, so it owes none either. **Letter NAMES remain BLOCKED as an
- * answer** (LetterSpotter homophone ruling): the child says the SOUND, and the
- * one place a letter name is spoken is the tutor's own second correction.
+ * answer at all, so it owes none either. **This pack still asks for the SOUND,
+ * never the letter NAME** — not because the name is blocked (that block was
+ * OVERTURNED 2026-08-13; `letter_name` is `accepted-build-ahead`, see
+ * judgedScriptContract.ts) but because sounding is the skill `cvc-speller`
+ * teaches. The one place a letter name is spoken is the tutor's own second
+ * correction.
  *
  * EVERY PHONEME IN A SPOKEN LINE GOES THROUGH `phonemeVoice`, with one
  * deliberate strengthening for the vowel: it is resolved from the vowel LETTER
@@ -249,13 +252,13 @@ export function judgingContract(item: CvcItem): string {
   const sound = spokenVowel(item);
   const first = spokenSoundAt(item, 0);
   const last = spokenSoundAt(item, 2);
-  return `Then wait for the learner to speak.
+  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner answers.
 Each time the learner responds, judge the audio you heard against the middle sound of "${item.word}", which is "${sound}":
 - The learner made the "${sound}" sound — clipped, held, or inside a short phrase: say exactly "Yes, ${sound}." and stop.
-- Anything else — saying the whole word "${item.word}" back, making one of the other sounds in it (${first} or ${last}), saying the NAME of a letter instead of a sound, or a different sound entirely: say exactly "${correctionLine(item, { correction: 1 })}" and stop, then wait again.
+- Anything else — saying the whole word "${item.word}" back, making one of the other sounds in it (${first} or ${last}), saying the NAME of a letter instead of a sound, or a different sound entirely: say exactly "${correctionLine(item, { correction: 1 })}" and stop — the learner tries again while you stay silent.
 Judge on the MIDDLE sound only: the answer is the one sound in the middle of "${item.word}", not the whole word and not the sounds around it. The name of a letter is not the answer either — the sound it makes is.
 Never begin any other sentence with the word "Yes" or the words "My turn".
-Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
+Speak nothing beyond these exact lines. After you affirm, you stay silent until the application's next instruction.`;
 }
 
 /**
@@ -315,7 +318,7 @@ export const buildVerdictCue = (
     ? `[DI_CVC_BUILD] The learner filled the boxes correctly for "${item.word}".
 Speak exactly:
 "Yes, ${item.word}."
-Then stop. Never begin any other sentence with the word "Yes" or the words "My turn". Speak nothing beyond that exact line, and wait silently for the application's next instruction.`
+Then stop. Never begin any other sentence with the word "Yes" or the words "My turn". Speak nothing beyond that exact line, and you stay silent until the application's next instruction.`
     : `[DI_CVC_BUILD] The learner put "${shown}" in the boxes, and the word is "${item.word}".
 Speak exactly:
 "${correctionLine(item, { correction: opts.correction ?? 1, wrongIndex: opts.wrongIndex })}"

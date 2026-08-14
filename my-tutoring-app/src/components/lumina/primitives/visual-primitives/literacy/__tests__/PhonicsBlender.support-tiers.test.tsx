@@ -318,7 +318,7 @@ describe('phonics-blender · DI sentinel discipline (standing gate 2)', () => {
       itemCue(CAT, { nameSounds: false }),
       moveOnCue(CAT, DOG, true),
     ]) {
-      expect(cue).toContain('Then wait for the learner to speak.');
+      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
       expect(cue).toContain('Never begin any other sentence with the word "Yes"');
     }
   });

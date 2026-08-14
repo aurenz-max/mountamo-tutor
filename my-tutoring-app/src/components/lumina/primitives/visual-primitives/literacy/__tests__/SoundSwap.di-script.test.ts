@@ -28,6 +28,10 @@ import {
   moveOnCue,
   type SwapItem,
 } from '../soundSwapScript';
+import {
+  findPerformedStageDirections,
+  spokenSpanOf,
+} from '../../../../hooks/judgedScriptContract';
 
 /** deletion: cat − /k/ → at */
 const DEL: SwapItem = {
@@ -70,12 +74,26 @@ const VOWEL: SwapItem = {
   newPhoneme: '/æ/',
 };
 
-/** The line the tutor is told to SPEAK — the quote right after "Speak
- *  exactly:". Everything else a cue contains is instruction ABOUT speech,
- *  including the contract's own "Yes" / "My turn" anti-collision quotes, which
- *  are the rule and not an utterance. */
-const spokenLine = (cue: string) =>
-  (cue.match(/Speak exactly:\s*\n?"([^"]*)"/) ?? [])[1] ?? '';
+/** The line the tutor is told to SPEAK — the shared parser, which knows this
+ *  port's di-bench-era `Speak exactly:` anchor as well as the runner-era one.
+ *  Everything else a cue contains is instruction ABOUT speech, including the
+ *  contract's own "Yes" / "My turn" anti-collision quotes, which are the rule
+ *  and not an utterance. */
+const spokenLine = spokenSpanOf;
+
+/** Every cue this pack can emit, labelled for the shared gates. This port
+ *  predates `useJudgedScriptRunner` and deliberately still hand-rolls its
+ *  runner half (2026-08-10 extraction ruling: no retrofit), so there is no
+ *  `JudgedScriptPack` to hand `checkPackGates` — its items carry no
+ *  `answerKind`/`responseClass`, and inventing them here would assert a
+ *  contract the production code does not keep. The cue-level gate below takes
+ *  a cue list directly, so it runs unchanged. */
+const allCues = (): Array<{ label: string; text: string }> =>
+  [DEL, ADD, SUB, VOWEL].flatMap((item) => [
+    { label: `itemCue(${item.id}, opening)`, text: itemCue(item, { opening: true, howToPlay: true }) },
+    { label: `itemCue(${item.id})`, text: itemCue(item) },
+    { label: `moveOnCue(${item.id})`, text: moveOnCue(item, null) },
+  ]).concat({ label: 'completeCue', text: completeCue() });
 
 describe('sound-swap script · the ask names the move (all three operations)', () => {
   it('deletion names the sound to take away', () => {
@@ -266,6 +284,14 @@ describe('sound-swap script · DI sentinel discipline (standing gate 2)', () => 
     }
   });
 
+  it('hands the tutor no stage direction shaped like something to perform', () => {
+    // The family gate, run over a cue list because this port has no pack (see
+    // `allCues`). A model VOICED "[WAIT silently]" to a child after taking the
+    // contract's imperative opener as one more thing on the list of things to
+    // say; every judge-side instruction here has to be a FACT about the turn.
+    expect(findPerformedStageDirections(allCues())).toEqual([]);
+  });
+
   it("the model line opens with 'Listen' — classic DISTAR's 'My turn.' opener is forbidden here", () => {
     for (const item of [DEL, ADD, SUB, VOWEL]) {
       expect(spokenLine(itemCue(item)).startsWith('Listen')).toBe(true);
@@ -274,7 +300,7 @@ describe('sound-swap script · DI sentinel discipline (standing gate 2)', () => 
 
   it('every item cue carries the judging contract, so no attempt can land unjudged', () => {
     for (const cue of [itemCue(DEL), itemCue(SUB), moveOnCue(DEL, ADD)]) {
-      expect(cue).toContain('Then wait for the learner to speak.');
+      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
       expect(cue).toContain('Never begin any other sentence with the word "Yes"');
     }
   });

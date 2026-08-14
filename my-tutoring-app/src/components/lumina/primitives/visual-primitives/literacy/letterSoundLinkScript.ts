@@ -366,7 +366,7 @@ const wrongClauseFor = (item: LetterSoundItem): string =>
     : `The other picture's word${item.distractor ? ` — "${item.distractor}" — ` : ' '}is NOT the answer. `;
 
 const judgingContract = (item: LetterSoundItem): string =>
-  `Then WAIT silently — the learner is thinking, and think time is unbounded. Never say the answer during their turn. `
+  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never say the answer during their turn. `
   + `The correct answer is ${targetFor(item)}. ${acceptClauseFor(item)}${wrongClauseFor(item)}`
   + `If the answer is right, say exactly: "Yes, ${item.mode === 'see-hear' ? item.spoken : item.answer}." `
   + `If it is wrong, say exactly: "${correctionFor(item)}"`;
@@ -375,7 +375,7 @@ const judgingContract = (item: LetterSoundItem): string =>
  *  to judge until the application describes the tap, and naming either letter
  *  would hand over the answer. */
 const tapContract = (item: LetterSoundItem): string =>
-  `Then WAIT in complete silence — the learner answers by TAPPING a letter, not by speaking. `
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a letter, not by speaking, so you then stay completely silent. `
   + `Never say which letter makes ${item.spoken}, never name or spell either letter on screen, and do not `
   + `judge anything you hear through the microphone. `
   + `You will be told what the learner tapped and given the exact line to say; only then do you speak.`;

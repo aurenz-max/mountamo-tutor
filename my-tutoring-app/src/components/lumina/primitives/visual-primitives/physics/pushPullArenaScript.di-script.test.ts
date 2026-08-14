@@ -14,7 +14,12 @@
  *     answer (heavier-moves-more misconception).
  */
 import { describe, expect, it } from 'vitest';
-import { validateJudgedScriptPack, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { spokenSpansOf, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  checkDiCatalogEntry,
+  checkPackGates,
+} from '../../../hooks/judgedScriptContract.testkit';
+import { PHYSICS_CATALOG } from '../../../service/manifest/catalog/physics';
 import {
   completeCue,
   designPushSize,
@@ -66,12 +71,23 @@ const packOf = (items: ArenaItem[]): JudgedScriptPack<ArenaItem> => ({
   }),
 });
 
-const spokenLines = (cue: string): string[] =>
-  Array.from(cue.matchAll(/[Ss]ay exactly: "([^"]+)"/g), (m) => m[1]);
+/** Every line the tutor is told to SPEAK — the shared parser, so every port
+ *  reads the same span. */
+const spokenLines = spokenSpansOf;
 
 describe('contract gates', () => {
-  it('the full fixture pack passes validateJudgedScriptPack', () => {
-    expect(validateJudgedScriptPack(packOf(FIXTURES))).toEqual([]);
+  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
+    // checkPackGates = validateJudgedScriptPack PLUS the two gates that exist
+    // because a live drive found the defect after every machine gate passed
+    // (the performed "[WAIT silently]"; the byte-identical consecutive ask).
+    // These fixtures pair observe with observe and predict with predict, so the
+    // repeat gate is actually exercised here rather than skipped.
+    expect(checkPackGates(packOf(FIXTURES))).toEqual([]);
+  });
+
+  it('the catalog keeps its side: audio mode, contextKeys, template keys, sentinel scan', () => {
+    const entry = PHYSICS_CATALOG.find((p) => p.id === 'push-pull-arena')!;
+    expect(checkDiCatalogEntry(entry, packOf(FIXTURES), FIXTURES[0])).toEqual([]);
   });
 
   it('predict avoids the yes/no menu — an ask ending "Yes, or no?" would collide with the affirm sentinel', () => {
@@ -126,9 +142,15 @@ describe('asks and corrections', () => {
     expect(cue).toContain('Also accept: "move", "yes"');
   });
 
-  it('every contract orders the tutor to wait silently', () => {
+  it('every contract STATES the wait as a fact, never orders it', () => {
+    // The old wording here ordered it ("Then WAIT silently…") and the test name
+    // said so. A model handed an imperative reads it as one more thing on the
+    // list of things to say, and voiced it as "[WAIT silently]" on a ten-frame
+    // drive; checkPackGates now refuses the imperative form family-wide.
     for (const fixture of FIXTURES) {
-      expect(itemCue(fixture)).toContain('WAIT silently');
+      const cue = itemCue(fixture);
+      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
+      expect(cue).toContain('you then stay silent while the learner thinks');
     }
   });
 

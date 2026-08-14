@@ -18,9 +18,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  validateJudgedScriptPack,
+  spokenSpansOf,
   type JudgedScriptPack,
 } from '../../../hooks/judgedScriptContract';
+import {
+  checkDiCatalogEntry,
+  checkPackGates,
+} from '../../../hooks/judgedScriptContract.testkit';
+import { MATH_CATALOG } from '../../../service/manifest/catalog/math';
 import {
   completeCue,
   countWalk,
@@ -74,15 +79,33 @@ const packOf = (items: CountingItem[]): JudgedScriptPack<CountingItem> => ({
   }),
 });
 
-/** Every line the tutor is told to SPEAK, extracted from a cue. */
-const spokenLines = (cue: string): string[] =>
-  Array.from(cue.matchAll(/[Ss]ay exactly: "([^"]+)"/g), (m) => m[1]);
+/** Every line the tutor is told to SPEAK — the shared parser, so every port
+ *  reads the same span. */
+const spokenLines = spokenSpansOf;
 
 const NUMBER_WORDS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|zero)\b/i;
 
 describe('contract gates', () => {
-  it('the full fixture pack passes validateJudgedScriptPack (classes + sentinel collisions)', () => {
-    expect(validateJudgedScriptPack(packOf(FIXTURES))).toEqual([]);
+  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
+    // checkPackGates = validateJudgedScriptPack PLUS the two gates that exist
+    // because a live drive found the defect after every machine gate passed
+    // (the performed "[WAIT silently]"; the byte-identical consecutive ask).
+    expect(checkPackGates(packOf(FIXTURES))).toEqual([]);
+  });
+
+  it('two count_all items in a row do not recite the ask twice', () => {
+    // The fixture list above never pairs a kind with itself, which is the ONE
+    // shape that cannot trigger the repeat gate — and a real counting session
+    // is mostly count_all after count_all.
+    expect(checkPackGates(packOf([
+      item('count_all', 5, { id: 'ca-1' }),
+      item('count_all', 7, { id: 'ca-2' }),
+    ]))).toEqual([]);
+  });
+
+  it('the catalog keeps its side: audio mode, contextKeys, template keys, sentinel scan', () => {
+    const entry = MATH_CATALOG.find((p) => p.id === 'counting-board')!;
+    expect(checkDiCatalogEntry(entry, packOf(FIXTURES), FIXTURES[0])).toEqual([]);
   });
 
   it('response classes split at 20 (standing gate 1, per item)', () => {
@@ -169,7 +192,10 @@ describe('the judging contracts', () => {
   it('every contract orders the tutor to wait and never count along', () => {
     for (const it_ of FIXTURES.filter((f) => f.kind !== 'subitize_perceptual')) {
       const cue = itemCue(it_);
-      expect(cue).toContain('WAIT silently');
+      // Stated as a FACT about the turn, never ordered: a model handed the
+      // imperative form voiced it as "[WAIT silently]" on a ten-frame drive.
+      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
+      expect(cue).toContain('you then stay silent while the learner counts');
       expect(cue).toContain('Never count aloud');
     }
   });
@@ -187,7 +213,7 @@ describe('subitize_perceptual is number-free (pre-numeric contract)', () => {
 
   it('the item cue is a SILENCE contract — the tap answers, not speech', () => {
     const cue = itemCue(pk);
-    expect(cue).toContain('WAIT in complete silence');
+    expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
     expect(cue).toContain('answers by TAPPING');
     expect(cue).toContain('Do not say any number word');
   });

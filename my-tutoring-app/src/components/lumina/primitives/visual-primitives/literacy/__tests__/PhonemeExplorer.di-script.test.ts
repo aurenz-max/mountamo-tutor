@@ -35,11 +35,13 @@ import {
   type PhonemeExplorerItem,
 } from '../phonemeExplorerScript';
 import {
-  findSentinelCollisions,
-  findUnresolvedTemplateKeys,
-  validateJudgedScriptPack,
+  spokenSpanOf,
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
+import {
+  checkDiCatalogEntry,
+  checkPackGates,
+} from '../../../../hooks/judgedScriptContract.testkit';
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
 
 // ── Fixtures — one item per mode, session-shaped ────────────────────────────
@@ -80,16 +82,29 @@ const pack: JudgedScriptPack<PhonemeExplorerItem> = {
   contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
 };
 
-const spokenLine = (cue: string): string => {
-  const match = cue.match(/Say exactly:\s*"([\s\S]*?)"/);
-  return match ? match[1] : '';
-};
+/** The line the tutor actually SPEAKS — the shared parser, so every port reads
+ *  the same span. Everything else in a cue is judge-side instruction. */
+const spokenLine = spokenSpanOf;
 
 // ── 1. Structural gates ─────────────────────────────────────────────────────
 
 describe('phoneme-explorer pack · structural gates', () => {
-  it('passes validateJudgedScriptPack with zero issues', () => {
-    expect(validateJudgedScriptPack(pack)).toEqual([]);
+  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
+    // checkPackGates = validateJudgedScriptPack PLUS the two gates that exist
+    // because a live drive found the defect after every machine gate passed
+    // (the performed "[WAIT silently]"; the byte-identical consecutive ask).
+    expect(checkPackGates(pack)).toEqual([]);
+  });
+
+  it('two items in the SAME mode do not recite the ask twice', () => {
+    // One item per mode is the ONE pack shape that cannot trigger the repeat
+    // gate — it compares consecutive items of the same action, and a real
+    // session runs several blend items in a row.
+    const twice = [
+      itemFromChallenge({ id: 'b1', mode: 'blend', phonemeSequence: ['k', 'a', 't'], word: 'cat', emoji: '🐱' })!,
+      itemFromChallenge({ id: 'b2', mode: 'blend', phonemeSequence: ['p', 'i', 'g'], word: 'pig', emoji: '🐷' })!,
+    ];
+    expect(checkPackGates({ ...pack, items: twice })).toEqual([]);
   });
 
   it('every mode is voice; segment answers with a benched number word', () => {
@@ -271,28 +286,7 @@ describe('phoneme-explorer pack · session frame and catalog', () => {
     expect(completeCue()).toContain('Then stop — the activity is over.');
   });
 
-  it('declares the family audio mode', () => {
-    expect(entry.audioInput).toEqual({ manual_activity: true });
-  });
-
-  it('template keys resolve against exactly what the pack pushes', () => {
-    const provided = Object.keys(pack.contextFor(BLEND));
-    expect(entry.tutoring?.contextKeys).toEqual(provided);
-    const prose = [
-      entry.tutoring?.taskDescription ?? '',
-      ...Object.values(entry.tutoring?.scaffoldingLevels ?? {}),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => d.instruction),
-    ].join('\n');
-    expect(findUnresolvedTemplateKeys(prose, provided)).toEqual([]);
-  });
-
-  it('no catalog sentence opens with a verdict sentinel (standing gate 2)', () => {
-    const cues = [
-      { label: 'taskDescription', text: entry.tutoring?.taskDescription ?? '' },
-      ...Object.entries(entry.tutoring?.scaffoldingLevels ?? {}).map(([label, text]) => ({ label, text })),
-      ...(entry.tutoring?.commonStruggles ?? []).map((s, i) => ({ label: `struggle-${i}`, text: `${s.pattern}. ${s.response}` })),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => ({ label: d.title, text: d.instruction })),
-    ];
-    expect(findSentinelCollisions(cues)).toEqual([]);
+  it('keeps its side of the contract: audio mode, contextKeys, template keys, sentinel scan', () => {
+    expect(checkDiCatalogEntry(entry, pack, BLEND)).toEqual([]);
   });
 });

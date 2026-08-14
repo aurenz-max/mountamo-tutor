@@ -34,6 +34,11 @@ import {
   vowelKeyword,
   type CvcItem,
 } from '../cvcSpellerScript';
+import {
+  findPerformedStageDirections,
+  findSentinelCollisions,
+  spokenSpanOf,
+} from '../../../../hooks/judgedScriptContract';
 
 const CAT: CvcItem = {
   id: 'c1', task: 'fill-vowel', word: 'cat',
@@ -51,12 +56,33 @@ const HEN: CvcItem = {
   vowelLetter: 'e', emoji: '🐔',
 };
 
-/** The line the tutor actually SPEAKS — everything between the quotes that
- *  follow `Speak exactly:`. Everything else in a cue is instruction. */
-const spokenLine = (cue: string): string => {
-  const match = cue.match(/Speak exactly:\s*\n?"([\s\S]*?)"/);
-  return match ? match[1] : '';
-};
+/** The line the tutor actually SPEAKS — the shared parser, which knows this
+ *  port's di-bench-era `Speak exactly:` anchor as well as the runner-era one.
+ *  Everything else in a cue is judge-side instruction. */
+const spokenLine = spokenSpanOf;
+
+/** Every cue this pack can emit, labelled for the shared gates. This port
+ *  predates `useJudgedScriptRunner` and deliberately still hand-rolls its
+ *  runner half (2026-08-10 extraction ruling: no retrofit), so there is no
+ *  `JudgedScriptPack` to hand `checkPackGates` — its items carry no
+ *  `answerKind`/`responseClass`, and inventing them here would assert a
+ *  contract the production code does not keep. The cue-level gates take a cue
+ *  list directly, so those run unchanged. */
+const allCues = (): Array<{ label: string; text: string }> =>
+  [CAT, SAT, HEN].flatMap((item) => [
+    { label: `itemCue(${item.id}, opening)`, text: itemCue(item, { opening: true, howToPlay: true }) },
+    { label: `itemCue(${item.id})`, text: itemCue(item, {}) },
+    { label: `moveOnCue(${item.id})`, text: moveOnCue(item, null, {}) },
+    { label: `pronounceCue(${item.id})`, text: pronounceCue(item.word) },
+    {
+      label: `buildVerdictCue(${item.id}, hit)`,
+      text: buildVerdictCue(item, { placed: item.letters, correct: true }),
+    },
+    {
+      label: `buildVerdictCue(${item.id}, miss)`,
+      text: buildVerdictCue(item, { placed: [item.letters[0], null, null], correct: false, wrongIndex: 1 }),
+    },
+  ]).concat({ label: 'completeCue', text: completeCue() });
 
 describe('cvc-speller script · the middle sound is LETTER-derived', () => {
   it('speaks di-letter-sounds own short-vowel spellings', () => {
@@ -296,6 +322,24 @@ describe('cvc-speller script · DI sentinel discipline (standing gate 2)', () =>
     }
   });
 
+  it('hands the tutor no stage direction shaped like something to perform', () => {
+    // The family gate, run over a cue list because this port has no pack (see
+    // `allCues`). A model VOICED "[WAIT silently]" to a child after taking the
+    // contract's imperative opener as one more thing on the list of things to
+    // say; every judge-side instruction here has to be a FACT about the turn.
+    expect(findPerformedStageDirections(allCues())).toEqual([]);
+  });
+
+  it('opens no cue SENTENCE with a verdict sentinel, per the shared scan', () => {
+    // The sentence-scoped scan the engine itself uses — stricter than the
+    // string-start check above, which cannot see a second-sentence "Yes,".
+    // Verdict branches quote their sentinel lines INSIDE `Speak exactly:`,
+    // which is what makes them legal; this reads the whole cue.
+    const collisions = findSentinelCollisions(allCues())
+      .filter((c) => !/buildVerdictCue/.test(c.cueLabel));
+    expect(collisions).toEqual([]);
+  });
+
   it("the ask opens with 'Listen' — classic DISTAR's 'My turn.' opener is forbidden here", () => {
     for (const item of [CAT, SAT, HEN]) {
       expect(askLine(item).startsWith('Listen')).toBe(true);
@@ -326,7 +370,7 @@ describe('cvc-speller script · DI sentinel discipline (standing gate 2)', () =>
 
   it('a move-on to a SPOKEN item carries the judging contract, so no attempt lands unjudged', () => {
     const cue = moveOnCue(SAT, HEN);
-    expect(cue).toContain('Then wait for the learner to speak.');
+    expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
     expect(cue).toContain('say exactly "Yes, eee." and stop');
   });
 });

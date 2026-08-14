@@ -160,7 +160,7 @@ const wrongLooksRight = (item: ArenaItem): string => {
 };
 
 const judgingContract = (item: ArenaItem): string =>
-  `Then WAIT silently — the learner is thinking, and think time is unbounded. Never name the answer during their turn. `
+  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner thinks, and their think time is unbounded. Never name the answer during their turn. `
   + `The correct answer is "${item.spokenAnswer}". Also accept: ${item.alternates.map((a) => `"${a}"`).join(', ')}. `
   + wrongLooksRight(item)
   + `If the answer is right, say exactly: "Yes, ${item.spokenAnswer}." `

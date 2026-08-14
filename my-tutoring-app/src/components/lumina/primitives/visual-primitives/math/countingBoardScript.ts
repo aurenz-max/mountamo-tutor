@@ -173,7 +173,7 @@ const judgingContract = (item: CountingItem): string => {
       ? `The smaller group's count is NOT the answer, however confident it sounds. `
       : '';
   return (
-    `Then WAIT silently — the learner is counting, and think time is unbounded. Never count aloud with them and never say the answer during their turn. `
+    `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner counts, and their think time is unbounded. Never count aloud with them and never say the answer during their turn. `
     + `The correct answer is "${word}". Counting aloud that ENDS on "${word}" counts as that answer — the last number said tells the total. `
     + `A final number other than "${word}" is wrong. ${wrongAnswers}`
     + `If the answer is right, say exactly: "Yes, ${word} ${item.objectWord}." `
@@ -185,7 +185,7 @@ const judgingContract = (item: CountingItem): string => {
  *  nothing to judge until the tap is described, and every number word is
  *  banned from the tutor's mouth for the whole item. */
 const perceptualContract = (item: CountingItem): string =>
-  `Then WAIT in complete silence — the learner answers by TAPPING a hand, not by speaking. `
+  `The quoted line is the ONLY thing you say on this turn; the learner answers by TAPPING a hand, not by speaking, so you then stay completely silent. `
   + `Do not say any number word or digit at any point during this item; this is pre-numeric perception practice. `
   + `Do not describe the hands, count the ${item.objectWord}, or narrate. `
   + `You will be told what the learner tapped and whether it matches; only then do you speak.`;

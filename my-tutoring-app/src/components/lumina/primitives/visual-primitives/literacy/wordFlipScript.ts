@@ -153,13 +153,13 @@ export const askLine = (item: FlipItem): string =>
  *    the correction branch — warmly, and without dwelling.
  */
 export function judgingContract(item: FlipItem) {
-  return `Then wait for the learner to speak.
+  return `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner answers.
 Each time the learner responds, judge the audio you heard against the word "${item.plural}":
 - The learner said ${item.plural} — on its own, or inside a short phrase like "${countWord(item.count)} ${item.plural}": say exactly "Yes, ${item.plural}." and stop.
-- Anything else — saying "${item.singular}" back with no ending added, adding too much ending like "${item.singular}ses", saying only the number, or a different word: say exactly "My turn: ${pairModel(item)} Your turn. ${countWordCapitalized(item.count)} what?" and stop, then wait again.
+- Anything else — saying "${item.singular}" back with no ending added, adding too much ending like "${item.singular}ses", saying only the number, or a different word: say exactly "My turn: ${pairModel(item)} Your turn. ${countWordCapitalized(item.count)} what?" and stop — the learner tries again while you stay silent.
 Judge on the ENDING: the answer is "${item.singular}" with the ending sound added and nothing more. Saying the one-thing word back is not the answer — changing it is the whole task. An extra syllable on the end is not the answer either.
 Never begin any other sentence with the word "Yes" or the words "My turn".
-Speak nothing beyond these exact lines. After you affirm, wait silently for the application's next instruction.`;
+Speak nothing beyond these exact lines. After you affirm, you stay silent until the application's next instruction.`;
 }
 
 /**

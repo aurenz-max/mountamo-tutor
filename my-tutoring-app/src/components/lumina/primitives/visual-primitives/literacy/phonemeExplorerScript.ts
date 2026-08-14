@@ -346,7 +346,7 @@ const affirmLineFor = (item: PhonemeExplorerItem): string =>
   item.kind === 'segment' ? `Yes, ${item.answer} sounds.` : `Yes, ${item.answer}.`;
 
 const judgingContract = (item: PhonemeExplorerItem): string =>
-  `Then WAIT silently — the learner is listening and thinking, and think time is unbounded. Never say the answer during their turn. `
+  `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner listens and thinks, and their think time is unbounded. Never say the answer during their turn. `
   + `The correct answer is "${item.answer}". ${acceptClauseFor(item)}${wrongClauseFor(item)}`
   + `If the answer is right, say exactly: "${affirmLineFor(item)}" `
   + `If it is wrong, say exactly: "${correctionFor(item)}"`;

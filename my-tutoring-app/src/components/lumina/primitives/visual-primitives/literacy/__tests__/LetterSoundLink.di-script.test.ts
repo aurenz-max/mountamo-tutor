@@ -44,10 +44,13 @@ import {
 } from '../letterSoundLinkScript';
 import {
   findSentinelCollisions,
-  findUnresolvedTemplateKeys,
-  validateJudgedScriptPack,
+  spokenSpanOf,
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
+import {
+  checkDiCatalogEntry,
+  checkPackGates,
+} from '../../../../hooks/judgedScriptContract.testkit';
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
 
 // ── Fixtures — one item per direction, session-shaped ───────────────────────
@@ -101,18 +104,29 @@ const pack: JudgedScriptPack<LetterSoundItem> = {
   contextFor: (item) => ({ challengeMode: item.mode, stimulus: stimulusFor(item) }),
 };
 
-/** The line the tutor actually SPEAKS — the quote after the first
- *  `Say exactly:`. Everything else in a cue is judge-side instruction. */
-const spokenLine = (cue: string): string => {
-  const match = cue.match(/Say exactly:\s*"([\s\S]*?)"/);
-  return match ? match[1] : '';
-};
+/** The line the tutor actually SPEAKS — the shared parser, so every port reads
+ *  the same span. Everything else in a cue is judge-side instruction. */
+const spokenLine = spokenSpanOf;
 
 // ── 1. Structural gates ─────────────────────────────────────────────────────
 
 describe('letter-sound-link pack · structural gates', () => {
-  it('passes validateJudgedScriptPack with zero issues', () => {
-    expect(validateJudgedScriptPack(pack)).toEqual([]);
+  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
+    // checkPackGates = validateJudgedScriptPack PLUS the two gates that exist
+    // because a live drive found the defect after every machine gate passed
+    // (the performed "[WAIT silently]"; the byte-identical consecutive ask).
+    expect(checkPackGates(pack)).toEqual([]);
+  });
+
+  it('two items in the SAME direction do not recite the ask twice', () => {
+    // One item per direction is the ONE pack shape that cannot trigger the
+    // repeat gate — it compares consecutive items of the same action, and a
+    // real session runs several see-hear items in a row.
+    const twice = [
+      build({ ...SAY_SOUND_RAW, id: 'lsl-a' }),
+      build({ ...SAY_SOUND_RAW, id: 'lsl-b', targetLetter: 'm', targetSound: '/m/', keywordWord: 'map' }),
+    ];
+    expect(checkPackGates({ ...pack, items: twice })).toEqual([]);
   });
 
   it('maps each direction to the ruled answer material and benched class', () => {
@@ -292,7 +306,11 @@ describe('letter-sound-link pack · session frame', () => {
 
   it('the hear-see cue carries the SILENCE contract', () => {
     const cue = itemCue(FIND_LETTER);
-    expect(cue).toContain('WAIT in complete silence');
+    // The wait is stated as a FACT about the turn, never as an order: the
+    // imperative form is what a model performed as "[WAIT silently]", and
+    // checkPackGates above now refuses it.
+    expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
+    expect(cue).toContain('the learner answers by TAPPING a letter, not by speaking');
     expect(cue).toContain('never name or spell either letter');
   });
 
@@ -323,31 +341,8 @@ describe('letter-sound-link pack · session frame', () => {
 describe('letter-sound-link catalog · DI frame', () => {
   const entry = LITERACY_CATALOG.find((p) => p.id === 'letter-sound-link')!;
 
-  it('declares the family audio mode', () => {
-    expect(entry.audioInput).toEqual({ manual_activity: true });
-  });
-
-  it('template keys resolve against exactly what the pack pushes', () => {
-    const provided = Object.keys(pack.contextFor(SAY_SOUND));
-    expect(entry.tutoring?.contextKeys).toEqual(provided);
-    const prose = [
-      entry.tutoring?.taskDescription ?? '',
-      ...Object.values(entry.tutoring?.scaffoldingLevels ?? {}),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => d.instruction),
-    ].join('\n');
-    expect(findUnresolvedTemplateKeys(prose, provided)).toEqual([]);
-  });
-
-  it('no catalog sentence opens with a verdict sentinel (standing gate 2)', () => {
-    const cues = [
-      { label: 'taskDescription', text: entry.tutoring?.taskDescription ?? '' },
-      ...Object.entries(entry.tutoring?.scaffoldingLevels ?? {}).map(([label, text]) => ({ label, text })),
-      ...(entry.tutoring?.commonStruggles ?? []).map((s, i) => ({
-        label: `struggle-${i}`, text: `${s.pattern}. ${s.response}`,
-      })),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => ({ label: d.title, text: d.instruction })),
-    ];
-    expect(findSentinelCollisions(cues)).toEqual([]);
+  it('keeps its side of the contract: audio mode, contextKeys, template keys, sentinel scan', () => {
+    expect(checkDiCatalogEntry(entry, pack, SAY_SOUND)).toEqual([]);
   });
 
   it('carries no directive for a deleted channel', () => {

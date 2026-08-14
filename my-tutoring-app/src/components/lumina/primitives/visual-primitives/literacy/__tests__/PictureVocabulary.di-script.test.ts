@@ -35,11 +35,13 @@ import {
   type PictureVocabItem,
 } from '../pictureVocabularyScript';
 import {
-  findSentinelCollisions,
-  findUnresolvedTemplateKeys,
-  validateJudgedScriptPack,
+  spokenSpanOf,
   type JudgedScriptPack,
 } from '../../../../hooks/judgedScriptContract';
+import {
+  checkDiCatalogEntry,
+  checkPackGates,
+} from '../../../../hooks/judgedScriptContract.testkit';
 import { LITERACY_CATALOG } from '../../../../service/manifest/catalog/literacy';
 
 // ── Fixtures — one item per mode, session-shaped ────────────────────────────
@@ -86,18 +88,29 @@ const pack: JudgedScriptPack<PictureVocabItem> = {
   contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
 };
 
-/** The line the tutor actually SPEAKS — the quote after the first
- *  `Say exactly:`. Everything else in a cue is judge-side instruction. */
-const spokenLine = (cue: string): string => {
-  const match = cue.match(/Say exactly:\s*"([\s\S]*?)"/);
-  return match ? match[1] : '';
-};
+/** The line the tutor actually SPEAKS — the shared parser, so every port reads
+ *  the same span. Everything else in a cue is judge-side instruction. */
+const spokenLine = spokenSpanOf;
 
 // ── 1. Structural gates ─────────────────────────────────────────────────────
 
 describe('picture-vocabulary pack · structural gates', () => {
-  it('passes validateJudgedScriptPack with zero issues', () => {
-    expect(validateJudgedScriptPack(pack)).toEqual([]);
+  it('passes the family gates: validate + performed-directions + repeated-asks', () => {
+    // checkPackGates = validateJudgedScriptPack PLUS the two gates that exist
+    // because a live drive found the defect after every machine gate passed
+    // (the performed "[WAIT silently]"; the byte-identical consecutive ask).
+    expect(checkPackGates(pack)).toEqual([]);
+  });
+
+  it('two items in the SAME mode do not recite the ask twice', () => {
+    // One item per mode is the ONE pack shape that cannot trigger the repeat
+    // gate — it compares consecutive items of the same action, and a real
+    // session runs several naming items in a row.
+    const twice = [
+      itemFromChallenge({ id: 'n1', type: 'naming', word: 'apple', emoji: '🍎' }),
+      itemFromChallenge({ id: 'n2', type: 'naming', word: 'chair', emoji: '🪑' }),
+    ];
+    expect(checkPackGates({ ...pack, items: twice })).toEqual([]);
   });
 
   it('maps modes to the ruled answer material and benched classes', () => {
@@ -208,7 +221,10 @@ describe('picture-vocabulary pack · tap items', () => {
   it('tap asks carry a SILENCE contract, not a judging contract', () => {
     for (const item of [RECEPTIVE, ASSOCIATION]) {
       const cue = itemCue(item);
-      expect(cue).toContain('WAIT in complete silence');
+      // The wait is stated as a FACT about the turn, never as an order — the
+      // imperative form is what a model performed as "[WAIT silently]", and
+      // checkPackGates now refuses it.
+      expect(cue).toContain('The quoted line is the ONLY thing you say on this turn');
       expect(cue).toContain('TAPPING a picture');
       expect(cue).not.toContain('If the answer is right');
     }
@@ -269,29 +285,8 @@ describe('picture-vocabulary pack · session frame', () => {
 describe('picture-vocabulary catalog · DI frame', () => {
   const entry = LITERACY_CATALOG.find((p) => p.id === 'picture-vocabulary')!;
 
-  it('declares the family audio mode', () => {
-    expect(entry.audioInput).toEqual({ manual_activity: true });
-  });
-
-  it('template keys resolve against exactly what the pack pushes', () => {
-    const provided = Object.keys(pack.contextFor(NAMING));
-    expect(entry.tutoring?.contextKeys).toEqual(provided);
-    const prose = [
-      entry.tutoring?.taskDescription ?? '',
-      ...Object.values(entry.tutoring?.scaffoldingLevels ?? {}),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => d.instruction),
-    ].join('\n');
-    expect(findUnresolvedTemplateKeys(prose, provided)).toEqual([]);
-  });
-
-  it('no catalog sentence opens with a verdict sentinel (standing gate 2)', () => {
-    const cues = [
-      { label: 'taskDescription', text: entry.tutoring?.taskDescription ?? '' },
-      ...Object.entries(entry.tutoring?.scaffoldingLevels ?? {}).map(([label, text]) => ({ label, text })),
-      ...(entry.tutoring?.commonStruggles ?? []).map((s, i) => ({ label: `struggle-${i}`, text: `${s.pattern}. ${s.response}` })),
-      ...(entry.tutoring?.aiDirectives ?? []).map((d) => ({ label: d.title, text: d.instruction })),
-    ];
-    expect(findSentinelCollisions(cues)).toEqual([]);
+  it('keeps its side of the contract: audio mode, contextKeys, template keys, sentinel scan', () => {
+    expect(checkDiCatalogEntry(entry, pack, NAMING)).toEqual([]);
   });
 
   it('the scale walk helper blanks exactly the target rung', () => {
