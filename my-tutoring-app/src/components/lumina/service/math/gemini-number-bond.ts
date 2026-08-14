@@ -1,5 +1,10 @@
 import { Type, Schema } from "@google/genai";
 import { NumberBondData } from "../../primitives/visual-primitives/math/NumberBond";
+// The ONE shared validity predicate for a bond's known part (1..whole−1),
+// IMPORTED from the script module — the DI build gates drop against the same
+// predicate this generator repairs against, so the two sides of the wire
+// cannot drift (numberBondScript.ts, `isValidBondPart`).
+import { isValidBondPart } from "../../primitives/visual-primitives/math/numberBondScript";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -27,8 +32,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"missing-part": Given the whole and one part, find the other. `
       + `Set part1 to the known part, part2 to null (student finds it). `
-      + `Choose part1 values that are not trivially 0 or equal to whole. `
-      + `Pictorial representation with prompts.`,
+      + `part1 MUST be between 1 and whole-1 — never 0 and never the whole. `
+      + `The child SAYS the missing part out loud to the live tutor. Pictorial representation.`,
     schemaDescription: "'missing-part' (find unknown part)",
   },
   'fact-family': {
@@ -68,7 +73,12 @@ const DEFAULT_INSTANCE_COUNT = 5; // T2 fallback
 const MAX_INSTANCE_COUNT = 6;
 
 const COUNT_BY_MODE: Record<NumberBondChallengeType, number> = {
-  decompose: 5,         // T2 — B4 bump 3-5 → 5
+  // Under the DI judged loop each decompose challenge EXPANDS into one judged
+  // turn per pair (~3 at K, ~5 at G1), so 5 challenges meant ~24 tutor-judged
+  // turns at G1 (live probe, 2026-08-14). 3 keeps a session at ~9-15 turns —
+  // the same student-visible volume the other modes get. Manifest
+  // challengeCount still overrides.
+  decompose: 3,
   'missing-part': 5,    // T2 — B4 bump 3-5 → 5
   'fact-family': 5,     // T2 — B4 bump 3-5 → 5
   'build-equation': 5,  // T2 — B4 bump 3-5 → 5
@@ -597,9 +607,11 @@ Return the complete number bond configuration.
       challenge.part2 = null;
     }
 
-    // Validate missing-part
+    // Validate missing-part. The known part must be 1..whole−1 (shared DI
+    // gate): 0 slipped the old `< 0` check and, spoken, would put the whole
+    // itself in the child's mouth as "the other part".
     if (challenge.type === 'missing-part') {
-      if (challenge.part1 == null || challenge.part1 < 0 || challenge.part1 >= challenge.whole) {
+      if (!isValidBondPart(challenge.whole, challenge.part1)) {
         challenge.part1 = Math.max(1, Math.floor(challenge.whole / 2));
       }
       challenge.part2 = null;
@@ -608,9 +620,13 @@ Return the complete number bond configuration.
       challenge.targetEquation = null;
     }
 
-    // Validate fact-family
+    // Validate fact-family. `??` kept a generated part1 of 0 (degenerate
+    // family: 0+w=w twice); the shared gate repairs it like any other
+    // out-of-range part.
     if (challenge.type === 'fact-family') {
-      const p1 = challenge.part1 ?? Math.max(1, Math.floor(challenge.whole / 3));
+      const p1 = isValidBondPart(challenge.whole, challenge.part1)
+        ? challenge.part1
+        : Math.max(1, Math.floor(challenge.whole / 3));
       const p2 = challenge.whole - p1;
       challenge.part1 = p1;
       challenge.part2 = p2;
@@ -625,9 +641,11 @@ Return the complete number bond configuration.
       challenge.targetEquation = null;
     }
 
-    // Validate build-equation
+    // Validate build-equation (same shared-gate repair as fact-family).
     if (challenge.type === 'build-equation') {
-      const p1 = challenge.part1 ?? Math.max(1, Math.floor(challenge.whole / 2));
+      const p1 = isValidBondPart(challenge.whole, challenge.part1)
+        ? challenge.part1
+        : Math.max(1, Math.floor(challenge.whole / 2));
       const p2 = challenge.whole - p1;
       challenge.part1 = p1;
       challenge.part2 = p2;

@@ -2850,23 +2850,76 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'number-bond',
-    description: 'Classic number bond diagram (circle-and-branch visual) showing part-part-whole relationships. Supports 4 challenge types: decompose (find all pairs), missing-part, fact-family (write all 4 equations), and build-equation (drag tiles). Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition.',
-    constraints: 'Max number 5 for Kindergarten, 10 for Grade 1. Decompose challenges need allPairs computed. Fact-family requires all 4 equations.',
+    description: 'Live tutor-judged number bond practice (DI modality) on the classic circle-and-branch part-part-whole diagram. The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the missing part OUT LOUD (missing-part, both grades); they answer WITH THEIR HANDS by splitting counters into the two part circles to find every pair (decompose — one judged turn per pair), by writing all four fact-family equations (fact-family), and by building a number sentence from tiles (build-equation) — in those three, constructing it IS the skill. Perfect for K-1 addition/subtraction fluency. ESSENTIAL for Kindergarten and Grade 1 number decomposition.',
+    constraints: 'Max number 5 for Kindergarten, 10 for Grade 1, so every spoken answer is a number word from 1 to 9. Requires a microphone: the missing-part answer is spoken and judged by the Live tutor, and there is no Check button, no stepper and no typed number answer anywhere. Kindergarten uses decompose and missing-part only; fact-family and build-equation are Grade 1. Known parts are never 0 and never the whole.',
     tutoring: {
-      taskDescription: 'Student is working on number bonds with whole number {{whole}}. Challenge type: {{challengeType}}. They are finding how numbers decompose into parts.',
-      contextKeys: ['challengeType', 'whole', 'part1', 'part2', 'missingValue', 'pairsFound', 'totalPairs', 'attemptNumber'],
+      taskDescription: 'LIVE-JUDGED number bond practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the bond, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // ⚠️ No level of this ladder may OFFER a speakable line of its own. The
+      // first number-bond cap drill (2026-08-14) proved why: on the SECOND
+      // wrong answer the model balked at repeating the byte-identical scripted
+      // correction (18c) and recited level2/level3's quoted hints instead —
+      // lines that open with neither sentinel, so the engine saw no verdict
+      // and the correction counter stalled. The ladder now commands script
+      // fidelity; it never supplies an alternative.
       scaffoldingLevels: {
-        level1: '"If the whole is {{whole}}, what two groups could you split it into?"',
-        level2: '"You put {{part1}} in one part. How many are left for the other part? Think: {{whole}} take away {{part1}} equals..."',
-        level3: '"{{whole}} = {{part1}} + {{part2}}. Now flip it: {{whole}} = {{part2}} + {{part1}}. And the subtraction: {{whole}} - {{part1}} = {{part2}}, {{whole}} - {{part2}} = {{part1}}. That\'s the whole fact family!"',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
+        level2: 'A wrong answer is never met with a hint of your own — speak the cue\'s scripted "My turn:" correction again, exactly as written, even if you just said it.',
+        level3: 'If the child stays stuck, stay with the script: the correction line re-models and re-asks for you. Never invent encouragement, a new question, or a softer hint.',
       },
       commonStruggles: [
-        { pattern: 'Student repeats the same pair in decompose mode', response: 'Guide systematic discovery: "You found {{part1}} + {{part2}}. What if we put one more in the left group?"' },
-        { pattern: 'Student cannot find the missing part', response: 'Use concrete strategy: "If the whole is {{whole}} and one part is {{part1}}, count up from {{part1}} to {{whole}} — how many more do you need?"' },
-        { pattern: 'Student writes only 2 of 4 fact family equations', response: 'Connect addition and subtraction: "You wrote the addition facts. Now think backwards — if {{part1}} + {{part2}} = {{whole}}, what is {{whole}} - {{part1}}?"' },
-        { pattern: 'Student arranges equation tiles in wrong order', response: 'Point to bond diagram: "Look at the number bond. The whole is {{whole}} at the top. Which operation connects the parts to the whole?"' },
+        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Says the whole instead of the missing part', response: 'The scripted correction handles this AFTER the attempt is judged: it models counting up from the known part and re-asks. Never interrupt mid-attempt.' },
+        { pattern: 'The same wrong answer comes twice in a row', response: 'Speak the SAME scripted "My turn:" correction again, word for word. Repetition is the method — never swap it for a paraphrase or a hint.' },
+        { pattern: 'Repeats a pair already found', response: 'The verdict cue you are handed names the repeated pair and asks for a new one. Speak only that line.' },
+      ],
+      aiDirectives: [
+        {
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
+          instruction:
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
+          instruction:
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
+            + 'On a SPOKEN item (missing-part) the answer is ONE number word from 1 to 9 and nothing else. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'On a HANDS item (decompose; fact-family; build-equation) the child answers by changing what is on the screen, and you are told what they made and whether it matches. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'HAND ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no encouragement mid-build. '
+            + 'You will be told what they made and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-QUESTION ON DEMAND',
+          instruction:
+            'The child can ask to hear the question again. That re-speaks the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
+        },
       ],
     },
+    audioInput: { manual_activity: true },
     supportsEvaluation: true,
     evalModes: [
       {
@@ -2875,7 +2928,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['decompose'],
-        description: 'Break whole into parts.',
+        // β HELD — the same split-the-counters construction, one pair at a
+        // time, exactly as the Submit Pair loop paced it; it merely gained a
+        // judge (and a stillness close instead of a button).
+        description: 'Break the whole into parts by splitting counters into the two circles — one judged turn per pair until every way is found. Concrete manipulative.',
       },
       {
         evalMode: 'missing_part',
@@ -2883,7 +2939,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['missing-part'],
-        description: 'Find unknown part.',
+        // β HELD on the ASS solve-story precedent: a −/+ stepper over 0..max
+        // became unaided speech — a structural change, but the stepper was a
+        // WEAK menu (every numeral in range, no chosen distractors), so the
+        // guess floor it removed is small, and β is per MODE.
+        description: 'Find the unknown part and SAY it out loud — the tutor judges the spoken number. Unaided spoken production; no stepper and no menu.',
       },
       {
         evalMode: 'fact_family',
@@ -2891,7 +2951,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['fact-family'],
-        description: 'Generate related facts.',
+        // β HELD — the written surface is untouched (the same four boxes);
+        // only the Check button became a stillness close.
+        description: 'Write all 4 related equations in the boxes; the tutor judges the written family. Symbolic FORM is the skill, so the answer is written, not spoken. Grade 1.',
       },
       {
         evalMode: 'build_equation',
@@ -2899,7 +2961,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['build-equation'],
-        description: 'Write symbolic equation.',
+        // β HELD — the same tile tray and the same three checks; only the
+        // Check button is gone.
+        description: 'Construct a number sentence from tiles; the tutor judges the assembled sentence. Any valid form over the bond\'s three numbers is accepted. Grade 1.',
       },
     ],
   },

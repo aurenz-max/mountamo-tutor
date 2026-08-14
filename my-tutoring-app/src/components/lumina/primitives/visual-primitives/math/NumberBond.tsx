@@ -1,7 +1,50 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+/**
+ * NumberBond — DI modality. The Live tutor owns the clock in every mode
+ * (qa/di/BACKLOG.md item 18 P3-correction; the third MATH port).
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - missing-part (K + 1): the tutor states the bond aloud and asks; the child
+ *    SAYS the missing part into an open mic. The −/+ stepper and its Check
+ *    button are deleted — a child who cannot find the part can still operate a
+ *    stepper, so the stepper was a costume (and a 0…max row is a weak menu).
+ *  - decompose (K + 1): the child SPLITS the counters into the two part
+ *    circles. One judged turn per pair — "make five with two parts", then
+ *    "find a different way" — the same one-pair-at-a-time pacing the click era
+ *    ran through its Submit Pair button.
+ *  - fact-family (1): the child WRITES all four equations in the boxes. The
+ *    page a teacher pushes across the table; form is the skill.
+ *  - build-equation (1): the child BUILDS the number sentence from tiles.
+ *
+ * WHAT CHANGED. Deleted: the stepper and every Check control, the Next
+ * control, the ≥2-attempt hint panel, the feedback strings that printed the
+ * answer ("Yes! 5 = 3 + 2"), the old tutor hook and all of its improvised
+ * turns, and the per-tier reveal clauses that governed them (render-side tier
+ * levers — dots, the equation mirror, the worked-example helper — survive
+ * untouched). There is no progression timer and no progression control
+ * anywhere in this file — progression has exactly one cause: a tutor verdict.
+ *
+ * HOW A HANDS-ONLY TURN CLOSES. A voice turn closes on SILENCE; a hands turn
+ * closes on STILLNESS, with a STRUCTURAL shape shortening the window (a full
+ * split; four parseable equations; a finished number sentence) — and no close
+ * is correctness-gated: an under-full split, a repeated pair, a wrong fact and
+ * a wrong sentence all commit exactly as readily as right ones, which is what
+ * gives the tutor something to teach. Settle timers are armed in the tap
+ * handlers through refs, never in effects keyed on the runner (its identity
+ * churns per audio frame — the ten-frame flash bug).
+ *
+ * ANSWER-LEAK RULE — INCLUDING IN PIXELS. The missing part renders as "?" until
+ * the tutor affirms; the fact-family worked example is code-picked from a
+ * triple the current item is NOT (`familyHelperExample`); nothing on screen
+ * names an answer before the child has produced it.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor speaks only scripted lines; no visible timers;
+ * tap-to-hear re-speaks the QUESTION; adult chrome hidden for pre-readers.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import {
   LuminaCard,
@@ -9,19 +52,35 @@ import {
   LuminaCardTitle,
   LuminaCardContent,
   LuminaBadge,
+  LuminaButton,
   LuminaPanel,
-  LuminaActionButton,
   LuminaInput,
+  LuminaChallengeCounter,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { NumberBondMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  bondEquationVerdictCue,
+  buildBondItems,
+  familyHelperExample,
+  familyVerdictCue,
+  numberBondPackBase,
+  parseBondEquation,
+  splitVerdictCue,
+  type NumberBondItem,
+} from './numberBondScript';
+import { numberWordFor } from './countingBoardScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -35,9 +94,9 @@ export interface NumberBondChallenge {
   whole: number;
   part1?: number | null;
   part2?: number | null;
-  allPairs?: [number, number][];
-  factFamily?: string[];
-  targetEquation?: string;
+  allPairs?: [number, number][] | null;
+  factFamily?: string[] | null;
+  targetEquation?: string | null;
 }
 
 export interface NumberBondData {
@@ -48,16 +107,12 @@ export interface NumberBondData {
   showCounters: boolean;
   showEquation: boolean;
   /**
-   * Whether the fact-family worked-example helper ("How do fact families work?")
-   * is shown. Defaults to true (current always-rendered behavior) when omitted so
-   * the no-tier path is byte-identical. The hard support tier hides it.
+   * Whether the fact-family worked-example helper is shown. Defaults to true
+   * when omitted so the no-tier path is unchanged. The hard support tier hides
+   * it. (Render-side tier lever — survives the judged loop.)
    */
   showFactFamilyHelper?: boolean;
-  /**
-   * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-   * Set by the generator only when a tier is present. Drives the AI tutor's
-   * reveal level so it matches what the on-screen scaffold withheld.
-   */
+  /** Per-component support tier from the manifest ('easy' | 'medium' | 'hard'). */
   supportTier?: 'easy' | 'medium' | 'hard';
   gradeBand: 'K' | '1';
 
@@ -74,17 +129,16 @@ export interface NumberBondData {
 // Constants
 // ============================================================================
 
-const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  decompose:        { label: 'Decompose',      icon: '🔀', accentColor: 'purple' },
-  'missing-part':   { label: 'Missing Part',   icon: '❓', accentColor: 'blue' },
-  'fact-family':    { label: 'Fact Family',     icon: '🔄', accentColor: 'emerald' },
-  'build-equation': { label: 'Build Equation',  icon: '🧩', accentColor: 'amber' },
+const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  decompose:        { label: 'Decompose',      icon: '🔀' },
+  'missing-part':   { label: 'Missing Part',   icon: '❓' },
+  'fact-family':    { label: 'Fact Family',    icon: '🔄' },
+  'build-equation': { label: 'Build Equation', icon: '🧩' },
 };
 
-// Colors for the two-tone counters
 const COUNTER_COLORS = {
-  left: { fill: '#ef4444', stroke: '#dc2626', label: 'red' },   // red
-  right: { fill: '#3b82f6', stroke: '#2563eb', label: 'blue' },  // blue
+  left: { fill: '#ef4444' },
+  right: { fill: '#3b82f6' },
 };
 
 // SVG layout constants
@@ -98,107 +152,30 @@ const PART_LEFT_CX = BOND_WIDTH / 2 - 100;
 const PART_RIGHT_CX = BOND_WIDTH / 2 + 100;
 const PART_CY = 200;
 
-// ============================================================================
-// Helper: generate all unique pairs for a whole
-// ============================================================================
-
-function allPairsForWhole(whole: number): [number, number][] {
-  const pairs: [number, number][] = [];
-  for (let a = 0; a <= Math.floor(whole / 2); a++) {
-    pairs.push([a, whole - a]);
-  }
-  return pairs;
-}
-
-// ============================================================================
-// Helper: semantic equation parsing for fact-family validation
-// ============================================================================
-
-interface ParsedEquation {
-  left: number;
-  op: '+' | '-';
-  right: number;
-  result: number;
-  valid: boolean;           // math checks out
-  usesCorrectNumbers: boolean; // uses exactly {whole, part1, part2}
-  canonicalKey: string;     // dedup key, e.g. "6+4=10"
-}
-
-/**
- * Parse a student-typed equation like "6 + 4 = 10" or "10 = 6 + 4"
- * into a structured form. Handles whitespace, both `=` directions, etc.
- */
-function parseEquation(input: string, whole: number, p1: number, p2: number): ParsedEquation | null {
-  const s = input.replace(/\s+/g, '');
-  if (!s) return null;
-
-  // Try both forms: "a+b=c" / "a-b=c" and "c=a+b" / "c=a-b"
-  const patterns = [
-    /^(\d+)([+\-])(\d+)=(\d+)$/,   // a op b = c
-    /^(\d+)=(\d+)([+\-])(\d+)$/,   // c = a op b
-  ];
-
-  let left: number, op: '+' | '-', right: number, result: number;
-
-  const m1 = s.match(patterns[0]);
-  if (m1) {
-    left = parseInt(m1[1], 10);
-    op = m1[2] as '+' | '-';
-    right = parseInt(m1[3], 10);
-    result = parseInt(m1[4], 10);
-  } else {
-    const m2 = s.match(patterns[1]);
-    if (m2) {
-      result = parseInt(m2[1], 10);
-      left = parseInt(m2[2], 10);
-      op = m2[3] as '+' | '-';
-      right = parseInt(m2[4], 10);
-    } else {
-      return null;
-    }
-  }
-
-  const mathCorrect = op === '+'
-    ? left + right === result
-    : left - right === result;
-
-  // Check the equation uses exactly {whole, part1, part2}
-  const nums = [left, right, result].sort((a, b) => a - b);
-  const expected = [whole, p1, p2].sort((a, b) => a - b);
-  const usesCorrectNumbers = nums[0] === expected[0] && nums[1] === expected[1] && nums[2] === expected[2];
-
-  // Canonical form: always "left op right = result" with smaller operand first for addition
-  const canonicalKey = op === '+'
-    ? `${Math.min(left, right)}+${Math.max(left, right)}=${result}`
-    : `${left}-${right}=${result}`;
-
-  return { left, op, right, result, valid: mathCorrect, usesCorrectNumbers, canonicalKey };
-}
-
-/**
- * Build the 4 canonical fact-family keys for a given bond.
- * E.g. for whole=10, p1=6, p2=4:
- *   "4+6=10", "4+6=10" (commutative => same key), "10-4=6", "10-6=4"
- * We return the set of unique canonical keys.
- */
-function factFamilyCanonicalKeys(whole: number, p1: number, p2: number): Set<string> {
-  const min = Math.min(p1, p2);
-  const max = Math.max(p1, p2);
-  return new Set([
-    `${min}+${max}=${whole}`,  // covers both a+b=c and b+a=c
-    `${whole}-${min}=${max}`,
-    `${whole}-${max}=${min}`,
-  ]);
-  // Note: 3 unique canonical keys covers all 4 equations because
-  // a+b=c and b+a=c canonicalize to the same key. We accept 4 inputs
-  // but the student can write EITHER commutative form — both map to same key.
-}
+/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
+ *  silence bracket. Generous: a five-year-old pauses to think, and a premature
+ *  commit spends one of the two corrections. */
+const SPLIT_SETTLE_MS = 3000;
+/** A FULL split (left + right = whole) is a terminal shape; it still waits a
+ *  beat rather than committing on the tap — structural, never correctness-
+ *  gated (a full DUPLICATE pair commits through this same window and is
+ *  corrected). */
+const SPLIT_FULL_SETTLE_MS = 1200;
+/** Typing four equations is long work with mid-equation pauses. */
+const FAMILY_SETTLE_MS = 6000;
+/** All four boxes hold a parseable equation — parseable, not correct. */
+const FAMILY_COMPLETE_SETTLE_MS = 2000;
+/** The tile tray: five deliberate taps, mid-build pauses are normal. */
+const EQUATION_SETTLE_MS = 4500;
+/** A finished sentence N op N = N shortens the window ("3 + 2 = 1" is a
+ *  complete sentence on its way to "3 + 2 = 10" — never commit on the tap). */
+const EQUATION_COMPLETE_SETTLE_MS = 1200;
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
-/** The classic number bond diagram (circle + branches) */
+/** The classic number bond diagram (circle + branches). */
 function BondDiagram({
   whole,
   leftValue,
@@ -235,7 +212,6 @@ function BondDiagram({
       viewBox={`0 0 ${BOND_WIDTH} ${BOND_HEIGHT}`}
       className="max-w-full h-auto"
     >
-      {/* Branches */}
       <line
         x1={WHOLE_CX} y1={WHOLE_CY + WHOLE_R}
         x2={PART_LEFT_CX} y2={PART_CY - PART_R}
@@ -247,7 +223,6 @@ function BondDiagram({
         stroke="rgba(255,255,255,0.2)" strokeWidth={2.5}
       />
 
-      {/* Whole circle */}
       <circle
         cx={WHOLE_CX} cy={WHOLE_CY} r={WHOLE_R}
         fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.5)" strokeWidth={2}
@@ -262,7 +237,6 @@ function BondDiagram({
         {showWhole ? whole : '?'}
       </text>
 
-      {/* Left part circle */}
       <circle
         cx={PART_LEFT_CX} cy={PART_CY} r={PART_R}
         fill={highlightLeft ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.08)'}
@@ -277,11 +251,11 @@ function BondDiagram({
         fill={showLeft ? '#fca5a5' : 'rgba(148,163,184,0.4)'}
         fontSize={24} fontWeight="bold"
         className="select-none"
+        style={{ pointerEvents: 'none' }}
       >
         {showLeft ? leftValue : '?'}
       </text>
 
-      {/* Right part circle */}
       <circle
         cx={PART_RIGHT_CX} cy={PART_CY} r={PART_R}
         fill={highlightRight ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.08)'}
@@ -296,11 +270,11 @@ function BondDiagram({
         fill={showRight ? '#93c5fd' : 'rgba(148,163,184,0.4)'}
         fontSize={24} fontWeight="bold"
         className="select-none"
+        style={{ pointerEvents: 'none' }}
       >
         {showRight ? rightValue : '?'}
       </text>
 
-      {/* Counter pips inside circles */}
       {leftCounters !== undefined && leftCounters > 0 && (
         <CounterPips cx={PART_LEFT_CX} cy={PART_CY} count={leftCounters} color={COUNTER_COLORS.left.fill} r={PART_R} />
       )}
@@ -311,7 +285,7 @@ function BondDiagram({
   );
 }
 
-/** Small dots arranged inside a part circle to represent counters */
+/** Small dots arranged inside a part circle to represent counters. */
 function CounterPips({ cx, cy, count, color, r }: {
   cx: number; cy: number; count: number; color: string; r: number;
 }) {
@@ -319,7 +293,6 @@ function CounterPips({ cx, cy, count, color, r }: {
   const positions = useMemo(() => {
     const pts: { x: number; y: number }[] = [];
     if (count <= 0) return pts;
-    // Arrange in a grid-like layout inside the circle
     const cols = Math.min(count, Math.ceil(Math.sqrt(count)));
     const rows = Math.ceil(count / cols);
     const spacing = Math.min((r * 1.2) / Math.max(cols, 1), (r * 1.2) / Math.max(rows, 1));
@@ -339,24 +312,29 @@ function CounterPips({ cx, cy, count, color, r }: {
         <circle
           key={i} cx={p.x} cy={p.y} r={DOT_R}
           fill={color} opacity={0.7}
+          style={{ pointerEvents: 'none' }}
         />
       ))}
     </>
   );
 }
 
-// ============================================================================
-// Fact Family Helper — collapsible conceptual explainer
-// ============================================================================
-
-const EXAMPLE_EQUATIONS = [
-  { eq: '2 + 3 = 5', tip: 'Start with the two parts. Add them together to get the whole.' },
-  { eq: '3 + 2 = 5', tip: 'Swap the parts — addition works in any order!' },
-  { eq: '5 − 2 = 3', tip: 'Start with the whole. Take away one part and the other part is left.' },
-  { eq: '5 − 3 = 2', tip: 'Same idea — take away the other part instead.' },
-];
-
-function FactFamilyHelper({ defaultOpen = false }: { defaultOpen?: boolean }) {
+/**
+ * Fact-family worked example — collapsible conceptual explainer. The triple is
+ * CODE-PICKED to differ from the current item's bond (`familyHelperExample`):
+ * the old hardcoded 2+3=5 was the answer sheet whenever the item was that bond.
+ */
+function FactFamilyHelper({ triple, defaultOpen = false }: {
+  triple: readonly [number, number, number];
+  defaultOpen?: boolean;
+}) {
+  const [a, b, w] = triple;
+  const equations = [
+    { eq: `${a} + ${b} = ${w}`, tip: 'Start with the two parts. Add them together to get the whole.' },
+    { eq: `${b} + ${a} = ${w}`, tip: 'Swap the parts — addition works in any order!' },
+    { eq: `${w} − ${a} = ${b}`, tip: 'Start with the whole. Take away one part and the other part is left.' },
+    { eq: `${w} − ${b} = ${a}`, tip: 'Same idea — take away the other part instead.' },
+  ];
   return (
     <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger asChild>
@@ -367,34 +345,27 @@ function FactFamilyHelper({ defaultOpen = false }: { defaultOpen?: boolean }) {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="mt-3 bg-slate-800/30 rounded-xl p-4 border border-white/5 space-y-3">
-          {/* Mini bond diagram: 2 + 3 = 5 */}
           <div className="flex justify-center">
             <svg width={160} height={100} viewBox="0 0 160 100" className="max-w-full h-auto">
-              {/* Branches */}
               <line x1={80} y1={30} x2={40} y2={75} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
               <line x1={80} y1={30} x2={120} y2={75} stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} />
-              {/* Whole */}
               <circle cx={80} cy={22} r={18} fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.4)" strokeWidth={1.5} />
-              <text x={80} y={22} textAnchor="middle" dominantBaseline="central" fill="#e2e8f0" fontSize={16} fontWeight="bold" className="select-none">5</text>
-              {/* Left part */}
+              <text x={80} y={22} textAnchor="middle" dominantBaseline="central" fill="#e2e8f0" fontSize={16} fontWeight="bold" className="select-none">{w}</text>
               <circle cx={40} cy={78} r={16} fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.3)" strokeWidth={1.5} />
-              <text x={40} y={78} textAnchor="middle" dominantBaseline="central" fill="#fca5a5" fontSize={14} fontWeight="bold" className="select-none">2</text>
-              {/* Right part */}
+              <text x={40} y={78} textAnchor="middle" dominantBaseline="central" fill="#fca5a5" fontSize={14} fontWeight="bold" className="select-none">{a}</text>
               <circle cx={120} cy={78} r={16} fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.3)" strokeWidth={1.5} />
-              <text x={120} y={78} textAnchor="middle" dominantBaseline="central" fill="#93c5fd" fontSize={14} fontWeight="bold" className="select-none">3</text>
+              <text x={120} y={78} textAnchor="middle" dominantBaseline="central" fill="#93c5fd" fontSize={14} fontWeight="bold" className="select-none">{b}</text>
             </svg>
           </div>
           <p className="text-slate-500 text-xs text-center">
             These 3 numbers make <span className="text-slate-300">4 related equations</span>:
           </p>
-          {/* Equation badges with hover tooltips */}
           <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
-            {EXAMPLE_EQUATIONS.map(({ eq, tip }) => (
+            {equations.map(({ eq, tip }) => (
               <div key={eq} className="group relative">
                 <div className="bg-slate-700/30 border border-white/10 rounded-lg px-3 py-1.5 text-center text-sm font-mono text-slate-200 cursor-default hover:bg-slate-700/50 transition-colors">
                   {eq}
                 </div>
-                {/* Hover tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-52 pointer-events-none">
                   <div className="bg-slate-800 border border-slate-600 rounded-lg p-2 shadow-xl text-xs text-slate-300 text-center">
                     {tip}
@@ -403,25 +374,33 @@ function FactFamilyHelper({ defaultOpen = false }: { defaultOpen?: boolean }) {
               </div>
             ))}
           </div>
-          <p className="text-slate-600 text-[10px] text-center">Hover an equation to see why it works</p>
         </div>
       </CollapsibleContent>
     </Collapsible>
   );
 }
 
+/** Deterministic shuffle (seeded LCG) — build-equation tiles must not depend
+ *  on render-time randomness. */
+function seededShuffle<T>(values: T[], seed: number): T[] {
+  const out = [...values];
+  let s = (seed * 16807 + 11) % 2147483647;
+  const rand = () => { s = (s * 16807) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 // ============================================================================
-// Props
+// Component
 // ============================================================================
 
 interface NumberBondProps {
   data: NumberBondData;
   className?: string;
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
   const {
@@ -442,67 +421,29 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // -------------------------------------------------------------------------
-  // Shared challenge progress
-  // -------------------------------------------------------------------------
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  const isPreReader = gradeBand === 'K';
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: CHALLENGE_TYPE_CONFIG,
-  });
-
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
-
-  // -------------------------------------------------------------------------
-  // Domain-specific state
-  // -------------------------------------------------------------------------
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-
-  // Decompose state
+  // ── Stage-payload state (the runner owns progression; this is the page) ───
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
   const [foundPairs, setFoundPairs] = useState<[number, number][]>([]);
-
-  // Missing-part state
-  const [missingAnswer, setMissingAnswer] = useState('');
-
-  // Fact-family state
   const [familyInputs, setFamilyInputs] = useState<string[]>(['', '', '', '']);
-  const [familyChecked, setFamilyChecked] = useState<(boolean | null)[]>([null, null, null, null]);
-
-  // Build-equation state
   const [equationSlots, setEquationSlots] = useState<string[]>([]);
   const [availableTiles, setAvailableTiles] = useState<string[]>([]);
+  /** Post-answer only (answer-leak rule), cleared when the next item opens. */
+  const [reward, setReward] = useState<string | null>(null);
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `number-bond-${Date.now()}`);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** What the workspace held when it last stopped changing. */
+  const pendingSplitRef = useRef({ left: 0, right: 0 });
+  const pendingFamilyRef = useRef<string[]>(['', '', '', '']);
+  const pendingTilesRef = useRef<string[]>([]);
+  const prevSourceRef = useRef<string | null>(null);
+
+  const stableInstanceIdRef = useRef(instanceId || `number-bond-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<NumberBondMetrics>({
+  const evaluation = usePrimitiveEvaluation<NumberBondMetrics>({
     primitiveType: 'number-bond',
     instanceId: resolvedInstanceId,
     skillId,
@@ -512,648 +453,469 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    challengeType: currentChallenge?.type ?? 'decompose',
-    whole: currentChallenge?.whole ?? 0,
-    part1: currentChallenge?.part1 ?? null,
-    part2: currentChallenge?.part2 ?? null,
-    missingValue: currentChallenge?.type === 'missing-part'
-      ? (currentChallenge.part1 == null ? currentChallenge.whole - (currentChallenge.part2 ?? 0) : currentChallenge.whole - currentChallenge.part1)
-      : null,
-    pairsFound: foundPairs.length,
-    totalPairs: currentChallenge?.allPairs?.length ?? allPairsForWhole(currentChallenge?.whole ?? 0).length,
-    attemptNumber: currentAttempts + 1,
-    gradeBand,
-    maxNumber,
-    currentChallengeIndex,
-    totalChallenges: challenges.length,
-    supportTier: supportTier ?? null,
-  }), [currentChallenge, foundPairs.length, currentAttempts, gradeBand, maxNumber, currentChallengeIndex, challenges.length, supportTier]);
+  const clearSettle = useCallback(() => {
+    if (settleTimerRef.current) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+  }, []);
 
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'number-bond',
+  // ── The pack: generated challenges → judged items + hand-authored script ──
+  // Unaskable items are DROPPED (invalid parts, out-of-range wholes, symbolic
+  // modes at K, consecutive duplicates); decompose expands one challenge into
+  // one judged turn per pair. Nothing is backfilled.
+  const built = useMemo(
+    () => buildBondItems(challenges, { band: gradeBand, maxNumber }),
+    [challenges, gradeBand, maxNumber],
+  );
+  const items = built.items;
+
+  const pack = useMemo<JudgedScriptPack<NumberBondItem>>(() => ({
+    ...numberBondPackBase(items),
+    // Only what DIFFERS from the runner's defaults.
+    statusLines: {
+      ready: (item) => item.answerKind === 'gesture'
+        ? 'Listen, then show me on the screen.'
+        : 'Listen, then say the missing part out loud.',
+      retry: (item) => item.answerKind === 'gesture'
+        ? 'Have another go — show me again.'
+        : 'Have another go — say your answer.',
+      done: 'Great number bond work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      switch (item.kind) {
+        case 'missing-part':
+          return {
+            challenge: `missing-part: the whole is ${item.whole}, the shown part is ${item.knownPart}.`,
+            expected: `${numberWordFor(item.answer)} (${item.answer})`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          };
+        case 'decompose':
+          return {
+            challenge: `decompose: find a new pair that makes ${item.whole}.`,
+            expected: `two parts that make ${item.whole}, not yet found`,
+            observed: `Split ${pendingSplitRef.current.left} and ${pendingSplitRef.current.right}.`,
+          };
+        case 'fact-family':
+          return {
+            challenge: `fact-family for ${item.knownPart}, ${item.otherPart}, ${item.whole}.`,
+            expected: `all four equations over exactly those three numbers`,
+            observed: `Wrote "${pendingFamilyRef.current.filter(Boolean).join(' ; ') || 'nothing'}".`,
+          };
+        default:
+          return {
+            challenge: `build-equation for the bond ${item.knownPart}+${item.otherPart}=${item.whole}.`,
+            expected: `any valid number sentence over exactly those three numbers`,
+            observed: `Built "${pendingTilesRef.current.join(' ') || 'nothing'}".`,
+          };
+      }
+    },
+  }), [items]);
+
+  // ── Per-item reset — every item owns its starting state ───────────────────
+  const resetStageFor = useCallback((item: NumberBondItem, index: number) => {
+    clearSettle();
+    setReward(null);
+    setLeftCount(0);
+    setRightCount(0);
+    pendingSplitRef.current = { left: 0, right: 0 };
+    setFamilyInputs(['', '', '', '']);
+    pendingFamilyRef.current = ['', '', '', ''];
+    setEquationSlots([]);
+    pendingTilesRef.current = [];
+    // The found-pairs ledger spans one CHALLENGE (several decompose items).
+    if (item.sourceId !== prevSourceRef.current) {
+      prevSourceRef.current = item.sourceId;
+      setFoundPairs([]);
+    }
+    if (item.kind === 'build-equation') {
+      setAvailableTiles(seededShuffle(
+        [String(item.whole), String(item.knownPart), String(item.otherPart), '+', '-', '='],
+        index * 31 + item.whole,
+      ));
+    } else {
+      setAvailableTiles([]);
+    }
+  }, [clearSettle]);
+
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const itemOf = (id: string) => items.find((i) => i.id === id);
+    const solvedOf = (kind: NumberBondItem['kind']) =>
+      summary.outcomes.filter((o) => itemOf(o.id)?.kind === kind && o.solved).length;
+
+    const metrics: NumberBondMetrics = {
+      type: 'number-bond',
+      accuracy: summary.accuracy,
+      decomposePairsFound: solvedOf('decompose'),
+      factFamilyComplete: solvedOf('fact-family') > 0,
+      attemptsCount: summary.attemptsCount,
+    };
+
+    evaluation.submitResult(
+      summary.solvedCount === items.length,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, evaluation]);
+
+  const runner = useJudgedScriptRunner<NumberBondItem>({
+    pack,
     instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: resetStageFor,
+    onAffirmed: (item) => {
+      // The first moment an answer may appear on screen.
+      if (item.kind === 'decompose') {
+        const { left, right } = pendingSplitRef.current;
+        const pair: [number, number] = [Math.min(left, right), Math.max(left, right)];
+        setFoundPairs((prev) => [...prev, pair]);
+        setReward(`${left} + ${right} = ${item.whole}`);
+        return;
+      }
+      if (item.kind === 'missing-part') {
+        setReward(`${item.knownPart} + ${item.answer} = ${item.whole}`);
+        return;
+      }
+      if (item.kind === 'build-equation') {
+        setReward(pendingTilesRef.current.join(' '));
+        return;
+      }
+      setReward(`${item.knownPart} + ${item.otherPart} = ${item.whole} — the whole family!`);
+    },
+    onCorrectionRetry: (item) => {
+      // The tutor's correction re-modeled and re-asked in-band; restore the
+      // working surface for another go.
+      clearSettle();
+      if (item.kind === 'decompose') {
+        setLeftCount(0);
+        setRightCount(0);
+        pendingSplitRef.current = { left: 0, right: 0 };
+        return;
+      }
+      if (item.kind === 'build-equation') {
+        // The tray clears: the tiles are indistinguishable, so there is no
+        // "wrong slot" to preserve.
+        setEquationSlots([]);
+        pendingTilesRef.current = [];
+        setAvailableTiles(seededShuffle(
+          [String(item.whole), String(item.knownPart), String(item.otherPart), '+', '-', '='],
+          item.whole * 7 + 3,
+        ));
+      }
+      // fact-family keeps the child's equations — the correction names the
+      // fault and the child EDITS; editing re-arms the close.
+    },
   });
 
-  // -------------------------------------------------------------------------
-  // Tutor reveal policy — keeps the tutor's reveal level in sync with the
-  // on-screen support tier so it never hands over what the scaffold withheld.
-  // Mode-aware: keyed off the CURRENT challenge type so it's correct in a blend.
-  // -------------------------------------------------------------------------
-  const tutorRevealClause = useCallback((challengeType?: string): string => {
-    if (!supportTier) return '';
-    if (supportTier === 'easy') {
-      // Easy: tutor may name the decomposition strategy and walk the setup.
-      if (challengeType === 'decompose') return ' [REVEAL: easy tier — you MAY name a decomposition strategy, e.g. "try counting down from the whole, 0 and 5, then 1 and 4". Walk one step, never list every pair.]';
-      if (challengeType === 'missing-part') return ' [REVEAL: easy tier — you MAY suggest counting up from the known part to the whole; do NOT state the missing number itself.]';
-      if (challengeType === 'fact-family') return ' [REVEAL: easy tier — you MAY remind that the same three numbers make addition and subtraction facts and point to the worked example.]';
-      return ' [REVEAL: easy tier — you MAY name which equation form to build and walk the setup, but do not place the final tiles for them.]';
-    }
-    if (supportTier === 'medium') {
-      return ' [REVEAL: medium tier — the strategy is on screen; nudge execution only, do not name the full strategy or reveal any part/answer.]';
-    }
-    // hard
-    return ' [REVEAL: hard tier — the scaffold is withdrawn; do NOT name the strategy and do NOT reveal the missing part. Ask what parts the student sees making the whole; never reveal the answer.]';
-  }, [supportTier]);
+  const currentItem = runner.currentItem;
+  const currentSolved = runner.currentSolved;
+  const kind = currentItem?.kind;
+  const whole = currentItem?.whole ?? 0;
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Number Bond activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges. Max number: ${maxNumber}. `
-      + `First challenge: "${currentChallenge?.instruction}" (type: ${currentChallenge?.type}, whole: ${currentChallenge?.whole}). `
-      + `Introduce warmly: "Let's explore how numbers break apart! We'll look at number bonds today."`
-      + tutorRevealClause(currentChallenge?.type),
-      { silent: true }
+  // ── The gesture commits ───────────────────────────────────────────────────
+  // No Check control: nothing on screen may carry the child forward. Each
+  // close describes the committed artifact; the MATCH IS COMPUTED IN CODE.
+  const commitSplit = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'decompose') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    const { left, right } = pendingSplitRef.current;
+    runner.submitGestureAttempt(splitVerdictCue(item, left, right, foundPairs));
+  }, [runner, foundPairs]);
+
+  const commitFamily = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'fact-family') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    runner.submitGestureAttempt(familyVerdictCue(item, pendingFamilyRef.current));
+  }, [runner]);
+
+  const commitEquation = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'build-equation') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    if (pendingTilesRef.current.length === 0) return;
+    runner.submitGestureAttempt(bondEquationVerdictCue(item, pendingTilesRef.current));
+  }, [runner]);
+
+  /** A hands turn closes on stillness; further touches reset the window. */
+  const armSplitSettle = useCallback((left: number, right: number) => {
+    const item = runner.currentItem;
+    pendingSplitRef.current = { left, right };
+    clearSettle();
+    const wait = item && left + right === item.whole ? SPLIT_FULL_SETTLE_MS : SPLIT_SETTLE_MS;
+    settleTimerRef.current = setTimeout(() => { commitSplit(); }, wait);
+  }, [runner, clearSettle, commitSplit]);
+
+  const armFamilySettle = useCallback((inputs: string[]) => {
+    const item = runner.currentItem;
+    pendingFamilyRef.current = inputs;
+    clearSettle();
+    const complete = !!item
+      && inputs.every((s) => s.trim().length > 0
+        && parseBondEquation(s, item.whole, item.knownPart, item.otherPart) !== null);
+    settleTimerRef.current = setTimeout(
+      () => { commitFamily(); },
+      complete ? FAMILY_COMPLETE_SETTLE_MS : FAMILY_SETTLE_MS,
     );
-  }, [isConnected, challenges.length, maxNumber, gradeBand, currentChallenge, sendText, tutorRevealClause]);
+  }, [runner, clearSettle, commitFamily]);
 
-  // -------------------------------------------------------------------------
-  // Reset domain state when challenge changes
-  // -------------------------------------------------------------------------
-  const resetDomainState = useCallback(() => {
-    setFeedback('');
-    setFeedbackType('');
-    setLeftCount(0);
-    setRightCount(0);
-    setFoundPairs([]);
-    setMissingAnswer('');
-    setFamilyInputs(['', '', '', '']);
-    setFamilyChecked([null, null, null, null]);
-    setEquationSlots([]);
-  }, []);
-
-  // Initialize build-equation tiles when challenge changes
-  useEffect(() => {
-    if (!currentChallenge) return;
-    if (currentChallenge.type === 'build-equation') {
-      const w = currentChallenge.whole;
-      const p1 = currentChallenge.part1 ?? 0;
-      const p2 = currentChallenge.part2 ?? 0;
-      const tiles = [String(w), String(p1), String(p2), '+', '-', '='];
-      // Shuffle tiles
-      const shuffled = [...tiles].sort(() => Math.random() - 0.5);
-      setAvailableTiles(shuffled);
-      setEquationSlots([]);
-    }
-  }, [currentChallengeIndex, currentChallenge]);
-
-  // -------------------------------------------------------------------------
-  // Decompose: add a counter to left or right
-  // -------------------------------------------------------------------------
-  const whole = currentChallenge?.whole ?? 0;
-  const totalCounters = leftCount + rightCount;
-  const remainingCounters = whole - totalCounters;
-
-  const handleAddLeft = useCallback(() => {
-    if (hasSubmittedEvaluation || remainingCounters <= 0) return;
-    SoundManager.tick();
-    setLeftCount(prev => prev + 1);
-  }, [hasSubmittedEvaluation, remainingCounters]);
-
-  const handleAddRight = useCallback(() => {
-    if (hasSubmittedEvaluation || remainingCounters <= 0) return;
-    SoundManager.tick();
-    setRightCount(prev => prev + 1);
-  }, [hasSubmittedEvaluation, remainingCounters]);
-
-  const handleResetCounters = useCallback(() => {
-    setLeftCount(0);
-    setRightCount(0);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Decompose: submit a pair
-  // -------------------------------------------------------------------------
-  const handleSubmitPair = useCallback(() => {
-    if (totalCounters !== whole) {
-      SoundManager.invalid();
-      setFeedback(`Place all ${whole} counters first!`);
-      setFeedbackType('error');
-      return;
-    }
-
-    const pair: [number, number] = [Math.min(leftCount, rightCount), Math.max(leftCount, rightCount)];
-    const alreadyFound = foundPairs.some(p => p[0] === pair[0] && p[1] === pair[1]);
-
-    if (alreadyFound) {
-      SoundManager.invalid();
-      setFeedback(`You already found ${leftCount} + ${rightCount} = ${whole}!`);
-      setFeedbackType('error');
-      sendText(
-        `[DUPLICATE_PAIR] Student tried ${leftCount} + ${rightCount} but already found this pair. `
-        + `Encourage: "You already found that one! Can you think of a different way to split ${whole}?"`
-        + tutorRevealClause('decompose'),
-        { silent: true }
-      );
-      return;
-    }
-
-    SoundManager.playCorrect();
-    const newPairs = [...foundPairs, pair];
-    setFoundPairs(newPairs);
-    setLeftCount(0);
-    setRightCount(0);
-
-    const totalExpected = currentChallenge?.allPairs?.length ?? allPairsForWhole(whole).length;
-
-    setFeedback(`${leftCount} + ${rightCount} = ${whole}! (${newPairs.length} of ${totalExpected} ways found)`);
-    setFeedbackType('success');
-
-    sendText(
-      `[PAIR_FOUND] Student found ${leftCount} + ${rightCount} = ${whole}. `
-      + `${newPairs.length} of ${totalExpected} pairs found. `
-      + `Celebrate: "Great! ${leftCount} and ${rightCount} make ${whole}!" `
-      + `${newPairs.length < totalExpected ? `Guide: "Can you find another way to make ${whole}?"` : ''}`
-      + tutorRevealClause('decompose'),
-      { silent: true }
+  const armEquationSettle = useCallback((tiles: string[]) => {
+    const item = runner.currentItem;
+    pendingTilesRef.current = tiles;
+    clearSettle();
+    const complete = !!item
+      && parseBondEquation(tiles.join(''), item.whole, item.knownPart, item.otherPart) !== null;
+    settleTimerRef.current = setTimeout(
+      () => { commitEquation(); },
+      complete ? EQUATION_COMPLETE_SETTLE_MS : EQUATION_SETTLE_MS,
     );
+  }, [runner, clearSettle, commitEquation]);
 
-    // All pairs found?
-    if (newPairs.length >= totalExpected) {
-      incrementAttempts();
-      recordResult({
-        challengeId: currentChallenge!.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        pairsFound: newPairs.length,
-        totalPairs: totalExpected,
-      });
-    }
-  }, [totalCounters, whole, leftCount, rightCount, foundPairs, currentChallenge, currentAttempts, sendText, incrementAttempts, recordResult]);
+  // ── Decompose interactions ────────────────────────────────────────────────
+  // NEVER gate interaction on the stage word — `canAttempt` reads the solved
+  // ledger (a stage-gated board ships dead from item 2 on; ten-frame drive 1).
+  const remaining = whole - leftCount - rightCount;
 
-  // -------------------------------------------------------------------------
-  // Missing-part: check answer
-  // -------------------------------------------------------------------------
-  const handleCheckMissingPart = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
+  const addCounter = useCallback((side: 'left' | 'right') => {
+    if (!currentItem || currentItem.kind !== 'decompose') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture() || remaining <= 0) return;
+    SoundManager.tap();
+    const left = leftCount + (side === 'left' ? 1 : 0);
+    const right = rightCount + (side === 'right' ? 1 : 0);
+    setLeftCount(left);
+    setRightCount(right);
+    armSplitSettle(left, right);
+  }, [currentItem, runner, remaining, leftCount, rightCount, armSplitSettle]);
 
-    const answer = parseInt(missingAnswer, 10);
-    const expected = currentChallenge.part1 == null
-      ? currentChallenge.whole - (currentChallenge.part2 ?? 0)
-      : currentChallenge.whole - (currentChallenge.part1 ?? 0);
-    const correct = answer === expected;
+  const resetCounters = useCallback(() => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setLeftCount(0);
+    setRightCount(0);
+    pendingSplitRef.current = { left: 0, right: 0 };
+    // Starting over is thinking, not an answer — nothing to commit, so the
+    // window is cleared rather than re-armed (mirrors item-open state).
+    clearSettle();
+  }, [runner, clearSettle]);
 
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! ${currentChallenge.whole} = ${currentChallenge.part1 ?? expected} + ${currentChallenge.part2 ?? expected}`);
-      setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly found the missing part: ${expected}. `
-        + `Whole: ${currentChallenge.whole}. Congratulate briefly.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite. Think: ${currentChallenge.whole} = ${currentChallenge.part1 ?? '?'} + ${currentChallenge.part2 ?? '?'}`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer} but correct is ${expected}. `
-        + `Whole: ${currentChallenge.whole}, known part: ${currentChallenge.part1 ?? currentChallenge.part2}. `
-        + `Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`
-        + tutorRevealClause(currentChallenge.type),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, missingAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
+  // ── Fact-family / equation-tray interactions ──────────────────────────────
+  const editFamilyInput = useCallback((index: number, value: string) => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    const next = [...familyInputs];
+    next[index] = value;
+    setFamilyInputs(next);
+    armFamilySettle(next);
+  }, [runner, familyInputs, armFamilySettle]);
 
-  // -------------------------------------------------------------------------
-  // Fact-family: semantic check for all 4 equations
-  // -------------------------------------------------------------------------
-  const handleCheckFactFamily = useCallback(() => {
-    if (!currentChallenge) return;
-    const w = currentChallenge.whole;
-    const p1 = currentChallenge.part1 ?? 0;
-    const p2 = currentChallenge.part2 ?? 0;
-    incrementAttempts();
+  const addTile = useCallback((tile: string, tileIndex: number) => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    setAvailableTiles((prev) => prev.filter((_, i) => i !== tileIndex));
+    const next = [...equationSlots, tile];
+    setEquationSlots(next);
+    armEquationSettle(next);
+  }, [runner, equationSlots, armEquationSettle]);
 
-    const validKeys = factFamilyCanonicalKeys(w, p1, p2);
-    const seenKeys = new Set<string>();
-    let uniqueCorrect = 0;
-
-    const checks = familyInputs.map((input) => {
-      if (!input.trim()) return null;
-
-      const parsed = parseEquation(input, w, p1, p2);
-      if (!parsed) return 'parse-error' as const;       // couldn't parse at all
-      if (!parsed.valid) return 'bad-math' as const;     // math doesn't check out
-      if (!parsed.usesCorrectNumbers) return 'wrong-numbers' as const; // valid math but wrong numbers
-      if (seenKeys.has(parsed.canonicalKey)) return 'duplicate' as const;
-
-      if (validKeys.has(parsed.canonicalKey)) {
-        seenKeys.add(parsed.canonicalKey);
-        uniqueCorrect++;
-        return true;
-      }
-      return 'wrong-numbers' as const;
-    });
-
-    setFamilyChecked(checks.map(c => c === true ? true : c === null ? null : false));
-
-    // Need all 3 canonical keys covered (4 input slots, but a+b and b+a share a key)
-    const allKeysFound = validKeys.size > 0 && seenKeys.size >= validKeys.size;
-
-    if (allKeysFound) {
-      SoundManager.playCorrect();
-      setFeedback('You found the whole fact family!');
-      setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        factFamilyComplete: true,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student completed the fact family for ${w} = ${p1} + ${p2}. `
-        + `All equations correct! Celebrate the inverse relationship understanding.`,
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      // Build specific feedback per slot
-      const hints: string[] = [];
-      checks.forEach((c, i) => {
-        if (c === 'parse-error') hints.push(`Slot ${i + 1}: couldn't read — use format like "6+4=10"`);
-        else if (c === 'bad-math') hints.push(`Slot ${i + 1}: the math doesn't add up`);
-        else if (c === 'wrong-numbers') hints.push(`Slot ${i + 1}: use only the numbers ${p1}, ${p2}, and ${w}`);
-        else if (c === 'duplicate') hints.push(`Slot ${i + 1}: same equation as another slot`);
-      });
-
-      const remaining = validKeys.size - seenKeys.size;
-      setFeedback(
-        `${uniqueCorrect > 0 ? `${uniqueCorrect} correct so far` : 'Not quite'}` +
-        ` — ${remaining} more unique equation${remaining !== 1 ? 's' : ''} needed.` +
-        (hints.length > 0 ? ` ${hints[0]}` : '')
-      );
-      setFeedbackType('error');
-
-      sendText(
-        `[ANSWER_INCORRECT] Fact family for ${w}=${p1}+${p2}: ${uniqueCorrect} unique facts found, ${remaining} still needed. `
-        + `Issues: ${hints.join('; ')}. Student wrote: ${familyInputs.join(', ')}. `
-        + `Remind them: "A fact family uses the SAME three numbers (${p1}, ${p2}, ${w}) in addition AND subtraction."`
-        + tutorRevealClause('fact-family'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, familyInputs, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
-
-  // -------------------------------------------------------------------------
-  // Build-equation: tile management
-  // -------------------------------------------------------------------------
-  const handleTileToSlot = useCallback((tile: string, tileIndex: number) => {
-    SoundManager.snap();
-    setAvailableTiles(prev => prev.filter((_, i) => i !== tileIndex));
-    setEquationSlots(prev => [...prev, tile]);
-  }, []);
-
-  const handleSlotRemove = useCallback((slotIndex: number) => {
+  const removeTile = useCallback((slotIndex: number) => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
     SoundManager.tap();
     const tile = equationSlots[slotIndex];
-    setEquationSlots(prev => prev.filter((_, i) => i !== slotIndex));
-    setAvailableTiles(prev => [...prev, tile]);
-  }, [equationSlots]);
+    const next = equationSlots.filter((_, i) => i !== slotIndex);
+    setEquationSlots(next);
+    setAvailableTiles((prev) => [...prev, tile]);
+    armEquationSettle(next);
+  }, [runner, equationSlots, armEquationSettle]);
 
-  const handleCheckEquation = useCallback(() => {
-    if (!currentChallenge) return;
-    const w = currentChallenge.whole;
-    const p1 = currentChallenge.part1 ?? 0;
-    const p2 = currentChallenge.part2 ?? 0;
-    incrementAttempts();
+  // Cancel the settle timer on unmount.
+  React.useEffect(() => () => {
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+  }, []);
 
-    const builtEq = equationSlots.join('');
-    const parsed = parseEquation(builtEq, w, p1, p2);
-
-    if (!parsed) {
-      SoundManager.invalid();
-      setFeedback('Arrange the tiles into an equation like 6+4=10');
-      setFeedbackType('error');
-      return;
-    }
-
-    // Accept any valid equation using the correct three numbers
-    const correct = parsed.valid && parsed.usesCorrectNumbers;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Correct! ${builtEq.replace(/\s+/g, '')}`);
-      setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student built the equation: ${builtEq}. Congratulate!`,
-        { silent: true }
-      );
-    } else if (!parsed.valid) {
-      SoundManager.playIncorrect();
-      setFeedback('The math doesn\'t add up — check the numbers.');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student built "${builtEq}" but the math is wrong. `
-        + `Attempt ${currentAttempts + 1}. Hint about checking their arithmetic.`
-        + tutorRevealClause('build-equation'),
-        { silent: true }
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Use the numbers from the bond: ${p1}, ${p2}, and ${w}`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student built "${builtEq}" — math is correct but wrong numbers. `
-        + `Attempt ${currentAttempts + 1}. Remind them to look at the number bond diagram.`
-        + tutorRevealClause('build-equation'),
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, equationSlots, currentAttempts, incrementAttempts, recordResult, sendText, tutorRevealClause]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation
-  // -------------------------------------------------------------------------
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
-
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — submit evaluation
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter(r => r.correct).length / challenges.length) * 100
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their number bond understanding!`,
-        { silent: true }
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter(r => r.correct).length;
-        const accuracy = Math.round((correctCount / challenges.length) * 100);
-        const decomposePairs = challengeResults
-          .filter(r => (r.pairsFound as number) > 0)
-          .reduce((s, r) => s + ((r.pairsFound as number) || 0), 0);
-        const factFamilyComplete = challengeResults.some(r => r.factFamilyComplete === true);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-
-        const metrics: NumberBondMetrics = {
-          type: 'number-bond',
-          accuracy,
-          decomposePairsFound: decomposePairs,
-          factFamilyComplete,
-          attemptsCount: totalAttempts,
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          accuracy,
-          metrics,
-          { challengeResults }
-        );
-      }
-      return;
-    }
-
-    // Reset domain state and announce next challenge
-    resetDomainState();
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}, whole: ${nextChallenge.whole}). `
-      + `Introduce it briefly.`,
-      { silent: true }
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, resetDomainState, currentChallengeIndex,
-  ]);
-
-  // Auto-submit when complete
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // -------------------------------------------------------------------------
-  // Overall Score
-  // -------------------------------------------------------------------------
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
-
-  // -------------------------------------------------------------------------
-  // Equation string for display
-  // -------------------------------------------------------------------------
+  // ── Live equation bar (render lever, unchanged semantics) ─────────────────
   const liveEquation = useMemo(() => {
-    if (!currentChallenge || !showEquation) return null;
-    if (currentChallenge.type === 'decompose') {
-      if (totalCounters === whole && leftCount > 0 && rightCount > 0) {
-        return `${leftCount} + ${rightCount} = ${whole}`;
-      }
-      return `? + ? = ${whole}`;
+    if (!currentItem || !showEquation) return null;
+    if (currentItem.kind === 'decompose') {
+      return `${leftCount || '?'} + ${rightCount || '?'} = ${currentItem.whole}`;
     }
-    if (currentChallenge.type === 'missing-part') {
-      const p1 = currentChallenge.part1;
-      const p2 = currentChallenge.part2;
-      return `${p1 ?? '?'} + ${p2 ?? '?'} = ${currentChallenge.whole}`;
+    if (currentItem.kind === 'missing-part') {
+      return `${currentItem.knownPart} + ${currentSolved ? currentItem.answer : '?'} = ${currentItem.whole}`;
     }
     return null;
-  }, [currentChallenge, showEquation, totalCounters, whole, leftCount, rightCount]);
+  }, [currentItem, showEquation, leftCount, rightCount, currentSolved]);
 
-  // -------------------------------------------------------------------------
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => (
+      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
+    ));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  const celebrationMessage = useMemo(() => {
+    const spoken = items.some((i) => i.answerKind === 'voice');
+    const hands = items.some((i) => i.answerKind === 'gesture');
+    if (spoken && hands) return 'You worked with your voice and your hands!';
+    if (spoken) return 'You said every missing part out loud!';
+    return 'You built every bond with your own hands!';
+  }, [items]);
+
+  // ============================================================================
   // Render
-  // -------------------------------------------------------------------------
+  // ============================================================================
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No number bond challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const isGestureItem = currentItem?.answerKind === 'gesture';
+
+  const stageWord = runner.stage === 'judging'
+    ? 'let’s see…'
+    : currentSolved
+      ? 'yes!'
+      : runner.running
+        ? (isGestureItem ? 'your turn' : 'say it out loud')
+        : 'get ready';
+
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="purple" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </LuminaBadge>
-            {currentChallenge && (
-              <LuminaBadge accent="emerald" className="text-xs">
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.icon}{' '}
-                {CHALLENGE_TYPE_CONFIG[currentChallenge.type]?.label}
-              </LuminaBadge>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            {/* Grade / mode badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge accent="purple" className="text-xs">Grade 1</LuminaBadge>
+                {kind && (
+                  <LuminaBadge accent="emerald" className="text-xs">
+                    {PHASE_TYPE_CONFIG[kind]?.icon} {PHASE_TYPE_CONFIG[kind]?.label}
+                  </LuminaBadge>
+                )}
+              </div>
             )}
           </div>
+          <LuminaBadge accent="cyan" className="text-xs">
+            {isGestureItem ? 'Show me' : 'Say it out loud'}
+          </LuminaBadge>
         </div>
-        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
+        {!isPreReader && description && (
+          <p className="text-slate-400 text-sm mt-1">{description}</p>
+        )}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Challenge Progress */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(CHALLENGE_TYPE_CONFIG).map(([type, config]) => {
-              const hasType = challenges.some(c => c.type === type);
-              if (!hasType) return null;
-              return (
-                <LuminaBadge
-                  key={type}
-                  accent={currentChallenge?.type === type ? 'purple' : undefined}
-                  className={`text-xs ${
-                    currentChallenge?.type === type
-                      ? 'bg-purple-500/20 border-purple-400/50'
-                      : 'bg-slate-800/30 border-slate-700/30 text-slate-500'
-                  }`}
-                >
-                  {config.icon} {config.label}
-                </LuminaBadge>
-              );
-            })}
-            <span className="text-slate-500 text-xs ml-auto">
-              Challenge {Math.min(currentChallengeIndex + 1, challenges.length)} of {challenges.length}
-            </span>
-          </div>
-        )}
-
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPanel className="p-3">
-            <p className="text-slate-200 text-sm font-medium">
-              {currentChallenge.instruction}
-            </p>
-          </LuminaPanel>
-        )}
-
-        {/* Number Bond Diagram */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="flex justify-center">
-            {currentChallenge.type === 'decompose' && (
-              <BondDiagram
-                whole={whole}
-                leftValue={leftCount || '?'}
-                rightValue={rightCount || '?'}
-                showWhole={true}
-                showLeft={leftCount > 0}
-                showRight={rightCount > 0}
-                highlightLeft={remainingCounters > 0}
-                highlightRight={remainingCounters > 0}
-                interactive={remainingCounters > 0}
-                onDropLeft={handleAddLeft}
-                onDropRight={handleAddRight}
-                leftCounters={showCounters ? leftCount : undefined}
-                rightCounters={showCounters ? rightCount : undefined}
-              />
-            )}
-            {currentChallenge.type === 'missing-part' && (
-              <BondDiagram
-                whole={whole}
-                leftValue={currentChallenge.part1 ?? '?'}
-                rightValue={currentChallenge.part2 ?? '?'}
-                showWhole={true}
-                showLeft={currentChallenge.part1 != null}
-                showRight={currentChallenge.part2 != null}
-              />
-            )}
-            {currentChallenge.type === 'fact-family' && (
-              <BondDiagram
-                whole={whole}
-                leftValue={currentChallenge.part1 ?? 0}
-                rightValue={currentChallenge.part2 ?? 0}
-                showWhole={true}
-                showLeft={true}
-                showRight={true}
-              />
-            )}
-            {currentChallenge.type === 'build-equation' && (
-              <BondDiagram
-                whole={whole}
-                leftValue={currentChallenge.part1 ?? 0}
-                rightValue={currentChallenge.part2 ?? 0}
-                showWhole={true}
-                showLeft={true}
-                showRight={true}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Live Equation Bar */}
-        {liveEquation && !allChallengesComplete && (
-          <div className="text-center">
-            <span className="inline-block bg-slate-800/50 border border-white/10 rounded-lg px-4 py-2 text-slate-200 text-lg font-mono tracking-wider">
-              {liveEquation}
-            </span>
-          </div>
-        )}
-
-        {/* === Decompose Controls === */}
-        {currentChallenge?.type === 'decompose' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="space-y-3">
-            {/* Counter bank */}
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-slate-400 text-sm">
-                Counters remaining: <span className="text-purple-300 font-bold">{remainingCounters}</span>
-              </span>
-            </div>
-            <div className="flex justify-center gap-3">
-              <Button
-                variant="ghost"
-                className="bg-red-500/10 border border-red-400/30 hover:bg-red-500/20 text-red-300"
-                onClick={handleAddLeft}
-                disabled={remainingCounters <= 0}
-              >
-                + Left ({leftCount})
-              </Button>
-              <Button
-                variant="ghost"
-                className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
-                onClick={handleAddRight}
-                disabled={remainingCounters <= 0}
-              >
-                + Right ({rightCount})
-              </Button>
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
-                onClick={handleResetCounters}
-              >
-                Reset
-              </Button>
-            </div>
-            {totalCounters === whole && (
+        {!evaluation.hasSubmitted && currentItem && (
+          <>
+            {!isPreReader && (
               <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/10 border border-emerald-400/30 hover:bg-emerald-500/20 text-emerald-300"
-                  onClick={handleSubmitPair}
-                >
-                  Submit Pair
-                </Button>
+                <LuminaChallengeCounter
+                  current={Math.min(runner.currentIndex + 1, items.length)}
+                  total={items.length}
+                  variant="dots"
+                />
               </div>
             )}
-            {/* Found pairs tracker */}
-            {foundPairs.length > 0 && (
+
+            {/* Bond diagram — the missing part stays "?" until the tutor
+                affirms (reveal-on-affirm; answer-leak rule). */}
+            <div className="flex justify-center">
+              {kind === 'decompose' && (
+                <BondDiagram
+                  whole={whole}
+                  leftValue={leftCount || '?'}
+                  rightValue={rightCount || '?'}
+                  showWhole={true}
+                  showLeft={leftCount > 0}
+                  showRight={rightCount > 0}
+                  highlightLeft={remaining > 0}
+                  highlightRight={remaining > 0}
+                  interactive={remaining > 0 && runner.canAttempt}
+                  onDropLeft={() => addCounter('left')}
+                  onDropRight={() => addCounter('right')}
+                  leftCounters={showCounters ? leftCount : undefined}
+                  rightCounters={showCounters ? rightCount : undefined}
+                />
+              )}
+              {kind === 'missing-part' && (
+                <BondDiagram
+                  whole={whole}
+                  leftValue={currentItem.knownPart}
+                  rightValue={currentSolved ? currentItem.answer : '?'}
+                  showWhole={true}
+                  showLeft={true}
+                  showRight={currentSolved}
+                />
+              )}
+              {(kind === 'fact-family' || kind === 'build-equation') && (
+                <BondDiagram
+                  whole={whole}
+                  leftValue={currentItem.knownPart}
+                  rightValue={currentItem.otherPart}
+                  showWhole={true}
+                  showLeft={true}
+                  showRight={true}
+                />
+              )}
+            </div>
+
+            {liveEquation && (
+              <div className="text-center">
+                <span className="inline-block bg-slate-800/50 border border-white/10 rounded-lg px-4 py-2 text-slate-200 text-lg font-mono tracking-wider">
+                  {liveEquation}
+                </span>
+              </div>
+            )}
+
+            {/* === Decompose workspace === */}
+            {kind === 'decompose' && !currentSolved && (
+              <div className="space-y-3">
+                <div className="flex justify-center gap-3">
+                  <LuminaButton
+                    className="bg-red-500/10 border border-red-400/30 hover:bg-red-500/20 text-red-300"
+                    onClick={() => addCounter('left')}
+                    disabled={remaining <= 0 || !runner.canAttempt}
+                  >
+                    + Left ({leftCount})
+                  </LuminaButton>
+                  <LuminaButton
+                    className="bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 text-blue-300"
+                    onClick={() => addCounter('right')}
+                    disabled={remaining <= 0 || !runner.canAttempt}
+                  >
+                    + Right ({rightCount})
+                  </LuminaButton>
+                  <LuminaButton
+                    className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400"
+                    onClick={resetCounters}
+                    disabled={!runner.canAttempt}
+                  >
+                    Start over
+                  </LuminaButton>
+                </div>
+              </div>
+            )}
+
+            {/* Found pairs — the child's own banked work (kept at every tier). */}
+            {kind === 'decompose' && foundPairs.length > 0 && (
               <LuminaPanel className="p-3 bg-slate-800/20">
                 <p className="text-slate-400 text-xs mb-2">
-                  Ways found: {foundPairs.length} of {currentChallenge.allPairs?.length ?? allPairsForWhole(whole).length}
+                  Ways found: {foundPairs.length} of {currentItem.pairCount}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {foundPairs.map((pair, i) => (
@@ -1164,198 +926,111 @@ const NumberBond: React.FC<NumberBondProps> = ({ data, className }) => {
                 </div>
               </LuminaPanel>
             )}
-          </div>
-        )}
 
-        {/* === Missing Part Input === */}
-        {currentChallenge?.type === 'missing-part' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="flex flex-col items-center gap-3">
-            <span className="text-slate-300 text-sm">What is the missing part?</span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
-                onClick={() => { SoundManager.tick(); setMissingAnswer(prev => String(Math.max(0, (parseInt(prev, 10) || 0) - 1))); }}
-                disabled={!missingAnswer || parseInt(missingAnswer, 10) <= 0}
-              >
-                −
-              </Button>
-              <div className="w-14 h-10 flex items-center justify-center rounded-xl bg-slate-800/60 border border-white/15 text-slate-100 text-xl font-bold tabular-nums select-none">
-                {missingAnswer || '?'}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-lg font-bold"
-                onClick={() => { SoundManager.tick(); setMissingAnswer(prev => String(Math.min(maxNumber, (parseInt(prev, 10) || 0) + 1))); }}
-                disabled={parseInt(missingAnswer, 10) >= maxNumber}
-              >
-                +
-              </Button>
-            </div>
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 px-6"
-              onClick={handleCheckMissingPart}
-              disabled={!missingAnswer}
-            >
-              Check
-            </Button>
-          </div>
-        )}
-
-        {/* === Fact Family Inputs === */}
-        {currentChallenge?.type === 'fact-family' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="space-y-3">
-            <p className="text-slate-400 text-sm text-center">
-              Write all 4 equations using{' '}
-              <span className="text-purple-300 font-semibold">{currentChallenge.part1 ?? 0}</span>,{' '}
-              <span className="text-purple-300 font-semibold">{currentChallenge.part2 ?? 0}</span>, and{' '}
-              <span className="text-purple-300 font-semibold">{currentChallenge.whole}</span>:
-            </p>
-            {showFactFamilyHelper && <FactFamilyHelper defaultOpen={supportTier === 'easy'} />}
-            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-              {familyInputs.map((val, i) => (
-                <div key={i} className="relative">
-                  <LuminaInput
-                    type="text"
-                    placeholder={i < 2 ? '_ + _ = _' : '_ − _ = _'}
-                    value={val}
-                    onChange={e => {
-                      const next = [...familyInputs];
-                      next[i] = e.target.value;
-                      setFamilyInputs(next);
-                    }}
-                    className={`w-full text-center text-sm ${
-                      familyChecked[i] === true
-                        ? 'border-emerald-400/50'
-                        : familyChecked[i] === false
-                          ? 'border-rose-400/50'
-                          : ''
-                    }`}
+            {/* === Fact-family workspace === */}
+            {kind === 'fact-family' && !currentSolved && (
+              <div className="space-y-3">
+                <p className="text-slate-400 text-sm text-center">
+                  Write all 4 equations using{' '}
+                  <span className="text-purple-300 font-semibold">{currentItem.knownPart}</span>,{' '}
+                  <span className="text-purple-300 font-semibold">{currentItem.otherPart}</span>, and{' '}
+                  <span className="text-purple-300 font-semibold">{whole}</span>:
+                </p>
+                {showFactFamilyHelper && (
+                  <FactFamilyHelper
+                    triple={familyHelperExample(currentItem)}
+                    defaultOpen={supportTier === 'easy'}
                   />
-                  {familyChecked[i] === true && (
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-400 text-xs">✓</span>
-                  )}
-                  {familyChecked[i] === false && (
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 text-xs">✗</span>
+                )}
+                <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+                  {familyInputs.map((val, i) => (
+                    <LuminaInput
+                      key={i}
+                      type="text"
+                      placeholder={i < 2 ? '_ + _ = _' : '_ − _ = _'}
+                      value={val}
+                      onChange={(e) => editFamilyInput(i, e.target.value)}
+                      className="w-full text-center text-sm"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* === Build-equation workspace === */}
+            {kind === 'build-equation' && !currentSolved && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
+                  {equationSlots.length === 0 ? (
+                    <span className="text-slate-600 text-sm">Tap the tiles to build the number sentence</span>
+                  ) : (
+                    equationSlots.map((tile, i) => (
+                      <LuminaButton
+                        key={i}
+                        className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
+                        onClick={() => removeTile(i)}
+                        title="Tap to remove"
+                      >
+                        {tile}
+                      </LuminaButton>
+                    ))
                   )}
                 </div>
-              ))}
-            </div>
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                onClick={handleCheckFactFamily}
-                disabled={familyInputs.every(v => !v.trim())}
-              >
-                Check Fact Family
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* === Build Equation === */}
-        {currentChallenge?.type === 'build-equation' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          <div className="space-y-3">
-            {/* Equation slots */}
-            <div className="flex items-center justify-center gap-1 min-h-[44px]">
-              {equationSlots.length === 0 && (
-                <span className="text-slate-500 text-sm italic">Tap tiles below to build the equation</span>
-              )}
-              {equationSlots.map((tile, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSlotRemove(i)}
-                  className="w-10 h-10 flex items-center justify-center bg-purple-500/15 border border-purple-400/30 rounded-lg text-purple-200 text-lg font-mono hover:bg-purple-500/25 transition-colors"
-                >
-                  {tile}
-                </button>
-              ))}
-            </div>
-            {/* Available tiles */}
-            <div className="flex items-center justify-center gap-2">
-              {availableTiles.map((tile, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleTileToSlot(tile, i)}
-                  className="w-10 h-10 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-lg text-slate-200 text-lg font-mono hover:bg-white/10 transition-colors"
-                >
-                  {tile}
-                </button>
-              ))}
-            </div>
-            {equationSlots.length > 0 && (
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckEquation}
-                >
-                  Check Equation
-                </Button>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {availableTiles.map((tile, i) => (
+                    <LuminaButton
+                      key={`${tile}-${i}`}
+                      className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
+                      onClick={() => addTile(tile, i)}
+                    >
+                      {tile}
+                    </LuminaButton>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`text-center text-sm font-medium ${
-            feedbackType === 'success' ? 'text-emerald-400' :
-            feedbackType === 'error' ? 'text-red-400' : 'text-slate-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Next / Complete buttons */}
-        {challenges.length > 0 && !allChallengesComplete && (
-          <div className="flex justify-center">
-            {isCurrentChallengeComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </LuminaActionButton>
+            {/* The reward — the first moment an answer may appear. */}
+            {reward && currentSolved && (
+              <LuminaPanel className="p-3 text-center">
+                <span className="text-emerald-300 text-lg font-black animate-bounce inline-block font-mono">
+                  {reward}
+                </span>
+              </LuminaPanel>
             )}
-          </div>
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {isGestureItem
+                  ? 'Make the bond match the task — the tutor checks when you stop.'
+                  : 'Look at the bond, then say the missing part out loud.'}
+              </p>
+            )}
+
+            {/* The orb tells the truth about the turn: a hands item is not
+                "I'm listening". */}
+            <JudgedMicPanel
+              run={runner}
+              gestureLabel={
+                kind === 'fact-family'
+                  ? 'Write the four equations'
+                  : kind === 'build-equation'
+                    ? 'Build the number sentence'
+                    : 'Show me your way'
+              }
+            />
+          </>
         )}
 
-        {allChallengesComplete && (
-          <div className="text-center">
-            <p className="text-emerald-400 text-sm font-medium mb-2">
-              All challenges complete!
-            </p>
-            <p className="text-slate-400 text-xs">
-              {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-            </p>
-          </div>
-        )}
-
-        {/* Hint */}
-        {currentChallenge && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPanel className="p-2 bg-slate-800/20 text-center">
-            <p className="text-slate-400 text-xs italic">
-              {currentChallenge.type === 'decompose' && `Try starting with 0 + ${whole}, then 1 + ${whole - 1}...`}
-              {currentChallenge.type === 'missing-part' && `Think: ${currentChallenge.whole} take away ${currentChallenge.part1 ?? currentChallenge.part2} equals...`}
-              {currentChallenge.type === 'fact-family' && `Remember: if a + b = c, then c - a = b and c - b = a`}
-              {currentChallenge.type === 'build-equation' && `Look at the number bond — which numbers go with + or -?`}
-            </p>
-          </LuminaPanel>
-        )}
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Number Bonds Complete!"
-            celebrationMessage={`You completed all ${challenges.length} number bond challenges!`}
+            celebrationMessage={celebrationMessage}
             className="mt-4"
           />
         )}

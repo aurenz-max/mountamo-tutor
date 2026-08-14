@@ -55,6 +55,15 @@ import {
   type TenFrameItem,
 } from '@/components/lumina/primitives/visual-primitives/math/tenFrameScript';
 import {
+  bondVerdictCueForPlaced,
+  buildBondItems,
+  numberBondHarnessAnswers,
+  numberBondPackBase,
+  type BondBand,
+  type NumberBondChallengeLike,
+  type NumberBondItem,
+} from '@/components/lumina/primitives/visual-primitives/math/numberBondScript';
+import {
   interactiveBookHarnessAnswers,
   interactiveBookPackBase,
   itemsFromChallenges as interactiveBookItems,
@@ -196,6 +205,25 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
 };
 
 /**
+ * number-bond (third math port). Gesture commits carry a NUMBER whose encoding
+ * is internal to numberBondScript — decompose packs the pair as left×100+right;
+ * fact-family and build-equation use 1 for a correct commit and 0 for a wrong
+ * one, because what they commit is a whole written form, not a quantity.
+ */
+const numberBondAdapter: DiPortAdapter<NumberBondItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as NumberBondChallengeLike[];
+    const band: BondBand = data.gradeBand === '1' ? '1' : 'K';
+    const maxNumber = typeof data.maxNumber === 'number' ? data.maxNumber : band === 'K' ? 5 : 10;
+    const { items, droppedChallenges } = buildBondItems(challenges, { band, maxNumber });
+    return { items, dropped: droppedChallenges, surface: numberBondPackBase(items) };
+  },
+  answersFor: numberBondHarnessAnswers,
+  gestureVerdictCue: (item, gesture) =>
+    bondVerdictCueForPlaced(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -205,6 +233,7 @@ const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;
