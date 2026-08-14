@@ -3,7 +3,89 @@ import {
   rhymeRemediationMoveFor,
   resolveRhymeSupportScaffold,
   applyRhymeSupportTier,
+  holdsRhymeIntegrity,
 } from './gemini-rhyme-studio';
+
+/**
+ * The answer-key gate, pinned to the three false keys that live Gemini actually
+ * produced across five DI-port probes on 2026-08-12. Live content is not
+ * deterministic, so the probe cannot be the regression — this is.
+ *
+ * All three were silent under the pre-DI tap surface and all three are SPOKEN
+ * under the judged loop, which is the whole reason the gate exists: where a port
+ * converts a tap into a spoken relation, the content the tap never had to
+ * justify has to be re-checked.
+ */
+describe('rhyme integrity — the answer key, checked in code', () => {
+  it('DROPS a target whose rhyme family is not its own ending (live: shark / -ank / "tank")', () => {
+    expect(holdsRhymeIntegrity({
+      id: 'c1', mode: 'identification', targetWord: 'shark', rhymeFamily: '-ank',
+      options: [
+        { word: 'tank', isCorrect: true },
+        { word: 'shell', isCorrect: false },
+      ],
+    })).toBe(false);
+  });
+
+  it('DROPS a rhyming "distractor" rather than correcting a correct child (live: crab / "fab")', () => {
+    const ch: Record<string, unknown> = {
+      id: 'c2', mode: 'identification', targetWord: 'crab', rhymeFamily: '-ab',
+      options: [
+        { word: 'coral', isCorrect: false },
+        { word: 'fab', isCorrect: false },   // …but "fab" really does rhyme
+        { word: 'grab', isCorrect: true },
+      ],
+    };
+    expect(holdsRhymeIntegrity(ch)).toBe(true);
+    expect((ch.options as Array<{ word: string }>).map((o) => o.word)).toEqual(['grab', 'coral']);
+  });
+
+  it('DROPS an acceptable answer that does not rhyme (live: jump / "lamp")', () => {
+    const ch: Record<string, unknown> = {
+      id: 'c3', mode: 'production', targetWord: 'jump', rhymeFamily: '-ump',
+      acceptableAnswers: ['bump', 'lamp', 'pump', 'dump'],
+    };
+    expect(holdsRhymeIntegrity(ch)).toBe(true);
+    expect(ch.acceptableAnswers).toEqual(['bump', 'pump', 'dump']);
+  });
+
+  it('recomputes doesRhyme from the words — the boolean is a claim, the words are the truth', () => {
+    const rhyming: Record<string, unknown> = {
+      mode: 'recognition', targetWord: 'cat', rhymeFamily: '-at', comparisonWord: 'hat', doesRhyme: false,
+    };
+    expect(holdsRhymeIntegrity(rhyming)).toBe(true);
+    expect(rhyming.doesRhyme).toBe(true);
+
+    const notRhyming: Record<string, unknown> = {
+      mode: 'recognition', targetWord: 'cat', rhymeFamily: '-at', comparisonWord: 'cap', doesRhyme: true,
+    };
+    expect(holdsRhymeIntegrity(notRhyming)).toBe(true);
+    expect(notRhyming.doesRhyme).toBe(false);
+  });
+
+  it('drops an identification item left with no distractor at all', () => {
+    expect(holdsRhymeIntegrity({
+      mode: 'identification', targetWord: 'cat', rhymeFamily: '-at',
+      options: [{ word: 'hat', isCorrect: true }, { word: 'bat', isCorrect: false }],
+    })).toBe(false);   // "bat" rhymes too — nothing wrong is left to choose between
+  });
+
+  it('drops a production item with no surviving rhyme', () => {
+    expect(holdsRhymeIntegrity({
+      mode: 'production', targetWord: 'jump', rhymeFamily: '-ump',
+      acceptableAnswers: ['lamp', 'ramp'],
+    })).toBe(false);
+  });
+
+  it('passes clean content untouched', () => {
+    const ch: Record<string, unknown> = {
+      mode: 'production', targetWord: 'cat', rhymeFamily: '-at',
+      acceptableAnswers: ['bat', 'hat', 'mat'],
+    };
+    expect(holdsRhymeIntegrity(ch)).toBe(true);
+    expect(ch.acceptableAnswers).toEqual(['bat', 'hat', 'mat']);
+  });
+});
 
 describe('RhymeStudio remediation affordances', () => {
   it.each([
@@ -17,21 +99,19 @@ describe('RhymeStudio remediation affordances', () => {
 });
 
 describe('RhymeStudio support-tier ladder', () => {
-  it('easy shows every help (the legacy full-help render)', () => {
+  it('easy shows every help', () => {
     expect(resolveRhymeSupportScaffold('easy')).toEqual({
       showRhymeFamilyHighlight: true,
       showWordImage: true,
-      showInstructionText: true,
       tutorNamesOptions: true,
       productionCorrectCount: 2,
     });
   });
 
-  it('medium withdraws the visual rime cue but keeps instruction + tutor enumeration', () => {
+  it('medium withdraws the visual rime cue but keeps the tutor enumeration', () => {
     const sc = resolveRhymeSupportScaffold('medium');
     expect(sc.showRhymeFamilyHighlight).toBe(false);
     expect(sc.showWordImage).toBe(false);
-    expect(sc.showInstructionText).toBe(true);
     expect(sc.tutorNamesOptions).toBe(true);
     expect(sc.productionCorrectCount).toBe(2);
   });
@@ -40,7 +120,6 @@ describe('RhymeStudio support-tier ladder', () => {
     expect(resolveRhymeSupportScaffold('hard')).toEqual({
       showRhymeFamilyHighlight: false,
       showWordImage: false,
-      showInstructionText: false,
       tutorNamesOptions: false,
       productionCorrectCount: 1,
     });
@@ -48,7 +127,7 @@ describe('RhymeStudio support-tier ladder', () => {
 
   it('monotone withdrawal — no lever ever comes BACK as the tier rises', () => {
     const order = ['easy', 'medium', 'hard'] as const;
-    const flags = ['showRhymeFamilyHighlight', 'showWordImage', 'showInstructionText', 'tutorNamesOptions'] as const;
+    const flags = ['showRhymeFamilyHighlight', 'showWordImage', 'tutorNamesOptions'] as const;
     const rungs = order.map(t => resolveRhymeSupportScaffold(t));
     for (const flag of flags) {
       for (let i = 1; i < rungs.length; i++) {
@@ -70,7 +149,6 @@ describe('applyRhymeSupportTier stamping', () => {
     applyRhymeSupportTier(chs, 'hard', false);
     for (const ch of chs) {
       expect(ch.showRhymeFamilyHighlight).toBe(false);
-      expect(ch.showInstructionText).toBe(false);
       expect(ch.showWordImage).toBe(false);
       expect(ch.tutorNamesOptions).toBe(false);
     }
@@ -79,15 +157,15 @@ describe('applyRhymeSupportTier stamping', () => {
     expect(chs[2].productionCorrectCount).toBe(1);
   });
 
-  it('PRE band floor WINS over a hard tier: picture + tutor read-aloud stay on', () => {
+  it('PRE band floor WINS over a hard tier: picture + tutor enumeration stay on', () => {
     const chs = challenges();
     applyRhymeSupportTier(chs, 'hard', true);
     for (const ch of chs) {
       expect(ch.showWordImage).toBe(true);      // the emoji is the K answer surface
-      expect(ch.tutorNamesOptions).toBe(true);  // the read-aloud is K's only instruction channel
-      // the reader-only scaffolds are still withdrawn (they are inert at PRE anyway)
+      // Without the enumeration a non-reader has no closed answer set at all.
+      expect(ch.tutorNamesOptions).toBe(true);
+      // the reader-only scaffold is still withdrawn (it is inert at PRE anyway)
       expect(ch.showRhymeFamilyHighlight).toBe(false);
-      expect(ch.showInstructionText).toBe(false);
     }
   });
 

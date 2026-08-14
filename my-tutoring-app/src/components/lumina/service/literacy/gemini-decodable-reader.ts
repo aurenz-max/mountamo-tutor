@@ -9,6 +9,14 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import {
+  MAX_SENTENCE_WORDS,
+  MIN_SENTENCE_WORDS,
+  opensWithSentinel,
+  optionsEarSeparable,
+  sentenceText,
+  wordsIn,
+} from '../../primitives/visual-primitives/literacy/decodableReaderScript';
 
 // ---------------------------------------------------------------------------
 // Eval modes = COMPREHENSION TASK IDENTITIES (not numeric difficulty).
@@ -57,10 +65,21 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 /**
  * Schema definition for Decodable Reader Data
  *
- * Generates controlled-vocabulary reading passages for K-2 students with
- * per-word TTS support, phonics pattern tagging, and embedded comprehension
- * questions. Tracks which words students tap for help as a proxy for
- * decoding difficulty.
+ * Generates controlled-vocabulary reading passages for K-2 students: the child
+ * READS each sentence aloud into a live judged loop, then answers comprehension
+ * questions — aloud with one word where the answer is a word in the story
+ * (literal / read-along), by picture card where the answer is a whole
+ * proposition. See `decodableReaderScript.ts` for the answer-material fork.
+ *
+ * TWO CONTENT RULES ARE LOAD-BEARING, NOT COSMETIC, because every string below
+ * gets SPOKEN by the tutor:
+ *  - a sentence must be 3-8 words (the benched judged-utterance window — a
+ *    sentence outside it is dropped at build, never trimmed);
+ *  - nothing may BEGIN a sentence with "Yes" or "My turn" — those are the
+ *    verdict sentinels, and the engine would read the tutor's own narration as
+ *    a judgment and advance the lesson before the child answered.
+ * Both are checked in code after generation (retry once, then KEEP-OR-DROP —
+ * never backfilled, because a placeholder here becomes a spoken ask).
  */
 const decodableReaderSchema: Schema = {
   type: Type.OBJECT,
@@ -96,22 +115,17 @@ const decodableReaderSchema: Schema = {
                     },
                     text: {
                       type: Type.STRING,
-                      description: "The word as displayed (including punctuation attached to word, e.g., 'cat.' or 'cat,')"
+                      description: "The word as displayed AND as it must be read aloud (including punctuation attached to word, e.g., 'cat.' or 'cat,')"
                     },
                     phonicsPattern: {
                       type: Type.STRING,
                       enum: ["cvc", "cvce", "sight", "blend", "digraph", "r-controlled", "diphthong", "other"],
                       description: "The primary phonics pattern of this word"
-                    },
-                    phonemes: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                      description: "Optional phoneme breakdown in slash notation (e.g., ['/k/', '/a/', '/t/'])"
                     }
                   },
                   required: ["id", "text", "phonicsPattern"]
                 },
-                description: "Array of words in this sentence"
+                description: `Array of words in this sentence. MUST be ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words — the child reads this sentence aloud as one utterance and a sentence outside that range is dropped.`
               }
             },
             required: ["id", "words"]
@@ -135,66 +149,118 @@ const decodableReaderSchema: Schema = {
       enum: ["literal", "sequence", "inference", "main_idea"],
       description: "The comprehension SKILL the embedded question demands: 'literal' (fact stated in text), 'sequence' (order / stated cause-effect), 'inference' (deduce from clues), 'main_idea' (central message)."
     },
-    comprehensionQuestion: {
-      type: Type.OBJECT,
-      properties: {
-        question: {
-          type: Type.STRING,
-          description: "A comprehension question about the passage"
-        },
-        type: {
-          type: Type.STRING,
-          enum: ["multiple-choice", "short-answer"],
-          description: "Question type"
-        },
-        options: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: {
-                type: Type.STRING,
-                description: "Option letter identifier (e.g., 'A', 'B', 'C', 'D')"
-              },
-              text: {
-                type: Type.STRING,
-                description: "Option text content"
-              },
-              emoji: {
-                type: Type.STRING,
-                description: "A single emoji that PICTURES this answer choice (e.g. '🐕' for 'The dog can run', '🐈' for 'The cat can nap'). K-1 readers answer by picture, not by reading the text, so the emoji must be a fair, distinct visual for THIS option — never the same emoji on two options, and never a hint that only the correct option gets a real picture."
-              }
-            },
-            required: ["id", "text", "emoji"]
+    comprehensionQuestions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          question: {
+            type: Type.STRING,
+            description: "A comprehension question about the passage, written to be SPOKEN aloud to the child"
           },
-          description: "Answer options for multiple-choice (3-4 options with stable IDs, each with a distinct picture emoji)"
+          answerWord: {
+            type: Type.STRING,
+            description: "The ONE WORD that answers this question, exactly as it appears in the passage (e.g. 'mat'). Required when the answer IS a single word stated in the story; leave empty when the answer is a whole idea rather than a word. Never 'yes' or 'no'."
+          },
+          options: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: {
+                  type: Type.STRING,
+                  description: "Option letter identifier (e.g., 'A', 'B', 'C', 'D')"
+                },
+                text: {
+                  type: Type.STRING,
+                  description: "Option text content: 3-7 words, one plain sentence. The tutor reads it aloud and the child SAYS which option they pick, so it must carry at least one word that appears in no other option — one option's words must never all appear inside another's."
+                },
+                emoji: {
+                  type: Type.STRING,
+                  description: "A single emoji that PICTURES this answer choice (e.g. '🐕' for 'The dog can run', '🐈' for 'The cat can nap'). K-1 readers answer by picture, not by reading the text, so the emoji must be a fair, distinct visual for THIS option — never the same emoji on two options, and never a hint that only the correct option gets a real picture."
+                }
+              },
+              required: ["id", "text", "emoji"]
+            },
+            description: "Answer options (3-4 options with stable IDs, each with a distinct picture emoji)"
+          },
+          correctOptionId: {
+            type: Type.STRING,
+            description: "The correct option ID letter (e.g., 'B') — must match one of the option ids"
+          }
         },
-        correctOptionId: {
-          type: Type.STRING,
-          description: "The correct option ID letter (e.g., 'B') — must match one of the option ids"
-        },
-        correctAnswer: {
-          type: Type.STRING,
-          description: "The correct answer text (for short-answer type)"
-        },
-        acceptableAnswers: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-          description: "Alternative acceptable answers (for short-answer type)"
-        }
+        required: ["question", "options", "correctOptionId"]
       },
-      required: ["question", "type", "correctOptionId"]
+      description: "The comprehension questions asked after the reading, in order"
     }
   },
-  required: ["title", "gradeLevel", "passage", "phonicsPatternsInPassage", "comprehensionQuestion"]
+  required: ["title", "gradeLevel", "passage", "phonicsPatternsInPassage", "comprehensionQuestions"]
+};
+
+// ---------------------------------------------------------------------------
+// Content gates — the SAME rules the pack runs at build time, run here too so a
+// bad draw is retried once instead of shipped and silently dropped on screen.
+// KEEP-OR-DROP only: a placeholder question in a judged loop becomes a spoken
+// ask the tutor has to judge.
+// ---------------------------------------------------------------------------
+
+type RawQuestion = NonNullable<DecodableReaderData['comprehensionQuestions']>[number];
+
+/** Is this question askable at all — one spoken word, or a fair card set? */
+const questionUsable = (q: RawQuestion, wantsSpokenAnswer: boolean): boolean => {
+  const question = (q?.question ?? '').trim();
+  if (!question || opensWithSentinel(question)) return false;
+
+  const answerWord = (q.answerWord ?? '').trim().toLowerCase();
+  const spokenOk =
+    wantsSpokenAnswer
+    && !!answerWord
+    && wordsIn(answerWord) === 1
+    && !['yes', 'no'].includes(answerWord.replace(/[^a-z]/g, ''));
+
+  const options = q.options ?? [];
+  // The child SAYS which choice it is, so the set has to be tellable apart by
+  // EAR as well as fair on screen (`closed_set_choice`). Same gate the pack
+  // runs at build time — re-drawing costs one call, dropping costs the question.
+  const choicesOk =
+    options.length >= 2
+    && !!q.correctOptionId
+    && options.some((o) => o.id === q.correctOptionId)
+    && options.every((o) => !!(o.text ?? '').trim() && !opensWithSentinel(o.text ?? ''))
+    && optionsEarSeparable(options);
+
+  return spokenOk || choicesOk;
+};
+
+/** Everything wrong with a draw, in one pass — used to decide the retry. */
+const contentIssues = (data: DecodableReaderData, wantsSpokenAnswer: boolean): string[] => {
+  const issues: string[] = [];
+  const sentences = data.passage?.sentences ?? [];
+  if (sentences.length === 0) issues.push('no passage sentences');
+  for (const sentence of sentences) {
+    const text = sentenceText(sentence);
+    const count = wordsIn(text);
+    if (count < MIN_SENTENCE_WORDS || count > MAX_SENTENCE_WORDS) {
+      issues.push(`sentence "${text}" is ${count} words (need ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS})`);
+    }
+    if (opensWithSentinel(text)) issues.push(`sentence "${text}" opens with a verdict sentinel`);
+  }
+  const questions = data.comprehensionQuestions ?? [];
+  if (questions.length === 0) issues.push('no comprehension questions');
+  for (const q of questions) {
+    if (!questionUsable(q, wantsSpokenAnswer)) {
+      issues.push(`question "${q?.question ?? ''}" has no askable answer`);
+    }
+  }
+  return issues;
 };
 
 /**
  * Generate decodable reader data using Gemini AI
  *
- * Creates controlled-vocabulary reading passages where every word is
- * individually tappable for pronunciation support. Passages use phonics
- * patterns matching the student's current decoding level.
+ * Creates controlled-vocabulary reading passages the child reads ALOUD, one
+ * judged sentence at a time, plus the comprehension questions asked after it.
+ * Passages use phonics patterns matching the student's current decoding level.
  *
  * @param topic - Theme for the passage (e.g., "Animals at the Park", "Going to School")
  * @param gradeLevel - Grade level ('K', '1', or '2') determines vocabulary and length
@@ -247,10 +313,9 @@ KINDERGARTEN GUIDELINES:
 - Tag sight words as "sight"
 - Tag CVC words as "cvc"
 - Simple content: concrete actions and objects kids know
-- Comprehension: simple "Who?" or "What happened?" question (multiple-choice with 3 options)
-- Include phoneme breakdowns for CVC words
+- Comprehension: simple "Who?" or "What?" questions whose answer is ONE WORD from the story
 - Example: "The big cat sat on a mat."
-  - "The" -> sight, "big" -> cvc [/b/, /i/, /g/], "cat" -> cvc [/k/, /a/, /t/], "sat" -> cvc [/s/, /a/, /t/], "on" -> sight, "a" -> sight, "mat." -> cvc [/m/, /a/, /t/]
+  - "The" -> sight, "big" -> cvc, "cat" -> cvc, "sat" -> cvc, "on" -> sight, "a" -> sight, "mat." -> cvc
 `,
     '1': `
 GRADE 1 GUIDELINES:
@@ -261,8 +326,7 @@ GRADE 1 GUIDELINES:
 - Blends: stop, trip, clap, frog, grin, slip, stem
 - Digraphs: ship, chat, thin, whip, fish, much, bath
 - CVCE: cake, bike, rope, cute, lake, ride, home
-- Include phoneme breakdowns for key pattern words
-- Comprehension: "What happened?" or "Why?" question (multiple-choice with 3-4 options)
+- Comprehension: "What happened?" or "Why?" questions (3-4 picture options)
 - Short and medium vowel words mixed
 `,
     '2': `
@@ -273,8 +337,7 @@ GRADE 2 GUIDELINES:
 - R-controlled: farm, bird, fern, corn, burn, star, first, north
 - Diphthongs: coin, boy, cloud, cow, point, round, joy, town
 - Can include 2-syllable words: basket, rabbit, sunset, garden, under
-- More complex comprehension: inference or main idea (multiple-choice with 4 options)
-- Include phoneme breakdowns for pattern words
+- More complex comprehension: inference or main idea (4 picture options)
 - Varied sentence structure
 `
   };
@@ -298,20 +361,52 @@ GRADE 2 GUIDELINES:
     gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '1';
   }
 
-  // In read-along the tutor reads the story, so the passage can stay minimal and
-  // the comprehension must be answerable purely from a PICTURE (a pre-reader
-  // can't read option text). Keep it a single, concrete, literal question.
+  // ── The answer-material fork, as the generator sees it ──────────────────
+  // read_along and literal answers are ONE WORD the child SAYS (the word is in
+  // the story, so the set is closed); sequence / inference / main_idea answers
+  // are whole propositions, which spoken would be an open set, so those are
+  // answered by tapping a picture card. Both shapes are always produced — the
+  // cards are the fallback when a one-word answer turns out not to exist.
+  const pinnedType = evalConstraint?.allowedTypes[0];
+  const wantsSpokenAnswer = isReadAlong || pinnedType === 'literal' || !pinnedType;
+  // A story has exactly ONE main idea, so a second main-idea question is the
+  // same problem worded twice — which the live probe drew on the first try
+  // ("What is the whole story mostly about?" / "What is the central message of
+  // this passage?"). Every other mode has room for genuinely different asks.
+  // (In decode modes the reading itself already supplies most of the items.)
+  const questionCount = isReadAlong ? 3 : pinnedType === 'main_idea' ? 1 : 2;
+
+  // In read-along the tutor reads the story, so the passage can stay minimal.
   const readAlongSection = isReadAlong
-    ? `\nREAD-ALONG MODE (Kindergarten pre-reader): The TUTOR will read this passage aloud to the child — the child `
-      + `does NOT decode it. Keep the passage VERY short (2-3 tiny sentences, 3-4 words each). The comprehension `
-      + `question MUST be a simple, concrete "who/what" question whose every answer choice is easy to PICTURE with `
-      + `one emoji (e.g. which animal, what object, where). Avoid answers that can't be drawn as a single clear picture.\n`
+    ? `\nREAD-ALONG MODE (Kindergarten pre-reader): The TUTOR reads this passage aloud to the child — the child `
+      + `does NOT decode it, they LISTEN and then answer. Keep the passage VERY short (2-3 tiny sentences). Every `
+      + `question MUST be a simple, concrete "who/what/where" question about the story whose answer is ONE WORD the `
+      + `child can say out loud, and whose answer choices are each easy to PICTURE with one emoji.\n`
     : '';
+
+  const answerSection = wantsSpokenAnswer
+    ? `\nTHE ANSWER THE CHILD GIVES: each question is answered OUT LOUD with ONE WORD. Set "answerWord" to that `
+      + `single word, spelled exactly as it appears in the passage (e.g. passage "The cat sat on a mat." → question `
+      + `"What did the cat sit on?" → answerWord "mat"). The question must have exactly ONE defensible one-word `
+      + `answer — never a question two words in the story could honestly answer. answerWord is NEVER "yes" or "no". `
+      + `Still provide the 3-4 picture options as well (they are the fallback).\n`
+    : `\nTHE ANSWER THE CHILD GIVES: the answer here is a whole idea rather than a single word, so the tutor reads `
+      + `the options aloud and the child SAYS which one they pick. Nothing is tapped. Leave "answerWord" empty. `
+      + `Two rules follow from the answer being SPOKEN, and a question that breaks either one is thrown away:\n`
+      + `- Keep each option SHORT: 3 to 7 words, one plain sentence a five-year-old could say back.\n`
+      + `- Every option must contain at least one WORD that appears in none of the others, so the tutor can tell `
+      + `which one the child named. "A cat." beside "A cat and a dog." is unusable — a child who says "a cat" has `
+      + `named both. Options must differ in their KEY WORDS, not merely in length or word order.\n`
+      + `The options carry the entire answer set, so make the distractors genuinely plausible to a child who read `
+      + `carelessly.\n`;
 
   const generationPrompt = `Create a decodable reading passage about: "${topic}".
 ${intent ? `\nSPECIFIC FOCUS: The broad lesson is "${topic}", but THIS activity must specifically target: "${intent}". Shape the content (passages, target words, sentences, evidence, questions) to serve that focus. Never name or reveal the answer in this focus text.\n` : ''}
 TARGET GRADE LEVEL: ${gradeLevelKey}
-${readAlongSection}
+${readAlongSection}${answerSection}
+THIS TEXT IS SPOKEN ALOUD BY A LIVE TUTOR, AND TWO RULES ARE ABSOLUTE:
+- Every sentence in the passage is ${MIN_SENTENCE_WORDS} to ${MAX_SENTENCE_WORDS} words long. The child reads one sentence at a time as a single breath; a sentence outside that range is thrown away.
+- NOTHING you write may BEGIN a sentence with the word "Yes" or the words "My turn" — not the passage, not a question, not an answer choice. Those two openings are reserved: the tutor's own words would be mistaken for a verdict and the lesson would jump ahead. Anywhere ELSE in a sentence they are fine.
 ${gradeContext[gradeLevelKey] || gradeContext['K']}
 ${challengeTypeSection}
 REQUIRED INFORMATION:
@@ -323,35 +418,38 @@ REQUIRED INFORMATION:
 3. **Passage**: An object with:
    - sentences: Array of sentence objects, EACH with:
      - id: Unique sentence ID (s1, s2, etc.)
-     - words: Array of word objects, EACH with:
+     - words: Array of ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} word objects, EACH with:
        - id: Unique word ID (s1_w1, s1_w2, etc.)
-       - text: The word as displayed. Attach trailing punctuation to the word (e.g., "cat." not "cat" + ".")
+       - text: The word as displayed AND as it is read aloud. Attach trailing punctuation to the word (e.g., "cat." not "cat" + ".")
        - phonicsPattern: One of: cvc, cvce, sight, blend, digraph, r-controlled, diphthong, other
-       - phonemes: (optional) Array of phoneme sounds in slash notation for decodable words
    - imageDescription: Brief description of the scene
 
    CRITICAL RULES:
    - EVERY word must be tagged with its phonicsPattern
    - Sight words = words that can't be fully decoded with phonics rules (the, a, is, was, said, to, I, etc.)
-   - Include phonemes for CVC, CVCE, blend, and digraph words (not required for sight words)
    - Punctuation (periods, commas) should be attached to the preceding word's text field
    - Word IDs must be unique across the entire passage
+   - Every sentence is ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words. One sentence = one thing the child reads aloud.
 
 4. **Phonics Patterns in Passage**: Array of pattern types used (e.g., ["cvc", "sight", "blend"])
 
 5. **Comprehension Type**: ${evalConstraint
-    ? `MUST be "${evalConstraint.allowedTypes[0]}". The comprehension question below MUST genuinely demand this exact reading-comprehension skill (see the COMPREHENSION SKILL section above).`
-    : `Pick the comprehension skill that best fits your passage: one of "literal", "sequence", "inference", or "main_idea". Set comprehensionType to that value and make the question genuinely demand that skill.`}
+    ? `MUST be "${evalConstraint.allowedTypes[0]}". Every comprehension question below MUST genuinely demand this exact reading-comprehension skill (see the COMPREHENSION SKILL section above).`
+    : `Pick the comprehension skill that best fits your passage: one of "literal", "sequence", "inference", or "main_idea". Set comprehensionType to that value and make the questions genuinely demand that skill.`}
 
-6. **Comprehension Question**: An object with:
-   - question: Clear question about the passage content that genuinely requires the comprehensionType skill above
-   - type: "multiple-choice"
+6. **Comprehension Questions**: EXACTLY ${questionCount} DIFFERENT questions about the passage, each an object with:
+   - question: Clear question about the passage content that genuinely requires the comprehensionType skill above. The tutor SAYS this to the child, so write it the way you would ask a five-year-old out loud.
+   - answerWord: ${wantsSpokenAnswer
+     ? 'The ONE word that answers it, exactly as spelled in the passage. Never "yes" or "no", never a phrase.'
+     : 'Leave this out — the answer here is a whole idea, not a word.'}
    - options: Array of 3-4 option objects, each with:
      - id: Letter identifier ("A", "B", "C", "D")
      - text: The option text
      - emoji: ONE emoji that pictures this option, so a K-1 reader can answer by picture (see the emoji rules in the schema). Every option gets a distinct, fair picture — never reuse an emoji and never give only the correct option a "real" picture.
    - correctOptionId: The letter ID of the correct option (e.g., "B")
-   - Mix up the position of the correct answer across generations
+   - Options are SPOKEN — the tutor reads them out and the child says which one. Keep each to 3-7 words, and give every option at least one key word that appears in NO other option (never let one option's words all appear inside another's).
+   - The ${questionCount} questions must ask about DIFFERENT parts of the story — never the same fact worded two ways.
+   - Mix up the position of the correct answer across questions and across generations
    - Distractors must be plausible but wrong; NEVER let the correct answer be the only complete or only on-topic option
    - For 'inference'/'main_idea': distractors should be true passage details that don't fully answer the question, so the layout can't reveal the answer
 
@@ -367,18 +465,18 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
           { "id": "s1_w1", "text": "I", "phonicsPattern": "sight" },
           { "id": "s1_w2", "text": "see", "phonicsPattern": "sight" },
           { "id": "s1_w3", "text": "a", "phonicsPattern": "sight" },
-          { "id": "s1_w4", "text": "big", "phonicsPattern": "cvc", "phonemes": ["/b/", "/i/", "/g/"] },
-          { "id": "s1_w5", "text": "red", "phonicsPattern": "cvc", "phonemes": ["/r/", "/e/", "/d/"] },
-          { "id": "s1_w6", "text": "dog.", "phonicsPattern": "cvc", "phonemes": ["/d/", "/o/", "/g/"] }
+          { "id": "s1_w4", "text": "big", "phonicsPattern": "cvc" },
+          { "id": "s1_w5", "text": "red", "phonicsPattern": "cvc" },
+          { "id": "s1_w6", "text": "dog.", "phonicsPattern": "cvc" }
         ]
       },
       {
         "id": "s2",
         "words": [
           { "id": "s2_w1", "text": "The", "phonicsPattern": "sight" },
-          { "id": "s2_w2", "text": "dog", "phonicsPattern": "cvc", "phonemes": ["/d/", "/o/", "/g/"] },
-          { "id": "s2_w3", "text": "can", "phonicsPattern": "cvc", "phonemes": ["/k/", "/a/", "/n/"] },
-          { "id": "s2_w4", "text": "run.", "phonicsPattern": "cvc", "phonemes": ["/r/", "/u/", "/n/"] }
+          { "id": "s2_w2", "text": "dog", "phonicsPattern": "cvc" },
+          { "id": "s2_w3", "text": "can", "phonicsPattern": "cvc" },
+          { "id": "s2_w4", "text": "run.", "phonicsPattern": "cvc" }
         ]
       }
     ],
@@ -386,19 +484,31 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
   },
   "phonicsPatternsInPassage": ["cvc", "sight"],
   "comprehensionType": "literal",
-  "comprehensionQuestion": {
-    "question": "What can the dog do?",
-    "type": "multiple-choice",
-    "options": [
-      { "id": "A", "text": "The dog can run.", "emoji": "🏃" },
-      { "id": "B", "text": "The dog can fly.", "emoji": "🦅" },
-      { "id": "C", "text": "The dog can swim.", "emoji": "🏊" }
-    ],
-    "correctOptionId": "A"
-  }
+  "comprehensionQuestions": [
+    {
+      "question": "What can the dog do?",
+      "answerWord": "run",
+      "options": [
+        { "id": "A", "text": "The dog can run.", "emoji": "🏃" },
+        { "id": "B", "text": "The dog can fly.", "emoji": "🦅" },
+        { "id": "C", "text": "The dog can swim.", "emoji": "🏊" }
+      ],
+      "correctOptionId": "A"
+    },
+    {
+      "question": "What color is the dog?",
+      "answerWord": "red",
+      "options": [
+        { "id": "A", "text": "The dog is red.", "emoji": "🔴" },
+        { "id": "B", "text": "The dog is blue.", "emoji": "🔵" },
+        { "id": "C", "text": "The dog is green.", "emoji": "🟢" }
+      ],
+      "correctOptionId": "A"
+    }
+  ]
 }
 
-Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, and the comprehension question genuinely demands the required comprehension skill.`;
+Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, every sentence is ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words, no sentence anywhere begins with "Yes" or "My turn", and the ${questionCount} comprehension questions genuinely demand the required comprehension skill.`;
 
   // Single call over a complex-but-essential schema (per-word tagging IS the
   // interaction surface, so it can't be flattened). Guard against flash-lite
@@ -410,6 +520,9 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
   // INVALID_ARGUMENT, so the array caps live in the prompt, not the schema.) If
   // grade-2 passages ever truncate despite these guards, THAT is when a
   // passage/question split earns its keep.
+  // The retry now covers CONTENT, not just JSON: a passage sentence outside the
+  // benched window or opening with a verdict sentinel is a spoken-ask defect,
+  // and re-drawing costs one call where dropping costs the child the sentence.
   let result: DecodableReaderData | null = null;
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -421,13 +534,19 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
           responseMimeType: "application/json",
           responseSchema: activeSchema,
           maxOutputTokens: 8192,
-          systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words. You carefully tag every word with its correct phonics pattern and provide accurate phoneme breakdowns. You craft comprehension questions that assess genuine understanding of the passage content.`,
+          systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages for a LIVE SPOKEN tutor: the child reads each sentence out loud and the tutor judges it word by word, then asks your comprehension questions aloud. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words, in sentences short enough to read in one breath. You carefully tag every word with its correct phonics pattern. You craft comprehension questions that assess genuine understanding of the passage content.`,
         }
       });
       const text = response.text;
       if (!text) throw new Error("No data returned from Gemini API");
-      result = JSON.parse(text) as DecodableReaderData;
-      break;
+      const parsed = JSON.parse(text) as DecodableReaderData;
+      const issues = contentIssues(parsed, wantsSpokenAnswer);
+      result = parsed;
+      if (issues.length === 0) break;
+      console.warn(
+        `[DecodableReader] attempt ${attempt}/2 content issues (${issues.length}):`,
+        issues.slice(0, 4),
+      );
     } catch (e) {
       lastErr = e;
       console.warn(`[DecodableReader] generation attempt ${attempt}/2 failed:`, e);
@@ -438,14 +557,21 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
     throw lastErr instanceof Error ? lastErr : new Error("decodable-reader generation failed");
   }
 
-  // Post-process: validate correctOptionId references a real option
-  const cq = result.comprehensionQuestion;
-  if (cq.type === 'multiple-choice' && cq.options && cq.options.length > 0) {
-    const optionIds = cq.options.map(o => o.id);
-    if (!cq.correctOptionId || !optionIds.includes(cq.correctOptionId)) {
-      console.warn(`[DecodableReader] correctOptionId "${cq.correctOptionId}" not in options [${optionIds}], defaulting to first option`);
-      cq.correctOptionId = cq.options[0].id;
-    }
+  // KEEP-OR-DROP, never backfill. Defaulting `correctOptionId` to the first
+  // option (what this used to do) invents an answer key and hands it to a tutor
+  // that will state it aloud as fact — the worst possible place for a guess.
+  const drawnQuestions = result.comprehensionQuestions ?? [];
+  const keptQuestions = drawnQuestions.filter((q) => questionUsable(q, wantsSpokenAnswer));
+  if (keptQuestions.length < drawnQuestions.length) {
+    console.warn(
+      `[DecodableReader] dropped ${drawnQuestions.length - keptQuestions.length} unaskable question(s)`,
+    );
+  }
+  result.comprehensionQuestions = keptQuestions;
+  // The one-word answer is spoken and echoed by the tutor — normalise it to the
+  // bare word so a stray "the mat"/"mat." never reaches a cue.
+  for (const q of keptQuestions) {
+    if (q.answerWord) q.answerWord = q.answerWord.trim().replace(/[^a-zA-Z0-9'-]+$/, '');
   }
 
   // Force the pinned comprehension skill when a mode was explicitly pinned,
@@ -466,6 +592,9 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
     // Named readingMode (not `mode`) to avoid the eval-test challenge-type field
     // collision — `mode` is auto-detected as the challenge type for literacy gens.
     readingMode: isReadAlong ? 'read_along' : 'decode',
+    // The kept questions are authoritative over anything merged in, for the same
+    // reason: a stale config question would arrive with no gate run over it.
+    comprehensionQuestions: keptQuestions,
   };
 
   console.log('Decodable Reader Generated:', {
@@ -475,6 +604,8 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
     gradeLevel: finalData.gradeLevel,
     sentenceCount: finalData.passage?.sentences?.length || 0,
     totalWords: finalData.passage?.sentences?.reduce((s, sent) => s + sent.words.length, 0) || 0,
+    questionCount: finalData.comprehensionQuestions?.length ?? 0,
+    spokenAnswers: (finalData.comprehensionQuestions ?? []).filter((q) => !!q.answerWord).length,
     patterns: finalData.phonicsPatternsInPassage,
   });
 

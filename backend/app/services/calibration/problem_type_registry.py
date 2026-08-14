@@ -442,14 +442,20 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "advanced":     PriorConfig(5.0, "Advanced: r-controlled vowels and diphthongs"),
     },
     "rhyme-studio": {
-        "recognition":    PriorConfig(1.5, "Recognition: do these words rhyme? (yes/no)"),
-        "identification": PriorConfig(2.5, "Guided: pick the rhyming word from options"),
-        "production":     PriorConfig(5.0, "Production: generate a rhyming word"),
+        "recognition":    PriorConfig(1.5, "Recognition: SAY yes or no — do these words rhyme?"),
+        "identification": PriorConfig(2.5, "Guided: SAY the rhyming word from 2-3 spoken choices"),
+        "production":     PriorConfig(5.0, "Constrained production: SAY a rhyming word from the card bank"),
     },
+    # DI port 2026-08-12 — the STRUCTURE changed, so the betas moved with it.
+    # Every mode went from an ungraded button press (record, then self-rate 1-5)
+    # to unaided spoken production judged word by word by the live tutor.
+    # `accuracy` is pinned to di-sentence-reading's `read_sentence` (3.0): the
+    # same act, on the same benched 3-8 word utterance window. The other two
+    # keep their spacing above it.
     "read-aloud-studio": {
-        "accuracy":   PriorConfig(2.0, "Smooth, accurate word reading (automaticity)"),
-        "expression": PriorConfig(3.5, "Prosody: phrasing, pausing, and emphasis"),
-        "dialogue":   PriorConfig(4.5, "Character voices and dramatic tone"),
+        "accuracy":   PriorConfig(3.0, "Production: decode a printed line COLD and read it aloud, every word in order"),
+        "expression": PriorConfig(4.5, "Production: read back a modelled phrase — phrasing taught, words judged"),
+        "dialogue":   PriorConfig(5.5, "Production: read back a modelled character line — voice taught, words judged"),
     },
     "context-clues-detective": {
         "definition":      PriorConfig(1.5, "Definition: meaning stated directly in text"),

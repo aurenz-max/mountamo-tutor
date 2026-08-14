@@ -1,46 +1,77 @@
 // @vitest-environment jsdom
 /**
- * Behavioral test for the RhymeStudio pre-reader (PRE band / Kindergarten) presentation —
- * the reader-fit contract (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md):
- *   - every word (target, comparison, each option) is PICTURE-primary (emoji) with the word a caption
- *   - recognition answers are a big 👍 / 👎 icon (tap = choose, no Check button)
- *   - identification is tap = choose (a tap immediately evaluates; no Check button)
- *   - the load-bearing question sentence is NOT on screen at PRE (the tutor voices it)
- *   - adult chrome hidden (title, grade badge, mode badge, progress counter, score ledger)
- *   - the text feedback card is hidden at PRE (ring/sound + spoken tutor carry right/wrong)
- *   - reader grades (Grade 1) keep the word-primary card, the text question, and full chrome (control)
+ * RhymeStudio render contract after the DI port (qa/di/BACKLOG.md item 16),
+ * carrying forward the PRE-band reader-fit gates that survived it
+ * (qa/reader-fit/rhyme-studio-PRE-2026-07-15.md).
+ *
+ * What this locks in:
+ *  1. §1 GATE A — nothing on screen carries the child forward: no Start
+ *     Activity, Next, Finish, Skip or Check. The tutor's verdict is the only
+ *     advance.
+ *  2. §1 GATE B — nothing names the answer before the child gives it. The rime
+ *     highlight and the correct-card ring are post-verdict only, and the
+ *     recognition pair shows no highlight on either card (the old surface
+ *     painted the comparison card's rime only when the pair rhymed, so the
+ *     highlight WAS the yes/no answer).
+ *  3. The spoken modes keep their choices ON SCREEN but make nothing tappable:
+ *     the cards are the closed set the child speaks from — the thing that keeps
+ *     a spoken rhyme a benched response class — not a tap surface.
+ *  4. Recognition keeps 👍 / 👎. They are DISABLED until the run starts, so no
+ *     tap can commit before the tutor has asked.
+ *  5. Pre-reader presentation: every word is picture-primary, adult chrome is
+ *     hidden at K and present at a reader grade.
+ *
+ * The live loop itself is NOT driven here. It cannot be driven honestly in
+ * jsdom (the mic never opens, the context refs never re-render), and a green
+ * test that never fired the path is worse than no test — the pedagogy is
+ * pinned in __tests__/RhymeStudio.di-script.test.ts instead.
  */
 import React from 'react';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
-const sendText = vi.fn();
-vi.mock('../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText, isConnected: true }),
+const sendText = vi.hoisted(() => vi.fn());
+const ctxState = vi.hoisted(() => ({
+  isConnected: true,
+  isListening: false,
+  isAudioPlaying: false,
+  micLevel: 0,
+  sessionMode: 'idle' as 'idle' | 'lesson',
+  sessionResumeCount: 0,
+  conversation: [] as Array<{ role: string; content: string }>,
 }));
-
-vi.mock('../../../hooks/useSpokenWordCapture', () => ({
-  useSpokenWordCapture: () => ({
-    state: 'idle', level: 0, isSupported: false,
-    start: vi.fn(), cancel: vi.fn(),
+vi.mock('@/contexts/LuminaAIContext', () => ({
+  useLuminaAIContext: () => ({
+    ...ctxState,
+    sendText,
+    connect: vi.fn(async () => {}),
+    disconnect: vi.fn(),
+    reconnect: vi.fn(),
+    startListening: vi.fn(() => { ctxState.isListening = true; }),
+    stopListening: vi.fn(),
+    updateContext: vi.fn(),
   }),
 }));
 
-vi.mock('../../../utils/SoundManager', () => ({
-  SoundManager: {
-    tap: vi.fn(),
-    playCorrect: vi.fn(),
-    playIncorrect: vi.fn(),
-    isEnabled: () => false,
-    getVolume: () => 0,
-    playComplete: vi.fn(),
-  },
+const submitGestureAttempt = vi.hoisted(() => vi.fn());
+vi.mock('../../../hooks/useJudgedSpeechLoop', () => ({
+  useJudgedSpeechLoop: () => ({
+    voiceTurns: { isVoiceActive: () => false, reset: vi.fn() },
+    queueCue: vi.fn(),
+    submitGestureAttempt,
+    sendCueNow: vi.fn(),
+    clearQueuedCue: vi.fn(),
+    arm: vi.fn(),
+    disarm: vi.fn(),
+    reset: vi.fn(),
+    isAwaitingJudgment: () => false,
+    config: {},
+  }),
 }));
 
-const submitResult = vi.fn();
 vi.mock('../../../evaluation', () => ({
   usePrimitiveEvaluation: () => ({
-    submitResult,
+    submitResult: vi.fn(),
     hasSubmitted: false,
     submittedResult: null,
     elapsedMs: 0,
@@ -48,128 +79,178 @@ vi.mock('../../../evaluation', () => ({
   useEvaluationContext: () => null,
 }));
 
+vi.mock('../../../utils/SoundManager', () => ({
+  SoundManager: new Proxy({}, { get: () => vi.fn() }),
+}));
+
 import RhymeStudio, { type RhymeStudioData } from './RhymeStudio';
 
 const recognition = (gradeLevel: 'K' | '1'): RhymeStudioData => ({
   title: 'Rhyme Time',
   gradeLevel,
-  challenges: [
-    {
-      id: 'c1',
-      mode: 'recognition',
-      targetWord: 'cat',
-      targetWordImage: 'a cute cat',
-      targetWordEmoji: '🐱',
-      rhymeFamily: '-at',
-      comparisonWord: 'bat',
-      comparisonWordImage: 'a fruit bat',
-      comparisonWordEmoji: '🦇',
-      doesRhyme: true,
-    },
-  ],
+  challenges: [{
+    id: 'c1',
+    mode: 'recognition',
+    targetWord: 'cat',
+    targetWordImage: 'a cute cat',
+    targetWordEmoji: '🐱',
+    rhymeFamily: '-at',
+    comparisonWord: 'bat',
+    comparisonWordImage: 'a fruit bat',
+    comparisonWordEmoji: '🦇',
+    doesRhyme: true,
+  }],
 });
 
 const identification = (gradeLevel: 'K' | '1'): RhymeStudioData => ({
   title: 'Rhyme Time',
   gradeLevel,
-  challenges: [
-    {
-      id: 'c1',
-      mode: 'identification',
-      targetWord: 'cat',
-      targetWordImage: 'a cute cat',
-      targetWordEmoji: '🐱',
-      rhymeFamily: '-at',
-      // At K the option's picture rides the `image` field as a single emoji.
-      options: [
-        { word: 'bat', image: '🦇', isCorrect: true },
-        { word: 'dog', image: '🐶', isCorrect: false },
-      ],
-    },
-  ],
+  challenges: [{
+    id: 'c1',
+    mode: 'identification',
+    targetWord: 'cat',
+    targetWordImage: 'a cute cat',
+    targetWordEmoji: '🐱',
+    rhymeFamily: '-at',
+    // At K the option's picture rides the `image` field as a single emoji.
+    options: [
+      { word: 'bat', image: '🦇', isCorrect: true },
+      { word: 'dog', image: '🐶', isCorrect: false },
+    ],
+  }],
 });
 
-const tagsStarting = (prefix: string) =>
-  sendText.mock.calls.map(c => String(c[0])).filter(m => m.startsWith(prefix));
+const production = (): RhymeStudioData => ({
+  title: 'Rhyme Time',
+  gradeLevel: '1',
+  challenges: [{
+    id: 'c1',
+    mode: 'production',
+    targetWord: 'sun',
+    targetWordImage: 'a bright sun',
+    rhymeFamily: '-un',
+    acceptableAnswers: ['bun', 'run', 'fun'],
+    bankDistractors: ['dog', 'book', 'milk'],
+  }],
+});
 
-// The activity opens behind a Start gate; at the start screen there is exactly
-// one button. Click it to reveal the first challenge.
-const startActivity = () => fireEvent.click(screen.getByRole('button'));
+beforeEach(() => {
+  sendText.mockClear();
+  submitGestureAttempt.mockClear();
+  ctxState.isListening = false;
+});
+afterEach(cleanup);
 
-describe('RhymeStudio @ PRE (Kindergarten) — recognition', () => {
-  beforeEach(() => { sendText.mockClear(); submitResult.mockClear(); });
-  afterEach(cleanup);
+// ── GATE A: nothing on screen carries the child forward ─────────────────────
 
-  it('renders both words picture-primary (emoji + word caption), no text question', () => {
+describe('RhymeStudio · the tutor owns the clock', () => {
+  it('offers no Start, Next, Finish, Skip or Check anywhere', () => {
     render(<RhymeStudio data={recognition('K')} />);
-    startActivity();
+    for (const label of [/^start activity$/i, /next/i, /finish/i, /skip/i, /check/i, /continue/i]) {
+      expect(screen.queryByRole('button', { name: label })).toBeNull();
+    }
+  });
+
+  it('the challenge is on screen immediately — no Start gate stands in front of it', () => {
+    render(<RhymeStudio data={recognition('K')} />);
     expect(screen.getByText('🐱')).toBeTruthy();
-    expect(screen.getByText('🦇')).toBeTruthy();
-    // the question is spoken, never on screen at PRE
+  });
+});
+
+// ── GATE B: nothing names the answer before the child gives it ──────────────
+
+describe('RhymeStudio · answer-leak', () => {
+  it('recognition shows no rime highlight on either card before the verdict', () => {
+    const { container } = render(<RhymeStudio data={recognition('1')} />);
+    // The amber span is the rime split; at a reader grade it is the give-away.
+    expect(container.querySelectorAll('.text-amber-300')).toHaveLength(0);
+    expect(screen.getByText('cat')).toBeTruthy();
+    expect(screen.getByText('bat')).toBeTruthy();
+  });
+
+  it('identification rings no card before the verdict', () => {
+    const { container } = render(<RhymeStudio data={identification('1')} />);
+    expect(container.querySelectorAll('.ring-emerald-400\\/40')).toHaveLength(0);
+  });
+
+  it('the on-screen question restatement is gone — the tutor asks it', () => {
+    render(<RhymeStudio data={identification('1')} />);
+    expect(screen.queryByText(/Which word rhymes with/)).toBeNull();
     expect(screen.queryByText('Do these words rhyme?')).toBeNull();
   });
+});
 
-  it('answers with a picture 👍 / 👎 (tap = choose, no text buttons, no Check)', () => {
-    render(<RhymeStudio data={recognition('K')} />);
-    startActivity();
-    expect(screen.getByText('👍')).toBeTruthy();
-    expect(screen.getByText('👎')).toBeTruthy();
-    // the reader-grade text labels are absent
-    expect(screen.queryByText('Yes!')).toBeNull();
-    // a single tap on 👍 (doesRhyme=true) evaluates immediately
-    fireEvent.click(screen.getByLabelText('Yes, they rhyme'));
-    expect(tagsStarting('[ANSWER_CORRECT]')).toHaveLength(1);
+// ── The spoken modes: the set is shown, nothing is tapped ───────────────────
+
+describe('RhymeStudio · the choices are a closed set, not a tap surface', () => {
+  it('identification shows every choice and makes none of them a button', () => {
+    render(<RhymeStudio data={identification('1')} />);
+    expect(screen.getByText('bat')).toBeTruthy();
+    expect(screen.getByText('dog')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^bat$/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^dog$/ })).toBeNull();
   });
 
-  it('hides adult chrome and the text feedback card', () => {
-    render(<RhymeStudio data={recognition('K')} />);
-    startActivity();
-    expect(screen.queryByText(/Grade K/)).toBeNull();          // grade badge
-    expect(screen.queryByText('Recognition')).toBeNull();      // mode badge
-    expect(screen.queryByText(/1 \/ 1/)).toBeNull();           // challenge counter
-    expect(screen.queryByText(/correct$/)).toBeNull();         // score ledger
-    fireEvent.click(screen.getByLabelText('Yes, they rhyme')); // correct
-    // no readable feedback card — ring/sound + spoken tutor carry it
-    expect(screen.queryByText(/both end in/i)).toBeNull();
+  it('production shows the four-tile bank — the bank is what makes the mode sayable', () => {
+    render(<RhymeStudio data={production()} />);
+    for (const word of ['bun', 'run', 'dog', 'book']) {
+      expect(screen.getByText(word)).toBeTruthy();
+    }
+    expect(screen.queryByRole('button', { name: /^bun$/ })).toBeNull();
   });
 });
 
-describe('RhymeStudio @ PRE (Kindergarten) — identification', () => {
-  beforeEach(() => { sendText.mockClear(); submitResult.mockClear(); });
-  afterEach(cleanup);
+// ── Nothing in this pack is answered with the hands ─────────────────────────
 
-  it('renders picture-primary option tiles and is tap = choose', () => {
-    render(<RhymeStudio data={identification('K')} />);
-    startActivity();
-    expect(screen.getByText('🦇')).toBeTruthy(); // bat option
-    expect(screen.getByText('🐶')).toBeTruthy(); // dog option
-    expect(screen.queryByText(/Which word rhymes/)).toBeNull(); // question spoken
-    // a single tap on the rhyming option (bat) evaluates immediately, no Check
-    fireEvent.click(screen.getByRole('button', { name: /bat/ }));
-    expect(tagsStarting('[ANSWER_CORRECT]')).toHaveLength(1);
-  });
-
-  it('a wrong tap does not fire ANSWER_CORRECT', () => {
-    render(<RhymeStudio data={identification('K')} />);
-    startActivity();
-    fireEvent.click(screen.getByRole('button', { name: /dog/ })); // dog does not rhyme with cat
-    expect(tagsStarting('[ANSWER_INCORRECT]')).toHaveLength(1);
-    expect(tagsStarting('[ANSWER_CORRECT]')).toHaveLength(0);
-  });
-});
-
-describe('RhymeStudio @ reader grade (control, Grade 1)', () => {
-  beforeEach(() => { sendText.mockClear(); submitResult.mockClear(); });
-  afterEach(cleanup);
-
-  it('keeps the word-primary card, the text question, and chrome (no big emoji)', () => {
-    render(<RhymeStudio data={recognition('1')} />);
-    startActivity();
-    expect(screen.getByText('Do these words rhyme?')).toBeTruthy();
-    expect(screen.getByText('Yes!')).toBeTruthy();
-    expect(screen.getAllByText(/Grade 1/).length).toBeGreaterThan(0);
-    // emoji is a PRE-only affordance
-    expect(screen.queryByText('🐱')).toBeNull();
+describe('RhymeStudio · every mode is answered aloud', () => {
+  /**
+   * REGRESSION. Recognition shipped with a 👍/👎 for one day. The user's first
+   * drive removed it — *"we should just be able to say yes to the tutor"* — and
+   * the session log showed the tap could not have survived anyway: asked a
+   * spoken question, the child answered aloud, the silence contract had no line
+   * for that, and the tutor improvised a verdict the engine could not read.
+   */
+  it('recognition offers NO thumbs — the answer is spoken', () => {
+    render(<RhymeStudio data={recognition('K')} />);
+    expect(screen.queryByLabelText('Yes, they rhyme')).toBeNull();
+    expect(screen.queryByLabelText('No, they do not rhyme')).toBeNull();
     expect(screen.queryByText('👍')).toBeNull();
+    expect(screen.queryByText('👎')).toBeNull();
+  });
+
+  it('the mic is the ONLY control on the stage, in every mode', () => {
+    for (const data of [recognition('K'), identification('1'), production()]) {
+      const { unmount } = render(<RhymeStudio data={data} />);
+      // The cards repeat the question (role=button for tap-to-hear); no <button>
+      // on the stage commits an answer, so nothing can be gesture-submitted.
+      fireEvent.click(screen.getAllByRole('button')[0]);
+      expect(submitGestureAttempt).not.toHaveBeenCalled();
+      unmount();
+    }
+  });
+
+  it('tells the child how to answer recognition without printing the answer', () => {
+    render(<RhymeStudio data={recognition('K')} />);
+    expect(screen.getByText(/say yes or no/i)).toBeTruthy();
+  });
+});
+
+// ── Band presentation ───────────────────────────────────────────────────────
+
+describe('RhymeStudio · pre-reader band', () => {
+  it('renders every word picture-primary and hides adult chrome at K', () => {
+    render(<RhymeStudio data={identification('K')} />);
+    expect(screen.getByText('🐱')).toBeTruthy();   // target
+    expect(screen.getByText('🦇')).toBeTruthy();   // option
+    expect(screen.getByText('🐶')).toBeTruthy();   // option
+    expect(screen.queryByText(/Grade K/)).toBeNull();
+    expect(screen.queryByText(/Find the Rhyme/)).toBeNull();
+  });
+
+  it('keeps the word-primary card and the chrome at a reader grade (control)', () => {
+    render(<RhymeStudio data={recognition('1')} />);
+    expect(screen.getAllByText(/Grade 1/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Do They Rhyme\?/)).toBeTruthy();
+    expect(screen.queryByText('🐱')).toBeNull();   // emoji is a PRE-only affordance
   });
 });

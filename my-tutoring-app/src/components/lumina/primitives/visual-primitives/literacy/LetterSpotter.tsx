@@ -1,27 +1,104 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * LetterSpotter — DI modality (ELEVENTH literacy port, 2026-08-13). The Live tutor
+ * owns the clock in every mode: it asks ONCE, waits, is handed the verdict for
+ * what the child tapped, corrects by re-modelling, and its OWN line is the
+ * advance. There is no advance timer, no Check button, no Next button, no
+ * push-to-talk mic and no answer anywhere on screen before the tutor affirms.
+ *
+ * WHAT WENT, AND WHY (all four traced to one live session, 42edfc52e539):
+ *  - **Three cue sites that each ordered the sentence re-read** — one on
+ *    advance, one on a wrong answer ("re-read the sentence slowly") and, worst,
+ *    one on a RIGHT answer ("read the full sentence aloud as celebration"). One
+ *    item was spoken 2-4 times; the log has "I see an ant walk away" three
+ *    times inside 13 seconds. The pack now speaks each item ONCE, and the only
+ *    repeat is a child-initiated tap-to-hear.
+ *  - **The advance handler, and every improvised tutor message this file used
+ *    to push.** The cue queue they fed ran 8-16s behind the screen while the
+ *    option buttons went live immediately, so the log shows a child answering
+ *    before the question had finished being asked. Progression now has exactly
+ *    one cause: a verdict.
+ *  - **The three-attempt reveal-and-lock ladder.** Corrections cap in the
+ *    runner and the lesson moves on; a hard item resurfaces through distributed
+ *    review, not by drilling a five-year-old.
+ *  - **The shape hint.** Group 1's `newLetters` IS the whole group, so the
+ *    "NEW letter — hint at its shape" branch fired on every single item ("a
+ *    triangle with a line across the middle"). That handed the answer to any
+ *    child who knows letterforms. No cue in this pack may describe a letter's
+ *    shape, at any tier, and the tap contract says so to the tutor explicitly.
+ *
+ * WHAT CHANGED AGAIN (2026-08-13, user ruling from session 6ada8c0a1bcf):
+ *  - **name-it is SPOKEN, and its four option tiles are deleted.** "In real life
+ *    … i ask the student to use context clues and the word to say the missing
+ *    letter … they dont need to click a button." The tiles were never pedagogy:
+ *    they existed because `letter_name` was marked BLOCKED, and they cost the
+ *    mode its production task (a 1-in-4 menu is recognition) while smuggling the
+ *    very homophony they were meant to avoid into the option set — the drive
+ *    that produced the ruling offered n / s / i / a, and n and s share a cluster.
+ *    The class is now `accepted-build-ahead`, judged against ONE target and
+ *    accepting the letter's sound as well as its name.
+ *
+ * WHAT STAYED, AND WHY:
+ *  - **find-it and match-it are still answered with the hands** — and only
+ *    because their answers are not sayable. find-it's answer is a POSITION;
+ *    match-it's is which lowercase FORM matches, which saying "S" would not
+ *    demonstrate. Their verdicts stay CODE-COMPUTED ([LSP_TAP]), and the runner
+ *    holds the activity bracket across the item so the tutor is silent in fact
+ *    and not merely under instruction.
+ *  - **The printed word residue.** The click-era render replaced the WHOLE
+ *    target word with the marker ("I see a ⭐ walk away"), which threw away the
+ *    one decodable cue and left the sentence pure decoration — the data model
+ *    already stored the marker over just the first character. It is rendered as
+ *    stored now, so the sentence carries information again.
+ *  - **The structural difficulty axis** (distractor letterform similarity) and
+ *    the find-it target reference — both are RENDER levers a pre-reader can
+ *    actually use. `strategyHint` did not survive: it was on-card text at a
+ *    band that cannot read, and the tier now composes the spoken DISTAR lead-in
+ *    instead (letterSpotterScript).
+ *
+ * Cue lines, judging contracts, build gates and the tier ladder live in
+ * `letterSpotterScript.ts` (hand-authored, DISTAR). Nothing in this file writes
+ * a spoken line.
+ */
+
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
   LuminaBadge,
-  LuminaProgress,
   LuminaChallengeCounter,
-  LuminaActionButton,
-  LuminaFeedbackCard,
   answerStateClass,
+  type LuminaAccent,
 } from '../../../ui';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { LetterSpotterMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  itemCue,
+  itemsFromChallenges,
+  moveOnCue,
+  pronounceCue,
+  stimulusFor,
+  tapVerdictCue,
+  SPOTTER_EMOJI,
+  type LetterSpotterItem,
+  type LetterSpotterMode,
+  type LetterSpotterTier,
+} from './letterSpotterScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -30,29 +107,34 @@ import { SoundManager } from '../../../utils/SoundManager';
 
 export interface LetterSpotterChallenge {
   id: string;
-  mode: 'name-it' | 'find-it' | 'match-it';
+  mode: LetterSpotterMode;
   targetLetter: string;
   targetCase: 'uppercase' | 'lowercase' | 'both';
-  /** Letter-name options for name-it / lowercase options for match-it */
+  /** name-it / match-it: the tappable letters, lowercase, answer included. */
   options?: string[];
-  /** Grid of mixed letters for find-it mode */
+  /** find-it: sixteen uppercase cells holding EXACTLY ONE target. Under the
+   *  judged loop one tap is one commit, so a second target would be a second
+   *  right answer to a question asked once. */
   letterGrid?: string[];
-  /** Number of target letter instances in the grid */
+  /** find-it: instances of the target in the grid. Recomputed by the generator;
+   *  1 under the judged loop. */
   targetCount?: number;
-  /** For name-it: sentence with emoji replacing the target letter (e.g., "The ⭐un is bright") */
+  /** name-it: the sentence as PRINTED — the marker sits over the target word's
+   *  FIRST character ("I see an ⭐nt walk away."). */
   sentence?: string;
-  /** For name-it: the emoji used as the placeholder */
+  /** name-it: the sentence as SPOKEN, word intact ("I see an ant walk away."). */
+  spokenSentence?: string;
+  /** name-it: the marker. Code-owned and invariant; kept on the type so cached
+   *  pre-DI content still typechecks. */
   emoji?: string;
-  /** For name-it: the full word containing the target letter (e.g., "sun") */
+  /** name-it: the word whose first letter the marker hides ("ant"). */
   targetWord?: string;
-  // -- Within-mode support-tier scaffolds (display-only; never the answer) --
-  /** #2 instruction-as-scaffold: a one-line "how to approach this" cue shown on the
-   *  card at lower tiers (e.g. "Say the sentence and listen for the missing sound").
-   *  Withdrawn at the hard tier so the student chooses a strategy unaided. */
+
+  // ── Legacy within-mode support-tier scaffolds, stamped by the generator.
+  //    `strategyHint` is INERT on the judged surface — on-card prose at a band
+  //    that cannot read it. The tier now composes the spoken lead-in instead.
+  //    `showTargetReference` is live: it is a picture, not prose. ──
   strategyHint?: string;
-  /** #1 perception (find-it): show the target letter on-card as a reference the
-   *  student can self-check against while scanning. Does NOT reveal which cells —
-   *  finding every instance is still the task. Withdrawn at hard (audio only). */
   showTargetReference?: boolean;
 }
 
@@ -62,9 +144,10 @@ export interface LetterSpotterData {
   cumulativeLetters: string[];
   newLetters: string[];
   challenges: LetterSpotterChallenge[];
-  /** Within-mode support tier ('easy'|'medium'|'hard'). Scaffolding level only —
-   *  the live tutor's reveal policy keys off this; it never changes the letters. */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  /** Canonical grade key ('K' | '1' | '2'…). Drives the pre-reader chrome gate. */
+  gradeLevel?: string;
+  /** Within-mode support tier from the manifest — the DISTAR lead-in ladder. */
+  supportTier?: LetterSpotterTier;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -79,29 +162,13 @@ export interface LetterSpotterData {
 // Constants
 // ============================================================================
 
-const MODE_CONFIG: Record<string, { label: string; description: string }> = {
-  'name-it': { label: 'Name It', description: 'Spot the missing letter in the sentence' },
-  'find-it': { label: 'Find It', description: 'Find all matching letters' },
-  'match-it': { label: 'Match It', description: 'Match uppercase to lowercase' },
+const MODE_META: Record<LetterSpotterMode, { badge: string; icon: string; accent: LuminaAccent }> = {
+  'name-it': { badge: 'Sentence Spotter', icon: '⭐', accent: 'blue' },
+  'find-it': { badge: 'Find It', icon: '🔎', accent: 'purple' },
+  'match-it': { badge: 'Match It', icon: '🔤', accent: 'emerald' },
 };
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'name-it': { label: 'Name It', accentColor: 'blue' },
-  'find-it': { label: 'Find It', accentColor: 'purple' },
-  'match-it': { label: 'Match It', accentColor: 'emerald' },
-};
-
-/** Mode → kit accent for the mode badge. */
-const MODE_ACCENT = {
-  'name-it': 'blue',
-  'find-it': 'purple',
-  'match-it': 'emerald',
-} as const;
-
-/** Rotate font families so students see letters in varied visual forms. */
-const FONT_CLASSES = ['font-sans', 'font-serif', 'font-mono'];
-
-const MAX_ATTEMPTS = 3;
+const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 
 // ============================================================================
 // Props
@@ -123,6 +190,7 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     cumulativeLetters = [],
     newLetters = [],
     challenges = [],
+    gradeLevel = 'K',
     supportTier,
     instanceId,
     skillId,
@@ -132,58 +200,39 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ---------------------------------------------------------------------------
-  // Refs & IDs
-  // ---------------------------------------------------------------------------
+  /** Pre-reader band: adult chrome is hidden, never read (reader-fit rule 7). */
+  const isPreReader = gradeLevel === 'K';
+
   const stableInstanceIdRef = useRef(instanceId || `letter-spotter-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const startTimeRef = useRef(Date.now());
 
-  // ---------------------------------------------------------------------------
-  // Shared hooks — challenge progression
-  // ---------------------------------------------------------------------------
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const tier: LetterSpotterTier = supportTier ?? 'medium';
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.mode,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ---------------------------------------------------------------------------
-  // Local UI state
-  // ---------------------------------------------------------------------------
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [selectedGridCells, setSelectedGridCells] = useState<Set<number>>(new Set());
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [isLocked, setIsLocked] = useState(false);
-  const [confusedPairs, setConfusedPairs] = useState<Set<string>>(new Set());
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
-
-  const currentChallenge = challenges[currentChallengeIndex];
-  const fontClass = useMemo(
-    () => FONT_CLASSES[currentChallengeIndex % FONT_CLASSES.length],
-    [currentChallengeIndex],
+  /** Build gates drop what cannot be asked — a placeholder in a judged loop
+   *  becomes a spoken ask the tutor has to stand behind. */
+  const items = useMemo<LetterSpotterItem[]>(
+    () => itemsFromChallenges(challenges, tier),
+    [challenges, tier],
   );
 
-  // ---------------------------------------------------------------------------
-  // Evaluation hook
-  // ---------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<LetterSpotterMetrics>({
+  /** Render-only lookups the pack has no business carrying. */
+  const challengeById = useMemo(
+    () => new Map(challenges.map((ch) => [ch.id, ch])),
+    [challenges],
+  );
+
+  // ── Per-item stage state ───────────────────────────────────────────────────
+  /** The tapped letter (name-it / match-it) — cleared on retry and item open. */
+  const [tapped, setTapped] = useState<string | null>(null);
+  const tappedRef = useRef<string | null>(null);
+  /** The tapped grid index (find-it) — a cell, not a letter. */
+  const [tappedCell, setTappedCell] = useState<number | null>(null);
+  /** [target, chosen] pairs from wrong taps — the confusion evidence this
+   *  primitive exists to collect. */
+  const confusedPairsRef = useRef<Array<[string, string]>>([]);
+
+  // ── Evaluation ─────────────────────────────────────────────────────────────
+  const evaluation = usePrimitiveEvaluation<LetterSpotterMetrics>({
     primitiveType: 'letter-spotter',
     instanceId: resolvedInstanceId,
     skillId,
@@ -193,681 +242,368 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---------------------------------------------------------------------------
-  // AI Tutoring
-  // ---------------------------------------------------------------------------
-  // Tier-aware reveal policy for the live tutor (second scaffold channel). The
-  // target letter IS the answer in every mode, so NO tier ever names it. Easy =
-  // name the strategy and model the approach; medium = nudge execution only;
-  // hard = ask what the student notices and have them justify, naming nothing.
-  const tierTutorClause = useMemo(() => {
-    if (supportTier === 'easy') {
-      return ' SUPPORT TIER easy: name the approach out loud (e.g. say the sentence and listen for the missing sound, or describe the letter\'s shape) and walk the student through it warmly — but NEVER say the target letter or which option/cell is correct.';
-    }
-    if (supportTier === 'hard') {
-      return ' SUPPORT TIER hard: do NOT name any strategy. Ask the student what they notice (the sound they hear, the shape they see) and have them explain their choice. Reveal nothing — never the target letter, the strategy, or the correct option/cell.';
-    }
-    if (supportTier === 'medium') {
-      return ' SUPPORT TIER medium: nudge the student to execute their own approach; do not lay out the full strategy and never reveal the target letter or correct answer.';
-    }
-    return '';
-  }, [supportTier]);
-  const aiPrimitiveData = useMemo(() => ({
-    letterGroup,
-    cumulativeLetters: cumulativeLetters.join(', '),
-    newLetters: newLetters.join(', '),
-    challengeMode: currentChallenge?.mode ?? '',
-    targetLetter: currentChallenge?.targetLetter ?? '',
-    targetCase: currentChallenge?.targetCase ?? '',
-    targetWord: currentChallenge?.targetWord ?? '',
-    sentence: currentChallenge?.sentence ?? '',
-    currentChallenge: currentChallengeIndex + 1,
-    totalChallenges: challenges.length,
-    attempts: currentAttempts,
-    supportTier: supportTier ?? '',
-  }), [
-    letterGroup, cumulativeLetters, newLetters,
-    currentChallenge, currentChallengeIndex, challenges.length, currentAttempts,
-    supportTier,
-  ]);
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const rate = (predicate: (item: LetterSpotterItem) => boolean) => {
+      const scoped = items.filter(predicate);
+      if (scoped.length === 0) return 100;
+      const solved = scoped.filter(
+        (item) => summary.outcomes.find((o) => o.id === item.id)?.solved,
+      ).length;
+      return Math.round((solved / scoped.length) * 100);
+    };
 
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'letter-spotter',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-  });
-
-  // Activity introduction — once on AI connect
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-
-    const isNew = newLetters.includes(currentChallenge.targetLetter.toLowerCase());
-    const modeLabel = MODE_CONFIG[currentChallenge.mode]?.description ?? currentChallenge.mode;
-
-    // For name-it: reconstruct the full sentence (emoji → letter) so the AI reads it naturally
-    const nameItFullSentence = currentChallenge.mode === 'name-it' && currentChallenge.sentence && currentChallenge.targetWord
-      ? currentChallenge.sentence.replace(currentChallenge.emoji || '⭐', currentChallenge.targetLetter)
-      : '';
-
-    const introExtra = currentChallenge.mode === 'name-it' && nameItFullSentence
-      ? `This is a sentence spotter challenge! Say this sentence aloud naturally: "${nameItFullSentence}". `
-        + `The student sees the sentence on screen but the word "${currentChallenge.targetWord}" is replaced by a ${currentChallenge.emoji || '⭐'} emoji. `
-        + `IMPORTANT: Do NOT say the letter name or give away the answer. Just read the sentence naturally and ask "What letter is the ${currentChallenge.emoji || '⭐'} hiding?" `
-      : currentChallenge.mode === 'find-it'
-        ? `Say "Find the letter ${currentChallenge.targetLetter.toUpperCase()}!" with enthusiasm. `
-        : '';
-
-    sendText(
-      `[ACTIVITY_START] Letter spotting activity for Group ${letterGroup} `
-      + `(letters: ${cumulativeLetters.join(', ')}). `
-      + `New letters in this group: ${newLetters.length > 0 ? newLetters.join(', ') : 'none — review only'}. `
-      + `There are ${challenges.length} challenges. `
-      + `Introduce the activity warmly — we're learning to recognize letters! `
-      + (currentChallenge.mode !== 'name-it' ? `First challenge: ${modeLabel} for the letter "${currentChallenge.targetLetter.toUpperCase()}". ` : '')
-      + introExtra
-      + (isNew ? `This is a NEW letter — introduce it warmly with a brief description of its shape. ` : '')
-      + `Keep it brief and enthusiastic — 2-3 sentences max.`
-      + tierTutorClause,
-      { silent: true },
-    );
-  }, [isConnected, currentChallenge, letterGroup, cumulativeLetters, newLetters, challenges.length, sendText, tierTutorClause]);
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  /** Record a confused pair (sorted alphabetically so "b-d" and "d-b" are the same). */
-  const trackConfusion = useCallback((target: string, chosen: string) => {
-    const pair = [target.toLowerCase(), chosen.toLowerCase()].sort().join('-');
-    setConfusedPairs(prev => new Set(Array.from(prev).concat(pair)));
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Name-It & Match-It: option selection (auto-check on tap)
-  // ---------------------------------------------------------------------------
-  const handleOptionSelect = useCallback((option: string) => {
-    if (isLocked || hasSubmittedEvaluation || !currentChallenge) return;
-
-    setSelectedOption(option);
-    incrementAttempts();
-
-    const isCorrect = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! That's the letter ${currentChallenge.targetLetter.toUpperCase()}!`);
-      setFeedbackType('success');
-      setIsLocked(true);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        mode: currentChallenge.mode,
-        targetLetter: currentChallenge.targetLetter,
-        targetCase: currentChallenge.targetCase,
-        isNewLetter: newLetters.includes(currentChallenge.targetLetter.toLowerCase()),
-      });
-
-      const correctExtra = currentChallenge.mode === 'name-it' && currentChallenge.targetWord
-        ? ` The word was "${currentChallenge.targetWord}". Read the full sentence aloud as celebration!`
-        : '';
-      sendText(
-        `[ANSWER_CORRECT] The student correctly identified the letter "${currentChallenge.targetLetter.toUpperCase()}"` +
-        `${currentAttempts === 0 ? ' on the first try!' : ` after ${currentAttempts + 1} attempts.`} ` +
-        `[SAY_LETTER_NAME] Say the letter name clearly and congratulate briefly.${correctExtra}`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback('Try again! Look at the letter carefully.');
-      setFeedbackType('error');
-      trackConfusion(currentChallenge.targetLetter, option);
-
-      const nameItSentence = currentChallenge.mode === 'name-it' && currentChallenge.sentence && currentChallenge.targetWord
-        ? currentChallenge.sentence.replace(currentChallenge.emoji || '⭐', currentChallenge.targetLetter)
-        : '';
-      const hintExtra = nameItSentence
-        ? ` Re-read the sentence "${nameItSentence}" aloud slowly and emphasize the word "${currentChallenge.targetWord}". Do NOT say the letter name directly.`
-        : '';
-      sendText(
-        `[ANSWER_INCORRECT] The student chose "${option.toUpperCase()}" but the correct letter is "${currentChallenge.targetLetter.toUpperCase()}". ` +
-        `This is attempt ${currentAttempts + 1}. Give a brief hint without giving the answer.${hintExtra}${tierTutorClause}`,
-        { silent: true },
-      );
-
-      // After max attempts, reveal and lock
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setFeedback(`This is the letter ${currentChallenge.targetLetter.toUpperCase()}. Let's keep going!`);
-        setFeedbackType('error');
-        setIsLocked(true);
-
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-          mode: currentChallenge.mode,
-          targetLetter: currentChallenge.targetLetter,
-          targetCase: currentChallenge.targetCase,
-          isNewLetter: newLetters.includes(currentChallenge.targetLetter.toLowerCase()),
-        });
-      }
-    }
-  }, [
-    isLocked, hasSubmittedEvaluation, currentChallenge, currentAttempts,
-    newLetters, incrementAttempts, recordResult, sendText, trackConfusion, tierTutorClause,
-  ]);
-
-  // ---------------------------------------------------------------------------
-  // Find-It: grid cell toggling + check
-  // ---------------------------------------------------------------------------
-  const handleGridCellToggle = useCallback((index: number) => {
-    if (isLocked || hasSubmittedEvaluation) return;
-    SoundManager.tap();
-    setSelectedGridCells(prev => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  }, [isLocked, hasSubmittedEvaluation]);
-
-  const handleCheckFindIt = useCallback(() => {
-    if (isLocked || hasSubmittedEvaluation || !currentChallenge) return;
-
-    const grid = currentChallenge.letterGrid || [];
-    const target = currentChallenge.targetLetter.toLowerCase();
-    incrementAttempts();
-
-    // Build set of correct target indices
-    const targetIndices = new Set<number>();
-    grid.forEach((letter, i) => {
-      if (letter.toLowerCase() === target) targetIndices.add(i);
-    });
-
-    const isCorrect =
-      selectedGridCells.size === targetIndices.size &&
-      Array.from(selectedGridCells).every(i => targetIndices.has(i));
-
-    if (isCorrect) {
-      SoundManager.playCorrect();
-      setFeedback(`You found all the ${currentChallenge.targetLetter.toUpperCase()}'s!`);
-      setFeedbackType('success');
-      setIsLocked(true);
-
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        mode: 'find-it',
-        targetLetter: currentChallenge.targetLetter,
-        targetCase: currentChallenge.targetCase,
-        isNewLetter: newLetters.includes(currentChallenge.targetLetter.toLowerCase()),
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] The student found all ${targetIndices.size} instances of "${currentChallenge.targetLetter.toUpperCase()}" in the grid! ` +
-        `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} ` +
-        `[SAY_LETTER_NAME] Celebrate briefly!`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      const missed = Array.from(targetIndices).filter(i => !selectedGridCells.has(i)).length;
-      const extra = Array.from(selectedGridCells).filter(i => !targetIndices.has(i)).length;
-
-      setFeedback(
-        missed > 0 && extra > 0
-          ? `Almost! You missed ${missed} and picked ${extra} wrong.`
-          : missed > 0
-            ? `Almost! You missed ${missed} letter${missed > 1 ? 's' : ''}.`
-            : `Almost! ${extra} of your picks ${extra > 1 ? "aren't" : "isn't"} the right letter.`,
-      );
-      setFeedbackType('error');
-
-      // Track confused pairs for wrongly selected cells
-      Array.from(selectedGridCells)
-        .filter(i => !targetIndices.has(i))
-        .forEach(i => {
-          const wrongLetter = grid[i];
-          if (wrongLetter) trackConfusion(currentChallenge.targetLetter, wrongLetter);
-        });
-
-      sendText(
-        `[ANSWER_INCORRECT] Find-it mode: student selected ${selectedGridCells.size} cells but there are ${targetIndices.size} "${currentChallenge.targetLetter.toUpperCase()}"s. ` +
-        `Missed: ${missed}, extra wrong: ${extra}. Attempt ${currentAttempts + 1}. Give a brief hint.${tierTutorClause}`,
-        { silent: true },
-      );
-
-      // After max attempts, reveal correct cells
-      if (currentAttempts + 1 >= MAX_ATTEMPTS) {
-        setFeedback(`The ${currentChallenge.targetLetter.toUpperCase()}'s are highlighted. Let's keep going!`);
-        setIsLocked(true);
-        setSelectedGridCells(targetIndices);
-
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-          mode: 'find-it',
-          targetLetter: currentChallenge.targetLetter,
-          targetCase: currentChallenge.targetCase,
-          isNewLetter: newLetters.includes(currentChallenge.targetLetter.toLowerCase()),
-        });
-      }
-    }
-  }, [
-    isLocked, hasSubmittedEvaluation, currentChallenge, selectedGridCells,
-    currentAttempts, newLetters, incrementAttempts, recordResult, sendText, trackConfusion, tierTutorClause,
-  ]);
-
-  // ---------------------------------------------------------------------------
-  // Submit final evaluation
-  // ---------------------------------------------------------------------------
-  const submitFinalEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-
-    const total = challengeResults.length;
-    const correct = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const elapsedMs = Date.now() - startTimeRef.current;
-
-    // Per-category accuracy helpers
-    const acc = (items: typeof challengeResults) =>
-      items.length > 0 ? Math.round((items.filter(r => r.correct).length / items.length) * 100) : 100;
-
-    const newLetterResults = challengeResults.filter(r => r.isNewLetter);
-    const reviewLetterResults = challengeResults.filter(r => !r.isNewLetter);
-    const uppercaseResults = challengeResults.filter(
-      r => r.targetCase === 'uppercase' || r.targetCase === 'both',
-    );
-    const lowercaseResults = challengeResults.filter(
-      r => r.targetCase === 'lowercase' || r.targetCase === 'both',
-    );
-
-    const overallScore = total > 0 ? Math.round((correct / total) * 100) : 0;
+    const isNew = (item: LetterSpotterItem) =>
+      newLetters.includes(item.targetLetter.toLowerCase());
 
     const metrics: LetterSpotterMetrics = {
       type: 'letter-spotter',
       letterGroup,
-      challengesCorrect: correct,
-      challengesTotal: total,
-      newLetterAccuracy: acc(newLetterResults),
-      reviewLetterAccuracy: acc(reviewLetterResults),
-      uppercaseAccuracy: acc(uppercaseResults),
-      lowercaseAccuracy: acc(lowercaseResults),
-      confusedLetterPairs: Array.from(confusedPairs),
-      attemptsCount: totalAttempts,
+      challengesCorrect: summary.solvedCount,
+      challengesTotal: items.length,
+      newLetterAccuracy: rate(isNew),
+      reviewLetterAccuracy: rate((item) => !isNew(item)),
+      // Case accuracy is read off the FORM the child actually worked with, not
+      // a `targetCase` field the click-era render never honoured (it printed
+      // every option uppercase regardless). find-it grids and the match-it
+      // stimulus are uppercase; the match-it ANSWER is the little form.
+      // name-it counts as neither since its tiles went: a spoken letter name
+      // carries no case at all.
+      uppercaseAccuracy: rate((item) => item.mode !== 'name-it'),
+      lowercaseAccuracy: rate((item) => item.mode === 'match-it'),
+      confusedLetterPairs: Array.from(
+        new Set(confusedPairsRef.current.map(([a, b]) => [a, b].sort().join('-'))),
+      ),
+      attemptsCount: summary.attemptsCount,
     };
 
-    setSubmittedResult({ score: overallScore });
-
-    submitEvaluation(
-      overallScore >= 60,
-      overallScore,
+    evaluation.submitResult(
+      summary.passed,
+      summary.accuracy,
       metrics,
-      { challengeResults, durationMs: elapsedMs },
+      { challengeResults: summary.outcomes, hearTaps: summary.hearTaps },
+      undefined,
+      summary.diagnosisEvidence,
     );
+  }, [items, letterGroup, newLetters, evaluation]);
 
-    // AI celebration
-    const phaseScoreStr = phaseResults.length > 0
-      ? phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ')
-      : `Overall: ${overallScore}%`;
-    sendText(
-      `[ALL_COMPLETE] Student finished all ${total} letter spotting challenges! ` +
-      `Score: ${correct}/${total} (${overallScore}%). ${phaseScoreStr}. ` +
-      (confusedPairs.size > 0 ? `Confused pairs: ${Array.from(confusedPairs).join(', ')}. ` : '') +
-      `Celebrate and give encouraging feedback!`,
-      { silent: true },
-    );
-  }, [
-    hasSubmittedEvaluation, challengeResults, letterGroup, confusedPairs,
-    phaseResults, submitEvaluation, sendText,
-  ]);
-
-  // Auto-submit when all challenges are complete (the "Finish" button disappears
-  // because allChallengesComplete hides it, so we need this effect as the trigger).
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation) {
-      submitFinalEvaluation();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, submitFinalEvaluation]);
-
-  // Compute score directly from results for immediate display (avoids 0% flash
-  // before the submitFinalEvaluation effect fires and sets submittedResult).
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  // ---------------------------------------------------------------------------
-  // Advance to next challenge
-  // ---------------------------------------------------------------------------
-  const handleNextChallenge = useCallback(() => {
-    // Reset UI state
-    setSelectedOption(null);
-    setSelectedGridCells(new Set());
-    setFeedback('');
-    setFeedbackType('');
-    setIsLocked(false);
-
-    if (!advanceProgress()) {
-      // All challenges done — submit evaluation
-      submitFinalEvaluation();
-      return;
-    }
-
-    // Introduce next challenge via AI
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-    if (!nextChallenge) return;
-
-    const isNew = newLetters.includes(nextChallenge.targetLetter.toLowerCase());
-    const modeLabel = MODE_CONFIG[nextChallenge.mode]?.description ?? nextChallenge.mode;
-
-    if (nextChallenge.mode === 'name-it' && nextChallenge.sentence) {
-      // Sentence spotter: AI reads the full sentence aloud (naturally, without revealing the letter)
-      const fullSentence = nextChallenge.sentence.replace(
-        nextChallenge.emoji || '⭐',
-        nextChallenge.targetLetter,
-      );
-      sendText(
-        `[SENTENCE_SPOTTER] Challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
-        `Say this sentence aloud naturally: "${fullSentence}". ` +
-        `The student sees the sentence on screen but the word "${nextChallenge.targetWord}" is replaced by a ${nextChallenge.emoji || '⭐'} emoji. ` +
-        `IMPORTANT: Do NOT say the letter name or give away which letter is missing. ` +
-        `Just read the sentence naturally, then ask "What letter is the ${nextChallenge.emoji || '⭐'} hiding?"` +
-        (isNew ? ` This is a NEW letter — give an extra hint about its shape without saying the letter name.` : ''),
-        { silent: true },
-      );
-    } else if (nextChallenge.mode === 'find-it') {
-      sendText(
-        `[FIND_LETTER] Find the letter ${nextChallenge.targetLetter.toUpperCase()}! ` +
-        `Challenge ${currentChallengeIndex + 2} of ${challenges.length}. ` +
-        `Say "Find the letter ${nextChallenge.targetLetter.toUpperCase()}!" with enthusiasm.`,
-        { silent: true },
-      );
-    } else if (isNew) {
-      sendText(
-        `[NEW_LETTER_INTRO] Introducing a new letter: ${nextChallenge.targetLetter.toUpperCase()}. ` +
-        `Warmly introduce this letter with a brief description of its shape. ` +
-        `Then tell the student to ${modeLabel.toLowerCase()}.`,
-        { silent: true },
-      );
-    } else {
-      sendText(
-        `[NEXT_CHALLENGE] Challenge ${currentChallengeIndex + 2} of ${challenges.length}: ` +
-        `${modeLabel} for "${nextChallenge.targetLetter.toUpperCase()}". Briefly introduce the task.`,
-        { silent: true },
-      );
-    }
-  }, [advanceProgress, submitFinalEvaluation, challenges, currentChallengeIndex, newLetters, sendText]);
-
-  // ============================================================================
-  // Render: Name-It Mode (Sentence Spotter)
-  // ============================================================================
-  const renderNameIt = () => {
-    if (!currentChallenge) return null;
-    const options = currentChallenge.options || [];
-    const sentence = currentChallenge.sentence || '';
-    const emoji = currentChallenge.emoji || '⭐';
-    const targetWord = currentChallenge.targetWord || '';
-
-    // Reconstruct the full sentence (replace emoji back with the target letter),
-    // then replace the entire targetWord with the emoji so students see
-    // "The ⭐ is bright" instead of "The ⭐un is bright".
-    const fullSentence = sentence.replace(emoji, currentChallenge.targetLetter);
-    let displaySentence = sentence; // fallback: use original sentence as-is
-    if (targetWord) {
-      // Try word-boundary match first, then case-insensitive plain match as fallback
-      const wordBoundaryMatch = fullSentence.replace(new RegExp(`\\b${targetWord}\\b`, 'i'), emoji);
-      if (wordBoundaryMatch !== fullSentence) {
-        displaySentence = wordBoundaryMatch;
-      } else {
-        // Fallback: plain case-insensitive replace (handles punctuation-attached words)
-        const plainMatch = fullSentence.replace(new RegExp(targetWord, 'i'), emoji);
-        if (plainMatch !== fullSentence) {
-          displaySentence = plainMatch;
+  // ── The pack — wording lives in letterSpotterScript.ts ─────────────────────
+  const pack = useMemo<JudgedScriptPack<LetterSpotterItem>>(() => ({
+    primitiveType: 'letter-spotter',
+    activityLine: 'live direct instruction letter spotting practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeType: item.mode,
+      stimulus: stimulusFor(item),
+    }),
+    // Only what DIFFERS from the runner's defaults — a line restated here reads
+    // as a deliberate pedagogic choice, so a byte-identical one is noise.
+    statusLines: {
+      // The two answer surfaces get different lines, because the child is being
+      // told what to DO: name-it is spoken, the other two are tapped.
+      ready: (item) => (item.answerKind === 'voice'
+        ? 'Listen, then say your answer.'
+        : 'Listen, then tap your answer.'),
+      retry: (item) => (item.answerKind === 'voice'
+        ? 'Listen again — then say your answer.'
+        : 'Listen again — then tap your answer.'),
+      noVerdict: () => 'One more time — say the letter.',
+      done: 'Great letter spotting today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) => {
+      const chosen = tappedRef.current;
+      switch (item.mode) {
+        case 'name-it': {
+          // Spoken mode: the evidence is what the child SAID. A heard single
+          // letter is also a confusion pair, which is the signal this primitive
+          // exists to collect — the tap path used to be the only source.
+          const heard = lastHeard?.trim() ?? '';
+          const heardLetter = /^[a-z]$/i.test(heard) ? heard.toLowerCase() : null;
+          if (heardLetter && heardLetter !== item.targetLetter.toLowerCase()) {
+            confusedPairsRef.current.push([item.targetLetter.toLowerCase(), heardLetter]);
+          }
+          return {
+            challenge: `Hear "${item.spokenSentence}" and say the letter "${item.targetWord}" starts with.`,
+            expected: `The letter "${item.targetLetter.toUpperCase()}".`,
+            observed: heard ? `Said "${heard}".` : 'Said something that did not match.',
+          };
         }
+        case 'find-it':
+          return {
+            challenge: `Find the letter "${item.targetLetter.toUpperCase()}" among sixteen letters.`,
+            expected: `The one cell holding "${item.targetLetter.toUpperCase()}".`,
+            observed: chosen
+              ? `Tapped a cell holding "${chosen.toUpperCase()}".`
+              : 'Tapped a cell that did not hold it.',
+          };
+        case 'match-it':
+          return {
+            challenge: `Match big "${item.targetLetter.toUpperCase()}" to its little form.`,
+            expected: `The little letter "${item.targetLetter}".`,
+            observed: chosen
+              ? `Tapped the little letter "${chosen}".`
+              : 'Tapped a little letter that did not match.',
+          };
       }
+    },
+  }), [items]);
+
+  const runner = useJudgedScriptRunner<LetterSpotterItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel,
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: () => {
+      setTapped(null);
+      tappedRef.current = null;
+      setTappedCell(null);
+    },
+    onCorrectionRetry: () => {
+      // The tutor's correction re-modelled in-band; free the surface for another go.
+      setTapped(null);
+      tappedRef.current = null;
+      setTappedCell(null);
+    },
+  });
+
+  const currentItem = runner.currentItem;
+  /** Affirmed: the first moment the answer may appear on screen. The runner
+   *  owns this now — the local `revealed` latch it replaces had to be reset in
+   *  `onItemOpened` and set in `onAffirmed`, one more pair to keep in step. */
+  const revealed = runner.currentSolved;
+
+  // ── The tap IS the commit, in every mode ──────────────────────────────────
+  const commitTap = useCallback((item: LetterSpotterItem, letter: string) => {
+    if (!runner.canAttempt || evaluation.hasSubmitted) return false;
+    // `canAttempt` closes the pending window through `stage`, which is batched
+    // React state; this ref flips synchronously, so it is what stops a second
+    // tap in the same tick from recording a second confusion pair.
+    if (runner.isAwaitingGesture()) return false;
+    SoundManager.tap();
+    setTapped(letter);
+    tappedRef.current = letter;
+    if (letter.toLowerCase() !== item.targetLetter.toLowerCase()) {
+      confusedPairsRef.current.push([item.targetLetter.toLowerCase(), letter.toLowerCase()]);
     }
+    runner.submitGestureAttempt(tapVerdictCue(item, letter));
+    return true;
+  }, [runner, evaluation.hasSubmitted]);
 
-    // Split the display sentence around the emoji to render it with emphasis
-    const parts = displaySentence.split(emoji);
-    const hasEmoji = parts.length > 1;
+  const handleOptionTap = useCallback((letter: string) => {
+    const item = runner.currentItem;
+    // match-it is the only tile mode left — name-it's answer is spoken.
+    if (!item || item.mode !== 'match-it') return;
+    commitTap(item, letter);
+  }, [runner, commitTap]);
 
-    return (
-      <div className="space-y-6">
-        {/* Sentence display with emoji replacing the full target word — INTERACTION SURFACE */}
-        <div className="flex justify-center">
-          <div className="bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg">
-            <p className={`${fontClass} text-3xl font-bold text-slate-100 text-center leading-relaxed`}>
-              {hasEmoji ? (
-                <>
+  const handleCellTap = useCallback((index: number) => {
+    const item = runner.currentItem;
+    if (!item || item.mode !== 'find-it') return;
+    const letter = item.letterGrid?.[index];
+    if (!letter) return;
+    if (commitTap(item, letter)) setTappedCell(index);
+  }, [runner, commitTap]);
+
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
+      const meta = MODE_META[item.mode];
+      return { label: meta.badge, icon: meta.icon };
+    });
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  // ============================================================================
+  // Render helpers
+  // ============================================================================
+
+  const letterColor = (letter: string) =>
+    VOWELS.has(letter.toLowerCase()) ? 'text-red-300' : 'text-blue-300';
+
+  /** The tappable answer tiles — match-it ONLY. Lowercase, because the match-it
+   *  answer IS the little form. (The click-era render printed every option
+   *  uppercase while the tutor described a lowercase shape — the buttons said
+   *  "I", the tutor said "a straight line with a little dot on top".)
+   *
+   *  name-it lost its tiles in the 2026-08-13 ruling: a four-way menu turned
+   *  "say the letter this word starts with" into a 1-in-4 recognition task, and
+   *  the menu is the reason the mode was ever a tap. */
+  const renderOptions = (item: LetterSpotterItem) => (
+    <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+      {item.options.map((option) => {
+        const isTarget = option.toLowerCase() === item.targetLetter.toLowerCase();
+        const state = revealed && isTarget
+          ? 'correct'
+          : tapped === option && !isTarget
+            ? 'incorrect'
+            : 'idle';
+        return (
+          <button
+            key={`${item.id}-${option}`}
+            type="button"
+            onClick={() => handleOptionTap(option)}
+            disabled={!runner.canAttempt}
+            className={`
+              h-20 rounded-xl border-2 text-4xl font-bold transition-all
+              ${answerStateClass(state)}
+              ${state === 'idle' ? letterColor(option) : ''}
+              ${revealed && isTarget ? 'ring-2 ring-emerald-400/40 scale-105' : ''}
+            `}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderChallenge = (item: LetterSpotterItem) => {
+    switch (item.mode) {
+      // ── Hear a sentence, SAY the letter the marker is hiding ──────────────
+      case 'name-it': {
+        const printed = item.sentence ?? '';
+        const parts = printed.split(SPOTTER_EMOJI);
+        return (
+          <div className="space-y-6">
+            {/* The sentence. Tapping it re-speaks the QUESTION — the click-era
+                item had no replay at all, and its audio ran up to 16s behind. */}
+            <div className="flex justify-center">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
+                className={`
+                  bg-white/5 border-2 border-white/15 rounded-2xl px-8 py-6 max-w-lg
+                  cursor-pointer transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+              >
+                <p className="text-3xl font-bold text-slate-100 text-center leading-relaxed">
                   {parts.map((part, i) => (
                     <React.Fragment key={i}>
                       {part}
                       {i < parts.length - 1 && (
-                        <span className="inline-flex items-center justify-center mx-1">
-                          <span className="relative inline-block">
-                            <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-dashed border-amber-400/70 animate-pulse" />
-                            <span className="text-4xl" role="img" aria-label="mystery letter">
-                              {emoji}
+                        <span className="relative inline-block mx-0.5">
+                          <span className="absolute inset-0 -m-1.5 rounded-full border-2 border-dashed border-amber-400/70 animate-pulse" />
+                          {revealed ? (
+                            <span className="text-4xl text-emerald-300">
+                              {item.targetLetter}
                             </span>
-                          </span>
+                          ) : (
+                            <span className="text-4xl" role="img" aria-label="hidden letter">
+                              {SPOTTER_EMOJI}
+                            </span>
+                          )}
                         </span>
                       )}
                     </React.Fragment>
                   ))}
-                </>
-              ) : (
-                displaySentence
-              )}
-            </p>
+                </p>
+              </div>
+            </div>
+            {/* No answer tiles. The sentence IS the whole stage — the child
+                reads the star, hears the word, and says the letter. */}
           </div>
-        </div>
+        );
+      }
 
-        <p className="text-center text-slate-400 text-sm">
-          Listen to the sentence. What letter does the {emoji} replace?
-        </p>
-
-        {/* Strategy cue (#2 instruction scaffold) — shown at lower tiers, withdrawn at hard */}
-        {currentChallenge.strategyHint && (
-          <p className="text-center text-amber-300/80 text-xs italic">
-            {currentChallenge.strategyHint}
-          </p>
-        )}
-
-        {/* Letter options grid — letter tiles (interaction surface); grading colors from kit tokens */}
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          {options.map((option) => {
-            const isSelected = selectedOption === option;
-            const isCorrectOption = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
-            const showCorrect = isLocked && isCorrectOption;
-            const showWrong = isSelected && feedbackType === 'error' && !isCorrectOption;
-            const stateClass = showCorrect
-              ? answerStateClass('correct')
-              : showWrong
-                ? answerStateClass('incorrect')
-                : isSelected
-                  ? answerStateClass('selected')
-                  : answerStateClass('idle');
-
-            return (
+      // ── Hear a letter named, tap the one cell holding it ──────────────────
+      case 'find-it': {
+        const grid = item.letterGrid ?? [];
+        const showReference = challengeById.get(item.id)?.showTargetReference;
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-center">
               <button
-                key={option}
-                type="button"
-                onClick={() => handleOptionSelect(option)}
-                disabled={isLocked}
-                className={`h-16 rounded-xl border-2 text-2xl font-bold transition-all ${stateClass}`}
+                onClick={runner.hearStimulus}
+                className={`
+                  flex items-center justify-center w-20 h-20 rounded-full
+                  bg-amber-500/15 border-2 border-amber-500/30
+                  hover:bg-amber-500/25 hover:scale-105 active:scale-95 transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
+                `}
+                aria-label="Hear the letter again"
               >
-                {option.toUpperCase()}
+                <span className="text-3xl">🔊</span>
               </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+            </div>
 
-  // ============================================================================
-  // Render: Find-It Mode
-  // ============================================================================
-  const renderFindIt = () => {
-    if (!currentChallenge) return null;
-    const grid = currentChallenge.letterGrid || [];
-    const target = currentChallenge.targetLetter.toLowerCase();
-    const gridCols = Math.ceil(Math.sqrt(grid.length));
+            {/* Perception support (tier lever). It prints the letter to FIND —
+                the answer is WHERE it is, so this is a reference, not a reveal. */}
+            {showReference && (
+              <div className="flex justify-center">
+                <div className="bg-white/5 border-2 border-white/15 rounded-xl px-5 py-2 flex items-center gap-3">
+                  <span className="text-slate-400 text-xs">Looking for</span>
+                  <span className={`text-2xl font-bold ${letterColor(item.targetLetter)}`}>
+                    {item.targetLetter.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            )}
 
-    return (
-      <div className="space-y-4">
-        {/* Instruction — letter is spoken by AI, not shown visually */}
-        <div className="text-center">
-          <p className="text-slate-400 text-sm">
-            Listen carefully — find all the matching letters in the grid!
-          </p>
-        </div>
-
-        {/* Target reference (#1 perception) — at lower tiers show the letter to
-            self-check against while scanning. Does NOT reveal which cells. */}
-        {currentChallenge.showTargetReference && (
-          <div className="flex justify-center">
-            <div className="bg-white/5 border-2 border-white/15 rounded-xl px-5 py-2 flex items-center gap-3">
-              <span className="text-slate-400 text-xs">Looking for</span>
-              <span className={`${fontClass} text-2xl font-bold text-slate-100`}>
-                {currentChallenge.targetLetter.toUpperCase()}
-              </span>
+            <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
+              {grid.map((letter, i) => {
+                const isTarget = letter.toLowerCase() === item.targetLetter.toLowerCase();
+                const state = revealed && isTarget
+                  ? 'correct'
+                  : tappedCell === i && !isTarget
+                    ? 'incorrect'
+                    : 'idle';
+                return (
+                  <button
+                    key={`${item.id}-${i}`}
+                    onClick={() => handleCellTap(i)}
+                    disabled={!runner.canAttempt}
+                    className={`
+                      aspect-square rounded-xl border-2 font-bold text-2xl
+                      transition-all select-none
+                      ${answerStateClass(state)}
+                      ${revealed && isTarget ? 'ring-2 ring-emerald-400/40 scale-105' : ''}
+                    `}
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
+        );
+      }
 
-        {/* Strategy cue (#2 instruction scaffold) — withdrawn at hard */}
-        {currentChallenge.strategyHint && (
-          <p className="text-center text-amber-300/80 text-xs italic">
-            {currentChallenge.strategyHint}
-          </p>
-        )}
-
-        {/* Letter grid — interaction surface; grading colors from kit tokens */}
-        <div
-          className="grid gap-2 max-w-md mx-auto"
-          style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}
-        >
-          {grid.map((letter, i) => {
-            const isSelected = selectedGridCells.has(i);
-            const isTarget = letter.toLowerCase() === target;
-            const showCorrect = isLocked && isTarget;
-            const stateClass = showCorrect
-              ? answerStateClass('correct')
-              : isSelected
-                ? answerStateClass('selected')
-                : answerStateClass('idle');
-
-            return (
-              <button
-                key={`${i}-${letter}`}
-                onClick={() => handleGridCellToggle(i)}
-                disabled={isLocked}
+      // ── See a big letter, tap its little form ────────────────────────────
+      case 'match-it':
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-center">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={runner.hearStimulus}
                 className={`
-                  aspect-square rounded-xl border-2 font-bold text-2xl
-                  transition-all select-none
-                  ${stateClass}
-                  ${(showCorrect || isSelected) ? 'scale-105' : ''}
-                  ${isLocked ? 'cursor-default' : 'cursor-pointer'}
+                  text-8xl font-bold ${letterColor(item.targetLetter)}
+                  bg-white/5 border-2 border-white/15 rounded-2xl
+                  px-12 py-8 select-none cursor-pointer transition-all
+                  ${runner.stimulusTapped ? 'ring-2 ring-cyan-300/60' : ''}
                 `}
               >
-                {letter}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Check button */}
-        {!isLocked && (
-          <div className="flex justify-center">
-            <LuminaActionButton
-              action="check"
-              onClick={handleCheckFindIt}
-              disabled={selectedGridCells.size === 0}
-            >
-              Check
-            </LuminaActionButton>
+                {item.targetLetter.toUpperCase()}
+              </div>
+            </div>
+            {renderOptions(item)}
           </div>
-        )}
-      </div>
-    );
+        );
+    }
   };
 
   // ============================================================================
-  // Render: Match-It Mode
-  // ============================================================================
-  const renderMatchIt = () => {
-    if (!currentChallenge) return null;
-    const uppercaseLetter = currentChallenge.targetLetter.toUpperCase();
-    const options = currentChallenge.options || [];
-
-    return (
-      <div className="space-y-6">
-        {/* Large uppercase letter — interaction surface */}
-        <div className="flex justify-center">
-          <div className={`
-            ${fontClass} text-8xl font-bold text-slate-100
-            bg-white/5 border-2 border-white/15 rounded-2xl
-            px-12 py-8 select-none
-          `}>
-            {uppercaseLetter}
-          </div>
-        </div>
-
-        <p className="text-center text-slate-400 text-sm">Which lowercase letter matches?</p>
-
-        {/* Strategy cue (#2 instruction scaffold) — withdrawn at hard */}
-        {currentChallenge.strategyHint && (
-          <p className="text-center text-amber-300/80 text-xs italic">
-            {currentChallenge.strategyHint}
-          </p>
-        )}
-
-        {/* Lowercase options — letter tiles (interaction surface); grading colors from kit tokens */}
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          {options.map((option) => {
-            const isSelected = selectedOption === option;
-            const isCorrectOption = option.toLowerCase() === currentChallenge.targetLetter.toLowerCase();
-            const showCorrect = isLocked && isCorrectOption;
-            const showWrong = isSelected && feedbackType === 'error' && !isCorrectOption;
-            const stateClass = showCorrect
-              ? answerStateClass('correct')
-              : showWrong
-                ? answerStateClass('incorrect')
-                : isSelected
-                  ? answerStateClass('selected')
-                  : answerStateClass('idle');
-
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => handleOptionSelect(option)}
-                disabled={isLocked}
-                className={`h-16 rounded-xl border-2 text-3xl font-bold transition-all ${stateClass}`}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // ============================================================================
-  // Main Render
+  // Main render
   // ============================================================================
 
-  if (challenges.length === 0) {
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
         <LuminaCardContent className="p-6">
@@ -877,78 +613,54 @@ const LetterSpotter: React.FC<LetterSpotterProps> = ({ data, className }) => {
     );
   }
 
-  const elapsedMs = Date.now() - startTimeRef.current;
-  const isNewLetterChallenge =
-    currentChallenge && newLetters.includes(currentChallenge.targetLetter.toLowerCase());
+  const modeMeta = MODE_META[currentItem?.mode ?? 'name-it'];
 
   return (
     <LuminaCard className={className}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+          {/* Pre-reader: hide adult chrome (group/mode badges) — rule 7. */}
+          {!isPreReader && !evaluation.hasSubmitted && currentItem && (
             <div className="flex items-center gap-2">
               <LuminaBadge className="text-xs">Group {letterGroup}</LuminaBadge>
-              {currentChallenge && (
-                <LuminaBadge accent={MODE_ACCENT[currentChallenge.mode]} className="text-xs">
-                  {MODE_CONFIG[currentChallenge.mode]?.label || currentChallenge.mode}
-                </LuminaBadge>
-              )}
-              {isNewLetterChallenge && (
-                <LuminaBadge accent="amber" className="text-xs">
-                  New Letter
-                </LuminaBadge>
-              )}
+              <LuminaBadge accent={modeMeta.accent} className="text-xs">
+                {modeMeta.icon} {modeMeta.badge}
+              </LuminaBadge>
             </div>
-          </div>
-          <LuminaChallengeCounter
-            current={currentChallengeIndex + 1}
-            total={challenges.length}
-          />
+          )}
         </div>
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Progress bar */}
-        <LuminaProgress
-          accent="blue"
-          value={((currentChallengeIndex + (isLocked ? 1 : 0)) / challenges.length) * 100}
-        />
-
-        {/* Challenge content */}
-        {!allChallengesComplete && currentChallenge && (
+        {!evaluation.hasSubmitted && (
           <>
-            {currentChallenge.mode === 'name-it' && renderNameIt()}
-            {currentChallenge.mode === 'find-it' && renderFindIt()}
-            {currentChallenge.mode === 'match-it' && renderMatchIt()}
+            <div className="flex justify-center">
+              <LuminaChallengeCounter
+                current={Math.min(runner.currentIndex + 1, items.length)}
+                total={items.length}
+                variant="dots"
+              />
+            </div>
+
+            {currentItem && renderChallenge(currentItem)}
+
+            {/* The orb reads `answerKind` off the runner: on find-it and
+                match-it the mic is still open (the tutor is audible, the child
+                may talk) but the answer is the tap, so it must not say it is
+                listening for one. This port's wording is the panel's default. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 
-        {/* Feedback */}
-        {feedback && (
-          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Next / Finish button */}
-        {isLocked && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <LuminaActionButton action="next" onClick={handleNextChallenge}>
-              {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </LuminaActionButton>
-          </div>
-        )}
-
-        {/* Completion summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Letter Spotting Complete!"
-            celebrationMessage="Great job recognizing letters!"
-            className="mb-6"
+            celebrationMessage={`You spotted letters across ${items.length} rounds — ${cumulativeLetters.length} letters in play!`}
+            className="mt-4"
           />
         )}
       </LuminaCardContent>

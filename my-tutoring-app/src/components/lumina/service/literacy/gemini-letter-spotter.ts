@@ -3,6 +3,12 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { LetterSpotterData } from "../../primitives/visual-primitives/literacy/LetterSpotter";
 import {
+  isSayableSentence,
+  isSayableWord,
+  opensWithSentinel,
+  SPOTTER_EMOJI,
+} from "../../primitives/visual-primitives/literacy/letterSpotterScript";
+import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
   buildChallengeTypePromptSection,
@@ -17,15 +23,17 @@ import {
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'name-it': {
     promptDoc:
-      `"name-it" (Sentence Spotter): Student sees a short sentence where one letter in a key word is hidden behind an emoji. `
-      + `The AI reads the full sentence aloud. Student must figure out which letter the emoji replaced. `
-      + `REQUIRED fields for name-it: sentence, targetWord, options. `
+      `"name-it" (Sentence Spotter): Student hears a short sentence where one letter in a key word is hidden behind an emoji. `
+      + `The tutor reads the full sentence aloud and the student SAYS the letter the emoji replaced — out loud, `
+      + `not from a list. There are no answer choices on screen for this mode. `
+      + `REQUIRED fields for name-it: sentence, targetWord. `
       + `Write the sentence PLAINLY with the whole word spelled out — code hides the letter behind the emoji afterwards. `
-      + `Example: targetLetter "s", targetWord "sun", sentence "The sun is bright.", options ["s","t","n","p"]. `
+      + `Example: targetLetter "s", targetWord "sun", sentence "The sun is bright.". `
       + `Sentences are simple, 4-7 words, age-appropriate for K-2, and MUST contain targetWord exactly once. `
       + `targetLetter MUST be the FIRST letter of targetWord (e.g., "sun" for "s", never "bus"). `
-      + `Do NOT include letterGrid for this mode.`,
-    schemaDescription: "'name-it' (sentence spotter — find missing letter)",
+      + `Pick a targetWord a five-year-old can hear the start of clearly — the answer is spoken, so the WORD has to `
+      + `carry the sound unambiguously. Do NOT include letterGrid or options for this mode.`,
+    schemaDescription: "'name-it' (sentence spotter — say the missing letter)",
   },
   'find-it': {
     promptDoc:
@@ -43,16 +51,26 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
-/** Emoji pool for the sentence spotter. CODE-OWNED, never requested from the
- *  model: asking flash-lite to emit emoji inside a JSON string is a known
- *  failure trigger, and the splice below is fully deterministic anyway. */
-const SENTENCE_EMOJIS = ['⭐', '🌟', '🔮', '💎', '🎯', '🎪', '🦋', '🌈', '🎨', '🌺'];
+/**
+ * ONE marker for every sentence-spotter item, imported from the pack so the
+ * screen and the spoken line can never disagree about it.
+ *
+ * This replaced a ten-emoji pool rotated by challenge index. The pool was a
+ * VISUAL variety idea with an AUDIO cost nobody priced: the tutor names the
+ * marker in its ask, so a live session (42edfc52e539) asked one child in turn
+ * about "the ⭐", "the 🌟", "the crystal ball", "the diamond" and "the target"
+ * inside two minutes. A five-year-old is learning the game, not a vocabulary of
+ * mystery objects.
+ */
+const SENTENCE_EMOJI = SPOTTER_EMOJI;
 
 /**
- * Hide the target letter behind the emoji. The model emits the PLAIN sentence
- * ("The sun is bright."); this restores the stored shape the component expects
- * ("The ⭐un is bright.") by replacing only the FIRST character of targetWord.
- * Returns null when targetWord isn't present, so the caller can fall back.
+ * Hide the target letter behind the marker. The model emits the PLAIN sentence
+ * ("The sun is bright."); this builds the PRINTED shape ("The ⭐un is bright.")
+ * by replacing only the FIRST character of targetWord — the rest of the word
+ * stays visible on purpose, because it is the only decodable cue the item has.
+ * Returns null when targetWord isn't present exactly once, so the caller drops
+ * the item rather than asking a question with two answers.
  */
 function spliceEmoji(sentence: string, targetWord: string, emoji: string): string | null {
   const escaped = targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -64,6 +82,36 @@ function spliceEmoji(sentence: string, targetWord: string, emoji: string): strin
   const word = match[0];
   return sentence.slice(0, match.index) + emoji + word.slice(1) + sentence.slice(match.index + word.length);
 }
+
+/**
+ * Repair a/an agreement before the sentence is ever spoken aloud.
+ *
+ * The live drive had the tutor read "I see a ant walk away" and "I see a inky
+ * paw print" to a five-year-old — in a LITERACY primitive. The generator
+ * constrains targetWord to START with the target letter, which pushes the model
+ * toward vowel-initial words in exactly the articles' blind spot, and no gate
+ * looked at the prose. Deterministic and applied to the SPOKEN form before the
+ * splice, because after the splice the deciding letter is gone.
+ *
+ * Orthographic, not phonetic: "an hour"/"a unicorn" are wrong here. Neither is
+ * reachable from the K-2 CVC vocabulary this primitive draws on, and a wrong
+ * article on a rare word is a smaller harm than the raw defect it replaces.
+ */
+const VOWEL_LETTERS = new Set(['a', 'e', 'i', 'o', 'u']);
+function fixArticleAgreement(sentence: string): string {
+  return sentence.replace(/\b(an?)(\s+)([A-Za-z])/gi, (_m, article: string, gap: string, first: string) => {
+    const target = VOWEL_LETTERS.has(first.toLowerCase()) ? 'an' : 'a';
+    const cased = /^[A-Z]/.test(article) ? target.charAt(0).toUpperCase() + target.slice(1) : target;
+    return `${cased}${gap}${first}`;
+  });
+}
+
+// Shape + sentinel gates are IMPORTED from letterSpotterScript (top of file):
+// both sides of the wire must agree on what is sayable, and the hand-synced
+// copies that used to live here had already drifted (90 vs 100 sentence chars).
+// The 400-char `targetWord` runaway story — why a field that cannot be
+// enum-locked needs a SHAPE gate, not only a meaning gate — lives with the
+// gates in the script module.
 
 // ---------------------------------------------------------------------------
 // Within-mode support tier (config.difficulty) — scaffolding level, NOT letters
@@ -102,9 +150,11 @@ interface LetterSpotterSupportScaffold {
   /** #1 perception (find-it only): show the target letter on-card as a self-check
    *  reference. Never reveals which cells. false at hard (audio only). */
   showTargetReference: boolean;
-  /** #5 answer-form (name-it / match-it): how many letter options to present.
+  /** #5 answer-form (match-it ONLY): how many letter options to present.
    *  Fewer distractors = more support. The correct answer is ALWAYS retained
-   *  (answer-bearing guard); only distractors are trimmed/kept. */
+   *  (answer-bearing guard); only distractors are trimmed/kept.
+   *  name-it dropped out of this lever with its option tiles — its support now
+   *  withdraws through the tutor's spoken lead-in instead. */
   optionCount: number;
   promptLines: string[];
 }
@@ -151,12 +201,17 @@ function resolveSupportStructure(mode: LetterMode, tier: SupportTier): LetterSpo
   const lines: string[] = [lead];
   switch (mode) {
     case 'name-it':
+      // The answer-form lever is GONE here: name-it has no options to trim
+      // since the child says the letter (2026-08-13 ruling). What withdraws
+      // instead is the tutor's spoken DISTAR lead-in, which the pack owns
+      // (`leadInFor`: easy = model + guide, medium = model, hard = nothing) —
+      // a real withdrawal of instruction rather than a shorter menu.
       lines.push(
         tier === 'easy'
-          ? 'A short strategy cue ("say the sentence, listen for the missing sound") is shown, and only a few options appear so the choice is focused.'
+          ? 'The tutor models the strategy ("listen for the sound at the very start of the word") AND promises to say the word on its own after the sentence.'
           : tier === 'hard'
-            ? 'No strategy cue is shown; the student decides how to find the missing letter and justifies it from the sound of the sentence.'
-            : 'A light strategy cue is shown; the student works through the sentence themselves.',
+            ? 'No lead-in at all: the tutor reads the sentence and asks, and the student finds the missing letter unaided.'
+            : 'The tutor models the strategy once before asking, but does not repeat the word on its own.',
       );
       break;
     case 'find-it':
@@ -339,6 +394,51 @@ function selectDistractorsBySimilarity(
 }
 
 /**
+ * A 16-cell find-it grid holding EXACTLY ONE instance of the target.
+ *
+ * The single instance is the mode's identity under the judged loop: the tutor
+ * asks once, the child taps once, and the tap's verdict is the advance. Two
+ * targets would make one question have two right answers; zero would make it
+ * unanswerable. `targetCount` is therefore always 1 and no longer a lever.
+ *
+ * Distractors come from `ranked` when the tier has an opinion about letterform
+ * similarity, else from the model's own non-target cells, else from the pool —
+ * always cycling so all fifteen slots fill even when the letter group is small.
+ * Nothing outside the cumulative group can enter (the band cap), and the target
+ * is never used as a distractor.
+ */
+function buildSingleTargetGrid(
+  targetLetter: string,
+  pool: string[],
+  existing?: string[],
+  ranked?: string[],
+): string[] {
+  const target = targetLetter.trim().toLowerCase();
+  const inPool = (letter: string) => pool.includes(letter) && letter !== target;
+
+  const fromExisting = (existing ?? [])
+    .map((l) => l.trim().toLowerCase())
+    .filter(inPool);
+  const source = (ranked ?? []).filter(inPool);
+  const chosen = source.length > 0
+    ? source
+    : fromExisting.length > 0
+      ? fromExisting
+      : pool.filter((l) => l !== target);
+  // A one-letter group would leave nothing to hide the target among; the letter
+  // groups all carry six or more, so this only guards a future edit.
+  const bag = chosen.length > 0 ? chosen : [target === 'x' ? 'o' : 'x'];
+
+  const grid: string[] = [target.toUpperCase()];
+  for (let i = 0; grid.length < 16; i++) grid.push(bag[i % bag.length].toUpperCase());
+  for (let i = grid.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [grid[i], grid[j]] = [grid[j], grid[i]];
+  }
+  return grid;
+}
+
+/**
  * Build the response schema for ONE request, enum-locked to the letters actually
  * in scope for this letter group.
  *
@@ -409,7 +509,7 @@ function buildLetterSpotterSchema(cumulativeLetters: string[]): Schema {
               items: { type: Type.STRING, enum: upper },
               minItems: "16",
               maxItems: "16",
-              description: "For find-it: exactly 16 uppercase letters in a 4x4 grid, with 2-3 instances of the target mixed with distractors",
+              description: "For find-it: exactly 16 uppercase letters in a 4x4 grid, containing the target EXACTLY ONCE mixed with distractors",
             },
             sentence: {
               type: Type.STRING,
@@ -567,13 +667,26 @@ MODE-SPECIFIC FIELD RULES:
 - find-it: set letterGrid (16 uppercase letters), do NOT set options, sentence, or targetWord
 - match-it: set options (4 lowercase letters), do NOT set letterGrid, sentence, or targetWord
 
+SENTENCE QUALITY (name-it) — a live tutor READS these aloud to a five-year-old,
+so a sentence that is not English is not a smaller problem here, it is the product:
+- Write ordinary, natural English a five-year-old would hear at home or at school.
+- targetWord must be a COMMON, CONCRETE word a five-year-old already knows — an
+  everyday object, animal, or action. Never a name, never a rare word, and never
+  a word used as the wrong part of speech ("I see a pat write a note" is not English).
+- Get a/an right: "an ant", "an inky paw print", "a sun", "a top".
+- Vary how sentences begin. Do NOT start every sentence with "I see a".
+- No sentence may begin with the word "Yes".
+
 RULES:
 - Use IDs: ch1, ch2, ch3, etc.
 - At least half the challenges should target NEW letters.
 - Every letter you emit — target, option, or grid cell — is a SINGLE character from the cumulative list.
-- For find-it grids: exactly 16 cells, each a single UPPERCASE letter, with 2-3 instances of the target.
+- For find-it grids: exactly 16 cells, each a single UPPERCASE letter, containing the
+  target EXACTLY ONCE. The child taps the one cell holding it, so a second instance
+  would give one question two right answers.
 - For name-it and match-it: exactly 4 options, each a single lowercase letter.
-- Vary targetCase across name-it challenges (some uppercase, some lowercase, some both).
+- targetCase: use "uppercase" for find-it and match-it (both print capitals as the
+  stimulus). name-it is always lowercase and the app sets it.
 ${!evalConstraint ? '- Order challenges so modes alternate (don\'t cluster all the same mode together).' : ''}
 
 CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"${l}"`).join(', ')}]`;
@@ -656,8 +769,12 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
     // Validate challenges
     if (result.challenges) {
       result.challenges = result.challenges.map((ch, i) => {
-        // Ensure IDs exist
-        if (!ch.id) ch.id = `ch${i + 1}`;
+        // IDs are stamped POSITIONALLY, never trusted. The model repeats them:
+        // the live probe drew a find-it set with two "ch1"s, which the pack's
+        // own validator refuses (duplicate item id) and which would otherwise
+        // collide in every per-item outcome lookup. Filling only MISSING ids —
+        // what this line used to do — cannot see a duplicate.
+        ch.id = `ch${i + 1}`;
 
         // Ensure targetLetter is lowercase
         ch.targetLetter = (ch.targetLetter || 's').toLowerCase();
@@ -667,15 +784,27 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
           ch.targetLetter = newLetters[i % newLetters.length];
         }
 
-        // name-it: the model emits a PLAIN sentence; CODE owns the emoji and the splice.
+        // name-it: the model emits a PLAIN sentence; CODE owns the marker, the
+        // article repair and the splice.
         if (ch.mode === 'name-it') {
-          ch.emoji = SENTENCE_EMOJIS[i % SENTENCE_EMOJIS.length];
+          ch.emoji = SENTENCE_EMOJI;
+          // The printed sentence is lowercase running text and the tappable
+          // options are its letters, so the answer tiles are lowercase too. The
+          // click-era render printed every option `.toUpperCase()` regardless of
+          // this field while the tutor described a lowercase form — the buttons
+          // said "I" and the tutor said "a straight line with a little dot on
+          // top". One case, chosen here, ends that.
+          ch.targetCase = 'lowercase';
 
           // The emoji hides the word's FIRST character, so targetWord MUST lead with
           // the target letter. A word that doesn't isn't merely imperfect — it hides
           // the wrong letter while the answer key still says targetLetter, i.e. an
           // unsolvable item. (Live probe caught exactly this: 'fox' offered for 'x'.)
-          if (!ch.targetWord || ch.targetWord[0]?.toLowerCase() !== ch.targetLetter) {
+          if (
+            !ch.targetWord
+            || !isSayableWord(ch.targetWord)
+            || ch.targetWord[0]?.toLowerCase() !== ch.targetLetter
+          ) {
             const fallbackWords: Record<string, string> = {
               s: 'sun', a: 'ant', t: 'top', i: 'ink', p: 'pan', n: 'net',
               c: 'cat', k: 'kit', e: 'egg', h: 'hat', r: 'run', m: 'map', d: 'dog',
@@ -690,12 +819,39 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
               : ch.targetLetter + 'at';
           }
 
-          // Splice the emoji over targetWord's first letter, restoring the stored
-          // shape the component expects ("The ⭐un is bright."). Falls back to a
-          // code-built sentence when the model's sentence can't carry the splice
-          // cleanly (word absent, or present more than once → answer leak).
-          const spliced = ch.sentence ? spliceEmoji(ch.sentence, ch.targetWord, ch.emoji) : null;
-          ch.sentence = spliced ?? `I see a ${ch.emoji}${ch.targetWord.slice(1)}.`;
+          // The SPOKEN form is the tutor's line, so it is repaired before it is
+          // ever said and refused outright if it would open a cue sentence with
+          // a verdict sentinel. The code-built fallback uses "the" rather than
+          // "a", so it is grammatical for every word in the pool by
+          // construction — that is where "I see a ant walk away" came from.
+          const modelSentence = ch.sentence ? fixArticleAgreement(ch.sentence) : '';
+          const usable =
+            isSayableSentence(modelSentence)
+            && !opensWithSentinel(modelSentence)
+            && !opensWithSentinel(ch.targetWord)
+            && spliceEmoji(modelSentence, ch.targetWord, ch.emoji) !== null;
+
+          // Rotated by index so two rejected sentences in one lesson do not
+          // both degrade to the SAME line (the probe drew exactly that: "I can
+          // see the sun." twice in eight items). Every frame uses "the", which
+          // is article-safe for every word in the pool by construction.
+          const FALLBACK_FRAMES = [
+            (w: string) => `I can see the ${w}.`,
+            (w: string) => `Look at the ${w}.`,
+            (w: string) => `Here is the ${w}.`,
+            (w: string) => `We found the ${w}.`,
+          ];
+          const spokenSentence = usable
+            ? modelSentence
+            : FALLBACK_FRAMES[i % FALLBACK_FRAMES.length](ch.targetWord);
+          // Splice the marker over targetWord's FIRST character only — the rest
+          // of the word stays printed, because it is the item's one decodable
+          // cue. (The click-era render then blanked the whole word anyway,
+          // which is what left the sentence as decoration.)
+          const printed = spliceEmoji(spokenSentence, ch.targetWord, ch.emoji);
+          ch.spokenSentence = spokenSentence;
+          ch.sentence = printed
+            ?? spokenSentence.replace(ch.targetWord, `${ch.emoji}${ch.targetWord.slice(1)}`);
 
           // Clean up fields that shouldn't exist for name-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -706,33 +862,18 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
 
         // Validate mode-specific fields
         if (ch.mode === 'find-it') {
-          // Ensure grid has exactly 16 cells
-          if (!ch.letterGrid || ch.letterGrid.length !== 16) {
-            // Build a valid grid with 2-3 target instances
-            const count = ch.targetCount || 2;
-            const grid: string[] = [];
-            for (let j = 0; j < count; j++) {
-              grid.push(ch.targetLetter.toUpperCase());
-            }
-            const distractors = cumulativeLetters.filter(l => l !== ch.targetLetter);
-            while (grid.length < 16) {
-              grid.push(distractors[Math.floor(Math.random() * distractors.length)].toUpperCase());
-            }
-            // Shuffle
-            for (let j = grid.length - 1; j > 0; j--) {
-              const k = Math.floor(Math.random() * (j + 1));
-              [grid[j], grid[k]] = [grid[k], grid[j]];
-            }
-            ch.letterGrid = grid;
-          } else {
-            // Ensure all grid cells are uppercase
-            ch.letterGrid = ch.letterGrid.map(l => l.toUpperCase());
-          }
-
-          // Ensure targetCount matches actual target instances in grid
-          ch.targetCount = ch.letterGrid.filter(
-            l => l.toLowerCase() === ch.targetLetter
-          ).length;
+          // EXACTLY ONE target, always. Under the judged loop one tap is one
+          // commit and the tutor's verdict is the advance, so a grid with two
+          // targets is a question asked once with two right answers, and a grid
+          // with none cannot be answered at all. (Pre-DI this mode was
+          // "select all, then press Check" — the Check button is what the
+          // modality deletes, and the batch commit went with it.)
+          ch.letterGrid = buildSingleTargetGrid(
+            ch.targetLetter,
+            cumulativeLetters,
+            ch.letterGrid,
+          );
+          ch.targetCount = 1;
 
           // Clean up fields that shouldn't exist for find-it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -811,9 +952,13 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
         // Second axis: structural similarity target for this challenge's OWN mode.
         const shape = resolveProblemShape(ch.mode as LetterMode, supportTier);
 
-        // #2 strategy cue — display-only, withdrawn at hard (null).
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (ch as any).strategyHint = sc.strategyHint ?? undefined;
+        // #2 strategy cue — NO LONGER STAMPED. It was on-card prose at a band
+        // that cannot read, so under the judged loop it withdrew nothing from
+        // the child who needed it. The lever survives as the SPOKEN DISTAR
+        // lead-in (letterSpotterScript: easy = model + guide, medium = model,
+        // hard = nothing). `resolveSupportStructure` still resolves it because
+        // it is the readable record of what each tier means.
+        void sc.strategyHint;
 
         // #1 perception reference — find-it only (UI contract: other modes ignore it).
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -862,36 +1007,17 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
           ch.options = [correct, ...finalDistractors].sort(() => Math.random() - 0.5);
         }
 
-        // find-it: re-fill the NON-target grid cells by similarity. ANSWER-BEARING
-        // + FLOOR GUARD: keep exactly the target instances (the mode identity — the
-        // answer is "every cell == target"); only the distractor cells change. The
-        // component recomputes targetCount from the grid, so the answer stays sound.
-        if (ch.mode === 'find-it' && Array.isArray(ch.letterGrid) && ch.letterGrid.length === 16) {
-          const upperTarget = correct.toUpperCase();
-          const targetCells = ch.letterGrid.filter(l => l.toUpperCase() === upperTarget).length;
-          const distractorSlots = 16 - targetCells;
-          if (targetCells >= 1 && distractorSlots > 0) {
-            // Build a similarity-tilted distractor BAG sized to fill every slot,
-            // cycling the ranked pool (the grid may need more cells than distinct
-            // in-group letters). Ranking respects the tier similarity target.
-            const ranked = selectDistractorsBySimilarity(
-              correct, pool, pool.length - 1, shape.similarity,
-            );
-            const bag: string[] = [];
-            for (let j = 0; j < distractorSlots; j++) {
-              bag.push((ranked[j % ranked.length] ?? pool.find(l => l !== correct) ?? 'x').toUpperCase());
-            }
-            const grid: string[] = [];
-            for (let j = 0; j < targetCells; j++) grid.push(upperTarget);
-            grid.push(...bag);
-            // Shuffle so targets aren't clustered.
-            for (let j = grid.length - 1; j > 0; j--) {
-              const k = Math.floor(Math.random() * (j + 1));
-              [grid[j], grid[k]] = [grid[k], grid[j]];
-            }
-            ch.letterGrid = grid;
-            ch.targetCount = grid.filter(l => l.toUpperCase() === upperTarget).length;
-          }
+        // find-it: re-fill the NON-target cells along the tier's similarity axis.
+        // ANSWER-BEARING GUARD: the single target cell survives by construction —
+        // buildSingleTargetGrid places it and only the other fifteen shift. This
+        // is the structural axis (how confusable the search field is), never the
+        // letter scope and never how many targets there are.
+        if (ch.mode === 'find-it' && Array.isArray(ch.letterGrid)) {
+          const ranked = selectDistractorsBySimilarity(
+            correct, pool, pool.length - 1, shape.similarity,
+          );
+          ch.letterGrid = buildSingleTargetGrid(correct, pool, ch.letterGrid, ranked);
+          ch.targetCount = 1;
         }
       }
       console.log(`[letter-spotter] Tier "${supportTier}" applied per-challenge (support + distractor-similarity; ${pinnedType ? 'single-mode ' + pinnedType : 'blended'})`);

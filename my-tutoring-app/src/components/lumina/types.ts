@@ -1392,7 +1392,7 @@ export type ComponentId =
   | 'revision-workshop'         // Edit and revise drafts with targeted feedback (grades 2-6)
   | 'letter-sound-link'         // Interactive letter-sound linking
   | 'letter-spotter'            // Interactive letter spotting and recognition
-  | 'read-aloud-studio'         // Fluency practice with model reading and recording (grades 1-6)
+  | 'read-aloud-studio'         // Live-judged read-aloud fluency, one line at a time (grades 1-6)
   | 'rhyme-studio'              // Interactive rhyming word exploration and practice
   | 'syllable-clapper'          // Interactive syllable clapping and segmentation
   | 'sentence-builder'          // Construct grammatical sentences from word tiles (grades 1-6)

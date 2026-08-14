@@ -2070,14 +2070,36 @@ export interface StoryPlannerMetrics extends BasePrimitiveMetrics {
   descriptiveLanguageUsed: number;
 }
 
+/**
+ * Read-aloud fluency, JUDGED (DI port 2026-08-12). Every field below is now
+ * evidence about a reading the live tutor actually heard and ruled on.
+ *
+ * What went, and why it had to: `modelListened` / `studentRecordingMade` /
+ * `comparisonUsed` were button presses, `selfAssessmentRating` was a 1-5 tap a
+ * beginning reader cannot make honestly about their own accuracy, and
+ * `estimatedWPM` was wall-clock duration divided by the passage word count —
+ * computed whether or not the child said a word.
+ *
+ * NO RATE FIELD REPLACES `estimatedWPM` yet. A real words-per-minute needs the
+ * DURATION of the learner's voice turn, and the engine currently surfaces only
+ * the latency TO it (`responseMs`); the runner's per-item `seconds` spans the
+ * tutor's ask as well, so dividing by it would ship a second wrong number in
+ * place of the first. Owed, and queued.
+ */
 export interface ReadAloudStudioMetrics extends BasePrimitiveMetrics {
   type: 'read-aloud-studio';
-  modelListened: boolean;
-  studentRecordingMade: boolean;
-  recordingDurationSeconds: number;
-  estimatedWPM: number;
-  comparisonUsed: boolean;
-  selfAssessmentRating: number;         // 1-5
+  /** Which fluency identity the passage practised (the eval mode). */
+  fluencyFocus: 'accuracy' | 'expression' | 'dialogue';
+  /** Judged lines the run actually contained (post drop-gates). */
+  linesTotal: number;
+  /** Lines the tutor affirmed. */
+  linesRead: number;
+  firstTryCount: number;
+  /** Every elicitation: one per line plus one per correction. */
+  attemptsCount: number;
+  accuracy: number;
+  /** Mean words per judged line — the pack's structural difficulty axis. */
+  meanLineWords: number;
   passageLexileLevel: string;
 }
 
@@ -2211,30 +2233,34 @@ export interface EvidenceFinderMetrics extends BasePrimitiveMetrics {
   attemptsCount: number;
 }
 
+// DI modality (2026-08-12): the reading is JUDGED, so the metrics record what
+// the child produced instead of how often they asked for help. `wordsTapped` /
+// `sightWordsIdentified` / `readingTimeSeconds` are gone with the per-word tap
+// affordance and the wall-clock phase they measured — a help-usage proxy was
+// never a reading measure, and the phase it summarised ended on a button.
 export interface DecodableReaderMetrics extends BasePrimitiveMetrics {
   type: 'decodable-reader';
 
-  // Grade context
+  // Grade + task context
   gradeLevel: string;
+  readingMode: 'decode' | 'read_along';
 
-  // Reading tracking
-  wordsTapped: number;                 // Words student tapped for help (lower = more independent)
-  wordsTotal: number;                  // Total words in the passage
+  // Judged oral reading (zero in read_along — the tutor reads the story)
+  linesTotal: number;                  // Passage sentences judged, 3-8 words each
+  linesRead: number;                   // Read correctly (after corrections)
+  meanLineWords: number;               // The set's structural difficulty axis
 
-  // Comprehension
-  comprehensionCorrect: boolean;
+  // Judged comprehension
+  questionsTotal: number;
+  questionsCorrect: number;
+
+  // Run shape
+  firstTryCount: number;               // Items affirmed with zero corrections
+  attemptsCount: number;               // Elicitations: one per item + one per correction
+  accuracy: number;                    // Mean per-item score (100/67/33/0)
 
   // Pattern tracking
   phonicsPatternsInPassage: string[];  // Array of patterns represented
-
-  // Sight word tracking
-  sightWordsIdentified: number;        // Sight words read without tapping
-
-  // Time
-  readingTimeSeconds: number;
-
-  // Attempts
-  attemptsOnComprehension: number;
 }
 
 export interface PhonemeExplorerMetrics extends BasePrimitiveMetrics {

@@ -3,6 +3,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
 import { RhymeStudioData } from "../../primitives/visual-primitives/literacy/RhymeStudio";
+import { isSentinelSafeWord } from "../../primitives/visual-primitives/literacy/rhymeStudioScript";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -88,21 +89,105 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   identification: {
     promptDoc:
-      `"identification": Show a target word and 2-3 options; student picks the rhyming one. `
+      `"identification": Show a target word and 2-3 options; student SAYS the rhyming one out loud. `
       + `Exactly ONE option must have isCorrect: true; all others isCorrect: false. `
+      + `Make at least one distractor share the target's BEGINNING sound but not its ending `
+      + `(cat → cap, not cat → dog): confusing rhyme with alliteration is the signature error this mode diagnoses. `
       + `REQUIRED fields: options (array of {word, image, isCorrect}). `
       + `Do NOT include comparisonWord, doesRhyme, or acceptableAnswers. 2-3 challenges per session.`,
-    schemaDescription: "'identification' (pick the rhyming word)",
+    schemaDescription: "'identification' (say the rhyming word)",
   },
   production: {
     promptDoc:
-      `"production": Show a target word; student types a rhyming word. `
-      + `Provide 3-5 common acceptable answers (do NOT include the target word itself). `
-      + `REQUIRED fields: acceptableAnswers (array of strings). `
+      `"production": Show a target word and a bank of word cards; student SAYS a card that rhymes. `
+      + `Provide 3-5 common acceptable answers (do NOT include the target word itself) AND 3 bankDistractors — `
+      + `words that clearly do NOT rhyme with the target, drawn from the same topic and the same reading level. `
+      + `REQUIRED fields: acceptableAnswers (array of strings), bankDistractors (array of strings). `
       + `Do NOT include comparisonWord, doesRhyme, or options. 2-3 challenges per session.`,
-    schemaDescription: "'production' (type a rhyming word)",
+    schemaDescription: "'production' (say a rhyming word from the card bank)",
   },
 };
+
+// ---------------------------------------------------------------------------
+// Sentinel safety (DI standing gate 2)
+// ---------------------------------------------------------------------------
+// Under the judged loop every word here reaches a line the TUTOR SPEAKS, and a
+// word that opens a sentence with a verdict sentinel is read by the engine as a
+// judgment. The pre-DI component shipped a hardcoded distractor pool whose
+// seventh entry was literally "yes" — port 7's near miss arriving here as a
+// latent bug. `isSentinelSafeWord` is the pack's own filter, applied to every
+// pool this generator emits so the prompt is never trusted with the rule.
+
+/** Drop any word that could open a spoken sentence with a sentinel. */
+const sentinelSafe = (words: unknown): string[] =>
+  (Array.isArray(words) ? words : [])
+    .map((w) => String(w ?? '').trim())
+    .filter((w) => w.length > 0 && isSentinelSafeWord(w));
+
+/** Non-rhyming bank fillers, used only when the model omitted bankDistractors.
+ *  Deliberately generic and topic-free: this is a LAST RESORT so the bank is
+ *  never short, not a content source (no DEFAULT_ITEMS ships in a primitive). */
+const FALLBACK_BANK_DISTRACTORS = ['book', 'star', 'milk', 'jump', 'green', 'hand'];
+
+// ---------------------------------------------------------------------------
+// Rhyme integrity — the answer key, checked in code
+// ---------------------------------------------------------------------------
+// Found by the DI port's live probes (2026-08-12), and it is the port-7 rule
+// arriving again: WHERE A PORT CONVERTS A TAP TO A SPOKEN RELATION, RE-CHECK
+// THE CONTENT THE TAP NEVER HAD TO JUSTIFY. Three false keys shipped from live
+// Gemini in five probes, all silent under a tap surface and all spoken aloud
+// under this one:
+//   - target "shark" carried rhymeFamily "-ank" and the answer "tank". The
+//     correction would have said "tank rhymes with shark — both end with ank".
+//   - target "crab" (-ab) offered "fab" as a DISTRACTOR. A child saying it
+//     would have been corrected for a right answer.
+//   - target "jump" (-ump) listed "lamp" as an acceptable rhyme.
+// All three are decidable from spelling alone, which is exactly why the prompt
+// was never the right place for the rule. Recognition's irregular-spelling
+// words are filtered separately (SP-7), so a spelling test is safe here.
+
+const endsWithRime = (word: unknown, rime: string): boolean =>
+  rime.length > 0 && String(word ?? '').trim().toLowerCase().endsWith(rime);
+
+/**
+ * Repair what is repairable, drop what is not. Returns false when the challenge
+ * cannot be made truthful — a wrong answer key must never ship, and a mode with
+ * two right answers is not a harder item, it is a broken one.
+ */
+export function holdsRhymeIntegrity(ch: Record<string, unknown>): boolean {
+  const target = String(ch.targetWord ?? '').trim().toLowerCase();
+  const rime = String(ch.rhymeFamily ?? '').replace(/^-+/, '').toLowerCase();
+  // The family must be the target's OWN ending. "shark" + "-ank" is not a hard
+  // item, it is a false premise, and nothing downstream can recover from it.
+  if (!target || !rime || !target.endsWith(rime)) return false;
+
+  if (ch.mode === 'recognition') {
+    // The words are the truth and the boolean is a claim about them, so the
+    // claim is recomputed rather than trusted.
+    ch.doesRhyme = endsWithRime(ch.comparisonWord, rime);
+    return !!String(ch.comparisonWord ?? '').trim();
+  }
+
+  if (ch.mode === 'identification') {
+    const options = (ch.options ?? []) as Array<{ word: string; isCorrect: boolean }>;
+    const correct = options.filter((o) => o.isCorrect && endsWithRime(o.word, rime));
+    // A "distractor" that really rhymes is a second right answer — drop it
+    // rather than ship an item that corrects a correct child.
+    const distractors = options.filter((o) => !o.isCorrect && !endsWithRime(o.word, rime));
+    if (correct.length === 0 || distractors.length === 0) return false;
+    ch.options = [correct[0], ...distractors];
+    return true;
+  }
+
+  if (ch.mode === 'production') {
+    const accepted = (ch.acceptableAnswers as string[] ?? []).filter(
+      (w) => endsWithRime(w, rime) && w.trim().toLowerCase() !== target,
+    );
+    if (accepted.length === 0) return false;
+    ch.acceptableAnswers = accepted;
+  }
+  return true;
+}
 
 
 // ---------------------------------------------------------------------------
@@ -121,14 +206,18 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 //   #1 perception   showWordImage            — the reader-grade prose image caption
 //                     under a word / option tile (a semantic self-check cue).
 //                     FORCED TRUE at K: the emoji IS the pre-reader answer surface.
-//   #2 instruction  showInstructionText      — the on-screen task restatement
-//                     ("Which word rhymes with cat?"). hard hides it; the tutor
-//                     still asks the question by voice, so the task is never lost.
 //   #2 instruction  tutorNamesOptions        — whether the tutor enumerates the
-//                     answer choices / word bank out loud. hard suppresses the
-//                     enumeration (target + question only). FORCED TRUE at K —
-//                     the catalog PRE read-aloud is a non-reader's ONLY instruction
-//                     channel and may never be withdrawn by a tier.
+//                     answer choices / word bank out loud in its scripted ask.
+//                     hard suppresses the enumeration, so a reader must read the
+//                     set off the screen before speaking. FORCED TRUE at K — a
+//                     non-reader cannot read the set, and without it there is no
+//                     closed answer set at all.
+//
+// RETIRED BY THE DI PORT (2026-08-12): `showInstructionText` withdrew an
+// on-screen task restatement that no longer exists — under the judged loop the
+// tutor's scripted ask IS the instruction channel at every tier and every band.
+// The DISTAR lead-in ladder in `rhymeStudioScript.ts` (model + guide → model →
+// nothing) is where tier #2 now does its work.
 //   #5 answer-form  productionCorrectCount   — how many of the production word
 //                     bank's 4 tiles are correct rhymes: 2 (easy/medium) → 1 (hard).
 //                     The bank size and the acceptableAnswers data are unchanged and
@@ -139,22 +228,20 @@ export type RhymeSupportTier = 'easy' | 'medium' | 'hard';
 
 export interface RhymeSupportScaffold {
   showRhymeFamilyHighlight: boolean;
-  showInstructionText: boolean;
   tutorNamesOptions: boolean;
   showWordImage: boolean;
   productionCorrectCount: number;
 }
 
-/** The scaffolding ladder. easy = every help shown (identical to legacy). */
+/** The scaffolding ladder. easy = every help shown. */
 export function resolveRhymeSupportScaffold(tier: RhymeSupportTier): RhymeSupportScaffold {
   return {
     // The rime highlight is the single strongest visual give-away — it is the
     // first thing withdrawn.
     showRhymeFamilyHighlight: tier === 'easy',
     showWordImage: tier === 'easy',
-    // Instruction + tutor enumeration survive to medium; hard is the "work from
-    // the words alone" rung.
-    showInstructionText: tier !== 'hard',
+    // The tutor's enumeration survives to medium; hard is the "read the set
+    // yourself, then say it" rung.
     tutorNamesOptions: tier !== 'hard',
     productionCorrectCount: tier === 'hard' ? 1 : 2,
   };
@@ -178,7 +265,6 @@ export function applyRhymeSupportTier(
   const sc = resolveRhymeSupportScaffold(tier);
   for (const ch of challenges) {
     ch.showRhymeFamilyHighlight = sc.showRhymeFamilyHighlight;
-    ch.showInstructionText = sc.showInstructionText;
     // ── Band floor (K = pre-reader) ──
     ch.showWordImage = isPreReaderBand ? true : sc.showWordImage;
     ch.tutorNamesOptions = isPreReaderBand ? true : sc.tutorNamesOptions;
@@ -273,6 +359,13 @@ const rhymeStudioSchema: Schema = {
             items: { type: Type.STRING },
             description: "Production mode: 3-5 acceptable rhyming words",
           },
+          bankDistractors: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "Production mode: exactly 3 words that clearly do NOT rhyme with the target, "
+              + "on the same topic and reading level. These fill the word-card bank.",
+          },
         },
         required: ["id", "mode", "targetWord", "targetWordImage", "rhymeFamily"],
       },
@@ -332,6 +425,12 @@ export const generateRhymeStudio = async (
   );
 
   const challengeCount = config?.challengeCount ?? 9;
+  // Over-draw, then trim. The rhyme-integrity gate below CUTS items with a false
+  // answer key, and the live probes show that biting hardest exactly where the
+  // families get harder (a Grade-2 draw lost 2 of 4). Cutting is right — a wrong
+  // key must not be spoken to a child — but a thinned activity is the student
+  // paying for the model's miss, so ask for headroom instead.
+  const requestCount = challengeCount + 2;
 
   const gradeGuidelines: Record<string, string> = {
     K: `
@@ -379,7 +478,7 @@ TARGET GRADE LEVEL: ${gradeLevelKey}
 
 ${gradeGuidelines[gradeLevelKey] || gradeGuidelines["K"]}
 
-Generate exactly ${challengeCount} challenges.
+Generate exactly ${requestCount} challenges.
 
 ${challengeTypeSection}
 ${remediationSection}
@@ -387,7 +486,7 @@ ${remediationSection}
 MODE-SPECIFIC FIELD RULES:
 - recognition: set comparisonWord, comparisonWordImage, doesRhyme. Do NOT set options or acceptableAnswers.
 - identification: set options (array of {word, image, isCorrect}). Do NOT set comparisonWord, doesRhyme, or acceptableAnswers.
-- production: set acceptableAnswers (array of strings). Do NOT set comparisonWord, doesRhyme, or options.
+- production: set acceptableAnswers (array of strings) AND bankDistractors (exactly 3 non-rhyming words on the same topic). Do NOT set comparisonWord, doesRhyme, or options.
 
 CRITICAL RULES:
 ${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime", identification uses "diagnostic_option", production uses "constrained_production". Make a non-rhyme or distractor encode the diagnosed confusion.' : ''}
@@ -403,6 +502,7 @@ ${ctx.remediationFocus ? '- REMEDIATION TRACE: recognition uses "contrast_rime",
 - For production acceptableAnswers, EVERY word must genuinely rhyme with the targetWord — same ending sound
 - All words should relate to the topic "${topic}" when possible, but prioritize real rhymes
 - Use simple, common, age-appropriate words
+- NEVER use the word "yes" as a target, comparison, option, acceptable answer or distractor — the live tutor says every one of these words out loud, and "yes" is how it signals a correct answer
 - IDs should be sequential: "c1", "c2", "c3", etc.
 - Image descriptions should be brief (3-6 words) and kid-friendly
 ${!evalConstraint ? '- Order challenges: recognition first, then identification, then production (easiest → hardest).' : ''}
@@ -461,40 +561,78 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
           ch.rhymeFamily = `-${ch.rhymeFamily}`;
         }
 
-        // Ensure mode-specific fields
+        // Mode-specific fields. KEEP-OR-DROP, never backfill: under the judged
+        // loop a placeholder becomes a spoken ask the tutor must then judge,
+        // and the old defaults ("word", "other") would have had a live tutor
+        // asking a five-year-old whether "cat" rhymes with "word". Anything
+        // missing here fails `holdsRhymeIntegrity` below and the item is cut.
         if (ch.mode === "recognition") {
-          if (!ch.comparisonWord) ch.comparisonWord = "word";
           if (!ch.comparisonWordImage) ch.comparisonWordImage = "";
-          if (typeof ch.doesRhyme !== "boolean") ch.doesRhyme = false;
         } else if (ch.mode === "identification") {
-          if (!Array.isArray(ch.options) || (ch.options as unknown[]).length === 0) {
-            ch.options = [
-              { word: "word", image: "", isCorrect: true },
-              { word: "other", image: "", isCorrect: false },
-            ];
-          }
-          // Ensure exactly one correct option
-          const options = ch.options as Array<{
+          if (!Array.isArray(ch.options)) ch.options = [];
+          // Every option word is ENUMERATED ALOUD by the tutor's scripted ask,
+          // so a word that could open a verdict sentence never reaches the set.
+          // A challenge whose CORRECT option is dropped this way is discarded
+          // below rather than shipped with no answer.
+          const options = (ch.options as Array<{
             word: string;
             image: string;
             isCorrect: boolean;
-          }>;
-          const correctCount = options.filter((o) => o.isCorrect).length;
-          if (correctCount === 0 && options.length > 0) {
-            options[0].isCorrect = true;
+          }>).filter((o) => isSentinelSafeWord(String(o?.word ?? '')));
+          ch.options = options;
+
+          // A missing isCorrect flag is repaired from the WORDS, not from
+          // position — promoting options[0] used to invent an answer key that
+          // the tutor would then have taught aloud. An item with no option that
+          // really rhymes has no answer, and the integrity gate cuts it.
+          if (!options.some((o) => o.isCorrect)) {
+            const rime = String(ch.rhymeFamily ?? '').replace(/^-+/, '').toLowerCase();
+            const real = options.find((o) => endsWithRime(o.word, rime));
+            if (real) real.isCorrect = true;
           }
         } else if (ch.mode === "production") {
-          if (
-            !Array.isArray(ch.acceptableAnswers) ||
-            (ch.acceptableAnswers as unknown[]).length === 0
-          ) {
-            ch.acceptableAnswers = ["word"];
+          // The word-card bank IS the answer set: under the DI modality the
+          // child SAYS a card, and a closed, code-enumerable set is what keeps
+          // that a benched response class (free production is `open_set_word`,
+          // BLOCKED). So both halves of the bank are guaranteed here rather
+          // than left to the model, and both are sentinel-filtered before they
+          // can reach a line the tutor speaks.
+          const accepted = sentinelSafe(ch.acceptableAnswers).filter(
+            (w) => w.toLowerCase() !== String(ch.targetWord ?? '').toLowerCase(),
+          );
+          // No backfill: an item with no real rhyme is cut, not padded.
+          ch.acceptableAnswers = accepted;
+
+          const target = String(ch.targetWord ?? '').toLowerCase();
+          const suffix = String(ch.rhymeFamily ?? '').replace(/^-+/, '').toLowerCase();
+          const emitted = sentinelSafe(ch.bankDistractors).filter(
+            // A "distractor" that actually rhymes is a wrong answer key, not a
+            // distractor — drop it rather than ship a bank with two truths.
+            (w) => w.toLowerCase() !== target && !(suffix && w.toLowerCase().endsWith(suffix)),
+          );
+          const filled = [...emitted];
+          for (const filler of FALLBACK_BANK_DISTRACTORS) {
+            if (filled.length >= 3) break;
+            if (filler === target || (suffix && filler.endsWith(suffix))) continue;
+            if (!filled.includes(filler)) filled.push(filler);
           }
+          ch.bankDistractors = filled.slice(0, 3);
         }
 
         return ch;
       }
     );
+
+    // Answer-key gate: repair what is repairable, drop what is not. Runs before
+    // the band/tier passes so nothing downstream reasons about a false rime.
+    const beforeIntegrity = result.challenges.length;
+    result.challenges = result.challenges.filter(holdsRhymeIntegrity);
+    if (result.challenges.length !== beforeIntegrity) {
+      console.warn(
+        `[rhyme-studio] Rhyme-integrity gate dropped `
+        + `${beforeIntegrity - result.challenges.length}/${beforeIntegrity} challenge(s) with a false answer key.`,
+      );
+    }
 
     // Band floor (K = pre-reader): production's word-bank distractors cannot be
     // pictured, so it is a Grade 1+ mode — drop production challenges at K unless
@@ -544,28 +682,72 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
       );
     }
 
-    // Post-process: remove recognition challenges that use irregular-spelling words (SP-7 safety net)
+    // Post-process: remove recognition challenges that use irregular-spelling words (SP-7 safety net),
+    // and identification challenges left without a correct option by the sentinel filter above.
     const irregularSet = new Set(IRREGULAR_RHYME_WORDS);
     result.challenges = result.challenges.filter((ch: Record<string, unknown>) => {
+      if (ch.mode === 'identification') {
+        const options = (ch.options ?? []) as Array<{ isCorrect: boolean }>;
+        return options.some((o) => o.isCorrect);
+      }
       if (ch.mode !== 'recognition') return true;
       const target = String(ch.targetWord ?? '').toLowerCase();
       const comparison = String(ch.comparisonWord ?? '').toLowerCase();
       return !irregularSet.has(target) && !irregularSet.has(comparison);
     });
 
-    // Fallback: ensure at least one challenge exists
+    // Trim the over-draw back to what was asked for. A run that survived every
+    // gate with items to spare hands back the requested count; one that did not
+    // is simply shorter, which is the honest outcome.
+    result.challenges = result.challenges.slice(0, challengeCount);
+
+    // Fallback: ensure at least one challenge exists. Each mode gets its OWN
+    // shape — under the judged loop a mode-shaped field that is missing is not
+    // a degraded render but a broken ask (production with no bank has no answer
+    // set, and identification with no options has nothing to enumerate).
     if (result.challenges.length === 0) {
       const fallbackMode = evalConstraint?.allowedTypes[0] ?? 'recognition';
-      result.challenges = [{
+      const base = {
         id: 'c1',
         mode: fallbackMode,
         targetWord: 'cat',
         targetWordImage: 'a fluffy cat',
         rhymeFamily: '-at',
-        comparisonWord: 'hat',
-        comparisonWordImage: 'a red hat',
-        doesRhyme: true,
-      }];
+      };
+      result.challenges = [
+        fallbackMode === 'identification'
+          ? {
+              ...base,
+              options: [
+                { word: 'hat', image: 'a red hat', isCorrect: true },
+                { word: 'cap', image: 'a blue cap', isCorrect: false },
+              ],
+            }
+          : fallbackMode === 'production'
+            ? {
+                ...base,
+                acceptableAnswers: ['hat', 'bat', 'mat'],
+                bankDistractors: ['dog', 'cup', 'pen'],
+              }
+            : {
+                ...base,
+                comparisonWord: 'hat',
+                comparisonWordImage: 'a red hat',
+                doesRhyme: true,
+              },
+      ];
+      if (gradeLevelKey === 'K') {
+        result.challenges = result.challenges.map((ch: Record<string, unknown>) => {
+          ch.targetWordEmoji = kEmojiFor(ch.targetWord);
+          if (ch.mode === 'recognition') ch.comparisonWordEmoji = kEmojiFor(ch.comparisonWord);
+          if (ch.mode === 'identification' && Array.isArray(ch.options)) {
+            (ch.options as Array<Record<string, unknown>>).forEach((o) => {
+              o.image = kEmojiFor(o.word);
+            });
+          }
+          return ch;
+        });
+      }
       if (supportTier) {
         applyRhymeSupportTier(
           result.challenges as Array<Record<string, unknown>>,
