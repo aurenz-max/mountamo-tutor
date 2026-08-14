@@ -501,8 +501,47 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
 
   {
     id: 'interactive-book',
-    description: 'Picture-rich, page-flippable nonfiction book for K-2 early literacy, print awareness, text-feature learning, and supported oral reading. Students either locate printed book parts or complete tutor-led sentence fragments by reading glowing underlined words aloud.',
-    constraints: 'Uses one generated nonfiction book. The manifest must not provide book text, feature answers, focus-word answers, page data, image prompts, or challenges; the generator derives all scored contracts from visible book content. Not a story or compare activity yet.',
+    description:
+      'Live Direct Instruction picture-book work with a spoken tutor. The tutor asks, waits, judges, and its '
+      + 'own affirmation moves the lesson on. Two directions, and the answer is made of something different in '
+      + 'each: Read Together (the tutor reads a real book sentence up to one glowing word, stops, and the child '
+      + 'READS that word out loud — supported oral reading), and Book Detective (the tutor names a printed book '
+      + 'part — title, author, heading, caption, page number — and the child TAPS it on the page — print '
+      + 'awareness and text features). The tap direction taps because its answer is WHICH printed element on '
+      + 'the page it is — a position, like pointing at a real book — while reading the part\'s words aloud '
+      + 'would be a different skill. Nothing on screen shows an answer before the tutor affirms. Requires a '
+      + 'microphone. ESSENTIAL for K-2 print awareness and early oral reading.',
+    constraints:
+      'Requires the live tutor and a microphone. Uses one generated nonfiction book. The manifest must not '
+      + 'provide book text, feature answers, focus-word answers, page data, image prompts, or challenges; the '
+      + 'generator derives all scored contracts from visible book content. Every focus word needs at least two '
+      + 'natural words before it in its sentence so the tutor has a real lead-in to read and stop after. Not a '
+      + 'story or compare activity yet.',
+    // ── DI MODALITY (2026-08-14) — FOURTEENTH literacy port. The tutor owns
+    // the clock in both directions: it asks once, waits, judges the spoken word
+    // from the audio in-band, is handed a CODE-COMPUTED verdict for the tap,
+    // and its own line is the advance. There is no advance timer, no Next
+    // button, no push-to-talk mic and no voice-mode fork anywhere in the path.
+    // THIS WAS THE LAST LITERACY SURFACE ON THE PUSH-TO-TALK CAPTURE HOOK —
+    // porting it discharges a standing open-mic doctrine violation. The old
+    // tap-the-glowing-word fallback is gone with it: tapping a word completes
+    // an ORAL READING task without reading anything (the costume test).
+    // THE SPLIT is the table picture: shared reading is the most spoken thing
+    // a teacher and a five-year-old do (read-focus-word → voice,
+    // short_spoken_word, benched); "show me the title" is answered by POINTING
+    // at the page (find-feature → gesture — concepts-of-print assessment is
+    // administered by pointing, and a pre-reader can find the title without
+    // being able to read it, which is the skill this mode measures).
+    // find-feature's silence is enforced by the runner HOLDING THE ACTIVITY
+    // BRACKET for the item, not by asking the tutor to wait.
+    // Free page navigation is gone: the screen follows the lesson to each
+    // item's page, so the child can no longer wander off the target page
+    // mid-question (the click-era block had a struggle entry for that state).
+    // Cue lines and the per-item judging contracts live in
+    // `interactiveBookScript.ts` (hand-authored, DISTAR); this block is the
+    // session-level frame. SENTINEL DISCIPLINE (standing gate 2) re-checked on
+    // every line below: no sentence begins with "Yes" or with "My turn".
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'find-feature',
@@ -511,60 +550,105 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         discrimination: 1.8,
         scaffoldingMode: 1,
         challengeTypes: ['find-feature'],
-        description: 'Locate title, author, heading, caption, and page number directly on a picture-rich book surface.',
+        description: 'Locate title, author, heading, caption, and page number by tapping the real printed element on a picture-rich book page. Task identity unchanged by the DI port; β holds.',
       },
       {
         evalMode: 'read-focus-word',
-        label: 'Read the Underlined Word',
+        label: 'Read the Glowing Word',
         beta: 2.5,
         discrimination: 1.6,
         scaffoldingMode: 2,
         challengeTypes: ['read-focus-word'],
-        description: 'Continue a tutor-read sentence by producing one visible underlined focus word aloud.',
+        description: 'The tutor reads a book sentence up to one glowing word and stops; the child reads that word aloud and the tutor judges it in-band. Already priced as spoken production; the old partial-credit tap escape is deleted, not restructured; β holds.',
       },
     ],
     tutoring: {
       taskDescription:
-        'Coach a Grade {{gradeLevel}} reader through a picture-rich nonfiction book in {{mode}} mode. '
-        + 'The student is on challenge {{currentChallengeIndex}} of {{totalChallenges}} doing {{currentTask}} with the {{currentFeature}} on the {{currentPageLabel}}. '
-        + 'Word band: {{wordDifficulty}}. Attempts: {{attempts}}. They have visited {{pagesVisited}} pages and opened {{focusWordsExplored}} underlined words. '
-        + 'They have supplied {{spokenWords}} words aloud. The current explored word is {{selectedFocusWord}}. Never ask for or reveal the literal correct printed text.',
-      contextKeys: [
-        'mode', 'gradeLevel', 'wordDifficulty', 'currentChallengeIndex', 'totalChallenges',
-        'currentTask', 'currentFeature', 'currentPageLabel', 'attempts', 'pagesVisited',
-        'focusWordsExplored', 'selectedFocusWord', 'spokenWords', 'voiceMode',
-      ],
+        'Live-judged Direct Instruction book work for a young child. Right now the direction is '
+        + '"{{challengeType}}" and the question side is "{{stimulus}}". How the child answers depends on the '
+        + 'direction, and each application message tells you which: in the reading direction they READ the '
+        + 'glowing word out loud and you judge what you hear; in the find direction they TAP a printed part of '
+        + 'a book page you cannot see, and you stay silent until the application tells you what they tapped. '
+        + 'You speak the exact scripted lines from each bracketed application message and nothing else. '
+        + 'Working the answer out from the page is the entire skill being practiced, so nothing you say may '
+        + 'hand it over first.',
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: 'For find-feature, invite a page scan. For read-focus-word, read the supplied lead-in once and leave a clean silence at the underlined word.',
-        level2: 'For find-feature, describe the {{currentFeature}} by job and location. For read-focus-word, repeat the lead-in more slowly and direct attention to the page picture without saying the word.',
-        level3: 'For find-feature, guide a top-to-picture-to-edge sweep. For read-focus-word, repeat the lead-in and the safe picture cue supplied in the event, then wait again.',
+        level1: 'Say the question once more, then wait for them alone.',
+        level2: 'Say the question again slowly and clearly, then wait.',
+        level3: 'Use the scripted correction line for this item, then hand the question back one more time.',
       },
       commonStruggles: [
-        { pattern: 'The student repeatedly taps a different printed feature', response: 'Compare the two features by their job and position. Do not quote the correct text.' },
-        { pattern: 'The student opens an underlined word while searching for a book feature', response: 'Affirm the word exploration, then explain that underlined words give meaning clues while book features organize the page.' },
-        { pattern: 'The student turns away from the target page', response: 'Prompt them to use the page dots and arrows to return to the page named in the on-screen clue.' },
-        { pattern: 'The student pauses in voice mode', response: 'Stay silent while the microphone is open; the visible tap path is the support net.' },
+        {
+          pattern: 'Says a word that fits the sentence but is not the glowing word',
+          response: 'Run the scripted correction for the item, then hand the question back and wait — the printed word, not the story, is the task.',
+        },
+        {
+          pattern: 'Taps a different printed part of the page',
+          response: 'Run the scripted correction for the item, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Goes quiet and does nothing for a long time',
+          response: 'Wait longer in silence first, then say the question one more time exactly as written and wait again.',
+        },
+        {
+          pattern: 'Talks about the picture instead of answering',
+          response: 'Stay warm and silent; when the talk ends, say the question once more exactly as written and wait.',
+        },
       ],
       aiDirectives: [
         {
-          title: 'ANSWER SAFETY',
-          instruction: 'The correct literal printed text is intentionally absent from your runtime context. Never invent, quote, spell, or guess it. Scaffold only with feature purpose, typography, position, and picture relationships.',
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [IB_ITEM], [IB_TAP], [IB_MOVE], [IB_HEAR] or [IB_COMPLETE] contain the only '
+            + 'lesson words you may speak, and each one quotes the exact line after "Say exactly:". The '
+            + 'square-bracket label is private metadata: never speak, reproduce, or invent it. Affirmations '
+            + 'begin with "Yes" and corrections begin with "My turn" — never begin any other sentence with '
+            + 'those words. The application decides which item comes next; never introduce one yourself, never '
+            + 'announce progress, and never re-read a sentence you have already read unless a message asks you to.',
         },
         {
-          title: 'QUIET VOICE MODE',
-          instruction: 'For find-feature open-mic work, remain silent after wrong, unclear, or missed speech because the microphone stays open. For read-focus-word, the mic is push-to-talk and closed while you speak: read the supplied lead-in once, then stop. Routine correct words stay silent; the component advances them.',
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [IB_ITEM] carries the greeting, how the game works, and the first question inside one '
+            + 'quoted line. Speak it and stop. Do not greet the child separately, do not explain the activity '
+            + 'in your own words, and do not add a warm-up question — the quoted line is the whole opening.',
         },
         {
-          title: 'PICTURE WORDS',
-          instruction: 'When {{selectedFocusWord}} is set or the student asks about an underlined word, give a brief child-friendly meaning and direct attention to the matching object or action in the page picture. Do not turn word exploration into a quiz.',
+          title: 'WHAT COUNTS AS AN ANSWER (it differs by direction)',
+          instruction:
+            'In the READING direction the child answers OUT LOUD, and the [IB_ITEM] message names the one word '
+            + 'that is correct. The word on its own, or inside a short phrase, is the answer; slow sounding-out '
+            + 'that lands on the word is the answer too. A different word that would fit the sentence is not, '
+            + 'however confident it sounds — the child is reading print, not guessing the story. In the FIND '
+            + 'direction the child taps a page you cannot see, so after you ask there is nothing for you to '
+            + 'judge — a separate [IB_TAP] message tells you what was tapped and gives you the exact line to '
+            + 'say, and only then do you speak.',
         },
         {
-          title: 'TAG RESPONSES',
-          instruction: 'On [ACTIVITY_START], frame the whole activity once in two short sentences. On [CHALLENGE_INCORRECT], give one clue without the answer. On [HINT_REQUESTED], give one progressively stronger location or typography clue. On [FIRST_VOICE_SUCCESS] and [ALL_COMPLETE], celebrate in one sentence and stop.',
+          title: 'NEVER READ THE PAGE FIRST',
+          instruction:
+            'The book\'s printed words are the child\'s work, not yours. Before a verdict, never say the '
+            + 'glowing word, never read the title, headings, captions or any printed text aloud, and never '
+            + 'hint at where on the page an answer sits. In the reading direction you read ONLY the scripted '
+            + 'lead-in and stop where it stops — the glowing word belongs to the child. After a verdict, the '
+            + 'scripted line may name what was found; speak it exactly and nothing more.',
         },
         {
-          title: 'TUTOR-LED FOCUS WORD TURN',
-          instruction: 'On [FOCUS_WORD_READY], read ONLY the exact supplied lead-in, slowly and naturally, then stop completely for the child at the underlined word. Never continue into the missing word. On [FOCUS_WORD_RETRY], repeat only the supplied lead-in and pause again. On [FOCUS_WORD_CONFIRMED], obey the message: celebrate only a first/comeback word; otherwise stay silent while the component advances and sends the next lead-in.',
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not read along, and do not finish a '
+            + 'word the child is working out. A long pause is a five-year-old decoding print or scanning a '
+            + 'page, and that work IS the activity. Think time is unbounded and the application, not the '
+            + 'clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [IB_HEAR], the child tapped to hear the question again. Say ONLY the quoted '
+            + 'line, warmly, then go back to waiting. Add nothing, judge nothing you just heard, and never let '
+            + 'the repeat carry more help than the first asking did. This channel is answered at every grade '
+            + 'and every support tier.',
         },
       ],
     },

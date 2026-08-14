@@ -54,6 +54,14 @@ import {
   type TenFrameChallengeLike,
   type TenFrameItem,
 } from '@/components/lumina/primitives/visual-primitives/math/tenFrameScript';
+import {
+  interactiveBookHarnessAnswers,
+  interactiveBookPackBase,
+  itemsFromChallenges as interactiveBookItems,
+  tapVerdictCue as interactiveBookTapVerdictCue,
+  type InteractiveBookChallengeLike,
+  type InteractiveBookItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/interactiveBookScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -64,7 +72,10 @@ export interface DiHarnessAnswers {
   correct: string;
   plainWrong: string;
   signatureWrong?: { text: string; why: string };
+  /** Count-committed gestures (ten-frame): how many were placed. */
   placed?: { correct: number; wrong: number };
+  /** Text-committed gestures (interactive-book): what the tapped print reads. */
+  tapped?: { correct: string; wrong: string };
   /** Answer tokens the spoken ask must not contain. */
   leakTokens: string[];
 }
@@ -133,8 +144,10 @@ export interface DiPortAdapter<Item extends JudgedScriptItem> {
     surface: JudgedCueSurface<Item>;
   };
   answersFor: (item: Item) => DiHarnessAnswers;
-  /** Only for packs with gesture items. */
-  gestureVerdictCue?: (item: Item, placed: number) => string;
+  /** Only for packs with gesture items. The commit payload is whatever the
+   *  port's gesture carries: a placed COUNT (ten-frame) or the tapped print
+   *  TEXT (interactive-book) — `answersFor` supplies the matching shape. */
+  gestureVerdictCue?: (item: Item, gesture: number | string) => string;
 }
 
 const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
@@ -148,7 +161,38 @@ const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
     return { items, dropped: challenges.length - items.length, surface: tenFramePackBase(items) };
   },
   answersFor: tenFrameHarnessAnswers,
-  gestureVerdictCue: frameVerdictCue,
+  gestureVerdictCue: (item, gesture) =>
+    frameVerdictCue(item, typeof gesture === 'number' ? gesture : Number(gesture) || 0),
+};
+
+/**
+ * interactive-book (fourteenth literacy port). Gesture commits carry the TAPPED
+ * PRINT TEXT, not a count, and the wrong tap must be a real printed candidate
+ * from the same page — the items deliberately do not carry the candidate list
+ * (the stage renders real page hotspots, not a menu), so `build` records one
+ * wrong candidate per challenge for `answersFor` to hand the harness.
+ */
+const interactiveBookWrongTaps = new Map<string, string>();
+const interactiveBookAdapter: DiPortAdapter<InteractiveBookItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as InteractiveBookChallengeLike[];
+    interactiveBookWrongTaps.clear();
+    for (const ch of challenges) {
+      const wrong = (ch.optionTexts ?? []).find(
+        (option) => option.trim().toLowerCase() !== (ch.targetText ?? '').trim().toLowerCase(),
+      );
+      if (wrong) interactiveBookWrongTaps.set(ch.id, wrong);
+    }
+    const items = interactiveBookItems(challenges);
+    return {
+      items,
+      dropped: challenges.length - items.length,
+      surface: interactiveBookPackBase(items),
+    };
+  },
+  answersFor: (item) =>
+    interactiveBookHarnessAnswers(item, interactiveBookWrongTaps.get(item.id)),
+  gestureVerdictCue: (item, gesture) => interactiveBookTapVerdictCue(item, String(gesture)),
 };
 
 /**
@@ -160,6 +204,7 @@ const tenFrameAdapter: DiPortAdapter<TenFrameItem> = {
  */
 export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;
@@ -223,16 +268,19 @@ export function buildDiDrivePlan(
       answers: adapter.answersFor(item),
       gestureVerdict:
         item.answerKind === 'gesture' && adapter.gestureVerdictCue
-          ? {
-              correct: adapter.gestureVerdictCue(
-                item,
-                adapter.answersFor(item).placed?.correct ?? 0,
-              ),
-              wrong: adapter.gestureVerdictCue(
-                item,
-                adapter.answersFor(item).placed?.wrong ?? 0,
-              ),
-            }
+          ? (() => {
+              const answers = adapter.answersFor(item);
+              return {
+                correct: adapter.gestureVerdictCue!(
+                  item,
+                  answers.placed?.correct ?? answers.tapped?.correct ?? 0,
+                ),
+                wrong: adapter.gestureVerdictCue!(
+                  item,
+                  answers.placed?.wrong ?? answers.tapped?.wrong ?? 0,
+                ),
+              };
+            })()
           : undefined,
       pronounceCue: surface.pronounceCue?.(item),
       moveOnCue: surface.moveOnCue(item, next, moveOnOpts),

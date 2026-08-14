@@ -16,10 +16,20 @@ import {
   resolveEvalModes,
   type ChallengeTypeDoc,
 } from '../evalMode';
+// The judged-loop build gates, imported from the script module so both sides of
+// the wire agree on what is askable (decodable-reader/letter-spotter precedent —
+// hand-synced copies drifted live once already). A challenge this gate refuses
+// would be DROPPED at the component seam anyway; filtering here keeps the
+// 4-6-challenge session contract honest instead of shipping a shorter run.
+import { challengeAskable } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
 
 // Fork B, coherent-book variant: Gemini authors one flat, internally coherent
 // nonfiction book. Code reconstructs its pages and derives every scored
 // challenge from text that is actually visible in the component.
+// DI note (port 14, 2026-08-14): the manifest still supplies NO book text, no
+// answers and no challenges — Gemini authors stimulus content only, and code
+// derives every scored contract from the visible book. That answer-leak
+// architecture is the part of this file the port must not disturb.
 const MODEL = 'gemini-flash-lite-latest';
 const PAGE_COUNT = 3;
 const COVER_COLORS: BookCoverColor[] = ['blue', 'emerald', 'amber', 'purple', 'rose'];
@@ -33,9 +43,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   'read-focus-word': {
     promptDoc:
-      '"read-focus-word": the tutor reads a sentence only up to an underlined focus word, pauses, and the child says that one word. '
-      + 'Every focus word must be a single token, must not begin its sentence, and must have at least one natural word before it.',
-    schemaDescription: "'read-focus-word' (supply an underlined word in oral reading)",
+      '"read-focus-word": the tutor reads a sentence only up to a glowing focus word, pauses, and the child READS that word out loud. '
+      + 'Every focus word must be a single token with at least two natural words before it in its sentence, so the spoken lead-in is a real phrase.',
+    schemaDescription: "'read-focus-word' (read a glowing word aloud in oral reading)",
   },
 };
 
@@ -172,10 +182,20 @@ STRICT PRINT-FEATURE RULES:
 - Image prompts show the facts and both focus words with large, clear subjects. They contain NO printed text, letters, labels, watermarks, signs, or speech bubbles.
 - Image alt text describes the same scene accurately.
 - Focus definitions are brief and child-friendly. Picture cues say where to look in that page picture.
-- Each focus word appears exactly once in its page paragraphs and may NEVER be the first word of its sentence. The words before it must form a natural phrase the tutor can read aloud and pause after.
+- Copy each focus word into its field EXACTLY as it is spelled inside the paragraph — same letters, same form, never a plural, tense, or capitalization change.
+- Each focus word appears exactly ONCE across its page's two paragraphs combined: if it is in paragraph0 it must not also appear in paragraph1, and it never repeats within a sentence.
+- Inside its sentence, each focus word has AT LEAST TWO words before it — never the first or second word of the sentence — so the tutor can read a natural lead-in phrase and pause.
+- Focus words are never the words "yes" or "no".
 - All requested fields are required. Do not add challenge questions or answers; code derives them from the visible book.
 ${corrective}
 `;
+
+/** Rejection with a stated reason: a probe (or a live session log) can name the
+ *  failing gate instead of reporting only "malformed". */
+const reject = (reason: string): null => {
+  console.warn(`[InteractiveBook] generated book rejected: ${reason}`);
+  return null;
+};
 
 const reconstructBook = (
   raw: RawBook,
@@ -189,10 +209,10 @@ const reconstructBook = (
   const coverImagePrompt = text(raw, 'coverImagePrompt');
   const coverImageAlt = text(raw, 'coverImageAlt');
 
-  if (!title || !description || !bookTitle || !author || !coverImagePrompt || !coverImageAlt) return null;
-  if (!COVER_COLORS.includes(coverColor)) return null;
-  if (wordCount(bookTitle) > 3 || wordCount(author) > 3) return null;
-  if (bookTitle.toLowerCase() === author.toLowerCase()) return null;
+  if (!title || !description || !bookTitle || !author || !coverImagePrompt || !coverImageAlt) return reject('empty cover-level field');
+  if (!COVER_COLORS.includes(coverColor)) return reject(`unknown coverColor "${coverColor}"`);
+  if (wordCount(bookTitle) > 3 || wordCount(author) > 3) return reject('title or author over three words');
+  if (bookTitle.toLowerCase() === author.toLowerCase()) return reject('title equals author');
 
   const pages: InteractiveBookPage[] = [];
   for (let index = 0; index < PAGE_COUNT; index += 1) {
@@ -210,20 +230,20 @@ const reconstructBook = (
     }));
 
     const requiredText = [heading, ...paragraphs, imagePrompt, imageAlt, caption];
-    if (requiredText.some((value) => !value)) return null;
-    if (paragraphs.some((paragraph) => /[<>]|\*\*|__/.test(paragraph))) return null;
-    if (wordCount(heading) > 3 || wordCount(caption) > 3) return null;
-    if (heading.toLowerCase() === caption.toLowerCase()) return null;
+    if (requiredText.some((value) => !value)) return reject(`page ${index + 1}: empty field`);
+    if (paragraphs.some((paragraph) => /[<>]|\*\*|__/.test(paragraph))) return reject(`page ${index + 1}: markup in paragraph`);
+    if (wordCount(heading) > 3 || wordCount(caption) > 3) return reject(`page ${index + 1}: heading or caption over three words`);
+    if (heading.toLowerCase() === caption.toLowerCase()) return reject(`page ${index + 1}: heading equals caption`);
     if (focusWords.some((word) => (
       !word.word
       || wordCount(word.word) !== 1
       || !word.definition
       || !word.pictureCue
-    ))) return null;
-    if (focusWords[0].word.toLowerCase() === focusWords[1].word.toLowerCase()) return null;
-    if (focusWords.some((word) => !containsWholeWord(paragraphs, word.word))) return null;
-    if (focusWords.some((word) => wholeWordCount(paragraphs, word.word) !== 1)) return null;
-    if (focusWords.some((word) => !sentenceFrameFor(paragraphs, word.word))) return null;
+    ))) return reject(`page ${index + 1}: focus word not a single filled token`);
+    if (focusWords[0].word.toLowerCase() === focusWords[1].word.toLowerCase()) return reject(`page ${index + 1}: duplicate focus words`);
+    if (focusWords.some((word) => !containsWholeWord(paragraphs, word.word))) return reject(`page ${index + 1}: focus word missing from paragraphs`);
+    if (focusWords.some((word) => wholeWordCount(paragraphs, word.word) !== 1)) return reject(`page ${index + 1}: focus word count != 1 in paragraphs`);
+    if (focusWords.some((word) => !sentenceFrameFor(paragraphs, word.word))) return reject(`page ${index + 1}: no readable sentence frame for a focus word`);
 
     pages.push({
       id: `interactive-book-page-${index + 1}`,
@@ -324,39 +344,51 @@ const deriveChallenges = (
   book: InteractiveBookVolume,
   allowedTypes: InteractiveBookChallenge['type'][],
 ): InteractiveBookChallenge[] => {
-  const featureChallenges = deriveFeatureChallenges(book);
-  const focusWordChallenges = deriveFocusWordChallenges(book);
+  // The judged-loop gate runs HERE as well as at the component seam: a
+  // challenge the script cannot ask (one-word lead, verdict-shaped word,
+  // unsayable feature text) ships nothing, and filtering before composition
+  // keeps the session count honest instead of leaving holes in a picked list.
+  const featureChallenges = deriveFeatureChallenges(book).filter(challengeAskable);
+  const focusWordChallenges = deriveFocusWordChallenges(book).filter(challengeAskable);
   if (allowedTypes.length === 1 && allowedTypes[0] === 'find-feature') return featureChallenges;
   if (allowedTypes.length === 1 && allowedTypes[0] === 'read-focus-word') return focusWordChallenges;
 
-  // The unpinned/blended path is an honest mixed session: three print-feature
-  // tasks and one oral-reading target from each interior page.
-  return [
-    featureChallenges[0],
-    focusWordChallenges[0],
-    featureChallenges[2],
-    focusWordChallenges[2],
-    featureChallenges[3],
-    focusWordChallenges[4],
-  ];
+  // The unpinned/blended path is an honest mixed session: print-feature tasks
+  // alternating with oral-reading targets, capped at six.
+  const features = [...featureChallenges];
+  const words = [...focusWordChallenges];
+  const mixed: InteractiveBookChallenge[] = [];
+  while (mixed.length < 6 && (features.length > 0 || words.length > 0)) {
+    const feature = features.shift();
+    if (feature) mixed.push(feature);
+    if (mixed.length >= 6) break;
+    const word = words.shift();
+    if (word) mixed.push(word);
+  }
+  return mixed;
 };
 
 const fallbackFor = (difficulty: BookWordDifficulty): { title: string; description: string; book: InteractiveBookVolume } => {
+  // Every focus word sits with AT LEAST TWO words before it in its sentence —
+  // the judged-loop lead gate (interactiveBookScript MIN_LEAD_WORDS). A
+  // fallback word with a one-word lead would be dropped at derive time and the
+  // fallback would ship an under-count session, which is the one thing a
+  // fallback exists to prevent.
   const bandWords: Record<BookWordDifficulty, Array<[string, string, string, string, string, string]>> = {
     easy: [
-      ['Pond Life', 'A frog can hop by the wet pond.', 'A duck can swim in the water.', 'frog', 'an animal that can hop and swim', 'Find the green frog by the pond.'],
-      ['In a Nest', 'A bird sits in a soft nest.', 'This home keeps each egg safe.', 'bird', 'an animal with feathers and wings', 'Find the bird above the nest.'],
-      ['Busy Bees', 'A bee can buzz by a red bloom.', 'The insect gets food from the flower.', 'bee', 'a small insect that can buzz', 'Find the bee beside the flower.'],
+      ['Pond Life', 'The green frog can hop by the pond.', 'A duck can swim in the water.', 'frog', 'an animal that can hop and swim', 'Find the green frog by the pond.'],
+      ['In a Nest', 'The small bird sits in a soft nest.', 'This home keeps each egg safe.', 'bird', 'an animal with feathers and wings', 'Find the bird above the nest.'],
+      ['Busy Bees', 'The busy bee can buzz by a red bloom.', 'The insect gets food from the flower.', 'bee', 'a small insect that can buzz', 'Find the bee beside the flower.'],
     ],
     medium: [
-      ['Pond Homes', 'A spotted frog rests beside the shallow pond.', 'A turtle swims through the clear water.', 'shallow', 'not deep', 'Look at the water near the pond edge.'],
-      ['Safe Nests', 'A robin gathers twigs to shape a strong nest.', 'The branches hold the nest above the ground.', 'branches', 'parts of a tree that grow from its trunk', 'Find the tree arms holding the nest.'],
-      ['Flower Food', 'A honeybee collects sweet nectar from a flower.', 'Yellow pollen clings to the bee as it flies.', 'nectar', 'sweet liquid made by flowers', 'Look inside the flower where the bee drinks.'],
+      ['Pond Homes', 'A spotted frog rests beside the shallow pond.', 'A slow turtle swims through the clear water.', 'shallow', 'not deep', 'Look at the water near the pond edge.'],
+      ['Safe Nests', 'A robin gathers twigs to shape a strong nest.', 'The thick branches hold the nest above the ground.', 'branches', 'parts of a tree that grow from its trunk', 'Find the tree arms holding the nest.'],
+      ['Flower Food', 'A honeybee collects sweet nectar from a flower.', 'Bright yellow pollen clings to the bee.', 'nectar', 'sweet liquid made by flowers', 'Look inside the flower where the bee drinks.'],
     ],
     hard: [
       ['Wetland Habitat', 'A wetland habitat gives frogs water, shelter, and food.', 'Reeds protect tadpoles near the muddy shoreline.', 'habitat', 'the place where a living thing gets what it needs', 'Look across the whole wetland home.'],
-      ['Hidden Shelter', 'A woven nest provides shelter for young birds.', 'Its sturdy branches protect the chicks from wind.', 'shelter', 'a safe place that protects a living thing', 'Find the covered nest that keeps the chicks safe.'],
-      ['Plant Partners', 'A bee carries powdery pollen between bright blossoms.', 'This pollination helps many plants make seeds.', 'pollination', 'moving pollen so a plant can make seeds', 'Follow the bee traveling between two flowers.'],
+      ['Hidden Shelter', 'A woven nest provides shelter for young birds.', 'The nest has sturdy branches against the wind.', 'shelter', 'a safe place that protects a living thing', 'Find the covered nest that keeps the chicks safe.'],
+      ['Plant Partners', 'A bee carries powdery pollen between bright blossoms.', 'All this pollination helps plants make seeds.', 'pollination', 'moving pollen so a plant can make seeds', 'Follow the bee traveling between two flowers.'],
     ],
   };
   const secondWords: Record<BookWordDifficulty, Array<[string, string, string]>> = {
@@ -401,6 +433,9 @@ const fallbackFor = (difficulty: BookWordDifficulty): { title: string; descripti
 
 const validateDerivedChallenges = (book: InteractiveBookVolume, challenges: InteractiveBookChallenge[]): boolean => {
   const pagesById = new Map(book.pages.map((page) => [page.id, page]));
+  // Belt on the final artifact: every derived challenge must survive the same
+  // judged-loop gate the component seam applies (one address, both sides).
+  if (!challenges.every(challengeAskable)) return false;
   return challenges.length >= 4 && challenges.length <= 6 && challenges.every((challenge) => {
     if (challenge.type === 'read-focus-word') {
       const page = pagesById.get(challenge.targetPageId);
@@ -474,14 +509,18 @@ export const generateInteractiveBook = async (ctx: GenerationContext): Promise<I
   );
   let reconstructed: ReturnType<typeof reconstructBook> = null;
 
-  for (let attempt = 0; attempt < 2 && !reconstructed; attempt += 1) {
+  // Three attempts, not two: the live probe for the DI port measured the
+  // focus-word placement contract as flash-lite's dominant failure (word
+  // repeated across the page's paragraphs, or the field not copied verbatim),
+  // and a cheap extra draw beats shipping the fallback book.
+  for (let attempt = 0; attempt < 3 && !reconstructed; attempt += 1) {
     try {
       const raw = await callGemini(
         ctx,
         difficulty,
         modeSection,
-        attempt === 1
-          ? 'CORRECTIVE RETRY: Return PLAIN TEXT with no HTML/Markdown tags. Ensure every scalar field is nonempty, each focus word occurs verbatim exactly once but never sentence-initial in its page paragraphs, and headings/captions are distinct and at most three words.'
+        attempt >= 1
+          ? 'CORRECTIVE RETRY: Return PLAIN TEXT with no HTML/Markdown tags. Ensure every scalar field is nonempty and headings/captions are distinct and at most three words. MOST IMPORTANT: copy each focus word field letter-for-letter from its paragraph, make each focus word occur exactly ONCE across its page\'s two paragraphs combined, and give it at least two words before it in its sentence.'
           : '',
       );
       reconstructed = reconstructBook(raw, difficulty);
