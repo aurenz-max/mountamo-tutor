@@ -628,7 +628,12 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
     );
   }
 
-  const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
+  // Gated on `running`, not on `ctx.isListening` alone: a lesson opens one
+  // shared mic at connect, so `isListening` is true before the child acts —
+  // the orb painted 'armed', which is the state that renders the live surface
+  // INSTEAD of the tap-to-start button, leaving the run unstartable and the
+  // board dead. See the same gate in useJudgedScriptRunner (19b drive, 08-14).
+  const micState = preparing ? 'opening' : running && ctx.isListening ? 'armed' : 'idle';
   const stageWord = stage === 'affirmed' ? 'yes!' : stage === 'asking' ? 'what word?' : 'get ready';
   const showImage = currentChallenge.showWordImage !== false;
   const highlightIdx = currentChallenge.operation === 'substitution'
@@ -730,7 +735,6 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
                 label is the honest one throughout. */}
             <JudgedMicPanel
               state={micState}
-              level={ctx.micLevel}
               statusLine={statusLine}
               onStart={() => void prepareLive()}
               onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}

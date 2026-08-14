@@ -6,8 +6,10 @@ import type { LoopEmission } from './judgedLoopModel';
 
 let sharedClose: ((event: Record<string, unknown>) => void) | undefined;
 let localEnabled: boolean | undefined;
+let sharedSubscribeCount = 0;
 const shared = {
   subscribe: (listener: { onTurnClose?: (event: Record<string, unknown>) => void }) => {
+    sharedSubscribeCount += 1;
     sharedClose = listener.onTurnClose;
     return () => { sharedClose = undefined; };
   },
@@ -19,6 +21,9 @@ const shared = {
 };
 
 vi.mock('@/contexts/LuminaAIContext', () => ({
+  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
+  // flat because nothing here asserts on the orb's spike ring.
+  useMicLevel: () => 0,
   useLuminaAIContext: () => ({
     conversation: [],
     isAudioPlaying: false,
@@ -49,6 +54,39 @@ vi.mock('./useLiveVoiceTurns', async (importOriginal) => {
 import { useJudgedSpeechLoop } from './useJudgedSpeechLoop';
 
 describe('useJudgedSpeechLoop shared lesson turns', () => {
+  /**
+   * REGRESSION (DI BACKLOG 19b, 2026-08-14) — the lesson-mode resubscribe.
+   *
+   * This effect's deps run `handleVoiceTurnClose` → `dispatch` →
+   * `schedulePendingCue` → `ctx`. The provider builds its value as a plain
+   * object literal, so every one of those took a new identity on every provider
+   * render — and while `micLevel` lived on that value, a provider render was
+   * every audio frame. So in a lesson the judged loop UNSUBSCRIBED AND
+   * RESUBSCRIBED from the shared turn authority 30-100 times a second, for the
+   * whole run, on every judged surface.
+   *
+   * It never lost a turn (subscribe/unsubscribe are synchronous and a turn
+   * closes between frames), which is why nothing caught it — the cost was pure
+   * waste, and the same dependency shape one file over was the fatal
+   * `verdictTimeoutMs` bug. `schedulePendingCue` reaches the tutor through
+   * `sendTextRef` now, which makes the whole chain identity-stable.
+   */
+  it('subscribes to the shared turn authority ONCE, whatever the render rate', () => {
+    sharedSubscribeCount = 0;
+    const view = renderHook(
+      ({ enabled }) => useJudgedSpeechLoop({ enabled, onEmission: () => {} }),
+      { initialProps: { enabled: true } },
+    );
+
+    expect(sharedSubscribeCount).toBe(1);
+
+    // 40 renders ≈ one second of microphone frames under the old regime, each
+    // handing the hook a brand-new `ctx` object exactly as the provider does.
+    for (let i = 0; i < 40; i++) act(() => { view.rerender({ enabled: true }); });
+
+    expect(sharedSubscribeCount).toBe(1);
+  });
+
   it('consumes provider closes without opening a second turn authority', () => {
     const emissions: LoopEmission[] = [];
     const closes: Record<string, unknown>[] = [];

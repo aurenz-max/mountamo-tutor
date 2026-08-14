@@ -34,7 +34,6 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { PrimitiveEvaluationResult } from '../../../evaluation/types';
@@ -68,6 +67,7 @@ import {
 import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
+import LiveMicListener from '../../../components/LiveMicListener';
 
 export type { DiWordReadingChallenge, DiWordReadingChallengeType } from './diWordReadingScript';
 
@@ -696,9 +696,8 @@ export const DiWordReading: React.FC<{ data: DiWordReadingData; index?: number }
         {/* Voice control: the whole interaction runs through the mic. */}
         {!isComplete && (
           <div className="flex flex-col items-center gap-3">
-            <LuminaMicListener
+            <LiveMicListener
               state={micState}
-              level={ctx.micLevel}
               isSupported={isSupported}
               onStart={() => void prepareLive()}
               onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}

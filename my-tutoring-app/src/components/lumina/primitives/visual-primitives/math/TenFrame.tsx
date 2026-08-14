@@ -80,13 +80,10 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
-  completeCue,
   frameVerdictCue,
-  itemCue,
   itemFromChallenge,
-  moveOnCue,
-  pronounceCue,
   stimulusFor,
+  tenFramePackBase,
   type TenFrameBand,
   type TenFrameItem,
 } from './tenFrameScript';
@@ -293,18 +290,11 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     [challenges],
   );
 
+  // The cue surface (everything the tutor is ever sent) comes from the script
+  // module, so the headless judged-loop harness drives the SAME cues this
+  // screen does. Below it: what only a mounted component can own.
   const pack = useMemo<JudgedScriptPack<TenFrameItem>>(() => ({
-    primitiveType: 'ten-frame',
-    activityLine: 'live direct instruction ten frame practice',
-    items,
-    itemCue,
-    moveOnCue,
-    completeCue,
-    pronounceCue,
-    contextFor: (item) => ({
-      challengeType: item.kind,
-      stimulus: stimulusFor(item),
-    }),
+    ...tenFramePackBase(items),
     // Only what DIFFERS from the runner's defaults.
     statusLines: {
       ready: (item) => item.answerKind === 'gesture'
@@ -523,14 +513,14 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
 
   // ── Subitize flash-then-hide ──────────────────────────────────────────────
   // ⚠️ DEPENDS ON `currentItem`, NEVER ON `runner`. The runner returns a fresh
-  // object every render and `ctx.micLevel` updates once per audio frame, so a
-  // callback that closes over `runner` changes identity continuously — and the
-  // effect below, which depends on this callback, would then tear down and
-  // re-arm its prep timer faster than the timer could ever fire. That is the
-  // standing Lumina context-churn footgun: a timer effect keyed on churning
-  // identity never fires, and it only shows up with the MIC OPEN, which is
-  // exactly when this primitive runs. `currentItem` is a stable object out of
-  // the `items` memo.
+  // object every render, so a callback that closes over `runner` changes
+  // identity continuously — and the effect below, which depends on this
+  // callback, would then tear down and re-arm its prep timer faster than the
+  // timer could ever fire. That is the standing Lumina context-churn footgun:
+  // a timer effect keyed on churning identity never fires. It used to be at
+  // its worst with the MIC OPEN, because `ctx.micLevel` was a context field
+  // that ticked once per audio frame; 19b removed that amplifier, and the rule
+  // stands without it. `currentItem` is a stable object out of the `items` memo.
   const startFlash = useCallback(() => {
     const item = currentItem;
     if (!item || item.kind !== 'subitize') return;
@@ -567,12 +557,25 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
   // subsequent challenge, and on a correction's re-flash; `tutorHasSpoken` is
   // cleared in all three places. This is what retired the hand-tuned
   // "wait 3s for the correction to finish" window — there is no window now.
+  //
+  // ⚠️ A FALLING EDGE ALONE WAS NOT ENOUGH, and drive 5 (2026-08-14, user)
+  // heard why: *"when i get it wrong, the very next one flashes way too fast
+  // before she finishes her statement."* On an affirm the runner QUEUES the
+  // next item's cue and opens the item in the same dispatch, and a queued cue
+  // waits for the floor — so the new item is on screen for the whole tail of
+  // the PREVIOUS item's affirmation. `tutorHasSpoken` latched on that tail,
+  // her affirm drained, and the flash fired in the silence before this item's
+  // ask was ever sent. `runner.cuedItemId` is the runner's answer: the id of
+  // the item her live line is ACTUALLY about. Requiring it to match closes the
+  // hole without a single tuned millisecond, and a correction still works
+  // untouched (no new cue is sent, so the id keeps naming this item).
   const tutorSpeaking = runner.tutorSpeaking;
+  const askIsForThisItem = currentItem != null && runner.cuedItemId === currentItem.id;
   const flashPending = runner.running && isSubitize && !isFlashing && !flashAnswerReady;
 
   useEffect(() => {
-    if (flashPending && tutorSpeaking) setTutorHasSpoken(true);
-  }, [flashPending, tutorSpeaking]);
+    if (flashPending && askIsForThisItem && tutorSpeaking) setTutorHasSpoken(true);
+  }, [flashPending, askIsForThisItem, tutorSpeaking]);
 
   // Safety net: if her audio never arrives, the stimulus still has to happen.
   useEffect(() => {

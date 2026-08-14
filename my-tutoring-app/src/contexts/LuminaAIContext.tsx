@@ -152,7 +152,7 @@ interface LuminaAIContextType {
   // AI interaction
   requestHint: (level: 1 | 2 | 3, currentState?: any) => void;
   sendVoice: (audioData: string) => void;
-  sendText: (text: string, options?: { silent?: boolean; interrupt?: boolean }) => void;
+  sendText: (text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean }) => void;
   updateContext: (newState: any, progress?: any) => void;
 
   // State
@@ -169,10 +169,30 @@ interface LuminaAIContextType {
   /** Hold the shared activity bracket (gesture items) without muting the mic.
    *  Ref-counted; call the returned disposer to release. */
   holdVoiceTurns: () => () => void;
-  micLevel: number;
-  /** How often `micLevel` updates, in ms — one audio-capture frame. Consumers
-   *  that measure DURATION from micLevel samples are quantised to this and must
-   *  account for it; 0 means not yet known (no audio context). */
+  /**
+   * Live mic RMS — a SUBSCRIPTION, never a context value, and that distinction
+   * is the whole point (DI BACKLOG 19b, fixed 2026-08-14).
+   *
+   * The level updates once per captured audio frame (~10-40ms). While it lived
+   * on this value as `micLevel: number`, every open mic re-rendered the whole
+   * provider 30-100×/sec, handed every consumer of `useLuminaAIContext()` a new
+   * `ctx` identity at that rate, and churned every callback derived from one.
+   * For state-driven effects that was waste; for TIME-based effects it was
+   * fatal — a 1000ms interval torn down every 20ms never fires (that is exactly
+   * how `verdictTimeoutMs` was dead for four DI ports; see the ⚠️ block in
+   * `useJudgedSpeechLoop`). Nothing in the provider re-renders on a frame now.
+   *
+   * Subscribe if you PAINT the level (the mic orb, Pip's halo) — `useMicLevel()`
+   * below wraps this so the render stays inside your own component. Read
+   * `micLevelRef.current` if you only need the value at some other event's
+   * moment. Never put it back on the value.
+   */
+  subscribeMicLevel: (listener: (level: number) => void) => () => void;
+  /** Current mic RMS, readable synchronously without subscribing or rendering. */
+  micLevelRef: React.MutableRefObject<number>;
+  /** How often the mic level updates, in ms — one audio-capture frame.
+   *  Consumers that measure DURATION from level samples are quantised to this
+   *  and must account for it; 0 means not yet known (no audio context). */
   micFramePeriodMs: number;
   /** Manual voice-activity brackets. Only meaningful for sessions connected
    *  with audio_input.manual_activity; no-ops when the socket is closed. */
@@ -271,8 +291,35 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [conversation, setConversation] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
-  const [micLevel, setMicLevel] = useState(0);
   const [micFramePeriodMs, setMicFramePeriodMs] = useState(0);
+
+  // ── Mic level: a per-frame signal that must never become a render ──────────
+  // See LuminaAIContextType.subscribeMicLevel for why this is not state. The
+  // publish is synchronous and outside React entirely: the turn machine steps
+  // on the frame it arrives, and only components that PAINT the level pay a
+  // render for it (via useMicLevel).
+  const micLevelRef = useRef(0);
+  const micLevelListenersRef = useRef(new Set<(level: number) => void>());
+  const publishMicLevel = useCallback((level: number) => {
+    micLevelRef.current = level;
+    micLevelListenersRef.current.forEach((listener) => {
+      // Isolated per listener BECAUSE the set is mixed: the voice-turn machine
+      // — the thing that decides a child's answer was heard at all — shares it
+      // with purely decorative orbs, in unpredictable subscribe order. One
+      // throwing halo must never make the session deaf.
+      try {
+        listener(level);
+      } catch (error) {
+        console.error('Lumina mic-level subscriber threw:', error);
+      }
+    });
+  }, []);
+  const subscribeMicLevel = useCallback((listener: (level: number) => void) => {
+    micLevelListenersRef.current.add(listener);
+    return () => {
+      micLevelListenersRef.current.delete(listener);
+    };
+  }, []);
 
   // Unexpected-end tracking. sessionEnded flips true on a server/Gemini close or
   // network drop (NOT on a user-initiated disconnect), so the UI can offer a
@@ -342,7 +389,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       voiceTurnListenersRef.current.forEach((listener) => listener.onTurnClose?.(event));
     },
   }, {
-    micLevel,
+    subscribeMicLevel,
     micFramePeriodMs,
     isTutorAudible: isAudioPlaying,
     sendActivityStart,
@@ -578,7 +625,9 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       audioServiceRef.current.setCallbacks({
         onStateChange: (state) => {
           setIsListening(state.isCapturing);
-          if (!state.isCapturing) setMicLevel(0);
+          // Capture stopped: publish the floor so every orb settles instead of
+          // freezing on the last frame it happened to see.
+          if (!state.isCapturing) publishMicLevel(0);
           // The audio context exists by the time capture starts, so the frame
           // period is knowable exactly here — never guessed downstream.
           if (state.isCapturing) {
@@ -589,11 +638,11 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         onAudioData: (frame) => {
           let sum = 0;
           for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
-          setMicLevel(frame.length ? Math.sqrt(sum / frame.length) : 0);
+          publishMicLevel(frame.length ? Math.sqrt(sum / frame.length) : 0);
         },
       });
     }
-  }, []);
+  }, [publishMicLevel]);
 
   // Helper to get Firebase token
   const getFirebaseToken = useCallback(async (): Promise<string | null> => {
@@ -980,7 +1029,12 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // end and rides out with whatever else piled up. Pass interrupt: true only
   // when finishing the sentence is worth nothing to the student — they left
   // the screen it describes, or they pressed something and are waiting on it.
-  const sendText = useCallback((text: string, options?: { silent?: boolean; interrupt?: boolean }) => {
+  // `scripted` declares that every word the model should speak is already in
+  // this cue (a judged pack's say-exactly line), so the server must not prepend
+  // its [CURRENT STATE] block — the Live model narrates that preamble aloud,
+  // target answer included (ten-frame DI drive, 2026-08-14). Per message, like
+  // `interrupt`: only the caller knows whether its cue is self-contained.
+  const sendText = useCallback((text: string, options?: { silent?: boolean; interrupt?: boolean; scripted?: boolean }) => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
       console.warn('Cannot send text: not connected');
       return;
@@ -1025,6 +1079,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       type: 'text',
       content: text,
       interrupt: options?.interrupt ?? false,
+      scripted: options?.scripted ?? false,
     }));
   }, []);
 
@@ -1148,7 +1203,8 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     stopListening,
     isListening,
     holdVoiceTurns,
-    micLevel,
+    subscribeMicLevel,
+    micLevelRef,
     micFramePeriodMs,
     sendActivityStart,
     sendActivityEnd,
@@ -1171,4 +1227,26 @@ export const useLuminaAIContext = () => {
     throw new Error('useLuminaAIContext must be used within a LuminaAIProvider');
   }
   return context;
+};
+
+/**
+ * The live mic RMS as state — for surfaces that PAINT it (the mic orb's spike
+ * ring, Pip's halo, the bench's RMS readout).
+ *
+ * Call it in the smallest component that draws the level, never in a primitive
+ * that merely contains one: it re-renders its caller once per audio frame, and
+ * that render is the cost item 19b exists to keep from spreading. Everything
+ * that only needs the value at some other moment reads `ctx.micLevelRef.current`
+ * instead, and everything that consumes the level as a SIGNAL (the turn machine)
+ * subscribes directly and never renders at all.
+ */
+export const useMicLevel = (): number => {
+  const { subscribeMicLevel, micLevelRef } = useLuminaAIContext();
+  const [level, setLevel] = useState(() => micLevelRef.current);
+  useEffect(() => {
+    // Frames may have flowed between the initial read and this subscribe.
+    setLevel(micLevelRef.current);
+    return subscribeMicLevel(setLevel);
+  }, [subscribeMicLevel, micLevelRef]);
+  return level;
 };

@@ -12,6 +12,13 @@
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// The panel owns the mic-level subscription now (19b), so it needs a provider
+// — or, here, a stub. The orb's spike ring is the orb's own surface to test.
+vi.mock('@/contexts/LuminaAIContext', () => ({
+  useMicLevel: () => 0,
+}));
+
 import JudgedMicPanel, { type JudgedRunSurface } from './JudgedMicPanel';
 
 afterEach(cleanup);
@@ -22,7 +29,6 @@ const SUPPORTED = { isSupported: true } as const;
 
 const runWith = (answerKind: 'voice' | 'gesture'): JudgedRunSurface => ({
   micState: 'armed',
-  micLevel: 0.02,
   statusLine: 'Listen, then answer.',
   start: vi.fn(async () => {}),
   cancelListening: undefined,
@@ -65,7 +71,6 @@ describe('JudgedMicPanel', () => {
     render(
       <JudgedMicPanel
         state="armed"
-        level={0}
         statusLine="Fill in the boxes."
         onStart={vi.fn()}
         {...SUPPORTED}
@@ -81,7 +86,6 @@ describe('JudgedMicPanel', () => {
     render(
       <JudgedMicPanel
         state="idle"
-        level={0}
         statusLine="Tap the microphone to start."
         onStart={vi.fn()}
         {...SUPPORTED}

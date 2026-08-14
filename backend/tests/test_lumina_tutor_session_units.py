@@ -463,6 +463,56 @@ def test_unserializable_state_still_attaches():
     assert s.attach("cue two") == "cue two"   # and still de-dupes
 
 
+# --- scripted cues own their floor: no state preamble ------------------------
+# Found live 2026-08-14 (ten-frame --di drive): the runner's per-item context
+# update rode out on the next [TF_ITEM] cue and the model NARRATED the state
+# block — "[CURRENT STATE]: … The target answer for this new item is 'four'" —
+# answer included, before speaking its say-exactly line. Every state-attached
+# cue in that run was narrated (6/6); every clean cue was not (0/2). The fix is
+# the transport's, not the prompt's (the prompt already forbade reading it, and
+# lost): a judged cue declares `scripted`, and the gate never attaches state to
+# a batch made only of scripted cues.
+# ---------------------------------------------------------------------------
+
+def _attach_allowed(batch):
+    """The gate's attach predicate: state rides out unless EVERY entry in the
+    batch declared itself a scripted, self-contained cue."""
+    return any(not e.scripted for e in batch)
+
+
+def test_a_cue_is_unscripted_by_default():
+    """An ordinary primitive's cue keeps the state channel — the improvised
+    reply it asks for NEEDS to know where the student is."""
+    assert TextQueueEntry(text="[READ_SECTION] intro").scripted is False
+    assert _attach_allowed([TextQueueEntry(text="[READ_SECTION] intro")])
+
+
+def test_a_batch_of_scripted_cues_refuses_the_state_preamble():
+    assert not _attach_allowed([
+        TextQueueEntry(text='[TF_ITEM] Say exactly: "How many did you see?"',
+                       scripted=True),
+    ])
+
+
+def test_one_unscripted_entry_keeps_the_state_channel_for_the_batch():
+    """A [PRIMITIVE SWITCH] coalescing with a judged opener still wants the
+    model told where the student is — the announcement is not a script."""
+    assert _attach_allowed([
+        TextQueueEntry(text="[PRIMITIVE SWITCH]", render=lambda: "switch"),
+        TextQueueEntry(text='[TF_ITEM] Say exactly: "…"', scripted=True),
+    ])
+
+
+def test_skipped_state_is_pending_not_lost():
+    """Suppression defers, never drops: the gate simply does not call attach()
+    for a scripted batch, so the change still rides the next unscripted
+    floor-giving message (a student's typed question, a hint request)."""
+    s = PrimitiveState()
+    s.merge({"stimulus": "four dots"})
+    out = s.attach("why is it called a ten frame?")
+    assert "stimulus: four dots" in out
+
+
 # --- the prompt no longer advertises a channel that does not exist ----------
 
 def test_prompts_do_not_mention_the_deleted_context_update_channel():

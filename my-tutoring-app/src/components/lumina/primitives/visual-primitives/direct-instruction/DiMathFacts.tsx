@@ -48,7 +48,6 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
   motion,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
@@ -83,6 +82,7 @@ import {
 import { DiStallCard } from './DiStallCard';
 import { useDiStallRecovery } from './useDiStallRecovery';
 import { useDiPostRunDisconnect } from './useDiPostRunDisconnect';
+import LiveMicListener from '../../../components/LiveMicListener';
 
 export type { DiMathFactsChallenge, DiMathFactsChallengeType, DiMathFactsSupportTier } from './diMathFactsScript';
 
@@ -888,9 +888,8 @@ export const DiMathFacts: React.FC<{ data: DiMathFactsData; index?: number }> = 
         {/* Voice control: the whole interaction runs through the mic. */}
         {!isComplete && (
           <div className="flex flex-col items-center gap-3">
-            <LuminaMicListener
+            <LiveMicListener
               state={micState}
-              level={ctx.micLevel}
               isSupported={isSupported}
               onStart={() => void prepareLive()}
               onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}

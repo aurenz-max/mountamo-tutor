@@ -36,10 +36,12 @@ const ctxState = {
   isConnected: true,
   isListening: true,
   isAudioPlaying: true,
-  micLevel: 0,
   sessionMode: 'standalone' as const,
 };
 vi.mock('@/contexts/LuminaAIContext', () => ({
+  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
+  // flat because nothing here asserts on the orb's spike ring.
+  useMicLevel: () => 0,
   useLuminaAIContext: () => ({
     ...ctxState,
     connect: vi.fn(), disconnect: vi.fn(),

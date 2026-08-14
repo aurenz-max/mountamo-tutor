@@ -41,6 +41,9 @@ const ctxState: { conversation: Msg[]; isAudioPlaying: boolean } = {
 const sentTexts: string[] = [];
 const sentOptions: Array<Record<string, unknown> | undefined> = [];
 vi.mock('@/contexts/LuminaAIContext', () => ({
+  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
+  // flat because nothing here asserts on the orb's spike ring.
+  useMicLevel: () => 0,
   useLuminaAIContext: () => ({
     conversation: ctxState.conversation,
     isAudioPlaying: ctxState.isAudioPlaying,

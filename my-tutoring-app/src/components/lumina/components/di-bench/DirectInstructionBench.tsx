@@ -13,10 +13,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LuminaAIProvider, useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { LuminaAIProvider, useLuminaAIContext, useMicLevel } from '@/contexts/LuminaAIContext';
 import { EvaluationProvider } from '../../evaluation';
 import { ExhibitProvider } from '../../contexts/ExhibitContext';
-import { LuminaMicListener } from '../../ui';
+import LiveMicListener from '../LiveMicListener';
 import { useJudgedSpeechLoop } from '../../hooks/useJudgedSpeechLoop';
 import type { LoopEmission } from '../../hooks/judgedLoopModel';
 import { DEFAULT_VOICE_TURN_CONFIG } from '../../hooks/voiceTurnMachine';
@@ -50,6 +50,22 @@ const DI_AUDIO_INPUT = {
  *  hysteresis, close and min-voice windows are the shared engine defaults
  *  (tuned by runs 3–4 and the 2026-07-19/20 open-mic runs). */
 const DEFAULT_VAD_THRESHOLD = DEFAULT_VOICE_TURN_CONFIG.silenceThreshold;
+
+/** The one number on this bench that moves at audio-frame rate. Kept in its own
+ *  leaf so the bench — run log, event table, JSON export — is not re-rendered
+ *  30-100×/sec to update three digits (DI BACKLOG 19b). */
+const RmsReadout: React.FC<{ tutorAudible: boolean; vadThreshold: number }> = ({
+  tutorAudible,
+  vadThreshold,
+}) => {
+  const micLevel = useMicLevel();
+  return (
+    <span className="flex items-center gap-2 font-mono">
+      <span className={`h-2 w-2 rounded-full ${!tutorAudible && micLevel >= vadThreshold ? 'bg-amber-400' : 'bg-slate-600'}`} />
+      RMS {micLevel.toFixed(3)}
+    </span>
+  );
+};
 
 const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ onBack }) => {
   const ctx = useLuminaAIContext();
@@ -511,9 +527,8 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-6 rounded-2xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur-xl">
-        <LuminaMicListener
+        <LiveMicListener
           state={preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle'}
-          level={ctx.micLevel}
           isSupported={typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia}
           onStart={() => void prepareLive()}
           onCancel={running ? undefined : ctx.stopListening}
@@ -527,10 +542,7 @@ const DirectInstructionBenchContent: React.FC<DirectInstructionBenchProps> = ({ 
           <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isConnected ? 'bg-emerald-400' : 'bg-slate-600'}`} />Live tutor {ctx.isConnected ? 'connected' : 'offline'}</span>
           <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isAudioPlaying ? 'animate-pulse bg-cyan-400' : 'bg-slate-600'}`} />{ctx.isAudioPlaying ? 'Tutor speaking' : 'Tutor silent'}</span>
           <span className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${ctx.isListening ? 'bg-emerald-400' : 'bg-slate-600'}`} />{ctx.isListening ? 'Mic live' : 'Mic off'}</span>
-          <span className="flex items-center gap-2 font-mono">
-            <span className={`h-2 w-2 rounded-full ${!ctx.isAudioPlaying && ctx.micLevel >= vadThreshold ? 'bg-amber-400' : 'bg-slate-600'}`} />
-            RMS {ctx.micLevel.toFixed(3)}
-          </span>
+          <RmsReadout tutorAudible={ctx.isAudioPlaying} vadThreshold={vadThreshold} />
           <label className="flex items-center gap-1">
             local VAD ≥
             <input

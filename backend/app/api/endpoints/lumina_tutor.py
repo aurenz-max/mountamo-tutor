@@ -152,6 +152,18 @@ class TextQueueEntry:
     # fallback for a client that says nothing — silence is recoverable, a
     # severed sentence is what the child actually hears.
     interrupt: bool = False
+    # This cue is a SELF-CONTAINED SCRIPT: the caller wrote every word the
+    # model should say, so the [CURRENT STATE] preamble must not be attached
+    # to it. Found live 2026-08-14 (ten-frame --di drive): a judged pack's
+    # per-item context update rode out on the next [TF_ITEM] cue, and the
+    # model narrated the whole block — "[CURRENT STATE]: … The target answer
+    # for this new item is 'four'" — answer included, before speaking the
+    # scripted line. Every state-attached cue in that run was narrated (6/6);
+    # every clean cue was not (0/2). Declared by the CLIENT, per message,
+    # exactly like `interrupt` and for the same reason: only the thing that
+    # fired the cue knows whether it is a say-exactly script (judged packs)
+    # or an improvising prompt whose reply NEEDS the state (everything else).
+    scripted: bool = False
     # Built at SEND time instead of enqueue time. A message whose wording
     # depends on session state ("Previous activity: X") must not be frozen
     # while it sits in the gate — if it gets superseded there it was never
@@ -1184,6 +1196,7 @@ async def lumina_tutor_session(websocket: WebSocket):
                             text=message.get("content", ""),
                             end_of_turn=True,
                             interrupt=interrupt,
+                            scripted=bool(message.get("scripted")),
                         ))
 
                     elif message_type == "audio":
@@ -1320,7 +1333,13 @@ async def lumina_tutor_session(websocket: WebSocket):
                     # This message is asking for a turn, so it is the right
                     # place to tell the model where the student currently
                     # is — no-ops when nothing changed since it last knew.
-                    if end_of_turn:
+                    # UNLESS every entry in the batch is a scripted cue: a
+                    # say-exactly line owns each word of its floor, and a
+                    # state preamble on one gets narrated aloud, target
+                    # answer and all (see TextQueueEntry.scripted). Nothing
+                    # is lost — the state stays pending and rides the next
+                    # unscripted floor-giving message.
+                    if end_of_turn and any(not e.scripted for e in kept.values()):
                         text = primitive_state.attach(text)
 
                     cut_in = interrupting and floor.busy

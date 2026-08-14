@@ -41,8 +41,7 @@ vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
     canAttempt: true,
     summary: null,
     micState: 'idle' as const,
-    micLevel: 0,
-    cancelListening: undefined,
+      cancelListening: undefined,
     start: async () => {},
     hearStimulus: () => {},
     stimulusTapped: false,
@@ -53,6 +52,9 @@ vi.mock('../../../hooks/useJudgedScriptRunner', () => ({
 }));
 
 vi.mock('@/contexts/LuminaAIContext', () => ({
+  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
+  // flat because nothing here asserts on the orb's spike ring.
+  useMicLevel: () => 0,
   useLuminaAIContext: () => ({
     isConnected: true,
     sendText: vi.fn(),

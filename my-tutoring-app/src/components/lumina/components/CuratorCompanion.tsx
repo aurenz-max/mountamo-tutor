@@ -46,12 +46,12 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
+import { useLuminaAIContext, useMicLevel } from '@/contexts/LuminaAIContext';
 import { getComponentById } from '../service/manifest/catalog';
 import { getPrimitive } from '../config/primitiveRegistry';
 import { interpolateTemplate } from '../utils/interpolateTemplate';
 import { usePerchAnchor } from '../hooks/usePerchAnchor';
-import { PipCharacter, type PipMood } from './PipCharacter';
+import { PipCharacter, type PipCharacterProps, type PipMood } from './PipCharacter';
 import type { ComponentId, StudentPrompt, StudentPromptKind } from '../types';
 import { Mic, MicOff, Send, RefreshCw, Loader2, MessageSquare, X } from 'lucide-react';
 
@@ -104,11 +104,19 @@ function passesShowWhen(p: StudentPrompt, data: Record<string, unknown>): boolea
 }
 
 /**
- * Debounced "the student is actually speaking". micLevel is a per-audio-frame
- * RMS, so raw thresholding flips several times per word and Pip's face strobes.
- * The tail keeps the listening pose alive across the gaps inside a sentence.
+ * Debounced "the student is actually speaking". The mic level is a per-audio-
+ * frame RMS, so raw thresholding flips several times per word and Pip's face
+ * strobes. The tail keeps the listening pose alive across the gaps inside a
+ * sentence.
+ *
+ * It SUBSCRIBES to the level rather than taking it as an argument (DI BACKLOG
+ * 19b, 2026-08-14) — the whole value of the debounce is that the companion
+ * re-renders a few times per utterance, and a per-frame argument would have
+ * made it re-render 30-100×/sec to compute exactly that. `setSpeaking(true)`
+ * on an already-true state is a React bail-out, so the frames cost nothing.
  */
-function useHeardVoice(level: number, active: boolean): boolean {
+function useHeardVoice(active: boolean): boolean {
+  const { subscribeMicLevel } = useLuminaAIContext();
   const [speaking, setSpeaking] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,17 +125,43 @@ function useHeardVoice(level: number, active: boolean): boolean {
       setSpeaking(false);
       return;
     }
-    if (level > VOICE_FLOOR) {
+    return subscribeMicLevel((level) => {
+      if (level <= VOICE_FLOOR) return;
       setSpeaking(true);
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => setSpeaking(false), VOICE_TAIL_MS);
-    }
-  }, [level, active]);
+    });
+  }, [active, subscribeMicLevel]);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   return speaking;
 }
+
+/**
+ * Pip with a live halo. The level is subscribed HERE, in the leaf that paints
+ * it, so the companion panel around it — transcript, prompt buttons, composer —
+ * re-renders on conversation and mood rather than on audio frames.
+ */
+const LivePipCharacter: React.FC<Omit<PipCharacterProps, 'level'>> = (props) => {
+  const level = useMicLevel();
+  return <PipCharacter {...props} level={level} />;
+};
+
+/** The pause/resume button's level-reactive ring — same discipline as the halo. */
+const MicLevelRing: React.FC = () => {
+  const micLevel = useMicLevel();
+  return (
+    <motion.span
+      className="absolute inset-0 rounded-full bg-rose-400"
+      animate={{
+        scale: 1 + Math.min(1, micLevel / 0.12) * 0.45,
+        opacity: 0.18 + Math.min(1, micLevel / 0.12) * 0.45,
+      }}
+      transition={{ duration: 0.12, ease: 'linear' }}
+    />
+  );
+};
 
 interface CuratorCompanionProps {
   defaultExpanded?: boolean;
@@ -147,7 +181,6 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
     startListening,
     stopListening,
     isListening,
-    micLevel,
     sessionEnded,
     reconnect,
   } = useLuminaAIContext();
@@ -160,7 +193,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
   const [hasUnread, setHasUnread] = useState(false);
 
   const focusName = useMemo(() => friendlyPrimitiveName(activePrimitiveType), [activePrimitiveType]);
-  const studentTalking = useHeardVoice(micLevel, isConnected && isListening);
+  const studentTalking = useHeardVoice(isConnected && isListening);
 
   // Where Pip is standing. Null ⇒ nothing worth sitting on; use the corner dock.
   const perch = usePerchAnchor(activePrimitiveId, expanded && isConnected);
@@ -328,7 +361,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
           aria-label={hasUnread ? 'Open Pip, your helper — Pip said something' : 'Open Pip, your helper'}
           className="relative rounded-full transition-transform hover:scale-105 active:scale-95"
         >
-          <PipCharacter mood={mood} level={micLevel} size={76} trackPointer={false} />
+          <LivePipCharacter mood={mood} size={76} trackPointer={false} />
           {hasUnread && (
             <motion.span
               className="absolute right-1 top-1 h-4 w-4 rounded-full border-2 border-slate-900 bg-amber-400"
@@ -382,7 +415,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
             </AnimatePresence>
 
             <div className="pointer-events-auto translate-y-[36%]">
-              <PipCharacter mood={mood} level={micLevel} size={108} onPoke={handlePoke} />
+              <LivePipCharacter mood={mood} size={108} onPoke={handlePoke} />
             </div>
           </div>
         </motion.div>
@@ -459,7 +492,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
 
         {/* Pip (only when it has nowhere to perch) + voice-first controls */}
         <div className={`flex w-full items-end gap-2 ${perched ? 'justify-end' : 'justify-between'}`}>
-          {!perched && <PipCharacter mood={mood} level={micLevel} size={!isConnected ? 152 : 124} onPoke={handlePoke} />}
+          {!perched && <LivePipCharacter mood={mood} size={!isConnected ? 152 : 124} onPoke={handlePoke} />}
 
           {isConnected && (
             <div className="flex flex-col items-center gap-1.5">
@@ -475,16 +508,7 @@ export const CuratorCompanion: React.FC<CuratorCompanionProps> = ({ defaultExpan
               >
                 {/* Level-reactive ring rather than a constant ping: it agrees with
                     Pip's halo, so both surfaces answer "can it hear me?" the same way. */}
-                {isListening && (
-                  <motion.span
-                    className="absolute inset-0 rounded-full bg-rose-400"
-                    animate={{
-                      scale: 1 + Math.min(1, micLevel / 0.12) * 0.45,
-                      opacity: 0.18 + Math.min(1, micLevel / 0.12) * 0.45,
-                    }}
-                    transition={{ duration: 0.12, ease: 'linear' }}
-                  />
-                )}
+                {isListening && <MicLevelRing />}
                 {isListening
                   ? <Mic className="relative h-7 w-7 text-white" />
                   : <MicOff className="relative h-7 w-7 text-white" />}

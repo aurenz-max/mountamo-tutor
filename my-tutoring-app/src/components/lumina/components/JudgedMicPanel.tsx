@@ -18,6 +18,14 @@
  * surface in the app. The kit is the frame, never the interaction; this is the
  * judged family's frame around the kit's.
  *
+ * IT ALSO OWNS THE MIC-LEVEL SUBSCRIPTION (DI BACKLOG 19b, 2026-08-14). The RMS
+ * updates once per audio frame, and the orb's spike ring is the only thing on a
+ * judged surface that paints it. Every port used to read `ctx.micLevel` and pass
+ * it down, which put a 30-100Hz value in the render path of the whole primitive
+ * — board, tiles, summary and all. The panel subscribes here instead, so the
+ * per-frame render stops at this component and the port above it re-renders on
+ * its own pedagogy. Ports pass nothing.
+ *
  * Two prop shapes, because four ports (phonics-blender, sound-swap, word-flip,
  * cvc-speller) predate `useJudgedScriptRunner` and drive the loop themselves:
  *
@@ -25,7 +33,7 @@
  * <JudgedMicPanel run={runner} gestureLabel="Show me on the frame" />
  *
  * <JudgedMicPanel
- *   state={micState} level={ctx.micLevel} statusLine={statusLine}
+ *   state={micState} statusLine={statusLine}
  *   onStart={() => void prepareLive()} onCancel={…}
  *   answerKind={item.task === 'spell-word' ? 'gesture' : 'voice'}
  *   gestureLabel="Your turn — fill the boxes"
@@ -34,6 +42,7 @@
  */
 
 import React from 'react';
+import { useMicLevel } from '@/contexts/LuminaAIContext';
 import { LuminaMicListener, type MicListenerState } from '../ui';
 import type { JudgedScriptItem } from '../hooks/judgedScriptContract';
 import type { JudgedScriptRun } from '../hooks/useJudgedScriptRunner';
@@ -42,7 +51,7 @@ import type { JudgedScriptRun } from '../hooks/useJudgedScriptRunner';
  *  is only read here, so a port's narrower run assigns cleanly. */
 export type JudgedRunSurface = Pick<
   JudgedScriptRun<JudgedScriptItem>,
-  'micState' | 'micLevel' | 'statusLine' | 'start' | 'cancelListening' | 'currentItem'
+  'micState' | 'statusLine' | 'start' | 'cancelListening' | 'currentItem'
 >;
 
 interface JudgedMicPanelCommonProps {
@@ -69,7 +78,6 @@ interface JudgedMicPanelCommonProps {
 interface JudgedMicPanelRunProps extends JudgedMicPanelCommonProps {
   run: JudgedRunSurface;
   state?: never;
-  level?: never;
   statusLine?: never;
   onStart?: never;
   onCancel?: never;
@@ -78,7 +86,6 @@ interface JudgedMicPanelRunProps extends JudgedMicPanelCommonProps {
 interface JudgedMicPanelManualProps extends JudgedMicPanelCommonProps {
   run?: never;
   state: MicListenerState;
-  level: number;
   statusLine: string;
   onStart: () => void;
   onCancel?: () => void;
@@ -101,7 +108,8 @@ const JudgedMicPanel: React.FC<JudgedMicPanelProps> = (props) => {
 
   const run = props.run;
   const state = run ? run.micState : props.state;
-  const level = run ? run.micLevel : props.level;
+  // Subscribed HERE, not threaded down from the port — see the file docblock.
+  const level = useMicLevel();
   const statusLine = run ? run.statusLine : props.statusLine;
   const onCancel = run ? run.cancelListening : props.onCancel;
   const onStart = run ? () => void run.start() : props.onStart;

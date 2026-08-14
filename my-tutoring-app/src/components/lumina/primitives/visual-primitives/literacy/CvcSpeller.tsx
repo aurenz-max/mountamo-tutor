@@ -874,7 +874,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
   }
 
   const item = itemOf(currentIndex)!;
-  const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
+  // Gated on `running`, not on `ctx.isListening` alone: a lesson opens one
+  // shared mic at connect, so `isListening` is true before the child acts —
+  // the orb painted 'armed', which is the state that renders the live surface
+  // INSTEAD of the tap-to-start button, leaving the run unstartable and the
+  // board dead. See the same gate in useJudgedScriptRunner (19b drive, 08-14).
+  const micState = preparing ? 'opening' : running && ctx.isListening ? 'armed' : 'idle';
   const showPicture = currentChallenge.showPictureCue !== false && !!currentChallenge.emoji;
   const stageWord = stage === 'affirmed'
     ? 'yes!'
@@ -1089,7 +1094,6 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
             <JudgedMicPanel
               state={micState}
-              level={ctx.micLevel}
               statusLine={statusLine}
               onStart={() => void prepareLive()}
               onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}

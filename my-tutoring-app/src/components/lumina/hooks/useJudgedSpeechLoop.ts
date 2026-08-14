@@ -165,8 +165,29 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   const callbacksRef = useRef(options);
   callbacksRef.current = options;
 
+  /**
+   * The tutor channel, reached through a ref rather than through `ctx`.
+   *
+   * `ctx.sendText` is stable, but `ctx` is not: the provider builds its value
+   * as a plain object literal, so ANY callback that closes over `ctx` takes a
+   * new identity on every provider render — and everything downstream of it
+   * does too. That is how `schedulePendingCue` → `dispatch` →
+   * `handleVoiceTurnClose` used to churn, which resubscribed the lesson-mode
+   * shared voice turns and re-ran the conversation, audio-edge and
+   * disable-falling-edge effects at the same rate. With `micLevel` off the
+   * value (19b's other half) that rate is no longer per audio frame, but the
+   * dependency was always the wrong shape: a transport handle is not a reason
+   * for a loop's identity to change. See the ⚠️ block on the tick effect below
+   * for what this class of dependency costs when the effect owns a timer.
+   */
+  const sendTextRef = useRef(ctx.sendText);
+  sendTextRef.current = ctx.sendText;
+
   const loopStateRef = useRef(IDLE_JUDGED_LOOP);
   const conversationIndexRef = useRef(ctx.conversation.length);
+  /** Live conversation length, so `reset` never has to depend on `ctx`. */
+  const conversationLengthRef = useRef(ctx.conversation.length);
+  conversationLengthRef.current = ctx.conversation.length;
   const audioPlayingRef = useRef(ctx.isAudioPlaying);
   audioPlayingRef.current = ctx.isAudioPlaying;
   const previousAudioPlayingRef = useRef(ctx.isAudioPlaying);
@@ -332,13 +353,18 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
       const cue = pendingCueRef.current;
       pendingCueRef.current = null;
       if (cue) {
-        ctx.sendText(cue, { silent: true, interrupt: offScript });
+        // scripted: a judged cue owns every word of its floor — the server
+        // must not prepend the [CURRENT STATE] block, which the Live model
+        // narrates aloud, target answer included (ten-frame drive 2026-08-14).
+        sendTextRef.current(cue, { silent: true, interrupt: offScript, scripted: true });
         callbacksRef.current.onCue?.({ phase: 'sent', text: cue, cutIn: offScript || undefined });
         armDeadCueWatch(cue);
         noteCueSent(cue);
       }
     }, VERIFY_BEAT_MS);
-  }, [armDeadCueWatch, ctx, noteCueSent]);
+  // Identity-stable BY DESIGN — `dispatch`, `handleVoiceTurnClose` and four
+  // effects hang off this one. See the sendTextRef docblock above.
+  }, [armDeadCueWatch, noteCueSent]);
 
   const dispatch = useCallback((event: LoopEvent) => {
     const step = reduceJudgedLoop(loopStateRef.current, event, configRef.current);
@@ -482,11 +508,11 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // ⚠️ DEPENDS ON `enabled` ALONE, AND THAT IS THE WHOLE POINT — it used to also
   // depend on `dispatch`, and that made `verdictTimeoutMs` DEAD ANY TIME THE MIC
   // WAS OPEN (found live 2026-08-10 on cvc-speller's first build item).
-  // `dispatch` → `schedulePendingCue` → `ctx`, and `LuminaAIContext` builds its
-  // value as a plain object literal (no useMemo) while `setMicLevel` fires on
-  // EVERY audio frame — so the provider re-renders every ~10-40ms, `dispatch`
-  // takes a new identity every time, and this effect tore down and recreated a
-  // 1000ms interval faster than it could ever fire. Not once, for a whole run.
+  // `dispatch` → `schedulePendingCue` → `ctx`; `LuminaAIContext` built its value
+  // as a plain object literal and `setMicLevel` fired on EVERY audio frame — so
+  // the provider re-rendered every ~10-40ms, `dispatch` took a new identity
+  // every time, and this effect tore down and recreated a 1000ms interval faster
+  // than it could ever fire. Not once, for a whole run.
   //
   // Nothing noticed for four ports because their tutor always speaks: verdicts
   // arrive through `tutor-text` and off-script through `tutor-quiet`, so the
@@ -495,6 +521,13 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // can ever close a stray voice attempt — and `schedulePendingCue` blocks every
   // queued cue while an attempt is open, so one word said aloud mid-build jammed
   // the lesson permanently.
+  //
+  // BOTH ENDS ARE FIXED NOW AND THE RULE STANDS ANYWAY (19b, 2026-08-14): the
+  // level left the context value, and `schedulePendingCue` reaches the tutor
+  // through `sendTextRef` rather than `ctx`, so `dispatch` no longer churns at
+  // all. Keep the dep list at `[enabled]` regardless — a timer effect that lists
+  // a callback is one refactor away from this bug, and this one was invisible
+  // for four ports.
   //
   // The interval reads `dispatchRef`, which is reassigned on every render, so it
   // always calls the current dispatch without being rebound to it.
@@ -541,13 +574,15 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // A pack arms inside its startRun, which calls `setRunning(true)` and `arm()`
   // in one synchronous block — so the ref write lands BEFORE React commits
   // `enabled: true`. This effect's other deps (`dispatch` → `schedulePendingCue`
-  // → `ctx`) change identity on EVERY render, and the lesson provider rebuilds
-  // its context value on every mic-level frame, so the effect re-runs constantly.
-  // Level-triggered, any of those passes that still carried the pre-run
-  // `enabled === false` — one racing the arm, or the previous render's deferred
-  // passive effects flushing late — wiped the arm, and nothing re-armed it. An
-  // unarmed loop returns `voice-close`, `transcript` and `tutor-text` untouched,
-  // so the child speaks, the tutor judges, and the surface never hears either.
+  // → `ctx`) used to change identity on EVERY render, and the lesson provider
+  // rebuilt its context value on every mic-level frame, so the effect re-ran
+  // constantly. Level-triggered, any of those passes that still carried the
+  // pre-run `enabled === false` — one racing the arm, or the previous render's
+  // deferred passive effects flushing late — wiped the arm, and nothing re-armed
+  // it. An unarmed loop returns `voice-close`, `transcript` and `tutor-text`
+  // untouched, so the child speaks, the tutor judges, and the surface never
+  // hears either. `dispatch` is identity-stable since 19b, which removes the
+  // re-run pressure; the falling edge is still what makes this correct.
   const previousEnabledRef = useRef(enabled);
   useEffect(() => {
     const wasEnabled = previousEnabledRef.current;
@@ -619,7 +654,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     }
     pendingCueRef.current = null;
     clearCueTimers();
-    ctx.sendText(text, { silent: true });
+    sendTextRef.current(text, { silent: true, scripted: true });
     // 'queued' then 'sent' even though nothing waited, so the ledger balances:
     // every 'sent' and every 'dropped' consumes exactly one 'queued', which
     // makes `queued − sent − dropped > 0` a clean read of "a cue stalled".
@@ -627,7 +662,7 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     callbacksRef.current.onCue?.({ phase: 'sent', text });
     armDeadCueWatch(text);
     noteCueSent(text);
-  }, [armDeadCueWatch, clearCueTimers, ctx, noteCueDropped, noteCueSent]);
+  }, [armDeadCueWatch, clearCueTimers, noteCueDropped, noteCueSent]);
 
   const arm = useCallback(() => dispatch({ type: 'arm' }), [dispatch]);
   const disarm = useCallback(() => dispatch({ type: 'disarm' }), [dispatch]);
@@ -641,10 +676,10 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
     pendingGestureCueRef.current = null;
     clearCueTimers();
     clearDeadCueWatch(true);
-    conversationIndexRef.current = ctx.conversation.length;
+    conversationIndexRef.current = conversationLengthRef.current;
   // voiceTurns is a fresh object each render but reset/refs are stable.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearCueTimers, clearDeadCueWatch, ctx, voiceTurns.reset]);
+  }, [clearCueTimers, clearDeadCueWatch, voiceTurns.reset]);
 
   useEffect(() => () => {
     clearCueTimers();

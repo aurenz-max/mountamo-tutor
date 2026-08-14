@@ -31,12 +31,14 @@ const ctxState = vi.hoisted(() => ({
   isConnected: true,
   isListening: true,
   isAudioPlaying: false,
-  micLevel: 0,
   sessionMode: 'idle' as 'idle' | 'lesson',
   sessionResumeCount: 0,
   conversation: [] as Array<{ role: string; content: string }>,
 }));
 vi.mock('@/contexts/LuminaAIContext', () => ({
+  // 19b: the mic level is a SUBSCRIPTION now, not a context field. Stubbed
+  // flat because nothing here asserts on the orb's spike ring.
+  useMicLevel: () => 0,
   useLuminaAIContext: () => ({
     ...ctxState,
     sendText,
@@ -171,6 +173,40 @@ describe('start', () => {
       .toBeLessThan(loopStub.sendCueNow.mock.invocationCallOrder[0]);
     expect(loopStub.sendCueNow.mock.invocationCallOrder[0])
       .toBeLessThan(loopStub.arm.mock.invocationCallOrder[0]);
+  });
+
+  /**
+   * REGRESSION — every judged port was UNSTARTABLE IN A LESSON (found live
+   * 2026-08-14, user, on the 19b mic drive: `ten-frame` then `counting-board`).
+   *
+   * A lesson opens ONE shared microphone at connect, so `ctx.isListening` is
+   * true before the child has done anything. `micState` read that alone, so the
+   * orb painted 'armed' — and `armed` is exactly the state in which
+   * `LuminaMicListener` renders the live surface INSTEAD of the tap-to-start
+   * button. So there was no start affordance to press: `start()` was
+   * unreachable, `running` stayed false, and `canAttempt` held every tap on the
+   * board dead — beneath an orb captioned *"I'm listening"* and a status line
+   * reading *"Tap the microphone to start."* Meanwhile the shared lesson tutor
+   * improvised over `primitive_data` and asked for counters the board would not
+   * accept.
+   *
+   * `isListening` answers "is the mic hardware open"; the orb asks "is this RUN
+   * listening for an answer". Only `running` answers that.
+   */
+  it('offers the start gesture in a LESSON, where the mic is already open', async () => {
+    ctxState.sessionMode = 'lesson';
+    ctxState.isListening = true;   // the provider opened it at connect
+    mount([voiceItem('i1', 'cat')]);
+
+    // Pre-start: 'idle' is what makes LuminaMicListener render the button.
+    expect(run.micState).toBe('idle');
+    expect(run.canAttempt).toBe(false);
+
+    await startRun();
+
+    expect(run.running).toBe(true);
+    expect(run.micState).toBe('armed');
+    expect(run.canAttempt).toBe(true);
   });
 
   it('opens the first item through onItemOpened', async () => {
@@ -356,7 +392,11 @@ describe('tap-to-hear', () => {
     mount([voiceItem('i1', 'cat')]);
     await startRun();
     act(() => run.hearStimulus());
-    expect(sendText).toHaveBeenCalledWith('[PRONOUNCE] cat', { silent: true });
+    // `scripted` is load-bearing here, not incidental: a [PRONOUNCE] cue is a
+    // say-exactly line, so the server must not prepend its [CURRENT STATE]
+    // block — the Live model narrates that preamble aloud, and on a judged
+    // item the preamble names the answer (ten-frame --di drive, 2026-08-14).
+    expect(sendText).toHaveBeenCalledWith('[PRONOUNCE] cat', { silent: true, scripted: true });
     expect(run.stimulusTapped).toBe(true);
     expect(run.currentIndex).toBe(0);
   });

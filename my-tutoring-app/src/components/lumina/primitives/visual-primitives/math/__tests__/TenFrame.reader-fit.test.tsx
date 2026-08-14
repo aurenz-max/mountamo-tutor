@@ -38,6 +38,12 @@ const runnerState = vi.hoisted(() => ({
   awaiting: false,
   solved: new Set<string>(),
   tutorSpeaking: false,
+  /** The item the tutor's live line is about. `null` = "whatever is on screen",
+   *  which is what every test that does not exercise the queue wants. A cue is
+   *  QUEUED on an affirm and sent only when the floor clears, so this can name
+   *  the PREVIOUS item while the next one is already rendered — see the drive-5
+   *  regression below. */
+  cuedItemId: null as string | null,
   gestureCues: [] as string[],
   options: null as null | {
     pack: { items: TenFrameItem[] };
@@ -65,8 +71,8 @@ vi.mock('../../../../hooks/useJudgedScriptRunner', () => ({
         && !runnerState.solved.has(item.id) && runnerState.stage !== 'judging',
       summary: null,
       micState: 'armed',
-      micLevel: 0,
       tutorSpeaking: runnerState.tutorSpeaking,
+      cuedItemId: runnerState.cuedItemId ?? item?.id ?? null,
       cancelListening: undefined,
       start: vi.fn(),
       hearStimulus: vi.fn(),
@@ -79,6 +85,12 @@ vi.mock('../../../../hooks/useJudgedScriptRunner', () => ({
       loop: {},
     };
   },
+}));
+
+// JudgedMicPanel subscribes to the live mic level (19b) — the only reason
+// this suite touches the AI context at all.
+vi.mock('@/contexts/LuminaAIContext', () => ({
+  useMicLevel: () => 0,
 }));
 
 vi.mock('../../../../evaluation', () => ({
@@ -143,6 +155,7 @@ beforeEach(() => {
   runnerState.awaiting = false;
   runnerState.solved = new Set();
   runnerState.tutorSpeaking = false;
+  runnerState.cuedItemId = null;
   runnerState.gestureCues = [];
   runnerState.options = null;
 });
@@ -406,16 +419,61 @@ describe('TenFrame stage · subitize is flash-then-hide (contract R4)', () => {
     expect(counters()).toHaveLength(4);
   });
 
+  it('does not flash on the tail of the PREVIOUS item’s affirmation', () => {
+    // REGRESSION (drive 5, 2026-08-14, user): "when i get it wrong, the very
+    // next one flashes way too fast before she finishes her statement."
+    //
+    // The falling edge was right and its SUBJECT was wrong. On an affirm the
+    // runner queues the next item's cue and opens the item in the same
+    // dispatch, but a queued cue waits for the floor — so item 2 is on screen
+    // for the entire tail of item 1's affirmation. The latch filled on that
+    // tail, her affirm drained, and the flash fired in the silence BEFORE the
+    // ask for item 2 had even been sent. `cuedItemId` is what makes "she
+    // stopped" mean "she stopped saying THIS item's line".
+    vi.useFakeTimers();
+    const fixture = data('K', [
+      challenge('s1', 'subitize', 4, { flashDuration: 1500 }),
+      challenge('s2', 'subitize', 3, { flashDuration: 1500 }),
+    ]);
+    const view = renderSubitize(fixture);
+    openItem(0);
+
+    // Item 1 runs normally.
+    tutorSays(view);
+    act(() => { vi.advanceTimersByTime(700 + 1500); });
+    expect(counters()).toHaveLength(0);
+
+    // She AFFIRMS item 1 and the runner opens item 2 underneath her voice. Her
+    // cue for item 2 is queued, not sent — `cuedItemId` still names item 1.
+    runnerState.cuedItemId = 's1';
+    view.setTutorSpeaking(true);
+    openItem(1);
+
+    // Her affirmation ends. Nothing may flash: this silence is the gap before
+    // the ask, not after it. (Pre-fix, the counters appeared right here.)
+    view.setTutorSpeaking(false);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(counters()).toHaveLength(0);
+
+    // The queued cue goes out and she asks about item 2. NOW the gate arms.
+    runnerState.cuedItemId = 's2';
+    tutorSays(view);
+    act(() => { vi.advanceTimersByTime(700) });
+    expect(counters()).toHaveLength(3);
+  });
+
   it('flashes even while the component re-renders continuously (mic-level churn)', () => {
     // REGRESSION (drive 2, 2026-08-13): the frame NEVER flashed — the screen sat
     // on "Get ready to look…" forever while the tutor asked "How many counters
     // did you see?" against an empty frame. The prep timer lives in an effect
     // that depends on the flash callback; that callback closed over `runner`,
-    // which is a fresh object every render, and `ctx.micLevel` updates once per
-    // audio frame. So the effect tore down and re-armed its timer many times a
-    // second and the timer could never reach its deadline.
-    // It is invisible at rest and only appears WITH THE MIC OPEN — which is the
-    // only way this primitive ever runs. Hence: re-render throughout the wait.
+    // which is a fresh object every render, and back then `ctx.micLevel` updated
+    // once per audio frame. So the effect tore down and re-armed its timer many
+    // times a second and the timer could never reach its deadline.
+    // 19b took the level off the context value, so the mic no longer SUPPLIES
+    // that churn — but the frame's own re-render does, and the invariant this
+    // pins is the one that matters: a stimulus timer must survive its component
+    // re-rendering. Hence: re-render throughout the wait.
     vi.useFakeTimers();
     const fixture = data('K', [challenge('s1', 'subitize', 4, { flashDuration: 1500 })]);
     const { rerender } = render(<TenFrame data={fixture} className="churn-0" />);

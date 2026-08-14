@@ -45,7 +45,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LoopEmission } from './judgedLoopModel';
-import { useJudgedSpeechLoop, type JudgedSpeechLoop } from './useJudgedSpeechLoop';
+import { useJudgedSpeechLoop, type CueLogEvent, type JudgedSpeechLoop } from './useJudgedSpeechLoop';
 import {
   JUDGED_AUDIO_INPUT,
   validateJudgedScriptPack,
@@ -161,7 +161,6 @@ export interface JudgedScriptRun<Item extends JudgedScriptItem> {
   summary: JudgedRunSummary | null;
   /** Mic affordance state for LuminaMicListener. */
   micState: 'idle' | 'opening' | 'armed';
-  micLevel: number;
   /**
    * True while the tutor's audio is still audibly playing (the tail outlives
    * `isAIResponding`). Read-only passthrough — it changes nothing in the loop.
@@ -174,8 +173,34 @@ export interface JudgedScriptRun<Item extends JudgedScriptItem> {
    * sentence. ten-frame's subitize flash fired while she was still saying
    * "watch the frame", so the child heard the instruction AFTER the counters
    * had come and gone (drive 3, 2026-08-13).
+   *
+   * ⚠️ NEVER GATE A STIMULUS ON THIS ALONE — pair it with `cuedItemId` below.
    */
   tutorSpeaking: boolean;
+  /**
+   * The id of the item the tutor's most recently SENT cue is about — the line
+   * she is speaking, or is about to speak, right now. `null` before the first
+   * cue goes out.
+   *
+   * A stimulus stage must gate on `cuedItemId === item.id` AS WELL AS on
+   * `tutorSpeaking`, because a falling edge alone catches the WRONG utterance.
+   * On an affirm the runner queues the next item's cue and calls `openNext()`
+   * in the SAME dispatch, but a queued cue only sends once the floor clears —
+   * so for one whole utterance the new item is already on screen while
+   * `tutorSpeaking` is still true for the PREVIOUS item's affirmation. A
+   * "she spoke, then stopped" latch fills on the tail of that affirm and fires
+   * the stimulus in the gap BEFORE this item's ask is ever spoken.
+   *
+   * That is what ten-frame drive 5 heard (2026-08-14, user): after a wrong
+   * answer the next frame flashed *"way too fast, before she finishes her
+   * statement"*. Drive 3 had already fixed the wall-clock version of this bug
+   * — this is the same defect arriving through the cue QUEUE instead of a
+   * timer, which is why the gate belongs to the runner and not to one
+   * primitive. A correction needs no special case: no new cue is sent, so
+   * `cuedItemId` still names the current item and the latch correctly catches
+   * her correction line.
+   */
+  cuedItemId: string | null;
   /** Present only when cancelling is allowed (idle standalone, not running). */
   cancelListening?: () => void;
   /** ONE start gesture: connect (standalone), open the mic, send the opening
@@ -233,6 +258,9 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
   const [summary, setSummary] = useState<JudgedRunSummary | null>(null);
   const [stimulusTapped, setStimulusTapped] = useState(false);
+  /** See `cuedItemId` on the returned interface — the item the tutor's live
+   *  line is about, which is NOT always the item on screen. */
+  const [cuedItemId, setCuedItemId] = useState<string | null>(null);
 
   const idxRef = useRef(0);
   idxRef.current = currentIndex;
@@ -524,11 +552,21 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
    */
   const listenForVoice = itemOf(currentIndex)?.answerKind !== 'gesture';
 
+  // Which item is the tutor's live line about? Set when a cue is actually SENT
+  // — never when it is queued, because the gap between the two is precisely the
+  // window in which a stimulus can fire against the previous item's audio.
+  // `sendCueNow` reports 'sent' too, so the run opener lands here as well.
+  const handleCue = useCallback((event: CueLogEvent) => {
+    if (event.phase !== 'sent') return;
+    setCuedItemId(currentItem()?.id ?? null);
+  }, [currentItem]);
+
   const loop = useJudgedSpeechLoop({
     enabled: running,
     listenForVoice,
     voice: voiceConfig,
     onEmission: handleEmission,
+    onCue: handleCue,
   });
   loopRef.current = loop;
 
@@ -564,7 +602,7 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     SoundManager.tap();
     hearTapsRef.current += 1;
     setStimulusTapped(true);
-    ctx.sendText(pronounce(item), { silent: true });
+    ctx.sendText(pronounce(item), { silent: true, scripted: true });
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     tapTimerRef.current = setTimeout(() => setStimulusTapped(false), 1200);
     // Context methods are stable.
@@ -588,6 +626,9 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     setCurrentIndex(0);
     idxRef.current = 0;
     setStimulusTapped(false);
+    // A re-run must not inherit the last run's cued item — a stimulus gate
+    // comparing ids would open before the new opener is spoken.
+    setCuedItemId(null);
     optionsRef.current.onItemOpened?.(first, 0);
     activeLoop.reset();
     setRunning(true);
@@ -671,9 +712,28 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     currentSolved,
     canAttempt: running && current != null && !currentSolved && stage !== 'judging',
     summary,
-    micState: preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle',
-    micLevel: ctx.micLevel,
+    // No `micLevel` here BY DESIGN (19b): a per-audio-frame value on the run
+    // object re-renders every consumer of the run — the whole primitive — at
+    // 30-100Hz. JudgedMicPanel subscribes for the orb it paints.
+    //
+    // ⚠️ GATED ON `running`, NOT ON `ctx.isListening` ALONE — that conflation
+    // made every judged port UNSTARTABLE IN A LESSON (found live 2026-08-14 on
+    // the 19b drive, `ten-frame` and `counting-board`). A lesson opens ONE
+    // shared microphone at connect, so `isListening` is true before the child
+    // has done anything; the orb therefore painted 'armed', and `armed` is
+    // exactly the state in which `LuminaMicListener` renders the live surface
+    // INSTEAD of the tap-to-start button. There was no start affordance left to
+    // press, `start()` was unreachable, `running` stayed false, and `canAttempt`
+    // held every tap on the board dead — under an orb captioned "I'm listening"
+    // and a status line reading "Tap the microphone to start."
+    //
+    // `isListening` answers "is the microphone hardware open", which in a lesson
+    // is not the question. The orb asks "is this RUN listening for an answer",
+    // and only `running` answers that. Standalone is unaffected: `isListening`
+    // there only goes true inside `start()`, so the two agree.
+    micState: preparing ? 'opening' : running && ctx.isListening ? 'armed' : 'idle',
     tutorSpeaking: ctx.isAudioPlaying,
+    cuedItemId,
     cancelListening: running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening,
     start,
     hearStimulus,
