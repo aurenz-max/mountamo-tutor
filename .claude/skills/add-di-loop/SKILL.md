@@ -157,11 +157,19 @@ One pure `__tests__/<Primitive>.di-script.test.ts`. **The plumbing is one import
    `grep -cE 'setTimeout\(\(\) =>[^;]*(ext|dvance)|AUTO_ADVANCE' <Primitive>.tsx`
 3. **Live real-pipeline probes, one per eval mode**: a TEMPORARY vitest file that calls the real generator (`GEMINI_API_KEY` from `.env.local`), builds items via `itemsFromChallenges`, asserts drops are rare, and runs `validateJudgedScriptPack` over packs built from LIVE content — the sentinel scan over generated words is the point. Probe both BANDS and both frame/scope sizes where the primitive forks, not just one of each. **Delete the probe file after the run**; record the drawn words in the queue block.
    *Two harness facts that cost a run:* `vitest.setup.ts` stamps a dummy `GEMINI_API_KEY` before any test module loads, and ES imports HOIST above your `.env.local` read — so read the key at the top of the file and `await import()` the generator **inside** the test. (`server-only` is already aliased away in `vitest.config.ts`.)
-4. Full vitest — expect concurrent-port noise in this lane; own only your suites.
+   *Registering a drive adapter (next gate) gives you this for free:* the plan endpoint runs `checkPackGates` over a pack built from live content and reports it, so the sentinel scan re-runs on every drive instead of once behind a deleted file.
+4. **The headless judged drive — `/tutor-test --di`.** Export your cue surface (`<primitive>PackBase`, spread by the component so there is one source) and register a `DiPortAdapter` in `service/qa/di/diDrivePlan.ts` naming it plus your answer material: for every item, the correct answer, an unambiguously wrong one, and — the one that earns its keep — the **signature wrong** your `discriminationFor` clause CLAIMS the judge refuses. Then:
+   ```bash
+   cd backend/tests/tutor_live
+   python run_tutor_live.py --component <id> --di --eval-mode <mode> --runs 3
+   python run_tutor_live.py --component <id> --di --di-cap    # past the corrections cap
+   ```
+   It answers every spoken item WRONG on purpose, then right, as TEXT — so it tests the judge's semantics without TTS. **It does not test acoustics, the mic, or VAD, so it does not close your mic row**; it closes the half of that row a machine can hold, which is why #82–#98 accumulated. Read the judgment matrix in `qa/tutor-reports/<id>-live-di-*.md`, then the transcript — the oracles are tripwires, the transcript is the evidence. Full oracle table in `/tutor-test`.
+5. Full vitest — expect concurrent-port noise in this lane; own only your suites.
 
 ## Step 8 — close the slice (PM discipline)
 
-Dated block in `qa/di/BACKLOG.md` — **item 16 for literacy, item 18 for math** (files, deletions, findings, gates, probe words). **HUMAN-CHECKS row** with per-mode wrong answers to say — *re-grep the register immediately before filing; concurrent sessions in this lane are normal and IDs move.* Update the WORKSTREAMS row. Report honestly: the machine gates prove the pack, **only a mic run proves the loop** — "shipped, mic row #N" — and never mark the port verified yourself. A drive that answers everything correctly does not advance the row: the criteria say answer WRONG on purpose.
+Dated block in `qa/di/BACKLOG.md` — **item 16 for literacy, item 18 for math** (files, deletions, findings, gates, probe words). **HUMAN-CHECKS row** with per-mode wrong answers to say — *re-grep the register immediately before filing; concurrent sessions in this lane are normal and IDs move.* Update the WORKSTREAMS row. Report honestly: the machine gates prove the pack, the headless drive proves the judge's SEMANTICS, and **only a mic run proves the LOOP a child is actually in** — "shipped, semantics green on N items, mic row #N" — and never mark the port verified yourself. A drive that answers everything correctly does not advance anything: the criteria say answer WRONG on purpose, which is why step 7.4 does it by construction.
 
 ## Standing doctrine (ruled; carry, don't re-derive)
 

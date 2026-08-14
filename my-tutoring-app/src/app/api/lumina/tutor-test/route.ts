@@ -8,6 +8,7 @@ import {
   auditAllScaffolds,
   buildScaffoldPromptPreview,
 } from '@/components/lumina/service/qa/tutoring/scaffoldAudit';
+import { buildDiDrivePlan, isDiPort } from '@/components/lumina/service/qa/di/diDrivePlan';
 
 /**
  * GET /api/lumina/tutor-test — deterministic tutoring-scaffold QA (/tutor-test skill).
@@ -28,9 +29,13 @@ import {
  *   generateComponentContent call the pipeline uses, then reports where each
  *   {{var}}/contextKey would resolve from and renders the assembled prompt.
  *   Optional: &evalMode= &topic= &gradeLevel=
+ * - ?componentId=X&probe=1&di=1: Tier-3 DI — adds `probe.diPlan`, the judged
+ *   loop serialized for the headless student in run_tutor_live.py --di: real
+ *   items through the real build gates, real cues, and the answer material a
+ *   right and a wrong child would produce. Judged-loop ports only.
  *
- * Tier 3 (live Gemini behavior — answer withholding, directive compliance)
- * is NOT covered here; use the Lumina Tutor Tester dev panel.
+ * Tier 3 for the CLICK-path tutor (answer withholding, directive compliance)
+ * is NOT covered here; use run_tutor_live.py or the Lumina Tutor Tester panel.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -136,6 +141,21 @@ export async function GET(request: NextRequest) {
         // so the journey can drive real values and know real answer keys.
         ...(searchParams.get('live') === '1'
           ? { liveContext: { tutoring: scaffold, generatedData: generated, mergedBag } }
+          : {}),
+        // Tier-3 DI (&di=1): the judged loop itself, serialized. The REAL script
+        // module builds the REAL cues from this generated content, so the headless
+        // student replays production strings instead of a Python replica of them.
+        ...(searchParams.get('di') === '1'
+          ? {
+              diPlan: isDiPort(componentId)
+                ? buildDiDrivePlan(componentId, generated, gradeLevel)
+                : {
+                    error:
+                      `"${componentId}" has no DI drive adapter — it is either not a `
+                      + '/add-di-loop port, or its port has not registered one. See '
+                      + 'DI_PORTS in service/qa/di/diDrivePlan.ts.',
+                  },
+            }
           : {}),
       };
     } catch (error: unknown) {

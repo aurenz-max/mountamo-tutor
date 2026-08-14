@@ -80,7 +80,11 @@
  * a sentence with either.
  */
 
-import type { JudgedScriptItem, ResponseClassId } from '../../../hooks/judgedScriptContract';
+import type {
+  JudgedCueSurface,
+  JudgedScriptItem,
+  ResponseClassId,
+} from '../../../hooks/judgedScriptContract';
 import { countWalk, numberWordFor } from './countingBoardScript';
 
 export type TenFrameItemKind = 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
@@ -367,12 +371,23 @@ const affirmTailFor = (item: TenFrameItem): string => {
  * is true ("the quoted line is the only thing you say") rather than issuing an
  * order, and the cue names the failure explicitly at the end.
  */
+/**
+ * ⚠️ THE STOP BELONGS TO EACH VERDICT BRANCH, NOT ONLY TO THE ASK.
+ * The opening sentence here says "the quoted line is the ONLY thing you say" —
+ * but by the time the model reaches the branches below, "the quoted line" reads
+ * as the ASK it was just handed, so the verdict lines inherited no stop at all.
+ * The first headless DI run (2026-08-14) shows exactly that decay: the first
+ * affirm came back clean ("Yes, three counters."), then every later one grew —
+ * 26, 31, 37, 35, 34 unscripted words — into praise, a preview of the next
+ * activity, and finally "We've completed this activity" at item 4 of 7.
+ * The literacy packs never had this: they close every branch with `and stop`.
+ */
 const judgingContract = (item: TenFrameItem): string =>
   `The quoted line is the ONLY thing you say on this turn; you then stay silent while the learner works, and their think time is unbounded. Never say the answer during their turn and never count aloud with them. `
   + `The correct answer is "${numberWordFor(item.answer)}". `
   + discriminationFor(item)
-  + `If the answer is right, say exactly: "Yes, ${affirmTailFor(item)}." `
-  + `If it is wrong, say exactly: "${correctionFor(item)}"`;
+  + `If the answer is right, say exactly: "Yes, ${affirmTailFor(item)}." and stop there — add no praise, no encouragement and no mention of what comes next, and never tell the learner the activity is finished. `
+  + `If it is wrong, say exactly: "${correctionFor(item)}" and stop there; that correction is the whole turn.`;
 
 /** The gesture contract is a SILENCE contract (spell_word's pattern): there is
  *  nothing to judge until the placement is described, and the quantity is
@@ -475,5 +490,134 @@ export const stimulusFor = (item: TenFrameItem): string => {
       return `${numberWordFor(item.addend1 ?? 0)} plus ${numberWordFor(item.addend2 ?? 0)}`;
     case 'subtract':
       return `${numberWordFor(item.shown)} ${countersWord(item.shown)}, take away ${numberWordFor(item.removed ?? 0)}`;
+  }
+};
+
+// ── The cue surface — one source for the component and the DI harness ───────
+
+/**
+ * Everything ten-frame ever sends the tutor. `TenFrame.tsx` spreads this and
+ * adds what only a mounted component can own (status lines, and the
+ * `diagnosisObservation` that reads the live board); the drive-plan endpoint
+ * builds the identical cues for the headless judged-loop harness.
+ *
+ * The split exists so the harness cannot drift from production: a Python
+ * journey that mirrors the cue wording by hand is a second source of truth,
+ * and this family has already paid that bill once (letter-spotter's generator
+ * and script disagreed live on what a sayable sentence was).
+ */
+export const tenFramePackBase = (
+  items: TenFrameItem[],
+): JudgedCueSurface<TenFrameItem> => ({
+  primitiveType: 'ten-frame',
+  activityLine: 'live direct instruction ten frame practice',
+  items,
+  itemCue,
+  moveOnCue,
+  completeCue,
+  pronounceCue,
+  contextFor: (item) => ({
+    challengeType: item.kind,
+    stimulus: stimulusFor(item),
+  }),
+});
+
+// ── Harness answer material — what a right and a wrong child sound like ─────
+
+/** Numbers the ask STATES aloud, so hearing one back is not a leak. A
+ *  make-ten of five into a frame of ten asks "there are five… how many more?"
+ *  where the answer is also five; forbidding the word there would flag the
+ *  question itself. */
+const publicValuesFor = (item: TenFrameItem): number[] => {
+  switch (item.kind) {
+    case 'build':
+      return [item.answer];
+    case 'subitize':
+      return [];
+    case 'make_ten':
+      return [item.shown, item.capacity];
+    case 'add':
+      return [item.addend1 ?? 0, item.addend2 ?? 0];
+    case 'subtract':
+      return [item.shown, item.removed ?? 0];
+  }
+};
+
+export interface TenFrameHarnessAnswers {
+  /** What a correct child says (or places). */
+  correct: string;
+  /** Unambiguously wrong — the baseline refusal test. */
+  plainWrong: string;
+  /**
+   * The FLUENT miss this item's judging contract explicitly refuses. Testing
+   * it tests the discrimination clause rather than mere arithmetic: a judge
+   * that only catches "four for five" can still affirm the addend said back.
+   */
+  signatureWrong?: { text: string; why: string };
+  /** Gesture items commit a placement, not a word — code computes the match. */
+  placed?: { correct: number; wrong: number };
+  /** Answer tokens that must NOT appear in the spoken ask. */
+  leakTokens: string[];
+}
+
+/**
+ * The answers a headless student says on a judged drive. This lives beside the
+ * contract it mirrors on purpose: `discriminationFor` above CLAIMS the judge
+ * refuses these, and this is the claim made testable. Change one, change both.
+ */
+export const tenFrameHarnessAnswers = (item: TenFrameItem): TenFrameHarnessAnswers => {
+  const answerWord = numberWordFor(item.answer);
+  const wrongValue = item.answer < SPOKEN_ANSWER_MAX ? item.answer + 1 : item.answer - 1;
+  const leakTokens = publicValuesFor(item).includes(item.answer) ? [] : [answerWord];
+
+  const base: TenFrameHarnessAnswers = {
+    correct: answerWord,
+    plainWrong: numberWordFor(wrongValue),
+    leakTokens,
+  };
+
+  switch (item.kind) {
+    case 'build':
+    case 'make_ten':
+      if (item.answerKind === 'gesture') {
+        return {
+          ...base,
+          correct: `${item.answer} counters placed`,
+          plainWrong: `${Math.max(0, item.answer - 1)} counters placed`,
+          placed: { correct: item.answer, wrong: Math.max(0, item.answer - 1) },
+        };
+      }
+      // make_ten @1-2: the contract refuses the TOTAL said back.
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.capacity),
+          why: 'the total said back instead of how many MORE are needed',
+        },
+      };
+    case 'subitize':
+      return {
+        ...base,
+        signatureWrong: {
+          text: countWalk(item.answer),
+          why: 'counted up one at a time — lands on the right number, but subitizing is the skill',
+        },
+      };
+    case 'add':
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.addend1 ?? 0),
+          why: 'an addend said back instead of the total',
+        },
+      };
+    case 'subtract':
+      return {
+        ...base,
+        signatureWrong: {
+          text: numberWordFor(item.shown),
+          why: 'the starting number said back instead of what is left',
+        },
+      };
   }
 };

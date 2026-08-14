@@ -4,20 +4,93 @@ Confirm that a primitive's tutoring scaffold actually reaches the AI tutor intac
 
 **Why this exists:** the backend renders any unresolvable `{{key}}` as the literal string `(not set)` — no error, no log (`interpolate_template`, `lumina_tutor.py`). A broken scaffold degrades invisibly into a vague, context-blind tutor. Type checks catch none of it.
 
-**Arguments:** `/tutor-test <primitive-id> [--probe]`
+**Arguments:** `/tutor-test <primitive-id> [--probe] [--di]`
 - Omit the id to sweep every catalog entry with a `tutoring:` block
 - `--probe` adds Tier 2 (real generated content + assembled prompt preview)
+- `--di` runs Tier 3-DI on a judged-loop port (see below) — the only tier that exercises the JUDGE
 
-## The three tiers
+## The tiers
 
 | Tier | What | Cost | Judged by |
 |------|------|------|-----------|
 | 1 — Static contract audit | orphan check, `{{var}}`/contextKey resolvability, sendText silent flags, directive tags, answer-leak lint | free, CI-able | code |
 | 2 — Prompt-assembly probe (`&probe=1`) | real generator output → assembled system-prompt preview, per-var resolution source | 1 Gemini generation | code + you |
 | 3 — Live journey harness | headless synthetic student drives the REAL backend WS + Gemini Live session through the primitive's natural interaction order; per-beat `ai_transcription` captured + code oracles | 1 generation + 1 Live session (~4 min) | code + you (read the transcript report) |
+| **3-DI — Judged-loop harness (`--di`)** | **the same session, driven as a DI loop: real cues from the primitive's own script module, answered WRONG on purpose then right, in TEXT** | 1 generation + 1 Live session (~6 min) | code + you (read the judgment matrix) |
 | 3b — Manual bench | edge behaviors the scripted journey doesn't cover; actual audio quality | Gemini Live session | human, in the Lumina Tutor Tester dev panel |
 
 Tiers 1–2 are this skill's fast path. Tier 3 runs on demand for scaffolds that are new, materially changed, or Tier 1/2-green but "tutor feels off".
+
+### Tier 3-DI: the judged loop, headless
+
+```bash
+cd backend/tests/tutor_live
+python run_tutor_live.py --component ten-frame --di --eval-mode subitize \
+  --topic "counting to ten" --grade Kindergarten --runs 3
+python run_tutor_live.py --component ten-frame --di --di-cap     # drill past the corrections cap
+python run_tutor_live.py --component ten-frame --di --di-wrong signature   # the fluent miss
+```
+
+**Every spoken item is answered wrong on purpose, then right.** A drive that answers
+everything correctly proves nothing — it is what every open mic row's criteria say not to do.
+Report: `qa/tutor-reports/<id>-live-di-<wrong-kind>-<date>.md`; read the **judgment matrix**
+first (per item: was the wrong answer refused, was the right one affirmed), then the transcript.
+
+**No TTS, and that is the whole trick.** The student's answer goes back as a plain text turn,
+which reaches Gemini through the same `send_realtime_input` floor a spoken answer does
+(`classify_cue` returns `"text"` for anything untagged, so it is not a cue and arms no mute
+window) and is judged under the identical contract. Synthesizing audio would make every
+finding a question about our synthesizer's diction instead of the judge's.
+
+**So be precise about what a green run buys.** It exercises the LOOP and the JUDGE'S
+SEMANTICS — refusal, affirmation, leak discipline, sentinel discipline, correction shape,
+cue compliance. It does **not** exercise acoustics, ASR, the mic transport, VAD, or the audio
+tail. Ear-separability and "can the judge hear a five-year-old say /s/" stay human-drive
+questions. **A green run retires the semantic half of a mic row's criteria, never the row.**
+
+Nothing in the journey is authored in Python: `/api/lumina/tutor-test?...&di=1` builds the plan
+from the port's own script module (real `itemFromChallenge` gates, real `itemCue`, real judging
+contract, the runner's opening/how-to-play policy), so the harness cannot drift from production.
+It also runs `checkPackGates` over a pack built from LIVE generated content — the sentinel scan
+over generated words that `/add-di-loop` step 7.3 otherwise buys with a delete-after-run file.
+
+**Judged cues ride clean of the state block (`scripted: true`, 2026-08-14).** The runner and the
+harness both send judged cues with `scripted: true`, which stops the backend prepending its
+`[CURRENT STATE]` block (`TextQueueEntry.scripted` → `PrimitiveState.attach` skipped). Without
+it the Live model NARRATES the preamble — *"[CURRENT STATE]: … The target answer for this new
+item is 'four'"*, answer included, on 6/6 state-attached cues in the first ten-frame cap drill —
+despite a prompt rule forbidding exactly that. **If `di-tag-spoken` and `di-answer-leak-in-ask`
+fire together on ask/moveon beats, suspect the state block before the pack's script**: check
+`state_attached` in the backend session ledger — on a judged run it must stay 0 after connect.
+The report's findings table clusters one row per MECHANISM (beat list carries the instances), so
+this class reads as one defect, not a 12-row wall.
+
+**Adding a port** = one `DiPortAdapter` in `service/qa/di/diDrivePlan.ts` naming the port's
+exported cue surface (`<primitive>PackBase`) and its answer material. It must never re-declare
+cues. If a port has no exported cue surface yet, extract one — the component spreads it, which
+is what makes the harness honest.
+
+#### DI oracles
+
+| Check | Severity | What it means |
+|---|---|---|
+| `di-false-affirm` | HIGH | **the one that matters** — a wrong answer was affirmed |
+| `di-false-refusal` | HIGH | a right answer was corrected |
+| `di-no-verdict` | HIGH | neither sentinel opened a sentence; the loop stalls here |
+| `di-answer-leak-in-ask` | HIGH | the ask contains the answer the child is about to say |
+| `di-tag-spoken` | HIGH | read control syntax aloud (the fabricated-`[LSP_TAP]` class) |
+| `di-performed-stage-direction` | HIGH | announced the wait instead of simply stopping |
+| `di-improvised-turn` | HIGH | spoke during a hands item, which the bracket owes no reply |
+| `di-false-completion-claim` | HIGH | told the child the work is over with items still queued |
+| `di-silent-turn` | HIGH | no speech in 60s — the loop cannot advance |
+| `di-verdict-embellished` | WARN | added ≥5 unscripted words to a `say exactly` line |
+| `di-off-script-ask` / `di-off-script-verdict` | WARN | <60% of the scripted line survived |
+| `di-correction-verbatim-repeat` | WARN | same correction word for word; DISTAR firms by escalating |
+| `di-capped-item-asks-then-withdraws` | WARN | last correction re-asks, then the move-on cue retracts it |
+| `di-sentinel-on-ask` | WARN | an ask opens with a verdict sentinel; the reducer misreads it |
+
+The click-path oracles are deliberately NOT run on `--di`: they score an improvising tutor, and
+on a judged loop a question per turn is the method, not interrogation cadence.
 
 ### Tier 3: live journey harness
 
@@ -127,8 +200,9 @@ For scaffolds that are new or materially changed, run the live journey harness (
 
 | File | Purpose |
 |------|---------|
-| `src/app/api/lumina/tutor-test/route.ts` | API endpoint (sweep / single / probe) |
+| `src/app/api/lumina/tutor-test/route.ts` | API endpoint (sweep / single / probe / `&di=1`) |
 | `src/components/lumina/service/qa/tutoring/scaffoldAudit.ts` | Static analyzer + prompt-preview mirror |
+| `src/components/lumina/service/qa/di/diDrivePlan.ts` | Tier 3-DI: port adapters + the serialized judged loop |
 | `src/contexts/LuminaAIContext.tsx` | Sends `componentDef.tutoring` verbatim in the WS auth message |
 | `backend/app/api/endpoints/lumina_tutor.py` | `interpolate_template` + prompt assembly (the mirror's source of truth) |
 | `backend/tests/tutor_live/run_tutor_live.py` | Tier-3 live journey harness (headless synthetic student) |

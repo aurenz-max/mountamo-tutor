@@ -323,6 +323,32 @@ export interface JudgedScriptPack<Item extends JudgedScriptItem> {
   ) => Omit<JudgedDiagnosisObservation, 'judgeFeedback'> | null;
 }
 
+/**
+ * THE WIRE: every field of a pack that can reach the tutor. The rest of
+ * `JudgedScriptPack` is component-owned — status lines are rendered, and
+ * `diagnosisObservation` closes over board state — so a pack splits cleanly
+ * into "what the tutor is told" and "what the screen does with the verdict".
+ *
+ * Named because a SECOND consumer arrived: the DI drive-plan endpoint
+ * (`/api/lumina/tutor-test?di=1`) builds the real cues for the headless
+ * judged-loop harness. A harness that re-typed those cues would test a
+ * fiction — the exact drift 19f found on both sides of letter-spotter's wire
+ * — so a port exports its cue surface once and the component spreads it.
+ */
+export type JudgedCueSurface<Item extends JudgedScriptItem> = Pick<
+  JudgedScriptPack<Item>,
+  | 'primitiveType'
+  | 'activityLine'
+  | 'items'
+  | 'itemCue'
+  | 'moveOnCue'
+  | 'completeCue'
+  | 'pronounceCue'
+  | 'contextFor'
+  | 'sentinels'
+  | 'maxCorrections'
+>;
+
 // ============================================================================
 // Validators — the gates, checkable by every pack's own test file
 // ============================================================================

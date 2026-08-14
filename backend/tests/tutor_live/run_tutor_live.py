@@ -29,7 +29,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 import websockets
@@ -66,7 +66,7 @@ def get_id_token() -> str:
 
 
 def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
-                       eval_mode: Optional[str] = None) -> Dict[str, Any]:
+                       eval_mode: Optional[str] = None, di: bool = False) -> Dict[str, Any]:
     """Tier-2 probe with &live=1: real generated content + the raw tutoring block.
 
     Retries: the Next dev server intermittently answers mid-recompile, and
@@ -81,6 +81,11 @@ def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
             params = {"componentId": component_id, "probe": "1", "live": "1", "topic": topic, "gradeLevel": grade}
             if eval_mode:
                 params["evalMode"] = eval_mode
+            if di:
+                # The judged loop, serialized: real items through the real build
+                # gates, real cues, and the answer material a right and a wrong
+                # child produce. Nothing here is authored in Python.
+                params["di"] = "1"
             r = requests.get(
                 f"{frontend}/api/lumina/tutor-test",
                 params=params,
@@ -93,7 +98,12 @@ def fetch_live_context(frontend: str, component_id: str, topic: str, grade: str,
             live = probe.get("liveContext")
             if not live:
                 raise RuntimeError(f"no liveContext in probe response (status {r.status_code}) — is the &live=1 route change deployed?")
-            return {"audit": body.get("audit"), "status": body.get("status"), **live}
+            return {
+                "audit": body.get("audit"),
+                "status": body.get("status"),
+                **live,
+                **({"diPlan": probe["diPlan"]} if "diPlan" in probe else {}),
+            }
         except (ValueError, RuntimeError, requests.RequestException) as e:
             last_err = e
             snippet = ""
@@ -137,6 +147,10 @@ class Beat:
     # deflection "maybe the next activity will show us what they're building"
     # contains the anchor word "building".
     judge: Optional[str] = None
+    # JUDGED-LOOP payload (--di). Set only by build_di_journey; carries what the
+    # DI oracles need without re-parsing beat names: the item, the role of this
+    # beat in the loop, the verdict owed, and the exact scripted line owed.
+    di: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -149,8 +163,16 @@ class BeatResult:
     elapsed: float = 0.0
 
 
-def text_msg(content: str) -> Dict[str, Any]:
-    return {"type": "text", "content": content}
+def text_msg(content: str, scripted: bool = False) -> Dict[str, Any]:
+    """`scripted=True` mirrors the judged runner's own sends (say-exactly cues
+    carry `scripted: true` so the backend never prepends the [CURRENT STATE]
+    block, which the Live model narrates aloud — target answer included, per
+    the 2026-08-14 ten-frame drive). Student answers stay unscripted: the
+    harness plays the child, and the child is not a script."""
+    msg: Dict[str, Any] = {"type": "text", "content": content}
+    if scripted:
+        msg["scripted"] = True
+    return msg
 
 
 def ctx_msg(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -1876,6 +1898,428 @@ def build_lesson_resume_continuity_journey(_live: Dict[str, Any], grade: str) ->
     }
 
 
+# ---------------------------------------------------------------------------
+# The judged loop (--di) — one generic journey for every /add-di-loop port
+#
+# WHAT THIS DRIVES, AND WHAT IT DOES NOT (read before trusting a green run):
+#
+#   The cues are PRODUCTION cues. They are not written here — they arrive from
+#   `/api/lumina/tutor-test?di=1`, built by the primitive's own script module
+#   from real generated content, through the same build gates and in the same
+#   order `useJudgedScriptRunner` sends them. Every other journey in this file
+#   re-types the component's sendText templates in Python and has to be kept in
+#   sync by hand; this one cannot drift, because there is nothing to sync.
+#
+#   THE STUDENT ANSWERS IN TEXT. That is the one substitution and it is
+#   deliberate: TTS on the way in would make every finding a question about our
+#   synthesizer's diction. A plain (untagged) text message reaches Gemini
+#   through the same `send_realtime_input` floor a student utterance does —
+#   `classify_cue` returns "text", so it is not a cue, arms no mute window, and
+#   the judge grades it under the identical contract.
+#
+#   So this exercises the LOOP and the JUDGE'S SEMANTICS: does a wrong answer
+#   get REFUSED, does a right one get affirmed, does the ask leak the answer,
+#   does the tutor stay on script, does it hold its tongue on a hands item, does
+#   a correction escalate. It does NOT exercise acoustics, ASR, the mic
+#   transport, VAD, or the audio tail — a run here retires the semantic half of
+#   a mic row's criteria, never the row itself.
+#
+#   EVERY VOICE ITEM IS ANSWERED WRONG BEFORE IT IS ANSWERED RIGHT, because a
+#   drive that answers everything correctly proves nothing — it is exactly what
+#   every open mic row's criteria say not to do.
+# ---------------------------------------------------------------------------
+
+def _di_sentences(text: str) -> List[Tuple[int, str]]:
+    """(offset, sentence) pairs — the engine classifies a verdict from a
+    SENTENCE opener, not the start of the turn, so a second-sentence "Yes,"
+    counts (judgedScriptContract.opensWithSentinel)."""
+    out: List[Tuple[int, str]] = []
+    pos = 0
+    for part in re.split(r"(?<=[.!?])\s+", text):
+        if part.strip():
+            out.append((pos, part.strip()))
+        pos += len(part) + 1
+    return out
+
+
+def _di_opener_pos(text: str, sequences: List[List[str]]) -> Optional[int]:
+    """Offset of the first sentence opening with any of these token sequences."""
+    for offset, sentence in _di_sentences(text):
+        tokens = re.sub(r"[^a-z0-9]+", " ", sentence.lower()).strip().split()
+        for seq in sequences:
+            if len(seq) <= len(tokens) and all(tokens[i] == w for i, w in enumerate(seq)):
+                return offset
+    return None
+
+
+def classify_di_verdict(text: str, sentinels: Dict[str, Any]) -> Optional[str]:
+    """"affirm" | "correct" | None, by whichever sentinel opens a sentence FIRST
+    — mirroring the reducer, which binds the verdict to the opener it reaches."""
+    hits = []
+    for kind, key in (("affirm", "affirm"), ("correct", "correct")):
+        pos = _di_opener_pos(text, sentinels.get(key) or [])
+        if pos is not None:
+            hits.append((pos, kind))
+    return min(hits)[1] if hits else None
+
+
+def _di_overlap(spoken: str, expected: str) -> float:
+    """Fraction of the SCRIPTED line's words that made it into the utterance.
+    A blunt instrument on purpose: the point is to catch a tutor improvising a
+    different line, not to police transcription noise."""
+    want = set(_norm(expected).split())
+    if not want:
+        return 1.0
+    got = set(_norm(spoken).split())
+    return len(want & got) / len(want)
+
+
+def _di_extra_words(spoken: str, expected: str) -> List[str]:
+    """Words the tutor ADDED to a "say exactly" line.
+
+    Recall and compliance are different questions and the first run of this
+    harness proved it: every scripted line came back at 100% overlap while the
+    tutor appended a fresh sentence to most of them. `say exactly` is the whole
+    mechanism by which a DI pack controls what a five-year-old hears, so an
+    addition is a compliance break even when the addition is pleasant.
+    """
+    want = set(_norm(expected).split())
+    return [w for w in _norm(spoken).split() if w not in want]
+
+
+# "You're all done with this part!" — spoken at item 4 of 7 on the first
+# headless run. Harmless-sounding, and false: the child is told the work is
+# over while five more items are queued behind it.
+#
+# ⚠️ THIS IS A PHRASE TRIPWIRE, AND IT ALREADY MISSED ONCE. Built from run 1's
+# wording, it read run 2 (ten-frame, 2026-08-14) as 0 HIGH — while the tutor
+# said "We've completed this activity. Are you ready for the next one" at item
+# 4 of 7. Same lie, different sentence, and the run shipped a PASS verdict.
+# Every alternate below that is not `all done` was added FROM that miss.
+#
+# So treat this as a convenience, never as the guarantee: the phrasing-blind
+# backstop is `di-verdict-embellished`, which caught all five of those lines by
+# counting words the script did not authorise. If a future run finds yet
+# another wording, widen this — but the reason the miss was RECOVERABLE is that
+# the structural check fired anyway.
+DONE_CLAIM_RE = re.compile(
+    r"\b(?:all done|you(?:'re| are)\s+done|that(?:'s| is)\s+all"
+    r"|we(?:'re| are)\s+(?:all\s+)?(?:done|finished)"
+    r"|we(?:'ve| have)\s+(?:completed|finished)"
+    r"|(?:completed|finished)\s+(?:this|the)\s+(?:activity|part|set|lesson)"
+    r"|(?:good|great|nice)\s+stopping\s+point"
+    r"|that(?:'s| is)\s+it\s+for"
+    r"|finished\s+the\s+whole|that was the last)\b",
+    re.I,
+)
+
+
+def build_di_journey(live: Dict[str, Any], grade: str,
+                     wrong_kind: str = "plain", cap_drill: bool = False) -> Dict[str, Any]:
+    plan = live.get("diPlan")
+    if not plan:
+        raise RuntimeError(
+            "no diPlan in the probe response — the component has no DI drive "
+            "adapter (register one in service/qa/di/diDrivePlan.ts) or the "
+            "route was called without &di=1"
+        )
+    if "error" in plan:
+        raise RuntimeError(plan["error"])
+    if not plan["items"]:
+        raise RuntimeError("the drive plan has no items — every generated challenge "
+                           "was dropped by the pack's build gates")
+
+    sentinels = plan["sentinels"]
+    beats: List[Beat] = []
+
+    def answer_beat(item: Dict[str, Any], said: str, expect: str,
+                    label: str, why: str = "", final_attempt: bool = False,
+                    is_last_item: bool = False) -> Beat:
+        return Beat(
+            f"{label}:{item['id']}",
+            sends=[text_msg(said)],
+            expect="turn",
+            note=(f'student says "{said}"' + (f" — {why}" if why else "")),
+            di={
+                "role": "answer", "item": item["id"], "expect": expect,
+                "said": said, "why": why,
+                "answer_kind": item["answerKind"],
+                "expected_line": item.get("affirmLine") if expect == "affirm"
+                                 else item.get("correctionLine"),
+                # The attempt the runner will not let stand: it decides the cap
+                # AFTER the tutor has spoken, so a correction that re-asks here
+                # is a question the child is never allowed to answer (18c(b)).
+                "final_attempt": final_attempt,
+                "is_last_item": is_last_item,
+            },
+        )
+
+    # The cap drill hangs off the FIRST voice item: wrong maxCorrections+1 times,
+    # then the runner's move-on cue — which carries the NEXT item's ask, so that
+    # cue REPLACES the next ask beat exactly as it does in production.
+    capped_id = None
+    if cap_drill:
+        capped_id = next((i["id"] for i in plan["items"] if i["answerKind"] == "voice"), None)
+    skip_next_ask = False
+
+    for index, item in enumerate(plan["items"]):
+        answers = item["answers"]
+        is_last_item = index == len(plan["items"]) - 1
+        # 1. The ask. The tutor's line here is fully scripted, so anything it
+        #    adds is improvisation and anything it drops is a compliance break.
+        if skip_next_ask:
+            # The previous item's move-on cue already spoke this item's ask.
+            skip_next_ask = False
+        else:
+            beats.append(Beat(
+                f"ask:{item['id']}",
+                # Context first, then the cue — `update_context` takes no turn, it
+                # updates the state block that rides along with the next message
+                # that asks for one (lumina_tutor.PrimitiveState.attach). Same order
+                # the runner syncs on advance, so `{{challengeType}}` / `{{stimulus}}`
+                # are the CURRENT item's by the time the tutor reads them.
+                sends=[ctx_msg({"activity": plan["activityLine"], **item["context"]}),
+                       text_msg(item["cue"], scripted=True)],
+                expect="turn",
+                note=f"{item['answerKind']} item ({item.get('action')})",
+                di={
+                    "role": "ask", "item": item["id"], "answer_kind": item["answerKind"],
+                    "expected_line": item["askLine"],
+                    "leak_tokens": answers.get("leakTokens") or [],
+                    "is_last_item": is_last_item,
+                },
+            ))
+
+        if item["answerKind"] == "gesture":
+            # A hands item holds the activity bracket: the mic is open, but no
+            # turn is ever committed, so the tutor is owed no reply. Speech here
+            # is the fabricated-[LSP_TAP] class (letter-spotter, 2026-08-13).
+            beats.append(Beat(
+                f"hands-hold:{item['id']}",
+                sends=[], expect="silence",
+                note="the child is working on the surface — the tutor owes no turn",
+                di={"role": "hold", "item": item["id"], "answer_kind": "gesture"},
+            ))
+            verdicts = item.get("gestureVerdict") or {}
+            for label, key, expect in (("commit-wrong", "wrong", "correct"),
+                                       ("commit-right", "correct", "affirm")):
+                if not verdicts.get(key):
+                    continue
+                beats.append(Beat(
+                    f"{label}:{item['id']}",
+                    sends=[text_msg(verdicts[key], scripted=True)],
+                    expect="turn",
+                    note="placement described to the tutor; the MATCH IS COMPUTED IN CODE",
+                    di={"role": "verdict", "item": item["id"], "expect": expect,
+                        "answer_kind": "gesture",
+                        "expected_line": None},
+                ))
+            continue
+
+        # 2. Wrong on purpose, 3. then right. Both under the same contract.
+        signature = answers.get("signatureWrong")
+        if wrong_kind == "signature" and signature:
+            wrong_said, wrong_why = signature["text"], signature["why"]
+        else:
+            wrong_said, wrong_why = answers["plainWrong"], ""
+
+        if item["id"] == capped_id:
+            # Never right: drill past the cap so the corrections can be compared
+            # to each other (DISTAR firms by escalating) and so the last one can
+            # be checked for a question the runner is about to withdraw.
+            attempts = plan["maxCorrections"] + 1
+            for n in range(attempts):
+                beats.append(answer_beat(
+                    item, wrong_said, "correct", f"wrong{n + 1}", wrong_why,
+                    final_attempt=(n == attempts - 1), is_last_item=is_last_item,
+                ))
+            next_item = plan["items"][index + 1] if index + 1 < len(plan["items"]) else None
+            beats.append(Beat(
+                f"moveon:{item['id']}",
+                sends=([ctx_msg({"activity": plan["activityLine"], **next_item["context"]})]
+                       if next_item else [])
+                      + [text_msg(item["moveOnCue"], scripted=True)],
+                expect="turn",
+                note="corrections cap reached — the lesson carries forward"
+                     + (" carrying the next item's ask" if next_item else ""),
+                di={
+                    "role": "ask" if next_item else "moveon",
+                    "item": next_item["id"] if next_item else item["id"],
+                    "answer_kind": (next_item or item)["answerKind"],
+                    "expected_line": next_item["askLine"] if next_item else None,
+                    "leak_tokens": (next_item["answers"].get("leakTokens") or []) if next_item else [],
+                    "is_last_item": next_item is None,
+                },
+            ))
+            skip_next_ask = next_item is not None
+            continue
+
+        beats.append(answer_beat(item, wrong_said, "correct", "wrong", wrong_why,
+                                 is_last_item=is_last_item))
+        beats.append(answer_beat(item, answers["correct"], "affirm", "right",
+                                 is_last_item=is_last_item))
+
+    beats.append(Beat(
+        "complete",
+        sends=[text_msg(plan["completeCue"], scripted=True)],
+        expect="turn",
+        di={"role": "complete", "item": "*"},
+    ))
+
+    first = plan["items"][0]
+    return {
+        "beats": beats,
+        "primitive_type": plan["primitiveType"],
+        "instance_id": f"di-live-{plan['componentId']}-{int(time.time())}",
+        "initial_bag": {"activity": plan["activityLine"], **first["context"]},
+        "audio_input": plan["audioInput"],
+        # DI-GREET-1: the pack's first cue IS its opening line. Without this the
+        # backend queues an improvised greeting with end_of_turn=True the instant
+        # the socket opens, and it collides with the opening cue — the word-flip
+        # defect (session 5269fc87d6da) this flag was added to fix.
+        "owns_opening": True,
+        "grade_level": plan["gradeLevel"],
+        "di_plan": plan,
+        "meta": {
+            "journey": "di-judged-loop",
+            "component": plan["componentId"],
+            "items": len(plan["items"]),
+            "voice_items": sum(1 for i in plan["items"] if i["answerKind"] == "voice"),
+            "gesture_items": sum(1 for i in plan["items"] if i["answerKind"] == "gesture"),
+            "dropped_challenges": plan["droppedChallenges"],
+            "pack_gate_issues": plan["packGateIssues"],
+            "wrong_kind": wrong_kind,
+            "cap_drill": bool(capped_id),
+            "grade": grade,
+        },
+    }
+
+
+def run_di_oracles(results: List[BeatResult], events: List[str],
+                   sentinels: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Judged-loop findings. Replaces run_oracles on a --di run rather than
+    adding to it: the click-path style oracles measure an IMPROVISING tutor
+    (interrogation cadence, question stacking), and on a judged loop every line
+    is scripted — a question per turn IS the method, so those rates would file
+    findings against the pedagogy."""
+    findings: List[Dict[str, str]] = []
+
+    def add(severity: str, check: str, beat: str, detail: str) -> None:
+        findings.append({"severity": severity, "check": check, "beat": beat, "detail": detail})
+
+    if "auth_success" not in events:
+        add("HIGH", "no-auth", "*", "auth_success never received")
+    if "ai_transcription" not in events:
+        add("HIGH", "no-output-transcription", "*",
+            "no ai_transcription — the tutor's words are unobservable, so every "
+            "verdict below is vacuous")
+
+    # 18c(c): a correction repeated word for word teaches nothing on the third
+    # pass. Tracked per item across the run; the static gate
+    # (findRepeatedConsecutiveAsks) scans ASKS only and cannot see this.
+    corrections_by_item: Dict[str, List[str]] = {}
+
+    for r in results:
+        di = r.beat.di
+        if not di:
+            continue
+        spoken = (r.transcript or r.ai_text).strip()
+        b = r.beat.name
+        role = di["role"]
+
+        if "(not set)" in spoken:
+            add("HIGH", "not-set-spoken", b, 'tutor spoke a literal "(not set)"')
+        tag = TAG_SYNTAX_RE.search(spoken)
+        if tag:
+            add("HIGH", "di-tag-spoken", b,
+                f'read control syntax aloud: "{tag.group(0)}" — the fabricated-tag class')
+        if re.search(r"\bwait(?:ing)?\b[^.?!]{0,20}\b(?:silently|in complete silence)\b"
+                     r"|\bI(?:'m| am) (?:listening|waiting)\b", spoken, re.I):
+            add("HIGH", "di-performed-stage-direction", b,
+                f'announced the wait instead of simply stopping: "{spoken[:120]}"')
+
+        if role == "hold":
+            if spoken:
+                add("HIGH", "di-improvised-turn", b,
+                    f"spoke during a hands item — the bracket owes it no reply: \"{spoken[:160]}\"")
+            continue
+
+        if not spoken:
+            severity = "HIGH" if role in ("ask", "answer") else "WARN"
+            add(severity, "di-silent-turn", b,
+                f"no speech in {TURN_TIMEOUT:.0f}s — the loop cannot advance without the tutor's line")
+            continue
+
+        if role == "ask":
+            for token in di.get("leak_tokens") or []:
+                if re.search(rf"\b{re.escape(_norm(token))}\b", _norm(spoken)):
+                    add("HIGH", "di-answer-leak-in-ask", b,
+                        f'the ask contains the answer "{token}": "{spoken[:160]}"')
+            if classify_di_verdict(spoken, sentinels):
+                add("WARN", "di-sentinel-on-ask", b,
+                    "the ask opens a sentence with a verdict sentinel — the reducer "
+                    f"will read it as a verdict for the previous item: \"{spoken[:120]}\"")
+            overlap = _di_overlap(spoken, di.get("expected_line") or "")
+            if overlap < 0.6:
+                add("WARN", "di-off-script-ask", b,
+                    f"only {overlap:.0%} of the scripted ask survived. "
+                    f'SCRIPT: "{(di.get("expected_line") or "")[:110]}" '
+                    f'SPOKE: "{spoken[:110]}"')
+
+        elif role in ("answer", "verdict"):
+            want = di["expect"]
+            got = classify_di_verdict(spoken, sentinels)
+            said = di.get("said") or "the described placement"
+            if got is None:
+                add("HIGH", "di-no-verdict", b,
+                    f'answered "{said}" and the tutor opened with neither sentinel — '
+                    f'the loop stalls here: "{spoken[:160]}"')
+            elif got != want:
+                if want == "correct":
+                    add("HIGH", "di-false-affirm", b,
+                        f'AFFIRMED a wrong answer ("{said}"'
+                        + (f' — {di["why"]}' if di.get("why") else "")
+                        + f'): "{spoken[:160]}"')
+                else:
+                    add("HIGH", "di-false-refusal", b,
+                        f'CORRECTED a right answer ("{said}"): "{spoken[:160]}"')
+            elif got == "correct":
+                item = di["item"]
+                prior = corrections_by_item.setdefault(item, [])
+                if _norm(spoken) in [_norm(p) for p in prior]:
+                    add("WARN", "di-correction-verbatim-repeat", b,
+                        "the correction is word-for-word the previous one on this item — "
+                        "DISTAR firms by escalating, not by repeating")
+                prior.append(spoken)
+
+            expected_line = di.get("expected_line")
+            if expected_line and got == want:
+                overlap = _di_overlap(spoken, expected_line)
+                if overlap < 0.6:
+                    add("WARN", "di-off-script-verdict", b,
+                        f"verdict was right but only {overlap:.0%} of the scripted line "
+                        f'survived. SCRIPT: "{expected_line[:110]}" SPOKE: "{spoken[:110]}"')
+                extra = _di_extra_words(spoken, expected_line)
+                if len(extra) >= 5:
+                    add("WARN", "di-verdict-embellished", b,
+                        f'added {len(extra)} unscripted words to a "say exactly" line. '
+                        f'SCRIPT: "{expected_line[:80]}" SPOKE: "{spoken[:150]}"')
+
+            if di.get("final_attempt") and spoken.rstrip().endswith("?"):
+                add("WARN", "di-capped-item-asks-then-withdraws", b,
+                    "the last correction before the cap ends in a question the "
+                    "runner is about to withdraw with the move-on cue — the child "
+                    "is asked, then told to move on before they can answer")
+
+        if DONE_CLAIM_RE.search(spoken) and not di.get("is_last_item") and role != "complete":
+            claim = DONE_CLAIM_RE.search(spoken)
+            add("HIGH", "di-false-completion-claim", b,
+                f'told the child the work is over with items still queued: '
+                f'"...{claim.group(0)}..." in "{spoken[:150]}"')
+
+    return findings
+
+
 JOURNEYS = {
     "lesson-refer-back": build_lesson_refer_back_journey,
     "lesson-curiosity": build_lesson_curiosity_journey,
@@ -2283,6 +2727,51 @@ def average_style_metrics(per_run: List[List[Dict[str, str]]]) -> Optional[Dict[
     return {k: round(sum(d[k] for d in dicts) / len(dicts), 2) for k in keys}
 
 
+def _di_report_section(plan: Dict[str, Any],
+                       run_results: List[List[BeatResult]]) -> List[str]:
+    """The judgment matrix — the one table a reader of a DI report wants: for
+    every item, did the judge REFUSE the wrong answer and AFFIRM the right one.
+    Everything else in the report is context for a ✗ in this table."""
+    sentinels = plan["sentinels"]
+    lines = [
+        "", "## Judgment matrix", "",
+        "Each spoken item was answered WRONG on purpose, then right, in TEXT "
+        "(no TTS — see the journey docblock for what that does and does not test).",
+        "`refused` = the tutor opened with the correction sentinel on the wrong "
+        "answer. `affirmed` = it opened with the affirm sentinel on the right one.",
+        "",
+        "| Item | Kind | Wrong answer said | refused? | Right answer said | affirmed? |",
+        "|---|---|---|---|---|---|",
+    ]
+    for item in plan["items"]:
+        verdicts: Dict[str, List[str]] = {"correct": [], "affirm": []}
+        said: Dict[str, str] = {}
+        for results in run_results:
+            for r in results:
+                di = r.beat.di
+                if not di or di.get("item") != item["id"] or di["role"] not in ("answer", "verdict"):
+                    continue
+                got = classify_di_verdict((r.transcript or r.ai_text), sentinels)
+                verdicts[di["expect"]].append("✅" if got == di["expect"]
+                                              else ("❌" if got else "—"))
+                said[di["expect"]] = di.get("said") or "(placement)"
+        lines.append(
+            f"| `{item['id']}` | {item['answerKind']}/{item.get('action') or '-'} "
+            f"| {said.get('correct', '-')} | {''.join(verdicts['correct']) or 'n/a'} "
+            f"| {said.get('affirm', '-')} | {''.join(verdicts['affirm']) or 'n/a'} |"
+        )
+    lines += [
+        "",
+        "*✅ judged as scripted · ❌ the opposite verdict · — neither sentinel "
+        "(the loop would stall). One glyph per run.*",
+        "",
+        f"Pack gates over this live content: "
+        f"{plan['packGateIssues'] or '`[]` — clean'}. "
+        f"Challenges dropped by the build gates: {plan['droppedChallenges']}.",
+    ]
+    return lines
+
+
 def write_report(path: str, component_id: str, journey: Dict[str, Any],
                  run_results: List[List[BeatResult]], aggregated: List[Dict[str, Any]],
                  style: Optional[Dict[str, float]], events: List[str]) -> None:
@@ -2308,7 +2797,10 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
         lines.append("**PASS** — no findings.")
     else:
         verdict = "FAIL" if confirmed_high else ("PASS with warnings" if confirmed_warn else "PASS")
-        lines.append(f"**{verdict}** — {len(confirmed_high)} HIGH + {len(confirmed_warn)} WARN confirmed, "
+        high_checks = len({f["check"] for f in confirmed_high})
+        warn_checks = len({f["check"] for f in confirmed_warn})
+        lines.append(f"**{verdict}** — {high_checks} HIGH + {warn_checks} WARN mechanism(s) confirmed "
+                     f"({len(confirmed_high)} + {len(confirmed_warn)} beat instances), "
                      f"{len(noted)} single-run note(s).")
     if style:
         lines += ["", "## Style metrics (avg across runs)", "",
@@ -2319,12 +2811,34 @@ def write_report(path: str, component_id: str, journey: Dict[str, Any],
                   f"{style['superlatives_per_turn']} |"]
     lines += ["", "## Findings", ""]
     if aggregated:
-        lines += ["| Status | Severity | Check | Beat | Rate | Example |", "|---|---|---|---|---|---|"]
+        # One row per MECHANISM, not per beat. The same check tripping on six
+        # beats is one defect with six instances — the 2026-08-14 ten-frame
+        # report buried a single transport bug (the [CURRENT STATE] echo) under
+        # a 12-row wall of per-beat HIGHs, which reads as harness noise instead
+        # of one fix. Confirmation stays per (check, beat) in
+        # aggregate_findings; this is presentation only.
+        clustered: Dict[Any, Dict[str, Any]] = {}
         for f in aggregated:
-            status = "CONFIRMED" if f["confirmed"] else "note"
-            lines.append(f"| {status} | {f['severity']} | `{f['check']}` | {f['beat']} | {f['rate']} | {f['detail']} |")
+            key = (f["confirmed"], f["severity"], f["check"])
+            c = clustered.setdefault(key, {**f, "beats": []})
+            c["beats"].append(f"{f['beat']} {f['rate']}")
+            c["detail"] = f["detail"]  # keep the latest example
+        lines += ["| Status | Severity | Check | Beats (rate) | Example |",
+                  "|---|---|---|---|---|"]
+        for c in clustered.values():
+            shown = ", ".join(c["beats"][:6])
+            if len(c["beats"]) > 6:
+                shown += f" — and {len(c['beats']) - 6} more"
+            status = "CONFIRMED" if c["confirmed"] else "note"
+            lines.append(f"| {status} | {c['severity']} | `{c['check']}` "
+                         f"| {shown} ({len(c['beats'])} beat"
+                         f"{'s' if len(c['beats']) != 1 else ''}) | {c['detail']} |")
     else:
         lines.append("None.")
+
+    if journey.get("di_plan"):
+        lines += _di_report_section(journey["di_plan"], run_results)
+
     for i, results in enumerate(run_results, 1):
         lines += ["", f"## Run {i} — beat-by-beat transcript", ""]
         for r in results:
@@ -2362,6 +2876,23 @@ async def amain() -> int:
                     help="drive LESSON mode (session_mode=lesson) — reproduces the "
                          "lesson greeting / [PRIMITIVE SWITCH] path where the tutor is "
                          "told to keep transitions to one sentence")
+    ap.add_argument("--di", action="store_true",
+                    help="drive the JUDGED LOOP (/add-di-loop ports): replays the real "
+                         "cues from the primitive's own script module and answers WRONG "
+                         "on purpose, then right, in TEXT — no TTS. Tests the judge's "
+                         "semantics, not acoustics.")
+    ap.add_argument("--di-wrong", choices=("plain", "signature"), default="plain",
+                    help="which wrong answer the headless student gives. plain = "
+                         "unambiguously wrong (the baseline refusal test); signature = "
+                         "the FLUENT miss the item's judging contract names (an addend "
+                         "said back, the total instead of the complement) — the harder "
+                         "test, and the one that checks the discrimination clause.")
+    ap.add_argument("--di-cap", action="store_true",
+                    help="drill the first spoken item PAST the corrections cap "
+                         "(never answer it right), then send the move-on cue. This is "
+                         "the only path that reaches two open defects: a correction "
+                         "repeated word for word, and a capped item that re-asks a "
+                         "question the runner withdraws 0.9s later (BACKLOG 18c b/c).")
     args = ap.parse_args()
 
     print(f"[1/4] Firebase sign-in…")
@@ -2371,11 +2902,23 @@ async def amain() -> int:
     if args.component in ("lesson-refer-back", "lesson-curiosity", "lesson-resume-continuity"):
         live = {"status": "static-journey", "tutoring": None, "generatedData": {}}
     else:
-        live = fetch_live_context(args.frontend, args.component, args.topic, args.grade, args.eval_mode)
+        live = fetch_live_context(args.frontend, args.component, args.topic, args.grade,
+                                  args.eval_mode, di=args.di)
     print(f"      tier-1 status: {live.get('status')}; scaffold keys: {list((live.get('tutoring') or {}).keys())}")
 
-    build = JOURNEYS.get(args.component, build_generic_journey)
-    journey = build(live, args.grade)
+    if args.di:
+        journey = build_di_journey(live, args.grade, args.di_wrong, args.di_cap)
+        meta = journey["meta"]
+        print(f"      judged loop: {meta['items']} items "
+              f"({meta['voice_items']} spoken / {meta['gesture_items']} hands), "
+              f"{meta['dropped_challenges']} challenge(s) dropped by the build gates, "
+              f"wrong-answer mode: {meta['wrong_kind']}"
+              f"{', cap drill ON' if meta['cap_drill'] else ''}")
+        if meta["pack_gate_issues"]:
+            print(f"      ⚠ pack gates over LIVE content: {meta['pack_gate_issues']}")
+    else:
+        build = JOURNEYS.get(args.component, build_generic_journey)
+        journey = build(live, args.grade)
     beats = journey["beats"]
     if args.plumbing:
         beats = [b for b in beats if b.name in ("greeting", "activity_start")]
@@ -2395,6 +2938,15 @@ async def amain() -> int:
         }
         if journey.get("force_lesson"):
             primitive_ctx["audio_input"] = {"manual_activity": True}
+        # A judged port authenticates exactly as useJudgedScriptRunner does: the
+        # family audio mode (carried by the plan, not asserted here) and the
+        # opening-ownership flag that keeps the backend silent until the first cue.
+        if journey.get("audio_input"):
+            primitive_ctx["audio_input"] = journey["audio_input"]
+        if journey.get("owns_opening"):
+            primitive_ctx["owns_opening"] = True
+        if journey.get("grade_level"):
+            primitive_ctx["grade_level"] = journey["grade_level"]
         # Lesson mode reproduces the observed K-lesson failure path: the server
         # auto-greets with the scaffold but tells the tutor to keep it brief/one
         # sentence, so a scaffold without a read-aloud directive strands a non-reader.
@@ -2419,8 +2971,14 @@ async def amain() -> int:
         client = LiveTutorClient(args.backend_ws)
         results = await client.run(auth_msg, beats)
         run_results.append(results)
-        findings = run_oracles(results, client.events)
-        findings.extend(judge_beats(results))
+        if args.di:
+            # DI replaces rather than extends: the click-path style oracles score
+            # an IMPROVISING tutor, and on a judged loop every line is scripted
+            # (a question per turn is the method, not interrogation cadence).
+            findings = run_di_oracles(results, client.events, journey["di_plan"]["sentinels"])
+        else:
+            findings = run_oracles(results, client.events)
+            findings.extend(judge_beats(results))
         # Journey-declared required events (e.g. the forced drop's resume pair):
         # missing one means the journey's premise never occurred — the run must
         # FAIL rather than pass vacuously.
@@ -2437,9 +2995,15 @@ async def amain() -> int:
 
     aggregated = aggregate_findings(per_run_findings)
     style = average_style_metrics(per_run_findings)
+    if args.di:
+        suffix = f"-di-{args.di_wrong}"
+    elif args.lesson or journey.get("force_lesson"):
+        suffix = "-lesson"
+    else:
+        suffix = ""
     report_path = os.path.join(
         REPO_ROOT, "my-tutoring-app", "qa", "tutor-reports",
-        f"{args.component}-live{'-lesson' if (args.lesson or journey.get('force_lesson')) else ''}-{date.today().isoformat()}.md",
+        f"{args.component}-live{suffix}-{date.today().isoformat()}.md",
     )
     write_report(report_path, args.component, journey, run_results, aggregated, style, all_events)
 

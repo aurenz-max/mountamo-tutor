@@ -33,6 +33,8 @@ import {
   pronounceCue,
   responseClassFor,
   stimulusFor,
+  tenFrameHarnessAnswers,
+  tenFramePackBase,
   type TenFrameItem,
 } from '../tenFrameScript';
 import {
@@ -73,17 +75,13 @@ const SUBTRACT = subtract();
 
 const ITEMS: TenFrameItem[] = [BUILD, SUBITIZE, MAKE_TEN_K, MAKE_TEN_READER, ADD, SUBTRACT];
 
-/** The pack exactly as the component assembles it (minus component closures). */
-const pack: JudgedScriptPack<TenFrameItem> = {
-  primitiveType: 'ten-frame',
-  activityLine: 'live direct instruction ten frame practice',
-  items: ITEMS,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  pronounceCue,
-  contextFor: (item) => ({ challengeType: item.kind, stimulus: stimulusFor(item) }),
-};
+/**
+ * The pack's CUE SURFACE — the real one. This used to be re-typed here, and a
+ * re-typed pack can pass every gate while production sends something else; the
+ * surface is now exported and both the component and the DI drive-plan endpoint
+ * spread it, so this fixture tests what actually goes on the wire.
+ */
+const pack: JudgedScriptPack<TenFrameItem> = tenFramePackBase(ITEMS);
 
 /** The line the tutor actually SPEAKS — the shared parser, so every port
  *  reads the same span. Everything else in a cue is judge-side instruction. */
@@ -384,5 +382,63 @@ describe('ten-frame catalog · DI frame', () => {
     expect(entry.constraints).toMatch(/microphone/i);
     expect(entry.constraints).toMatch(/no Check button/i);
     expect(entry.evalModes?.map((m) => m.evalMode)).toEqual(['build', 'subitize', 'make_ten', 'operate']);
+  });
+});
+
+// ── 8. Harness answer material — the contract's refusal claims, made testable ─
+
+describe('ten-frame pack · headless drive answers', () => {
+  // These feed the judged-loop harness (run_tutor_live.py --di), which answers
+  // every spoken item WRONG on purpose before answering it right. The pins that
+  // matter are the ones tying each wrong answer back to the clause of
+  // `discriminationFor` that claims the judge refuses it — the claim and the
+  // test of the claim have to move together or the harness drills a straw man.
+
+  it('never offers a "wrong" answer that is actually right', () => {
+    for (const item of ITEMS) {
+      const answers = tenFrameHarnessAnswers(item);
+      expect(answers.plainWrong).not.toBe(answers.correct);
+      if (answers.signatureWrong) {
+        expect(answers.signatureWrong.text).not.toBe(answers.correct);
+      }
+    }
+  });
+
+  it('names the SIGNATURE error each judging contract promises to refuse', () => {
+    // make-ten: six shown in a frame of ten, so the ANSWER is four — and the
+    // signature error is the TOTAL ("ten") said back, which is the fluent miss
+    // the contract names. The two must not be confused: drilling "four" here
+    // would be drilling the right answer.
+    expect(MAKE_TEN_READER.answer).toBe(4);
+    expect(tenFrameHarnessAnswers(MAKE_TEN_READER).signatureWrong?.text).toBe('ten');
+    expect(itemCue(MAKE_TEN_READER, {})).toContain('"ten" said back is NOT the answer');
+    // add: the contract refuses either addend said back.
+    expect(tenFrameHarnessAnswers(ADD).signatureWrong?.text).toBe('three');
+    expect(itemCue(ADD, {})).toContain('Either addend said back');
+    // subtract: the contract refuses the starting number.
+    expect(tenFrameHarnessAnswers(SUBTRACT).signatureWrong?.text).toBe('seven');
+    expect(itemCue(SUBTRACT, {})).toContain('The starting number "seven"');
+  });
+
+  it('only forbids the answer word where the ask does not already say it', () => {
+    // subitize states no quantity at all — hearing the count back IS the leak.
+    expect(tenFrameHarnessAnswers(SUBITIZE).leakTokens).toEqual(['four']);
+    // build SPEAKS its target: the number is the question, not the answer, and
+    // flagging it would file a finding against the ask itself.
+    expect(tenFrameHarnessAnswers(BUILD).leakTokens).toEqual([]);
+  });
+
+  it('gives hands items a placement to commit, not a word to say', () => {
+    const answers = tenFrameHarnessAnswers(BUILD);
+    expect(answers.placed).toEqual({ correct: BUILD.answer, wrong: BUILD.answer - 1 });
+    expect(answers.signatureWrong).toBeUndefined();
+  });
+
+  it('keeps the spoken answers inside the benched number window', () => {
+    for (const item of ITEMS.filter((i) => i.answerKind === 'voice')) {
+      const { plainWrong } = tenFrameHarnessAnswers(item);
+      expect(plainWrong).not.toMatch(/zero/);
+      expect(plainWrong.length).toBeGreaterThan(0);
+    }
   });
 });
