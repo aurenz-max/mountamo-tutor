@@ -1,6 +1,63 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * TenFrame — DI modality. The Live tutor owns the clock in every mode.
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - subitize: counters flash, then HIDE, and the child SAYS how many they saw
+ *    into an open mic. The tutor asks, waits, judges the audio in-band,
+ *    corrects contrastively, and its own affirmation is what moves the lesson.
+ *  - make_ten @ Grades 1-2: the frame shows some counters; the child SAYS how
+ *    many more make ten.
+ *  - add / subtract: the frame is the working surface — the child places or
+ *    removes counters — and the SUM or DIFFERENCE is spoken.
+ *  - build: the child PLACES counters. The placement is the answer.
+ *  - make_ten @ K: the child TAPS EMPTY CELLS to fill the frame; the counters
+ *    they placed are the enacted complement (contract R6, untouched).
+ *
+ * WHY TWO MODES KEPT THEIR HANDS. Apply the costume test — can a child who
+ * cannot do the skill still perform this action correctly? A stepper: yes,
+ * anyone can operate one, so the steppers died. Placing counters: no — placing
+ * five counters IS building the quantity five. In literacy the clicking almost
+ * always stood in for a mouth; IN MATH THE MANIPULATIVE IS OFTEN THE SKILL, so
+ * `build` and K make-ten keep their surface and gain a JUDGE. The full fork and
+ * its evidence live in `tenFrameScript.ts`.
+ *
+ * WHAT CHANGED (first math consumer of useJudgedScriptRunner; qa/di/BACKLOG.md
+ * item 18). Deleted: the subitize -/+ numeral stepper, the Grades 1-2 make-ten
+ * stepper, the Check control, the Next control, the printed hint ladder, the
+ * feedback card that named the target, and every improvised tutor turn. There
+ * is no progression timer and no progression control anywhere in this file —
+ * progression here has exactly one cause: a tutor verdict.
+ *
+ * HOW A HANDS-ONLY TURN CLOSES. A voice turn closes on SILENCE (the mic's
+ * amplitude bracket). A hands turn closes on STILLNESS: when the frame stops
+ * changing for `PLACEMENT_SETTLE_MS` the placement is described to the tutor
+ * and judged. K make-ten additionally commits the moment the frame is full,
+ * which is R6's literal rule — but stillness is what makes the item JUDGEABLE,
+ * because stopping early is now a wrong answer the tutor corrects. Neither
+ * commit is correctness-gated: a wrong placement commits exactly as readily as
+ * a right one, which is the property a Check button used to fake.
+ *
+ * ANSWER-LEAK RULE — AND HERE THE LEAK IS PIXELS, NOT STRINGS.
+ *  - R4 holds: subitize counters hide BEFORE the answer is asked for, and the
+ *    frame cannot be tapped while hidden. If the loop left them on screen,
+ *    subitizing would become counting and the mode would be destroyed.
+ *  - R5 holds harder than before: the empty-space readout is not rendered at
+ *    all — on a make-ten item it IS the answer.
+ *  - The running count readout is withdrawn for add/subtract: it equals the
+ *    number the child is about to say. It survives for build and make-ten as
+ *    the child's own trace of what they placed (R3/R7, tier-governed).
+ *  - The number only appears on screen AFTER the tutor has affirmed.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines); no
+ * visible timers (the subitize flash is stimulus presentation — when it ends,
+ * nothing moves forward); "Show again" re-shows the STIMULUS and never the
+ * answer; adult chrome is hidden for pre-readers.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -8,23 +65,36 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaButton,
-  LuminaActionButton,
-  LuminaModeTabs,
-  LuminaChallengeCounter,
+  LuminaPanel,
   LuminaPrompt,
-  LuminaFeedbackCard,
-  type LuminaModeTab,
+  LuminaChallengeCounter,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { TenFrameMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  frameVerdictCue,
+  itemCue,
+  itemFromChallenge,
+  moveOnCue,
+  pronounceCue,
+  stimulusFor,
+  type TenFrameBand,
+  type TenFrameItem,
+} from './tenFrameScript';
+import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -33,11 +103,12 @@ import { SoundManager } from '../../../utils/SoundManager';
 export interface TenFrameChallenge {
   id: string;
   type: 'build' | 'subitize' | 'make_ten' | 'add' | 'subtract';
-  /** Student-facing prompt. Synthesized deterministically by the generator from the
-   *  numeric fields below — never authored by the LLM (see SP-17). */
+  /** Student-facing prompt. Synthesized deterministically by the generator from
+   *  the numeric fields below — never authored by the LLM (see SP-17). Shown to
+   *  readers only; the tutor SPEAKS the problem for everyone. */
   instruction: string;
   targetCount: number;
-  startCount?: number; // for subtract: how many counters to pre-fill before removal
+  startCount?: number; // for subtract: how many counters are on the frame before removal
   addend1?: number; // for add: first addend (addend1 + addend2 = targetCount)
   addend2?: number; // for add: second addend
   flashDuration?: number | null; // ms, for subitize mode
@@ -65,11 +136,13 @@ export interface TenFrameData {
   showOptions?: {
     showCount?: boolean;
     showEquation?: boolean;
+    /** Retained so the generator contract is unchanged. NEVER rendered: on a
+     *  make-ten item the empty-space count is the answer (R5). */
     showEmptyCount?: boolean;
     allowFlip?: boolean;
   };
   imagePrompt?: string | null;
-  gradeBand?: 'K' | '1-2';
+  gradeBand?: TenFrameBand;
 
   // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -84,25 +157,12 @@ export interface TenFrameData {
 // Constants
 // ============================================================================
 
-type Phase = 'build' | 'subitize' | 'makeTen' | 'operate';
-
-const PHASE_CONFIG: Record<Phase, { label: string; description: string }> = {
-  build: { label: 'Build', description: 'Place counters on the frame' },
-  subitize: { label: 'Subitize', description: 'How many do you see?' },
-  makeTen: { label: 'Make Ten', description: 'What makes 10?' },
-  operate: { label: 'Operate', description: 'Add & subtract with frames' },
-};
-
-const PHASE_TABS: LuminaModeTab[] = (Object.entries(PHASE_CONFIG) as [Phase, { label: string }][]).map(
-  ([value, config]) => ({ value, label: config.label })
-);
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  build: { label: 'Build', icon: '🧱', accentColor: 'purple' },
-  subitize: { label: 'Subitize', icon: '👁️', accentColor: 'blue' },
-  make_ten: { label: 'Make Ten', icon: '🎯', accentColor: 'emerald' },
-  add: { label: 'Add', icon: '➕', accentColor: 'amber' },
-  subtract: { label: 'Subtract', icon: '➖', accentColor: 'orange' },
+const CHALLENGE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  build: { label: 'Build', icon: '🧱' },
+  subitize: { label: 'Subitize', icon: '👁️' },
+  make_ten: { label: 'Make Ten', icon: '🎯' },
+  add: { label: 'Add', icon: '➕' },
+  subtract: { label: 'Subtract', icon: '➖' },
 };
 
 const COUNTER_COLORS: Record<string, string> = {
@@ -119,6 +179,25 @@ const COUNTER_RADIUS = 18;
 const FRAME_COLS = 5;
 const FRAME_ROWS = 2;
 const FRAME_PADDING = 8;
+
+/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
+ *  silence bracket. Deliberately generous: a five-year-old placing counters
+ *  pauses to think, and a premature commit spends one of the two corrections. */
+const PLACEMENT_SETTLE_MS = 3000;
+
+/** Subitize flash lifecycle. The flash is STIMULUS PRESENTATION, not a
+ *  progression clock — when it ends nothing advances; the tutor is still
+ *  waiting for the child's answer. */
+const SUBITIZE_FLASH_MS = 1500;   // default; per-challenge `flashDuration` wins (R7 tier lever)
+/** A short "get ready" beat AFTER the tutor stops talking — a breath between
+ *  "How many counters did you see?" and the counters appearing, not a race
+ *  against her sentence. See the flash gate below for why that distinction is
+ *  the whole design. */
+const SUBITIZE_PREP_MS = 700;
+/** If the tutor's audio never arrives at all, the stimulus still has to happen
+ *  — a child cannot answer a question about a frame that never flashed. Long
+ *  enough that it never pre-empts a real utterance. */
+const TUTOR_SILENCE_FALLBACK_MS = 12_000;
 
 // ============================================================================
 // Props
@@ -151,108 +230,37 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  const {
-    showCount = true,
-    showEmptyCount = false,
-    showEquation = false,
-  } = showOptions;
+  const { showCount = true, showEquation = false } = showOptions;
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
   const totalCells = mode === 'double' ? 20 : 10;
+  const isPreReader = gradeBand === 'K';
+  const counterColor = initialCounters?.color || 'red';
 
-  const [filledCells, setFilledCells] = useState<Set<number>>(() => {
-    const initial = new Set<number>();
-    if (initialCounters?.positions) {
-      initialCounters.positions.forEach(p => {
-        if (p >= 0 && p < totalCells) initial.add(p);
-      });
-    }
-    return initial;
-  });
-
-  const [cellColors, setCellColors] = useState<Map<number, string>>(() => {
-    const map = new Map<number, string>();
-    const color = initialCounters?.color || 'red';
-    if (initialCounters?.positions) {
-      initialCounters.positions.forEach(p => map.set(p, color));
-    }
-    return map;
-  });
-
-  // Challenge progress tracking (shared hooks)
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  const [currentPhase, setCurrentPhase] = useState<Phase>(() => {
-    if (challenges.length === 0) return 'build';
-    const firstType = challenges[0].type;
-    if (firstType === 'subitize') return 'subitize';
-    if (firstType === 'make_ten') return 'makeTen';
-    if (firstType === 'add' || firstType === 'subtract') return 'operate';
-    return 'build';
-  });
-
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
-
-  // Subitize state
+  // ── Stage-payload state (the runner owns progression; this is the frame) ──
+  const [filledCells, setFilledCells] = useState<Set<number>>(new Set());
+  const [countersVisible, setCountersVisible] = useState(true);
   const [isFlashing, setIsFlashing] = useState(false);
-  const [showCounters, setShowCounters] = useState(true);
-  const [subitizeInput, setSubitizeInput] = useState('');
-  const [subitizeStartTime, setSubitizeStartTime] = useState(0);
-  const [subitizeReflashes, setSubitizeReflashes] = useState(0);
+  const [flashAnswerReady, setFlashAnswerReady] = useState(false);
+  /** Has the tutor spoken for THIS item yet? The flash waits on her, so it has
+   *  to know the difference between "she has not started" and "she has
+   *  finished" — both look like silence. Reset on every item and on every
+   *  correction retry. */
+  const [tutorHasSpoken, setTutorHasSpoken] = useState(false);
+  /** The number JUST affirmed — post-answer only (answer-leak rule), cleared
+   *  the moment the next item opens. */
+  const [reward, setReward] = useState<string | null>(null);
 
-  // Make-ten state
-  const [makeTenInput, setMakeTenInput] = useState('');
-
-  // Domain-specific tracking (not covered by shared hooks)
-  const [placementChanges, setPlacementChanges] = useState(0);
-  const [fullFrameReached, setFullFrameReached] = useState(false);
-  const [twoColorExplorations, setTwoColorExplorations] = useState(0);
-
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `ten-frame-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** What the frame held when it last stopped changing. */
+  const pendingPlacementRef = useRef(0);
+  const placementChangesRef = useRef(0);
+  const fullFrameEverRef = useRef(false);
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  const stableInstanceIdRef = useRef(instanceId || `ten-frame-${Math.round(performance.now())}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  const isCurrentChallengeComplete = challengeResults.some(
-    r => r.challengeId === currentChallenge?.id && r.correct
-  );
-
-  // Reader-fit item 12: at K, make-ten is enacted on the frame itself. Reader
-  // grades keep the existing numeric complement response.
-  const isKMakeTen = gradeBand === 'K' && currentChallenge?.type === 'make_ten';
-
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    elapsedMs,
-  } = usePrimitiveEvaluation<TenFrameMetrics>({
+  const evaluation = usePrimitiveEvaluation<TenFrameMetrics>({
     primitiveType: 'ten-frame',
     instanceId: resolvedInstanceId,
     skillId,
@@ -262,487 +270,344 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    mode,
-    gradeBand,
-    totalChallenges: challenges.length,
-    currentChallengeIndex,
-    instruction: currentChallenge?.instruction ?? 'Free exploration',
-    challengeType: currentChallenge?.type ?? 'build',
-    targetCount: currentChallenge?.targetCount ?? 0,
-    currentCount: filledCells.size,
-    emptySpaces: totalCells - filledCells.size,
-    attemptNumber: currentAttempts + 1,
-    currentPhase,
-  }), [
-    mode, gradeBand, challenges.length, currentChallengeIndex,
-    currentChallenge, filledCells.size, totalCells, currentAttempts, currentPhase,
-  ]);
+  const clearSettle = useCallback(() => {
+    if (settleTimerRef.current) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+  }, []);
 
-  const { sendText, isConnected } = useLuminaAI({
+  // ── The pack: generated challenges → judged items + hand-authored script ──
+  // Unaskable items are DROPPED here (zero answers, out-of-bench counts,
+  // incoherent operations). Nothing is backfilled: a placeholder in a judged
+  // loop becomes a spoken ask the tutor has to judge.
+  const items = useMemo<TenFrameItem[]>(() =>
+    challenges
+      .map((ch) => itemFromChallenge(ch, { capacity: totalCells, band: gradeBand }))
+      .filter((item): item is TenFrameItem => item !== null),
+    [challenges, totalCells, gradeBand],
+  );
+
+  const challengeById = useMemo(
+    () => new Map(challenges.map((ch) => [ch.id, ch])),
+    [challenges],
+  );
+
+  const pack = useMemo<JudgedScriptPack<TenFrameItem>>(() => ({
     primitiveType: 'ten-frame',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2',
-  });
+    activityLine: 'live direct instruction ten frame practice',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      stimulus: stimulusFor(item),
+    }),
+    // Only what DIFFERS from the runner's defaults.
+    statusLines: {
+      ready: (item) => item.answerKind === 'gesture'
+        ? 'Listen, then use the frame.'
+        : 'Listen, then say your answer out loud.',
+      retry: (item) => item.answerKind === 'gesture'
+        ? 'Have another go on the frame.'
+        : 'Have another go — say your answer.',
+      done: 'Great number work today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) =>
+      item.answerKind === 'gesture'
+        ? {
+            challenge: item.kind === 'build'
+              ? `Put ${item.answer} counters on the ten frame.`
+              : `Fill the frame from ${item.shown} to ${item.capacity}.`,
+            expected: `${item.answer} counters placed.`,
+            observed: `Placed ${pendingPlacementRef.current - (item.kind === 'make_ten' ? item.shown : 0)}.`,
+          }
+        : {
+            challenge: `${item.kind} on a frame of ${item.capacity} (${stimulusFor(item)}).`,
+            expected: `${numberWordFor(item.answer)} (${item.answer})`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          },
+  }), [items]);
 
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-
-    sendText(
-      `[ACTIVITY_START] This is a ten frame activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grades 1-2'}. `
-      + `Mode: ${mode} frame. There are ${challenges.length} challenges. `
-      + `First challenge: "${currentChallenge?.instruction}". `
-      + `Introduce the activity warmly: mention we're going to use a ten frame to build numbers and discover patterns. `
-      + `Then read the first instruction to the student.`,
-      { silent: true }
-    );
-  }, [isConnected, challenges.length, mode, gradeBand, currentChallenge, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Interaction Handlers
-  // -------------------------------------------------------------------------
-  const completeKMakeTen = useCallback((completedCount: number) => {
-    if (!isKMakeTen || !currentChallenge || isCurrentChallengeComplete) return;
-
-    const seededCount = Math.min(currentChallenge.targetCount, totalCells);
-    const placedCount = Math.max(0, completedCount - seededCount);
-    incrementAttempts();
-    setFeedback(`You made ${totalCells}! ${seededCount} + ${placedCount} = ${totalCells}!`);
-    setFeedbackType('success');
-    SoundManager.playCorrect();
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-    });
-    sendText(
-      `[MAKE_TEN_CORRECT] Student filled the frame by placing ${placedCount} counters. `
-      + `${seededCount} + ${placedCount} = ${totalCells}. `
-      + `Celebrate the enacted number bond briefly.`,
-      { silent: true }
-    );
-  }, [
-    isKMakeTen, currentChallenge, isCurrentChallengeComplete, totalCells,
-    incrementAttempts, recordResult, currentAttempts, sendText,
-  ]);
-
-  const handleCellClick = useCallback((cellIndex: number) => {
-    if (currentPhase === 'subitize' && !showCounters) return; // Can't click during subitize answer phase
-    if (hasSubmittedEvaluation) return;
-
-    // K make-ten uses only the empty cells as its answer surface. The seeded
-    // counters are fixed; each empty-cell tap places one answer counter, and
-    // filling the frame auto-judges the enacted complement.
-    if (isKMakeTen) {
-      if (isCurrentChallengeComplete || filledCells.has(cellIndex)) return;
-
-      SoundManager.tap();
-      const next = new Set(filledCells);
-      next.add(cellIndex);
-      const color = twoColorMode?.enabled
-        ? (next.size <= (twoColorMode.color1Count || 5)
-          ? twoColorMode.color1 || 'red'
-          : twoColorMode.color2 || 'yellow')
-        : (initialCounters?.color || 'red');
-
-      setFilledCells(next);
-      setCellColors(colors => {
-        const newColors = new Map(colors);
-        newColors.set(cellIndex, color);
-        return newColors;
-      });
-      setPlacementChanges(p => p + 1);
-      setFeedback('');
-      setFeedbackType('');
-
-      if (next.size === totalCells) completeKMakeTen(next.size);
-      return;
-    }
-
-    SoundManager.tap();
-
-    setFilledCells(prev => {
-      const next = new Set(prev);
-      if (next.has(cellIndex)) {
-        next.delete(cellIndex);
-        setCellColors(colors => {
-          const newColors = new Map(colors);
-          newColors.delete(cellIndex);
-          return newColors;
-        });
-      } else {
-        next.add(cellIndex);
-        const color = twoColorMode?.enabled
-          ? (next.size <= (twoColorMode.color1Count || 5)
-            ? twoColorMode.color1 || 'red'
-            : twoColorMode.color2 || 'yellow')
-          : (initialCounters?.color || 'red');
-        setCellColors(colors => {
-          const newColors = new Map(colors);
-          newColors.set(cellIndex, color);
-          return newColors;
-        });
-      }
-      setPlacementChanges(p => p + 1);
-      return next;
-    });
-
-    setFeedback('');
-    setFeedbackType('');
-  }, [
-    currentPhase, showCounters, hasSubmittedEvaluation, isKMakeTen,
-    isCurrentChallengeComplete, filledCells, twoColorMode, initialCounters?.color,
-    totalCells, completeKMakeTen,
-  ]);
-
-  // Check if first frame is full (exactly 10)
-  useEffect(() => {
-    const frame1Count = Array.from(filledCells).filter(c => c < 10).length;
-    if (frame1Count === 10 && !fullFrameReached) {
-      setFullFrameReached(true);
-      if (isConnected && !isKMakeTen) {
-        sendText(
-          `[FULL_FRAME] The student just filled the ten frame completely with 10 counters! `
-          + `Celebrate this moment: "You made 10! The frame is full!"`,
-          { silent: true }
-        );
-      }
-    }
-  }, [filledCells, fullFrameReached, isConnected, isKMakeTen, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Checking
-  // -------------------------------------------------------------------------
-  const checkBuildChallenge = useCallback(() => {
-    if (!currentChallenge) return;
-    const target = currentChallenge.targetCount;
-    const current = filledCells.size;
-    const correct = current === target;
-    incrementAttempts();
-
-    if (correct) {
-      setFeedback(`Correct! You placed ${target} counters!`);
-      setFeedbackType('success');
-      sendText(
-        `[BUILD_CORRECT] Student placed exactly ${target} counters on the ten frame. `
-        + `${currentAttempts === 0 ? 'First try!' : `After ${currentAttempts + 1} attempts.`} `
-        + `Congratulate briefly and ask about the empty spaces.`,
-        { silent: true }
-      );
-    } else {
-      setFeedback(`You have ${current} counters. The target is ${target}. Try again!`);
-      setFeedbackType('error');
-      sendText(
-        `[BUILD_INCORRECT] Student placed ${current} counters but target is ${target}. `
-        + `Attempt ${currentAttempts + 1}. `
-        + `Give a brief hint: "Count the counters. Do you need more or fewer?"`,
-        { silent: true }
-      );
-    }
-
-    return correct;
-  }, [currentChallenge, filledCells.size, currentAttempts, sendText, incrementAttempts]);
-
-  const startSubitizeFlash = useCallback(() => {
-    if (!currentChallenge) return;
-    const target = currentChallenge.targetCount;
-
-    // Cancel any in-flight flash timeout to prevent stale callbacks
+  // ── Per-item frame reset — every item owns its starting state (R6) ────────
+  const resetFrameFor = useCallback((item: TenFrameItem) => {
+    clearSettle();
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
       flashTimeoutRef.current = null;
     }
+    setReward(null);
+    setIsFlashing(false);
+    setFlashAnswerReady(false);
+    setTutorHasSpoken(false);
 
-    // Place counters for the flash
-    const positions: number[] = [];
-    for (let i = 0; i < target && i < totalCells; i++) {
-      positions.push(i);
-    }
-    setFilledCells(new Set(positions));
-    setCellColors(() => {
-      const m = new Map<number, string>();
-      positions.forEach(p => m.set(p, initialCounters?.color || 'red'));
-      return m;
-    });
+    // A completed frame never carries into the next challenge: build and add
+    // start empty, make-ten seeds its shown group, subtract seeds its start.
+    const seeded = item.kind === 'subitize' ? 0 : item.shown;
+    setFilledCells(new Set(Array.from({ length: seeded }, (_, i) => i)));
+    pendingPlacementRef.current = seeded;
+    // Subitize hides its counters until the flash runs; every other mode shows
+    // whatever is on the frame.
+    setCountersVisible(item.kind !== 'subitize');
+  }, [clearSettle]);
 
-    setIsFlashing(true);
-    setShowCounters(true);
-    setSubitizeInput('');
-    setSubitizeStartTime(Date.now());
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const kindOf = (id: string) => items.find((i) => i.id === id)?.kind;
+    const subitizeOutcomes = summary.outcomes.filter((o) => kindOf(o.id) === 'subitize');
+    const makeTenOutcomes = summary.outcomes.filter((o) => kindOf(o.id) === 'make_ten');
+    const targetSum = items.reduce((sum, item) => sum + item.answer, 0);
 
-    const duration = currentChallenge.flashDuration || 1500;
-    flashTimeoutRef.current = setTimeout(() => {
-      setShowCounters(false);
-      setIsFlashing(false);
-      flashTimeoutRef.current = null;
-    }, duration);
-  }, [currentChallenge, totalCells, initialCounters?.color]);
+    const metrics: TenFrameMetrics = {
+      type: 'ten-frame',
+      evalMode: items[0]?.kind ?? 'default',
+      challengesCompleted: summary.solvedCount,
+      challengesTotal: items.length,
+      subitizeAccuracy: subitizeOutcomes.length > 0
+        ? Math.round((subitizeOutcomes.filter((o) => o.solved).length / subitizeOutcomes.length) * 100)
+        : 0,
+      subitizeAverageTime: subitizeOutcomes.length > 0
+        ? Math.round(
+            subitizeOutcomes.reduce((s, o) => s + (o.seconds ?? 0) * 1000, 0) / subitizeOutcomes.length,
+          )
+        : 0,
+      makeTenCorrect: makeTenOutcomes.filter((o) => o.solved).length,
+      makeTenTotal: makeTenOutcomes.length,
+      usedMakeTenStrategy: fullFrameEverRef.current,
+      counterPlacementEfficiency: placementChangesRef.current <= targetSum,
+      twoColorDecompositionsExplored: 0,
+      attemptsCount: summary.attemptsCount,
+    };
 
-  const checkSubitizeAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    const target = currentChallenge.targetCount;
-    const answer = parseInt(subitizeInput, 10);
-    const correct = answer === target;
-    const timeMs = Date.now() - subitizeStartTime;
-    incrementAttempts();
+    evaluation.submitResult(
+      summary.solvedCount === items.length,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, evaluation]);
 
-    if (correct) {
-      setShowCounters(true);
-      setFeedback(`Yes! There were ${target} counters!`);
-      setFeedbackType('success');
-      sendText(
-        `[SUBITIZE_CORRECT] Student correctly identified ${target} counters in ${timeMs}ms. `
-        + `Celebrate: "Great eyes! You saw ${target} without counting!"`,
-        { silent: true }
+  const runner = useJudgedScriptRunner<TenFrameItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: resetFrameFor,
+    onAffirmed: (item) => {
+      // The first moment a number may appear on screen — and, for subitize, the
+      // moment R4's "a correct response restores the counters" now hangs off
+      // (it used to hang off a Check click that no longer exists).
+      if (item.kind === 'subitize') setCountersVisible(true);
+      setReward(
+        item.kind === 'subitize'
+          ? `${item.answer} — ${numberWordFor(item.answer)} ${item.answer === 1 ? 'counter' : 'counters'}!`
+          : item.kind === 'make_ten'
+            ? `${item.shown} + ${item.answer} = ${item.capacity}`
+            : item.kind === 'add'
+              ? `${item.addend1} + ${item.addend2} = ${item.answer}`
+              : item.kind === 'subtract'
+                ? `${item.shown} − ${item.removed} = ${item.answer}`
+                : `${item.answer} ${item.answer === 1 ? 'counter' : 'counters'}!`,
       );
-    } else {
-      setFeedback(`Not quite. You said ${answer}. Look again!`);
-      setFeedbackType('error');
-      sendText(
-        `[SUBITIZE_INCORRECT] Student guessed ${answer} but there were ${target} counters. `
-        + `Time: ${timeMs}ms. Give a brief hint without revealing the answer.`,
-        { silent: true }
-      );
-    }
-
-    return { correct, timeMs };
-  }, [currentChallenge, subitizeInput, subitizeStartTime, sendText, incrementAttempts]);
-
-  const checkMakeTenAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    const currentCount = filledCells.size;
-    const frameTarget = totalCells; // 10 for single, 20 for double
-    const complement = frameTarget - currentCount;
-    const answer = parseInt(makeTenInput, 10);
-    const correct = answer === complement;
-    incrementAttempts();
-
-    if (correct) {
-      setFeedback(`Yes! ${currentCount} + ${complement} = ${frameTarget}!`);
-      setFeedbackType('success');
-      sendText(
-        `[MAKE_TEN_CORRECT] Student correctly found ${complement} as the complement to make ${frameTarget}. `
-        + `Current count: ${currentCount}. Celebrate and connect to the empty spaces on the frame.`,
-        { silent: true }
-      );
-    } else {
-      setFeedback(`Not quite. Look at the empty spaces on the frame.`);
-      setFeedbackType('error');
-      sendText(
-        `[MAKE_TEN_INCORRECT] Student answered ${answer} but ${currentCount} + ${complement} = ${frameTarget}. `
-        + `Hint: "Count the empty spaces on the frame."`,
-        { silent: true }
-      );
-    }
-
-    return correct;
-  }, [currentChallenge, filledCells.size, makeTenInput, sendText, incrementAttempts, totalCells]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Navigation
-  // -------------------------------------------------------------------------
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-
-    let correct = false;
-    let timeMs: number | undefined;
-
-    switch (currentChallenge.type) {
-      case 'build':
-        correct = checkBuildChallenge() ?? false;
-        break;
-      case 'subitize': {
-        const result = checkSubitizeAnswer();
-        correct = result?.correct ?? false;
-        timeMs = result?.timeMs;
-        break;
+    },
+    onCorrectionRetry: (item) => {
+      // The tutor's correction re-modeled and re-asked in-band; restore the
+      // working surface for another go.
+      clearSettle();
+      if (item.kind === 'subitize') {
+        // Re-arm the flash. Clearing `tutorHasSpoken` is what makes the
+        // re-flash wait for her CORRECTION to finish — the same gate as the
+        // first ask, so there is no hand-tuned window to get wrong.
+        if (flashTimeoutRef.current) {
+          clearTimeout(flashTimeoutRef.current);
+          flashTimeoutRef.current = null;
+        }
+        setIsFlashing(false);
+        setFlashAnswerReady(false);
+        setTutorHasSpoken(false);
+        setCountersVisible(false);
+        return;
       }
-      case 'make_ten':
-        correct = checkMakeTenAnswer() ?? false;
-        break;
-      case 'add':
-      case 'subtract':
-        correct = checkBuildChallenge() ?? false;
-        break;
-    }
+      // Gesture items clear back to their opening state: the counters are
+      // indistinguishable, so there is no "wrong slot" to clear the way
+      // cvc-speller does. Voice items keep whatever the child built.
+      if (item.answerKind === 'gesture') {
+        setFilledCells(new Set(Array.from({ length: item.shown }, (_, i) => i)));
+        pendingPlacementRef.current = item.shown;
+      }
+    },
+  });
 
-    // Immediate per-challenge audio feedback (the end-of-primitive celebration
-    // is fired by PhaseSummaryPanel when the results screen appears).
-    if (correct) {
-      SoundManager.playCorrect();
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        timeMs,
-        attempts: currentAttempts + 1,
-        reflashes: currentChallenge.type === 'subitize' ? subitizeReflashes : 0,
-      });
-    } else {
-      SoundManager.playIncorrect();
-    }
-  }, [currentChallenge, currentAttempts, subitizeReflashes, checkBuildChallenge, checkSubitizeAnswer, checkMakeTenAnswer, recordResult]);
+  const currentItem = runner.currentItem;
+  const currentChallenge = currentItem ? challengeById.get(currentItem.id) ?? null : null;
 
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges complete — compute per-phase scores for AI feedback
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallCorrect = challengeResults.filter(r => r.correct).length;
-      const overallPct = Math.round((overallCorrect / challenges.length) * 100);
+  // ── The gesture commit ────────────────────────────────────────────────────
+  // No Check control: nothing on screen may carry the child forward. The cue
+  // goes out through `submitGestureAttempt`, which opens the attempt when the
+  // cue is actually SENT — an attempt opened at commit time would block the
+  // very cue meant to provoke its verdict (cvc-speller's finding).
+  const commitPlacement = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.answerKind !== 'gesture') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    const onFrame = pendingPlacementRef.current;
+    const enacted = item.kind === 'make_ten' ? Math.max(0, onFrame - item.shown) : onFrame;
+    runner.submitGestureAttempt(frameVerdictCue(item, enacted));
+  }, [runner]);
 
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback.`,
-        { silent: true }
-      );
+  /** A hands turn closes on stillness. Any further tap resets the window. */
+  const armSettle = useCallback((onFrame: number) => {
+    pendingPlacementRef.current = onFrame;
+    clearSettle();
+    settleTimerRef.current = setTimeout(() => { commitPlacement(); }, PLACEMENT_SETTLE_MS);
+  }, [clearSettle, commitPlacement]);
 
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const subitizeResults = challengeResults.filter(r => {
-          const ch = challenges.find(c => c.id === r.challengeId);
-          return ch?.type === 'subitize';
-        });
-        const makeTenResults = challengeResults.filter(r => {
-          const ch = challenges.find(c => c.id === r.challengeId);
-          return ch?.type === 'make_ten';
-        });
+  // ── Frame taps ────────────────────────────────────────────────────────────
+  const handleCellClick = useCallback((cellIndex: number) => {
+    const item = runner.currentItem;
+    // NEVER gate interaction on the stage word — the runner sets `affirmed` and
+    // opens the next item in the same dispatch, so a stage-gated frame ships
+    // dead from item 2 on. `canAttempt` is the runner's own answer to the live
+    // question ("is THIS item still open?"); it reads the solved ledger, not
+    // the stage word. See its docblock for the drive that proved it.
+    if (!item || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (runner.isAwaitingGesture()) return;
+    // R4: subitizing is perceptual recognition, never tap-counting, and hidden
+    // counters can never be manipulated.
+    if (item.kind === 'subitize') return;
 
-        const subitizeAccuracy = subitizeResults.length > 0
-          ? (subitizeResults.filter(r => r.correct).length / subitizeResults.length) * 100
-          : 0;
-        const subitizeAvgTime = subitizeResults.length > 0
-          ? subitizeResults.reduce((sum, r) => sum + ((r.timeMs as number) || 0), 0) / subitizeResults.length
-          : 0;
-
-        // Score with reflash penalty: each reflash reduces that challenge's credit
-        const REFLASH_PENALTY = 0.15; // 15% credit reduction per reflash
-        const REFLASH_MIN_CREDIT = 0.5; // floor at 50% credit even with many reflashes
-        const weightedCorrect = challengeResults.reduce((sum, r) => {
-          if (!r.correct) return sum;
-          const reflashes = (r.reflashes as number) || 0;
-          return sum + Math.max(REFLASH_MIN_CREDIT, 1 - REFLASH_PENALTY * reflashes);
-        }, 0);
-        const totalCorrect = challengeResults.filter(r => r.correct).length;
-        const score = challenges.length > 0
-          ? Math.round((weightedCorrect / challenges.length) * 100)
-          : 0;
-
-        const metrics: TenFrameMetrics = {
-          type: 'ten-frame',
-          evalMode: challenges[0]?.type ?? 'default',
-          challengesCompleted: totalCorrect,
-          challengesTotal: challenges.length,
-          subitizeAccuracy,
-          subitizeAverageTime: Math.round(subitizeAvgTime),
-          makeTenCorrect: makeTenResults.filter(r => r.correct).length,
-          makeTenTotal: makeTenResults.length,
-          usedMakeTenStrategy: fullFrameReached,
-          counterPlacementEfficiency: placementChanges <= challenges.reduce((s, c) => s + c.targetCount, 0),
-          twoColorDecompositionsExplored: twoColorExplorations,
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        submitEvaluation(
-          totalCorrect === challenges.length,
-          score,
-          metrics,
-          { challengeResults }
-        );
+    // K make-ten: only the EMPTY cells are the answer surface. The seeded
+    // counters are fixed and placed ones stay placed (R6); filling the frame
+    // commits immediately, which is R6's own rule.
+    if (item.kind === 'make_ten' && item.answerKind === 'gesture') {
+      if (filledCells.has(cellIndex)) return;
+      SoundManager.tap();
+      const placed = new Set(filledCells);
+      placed.add(cellIndex);
+      setFilledCells(placed);
+      placementChangesRef.current += 1;
+      if (placed.size >= totalCells) fullFrameEverRef.current = true;
+      if (placed.size >= (item.commitAt ?? item.capacity)) {
+        clearSettle();
+        pendingPlacementRef.current = placed.size;
+        commitPlacement();
+      } else {
+        armSettle(placed.size);
       }
       return;
     }
 
-    // advanceProgress() already incremented index and reset attempts.
-    // Now reset domain-specific state.
-    setFeedback('');
-    setFeedbackType('');
-    setSubitizeInput('');
-    setMakeTenInput('');
-    setShowCounters(true);
-    setSubitizeReflashes(0);
+    SoundManager.tap();
+    const placed = new Set(filledCells);
+    if (placed.has(cellIndex)) placed.delete(cellIndex);
+    else placed.add(cellIndex);
+    setFilledCells(placed);
+    placementChangesRef.current += 1;
+    if (placed.size >= totalCells) fullFrameEverRef.current = true;
 
-    const nextChallenge = challenges[currentChallengeIndex + 1];
-
-    // Every challenge owns its initial frame state. Addition starts empty;
-    // make-ten and subtraction are pre-filled by their mode-specific effects.
-    // Never carry a completed frame into the next challenge.
-    setFilledCells(new Set());
-    setCellColors(new Map());
-
-    // Set phase
-    if (nextChallenge.type === 'subitize') setCurrentPhase('subitize');
-    else if (nextChallenge.type === 'make_ten') setCurrentPhase('makeTen');
-    else if (nextChallenge.type === 'add' || nextChallenge.type === 'subtract') setCurrentPhase('operate');
-    else setCurrentPhase('build');
-
-    sendText(
-      `[PHASE_TRANSITION] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
-      + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
-      + `Read the instruction to the student and encourage them.`,
-      { silent: true }
-    );
+    // `build` closes on stillness; add/subtract are voice items whose turn the
+    // child closes by answering, so the frame there is a working surface only.
+    if (item.answerKind === 'gesture') armSettle(placed.size);
+    else pendingPlacementRef.current = placed.size;
   }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, fullFrameReached, placementChanges,
-    twoColorExplorations, submitEvaluation, currentChallengeIndex,
+    runner, evaluation.hasSubmitted, filledCells, totalCells,
+    armSettle, clearSettle, commitPlacement,
   ]);
 
-  // -------------------------------------------------------------------------
-  // Subitize auto-start
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (currentPhase === 'subitize' && currentChallenge?.type === 'subitize' && showCounters && !isFlashing && !isCurrentChallengeComplete) {
-      // Ready to flash — give a brief delay for the student to prepare
-      const timer = setTimeout(() => startSubitizeFlash(), 800);
-      return () => clearTimeout(timer);
+  // ── Subitize flash-then-hide ──────────────────────────────────────────────
+  // ⚠️ DEPENDS ON `currentItem`, NEVER ON `runner`. The runner returns a fresh
+  // object every render and `ctx.micLevel` updates once per audio frame, so a
+  // callback that closes over `runner` changes identity continuously — and the
+  // effect below, which depends on this callback, would then tear down and
+  // re-arm its prep timer faster than the timer could ever fire. That is the
+  // standing Lumina context-churn footgun: a timer effect keyed on churning
+  // identity never fires, and it only shows up with the MIC OPEN, which is
+  // exactly when this primitive runs. `currentItem` is a stable object out of
+  // the `items` memo.
+  const startFlash = useCallback(() => {
+    const item = currentItem;
+    if (!item || item.kind !== 'subitize') return;
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+      flashTimeoutRef.current = null;
     }
-  }, [currentPhase, currentChallenge, showCounters, isFlashing, startSubitizeFlash, isCurrentChallengeComplete]);
+    setFilledCells(new Set(Array.from({ length: Math.min(item.answer, totalCells) }, (_, i) => i)));
+    setFlashAnswerReady(false);
+    setCountersVisible(true);
+    setIsFlashing(true);
+    const duration = currentChallenge?.flashDuration || SUBITIZE_FLASH_MS;
+    flashTimeoutRef.current = setTimeout(() => {
+      setCountersVisible(false);
+      setIsFlashing(false);
+      setFlashAnswerReady(true);
+      flashTimeoutRef.current = null;
+    }, duration);
+  }, [currentItem, totalCells, currentChallenge?.flashDuration]);
 
-  // -------------------------------------------------------------------------
-  // Make-ten: pre-fill counters
-  // -------------------------------------------------------------------------
+  const isSubitize = currentItem?.kind === 'subitize';
+
+  // ── THE FLASH GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ───────────────────
+  // She says "Watch the frame — the counters show for just a moment… How many
+  // counters did you see?" and THEN the counters appear. Keying the flash to a
+  // beat measured from item-open raced her instead: the flash landed mid-
+  // sentence, so the child heard "watch the frame" after the counters had
+  // already come and gone, and the ask arrived about a frame they never saw
+  // (drive 3, 2026-08-13 — "this would be confusing for the child").
+  //
+  // "Not speaking" is ambiguous on its own — it is also true in the gap before
+  // her audio starts — so the gate is a FALLING EDGE: she must have spoken for
+  // this item, and then stopped. Same gate on the first ask, on every
+  // subsequent challenge, and on a correction's re-flash; `tutorHasSpoken` is
+  // cleared in all three places. This is what retired the hand-tuned
+  // "wait 3s for the correction to finish" window — there is no window now.
+  const tutorSpeaking = runner.tutorSpeaking;
+  const flashPending = runner.running && isSubitize && !isFlashing && !flashAnswerReady;
+
   useEffect(() => {
-    if (currentPhase === 'makeTen' && currentChallenge?.type === 'make_ten') {
-      const count = currentChallenge.targetCount;
-      const positions: number[] = [];
-      for (let i = 0; i < count && i < totalCells; i++) positions.push(i);
-      setFilledCells(new Set(positions));
-      setCellColors(() => {
-        const m = new Map<number, string>();
-        positions.forEach(p => m.set(p, initialCounters?.color || 'red'));
-        return m;
-      });
-    }
-  }, [currentPhase, currentChallenge, initialCounters?.color, totalCells]);
+    if (flashPending && tutorSpeaking) setTutorHasSpoken(true);
+  }, [flashPending, tutorSpeaking]);
 
-  // -------------------------------------------------------------------------
-  // Subtract: pre-fill counters with startCount
-  // -------------------------------------------------------------------------
+  // Safety net: if her audio never arrives, the stimulus still has to happen.
   useEffect(() => {
-    if (currentPhase === 'operate' && currentChallenge?.type === 'subtract' && currentChallenge.startCount != null) {
-      const count = currentChallenge.startCount;
-      const positions: number[] = [];
-      for (let i = 0; i < count && i < totalCells; i++) positions.push(i);
-      setFilledCells(new Set(positions));
-      setCellColors(() => {
-        const m = new Map<number, string>();
-        positions.forEach(p => m.set(p, initialCounters?.color || 'red'));
-        return m;
-      });
-    }
-  }, [currentPhase, currentChallenge, initialCounters?.color, totalCells]);
+    if (!flashPending || tutorHasSpoken) return;
+    const timer = setTimeout(() => setTutorHasSpoken(true), TUTOR_SILENCE_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [flashPending, tutorHasSpoken]);
 
-  // -------------------------------------------------------------------------
-  // SVG Rendering Helpers
-  // -------------------------------------------------------------------------
+  useEffect(() => {
+    if (!flashPending || !tutorHasSpoken || tutorSpeaking) return;
+    const timer = setTimeout(() => startFlash(), SUBITIZE_PREP_MS);
+    return () => clearTimeout(timer);
+  }, [flashPending, tutorHasSpoken, tutorSpeaking, startFlash]);
+
+  // Cancel timers on unmount.
+  useEffect(() => () => {
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+  }, []);
+
+  // ── Rendering helpers ─────────────────────────────────────────────────────
+  const colorForCell = useCallback((index: number): string => {
+    if (twoColorMode?.enabled) {
+      return index < (twoColorMode.color1Count || 5)
+        ? (twoColorMode.color1 || 'red')
+        : (twoColorMode.color2 || 'yellow');
+    }
+    return counterColor;
+  }, [twoColorMode, counterColor]);
+
+  const frameCount = mode === 'double' ? 2 : 1;
+  const svgWidth = frameCount * (FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2)
+    + (frameCount - 1) * 24;
+  const svgHeight = FRAME_ROWS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2;
+
   const renderFrame = useCallback((frameIndex: number) => {
     const offsetX = frameIndex * (FRAME_COLS * (CELL_SIZE + CELL_GAP) + FRAME_PADDING * 2 + 24);
     const cells: React.ReactNode[] = [];
@@ -753,12 +618,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
         const x = offsetX + FRAME_PADDING + col * (CELL_SIZE + CELL_GAP);
         const y = FRAME_PADDING + row * (CELL_SIZE + CELL_GAP);
         const isFilled = filledCells.has(cellIndex);
-        const counterColor = cellColors.get(cellIndex) || 'red';
-        const shouldShowCounter = isFilled && showCounters;
+        const shouldShowCounter = isFilled && countersVisible;
 
         cells.push(
           <g key={cellIndex}>
-            {/* Cell background */}
             <rect
               x={x}
               y={y}
@@ -767,22 +630,19 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
               rx={CELL_RADIUS}
               ry={CELL_RADIUS}
               className="cursor-pointer transition-colors duration-150"
-              fill={isFilled && showCounters ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}
+              fill={shouldShowCounter ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}
               stroke="rgba(255,255,255,0.15)"
               strokeWidth={1.5}
               onClick={() => handleCellClick(cellIndex)}
             />
-            {/* Counter */}
             {shouldShowCounter && (
               <circle
                 cx={x + CELL_SIZE / 2}
                 cy={y + CELL_SIZE / 2}
                 r={COUNTER_RADIUS}
-                fill={COUNTER_COLORS[counterColor] || counterColor}
+                fill={COUNTER_COLORS[colorForCell(cellIndex)] || colorForCell(cellIndex)}
                 className="transition-all duration-200"
-                style={{
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-                }}
+                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
                 onClick={() => handleCellClick(cellIndex)}
               />
             )}
@@ -791,11 +651,10 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
       }
     }
 
-    // Frame border
     const frameWidth = FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2;
     const frameHeight = FRAME_ROWS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2;
-
-    const frame1Full = Array.from(filledCells).filter(c => c >= frameIndex * 10 && c < (frameIndex + 1) * 10).length === 10;
+    const thisFrameFull = countersVisible
+      && Array.from(filledCells).filter(c => c >= frameIndex * 10 && c < (frameIndex + 1) * 10).length === 10;
 
     return (
       <g key={`frame-${frameIndex}`}>
@@ -807,276 +666,212 @@ const TenFrame: React.FC<TenFrameProps> = ({ data, className }) => {
           rx={12}
           ry={12}
           fill="none"
-          stroke={frame1Full ? 'rgba(234,179,8,0.6)' : 'rgba(255,255,255,0.2)'}
-          strokeWidth={frame1Full ? 3 : 2}
+          stroke={thisFrameFull ? 'rgba(234,179,8,0.6)' : 'rgba(255,255,255,0.2)'}
+          strokeWidth={thisFrameFull ? 3 : 2}
           className="transition-colors duration-300"
         />
-        {frame1Full && (
-          <rect
-            x={offsetX}
-            y={0}
-            width={frameWidth}
-            height={frameHeight}
-            rx={12}
-            ry={12}
-            fill="none"
-            stroke="rgba(234,179,8,0.3)"
-            strokeWidth={8}
-            className="animate-pulse"
-          />
-        )}
         {cells}
       </g>
     );
-  }, [filledCells, cellColors, showCounters, handleCellClick]);
+  }, [filledCells, countersVisible, colorForCell, handleCellClick]);
 
-  // -------------------------------------------------------------------------
-  // Computed Values
-  // -------------------------------------------------------------------------
-  const counterCount = filledCells.size;
-  const emptyCount = totalCells - counterCount;
-  const frameCount = mode === 'double' ? 2 : 1;
-  const svgWidth = frameCount * (FRAME_COLS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2) + (frameCount - 1) * 24;
-  const svgHeight = FRAME_ROWS * (CELL_SIZE + CELL_GAP) - CELL_GAP + FRAME_PADDING * 2;
-
-  // -------------------------------------------------------------------------
-  // Auto-submit evaluation when all challenges complete
-  // -------------------------------------------------------------------------
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  /** `build` runs never speak an answer and `subitize` runs never place one —
+   *  only a mixed set earned the old "voice and hands" line. */
+  const celebrationMessage = useMemo(() => {
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return 'You worked the ten frame with your own hands!';
+      case 'mixed':
+        return 'You worked the ten frame with your voice and your hands!';
+      default:
+        return 'You read the ten frame out loud!';
     }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+  }, [items]);
 
-  // -------------------------------------------------------------------------
-  // Overall Score
-  // -------------------------------------------------------------------------
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => (
+      CHALLENGE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
+    ));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
 
-  // Snapshot duration when challenges complete (elapsedMs from hook keeps ticking)
-  const completionDurationRef = useRef<number | undefined>(undefined);
-  if (allChallengesComplete && completionDurationRef.current === undefined) {
-    completionDurationRef.current = elapsedMs;
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  if (items.length === 0) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No ten frame challenges available.</p>
+        </LuminaCardContent>
+      </LuminaCard>
+    );
   }
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
+  const kind = currentItem?.kind;
+  const isGestureItem = currentItem?.answerKind === 'gesture';
+  /** Is the item ON SCREEN closed? The runner's `stage` cannot answer this — it
+   *  stays 'affirmed' across the advance — so everything that means "this item
+   *  is finished" reads the solved ledger instead. */
+  const currentSolved = runner.currentSolved;
+  // The running count is the child's own trace of what they placed (R3/R7,
+  // tier-governed) — but on add/subtract it EQUALS the number they are about to
+  // say, so it is withdrawn there.
+  const showTrace = showCount && countersVisible
+    && (kind === 'build' || kind === 'make_ten') && filledCells.size > 0;
+
+  const stageWord = runner.stage === 'judging'
+    ? 'let’s see…'
+    : currentSolved
+      ? 'yes!'
+      : runner.running
+        ? (isGestureItem ? 'your hands' : 'how many?')
+        : 'get ready';
+
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="orange" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1-2'}
-            </LuminaBadge>
-            <LuminaBadge accent="emerald" className="text-xs">
-              {mode === 'double' ? 'Double Frame' : 'Ten Frame'}
-            </LuminaBadge>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            {/* Grade / mode badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge accent="orange" className="text-xs">Grade 1-2</LuminaBadge>
+                {kind && (
+                  <LuminaBadge accent="emerald" className="text-xs">
+                    {CHALLENGE_TYPE_CONFIG[kind]?.icon} {CHALLENGE_TYPE_CONFIG[kind]?.label}
+                  </LuminaBadge>
+                )}
+              </div>
+            )}
           </div>
+          <LuminaBadge accent="cyan" className="text-xs">
+            {isGestureItem ? 'Use the frame' : 'Say it out loud'}
+          </LuminaBadge>
         </div>
-        {description && (
+        {!isPreReader && description && (
           <p className="text-slate-400 text-sm mt-1">{description}</p>
         )}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Phase Progress */}
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <LuminaModeTabs tabs={PHASE_TABS} active={currentPhase} accent="orange" />
-            <LuminaChallengeCounter
-              current={Math.min(currentChallengeIndex + 1, challenges.length)}
-              total={challenges.length}
-              className="ml-auto"
-            />
-          </div>
-        )}
+        {!evaluation.hasSubmitted && currentItem && (
+          <>
+            {!isPreReader && (
+              <div className="flex justify-center">
+                <LuminaChallengeCounter
+                  current={Math.min(runner.currentIndex + 1, items.length)}
+                  total={items.length}
+                  variant="dots"
+                />
+              </div>
+            )}
 
-        {/* Instruction */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPrompt>
-            <span className="text-sm">{currentChallenge.instruction}</span>
-          </LuminaPrompt>
-        )}
+            {/* Readers get the printed problem; the tutor SPEAKS it for everyone. */}
+            {!isPreReader && currentChallenge?.instruction && (
+              <LuminaPrompt>
+                <span className="text-sm">{currentChallenge.instruction}</span>
+              </LuminaPrompt>
+            )}
 
-        {/* Ten Frame SVG */}
-        <div className="flex justify-center">
-          <svg
-            width={svgWidth}
-            height={svgHeight}
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            className="max-w-full h-auto"
-          >
-            {Array.from({ length: frameCount }, (_, i) => renderFrame(i))}
-          </svg>
-        </div>
-
-        {/* Counter Info */}
-        <div className="flex items-center justify-center gap-4 text-sm">
-          {showCount && (
-            <span className="text-slate-300">
-              Counters: <span className="text-orange-300 font-bold">{counterCount}</span>
-            </span>
-          )}
-          {showEmptyCount && (
-            <span className="text-slate-300">
-              Empty: <span className="text-slate-400 font-bold">{emptyCount}</span>
-            </span>
-          )}
-          {showEquation && (currentChallenge?.type === 'add' || currentChallenge?.type === 'subtract') && (
-            <span className="text-slate-300">
-              {currentChallenge?.type === 'subtract' && currentChallenge.startCount != null
-                ? <>Equation: <span className="text-emerald-300 font-mono">{currentChallenge.startCount} − {currentChallenge.startCount - currentChallenge.targetCount} = ?</span></>
-                : <>Equation: <span className="text-emerald-300 font-mono">{counterCount} = ?</span></>
-              }
-            </span>
-          )}
-        </div>
-
-        {/* Subitize Input — bespoke number-entry surface */}
-        {currentPhase === 'subitize' && !showCounters && !isFlashing && !isCurrentChallengeComplete && (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-slate-300 text-sm">How many counters did you see?</p>
-            <div className="flex items-center gap-2">
-              <LuminaButton
-                className="w-14 h-14 text-2xl font-bold rounded-xl"
-                onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.max((parseInt(subitizeInput, 10) || 0) - 1, 0))); }}
-                disabled={(parseInt(subitizeInput, 10) || 0) <= 0}
+            <div className="flex justify-center">
+              <svg
+                width={svgWidth}
+                height={svgHeight}
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                className="max-w-full h-auto"
               >
-                &minus;
-              </LuminaButton>
-              <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
-                <span className="text-3xl font-bold text-slate-100">
-                  {subitizeInput === '' ? '–' : parseInt(subitizeInput, 10) || 0}
+                {Array.from({ length: frameCount }, (_, i) => renderFrame(i))}
+              </svg>
+            </div>
+
+            {/* The child's own placement trace. Never an empty-space readout —
+                on a make-ten item that number IS the answer (R5). */}
+            {showTrace && (
+              <div className="flex items-center justify-center text-sm">
+                <span className="text-slate-300">
+                  Counters: <span className="text-orange-300 font-bold text-lg">{filledCells.size}</span>
                 </span>
               </div>
-              <LuminaButton
-                className="w-14 h-14 text-2xl font-bold rounded-xl"
-                onClick={() => { SoundManager.tick(); setSubitizeInput(String(Math.min((parseInt(subitizeInput, 10) || 0) + 1, totalCells))); }}
-              >
-                +
-              </LuminaButton>
-            </div>
-            <LuminaButton
-              tone="subtle"
-              className="text-xs"
-              onClick={() => {
-                setSubitizeReflashes(r => r + 1);
-                startSubitizeFlash();
-              }}
-            >
-              Flash Again
-            </LuminaButton>
-          </div>
-        )}
+            )}
 
-        {/* Make-ten Input — bespoke number-entry surface */}
-        {currentPhase === 'makeTen' && !isCurrentChallengeComplete && !isKMakeTen && (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-slate-300 text-sm font-mono">{counterCount} + ___ = {totalCells}</p>
-            <div className="flex items-center gap-2">
-              <LuminaButton
-                className="w-14 h-14 text-2xl font-bold rounded-xl"
-                onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.max((parseInt(makeTenInput, 10) || 0) - 1, 0))); }}
-                disabled={(parseInt(makeTenInput, 10) || 0) <= 0}
-              >
-                &minus;
-              </LuminaButton>
-              <div className="w-20 h-14 flex items-center justify-center bg-slate-800/50 border border-white/20 rounded-xl">
-                <span className="text-3xl font-bold text-slate-100">
-                  {makeTenInput === '' ? '–' : parseInt(makeTenInput, 10) || 0}
+            {/* The FACT, for readers — the same thing the tutor says aloud. It
+                is the question side; the answer stays off the screen. */}
+            {showEquation && !isPreReader && kind === 'add' && (
+              <p className="text-center text-sm text-slate-300 font-mono">
+                {currentItem.addend1} + {currentItem.addend2} = ?
+              </p>
+            )}
+            {showEquation && !isPreReader && kind === 'subtract' && (
+              <p className="text-center text-sm text-slate-300 font-mono">
+                {currentItem.shown} − {currentItem.removed} = ?
+              </p>
+            )}
+
+            {/* Subitize flash prompt + re-show. "Show again" re-shows the
+                STIMULUS and is never withdrawn; the tutor's matching
+                tap-to-hear re-asks the QUESTION and never narrates the count. */}
+            {isSubitize && (
+              <div className="flex flex-col items-center gap-2">
+                {!flashAnswerReady && (
+                  <span className="text-orange-300 text-sm font-medium">
+                    👀 {isFlashing ? 'Look quick!' : 'Get ready to look…'}
+                  </span>
+                )}
+                {flashAnswerReady && runner.running && !currentSolved && (
+                  <LuminaButton
+                    tone="subtle"
+                    className="text-xs"
+                    onClick={() => {
+                      // Counted via hearStimulus → summary.hearTaps (the
+                      // contract's successor to the old reflash penalty).
+                      runner.hearStimulus();
+                      startFlash();
+                    }}
+                  >
+                    Show again
+                  </LuminaButton>
+                )}
+              </div>
+            )}
+
+            {/* The reward — the first moment a number may appear on screen. */}
+            {reward && currentSolved && (
+              <LuminaPanel className="p-3 text-center">
+                <span className="text-emerald-300 text-lg font-black animate-bounce inline-block">
+                  {reward}
                 </span>
-              </div>
-              <LuminaButton
-                className="w-14 h-14 text-2xl font-bold rounded-xl"
-                onClick={() => { SoundManager.tick(); setMakeTenInput(String(Math.min((parseInt(makeTenInput, 10) || 0) + 1, totalCells))); }}
-              >
-                +
-              </LuminaButton>
-            </div>
-          </div>
-        )}
-
-        {/* Flash button for subitize */}
-        {currentPhase === 'subitize' && showCounters && !isFlashing && !isCurrentChallengeComplete && (
-          <div className="flex justify-center">
-            <LuminaButton
-              tone="primary"
-              className="bg-orange-500/10 border-orange-400/30 text-orange-300 hover:bg-orange-500/20"
-              onClick={startSubitizeFlash}
-            >
-              Flash Counters
-            </LuminaButton>
-          </div>
-        )}
-
-        {/* Feedback */}
-        {feedback && (
-          <LuminaFeedbackCard
-            status={feedbackType === 'success' ? 'correct' : feedbackType === 'error' ? 'incorrect' : 'insight'}
-          >
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Action Buttons */}
-        {challenges.length > 0 && (
-          <div className="flex justify-center gap-3">
-            {!isCurrentChallengeComplete && !allChallengesComplete && !isKMakeTen && (
-              <LuminaActionButton
-                action="check"
-                onClick={handleCheckAnswer}
-                disabled={
-                  (currentPhase === 'subitize' && (showCounters || isFlashing)) ||
-                  hasSubmittedEvaluation
-                }
-              />
+              </LuminaPanel>
             )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
-              <LuminaActionButton
-                action="next"
-                onClick={advanceToNextChallenge}
-              >
-                Next Challenge
-              </LuminaActionButton>
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {isGestureItem
+                  ? 'Tap the frame to place your counters — the tutor checks when you stop.'
+                  : 'Work it out on the frame, then say your answer out loud.'}
+              </p>
             )}
-            {allChallengesComplete && !hasSubmittedEvaluation && (
-              <div className="text-center">
-                <p className="text-emerald-400 text-sm font-medium mb-2">
-                  All challenges complete!
-                </p>
-                <p className="text-slate-400 text-xs">
-                  {challengeResults.filter(r => r.correct).length} / {challenges.length} correct
-                </p>
-              </div>
-            )}
-          </div>
+
+            {/* "I’m listening" over an item whose answer is a placement is a lie
+                in the UI (add-di-loop step 3) — the hands items hold the
+                bracket, so the orb says what the turn actually is. */}
+            <JudgedMicPanel run={runner} gestureLabel="Show me on the frame" />
+          </>
         )}
 
-        {/* Hint */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
-          <LuminaPrompt accent="amber" center className="py-2">
-            <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
-          </LuminaPrompt>
-        )}
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={localOverallScore}
-            durationMs={completionDurationRef.current}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Challenge Complete!"
-            celebrationMessage="You completed all ten frame challenges!"
-            className="mb-6"
+            celebrationMessage={celebrationMessage}
+            className="mt-4"
           />
         )}
       </LuminaCardContent>

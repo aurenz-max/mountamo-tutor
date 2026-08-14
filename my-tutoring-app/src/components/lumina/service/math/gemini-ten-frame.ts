@@ -60,16 +60,18 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   subitize: {
     promptDoc:
-      `"subitize": Counters flash briefly, student types how many they saw. `
+      `"subitize": Counters flash briefly, then hide; the student SAYS OUT LOUD how many they saw. `
       + `Set flashDuration: 1500-2000ms for K, 1000-1500ms for grades 1-2. `
-      + `Numbers 1-5 for K, 1-10 for grades 1-2. Vary arrangements for perceptual fluency.`,
+      + `Numbers 1-5 for K, 1-10 for grades 1-2 — NEVER 0 (an empty frame has no sayable answer). `
+      + `Vary arrangements for perceptual fluency.`,
     schemaDescription: "'subitize' (flash and identify count)",
   },
   make_ten: {
     promptDoc:
-      `"make_ten": Frame shows some counters, student enters how many more to fill the frame. `
+      `"make_ten": The frame shows some counters; the student supplies how many MORE fill it — `
+      + `said out loud at grades 1-2, tapped onto the frame at Kindergarten. `
       + `For single frame: make 10. For double frame: make 20. `
-      + `targetCount = number of counters ALREADY shown (must be < frame capacity). `
+      + `targetCount = number of counters ALREADY shown (at least 1, and strictly less than frame capacity). `
       + `Use varied starting counts (3-8 for single frame). Focus on number bonds to 10.`,
     schemaDescription: "'make_ten' (find complement to 10)",
   },
@@ -463,6 +465,14 @@ SUBTRACTION GUIDELINES (if generating subtract challenges):
 - Always include startCount for subtract challenges (it controls how many counters appear)
 - Use numbers within 10 for single frame (startCount ≤ 10)
 - startCount MUST be greater than targetCount (the student removes startCount − targetCount counters)
+- targetCount (how many are LEFT) must be at least 1 — a subtraction down to nothing has no sayable answer
+
+SPOKEN-ANSWER WINDOW (this activity is answered OUT LOUD to a live tutor):
+- Every answer the student says must be a whole number from 1 to 20. NEVER 0.
+- subitize → the answer is targetCount. make_ten → the answer is (frame capacity − targetCount).
+  add → the answer is addend1 + addend2. subtract → the answer is targetCount.
+- Any challenge whose answer would be 0 or above 20 is discarded before the student sees it,
+  so choosing such numbers wastes the slot.
 
 ${(() => {
   const hints: string[] = [];
@@ -492,9 +502,10 @@ REQUIREMENTS:
 9. For Kindergarten: stick to single frame, numbers 1-10, build and subitize only
 10. For Grades 1-2: can include make_ten, add, subtract, and double frame
 11. Set showOptions appropriately:
-    - showCount: true for build challenges, false for subitize
+    - showCount: true for build challenges; false for subitize and for add/subtract
+      (there the running count equals the answer the student is about to say aloud)
     - showEmptyCount: false for make_ten (showing empty count leaks the complement answer)
-    - showEquation: true for add/subtract
+    - showEquation: true for add/subtract (it shows the FACT, never the answer)
 
 Return the complete ten frame configuration.
 `;
@@ -597,25 +608,6 @@ Return the complete ten frame configuration.
     }
   }
 
-  // ── Fallback if empty ──
-  if (data.challenges.length === 0) {
-    const fallbackType = resolution?.allowedTypes[0] ?? 'build';
-    // instruction is synthesized below — these objects only carry the numeric fields.
-    const fallbacks: Record<string, Omit<TenFrameChallenge, 'id' | 'instruction'>> = {
-      build: { type: 'build', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
-      subitize: { type: 'subitize', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
-      make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
-      add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
-      subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Click counters to remove them!', narration: "Let's practice taking away." },
-    };
-    console.log(`[TenFrame] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
-  }
-
-  // Final summary log
-  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
-  console.log(`[TenFrame] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
-
   // Ensure counter positions is an array
   if (!data.counters) {
     data.counters = { count: 0, color: 'red', positions: [] };
@@ -634,6 +626,74 @@ Return the complete ten frame configuration.
   // make_ten stays single-frame even if the manifest passed a double-frame override.
   if (isMakeTenEvalMode) data.mode = 'single';
 
+  // ── The spoken-answer gate: KEEP OR DROP, never backfill ──────────────────
+  // This activity is answered OUT LOUD to a live tutor, so an item whose answer
+  // falls outside the benched `number_word_to_20` window cannot be asked at
+  // all. ZERO is the live one: an empty frame is a legitimate subitize stimulus
+  // and a subtraction can land on nothing, but "zero"/"none" is an unbenched
+  // spoken answer (di-shapes rung 2 residual). A repaired placeholder would
+  // become a spoken ask the tutor has to judge, so these DROP.
+  //
+  // The same predicate runs build-side in `tenFrameScript.itemFromChallenge` —
+  // belt and suspenders on both sides of the wire. Runs after every config
+  // override so it sees the frame capacity the child will actually get.
+  {
+    const capacity = data.mode === 'double' ? 20 : 10;
+    const sayable = (n: unknown): n is number =>
+      typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 20;
+
+    const askable = (ch: TenFrameChallenge): boolean => {
+      switch (ch.type) {
+        case 'build':
+          // Gestural: the target is the QUESTION, the placement is the answer.
+          return Number.isInteger(ch.targetCount) && ch.targetCount >= 1 && ch.targetCount <= capacity;
+        case 'subitize':
+          return sayable(ch.targetCount) && ch.targetCount <= capacity;
+        case 'make_ten':
+          return Number.isInteger(ch.targetCount)
+            && ch.targetCount >= 1
+            && ch.targetCount < capacity
+            && sayable(capacity - ch.targetCount);
+        case 'add':
+          return sayable(ch.addend1) && sayable(ch.addend2)
+            && sayable((ch.addend1 ?? 0) + (ch.addend2 ?? 0))
+            && (ch.addend1 ?? 0) + (ch.addend2 ?? 0) <= capacity;
+        case 'subtract':
+          return sayable(ch.startCount) && (ch.startCount ?? 0) <= capacity
+            && sayable(ch.targetCount) && ch.targetCount < (ch.startCount ?? 0);
+        default:
+          return false;
+      }
+    };
+
+    const before = (data.challenges as TenFrameChallenge[]).length;
+    data.challenges = (data.challenges as TenFrameChallenge[]).filter(askable);
+    const dropped = before - data.challenges.length;
+    if (dropped > 0) {
+      console.log(`[TenFrame] Dropped ${dropped}/${before} challenge(s) outside the spoken-answer window (1-20, never 0)`);
+    }
+  }
+
+  // ── Fallback if empty ──
+  if (data.challenges.length === 0) {
+    const fallbackType = resolution?.allowedTypes[0] ?? 'build';
+    // instruction is synthesized below — these objects only carry the numeric
+    // fields, and every one of them clears the spoken-answer gate above.
+    const fallbacks: Record<string, Omit<TenFrameChallenge, 'id' | 'instruction'>> = {
+      build: { type: 'build', targetCount: 5, hint: 'Fill up one whole row!', narration: "Let's start by building the number 5 on the ten frame." },
+      subitize: { type: 'subitize', targetCount: 4, hint: 'Think about how many fit in one row.', narration: "Watch carefully — how many counters flash on the frame?", flashDuration: 1500 },
+      make_ten: { type: 'make_ten', targetCount: 6, hint: 'Count the empty spaces!', narration: "Some counters are already here. How many more do we need?" },
+      add: { type: 'add', targetCount: 7, addend1: 3, addend2: 4, hint: 'Place 3, then add 4 more.', narration: "Let's add these numbers using the ten frame." },
+      subtract: { type: 'subtract', targetCount: 5, startCount: 8, hint: 'Tap counters to take them off!', narration: "Let's practice taking away." },
+    };
+    console.log(`[TenFrame] No valid challenges — using ${fallbackType} fallback`);
+    data.challenges = [{ id: 'c1', ...fallbacks[fallbackType] ?? fallbacks.build }];
+  }
+
+  // Final summary log
+  const typeBreakdown = (data.challenges as Array<{ type: string }>).map((c: { type: string }) => c.type).join(', ');
+  console.log(`[TenFrame] Final: ${data.challenges.length} challenge(s) → [${typeBreakdown}]`);
+
   // ── Apply the support-tier structure deterministically (code owns the SUPPORT
   // structure; the LLM only chose numbers). Withdraws scaffolds as the tier
   // hardens — never alters the target numbers. ──
@@ -641,10 +701,15 @@ Return the complete ten frame configuration.
     if (!data.showOptions) {
       data.showOptions = { showCount: true, showEquation: false, showEmptyCount: false, allowFlip: false };
     }
-    // Count readout supports build/make_ten/operate; subitize is flashed, so its
-    // count display stays off regardless of tier.
-    if (pinnedType !== 'subitize') {
+    // The count readout is the child's own trace of what they placed, so it is
+    // a tier lever on build and make_ten only. Subitize is flashed, so its
+    // count display stays off regardless of tier — and on add/subtract the
+    // readout EQUALS the sum or difference the child is about to say aloud,
+    // which makes it an answer leak in the judged loop rather than a scaffold.
+    if (pinnedType === 'build' || pinnedType === 'make_ten') {
       data.showOptions.showCount = tierScaffold.showCount;
+    } else {
+      data.showOptions.showCount = false;
     }
     if (pinnedType === 'add' || pinnedType === 'subtract') {
       data.showOptions.showEquation = tierScaffold.showEquation;

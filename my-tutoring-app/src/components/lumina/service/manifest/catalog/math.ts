@@ -1965,8 +1965,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   // Math Phase 2 Primitives (K-5 Foundations)
   {
     id: 'ten-frame',
-    description: 'Interactive 2×5 grid manipulative for building number sense in K-2. Students place counters to build numbers (0-20), develop subitizing skills (instant quantity recognition), compose and decompose numbers with two-color counters, practice "make ten" strategy, and solve addition/subtraction using the frame. Supports single frame (0-10) and double frame (0-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, counting, addition, and subtraction.',
-    constraints: 'Best for grades K-2. Counter-based manipulative. Single frame for K (numbers 0-10), double frame for grades 1-2 (numbers 0-20).',
+    description: 'Live tutor-judged 2×5 grid manipulative for K-2 number sense (DI modality). The Live tutor asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the answer out loud for subitizing (counters flash, then hide — say how many you saw), for make-ten at grades 1-2 (how many more fill the frame), and for addition and subtraction on the frame; they answer WITH THEIR HANDS for building a number (place exactly N counters) and for make-ten at Kindergarten (tap the empty cells until the frame is full), where placing the counters IS the skill. Supports single frame (1-10) and double frame (1-20). The most foundational manipulative for early number sense. ESSENTIAL for grades K-2 number sense, subitizing, make-ten strategy, addition, and subtraction.',
+    constraints: 'Best for grades K-2. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button and no typed or stepper answer anywhere. Single frame for K, double frame for grades 1-2. Every spoken answer is a number word from 1 to 20 — challenges whose answer would be 0 (an empty frame, a subtraction down to nothing) or above 20 are discarded before the child sees them.',
     evalModes: [
       {
         evalMode: 'build',
@@ -1974,7 +1974,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['build'],
-        description: 'Place counters on the frame with full guidance. Concrete manipulative — lowest cognitive load.',
+        description: 'Place exactly N counters on the frame; the tutor judges the placement. Concrete manipulative — lowest cognitive load.',
       },
       {
         evalMode: 'subitize',
@@ -1982,7 +1982,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['subitize'],
-        description: 'Flash counters briefly, identify count. Pictorial recognition — one layer of abstraction above concrete.',
+        description: 'Counters flash and hide; the child says how many they saw. Pictorial recognition — one layer of abstraction above concrete.',
       },
       {
         evalMode: 'make_ten',
@@ -1990,7 +1990,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['make_ten'],
-        description: 'Find the complement to 10. Strategic decomposition — student must self-organize approach.',
+        description: 'Find the complement to 10 — enacted on the frame at Kindergarten, said aloud at grades 1-2. Strategic decomposition — student must self-organize approach.',
       },
       {
         evalMode: 'operate',
@@ -1998,29 +1998,63 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['add', 'subtract'],
-        description: 'Addition and subtraction using the frame. Transitional symbolic — bridging concrete and abstract.',
+        description: 'Addition and subtraction worked on the frame, with the sum or difference said aloud. Transitional symbolic — bridging concrete and abstract.',
       },
     ],
+    audioInput: { manual_activity: true },
     tutoring: {
-      taskDescription: 'Student is building numbers on a ten frame. Challenge: {{instruction}}. Target: {{targetCount}} counters. Current count: {{currentCount}}. Empty spaces: {{emptySpaces}}.',
-      contextKeys: ['instruction', 'targetCount', 'currentCount', 'mode', 'challengeType', 'emptySpaces', 'attemptNumber'],
+      taskDescription: 'LIVE-JUDGED ten frame practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the frame, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: '"How many counters do you see? Can you count them?"',
-        level2: '"Look at the empty spaces on the frame. How many empty spaces do you see?"',
-        level3: '"You have {{currentCount}} counters. The frame holds 10. So {{currentCount}} + {{emptySpaces}} = 10. That is the make-ten strategy!"',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
+        level2: 'Remind the child of the method in one short sentence — "Look at the frame and think about how many" — without saying any number.',
+        level3: 'Invite one try together: "Take your time. Look at the frame. Then tell me." Still never say the answer.',
       },
       commonStruggles: [
-        { pattern: 'Counting past 10 on single frame', response: '"A single ten frame only holds 10. Let\'s count the spaces: each row has 5."' },
-        { pattern: 'Not seeing empty spaces as meaningful', response: '"The empty spaces are important! They tell us how many more we need to make 10."' },
-        { pattern: 'Double-counting counters', response: '"Try touching each counter as you count it. That way you won\'t count any twice."' },
+        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Counts the counters aloud on a flash item', response: 'The scripted correction handles this AFTER the attempt is judged: it re-models looking at the whole group, then re-asks. Never interrupt mid-attempt.' },
+        { pattern: 'Says the total instead of how many more', response: 'The scripted correction re-models the number bond and re-elicits. Speak only that line.' },
       ],
       aiDirectives: [
         {
-          title: 'K-LEVEL COUNTING ENCOURAGEMENT',
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
           instruction:
-            'Use warm, simple language. Count along with the student: "1, 2, 3..." '
-            + 'Celebrate each counter placed. Use "how many more?" to build towards make-ten thinking. '
-            + 'If the student fills one row (5), note: "You filled a whole row! That is 5!"',
+            'Your first cue contains a scripted opening line with the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER',
+          instruction:
+            'On spoken items the answer is ONE number word from 1 to 20 and nothing else — never a digit read as a string of words, never a sentence you supply. '
+            + 'The cue for each item names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right. Judge by that cue and nothing else. '
+            + 'THE LAW: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'HAND ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers with their hands on the frame, say nothing at all while they work — no counting, no narration, no encouragement mid-placement. '
+            + 'You will be told what they placed and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'SHOW-AGAIN ON DEMAND',
+          instruction:
+            'The child can ask to see the flash again. That re-asks the QUESTION only — speak the scripted line you are given and never describe or count what flashed.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
         },
       ],
     },
