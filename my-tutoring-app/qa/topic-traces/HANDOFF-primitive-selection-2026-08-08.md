@@ -361,3 +361,98 @@ duplicate-skill counts per arm. Writes `order-ab.json` beside the script.
   so every `fs` call in a harness misses by one directory. All three harnesses had
   this — `block-ramp.json` and the bloom-order label file were never actually
   written. Fixed in all three.
+
+---
+
+## 📥 MOVED FROM `WORKSTREAMS.md` — `/pm` 2026-08-13 (user ruling)
+
+The index's `## ACTIVE` section had grown to ~1,360 lines (79% of the file), so each
+stream's DETAIL now lives in its owning queue and the index carries the pointer plus the
+one-line state. **Moved verbatim, nothing deleted.** The index remains authority for
+STATE (active/parked, what to pull next); this block is authority for the detail behind
+it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
+
+### 00. Lesson ordering & primitive selection — **SCOPED ACTIVE 2026-08-08 (user call)** — last touched **2026-08-08**
+
+- **Queue of record:** `my-tutoring-app/qa/topic-traces/HANDOFF-primitive-selection-2026-08-08.md`
+  — §5 IS the queue (B′ → C → three smaller residuals), §4 is the do-not-rebuild
+  list, §6 the instruments, §7 the gotchas. ~~**Everything is UNCOMMITTED.**~~
+  **✅ CORRECTED `/pm` 2026-08-13 — Layer A SHIPPED in `3226734` (objective ordering, and the
+  handoff itself is in that commit) and the hundreds-chart window in `8ba8c1e`; both are on
+  `main` since the 08-12 fast-forward. The working tree is clean here.** The stale claim was
+  three days old and would have cost the next session a re-verification pass before it could
+  start — the same "carried rows are copied, not re-read" failure the orphaned-pair row named.
+  **What is genuinely not started is the pull below: B′.**
+- **Why it exists.** A Kindergarten "counting to 10" lesson opened `hundreds-chart`
+  on the full 1–100 board instructing *"Count by 5s and tap every number you land
+  on, all the way to 100"* — while the card's own title said *"highlighting the
+  first ten numbers in order"*. **The LLM prose honored the lesson; the
+  deterministic builder underneath did not.** Three hardcoded `100`s plus a skip
+  pool containing no `1` made "count in order" inexpressible at any grade — the
+  generator's entire output space was skip-counting to 100. Fixed
+  (`resolveChartWindow` + `resolveLessonEvalModes`-fed `gridMax`), and the chase
+  opened the real question.
+- **✅ Layer A — objective ORDERING. Done and measured: 20/24 → 24/24 ordered, 4
+  inversions → 0.** Objectives are taught in emitted order, so an inversion means
+  the lesson applies a skill before teaching the concept it rests on. All four
+  baseline inversions were **one shape** — conceptual `explain` appended after
+  `apply` — and the cause is worth carrying: the prompt asked to *"progress from
+  lower to higher Bloom's levels when appropriate"* and then listed verbs in
+  **non-Bloom order carrying no level numbers**. **The model was asked to rank by
+  a scale the prompt never gave it.** Fix: verbs re-listed lowest→highest with
+  explicit `(n)`, the trailing-`explain` trap named, and a PREREQUISITE OVERRIDE
+  for same-level pairs. Confirmed on the origin lesson — cardinality moved from
+  3rd to 2nd, ahead of the counting objective that depends on it.
+- **➡️ TOP = B′ (deterministic within-block sort).** After `resolveLessonEvalModes`
+  (`gemini-manifest.ts:484`), sort each objective block's components ascending by
+  the resolved mode's `scaffoldingMode`. **~15 lines, no LLM call, no authoring
+  campaign, and the data is already on all 541 modes** — it enforces what the
+  manifest schema asks for in prose (*"start with introduction/explanation, then
+  practice/application"*) and structurally cannot enforce today, because **the
+  curator picks order before modes exist**. **Success criterion is already
+  measured: 19 of 72 scorable blocks inverted → 0**, with the 35 flat blocks
+  untouched. One open design point: components with no `evalModes`
+  (`scaffoldingMode: null`) need a documented placement rule — the handoff
+  suggests **hold position** rather than defaulting to 0, so an
+  `annotated-example` or `foundation-explorer` intro isn't shuffled behind
+  practice.
+- **Then C — the objective verb into mode resolution.** `ten-frame` resolves
+  `build` under **all four verbs** (6× explain, 6× apply, 5× identify, 2×
+  compare); `sorting-station` resolves `sort_one` under 7 identify / 2 explain /
+  2 apply, including under counting objectives its own `count_compare` mode
+  serves directly. **The mode picker ignores the objective verb.** The fix is a
+  prompt change plus threading two fields — `resolveLessonEvalModes` already loads
+  the catalog and already receives the objectives — **not a data-model change**.
+- **⚠️ §4 — REJECTED, do not rebuild. Both were proposed and then killed, one by a
+  user ruling and one by measurement.**
+  **(a) Sorting components by IRT `beta`.** β is a psychometric difficulty prior;
+  Bloom is a cognitive-demand class. **Orthogonal** — `decompose` and
+  `compare_groups` are both β 1.5, identical difficulty, different cognitive acts
+  serving different objectives. Sorting by β yields an easy→hard lesson, not a
+  pedagogically ordered one. *(User ruling: "learning objective should drive
+  this.")*
+  **(b) Tagging 192 primitives / 541 eval modes with Bloom levels.** Killed by
+  measurement, and the reasoning generalises: it **would not have fixed either
+  observed finding** (`number-bond`/`decompose` under a cardinality objective is a
+  *conceptual content* error, not a cognitive-level one — Bloom tags let it
+  through); components already sit under a block carrying `objectiveVerb`, so a
+  per-primitive level re-encodes what the parent declares; and both real findings
+  are fixable from data that **already exists**. The campaign would have added a
+  third signal on top of `beta` and `scaffoldingMode` and touched neither finding.
+  **(c) A content-fit `serves:` catalog clause is DEFERRED, not rejected** —
+  validate with the §6 harnesses before anyone authors 541 rows. The cheap version
+  of that channel is already proven: a **2-line edit** to hundreds-chart's
+  `description` measurably moved the curator (it began emitting "small 1-10 grid").
+  **Fix named offenders empirically before generalizing.**
+- **Instruments (§6) — capture a fresh baseline before changing B′ or C, because
+  §3.2's numbers predate them.** `npm run audit:bloom-order -- <port> <label> 3`
+  and `npm run audit:block-ramp -- <port> 4`. **Repeats matter**: objective COUNT
+  varies run to run (2–3 at K-2) and the inversion only appears on the
+  3-objective shape, so one pass under-samples.
+- **Gotchas (§7), each already paid for:** dev-server **port drift** (ports climb
+  when 3000-3004 are taken — read `Local:` from the log); **warm the route first**
+  or a trace fired during recompile returns HTML 404 and silently shrinks the
+  sample; `generatorInput.config` **does not exist**, the path is
+  `generatorInput.item.config` (cost an hour and a false bug report); and
+  **`typecheck:lumina` does not cover `src/app/api/`**, where the trace endpoint
+  lives — exercise it at runtime.

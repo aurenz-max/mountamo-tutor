@@ -1960,3 +1960,375 @@ Tier-3 live `--lesson` + pixel (→ HUMAN-CHECKS). With #9b–#9d closed, the K 
   - Audit-C chrome evidence (for K-stage): `LuminaModeTabs`, `LuminaChallengeCounter`,
     "Kindergarten"/operation `LuminaBadge`, ten-frame toggle all sit in the child's
     field — per-primitive internal chrome the stage MVP does not yet remove.
+
+---
+
+## 📥 MOVED FROM `WORKSTREAMS.md` — `/pm` 2026-08-13 (user ruling)
+
+The index's `## ACTIVE` section had grown to ~1,360 lines (79% of the file), so each
+stream's DETAIL now lives in its owning queue and the index carries the pointer plus the
+one-line state. **Moved verbatim, nothing deleted.** The index remains authority for
+STATE (active/parked, what to pull next); this block is authority for the detail behind
+it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
+
+### 1. Reader-fit supply-side sweep — items 15 + 16 CLOSED → **item 17, gated on a human check** — **PARKED 2026-08-08** — last touched **2026-08-08**
+
+*Demoted from TOP SLOT and then PARKED the same day (`/pm` 2026-08-08). Not for
+staleness — it moved twice in 24h. Two reasons, in order: its band-audit queue is
+genuinely drained, and its filed top is `/add-eval-modes` work belonging to the
+lifecycle ladder rather than to this lane. Then the parking reason on top of that:
+**item 17's template is unproven until HUMAN-CHECKS #77 is driven**, and pulling
+it first risks copying a hit-layer bug into three more primitives. **Resume the
+moment #77 is struck** — nothing else gates it. The lane's own scope fence
+(no eval-mode work inside a reader-fit slice) still stands; item 17 is the thing
+this lane kept surfacing and could never close from inside a slice.*
+
+- **✅ Item 16 CLOSED 2/2 (2026-08-08)** — `constellation-builder` (`ea5f60b`) and
+  `planetary-explorer` (`01cebd7`), both READY at PRE. **The astronomy prose-grade
+  class is closed 10/10.** The defect bit **K and Grade 1 identically in both**:
+  the regex only matched prose literally spelling *"grade N"*, so the whole
+  spelled-out band ("kindergarten students", "first grade students") fell to the
+  literal `'3'`.
+- **Three findings from item 16 worth carrying into any lane:**
+  **(a) "Has a tutoring block" ≠ "reaches the tutor", and "has 14 moment tags" ≠
+  "says the right things."** S1 shipped a full catalog block that arrived **EMPTY**
+  (`sendTextTags: []`, 0/7 keys resolved). S2 had a live 14-tag channel that had
+  **never once voiced the question or its options**. Only `tutor-test?probe=1`
+  showed either. **Probe the tutor channel BEFORE scoping.**
+  **(b) A band failure can be a CONTENT gap**, and only the generator closes one.
+  **(c) A handoff's answer-leak "clean" bill is a claim to re-derive, not a
+  finding** — S2's first-attempt hint was leaking.
+- **➡️ TOP = item 17** (`qa/reader-fit/BACKLOG.md`, filed this run because the
+  queue had no top and the successor was living as prose inside a closed item —
+  the same hygiene defect corrected on 08-07). **The owed portfolio decision, now
+  3 primitives not 4:** `scale-comparator`, `organism-card`, `species-profile` have
+  **no evaluation hook at all**, so the manifest can route an objective at an
+  instrument that cannot measure it. Each needs `/add-eval-modes` **or** an explicit
+  exploration-only declaration that drops `supportsEvaluation`.
+- **`solar-system-explorer` answered the decision in the ADD direction (08-08,
+  user-pulled) and left a template.** No challenge enum existed to constrain, so
+  the rung **BUILT** the answer surface: the answer is a tap on a body in the live
+  model, and the items **and the key** are derived in CODE from the same `bodies`
+  array the component renders. **That is the load-bearing choice — a derived key
+  cannot contradict the screen, and a prompt generated FROM its answer cannot leak
+  it**, which is precisely the failure that made DNA-1 and CB-1. 5 modes β 1.5→8.0,
+  catalog + backend priors + 24 tests. **⚠️ UNCOMMITTED, and gated on HUMAN-CHECKS
+  #77: drive the taps before copying this template three more times.**
+- **Everything below this line is item 15/16 history and remains accurate.**
+
+### 1a. Reader-fit — item 15 detail (CLOSED 15/15) — history
+
+*Section authored by `/pm` 2026-08-07. **This lane had been running for two days
+with no entry in the `## ACTIVE` body at all** — it existed only in the snapshot
+narrative, while the body below still showed it as "PARKED — queue DRAINED". Same
+defect the grammar lane hit on 08-05, in the opposite direction. A cold reader
+starting at `## ACTIVE` was being sent to the wrong stream.*
+
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` — **top = item 16** (the
+  frontier), filed by `/pm` 2026-08-07 night because item 15 closed 15/15 and its
+  successor was living as prose inside a completed item. **Handoff of record:**
+  `qa/HANDOFF-reader-fit-frontier-2026-08-07.md` — a fresh session can take
+  `constellation-builder` from that file alone. **Every earlier handoff's anchors
+  are STALE**, including the 08-07 one: S7 added a `tutoring` block to
+  `catalog/astronomy.ts` and shifted every id below `mission-planner`. The frontier
+  handoff re-derived them at `98e4928`.
+- **Executor skills:** `/reader-fit [--fix]`, then `/add-tutoring-scaffold` where the
+  channel is missing. **Not** `/add-eval-modes` — that is a different lifecycle layer
+  and is explicitly out of scope for a reader-fit slice.
+- **What this lane is.** Not a demand census. A **supply-side** enumeration of the
+  live catalog: **196 entries → 118 K-selectable → 28 audited → 90 never audited**.
+  The top risk band collapsed from "90 audits" to ONE verified class — **26
+  K-claiming primitives can reach a non-reader through NO channel at all** (no
+  catalog `tutoring` block, no component `useLuminaAI`/`sendText`), so the tutor is
+  handed the literal string *"No specific scaffolding instructions for this primitive
+  type."* (`lumina_tutor.py:385`). PRE contract rule #1 fails before a single string
+  is read. **11 of the 26 are already owned** by
+  `qa/engineering-tutoring-scaffold/BACKLOG.md` Phase A — confirmed, not re-filed.
+  The unowned 15 are item 15.
+- **Progress: item 15 is COMPLETE — 15 of 15 CLOSED** *(corrected `/pm` 2026-08-07
+  night: this bullet said "11 of 15, NEXT = S5" while S5, S6 and S7 had all shipped
+  the same evening — `f5b89dc`, `a1b21ad`, `98e4928`. Four slices of lag in the
+  `## ACTIVE` body, which is the index a cold session reads.)* 15B **8/8** (S8–S15)
+  and 15A **7/7** (S1 `telescope-simulator`, S2 `orbit-mechanics-lab`, S3
+  `rocket-builder`, S4 `story-planner`, S5 `bio-compare-contrast`, S6
+  `species-profile`, S7 `mission-planner`) — **all READY at PRE**, each with its own
+  report under `qa/reader-fit/` and its own commit.
+- **NEXT = item 16: `constellation-builder` first, then `planetary-explorer`.**
+  The last two astronomy generators still on the prose-grade contract violation,
+  and the two now carrying the K astronomy demand S1's floor and 15B's fixes
+  redirected onto them. **The defect is REPRODUCED, not predicted** — both read
+  `ctx.grade` zero times and both return `gradeLevel: "3"` for a `grade=K` request,
+  so probe to EXTEND it, not to confirm it. Unlike 15A the rung IS stamped, just
+  resolved wrong: make the resolver canonical-first (S8/S1 template), no stamping
+  fix needed. Neither is mute, but **neither has a single `aiDirective`**, so
+  neither has a PRE-READER READ-ALOUD or the cap-override clause;
+  `planetary-explorer`'s existing 18-hit voice is written **for a reader**
+  (`level1: "Look at the stats panel — one of those numbers will help you."`).
+- **⚠️ S7's lesson, and it points the opposite way to the rest of the sweep: the
+  defect bit at GRADE 4, not at K.** A `grade=4` request returned `gradeLevel:'1'`,
+  so a Grade 4 student got the Grade 1 screen while K was already fine. "Probe the
+  neighbouring grade" is not a K-and-below rule.
+- **⚠️ STRATEGY RULING (user, 2026-08-07, mid-S2) — band floors are a LAST RESORT.**
+  *"i dont like band floor method, like if lumina routes to a certain primitive, its
+  okay to use it and we should make it age friendly?"* A floor removes a K failure by
+  removing the primitive, which shrinks supply at the band with the **least content**
+  (CLAUDE.md #3). The fix for a band failure is a component pass that makes the
+  primitive work at that band. WRONG-BAND is legitimate only when the core act cannot
+  exist at the band at all AND another primitive already covers the objective — and
+  even then, design the band-appropriate interaction first and say what it would be.
+  Corroborated live, not merely accepted: a real `topic-trace` on *"Things that go
+  around and around in space"* @ K **selected `orbit-mechanics-lab`**, so a floor
+  would have deleted a card the curator actively wanted.
+  **S1's Grade-2 floor shipped under the old theory and is now a REVISIT CANDIDATE,
+  not a precedent.** Recorded as [[feedback_make-age-friendly-not-band-floor]].
+- **⚠️ The queued label has understated the work 11 times out of 11.** "SCAFFOLD-GAP
+  — the interaction is fine, only the voice is missing" was true of the *core
+  mechanic* every time and false about the *screen* every time. **Every one of the 8
+  15B slices also sat on a grade-resolution defect**, which means the queued scaffold
+  fix alone would have shipped **inert** in all of them: the component band-gates on
+  `data.gradeLevel`, so a generator that can never emit `'K'` makes `isPreReader`
+  dead code and yields a green report over an unchanged child experience.
+  **Budget every remaining slice for a component pass and probe at the band before
+  writing anything.** A supply-side triage read from catalog text cannot see chrome,
+  protocol, or a grade-blind generator.
+  **⚠️ S4 extended this in a NEW direction and it is the sharpest scope lesson in the
+  sweep.** Its queue line said *"generator already canonical — audit component and
+  scaffold only"*. The **prediction was right** (it is now a regression test — the one
+  generator in the sweep needing no grade work), but the **scope was wrong**: at K the
+  screen was two open questions with **nothing to choose from**, so chrome-gating plus
+  read-aloud would have left a five-year-old listening to a well-spoken question in
+  front of two empty text boxes — and recorded it READY. **A band failure can be a
+  CONTENT gap, and only the generator can close a content gap.** Check what the child
+  would actually DO before scoping any slice as catalog- or component-only.
+- **⚠️ FOUR grade-blindness mechanisms are now confirmed, and they do NOT share a
+  grep.** (1) **astronomy** — regex `/grade\s*(\d|K)/` over prose `ctx.gradeContext`,
+  falling through to a literal `'3'`; (2) **biology** — `gradeBandMap[ctx.gradeContext]`,
+  a map keyed on grade TOKENS but indexed with PROSE, so it missed at every grade and
+  the `'3-5'` default always won; (3) **inline** (S11) — prose passed straight into
+  `getDefaultBodies(gradeLevel)` whose only branch is `=== 'K'`, unreachable and only
+  on the DEGRADE path; (4) **call-site** (S5, next up) — `gradeBand` is a function
+  PARAMETER defaulting to `'3-5'`, so the body greps clean and the defect is at the
+  caller. Identical signature, four different codes. **Probe each primitive at
+  `grade=K` — and at the NEIGHBOURING grade — before writing anything.**
+- **⚠️ Do NOT gate on the absolute `tsc` count in this lane.** It read 805 → 806 →
+  807 on an unchanged tree: `.next/types/app/**` is in the tsc program and the dev
+  server these probes require regenerates it. **Gate on the `src/`-scoped error SET
+  diff** (`comm -13 baseline current`).
+- **Open across the lane:** **no Tier-3 live audio run on any of the 15** →
+  **HUMAN-CHECKS #73** (the eight 15B slices) + **#74** (S2/S3/S4) + **#75**
+  (S5/S6/S7, opened `/pm` 2026-08-07 night — those three closed *after* the previous
+  HUMAN-CHECKS refresh and had nowhere to route). **14 of the 15 still have 0 eval
+  modes** — `story-planner` is the exception (it already had 3, all grade 2-6, and
+  they now have no band floor, which is its own residual). And the portfolio decision,
+  **now FOUR primitives**: `solar-system-explorer`, `scale-comparator`,
+  `organism-card` and `species-profile` have **no evaluation hook at all** — decide
+  `/add-eval-modes` vs. declared exploration-only, because today the manifest can
+  route assessment demand at instruments that cannot measure it. S6's report states
+  it plainly: *"that is now 4 of the sweep's primitives in the same state and it
+  needs a decision, not another slice."*
+  **One S4 residual worth its own eye:** the arc-ordering assessment assumes exactly
+  ONE sensible order, so a draw with two interchangeable middle events would mark a
+  defensible answer wrong — a rule-#1-adjacent risk that only shows up under real K
+  traffic. `/oracle-test` contract if this primitive starts getting used.
+- **Scope fence — do not creep.** Don't re-run the census. Don't re-file engineering
+  Phase A's 11. Don't add eval modes inside a reader-fit slice. Don't fix
+  `planetary-explorer`/`constellation-builder` inside a 15A slice — audit them as
+  their own items. Don't "fix" `story-planner`'s grade resolution; it is correct.
+  The other ~64 unaudited K-selectable entries have at least one channel and are
+  deliberately NOT queued ([[feedback_qa-is-a-gate-not-a-census]]).
+- Serial, one primitive per slice ([[feedback_serial-over-workflow-token-budget]]).
+
+### (PARKED 2026-08-05 — queue DRAINED; kept in place as the history record, not an ACTIVE pull. **⚠️ `/pm` 2026-08-07: this is NOT the active reader-fit lane — see stream 1 above.** This row is the *demand-side* K → EMERGING census queue, §14a–14m, which genuinely drained on 08-05. The ACTIVE lane is the *supply-side* sweep, BACKLOG item 15, seeded from a live-catalog enumeration rather than a demand sample. Two different queues in the same file; reading "reader-fit is parked" off this heading is the mistake that made `/pm` under-scope the band on 08-06.) Reader-fit K → EMERGING queue — last touched **2026-08-05** (**§14l CLOSED 2026-08-05 — flashcard-deck final-assessment scope/count binding.** The requested count and the taught-concept scope both lived in **intent prose**; `config.cardCount` is stamped by no manifest producer anywhere in the repo, so a "10 simple review cards" ask fell through to `defaultCount` 15 while the prompt's own rules invited expansion and the `cards` schema array was unbounded. New `service/flashcard-deck/resolveDeckRequest.ts` applies the 14h resolver template to a non-numeric axis — one temperature-0 structured call yielding `{requestedCount, isReview, taughtConcepts[]}`, never a regex. Binding is a **constraint-presence fork** (14j's shape, contract C1) so generic open-study decks stay byte-identical at 15; under a review scope the two expansion-inviting rules invert and a TAUGHT CONCEPTS block forbids new vocabulary, with code comparing count-vs-concepts so surplus cards revisit angles rather than pad. Schema array bound to the resolved count + post-parse slice; `buildGradeLine(ctx.grade)` threads canonical grade. **Contract C2 ruled: the K 6-card cap wins over a requested count at PRE** — a developmental load rule, deliberately narrow, with R8 still forbidding new caps elsewhere. Live: G1 census replay **exactly 10** cards with zero untaught vocabulary (no patent/prototype/Internet/medicine); the **K community-helpers census instance closed as a rider**; G5 generic control unchanged at 15; K PRE control 6 cards / 6 distinct emojis; tutor probe 0 findings. Contract derived same slice (9 R, 2 conflicts, **zero authored-map consumers — every consumer is manifest-emergent, mostly the finalAssessment slot**), `--check` **COMPATIBLE**; catalog `constraints` padding invitation removed. Focused 20/20 with revert-bite (10 fail pre-fix), full Vitest **1,589/1,589**, typecheck:lumina 0, tsc 803 baseline. Anchor correction recorded: the generator is `gemini-flashcard.ts`, not the `gemini-flashcard-deck.ts` the queue and both censuses name. Reports `qa/reader-fit/flashcard-deck-14l-2026-08-05.md` + `qa/primitive-contracts/flashcard-deck-check-2026-08-05.md`. **NEXT = re-read the §14 pull order; the EMERGING census is drained except 14g's DI-owned half.** Prior day: **§14m CLOSED 2026-08-04 — the FULL SWEEP shipped in one slice: 20 generators** (hundreds-chart/14i's hard `?? '2'` + the six K-2/elementary prose resolvers + coin-counter/14c per contract gap G2 + 12 chemistry incl. `matter-explorer`, an inline-resolver census under-count found in-flight) **now resolve canonical-first** — exported per-generator mapper over `ctx.grade`, legacy prose/default fallback kept everywhere, explicit `config.gradeBand` pins still outrank. **The chemistry "may not bite" guess was WRONG in the published band**: safety-lab sent K to 6-8 off the '6' in the kindergarten prose "(ages 5-6)"; states-of-matter/reaction-lab sent published G1/G2 to 3-5 — verified, fixed, probed (K→K-2, G1→K-2, G2→K-2). Where the LLM stamped `gradeBand` via schema (fraction-circles + 6 chemistry) code now stamps the band when a canonical grade exists. Headline probe wins: fraction-circles G1 dens ≤4 (was ≤12), timeline-builder G2/G4/G7 reach 2-3/4-5/6-8 (all previously unreachable), coin-counter G2 drew a **half-dollar** (`MEAS002-05` pool live for the first time), hundreds-chart G4 → [3,4,6,7,8]. Gates: 43 new tests / 7 suites with revert-bite per generator, typecheck:lumina 0, tsc 803 baseline, full vitest 1400/1400, 21 real-Gemini probes. Reports `qa/reader-fit/14m-sweep-2026-08-04.md` + `qa/reader-fit/hundreds-chart-14i-2026-08-04.md`. 14i's intent-focus half measured IN-DESIGN (6/7 on named intervals); its 120-grid capability half stays open (fork territory). NEXT by pull order = **14h number-sequencer** → 14j → 14k/14l. Prior day: **§14m PILOT DONE 2026-08-03 (evening): number-line ships the canonical-grade-first template — contract-first (`docs/contracts/number-line.md` derived, 12 R, C1 OPEN → 14k), `--check` COMPATIBLE, focused wiring tests 7/7 with revert-bite, typecheck:lumina 0 / tsc 803-baseline / full vitest 1327/1327, 10 real-Gemini eval-test probes incl. `grade=4 → 3-5/decimal` — the FIRST runtime 3-5 render on the ctx path — and `grade=1 → K-2` for all 8 authored G1 consumers. PREMISE CORRECTION recorded for the sweep: production passes grade-context PROSE and every production sentence matched the old K-2 substring test ("grades 1-5" has a `1`, "thinking" has a `k`), so the live defect was EVERYTHING-lands-K-2 / 3-5 unreachable — not G1→3-5; verify each sweep target's actual input string before predicting direction. 14k replay measured honestly: band fixed, 14k STAYS OPEN with mechanism pinned into contract C1 (K-2 ≤30 clamp vs authored ≤120 + uniform pool-window placement + any-interior accept — fork required). **Committed `dcfaac7`** (slice-only; the concurrent DI session's in-flight files left for its own commit). Report `qa/reader-fit/number-line-14m-2026-08-03.md`; check report `qa/primitive-contracts/number-line-check-2026-08-03.md`. NEXT = the 14m SWEEP: hundreds-chart (14i, the `?? '2'` shape) → sorting-station / number-tracer / fraction-circles / shape-composer / net-folder / timeline-builder → coin-counter (14c rides) → 11 chemistry last (verify the defect bites first). Earlier same day: §14f DONE & SHIPPED `7ba48ba`.** Pilot swapped off coin-counter by user ruling 08-03: the first version named coin-counter because its contract already documented the defect as gap G2 — i.e. it was the *cheapest* pull, not the highest-leverage one. That is the trap the user named — a heavily-worked primitive keeps winning pulls because prior work makes each next item cheap, regardless of demand (coin-counter routes **3** across both censuses yet had consumed 2 build slices + 2 contract checks + 2 human-check rows). number-line carries real census demand via **14k** and its defect is confirmed at `gemini-number-line.ts:890` — `elementary` prose contains no 'k'/'1'/'2', so a Grade-1 objective lands on the `3-5` band and the range resolver then falls back to grade-band defaults. Cost accepted honestly: number-line has no contract, so contract-first adds work coin-counter would not have needed — paying it once is the point. See [[feedback_worked-primitives-self-select]])
+- **14h CLOSED 2026-08-04:** number-sequencer blend + scoped Grade-1 120 fidelity is
+  contract-first and runtime-verified; generic ≤100 preserved; all five modes PASS;
+  full Vitest 1406/1406. Report `qa/reader-fit/number-sequencer-14h-2026-08-04.md`.
+  **14j and 14k are closed; next = 14l.**
+- **14j CLOSED 2026-08-04:** annotated-example exact scenario/grade/operation
+  binding is contract-first and runtime-verified. The recorded 4×5 dime/200¢
+  replacement now fails deterministic validation; the coin final-payload oracle
+  passes 3/3 live, 108–111 remains exact, and advanced calculus remains legal.
+  Report `qa/reader-fit/annotated-example-14j-2026-08-04.md`.
+  **Next = 14l flashcard-deck.**
+- **14k CLOSED 2026-08-04:** number-line exact missing-number fidelity is
+  contract-first and runtime-verified. Canonical Grade-1 objectives may retain an
+  explicit 0–120 domain while a focus-aware local window keeps the line legible;
+  additive exact-target grading preserves legacy any-interior `between` behavior.
+  Contract C1 is resolved. Real eval-test 4/4, tutor live standalone and lesson 3/3,
+  browser exact-click pass, focused 29/29, full Vitest 1,569/1,569. Report
+  `qa/reader-fit/number-line-14k-2026-08-04.md`. **Next = 14l.**
+- **Queue:** `my-tutoring-app/qa/reader-fit/BACKLOG.md` (top = next).
+- **Executor skills:** `/reader-fit [--fix]`, `/eval-fix`, `/tutor-test`
+- **Re-prioritized by Pulse walk 2026-07-16 (user):** two live K-math findings jump ahead of the
+  supply-side #9a–#9d tail. **(a) comparison-builder #2b** chrome band-gate is now PEDAGOGY-CRITICAL —
+  the K screen still shows "Left: 3 / Right: 5" count badges that hand the child the answer (rule-#1
+  violation), plus a one_more_less scaffold that's silent on "one less". **(b) NEW item 11** —
+  addition-subtraction-scene `act_out` promises "drag the frogs out" but only offers a number-tile
+  proxy; K must enact the scene (direct-manipulation-first). Two systemic generalizations seeded
+  (direct-manipulation for act/build scenes; on-demand "🔊 Read me" replay across eval modes).
+  Verified & struck: HUMAN-CHECKS #2 (knowledge-check @ PRE) + #6 (deep-dive @ PRE) — user Pulse-confirmed.
+  **Paste-able handoff prompts for all three findings:** `my-tutoring-app/qa/HANDOFF-reader-fit-pulse-2026-07-16.md`.
+  **Explainer-tail #9b–#9d handoff (concept-card-grid / comparison-panel / flashcard-deck):**
+  `my-tutoring-app/qa/HANDOFF-reader-fit-explainer-tail-2026-07-16.md`.
+- **In flight 2026-07-16 (parallel sessions):** #9a delegated (own workstream). **#9b concept-card-grid /
+  #9c comparison-panel / #9d flashcard-deck — ALL THREE READY @ PRE 2026-07-16** (ctx-native generator
+  refactor + `gradeLevel` stamp + code-attached emoji + catalog PRE-READER directive + component band-gate;
+  typecheck:lumina 0, full suite 799/799, new jsdom 15/15, eval-test + tutor-probe PASS at K). Residual =
+  Tier-3 live `--lesson` + pixel → HUMAN-CHECKS #27/#28/#29. Reports: `qa/reader-fit/{comparison-panel,
+  concept-card-grid,flashcard-deck}-PRE-2026-07-16.md`. **The K explainer tail now drains.**
+  **#2b comparison-builder — 3 Pulse priorities DONE 2026-07-16** — (1) K chrome band-gate kills the
+  "Left: 3 / Right: 5" count-leak + hides counter/mode-tabs/grade+type badges at K (group pictures +
+  "=" kept); (2) one_more_less symmetry — component `voiceOtherOneMoreLess` silent `[DISAMBIGUATE]` +
+  catalog ORIENT rewrite, **live `--lesson --runs 3` decrement spoken 3/3**; (3) persistent 🔊
+  `ReadMeButton` shared helper (first instance of the systemic replay item). Contract-first:
+  `docs/contracts/comparison-builder.md` derived, edit COMPATIBLE (no fork). Verified tsc 0-new +
+  typecheck:lumina 0 + jsdom 12/12 + full suite 790/790 + tutor-test Tier-1/2 pass. Report:
+  `qa/reader-fit/comparison-builder-PRE-2b-2026-07-16.md`. Head **Committed `39f2543`** (pixel → HUMAN-CHECKS #26).
+  **2b TAIL DONE 2026-07-20** — Audit-C rule-5 feedback-on-object (text card hidden at K, wrong tap shakes the
+  touched object) + per-mode PRE picture passes (compare_numbers → tap the bigger numeral + `=`, no `<>` /
+  alligator / Check; order → wordless graduated-bar direction; one_more_less → 5-cell window + wordless ⬆/⬇ +
+  tap=choose). Band+mode fork (builds contract G1). Verified jsdom 25/25, full 857/857, typecheck:lumina 0,
+  eval-test @ K 3/3, contract `--check` COMPATIBLE. Report: `qa/reader-fit/comparison-builder-PRE-2b-tail-2026-07-20.md`.
+  Residual: live `--lesson` + pixel → HUMAN-CHECKS #35. **comparison-builder #2b now FULLY RESOLVED.**
+  **#11 addition-subtraction-scene `act_out` @ K DONE + USER-CONFIRMED LIVE 2026-07-16** — TRUE direct
+  manipulation (seed startCount → tap-add/remove → auto-judge on the enacted count); fork by band+mode
+  (solve_story tiles + create_story build + Grade-1 count model all preserved); deterministic
+  tap-accurate instruction. **Two same-day browser-reported follow-ons, both fixed:** (a) scene objects
+  were unclickable — SVG `<g>` had no hit area; added a transparent hit-target `<circle pointerEvents:all>`
+  (real-browser proof via playwright-core + Chrome; jsdom is blind to this — memory
+  `svg-g-unclickable-jsdom-blind`); (b) `solve_story` "count the bunnies" was inert — added a tap-to-count
+  aid (ordinal badges in tap order + highlight, result-unknown only; tiles still answer). Verified vitest
+  **7/7** + eval-test @ K + **live `--lesson` 3/3** + **user browser check (full session 100%, Act Out +
+  Solve Story)** → HUMAN-CHECKS #25/#26 struck to Done. Contract + changelog:
+  `docs/contracts/addition-subtraction-scene.md`. Report: `qa/reader-fit/addition-subtraction-scene-item11-2026-07-16.md`.
+  **Committed `39f2543`** (folded into the coordinated reader-fit slice).
+  **#9a Step 1 (contract) DONE 2026-07-16, then PROMOTED (user-approved) to its own workstream,
+  now PARKED 2026-07-16 (B1 shipped)** — see the PARKED media-player row; #9a is no longer in this
+  queue (reader-fit tail = #9b–#9d + 2b tail + #11 residuals).
+  Multiple reader-fit sessions live — shared files (BACKLOG, WORKSTREAMS, catalog, `run_tutor_live.py`,
+  EVAL_TRACKER) will collide; each session re-reads before editing and commits its primitive + its
+  strike in a tight slice.
+- **Direct-manipulation census DONE 2026-07-16** (the item-11 session's sibling audit swept ~60 math
+  primitives — that IS the census of record, do not re-sweep). Findings promoted to discrete fix
+  items. **#12 ten-frame make-ten DONE 2026-07-16** — contract-first K band+mode fork: fixed seed →
+  tap empty cells → auto-judge the enacted complement; stepper/Check removed only at K. K build +
+  flash/hide subitize and Grade 1–2 make-ten preserved. Browser follow-on fixed: make-ten → add now
+  clears the completed frame before operate begins. Verified jsdom 5/5, full suite 810/810,
+  typecheck:lumina 0, eval-test 4/4 modes; report `qa/reader-fit/ten-frame-item12-2026-07-16.md`;
+  pixel/real-click → HUMAN-CHECKS #31. **#13 counting-board subitize DONE 2026-07-20** —
+  contract-first flash-then-hide DISPLAY fork (K band+mode: objects render only during the flash,
+  stepper/Check gated behind the hide, `handleObjectTap` no-op so the scene can't be tap-counted);
+  count_all @ K + Grade-1 subitize + Pre-K perceptual all unchanged; no generator/schema/catalog
+  change. Verified jsdom 3/3, full suite 844/844, typecheck:lumina 0, eval-test @ K PASS (content
+  unchanged). Contract `docs/contracts/counting-board.md` (R4); report
+  `qa/reader-fit/counting-board-item13-2026-07-20.md`; pixel → HUMAN-CHECKS #34. **Next =
+  coin-counter `count-like` confirm/clear (Task 3).** Execution handoff:
+  `my-tutoring-app/qa/HANDOFF-direct-manipulation-fixes-2026-07-16.md`.
+- **Now (2026-08-01): §14a DONE; the EMERGING queue is evidence-seeded.** Six published Grade-1
+  subskills (2× LA / 2× Math / 2× SS) ran through the real `/topic-trace` pipeline: **42 generated
+  components, zero generator errors**. The routing census is led by knowledge-check 6, sorting-station
+  4, foundation-explorer 3, then seven primitives at 2 each. Reports:
+  `qa/topic-traces/g1-*-2026-08-01.md`; ranked findings live in `qa/reader-fit/BACKLOG.md` §14.
+  **14e DONE 2026-08-01:** the numeric Grade-1 generator boundary now stamps topic-driven and final
+  assessment configs with raw `objectiveGrade`, then resolves it through the one canonical parser;
+  numeric prompt bands reuse that parser too. Two live trace replays stamped Grade 1 on **15/15**
+  calls and cleared `phonics-blender` K → 1; primitive-local `hundreds-chart` 2 and DI generic prose
+  remain queued. Full vitest 1,076/1,076; Lumina typecheck 0; tsc 803 baseline before/after.
+  Reports: `qa/topic-fidelity/numeric-grade-generator-boundary-2026-08-01.md` and
+  `qa/topic-traces/g1-numeric-grade-14e-replay-2026-08-01.md`. **14b DONE 2026-08-01** (parallel
+  session): coin-counter G1 `count-like` now enacts the tag — the child taps each coin (re-tap =
+  rejected double-count), then still TYPES the total, keeping the β1.5 answer act and the
+  "summation" half of `MEAS001-07-c` student-produced (full K parity was deliberately REJECTED);
+  `showRunningTotal` reconciled as the enacted-display lever (easy = climbing skip-count
+  readout/badges, medium/hard = plain ✓ tags). Contract **R11** + `--check` **COMPATIBLE**;
+  report `qa/reader-fit/coin-counter-14b-2026-08-01.md`; pixel/feel → HUMAN-CHECKS **#58**.
+  **14f DONE 2026-08-02:** knowledge-check now consumes precise Grade 1, schema-bounds every
+  problem shape, and renders bounded existing visual evidence for map/symbol/invention tasks;
+  visual text-column matching is converted per problem while nonvisual mixed siblings and K/PRE
+  remain intact. Contract derived + check **COMPATIBLE**; real-Gemini analyze/map/K probes pass;
+  both failing census topics replay clean; full 1085/1085, Lumina typecheck 0. Report:
+  `qa/reader-fit/knowledge-check-14f-2026-08-02.md`; pixel → HUMAN-CHECKS #59.
+  Both 14e and 14b had paste-able
+  handoffs (`/pm` 2026-08-01, file-disjoint — safe as two parallel sessions):
+  `qa/HANDOFF-reader-fit-14e-numeric-grade-2026-08-01.md` +
+  `qa/HANDOFF-reader-fit-14b-coin-counter-g1-2026-08-01.md`.** Next by observed demand:
+  DI intent fidelity 3/42 (coordinate with the active DI stream) →
+  number-sequencer/hundreds-chart 2 each → annotated-example → number-line/flashcard singletons.
+  **coin-counter `count-like` @ K — VERDICT PROXY (CLEARED=false), FIXED.** K now enacts the count:
+  tap each coin, a badge stamps the **running skip-count total** (5→10→15) in tap order, auto-judge
+  when every coin is counted exactly once, no number input and no Check at K; a re-tap is a rejected
+  double-count that shakes the object, so the path is failable rather than a walk-through. Fork is
+  **band+mode**; Grade 1+ and every `count-mixed` card are byte-identical (`git diff` = **160
+  insertions, 0 deletions**). Contract derived first (none existed): `docs/contracts/coin-counter.md`
+  — 10 requirements, C1 resolved, 6 gaps; `--check` **COMPATIBLE**. Verified tsc **0-new** (all 803
+  pre-existing errors sit outside `components/lumina/`) + typecheck:lumina 0 + jsdom **9/9** with
+  **both non-vacuity probes failing the right tests** + full vitest **930/930** + real-Gemini
+  eval-test **6/6 @K, 6/6 count-like @G1, 6/6 count-mixed @G2** + a **real-Chrome mouse-click probe**
+  (tap→5¢→10¢, double-tap holds at 10¢, →15¢, 0 inputs/0 Check, no page errors). Report:
+  `qa/reader-fit/coin-counter-task3-2026-07-25.md`. Pixel/feel → HUMAN-CHECKS **#52**.
+  - **Two rulings recorded.** (1) *Split mechanism:* the generator now **stamps
+    `countMode:'like'|'mixed'` from `targetEvalMode`**; inspecting `displayedCoins` for a single
+    denomination was REJECTED because the generator rejects multi-type sets for count-like but has
+    **no converse rule** — a G2 count-mixed card drawing three dimes would have silently flipped
+    into K's enacted mode and ablated a live consumer. (2) *`showCoinValues` on like coins:*
+    **legitimate recognition aid, NOT a rule-#1 leak — kept default-true.** The denomination is the
+    skip-count INTERVAL (an input); the total is never printed; coin-value recall is a different
+    subskill (`MEAS001-07-b`→knowledge-check); and `identify` already hides values because there the
+    value IS the answer. Narrow exception queued (G4: a one-coin card prints its own total).
+  - **PREMISE CORRECTION — `count-like` is a GRADE 1 skill, and its Grade-1 consumer STILL has the
+    proxy.** The census found the only authored consumer is **`MEAS001-07-c` @ Grade 1** ("Focus:
+    Skip counting and summation… single-denomination sets"), and live routing confirms Grade 1.
+    **There is no K money subskill in the curriculum at all** — the strand is G1 `MEAS001-07` + G2
+    `MEAS002-05`; the K `MEAS001-07-A…F` sharing that stem is **"Time Durations"**.
+    `PRIMITIVE_GAPS.md` GAP-007 mislabels them "MATHEMATICS (K)" — the likely origin of the K
+    framing. **K is still reachable** (a K topic-driven money lesson routes `identify`→`count-like`),
+    so the fork is live code — but the PRIMARY consumer is Grade 1. Not widened unilaterally: Grade 1
+    carries β1.5 item history and changing its interaction deserves its own slice. → **gap G1, the
+    first item for the EMERGING census.**
+  - **Other gaps opened:** **G2** `resolveGradeBand` parses `ctx.gradeContext` PROSE (which
+    `GenerationContext` explicitly forbids) so **Grades 2–3 are unreachable** and G2 money lessons
+    silently run as Grade 1 (`/topic-fidelity`); **G3** K chrome (grade badge / "1/2" counter / phase
+    badge) is not band-gated and the instruction has no 🔊 — surfaced by the pixel check, the same
+    class comparison-builder fixed in #2b; **G5** count fallback is a MIXED set; **G6** the catalog
+    advertises a K band the curriculum lacks.
+  - *Superseded (kept for the record — the handoff that drove this):*
+  **`qa/HANDOFF-reader-fit-coin-counter-2026-07-25.md`.** The 07-16 prompt was written blind and
+  misnames the target (`count-like` is a CATALOG eval mode, `catalog/math.ts:3613` β1.5; the
+  component challenge type is `'count'`, `CoinCounter.tsx:39`, shared with `count-mixed` β2.5 — a
+  session grepping the component for "count-like" finds nothing). The new handoff carries a
+  completed line-exact read whose **indicated verdict is PROXY, not clear**: `renderCountChallenge`
+  (`:632`) renders coins via `renderCoinGroup` → `<CoinVisual disabled />` (`:599`, no `onClick`)
+  and takes the answer as a typed `LuminaInput type="number"` (`:640`) behind a Check button
+  (`:928`/`:931`) — so K is compute-then-type over an inert coin set, the item-11/12 shape. It also
+  names the two rulings the session must record (count-like vs count-mixed can't be told apart by
+  `challenge.type`; `showCoinValues` default-true on LIKE coins = aid or rule-#1 leak?) and makes
+  **contract-first REQUIRED** (no `docs/contracts/coin-counter.md`; 6 eval modes span K–3, and
+  Grade-2/3 `count-mixed` shares the render path). Closing this **drains the demand-side K queue** →
+  milestone: re-run the topic-trace census at grade 1 (EMERGING).
+  *Prior framing, kept for the record:* #13 closed; **2b tail closed 2026-07-20** (see the #2b
+  row above). Remaining pull = **Task 3 — coin-counter `count-like` confirm/clear** (the last
+  un-swept direct-manipulation candidate from the 07-16 sibling census). **Confirmed genuinely open** —
+  `CoinCounter.tsx` has a `gradeBand` prop but NO `isK` fork anywhere (it only picks the grade
+  LABEL at line 321/844), so the K `count-like` interaction has never been band-gated or
+  direct-manipulation-audited. It is a READ-then-verdict task (~30 min), not a build: enacted count
+  → record CLEARED under the systemic note; stepper/number-pad over a manipulable coin set → promote
+  a new BACKLOG item with the item-11 fix direction. No source edit unless it's a confirmed proxy.
+  Then, with the demand-side K queue drained, re-run the topic-trace census at grade 1 (EMERGING) to
+  re-seed the band.
+  **Stale line removed 2026-07-24:** the "uncommitted `CountingBoard.tsx` + contract + QA docs"
+  note was true on 07-20 and is now false — that sibling slice SHIPPED (tree carries no reader-fit
+  files; the only uncommitted surface is DI).
+- **History (#9 explainer tail):** pilot + fact-file DONE 2026-07-15, tail reconciled. The
+  "same shape → one pattern" premise held for only 1 of 5: pilot **foundation-explorer @ PRE
+  READY** (live `--lesson` 3/3) + a reusable **`PreReaderSelfCheck` helper** extracted; **fact-file
+  @ PRE READY** via the helper (jsdom 6/6, eval-test K 2/2, live queued). The other four are NOT
+  the same shape (no MCQ / true-false gate / no grade threading / no tutoring block) and are queued
+  as **BACKLOG #9a media-player** (now a **REIMAGINING** per user pivot 2026-07-16 — contract-first
+  via `/primitive-contract`, then re-build across K/EMERGING/ESTABLISHED reading modalities inspired
+  by deep-dive/interactive-passage; supersedes the old band-gate plan), **#9b concept-card-grid** /
+  **#9c comparison-panel** / **#9d flashcard-deck** (bespoke: read-aloud-on-flip / picture-T-F +
+  ctx-native generator refactors + grade threading). #2b comparison-builder remaining still DEFERRED
+  to K-stage. (#10 word-workout+word-flip, #8 rhyme-studio, #7 phonics-blender, #1e sorting-station
+  all **DONE 2026-07-15**.)
+- **Milestone (after #9a–#9d + #2b close, the K queue drains):** re-run the topic-trace census at
+  grade 1 (EMERGING) to re-seed the queue at the next band. #10 was the last *demand-side*
+  (census-routed) K item; the explainer tail (#9a–#9d) is the remaining supply-side text-surface work.

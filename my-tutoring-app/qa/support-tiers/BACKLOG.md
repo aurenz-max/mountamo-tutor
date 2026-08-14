@@ -113,3 +113,57 @@ decision, not a batch-3 side effect.
   text-structure-analyzer, stoichiometry-lab, push-pull-arena, race-track-lab,
   gravity-drop-tower, gas-laws-simulator, light-shadow-lab, cvc-speller,
   sound-swap, sentence-builder, letter-spotter.
+
+---
+
+## 📥 MOVED FROM `WORKSTREAMS.md` — `/pm` 2026-08-13 (user ruling)
+
+The index's `## ACTIVE` section had grown to ~1,360 lines (79% of the file), so each
+stream's DETAIL now lives in its owning queue and the index carries the pointer plus the
+one-line state. **Moved verbatim, nothing deleted.** The index remains authority for
+STATE (active/parked, what to pull next); this block is authority for the detail behind
+it. Where the two disagree, the queue wins on WHAT and reports win on EVIDENCE.
+
+### 3. Support-tiers campaign (non-math) — **PARKED 2026-08-08 (was OPPORTUNISTIC +1)** — last touched **2026-08-04**
+
+*Parked by `/pm` 2026-08-08. Not stale-by-neglect and nothing is wrong with it: it
+was being carried as the opportunistic +1 while three other lanes had live findings
+and it had not moved in four days. Its queue is trusted as of 2026-08-04. Resume
+cost is zero — batch-3 evidence closure via `/eval-test`, serial, one primitive per
+slice. **The +1 slot now belongs to reader-fit item 17.***
+- **Queue:** `my-tutoring-app/qa/support-tiers/BACKLOG.md` — **RECONCILED `/pm` 2026-08-04**.
+  Batch-3 implementation already shipped in `effc7a6`; the top task is its missing
+  `/eval-test` evidence/report closure, not another implementation pass. After that, five eligible
+  primitives remain. Hydraulics-lab still requires coordination with its reimagining stream;
+  timeline-builder's reader-fit 14m resolver prerequisite has landed, so its tier work is now
+  independently pullable. The ~59 not-yet-eligible generators (need `/add-eval-modes` first) stay
+  un-enumerated by design — opening that frontier is its own decision.
+- **Executor skills:** `/add-support-tiers` (+ `/add-eval-modes` first for the ~59 that lack modes),
+  `/eval-test`, `/primitive-contract --check`.
+- **State: 31/36 non-math primitives code-wired; 21/36 have complete batch-report evidence.**
+  Batch 3 shipped in `effc7a6` across 10 primitives, but no
+  `qa/eval-reports/support-tiers-batch3-2026-08-04.md` or equivalent per-item real-Gemini probe
+  record landed. Close that evidence gap before declaring the batch fully done. Batch 2
+  (**committed `423c58f`**, report
+  `qa/eval-reports/support-tiers-batch2-2026-08-02.md`) took 13/36 → 21/36 via an 8-agent
+  orchestrated Workflow — 7 implemented, 1 partial (letter-sound-link `see_hear` correctly declined
+  single-tap commit: its options are bare speaker bubbles, so a first tap would commit an *unheard*
+  option). ~15 remain, plus ~59 that need `/add-eval-modes` before they are even eligible.
+- **The batch's real value was the defects it found en route, not the tiers** — and this is the
+  argument for the campaign continuing: a **rule-#1 answer leak in rhyme-studio** (the rime
+  highlight rendered only when the pair rhymed, so the highlight WAS the yes/no answer), **three
+  live rule-#1 tutor leaks in letter-sound-link** ([ACTIVITY_START] named the sound and keyword
+  before the challenge), an **unanswerable calendar-explorer identify** mode, and the
+  **calendar-explorer grade-band bug that turned out to be systemic** (now reader-fit **14m**).
+  Profiling 8 primitives closely enough to withdraw their scaffolding is what surfaced these; none
+  were findable from the tier work alone.
+- **Residuals:** batch-2 hard-tier browser feel-pass → **HUMAN-CHECKS #60**; batch-3 feel-pass →
+  **HUMAN-CHECKS #62**; the
+  live-tutor ear-check that reveal-policy directives hold in real audio rides any DI/lesson sitting
+  at a hard tier. None blocks machine verification/report closure.
+- **Note the shape for reuse:** the orchestration pattern held — profiles → orchestrator writes
+  line-anchored specs → agents implement mechanically → orchestrator applies all catalog patches
+  serially and runs the merge gates. Zero collisions across 7 agents in `catalog/literacy.ts`, and
+  the concurrent 14f session's uncommitted register edits were untouched. One trap recorded: apply
+  structured-output patches with **UTF-8 decoding**, since PowerShell 5.1 `Get-Content` ANSI-decoded
+  the journal and briefly wrote em-dash mojibake into the catalogs.

@@ -51,6 +51,32 @@ Cloud Run, and a real account minted through the live site.**
   and it survived `f4facf5` (the literal `"3"` vs `3rd` vocabulary bug) too.
   **Invite #1 is UNBLOCKED.**
 
+### 2026-08-12 — `main` FAST-FORWARDED (user ruling during `/pm`)
+
+`main` `f4facf5` → **`6161a0f`**, pushed to origin. Six commits, ff clean, zero
+divergence. What the pilot's prod now carries:
+
+- `927b754` multiplication-explorer per-challenge facts — **the only correctness
+  fix in the set**; before it, five representation panels drew the *shared* fact,
+  so the picture disagreed with the equation. Human gate **#90**, never looked at.
+- `ead9ae1` the shared judged-loop engine cut-in — under every judged-loop
+  consumer. Human gate **#89**, never heard.
+- `71cba07` di-spoken-practice, `9139cf1` literacy DI ports 5–7 (+2 doc commits).
+
+⚠️ **Eight judged surfaces reach the family before the mic sitting cleared them.**
+The user took that trade knowingly — #91 and #92 both passed first drive with
+deliberate wrong answers — but it re-prices the sitting: **it is now a production
+check, not a pre-ship gate.** Drive #93, #94 and #89 first (see HUMAN-CHECKS).
+
+⚠️ **The DEPLOY is unverified, only the PUSH is.** `my-tutoring-app/vercel.json`
+carries no branch config (Vercel's production branch is a dashboard setting), so
+nothing in the repo proves `main` auto-deploys. **Confirm a Vercel build off
+`6161a0f`; if there is none, trigger one.** The backend did NOT move — Cloud Run
+is a manual `gcloud builds submit`, so residual 1 below still gates it.
+
+⚠️ **NOT in this push:** port 8 `rhyme-studio` and the `/add-di-loop` skill, both
+still uncommitted on `ship/2026-08-10-judged-loop`.
+
 ### ⚠️ Residuals — small, but fix before the family session
 
 1. **Service name mismatch.** It deployed as **`mountamo-education`**;
