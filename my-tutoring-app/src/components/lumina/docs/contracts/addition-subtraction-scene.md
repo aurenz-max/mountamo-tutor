@@ -87,6 +87,46 @@ _None open._ The item-11 `act_out` K rebuild is a **fork by band + mode**, asses
 
 ## Changelog
 
+- 2026-08-14 — **DI JUDGED-LOOP PORT** (`/add-di-loop`, qa/di/BACKLOG.md item 18 P2). Assessed
+  **COMPATIBLE / fork-by-modality**; no requirement is reversed and one is strengthened.
+  - **R1 RE-BASED, stronger.** Reading the story aloud was a catalog `aiDirective` the tutor
+    could drop; it is now INSIDE the quoted line of every cue the pack emits, including every
+    correction, so it is the only thing the tutor is given to say. The directive survives as a
+    defence against summarising rather than as a command to act first.
+  - **R2 RETIRED WITH ITS MECHANISM.** `{{instruction}}`/`{{storyText}}` no longer exist in the
+    tutoring block — `contextKeys` is the family standard `['challengeType', 'stimulus']` and
+    the ask is code-owned. The requirement existed so the directive could interpolate a real
+    string; there is no interpolation left to fail. `checkDiCatalogEntry` now pins what R2 used
+    to probe by hand.
+  - **R3 HELD AND EXTENDED — read carefully, because one clause LOOKS reversed.** "No keyboard
+    at K" becomes no keyboard at ANY band. K `act_out` (direct manipulation, item 11) and K
+    `create_story` (build the story) are UNTOUCHED. **`solve_story` @K's `NumberTileRow` is
+    DELETED** — that is a fork onto what R3 protected (no typing at K), not a reversal of it: a
+    numeral menu is recognition, floors a guess at 1-in-6, and the letter-spotter ruling
+    (2026-08-13) struck exactly this shape. The answer there is now unaided speech, which is
+    also not typing. G1 `create_story`'s scene+object picker is deleted because it accepted ANY
+    selection as correct — it could not produce a wrong answer, so a judged loop has nothing to
+    do with it; G1 now does K's construction.
+  - **R4 HELD, stronger.** The tutor's spoken verdict IS the feedback; the text feedback card is
+    gone.
+  - **R5 HELD** on both sides of the wire — and the pack re-checks the triple, because a judged
+    ask STATES the arithmetic aloud and an inconsistent one would be spoken as fact.
+  - **R6 HELD.** `showCountBadges` / `groupedReveal` (AXIS 1) and `allowedTiles` / `storyType` /
+    `unknownPosition` (AXIS 2) all survive as render and problem-shape levers. `groupedReveal`
+    additionally now waits on the tutor's voice rather than a wall clock.
+  - **R7 HELD** — the runner's summary feeds the same per-type metrics.
+  - **R8 HELD AND EXTENDED TO PIXELS.** New build gate on both sides of the wire: a story that
+    STATES the value under `unknownPosition` is DROPPED (a publicly stated operand is not a
+    leak). The ten-frame aid now mirrors what is ACTUALLY VISIBLE, so it cannot fill to the
+    total while the change group is still waiting on her voice.
+  - **What CLOSES a hands turn changed, and it is the pedagogic gain.** K `act_out` and
+    `create_story` used to auto-judge the instant the enacted count MATCHED — a Check button
+    that presses itself, so the child could not produce a wrong answer and the tutor could not
+    teach. They now close on STILLNESS (`build_equation` also on a finished sentence shape),
+    neither of which is correctness-gated. This is a strict addition to R3, not a reversal.
+  - Verified: `typecheck:lumina` 0 · full `tsc` 803 = exact baseline, 0 in touched files ·
+    census greps 0 · own suites 79 (55 di-script + 24 stage) · full vitest 3120 · 6-run live
+    pipeline probe, both bands, **40/40 items kept, zero drops**.
 - 2026-07-16 — derived (initial). 8 requirements, 0 open conflicts.
 - 2026-07-16 — item 11 (K `act_out` → direct manipulation). Assessed **COMPATIBLE / fork-by-band+mode**: replaces 1b's K act_out `NumberTileRow` (a proxy number) with seed-startCount + tap-add/remove + auto-judge-on-count. Preserves R3 solve_story tiles + create_story build (band+mode scoped), R1/R2 read-aloud (instruction rewritten tap-accurate, still voiced), R5 code-owned arithmetic (no schema change — `startCount`/`changeCount`/`resultCount` already model the scene), R6 Grade-1 act_out aids. No new data fields required.
 - 2026-07-16 — runtime fix (browser-reported): scene objects were unclickable — SVG `<g onClick>` with a `pointer-events:none` `<text>` and no hit area. Added a transparent hit-target `<circle pointerEvents:all>` per object. Real-browser proof (playwright-core + Chrome): old variant 0 hits, fixed 2 hits. jsdom is blind to this class (see memory [[svg-g-unclickable-jsdom-blind]]).

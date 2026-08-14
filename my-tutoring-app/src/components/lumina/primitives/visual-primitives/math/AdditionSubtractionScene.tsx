@@ -1,6 +1,68 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * AdditionSubtractionScene — DI modality. The Live tutor owns the clock in every
+ * mode (qa/di/BACKLOG.md item 18 P2; the second MATH port after ten-frame).
+ *
+ * WHAT THE CHILD DOES, PER MODE.
+ *  - solve-story (K + Grade 1): the tutor reads the story and asks the question;
+ *    the child SAYS the number into an open mic. This is the port the user
+ *    asked for — *"speaking aloud instead of typing"* — and it replaces a
+ *    keyboard at Grade 1 and a row of numeral tiles at K.
+ *  - act-out @ Grade 1: the child enacts the departure on the scene (a static
+ *    picture cannot show one — contract R3 item 12), then SAYS how many are
+ *    left. Addition counts the scene and says the total.
+ *  - act-out @ K: the child ENACTS the story by bringing objects in or sending
+ *    them away. The enacted scene count IS the answer (contract R3 item 11,
+ *    untouched).
+ *  - build-equation: the child BUILDS the number sentence from tiles.
+ *  - create-story: the child BUILDS the scene that matches a given equation.
+ *
+ * WHY THREE MODES KEPT THEIR HANDS, AND ONE OF THOSE IS ARGUABLE — the full
+ * fork, its evidence and the one flag for the drive live in
+ * `additionSubtractionSceneScript.ts`. Short version: in literacy the clicking
+ * almost always stood in for a mouth; in math the manipulative is often the
+ * skill, and R3 had already deleted this primitive's proxy number for a better
+ * reason than the modality would have.
+ *
+ * WHAT CHANGED. Deleted: both numeric keyboards, the K numeral-tile row, the
+ * Check control, the Next control, the scene+object picker (it accepted ANY
+ * selection as correct — a mode that cannot produce a wrong answer has nothing
+ * for a judge to do), the feedback card that named the target, the old tutor
+ * hook, and all fourteen of the improvised tutor turns it sent. There is no
+ * progression timer and no progression control anywhere in this file —
+ * progression here has exactly one cause: a tutor verdict.
+ *
+ * HOW A HANDS-ONLY TURN CLOSES. A voice turn closes on SILENCE (the mic's
+ * amplitude bracket). A hands turn closes on STILLNESS: when the scene (or the
+ * tile tray) stops changing, the commit is described to the tutor and judged.
+ * The equation tray also has a STRUCTURAL close — a finished number sentence
+ * shortens the window — and neither close is correctness-gated: a wrong scene
+ * commits exactly as readily as a right one. That property is the whole point.
+ * The click era auto-judged `act-out` @K and `create-story` the instant the
+ * count MATCHED, so those modes could only ever produce a correct answer;
+ * stopping early or overshooting is now a wrong answer the tutor corrects.
+ *
+ * THE TUTOR OWNS THE STIMULUS CLOCK, NOT JUST THE ADVANCE. `groupedReveal` —
+ * the change group arriving separately so the JOIN is visible — is a stimulus
+ * the ask refers to, so it waits for her to have told the story and stopped
+ * (ten-frame drives 3 and 5). The gate is a falling edge AND `cuedItemId`:
+ * "not speaking" is also true before her audio starts, and on an advance the
+ * new item is on screen for the whole tail of the previous item's affirmation.
+ *
+ * ANSWER-LEAK RULE — INCLUDING IN PIXELS. The story prints but never states the
+ * value the child must produce (build gate, both sides of the wire). The
+ * ten-frame aid mirrors what is ACTUALLY VISIBLE, so it cannot fill to the
+ * total while the change group is still waiting on her voice. Nothing names the
+ * answer until the tutor has affirmed it.
+ *
+ * DOCTRINE HELD: open mic, never push-to-talk; the mic is never gated on
+ * tutor-busy; the tutor is quiet by default (it speaks only scripted lines); no
+ * visible timers; tap-to-hear re-speaks the STORY and never the answer; adult
+ * chrome is hidden for pre-readers.
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -8,23 +70,37 @@ import {
   LuminaCardContent,
   LuminaBadge,
   LuminaButton,
+  LuminaPanel,
   LuminaPrompt,
-  LuminaInput,
-  LuminaModeTabs,
   LuminaChallengeCounter,
-  LuminaActionButton,
-  LuminaFeedbackCard,
-  answerStateClass,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { AdditionSubtractionSceneMetrics } from '../../../evaluation/types';
-import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import {
+  useJudgedScriptRunner,
+  type JudgedRunSummary,
+} from '../../../hooks/useJudgedScriptRunner';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import {
+  completeCue,
+  equationVerdictCue,
+  itemCue,
+  itemFromChallenge,
+  moveOnCue,
+  parseEquationTiles,
+  pronounceCue,
+  sceneVerdictCue,
+  stimulusFor,
+  type AddSubBand,
+  type AddSubSceneItem,
+} from './additionSubtractionSceneScript';
+import { numberWordFor } from './countingBoardScript';
+import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -61,14 +137,15 @@ export interface AdditionSubtractionSceneData {
   maxNumber: number;
   showTenFrame: boolean;
   showEquationBar: boolean;
-  gradeBand: 'K' | '1';
+  gradeBand: AddSubBand;
 
   /**
    * Support-tier levers (act-out). Scaffolding-only — never change the numbers.
    * - showCountBadges: tapping an object stamps its running ordinal (1,2,3…) so the
    *   scene tracks the count. Off = the student must hold the count mentally.
-   * - groupedReveal: the "change" objects animate in separately from the "start" group
-   *   so the join/separation is visible. Off = all objects appear together (must segment).
+   * - groupedReveal: the "change" objects arrive separately from the "start" group
+   *   so the join is visible. Off = all objects appear together (must segment).
+   *   Under the judged loop this reveal waits for the tutor's voice, never a clock.
    */
   showCountBadges?: boolean;
   groupedReveal?: boolean;
@@ -86,11 +163,11 @@ export interface AdditionSubtractionSceneData {
 // Constants
 // ============================================================================
 
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  'act-out':        { label: 'Act Out',        icon: '🎭', accentColor: 'orange' },
-  'build-equation': { label: 'Build Equation', icon: '🧩', accentColor: 'purple' },
-  'solve-story':    { label: 'Solve Story',    icon: '📖', accentColor: 'blue' },
-  'create-story':   { label: 'Create Story',   icon: '✨', accentColor: 'emerald' },
+const PHASE_TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
+  'act-out':        { label: 'Act Out',        icon: '🎭' },
+  'build-equation': { label: 'Build Equation', icon: '🧩' },
+  'solve-story':    { label: 'Solve Story',    icon: '📖' },
+  'create-story':   { label: 'Create Story',   icon: '✨' },
 };
 
 const SCENE_BACKGROUNDS: Record<string, { gradient: string; label: string }> = {
@@ -114,28 +191,34 @@ const SCENE_WIDTH = 480;
 const SCENE_HEIGHT = 220;
 const OBJ_SIZE = 38;
 
+/** Stillness that closes a hands-only turn — the gesture analogue of the mic's
+ *  silence bracket (ten-frame's finding, generalised here to a second Class-B
+ *  surface). Deliberately generous: a five-year-old placing objects pauses to
+ *  think, and a premature commit spends one of the two corrections. */
+const SCENE_SETTLE_MS = 3000;
+/** The tile tray runs longer, because a number sentence is five deliberate taps
+ *  and a mid-build pause is normal. */
+const EQUATION_SETTLE_MS = 4500;
+/** A tray that has reached a FINISHED SHAPE (N op N = N) still waits — briefly —
+ *  rather than committing on the keystroke: "3 + 2 = 1" is a complete sentence
+ *  on its way to becoming "3 + 2 = 10". Structural, never correctness-gated. */
+const EQUATION_COMPLETE_SETTLE_MS = 1200;
+
+/** A breath AFTER the tutor stops talking, before the change group arrives —
+ *  so the join lands just after "…and one more duck joins them", not on top of
+ *  it. See the reveal gate for why that distinction is the whole design. */
+const REVEAL_PREP_MS = 600;
+/** If her audio never arrives at all, the stimulus still has to happen — a child
+ *  cannot answer about a join they were never shown. Long enough that it never
+ *  pre-empts a real utterance. */
+const TUTOR_SILENCE_FALLBACK_MS = 12_000;
+
 // ============================================================================
 // Helpers
 // ============================================================================
 
 function getEmoji(objectType: string): string {
   return OBJECT_EMOJI[objectType] || '⭐';
-}
-
-/**
- * The spoken ORIENT / STIMULUS line for one challenge (reader-fit Audit B). Story
- * challenges are read verbatim; the K "build the story" create-story task has NO
- * story text — the EQUATION is the prompt — so the tutor reads the number sentence
- * aloud and cues the build, rather than cold-starting on an empty string.
- */
-function orientLineForChallenge(ch: AddSubChallenge): string {
-  if (ch.type === 'create-story') {
-    const build = ch.operation === 'addition'
-      ? `start with an empty ${ch.scene} and help them add ${ch.objectType} to show ${ch.startCount} and ${ch.changeCount} more (${ch.resultCount} in all)`
-      : `there are ${ch.startCount} ${ch.objectType} already; help them send ${ch.changeCount} away so ${ch.resultCount} are left`;
-    return `This is a BUILD-the-story challenge — the child MAKES the story for the number sentence ${ch.equation}. There is NO story text; the equation IS the prompt. Read the number sentence aloud warmly, then tell them what to build: ${build}.`;
-  }
-  return `read this story aloud, word for word: "${ch.storyText}". Do not skip it or replace it with a bare greeting. THEN, in one short warm sentence, tell them what to do: ${ch.instruction}`;
 }
 
 /** Deterministic scattered positions for scene objects */
@@ -162,37 +245,9 @@ function scenePositions(count: number, seed: number = 7): Array<{ x: number; y: 
   return positions;
 }
 
-// ============================================================================
-// Sub-components
-// ============================================================================
-
-/**
- * Tap-to-choose number row (reader-fit PRE band-gate, rule 6 "no typing").
- * At Kindergarten, act-out/solve-story answer via a numeral — a pre-reader must
- * NOT type it on a keyboard. This renders 0…max as big tappable tiles; tapping one
- * IS the atomic answer (tap = choose, no Check button). Grade 1 keeps the input.
- */
-const NumberTileRow: React.FC<{ max: number; onPick: (n: number) => void; disabled?: boolean }> = ({ max, onPick, disabled }) => {
-  const tiles = Array.from({ length: Math.max(0, max) + 1 }, (_, n) => n);
-  return (
-    <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Choose the number">
-      {tiles.map((n) => (
-        <button
-          key={n}
-          type="button"
-          disabled={disabled}
-          onClick={() => onPick(n)}
-          aria-label={`${n}`}
-          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-2xl font-bold text-amber-100 shadow-sm transition active:scale-95 hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
-        >
-          {n}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-/** Ten-frame visual helper */
+/** Ten-frame counting aid. Mirrors what is ON SCREEN — never a stored count
+ *  (contract R8) and never more than is currently visible, so it cannot fill to
+ *  the total while the change group is still waiting on the tutor's voice. */
 const TenFrameHelper: React.FC<{ filled: number; max?: number }> = ({ filled, max = 10 }) => {
   const cells = Array.from({ length: max }, (_, i) => i < filled);
   return (
@@ -213,7 +268,7 @@ const TenFrameHelper: React.FC<{ filled: number; max?: number }> = ({ filled, ma
 };
 
 // ============================================================================
-// Main Component
+// Component
 // ============================================================================
 
 interface AdditionSubtractionSceneProps {
@@ -240,157 +295,36 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     onEvaluationSubmit,
   } = data;
 
-  // ── Shared challenge hooks ──────────────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const isPreReader = gradeBand === 'K';
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ── Local state ─────────────────────────────────────────────────
-  // Tapped scene objects for the counting aid, kept in TAP ORDER (not a Set) so the
-  // ordinal badge climbs 1,2,3… in the order the child touches them — no renumbering.
-  const [tappedObjects, setTappedObjects] = useState<number[]>([]);
-  const [countAnswer, setCountAnswer] = useState('');
-  const [equationTiles, setEquationTiles] = useState<string[]>([]);
-  const [solveAnswer, setSolveAnswer] = useState('');
-  const [createSelection, setCreateSelection] = useState<{ scene: string; object: string } | null>(null);
-  // Kindergarten "build the story" production task (create-story band-gate): the
-  // child MAKES the story for a given equation by placing/removing objects, judged
-  // by construction. sceneSlots holds the STABLE slot-id of each object currently on
-  // screen (not just a count), so tapping a specific object removes THAT object —
-  // positions are keyed by slot id and never renumber the survivors. builtCount is
-  // derived; buildPhase drives the addition two-step narration ("…now 2 more come!").
-  // Grade 1 keeps the picker. Non-build scenes ignore sceneSlots (they are count-driven).
+  // ── Stage-payload state (the runner owns progression; this is the scene) ──
+  /** Objects currently in the picture, by STABLE slot id, so removing one leaves
+   *  the survivors exactly where they were. Build scenes only. */
   const [sceneSlots, setSceneSlots] = useState<number[]>([]);
   const builtCount = sceneSlots.length;
-  const [buildPhase, setBuildPhase] = useState<'start' | 'change'>('start');
+  /** Tapped-to-count highlights, in TAP ORDER so the ordinal badge climbs
+   *  1,2,3… in the order the child touches them (K.CC.4 one-to-one). */
+  const [tappedObjects, setTappedObjects] = useState<number[]>([]);
+  const [equationTiles, setEquationTiles] = useState<string[]>([]);
+  /** Has the change group arrived? Gated on the tutor's voice, never a clock. */
+  const [changeRevealed, setChangeRevealed] = useState(false);
+  /** Has the tutor spoken for THIS item yet? The reveal waits on her, so it has
+   *  to tell "she has not started" from "she has finished" — both look like
+   *  silence. Reset on every item and on every correction retry. */
+  const [tutorHasSpoken, setTutorHasSpoken] = useState(false);
+  /** The number sentence JUST affirmed — post-answer only (answer-leak rule),
+   *  cleared the moment the next item opens. */
+  const [reward, setReward] = useState<string | null>(null);
 
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [showTenFrameHelper, setShowTenFrameHelper] = useState(false);
-  const [animatingObjects, setAnimatingObjects] = useState(false);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** What the scene / tray held when it last stopped changing. */
+  const pendingSceneRef = useRef(0);
+  const pendingTilesRef = useRef<string[]>([]);
 
-  // ── Refs ────────────────────────────────────────────────────────
-  const stableInstanceIdRef = useRef(instanceId || `add-sub-scene-${Date.now()}`);
+  const stableInstanceIdRef = useRef(instanceId || `add-sub-scene-${Math.round(performance.now())}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Current challenge ───────────────────────────────────────────
-  const currentChallenge = useMemo(
-    () => challenges[currentChallengeIndex] || null,
-    [challenges, currentChallengeIndex],
-  );
-
-  const sceneConfig = currentChallenge
-    ? SCENE_BACKGROUNDS[currentChallenge.scene] || SCENE_BACKGROUNDS.pond
-    : SCENE_BACKGROUNDS.pond;
-
-  // Grade-1 act-out forks by OPERATION. A static picture can show a join (the change
-  // group arrives via groupedReveal) but it cannot show a departure: for subtraction
-  // the scene painted the START group and nothing ever left, so "act out" collapsed
-  // into counting objects that weren't the answer — the instruction said "tap 2 frogs
-  // to send them away" and the taps stamped count badges 1…6 when the answer was 4.
-  // Subtraction is therefore ENACTED at Grade 1 too. The answer channel is unchanged
-  // (R3 keeps the keyboard at Grade 1): the enactment MODELS the story, the typed
-  // numeral REPORTS it.
-  const isG1ActOutSubtraction = !!currentChallenge
-    && gradeBand !== 'K'
-    && currentChallenge.type === 'act-out'
-    && currentChallenge.operation === 'subtraction';
-
-  // Build/manipulation scenes track object identity (add/remove a specific object):
-  // create-story, K act-out, and Grade-1 act-out subtraction. Everything else is
-  // count-driven (render 0…n).
-  const isBuildScene = !!currentChallenge && (
-    currentChallenge.type === 'create-story' ||
-    (gradeBand === 'K' && currentChallenge.type === 'act-out') ||
-    isG1ActOutSubtraction
-  );
-
-  // Compute visible objects based on phase & operation
-  const totalVisible = useMemo(() => {
-    if (!currentChallenge) return 0;
-    const { type, resultCount } = currentChallenge;
-    if (type === 'act-out') {
-      // Enacted scenes show exactly what the child has enacted — seeded at startCount,
-      // driven by add/remove: K at both operations, Grade 1 at subtraction.
-      if (gradeBand === 'K' || isG1ActOutSubtraction) return builtCount;
-      // Grade-1 addition keeps the count-the-scene model: start+change are both on
-      // screen and the change group animates in (groupedReveal), so the join is visible.
-      return resultCount;
-    }
-    // create-story (K build task): the scene shows exactly what the child has built.
-    if (type === 'create-story') {
-      return builtCount;
-    }
-    return resultCount;
-  }, [currentChallenge, builtCount, gradeBand, isG1ActOutSubtraction]);
-
-  // The max objects the scene will ever hold for this challenge. Positions are laid
-  // out ONCE for this capacity (not per live count), so removing an object leaves its
-  // survivors exactly where they were — the tapped object is the one that disappears.
-  const sceneCapacity = useMemo(() => {
-    if (!currentChallenge) return 0;
-    if (!isBuildScene) return totalVisible;
-    const { operation, startCount, resultCount } = currentChallenge;
-    // Addition grows toward resultCount; subtraction starts full at startCount.
-    return operation === 'addition' ? Math.max(startCount, resultCount) : startCount;
-  }, [currentChallenge, isBuildScene, totalVisible]);
-
-  const positions = useMemo(
-    () => scenePositions(sceneCapacity, currentChallengeIndex * 31 + 7),
-    [sceneCapacity, currentChallengeIndex],
-  );
-
-  // The objects actually painted, each with a STABLE slot id → position. Build scenes
-  // render their live sceneSlots (a removed object leaves a gap that never reshuffles);
-  // count-driven scenes render position-order 0…n.
-  const sceneObjects = useMemo(() => {
-    if (isBuildScene) {
-      return sceneSlots
-        .map((slotId) => ({ slotId, pos: positions[slotId] }))
-        .filter((o): o is { slotId: number; pos: { x: number; y: number } } => !!o.pos);
-    }
-    return positions.map((pos, i) => ({ slotId: i, pos }));
-  }, [isBuildScene, sceneSlots, positions]);
-
-  // Grade-1 subtraction enactment progress: how many objects the story still says to
-  // send away. While > 0 a tap REMOVES the object it lands on; at 0 the story has been
-  // enacted and taps fall through to the count aid, so the badges tag the SURVIVORS —
-  // the objects the answer is actually about (see handleObjectTap).
-  const removalsRemaining = useMemo(() => {
-    if (!currentChallenge || !isG1ActOutSubtraction) return 0;
-    const removed = Math.max(0, currentChallenge.startCount - builtCount);
-    return Math.max(0, currentChallenge.changeCount - removed);
-  }, [currentChallenge, isG1ActOutSubtraction, builtCount]);
-
-  // Which objects are "start" vs "change" for animation grouping
-  const startGroup = useMemo(() => {
-    if (!currentChallenge) return new Set<number>();
-    const s = new Set<number>();
-    for (let i = 0; i < currentChallenge.startCount; i++) s.add(i);
-    return s;
-  }, [currentChallenge]);
-
-  // ── Evaluation ──────────────────────────────────────────────────
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<AdditionSubtractionSceneMetrics>({
+  const evaluation = usePrimitiveEvaluation<AdditionSubtractionSceneMetrics>({
     primitiveType: 'addition-subtraction-scene',
     instanceId: resolvedInstanceId,
     skillId,
@@ -400,491 +334,400 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI Tutoring ─────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    storyText: currentChallenge?.storyText ?? '',
-    // The task instruction is load-bearing for the scaffold's ORIENT beat
-    // ({{instruction}} in taskDescription + the read-aloud directive). Without it
-    // in the bag the tutor prompt interpolates the literal '(not set)'.
-    instruction: currentChallenge?.instruction ?? '',
-    operation: currentChallenge?.operation ?? 'addition',
-    storyType: currentChallenge?.storyType ?? 'join',
-    startCount: currentChallenge?.startCount ?? 0,
-    changeCount: currentChallenge?.changeCount ?? 0,
-    resultCount: currentChallenge?.resultCount ?? 0,
-    unknownPosition: currentChallenge?.unknownPosition ?? 'result',
-    challengeType: currentChallenge?.type ?? 'act-out',
-    equation: currentChallenge?.equation ?? '',
-    objectType: currentChallenge?.objectType ?? '',
-    scene: currentChallenge?.scene ?? 'pond',
-    attemptNumber: currentAttempts + 1,
-    currentChallengeIndex,
-    totalChallenges: challenges.length,
-    gradeBand,
-    maxNumber,
-  }), [currentChallenge, currentAttempts, currentChallengeIndex, challenges.length, gradeBand, maxNumber]);
-
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'addition-subtraction-scene',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
-  });
-
-  // Activity introduction
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
-    hasIntroducedRef.current = true;
-    const ch = challenges[0];
-    sendText(
-      `[ACTIVITY_START] Addition & subtraction story scene for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
-      + `${challenges.length} challenges total. This student CANNOT read — you are their voice. `
-      + `FIRST, ${orientLineForChallenge(ch)}`,
-      { silent: true },
-    );
-  }, [isConnected, challenges, gradeBand, sendText]);
-
-  // Play entrance animation for act-out
-  useEffect(() => {
-    if (currentChallenge?.type === 'act-out') {
-      setAnimatingObjects(true);
-      const timer = setTimeout(() => setAnimatingObjects(false), 1200);
-      return () => clearTimeout(timer);
+  const clearSettle = useCallback(() => {
+    if (settleTimerRef.current) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
     }
-  }, [currentChallengeIndex, currentChallenge?.type]);
+  }, []);
 
-  // Seed the enacted scene when a build/manipulation challenge loads.
-  //  • create-story: addition starts EMPTY (the child adds up to the total);
-  //    subtraction starts pre-filled with startCount (sends changeCount away).
-  //  • act-out at K (direct manipulation, item 11): the child ENACTS the story, so
-  //    the scene is seeded with the story's START group for BOTH operations —
-  //    addition adds changeCount up to resultCount, subtraction sends changeCount
-  //    away down to resultCount. The count is DERIVED from what they build, never
-  //    entered as a proxy number. Reset the two-step phase.
-  //  • act-out SUBTRACTION at Grade 1: same seeding — the departure has to be enacted
-  //    at every band (a static scene can't show it). Grade 1 then TYPES the count.
-  useEffect(() => {
-    const t = currentChallenge?.type;
-    const seedSlots = (n: number) => setSceneSlots(Array.from({ length: n }, (_, i) => i));
-    if (t === 'create-story') {
-      seedSlots(currentChallenge!.operation === 'subtraction' ? currentChallenge!.startCount : 0);
-      setBuildPhase('start');
-    } else if (t === 'act-out' && (gradeBand === 'K' || currentChallenge!.operation === 'subtraction')) {
-      seedSlots(currentChallenge!.startCount);
-      setBuildPhase('start');
-    }
-  }, [currentChallengeIndex, currentChallenge?.type, currentChallenge?.operation, currentChallenge?.startCount, gradeBand]);
-
-  // ── Check Answers ───────────────────────────────────────────────
-
-  const handleCheckActOut = useCallback((explicitValue?: number) => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    const answer = explicitValue !== undefined ? explicitValue : parseInt(countAnswer, 10);
-    const target = currentChallenge.resultCount;
-    const correct = answer === target;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Yes! ${currentChallenge.equation}`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student counted ${target} ${currentChallenge.objectType} correctly! `
-        + `Story: "${currentChallenge.storyText}". Congratulate and connect to the equation: ${currentChallenge.equation}.`,
-        { silent: true },
-      );
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite — you said ${answer || '?'}. ${currentChallenge.operation === 'addition' ? 'Count all the objects together!' : 'Count what\'s left!'}`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer || 'nothing'} but correct is ${target}. `
-        + `Story: "${currentChallenge.storyText}". Attempt ${currentAttempts + 1}. `
-        + `Hint: "What happened in the story? Did ${currentChallenge.objectType} come or go?"`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, countAnswer, currentAttempts, sendText, incrementAttempts, recordResult]);
-
-  const handleCheckEquation = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    const studentEquation = equationTiles.join(' ');
-    const { startCount, changeCount, resultCount, operation } = currentChallenge;
-
-    // Parse student equation: "A + B = C" or "A - B = C"
-    const stripped = studentEquation.replace(/\s+/g, '');
-    const eqMatch = stripped.match(/^(\d+)([+-])(\d+)=(\d+)$/);
-
-    if (!eqMatch) {
-      SoundManager.invalid();
-      setFeedback('Build an equation like 3 + 2 = 5');
-      setFeedbackType('error');
-      return;
-    }
-
-    const left = parseInt(eqMatch[1], 10);
-    const op = eqMatch[2];
-    const right = parseInt(eqMatch[3], 10);
-    const result = parseInt(eqMatch[4], 10);
-
-    // Check 1: arithmetic is correct
-    const mathCorrect = op === '+'
-      ? left + right === result
-      : left - right === result;
-
-    // Check 2: uses the correct three numbers (order-independent for addition)
-    const studentNums = [left, right, result].sort((a, b) => a - b);
-    const expectedNums = [startCount, changeCount, resultCount].sort((a, b) => a - b);
-    const usesCorrectNumbers = studentNums[0] === expectedNums[0]
-      && studentNums[1] === expectedNums[1]
-      && studentNums[2] === expectedNums[2];
-
-    // Check 3: correct operation type
-    const correctOp = (operation === 'addition' && op === '+')
-      || (operation === 'subtraction' && op === '-');
-
-    const correct = mathCorrect && usesCorrectNumbers && correctOp;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`Perfect! ${stripped} matches the story!`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student built the equation: ${stripped}. `
-        + `Celebrate: "The equation tells the same story as the ${currentChallenge.objectType}!"`,
-        { silent: true },
-      );
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-    } else if (!mathCorrect) {
-      SoundManager.playIncorrect();
-      setFeedback('The math doesn\'t add up — check the numbers.');
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student built "${stripped}" but the arithmetic is wrong. `
-        + `Attempt ${currentAttempts + 1}. Hint: "Check if ${left} ${op} ${right} really equals ${result}."`,
-        { silent: true },
-      );
-    } else if (!correctOp) {
-      SoundManager.playIncorrect();
-      setFeedback(`Think about the story — did the ${currentChallenge.objectType} come or go away?`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student used "${op}" but the story is ${operation}. `
-        + `Attempt ${currentAttempts + 1}. Guide: "In the story, did things join together or go away?"`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Use the numbers from the story: ${startCount}, ${changeCount}, and ${resultCount}`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student built "${stripped}" — valid math but wrong numbers for this story. `
-        + `Attempt ${currentAttempts + 1}. Remind them to look at the story again.`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, equationTiles, currentAttempts, sendText, incrementAttempts, recordResult]);
-
-  const handleCheckSolveStory = useCallback((explicitValue?: number) => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    const answer = explicitValue !== undefined ? explicitValue : parseInt(solveAnswer, 10);
-    const { unknownPosition = 'result', startCount, changeCount, resultCount } = currentChallenge;
-    const target = unknownPosition === 'result' ? resultCount
-      : unknownPosition === 'change' ? changeCount : startCount;
-    const correct = answer === target;
-
-    if (correct) {
-      SoundManager.playCorrect();
-      setFeedback(`That's right! The answer is ${target}.`);
-      setFeedbackType('success');
-      sendText(
-        `[ANSWER_CORRECT] Student solved the word problem correctly: ${target}. `
-        + `Unknown was "${unknownPosition}". Celebrate and explain why.`,
-        { silent: true },
-      );
-      recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback(`Not quite — try again! Read the story carefully.`);
-      setFeedbackType('error');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered ${answer || 'nothing'} but correct is ${target}. `
-        + `Unknown position: "${unknownPosition}". Attempt ${currentAttempts + 1}. `
-        + `Scaffolding: "You started with ${startCount} ${currentChallenge.objectType}. Then ${changeCount} ${currentChallenge.operation === 'addition' ? 'more came' : 'went away'}."`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, solveAnswer, currentAttempts, sendText, incrementAttempts, recordResult]);
-
-  const handleCheckCreateStory = useCallback(() => {
-    if (!currentChallenge || !createSelection) return;
-    incrementAttempts();
-    // Create-story is open-ended — accept any scene+object selection as correct
-    const correct = true;
-    SoundManager.playCorrect();
-    setFeedback(`Great story! You showed ${currentChallenge.equation} with ${createSelection.object} at the ${createSelection.scene}!`);
-    setFeedbackType('success');
-    sendText(
-      `[ANSWER_CORRECT] Student created a story for ${currentChallenge.equation} using ${createSelection.object} in a ${createSelection.scene} scene. `
-      + `Celebrate their creativity! Ask them to tell you the story in words.`,
-      { silent: true },
-    );
-    recordResult({ challengeId: currentChallenge.id, correct, attempts: currentAttempts + 1 });
-  }, [currentChallenge, createSelection, currentAttempts, sendText, incrementAttempts, recordResult]);
-
-  // ── K "build the story" production task (create-story band-gate) ──
-  // Construction-judged completion: fires automatically the instant the child has
-  // placed exactly resultCount objects (tap = choose — no Check button). The build
-  // ACTION is the answer, so a pre-reader produces the story instead of authoring text.
-  const completeBuildStory = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    SoundManager.playCorrect();
-    const { type, operation, objectType, scene, startCount, changeCount, resultCount, equation } = currentChallenge;
-    // Feedback + narration are enactment-accurate: act-out subtraction SENDS objects
-    // AWAY (not "places" them), addition BRINGS them together. Post-completion the
-    // whole number story (incl. the result) is recapped — that recap is a celebration
-    // AFTER the answer was enacted, not a leak of what to discover.
-    setFeedback(operation === 'addition' ? `You made ${resultCount}! ${equation}` : `You sent them away! ${equation}`);
-    setFeedbackType('success');
-    const enacted = type === 'act-out'
-      ? (operation === 'addition'
-          ? `The child ACTED OUT the story by bringing ${changeCount} more ${objectType} into the ${scene}`
-          : `The child ACTED OUT the story by sending ${changeCount} ${objectType} away from the ${scene}`)
-      : `The child BUILT the story for ${equation} by placing ${objectType} in the ${scene}`;
-    sendText(
-      `[ANSWER_CORRECT] ${enacted}. `
-      + `Celebrate warmly and say the whole number story back to them: `
-      + `"${startCount} and ${changeCount} ${operation === 'addition' ? 'more makes' : 'away leaves'} ${resultCount}!"`,
-      { silent: true },
-    );
-    recordResult({ challengeId: currentChallenge.id, correct: true, attempts: currentAttempts + 1 });
-  }, [currentChallenge, currentAttempts, sendText, incrementAttempts, recordResult]);
-
-  // Advance the build after each add/remove: narrate the addition two-step at the
-  // start→change boundary, and complete when the scene holds exactly resultCount.
-  const handleBuildProgress = useCallback((count: number) => {
-    if (!currentChallenge) return;
-    const { type, startCount, changeCount, resultCount, operation, objectType } = currentChallenge;
-    // The two-step "now N more come!" cue only fits create-story addition, which
-    // starts EMPTY and crosses the start→change boundary. act-out seeds at startCount
-    // (the start group is already on screen), so it has no such boundary to narrate.
-    if (type === 'create-story' && operation === 'addition' && buildPhase === 'start' && count === startCount && startCount !== resultCount) {
-      setBuildPhase('change');
-      sendText(
-        `[BUILD_STEP] The child placed the first ${startCount} ${objectType}. Warmly cue the next part of the story: `
-        + `"Now ${changeCount} more come!"`,
-        { silent: true },
-      );
-    }
-    // Grade-1 act-out REPORTS by typing the count (R3 keeps the keyboard at Grade 1):
-    // there the enactment models the story but is not the answer channel, so reaching
-    // resultCount must NOT auto-judge. K auto-judges on the enacted count.
-    if (count === resultCount && !isG1ActOutSubtraction) {
-      completeBuildStory();
-    }
-  }, [currentChallenge, buildPhase, sendText, completeBuildStory, isG1ActOutSubtraction]);
-
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    switch (currentChallenge.type) {
-      case 'act-out': handleCheckActOut(); break;
-      case 'build-equation': handleCheckEquation(); break;
-      case 'solve-story': handleCheckSolveStory(); break;
-      case 'create-story': handleCheckCreateStory(); break;
-    }
-  }, [currentChallenge, handleCheckActOut, handleCheckEquation, handleCheckSolveStory, handleCheckCreateStory]);
-
-  // ── Navigation ──────────────────────────────────────────────────
-
-  const advanceToNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All complete
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = Math.round(
-        (challengeResults.filter((r) => r.correct).length / challenges.length) * 100,
-      );
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their addition and subtraction story skills!`,
-        { silent: true },
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const correctCount = challengeResults.filter((r) => r.correct).length;
-        const accuracy = Math.round((correctCount / challenges.length) * 100);
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const equationChallenges = challengeResults.filter((_, i) => challenges[i]?.type === 'build-equation');
-        const equationAccuracy = equationChallenges.length > 0
-          ? Math.round((equationChallenges.filter((r) => r.correct).length / equationChallenges.length) * 100) : 0;
-        const storySolveChallenges = challengeResults.filter((_, i) => challenges[i]?.type === 'solve-story');
-        const storyAccuracy = storySolveChallenges.length > 0
-          ? Math.round((storySolveChallenges.filter((r) => r.correct).length / storySolveChallenges.length) * 100) : 0;
-
-        const metrics: AdditionSubtractionSceneMetrics = {
-          type: 'addition-subtraction-scene',
-          overallAccuracy: accuracy,
-          equationBuildingAccuracy: equationAccuracy,
-          storySolvingAccuracy: storyAccuracy,
-          attemptsCount: totalAttempts,
-          operationsUsed: Array.from(new Set(challenges.map((c) => c.operation))),
-          storyTypesUsed: Array.from(new Set(challenges.map((c) => c.storyType))),
-        };
-
-        submitEvaluation(correctCount === challenges.length, accuracy, metrics, { challengeResults });
-      }
-      return;
-    }
-
-    // Reset domain-specific state for next challenge
-    setFeedback('');
-    setFeedbackType('');
-    setCountAnswer('');
-    setEquationTiles([]);
-    setSolveAnswer('');
-    setCreateSelection(null);
-    setTappedObjects([]);
-    setShowTenFrameHelper(false);
-
-    const nextCh = challenges[currentChallengeIndex + 1];
-    sendText(
-      `[NEXT_ITEM] Next story (${currentChallengeIndex + 2} of ${challenges.length}). The student cannot read. `
-      + `FIRST, ${orientLineForChallenge(nextCh)}`,
-      { silent: true },
-    );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
-  ]);
-
-  // ── Auto-submit when complete ───────────────────────────────────
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
-    }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
-
-  // ── Computed ────────────────────────────────────────────────────
-  const isCurrentChallengeComplete = challengeResults.some(
-    (r) => r.challengeId === currentChallenge?.id && r.correct,
+  // ── The pack: generated challenges → judged items + hand-authored script ──
+  // Unaskable items are DROPPED here (zero spoken answers, inconsistent
+  // arithmetic, a story that opens with a verdict sentinel or states the value
+  // the child must produce). Nothing is backfilled: a placeholder in a judged
+  // loop becomes a spoken ask the tutor has to judge.
+  const items = useMemo<AddSubSceneItem[]>(() =>
+    challenges
+      .map((ch) => itemFromChallenge(ch, { band: gradeBand }))
+      .filter((item): item is AddSubSceneItem => item !== null),
+    [challenges, gradeBand],
   );
 
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    return Math.round((challengeResults.filter((r) => r.correct).length / challenges.length) * 100);
-  }, [allChallengesComplete, challenges, challengeResults]);
+  const challengeById = useMemo(
+    () => new Map(challenges.map((ch) => [ch.id, ch])),
+    [challenges],
+  );
 
-  // ── Equation tile handlers ──────────────────────────────────────
-  const addTile = useCallback((tile: string) => {
-    SoundManager.tap();
-    setEquationTiles((prev) => [...prev, tile]);
-  }, []);
-  const removeTile = useCallback((index: number) => {
-    SoundManager.tap();
-    setEquationTiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  const pack = useMemo<JudgedScriptPack<AddSubSceneItem>>(() => ({
+    primitiveType: 'addition-subtraction-scene',
+    activityLine: 'live direct instruction addition and subtraction story scenes',
+    items,
+    itemCue,
+    moveOnCue,
+    completeCue,
+    pronounceCue,
+    contextFor: (item) => ({
+      challengeType: item.kind,
+      stimulus: stimulusFor(item),
+    }),
+    // Only what DIFFERS from the runner's defaults.
+    statusLines: {
+      ready: (item) => item.answerKind === 'gesture'
+        ? 'Listen to the story, then show me.'
+        : 'Listen to the story, then say your answer out loud.',
+      retry: (item) => item.answerKind === 'gesture'
+        ? 'Have another go — show me again.'
+        : 'Have another go — say your answer.',
+      done: 'Great story math today!',
+    },
+    diagnosisObservation: (item, { lastHeard }) =>
+      item.answerKind === 'gesture'
+        ? {
+            challenge: item.kind === 'build-equation'
+              ? `Build the number sentence for "${item.situation}" (${item.equation}).`
+              : `${item.operation === 'addition' ? 'Bring in' : 'Send away'} ${item.changeCount} — the picture should end with ${item.answer} ${item.objectType}.`,
+            expected: item.kind === 'build-equation'
+              ? item.equation
+              : `${item.answer} ${item.objectType}.`,
+            observed: item.kind === 'build-equation'
+              ? `Built "${pendingTilesRef.current.join(' ') || 'nothing'}".`
+              : `Ended with ${pendingSceneRef.current}.`,
+          }
+        : {
+            challenge: `${item.kind} (${item.unknownPosition} unknown): ${item.situation}`,
+            expected: `${numberWordFor(item.answer)} (${item.answer})`,
+            observed: lastHeard
+              ? `Heard "${lastHeard}".`
+              : 'The tutor judged the answer wrong from the audio.',
+          },
+  }), [items]);
 
-  // ── Object tap handler (act-out counting) ───────────────────────
-  const handleObjectTap = useCallback((index: number) => {
-    if (isCurrentChallengeComplete) return;
-    // Build/manipulation scenes — tapping a placed object sends it away (remove one):
-    // create-story (any band) and K act-out (direct manipulation, item 11 — this is
-    // the subtraction interaction: "tap the frogs to send them away").
-    const isBuildTap =
-      currentChallenge?.type === 'create-story' ||
-      (gradeBand === 'K' && currentChallenge?.type === 'act-out') ||
-      // Grade-1 act-out subtraction: taps send objects away until the story's change
-      // has been enacted. After that the tap falls through to the count aid below, so
-      // the ordinal badges land on the survivors (the count that IS the answer)
-      // instead of rehearsing the start group.
-      (isG1ActOutSubtraction && removalsRemaining > 0);
-    if (isBuildTap) {
-      if (!sceneSlots.includes(index)) return;
+  // ── Per-item scene reset — every item owns its starting state ─────────────
+  const resetSceneFor = useCallback((item: AddSubSceneItem) => {
+    clearSettle();
+    setReward(null);
+    setTappedObjects([]);
+    setEquationTiles([]);
+    pendingTilesRef.current = [];
+    setTutorHasSpoken(false);
+
+    // The change group is a stimulus on count-the-scene items, so it waits for
+    // her voice. Everywhere else there is nothing to withhold: enacted scenes
+    // are built by the child, and a withdrawn `groupedReveal` (hard tier) means
+    // "everything at once" by design.
+    const waitsForReveal = item.kind === 'act-out'
+      && item.answerKind === 'voice'
+      && item.operation === 'addition'
+      && groupedReveal;
+    setChangeRevealed(!waitsForReveal);
+
+    // Seeding, per contract R3:
+    //  • create-story: addition starts EMPTY (build up to the total);
+    //    subtraction starts pre-filled at startCount (send the change away).
+    //  • act-out: seeded with the story's START group wherever the scene is
+    //    enacted — K at both operations, Grade 1 at subtraction (a static
+    //    picture can show a join but never a departure).
+    //  • everything else is count-driven and holds no slots.
+    const enacted = item.kind === 'create-story'
+      || (item.kind === 'act-out' && (item.band === 'K' || item.operation === 'subtraction'));
+    const seeded = !enacted
+      ? 0
+      : item.kind === 'create-story' && item.operation === 'addition'
+        ? 0
+        : item.startCount;
+    setSceneSlots(Array.from({ length: seeded }, (_, i) => i));
+    pendingSceneRef.current = seeded;
+  }, [clearSettle, groupedReveal]);
+
+  // ── Metrics ───────────────────────────────────────────────────────────────
+  const handleFinished = useCallback((summary: JudgedRunSummary) => {
+    const itemOf = (id: string) => items.find((i) => i.id === id);
+    const accuracyOver = (kind: AddSubSceneItem['kind']) => {
+      const scoped = summary.outcomes.filter((o) => itemOf(o.id)?.kind === kind);
+      return scoped.length > 0
+        ? Math.round((scoped.filter((o) => o.solved).length / scoped.length) * 100)
+        : 0;
+    };
+
+    const metrics: AdditionSubtractionSceneMetrics = {
+      type: 'addition-subtraction-scene',
+      overallAccuracy: summary.accuracy,
+      equationBuildingAccuracy: accuracyOver('build-equation'),
+      storySolvingAccuracy: accuracyOver('solve-story'),
+      attemptsCount: summary.attemptsCount,
+      operationsUsed: Array.from(new Set(items.map((i) => i.operation))),
+      storyTypesUsed: Array.from(new Set(
+        items.map((i) => challengeById.get(i.id)?.storyType).filter((t): t is AddSubChallenge['storyType'] => !!t),
+      )),
+    };
+
+    evaluation.submitResult(
+      summary.solvedCount === items.length,
+      summary.accuracy,
+      metrics,
+      { challengeResults: summary.outcomes },
+      undefined,
+      summary.diagnosisEvidence,
+    );
+  }, [items, challengeById, evaluation]);
+
+  const runner = useJudgedScriptRunner<AddSubSceneItem>({
+    pack,
+    instanceId: resolvedInstanceId,
+    gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    exhibitId,
+    onFinished: handleFinished,
+    onItemOpened: resetSceneFor,
+    onAffirmed: (item) => {
+      // The first moment a number may appear on screen.
+      setChangeRevealed(true);
+      setReward(item.equation);
+    },
+    onCorrectionRetry: (item) => {
+      // The tutor's correction re-modeled and re-asked in-band; restore the
+      // working surface for another go. Clearing `tutorHasSpoken` is what makes
+      // a re-reveal wait for her CORRECTION to finish — the same gate as the
+      // first ask, so there is no hand-tuned window to get wrong.
+      clearSettle();
+      setTutorHasSpoken(false);
+      if (item.kind === 'build-equation') {
+        // The tray clears: the tiles are indistinguishable from each other, so
+        // there is no "wrong slot" to clear the way cvc-speller does.
+        setEquationTiles([]);
+        pendingTilesRef.current = [];
+        return;
+      }
+      if (item.answerKind === 'gesture') {
+        const seeded = item.kind === 'create-story' && item.operation === 'addition' ? 0 : item.startCount;
+        setSceneSlots(Array.from({ length: seeded }, (_, i) => i));
+        pendingSceneRef.current = seeded;
+      }
+      setTappedObjects([]);
+    },
+  });
+
+  const currentItem = runner.currentItem;
+  const currentSolved = runner.currentSolved;
+  const sceneConfig = currentItem
+    ? SCENE_BACKGROUNDS[currentItem.scene] || SCENE_BACKGROUNDS.pond
+    : SCENE_BACKGROUNDS.pond;
+
+  // Is the scene ENACTED for this item (the child adds/removes objects), or
+  // count-driven (the picture is painted from the story)?
+  const isEnactedScene = !!currentItem && (
+    currentItem.kind === 'create-story'
+    || (currentItem.kind === 'act-out' && (currentItem.band === 'K' || currentItem.operation === 'subtraction'))
+  );
+
+  // Grade-1 act-out subtraction: how many objects the story still says to send
+  // away. While > 0 a tap REMOVES the object it lands on; at 0 the story has
+  // been enacted and taps fall through to the count aid, so the badges tag the
+  // SURVIVORS — the group the spoken answer is actually about.
+  const removalsRemaining = useMemo(() => {
+    if (!currentItem || currentItem.answerKind !== 'voice' || currentItem.kind !== 'act-out') return 0;
+    if (currentItem.operation !== 'subtraction') return 0;
+    const removed = Math.max(0, currentItem.startCount - builtCount);
+    return Math.max(0, currentItem.changeCount - removed);
+  }, [currentItem, builtCount]);
+
+  // How many objects the picture currently holds. Enacted scenes show exactly
+  // what the child built; count-driven scenes paint the story — and while the
+  // change group is still waiting on her voice, only the start group is there.
+  const totalVisible = useMemo(() => {
+    if (!currentItem) return 0;
+    if (isEnactedScene) return builtCount;
+    if (currentItem.kind === 'act-out' && currentItem.operation === 'addition' && !changeRevealed) {
+      return currentItem.startCount;
+    }
+    return currentItem.resultCount;
+  }, [currentItem, isEnactedScene, builtCount, changeRevealed]);
+
+  // The most objects the scene will ever hold for this item. Positions are laid
+  // out ONCE for this capacity (not per live count), so removing an object
+  // leaves its survivors exactly where they were.
+  const sceneCapacity = useMemo(() => {
+    if (!currentItem) return 0;
+    if (!isEnactedScene) return Math.max(currentItem.resultCount, currentItem.startCount);
+    return currentItem.operation === 'addition'
+      ? Math.max(currentItem.startCount, currentItem.resultCount)
+      : currentItem.startCount;
+  }, [currentItem, isEnactedScene]);
+
+  const positions = useMemo(
+    () => scenePositions(sceneCapacity, runner.currentIndex * 31 + 7),
+    [sceneCapacity, runner.currentIndex],
+  );
+
+  const sceneObjects = useMemo(() => {
+    if (isEnactedScene) {
+      return sceneSlots
+        .map((slotId) => ({ slotId, pos: positions[slotId] }))
+        .filter((o): o is { slotId: number; pos: { x: number; y: number } } => !!o.pos);
+    }
+    return positions
+      .slice(0, totalVisible)
+      .map((pos, i) => ({ slotId: i, pos }));
+  }, [isEnactedScene, sceneSlots, positions, totalVisible]);
+
+  const startGroup = useMemo(() => {
+    const s = new Set<number>();
+    for (let i = 0; i < (currentItem?.startCount ?? 0); i++) s.add(i);
+    return s;
+  }, [currentItem]);
+
+  // ── The gesture commits ───────────────────────────────────────────────────
+  // No Check control: nothing on screen may carry the child forward. The cue
+  // goes out through `submitGestureAttempt`, which opens the attempt when the
+  // cue is actually SENT — an attempt opened at commit time would block the very
+  // cue meant to provoke its verdict (cvc-speller's finding).
+  const commitScene = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.answerKind !== 'gesture' || item.kind === 'build-equation') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    runner.submitGestureAttempt(sceneVerdictCue(item, pendingSceneRef.current));
+  }, [runner]);
+
+  const commitEquation = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || item.kind !== 'build-equation') return;
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    if (pendingTilesRef.current.length === 0) return;
+    runner.submitGestureAttempt(equationVerdictCue(item, pendingTilesRef.current));
+  }, [runner]);
+
+  /** A hands turn closes on stillness. Any further touch resets the window. */
+  const armSceneSettle = useCallback((count: number) => {
+    pendingSceneRef.current = count;
+    clearSettle();
+    settleTimerRef.current = setTimeout(() => { commitScene(); }, SCENE_SETTLE_MS);
+  }, [clearSettle, commitScene]);
+
+  const armEquationSettle = useCallback((tiles: string[]) => {
+    pendingTilesRef.current = tiles;
+    clearSettle();
+    // A finished SHAPE shortens the window; it never commits on the keystroke,
+    // because "3 + 2 = 1" is a complete sentence on its way to "3 + 2 = 10".
+    const wait = parseEquationTiles(tiles) ? EQUATION_COMPLETE_SETTLE_MS : EQUATION_SETTLE_MS;
+    settleTimerRef.current = setTimeout(() => { commitEquation(); }, wait);
+  }, [clearSettle, commitEquation]);
+
+  // ── Scene taps ────────────────────────────────────────────────────────────
+  // NEVER gate interaction on the stage word — the runner sets 'affirmed' and
+  // opens the next item in the same dispatch, so a stage-gated scene ships dead
+  // from item 2 on (ten-frame drive 1). `canAttempt` reads the solved ledger.
+  const handleObjectTap = useCallback((slotId: number) => {
+    const item = runner.currentItem;
+    if (!item || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (runner.isAwaitingGesture()) return;
+
+    // Sending an object away: every enacted scene, plus Grade-1 act-out
+    // subtraction until the story's departure has been enacted.
+    const removes = isEnactedScene && (item.answerKind === 'gesture' || removalsRemaining > 0);
+    if (removes) {
+      if (!sceneSlots.includes(slotId)) return;
       SoundManager.tap();
-      // Remove THIS object (by slot id) — its position stays vacated, survivors don't move.
-      const remaining = sceneSlots.filter((s) => s !== index);
+      const remaining = sceneSlots.filter((s) => s !== slotId);
       setSceneSlots(remaining);
-      handleBuildProgress(remaining.length);
+      if (item.answerKind === 'gesture') armSceneSettle(remaining.length);
+      else pendingSceneRef.current = remaining.length;
       return;
     }
-    // Counting aid (tap toggles a highlight + running ordinal badge, does NOT change
-    // the count). Consumers:
-    //  • Grade-1 act-out addition (the count-the-scene model).
-    //  • Grade-1 act-out subtraction AFTER the removals are enacted (count what's left).
-    //  • K solve-story when the visible scene count IS the answer (unknownPosition
-    //    'result'): the story says "count the bunnies", so tapping each one tags it
-    //    1,2,3… (one-to-one correspondence, K.CC.4), then the child SELECTS the total
-    //    below. NOT enabled for hide-the-change / hide-the-start (the scene count
-    //    isn't the answer there, so counting it would mislead).
-    const isCountAid =
-      currentChallenge?.type === 'act-out' ||
-      (gradeBand === 'K' &&
-        currentChallenge?.type === 'solve-story' &&
-        (currentChallenge?.unknownPosition ?? 'result') === 'result');
+
+    // Counting aid (highlight + running ordinal; changes no count). Consumers:
+    // Grade-1 act-out addition, Grade-1 act-out subtraction once the removals
+    // are enacted, and solve-story where the visible scene count IS the answer.
+    const isCountAid = item.kind === 'act-out'
+      || (item.kind === 'solve-story' && item.unknownPosition === 'result');
     if (!isCountAid) return;
     SoundManager.tap();
     setTappedObjects((prev) =>
-      prev.includes(index) ? prev.filter((x) => x !== index) : [...prev, index],
+      prev.includes(slotId) ? prev.filter((x) => x !== slotId) : [...prev, slotId],
     );
-  }, [currentChallenge?.type, currentChallenge?.unknownPosition, gradeBand, isCurrentChallengeComplete, sceneSlots, handleBuildProgress, isG1ActOutSubtraction, removalsRemaining]);
+  }, [
+    runner, evaluation.hasSubmitted, isEnactedScene, removalsRemaining,
+    sceneSlots, armSceneSettle,
+  ]);
 
-  // Add one object to the enacted scene — K create-story (build the story) and
-  // K act-out (bring the story's objects together, the addition interaction).
-  // Capped at maxNumber so a stray tap can't run past the scene's range.
-  const addBuildObject = useCallback(() => {
-    const t = currentChallenge?.type;
-    const isBuildAdd = t === 'create-story' || (gradeBand === 'K' && t === 'act-out');
-    if (!isBuildAdd || isCurrentChallengeComplete || builtCount >= maxNumber) return;
-    // Append the lowest unused slot id so re-adding after a removal fills the gap
-    // rather than growing past the scene's laid-out capacity.
+  /** Bring one more object in — the addition interaction on any enacted scene. */
+  const addSceneObject = useCallback(() => {
+    const item = runner.currentItem;
+    if (!item || !isEnactedScene || !runner.canAttempt || evaluation.hasSubmitted) return;
+    if (runner.isAwaitingGesture() || builtCount >= maxNumber) return;
+    // Append the lowest unused slot id so re-adding after a removal fills the
+    // gap rather than growing past the scene's laid-out capacity.
     const used = new Set(sceneSlots);
     let slot = 0;
     while (used.has(slot)) slot++;
     SoundManager.tap();
     const next = [...sceneSlots, slot];
     setSceneSlots(next);
-    handleBuildProgress(next.length);
-  }, [currentChallenge?.type, gradeBand, isCurrentChallengeComplete, sceneSlots, builtCount, maxNumber, handleBuildProgress]);
+    if (item.answerKind === 'gesture') armSceneSettle(next.length);
+    else pendingSceneRef.current = next.length;
+  }, [
+    runner, isEnactedScene, evaluation.hasSubmitted, builtCount,
+    maxNumber, sceneSlots, armSceneSettle,
+  ]);
 
-  // Reader-fit PRE band-gate. At Kindergarten (rule 6 no-typing, rule 2 tap=choose):
-  //  • solve-story answers by TAPPING a number tile (the story's unknown is a value
-  //    to read off, so a numeral choice fits) — Check-free.
-  //  • act-out is DIRECT MANIPULATION (item 11): the child enacts the story by
-  //    adding/removing scene objects; the enacted count auto-judges — Check-free,
-  //    no number entry at all (the count is not a proxy the child types).
-  //  • create-story is a build-the-story production task — Check-free, auto-judges.
-  // Grade 1 keeps keyboard input + Check.
-  const isKindergartenBand = gradeBand === 'K';
-  const isTapChooseCount = isKindergartenBand && currentChallenge?.type === 'solve-story';
-  const isBuildStory = isKindergartenBand && currentChallenge?.type === 'create-story';
-  const isActOutBuild = isKindergartenBand && currentChallenge?.type === 'act-out';
+  // ── Equation tray ─────────────────────────────────────────────────────────
+  const addTile = useCallback((tile: string) => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    const next = [...equationTiles, tile];
+    setEquationTiles(next);
+    armEquationSettle(next);
+  }, [runner, equationTiles, armEquationSettle]);
 
-  // Determine if Check button should be enabled
-  const canCheck = useMemo(() => {
-    if (!currentChallenge || isCurrentChallengeComplete) return false;
-    switch (currentChallenge.type) {
-      case 'act-out': return countAnswer.trim() !== '';
-      case 'build-equation': return equationTiles.length >= 3;
-      case 'solve-story': return solveAnswer.trim() !== '';
-      case 'create-story': return createSelection !== null;
-      default: return false;
-    }
-  }, [currentChallenge, isCurrentChallengeComplete, countAnswer, equationTiles, solveAnswer, createSelection]);
+  const removeTile = useCallback((index: number) => {
+    if (!runner.canAttempt || runner.isAwaitingGesture()) return;
+    SoundManager.tap();
+    const next = equationTiles.filter((_, i) => i !== index);
+    setEquationTiles(next);
+    armEquationSettle(next);
+  }, [runner, equationTiles, armEquationSettle]);
 
-  // Equation tray tiles. Support tier (build-equation) may restrict the offered
-  // numbers via challenge.allowedTiles; operators are always available. Falls back
-  // to the full 0…maxNumber palette. Never affects the target equation.
+  // ── THE REVEAL GATE: THE TUTOR'S VOICE OWNS THE STIMULUS ──────────────────
+  // She tells the story — "Two ducks are swimming in the pond. One more duck
+  // joins them." — and THEN the extra duck arrives. Keying the reveal to a beat
+  // measured from item-open races her instead, so the join happens while she is
+  // still setting the scene and the ask lands on a picture the child was never
+  // told to watch (ten-frame drive 3).
+  //
+  // "Not speaking" is ambiguous on its own — it is also true in the gap before
+  // her audio starts — so the gate is a FALLING EDGE. And a falling edge alone
+  // is not enough either: on an advance the runner queues the next item's cue
+  // and opens the item in the same dispatch, so the new item is on screen for
+  // the whole tail of the PREVIOUS item's affirmation, and a latch would fill on
+  // that tail (ten-frame drive 5). `runner.cuedItemId` is the runner's answer —
+  // the id of the item her live line is ACTUALLY about.
+  const tutorSpeaking = runner.tutorSpeaking;
+  const askIsForThisItem = currentItem != null && runner.cuedItemId === currentItem.id;
+  const revealPending = runner.running && !changeRevealed;
+
+  useEffect(() => {
+    if (revealPending && askIsForThisItem && tutorSpeaking) setTutorHasSpoken(true);
+  }, [revealPending, askIsForThisItem, tutorSpeaking]);
+
+  // Safety net: if her audio never arrives, the stimulus still has to happen.
+  useEffect(() => {
+    if (!revealPending || tutorHasSpoken) return;
+    const timer = setTimeout(() => setTutorHasSpoken(true), TUTOR_SILENCE_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [revealPending, tutorHasSpoken]);
+
+  useEffect(() => {
+    if (!revealPending || !tutorHasSpoken || tutorSpeaking) return;
+    const timer = setTimeout(() => setChangeRevealed(true), REVEAL_PREP_MS);
+    return () => clearTimeout(timer);
+  }, [revealPending, tutorHasSpoken, tutorSpeaking]);
+
+  // Cancel timers on unmount.
+  useEffect(() => () => {
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+  }, []);
+
+  // ── Equation tray palette (R6 AXIS-1 lever, unchanged) ────────────────────
   const equationTilePalette = useMemo(() => {
-    const allowed = currentChallenge?.allowedTiles;
+    const allowed = currentItem?.allowedTiles;
     const numberTiles = allowed && allowed.length > 0
       ? Array.from(new Set(allowed)).sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
       : EQUATION_TILES.filter((t) => {
@@ -892,419 +735,301 @@ const AdditionSubtractionScene: React.FC<AdditionSubtractionSceneProps> = ({ dat
           return !isNaN(num) && num <= maxNumber;
         });
     return [...numberTiles, '+', '-', '='];
-  }, [currentChallenge, maxNumber]);
+  }, [currentItem, maxNumber]);
 
-  // Eval-mode / phase tabs (chrome)
-  const phaseTabs = useMemo(
-    () => Object.entries(PHASE_TYPE_CONFIG).map(([value, cfg]) => ({
-      value,
-      label: `${cfg.icon} ${cfg.label}`,
-    })),
-    [],
-  );
+  // ── Phase summary ─────────────────────────────────────────────────────────
+  /** An all-spoken run never touched the picture and an all-hands run never said
+   *  a number — only a mixed set earned a line about both. */
+  const celebrationMessage = useMemo(() => {
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return 'You told the whole story with your own hands!';
+      case 'mixed':
+        return 'You told the story with your voice and your hands!';
+      default:
+        return 'You solved every story out loud!';
+    }
+  }, [items]);
 
-  // ── Render ──────────────────────────────────────────────────────
-  if (challenges.length === 0) {
+  const phaseResults = useMemo<PhaseResult[]>(() => {
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => (
+      PHASE_TYPE_CONFIG[item.kind] ?? { label: item.kind, icon: '🔢' }
+    ));
+  }, [evaluation.hasSubmitted, runner.summary, items]);
+
+  // ============================================================================
+  // Render
+  // ============================================================================
+
+  if (items.length === 0) {
     return (
       <LuminaCard className={className}>
-        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
-        <LuminaCardContent><p className="text-slate-400 text-sm">No challenges configured.</p></LuminaCardContent>
+        <LuminaCardContent className="p-6">
+          <p className="text-slate-400 text-center">No story challenges available.</p>
+        </LuminaCardContent>
       </LuminaCard>
     );
   }
 
+  const kind = currentItem?.kind;
+  const isGestureItem = currentItem?.answerKind === 'gesture';
+  const emoji = currentItem ? getEmoji(currentItem.objectType) : '⭐';
+  const canAddObjects = isEnactedScene
+    && !(currentItem?.kind === 'act-out' && currentItem.operation === 'subtraction' && currentItem.answerKind === 'voice');
+
+  const stageWord = runner.stage === 'judging'
+    ? 'let’s see…'
+    : currentSolved
+      ? 'yes!'
+      : runner.running
+        ? (isGestureItem ? 'your turn' : 'how many?')
+        : 'get ready';
+
   return (
-    <LuminaCard className={className}>
+    <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          <div className="flex items-center gap-2">
-            <LuminaBadge accent="orange" className="text-xs">
-              {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
-            </LuminaBadge>
-            {currentChallenge && (
-              <LuminaBadge accent="cyan" className="text-xs">
-                {currentChallenge.operation}
-              </LuminaBadge>
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
+            {/* Grade / mode badges are adult chrome — hidden for pre-readers. */}
+            {!isPreReader && (
+              <div className="flex items-center gap-2">
+                <LuminaBadge accent="orange" className="text-xs">Grade 1</LuminaBadge>
+                {kind && (
+                  <LuminaBadge accent="emerald" className="text-xs">
+                    {PHASE_TYPE_CONFIG[kind]?.icon} {PHASE_TYPE_CONFIG[kind]?.label}
+                  </LuminaBadge>
+                )}
+              </div>
             )}
           </div>
+          <LuminaBadge accent="cyan" className="text-xs">
+            {isGestureItem ? 'Show me' : 'Say it out loud'}
+          </LuminaBadge>
         </div>
-        {description && <p className="text-slate-400 text-sm mt-1">{description}</p>}
+        {!isPreReader && description && (
+          <p className="text-slate-400 text-sm mt-1">{description}</p>
+        )}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Phase Progress */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <LuminaModeTabs
-            tabs={phaseTabs}
-            active={currentChallenge?.type ?? ''}
-            accent="orange"
-          />
-          <LuminaChallengeCounter
-            current={Math.min(currentChallengeIndex + 1, challenges.length)}
-            total={challenges.length}
-            className="ml-auto"
-          />
-        </div>
-
-        {/* Story Text */}
-        {currentChallenge && !allChallengesComplete && (
-          <LuminaPrompt>
-            <p className="text-slate-200 text-sm font-medium mb-1">
-              {currentChallenge.storyText}
-            </p>
-            <p className="text-slate-400 text-xs italic font-normal">
-              {currentChallenge.instruction}
-            </p>
-          </LuminaPrompt>
-        )}
-
-        {/* Scene Visualization */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="flex justify-center">
-            <div
-              className={`relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br ${sceneConfig.gradient}`}
-              style={{ width: SCENE_WIDTH, maxWidth: '100%', height: SCENE_HEIGHT }}
-            >
-              {/* Scene label */}
-              <div className="absolute top-2 left-2">
-                <LuminaBadge className="bg-black/30 border-white/10 text-white/70 text-[10px]">
-                  {sceneConfig.label}
-                </LuminaBadge>
-              </div>
-
-              {/* Objects */}
-              <svg
-                width={SCENE_WIDTH}
-                height={SCENE_HEIGHT}
-                viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
-                className="absolute inset-0 w-full h-full"
-              >
-                {sceneObjects.map(({ slotId, pos }) => {
-                  const isTapped = tappedObjects.includes(slotId);
-                  const isChangeGroup = !startGroup.has(slotId);
-                  // groupedReveal (easy/medium): the change group animates in separately so the
-                  // join is visible. Withdrawn (hard): everything appears together at once.
-                  const useGroupedAnim = groupedReveal && animatingObjects && isChangeGroup;
-                  const animDelay = useGroupedAnim ? '0.5s' : '0s';
-
-                  return (
-                    <g
-                      key={slotId}
-                      className={`cursor-pointer transition-transform duration-300 ${
-                        useGroupedAnim ? 'opacity-0 animate-fadeIn' : 'opacity-100'
-                      }`}
-                      style={{
-                        animationDelay: animDelay,
-                        animationFillMode: 'forwards',
-                      }}
-                      onClick={() => handleObjectTap(slotId)}
-                    >
-                      {/* Hit target — an SVG <g> paints nothing of its own and the
-                          emoji <text> is pointer-events-none, so WITHOUT this the
-                          object is unclickable in a real browser (only jsdom, which
-                          dispatches straight to the <g>, "worked"). A transparent
-                          circle with pointerEvents="all" gives every object a finger-
-                          sized tappable area — this IS the send-away / count surface. */}
-                      <circle
-                        cx={pos.x} cy={pos.y} r={OBJ_SIZE / 2 + 4}
-                        fill="transparent"
-                        style={{ pointerEvents: 'all' }}
-                      />
-                      {/* Tap highlight */}
-                      {isTapped && (
-                        <circle
-                          cx={pos.x} cy={pos.y} r={OBJ_SIZE / 2 + 3}
-                          fill="none" stroke="rgba(234,179,8,0.5)" strokeWidth={2}
-                          style={{ pointerEvents: 'none' }}
-                        />
-                      )}
-                      <text
-                        x={pos.x} y={pos.y}
-                        textAnchor="middle" dominantBaseline="central"
-                        fontSize={OBJ_SIZE * 0.7}
-                        className="select-none pointer-events-none"
-                      >
-                        {getEmoji(currentChallenge.objectType)}
-                      </text>
-                      {/* Count badge for tapped objects (withdrawn at the hard tier) */}
-                      {isTapped && showCountBadges && (
-                        <>
-                          <circle
-                            cx={pos.x + OBJ_SIZE / 2 - 2} cy={pos.y - OBJ_SIZE / 2 + 2}
-                            r={8} fill="#eab308" stroke="rgba(0,0,0,0.3)" strokeWidth={1}
-                          />
-                          <text
-                            x={pos.x + OBJ_SIZE / 2 - 2} y={pos.y - OBJ_SIZE / 2 + 2}
-                            textAnchor="middle" dominantBaseline="central"
-                            fontSize={9} fill="white" fontWeight="bold"
-                            className="pointer-events-none select-none"
-                          >
-                            {tappedObjects.indexOf(slotId) + 1}
-                          </text>
-                        </>
-                      )}
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-          </div>
-        )}
-
-        {/* Ten-frame toggle */}
-        {showTenFrame && currentChallenge && !allChallengesComplete && (
-          <div className="flex items-center justify-center gap-3">
-            <LuminaButton
-              tone="subtle"
-              className="text-slate-400 text-xs h-7 px-2"
-              onClick={() => setShowTenFrameHelper((v) => !v)}
-            >
-              {showTenFrameHelper ? 'Hide' : 'Show'} Ten Frame
-            </LuminaButton>
-            {showTenFrameHelper && (
-              /* The ten frame mirrors what is ON SCREEN, never the stored resultCount:
-                 on any enacted scene (K act-out, K create-story, Grade-1 act-out
-                 subtraction) resultCount is the target the child is supposed to reach
-                 by enacting, so filling the frame with it handed over the answer. */
-              <TenFrameHelper filled={totalVisible} max={maxNumber <= 5 ? 5 : 10} />
-            )}
-          </div>
-        )}
-
-        {/* ── Phase-specific input areas ─────────────────────── */}
-
-        {/* Act-Out: at K the child ENACTS the story by adding/removing scene objects
-            (item 11 direct manipulation); the enacted count auto-judges. Grade 1
-            counts the scene and types the answer. */}
-        {currentChallenge?.type === 'act-out' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          isKindergartenBand ? (
-            <div className="flex flex-col items-center gap-3">
-              {/* Add one object — the addition interaction ("bring more in"). Tapping a
-                  scene object (above) sends it away — the subtraction interaction. */}
-              <button
-                type="button"
-                onClick={addBuildObject}
-                disabled={hasSubmittedEvaluation || builtCount >= maxNumber}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-amber-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
-              >
-                <span className="text-2xl" aria-hidden>{getEmoji(currentChallenge.objectType)}</span>
-                <span aria-hidden>＋</span>
-                <span className="sr-only">Add one {currentChallenge.objectType}</span>
-              </button>
-              <span className="text-slate-500 text-xs">
-                {currentChallenge.operation === 'subtraction'
-                  ? `Tap a ${getEmoji(currentChallenge.objectType)} to send it away`
-                  : `Tap ➕ to bring more ${getEmoji(currentChallenge.objectType)} in`}
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              {/* Grade-1 subtraction is enacted on the scene first: the objects the
-                  story sends away are tapped away, THEN the survivors are counted and
-                  reported. Names changeCount only (already public in the story). */}
-              {isG1ActOutSubtraction && (
-                <span className="text-slate-500 text-xs">
-                  {removalsRemaining > 0
-                    ? `Tap ${removalsRemaining} ${getEmoji(currentChallenge.objectType)} to send ${removalsRemaining === 1 ? 'it' : 'them'} away`
-                    : `Now count the ${getEmoji(currentChallenge.objectType)} that are left`}
-                </span>
-              )}
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-slate-300 text-sm">How many {currentChallenge.objectType} are there now?</span>
-                <LuminaInput
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={maxNumber}
-                  value={countAnswer}
-                  onChange={(e) => setCountAnswer(e.target.value)}
-                  className="w-16 text-center text-lg"
-                  onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
+        {!evaluation.hasSubmitted && currentItem && (
+          <>
+            {!isPreReader && (
+              <div className="flex justify-center">
+                <LuminaChallengeCounter
+                  current={Math.min(runner.currentIndex + 1, items.length)}
+                  total={items.length}
+                  variant="dots"
                 />
               </div>
-            </div>
-          )
-        )}
+            )}
 
-        {/* Build-Equation: tile builder */}
-        {currentChallenge?.type === 'build-equation' && !isCurrentChallengeComplete && !allChallengesComplete && showEquationBar && (
-          <div className="space-y-3">
-            {/* Built equation display */}
-            <div className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
-              {equationTiles.length === 0 ? (
-                <span className="text-slate-600 text-sm">Drag tiles here to build the equation</span>
-              ) : (
-                equationTiles.map((tile, i) => (
-                  <LuminaButton
-                    key={i}
-                    className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
-                    onClick={() => removeTile(i)}
-                    title="Click to remove"
-                  >
-                    {tile}
-                  </LuminaButton>
-                ))
-              )}
-            </div>
-            {/* Available tiles */}
-            <div className="flex flex-wrap justify-center gap-1">
-              {equationTilePalette.map((tile) => (
-                <LuminaButton
-                  key={tile}
-                  className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
-                  onClick={() => addTile(tile)}
-                >
-                  {tile}
-                </LuminaButton>
-              ))}
-            </div>
-          </div>
-        )}
+            {/* The story, for readers. The tutor SPEAKS it for everyone (R1),
+                and it is the situation only — the generated question is stripped
+                so the tutor's own code-owned ask is the only one asked. The
+                LLM-authored instruction line is NOT printed: the cue is
+                code-owned per band, and a printed instruction could name an
+                action this band does not implement (R3 changelog item 12d). */}
+            {!isPreReader && currentItem.situation && (
+              <LuminaPrompt>
+                <span className="text-sm">{currentItem.situation}</span>
+              </LuminaPrompt>
+            )}
 
-        {/* Solve-Story: answer input */}
-        {currentChallenge?.type === 'solve-story' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          isKindergartenBand ? (
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-slate-300 text-sm">
-                What is the answer?
-                {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
-                {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
-              </span>
-              <NumberTileRow max={maxNumber} onPick={(n) => handleCheckSolveStory(n)} disabled={hasSubmittedEvaluation} />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-slate-300 text-sm">
-                What is the answer?
-                {currentChallenge.unknownPosition === 'start' && ' (How many at the start?)'}
-                {currentChallenge.unknownPosition === 'change' && ' (How many came or left?)'}
-              </span>
-              <LuminaInput
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={maxNumber}
-                value={solveAnswer}
-                onChange={(e) => setSolveAnswer(e.target.value)}
-                className="w-16 text-center text-lg"
-                onKeyDown={(e) => e.key === 'Enter' && canCheck && handleCheckAnswer()}
-              />
-            </div>
-          )
-        )}
-
-        {/* Create-Story: at K a pre-reader BUILDS the story (place/remove objects,
-            judged by construction); Grade 1 keeps the scene+object picker. */}
-        {currentChallenge?.type === 'create-story' && !isCurrentChallengeComplete && !allChallengesComplete && (
-          isBuildStory ? (
-            <div className="flex flex-col items-center gap-3">
-              {/* The equation IS the given prompt for create-story (tutor reads it
-                  aloud); numbers/symbols are taught at K, so it may show on screen. */}
-              <div className="text-2xl font-bold text-emerald-200 tracking-wide font-mono">
-                {currentChallenge.equation}
+            {/* The number sentence a create-story item must be built FOR — the
+                given prompt, not an answer. */}
+            {kind === 'create-story' && (
+              <div className="text-center text-2xl font-bold text-emerald-200 tracking-wide font-mono">
+                {currentItem.equation}
               </div>
-              {/* Primary build action — add one object to the scene. */}
-              <button
-                type="button"
-                onClick={addBuildObject}
-                disabled={hasSubmittedEvaluation || builtCount >= maxNumber}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-emerald-400/25 to-teal-400/25 border-2 border-emerald-300/40 text-emerald-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-emerald-400/40 hover:to-teal-400/40 disabled:opacity-40 disabled:pointer-events-none"
+            )}
+
+            {/* Scene */}
+            <div className="flex justify-center">
+              <div
+                className={`relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br ${sceneConfig.gradient}`}
+                style={{ width: SCENE_WIDTH, maxWidth: '100%', height: SCENE_HEIGHT }}
               >
-                <span className="text-2xl" aria-hidden>{getEmoji(currentChallenge.objectType)}</span>
-                <span aria-hidden>＋</span>
-                <span className="sr-only">Add one {currentChallenge.objectType}</span>
-              </button>
-              <span className="text-slate-500 text-xs">
-                Tap a {getEmoji(currentChallenge.objectType)} to send it away
-              </span>
+                <div className="absolute top-2 left-2">
+                  <LuminaBadge className="bg-black/30 border-white/10 text-white/70 text-[10px]">
+                    {sceneConfig.label}
+                  </LuminaBadge>
+                </div>
+
+                <svg
+                  width={SCENE_WIDTH}
+                  height={SCENE_HEIGHT}
+                  viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
+                  className="absolute inset-0 w-full h-full"
+                >
+                  {sceneObjects.map(({ slotId, pos }) => {
+                    const isTapped = tappedObjects.includes(slotId);
+                    const isChangeGroup = !startGroup.has(slotId);
+                    // The change group ARRIVES when she has finished saying it
+                    // arrives — never on a clock. `changeRevealed` gates the
+                    // count itself (see totalVisible), so this only animates it.
+                    const arriving = groupedReveal && isChangeGroup && !isEnactedScene;
+
+                    return (
+                      <g
+                        key={slotId}
+                        className={`cursor-pointer transition-transform duration-300 ${arriving ? 'animate-fadeIn' : ''}`}
+                        style={{ animationFillMode: 'forwards' }}
+                        onClick={() => handleObjectTap(slotId)}
+                      >
+                        {/* Hit target — an SVG <g> paints nothing of its own and
+                            the emoji <text> is pointer-events-none, so WITHOUT
+                            this the object is unclickable in a real browser
+                            (only jsdom, which dispatches straight to the <g>,
+                            "worked"). This transparent circle IS the send-away /
+                            count surface. */}
+                        <circle
+                          cx={pos.x} cy={pos.y} r={OBJ_SIZE / 2 + 4}
+                          fill="transparent"
+                          style={{ pointerEvents: 'all' }}
+                        />
+                        {isTapped && (
+                          <circle
+                            cx={pos.x} cy={pos.y} r={OBJ_SIZE / 2 + 3}
+                            fill="none" stroke="rgba(234,179,8,0.5)" strokeWidth={2}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        )}
+                        <text
+                          x={pos.x} y={pos.y}
+                          textAnchor="middle" dominantBaseline="central"
+                          fontSize={OBJ_SIZE * 0.7}
+                          className="select-none pointer-events-none"
+                        >
+                          {emoji}
+                        </text>
+                        {/* The child's own counting trace — an ordinal in TAP
+                            order (K.CC.4). Withdrawn at the hard tier. */}
+                        {isTapped && showCountBadges && (
+                          <>
+                            <circle
+                              cx={pos.x + OBJ_SIZE / 2 - 2} cy={pos.y - OBJ_SIZE / 2 + 2}
+                              r={8} fill="#eab308" stroke="rgba(0,0,0,0.3)" strokeWidth={1}
+                            />
+                            <text
+                              x={pos.x + OBJ_SIZE / 2 - 2} y={pos.y - OBJ_SIZE / 2 + 2}
+                              textAnchor="middle" dominantBaseline="central"
+                              fontSize={9} fill="white" fontWeight="bold"
+                              className="pointer-events-none select-none"
+                            >
+                              {tappedObjects.indexOf(slotId) + 1}
+                            </text>
+                          </>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="text-center">
-                <span className="text-slate-300 text-sm">
-                  Show <span className="text-emerald-300 font-bold">{currentChallenge.equation}</span> — pick a scene and objects:
+
+            {/* Ten-frame aid — mirrors what is ACTUALLY VISIBLE (R8), so it can
+                never fill to the total while the change group is still waiting
+                on her voice. */}
+            {showTenFrame && (
+              <div className="flex items-center justify-center">
+                <TenFrameHelper filled={totalVisible} max={maxNumber <= 5 ? 5 : 10} />
+              </div>
+            )}
+
+            {/* Bring one more in. Tapping an object in the picture sends it
+                away — that IS the subtraction interaction, so it needs no
+                control of its own. */}
+            {canAddObjects && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={addSceneObject}
+                  disabled={!runner.canAttempt || builtCount >= maxNumber}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-400/25 to-orange-400/25 border-2 border-amber-300/40 text-amber-100 text-xl font-bold shadow-sm active:scale-95 transition hover:from-amber-400/40 hover:to-orange-400/40 disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <span className="text-2xl" aria-hidden>{emoji}</span>
+                  <span aria-hidden>＋</span>
+                  <span className="sr-only">Add one {currentItem.objectType}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Equation tray. The tiles are the page a teacher pushes across the
+                table; the tray closes on a finished shape or on stillness, never
+                on a Check. */}
+            {kind === 'build-equation' && showEquationBar && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-1 min-h-[44px] bg-slate-800/30 rounded-lg p-2 border border-white/5">
+                  {equationTiles.length === 0 ? (
+                    <span className="text-slate-600 text-sm">Tap the tiles to build the number sentence</span>
+                  ) : (
+                    equationTiles.map((tile, i) => (
+                      <LuminaButton
+                        key={i}
+                        className="bg-purple-500/20 border border-purple-400/30 text-purple-200 text-lg font-mono h-9 w-9 p-0 hover:bg-red-500/20 hover:border-red-400/30"
+                        onClick={() => removeTile(i)}
+                        title="Tap to remove"
+                      >
+                        {tile}
+                      </LuminaButton>
+                    ))
+                  )}
+                </div>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {equationTilePalette.map((tile) => (
+                    <LuminaButton
+                      key={tile}
+                      className="text-slate-200 text-sm font-mono h-8 w-8 p-0"
+                      onClick={() => addTile(tile)}
+                    >
+                      {tile}
+                    </LuminaButton>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* The reward — the first moment a number sentence may appear. */}
+            {reward && currentSolved && (
+              <LuminaPanel className="p-3 text-center">
+                <span className="text-emerald-300 text-lg font-black animate-bounce inline-block font-mono">
+                  {reward}
                 </span>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {Object.entries(SCENE_BACKGROUNDS).map(([key, cfg]) => (
-                  <LuminaButton
-                    key={key}
-                    className={`text-xs h-8 ${
-                      createSelection?.scene === key
-                        ? answerStateClass('selected')
-                        : ''
-                    }`}
-                    onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: key, object: prev?.object || '' })); }}
-                  >
-                    {cfg.label}
-                  </LuminaButton>
-                ))}
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {Object.entries(OBJECT_EMOJI).map(([key, emoji]) => (
-                  <LuminaButton
-                    key={key}
-                    className={`text-xs h-8 ${
-                      createSelection?.object === key
-                        ? answerStateClass('selected')
-                        : ''
-                    }`}
-                    onClick={() => { SoundManager.select(); setCreateSelection((prev) => ({ scene: prev?.scene || '', object: key })); }}
-                  >
-                    {emoji} {key}
-                  </LuminaButton>
-                ))}
-              </div>
-            </div>
-          )
+              </LuminaPanel>
+            )}
+
+            <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
+
+            {!isPreReader && (
+              <p className="text-center text-xs text-slate-500">
+                {isGestureItem
+                  ? 'Make the picture match the story — the tutor checks when you stop.'
+                  : 'Work it out on the picture, then say your answer out loud.'}
+              </p>
+            )}
+
+            {/* "I’m listening" over an item whose answer is a placement is a lie
+                in the UI — the hands items hold the bracket, so the orb says
+                what the turn actually is. */}
+            <JudgedMicPanel run={runner} gestureLabel="Show me in the picture" />
+          </>
         )}
 
-        {/* Feedback */}
-        {feedback && (
-          <LuminaFeedbackCard status={feedbackType === 'success' ? 'correct' : 'incorrect'}>
-            {feedback}
-          </LuminaFeedbackCard>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-3">
-          {!isCurrentChallengeComplete && !allChallengesComplete && !isTapChooseCount && !isBuildStory && !isActOutBuild && (
-            <LuminaActionButton
-              action="check"
-              onClick={handleCheckAnswer}
-              disabled={!canCheck || hasSubmittedEvaluation}
-            />
-          )}
-          {isCurrentChallengeComplete && !allChallengesComplete && (
-            <LuminaActionButton
-              action="next"
-              onClick={advanceToNextChallenge}
-            >
-              Next Challenge
-            </LuminaActionButton>
-          )}
-          {allChallengesComplete && !hasSubmittedEvaluation && (
-            <div className="text-center">
-              <p className="text-emerald-400 text-sm font-medium">All challenges complete!</p>
-            </div>
-          )}
-        </div>
-
-        {/* Phase Summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {evaluation.hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
+            overallScore={evaluation.submittedResult?.score}
+            durationMs={evaluation.elapsedMs}
             heading="Story Complete!"
-            celebrationMessage={`You completed all ${challenges.length} addition & subtraction story challenges!`}
+            celebrationMessage={celebrationMessage}
             className="mt-4"
           />
         )}
       </LuminaCardContent>
 
-      {/* CSS animation for object entrance */}
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px) scale(0.8); }

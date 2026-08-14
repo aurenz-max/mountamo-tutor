@@ -9,6 +9,14 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+// The judged-loop build gate, IMPORTED — never re-implemented here. Both sides
+// of the wire must agree on what an askable story is, and hand-synced copies
+// drift: letter-spotter shipped two definitions of a sayable sentence (90 vs
+// 100 chars) that disagreed live. This is the same function the component runs.
+import {
+  itemFromChallenge,
+  type AddSubBand,
+} from "../../primitives/visual-primitives/math/additionSubtractionSceneScript";
 
 // ---------------------------------------------------------------------------
 // Valid object types — must match OBJECT_EMOJI in AdditionSubtractionScene.tsx
@@ -363,7 +371,7 @@ const additionSubtractionSceneSchema: Schema = {
           },
           storyText: {
             type: Type.STRING,
-            description: "The story narrative (e.g., '3 ducks are swimming. 2 more ducks join them.')"
+            description: "What HAPPENS in the story, and nothing else — the tutor reads this aloud and then asks its own question (e.g., '3 ducks are swimming. 2 more ducks join them.'). Do NOT include a question. Do NOT state the number the child must find. Do NOT begin a sentence with 'Yes'."
           },
           scene: {
             type: Type.STRING,
@@ -412,7 +420,7 @@ const additionSubtractionSceneSchema: Schema = {
           "operation", "storyType", "startCount", "changeCount", "resultCount", "equation"
         ]
       },
-      description: "Array of 4-8 progressive challenges"
+      description: "Array of 6-8 progressive challenges"
     },
     maxNumber: {
       type: Type.INTEGER,
@@ -462,6 +470,111 @@ type AdditionSubtractionSceneConfig = {
    * story focus + scope (the grade stays the ceiling). Never names an answer.
    */
   intent?: string;
+};
+
+/**
+ * Act-out instructions are CODE-OWNED at every band, hoisted so the DI gate's
+ * own fallback path gets them too. Left to the LLM this field writes
+ * manipulation language for every band ("tap 2 frogs to send them away") —
+ * which was TRUE at K and a lie at Grade 1, where the child tapped frogs that
+ * never moved (contract R3, changelog item 12d).
+ *
+ * Under the judged loop it is no longer spoken (the cue is) and no longer
+ * printed (the component shows the story only), so it now serves readers of the
+ * generated payload — the tester, the oracle, a lesson preview. Keeping it
+ * band-accurate costs one function and stops the payload describing an
+ * interaction the band does not implement.
+ */
+const applyCodeOwnedInstructions = (challenges: AddSubChallenge[], gradeBand: string): void => {
+  for (const challenge of challenges) {
+    if (challenge.type !== 'act-out') continue;
+    if (challenge.operation === 'subtraction') {
+      challenge.instruction = gradeBand === 'K'
+        ? `Tap ${challenge.changeCount} ${challenge.objectType} to send them away!`
+        : `Tap ${challenge.changeCount} ${challenge.objectType} to send them away, then say how many are left.`;
+    } else {
+      challenge.instruction = gradeBand === 'K'
+        ? `Tap to bring ${challenge.changeCount} more ${challenge.objectType} in!`
+        : `Count all the ${challenge.objectType} and say how many there are now.`;
+    }
+  }
+};
+
+/**
+ * Last-resort content, hoisted so the DI build gate can fall back to it too —
+ * the gate runs LAST (after the tier axes have set `unknownPosition`, which is
+ * what the leak check is relative to), and a set it empties needs the same
+ * escape hatch as an empty model response.
+ *
+ * Every one of these passes `itemFromChallenge`, which is asserted in the
+ * di-script suite: a fallback that the judged loop would drop is a fallback
+ * that ships a lesson with no items.
+ */
+export const fallbackFor = (type: string): AddSubChallenge => {
+  const fallbacks: Record<string, AddSubChallenge> = {
+    'act-out': {
+      id: 'ch1',
+      type: 'act-out',
+      instruction: 'Watch the story and bring the ducks into the pond!',
+      storyText: '2 ducks are swimming in the pond. 1 more duck joins them.',
+      scene: 'pond',
+      objectType: 'ducks',
+      operation: 'addition',
+      storyType: 'join',
+      startCount: 2,
+      changeCount: 1,
+      resultCount: 3,
+      equation: '2 + 1 = 3',
+    },
+    'build-equation': {
+      id: 'ch1',
+      type: 'build-equation',
+      instruction: 'Build the equation that matches the story!',
+      storyText: '4 apples are on the table. 2 more apples are placed on the table.',
+      scene: 'kitchen',
+      objectType: 'apples',
+      operation: 'addition',
+      storyType: 'join',
+      startCount: 4,
+      changeCount: 2,
+      resultCount: 6,
+      equation: '4 + 2 = 6',
+    },
+    'solve-story': {
+      id: 'ch1',
+      type: 'solve-story',
+      instruction: 'Listen to the story and find the missing number!',
+      storyText: '5 flowers are in the garden. 2 flowers are picked.',
+      scene: 'garden',
+      objectType: 'flowers',
+      operation: 'subtraction',
+      storyType: 'separate',
+      startCount: 5,
+      changeCount: 2,
+      resultCount: 3,
+      equation: '5 - 2 = 3',
+      unknownPosition: 'result',
+    },
+    'create-story': {
+      id: 'ch1',
+      type: 'create-story',
+      instruction: 'Can you make the story that matches this number sentence?',
+      storyText: '',
+      scene: 'farm',
+      // Was 'chickens' — which is not in VALID_OBJECT_TYPES, so the scene drew
+      // ⭐ for it. Harmless while nobody said the word; under the judged loop
+      // the tutor SPEAKS it ("make that story with the chickens") over a
+      // picture of stars. Writing the spoken ask is what found it.
+      objectType: 'birds',
+      operation: 'addition',
+      storyType: 'join',
+      startCount: 3,
+      changeCount: 2,
+      resultCount: 5,
+      equation: '3 + 2 = 5',
+    },
+  };
+  return fallbacks[type] ?? fallbacks['act-out'];
 };
 
 export const generateAdditionSubtractionScene = async (ctx: GenerationContext): Promise<AdditionSubtractionSceneData> => {
@@ -555,8 +668,26 @@ ${(() => {
   return hints.length > 0 ? `CONFIGURATION HINTS:\n${hints.join('\n')}` : '';
 })()}
 
+THE STORY IS READ ALOUD BY A LIVE TUTOR TO A CHILD WHO CANNOT READ. Three rules
+follow from that, and a story breaking any of them is DROPPED, not repaired:
+A. storyText describes ONLY WHAT HAPPENS. Do NOT put the question in it — the
+   tutor asks the question itself, worded for the exact number this challenge
+   hides. A story that asks its own question can ask for the wrong thing.
+   WRITE: "2 ducks are swimming in the pond. 1 more duck joins them."
+   NOT:   "…How many ducks are there now?"
+B. NEVER STATE THE NUMBER THE CHILD MUST FIND. Say the two numbers the story
+   gives; never the one it asks for. If unknownPosition is "change" or "start",
+   that hidden number must not appear in storyText at all — as a numeral or as
+   a word. WRITE (start unknown): "Some frogs were on the log. 2 hopped away.
+   Now there are 3." NOT: "5 frogs were on the log…"
+C. NEVER begin a sentence with the word "Yes". The tutor's spoken verdicts start
+   with it, so a story sentence that opens that way is read back as a judgment
+   and the lesson advances on nothing.
+
 REQUIREMENTS:
-1. Generate 4-8 challenges that progress in difficulty
+1. Generate 6-8 challenges that progress in difficulty (a few extra: stories
+   that break the rules above are dropped rather than fixed, and a lesson must
+   not be starved by the gate)
 2. Use appropriate story contexts (join, separate, compare, part-whole)
 3. Keep all numbers within maxNumber (5 for K, 10 for Grade 1)
 4. Create engaging, relatable story texts that match the scene theme
@@ -696,67 +827,8 @@ Return the complete addition/subtraction scene configuration.
   // ── Fallback if empty ──
   if (data.challenges.length === 0) {
     const fallbackType = evalConstraint?.allowedTypes[0] ?? 'act-out';
-    const fallbacks: Record<string, object> = {
-      'act-out': {
-        id: 'ch1',
-        type: 'act-out',
-        instruction: 'Watch the story and drag the ducks into the pond!',
-        storyText: '2 ducks are swimming in the pond. 1 more duck joins them. How many ducks are there now?',
-        scene: 'pond',
-        objectType: 'ducks',
-        operation: 'addition',
-        storyType: 'join',
-        startCount: 2,
-        changeCount: 1,
-        resultCount: 3,
-        equation: '2 + 1 = 3',
-      },
-      'build-equation': {
-        id: 'ch1',
-        type: 'build-equation',
-        instruction: 'Build the equation that matches the story!',
-        storyText: '4 apples are on the table. 2 more apples are placed on the table.',
-        scene: 'kitchen',
-        objectType: 'apples',
-        operation: 'addition',
-        storyType: 'join',
-        startCount: 4,
-        changeCount: 2,
-        resultCount: 6,
-        equation: '4 + 2 = 6',
-      },
-      'solve-story': {
-        id: 'ch1',
-        type: 'solve-story',
-        instruction: 'Read the story and find the missing number!',
-        storyText: '5 flowers are in the garden. 2 flowers are picked. How many flowers are left?',
-        scene: 'garden',
-        objectType: 'flowers',
-        operation: 'subtraction',
-        storyType: 'separate',
-        startCount: 5,
-        changeCount: 2,
-        resultCount: 3,
-        equation: '5 - 2 = 3',
-        unknownPosition: 'result',
-      },
-      'create-story': {
-        id: 'ch1',
-        type: 'create-story',
-        instruction: 'Can you make up a story that matches this equation?',
-        storyText: '',
-        scene: 'farm',
-        objectType: 'chickens',
-        operation: 'addition',
-        storyType: 'join',
-        startCount: 3,
-        changeCount: 2,
-        resultCount: 5,
-        equation: '3 + 2 = 5',
-      },
-    };
     console.log(`[AdditionSubtractionScene] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [fallbacks[fallbackType] ?? fallbacks['act-out']];
+    data.challenges = [fallbackFor(fallbackType)];
   }
 
   // Final summary log
@@ -786,18 +858,7 @@ Return the complete addition/subtraction scene configuration.
   //    so the instruction names the COUNT, never a tap that does nothing.
   // Names only changeCount (already public in the story), never resultCount — the
   // result is what the child discovers by enacting and counting.
-  for (const challenge of data.challenges as AddSubChallenge[]) {
-    if (challenge.type !== 'act-out') continue;
-    if (challenge.operation === 'subtraction') {
-      challenge.instruction = data.gradeBand === 'K'
-        ? `Tap ${challenge.changeCount} ${challenge.objectType} to send them away!`
-        : `Tap ${challenge.changeCount} ${challenge.objectType} to send them away, then count what's left.`;
-    } else {
-      challenge.instruction = data.gradeBand === 'K'
-        ? `Tap to bring ${challenge.changeCount} more ${challenge.objectType} in!`
-        : `Count all the ${challenge.objectType} to find how many there are now.`;
-    }
-  }
+  applyCodeOwnedInstructions(data.challenges as AddSubChallenge[], data.gradeBand);
 
   // ── Apply the within-mode difficulty deterministically (both axes) ──
   // Runs LAST, after all structural fixups. AXIS 1 (scaffolding) is code-owned;
@@ -864,6 +925,45 @@ Return the complete addition/subtraction scene configuration.
         );
       }
     }
+  }
+
+  // ── THE JUDGED-LOOP BUILD GATE — KEEP OR DROP, NEVER BACKFILL ─────────────
+  // Runs LAST, because two of its checks are relative to fields the tier axes
+  // above can still change (`unknownPosition` decides which value is the answer,
+  // and therefore which numbers the story is allowed to say out loud).
+  //
+  // Same function the component runs — imported, not copied. It drops a
+  // challenge whose story is empty once its own question is stripped, opens a
+  // sentence with a verdict sentinel (the engine would read the tutor's reading
+  // of it as a judgment), states the value the child must produce, computes a
+  // spoken answer of zero or above the benched ceiling, or whose arithmetic
+  // does not model its own operation.
+  //
+  // A generator that BACKFILLED here would be worse than one that ships fewer
+  // items: a repaired placeholder in a judged loop becomes a spoken ask the
+  // tutor has to judge, and a fabricated answer key is stated to a child as
+  // fact (decodable-reader's finding).
+  const diBand: AddSubBand = data.gradeBand === 'K' ? 'K' : '1';
+  const beforeGate = (data.challenges as AddSubChallenge[]).length;
+  const kept = (data.challenges as AddSubChallenge[]).filter(
+    (ch) => itemFromChallenge(ch, { band: diBand }) !== null,
+  );
+  if (kept.length !== beforeGate) {
+    console.log(
+      `[AdditionSubtractionScene] Judged-loop gate dropped ${beforeGate - kept.length} of ${beforeGate} `
+      + `challenge(s) as unaskable (empty situation / sentinel opener / answer stated in the story / `
+      + `spoken answer outside 1-${20})`,
+    );
+  }
+  data.challenges = kept;
+
+  if (data.challenges.length === 0) {
+    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'act-out';
+    console.log(
+      `[AdditionSubtractionScene] Judged-loop gate emptied the set — using ${fallbackType} fallback`,
+    );
+    data.challenges = [fallbackFor(fallbackType)];
+    applyCodeOwnedInstructions(data.challenges as AddSubChallenge[], data.gradeBand);
   }
 
   return data;

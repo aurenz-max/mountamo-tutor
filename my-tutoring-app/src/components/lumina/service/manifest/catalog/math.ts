@@ -2905,44 +2905,84 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'addition-subtraction-scene',
-    description: 'An animated story scene where objects join, leave, or are compared to teach addition and subtraction. Students act out stories by adding and taking away objects (tapping to bring more in or send some away), build matching equations from tiles, solve word problems, and create their own stories for given equations. Supports join, separate, compare, and part-part-whole story types. Perfect for K-1 students bridging from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
-    constraints: 'Numbers limited to maxNumber (5 for K, 10 for Grade 1). Requires 4 challenge types: act-out, build-equation, solve-story, create-story. Story contexts must match scene theme.',
+    description: 'Live tutor-judged K-1 addition and subtraction story scenes (DI modality). The Live tutor reads the story aloud, asks with scripted lines, judges the child in-band, and its own affirmation advances the lesson. What the child produces depends on the skill: they SAY the number OUT LOUD to solve a word problem (both grades) and to report how many there are now, or how many are left, after acting a story out at Grade 1; they answer WITH THEIR HANDS by acting the story out on the scene at Kindergarten (bring more in, send some away), by building the number sentence from tiles, and by making the scene that matches a given number sentence — in those three, constructing it IS the skill. Supports join, separate, compare, and part-part-whole story types. The bridge from manipulatives to symbolic math. ESSENTIAL for Kindergarten and Grade 1 addition and subtraction.',
+    constraints: 'Best for Kindergarten and Grade 1. Requires a microphone: spoken answers are judged by the Live tutor and there is no Check button, no typed answer and no numeral menu anywhere. Numbers limited to maxNumber (5 for K, 10 for Grade 1), so every spoken answer is a number word from 1 to 20. Four challenge types: act-out, build-equation, solve-story, create-story; story contexts must match the scene theme. Stories are read aloud, so a story that states the number the child must find — or whose answer would be 0 — is discarded before the child ever sees it.',
     tutoring: {
-      taskDescription: 'The student is working through addition and subtraction story challenges. Current story: "{{storyText}}" ({{operation}}, {{storyType}} type). The equation is {{equation}}. They are in a {{challengeType}} phase where they must: {{instruction}}',
-      contextKeys: ['storyText', 'operation', 'storyType', 'startCount', 'changeCount', 'resultCount', 'unknownPosition', 'equation', 'objectType', 'scene', 'challengeType', 'instruction', 'attemptNumber'],
+      taskDescription: 'LIVE-JUDGED addition and subtraction story practice (DI modality): you ask with scripted lines sent as cues, the child answers OUT LOUD or WITH THEIR HANDS on the scene, you judge what you heard, and your own affirmation is what advances the lesson. Current challenge type: {{challengeType}}. The question side of what is on screen: {{stimulus}}.',
+      contextKeys: ['challengeType', 'stimulus'],
       scaffoldingLevels: {
-        level1: '"What happened in the story? Did the {{objectType}} come or go away?"',
-        level2: '"You started with {{startCount}} {{objectType}}. Then {{changeCount}} more came/went away. Can you count them all?"',
-        level3: '"Let\'s count together: {{startCount}} {{objectType}} and {{changeCount}} more makes... {{startCount}} + {{changeCount}} = {{resultCount}}. The equation matches the story!"',
+        level1: 'Repeat the current scripted ask exactly once, a little slower. Never count aloud for the child and never name any part of the answer.',
+        level2: 'Remind the child of the method in one short sentence — "Think about what happened in the story" — without saying any number.',
+        level3: 'Invite one try together: "Take your time. Look at the picture. Then tell me." Still never say the answer.',
       },
       commonStruggles: [
-        { pattern: 'Student counts incorrectly in act-out phase', response: 'Encourage tapping each object one at a time while saying the number aloud: "Touch each one as you count: 1, 2, 3..."' },
-        { pattern: 'Student confuses addition and subtraction operations', response: 'Connect to the story action: "In our story, the ducks flew AWAY. When things leave, we subtract!"' },
-        { pattern: 'Student builds equation with wrong operator', response: 'Ask about the story direction: "Did more objects come, or did some leave? That tells us which symbol to use!"' },
-        { pattern: 'Student struggles with unknown position other than result', response: 'Reframe the problem: "We know the answer is {{resultCount}}. We know {{changeCount}} left. So how many were there before?"' },
+        { pattern: 'Long silence', response: 'Silence is the child thinking — wait. If they truly seem stuck, re-speak the current ask once; never answer for them.' },
+        { pattern: 'Says a number the story already gave', response: 'The scripted correction handles this AFTER the attempt is judged: it re-models the story and re-asks. Never interrupt mid-attempt.' },
+        { pattern: 'Confuses joining with taking away', response: 'The scripted correction names the story direction and re-elicits. Speak only that line.' },
       ],
-      // STIMULUS beat (reader-fit): this is a K–1 pre/emerging reader — the story
-      // text on screen is load-bearing English they cannot decode. Nothing else in
-      // this scaffold READS it aloud (taskDescription/contextKeys are tutor-
-      // reference only), and in lesson mode the [PRIMITIVE SWITCH] / greeting both
-      // tell the tutor to keep it to one sentence — so without this the tutor
-      // greets ("let's do a story!") and stops, stranding the non-reader. This
-      // directive makes reading the story aloud the mandatory first action and
-      // explicitly overrides the one-sentence transition cap.
+      // R1 (the STIMULUS beat) is RE-BASED, not dropped. It used to be a
+      // directive telling the tutor to read {{storyText}} before improvising —
+      // necessary when the tutor authored its own turns, and droppable for the
+      // same reason. Under the judged loop the story is INSIDE the quoted line
+      // of every cue this pack emits, including every correction, so reading it
+      // aloud is no longer a rule the tutor might forget: it is the only thing
+      // the tutor is given to say. The directive below now defends that line
+      // against summarising rather than commanding a first action.
       aiDirectives: [
         {
-          title: 'READ THE STORY ALOUD FIRST — the student is a K–1 child who cannot read',
+          title: 'THE OPENING LINE ALREADY SAYS HOW TO PLAY',
           instruction:
-            'The student CANNOT read the story on screen — you are their voice. '
-            + 'Whenever a new story challenge begins (a [PRIMITIVE SWITCH], [ACTIVITY_START], or [NEXT_ITEM]), '
-            + 'your FIRST action is to read the story aloud, word for word: "{{storyText}}". '
-            + 'Say the WHOLE story out loud — never replace it with "let\'s do a story" or a bare greeting and stop. '
-            + 'Then, in ONE short warm sentence, tell them what to do: {{instruction}} '
-            + 'Reading the story IS your greeting for this activity — this overrides any instruction to keep the '
-            + 'transition to a single sentence. Only after the story has been read do you wait for the child to act.',
+            'Your first cue contains a scripted opening line with the story and the how-to-play inside it. Speak that line exactly. '
+            + 'Never invent a greeting, add instructions, or ask a question of your own before or after it.',
+        },
+        {
+          title: 'THE STORY IS INSIDE THE SCRIPTED LINE — SAY IT AS WRITTEN',
+          instruction:
+            'The child CANNOT read the screen — you are their voice, and the story IS the whole problem. '
+            + 'It is already inside the quoted line of every cue, including every correction, so it gets read aloud '
+            + 'word for word each time you speak that line. Never summarise it, never shorten it, never replace it '
+            + 'with a bare greeting, and never add a sentence of your own to it.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER — IT DIFFERS BY CHALLENGE TYPE',
+          instruction:
+            'The current type is {{challengeType}}, and every cue states which kind of answer its item wants. '
+            + 'On a SPOKEN item (solve-story at either grade; act-out at Grade 1) the answer is ONE number word from 1 to 20 and nothing else. '
+            + 'The cue names the correct answer, the wrong answer most likely to sound right, and the right answer that may not look right — judge by that cue and nothing else. '
+            + 'On a HANDS item (act-out at Kindergarten; build-equation; create-story) the child answers by changing what is on the screen, and you are told what they made and whether it matches. '
+            + 'THE LAW, on every type: never say the answer, or any part of it, before the child has answered. The answer belongs to the correction.',
+        },
+        {
+          title: 'HAND ITEMS ARE SILENT',
+          instruction:
+            'When the cue tells you the child answers with their hands, say nothing at all while they work — no counting, no narration, no encouragement mid-build. '
+            + 'You will be told what they made and whether it matches; only then do you speak the line the cue gives you.',
+        },
+        {
+          title: 'THE CHILD IS THINKING — WAIT',
+          instruction:
+            'Think time is unbounded. Never fill a silence, never count along, and never prompt while the child is working. The silence is theirs.',
+        },
+        {
+          title: 'SENTINEL DISCIPLINE',
+          instruction:
+            'Every affirmation begins with "Yes" and EVERY correction begins with "My turn:" exactly as the cue scripts. '
+            + 'Never begin any other sentence with either opener.',
+        },
+        {
+          title: 'HEAR-THE-STORY ON DEMAND',
+          instruction:
+            'The child can ask to hear the story again. That re-speaks the STORY and the QUESTION only — speak the scripted line you are given, '
+            + 'treat nothing you just heard as an answer, and never say the answer.',
+        },
+        {
+          title: 'NEVER READ BRACKET TAGS',
+          instruction:
+            'Text in [BRACKETS] and instruction text outside quoted lines is stage direction for you. It is never spoken.',
         },
       ],
     },
+    audioInput: { manual_activity: true },
     evalModes: [
       {
         evalMode: 'act_out',
@@ -2950,7 +2990,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['act-out'],
-        description: 'Manipulate objects in scene',
+        // β HELD. At Kindergarten this mode is unchanged — enacting the story
+        // was already the answer, and it merely gained a judge. At Grade 1 the
+        // enactment is unchanged too and only the REPORT moved from a keyboard
+        // to the mouth; the modality changed, the production demand did not.
+        description: 'Act the story out on the scene: bring objects in, send objects away. Kindergarten answers with the enacted scene itself; Grade 1 enacts and then says the count out loud. Concrete manipulative — lowest cognitive load.',
       },
       {
         evalMode: 'build_equation',
@@ -2958,7 +3002,9 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 2.5,
         scaffoldingMode: 2,
         challengeTypes: ['build-equation'],
-        description: 'Represent scene as equation',
+        // β HELD — the answer surface is untouched (the same tile tray, the same
+        // three checks), only the Check button is gone.
+        description: 'Represent the story as a number sentence built from tiles; the tutor judges the assembled sentence. Symbolic FORM is the skill, so the answer is written, not spoken.',
       },
       {
         evalMode: 'solve_story',
@@ -2966,7 +3012,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['solve-story'],
-        description: 'Solve a word problem',
+        // β HELD, and this is the one worth recording. At Grade 1 nothing
+        // changed (typed numeral → spoken numeral, same production). At K a
+        // 0…max numeral row became unaided speech, which IS a structural change
+        // — but β is per MODE, not per band, and raising it would misprice every
+        // Grade-1 item to reprice the K half. The K menu was also a weak one
+        // (all numerals in range, no chosen distractors), so the guess floor it
+        // removed is smaller than the letter-spotter menu that moved 1.5 → 2.0.
+        description: 'Solve a word problem and SAY the answer out loud. The unknown may be the result, the change, or the start (AXIS 2). Unaided spoken production at both grades — no numeral menu and no keyboard.',
       },
       {
         evalMode: 'create_story',
@@ -2974,7 +3027,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['create-story'],
-        description: 'Represent a given equation as a story by BUILDING the scene — a production task, not writing. Kindergarten places/removes objects to construct the story (judged by count); Grade 1 chooses scene + objects. Pre-reader capable.',
+        // β HELD. Kindergarten's build task already carried this β and is
+        // unchanged. Grade 1's scene+object picker is DELETED: it accepted any
+        // selection as correct, so it could not produce a wrong answer and had
+        // nothing for a judge to do. Grade 1 now does the same construction —
+        // that raises what the mode MEASURES from nothing to something, which is
+        // a validity fix, not a difficulty change.
+        description: 'Represent a given number sentence as a story by BUILDING the scene — a production task, not writing. The child places and removes objects until the picture matches the equation, and the tutor judges what they made. Pre-reader capable at both grades.',
       },
     ],
     supportsEvaluation: true,
