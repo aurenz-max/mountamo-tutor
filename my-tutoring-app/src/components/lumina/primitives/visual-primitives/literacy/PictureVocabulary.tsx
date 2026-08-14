@@ -39,7 +39,6 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
@@ -52,7 +51,7 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   completeCue,
   itemCue,
@@ -67,6 +66,8 @@ import {
 } from './pictureVocabularyScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -182,7 +183,6 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   const [tapped, setTapped] = useState<string | null>(null);
   const tappedRef = useRef<string | null>(null);
   /** Affirmed: the first moment the answer may appear on screen. */
-  const [revealed, setRevealed] = useState(false);
 
   // ── Evaluation ─────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<PictureVocabularyMetrics>({
@@ -232,18 +232,14 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
       challengeType: item.kind,
       stimulus: stimulusFor(item),
     }),
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
       ready: (item) => item.answerKind === 'gesture'
         ? 'Listen, then tap the picture.'
         : 'Listen, then say your answer out loud.',
       retry: (item) => item.answerKind === 'gesture'
         ? 'Look again — then tap the picture.'
         : 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say your answer.',
-      affirmedNext: 'Yes! You got it.',
-      affirmedLast: 'You did it!',
-      moveOn: 'Good try — here comes the next one.',
       done: 'Great word work today!',
     },
     diagnosisObservation: (item, { lastHeard }) =>
@@ -281,9 +277,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     onItemOpened: () => {
       setTapped(null);
       tappedRef.current = null;
-      setRevealed(false);
     },
-    onAffirmed: () => setRevealed(true),
     onCorrectionRetry: () => {
       // The tutor's line re-oriented in-band; free the cards for another go.
       setTapped(null);
@@ -292,32 +286,44 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
   });
 
   const currentItem = runner.currentItem;
+  /** Affirmed: the first moment the answer may appear on screen. The runner
+   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const revealed = runner.currentSolved;
 
   // ── The tap — gesture modes only; the tap IS the commit ───────────────────
   const handleOptionTap = useCallback((option: PictureVocabOption) => {
     const item = runner.currentItem;
-    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (!item || item.answerKind !== 'gesture') return;
-    if (runner.isAwaitingGesture() || revealed) return;
+    // Synchronous ref: `canAttempt` closes the pending window through batched
+    // state, this stops a second tap inside the same tick.
+    if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     setTapped(option.word);
     tappedRef.current = option.word;
     runner.submitGestureAttempt(tapVerdictCue(item, option.word));
-  }, [runner, evaluation.hasSubmitted, revealed]);
+  }, [runner, evaluation.hasSubmitted]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
+  /** Say-it and tap-it runs are both legitimate here, so the copy names what
+   *  this one was — claiming "voice and hands" is wrong on either pure run. */
+  const celebrationMessage = useMemo(() => {
+    const n = challenges.length;
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return `You worked on ${n} words — you found every one!`;
+      case 'mixed':
+        return `You worked on ${n} words with your own voice and hands!`;
+      default:
+        return `You worked on ${n} words with your own voice!`;
+    }
+  }, [items, challenges.length]);
+
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted || !runner.summary) return [];
-    return challenges.map((ch) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
       const meta = MODE_META[ch.type];
-      return {
-        label: meta.badge,
-        icon: meta.icon,
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
+      return { label: meta.badge, icon: meta.icon };
     });
   }, [evaluation.hasSubmitted, runner.summary, challenges]);
 
@@ -343,7 +349,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
           <button
             key={`${item.id}-${idx}`}
             onClick={() => handleOptionTap(option)}
-            disabled={!runner.running || revealed}
+            disabled={!runner.canAttempt}
             className={`
               rounded-xl border-2 p-4 flex flex-col items-center gap-1.5
               transition-all duration-200 cursor-pointer
@@ -528,7 +534,6 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
     );
   }
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const modeMeta = MODE_META[currentItem?.kind ?? 'naming'];
 
   return (
@@ -557,23 +562,9 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
 
             {currentItem && renderChallenge(currentItem)}
 
-            {/* ONE start gesture: connect, open the mic, opening cue, arm.
-                A browser will not open a microphone without a gesture — never
-                per answer, never a push-to-talk button mid-challenge. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* The picture-tap modes are answered with the hands — the orb
+                names that turn instead of claiming to listen for it. */}
+            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap the picture" />
           </>
         )}
 
@@ -583,7 +574,7 @@ const PictureVocabulary: React.FC<PictureVocabularyProps> = ({ data, className }
             overallScore={evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Picture Vocabulary Complete!"
-            celebrationMessage={`You worked on ${challenges.length} words with your own voice and hands!`}
+            celebrationMessage={celebrationMessage}
             className="mt-4"
           />
         )}

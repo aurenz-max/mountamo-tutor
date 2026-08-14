@@ -59,7 +59,6 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaChallengeCounter,
-  LuminaMicListener,
   dropZoneStateClass,
   motion,
   type DropZoneState,
@@ -75,6 +74,8 @@ import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   buildVerdictCue,
   completeCue,
@@ -381,16 +382,12 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
-    return challenges.map((challenge) => {
-      const outcome = outcomesRef.current.find((o) => o.id === challenge.id);
-      return {
-        label: challenge.targetWord,
-        icon: challenge.emoji || '🔤',
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
-    });
+    // This port drives the loop itself, so its ledger is the ref, not a
+    // runner summary — the row shape is the family's either way.
+    return phaseResultsFromSummary(challenges, { outcomes: outcomesRef.current }, (challenge) => ({
+      label: challenge.targetWord,
+      icon: challenge.emoji || '🔤',
+    }));
   }, [evaluation.hasSubmitted, challenges]);
 
   // ── Submit ───────────────────────────────────────────────────────
@@ -878,7 +875,6 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
 
   const item = itemOf(currentIndex)!;
   const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const showPicture = currentChallenge.showPictureCue !== false && !!currentChallenge.emoji;
   const stageWord = stage === 'affirmed'
     ? 'yes!'
@@ -1091,25 +1087,19 @@ const CvcSpeller: React.FC<CvcSpellerProps> = ({ data, className }) => {
               </p>
             )}
 
-            {/* The mic. ONE tap, at the start, because a browser will not open a
-                microphone without a gesture — never per answer, and never a
-                push-to-talk button the child has to find mid-challenge. It stays
-                open through `spell-word` too: the doctrine is one open mic per
-                session, not one per spoken mode. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={micState}
-                level={ctx.micLevel}
-                isSupported={isSupported}
-                onStart={() => void prepareLive()}
-                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{statusLine}</p>
-            </div>
+            <JudgedMicPanel
+              state={micState}
+              level={ctx.micLevel}
+              statusLine={statusLine}
+              onStart={() => void prepareLive()}
+              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+              /* `spell-word` is answered in the BOXES. The orb used to claim it
+                 was listening for an answer it would never receive — the mic is
+                 open (the tutor is audible, the child may talk) but the answer
+                 is the placement. */
+              answerKind={item.task === 'spell-word' ? 'gesture' : 'voice'}
+              gestureLabel="Your turn — fill the boxes"
+            />
           </>
         )}
 

@@ -57,7 +57,6 @@ import {
   LuminaPanel,
   LuminaPrompt,
   LuminaChallengeCounter,
-  LuminaMicListener,
   answerStateClass,
 } from '../../../ui';
 import {
@@ -69,7 +68,7 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   completeCue,
   handVerdictCue,
@@ -83,6 +82,8 @@ import {
 import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -420,8 +421,8 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       objectType: item.objectWord,
       targetCount: String(item.target),
     }),
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
       ready: (item) => item.kind === 'subitize_perceptual'
         ? 'Look, then tap the hand that matches.'
         : 'Listen, then say how many out loud.',
@@ -430,8 +431,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
         : 'Have another go — say how many.',
       noVerdict: () => 'One more time — say how many.',
       affirmedNext: 'Yes! You counted it.',
-      affirmedLast: 'You did it!',
-      moveOn: 'Good try — here comes the next one.',
       done: 'Great counting today!',
     },
     diagnosisObservation: (item, { lastHeard }) =>
@@ -623,7 +622,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
 
   // ── Tap-to-count — the working surface, never the commit ──────────────────
   const handleObjectTap = useCallback((objectIndex: number) => {
-    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
     const kind = currentItem?.kind;
     // Subitizing is perceptual recognition, never tap-counting.
     if (kind === 'subitize' || kind === 'subitize_perceptual') return;
@@ -650,13 +649,15 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
       next.set(objectIndex, newCount);
       return next;
     });
-  }, [runner.running, evaluation.hasSubmitted, currentItem?.kind, countedObjects]);
+  }, [runner, evaluation.hasSubmitted, currentItem?.kind, countedObjects]);
 
   // ── The hand pick (subitize_perceptual) — the tap IS the commit ───────────
   const handleHandPick = useCallback((fingers: number) => {
     const item = runner.currentItem;
-    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (!item || item.kind !== 'subitize_perceptual') return;
+    // Synchronous ref: `canAttempt` closes the pending window through batched
+    // state, this stops a second pick inside the same tick.
     if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     setHandChoice(fingers);
@@ -665,18 +666,26 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
   }, [runner, evaluation.hasSubmitted]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
+  /** `subitize_perceptual` is answered by picking a hand, so an all-perceptual
+   *  run was never counted "out loud". */
+  const celebrationMessage = useMemo(() => {
+    const n = runner.summary?.solvedCount ?? 0;
+    const boards = `${n} board${n === 1 ? '' : 's'} of ${objectWord}`;
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return `You matched ${boards} — you saw how many!`;
+      case 'mixed':
+        return `You counted ${boards}!`;
+      default:
+        return `You counted ${boards} out loud!`;
+    }
+  }, [items, objectWord, runner.summary]);
+
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted || !runner.summary) return [];
-    return challenges.map((ch) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
       const config = CHALLENGE_TYPE_CONFIG[ch.type] ?? { label: ch.type, icon: '🔢' };
-      return {
-        label: `${config.label} — ${ch.count} ${objectWord}`,
-        icon: config.icon,
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
+      return { label: `${config.label} — ${ch.count} ${objectWord}`, icon: config.icon };
     });
   }, [evaluation.hasSubmitted, runner.summary, challenges, objectWord]);
 
@@ -694,7 +703,6 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
     );
   }
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const kind = currentItem?.kind;
   const boardTappable = kind !== 'subitize' && kind !== 'subitize_perceptual';
   const stageWord = runner.stage === 'affirmed'
@@ -937,7 +945,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
                         aria-label="Pick this hand"
                         className={`h-24 w-24 p-2 rounded-lg border flex items-center justify-center transition-colors disabled:opacity-50 ${answerStateClass(isPicked ? 'selected' : 'idle')}`}
                         onClick={() => handleHandPick(choice)}
-                        disabled={!runner.running || runner.stage === 'judging'}
+                        disabled={!runner.canAttempt}
                       >
                         <HandIcon fingerCount={choice as 1 | 2 | 3} size={72} />
                       </button>
@@ -997,23 +1005,9 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
               </p>
             )}
 
-            {/* The mic. ONE tap, at the start, because a browser will not open a
-                microphone without a gesture — never per answer, and never a
-                push-to-talk button the child has to find mid-challenge. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* The pre-K hand pick is answered with the hands — the orb names
+                that turn instead of claiming to listen for it. */}
+            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap the hand" />
           </>
         )}
 
@@ -1023,7 +1017,7 @@ const CountingBoard: React.FC<CountingBoardProps> = ({ data, className }) => {
             overallScore={evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Counting Complete!"
-            celebrationMessage={`You counted ${runner.summary?.solvedCount ?? 0} board${(runner.summary?.solvedCount ?? 0) === 1 ? '' : 's'} of ${objectWord} out loud!`}
+            celebrationMessage={celebrationMessage}
             className="mt-4"
           />
         )}

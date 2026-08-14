@@ -46,7 +46,6 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaChallengeCounter,
-  LuminaMicListener,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -73,6 +72,8 @@ import {
 } from './phonemeExplorerScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -206,7 +207,6 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   // ── Per-item stage state ──────────────────────────────────────────────────
   /** Affirmed: the first moment the answer may appear on screen. */
-  const [revealed, setRevealed] = useState(false);
 
   // ── Evaluation ────────────────────────────────────────────────────────────
   const evaluation = usePrimitiveEvaluation<PhonemeExplorerMetrics>({
@@ -252,18 +252,15 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
       challengeType: item.kind,
       stimulus: stimulusFor(item),
     }),
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
       ready: (item) => item.kind === 'segment'
         ? 'Listen, then say how many sounds.'
         : 'Listen, then say your answer out loud.',
       retry: (item) => item.kind === 'segment'
         ? 'Have another go — say how many sounds.'
         : 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say your answer.',
       affirmedNext: 'Yes! You heard it.',
-      affirmedLast: 'You did it!',
-      moveOn: 'Good try — here comes the next one.',
       done: 'Great sound work today!',
     },
     diagnosisObservation: (item, { lastHeard }) => ({
@@ -287,11 +284,12 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     gradeLevel,
     exhibitId,
     onFinished: handleFinished,
-    onItemOpened: () => setRevealed(false),
-    onAffirmed: () => setRevealed(true),
   });
 
   const currentItem = runner.currentItem;
+  /** Affirmed: the first moment the answer may appear on screen. The runner
+   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const revealed = runner.currentSolved;
   const currentChallenge = currentItem ? challengeById.get(currentItem.id) : undefined;
 
   // ── Tap-to-hear question-side audio (never a commit, never the answer) ────
@@ -313,17 +311,10 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
 
   // ── Phase summary ─────────────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted || !runner.summary) return [];
-    return items.map((item) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === item.id);
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
       const meta = MODE_META[item.kind];
-      return {
-        label: meta.badge,
-        icon: meta.icon,
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
+      return { label: meta.badge, icon: meta.icon };
     });
   }, [evaluation.hasSubmitted, runner.summary, items]);
 
@@ -512,7 +503,6 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
     );
   }
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const modeMeta = MODE_META[currentItem?.kind ?? 'isolate'];
 
   return (
@@ -544,21 +534,8 @@ const PhonemeExplorer: React.FC<PhonemeExplorerProps> = ({ data, className }) =>
             {currentItem && currentItem.kind === 'segment' && renderSegment(currentItem, currentChallenge)}
             {currentItem && currentItem.kind === 'manipulate' && renderManipulate(currentItem, currentChallenge)}
 
-            {/* ONE start gesture: connect, open the mic, opening cue, arm. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* Every mode here is answered out loud. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 

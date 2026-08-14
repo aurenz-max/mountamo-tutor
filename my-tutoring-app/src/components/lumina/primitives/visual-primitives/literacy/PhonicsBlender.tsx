@@ -43,7 +43,6 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -56,6 +55,8 @@ import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   completeCue,
   itemCue,
@@ -152,7 +153,9 @@ type Stage = 'idle' | 'reading' | 'affirmed' | 'done';
 
 interface WordOutcome {
   id: string;
-  blended: boolean;
+  /** The family's word for "the tutor affirmed it"; `blended` is what this
+   *  primitive calls the act, and it is still the argument name below. */
+  solved: boolean;
   corrections: number;
   score: number;
   seconds: number | null;
@@ -267,16 +270,12 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
 
   const wordResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
-    return words.map(word => {
-      const outcome = outcomesRef.current.find(o => o.id === word.id);
-      return {
-        label: word.targetWord,
-        icon: word.emoji || '🔤',
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.blended && (outcome?.corrections ?? 0) === 0,
-      };
-    });
+    // This port drives the loop itself, so its ledger is the ref, not a
+    // runner summary — the row shape is the family's either way.
+    return phaseResultsFromSummary(words, { outcomes: outcomesRef.current }, (word) => ({
+      label: word.targetWord,
+      icon: word.emoji || '🔤',
+    }));
   }, [evaluation.hasSubmitted, words]);
 
   // ── Submit ───────────────────────────────────────────────────────
@@ -284,10 +283,10 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     if (submittedRef.current) return;
     submittedRef.current = true;
     const outcomes = outcomesRef.current;
-    const wordsBlended = outcomes.filter(o => o.blended).length;
+    const wordsBlended = outcomes.filter(o => o.solved).length;
     const wordsTotal = words.length;
     const totalSounds = words.reduce((sum, w) => sum + w.phonemes.length, 0);
-    const firstTry = outcomes.filter(o => o.blended && o.corrections === 0).length;
+    const firstTry = outcomes.filter(o => o.solved && o.corrections === 0).length;
     const attemptsCount = outcomes.reduce((s, o) => s + 1 + o.corrections, 0);
     const timed = outcomes.map(o => o.seconds).filter((s): s is number => s != null);
     const avgSeconds = timed.length ? timed.reduce((s, v) => s + v, 0) / timed.length : 0;
@@ -336,7 +335,7 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
     const corrections = correctionsRef.current.get(item.id) ?? 0;
     outcomesRef.current.push({
       id: item.id,
-      blended,
+      solved: blended,
       corrections,
       score: blended ? scoreForCorrections(corrections) : 0,
       seconds: wordStartRef.current == null
@@ -586,7 +585,6 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
   }
 
   const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const stageWord = stage === 'affirmed' ? 'yes!' : stage === 'reading' ? 'what word?' : 'get ready';
 
   /** The stimulus: the word's letters. Tap any one to hear its sound. At
@@ -665,23 +663,15 @@ const PhonicsBlender: React.FC<PhonicsBlenderProps> = ({ data, className }) => {
               </p>
             )}
 
-            {/* The mic. ONE tap, at the start, because a browser will not open a
-                microphone without a gesture — never per answer, and never a
-                push-to-talk button the child has to find mid-word. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={micState}
-                level={ctx.micLevel}
-                isSupported={isSupported}
-                onStart={() => void prepareLive()}
-                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{statusLine}</p>
-            </div>
+            {/* Every word here is blended OUT LOUD — the spoken label is the
+                honest one on every item. */}
+            <JudgedMicPanel
+              state={micState}
+              level={ctx.micLevel}
+              statusLine={statusLine}
+              onStart={() => void prepareLive()}
+              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+            />
           </>
         )}
 

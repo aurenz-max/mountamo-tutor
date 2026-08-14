@@ -34,7 +34,6 @@ import {
   LuminaBadge,
   LuminaButton,
   LuminaChallengeCounter,
-  LuminaMicListener,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type {
@@ -47,6 +46,8 @@ import {
 } from '../../../hooks/useJudgedScriptRunner';
 import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   completeCue,
   contextFor,
@@ -132,13 +133,10 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     // hidden, so the tutor can never read the child their own task.
     pronounceCue: (item) => pronounceCue(item),
     contextFor,
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
-      ready: () => 'Listen, then answer out loud.',
       retry: () => 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say your answer.',
       affirmedNext: 'Yes! You said it.',
-      affirmedLast: 'You did it!',
       done: 'Great talking today!',
     },
     diagnosisObservation: (item, { lastHeard }) => ({
@@ -180,17 +178,11 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
   const canHear = !!item && pronounceCue(item) !== '';
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmitted || !runner.summary) return [];
-    return items.map((it) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === it.id);
-      return {
-        label: `${MODE_SHAPE[it.mode].label} — ${it.stimulusText}`,
-        icon: MODE_ICON[it.mode],
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
-    });
+    if (!hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (it) => ({
+      label: `${MODE_SHAPE[it.mode].label} — ${it.stimulusText}`,
+      icon: MODE_ICON[it.mode],
+    }));
   }, [hasSubmitted, runner.summary, items]);
 
   // ── Stimulus ──────────────────────────────────────────────────────────────
@@ -234,7 +226,6 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
     }
   };
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const stageWord = runner.stage === 'affirmed'
     ? 'yes!'
     : runner.stage === 'asking'
@@ -299,21 +290,8 @@ export const DiSpokenPractice: React.FC<{ data: DiSpokenPracticeData; index?: nu
               {stageWord}
             </div>
 
-            {/* The mic. ONE tap, at the start — never per answer. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* Every item in this pack is answered out loud. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 

@@ -49,7 +49,6 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
   type LuminaAccent,
 } from '../../../ui';
 import {
@@ -63,6 +62,8 @@ import type { LoopEmission } from '../../../hooks/judgedLoopModel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import {
   completeCue,
   itemCue,
@@ -304,16 +305,12 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
 
   const phaseResults = useMemo<PhaseResult[]>(() => {
     if (!evaluation.hasSubmitted) return [];
-    return challenges.map(challenge => {
-      const outcome = outcomesRef.current.find(o => o.id === challenge.id);
-      return {
-        label: `${challenge.originalWord} → ${challenge.resultWord}`,
-        icon: OPERATION_ICONS[challenge.operation] || '🔤',
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
-    });
+    // This port drives the loop itself, so its ledger is the ref, not a
+    // runner summary — the row shape is the family's either way.
+    return phaseResultsFromSummary(challenges, { outcomes: outcomesRef.current }, (challenge) => ({
+      label: `${challenge.originalWord} → ${challenge.resultWord}`,
+      icon: OPERATION_ICONS[challenge.operation] || '🔤',
+    }));
   }, [evaluation.hasSubmitted, challenges]);
 
   // ── Submit ───────────────────────────────────────────────────────
@@ -632,7 +629,6 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
   }
 
   const micState = preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle';
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const stageWord = stage === 'affirmed' ? 'yes!' : stage === 'asking' ? 'what word?' : 'get ready';
   const showImage = currentChallenge.showWordImage !== false;
   const highlightIdx = currentChallenge.operation === 'substitution'
@@ -730,23 +726,15 @@ const SoundSwap: React.FC<SoundSwapProps> = ({ data, className }) => {
               </p>
             )}
 
-            {/* The mic. ONE tap, at the start, because a browser will not open a
-                microphone without a gesture — never per answer, and never a
-                push-to-talk button the child has to find mid-challenge. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={micState}
-                level={ctx.micLevel}
-                isSupported={isSupported}
-                onStart={() => void prepareLive()}
-                onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{statusLine}</p>
-            </div>
+            {/* The answer here is SPOKEN on every item — the orb's spoken
+                label is the honest one throughout. */}
+            <JudgedMicPanel
+              state={micState}
+              level={ctx.micLevel}
+              statusLine={statusLine}
+              onStart={() => void prepareLive()}
+              onCancel={running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening}
+            />
           </>
         )}
 

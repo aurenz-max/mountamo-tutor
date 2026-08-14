@@ -52,7 +52,6 @@ import {
   LuminaCardTitle,
   LuminaBadge,
   LuminaChallengeCounter,
-  LuminaMicListener,
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
@@ -65,7 +64,7 @@ import {
   useJudgedScriptRunner,
   type JudgedRunSummary,
 } from '../../../hooks/useJudgedScriptRunner';
-import type { JudgedScriptPack } from '../../../hooks/judgedScriptContract';
+import { judgedAnswerMix, type JudgedScriptPack } from '../../../hooks/judgedScriptContract';
 import {
   completeCue,
   itemCue,
@@ -79,6 +78,8 @@ import {
   type LetterSoundTier,
 } from './letterSoundLinkScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -203,8 +204,6 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   /** The tapped letter (hear-see only) — cleared on retry and on item open. */
   const [tapped, setTapped] = useState<string | null>(null);
   const tappedRef = useRef<string | null>(null);
-  /** Affirmed: the first moment the answer may appear on screen. */
-  const [revealed, setRevealed] = useState(false);
   /** [target, chosen] letter pairs from wrong hear-see taps — the one place
    *  this primitive can observe a confusion directly. */
   const confusedPairsRef = useRef<Array<[string, string]>>([]);
@@ -273,18 +272,14 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     // maxAttempts counts elicitations; the runner counts CORRECTIONS, so the
     // first ask is not one of them. Tier `hard` ships 2 ⇒ one correction.
     maxCorrections: Math.max(1, (maxAttempts ?? DEFAULT_MAX_ATTEMPTS) - 1),
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
       ready: (item) => item.answerKind === 'gesture'
         ? 'Listen, then tap the letter.'
         : 'Listen, then say your answer out loud.',
       retry: (item) => item.answerKind === 'gesture'
         ? 'Listen again — then tap the letter.'
         : 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say your answer.',
-      affirmedNext: 'Yes! You got it.',
-      affirmedLast: 'You did it!',
-      moveOn: 'Good try — here comes the next one.',
       done: 'Great letter-sound work today!',
     },
     diagnosisObservation: (item, { lastHeard }) => {
@@ -320,9 +315,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     onItemOpened: () => {
       setTapped(null);
       tappedRef.current = null;
-      setRevealed(false);
     },
-    onAffirmed: () => setRevealed(true),
     onCorrectionRetry: () => {
       // The tutor's correction re-modeled in-band; free the letters for another go.
       setTapped(null);
@@ -331,13 +324,18 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
   });
 
   const currentItem = runner.currentItem;
+  /** Affirmed: the first moment the answer may appear on screen. The runner
+   *  owns this latch now (it replaces the `onItemOpened`/`onAffirmed` pair). */
+  const revealed = runner.currentSolved;
 
   // ── The tap — hear-see only; the tap IS the commit ────────────────────────
   const handleLetterTap = useCallback((letter: string) => {
     const item = runner.currentItem;
-    if (!runner.running || evaluation.hasSubmitted) return;
+    if (!runner.canAttempt || evaluation.hasSubmitted) return;
     if (!item || item.answerKind !== 'gesture') return;
-    if (runner.isAwaitingGesture() || revealed) return;
+    // Synchronous ref: `canAttempt` closes the pending window through batched
+    // state, this stops a second tap inside the same tick.
+    if (runner.isAwaitingGesture()) return;
     SoundManager.tap();
     setTapped(letter);
     tappedRef.current = letter;
@@ -345,21 +343,28 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
       confusedPairsRef.current.push([item.answer.toLowerCase(), letter.toLowerCase()]);
     }
     runner.submitGestureAttempt(tapVerdictCue(item, letter));
-  }, [runner, evaluation.hasSubmitted, revealed]);
+  }, [runner, evaluation.hasSubmitted]);
 
   // ── Phase summary ─────────────────────────────────────────────────────────
+  /** What the child actually DID. A run of `hear-see` items is answered by
+   *  tapping, and congratulating them for using "your own voice" is the same
+   *  lie the orb used to tell one screen earlier (user drive 2026-08-13). */
+  const celebrationMessage = useMemo(() => {
+    switch (judgedAnswerMix(items)) {
+      case 'gesture':
+        return `You found ${items.length} letters by their sounds!`;
+      case 'mixed':
+        return `You worked on ${items.length} letter sounds — out loud and by ear!`;
+      default:
+        return `You worked on ${items.length} letter sounds with your own voice!`;
+    }
+  }, [items]);
+
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!evaluation.hasSubmitted || !runner.summary) return [];
-    return items.map((item) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === item.id);
+    if (!evaluation.hasSubmitted) return [];
+    return phaseResultsFromSummary(items, runner.summary, (item) => {
       const meta = MODE_META[item.mode];
-      return {
-        label: meta.badge,
-        icon: meta.icon,
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
+      return { label: meta.badge, icon: meta.icon };
     });
   }, [evaluation.hasSubmitted, runner.summary, items]);
 
@@ -441,7 +446,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
                   <button
                     key={`${item.id}-${idx}`}
                     onClick={() => handleLetterTap(option.value)}
-                    disabled={!runner.running || revealed}
+                    disabled={!runner.canAttempt}
                     className={`
                       w-28 h-28 sm:w-32 sm:h-32 rounded-2xl text-5xl font-bold border-2
                       transition-all duration-200 cursor-pointer
@@ -507,7 +512,6 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
     );
   }
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const modeMeta = MODE_META[currentItem?.mode ?? 'see-hear'];
 
   return (
@@ -540,23 +544,9 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
 
             {currentItem && renderChallenge(currentItem)}
 
-            {/* ONE start gesture: connect, open the mic, opening cue, arm.
-                A browser will not open a microphone without a gesture — never
-                per answer, never a push-to-talk button mid-challenge. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* hear-see is answered with a TAP on a letter — the orb says so
+                instead of claiming to listen for an answer it will not get. */}
+            <JudgedMicPanel run={runner} gestureLabel="Your turn — tap the letter" />
           </>
         )}
 
@@ -566,7 +556,7 @@ const LetterSoundLink: React.FC<LetterSoundLinkProps> = ({ data, className }) =>
             overallScore={evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Letter-Sound Link Complete!"
-            celebrationMessage={`You worked on ${items.length} letter sounds with your own voice!`}
+            celebrationMessage={celebrationMessage}
             className="mt-4"
           />
         )}

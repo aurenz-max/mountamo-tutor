@@ -44,7 +44,6 @@ import {
   LuminaBadge,
   LuminaButton,
   LuminaChallengeCounter,
-  LuminaMicListener,
   LuminaSlider,
 } from '../../../ui';
 import { usePrimitiveEvaluation } from '../../../evaluation';
@@ -66,6 +65,8 @@ import {
   type ArenaItemKind,
 } from './pushPullArenaScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
+import JudgedMicPanel from '../../../components/JudgedMicPanel';
+import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
@@ -523,17 +524,15 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
       surface: item.surfaceSpoken,
       expectedAnswer: item.spokenAnswer,
     }),
+    // Only what DIFFERS from the runner's defaults.
     statusLines: {
-      idle: 'Tap the microphone to start.',
       ready: (item) => item.kind === 'observe'
         ? 'Tap Go, watch, then say what you saw.'
         : item.kind === 'design'
           ? 'Experiment, then say your answer.'
           : 'Think, then say your answer.',
       retry: () => 'Have another go — say your answer.',
-      noVerdict: () => 'One more time — say your answer.',
       affirmedNext: 'Yes! You said what the physics did.',
-      affirmedLast: 'You did it!',
       done: 'Great force science today!',
     },
     diagnosisObservation: (item, { lastHeard }) => ({
@@ -721,17 +720,10 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
   // ── Phase summary ────────────────────────────────────────────────
   const phaseResults = useMemo<PhaseResult[]>(() => {
-    if (!hasSubmitted || !runner.summary) return [];
-    return challenges.map((ch) => {
-      const outcome = runner.summary!.outcomes.find((o) => o.id === ch.id);
+    if (!hasSubmitted) return [];
+    return phaseResultsFromSummary(challenges, runner.summary, (ch) => {
       const config = PHASE_TYPE_CONFIG[ch.type] ?? { label: ch.type, icon: '🧲' };
-      return {
-        label: `${config.label} — ${ch.objectName}`,
-        icon: config.icon,
-        score: outcome?.score ?? 0,
-        attempts: (outcome?.corrections ?? 0) + 1,
-        firstTry: !!outcome?.solved && (outcome?.corrections ?? 0) === 0,
-      };
+      return { label: `${config.label} — ${ch.objectName}`, icon: config.icon };
     });
   }, [hasSubmitted, runner.summary, challenges]);
 
@@ -739,7 +731,6 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
   // Render
   // =============================================================================
 
-  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   // design = the child's own experiment; observe = tap Go to run the preset.
   const showDesignControls = currentKind === 'design';
   const showGoButton = currentKind === 'observe' || currentKind === 'design';
@@ -846,21 +837,9 @@ export default function PushPullArena({ data, className = '' }: PushPullArenaPro
 
             <div className="text-center text-xs uppercase tracking-[0.25em] text-cyan-300">{stageWord}</div>
 
-            {/* The mic. ONE tap, at the start — never per answer. */}
-            <div className="flex flex-col items-center gap-3 pt-1">
-              <LuminaMicListener
-                state={runner.micState}
-                level={runner.micLevel}
-                isSupported={isSupported}
-                onStart={() => void runner.start()}
-                onCancel={runner.cancelListening}
-                size="lg"
-                idleLabel="Tap to start"
-                openingLabel="Getting ready…"
-                listeningLabel="I’m listening"
-              />
-              <p className="text-sm text-slate-300">{runner.statusLine}</p>
-            </div>
+            {/* Every item here is answered out loud — the sim is the stage,
+                the answer is the child saying what the forces did. */}
+            <JudgedMicPanel run={runner} />
           </>
         )}
 
