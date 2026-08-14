@@ -1349,7 +1349,15 @@ async def lumina_tutor_session(websocket: WebSocket):
                         waited_ms=waited_ms,
                         cut_in=cut_in,
                         wedged=wedged,
-                        preview=text[:160],
+                        # 400, not 160. A judged-loop log has to answer "was
+                        # the tutor's verdict RIGHT about this item", and the
+                        # item rides in the [CURRENT STATE] block that
+                        # PrimitiveState prepends — which alone runs ~190
+                        # chars, so 160 truncated every cue at exactly the
+                        # stimulus. Cost is a dev log file; the loss was a
+                        # read-aloud drive whose correction could not be
+                        # adjudicated after the fact (HUMAN-CHECKS #95).
+                        preview=text[:400],
                     )
 
                     # The floor is now the model's. Set it here rather than
