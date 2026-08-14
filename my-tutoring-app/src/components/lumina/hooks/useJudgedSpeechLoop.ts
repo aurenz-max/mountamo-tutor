@@ -88,6 +88,26 @@ export interface JudgedSpeechLoopOptions {
   /** Master switch — typically "a run/challenge is active". Disabling
    *  disarms the loop and closes any open voice turn. */
   enabled: boolean;
+  /**
+   * Whether the learner's voice may open a TURN. Default true.
+   *
+   * False holds the activity bracket: the mic keeps capturing, frames keep
+   * streaming, the level meter stays live — but no `activity_start` /
+   * `activity_end` pair goes out, so with `manual_activity` (which disables
+   * Gemini's own detection) nothing is ever committed as a turn.
+   *
+   * This is NOT a mute, and the distinction is the whole point (standing
+   * doctrine: no force-mutes from a primitive). It exists because a gesture item
+   * cannot get silence by asking for it. On 2026-08-13 letter-spotter's tap
+   * contract told the tutor to "WAIT in complete silence… do not judge anything
+   * you hear"; a child spoke anyway, the bracket closed, and a closed turn owes
+   * a reply — so the model fabricated a `[LSP_TAP]` control message and read it
+   * aloud, instructions and all (session 6ada8c0a1bcf). Filtering the emission
+   * client-side, which the runner already did, muzzles our reaction and not the
+   * tutor's mouth. The only thing that makes a tap item silent is never handing
+   * the model a turn.
+   */
+  listenForVoice?: boolean;
   config?: Partial<JudgedLoopConfig>;
   voice?: { config?: Partial<VoiceTurnConfig> };
   /** Every model emission, in order. Progression decisions happen here. */
@@ -137,7 +157,7 @@ export interface JudgedSpeechLoop {
 
 export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpeechLoop {
   const ctx = useLuminaAIContext();
-  const { enabled } = options;
+  const { enabled, listenForVoice = true } = options;
 
   const config: JudgedLoopConfig = { ...DEFAULT_JUDGED_LOOP_CONFIG, ...options.config };
   const configRef = useRef(config);
@@ -371,10 +391,17 @@ export function useJudgedSpeechLoop(options: JudgedSpeechLoopOptions): JudgedSpe
   // activity-bracket owner and this judged loop only consumes its turn stream.
   const usesSharedVoiceTurns = ctx.sessionMode === 'lesson' && !!ctx.sharedVoiceTurns;
   const localVoiceTurns = useLiveVoiceTurns({
-    enabled: enabled && !usesSharedVoiceTurns,
+    enabled: enabled && listenForVoice && !usesSharedVoiceTurns,
     config: options.voice?.config,
     onTurnClose: handleVoiceTurnClose,
   });
+  // In a lesson the PROVIDER owns the one bracket for every primitive on the
+  // page, so a hold has to be asked for rather than taken. `holdVoiceTurns` is
+  // ref-counted there and releases on unmount via this effect's cleanup.
+  useEffect(() => {
+    if (!enabled || !usesSharedVoiceTurns || listenForVoice) return;
+    return ctx.holdVoiceTurns();
+  }, [ctx.holdVoiceTurns, enabled, listenForVoice, usesSharedVoiceTurns]);
   useEffect(() => {
     if (!enabled || !usesSharedVoiceTurns) return;
     return ctx.sharedVoiceTurns.subscribe({ onTurnClose: handleVoiceTurnClose });

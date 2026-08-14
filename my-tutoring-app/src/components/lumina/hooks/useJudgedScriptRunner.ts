@@ -22,10 +22,16 @@
  *     the tutor's line is the advance; the screen only follows (all ports).
  *   - Corrections cap (default 2) then `moveOnCue` — a hard item resurfaces
  *     through distributed review, not by drilling a frustrated five-year-old.
+ *   - Gesture items hold the ACTIVITY BRACKET for the whole item (2026-08-13):
+ *     the mic stays open and capturing, but no turn is ever committed, so the
+ *     tutor cannot be handed something it must answer. The rule used to live in
+ *     pack prose ("wait in complete silence") plus the emission filter below,
+ *     and neither reaches the tutor's mouth — see `listenForVoice`.
  *   - Gesture items (cvc-speller spell-word, the anchor's first caller):
- *     `no-verdict` and `resync` are IGNORED while the item is a build — a
- *     stray voice turn while the child works opens an attempt the tutor was
- *     told not to answer, and re-asking would talk over a working child.
+ *     `no-verdict` and `resync` are IGNORED while the item is a build. This is
+ *     now belt-and-braces behind the bracket hold rather than the only guard,
+ *     and it still matters on the transition edge, where a turn opened under
+ *     the previous item can close after a gesture item has begun.
  *     `unanchored-verdict` is applied when — and only when — a build awaits
  *     judgment, else the lesson wedges on a board that cannot be committed
  *     twice.
@@ -41,6 +47,7 @@ import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import type { LoopEmission } from './judgedLoopModel';
 import { useJudgedSpeechLoop, type JudgedSpeechLoop } from './useJudgedSpeechLoop';
 import {
+  JUDGED_AUDIO_INPUT,
   validateJudgedScriptPack,
   type JudgedCueOptions,
   type JudgedDiagnosisObservation,
@@ -55,12 +62,10 @@ import type { DiagnosisEvidence } from '../evaluation/diagnosis/types';
 const DEFAULT_MAX_CORRECTIONS = 2;
 const DEFAULT_PASS_THRESHOLD = 60;
 
-/** Manual voice-activity mode for the whole family: our amplitude detector
- *  brackets every learner turn; Gemini's speech-likeness VAD is unusable for
- *  short spoken responses (DI bench run-3 ruling). Every consumer's catalog
- *  entry must declare the same `audioInput` so the lesson path opens the
- *  shared session identically. */
-export const JUDGED_AUDIO_INPUT = { manual_activity: true } as const;
+/** The family audio mode now lives in the contract (so pure di-script tests
+ *  can pin the catalog side without importing React); re-exported here because
+ *  the runner is where existing consumers found it. */
+export { JUDGED_AUDIO_INPUT };
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -97,6 +102,20 @@ export interface JudgedScriptRunnerOptions<Item extends JudgedScriptItem> {
   instanceId: string;
   gradeLevel: string;
   exhibitId?: string;
+  /**
+   * Silence that closes a learner voice turn. Omit for short spoken answers —
+   * the engine default (500ms) is tuned for exactly those and is correct in the
+   * six packs that shipped before this option existed.
+   *
+   * CONNECTED TEXT must raise it (di-sentence-reading bench sitting 2026-07-25,
+   * finding 2 — that pack's ship-blocking fix): a child reading a whole line
+   * pauses BETWEEN WORDS, and at 500ms three of ten probe reads split into two
+   * voice turns, which broke the alias cross-check and nulled the timing on the
+   * second fragment. A mid-line pause is part of one response, not the end of
+   * it. Passed as a number, not an object, so a caller cannot churn the config
+   * identity on every render.
+   */
+  silenceCloseMs?: number;
   /** The run finished (all items closed). The component submits its metrics. */
   onFinished: (summary: JudgedRunSummary) => void;
   /** An item is now on screen (including the first). Reset stage-payload
@@ -120,20 +139,53 @@ export interface JudgedScriptRun<Item extends JudgedScriptItem> {
   currentIndex: number;
   currentItem: Item | null;
   solvedIds: Set<string>;
+  /**
+   * Is the CURRENT item already affirmed? This — not `stage` — is the reveal
+   * and interaction gate: `stage` goes to 'affirmed' and the runner opens the
+   * next item in the SAME dispatch, and nothing returns it to 'asking' on the
+   * happy path, so a stage-gated board ships dead from item 2 on and HEALS the
+   * moment the child answers wrong (ten-frame drive 3, 2026-08-13). Also the
+   * successor to the per-component `revealed` latch + `onAffirmed`/
+   * `onItemOpened` reset pair four ports hand-rolled.
+   */
+  currentSolved: boolean;
+  /**
+   * May the child act on the current item right now? True while the run is
+   * live, the item is unsolved, and no verdict is pending — a committed
+   * gesture sets `stage` to 'judging' in the same dispatch, so the pending
+   * window is covered. Gate taps/placements on THIS instead of composing
+   * `running`/`stage`/`isAwaitingGesture`/`solvedIds` per component.
+   */
+  canAttempt: boolean;
   /** Set once the run finishes — render summaries from this. */
   summary: JudgedRunSummary | null;
   /** Mic affordance state for LuminaMicListener. */
   micState: 'idle' | 'opening' | 'armed';
   micLevel: number;
+  /**
+   * True while the tutor's audio is still audibly playing (the tail outlives
+   * `isAIResponding`). Read-only passthrough — it changes nothing in the loop.
+   *
+   * It exists because THE TUTOR OWNS THE CLOCK applies to a primitive's own
+   * stimulus too, not just to progression. A stage that PRESENTS something —
+   * a flash, a reveal, an animation the ask refers to — must key it to this
+   * signal, never to a delay measured from item-open: the tutor's line takes
+   * as long as it takes, so a wall-clock beat lands in the middle of her
+   * sentence. ten-frame's subitize flash fired while she was still saying
+   * "watch the frame", so the child heard the instruction AFTER the counters
+   * had come and gone (drive 3, 2026-08-13).
+   */
+  tutorSpeaking: boolean;
   /** Present only when cancelling is allowed (idle standalone, not running). */
   cancelListening?: () => void;
   /** ONE start gesture: connect (standalone), open the mic, send the opening
    *  cue, arm. A browser will not open a microphone without a gesture. */
   start: () => Promise<void>;
-  /** Tap-to-hear the stimulus (never the answer). No-op without pronounceCue. */
+  /** Tap-to-hear the stimulus (never the answer). No-op without pronounceCue.
+   *  The tap COUNT rides `summary.hearTaps` — a render-time ref read here
+   *  would not update reactively, and no consumer ever read it. */
   hearStimulus: () => void;
   stimulusTapped: boolean;
-  hearTaps: number;
   /** Commit a manipulation: the pack-built cue describes what was done and
    *  asks for the verdict. Locks until that verdict lands. */
   submitGestureAttempt: (cue: string) => void;
@@ -451,7 +503,33 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     optionsRef.current.onEmission?.(emission, item);
   }, [applyVerdict, cueOptsFor, currentItem, lines]);
 
-  const loop = useJudgedSpeechLoop({ enabled: running, onEmission: handleEmission });
+  const { silenceCloseMs } = options;
+  const voiceConfig = useMemo(
+    () => (silenceCloseMs == null ? undefined : { config: { silenceCloseMs } }),
+    [silenceCloseMs],
+  );
+
+  /**
+   * A gesture item hands the tutor NOTHING to listen to, so the bracket is held
+   * for its duration — mic open, capture running, no turn ever committed.
+   *
+   * This replaces a rule the family previously tried to enforce with prose. Two
+   * places used to carry it and neither could: the pack's tap contract asked the
+   * model to "WAIT in complete silence", and the emission switch below drops
+   * `no-verdict` on gesture items. The first is unenforceable (a closed turn
+   * owes a reply, and on 2026-08-13 letter-spotter's tutor answered one by
+   * inventing a `[LSP_TAP]` message and reading it aloud); the second only stops
+   * US reacting. Holding the bracket is the one lever that reaches the tutor's
+   * mouth, and it is not a mute — see `listenForVoice`.
+   */
+  const listenForVoice = itemOf(currentIndex)?.answerKind !== 'gesture';
+
+  const loop = useJudgedSpeechLoop({
+    enabled: running,
+    listenForVoice,
+    voice: voiceConfig,
+    onEmission: handleEmission,
+  });
   loopRef.current = loop;
 
   // ── Keep the tutor's RUNTIME STATE truthful as items advance ──────────────
@@ -465,6 +543,10 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
   }, [ctx.isConnected, currentIndex]);
 
   // ── Gesture commit ────────────────────────────────────────────────────────
+  /** Stable identity — safe in effect/callback dep arrays (the returned runner
+   *  object itself is fresh per render; see the timer-effect footgun note). */
+  const isAwaitingGesture = useCallback(() => awaitingGestureRef.current, []);
+
   const submitGestureAttempt = useCallback((cue: string) => {
     const loop = loopRef.current;
     if (!loop || awaitingGestureRef.current) return;
@@ -575,24 +657,29 @@ export function useJudgedScriptRunner<Item extends JudgedScriptItem>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const current = itemOf(currentIndex);
+  const currentSolved = current != null && solvedIds.has(current.id);
+
   return {
     running,
     preparing,
     stage,
     statusLine,
     currentIndex,
-    currentItem: itemOf(currentIndex),
+    currentItem: current,
     solvedIds,
+    currentSolved,
+    canAttempt: running && current != null && !currentSolved && stage !== 'judging',
     summary,
     micState: preparing ? 'opening' : ctx.isListening ? 'armed' : 'idle',
     micLevel: ctx.micLevel,
+    tutorSpeaking: ctx.isAudioPlaying,
     cancelListening: running || ctx.sessionMode === 'lesson' ? undefined : ctx.stopListening,
     start,
     hearStimulus,
     stimulusTapped,
-    hearTaps: hearTapsRef.current,
     submitGestureAttempt,
-    isAwaitingGesture: () => awaitingGestureRef.current,
+    isAwaitingGesture,
     loop,
   };
 }

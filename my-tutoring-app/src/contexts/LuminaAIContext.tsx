@@ -166,6 +166,9 @@ interface LuminaAIContextType {
   startListening: () => void;
   stopListening: () => void;
   isListening: boolean;
+  /** Hold the shared activity bracket (gesture items) without muting the mic.
+   *  Ref-counted; call the returned disposer to release. */
+  holdVoiceTurns: () => () => void;
   micLevel: number;
   /** How often `micLevel` updates, in ms — one audio-capture frame. Consumers
    *  that measure DURATION from micLevel samples are quantised to this and must
@@ -298,13 +301,39 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const sendActivityStart = useCallback(() => sendActivitySignal('activity_start'), [sendActivitySignal]);
   const sendActivityEnd = useCallback(() => sendActivitySignal('activity_end'), [sendActivitySignal]);
 
+  /**
+   * Ref-counted bracket hold for the shared lesson turn authority.
+   *
+   * A primitive running a gesture item needs the tutor to be silent, and the
+   * only thing that delivers that is never closing a turn — prose asking the
+   * model to wait cannot, because a closed turn owes a reply. The mic is NOT
+   * touched (standing doctrine forbids a primitive muting it): capture keeps
+   * running and the level meter stays live, we simply stop bracketing.
+   *
+   * Ref-counted because a lesson page can hold several primitives; the last
+   * release wins, and every caller releases through the returned disposer.
+   */
+  const voiceTurnHoldsRef = useRef(0);
+  const [voiceTurnsHeld, setVoiceTurnsHeld] = useState(false);
+  const holdVoiceTurns = useCallback(() => {
+    voiceTurnHoldsRef.current += 1;
+    setVoiceTurnsHeld(true);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      voiceTurnHoldsRef.current = Math.max(0, voiceTurnHoldsRef.current - 1);
+      if (voiceTurnHoldsRef.current === 0) setVoiceTurnsHeld(false);
+    };
+  }, []);
+
   const voiceTurnListenersRef = useRef(new Set<VoiceTurnListener>());
   const subscribeSharedVoiceTurns = useCallback((listener: VoiceTurnListener) => {
     voiceTurnListenersRef.current.add(listener);
     return () => voiceTurnListenersRef.current.delete(listener);
   }, []);
   const lessonVoiceTurns = useLiveVoiceTurnsWithTransport({
-    enabled: isConnected && sessionMode === 'lesson' && isListening,
+    enabled: isConnected && sessionMode === 'lesson' && isListening && !voiceTurnsHeld,
     config: resolveLessonVoiceTurnConfig(activePrimitiveType),
     onTurnOpen: (event) => {
       voiceTurnListenersRef.current.forEach((listener) => listener.onTurnOpen?.(event));
@@ -1118,6 +1147,7 @@ export const LuminaAIProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     startListening,
     stopListening,
     isListening,
+    holdVoiceTurns,
     micLevel,
     micFramePeriodMs,
     sendActivityStart,

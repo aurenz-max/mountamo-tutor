@@ -45,6 +45,7 @@ import { DI_SENTINELS, type SentinelPair } from './judgedLoopModel';
 export type ResponseClassId =
   | 'continuant_sound'
   | 'short_spoken_word'
+  | 'yes_no'
   | 'number_word_to_20'
   | 'number_word_to_120'
   | 'ordinal_word'
@@ -52,6 +53,7 @@ export type ResponseClassId =
   | 'shape_name'
   | 'manipulation'
   | 'letter_name'
+  | 'closed_set_choice'
   | 'open_set_word';
 
 export type ResponseClassStatus =
@@ -83,6 +85,22 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
     notes:
       'One short spoken word from a closed per-item set. VC-length (2-sound) words are '
       + 'unbenched at that length — the sound-swap deletion residual (#83).',
+  },
+  yes_no: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER RULING 2026-08-12, from the rhyme-studio port-8 drive: "i think its weird to need '
+      + 'the thumbs up and thumbs down [for] do they rhyme? we should just be able to say yes to '
+      + 'the tutor". Acceptance drive owed on HUMAN-CHECKS #94.',
+    notes:
+      'A spoken yes/no VERDICT — the most separable closed pair there is (no shared phonemes), '
+      + 'which is why it ships ahead of its sitting. Two things the pack must handle and the '
+      + 'class cannot: (1) "no" is VC-length, the length short_spoken_word records as unbenched, '
+      + 'so the accept clause must name the natural variants ("yeah", "nope", "they do", "they '
+      + 'don\'t") rather than demand the bare word; (2) the child\'s "yes" is NOT a sentinel '
+      + 'hazard — the verdict scan reads the TUTOR\'s output only (proven in the port-8 session '
+      + 'log: a child "Yes." passed through with no misfire). The tutor\'s own affirmation still '
+      + 'opens with "Yes," even when it affirms a NO answer.',
   },
   number_word_to_20: {
     status: 'benched',
@@ -121,10 +139,45 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
     notes: 'Gesture items must follow the runner’s gesture rules — see useJudgedScriptRunner.',
   },
   letter_name: {
-    status: 'blocked',
+    status: 'accepted-build-ahead',
     evidence:
-      'LetterSpotter ruling: letter names are an unbenched homophonic class '
-      + '(b/p/d/e/g…) — needs a Voice Studio bench before any pack uses them.',
+      'USER RULING 2026-08-13, from the letter-spotter drive (session 6ada8c0a1bcf): "in real '
+      + 'life if i have a sentence with a missing letter, and i ask the student to use context '
+      + 'clues and the word to say the missing letter, they should be able to translate the '
+      + 'sentence and missing letter verbally. they dont need to click a button." The prior '
+      + 'BLOCKED status is what pushed letter-spotter to an all-tap pack, and that pack is the '
+      + 'defect the ruling overturns. Acceptance drive owed on HUMAN-CHECKS.',
+    notes:
+      'The homophony that motivated the block is REAL but is a per-ITEM constraint, not a class-'
+      + 'wide one. The judge is never asked to classify across 26 letters — it is handed ONE '
+      + 'target and asked whether the child said it. Two things a pack must do that the class '
+      + 'cannot: (1) ACCEPT THE SOUND TOO. "S" or a held /s/ are both right answers from a '
+      + 'five-year-old, the sound side is the benched continuant_sound channel, and accepting '
+      + 'both makes a cluster confusion need to fail twice. (2) MIND THE CLUSTERS when a wrong '
+      + 'answer is plausible: /iː/ = b c d e g p t v z, /ɛ/-initial = f l m n s x, /eɪ/ = a h j k, '
+      + '/aɪ/ = i y. A target whose cluster-mate is a likely error for THAT item (b/d on a '
+      + 'reversal-prone word) is the item to drop, not the class to block.',
+  },
+  closed_set_choice: {
+    status: 'accepted-build-ahead',
+    evidence:
+      'USER RULING 2026-08-13, from the decodable-reader drive: "mode sequence/cause effect doesnt let me '
+      + 'answer for the 2nd part verbally, i need to click on the button even though im speaking, this is the '
+      + 'same issue with inference mode." Third time the same ruling has landed (rhyme-studio recognition, '
+      + 'letter-spotter name-it, now this) and the last two both shipped SPOKEN and held. Acceptance drive owed '
+      + 'on HUMAN-CHECKS #96 (c) — the decodable-reader row, where the fork lives.',
+    notes:
+      'The child SAYS which of the N choices on screen they pick. This is NOT open-set production: the judge is '
+      + 'handed the exact choice texts and told which one is right, so it classifies an utterance against a '
+      + 'printed menu — the same closed-set arithmetic that makes short_spoken_word safe, over a longer string. '
+      + 'It is what a proposition-shaped answer needs, because spoken FREE production of a proposition is '
+      + 'open_set_word (BLOCKED) and the alternative — a button — is the costume the ruling struck down.\n'
+      + 'Two things a pack must do that the class cannot: (1) ACCEPT THE SHORT FORM. A five-year-old answers '
+      + '"the mat" or "the second one", not the whole sentence back; a contract that demands the full string '
+      + 'fails children for recall, not comprehension. (2) GATE ON EAR-SEPARABILITY. Every choice must carry at '
+      + 'least one word no other choice has, or an utterance can fit two of them and the judge cannot honestly '
+      + 'score it — a subset option ("A cat." against "A cat and a dog.") is the shape to DROP, not to judge '
+      + 'leniently.',
   },
   open_set_word: {
     status: 'blocked',
@@ -133,6 +186,18 @@ export const RESPONSE_CLASSES: Record<ResponseClassId, ResponseClassRecord> = {
       + 'keeps rhyme-studio behind a sitting for exactly this.',
   },
 };
+
+// ============================================================================
+// Family constants
+// ============================================================================
+
+/** Manual voice-activity mode for the whole family: our amplitude detector
+ *  brackets every learner turn; Gemini's speech-likeness VAD is unusable for
+ *  short spoken responses (DI bench run-3 ruling). Every consumer's catalog
+ *  entry must declare the same `audioInput` so the lesson path opens the
+ *  shared session identically. Lives here (not the runner) so pure di-script
+ *  tests can pin the catalog side without importing React. */
+export const JUDGED_AUDIO_INPUT = { manual_activity: true } as const;
 
 // ============================================================================
 // The pack contract
@@ -151,7 +216,15 @@ export interface JudgedScriptItem {
   id: string;
   /** What the answer is MADE of — the only per-primitive modality question
    *  (item 16 frame ruling). 'voice' = spoken, judged from audio in-band;
-   *  'gesture' = a committed manipulation, described to the tutor by cue. */
+   *  'gesture' = a committed manipulation, described to the tutor by cue.
+   *
+   *  THE DECISION RULE (user ruling 2026-08-13): picture a teacher at a table
+   *  with one student. If the student would naturally answer OUT LOUD, the
+   *  answer is 'voice' — the mic is the student's voice, and the screen never
+   *  impersonates it with buttons. If the student would do the work ON THE
+   *  PAGE (arrange, build, write, point), the screen IS that page and the
+   *  answer is 'gesture' — honest page-work, never a workaround for a judge
+   *  that finds the spoken answer hard. Full fork: add-di-loop Step 1. */
   answerKind: 'voice' | 'gesture';
   /** Standing gate 1: the benched class this item's answer belongs to. */
   responseClass: ResponseClassId;
@@ -169,6 +242,32 @@ export interface JudgedDiagnosisObservation {
   expected: string;
   observed: string;
   judgeFeedback?: string;
+}
+
+/** What a finished RUN was actually made of. Not a pack field — a run's mix
+ *  depends on which items the manifest sent, and a mode-forked pack ships all
+ *  three shapes at different times. */
+export type JudgedAnswerMix = 'voice' | 'gesture' | 'mixed';
+
+/**
+ * The honest modality of a run, for completion copy.
+ *
+ * The orb learned this in 19d; the celebration line had not. A `letter-sound-link`
+ * run of six `hear-see` items — every one answered by TAPPING — congratulated the
+ * child for working "with your own voice" (user drive 2026-08-13). Same defect
+ * class, one screen later: text that asserts a modality the run did not have.
+ *
+ * The PHRASING stays per-primitive (it is pedagogy, and "out loud" is not
+ * interchangeable with "on the frame"); only the fact is shared. An empty run is
+ * 'voice' — the family's default shape, and there is nothing to congratulate.
+ */
+export function judgedAnswerMix(
+  items: readonly Pick<JudgedScriptItem, 'answerKind'>[],
+): JudgedAnswerMix {
+  if (items.length === 0) return 'voice';
+  const spoken = items.filter((item) => item.answerKind === 'voice').length;
+  if (spoken === items.length) return 'voice';
+  return spoken === 0 ? 'gesture' : 'mixed';
 }
 
 /** Status-line strings shown under the mic. Text is pack-owned pedagogy;
@@ -271,6 +370,79 @@ export function findSentinelCollisions(
   return collisions;
 }
 
+/**
+ * The tutor-audible span(s) of a cue — every quoted line after a speak anchor.
+ * Everything outside these spans is judge-side instruction. Extracted here
+ * because 12 di-script test files grew three divergent copies of this parser,
+ * and the naive single-anchor form reads the wrong span on dual-anchor cues
+ * (LetterSpotter's test docblock records the miss). Use this everywhere a gate
+ * needs "inside vs outside the quoted line".
+ *
+ * FOUR anchors, because the family has two eras and the parser has to cover
+ * both or the sweep can't reach the older half: `Speak exactly:` is the
+ * di-bench form the four pre-runner ports inherited (47 sites), `Say exactly:`
+ * the runner-era form (70), `then wait:` the tail of the dual-anchor
+ * "Say ONLY this, warmly, then wait:" frame, and `Say ONLY this <n words>:`
+ * the tap-to-hear pronounce form. An anchor missing here is not a silent
+ * no-op: `findPerformedStageDirections` subtracts these spans before scanning,
+ * so an unrecognised span makes the SPOKEN line searchable for stage
+ * directions and can flag a cue that is in fact clean.
+ */
+const SPOKEN_SPAN_RE =
+  /(?:(?:Say|Speak) exactly:|Say ONLY this[^:"]{0,40}:|then wait:)\s*"([\s\S]*?)"/gi;
+
+export const spokenSpansOf = (cue: string): string[] =>
+  Array.from(cue.matchAll(SPOKEN_SPAN_RE), (m) => m[1]);
+
+/** The first spoken span — the line the tutor SPEAKS on this turn. */
+export const spokenSpanOf = (cue: string): string => spokenSpansOf(cue)[0] ?? '';
+
+/**
+ * Does any SENTENCE of this text open with a verdict sentinel? The one
+ * generated-content lock: run it over every model-produced string that can be
+ * spoken or printed into a cue. Sentence-scoped like the engine's verdict scan
+ * — a string-START regex misses a second-sentence opener ("I was tired. Yes,
+ * very tired."), which is the weaker fork this export replaces (letter-spotter
+ * carried it on both sides of the wire).
+ */
+export const opensWithSentinel = (
+  text: string,
+  sentinels: SentinelPair = DI_SENTINELS,
+): boolean => findSentinelCollisions([{ label: 'content', text }], sentinels).length > 0;
+
+/**
+ * Imperative stage directions OUTSIDE the spoken span get PERFORMED: ten-frame's
+ * contract opened "Then WAIT silently — …" and the tutor wrapped it in an
+ * invented bracket tag and read "[WAIT silently]" to the child (drive 2,
+ * 2026-08-13); letter-spotter fabricated `[LSP_TAP]` from the same shape. A
+ * contract states FACTS about the turn ("you then stay silent while the
+ * learner works"), never orders. This finds the known imperative forms so the
+ * fix propagates structurally instead of pack by pack.
+ *
+ * It caught NINE packs when the 19a sweep turned it on — every judged pack in
+ * the repo except the ten-frame pilot opened its contract with the imperative
+ * — plus a second form one clause down (`"and stop, then wait again"`, 10
+ * sites) and the pre-runner ports' `"Then wait for the learner to speak."`.
+ * All are on the fact-form now; the ear-check rides the open mic rows.
+ *
+ * It runs from the shared testkit rather than inside validateJudgedScriptPack
+ * because the RUNNER calls that validator in dev, and a wording rule belongs in
+ * the gate a pack author runs, not in a console.error at session start.
+ */
+const PERFORMED_DIRECTION_RE = /\bThen WAIT\b|\bWAIT (?:silently|in complete silence)\b/i;
+
+export function findPerformedStageDirections(
+  cues: Array<{ label: string; text: string }>,
+): Array<{ cueLabel: string; match: string }> {
+  const findings: Array<{ cueLabel: string; match: string }> = [];
+  for (const { label, text } of cues) {
+    const outsideSpokenSpans = text.replace(SPOKEN_SPAN_RE, ' ');
+    const match = outsideSpokenSpans.match(PERFORMED_DIRECTION_RE);
+    if (match) findings.push({ cueLabel: label, match: match[0] });
+  }
+  return findings;
+}
+
 /** Every `{{key}}` in a catalog tutoring block. */
 export const extractTemplateKeys = (text: string): string[] =>
   Array.from(text.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g), (m) => m[1]);
@@ -344,5 +516,71 @@ export function validateJudgedScriptPack<Item extends JudgedScriptItem>(
     );
   }
 
+  return issues;
+}
+
+/**
+ * A repeated ask is RECITATION above this length and a SIGNAL below it, so the
+ * gate below only flags the long form.
+ *
+ * DI runs on invariant signals — "Your turn." is supposed to be the same words
+ * every round, and a pack that rotated its wording to satisfy a gate would be
+ * teaching worse. What the 2026-08-13 rulings struck was the opposite thing: a
+ * long block the child has to listen THROUGH to reach the question, re-recited
+ * per item. Calibrated against all four known spans:
+ *
+ *   FLAG   rhyme-studio's per-item rule model, 15 words ("Words rhyme when they
+ *          end the same way. Listen: bee, tree — both end with -ee.") — the
+ *          user ruling that opened the class: "i think we can remove that after
+ *          the first example".
+ *   FLAG   letter-spotter's full match-it frame, 16 words, re-spoken per item.
+ *   PASS   letter-spotter's shipped SHORT repeat, 10 words — the fix the same
+ *          drive produced, which a byte-identical rule would have refused.
+ *   PASS   decodable-reader's "Your turn. Read it.", 4 words, once per sentence
+ *          of a passage. Nothing about it can vary without inventing content,
+ *          and it is the correct DI signal.
+ *
+ * A pack that wants a longer invariant ask does not tune this number — it says
+ * the short form second, which is what the ruling asked for.
+ */
+const REPEATED_ASK_WORD_LIMIT = 12;
+
+/**
+ * Consecutive same-action items whose plain re-ask is BYTE-IDENTICAL and long
+ * enough to be recitation (see the limit above). If the spoken line does not
+ * change when the item changes, it is established once, not recited — the
+ * defect shipped twice on 2026-08-13 (rhyme-studio's per-item lead-in, then
+ * letter-spotter's match-it hours later, ~14s of identical speech per round)
+ * because the rule lived in prose. The fix is a SHORT repeat ask for the
+ * invariant mode, never a silent one: an ask that says nothing is broken
+ * rather than terser. Runs from the shared testkit; legacy packs adopt it with
+ * their next drive.
+ */
+export function findRepeatedConsecutiveAsks<Item extends JudgedScriptItem>(
+  pack: JudgedScriptPack<Item>,
+): string[] {
+  const issues: string[] = [];
+  for (let i = 1; i < pack.items.length; i++) {
+    const prev = pack.items[i - 1];
+    const item = pack.items[i];
+    if (prev.id === item.id || (prev.action ?? '') !== (item.action ?? '')) continue;
+    let prevCue = '';
+    let cue = '';
+    try {
+      prevCue = pack.itemCue(prev, { opening: false, howToPlay: false });
+      cue = pack.itemCue(item, { opening: false, howToPlay: false });
+    } catch {
+      continue; // a throwing cue builder is validateJudgedScriptPack's finding
+    }
+    const prevSpoken = spokenSpansOf(prevCue).join('\n');
+    const spoken = spokenSpansOf(cue).join('\n');
+    if (prevSpoken.length === 0 || prevSpoken !== spoken) continue;
+    const words = spoken.split(/\s+/).filter(Boolean).length;
+    if (words > REPEATED_ASK_WORD_LIMIT) {
+      issues.push(
+        `items "${prev.id}" → "${item.id}" (action "${item.action ?? ''}"): consecutive asks recite a byte-identical ${words}-word line — give the invariant mode a short repeat ask`,
+      );
+    }
+  }
   return issues;
 }
