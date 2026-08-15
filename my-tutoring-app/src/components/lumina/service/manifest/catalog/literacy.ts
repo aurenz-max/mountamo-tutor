@@ -2213,14 +2213,187 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
   {
     id: 'story-talk',
     description:
-      'Listening-comprehension activity for Kindergarten — the tutor READS a short 3-5 sentence story ALOUD with character voices, then the student answers a literal-recall question ("Who hid the acorn?", "What did Milo find?", "Where did it happen?") by tapping the matching picture from 4 options. Builds oral listening comprehension, recall of key story details, and who/what/where questioning. ESSENTIAL for K Reading Comprehension and Speaking & Listening (recall key details from a read-aloud). Answers are single picturable words shown as pictures, so it works for pre-readers.',
+      'Live Direct Instruction listening comprehension with a spoken tutor. The tutor reads a short 3-5 '
+      + 'sentence story aloud with character voices, asks one question, waits, judges the child\'s answer from '
+      + 'the audio in-band, and its own affirmation moves the lesson on. ALL THREE MODES ARE ANSWERED ALOUD — '
+      + 'the child SAYS the detail the story stated (Listen & Tell: "Who hid the acorn?"), SAYS how a character '
+      + 'felt when the story never named the feeling (How Did They Feel?), or SAYS why something happened (Why '
+      + 'Did It Happen?). Every answer is one short word a five-year-old can say, so the child produces it '
+      + 'rather than picking it; there are no answer pictures, no chips and nothing to click to advance. The '
+      + 'story is audio-only while they answer and prints afterwards. Requires a microphone. Builds oral '
+      + 'listening comprehension, recall of key story details, emotion inference and causal reasoning. '
+      + 'ESSENTIAL for K Reading Comprehension and Speaking & Listening (recall key details from a read-aloud). '
+      + 'Works for pre-readers: nothing has to be read.',
     constraints:
-      'Story stays audio-only while the student answers (a listening task) — do not rely on the child reading. Answers must be single concrete, picturable words with a clear emoji. K comprehension: 3-5 short sentences, one scene, one problem. The manifest must NOT supply story text, questions, or answers — the generator authors the mini-stories and questions deterministically from the topic.',
+      'Requires the live tutor and a microphone. Listening comprehension only — the child never reads, so do '
+      + 'NOT route decoding, phonics, sight-word or print-concept objectives here. Answers must be single '
+      + 'concrete words a five-year-old can pronounce (a picturable noun, or one common feeling word). K '
+      + 'comprehension: 3-5 short sentences, one scene, one problem. The manifest must NOT supply story text, '
+      + 'questions, or answers — the generator authors the mini-stories, questions and near misses '
+      + 'self-consistently from the topic.',
+    // ── DI MODALITY (2026-08-14) — FIFTEENTH literacy port. The tutor owns the
+    // clock: it reads the story, asks once, waits, judges the spoken answer from
+    // the audio in-band, and its own line is the advance. No advance timer, no
+    // Next button, no push-to-talk mic, no start-screen fork.
+    // THE FORK HAS NO SPLIT — every mode's answer is ONE WORD (a noun, a
+    // feeling, a cause), which is sayable, so all three are spoken and the
+    // four-picture menu is DELETED. A menu here converted production into
+    // recognition and floored a guess at 1 in 4; a teacher reading a story to
+    // one child and asking "Who hid the acorn?" has no cards on the table. The
+    // distractors survive OFF SCREEN as generator quality material and as the
+    // judged harness's signature wrong answer — nothing renders them.
+    // IT ALSO DELETED THE FAMILY'S LAST TUTOR-BUSY MIC GATE. The click era ran
+    // the mic only while the tutor was silent, because a separate capture could
+    // hear the TUTOR read the answer out of the story. The judged loop removes
+    // the reason rather than the rule: the judge is the tutor, judging its own
+    // session audio, so it cannot mistake its read-aloud for the learner.
+    // Cue lines and the per-item judging contracts live in `storyTalkScript.ts`
+    // (hand-authored, DISTAR); this block is the session-level frame. SENTINEL
+    // DISCIPLINE (standing gate 2) re-checked on every line below: no sentence
+    // begins with "Yes" or with "My turn". That gate binds the GENERATED stories
+    // too — this is the one primitive whose read-aloud is character dialogue,
+    // and "Yes, I found it!" read verbatim would be a phantom verdict.
+    audioInput: { manual_activity: true },
     evalModes: [
-      { evalMode: 'who_what_where', label: 'Listen & Tell (Tier 1)', beta: 2.0, scaffoldingMode: 2, challengeTypes: ['who_what_where'], description: 'Literal recall — answer a who/what/where question about a detail the story stated aloud.' },
-      { evalMode: 'feeling_check', label: 'How Did They Feel? (Tier 2)', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['feeling_check'], description: 'Emotion inference — infer how a character felt from what happened (the feeling is not stated).' },
-      { evalMode: 'why_because', label: 'Why Did It Happen? (Tier 3)', beta: 4.0, scaffoldingMode: 3, challengeTypes: ['why_because'], description: 'Causal inference — tap the picture of WHY something happened in the story.' },
+      {
+        evalMode: 'who_what_where',
+        label: 'Listen & Tell (Tier 1)',
+        // β RAISED 2.0 → 2.5 on the DI port: a 1-of-4 picture tap became unaided
+        // spoken production, which is the structural case the family's β rule
+        // names (letter-spotter name_it, same conversion, same step).
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['who_what_where'],
+        description: 'Literal recall — hear a story, then SAY the who/what/where detail the story stated. The guess floor is gone with the picture menu; β raised for unaided production.',
+      },
+      {
+        evalMode: 'feeling_check',
+        label: 'How Did They Feel? (Tier 2)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['feeling_check'],
+        description: 'Emotion inference — SAY how a character felt when the story showed it through events and never named it. β raised for unaided production; the feeling is now also gated absent from the story text, which the click era never checked.',
+      },
+      {
+        evalMode: 'why_because',
+        label: 'Why Did It Happen? (Tier 3)',
+        beta: 4.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['why_because'],
+        description: 'Causal inference — SAY why something happened in the story. β raised for unaided production; the cause said as a whole reason ("because of the rain") is accepted and is a better answer than the word alone.',
+      },
     ],
+    tutoring: {
+      taskDescription:
+        'Live-judged Direct Instruction listening comprehension for a young child. You read a short story '
+        + 'aloud, ask one question about it, and the child answers OUT LOUD with one word. Right now the '
+        + 'comprehension skill is "{{challengeType}}" and the question you are asking is "{{stimulus}}". You '
+        + 'speak the exact scripted lines from each bracketed application message, you re-read the story when '
+        + 'the child asks to hear it again, and you judge each spoken attempt from the audio you heard using '
+        + 'only the two allowed reply branches. Holding a story in mind and finding the answer inside it is the '
+        + 'entire skill being practiced, so the child produces the answer — never picks it from a list you '
+        + 'offer.',
+      contextKeys: ['challengeType', 'stimulus'],
+      // Correction territory, not answer territory, and every level is a
+      // BEHAVIOUR rather than a line you may say. A ladder that quotes speakable
+      // hints is a no-verdict stall: on a repeated wrong answer the model
+      // reaches for the sanctioned-sounding alternative and says something that
+      // opens with neither sentinel, so the loop records no verdict at all and
+      // the correction counter freezes (proven by number-bond's cap drill,
+      // 2026-08-14; queue item 18d).
+      scaffoldingLevels: {
+        level1: 'Use the scripted correction line for this story, then hand the question back and wait.',
+        level2: 'Use that same scripted correction line again, unchanged, and give them longer in silence.',
+        level3: 'Use that same scripted correction line again — the wording is fixed, the patience is what changes.',
+      },
+      // Observable behaviours only, and the first entry in each mode's family is
+      // that mode's signature error: the wrong answer that arrives fluent,
+      // confident, and most likely to be affirmed by mistake.
+      commonStruggles: [
+        {
+          pattern: 'Says a different thing from the story — whatever they heard last, said confidently',
+          response: 'Treat it as not yet answered: run the scripted correction for this story, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says what HAPPENED when asked how someone felt — "he lost his acorn" instead of a feeling',
+          response: 'An event is not a feeling, and this is the miss to catch. Run the scripted correction, then ask once more and wait.',
+        },
+        {
+          pattern: 'Says what happened when asked WHY it happened — the event repeated back',
+          response: 'Naming the event is not naming its cause. Run the scripted correction, then hand the question back and wait.',
+        },
+        {
+          pattern: 'Says a fair word for the same idea — "unhappy" for sad, "puppy" for dog',
+          response: 'That is a correct answer — affirm it and echo the story\'s own word. Comprehension is what is being measured, not vocabulary.',
+        },
+        {
+          pattern: 'Answers inside a phrase — "the squirrel" or "because it rained" instead of one bare word',
+          response: 'That is a correct answer, and the fuller reason is the better one. Affirm it and echo the word.',
+        },
+        {
+          pattern: 'Goes quiet after the question, or asks to hear the story again',
+          response: 'Silence is a five-year-old holding a whole story in mind — wait. If they ask, the application sends the re-read; never volunteer one.',
+        },
+      ],
+      aiDirectives: [
+        {
+          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
+          instruction:
+            'Messages tagged [ST_ITEM], [ST_MOVE], [ST_HEAR] or [ST_COMPLETE] contain the only lesson words '
+            + 'you may speak, and each one quotes the exact line after "Say exactly:". The square-bracket label '
+            + 'is private metadata: never speak, reproduce, or invent it. Affirmations begin with "Yes" and '
+            + 'corrections begin with "My turn" — never begin any other sentence with those words. Judge '
+            + 'honestly from the audio and do not praise to be kind. The application decides which story comes '
+            + 'next; never introduce one yourself and never announce progress.',
+        },
+        {
+          title: 'THE OPENING LINE ALREADY TEACHES THE GAME',
+          instruction:
+            'The first [ST_ITEM] carries the greeting, how the game works, the whole first story and its '
+            + 'question inside one quoted line. Speak it and stop. Do not greet the child separately, do not '
+            + 'explain the activity in your own words, and do not add a warm-up question — the quoted line is '
+            + 'the whole opening. Read the story slowly and expressively, with character voices; it is the '
+            + 'only thing the child has to work from.',
+        },
+        {
+          title: 'WHAT COUNTS AS AN ANSWER',
+          instruction:
+            'Every answer here is SPOKEN and every answer is one short word, and the [ST_ITEM] message names '
+            + 'the word that is correct. The word alone, or inside a little phrase ("the squirrel", "because '
+            + 'of the rain"), is the answer. A fair word for the same idea is the answer too — unhappy for '
+            + 'sad, afraid for scared — and you affirm it while echoing the story\'s own word. What is not an '
+            + 'answer: a different thing from the story, an event given where a feeling or a cause was asked '
+            + 'for, or the question said back to you. There is nothing on screen for the child to choose from '
+            + 'and nothing for them to tap, so never suggest picking, pointing, or showing you anything.',
+        },
+        {
+          title: 'THE STORY IS THE MATERIAL — NEVER THE ANSWER SERVICE',
+          instruction:
+            'You read the story exactly as written. For a who, what, where or why question the answer word is '
+            + 'inside that story, and hearing it there is precisely the task — so reading the story is never a '
+            + 'leak. What you must never do is single that word out, say it on its own, tell the child which '
+            + 'part of the story holds it, stress it as you read, or answer for them. For a feeling question '
+            + 'the story never names the feeling at all, and neither do you until you have given a verdict.',
+        },
+        {
+          title: 'WAIT (the silence is theirs)',
+          instruction:
+            'After you ask, STOP. Do not re-ask, do not fill the pause, do not offer a clue, and do not repeat '
+            + 'part of the story to nudge them. A long pause is a five-year-old replaying a whole story in '
+            + 'their head, and that work IS the activity. Think time is unbounded and the application, not the '
+            + 'clock, decides when to move on.',
+        },
+        {
+          title: 'HEAR IT AGAIN ON DEMAND',
+          instruction:
+            'When you receive [ST_HEAR], the child asked to hear the story again. Say ONLY the quoted line — '
+            + 'the whole story once more, then the question — warmly and slowly, then go back to waiting. Add '
+            + 'nothing, judge nothing you just heard, and never let the repeat carry more help than the first '
+            + 'telling did: no extra stress on any word, no shortened version, no clue about which part '
+            + 'matters. This channel is answered at every grade and every support tier.',
+        },
+      ],
+    },
     supportsEvaluation: true,
   },
   {

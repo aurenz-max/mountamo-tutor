@@ -71,6 +71,13 @@ import {
   type InteractiveBookChallengeLike,
   type InteractiveBookItem,
 } from '@/components/lumina/primitives/visual-primitives/literacy/interactiveBookScript';
+import {
+  itemsFromChallenges as storyTalkItems,
+  storyTalkHarnessAnswers,
+  storyTalkPackBase,
+  type StoryTalkChallengeLike,
+  type StoryTalkItem,
+} from '@/components/lumina/primitives/visual-primitives/literacy/storyTalkScript';
 
 // ---------------------------------------------------------------------------
 // The plan a harness replays
@@ -242,6 +249,23 @@ const numberBondAdapter: DiPortAdapter<NumberBondItem> = {
 };
 
 /**
+ * story-talk (fifteenth literacy port). ALL-VOICE — the picture menu is deleted,
+ * so there is no `gestureVerdictCue` and every item is judged from the answer
+ * text. Its signature wrong is the same-category near miss the deleted menu used
+ * to display (another animal, another feeling), which is exactly the
+ * discrimination `wrongClauseFor` claims: driving it is what turns that clause
+ * from prose into evidence.
+ */
+const storyTalkAdapter: DiPortAdapter<StoryTalkItem> = {
+  build: (data) => {
+    const challenges = (data.challenges ?? []) as StoryTalkChallengeLike[];
+    const items = storyTalkItems(challenges);
+    return { items, dropped: challenges.length - items.length, surface: storyTalkPackBase(items) };
+  },
+  answersFor: storyTalkHarnessAnswers,
+};
+
+/**
  * Ports the judged-loop harness can drive. One entry per `/add-di-loop` port.
  *
  * The cast erases the per-port item type: the plan builder only ever reads the
@@ -252,6 +276,7 @@ export const DI_PORTS: Record<string, DiPortAdapter<JudgedScriptItem>> = {
   'ten-frame': tenFrameAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'interactive-book': interactiveBookAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
   'number-bond': numberBondAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
+  'story-talk': storyTalkAdapter as unknown as DiPortAdapter<JudgedScriptItem>,
 };
 
 export const isDiPort = (componentId: string): boolean => componentId in DI_PORTS;

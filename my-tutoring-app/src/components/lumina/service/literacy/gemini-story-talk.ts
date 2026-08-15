@@ -13,13 +13,19 @@ import {
   buildModeConstraintSection,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import {
+  challengeAskable,
+  MAX_STORY_CHARS,
+  type StoryTalkChallengeLike,
+} from "../../primitives/visual-primitives/literacy/storyTalkScript";
 
 // ---------------------------------------------------------------------------
 // STORY TALK generator (FORK B: orchestrator / content-bearing).
 //
-// Kindergarten LISTENING comprehension. The tutor reads a short 3-5 sentence
-// story aloud; the child answers a comprehension question whose answer is a
-// single picturable word, by tapping one of 4 pictures.
+// Kindergarten LISTENING comprehension, on the JUDGED DI LOOP (2026-08-14): the
+// tutor reads a short 3-5 sentence story aloud, asks its question, and the child
+// SAYS the one-word answer out loud. There is no picture menu — the answer is
+// produced, never picked.
 //
 // LESSON (story primitives): the LLM authors each story TOGETHER WITH its
 // question, answer, and distractors — self-consistently, in ONE structured
@@ -31,9 +37,23 @@ import {
 //   who_what_where — literal recall; the answer is STATED in the story.
 //   feeling_check  — emotion inference; the feeling is NOT stated, it's inferred.
 //   why_because    — causal inference; the CAUSE is a picturable word in the story.
-// All three share ONE render surface (question + 4 emoji taps), so they share ONE
-// schema. Gemini self-labels each story via `challengeType` (enum-constrained by
-// resolveEvalModes to the pinned/resolved/mixed set); validation branches on it.
+// All three share ONE render surface (a listening card + a spoken answer), so
+// they share ONE schema. Gemini self-labels each story via `challengeType`
+// (enum-constrained by resolveEvalModes); validation branches on it.
+//
+// THE SPEECH GATES LIVE IN `storyTalkScript.ts` AND ARE IMPORTED, NEVER COPIED
+// (decodable-reader / letter-spotter precedent — hand-synced copies drifted live
+// once already). Everything the tutor will SAY is checked here at generation and
+// again at the build seam by the same predicate: `challengeAskable`. What that
+// buys this primitive specifically is the DIALOGUE gate — a story sentence
+// opening "Yes, I found it!" is ordinary children's writing, and the tutor
+// reading it verbatim would hand the judged loop's verdict scan an affirmation
+// nobody made.
+//
+// The `options` array is NOT an answer menu any more (the DI port deleted the
+// picture grid). It is kept because committing to three fair near misses
+// measurably improves the answer the model picks, and because the judged-loop
+// harness drives one of them as the signature wrong answer.
 // ---------------------------------------------------------------------------
 
 const MODEL = 'gemini-flash-lite-latest';
@@ -94,7 +114,7 @@ const buildStoryPoolSchema = (): Schema => ({
     },
     description: {
       type: Type.STRING,
-      description: "One friendly sentence telling a Kindergartner what they'll do (listen and tap the answer). NO answer words.",
+      description: "One friendly sentence telling a Kindergartner what they'll do (listen to a story, then say the answer out loud). NO answer words.",
     },
     stories: {
       type: Type.ARRAY,
@@ -241,8 +261,14 @@ const validateStoryPool = (raw: RawStoryPool, allowed: readonly StoryTalkChallen
     if (!isValidAnswerToken(answer)) { rejected += 1; continue; }
 
     // 4. Answer-derivability (mode-aware): literal recall + causal answers must be
-    //    spoken in the story; feeling_check is inference, so it is NOT required.
+    //    spoken in the story; feeling_check is the INVERSE — the feeling must be
+    //    absent, or the mode's whole claim is false. That second half was missing
+    //    until the DI port wrote the spoken ask: nothing checked it, so a story
+    //    saying "Milo felt sad" shipped as emotion INFERENCE while the child only
+    //    had to repeat what they heard, and the tutor's own how-to-play line
+    //    ("the story will not say how they felt") would have been a lie.
     if (REQUIRES_ANSWER_IN_STORY.has(challengeType) && !containsToken(story, answer)) { rejected += 1; continue; }
+    if (challengeType === 'feeling_check' && containsToken(story, answer)) { rejected += 1; continue; }
 
     // 5. Answer-leak: the question must NOT contain the answer (all modes).
     if (containsToken(question, answer)) { rejected += 1; continue; }
@@ -267,12 +293,26 @@ const validateStoryPool = (raw: RawStoryPool, allowed: readonly StoryTalkChallen
     }
     if (distractors.length < 3) { rejected += 1; continue; }
 
-    // 7. Assemble exactly 4 options (answer once + 3 distractors), then shuffle
-    //    so the answer isn't always first — code owns option order.
+    // 7. Assemble exactly 4 options (answer once + 3 distractors), then shuffle.
+    //    No longer a menu — near-miss material for the generator's own quality
+    //    and for the judged-loop harness's signature wrong answer.
     const options = shuffle<StoryTalkOption>([
       { word: answer, emoji: answerEmoji },
       ...distractors.slice(0, 3),
     ]);
+
+    // 8. THE SPEECH GATE, imported from the script module so both sides of the
+    //    wire read one address: is this a story the tutor can actually SAY and
+    //    judge? Refuses a story that is not a read-aloud (too long, under two
+    //    sentences, carrying blank markers or bracket tags), an unsayable
+    //    answer, and — the gate this primitive exists to need — anything whose
+    //    dialogue opens a sentence with a verdict sentinel.
+    const candidate: StoryTalkChallengeLike = {
+      id: 'validation-probe',
+      type: challengeType,
+      storyTitle, story, question, answer, answerEmoji, options,
+    };
+    if (!challengeAskable(candidate)) { rejected += 1; continue; }
 
     survivors.push({ challengeType, storyTitle, story, question, answer, answerEmoji, options });
   }
@@ -317,13 +357,14 @@ const SYSTEM_INSTRUCTION =
   `You are an expert early-childhood read-aloud specialist. You write tiny 3-5 sentence stories `
   + `that a Kindergartner (age 5) can follow when heard aloud — simple words, concrete objects, one clear `
   + `event. For each story you write ONE comprehension question whose answer is a single concrete, picturable `
-  + `word. You NEVER put the answer word inside the question — the question is asked right before the child taps `
-  + `a picture, so containing the answer would give it away. For literal-recall (who/what/where) and causal `
+  + `word. THE CHILD ANSWERS OUT LOUD — a live tutor reads your story, asks your question, and judges the `
+  + `spoken answer — so there are no pictures to choose from and the answer must be one word a 5-year-old can `
+  + `SAY. You NEVER put the answer word inside the question. For literal-recall (who/what/where) and causal `
   + `(why) questions you STATE the answer plainly inside the story; for feeling questions you show the feeling `
-  + `through events and NEVER name it. Every distractor you give is the SAME CATEGORY as the answer (another `
-  + `animal for an animal, another feeling for a feeling) so the pictures are a fair choice. The child may also `
-  + `answer by SAYING the word aloud, so all four option words must be easy for a 5-year-old to pronounce and `
-  + `must SOUND clearly different from each other — never rhymes, homophones, or near-homophones of one another.`;
+  + `through events and NEVER name it anywhere in the story. Every distractor you give is the SAME CATEGORY as `
+  + `the answer (another animal for an animal, another feeling for a feeling): distractors are never shown to `
+  + `the child, they are the near misses that prove your answer is the only right one, so an answer whose `
+  + `distractors are equally correct is a broken question you must rewrite.`;
 
 const callGemini = async (schema: Schema, prompt: string, corrective?: string): Promise<RawStoryPool> => {
   const response = await ai.models.generateContent({
@@ -351,8 +392,8 @@ const buildPrompt = (
   grade: string,
   modeSection: string,
 ): string =>
-  `Write a pool of tiny stories for a Kindergarten LISTENING comprehension game. The tutor reads each
-story aloud, asks the question, and the child answers by tapping one of four pictures.
+  `Write a pool of tiny stories for a Kindergarten LISTENING comprehension lesson. A live tutor reads each
+story aloud, asks the question, and the child SAYS the answer out loud. There are no pictures to pick from.
 ${preamble(topic, intent, grade)}
 
 Produce 6-8 self-consistent mini-stories. For EACH story give ALL fields, and set challengeType to the skill it tests.
@@ -360,16 +401,17 @@ Produce 6-8 self-consistent mini-stories. For EACH story give ALL fields, and se
 ${modeSection}
 
 STRICT RULES (this is the whole activity — follow every one):
-- story: 3-5 SHORT simple sentences a 5-year-old can follow when heard aloud. One clear event.
-- answer: ONE concrete, PICTURABLE, lowercase word with a clear emoji (a feeling word for feeling_check).
+- story: 3-5 SHORT simple sentences a 5-year-old can follow when heard aloud. One clear event. Under ${MAX_STORY_CHARS} characters.
+- SPEAKABILITY: the story is read aloud VERBATIM by a tutor. If a character speaks, use SINGLE quotes ('I found it!' said Milo), never double quotes. Never use underscores, blanks, or square brackets anywhere.
+- NEVER begin any sentence of the story, the question, or the title with the word "Yes" or the words "My turn" — those two openings are reserved signals in this lesson and a story that uses them is unusable. Write 'I found it!' or 'That is it!' instead of 'Yes, I found it!'.
+- answer: ONE concrete, PICTURABLE, lowercase word the child can SAY, with a clear emoji (a feeling word for feeling_check). Never "yes" or "no".
 - question: MUST NOT contain the answer word anywhere.
-- distractor0/1/2 Word+Emoji: three DIFFERENT wrong choices in the SAME CATEGORY as the answer, each a lowercase single word with its own distinct emoji. None may equal the answer or each other.
-- SPOKEN-ANSWER RULE: the child may answer by SAYING a word aloud, so all four option words must be easy for a 5-year-old to say and must SOUND clearly different from each other — never rhymes, homophones, or near-homophones (not "bear"/"pear", not "sun"/"son").
+- distractor0/1/2 Word+Emoji: three DIFFERENT wrong choices in the SAME CATEGORY as the answer, each a lowercase single word with its own distinct emoji. None may equal the answer or each other. The child never sees these — they exist to prove your answer is the ONLY right one, so if a distractor would also be a fair answer, rewrite the question.
 - Theme the stories to "${topic}" wherever it fits naturally; keep the language K-simple regardless.
 
 Also provide:
 - title: a fun, kid-friendly session title including the topic.
-- description: one friendly sentence telling the child what they'll do (listen, then tap the answer). NO answer words.`;
+- description: one friendly sentence telling the child what they'll do (listen to a story, then tell the tutor the answer out loud). NO answer words.`;
 
 // ---------------------------------------------------------------------------
 // Orchestrator
@@ -417,9 +459,10 @@ export const generateStoryTalk = async (ctx: GenerationContext): Promise<StoryTa
         `PREVIOUS ATTEMPT REJECTED: too few usable stories. Regenerate 8 stories. For EACH story: `
         + `(1) set challengeType correctly; `
         + `(2) the question MUST NOT contain the answer word; `
-        + `(3) for who_what_where and why_because the exact lowercase answer word MUST appear inside the story; for feeling_check do NOT name the feeling in the story; `
-        + `(4) the answer MUST be a single concrete picturable word with a matching emoji; `
-        + `(5) give three DIFFERENT same-category distractors, each with its own distinct emoji, none equal to the answer.`);
+        + `(3) for who_what_where and why_because the exact lowercase answer word MUST appear inside the story; for feeling_check the feeling word MUST NOT appear anywhere in the story — the child infers it; `
+        + `(4) the answer MUST be a single concrete picturable word with a matching emoji, and never "yes" or "no"; `
+        + `(5) give three DIFFERENT same-category distractors, each with its own distinct emoji, none equal to the answer; `
+        + `(6) the story is read aloud verbatim: keep it under ${MAX_STORY_CHARS} characters, use SINGLE quotes for any speech, and never begin a sentence with "Yes" or "My turn".`);
       const retryPool = validateStoryPool(raw, allowedTypes);
       // Keep whichever attempt yielded more usable stories.
       if (retryPool.length > pool.length) pool = retryPool;
