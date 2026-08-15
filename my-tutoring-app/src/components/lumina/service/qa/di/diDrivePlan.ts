@@ -87,6 +87,24 @@ export interface DiHarnessAnswers {
   tapped?: { correct: string; wrong: string };
   /** Answer tokens the spoken ask must not contain. */
   leakTokens: string[];
+  /**
+   * A span of the ask INSIDE which `leakTokens` may legitimately appear, so the
+   * leak scan subtracts it before looking.
+   *
+   * It exists because story-talk (port 15) was the first pack whose ask carries
+   * a STIMULUS that contains the answer by design: the tutor reads a story
+   * aloud and the child recalls a detail from it, so the answer word is in the
+   * read-aloud or the question is unanswerable. Every earlier port's ask
+   * referred to a stimulus on screen, so "the ask must not contain the answer"
+   * and "the tutor must not give the answer away" were the same rule; here they
+   * come apart. Subtracting the stimulus keeps the oracle STRONGER than
+   * silently emptying `leakTokens` would: an answer mentioned in the greeting,
+   * the how-to-play, the question or the hand-over is still a HIGH.
+   *
+   * Omit it wherever the flat rule is true (story-talk's own feeling_check mode
+   * omits it — the feeling is absent from the story, so any mention is a leak).
+   */
+  leakExemptSpan?: string;
 }
 
 export interface DiDriveItem {

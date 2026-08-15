@@ -2086,6 +2086,7 @@ def build_di_journey(live: Dict[str, Any], grade: str,
                     "role": "ask", "item": item["id"], "answer_kind": item["answerKind"],
                     "expected_line": item["askLine"],
                     "leak_tokens": answers.get("leakTokens") or [],
+                    "leak_exempt_span": answers.get("leakExemptSpan") or "",
                     "is_last_item": is_last_item,
                 },
             ))
@@ -2148,6 +2149,13 @@ def build_di_journey(live: Dict[str, Any], grade: str,
                     "answer_kind": (next_item or item)["answerKind"],
                     "expected_line": next_item["askLine"] if next_item else None,
                     "leak_tokens": (next_item["answers"].get("leakTokens") or []) if next_item else [],
+                    # The move-on cue CARRIES the next item's ask, stimulus and
+                    # all, so it inherits the next item's exempt span too — not
+                    # this item's. (Found by story-talk's cap drill: the leak
+                    # scan flagged the next story's answer word inside the next
+                    # story, because only the plain `ask` beat had been wired.)
+                    "leak_exempt_span": (next_item["answers"].get("leakExemptSpan") or "")
+                                        if next_item else "",
                     "is_last_item": next_item is None,
                 },
             ))
@@ -2251,10 +2259,22 @@ def run_di_oracles(results: List[BeatResult], events: List[str],
             continue
 
         if role == "ask":
+            # A pack may declare a STIMULUS span inside which the answer word
+            # legitimately appears — story-talk reads a story aloud and asks the
+            # child to recall a detail FROM it, so the answer is in the
+            # read-aloud or the question cannot be answered. Subtract that span
+            # and scan the rest; the greeting, the how-to-play, the question and
+            # the hand-over are all still governed. If the tutor paraphrased the
+            # stimulus the subtraction misses and the whole line is scanned,
+            # which is the right direction for a leak oracle to fail.
+            scanned = _norm(spoken)
+            exempt = _norm(di.get("leak_exempt_span") or "")
+            if exempt and exempt in scanned:
+                scanned = scanned.replace(exempt, " ")
             for token in di.get("leak_tokens") or []:
-                if re.search(rf"\b{re.escape(_norm(token))}\b", _norm(spoken)):
+                if re.search(rf"\b{re.escape(_norm(token))}\b", scanned):
                     add("HIGH", "di-answer-leak-in-ask", b,
-                        f'the ask contains the answer "{token}": "{spoken[:160]}"')
+                        f'the ask contains the answer "{token}" outside its stimulus: "{spoken[:160]}"')
             if classify_di_verdict(spoken, sentinels):
                 add("WARN", "di-sentinel-on-ask", b,
                     "the ask opens a sentence with a verdict sentinel — the reducer "
